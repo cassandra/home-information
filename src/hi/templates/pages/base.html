@@ -1,0 +1,43 @@
+{% load static %}
+{% load pipeline %}
+<!doctype html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8" lang="en"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Home Information</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" type="image/png" href="{% static 'favicon.png' %}"/>
+    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-16x16.png' %}" sizes="16x16">  
+    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-32x32.png' %}" sizes="32x32">  
+    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-96x96.png' %}" sizes="96x96">  
+    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-128x128.png' %}" sizes="128x128">  
+    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-196x196.png' %}" sizes="196x196">  
+    {% stylesheet 'css_head' %}
+    {% block head_css %}{% endblock %}
+    {% block head_javascript %}{% endblock %}
+  </head>
+  <body style="min-height: 101vh;">
+    <!--[if lt IE 8]>
+      <p class="browserupgrade">
+      You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+    <![endif]-->
+
+    <!-- Ensures server version is compatible with the client side CS and JS versions. -->
+    <script type="text/javascript">const AN_VERSION = "{{ AN_VERSION }}";</script>
+
+    <!-- Must precede body since body may embed call to open websocket. -->
+    {% javascript 'js_before_content' %}
+        
+    {% block content %}{% endblock %}
+    
+    {% block footer_pre_javascript %}{% endblock %}
+    {% javascript 'js_after_content' %}
+    {% javascript 'js_after_content_custom' %}
+    {% block footer_post_javascript %}{% endblock %}
+    
+  </body>
+</html>
