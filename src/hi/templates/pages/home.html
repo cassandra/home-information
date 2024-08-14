@@ -1,7 +1,25 @@
 {% extends "pages/base.html" %}
 
 {% block content %}
-<div>
-  <h1>HOME</h1>
+
+<div class="fixed-top">
+  {% include "panes/top_buttons.html" %}
+</div>
+
+<div class="fixed-bottom">
+  {% include "panes/bottom_buttons.html" %}
+</div>
+
+<div class="container-fluid hi-screen">
+  <div class="row">
+    <div class="col-9 scrollable-column ">
+      SCREEN
+
+    </div>
+    <div class="col-3 fixed-column">
+      {% include "panes/side_panel.html" %}
+    </div>
+  </div>
+  
 </div>
 {% endblock %}

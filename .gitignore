@@ -17,4 +17,7 @@ __pycache__/
 *.zip
 *.Z
 
-/src/venv/
+/venv/
+/data/
+/design/
+/docs/
