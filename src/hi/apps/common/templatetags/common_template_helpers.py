@@ -1,7 +1,9 @@
+import os
 import urllib
 
 from django import template
 from django.conf import settings
+from django.template import engines
 from django.urls import reverse
 
 register = template.Library()
@@ -59,3 +61,24 @@ def digit_count( value ):
 @register.simple_tag
 def settings_value(name):
     return getattr(settings, name, "")
+
+
+@register.simple_tag( takes_context = True )
+def include_media_template( context, file_path ):
+    """
+    Load a file from MEDIA_ROOT, treat it as a Django template,
+    and render it with the current context.
+    """
+    full_path = os.path.join( settings.MEDIA_ROOT, file_path )
+    
+    if not os.path.exists(full_path):
+        return f'Template file not found: {full_path}'
+
+    with open(full_path, 'r') as file:
+        file_content = file.read()
+
+    template_engine = engines['django']
+    template_obj = template_engine.from_string(file_content)
+
+    context_dict = context.flatten()
+    return template_obj.render(context_dict)

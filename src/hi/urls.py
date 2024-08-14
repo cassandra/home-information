@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.urls import include, path, re_path
@@ -15,8 +17,17 @@ urlpatterns = [
              name="favicon"
              ),
 
+    re_path(r'^(?P<filename>(service-worker.js))$',
+            views.home_javascript_files, name='home-javascript-files'),
+
+
     path('admin/', admin.site.urls),
 
     re_path( r'^$', views.HomeView.as_view(), name='home' ),
     re_path( r'^index.html$', views.HomeView.as_view(), name='home_index' ),
+
+    re_path( r'^location/', include('hi.apps.location.urls' )),
+     
 ]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

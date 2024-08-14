@@ -136,6 +136,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'constance',
     'hi.apps.common',
+    'hi.apps.location',
 ]
 
 MIDDLEWARE = [
@@ -228,6 +229,9 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, "static"),
 )
 
+MEDIA_ROOT = get_env_variable('HI_MEDIA_PATH')
+MEDIA_URL = '/media/'
+
 PIPELINE = {
     'DISABLE_WRAPPER': True,  # Important since some scripts assume global scope
 
@@ -279,3 +283,4 @@ CONSTANCE_DATABASE_PREFIX = 'constance:hi:'
 CONSTANCE_CONFIG = {
     'DOWN_FOR_MAINTENANCE': ( False, 'Should we force the down for maintenance page to show?' ),
 }
+

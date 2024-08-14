@@ -13,13 +13,15 @@
 <div class="container-fluid hi-screen">
   <div class="row">
     <div class="col-9 scrollable-column ">
-      SCREEN
-
+      <div id="hi-main-content">
+	{% include "location/location_view.html" %}
+      </div>
     </div>
     <div class="col-3 fixed-column">
-      {% include "panes/side_panel.html" %}
+      <div id="hi-side-content">
+	{% include "panes/side_panel.html" %}
+      </div>
     </div>
   </div>
-  
 </div>
 {% endblock %}
