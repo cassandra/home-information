@@ -34,7 +34,7 @@ class Location(models.Model):
         max_digits = 9,
         decimal_places = 3,
     )
-    order_id = models.IntegerField(
+    order_id = models.PositiveIntegerField(
         'Order Id',
         default = 0,
     )
@@ -64,7 +64,7 @@ class LocationView(models.Model):
     location = models.ForeignKey(
         Location,
         related_name = 'views',
-        verbose_name = 'View',
+        verbose_name = 'Location',
         on_delete = models.CASCADE,
         null = False, blank = False,
     )
@@ -84,7 +84,7 @@ class LocationView(models.Model):
         max_digits = 9,
         decimal_places = 6,
     )
-    order_id = models.IntegerField(
+    order_id = models.PositiveIntegerField(
         'Order Id',
         default = 0,
     )

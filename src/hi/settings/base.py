@@ -137,6 +137,10 @@ INSTALLED_APPS = [
     'constance',
     'hi.apps.common',
     'hi.apps.location',
+    'hi.apps.entity',
+    'hi.apps.collection',
+    'hi.apps.sensor',
+    'hi.apps.control',
 ]
 
 MIDDLEWARE = [

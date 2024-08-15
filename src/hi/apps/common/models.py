@@ -3,6 +3,8 @@ import json
 import logging
 from typing import Dict
 
+from django.db import models
+
 logger = logging.getLogger(__name__)
 
 
@@ -68,4 +70,3 @@ class Histogram:
             choices.append( ( category, f'{category} ({value})' ) )
             continue
         return choices
-
