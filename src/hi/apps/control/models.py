@@ -2,11 +2,17 @@ from django.db import models
 
 from hi.apps.entity.models import Entity
 
-from .enums import ControlType, ControlledAreaType
+from .enums import ControllerType, ControlledAreaType
 
 
-class Control( models.Model ):
-
+class Controller( models.Model ):
+    """
+    - Represents an action that can be taken.
+    - Will control zero or more Entities
+    - When controling multiple entities, it is a single action that is broadcast to all.
+    - The ControllerType implies what types of entities are typically controlled.
+    """
+    
     name = models.CharField(
         'Name',
         max_length = 64,
@@ -14,41 +20,41 @@ class Control( models.Model ):
     )
     entity = models.ForeignKey(
         Entity,
-        related_name = 'controls',
+        related_name = 'controllers',
         verbose_name = 'Entity',
         on_delete=models.CASCADE,
     )
-    control_type_str = models.CharField(
-        'Control Type',
+    controller_type_str = models.CharField(
+        'Controller Type',
         max_length = 32,
         null = False, blank = False,
     )
 
     class Meta:
-        verbose_name = 'Control'
-        verbose_name_plural = 'Controls'
+        verbose_name = 'Controller'
+        verbose_name_plural = 'Controllers'
 
     @property
-    def control_type(self):
-        return ControlType.from_name_safe( self.control_type_str )
+    def controller_type(self):
+        return ControllerType.from_name_safe( self.controller_type_str )
 
-    @control_type.setter
-    def control_type( self, control_type : ControlType ):
-        self.control_type_str = str(control_type)
+    @controller_type.setter
+    def controller_type( self, controller_type : ControllerType ):
+        self.controller_type_str = str(controller_type)
         return
 
     
 class ControlledEntity(models.Model):
 
-    control = models.ForeignKey(
-        Entity,
+    controller = models.ForeignKey(
+        Controller,
         related_name = 'controlled_entities',
-        verbose_name = 'Control',
+        verbose_name = 'Controller',
         on_delete=models.CASCADE,
     )
     controlled_entity = models.ForeignKey(
         Entity,
-        related_name = 'controlling_source',
+        related_name = 'control_sources',
         verbose_name = 'Controlled Entity',
         on_delete=models.CASCADE,
     )
@@ -63,6 +69,12 @@ class ControlledArea(models.Model):
     come from the ControlledAreaType.
 
     """
+
+
+
+    # ????  !!! Not needed if an entity can be an Area?
+
+    
     
     control = models.ForeignKey(
         Entity,
@@ -90,5 +102,23 @@ class ControlledArea(models.Model):
 
     @controlled_area_type.setter
     def controlled_area_type( self, controlled_area_type : ControlledAreaType ):
-        self.controlled_area_type_str = str(control_coverage_type)
+        self.controlled_area_type_str = str(controlled_area_type)
         return
+
+    
+class ControllerHistory(models.Model):
+
+    controller = models.ForeignKey(
+        Controller,
+        related_name = 'history',
+        verbose_name = 'Controller',
+        on_delete=models.CASCADE,
+    )
+    value = models.CharField(
+        'Value',
+        max_length = 255
+    )
+    created_datetime = models.DateTimeField(
+        'Created',
+        auto_now_add = True,
+    )

@@ -13,7 +13,7 @@ class Collection( models.Model ):
     )
     entities = models.ManyToManyField(
         Entity,
-        through = 'CollectionRelation',
+        through = 'CollectionEntityRelation',
         related_name = 'collections'
         
     )
@@ -37,7 +37,7 @@ class Collection( models.Model ):
         return
         
     
-class CollectionRelation(models.Model):
+class CollectionEntityRelation(models.Model):
 
     entity = models.ForeignKey(
         Entity,

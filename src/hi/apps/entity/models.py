@@ -6,7 +6,22 @@ from .enums import EntityType, EntityAttributeType
 
 
 class Entity( models.Model ):
-
+    """
+    - A physical object or space.
+    - May have a fixed physical location or can just be part of a collection.
+    - Maybe be located at a specific point or defined by an SVG path (e.g., wire runs, areas) 
+    - Contains zero or more sensors
+    - Contains zero or more controllers
+    - May be controlled by zero or more controllers
+    - It may have zero or more states.
+    - The state's actual value is always hidden.
+    - A state may have zero of more sensors to report the state values.
+    - Each sensor reports the value for a single state.
+    - Each sensors reports state from a space of discrete or continuous values (or a blob).
+    - Its 'EntityType' determines is visual appearance.
+    - An entity can have zero or more staticly defined attributes (for information and configuration)
+    """
+    
     location = models.ForeignKey(
         Location,
         related_name = 'entities',
@@ -23,6 +38,15 @@ class Entity( models.Model ):
         'Entity Type',
         max_length = 32,
         null = False, blank = False,
+    )
+    created_datetime = models.DateTimeField(
+        'Created',
+        auto_now_add = True,
+    )
+    updated_datetime = models.DateTimeField(
+        'Updated',
+        auto_now=True,
+        blank = True,
     )
 
     class Meta:
@@ -104,6 +128,9 @@ class EntityPath(models.Model):
 
         
 class EntityAttribute(models.Model):
+    """
+    Information related to an entity, e.g., specs, docs, notes, configs)
+    """
     
     entity = models.ForeignKey(
         Entity,

@@ -7,38 +7,56 @@ class EntityType(LabeledEnum):
     SVG File needed for each (by convention): templates/entity/svg/{name.lower()}.svg 
     """
     
-    CAMERA               = ( 'Camera', '' )
-    MOTION_SENSOR        = ( 'Motion Sensor', '' )
-    LIGHT_SWITCH         = ( 'Light Switch', '' )
-    LIGHT                = ( 'Light', '' )
-    ELECTRICAL_OUTLET    = ( 'Electrical Outlet', '' )
-    CONTACT_SENSOR       = ( 'Contact Sensor', '' )
-    DOOR                 = ( 'Door', '' )
-    INTERNET_CONNECTION  = ( 'Internet Connection', '' )
-    ELECTRIC_WIRE        = ( 'Electric Wire', '' )
-    TELECOM_WIRE         = ( 'Telecom Wire', '' )
-    TELECOM_BOX          = ( 'Telecom Box', '' )
-    WATER_LINE           = ( 'Water Line', '' )
-    SEWER_LINE           = ( 'Sewer Wire', '' )
-    ELECTRIC_PANEL       = ( 'Electric_Panel', '' )
-    WATER_SHUTOFF_VALVE  = ( 'Water Shutoff Valve', '' )
-    WATER_METER          = ( 'Water_Meter', '' )
-    DOOR_LOCK            = ( 'Door Lock', '' )
-    THERMOSTAT           = ( 'Thermostat', '' )
-    THERMOMETER          = ( 'Thermometer', '' )
-    HYGROMETER           = ( 'Hygrometer', '' )
-    BAROMETER            = ( 'Barometer', '' )
-    HEATER               = ( 'Heater', '' )
-    AIR_CONDITIONER      = ( 'Air_Conditioner', '' )
-    HUMIDIFIER           = ( 'Humidifier', '' )
-    COMPUTER             = ( 'Computer', '' )
+    AIR_CONDITIONER      = ( 'Air_Conditioner', '' )  # Controls area
     APPLIANCE            = ( 'Appliance', '' )
-    TOOL                 = ( 'Tool', '' )
-    SWITCH               = ( 'Switch', '' )
+    AREA                 = ( 'Area', '' )
+    AUDIO_AMPLIFIER      = ( 'Audio Amplifier', '' )  # Controls SPeaker
+    AUDIO_PLAYER         = ( 'Audio Player', '' )
+    BAROMETER            = ( 'Barometer', '' )
+    CAMERA               = ( 'Camera', '' )
+    COMPUTER             = ( 'Computer', '' )
+    CONTROL_WIRE         = ( 'Control Wire', '' )
+    DISPLAY              = ( 'Display', '' )
+    DOOR                 = ( 'Door', '' )
+    DOOR_LOCK            = ( 'Door Lock', '' )  # Controls doors
+    ELECTRICAL_OUTLET    = ( 'Electrical Outlet', '' )
+    ELECTRICY_METER      = ( 'Electric Meter', '' )
+    ELECTRIC_PANEL       = ( 'Electric_Panel', '' )
+    ELECTRIC_WIRE        = ( 'Electric Wire', '' )
+    HEATER               = ( 'Heater', '' )  # Controls area
+    HUMIDIFIER           = ( 'Humidifier', '' )  # Controls area
+    HYGROMETER           = ( 'Hygrometer', '' )
+    LIGHT                = ( 'Light', '' )
+    LIGHT_SENSOR         = ( 'Light Sensor', '' )
+    MOTION_SENSOR        = ( 'Motion Sensor', '' )
+    OPEN_CLOSE_DETECTOR  = ( 'Open/Close_Sensor', '' )
+    OTHER                = ( 'Other', '' )
+    PRESENCE_SENSOR      = ( 'Presence Sensor', '' )
+    SEWER_LINE           = ( 'Sewer Wire', '' )
+    SPEAKER              = ( 'Speaker', '' )
     SPINKLER_CONTROLLER  = ( 'Spinkler Controller', '' )
-    SPINKLER_VALVE       = ( 'Spinkler Valve', '' )
+    SPINKLER_VALVE       = ( 'Spinkler Valve', '' )  # Controls sprinkler heads
     SPRINKLER_HEAD       = ( 'Sprinkler Head', '' )
+    TELECOM_BOX          = ( 'Telecom Box', '' )
+    TELECOM_WIRE         = ( 'Telecom Wire', '' )
+    THERMOMETER          = ( 'Thermometer', '' )
+    THERMOSTAT           = ( 'Thermostat', '' )
+    TOOL                 = ( 'Tool', '' )
+    VIDEO_PLAYER         = ( 'Video Player', '' )
+    WALL_SWITCH          = ( 'Wall Switch', '' )
+    WATER_LINE           = ( 'Water Line', '' )
+    WATER_METER          = ( 'Water Meter', '' )
+    WATER_METER          = ( 'Water_Meter', '' )
+    WATER_SHUTOFF_VALVE  = ( 'Water Shutoff Valve', '' )
+    
+    @property
+    def svg_icon_name(self):
+        raise NotImplementedError()
 
+    @property
+    def svg_path_style(self):
+        raise NotImplementedError()
+        
     
 class EntityAttributeType(LabeledEnum):
 

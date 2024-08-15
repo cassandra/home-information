@@ -6,7 +6,16 @@ from .enums import SensorType, SensedAreaType
 
 
 class Sensor( models.Model ):
-
+    """
+    - Represents an observed state of an entity.
+    - An entity state's is hidden and a sensor's value may not be true state (sensors can fail).
+    - May sense zero or more Entities
+    - When sensing multiple Entities, the sensed value is a single value, aggregated from all.
+    - The SensorType defines the type of sensed value.
+    - Sensor value are discrete, continuous or a blob a data.
+    - Continuous valued sensors usually have units (defined by the SensorType).
+    """
+    
     name = models.CharField(
         'Name',
         max_length = 64,
@@ -41,14 +50,14 @@ class Sensor( models.Model ):
 class SensedEntity(models.Model):
 
     sensor = models.ForeignKey(
-        Entity,
+        Sensor,
         related_name = 'sensed_entities',
         verbose_name = 'Sensor',
         on_delete=models.CASCADE,
     )
     sensed_entity = models.ForeignKey(
         Entity,
-        related_name = 'sensing_source',
+        related_name = 'sense_sources',
         verbose_name = 'Sensed Entity',
         on_delete=models.CASCADE,
     )
@@ -63,6 +72,11 @@ class SensedArea(models.Model):
     will come from the SensedAreaType.
 
     """
+
+
+    # ????  !!! Not needed if an entity can be an Area?
+
+    
     sensor = models.ForeignKey(
         Entity,
         related_name = 'sensed_areas',
@@ -91,3 +105,22 @@ class SensedArea(models.Model):
     def sensed_area_type( self, sensed_area_type : SensedAreaType ):
         self.sensed_area_type_str = str(sensed_area_type)
         return
+
+
+class SensorHistory(models.Model):
+
+    sensor = models.ForeignKey(
+        Sensor,
+        related_name = 'history',
+        verbose_name = 'Sensor',
+        on_delete=models.CASCADE,
+    )
+    value = models.CharField(
+        'Value',
+        max_length = 255
+    )
+    created_datetime = models.DateTimeField(
+        'Created',
+        auto_now_add = True,
+    )
+    

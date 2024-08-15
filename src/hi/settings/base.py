@@ -139,7 +139,7 @@ INSTALLED_APPS = [
     'hi.apps.location',
     'hi.apps.entity',
     'hi.apps.collection',
-    'hi.apps.sensor',
+    'hi.apps.sense',
     'hi.apps.control',
 ]
 
