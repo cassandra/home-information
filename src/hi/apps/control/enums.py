@@ -3,7 +3,9 @@ from hi.apps.common.enums import LabeledEnum
 
 class ControllerType(LabeledEnum):
 
-    SETTING              = ( 'Setting', '' )  # Generic, discrete value control (incl. on/off)
+    SWITCH               = ( 'Switch', '' )  # Boolean on/off value
+    SET_STRING           = ( 'Set Value', '' )  # Generic, discrete value control
+    SET_INTEGER          = ( 'Set Value', '' )  # Generic, discrete value control
     SLIDER               = ( 'Slider', '' )  # Continuous value control
     BLOB                 = ( 'Blob', '' )  # For custom or large chunks of text
 
@@ -11,6 +13,7 @@ class ControllerType(LabeledEnum):
     
     # ???? !!!! There's another concept / division in here (general v. specific)
     # ControllerState ControllerAction?
+    # Is there value in having predefined ones for convenience?
 
 
     

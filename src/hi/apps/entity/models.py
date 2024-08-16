@@ -2,7 +2,7 @@ from django.db import models
 
 from hi.apps.location.models import Location
 
-from .enums import EntityType, EntityAttributeType
+from .enums import EntityType, AttributeValueType, AttributeSourceType
 
 
 class Entity( models.Model ):
@@ -127,7 +127,7 @@ class EntityPath(models.Model):
         verbose_name_plural = 'EntitiePaths'
 
         
-class EntityAttribute(models.Model):
+class Attribute(models.Model):
     """
     Information related to an entity, e.g., specs, docs, notes, configs)
     """
@@ -138,8 +138,8 @@ class EntityAttribute(models.Model):
         verbose_name = 'Attributes',
         on_delete=models.CASCADE,
     )
-    entity_attribute_type_str = models.CharField(
-        'Attribute Type',
+    attribute_value_type_str = models.CharField(
+        'Attribute Value Type',
         max_length = 32,
         null = False, blank = False,
     )
@@ -151,17 +151,39 @@ class EntityAttribute(models.Model):
         'Value',
         max_length = 255
     )
+    attribute_source_type_str = models.CharField(
+        'Attribute Source Type',
+        max_length = 32,
+        null = False, blank = False,
+    )
+    is_editable = models.BooleanField(
+        'Editable?',
+        default = True,
+    )
+    is_required = models.BooleanField(
+        'Required?',
+        default = False,
+    )
 
     class Meta:
         verbose_name = 'Attribute'
         verbose_name_plural = 'Attributes'
 
     @property
-    def entity_attribute_type(self):
-        return EntityAttributeType.from_name_safe( self.entity_attribute_type_str )
+    def attribute_value_type(self):
+        return AttributeValueType.from_name_safe( self.attribute_value_type_str )
 
-    @entity_attribute_type.setter
-    def entity_attribute_type( self, entity_attribute_type : EntityAttributeType ):
-        self.entity_attribute_type_str = str(entity_attribute_type)
+    @attribute_value_type.setter
+    def attribute_value_type( self, attribute_value_type : AttributeValueType ):
+        self.attribute_value_type_str = str(attribute_value_type)
+        return
+
+    @property
+    def attribute_source_type(self):
+        return AttributeSourceType.from_name_safe( self.attribute_source_type_str )
+
+    @attribute_source_type.setter
+    def attribute_source_type( self, attribute_source_type : AttributeSourceType ):
+        self.attribute_source_type_str = str(attribute_source_type)
         return
    

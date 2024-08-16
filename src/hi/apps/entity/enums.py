@@ -45,7 +45,6 @@ class EntityType(LabeledEnum):
     VIDEO_PLAYER         = ( 'Video Player', '' )
     WALL_SWITCH          = ( 'Wall Switch', '' )
     WATER_LINE           = ( 'Water Line', '' )
-    WATER_METER          = ( 'Water Meter', '' )
     WATER_METER          = ( 'Water_Meter', '' )
     WATER_SHUTOFF_VALVE  = ( 'Water Shutoff Valve', '' )
     
@@ -58,7 +57,7 @@ class EntityType(LabeledEnum):
         raise NotImplementedError()
         
     
-class EntityAttributeType(LabeledEnum):
+class AttributeValueType(LabeledEnum):
 
     STRING  = ('String', '' )
     INTEGER = ('Integer', '' )
@@ -69,3 +68,9 @@ class EntityAttributeType(LabeledEnum):
     VIDEO   = ('Video', '' )  # relative filename in MEDIA_ROOT
     AUDIO   = ('Audio', '' )  # relative filename in MEDIA_ROOT
     LINK    = ('Link', '' )
+
+
+class AttributeSourceType(LabeledEnum):
+
+    PREDEFINED  = ('Predefined', '' )
+    CUSTOM = ('Custom', '' )
