@@ -2,29 +2,34 @@ from django.db import models
 
 from hi.apps.location.models import Location
 
-from .enums import EntityType, AttributeValueType, AttributeSourceType
+from .enums import (
+    DeviceType,
+    DeviceStateType,
+    AttributeValueType,
+    AttributeSourceType,
+)
 
 
-class Entity( models.Model ):
+class Device( models.Model ):
     """
-    - A physical object or space.
+    - A physical or software artifact.
     - May have a fixed physical location or can just be part of a collection.
     - Maybe be located at a specific point or defined by an SVG path (e.g., wire runs, areas) 
     - Contains zero or more sensors
     - Contains zero or more controllers
     - May be controlled by zero or more controllers
-    - It may have zero or more states.
+    - It may have zero or more DeviceStates.
     - The state's actual value is always hidden.
     - A state may have zero of more sensors to report the state values.
     - Each sensor reports the value for a single state.
     - Each sensors reports state from a space of discrete or continuous values (or a blob).
-    - Its 'EntityType' determines is visual appearance.
-    - An entity can have zero or more staticly defined attributes (for information and configuration)
+    - Its 'DeviceType' determines is visual appearance.
+    - An device can have zero or more staticly defined attributes (for information and configuration)
     """
     
     location = models.ForeignKey(
         Location,
-        related_name = 'entities',
+        related_name = 'devices',
         verbose_name = 'Location',
         on_delete = models.CASCADE,
         null = False, blank = False,
@@ -34,8 +39,8 @@ class Entity( models.Model ):
         max_length = 64,
         null = False, blank = False,
     )
-    entity_type_str = models.CharField(
-        'Entity Type',
+    device_type_str = models.CharField(
+        'Device Type',
         max_length = 32,
         null = False, blank = False,
     )
@@ -50,30 +55,66 @@ class Entity( models.Model ):
     )
 
     class Meta:
-        verbose_name = 'Entity'
-        verbose_name_plural = 'Entities'
+        verbose_name = 'Device'
+        verbose_name_plural = 'Devices'
 
     @property
-    def entity_type(self):
-        return EntityType.from_name_safe( self.entity_type_str )
+    def device_type(self):
+        return DeviceType.from_name_safe( self.device_type_str )
 
-    @entity_type.setter
-    def entity_type( self, entity_type : EntityType ):
-        self.entity_type_str = str(entity_type)
+    @device_type.setter
+    def device_type( self, device_type : DeviceType ):
+        self.device_type_str = str(device_type)
         return
-        
 
-class EntityPosition(models.Model):
-    """For entities represented by an icon. This is the most common case. The
-    icon and its styling determined by the EntityType.  An Entity is not
-    required to have an EntityPosition.
+class DeviceState(models.Model):
+
+
+    #  !!! Consider how to model an area with multiple temp sensors and multiple controllers to alter the temp.
+    
+    device = models.ForeignKey(
+        Device,
+        related_name = 'states',
+        verbose_name = 'Device',
+        on_delete=models.CASCADE,
+    )
+    name = models.CharField(
+        'Name',
+        max_length = 64,
+        null = False, blank = False,
+    )
+    device_state_type_str = models.CharField(
+        'Device State Type',
+        max_length = 32,
+        null = False, blank = False,
+    )
+    
+    class Meta:
+        verbose_name = 'DeviceState'
+        verbose_name_plural = 'DeviceStates'
+
+    @property
+    def device_state_type(self):
+        return DeviceStateType.from_name_safe( self.device_state_type_str )
+
+    @device_state_type.setter
+    def device_state_type( self, device_state_type : DeviceStateType ):
+        self.device_state_type_str = str(device_state_type)
+        return
+    
+    
+
+class DevicePosition(models.Model):
+    """For devices represented by an icon. This is the most common case. The
+    icon and its styling determined by the DeviceType.  An Device is not
+    required to have an DevicePosition.
 
     """
     
-    entity = models.OneToOneField(
-        Entity,
+    device = models.OneToOneField(
+        Device,
         related_name = 'position',
-        verbose_name = 'Entity',
+        verbose_name = 'Device',
         on_delete = models.CASCADE,
     )
     svg_x = models.DecimalField(
@@ -100,21 +141,21 @@ class EntityPosition(models.Model):
     )
 
     class Meta:
-        verbose_name = 'EntityPosition'
-        verbose_name_plural = 'EntitiePositionss'
+        verbose_name = 'DevicePosition'
+        verbose_name_plural = 'DevicePositionss'
     
 
-class EntityPath(models.Model):
-    """For entities represented by an arbitary SVG path. e.g., The path of a
-    utility line, The styling of the path is determined by the EntityType. An Entity is not
-    required to have an EntityPath.  
+class DevicePath(models.Model):
+    """For devices represented by an arbitary SVG path. e.g., The path of a
+    utility line, The styling of the path is determined by the DeviceType. An Device is not
+    required to have an DevicePath.  
 
     """
     
-    entity = models.OneToOneField(
-        Entity,
+    device = models.OneToOneField(
+        Device,
         related_name = 'path',
-        verbose_name = 'Entity',
+        verbose_name = 'Device',
         on_delete = models.CASCADE,
     )
     svg_path = models.TextField(
@@ -123,19 +164,19 @@ class EntityPath(models.Model):
     )
 
     class Meta:
-        verbose_name = 'EntityPath'
-        verbose_name_plural = 'EntitiePaths'
+        verbose_name = 'DevicePath'
+        verbose_name_plural = 'DevicePaths'
 
         
 class Attribute(models.Model):
     """
-    Information related to an entity, e.g., specs, docs, notes, configs)
+    Information related to an device, e.g., specs, docs, notes, configs)
     """
     
-    entity = models.ForeignKey(
-        Entity,
+    device = models.ForeignKey(
+        Device,
         related_name = 'attributes',
-        verbose_name = 'Attributes',
+        verbose_name = 'Device',
         on_delete=models.CASCADE,
     )
     attribute_value_type_str = models.CharField(

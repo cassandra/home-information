@@ -1,10 +1,10 @@
 from hi.apps.common.enums import LabeledEnum
 
 
-class EntityType(LabeledEnum):
+class DeviceType(LabeledEnum):
 
     """ 
-    SVG File needed for each (by convention): templates/entity/svg/{name.lower()}.svg 
+    SVG File needed for each (by convention): templates/device/svg/{name.lower()}.svg 
     """
     
     AIR_CONDITIONER      = ( 'Air_Conditioner', '' )  # Controls area
@@ -47,6 +47,7 @@ class EntityType(LabeledEnum):
     WATER_LINE           = ( 'Water Line', '' )
     WATER_METER          = ( 'Water_Meter', '' )
     WATER_SHUTOFF_VALVE  = ( 'Water Shutoff Valve', '' )
+    WEATHER_STATION      = ( 'Weather Station', '' )
     
     @property
     def svg_icon_name(self):
@@ -55,7 +56,22 @@ class EntityType(LabeledEnum):
     @property
     def svg_path_style(self):
         raise NotImplementedError()
-        
+
+    
+class DeviceStateType(LabeledEnum):
+
+    DICRETE = ( 'Dicrete', '' )
+    CONTINUOUS = ( 'Continuous', '' )
+    BLOB = ( 'Blob', '' )
+    MOVEMENT = ( 'Movement', '' )
+    
+    TEMPERATURE = ( 'Temperature', '' )
+    HUMIDITY = ( 'Humidity', '' )
+    LIGHT_LEVEL = ( 'Light Level', '' )
+    SOUND_LEVEL = ( 'Sound Level', '' )
+    MOISTURE = ( 'Moisture', '' )
+    WIND_SPEED = ( 'Wind Speed', '' )
+
     
 class AttributeValueType(LabeledEnum):
 

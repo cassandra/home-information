@@ -3,6 +3,10 @@ from hi.apps.common.enums import LabeledEnum
 
 class ControllerType(LabeledEnum):
 
+    # !!!! Some of these should change to be view concerns, not model concerns
+
+
+    
     SWITCH               = ( 'Switch', '' )  # Boolean on/off value
     SET_STRING           = ( 'Set Value', '' )  # Generic, discrete value control
     SET_INTEGER          = ( 'Set Value', '' )  # Generic, discrete value control

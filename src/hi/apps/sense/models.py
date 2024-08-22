@@ -1,14 +1,14 @@
 from django.db import models
 
-from hi.apps.entity.models import Entity
+from hi.apps.devices.models import DeviceState
 
 from .enums import SensorType, SensedAreaType
 
 
 class Sensor( models.Model ):
     """
-    - Represents an observed state of an entity.
-    - An entity state's is hidden and a sensor's value may not be true state (sensors can fail).
+    - Represents an observed state of an device.
+    - An devices state's is hidden and a sensor's value may not be true state (sensors can fail).
     - May sense zero or more Entities
     - When sensing multiple Entities, the sensed value is a single value, aggregated from all.
     - The SensorType defines the type of sensed value.
@@ -21,10 +21,10 @@ class Sensor( models.Model ):
         max_length = 64,
         null = False, blank = False,
     )
-    entity = models.ForeignKey(
-        Entity,
+    device_state = models.ForeignKey(
+        DeviceState,
         related_name = 'sensors',
-        verbose_name = 'Entity',
+        verbose_name = 'Device State',
         on_delete=models.CASCADE,
     )
     sensor_type_str = models.CharField(
@@ -46,7 +46,8 @@ class Sensor( models.Model ):
         self.sensor_type_str = str(sensor_type)
         return
     
-        
+
+# !!! Not a thing anymore: state variables this senses are related to areas
 class SensedEntity(models.Model):
 
     sensor = models.ForeignKey(
@@ -67,6 +68,7 @@ class SensedEntity(models.Model):
         verbose_name_plural = 'Sensed Entities'
 
         
+# !!! Not a thing anymore: state variables this senses are related to areas
 class SensedArea(models.Model):
     """For sensors that are detection area-wide conditions. The SVG styling
     will come from the SensedAreaType.

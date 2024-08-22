@@ -1,6 +1,6 @@
 from django.db import models
 
-from hi.apps.entity.models import Entity
+from hi.apps.device.models import DeviceState
 
 from .enums import ControllerType, ControlledAreaType
 
@@ -18,10 +18,10 @@ class Controller( models.Model ):
         max_length = 64,
         null = False, blank = False,
     )
-    entity = models.ForeignKey(
-        Entity,
+    device_state = models.ForeignKey(
+        DeviceState,
         related_name = 'controllers',
-        verbose_name = 'Entity',
+        verbose_name = 'Device State',
         on_delete=models.CASCADE,
     )
     controller_type_str = models.CharField(
@@ -43,7 +43,9 @@ class Controller( models.Model ):
         self.controller_type_str = str(controller_type)
         return
 
-    
+
+# !!!! This is not a thing anymore: either controlling its own state ot that of an area or other device as defined by relationsnhip of state variable.
+
 class ControlledEntity(models.Model):
 
     controller = models.ForeignKey(
@@ -63,7 +65,8 @@ class ControlledEntity(models.Model):
         verbose_name = 'Controlled Entity'
         verbose_name_plural = 'Controlled Entities'
 
-        
+
+# !!! Not a thing anymore: state variables this controls are related to areas
 class ControlledArea(models.Model):
     """For controls that exert influence over an area. The SVG styling will
     come from the ControlledAreaType.
