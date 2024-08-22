@@ -3,6 +3,6 @@ from hi.apps.common.enums import LabeledEnum
 
 class CollectionType(LabeledEnum):
 
-    LIST  = ( 'List', '' )
-    
- 
+    AD_HOC    = ( 'Ad-hoc', '' )
+    CONTROL   = ( 'Control', '' )
+    AREA      = ( 'Area', '' )

@@ -11,16 +11,18 @@ class Collection( models.Model ):
         'Name',
         max_length = 64
     )
-    entities = models.ManyToManyField(
-        Entity,
-        through = 'CollectionEntityRelation',
-        related_name = 'collections'
-        
-    )
     collection_type_str = models.CharField(
         'Collection Type',
         max_length = 32,
         null = False, blank = False,
+    )
+    svg_path = models.TextField(
+        'Path',
+        null = True, blank = True,
+    )
+    created_datetime = models.DateTimeField(
+        'Created',
+        auto_now_add = True,
     )
 
     class Meta:
@@ -37,25 +39,30 @@ class Collection( models.Model ):
         return
         
     
-class CollectionEntityRelation(models.Model):
+class CollectionEntity(models.Model):
 
-    entity = models.ForeignKey(
-        Entity,
-        verbose_name = 'Entity',
-        on_delete=models.CASCADE,
-    )
     collection = models.ForeignKey(
         Collection,
         verbose_name = 'Collection',
+        on_delete=models.CASCADE,
+    )
+    entity = models.ForeignKey(
+        Entity,
+        verbose_name = 'Entity',
         on_delete=models.CASCADE,
     )
     order_id = models.PositiveIntegerField(
         'Order Id',
         default = 0,
     )
+    created_datetime = models.DateTimeField(
+        'Created',
+        auto_now_add = True,
+    )
 
     class Meta:
         ordering = [ 'order_id' ]
         indexes = [
-            models.Index( fields=['entity', 'collection' ] ),
+            models.Index( fields=[ 'collection', 'entity' ] ),
         ]
+

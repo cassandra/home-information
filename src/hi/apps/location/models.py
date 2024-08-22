@@ -1,5 +1,7 @@
 from django.db import models
 
+from .enums import ViewType
+
 
 class Location(models.Model):
     
@@ -68,6 +70,11 @@ class LocationView(models.Model):
         on_delete = models.CASCADE,
         null = False, blank = False,
     )
+    view_type_str = models.CharField(
+        'View Type',
+        max_length = 32,
+        null = False, blank = False,
+    )
     name = models.CharField(
         'Name',
         max_length = 64,
@@ -108,3 +115,11 @@ class LocationView(models.Model):
     def __repr__(self):
         return self.__str__()
     
+    @property
+    def view_type(self):
+        return ViewType.from_name_safe( self.view_type_str )
+
+    @view_type.setter
+    def view_type( self, view_type : ViewType ):
+        self.view_type_str = str(view_type)
+        return

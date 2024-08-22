@@ -1,16 +1,14 @@
 from django.db import models
 
-from hi.apps.device.models import DeviceState
+from hi.apps.entity.models import Entity, EntityState
 
-from .enums import ControllerType, ControlledAreaType
+from .enums import ControllerType
 
 
 class Controller( models.Model ):
     """
     - Represents an action that can be taken.
-    - Will control zero or more Entities
-    - When controling multiple entities, it is a single action that is broadcast to all.
-    - The ControllerType implies what types of entities are typically controlled.
+    - Will control exactly one EntityState
     """
     
     name = models.CharField(
@@ -18,10 +16,10 @@ class Controller( models.Model ):
         max_length = 64,
         null = False, blank = False,
     )
-    device_state = models.ForeignKey(
-        DeviceState,
+    entity_state = models.ForeignKey(
+        EntityState,
         related_name = 'controllers',
-        verbose_name = 'Device State',
+        verbose_name = 'Entity State',
         on_delete=models.CASCADE,
     )
     controller_type_str = models.CharField(
@@ -43,70 +41,39 @@ class Controller( models.Model ):
         self.controller_type_str = str(controller_type)
         return
 
+    
+class ControlledEntity( models.Model ):
+    """The Entity associated with a Controller's state is implicitly a
+    "controlled" entity, but this may also be controlling (directly or
+    indirectly) the state of more than one entity.
 
-# !!!! This is not a thing anymore: either controlling its own state ot that of an area or other device as defined by relationsnhip of state variable.
+    e.g., A light switch's on/off state is controlling the state of the
+    switch, but also indirectly controlling the state of the light bulb.
 
-class ControlledEntity(models.Model):
-
+    e.g., A sprinkler controller's on/off state for a zone is indirectly
+    controlling a sprinkler valve as well as the sprinkler heads in that
+    zone.
+    """
     controller = models.ForeignKey(
         Controller,
-        related_name = 'controlled_entities',
+        related_name = '+',
         verbose_name = 'Controller',
         on_delete=models.CASCADE,
     )
-    controlled_entity = models.ForeignKey(
+    entity = models.ForeignKey(
         Entity,
-        related_name = 'control_sources',
-        verbose_name = 'Controlled Entity',
+        related_name = 'controlled_by',
+        verbose_name = 'Entity',
         on_delete=models.CASCADE,
+    )
+    created_datetime = models.DateTimeField(
+        'Created',
+        auto_now_add = True,
     )
     
     class Meta:
         verbose_name = 'Controlled Entity'
         verbose_name_plural = 'Controlled Entities'
-
-
-# !!! Not a thing anymore: state variables this controls are related to areas
-class ControlledArea(models.Model):
-    """For controls that exert influence over an area. The SVG styling will
-    come from the ControlledAreaType.
-
-    """
-
-
-
-    # ????  !!! Not needed if an entity can be an Area?
-
-    
-    
-    control = models.ForeignKey(
-        Entity,
-        related_name = 'controlled_areas',
-        verbose_name = 'Control',
-        on_delete=models.CASCADE,
-    )
-    svg_path = models.TextField(
-        'Path',
-        null = False, blank = False,
-    )
-    controlled_area_type_str = models.CharField(
-        'Control Area Type',
-        max_length = 32,
-        null = False, blank = False,
-    )
-
-    class Meta:
-        verbose_name = 'Controlled Area'
-        verbose_name_plural = 'Controlled Areas'
-
-    @property
-    def controlled_area_type(self):
-        return ControlledAreaType.from_name_safe( self.controlled_area_type_str )
-
-    @controlled_area_type.setter
-    def controlled_area_type( self, controlled_area_type : ControlledAreaType ):
-        self.controlled_area_type_str = str(controlled_area_type)
-        return
 
     
 class ControllerHistory(models.Model):
@@ -125,3 +92,7 @@ class ControllerHistory(models.Model):
         'Created',
         auto_now_add = True,
     )
+    
+    class Meta:
+        verbose_name = 'Controller History'
+        verbose_name_plural = 'Controller History'
