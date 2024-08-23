@@ -253,6 +253,9 @@ class Attribute(models.Model):
     class Meta:
         verbose_name = 'Attribute'
         verbose_name_plural = 'Attributes'
+        indexes = [
+            models.Index( fields=[ 'name', 'value' ] ),
+        ]
 
     @property
     def attribute_value_type(self):

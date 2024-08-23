@@ -1,72 +1,36 @@
-from dataclasses import dataclass, field
-import json
-import logging
-from typing import Dict
+from datetime import timedelta
 
-from django.db import models
-
-logger = logging.getLogger(__name__)
+from django.db import models, transaction
+from django.utils import timezone
 
 
-@dataclass
-class Histogram:
-    label             : str                        = 'Untitled'
-    category_label    : str                        = 'Value'
-    count_label       : str                        = 'Count'
-    total_sum         : int                        = 0
-    sort_by_value     : bool                       = True
-    sort_disabled     : bool                       = False
-    histogram         : Dict[ object, int ]        = field( default_factory = dict )
-    limit             : int                        = 0
+class DatabaseLock(models.Model):
 
-    def __str__(self):
-        return '%s: %s' % ( self.label,
-                            json.dumps( self._stats.histogram, indent=4, sort_keys=True  ))
-     
-    def get( self, category, default = 0 ):
-        return self.histogram.get( category, default )
+    name = models.CharField(
+        max_length = 64,
+        unique = True
+    )
+    acquired_at = models.DateTimeField()
 
-    @property
-    def total_unique(self):
-        return len(self.histogram)
-    
-    def increment( self, category, value = 1 ):
-        self.total_sum += value
-        if category not in self.histogram:
-            self.histogram[category] = 0
-        self.histogram[category] += value
+    def is_expired( self, timeout_seconds = 300 ):
+        return timezone.now() > self.acquired_at + timedelta( seconds = timeout_seconds )
+
+    def acquire( self, timeout_seconds = 300 ):
+        """
+        Attempt to acquire the lock. Returns True if the lock is acquired, False otherwise.
+        """
+        with transaction.atomic():
+            lock, created = DatabaseLock.objects.get_or_create(
+                name = self.name,
+                defaults={ "acquired_at": timezone.now() }
+            )
+            if not created and not lock.is_expired( timeout_seconds ):
+                return False
+
+            lock.acquired_at = timezone.now()
+            lock.save()
+        return True
+
+    def release(self):
+        self.delete()
         return
-
-    def items( self ):
-        item_list = [ ( x, y ) for x, y in self.histogram.items() ]
-
-        # If no sorting, use insertion ordering
-        if not self.sort_disabled:        
-            if self.sort_by_value:
-                item_list.sort( key = lambda item: item[1], reverse = True )
-            else:
-                item_list.sort( key = lambda item: item[0], reverse = True )
-            
-        for idx, item in enumerate( item_list ):
-            if self.limit and idx >= self.limit:
-                return
-            if self.total_sum > 0:
-                percentage = 100.0 * item[1] / self.total_sum
-            else:
-                percentage = 0.0
-            yield ( item[1], item[0], percentage )
-            continue
-        return
-
-    def update( self, histogram ):
-        for category, count in histogram.histogram.items():
-            self.increment( category, value = count )
-            continue
-        return
-    
-    def to_django_choices(self):
-        choices = list()
-        for value, category, _ in self.items():
-            choices.append( ( category, f'{category} ({value})' ) )
-            continue
-        return choices
