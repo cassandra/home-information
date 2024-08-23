@@ -8,29 +8,56 @@ class DatabaseLock(models.Model):
 
     name = models.CharField(
         max_length = 64,
-        unique = True
+        unique = True,
     )
-    acquired_at = models.DateTimeField()
+    acquired_at = models.DateTimeField(
+    )
+    initialized = models.BooleanField(
+        default = False,
+    )
+
+    class Meta:
+        verbose_name = 'Database Lock'
+        verbose_name_plural = 'Database Locks'
 
     def is_expired( self, timeout_seconds = 300 ):
         return timezone.now() > self.acquired_at + timedelta( seconds = timeout_seconds )
 
-    def acquire( self, timeout_seconds = 300 ):
-        """
-        Attempt to acquire the lock. Returns True if the lock is acquired, False otherwise.
-        """
+    @classmethod
+    def acquire( cls,
+                 name                : str,
+                 timeout_seconds     : int   = 300,
+                 for_initialization  : bool  = False ):
+        
         with transaction.atomic():
             lock, created = DatabaseLock.objects.get_or_create(
-                name = self.name,
-                defaults={ "acquired_at": timezone.now() }
+                name = name,
+                defaults = {
+                    'acquired_at': timezone.now(),
+                    'initialized': False,
+                }
             )
-            if not created and not lock.is_expired( timeout_seconds ):
-                return False
 
-            lock.acquired_at = timezone.now()
-            lock.save()
-        return True
+            if created:
+                return lock
+            
+            if lock.is_expired( timeout_seconds ):
+                lock.acquired_at = timezone.now()
+                lock.initialized = False
+                lock.save()
+                return lock
+            
+            if for_initialization and lock.initialized:
+                return None
+
+            return lock
 
     def release(self):
         self.delete()
         return
+
+    def mark_initialized(self):
+        self.initialized = True
+        self.save()
+        return
+    

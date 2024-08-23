@@ -1,3 +1,13 @@
 from django.contrib import admin
 
-# Register your models here.
+from . import models
+
+
+@admin.register(models.DatabaseLock)
+class LocationAdmin(admin.ModelAdmin):
+    show_full_result_count = False
+    
+    list_display = (
+        'name',
+        'acquired_at',
+    )
