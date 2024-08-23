@@ -1,7 +1,6 @@
 from django.apps import AppConfig
 
 
-class CoreConfig(AppConfig):
-
+class ConfigConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "hi.integrations.core"
+    name = "hi.apps.config"

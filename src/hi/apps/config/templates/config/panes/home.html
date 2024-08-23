@@ -1,0 +1,49 @@
+<div class="">
+  <h1>Settings</h1>
+
+  <div><em>TBD </em></div>
+  
+  <h2>Integrations</h2>
+  {% for integration in integration_list %}
+  <div class="row hi-config-integration">
+    <div class="col-2">
+      {{ integration.integration_type.label }}
+    </div>
+    <div class="col-2">
+      {% if integration.is_enabled %}
+      <span class="text-success">ENABLED</span>
+      {% else %}
+      <span class="text-danger">DISABLED</span>
+      {% endif %}
+    </div>
+    <div class="col-2">
+      {% if integration.is_enabled %}
+      <form action="{% url 'config_integration' action='disable' name=integration.integration_type.name %}"
+	    method="POST" role="form" data-async="#hi-main-content">
+	{% csrf_token %}
+	<button type="submit" class="btn btn-danger btn-control" role="button"">DISABLE</button>
+      </form>
+      
+      {% else %}
+      <form action="{% url 'config_integration' action='enable' name=integration.integration_type.name %}"
+	    method="POST" role="form" data-async="#hi-main-content">
+	{% csrf_token %}
+	<button type="submit" class="btn btn-success btn-control" role="button" >ENABLE</button>
+      </form>
+      {% endif %}
+    </div>
+    <div class="col-2">
+      {% if integration.is_enabled %}
+      <form action="{% url 'config_integration' action='sync' name=integration.integration_type.name %}"
+	    method="POST" role="form" data-async="#hi-main-content">
+	{% csrf_token %}
+	<button type="submit" class="btn btn-info btn-control" role="button" >SYNC</button>
+      </form>
+      {% else %}
+      ---
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+  
+</div>

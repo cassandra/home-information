@@ -136,6 +136,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'constance',
     'hi.apps.common',
+    'hi.apps.config',
     'hi.apps.location',
     'hi.apps.entity',
     'hi.apps.collection',
