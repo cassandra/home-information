@@ -1,0 +1,26 @@
+<h5>{{ processing_result.title }}</h5>
+
+{% if processing_result.error_list %}
+<div class="alert alert-danger">
+  <h5>Errors</h5>:
+  <ul>
+    {% for error_message in processing_result.error_list %}
+    <li>{{ error_message }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if processing_result.message_list %}
+<div class="alert alert-info">
+  <ul>
+    {% for message in processing_result.message_list %}
+    <li>{{ message }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if not processing_result.error_list %}
+<div><em>No errors.</em></div>
+{% endif %}

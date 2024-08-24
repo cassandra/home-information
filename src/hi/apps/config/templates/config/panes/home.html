@@ -1,49 +1,31 @@
 <div class="">
-  <h1>Settings</h1>
+  <h1>Administration</h1>
 
-  <div><em>TBD </em></div>
+  <ul class="nav nav-tabs" id="hi-config-tab" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link active" id="hi-settings-tab" data-toggle="tab" href="#hi-settings" role="tab" aria-controls="hi-settings" aria-selected="true">Settings</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="hi-integrations-tab" data-toggle="tab" href="#hi-integrations" role="tab" aria-controls="hi-integrations" aria-selected="false">Integrations</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="hi-other-tab" data-toggle="tab" href="#hi-other" role="tab" aria-controls="hi-other" aria-selected="false">Other</a>
+    </li>
+  </ul>
   
-  <h2>Integrations</h2>
-  {% for integration in integration_list %}
-  <div class="row hi-config-integration">
-    <div class="col-2">
-      {{ integration.integration_type.label }}
+  <div class="tab-content" id="hi-config-tab-content">
+    <div class="tab-pane fade show active" id="hi-settings" role="tabpanel" aria-labelledby="hi-settings-tab">
+      TBD for Settings
     </div>
-    <div class="col-2">
-      {% if integration.is_enabled %}
-      <span class="text-success">ENABLED</span>
-      {% else %}
-      <span class="text-danger">DISABLED</span>
-      {% endif %}
+    <div class="tab-pane fade" id="hi-integrations" role="tabpanel" aria-labelledby="hi-integrations-tab">
+      <div id="hi-config-integration-tab">
+	{% include "core/panes/config_tab.html" with integration_list=integration_list %}
+      </div>
     </div>
-    <div class="col-2">
-      {% if integration.is_enabled %}
-      <form action="{% url 'config_integration' action='disable' name=integration.integration_type.name %}"
-	    method="POST" role="form" data-async="#hi-main-content">
-	{% csrf_token %}
-	<button type="submit" class="btn btn-danger btn-control" role="button"">DISABLE</button>
-      </form>
-      
-      {% else %}
-      <form action="{% url 'config_integration' action='enable' name=integration.integration_type.name %}"
-	    method="POST" role="form" data-async="#hi-main-content">
-	{% csrf_token %}
-	<button type="submit" class="btn btn-success btn-control" role="button" >ENABLE</button>
-      </form>
-      {% endif %}
-    </div>
-    <div class="col-2">
-      {% if integration.is_enabled %}
-      <form action="{% url 'config_integration' action='sync' name=integration.integration_type.name %}"
-	    method="POST" role="form" data-async="#hi-main-content">
-	{% csrf_token %}
-	<button type="submit" class="btn btn-info btn-control" role="button" >SYNC</button>
-      </form>
-      {% else %}
-      ---
-      {% endif %}
+    
+    <div class="tab-pane fade" id="hi-other" role="tabpanel" aria-labelledby="hi-other-tab">
+      TBD for Other
     </div>
   </div>
-  {% endfor %}
   
 </div>

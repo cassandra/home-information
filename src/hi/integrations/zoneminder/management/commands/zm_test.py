@@ -20,7 +20,7 @@ class Command( BaseCommand, CommandLoggerMixin ):
             'apiurl': 'https://bordeaux:8443/zm/api',
             'portalurl': 'https://bordeaux:8443/zm',
             'user': 'admin',
-            'password': '--REDACTED--',  # TODO: Need to manuallyt tweak this.
+            'password': '--REDACTED--',  # TODO: Need to manually tweak this.
             # 'disable_ssl_cert_check': True
         }
         try:

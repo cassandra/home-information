@@ -1,0 +1,14 @@
+<h3>ZoneMinder Integration</h3>
+
+{% if processing_result %}
+{% include "common/processing_result.html" with processing_result=processing_result  %}
+{% endif %}
+
+<div class="col-2">
+  <form action="{% url 'integration_manage' name=integration_type.name %}"
+	method="POST" role="form" data-async="#hi-config-integration-tab">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary btn-control" role="button"
+	    name="action" value="sync" >SYNC</button>
+  </form>
+</div>
