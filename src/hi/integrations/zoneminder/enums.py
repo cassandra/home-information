@@ -44,3 +44,18 @@ class ZmPropertyName(LabeledEnum):
         True,
         True,
     )
+
+
+class ZmAttributeName(LabeledEnum):
+
+    ZM_MONITOR_ID = ( 'ZM Monitor Id', '' )
+
+    
+class ZmMonitorState(LabeledEnum):
+
+    NONE      = ( 'None', '' )
+    MONITOR   = ( 'Monitor', '' )
+    MODECT    = ( 'Modect', '' )
+    RECORD    = ( 'Record', '' )
+    MOCORD    = ( 'Mocord', '' )
+    NODECT    = ( 'Nodect', '' )

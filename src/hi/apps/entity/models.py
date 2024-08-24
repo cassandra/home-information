@@ -45,6 +45,12 @@ class Entity( models.Model ):
         verbose_name = 'Entity'
         verbose_name_plural = 'Entities'
 
+    def __str__(self):
+        return f'Entity[{self.id}]: {self.name} [{self.entity_type_str}]'
+    
+    def __repr__(self):
+        return self.__str__()
+    
     @property
     def entity_type(self):
         return EntityType.from_name_safe( self.entity_type_str )
@@ -54,6 +60,13 @@ class Entity( models.Model ):
         self.entity_type_str = str(entity_type)
         return
 
+    def get_attribute_map(self):
+        attribute_map = dict()
+        for attribute in self.attributes.all():
+            attribute_map[attribute.name] = attribute
+            continue
+        return attribute_map
+    
     
 class EntityState(models.Model):
     """
@@ -95,6 +108,12 @@ class EntityState(models.Model):
         verbose_name = 'Entity State'
         verbose_name_plural = 'Entity States'
 
+    def __str__(self):
+        return f'State[{self.id}]: {self.name} [{self.entity_state_type_str}]'
+    
+    def __repr__(self):
+        return self.__str__()
+    
     @property
     def entity_state_type(self):
         return EntityStateType.from_name_safe( self.entity_state_type_str )
@@ -257,6 +276,12 @@ class Attribute(models.Model):
             models.Index( fields=[ 'name', 'value' ] ),
         ]
 
+    def __str__(self):
+        return f'Attr: {self.name}={self.value} [{self.attribute_value_type_str}] [{self.attribute_type_str}]'
+    
+    def __repr__(self):
+        return self.__str__()
+    
     @property
     def attribute_value_type(self):
         return AttributeValueType.from_name_safe( self.attribute_value_type_str )
