@@ -144,6 +144,7 @@ INSTALLED_APPS = [
     'hi.apps.control',
     'hi.integrations.core',
     'hi.integrations.zoneminder',
+    'hi.integrations.hass',
 ]
 
 MIDDLEWARE = [

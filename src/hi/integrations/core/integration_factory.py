@@ -3,6 +3,7 @@ from typing import List
 
 from hi.apps.common.singleton import Singleton
 
+from hi.integrations.hass.hass_gateway import HassGateway
 from hi.integrations.zoneminder.zm_gateway import ZoneMinderGateway
 
 from .enums import IntegrationType
@@ -35,7 +36,9 @@ class IntegrationFactory( Singleton ):
             )
         
     def get_integration_gateway( self, integration_type : IntegrationType ) -> IntegrationGateway:
-        if integration_type == IntegrationType.ZONEMINDER:
+        if integration_type == IntegrationType.HASS:
+            return HassGateway()
+        elif integration_type == IntegrationType.ZONEMINDER:
             return ZoneMinderGateway()
         else:
             raise ValueError( f'The "{integration_type}" integration is not yet implemented.' )

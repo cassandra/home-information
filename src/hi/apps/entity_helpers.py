@@ -70,4 +70,3 @@ class EntityHelpers:
             name = name,
         )
         return controller
-    

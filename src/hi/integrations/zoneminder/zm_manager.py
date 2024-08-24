@@ -63,7 +63,7 @@ class ZoneMinderManager( Singleton ):
         try:
             zm_integration = Integration.objects.get( integration_type_str = str(IntegrationType.ZONEMINDER) )
         except Integration.DoesNotExist:
-            logger.debug( 'ZoneMinder integration is not enabled.' )
+            logger.debug( 'ZoneMinder integration is not implemented.' )
 
         if not zm_integration.is_enabled:
             logger.debug( 'ZoneMinder integration is not enabled.' )
