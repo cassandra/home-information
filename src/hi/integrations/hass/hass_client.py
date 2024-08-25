@@ -2,7 +2,8 @@ import json
 from requests import get
 from typing import Dict, List
 
-from .hass_state import HassState
+from .hass_filter import HassFilter
+from .hass_models import HassState
 
 
 class HassClient:
@@ -33,18 +34,6 @@ class HassClient:
         url = f'{self._api_base_url}/api/states'
         response = get( url, headers = self._headers )
         data = json.loads(response.text)
-
-
-
-
-
-
-        
-        print( json.dumps( data, indent=4, sort_keys=True ))
-
-
-
-        
-        return [ HassState(x) for x in data ]
+        return [ HassFilter.create_hass_state(x) for x in data ]
     
     

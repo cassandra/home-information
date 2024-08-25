@@ -34,4 +34,4 @@ class HassPropertyName(LabeledEnum):
     
 class HassAttributeName(LabeledEnum):
 
-    HASS_ENTITY_ID = ( 'HAss Entity Id', '' )
+    HASS_DEVICE_ID = ( 'HAss Device Id', '' )

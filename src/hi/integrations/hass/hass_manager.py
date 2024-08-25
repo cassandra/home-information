@@ -1,5 +1,6 @@
 import logging
 from typing import Dict
+import re
 
 from django.db import transaction
 
@@ -25,7 +26,8 @@ from .enums import (
     HassAttributeName,
 )
 from .hass_client import HassClient
-from .hass_state import HassState
+from .hass_filter import HassFilter
+from .hass_models import HassState, HassDevice
 
 logger = logging.getLogger(__name__)
 
@@ -106,76 +108,82 @@ class HassManager( Singleton ):
             result.error_list.append( 'Sync problem. HAss integration disabled?' )
             return result
                     
-        hass_id_to_entity = self._get_hass_entities( result = result )
-        result.message_list.append( f'Found {len(hass_id_to_entity)} existing HAss entities.' )
+        hass_device_id_to_entity = self._get_hass_entities( result = result )
+        result.message_list.append( f'Found {len(hass_device_id_to_entity)} existing HAss entities.' )
 
-        hass_id_to_state = self._get_hass_states( result = result )
-        result.message_list.append( f'Found {len(hass_id_to_state)} current HAss states.' )
+        hass_entity_id_to_state = self._get_hass_states( result = result )
+        result.message_list.append( f'Found {len(hass_entity_id_to_state)} current HAss states.' )
+
+        hass_device_id_to_device = HassFilter.hass_states_to_hass_devices(
+            hass_entity_id_to_state = hass_entity_id_to_state,
+        )
+        result.message_list.append( f'Found {len(hass_device_id_to_device)} current HAss devices.' )
         
-        for hass_id, hass_state in hass_id_to_state.items():
-            entity = hass_id_to_entity.get( hass_id )
+        for hass_device_id, hass_device in hass_device_id_to_device.items():
+            entity = hass_device_id_to_entity.get( hass_device_id )
             if entity:
                 self._update_entity( entity = entity,
-                                     hass_state = hass_state,
+                                     hass_device = hass_device,
                                      result = result )
             else:
-                self._create_entity( hass_state = hass_state,
+                self._create_entity( hass_device = hass_device,
                                      result = result )
             continue
         
-        for hass_id, entity in hass_id_to_entity.items():
-            if hass_id not in hass_id_to_state:
+        for hass_device_id, entity in hass_device_id_to_device.items():
+            if hass_device_id not in hass_entity_id_to_state:
                 self._remove_entity( entity = entity,
                                      result = result )
             continue
         
         return result
 
-    def _get_hass_entities( self, result : ProcessingResult ) -> Dict[ int, Entity ]:
+    def _get_hass_entities( self, result : ProcessingResult ) -> Dict[ str, Entity ]:
         logger.debug( 'Getting existing HAss entities.' )
-        hass_id_to_entity = dict()
+        hass_device_id_to_entity = dict()
 
         attribute_queryset = Attribute.objects.select_related( 'entity' ). filter(
             name = AttributeName.INTEGRATION_SOURCE,
             value = IntegrationType.HASS.name,
         )
         for attribute in attribute_queryset:
-            hass_entity = attribute.entity
-            attribute_map = hass_entity.get_attribute_map()
-            attribute = attribute_map.get( str(HassAttributeName.HASS_ENTITY_ID) )
+            hi_entity = attribute.entity
+            attribute_map = hi_entity.get_attribute_map()
+            attribute = attribute_map.get( str(HassAttributeName.HASS_DEVICE_ID) )
             if attribute and attribute.value:
-                hass_id = attribute.value
+                hass_device_id = attribute.value
             else:
-                result.error_list.append( f'HAss entity found without valid HAss Id: {hass_entity}' )
-                hass_id = 1000000 + hass_entity.id  # We need a (unique) placeholder (will remove this later)
-            hass_id_to_entity[hass_id] = hass_entity
+                result.error_list.append( f'Entity found without valid HAss Id: {hi_entity}' )
+                hass_device_id = 1000000 + hi_entity.id  # We need a (unique) placeholder for removals
+            hass_device_id_to_entity[hass_device_id] = hi_entity
             continue
 
-        return hass_id_to_entity
+        return hass_device_id_to_entity
 
     def _get_hass_states( self, result : ProcessingResult ) -> Dict[ int, HassState ]:
         
         logger.debug( 'Getting current HAss states.' )
-        hass_id_to_state = dict()
+        hass_entity_id_to_state = dict()
         for hass_state in self.hass_client.states():
-            hass_id = hass_state.entity_id
-            
-            hass_id_to_state[hass_id] = hass_state
+            hass_entity_id = hass_state.entity_id
+
+            if hass_state.is_insteon:
+                hass_entity_id_to_state[hass_entity_id] = hass_state
             continue
 
-        return hass_id_to_state
+        return hass_entity_id_to_state
     
     def _create_entity( self,
-                        hass_state  : HassState,
-                        result      : ProcessingResult ):
+                        hass_device  : HassDevice,
+                        result       : ProcessingResult ):
 
-        result.error_list.append( f'Create not yet implemented: {hass_state} [insteon={hass_state.is_insteon}]' )
+        result.error_list.append( f'Create not yet implemented: {hass_device} [insteon={hass_device.is_insteon}]' )
         return
     
     def _update_entity( self,
-                        entity      : Entity,
-                        hass_state  : HassState,
-                        result      : ProcessingResult ):
+                        entity       : Entity,
+                        hass_device  : HassDevice,
+                        result       : ProcessingResult ):
 
         result.error_list.append( f'Update not yet implemented: {entity}' )
         
