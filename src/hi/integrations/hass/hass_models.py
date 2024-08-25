@@ -11,16 +11,17 @@ class HassState:
     entity_id_prefix         : str
     entity_name_sans_prefix  : str
     entity_name_sans_suffix  : str
-
+    ignore                   : bool  = True
+    
     def __str__(self):
-        return f'HassState: {self._entity_id}'
+        return f'HassState: {self.entity_id}'
     
     def __repr__(self):
         return self.__str__()
 
     @property
     def attributes(self):
-        attributes = self._api_dict.get( 'attributes' )
+        attributes = self.api_dict.get( 'attributes' )
         if not attributes:
             attributes = dict()
         return attributes
@@ -43,11 +44,7 @@ class HassState:
 
     @property
     def options(self):
-        return self.attributes.get( 'options' )
-
-    @property
-    def is_insteon(self):
-        return bool( self.insteon_address is not None )
+        return self.attributes.get( 'options', list() )
         
 
 class HassDevice:
@@ -72,10 +69,22 @@ class HassDevice:
         self._state_list.append( hass_state )
         return
 
+    @property
+    def hass_state_list(self):
+        return self._state_list
+    
+    @property
+    def device_class_set(self):
+        return { x.device_class for x in self._state_list if x.device_class }
+    
+    @property
+    def entity_id_prefix_set(self):
+        return { x.entity_id_prefix for x in self._state_list }
+    
     def to_dict(self):
         return {
             'device_id': self.device_id,
             'num_states': len(self._state_list),
-            'prefixes': [ x.entity_id_prefix for x in self._state_list ],
+            'prefixes': list( self.entity_id_prefix_set ),
             'states': [ x.api_dict for x in self._state_list ],
         }

@@ -1,8 +1,12 @@
+import logging
+
 from django.shortcuts import render
 from django.views.generic import View
 
 from .enums import IntegrationType
 from .integration_factory import IntegrationFactory
+
+logger = logging.getLogger(__name__)
 
 
 class IntegrationViewMixin:
@@ -54,6 +58,7 @@ class IntegrationManageView( View, IntegrationViewMixin ):
             )
             return integration_gateway.manage( request = request, *args, **kwargs )
         except Exception as e:
+            logger.exception( e )
             error_message = str(e)
             
         context = {

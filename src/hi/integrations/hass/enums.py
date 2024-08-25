@@ -32,6 +32,3 @@ class HassPropertyName(LabeledEnum):
     )
 
     
-class HassAttributeName(LabeledEnum):
-
-    HASS_DEVICE_ID = ( 'HAss Device Id', '' )

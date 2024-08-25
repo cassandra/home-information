@@ -1,6 +1,7 @@
 from django.db import models
 
 from hi.apps.entity.models import Entity, EntityState
+from hi.integrations.core.enums import IntegrationType
 
 from .enums import ControllerType
 
@@ -27,6 +28,16 @@ class Controller( models.Model ):
         max_length = 32,
         null = False, blank = False,
     )
+    integration_type_str = models.CharField(
+        'Integration Type',
+        max_length = 32,
+        null = True, blank = True,
+    )
+    integration_id = models.CharField(
+        'Integration Id',
+        max_length = 128,
+        null = True, blank = True,
+    )
 
     class Meta:
         verbose_name = 'Controller'
@@ -39,6 +50,15 @@ class Controller( models.Model ):
     @controller_type.setter
     def controller_type( self, controller_type : ControllerType ):
         self.controller_type_str = str(controller_type)
+        return
+
+    @property
+    def integration_type(self):
+        return IntegrationType.from_name_safe( self.integration_type_str )
+
+    @integration_type.setter
+    def integration_type( self, integration_type : IntegrationType ):
+        self.integration_type_str = str(integration_type)
         return
 
     

@@ -10,6 +10,7 @@ class PropertyValueType(LabeledEnum):
 
 class IntegrationType(LabeledEnum):
 
+    NONE              = ( 'None', 'No integration placeholder.' )
     ZONEMINDER        = ( 'ZoneMinder', 'ZoneMinder camera streaming and motion detection.' )
     HASS              = ( 'Home Assistant (hass)', 'Home Assistant device access' )
     

@@ -5,8 +5,7 @@ from django.core.management.base import BaseCommand
 
 from hi.apps.common.command_utils import CommandLoggerMixin
 
-from hi.integrations.hass.hass_filter import HassFilter
-from hi.integrations.hass.hass_models import HassState
+from hi.integrations.hass.hass_converter import HassConverter
 
 
 class Command( BaseCommand, CommandLoggerMixin ):
@@ -34,11 +33,11 @@ class Command( BaseCommand, CommandLoggerMixin ):
 
         hass_entity_id_to_state = dict()
         for api_dict in data:
-            hass_state = HassFilter.create_hass_state( api_dict = api_dict )
+            hass_state = HassConverter.create_hass_state( api_dict = api_dict )
             hass_entity_id_to_state[hass_state.entity_id] = hass_state
             continue
 
-        hass_device_id_to_device = HassFilter.hass_states_to_hass_devices(
+        hass_device_id_to_device = HassConverter.hass_states_to_hass_devices(
             hass_entity_id_to_state = hass_entity_id_to_state,
         )
 

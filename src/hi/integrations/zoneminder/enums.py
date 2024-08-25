@@ -46,11 +46,6 @@ class ZmPropertyName(LabeledEnum):
     )
 
 
-class ZmAttributeName(LabeledEnum):
-
-    ZM_MONITOR_ID = ( 'ZM Monitor Id', '' )
-
-    
 class ZmMonitorState(LabeledEnum):
 
     NONE      = ( 'None', '' )

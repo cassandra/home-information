@@ -3,7 +3,9 @@ from hi.apps.common.enums import LabeledEnum
 
 class EntityType(LabeledEnum):
     """ 
-    - SVG File needed for each of these, else uses default.
+    - This helps define the default visual appearance.
+    - No assumptions are made about what sensors or controllers are associated with a given EntityType.
+    - SVG file is needed for each of these, else will use a default.
     - SVG filename is by convention: templates/entity/svg/type.{name.lower()}.svg 
     """
     
@@ -23,6 +25,7 @@ class EntityType(LabeledEnum):
     ELECTRICY_METER      = ( 'Electric Meter', '' )
     ELECTRIC_PANEL       = ( 'Electric Panel', '' )
     ELECTRIC_WIRE        = ( 'Electric Wire', '' )
+    HEALTHCHECK          = ( 'Healthcheck', '' )
     HEATER               = ( 'Heater', '' )  # Controls area
     HVAC_AIR_HANDLER     = ( 'HVAC Air Handler', '' )  # Controls area
     HVAC_CONDENSER       = ( 'HVAC Condenser', '' )  # Controls area
@@ -33,7 +36,7 @@ class EntityType(LabeledEnum):
     LIGHT_SENSOR         = ( 'Light Sensor', '' )
     MOTION_SENSOR        = ( 'Motion Sensor', '' )
     OPEN_CLOSE_DETECTOR  = ( 'Open/Close Sensor', '' )
-    OTHER                = ( 'Other', '' )
+    OTHER                = ( 'Other', '' )  # Will use generic visual element
     PRESENCE_SENSOR      = ( 'Presence Sensor', '' )
     SEWER_LINE           = ( 'Sewer Wire', '' )
     SHOWER               = ( 'Shower', '' ) 
@@ -46,6 +49,7 @@ class EntityType(LabeledEnum):
     TELECOM_WIRE         = ( 'Telecom Wire', '' )
     THERMOMETER          = ( 'Thermometer', '' )
     THERMOSTAT           = ( 'Thermostat', '' )
+    TIME_SOURCE          = ( 'Time Source', '' )
     TOILET               = ( 'Toilet', '' ) 
     TOOL                 = ( 'Tool', '' )
     VIDEO_PLAYER         = ( 'Video Player', '' )
@@ -69,28 +73,36 @@ class EntityType(LabeledEnum):
 class EntityStateType(LabeledEnum):
 
     # General types
-    DICRETE          = ( 'Dicrete', '' )
-    CONTINUOUS       = ( 'Continuous', '' )
-    BLOB             = ( 'Blob', '' )
+    DICRETE          = ( 'Dicrete'          , 'Single value, fixed set of possible values' )
+    CONTINUOUS       = ( 'Continuous'       , 'For single value with a float type value' )
+    MULTVALUED       = ( 'Multi-valued'     , 'Provides multiple name-value pairs' )
+    BLOB             = ( 'Blob'             , 'Provides blob of uninterpreted data' )
 
     # Specific types
-    AIR_PRESSURE     = ( 'Air Pressure', '' )
-    BANDWIDTH_USAGE  = ( 'Bandwidth Usage', '' )
-    CONNECTION       = ( 'Connection', '' )    
-    ELECTRIC_USAGE   = ( 'Electric Usage', '' )
-    HUMIDITY         = ( 'Humidity', '' )
-    VIDEO_STREAM     = ( 'Video Stream', '' )
-    LIGHT_LEVEL      = ( 'Light Level', '' )
-    MOISTURE         = ( 'Moisture', '' )
-    MOVEMENT         = ( 'Movement', '' )    
-    NOISE_LEVEL      = ( 'Noise Level', '' )
-    ON_OFF           = ( 'On/Off', '' )    
-    OPEN_CLOSE       = ( 'Open/Close', '' )    
-    PRESENCE         = ( 'Presence', '' )
-    SOUND_LEVEL      = ( 'Sound Level', '' )
-    TEMPERATURE      = ( 'Temperature', '' )
-    WATER_FLOW       = ( 'Water Flow', '' )
-    WIND_SPEED       = ( 'Wind Speed', '' )
+    #
+    # The general types (above) could be used for these, since all are just
+    # name-value pairs. However, by being more specific, we can provide
+    # more specific visual and processing for the sensors/controllers.
+    
+    AIR_PRESSURE     = ( 'Air Pressure'     , '' )
+    BANDWIDTH_USAGE  = ( 'Bandwidth Usage'  , '' )
+    CONNECTIVITY     = ( 'Connectivity'     , '' )    
+    ELECTRIC_USAGE   = ( 'Electric Usage'   , '' )
+    HUMIDITY         = ( 'Humidity'         , '' )
+    VIDEO_STREAM     = ( 'Video Stream'     , '' )
+    LIGHT_LEVEL      = ( 'Light Level'      , '' )
+    MOISTURE         = ( 'Moisture'         , '' )
+    MOVEMENT         = ( 'Movement'         , '' )    
+    NOISE_LEVEL      = ( 'Noise Level'      , '' )
+    ON_OFF           = ( 'On/Off'           , '' )    
+    HIGH_LOW         = ( 'High/Low'         , '' )    
+    OPEN_CLOSE       = ( 'Open/Close'       , '' )    
+    PRESENCE         = ( 'Presence'         , '' )
+    SOUND_LEVEL      = ( 'Sound Level'      , '' )
+    DATETIME         = ( 'Date/Time'        , '' )
+    TEMPERATURE      = ( 'Temperature'      , '' )
+    WATER_FLOW       = ( 'Water Flow'       , '' )
+    WIND_SPEED       = ( 'Wind Speed'       , '' )
         
 
 class AttributeType(LabeledEnum):
@@ -115,4 +127,17 @@ class AttributeValueType(LabeledEnum):
 class AttributeName(LabeledEnum):
     # Common attribute names
     
-    INTEGRATION_SOURCE = ( 'Integration Source', '' )
+    INSTEON_ADDRESS = ( 'Insteon Address', '' )
+
+
+class TemperatureUnit(LabeledEnum):
+
+    FAHRENHEIT  = ( 'Fahrenheit', '' )
+    CELSIUS     = ( 'Celsius', '' )
+
+    
+class HumidityUnit(LabeledEnum):
+
+    PERCENT                = ( 'Percent', '' )
+    GRAMS_PER_CUBIN_METER  = ( 'Grams per cubic meter (g/m³)', '' )
+    GRAMS_PER_KILOGRAM     = ( 'Grams per kilogram (g/kg)', '' )

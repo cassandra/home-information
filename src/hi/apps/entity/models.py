@@ -1,6 +1,7 @@
 from django.db import models
 
 from hi.apps.location.models import Location
+from hi.integrations.core.enums import IntegrationType
 
 from .enums import (
     EntityType,
@@ -32,10 +33,21 @@ class Entity( models.Model ):
         null = False, blank = False,
     )
     entity_type_str = models.CharField(
-        'Type',
+        'Entity Type',
         max_length = 32,
         null = False, blank = False,
     )
+    integration_type_str = models.CharField(
+        'Integration Type',
+        max_length = 32,
+        null = True, blank = True,
+    )
+    integration_id = models.CharField(
+        'Integration Id',
+        max_length = 128,
+        null = True, blank = True,
+    )
+    
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,
@@ -60,12 +72,100 @@ class Entity( models.Model ):
         self.entity_type_str = str(entity_type)
         return
 
+    @property
+    def integration_type(self):
+        return IntegrationType.from_name_safe( self.integration_type_str )
+
+    @integration_type.setter
+    def integration_type( self, integration_type : IntegrationType ):
+        self.integration_type_str = str(integration_type)
+        return 
+   
     def get_attribute_map(self):
         attribute_map = dict()
         for attribute in self.attributes.all():
             attribute_map[attribute.name] = attribute
             continue
         return attribute_map
+
+        
+class Attribute(models.Model):
+    """
+    - Information related to an entity, e.g., specs, docs, notes, configs
+    - The 'attribute type' is used to help define what information the user might need to provide.
+    """
+    
+    entity = models.ForeignKey(
+        Entity,
+        related_name = 'attributes',
+        verbose_name = 'Entity',
+        on_delete=models.CASCADE,
+    )
+    attribute_value_type_str = models.CharField(
+        'Attribute Value Type',
+        max_length = 32,
+        null = False, blank = False,
+    )
+    name = models.CharField(
+        'Name',
+        max_length = 64,
+    )
+    value = models.TextField(
+        'Value',
+    )
+    attribute_type_str = models.CharField(
+        'Attribute Type',
+        max_length = 32,
+        null = False, blank = False,
+    )
+    is_editable = models.BooleanField(
+        'Editable?',
+        default = True,
+    )
+    is_required = models.BooleanField(
+        'Required?',
+        default = False,
+    )
+    created_datetime = models.DateTimeField(
+        'Created',
+        auto_now_add = True,
+    )
+    updated_datetime = models.DateTimeField(
+        'Updated',
+        auto_now=True,
+        blank = True,
+    )
+
+    class Meta:
+        verbose_name = 'Attribute'
+        verbose_name_plural = 'Attributes'
+        indexes = [
+            models.Index( fields=[ 'name', 'value' ] ),
+        ]
+
+    def __str__(self):
+        return f'Attr: {self.name}={self.value} [{self.attribute_value_type_str}] [{self.attribute_type_str}]'
+    
+    def __repr__(self):
+        return self.__str__()
+    
+    @property
+    def attribute_value_type(self):
+        return AttributeValueType.from_name_safe( self.attribute_value_type_str )
+
+    @attribute_value_type.setter
+    def attribute_value_type( self, attribute_value_type : AttributeValueType ):
+        self.attribute_value_type_str = str(attribute_value_type)
+        return
+
+    @property
+    def attribute_type(self):
+        return AttributeType.from_name_safe( self.attribute_type_str )
+
+    @attribute_type.setter
+    def attribute_type( self, attribute_type : AttributeType ):
+        self.attribute_type_str = str(attribute_type)
+        return
     
     
 class EntityState(models.Model):
@@ -220,83 +320,3 @@ class EntityPath(models.Model):
         indexes = [
             models.Index( fields=[ 'location', 'entity' ] ),
         ]
-
-        
-class Attribute(models.Model):
-    """
-    - Information related to an entity, e.g., specs, docs, notes, configs
-    - The 'attribute type' is used to help define what information the user might need to provide.
-    """
-    
-    entity = models.ForeignKey(
-        Entity,
-        related_name = 'attributes',
-        verbose_name = 'Entity',
-        on_delete=models.CASCADE,
-    )
-    attribute_value_type_str = models.CharField(
-        'Attribute Value Type',
-        max_length = 32,
-        null = False, blank = False,
-    )
-    name = models.CharField(
-        'Name',
-        max_length = 64,
-    )
-    value = models.TextField(
-        'Value',
-    )
-    attribute_type_str = models.CharField(
-        'Attribute Type',
-        max_length = 32,
-        null = False, blank = False,
-    )
-    is_editable = models.BooleanField(
-        'Editable?',
-        default = True,
-    )
-    is_required = models.BooleanField(
-        'Required?',
-        default = False,
-    )
-    created_datetime = models.DateTimeField(
-        'Created',
-        auto_now_add = True,
-    )
-    updated_datetime = models.DateTimeField(
-        'Updated',
-        auto_now=True,
-        blank = True,
-    )
-
-    class Meta:
-        verbose_name = 'Attribute'
-        verbose_name_plural = 'Attributes'
-        indexes = [
-            models.Index( fields=[ 'name', 'value' ] ),
-        ]
-
-    def __str__(self):
-        return f'Attr: {self.name}={self.value} [{self.attribute_value_type_str}] [{self.attribute_type_str}]'
-    
-    def __repr__(self):
-        return self.__str__()
-    
-    @property
-    def attribute_value_type(self):
-        return AttributeValueType.from_name_safe( self.attribute_value_type_str )
-
-    @attribute_value_type.setter
-    def attribute_value_type( self, attribute_value_type : AttributeValueType ):
-        self.attribute_value_type_str = str(attribute_value_type)
-        return
-
-    @property
-    def attribute_type(self):
-        return AttributeType.from_name_safe( self.attribute_type_str )
-
-    @attribute_type.setter
-    def attribute_type( self, attribute_type : AttributeType ):
-        self.attribute_type_str = str(attribute_type)
-        return
-

@@ -35,6 +35,8 @@ class EntityAdmin(admin.ModelAdmin):
     list_display = (
         'name',
         'entity_type_str',
+        'integration_type_str',
+        'integration_id',
         'created_datetime',
     )
 

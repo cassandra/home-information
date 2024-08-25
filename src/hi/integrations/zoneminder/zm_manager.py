@@ -16,7 +16,7 @@ from hi.apps.entity.enums import (
 )
 from hi.apps.entity.models import Entity, Attribute
 
-from hi.apps.entity_helpers import EntityHelpers
+from hi.apps.model_helper import HiModelHelper
 
 from hi.integrations.core.enums import IntegrationType
 from hi.integrations.core.exceptions import IntegrationPropertyError
@@ -24,7 +24,6 @@ from hi.integrations.core.models import Integration
 
 from .enums import (
     ZmPropertyName,
-    ZmAttributeName,
     ZmMonitorState,
 )
 
@@ -140,23 +139,18 @@ class ZoneMinderManager( Singleton ):
     def _get_zm_entities( self, result : ProcessingResult ) -> Dict[ int, Entity ]:
         logger.debug( 'Getting existing ZM entities.' )
         zm_id_to_entity = dict()
-
-        attribute_queryset = Attribute.objects.select_related( 'entity' ). filter(
-            name = AttributeName.INTEGRATION_SOURCE,
-            value = IntegrationType.ZONEMINDER.name,
-        )
-        for attribute in attribute_queryset:
-            zm_entity = attribute.entity
-            attribute_map = zm_entity.get_attribute_map()
+        
+        entity_queryset = Entity.objects.filter( integration_type_str = str(IntegrationType.ZONEMINDER) )
+        for entity in entity_queryset:
             try:
-                attribute = attribute_map.get( str(ZmAttributeName.ZM_MONITOR_ID) )
-                zm_id = int( attribute.value )
+                zm_id = int( entity.integration_id )
             except ( TypeError, ValueError ):
-                result.error_list.append( f'ZM entity found without valid ZM Id: {zm_entity}' )
-                zm_id = 1000000 + zm_entity.id  # We need a (unique) placeholder (will remove this later)
-            zm_id_to_entity[zm_id] = zm_entity
+                result.error_list.append( f'ZM entity found without valid ZM Id: {entity}' )
+                zm_id = 1000000 + entity.id  # We need a (unique) placeholder (will remove this later)
+            zm_id_to_entity[zm_id] = entity
+            
             continue
-
+        
         return zm_id_to_entity
 
     def _get_zm_monitors( self, result : ProcessingResult ) -> Dict[ int, ZmMonitor ]:
@@ -190,33 +184,16 @@ class ZoneMinderManager( Singleton ):
             entity = Entity.objects.create(
                 name = monitor.name(),
                 entity_type_str = str(EntityType.CAMERA),
+                integration_type_str = str(IntegrationType.ZONEMINDER),
+                integration_id = str( monitor.id() ),
             )
-            Attribute.objects.create(
-                entity = entity,
-                name = AttributeName.INTEGRATION_SOURCE,
-                value = IntegrationType.ZONEMINDER.name,
-                attribute_value_type_str = str( AttributeValueType.STRING ),
-                attribute_type_str = str( AttributeType.PREDEFINED ),
-                is_editable = False,
-                is_required = True,
-            )
-            Attribute.objects.create(
-                entity = entity,
-                name = ZmAttributeName.ZM_MONITOR_ID,
-                value = str( monitor.id() ),
-                attribute_value_type_str = str( AttributeValueType.INTEGER ),
-                attribute_type_str = str( AttributeType.PREDEFINED ),
-                is_editable = False,
-                is_required = True,
-            )
-
-            EntityHelpers.create_video_stream_sensor(
+            HiModelHelper.create_video_stream_sensor(
                 entity = entity,
             )
-            EntityHelpers.create_movement_sensor(
+            HiModelHelper.create_movement_sensor(
                 entity = entity,
             )
-            EntityHelpers.create_discrete_controller(
+            HiModelHelper.create_discrete_controller(
                 entity = entity,
                 name = f'{entity.name} State',
                 value_list = [ str(x) for x in ZmMonitorState ],
