@@ -21,3 +21,6 @@ __pycache__/
 /data/
 /design/
 /docs/
+/src/*json
+/src/*csv
+/src/*txt
