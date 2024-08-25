@@ -17,7 +17,7 @@ from hi.apps.model_helper import HiModelHelper
 
 from hi.integrations.core.enums import IntegrationType
 
-from .hass_models import HassState, HassDevice
+from .hass_models import HassApi, HassState, HassDevice
 
 logger = logging.getLogger(__name__)
 
@@ -34,66 +34,66 @@ class HassConverter:
     # Ignore all states that have these prefixes.
     #
     IGNORE_PREFIXES = {
-        'automation',
-        'calendar',
-        'conversation',
-        'person',
-        'script',
-        'todo',
-        'tts',
-        'zone',
+        HassApi.AUTOMATION_ID_PREFIX,
+        HassApi.CALENDAR_ID_PREFIX,
+        HassApi.CONVERSATION_ID_PREFIX,
+        HassApi.PERSON_ID_PREFIX,
+        HassApi.SCRIPT_ID_PREFIX,
+        HassApi.TODO_ID_PREFIX,
+        HassApi.TTS_ID_PREFIX,
+        HassApi.ZONE_ID_PREFIX,
     }
 
     # Suffixes that suggest the HAss state may be part of another device
     # and the "name" of the device precedes the suffix.
     #
     STATE_SUFFIXES = {
-        '_battery',
-        '_events_last_hour',
-        '_humidity',
-        '_light',
-        '_motion',
-        '_state',
-        '_status',
-        '_temperature',
+        HassApi.BATTERY_ID_SUFFIX,
+        HassApi.EVENTS_last_HOUR_ID_SUFFIX,
+        HassApi.HUMIDITY_ID_SUFFIX,
+        HassApi.LIGHT_ID_SUFFIX,
+        HassApi.MOTION_ID_SUFFIX,
+        HassApi.STATE_ID_SUFFIX,
+        HassApi.STATUS_ID_SUFFIX,
+        HassApi.TEMPERATURE_ID_SUFFIX,
 
         # Sun
-        '_next_setting',
-        '_next_rising',
-        '_next_noon',
-        '_next_midnight',
-        '_next_dusk',
-        '_next_dawn',
+        HassApi.NEXT_SETTING_ID_SUFFIX,
+        HassApi.NEXT_RISING_ID_SUFFIX,
+        HassApi.NEXT_NOON_ID_SUFFIX,
+        HassApi.NEXT_MIDNIGHT_ID_SUFFIX,
+        HassApi.NEXT_DUSK_ID_SUFFIX,
+        HassApi.NEXT_DAWN_ID_SUFFIX,
 
         # Printer
-        '_black_cartridge',
+        HassApi.BLACK_CARTRIDGE_ID_SUFFIX,
     }
 
     # HAss entity id prefixes that define an two-value (on-off) switch
     #
     SWITCH_PREFIXES = {
-        'switch',
-        'light',
+        HassApi.SWITCH_ID_PREFIX,
+        HassApi.LIGHT_ID_PREFIX,
     }
     SENSOR_PREFIXES = {
-        'sensor',
-        'binary_sensor',
+        HassApi.BINARY_SENSOR_ID_PREFIX,
+        HassApi.SENSOR_ID_PREFIX,
     }
 
     PREFERRED_NAME_PREFIXES = {
-        'camera',
-        'light',
-        'sun',
-        'climate',
+        HassApi.CAMERA_ID_PREFIX,
+        HassApi.CLIMATE_ID_PREFIX,
+        HassApi.LIGHT_ID_PREFIX,
+        HassApi.SUN_ID_PREFIX,
     }
     PREFERRED_NAME_DEVICE_CLASSES = {
-        'motion',
+        HassApi.MOTION_DEVICE_CLASS,
     }
     
     @classmethod
     def create_hass_state( cls, api_dict : Dict ) -> HassState:
 
-        entity_id = api_dict.get( 'entity_id' )
+        entity_id = api_dict.get( HassApi.ENTITY_ID_FIELD )
 
         # Since a device/entity can have multiple HAss states, and since the API does not 
         m = re.search( r'^([^\.]+)\.(.+)$', entity_id )
@@ -260,7 +260,7 @@ class HassConverter:
         # Sensors - All HAss states are at least a sensor except for those
         # we know are controllable.  
 
-        if hass_state.entity_id_prefix == 'sun':
+        if hass_state.entity_id_prefix == HassApi.SUN_ID_PREFIX:
             HiModelHelper.create_multivalued_sensor(
                 entity = entity,
                 integration_id = hass_state.entity_id,
@@ -268,7 +268,7 @@ class HassConverter:
             )
             return
 
-        if hass_state.entity_id_prefix == 'weather':
+        if hass_state.entity_id_prefix == HassApi.WEATHER_ID_PREFIX:
             HiModelHelper.create_multivalued_sensor(
                 entity = entity,
                 integration_id = hass_state.entity_id,
@@ -276,7 +276,7 @@ class HassConverter:
             )
             return
 
-        if hass_state.entity_id_prefix == 'binary_sensor':
+        if hass_state.entity_id_prefix == HassApi.BINARY_SENSOR_ID_PREFIX:
             cls._create_hass_state_binary_sensor(
                 hass_device = hass_device,
                 hass_state = hass_state,
@@ -284,7 +284,7 @@ class HassConverter:
             )
             return        
         
-        if device_class == 'temperature':
+        if device_class == HassApi.TEMPERATURE_DEVICE_CLASS:
             if 'c' in hass_state.unit_of_measurement.lower():
                 temperature_unit = TemperatureUnit.CELSIUS
             else:
@@ -298,7 +298,7 @@ class HassConverter:
             )
             return
 
-        if device_class == 'humidity':
+        if device_class == HassApi.HUMIDITY_DEVICE_CLASS:
             if 'kg' in hass_state.unit_of_measurement.lower():
                 humidity_unit = HumidityUnit.GRAMS_PER_KILOGRAM
             elif 'g' in hass_state.unit_of_measurement.lower():
@@ -314,7 +314,7 @@ class HassConverter:
             )
             return
 
-        if device_class == 'timestamp':
+        if device_class == HassApi.TIMESTAMP_DEVICE_CLASS:
             HiModelHelper.create_datetime_sensor(
                 entity = entity,
                 integration_id = hass_state.entity_id,
@@ -322,7 +322,7 @@ class HassConverter:
             )
             return
 
-        if device_class == 'enum':
+        if device_class == HassApi.ENUM_DEVICE_CLASS:
             HiModelHelper.create_discrete_sensor(
                 entity = entity,
                 values = hass_state.options,
@@ -350,31 +350,31 @@ class HassConverter:
         elif not name:
             name = f'{entity.name} ({hass_state.entity_id_prefix})'
             
-        if hass_state.device_class == 'connectivity':
+        if hass_state.device_class == HassApi.CONNECTIVITY_DEVICE_CLASS:
             HiModelHelper.create_connectivity_sensor(
                 entity = entity,
                 integration_id = hass_state.entity_id,
                 name = name,
             )
-        elif 'door' in hass_state.device_class:
+        elif hass_state.device_class in HassApi.DOOR_DEVICE_CLASS_SET:
             HiModelHelper.create_open_close_sensor(
                 entity = entity,
                 integration_id = hass_state.entity_id,
                 name = name,
             )
-        elif hass_state.device_class == 'motion':
+        elif hass_state.device_class == HassApi.MOTION_DEVICE_CLASS:
             HiModelHelper.create_movement_sensor(
                 entity = entity,
                 integration_id = hass_state.entity_id,
                 name = name,
             )
-        elif hass_state.device_class == 'light':
+        elif hass_state.device_class == HassApi.LIGHT_DEVICE_CLASS:
             HiModelHelper.create_on_off_sensor(
                 entity = entity,
                 integration_id = hass_state.entity_id,
                 name = name,
             )
-        elif hass_state.device_class == 'battery':
+        elif hass_state.device_class == HassApi.BATTERY_DEVICE_CLASS:
             HiModelHelper.create_high_low_sensor(
                 entity = entity,
                 integration_id = hass_state.entity_id,
@@ -415,26 +415,27 @@ class HassConverter:
     def hass_device_to_entity_type( cls, hass_device : HassDevice ) -> EntityType:
         prefix_set = hass_device.entity_id_prefix_set
         device_class_set = hass_device.device_class_set
-        device_class_str = ' '.join( device_class_set )
         
-        if 'camera' in prefix_set:
+        if HassApi.CAMERA_ID_PREFIX in prefix_set:
             return EntityType.CAMERA
-        if 'timestamp' in device_class_set:
-            return EntityType.TIME_SOURCE
-        if 'binary_sensor' in prefix_set and 'door' in device_class_str:
-            return EntityType.OPEN_CLOSE_DETECTOR
-        if 'motion' in device_class_set:
-            return EntityType.MOTION_SENSOR
-        if 'light' in prefix_set or 'light' in device_class_set:
-            return EntityType.LIGHT
-        if 'outlet' in device_class_set:
-            return EntityType.WALL_SWITCH
-        if 'temperature' in device_class_set:
-            return EntityType.THERMOSTAT
-        if 'connectivity' in device_class_set:
-            return EntityType.HEALTHCHECK
-        if 'weather' in prefix_set:
+        if HassApi.WEATHER_ID_PREFIX in prefix_set:
             return EntityType.WEATHER_STATION
+        if HassApi.TIMESTAMP_DEVICE_CLASS in device_class_set:
+            return EntityType.TIME_SOURCE
+        if ( HassApi.BINARY_SENSOR_ID_PREFIX in prefix_set
+             and device_class_set.intersection( HassApi.DOOR_DEVICE_CLASS_SET )):
+            return EntityType.OPEN_CLOSE_DETECTOR
+        if HassApi.MOTION_DEVICE_CLASS in device_class_set:
+            return EntityType.MOTION_SENSOR
+        if ( HassApi.LIGHT_ID_PREFIX in prefix_set
+             or HassApi.LIGHT_DEVICE_CLASS in device_class_set ):
+            return EntityType.LIGHT
+        if HassApi.OUTLET_DEVICE_CLASS in device_class_set:
+            return EntityType.WALL_SWITCH
+        if HassApi.TEMPERATURE_DEVICE_CLASS in device_class_set:
+            return EntityType.THERMOSTAT
+        if HassApi.CONNECTIVITY_DEVICE_CLASS in device_class_set:
+            return EntityType.HEALTHCHECK
 
         return EntityType.OTHER
             
