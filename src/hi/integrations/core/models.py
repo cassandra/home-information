@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Dict
 
 from django.db import models
@@ -103,3 +104,67 @@ class IntegrationProperty(models.Model):
     def value_type( self, value_type : PropertyValueType ):
         self.value_type_str = str(value_type)
         return
+
+
+@dataclass
+class IntegrationId:
+    """ Internal data corresponding to/from IntegrationIdModel """
+
+    integration_type  : IntegrationType
+    key   : str
+
+    @property
+    def integration_type_str(self):
+        if self.integration_type:
+            return str(self.integration_type)
+        return None
+
+    
+class IntegrationIdModel( models.Model ):
+    """
+    For use in DB objects that need to be associated with an integration
+    device/sensor/control.
+    """
+    
+    class Meta:
+        abstract = True
+
+    integration_type_str = models.CharField(
+        'Integration Type',
+        max_length = 32,
+        null = True, blank = True,
+    )
+    integration_key = models.CharField(
+        'Integration Key',
+        max_length = 128,
+        null = True, blank = True,
+    )
+
+    @property
+    def integration_type(self):
+        return IntegrationType.from_name_safe( self.integration_type_str )
+
+    @integration_type.setter
+    def integration_type( self, integration_type : IntegrationType ):
+        self.integration_type_str = str(integration_type)
+        return 
+
+    @property
+    def integration_id(self):
+        return IntegrationId(
+            integration_type = self.integration_type,
+            key = self.integration_key,
+        )
+
+    @integration_id.setter
+    def integration_id( self, integration_id : IntegrationId ):
+        if not integration_id:
+            self.integration_type_str = None
+            self.integration_key = None
+            return            
+        self.integration_type_str = integration_id.integration_type_str
+        self.integration_key = integration_id.key
+        return 
+    
+    
+    

@@ -12,6 +12,8 @@ from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.enums import SensorType
 from hi.apps.sense.models import Sensor
 
+from hi.integrations.core.models import IntegrationId
+
 
 class HiModelHelper:
     """ Model creation helpers. """
@@ -19,312 +21,275 @@ class HiModelHelper:
     @classmethod
     def create_blob_sensor( cls,
                             entity           : Entity,
-                            integration_id   : str      = None,
-                            name             : str      = None ):
+                            integration_id   : IntegrationId  = None,
+                            name             : str            = None ):
         if not name:
             name = f'{entity.name} Blob'
-        entity_state = EntityState.objects.create(
+        return cls.create_sensor(
             entity = entity,
-            entity_state_type_str = str( EntityStateType.BLOB ),
+            entity_state_type = EntityStateType.BLOB,
             name = name,
-            value_range = '',
-            units = None,
+            integration_id = integration_id,
         )
-        sensor = Sensor.objects.create(
-            entity_state = entity_state,
-            sensor_type_str = str( SensorType.DEFAULT ),
-            name = name,
-        )
-        return sensor
     
     @classmethod
     def create_multivalued_sensor( cls,
                                    entity           : Entity,
-                                   integration_id   : str      = None,
-                                   name             : str      = None ):
+                                   integration_id   : IntegrationId  = None,
+                                   name             : str            = None ):
         if not name:
             name = f'{entity.name} Values'
-        entity_state = EntityState.objects.create(
+        return cls.create_sensor(
             entity = entity,
-            entity_state_type_str = str( EntityStateType.MULTVALUED ),
+            entity_state_type = EntityStateType.MULTVALUED,
             name = name,
-            value_range = '',
-            units = None,
+            integration_id = integration_id,
         )
-        sensor = Sensor.objects.create(
-            entity_state = entity_state,
-            sensor_type_str = str( SensorType.DEFAULT ),
-            name = name,
-        )
-        return sensor
     
     @classmethod
     def create_connectivity_sensor( cls,
                                     entity           : Entity,
-                                    integration_id   : str      = None,
-                                    name             : str      = None ):
+                                    integration_id   : IntegrationId  = None,
+                                    name             : str            = None ):
         if not name:
             name = f'{entity.name} Connection'
-        entity_state = EntityState.objects.create(
+        return cls.create_sensor(
             entity = entity,
-            entity_state_type_str = str( EntityStateType.CONNECTIVITY ),
+            entity_state_type = EntityStateType.CONNECTIVITY,
             name = name,
-            value_range = '',
-            units = None,
+            integration_id = integration_id,
         )
-        sensor = Sensor.objects.create(
-            entity_state = entity_state,
-            sensor_type_str = str( SensorType.DEFAULT ),
-            name = name,
-        )
-        return sensor
     
     @classmethod
     def create_datetime_sensor( cls,
                                 entity           : Entity,
-                                integration_id   : str      = None,
-                                name             : str      = None ):
+                                integration_id   : IntegrationId  = None,
+                                name             : str            = None ):
         if not name:
             name = f'{entity.name} Date/Time'
-        entity_state = EntityState.objects.create(
+        return cls.create_sensor(
             entity = entity,
-            entity_state_type_str = str( EntityStateType.DATETIME ),
+            entity_state_type = EntityStateType.DATETIME,
             name = name,
-            value_range = '',
-            units = None,
+            integration_id = integration_id,
         )
-        sensor = Sensor.objects.create(
-            entity_state = entity_state,
-            sensor_type_str = str( SensorType.DEFAULT ),
-            name = name,
-        )
-        return sensor
     
     @classmethod
     def create_discrete_sensor( cls,
                                 entity           : Entity,
                                 values           : List[ str ],
-                                integration_id   : str      = None,
-                                name             : str      = None ):
+                                integration_id   : IntegrationId  = None,
+                                name             : str            = None ):
         if not name:
             name = f'{entity.name} Value'
-        entity_state = EntityState.objects.create(
+        return cls.create_sensor(
             entity = entity,
-            entity_state_type_str = str( EntityStateType.DICRETE ),
+            entity_state_type = EntityStateType.DISCRETE,
             name = name,
-            value_range = '',
-            units = None,
+            integration_id = integration_id,
+            value_range = json.dumps( values ),
         )
-        sensor = Sensor.objects.create(
-            entity_state = entity_state,
-            sensor_type_str = str( SensorType.DEFAULT ),
-            name = name,
-        )
-        return sensor
     
     @classmethod
     def create_high_low_sensor( cls,
                                 entity           : Entity,
-                                integration_id   : str      = None,
-                                name             : str      = None ):
+                                integration_id   : IntegrationId  = None,
+                                name             : str            = None ):
         if not name:
             name = f'{entity.name} Level'
-        entity_state = EntityState.objects.create(
+        return cls.create_sensor(
             entity = entity,
-            entity_state_type_str = str( EntityStateType.HIGH_LOW ),
+            entity_state_type = EntityStateType.HIGH_LOW,
             name = name,
-            value_range = '',
-            units = None,
+            integration_id = integration_id,
         )
-        sensor = Sensor.objects.create(
-            entity_state = entity_state,
-            sensor_type_str = str( SensorType.DEFAULT ),
-            name = name,
-        )
-        return sensor
     
     @classmethod
     def create_temperature_sensor( cls,
                                    entity           : Entity,
                                    temperature_unit : TemperatureUnit,
-                                   integration_id   : str      = None,
-                                   name             : str      = None ):
+                                   integration_id   : IntegrationId  = None,
+                                   name             : str            = None ):
         if not name:
             name = f'{entity.name} Temperature'
-        entity_state = EntityState.objects.create(
+        return cls.create_sensor(
             entity = entity,
-            entity_state_type_str = str( EntityStateType.TEMPERATURE ),
+            entity_state_type = EntityStateType.TEMPERATURE,
             name = name,
-            value_range = '',
+            integration_id = integration_id,
             units = str(temperature_unit),
         )
-        sensor = Sensor.objects.create(
-            entity_state = entity_state,
-            sensor_type_str = str( SensorType.DEFAULT ),
-            name = name,
-        )
-        return sensor
     
     @classmethod
     def create_humidity_sensor( cls,
                                 entity           : Entity,
                                 humidity_unit    : HumidityUnit,
-                                integration_id   : str      = None,
-                                name             : str      = None ):
+                                integration_id   : IntegrationId  = None,
+                                name             : str            = None ):
         if not name:
             name = f'{entity.name} Humidity'
-        entity_state = EntityState.objects.create(
+        return cls.create_sensor(
             entity = entity,
-            entity_state_type_str = str( EntityStateType.HUMIDITY ),
+            entity_state_type = EntityStateType.HUMIDITY,
             name = name,
-            value_range = '',
+            integration_id = integration_id,
             units = str(humidity_unit),
         )
-        sensor = Sensor.objects.create(
-            entity_state = entity_state,
-            sensor_type_str = str( SensorType.DEFAULT ),
-            name = name,
-        )
-        return sensor
     
     @classmethod
     def create_on_off_sensor( cls,
                               entity           : Entity,
-                              integration_id   : str      = None,
-                              name             : str      = None ):
+                              integration_id   : IntegrationId  = None,
+                              name             : str            = None ):
         if not name:
             name = f'{entity.name} On/Off'
-        entity_state = EntityState.objects.create(
+        return cls.create_sensor(
             entity = entity,
-            entity_state_type_str = str( EntityStateType.ON_OFF ),
+            entity_state_type = EntityStateType.ON_OFF,
             name = name,
-            value_range = '',
-            units = None,
+            integration_id = integration_id,
         )
-        sensor = Sensor.objects.create(
-            entity_state = entity_state,
-            sensor_type_str = str( SensorType.DEFAULT ),
-            name = name,
-        )
-        return sensor
     
     @classmethod
     def create_open_close_sensor( cls,
                                   entity           : Entity,
-                                  integration_id   : str      = None,
-                                  name             : str      = None ):
+                                  integration_id   : IntegrationId  = None,
+                                  name             : str            = None ):
         if not name:
             name = f'{entity.name} Open/Close'
-        entity_state = EntityState.objects.create(
+        return cls.create_sensor(
             entity = entity,
-            entity_state_type_str = str( EntityStateType.OPEN_CLOSE ),
+            entity_state_type = EntityStateType.OPEN_CLOSE,
             name = name,
-            value_range = '',
-            units = None,
+            integration_id = integration_id,
         )
-        sensor = Sensor.objects.create(
-            entity_state = entity_state,
-            sensor_type_str = str( SensorType.DEFAULT ),
-            name = name,
-        )
-        return sensor
     
     @classmethod
     def create_movement_sensor( cls,
                                 entity          : Entity,
-                                integration_id  : str      = None,
-                                name            : str      = None ):
+                                integration_id  : IntegrationId  = None,
+                                name            : str            = None ):
         if not name:
             name = f'{entity.name} Motion'
-        entity_state = EntityState.objects.create(
+        return cls.create_sensor(
             entity = entity,
-            entity_state_type_str = str( EntityStateType.MOVEMENT ),
+            entity_state_type = EntityStateType.MOVEMENT,
             name = name,
-            value_range = '',
-            units = None,
+            integration_id = integration_id,
         )
-        sensor = Sensor.objects.create(
-            entity_state = entity_state,
-            sensor_type_str = str( SensorType.DEFAULT ),
-            name = name,
-        )
-        return sensor
 
     @classmethod
     def create_video_stream_sensor( cls,
                                     entity          : Entity,
-                                    integration_id  : str      = None,
-                                    name            : str      = None ):
+                                    integration_id  : IntegrationId  = None,
+                                    name            : str            = None ):
         if not name:
             name = f'{entity.name} Stream'
-        entity_state = EntityState.objects.create(
+        return cls.create_sensor(
             entity = entity,
-            entity_state_type_str = str( EntityStateType.VIDEO_STREAM ),
+            entity_state_type = EntityStateType.VIDEO_STREAM,
             name = name,
-            value_range = '',
-            units = None,
+            integration_id = integration_id,
         )
-        sensor = Sensor.objects.create(
-            entity_state = entity_state,
-            sensor_type_str = str( SensorType.DEFAULT ),
-            name = name,
-        )
-        return sensor
 
     @classmethod
     def create_on_off_controller( cls,
                                   entity          : Entity,
-                                  integration_id  : str      = None,
-                                  name            : str      = None,
-                                  is_sensed       : bool     = True ):
+                                  integration_id  : IntegrationId  = None,
+                                  name            : str            = None,
+                                  is_sensed       : bool           = True ):
         if not name:
             name = f'{entity.name} Controller'
-        entity_state = EntityState.objects.create(
+        return cls.create_controller(
             entity = entity,
-            entity_state_type_str = str( EntityStateType.ON_OFF ),
+            entity_state_type = EntityStateType.ON_OFF,
             name = name,
-            value_range = '',
-            units = None,
+            is_sensed = is_sensed,
+            integration_id = integration_id,
         )
-        if is_sensed:
-            _ = Sensor.objects.create(
-                entity_state = entity_state,
-                sensor_type_str = str( SensorType.DEFAULT ),
-                name = name,
-            )
-        controller = Controller.objects.create(
-            entity_state = entity_state,
-            controller_type_str = str( ControllerType.DEFAULT ),
-            name = name,
-        )
-        return controller
 
     @classmethod
     def create_discrete_controller( cls,
                                     entity          : Entity,
                                     value_list      : List[ str ],
-                                    integration_id  : str          = None,
-                                    name            : str          = None,
-                                    is_sensed       : bool         = True ):
+                                    integration_id  : IntegrationId  = None,
+                                    name            : str            = None,
+                                    is_sensed       : bool           = True ):
         if not name:
             name = f'{entity.name} Controller'
+        return cls.create_controller(
+            entity = entity,
+            entity_state_type = EntityStateType.DISCRETE,
+            name = name,
+            is_sensed = is_sensed,
+            integration_id = integration_id,
+            value_range = json.dumps( value_list ),
+        )
+
+    @classmethod
+    def create_sensor( cls,
+                       entity             : Entity,
+                       entity_state_type  : EntityStateType,
+                       name               : str               = None,
+                       sensor_type        : SensorType        = SensorType.DEFAULT,
+                       integration_id     : IntegrationId     = None,
+                       value_range        : str               = '',
+                       units              : str               = None ):
+        if not name:
+            name = f'{entity.name}'
+
         entity_state = EntityState.objects.create(
             entity = entity,
-            entity_state_type_str = str( EntityStateType.DICRETE ),
+            entity_state_type_str = str( entity_state_type ),
             name = name,
-            value_range = json.dumps( value_list ),
-            units = None,
+            value_range = value_range,
+            units = units,
         )
-        if is_sensed:
-            _ = Sensor.objects.create(
-                entity_state = entity_state,
-                sensor_type_str = str( SensorType.DEFAULT ),
-                name = name,
-            )
-        controller = Controller.objects.create(
+        sensor = Sensor(
             entity_state = entity_state,
-            controller_type_str = str( ControllerType.DEFAULT ),
+            sensor_type_str = str( sensor_type ),
             name = name,
         )
+        sensor.integration_id = integration_id
+        sensor.save()
+        return sensor
+    
+    @classmethod
+    def create_controller( cls,
+                           entity             : Entity,
+                           entity_state_type  : EntityStateType,
+                           name               : str               = None,
+                           controller_type    : ControllerType    = ControllerType.DEFAULT,
+                           is_sensed          : bool              = True,
+                           integration_id     : IntegrationId     = None,
+                           value_range        : str               = '',
+                           units              : str               = None ):
+        if not name:
+            name = f'{entity.name}'
+            
+        entity_state = EntityState.objects.create(
+            entity = entity,
+            entity_state_type_str = str( entity_state_type ),
+            name = name,
+            value_range = value_range,
+            units = units,
+        )
+        
+        if is_sensed:
+            sensor = Sensor(
+                entity_state = entity_state,
+                name = name,
+                sensor_type_str = str( SensorType.DEFAULT ),
+            )
+            sensor.integration_id = integration_id
+            sensor.save()
+            
+        controller = Controller(
+            entity_state = entity_state,
+            controller_type_str = str( controller_type ),
+            name = name,
+        )
+        controller.integration_id = integration_id
+        controller.save()
         return controller
     

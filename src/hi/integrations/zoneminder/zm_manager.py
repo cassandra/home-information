@@ -8,19 +8,14 @@ from django.db import transaction
 from hi.apps.common.database_lock import ExclusionLockContext
 from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.common.singleton import Singleton
-from hi.apps.entity.enums import (
-    AttributeName,
-    EntityType,
-    AttributeValueType,
-    AttributeType,
-)
-from hi.apps.entity.models import Entity, Attribute
+from hi.apps.entity.enums import EntityType
+from hi.apps.entity.models import Entity
 
 from hi.apps.model_helper import HiModelHelper
 
 from hi.integrations.core.enums import IntegrationType
 from hi.integrations.core.exceptions import IntegrationPropertyError
-from hi.integrations.core.models import Integration
+from hi.integrations.core.models import Integration, IntegrationId
 
 from .enums import (
     ZmPropertyName,
@@ -142,8 +137,9 @@ class ZoneMinderManager( Singleton ):
         
         entity_queryset = Entity.objects.filter( integration_type_str = str(IntegrationType.ZONEMINDER) )
         for entity in entity_queryset:
+            integration_id = entity.integration_id
             try:
-                zm_id = int( entity.integration_id )
+                zm_id = int( integration_id.key )
             except ( TypeError, ValueError ):
                 result.error_list.append( f'ZM entity found without valid ZM Id: {entity}' )
                 zm_id = 1000000 + entity.id  # We need a (unique) placeholder (will remove this later)
@@ -178,23 +174,31 @@ class ZoneMinderManager( Singleton ):
     def _create_entity( self,
                         monitor  : ZmMonitor,
                         result   : ProcessingResult ):
-        
+
+        integration_id = IntegrationId(
+            integration_type = IntegrationType.ZONEMINDER,
+            key = str( monitor.id() ),
+            
+        )
         with transaction.atomic():
 
-            entity = Entity.objects.create(
+            entity = Entity(
                 name = monitor.name(),
                 entity_type_str = str(EntityType.CAMERA),
-                integration_type_str = str(IntegrationType.ZONEMINDER),
-                integration_id = str( monitor.id() ),
             )
+            entity.integration_id = integration_id
+            entity.save()
             HiModelHelper.create_video_stream_sensor(
                 entity = entity,
+                integration_id = integration_id,
             )
             HiModelHelper.create_movement_sensor(
                 entity = entity,
+                integration_id = integration_id,
             )
             HiModelHelper.create_discrete_controller(
                 entity = entity,
+                integration_id = integration_id,
                 name = f'{entity.name} State',
                 value_list = [ str(x) for x in ZmMonitorState ],
             )

@@ -36,7 +36,7 @@ class EntityAdmin(admin.ModelAdmin):
         'name',
         'entity_type_str',
         'integration_type_str',
-        'integration_id',
+        'integration_key',
         'created_datetime',
     )
 

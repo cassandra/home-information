@@ -1,7 +1,7 @@
 from django.db import models
 
 from hi.apps.location.models import Location
-from hi.integrations.core.enums import IntegrationType
+from hi.integrations.core.models import IntegrationIdModel
 
 from .enums import (
     EntityType,
@@ -11,7 +11,7 @@ from .enums import (
 )
 
 
-class Entity( models.Model ):
+class Entity( IntegrationIdModel ):
     """
     - A physical feature, device or software artifact.
     - May have a fixed physical location (or can just be part of a collection)
@@ -36,18 +36,7 @@ class Entity( models.Model ):
         'Entity Type',
         max_length = 32,
         null = False, blank = False,
-    )
-    integration_type_str = models.CharField(
-        'Integration Type',
-        max_length = 32,
-        null = True, blank = True,
-    )
-    integration_id = models.CharField(
-        'Integration Id',
-        max_length = 128,
-        null = True, blank = True,
-    )
-    
+    )    
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,
@@ -72,15 +61,6 @@ class Entity( models.Model ):
         self.entity_type_str = str(entity_type)
         return
 
-    @property
-    def integration_type(self):
-        return IntegrationType.from_name_safe( self.integration_type_str )
-
-    @integration_type.setter
-    def integration_type( self, integration_type : IntegrationType ):
-        self.integration_type_str = str(integration_type)
-        return 
-   
     def get_attribute_map(self):
         attribute_map = dict()
         for attribute in self.attributes.all():

@@ -13,7 +13,7 @@ class ControllerAdmin(admin.ModelAdmin):
         'entity_state',
         'controller_type_str',
         'integration_type_str',
-        'integration_id',
+        'integration_key',
     )
 
     search_fields = ['name']

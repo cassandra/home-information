@@ -73,7 +73,7 @@ class EntityType(LabeledEnum):
 class EntityStateType(LabeledEnum):
 
     # General types
-    DICRETE          = ( 'Dicrete'          , 'Single value, fixed set of possible values' )
+    DISCRETE         = ( 'Discrete'         , 'Single value, fixed set of possible values' )
     CONTINUOUS       = ( 'Continuous'       , 'For single value with a float type value' )
     MULTVALUED       = ( 'Multi-valued'     , 'Provides multiple name-value pairs' )
     BLOB             = ( 'Blob'             , 'Provides blob of uninterpreted data' )

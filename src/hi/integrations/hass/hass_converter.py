@@ -16,6 +16,7 @@ from hi.apps.entity.models import Entity, Attribute
 from hi.apps.model_helper import HiModelHelper
 
 from hi.integrations.core.enums import IntegrationType
+from hi.integrations.core.models import IntegrationId
 
 from .hass_models import HassApi, HassState, HassDevice
 
@@ -192,17 +193,23 @@ class HassConverter:
     @classmethod
     def create_models_for_hass_device( cls, hass_device : HassDevice ) -> Entity:
 
+        integration_id = IntegrationId(
+            integration_type = IntegrationType.HASS,
+            key = hass_device.device_id,
+            
+        )
         entity_name = cls.hass_device_to_entity_name( hass_device )
         entity_type = cls.hass_device_to_entity_type( hass_device )
         
         with transaction.atomic():
 
-            entity = Entity.objects.create(
+            entity = Entity(
                 name = entity_name,
                 entity_type_str = str(entity_type),
-                integration_type_str = str(IntegrationType.HASS),
-                integration_id = str( hass_device.device_id )
             )
+            entity.integration_id = integration_id
+            entity.save()
+            
             insteon_address = cls.hass_device_to_insteon_address( hass_device )
             if insteon_address:
                 Attribute.objects.create(
@@ -224,6 +231,7 @@ class HassConverter:
                     hass_device = hass_device,
                     hass_state = hass_state,
                     entity = entity,
+                    integration_id = integration_id,
                 )
                 continue
             
@@ -231,9 +239,10 @@ class HassConverter:
     
     @classmethod
     def _create_hass_state_sensor_or_controller( cls,
-                                                 hass_device  : HassDevice,
-                                                 hass_state  : HassState,
-                                                 entity       : Entity ):
+                                                 hass_device     : HassDevice,
+                                                 hass_state      : HassState,
+                                                 entity          : Entity,
+                                                 integration_id  : IntegrationId ):
         # Observations:
         #
         #   - Some light switches have both a 'switch' and 'light' HAss state.
@@ -251,7 +260,7 @@ class HassConverter:
         if hass_state.entity_id_prefix in cls.SWITCH_PREFIXES:
             HiModelHelper.create_on_off_controller(
                 entity = entity,
-                integration_id = hass_state.entity_id,
+                integration_id = integration_id,
                 name = name,
             )
             return
@@ -263,7 +272,7 @@ class HassConverter:
         if hass_state.entity_id_prefix == HassApi.SUN_ID_PREFIX:
             HiModelHelper.create_multivalued_sensor(
                 entity = entity,
-                integration_id = hass_state.entity_id,
+                integration_id = integration_id,
                 name = name,
             )
             return
@@ -271,7 +280,7 @@ class HassConverter:
         if hass_state.entity_id_prefix == HassApi.WEATHER_ID_PREFIX:
             HiModelHelper.create_multivalued_sensor(
                 entity = entity,
-                integration_id = hass_state.entity_id,
+                integration_id = integration_id,
                 name = name,
             )
             return
@@ -281,6 +290,7 @@ class HassConverter:
                 hass_device = hass_device,
                 hass_state = hass_state,
                 entity = entity,
+                integration_id = integration_id,
             )
             return        
         
@@ -292,7 +302,7 @@ class HassConverter:
 
             HiModelHelper.create_temperature_sensor(
                 entity = entity,
-                integration_id = hass_state.entity_id,
+                integration_id = integration_id,
                 name = name,
                 temperature_unit = temperature_unit,
             )
@@ -308,7 +318,7 @@ class HassConverter:
 
             HiModelHelper.create_humidity_sensor(
                 entity = entity,
-                integration_id = hass_state.entity_id,
+                integration_id = integration_id,
                 name = name,
                 humidity_unit = humidity_unit,
             )
@@ -317,7 +327,7 @@ class HassConverter:
         if device_class == HassApi.TIMESTAMP_DEVICE_CLASS:
             HiModelHelper.create_datetime_sensor(
                 entity = entity,
-                integration_id = hass_state.entity_id,
+                integration_id = integration_id,
                 name = name,
             )
             return
@@ -326,14 +336,14 @@ class HassConverter:
             HiModelHelper.create_discrete_sensor(
                 entity = entity,
                 values = hass_state.options,
-                integration_id = hass_state.entity_id,
+                integration_id = integration_id,
                 name = name,
             )
             return
 
         HiModelHelper.create_blob_sensor(
             entity = entity,
-            integration_id = hass_state.entity_id,
+            integration_id = integration_id,
             name = name,
         )
         return
@@ -342,7 +352,8 @@ class HassConverter:
     def _create_hass_state_binary_sensor( cls,
                                           hass_device  : HassDevice,
                                           hass_state  : HassState,
-                                          entity       : Entity ):
+                                          entity       : Entity,
+                                          integration_id  : IntegrationId ):
         name = hass_state.friendly_name
         device_class = hass_state.device_class
         if not name and device_class:
@@ -353,37 +364,37 @@ class HassConverter:
         if hass_state.device_class == HassApi.CONNECTIVITY_DEVICE_CLASS:
             HiModelHelper.create_connectivity_sensor(
                 entity = entity,
-                integration_id = hass_state.entity_id,
+                integration_id = integration_id,
                 name = name,
             )
         elif hass_state.device_class in HassApi.DOOR_DEVICE_CLASS_SET:
             HiModelHelper.create_open_close_sensor(
                 entity = entity,
-                integration_id = hass_state.entity_id,
+                integration_id = integration_id,
                 name = name,
             )
         elif hass_state.device_class == HassApi.MOTION_DEVICE_CLASS:
             HiModelHelper.create_movement_sensor(
                 entity = entity,
-                integration_id = hass_state.entity_id,
+                integration_id = integration_id,
                 name = name,
             )
         elif hass_state.device_class == HassApi.LIGHT_DEVICE_CLASS:
             HiModelHelper.create_on_off_sensor(
                 entity = entity,
-                integration_id = hass_state.entity_id,
+                integration_id = integration_id,
                 name = name,
             )
         elif hass_state.device_class == HassApi.BATTERY_DEVICE_CLASS:
             HiModelHelper.create_high_low_sensor(
                 entity = entity,
-                integration_id = hass_state.entity_id,
+                integration_id = integration_id,
                 name = name,
             )
         else:
             HiModelHelper.create_on_off_sensor(
                 entity = entity,
-                integration_id = hass_state.entity_id,
+                integration_id = integration_id,
                 name = name,
             )
         return

@@ -131,7 +131,8 @@ class HassManager( Singleton ):
 
         entity_queryset = Entity.objects.filter( integration_type_str = str(IntegrationType.HASS) )
         for entity in entity_queryset:
-            hass_device_id = entity.integration_id
+            integration_id = entity.integration_id
+            hass_device_id = integration_id.key
             if not hass_device_id:
                 result.error_list.append( f'Entity found without valid HAss Id: {entity}' )
                 hass_device_id = 1000000 + entity.id  # We need a (unique) placeholder for removals
