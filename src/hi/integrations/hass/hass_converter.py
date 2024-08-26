@@ -49,6 +49,7 @@ class HassConverter:
     # and the "name" of the device precedes the suffix.
     #
     STATE_SUFFIXES = {
+
         HassApi.BATTERY_ID_SUFFIX,
         HassApi.EVENTS_last_HOUR_ID_SUFFIX,
         HassApi.HUMIDITY_ID_SUFFIX,
@@ -134,6 +135,11 @@ class HassConverter:
         # All full names seen (ignoring suffix). Values are set of prefixes seen.
         full_names_without_prefix = dict()
 
+        # Special group names when there are othere attributes that
+        # uniquely identify a device.
+        #
+        group_ids = dict()
+        
         for hass_state in hass_entity_id_to_state.values():
             prefix = hass_state.entity_id_prefix
             full_name = hass_state.entity_name_sans_prefix
@@ -141,6 +147,12 @@ class HassConverter:
 
             if prefix in cls.IGNORE_PREFIXES:
                 continue
+
+            # All states with same insteon address are from same device
+            if hass_state.device_group_id:
+                if hass_state.device_group_id not in group_ids:
+                    group_ids[hass_state.device_group_id] = set()
+                group_ids[hass_state.device_group_id].add( prefix )
             
             if full_name not in full_names_without_prefix:
                 full_names_without_prefix[full_name] = set()
@@ -151,7 +163,7 @@ class HassConverter:
 
             if short_name not in names_seen_with_suffixes:
                 names_seen_with_suffixes[short_name] = set()
-                names_seen_with_suffixes[short_name].add( prefix )
+            names_seen_with_suffixes[short_name].add( prefix )
             
             continue
 
@@ -169,23 +181,34 @@ class HassConverter:
             if prefix in cls.IGNORE_PREFIXES:
                 continue
 
-            # Simplest case of joining states is when only the prefix is different.
+            # Simplest case of having explicit group id
+            if hass_state.device_group_id in hass_device_id_to_device:
+                hass_device = hass_device_id_to_device[hass_state.device_group_id]
+                hass_device.add_state( hass_state = hass_state )
+                continue
+                
+            # Next case of joining states is when only the prefix is different.
             if full_name in hass_device_id_to_device:
                 hass_device = hass_device_id_to_device[full_name]
                 hass_device.add_state( hass_state = hass_state )
                 continue
 
-            # Next simplest is when the short name matches to another state
+            # Next case is when the short name matches to another state
             if short_name in hass_device_id_to_device:
                 hass_device = hass_device_id_to_device[short_name]
                 hass_device.add_state( hass_state = hass_state )
                 continue
-
-            # Note that if no known suffix was found, short_name == full_name
             
-            hass_device = HassDevice( device_id = short_name )
+            # Note that if no known suffix was found, short_name == full_name
+
+            if hass_state.device_group_id:
+                device_id = hass_state.device_group_id
+            else:
+                device_id = short_name
+
+            hass_device = HassDevice( device_id = device_id )
             hass_device.add_state( hass_state )
-            hass_device_id_to_device[short_name] = hass_device
+            hass_device_id_to_device[device_id] = hass_device
             continue
         
         return hass_device_id_to_device

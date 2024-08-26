@@ -17,7 +17,7 @@ class Command( BaseCommand, CommandLoggerMixin ):
         self.info( 'HAss API Test' )
 
         url = 'http://bordeaux:8123/api/states'
-        token = '--REDACTED--'
+        token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI3YjY1NjgxODBkN2I0OTQ2Yjc3NDkwNDJkYmVhYzllYyIsImlhdCI6MTcyNDUzMTU3NiwiZXhwIjoyMDM5ODkxNTc2fQ.fOrz9BBV6GPPyQbFXqJ0TEesDEwc5jLTOYoB3r2NX5c'
         
         headers = {
             'Authorization': f'Bearer {token}',

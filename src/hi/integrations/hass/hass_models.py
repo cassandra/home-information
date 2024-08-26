@@ -108,8 +108,17 @@ class HassState:
     @property
     def options(self):
         return self.attributes.get( HassApi.OPTIONS_ATTR, list() )
-        
 
+    @property
+    def device_group_id(self):
+        # When there are other attributes that can uniquely identify a
+        # device for a collection of states, this is used to collate all
+        # the states into a single device.
+        if self.insteon_address:
+            return f'insteon:{self.insteon_address}'
+        return None
+
+    
 class HassDevice:
     """ An aggregate of one or more HassStates associated with a single device. """
     
