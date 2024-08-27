@@ -9,4 +9,8 @@ urlpatterns = [
              views.LocationViewView.as_view(), 
              name='location_view'),
 
+    re_path( r'^view$', 
+             views.LocationViewDefaultView.as_view(), 
+             name='location_view_default'),
+    
 ]

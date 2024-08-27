@@ -2,24 +2,24 @@
 
 {% block content %}
 
-<div class="fixed-top">
-  {% include "panes/top_buttons.html" %}
+<div id="{{ DIVID.TOP }}" class="fixed-top">
+  {% include top_template_name %}
 </div>
 
-<div class="fixed-bottom">
-  {% include "panes/bottom_buttons.html" %}
+<div id="{{ DIVID.BOTTOM }}" class="fixed-bottom">
+  {% include bottom_template_name %}
 </div>
 
 <div class="container-fluid hi-screen">
   <div class="row">
     <div class="col-9 scrollable-column ">
-      <div id="hi-main-content">
-	{% include "location/location_view.html" %}
+      <div id="{{ DIVID.MAIN }}">
+	{% include main_template_name %}
       </div>
     </div>
     <div class="col-3 fixed-column">
-      <div id="hi-side-content">
-	{% include "panes/side_panel.html" %}
+      <div id="{{ DIVID.SIDE }}">
+	{% include side_template_name %}
       </div>
     </div>
   </div>

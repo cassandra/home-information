@@ -54,68 +54,68 @@ def redirect_response( url ):
     return http_response( { 'location': url } )
 
 
-def response_as_dict( mainContent=None, 
-                      replaceMap=None, 
-                      insertMap=None, 
-                      appendMap=None,
-                      modalContent=None,
-                      pushUrl = None,
-                      resetScrollbar = False ):
+def response_as_dict( main_content = None, 
+                      replace_map = None, 
+                      insert_map = None, 
+                      append_map = None,
+                      modal_content = None,
+                      push_url = None,
+                      reset_scrollbar = False ):
     """
     In concert with the Javascript handling of synchronous replies,
     this will allow returning multiple pieces of content in one reply
     for the cases where the request has altered more than one area
-    of the page.  The 'mainContent' will be rendered in whatever
-    the 'data-async' value that was specified, while the 'replaceMap' should
+    of the page.  The 'main_content' will be rendered in whatever
+    the 'data-async' value that was specified, while the 'replace_map' should
     be a map from an html tag id to the html content to populate.
 
-    The 'replaceMap' is a full replacement of the previous content,
+    The 'replace_map' is a full replacement of the previous content,
     so usually should have the same html tag id as what it replaces.
 
-    The 'insertMap' is used when you only want to replace the contents
+    The 'insert_map' is used when you only want to replace the contents
     of the given node and not the node itself.
 
-    The 'appendMap' is for content you want appended to the given id
+    The 'append_map' is for content you want appended to the given id
     list of child content.
     """
     response_dict = {}
 
-    if mainContent and isinstance( mainContent, HttpResponse ):
-        mainContent = mainContent.content.decode('utf-8' )
+    if main_content and isinstance( main_content, HttpResponse ):
+        main_content = main_content.content.decode('utf-8' )
         
-    if mainContent is not None:
-        response_dict['html'] = str(mainContent)
-    if replaceMap is not None:
-        response_dict['replace'] = replaceMap
-    if insertMap is not None:
-        response_dict['insert'] = insertMap
-    if appendMap is not None:
-        response_dict['append'] = appendMap
-    if modalContent is not None:
-        response_dict['modal'] = modalContent
-    if pushUrl is not None:
-        response_dict['pushUrl'] = pushUrl
-    if resetScrollbar:
+    if main_content is not None:
+        response_dict['html'] = str(main_content)
+    if replace_map is not None:
+        response_dict['replace'] = replace_map
+    if insert_map is not None:
+        response_dict['insert'] = insert_map
+    if append_map is not None:
+        response_dict['append'] = append_map
+    if modal_content is not None:
+        response_dict['modal'] = modal_content
+    if push_url is not None:
+        response_dict['pushUrl'] = push_url
+    if reset_scrollbar:
         response_dict['resetScrollbar'] = 'true'
     return response_dict
 
 
-def response( mainContent = None, 
-              replaceMap = None, 
-              insertMap = None, 
-              appendMap = None,
-              modalContent = None,
-              pushUrl = None,
-              resetScrollbar = False,
+def response( main_content = None, 
+              replace_map = None, 
+              insert_map = None, 
+              append_map = None,
+              modal_content = None,
+              push_url = None,
+              reset_scrollbar = False,
               status = 200 ):
     
-    response_dict = response_as_dict( mainContent = mainContent,
-                                      replaceMap = replaceMap,
-                                      insertMap = insertMap,
-                                      appendMap = appendMap,
-                                      modalContent = modalContent,
-                                      pushUrl = pushUrl,
-                                      resetScrollbar = resetScrollbar,
+    response_dict = response_as_dict( main_content = main_content,
+                                      replace_map = replace_map,
+                                      insert_map = insert_map,
+                                      append_map = append_map,
+                                      modal_content = modal_content,
+                                      push_url = push_url,
+                                      reset_scrollbar = reset_scrollbar,
                                       )
     return http_response( response_dict, status=status )
 

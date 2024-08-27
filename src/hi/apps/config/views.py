@@ -1,14 +1,17 @@
-from django.shortcuts import render
-from django.views.generic import View
-
+from hi.hi_grid_view import HiGridView
 from hi.integrations.core.views import IntegrationViewMixin
 
 
-class ConfigHomePaneView( View, IntegrationViewMixin ):
+class ConfigHomePaneView( HiGridView, IntegrationViewMixin ):
 
     def get(self, request, *args, **kwargs):
 
         context = {
         }
         context.update( self.get_integration_config_tab_context() )
-        return render( request, 'config/panes/home.html', context )
+        return self.hi_grid_response( 
+            request = request,
+            context = context,
+            main_template_name = 'config/panes/home.html',
+            push_url_name = 'config_home_pane',
+        )

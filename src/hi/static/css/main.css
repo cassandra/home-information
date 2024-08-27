@@ -128,11 +128,11 @@ a.underline:visited {
     background-color: var(--muted-color) !important;
 }
 
-.hi-top-buttons {
+.hi-top-content {
     height: var(--top-buttons-height);
     border-bottom: 1px solid var(--line-color);
 }
-.hi-bottom-buttons {
+.hi-bottom-content {
     height: var(--bottom-buttons-height);
     border-top: 1px solid var(--line-color);
 }

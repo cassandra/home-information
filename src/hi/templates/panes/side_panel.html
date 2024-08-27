@@ -1,11 +1,19 @@
 <div class="border-left" >
   SIDE PANEL
-<div class="">
-  <a href="{% url 'config_home_pane' %}"
-      class="btn btn-tertiary btn-control" role="button"
-     data-async="#hi-main-content" >
-    ADMIN
-  </a>
-</div>
-  
+
+  <div class="">
+    <a href="{% url 'config_home_pane' %}"
+       class="btn btn-tertiary btn-control" role="button"
+       data-async="true" >
+      ADMIN
+    </a>
+  </div>
+  <div class="">
+    <a href="{% url 'edit_start' %}"
+       class="btn btn-tertiary btn-control" role="button"
+       data-async="true" >
+      EDIT
+    </a>
+  </div>
+
 </div>

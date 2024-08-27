@@ -2,7 +2,7 @@
 <div class="col-1">
   <a href="{% url 'location_view' id=location_view.id %}"
       class="btn btn-primary btn-control" role="button"
-     data-async="#hi-main-content" >
+     data-async="#{{ DIVID.MAIN }}" >
     {{ location_view.name }}
   </a>
 </div>

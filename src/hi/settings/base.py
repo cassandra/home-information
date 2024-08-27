@@ -142,6 +142,7 @@ INSTALLED_APPS = [
     'hi.apps.collection',
     'hi.apps.sense',
     'hi.apps.control',
+    'hi.apps.edit',
     'hi.integrations.core',
     'hi.integrations.zoneminder',
     'hi.integrations.hass',
@@ -156,6 +157,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'hi.middleware.ViewMiddleware',
 ]
 
 ROOT_URLCONF = 'hi.urls'
@@ -171,6 +173,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'hi.context_processors.constants_context',
             ],
         },
     },
