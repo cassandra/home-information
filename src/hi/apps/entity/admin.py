@@ -26,6 +26,18 @@ class PathInLine(admin.TabularInline):
     extra = 0
     show_change_link = True
 
+    
+class ProxyStateInLine(admin.TabularInline):
+    model = models.ProxyState
+    extra = 0
+    show_change_link = True
+
+
+class EntityViewInLine(admin.TabularInline):
+    model = models.EntityView
+    extra = 0
+    show_change_link = True
+
 
 @admin.register(models.Entity)
 class EntityAdmin(admin.ModelAdmin):
@@ -42,5 +54,27 @@ class EntityAdmin(admin.ModelAdmin):
 
     search_fields = ['name']
 
-    inlines = [ AttributesInLine, StatesInLine, PositionInLine, PathInLine ]
+    inlines = [
+        AttributesInLine,
+        StatesInLine,
+        EntityViewInLine,
+        PositionInLine,
+        PathInLine,
+        ProxyStateInLine,
+    ]
+    
+
+@admin.register(models.ProxyState)
+class ProxyStateAdmin(admin.ModelAdmin):
+
+    show_full_result_count = False
+    
+    list_display = (
+        'entity_state',
+        'entity',
+        'created_datetime',
+    )
+
+    search_fields = ['entity__name']
+    readonly_fields = ( 'entity_state', 'entity', )
     

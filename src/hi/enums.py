@@ -1,8 +1,8 @@
 from hi.apps.common.enums import LabeledEnum
 
 
-class ViewMode(LabeledEnum):
+class EditMode(LabeledEnum):
 
-    INFORMATION  = ('Information', '' )
-    CONTROL = ('Control', '' )
-    EDIT   = ('Edit', '' )
+    OFF          = ('Off', '' )
+    ON           = ('On', '' )
+    

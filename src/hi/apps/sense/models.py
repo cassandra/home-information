@@ -1,6 +1,6 @@
 from django.db import models
 
-from hi.apps.entity.models import Entity, EntityState
+from hi.apps.entity.models import EntityState
 from hi.integrations.core.models import IntegrationIdModel
 
 from .enums import SensorType
@@ -43,47 +43,13 @@ class Sensor( IntegrationIdModel ):
         return
 
     
-class SensedEntity(models.Model):
-    """The Entity associated with a Sensors's state is implicitly a
-    "sensed" entity, but this may also be sensing (directly or
-    indirectly) the state of more than one entity.
-
-    e.g., An open/close sensor is directly sensing the proximity sensor in
-    the device, but it is indirectly trying to sense the state of a door or window.
-
-    e.g., A temperature sensor might be the aggregate of a number of thermometer readings.
-
-    """
-
-    sensor = models.ForeignKey(
-        Sensor,
-        related_name = '+',
-        verbose_name = 'Sensor',
-        on_delete=models.CASCADE,
-    )
-    entity = models.ForeignKey(
-        Entity,
-        related_name = 'sensed_by',
-        verbose_name = 'Entity',
-        on_delete=models.CASCADE,
-    )
-    created_datetime = models.DateTimeField(
-        'Created',
-        auto_now_add = True,
-    )
-    
-    class Meta:
-        verbose_name = 'Sensed Entity'
-        verbose_name_plural = 'Sensed Entities'
-
-        
 class SensorHistory(models.Model):
 
     sensor = models.ForeignKey(
         Sensor,
         related_name = 'history',
         verbose_name = 'Sensor',
-        on_delete=models.CASCADE,
+        on_delete = models.CASCADE,
     )
     value = models.CharField(
         'Value',

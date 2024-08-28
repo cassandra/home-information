@@ -50,7 +50,11 @@ class LocationViewView( HiGridView ):
         except LocationView.DoesNotExist:
             logger.warning( f'Location view "{location_view_id}" does not exist.' )
             raise NotImplementedError('Handling bad location view not yet implemengted')
-            
+
+        # Remember last view chosen
+        request.view_parameters.location_view_id = current_location_view.id
+        request.view_parameters.to_session( request )
+        
         context = {
             'current_location_view': current_location_view,
         }

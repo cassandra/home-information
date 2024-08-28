@@ -1,6 +1,7 @@
 from django.db import models
 
 from hi.apps.entity.models import Entity
+from hi.apps.location.models import Location, LocationView, SvgPositionModel
 
 from .enums import CollectionType
 
@@ -15,10 +16,6 @@ class Collection( models.Model ):
         'Collection Type',
         max_length = 32,
         null = False, blank = False,
-    )
-    svg_path = models.TextField(
-        'Path',
-        null = True, blank = True,
     )
     created_datetime = models.DateTimeField(
         'Created',
@@ -65,4 +62,53 @@ class CollectionEntity(models.Model):
         indexes = [
             models.Index( fields=[ 'collection', 'entity' ] ),
         ]
+
+        
+class CollectionPosition( SvgPositionModel ):
+
+    location = models.ForeignKey(
+        Location,
+        related_name = 'collection_positions',
+        verbose_name = 'Location',
+        on_delete = models.CASCADE,
+    )
+    collection = models.ForeignKey(
+        Collection,
+        related_name = 'positions',
+        verbose_name = 'Collection',
+        on_delete = models.CASCADE,
+    )
+    created_datetime = models.DateTimeField(
+        'Created',
+        auto_now_add = True,
+    )
+    updated_datetime = models.DateTimeField(
+        'Updated',
+        auto_now=True,
+        blank = True,
+    )
+
+    
+class CollectionView(models.Model):
+    
+    collection = models.ForeignKey(
+        Collection,
+        related_name = 'location_views',
+        verbose_name = 'Collection',
+        on_delete = models.CASCADE,
+    )
+    location_view = models.ForeignKey(
+        LocationView,
+        related_name = 'collections',
+        verbose_name = 'Location',
+        on_delete = models.CASCADE,
+    )
+    created_datetime = models.DateTimeField(
+        'Created',
+        auto_now_add = True,
+    )
+
+    class Meta:
+        verbose_name = 'Collection View'
+        verbose_name_plural = 'Collection Views'
 

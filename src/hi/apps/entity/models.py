@@ -1,6 +1,6 @@
 from django.db import models
 
-from hi.apps.location.models import Location
+from hi.apps.location.models import Location, LocationView
 from hi.integrations.core.models import IntegrationIdModel
 
 from .enums import (
@@ -79,7 +79,7 @@ class Attribute(models.Model):
         Entity,
         related_name = 'attributes',
         verbose_name = 'Entity',
-        on_delete=models.CASCADE,
+        on_delete = models.CASCADE,
     )
     attribute_value_type_str = models.CharField(
         'Attribute Value Type',
@@ -158,8 +158,8 @@ class EntityState(models.Model):
         Entity,
         related_name = 'states',
         verbose_name = 'Entity',
-        on_delete=models.CASCADE,
-    )
+        on_delete = models.CASCADE,
+    )   
     entity_state_type_str = models.CharField(
         'State Type',
         max_length = 32,
@@ -204,6 +204,62 @@ class EntityState(models.Model):
         return
     
     
+class ProxyState(models.Model):
+    """An EntityState associated with a Sensors or Controller is
+    implicitly a "sensing" or "controlling" the internals of the
+    entity/device. However, this may really just be a proxy for another entity's
+    (hidden) state.
+
+        e.g., An open/close sensor is directly sensing the proximity sensor in
+        the device, but it is indirectly trying to sense the state of a door or window.
+
+        e.g., A sprinkler controller valve is directly sensing and controlling
+        whether it is on or off, but also serves as a proxy for all the
+        sprinkler heads connected to it.
+
+        e.g., A temperature sensor's internal temperature states is really just
+        a proxy for an area (and area is also an Entity).
+
+        e.g., A motion detectors's internal "movement" state about reflected
+        infrared signals is just a proxy for movement associated with an area.
+
+    This relationship between an EntityState and proxy for another Entity
+    can either be one-to-many or many-to-one.
+    
+        e.g., A thermostat may be aggregating the readings from multiple
+        remote sensors so that the internal temperature state of the
+        thermostat is a proxy for all the remote sensor states.
+
+    The purpose of representing the proxy relationships is to allow
+    visually changing the display of an Entity based on the sensors
+    that are serving as a proxy for it.  It also allows clicks/taps on the 
+    entity to be associated with the sensors or controllers that are proxying 
+    for it.  
+
+        e.g., A common case is for defining "AREA" entities and visually
+        displaying them so that they can change colors based on movement
+        sensors that proxy for the area and showing the video stream for
+        the camera entity proxying for the area.
+    """
+    
+    entity_state = models.ForeignKey(
+        EntityState,
+        related_name = 'proxy_for_entities',
+        verbose_name = 'Entity State',
+        on_delete=models.CASCADE,
+    )
+    entity = models.ForeignKey(
+        Entity,
+        related_name = 'proxy_by_states',
+        verbose_name = 'Entity',
+        on_delete = models.CASCADE,
+    )
+    created_datetime = models.DateTimeField(
+        'Created',
+        auto_now_add = True,
+    )
+
+    
 class EntityPosition(models.Model):
     """
     - For entities represented by an SVG icon.
@@ -214,10 +270,9 @@ class EntityPosition(models.Model):
     
     location = models.ForeignKey(
         Location,
-        related_name = 'positions',
+        related_name = 'entity_positions',
         verbose_name = 'Location',
         on_delete = models.CASCADE,
-        null = False, blank = False,
     )
     entity = models.ForeignKey(
         Entity,
@@ -277,7 +332,6 @@ class EntityPath(models.Model):
         related_name = 'paths',
         verbose_name = 'Location',
         on_delete = models.CASCADE,
-        null = False, blank = False,
     )
     entity = models.ForeignKey(
         Entity,
@@ -293,6 +347,11 @@ class EntityPath(models.Model):
         'Created',
         auto_now_add = True,
     )
+    updated_datetime = models.DateTimeField(
+        'Updated',
+        auto_now=True,
+        blank = True,
+    )
 
     class Meta:
         verbose_name = 'Entity Path'
@@ -300,3 +359,29 @@ class EntityPath(models.Model):
         indexes = [
             models.Index( fields=[ 'location', 'entity' ] ),
         ]
+
+        
+class EntityView(models.Model):
+
+    entity = models.ForeignKey(
+        Entity,
+        related_name = 'location_views',
+        verbose_name = 'Entity',
+        on_delete = models.CASCADE,
+    )
+    location_view = models.ForeignKey(
+        LocationView,
+        related_name = 'entities',
+        verbose_name = 'Location',
+        on_delete = models.CASCADE,
+    )
+    created_datetime = models.DateTimeField(
+        'Created',
+        auto_now_add = True,
+    )
+
+    class Meta:
+        verbose_name = 'Entity View'
+        verbose_name_plural = 'Entity Views'
+
+    

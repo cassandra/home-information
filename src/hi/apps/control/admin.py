@@ -20,22 +20,6 @@ class ControllerAdmin(admin.ModelAdmin):
     readonly_fields = ( 'entity_state', )
 
     
-@admin.register(models.ControlledEntity)
-class ControlledEntityAdmin(admin.ModelAdmin):
-
-    show_full_result_count = False
-    
-    list_display = (
-        'controller',
-        'entity',
-        'created_datetime',
-    )
-
-    search_fields = ['controller__name']
-    readonly_fields = ( 'controller', 'entity', )
-    ordering = ( '-created_datetime', )
-
-    
 @admin.register(models.ControllerHistory)
 class ControllerHistoryAdmin(admin.ModelAdmin):
 

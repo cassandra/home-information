@@ -1,34 +1,37 @@
-from django.shortcuts import render
-from django.template.loader import get_template
-from django.views.generic import View
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 
-import hi.apps.common.antinode as antinode
-
-from hi.constants import DIVID
+from hi.hi_grid_view import HiGridView
+from hi.enums import EditMode
 
 
-class EditStartView( View ):
+class EditStartView( HiGridView ):
 
     def get(self, request, *args, **kwargs):
 
-        div_id_to_template_name = {
-            DIVID['TOP'] : 'edit/panes/top.html',
-            DIVID['BOTTOM'] : 'edit/panes/bottom.html',
-            DIVID['MAIN'] : 'edit/panes/main.html',
-            DIVID['SIDE'] : 'edit/panes/side.html',
-        }
+        request.view_parameters.edit_mode = EditMode.ON
+        request.view_parameters.to_session( request )
         
         context = {
         }
-
-        insert_map = dict()
-        for div_id, template_name in div_id_to_template_name.items():
-            template = get_template( template_name )
-            content = template.render( context, request = request )
-            insert_map[div_id] = content,
-            continue
-        
-        return antinode.response(
-            insert_map = insert_map,
+        return self.hi_grid_response( 
+            request = request,
+            context = context,
+            bottom_template_name = 'edit/panes/bottom.html',
+            main_template_name = 'edit/panes/main.html',
+            side_template_name = 'edit/panes/side.html',
+            push_url_name = 'edit_start',
+            push_url_kwargs = kwargs,
         )
+
     
+class EditEndView( HiGridView ):
+
+    def get(self, request, *args, **kwargs):
+
+        request.view_parameters.edit_mode = EditMode.OFF
+        request.view_parameters.to_session( request )
+
+        redirect_url = reverse( 'home' )
+        return HttpResponseRedirect( redirect_url )
+        

@@ -2,15 +2,15 @@ from dataclasses import dataclass
 
 from hi.apps.location.models import LocationView
 
-from .enums import ViewMode
+from .enums import EditMode
 
 
 @dataclass
 class ViewParameters:
     
     location_view_id    : int       = None
-    view_mode           : ViewMode  = None
-
+    edit_mode           : EditMode  = False
+    
     def __post_init__(self):
         self._location_view = None  # Lazy loaded
         return
@@ -31,7 +31,7 @@ class ViewParameters:
         if not hasattr( request, 'session' ):
             return
         request.session['location_view_id'] = self.location_view_id
-        request.session['view_mode'] = str(self.view_mode)
+        request.session['edit_mode'] = str(self.edit_mode)
         return
 
     @staticmethod
@@ -45,10 +45,10 @@ class ViewParameters:
         except ( TypeError, ValueError ):
             location_view_id = None
 
-        view_mode = ViewMode.from_name_safe( name = request.session.get( 'view_mode' ))
+        edit_mode = EditMode.from_name_safe( name = request.session.get( 'edit_mode' ))
 
         return ViewParameters(
             location_view_id = location_view_id,
-            view_mode = view_mode,
+            edit_mode = edit_mode,
         )
     

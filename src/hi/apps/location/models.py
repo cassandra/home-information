@@ -123,3 +123,51 @@ class LocationView(models.Model):
     def view_type( self, view_type : ViewType ):
         self.view_type_str = str(view_type)
         return
+
+    
+class SvgPositionModel(models.Model):
+    """
+    For models that have a visual representaion that can be overlayed on
+    the Location's SVG as an icon with a center position, rotartion and scale.
+    """
+    
+    class Meta:
+        abstract = True
+        
+    svg_x = models.DecimalField(
+        'X',
+        max_digits = 12,
+        decimal_places = 6,
+    )
+    svg_y = models.DecimalField(
+        'Y',
+        max_digits = 12,
+        decimal_places = 6,
+    )
+    svg_scale = models.DecimalField(
+        'Scale',
+        max_digits = 12,
+        decimal_places = 6,
+        default = 1.0,
+    )
+    svg_rotation = models.DecimalField(
+        'Rotation',
+        max_digits = 12,
+        decimal_places = 6,
+        default = 0.0,
+    )
+    
+
+class SvgPathModel(models.Model):
+    """
+    For models that have a visual representaion that can be overlayed on
+    the Location's SVG as a general SVG path.
+    """
+    
+    class Meta:
+        abstract = True
+        
+    svg_path = models.TextField(
+        'Path',
+        null = False, blank = False,
+    )
