@@ -143,6 +143,7 @@ INSTALLED_APPS = [
     'hi.apps.sense',
     'hi.apps.control',
     'hi.apps.edit',
+    'hi.apps.api',
     'hi.integrations.core',
     'hi.integrations.zoneminder',
     'hi.integrations.hass',

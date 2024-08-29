@@ -16,7 +16,7 @@ class LocationAdmin(admin.ModelAdmin):
     list_display = (
         'name',
         'svg_filename',
-        'svg_viewbox',
+        'svg_view_box_str',
         'latitude',
         'longitude',
         'elevation_feet',
@@ -38,7 +38,7 @@ class LocationViewAdmin(admin.ModelAdmin):
     list_display = (
         'name',
         'location',
-        'svg_viewbox',
+        'svg_view_box_str',
         'svg_rotation',
         'order_id',
         'created_datetime',

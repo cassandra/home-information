@@ -1,5 +1,7 @@
 from django.db import models
 
+from hi.apps.api.api_models import SvgViewBox
+
 from .enums import ViewType
 
 
@@ -15,12 +17,11 @@ class Location(models.Model):
         max_length = 256,
         null = False, blank = False,
     )
-    svg_viewbox = models.CharField(
+    svg_view_box_str = models.CharField(
         'Viewbox',
         max_length = 64,
         null = False, blank = False,
     )
-
     latitude = models.DecimalField(
         'Latitude',
         max_digits = 11,
@@ -59,6 +60,15 @@ class Location(models.Model):
 
     def __repr__(self):
         return self.__str__()
+    
+    @property
+    def svg_view_box(self):
+        return SvgViewBox.from_attribute_value( self.svg_view_box_str )
+
+    @svg_view_box.setter
+    def svg_view_box( self, svg_view_box : SvgViewBox ):
+        self.svg_view_box_str = str(svg_view_box)
+        return
 
 
 class LocationView(models.Model):
@@ -80,12 +90,11 @@ class LocationView(models.Model):
         max_length = 64,
         null = False, blank = False,
     )
-    svg_viewbox = models.CharField(
+    svg_view_box_str = models.CharField(
         'Viewbox',
         max_length = 64,
         null = False, blank = False,
     )
-
     svg_rotation = models.DecimalField(
         'Rotation',
         max_digits = 9,
@@ -114,6 +123,10 @@ class LocationView(models.Model):
 
     def __repr__(self):
         return self.__str__()
+
+    @property
+    def html_id(self):
+        return f'hi-location-view-{self.id}'
     
     @property
     def view_type(self):
@@ -122,6 +135,15 @@ class LocationView(models.Model):
     @view_type.setter
     def view_type( self, view_type : ViewType ):
         self.view_type_str = str(view_type)
+        return
+    
+    @property
+    def svg_view_box(self):
+        return SvgViewBox.from_attribute_value( self.svg_view_box_str )
+
+    @svg_view_box.setter
+    def svg_view_box( self, svg_view_box : SvgViewBox ):
+        self.svg_view_box_str = str(svg_view_box)
         return
 
     

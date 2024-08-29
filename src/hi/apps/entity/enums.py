@@ -6,7 +6,7 @@ class EntityType(LabeledEnum):
     - This helps define the default visual appearance.
     - No assumptions are made about what sensors or controllers are associated with a given EntityType.
     - SVG file is needed for each of these, else will use a default.
-    - SVG filename is by convention: templates/entity/svg/type.{name.lower()}.svg 
+    - SVG filename is by convention:  
     """
     
     AIR_CONDITIONER      = ( 'Air Conditioner', '' )  # Controls area
@@ -60,10 +60,17 @@ class EntityType(LabeledEnum):
     WATER_METER          = ( 'Water Meter', '' )
     WATER_SHUTOFF_VALVE  = ( 'Water Shutoff Valve', '' )
     WEATHER_STATION      = ( 'Weather Station', '' )
+
+    @classmethod
+    def default(cls):
+        return cls.OTHER
     
     @property
     def svg_icon_name(self):
-        raise NotImplementedError()
+        # TODO: Change this after creating initial icons
+        #
+        #    return f'templates/entity/svg/type.{self.name.lower()}.svg'
+        return 'templates/entity/svg/type.other.svg'
 
     @property
     def svg_path_style(self):

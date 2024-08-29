@@ -6,6 +6,7 @@ from django.views.generic import View
 
 from hi.hi_grid_view import HiGridView
 
+from .location_view_manager import LocationViewManager
 from .models import Location, LocationView
 
 logger = logging.getLogger(__name__)
@@ -45,18 +46,21 @@ class LocationViewView( HiGridView ):
 
         location_view_id = kwargs.get('id')
         try:
-            current_location_view = LocationView.objects.select_related(
+            location_view = LocationView.objects.select_related(
                 'location' ).get( id = location_view_id )
         except LocationView.DoesNotExist:
             logger.warning( f'Location view "{location_view_id}" does not exist.' )
             raise NotImplementedError('Handling bad location view not yet implemengted')
 
         # Remember last view chosen
-        request.view_parameters.location_view_id = current_location_view.id
+        request.view_parameters.location_view_id = location_view.id
         request.view_parameters.to_session( request )
-        
+
+        location_view_data = LocationViewManager().get_location_view_data(
+            location_view = location_view,
+        )
         context = {
-            'current_location_view': current_location_view,
+            'location_view_data': location_view_data,
         }
         return self.hi_grid_response( 
             request = request,

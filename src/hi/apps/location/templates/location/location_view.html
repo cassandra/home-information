@@ -1,8 +1,10 @@
 {% load common_template_helpers %}
 <div class="hi-location-view">
-  {% with current_location_view.svg_viewbox as svg_viewbox %}
-  {% with current_location_view.svg_rotation as svg_rotation %}
-  {% include_media_template current_location_view.location.svg_filename %}
+  {% with location_view_data.location_view.svg_view_box as svg_view_box %}
+  {% with location_view_data.location_view.svg_rotation as svg_rotation %}
+  {% with location_view_data.location_view.html_id as html_id %}
+  {% include_media_template location_view_data.location_view.location.svg_filename %}
+  {% endwith %}
   {% endwith %}
   {% endwith %}
 </div>

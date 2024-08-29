@@ -40,11 +40,13 @@ class CollectionEntity(models.Model):
 
     collection = models.ForeignKey(
         Collection,
+        related_name = 'entities',
         verbose_name = 'Collection',
         on_delete=models.CASCADE,
     )
     entity = models.ForeignKey(
         Entity,
+        related_name = 'collections',
         verbose_name = 'Entity',
         on_delete=models.CASCADE,
     )
@@ -102,6 +104,10 @@ class CollectionView(models.Model):
         related_name = 'collections',
         verbose_name = 'Location',
         on_delete = models.CASCADE,
+    )
+    order_id = models.PositiveIntegerField(
+        'Order Id',
+        default = 0,
     )
     created_datetime = models.DateTimeField(
         'Created',

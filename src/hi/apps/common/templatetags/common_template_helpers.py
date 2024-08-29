@@ -69,8 +69,11 @@ def include_media_template( context, file_path ):
     Load a file from MEDIA_ROOT, treat it as a Django template,
     and render it with the current context.
     """
-    full_path = os.path.join( settings.MEDIA_ROOT, file_path )
+    if not file_path:
+        return 'Template file path not defined.'
     
+    full_path = os.path.join( settings.MEDIA_ROOT, file_path )
+
     if not os.path.exists(full_path):
         return f'Template file not found: {full_path}'
 

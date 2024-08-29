@@ -1,6 +1,6 @@
 from django.db import models
 
-from hi.apps.location.models import Location, LocationView
+from hi.apps.location.models import Location, LocationView, SvgPositionModel, SvgPathModel
 from hi.integrations.core.models import IntegrationIdModel
 
 from .enums import (
@@ -260,7 +260,7 @@ class ProxyState(models.Model):
     )
 
     
-class EntityPosition(models.Model):
+class EntityPosition( SvgPositionModel ):
     """
     - For entities represented by an SVG icon.
     - This is the most common case.
@@ -280,28 +280,6 @@ class EntityPosition(models.Model):
         verbose_name = 'Entity',
         on_delete = models.CASCADE,
     )
-    svg_x = models.DecimalField(
-        'X',
-        max_digits = 12,
-        decimal_places = 6,
-    )
-    svg_y = models.DecimalField(
-        'Y',
-        max_digits = 12,
-        decimal_places = 6,
-    )
-    svg_scale = models.DecimalField(
-        'Scale',
-        max_digits = 12,
-        decimal_places = 6,
-        default = 1.0,
-    )
-    svg_rotation = models.DecimalField(
-        'Rotation',
-        max_digits = 12,
-        decimal_places = 6,
-        default = 0.0,
-    )
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,
@@ -320,7 +298,7 @@ class EntityPosition(models.Model):
         ]
         
 
-class EntityPath(models.Model):
+class EntityPath( SvgPathModel ):
     """
     - For entities represented by an arbitary SVG path. e.g., The path of a utility line, 
     - The styling of the path is determined by the EntityType. 
@@ -338,10 +316,6 @@ class EntityPath(models.Model):
         related_name = 'paths',
         verbose_name = 'Entity',
         on_delete = models.CASCADE,
-    )
-    svg_path = models.TextField(
-        'Path',
-        null = False, blank = False,
     )
     created_datetime = models.DateTimeField(
         'Created',
