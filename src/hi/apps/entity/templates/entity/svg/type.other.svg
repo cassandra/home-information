@@ -1,5 +1,8 @@
-<rect id="{{ svg_item.html_id }}"
-      hi-state="default" 
+<rect hi-state="default"
+      class="hi-entity-other-bg"
       fill="blue"
-      x="0" y="0" width="32" height="32"
-      transform="scale( {{ svg_item.scale }} ) translate( {{ svg_item.translate_x }} {{ svg_item.translate_y }} ) rotate( {{ svg_item.rotate }} {{ svg_item.bounds_center_x }} {{ svg_item.bounds_center_y }} )"/>
+      x="0" y="0" width="32" height="32" />
+<rect hi-state="default"
+      class="hi-entity-other-fg"      
+      fill="green"
+      x="0" y="0" width="16" height="16" />

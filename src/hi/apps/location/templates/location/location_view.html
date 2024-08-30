@@ -1,5 +1,5 @@
 {% load common_template_helpers %}
-<div class="hi-location-view">
+<div id="hi-location-view-main" class="hi-location-view">
   <svg id="{{ location_view_data.location_view.html_id }}" xmlns="http://www.w3.org/2000/svg"
        viewBox="{{ location_view_data.location_view.svg_view_box }}"
        transform="rotate({{ location_view_data.location_view.svg_rotation }} 0 0)">
@@ -7,9 +7,15 @@
 
     {% for entity_path in location_view_data.entity_paths %}
     {% endfor %}
-    
+
     {% for entity_position in location_view_data.entity_positions %}
-    {% include entity_position.svg_item.template_name with svg_item=entity_position.svg_item %}
+    {% with entity_position.svg_item as svg_item %}
+    <g id="{{ svg_item.html_id }}"
+       class="draggable"
+       transform="scale( {{ svg_item.scale }} ) translate( {{ svg_item.translate_x }} {{ svg_item.translate_y }} ) rotate( {{ svg_item.rotate }} {{ svg_item.bounds_center_x }} {{ svg_item.bounds_center_y }} )">
+      {% include entity_position.svg_item.template_name %}
+    </g>
+    {% endwith %}
     {% endfor %}
     
     {% for collection_position in location_view_data.collection_positions %}

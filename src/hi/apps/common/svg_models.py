@@ -90,7 +90,7 @@ class SvgItem:
         """ Translation needed to put the item's center at the SVG position x. """
         if self.scale < 0.000001:
             return 0
-        return ( self.position_x / self.scale ) - self.bounds_center_x 
+        return ( self.position_x / self.scale ) - self.bounds_center_x
 
     @property
     def translate_y(self):

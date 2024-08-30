@@ -279,6 +279,7 @@ PIPELINE = {
             'source_filenames': (
                 'js/svg-utils.js',
                 'js/polling.js',
+                'js/edit.js',
                 'js/main.js',
             ),
             'output_filename': 'js/js_after_content_custom.js',

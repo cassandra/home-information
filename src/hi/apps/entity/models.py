@@ -317,7 +317,7 @@ class EntityPosition( SvgPositionModel ):
             bounding_box = self.entity.entity_type.svg_bounding_box,
             # rotate = float( self.svg_rotation ),
             # scale = float( self.svg_scale ),
-            rotate = 5,
+            rotate = 0,
             scale = 4.0,
         )
             
