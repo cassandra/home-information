@@ -1,10 +1,19 @@
 {% load common_template_helpers %}
 <div class="hi-location-view">
-  {% with location_view_data.location_view.svg_view_box as svg_view_box %}
-  {% with location_view_data.location_view.svg_rotation as svg_rotation %}
-  {% with location_view_data.location_view.html_id as html_id %}
-  {% include_media_template location_view_data.location_view.location.svg_filename %}
-  {% endwith %}
-  {% endwith %}
-  {% endwith %}
+  <svg id="{{ location_view_data.location_view.html_id }}" xmlns="http://www.w3.org/2000/svg"
+       viewBox="{{ location_view_data.location_view.svg_view_box }}"
+       transform="rotate({{ location_view_data.location_view.svg_rotation }} 0 0)">
+    {% include_media_template location_view_data.location_view.location.svg_filename %}
+
+    {% for entity_path in location_view_data.entity_paths %}
+    {% endfor %}
+    
+    {% for entity_position in location_view_data.entity_positions %}
+    {% include entity_position.svg_item.template_name with svg_item=entity_position.svg_item %}
+    {% endfor %}
+    
+    {% for collection_position in location_view_data.collection_positions %}
+    {% endfor %}
+
+  </svg>
 </div>

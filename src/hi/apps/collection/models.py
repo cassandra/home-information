@@ -1,7 +1,12 @@
 from django.db import models
 
+from hi.apps.common.svg_models import SvgItem
 from hi.apps.entity.models import Entity
-from hi.apps.location.models import Location, LocationView, SvgPositionModel
+from hi.apps.location.models import (
+    Location,
+    LocationView,
+    SvgPositionModel,
+)
 
 from .enums import CollectionType
 
@@ -26,6 +31,10 @@ class Collection( models.Model ):
         verbose_name = 'Collection'
         verbose_name_plural = 'Collections'
 
+    @property
+    def html_id(self):
+        return f'hi-collection-{self.id}'
+    
     @property
     def collection_type(self):
         return CollectionType.from_name_safe( self.collection_type_str )
@@ -60,6 +69,8 @@ class CollectionEntity(models.Model):
     )
 
     class Meta:
+        verbose_name = 'Collection Entity'
+        verbose_name_plural = 'Collection Entities'
         ordering = [ 'order_id' ]
         indexes = [
             models.Index( fields=[ 'collection', 'entity' ] ),
@@ -90,18 +101,34 @@ class CollectionPosition( SvgPositionModel ):
         blank = True,
     )
 
+    class Meta:
+        verbose_name = 'Collection Position'
+        verbose_name_plural = 'Collection Positions'
+
+    @property
+    def svg_item(self):
+        return SvgItem(
+            html_id = f'hi-collection-{self.collection.id}',
+            template_name = self.collection.collection_type.svg_icon_template_name,
+            position_x = float( self.svg_x ),
+            position_y = float( self.svg_y ),
+            bounding_box = self.collection.collection_type.svg_bounding_box,
+            rotate = float( self.svg_rotation ),
+            scale = float( self.svg_scale ),
+        )
+    
     
 class CollectionView(models.Model):
     
     collection = models.ForeignKey(
         Collection,
-        related_name = 'location_views',
+        related_name = 'collection_views',
         verbose_name = 'Collection',
         on_delete = models.CASCADE,
     )
     location_view = models.ForeignKey(
         LocationView,
-        related_name = 'collections',
+        related_name = 'collection_views',
         verbose_name = 'Location',
         on_delete = models.CASCADE,
     )

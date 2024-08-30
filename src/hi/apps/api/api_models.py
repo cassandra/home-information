@@ -6,74 +6,12 @@ little as possible about the server's internal models.
 """
 
 from dataclasses import dataclass, field
+import json
 from typing import List
 
-
-@dataclass
-class SvgViewBox:
-    x       : float
-    y       : float
-    width   : float
-    height  : float
-    
-    def __post_init__(self):
-        self._max_x = self.x + self.width
-        self._max_y = self.y + self.height
-        return
-        
-    def __str__(self):
-        return f'{self.x} {self.y} {self.width} {self.height}'
-    
-    @property
-    def min_x(self):
-        return self.x
-    
-    @property
-    def min_y(self):
-        return self.y
-    
-    @property
-    def max_x(self):
-        return self._max_x
-    
-    @property
-    def max_y(self):
-        return self._max_y
-    
-    @staticmethod
-    def from_attribute_value( value : str ):
-        components = value.split(' ')
-        if len(components) != 4:
-            raise ValueError( f'Invalid viewBox value "{value}".' )
-        return SvgViewBox(
-            x = float(components[0]),
-            y = float(components[1]),
-            width = float(components[2]),
-            height = float(components[3]),
-        )
-
-    def to_dict(self):
-        return {
-            'x': self.x,
-            'y': self.y,
-            'width': self.width,
-            'height': self.height,
-        }
+from hi.apps.common.svg_models import SvgPathStyle
 
 
-@dataclass
-class SvgPathStyle:
-    stroke_color  : str
-    stroke_width  : float
-    fill_color    : str
-
-    def to_dict(self):
-        return {
-            'stroke_color': self.stroke_color,
-            'stroke_width': self.stroke_width,
-            'fill_color': self.fill_color,
-        }    
-    
 @dataclass
 class SvgIconItem:
     """
@@ -129,17 +67,16 @@ class SvgOverlayData:
     """
     
     base_html_id  : str
-    view_box      : SvgViewBox
-    rotation      : float
     icon_items    : List[ SvgIconItem ]  = field( default_factory = list )
     path_items    : List[ SvgPathItem ]  = field( default_factory = list )
 
     def to_dict(self):
         return {
-            'html_id': self.html_id,
-            'view_box': self.view_box.to_dict(),
-            'rotation': self.rotation,
+            'base_html_id': self.base_html_id,
             'icon_items': [ x.to_dict() for x in self.icon_items ],
             'path_items': [ x.to_dict() for x in self.path_items ],
         }
+
+    def to_json(self):
+        return json.dumps( self.to_dict() )
     

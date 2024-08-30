@@ -12,33 +12,33 @@ class LocationViewManager(Singleton):
     def get_location_view_data( self, location_view : LocationView ):
 
         location = location_view.location
-        entity_positions = set()
-        entity_paths = set()
+        entity_positions = list()
+        entity_paths = list()
         non_displayed_entities = set()
-        for entity in location_view.entities.all():
+        for entity_view in location_view.entity_views.all():
+            entity = entity_view.entity
             is_visible = False
             entity_position = entity.positions.filter( location = location ).first()
             if entity_position:
                 is_visible = True
-                entity_positions.add( entity_position )
+                entity_positions.append( entity_position )
             entity_path = entity.paths.filter( location = location ).first()
             if entity_path:
                 is_visible = True
-                entity_paths.add( entity_path )
+                entity_paths.append( entity_path )
             if not is_visible:
                 non_displayed_entities.add( entity )
             continue
 
-        all_collections = set()
-        collection_positions = set()
-        unpositioned_collections = set()
-        for collection in location_view.collections.all():
+        collection_positions = list()
+        unpositioned_collections = list()
+        for collection_view in location_view.collection_views.all():
+            collection = collection_view.collection
             collection_position = collection.positions.filter( location = location ).first()
             if collection_position:
-                collection_positions.add( collection )
+                collection_positions.append( collection )
             else:
-                unpositioned_collections.add( collection )
-            all_collections.add( collection )
+                unpositioned_collections.append( collection )
             continue
 
         # These are used for reporting entities that might otherwise be
@@ -52,8 +52,7 @@ class LocationViewManager(Singleton):
             continue
 
         # These become bottom buttons, which can be ordered
-        collection_list = list( unpositioned_collections )
-        collection_list.sort( key = lambda item : item.order_id )
+        unpositioned_collections.sort( key = lambda item : item.order_id )
 
         return LocationViewData(
             location_view = location_view,

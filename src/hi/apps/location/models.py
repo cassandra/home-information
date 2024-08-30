@@ -1,6 +1,6 @@
 from django.db import models
 
-from hi.apps.api.api_models import SvgViewBox
+from hi.apps.common.svg_models import SvgViewBox
 
 from .enums import ViewType
 

@@ -1,3 +1,5 @@
-<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0" y="0" width="32" height="32" fill="blue" />
-</svg>
+<rect id="{{ svg_item.html_id }}"
+      hi-state="default" 
+      fill="blue"
+      x="0" y="0" width="32" height="32"
+      transform="scale( {{ svg_item.scale }} ) translate( {{ svg_item.translate_x }} {{ svg_item.translate_y }} ) rotate( {{ svg_item.rotate }} {{ svg_item.bounds_center_x }} {{ svg_item.bounds_center_y }} )"/>

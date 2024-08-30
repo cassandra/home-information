@@ -1,6 +1,12 @@
 from django.db import models
 
-from hi.apps.location.models import Location, LocationView, SvgPositionModel, SvgPathModel
+from hi.apps.common.svg_models import SvgItem
+from hi.apps.location.models import (
+    Location,
+    LocationView,
+    SvgPositionModel,
+    SvgPathModel,
+)
 from hi.integrations.core.models import IntegrationIdModel
 
 from .enums import (
@@ -51,6 +57,10 @@ class Entity( IntegrationIdModel ):
     
     def __repr__(self):
         return self.__str__()
+    
+    @property
+    def html_id(self):
+        return f'hi-entity-{self.id}'
     
     @property
     def entity_type(self):
@@ -172,7 +182,7 @@ class EntityState(models.Model):
     )
     value_range = models.TextField(
         'Value Range',
-        null = False, blank = False,
+        null = True, blank = True,
     )
     units = models.CharField(
         'Units',
@@ -296,7 +306,21 @@ class EntityPosition( SvgPositionModel ):
         indexes = [
             models.Index( fields=[ 'location', 'entity' ] ),
         ]
-        
+
+    @property
+    def svg_item(self):
+        return SvgItem(
+            html_id = f'hi-entity-{self.entity.id}',
+            template_name = self.entity.entity_type.svg_icon_template_name,
+            position_x = float( self.svg_x ),
+            position_y = float( self.svg_y ),
+            bounding_box = self.entity.entity_type.svg_bounding_box,
+            # rotate = float( self.svg_rotation ),
+            # scale = float( self.svg_scale ),
+            rotate = 5,
+            scale = 4.0,
+        )
+            
 
 class EntityPath( SvgPathModel ):
     """
@@ -339,13 +363,13 @@ class EntityView(models.Model):
 
     entity = models.ForeignKey(
         Entity,
-        related_name = 'location_views',
+        related_name = 'entity_views',
         verbose_name = 'Entity',
         on_delete = models.CASCADE,
     )
     location_view = models.ForeignKey(
         LocationView,
-        related_name = 'entities',
+        related_name = 'entity_views',
         verbose_name = 'Location',
         on_delete = models.CASCADE,
     )
