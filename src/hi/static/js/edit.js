@@ -1,4 +1,6 @@
 (function() {
+    const DEBUG = true;
+
     window.Hi = window.Hi || {};
 
     const HiEdit = {
@@ -9,77 +11,160 @@
     
     window.Hi.edit = HiEdit;
 
-    const DEBUG = true;
-    const clickThreshold = 300; // Adjust the threshold as needed (in milliseconds)
+    const locationViewAreaSelector = '#hi-location-view-main';
+    const baseSvgSelector = '#hi-location-view-main > svg';
+
+    let clickStart = null;
+    let clickTimeout = null;
+    const doubleClickDelayMs = 300;
+
+    let isDragging = false;
     let dragData = null;
-	
-    $(document).on('mousedown', function(event) {
-	startDrag( event );
-	
-    });
-    $(document).on('mousemove', function(event) {
-	updateDrag( event );
-    });
-    $(document).on('mouseup', function() {
-	endDrag( event );
-    });
-    $(document).on('keydown', function(event) {
-        console.log(`Key down: ${event.key}`);
-    });
-    $(document).on('keyup', function(event) {
-        console.log(`Key up: ${event.key}`);
+    const dragThreshold = 3;
+
+    $(document).ready(function() {
+	$(document).on('mousedown', locationViewAreaSelector, function(event) {
+	    isDragging = false;
+	    clickStart = {
+		x: event.clientX,
+		y: event.clientY,
+		time: Date.now()
+	    }
+	    createDragData( event );
+	});
+	$(document).on('mousemove', locationViewAreaSelector, function(event) {
+	    if ( ! dragData ) {
+		return;
+	    }
+	    const distanceX = Math.abs( event.clientX - clickStart.x );
+	    const distanceY = Math.abs( event.clientY - clickStart.y );
+	    
+	    if ( isDragging || ( distanceX > dragThreshold ) || ( distanceY > dragThreshold )) {
+		isDragging = true;
+		updateDrag(event);
+	    }
+	});
+	$(document).on('mouseup', locationViewAreaSelector, function(event) {
+	    if ( isDragging ) {
+		endDrag( event );
+		return;
+	    }
+	    dragData = null;
+	    
+	    if ( clickTimeout ) {
+		const clickEndTime = Date.now();
+		const elapsedTime = clickEndTime - clickStart.time;
+		console.log( `Click Elapsed: ${elapsedTime}` );
+		clearTimeout( clickTimeout );
+		clickTimeout = null;
+		handleDoubleClick( event );
+	    } else {
+		clickTimeout = setTimeout(() => {
+		    const clickEndTime = Date.now();
+		    const elapsedTime = clickEndTime - clickStart.time;
+		    console.log( `Click Elapsed: ${elapsedTime}` );
+		    handleClick( event );
+		    clickTimeout = null;
+		}, doubleClickDelayMs );
+	    }
+	});
+	$(document).on('keydown', locationViewAreaSelector, function(event) {
+	    handleKeyDown( event );
+	});
+	$(document).on('keyup', locationViewAreaSelector, function(event) {
+	    handleKeyUp( event );
+	});
     });
 
-    function startDrag( event ) {
-        displayEventInfo( event );
+    function handleClick( event ) {
+        displayEventInfo( 'Click', event );
         displayElementInfo( 'Event Target', $(event.target) );
 
 	const enclosingSvgGroup = $(event.target).closest('g');
-	if ( enclosingSvgGroup.length > 0 ) {
-	    dragData = {};
-	    dragData.element = enclosingSvgGroup;
-            displayElementInfo( 'Drag Element', dragData.element );
-	
-	    dragData.startTime = Date.now();
-
-	    dragData.baseSvg = $('#hi-location-view-main > svg');
-	    displayElementInfo( 'Base SVG', dragData.baseSvg );
-
-            let transform = dragData.element.attr('transform') || '';
-            let { scale, translate, rotate } = getTransformValues( transform );
-            let svgPoint = toSvgPoint( dragData.baseSvg[0], event.clientX, event.clientY );
-
-	    dragData.offsetSvgX = (svgPoint.x / scale.x) - translate.x;
-	    dragData.offsetSvgY = (svgPoint.y / scale.y) - translate.y;
-
-	    dragData.svgCenter = getSvgCenterPoint( dragData.element, dragData.baseSvg[0] );
-	    
-	    dragData.scale = scale;
-	    dragData.rotate = rotate;
-
-	    if ( DEBUG ) {
-		console.log( `Drag Start:
-    SVG Cursor Point: ( ${svgPoint.x}, ${svgPoint.y} ), 
-    SVG Cursor Offset: ( ${dragData.offsetSvgX}, ${dragData.offsetSvgY} ),
-    SVG Center Point: ( ${dragData.svgCenter.x}, ${dragData.svgCenter.y} )`); 
-	    }
+	if ( enclosingSvgGroup.length < 1 ) {
+	    return;
 	}
+        displayElementInfo( 'SVG Target Element', enclosingSvgGroup );
+	
+    }
+    
+    function handleDoubleClick( event ) {
+        displayEventInfo( 'Double Click', event );
+        displayElementInfo( 'Event Target', $(event.target) );
+
+	const enclosingSvgGroup = $(event.target).closest('g');
+	if ( enclosingSvgGroup.length < 1 ) {
+	    return;
+	}
+        displayElementInfo( 'SVG Target Element', enclosingSvgGroup );
+	
+    }
+
+    function handleKeyDown( event ) {
+        displayEventInfo( 'Key Down', event );
+    }
+
+    function handleKeyUp( event ) {
+        displayEventInfo( 'Key Up', event );
+    }
+    
+    function createDragData( event ) {
+        displayEventInfo( 'Create Drag', event );
+        displayElementInfo( 'Event Target', $(event.target) );
+
+	const enclosingSvgGroup = $(event.target).closest('g');
+	if ( enclosingSvgGroup.length < 1 ) {
+	    return;
+	}
+
+	const dragElement = enclosingSvgGroup;
+        displayElementInfo( 'Drag Element', dragElement );
+	
+	const baseSvgElement = $(baseSvgSelector);
+	displayElementInfo( 'Base SVG', baseSvgElement );
+
+        let transform = dragElement.attr('transform') || '';
+        let { scale, translate, rotate } = getTransformValues( transform );
+        let cursorSvgPoint = toSvgPoint( baseSvgElement, event.clientX, event.clientY );
+
+	const cursorSvgOffset = {
+	    x : (cursorSvgPoint.x / scale.x) - translate.x,
+	    y : (cursorSvgPoint.y / scale.y) - translate.y
+	}
+
+	dragData = {
+	    element: dragElement,
+	    baseSvgElement: baseSvgElement,
+	    cursorSvgOffset: cursorSvgOffset,
+	    elementSvgCenterPoint: getSvgCenterPoint( dragElement, baseSvgElement ),
+	    originalSvgScale: scale,
+	    originalSvgRotate: rotate,
+	    
+	}
+	
+	if ( DEBUG ) {
+	    console.log( `Drag Start:
+    SVG Cursor Point: ( ${cursorSvgPoint.x}, ${cursorSvgPoint.y} ), 
+    SVG Cursor Offset: ( ${dragData.cursorSvgOffset.x}, ${dragData.cursorSvgOffset.y} ),
+    SVG Center Point: ( ${dragData.elementSvgCenterPoint.x}, ${dragData.elementSvgCenterPoint.y} )`); 
+	}
+	
     }
     
     function updateDrag( event ) {
         if ( dragData == null ) {
 	    return;
 	}
-        displayEventInfo( event );
+        displayEventInfo( 'Update Drag', event );
         displayElementInfo( 'Drag Element', dragData.element );
 
-        let svgPoint = toSvgPoint( dragData.baseSvg[0], event.clientX, event.clientY );
+        let cursorSvgPoint = toSvgPoint( dragData.baseSvgElement, event.clientX, event.clientY );
 
-	let scale = dragData.scale;
-	let rotate = dragData.rotate
+	let scale = dragData.originalSvgScale;
+	let rotate = dragData.originalSvgRotate
 	
-        let newX = (svgPoint.x / scale.x) - dragData.offsetSvgX;
-        let newY = (svgPoint.y / scale.y) - dragData.offsetSvgY;
+        let newX = (cursorSvgPoint.x / scale.x) - dragData.cursorSvgOffset.x;
+        let newY = (cursorSvgPoint.y / scale.y) - dragData.cursorSvgOffset.y;
 
         let transform = dragData.element.attr('transform') || '';
 
@@ -87,13 +172,13 @@
 
         dragData.element.attr('transform', newTransform);	    
 
-	dragData.svgCenter = getSvgCenterPoint( dragData.element, dragData.baseSvg[0] );
+	dragData.elementSvgCenterPoint = getSvgCenterPoint( dragData.element, dragData.baseSvgElement );
 	
 	if ( DEBUG ) {
 	    console.log( `Drag Update:
-    SVG Cursor Point: ( ${svgPoint.x}, ${svgPoint.y} ),
+    SVG Cursor Point: ( ${cursorSvgPoint.x}, ${cursorSvgPoint.y} ),
     TRANSFORM Result: ${newTransform},
-    SVG Center Point: ( ${dragData.svgCenter.x}, ${dragData.svgCenter.y} )`); 
+    SVG Center Point: ( ${dragData.elementSvgCenterPoint.x}, ${dragData.elementSvgCenterPoint.y} )`); 
 	}
     }
     
@@ -102,16 +187,9 @@
 	    return;
 	}
 	
-        displayEventInfo( event );
+        displayEventInfo( 'End Drag', event );
         displayElementInfo( 'Drag Element', dragData.element );
-	
 	updateDrag( event );
-
-	let dragEndTime = Date.now();
-	const elapsedTime = dragEndTime - dragData.startTime;
-	if (elapsedTime <= clickThreshold) {
-	    console.log( `CLICK: ${elapsedTime}` );
-	}
 	dragData = null;
     }
  
@@ -173,20 +251,21 @@
     }
     
     function toSvgPoint( svgElement, clientX, clientY) {
-        let point = svgElement.createSVGPoint();
+        let point = svgElement[0].createSVGPoint();
         point.x = clientX;
         point.y = clientY;
-        return point.matrixTransform( svgElement.getScreenCTM().inverse());
+        return point.matrixTransform( svgElement[0].getScreenCTM().inverse());
     }
     
-    function displayEventInfo( event ) {
+    function displayEventInfo( label, event ) {
 	if ( ! DEBUG ) { return; }
 	if ( ! event ) {
             console.log( 'No element to display info for.' );
 	    return;
 	}
-        console.log( `Event: 
+        console.log( `${label} Event: 
     Type: ${event.type}, 
+    Key: ${event.key},
     Pos: ( ${event.clientX}, ${event.clientY} )` );
     }
     

@@ -69,6 +69,27 @@ class SvgPathStyle:
 
 @dataclass
 class SvgItem:
+    """
+    Encapsulates an iten to be inserted in a base SVG file.  A item is a
+    sequence of drawing commands stored in a template.  The shape that the
+    drawing commands define can be transformed to scale, roate and chnage
+    its position as provided.
+    """
+
+    # The SVG Transformations needed to move, scale and rotate SVG
+    # fragments are tricky and inconsistent.
+    #
+    #  - Scaling changes the coordinate system.
+    #  - Translation does not dirrectly move the item, but insteadmodifies
+    #    the coordinate systems zero point.
+    #  - Scaling has to be accounted for in the translation cooridinates.
+    #  - Scaling does *not* affect the rotate center point.
+    #  - Translation does not affect the roatate center point.
+    #  - Thus, though the transformation order matters, things that
+    #    come before can impact things that come after.
+    #  - Also, scaling does not always need to be compensated for.
+    
+    # Template name
     html_id        : str
     template_name  : str
     bounding_box   : SvgViewBox
