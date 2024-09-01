@@ -1,9 +1,5 @@
-{% if not svg_position_form.instance %}
-<div><em>Not positioned.</em></div>
-{% endif %}
-
-<form action="{% url 'edit_svg_position' html_id=html_id %}" method="post"
-      class="form" data-async="#hi-edit-svg-position">
+<form action="{% url 'edit_svg_position' html_id=svg_position_form.item_html_id %}" method="post"
+      class="form" data-async="#{{ svg_position_form.content_html_id }}-svg-position">
   {% csrf_token %}
   
   {% for hidden in svg_position_form.hidden_fields %}

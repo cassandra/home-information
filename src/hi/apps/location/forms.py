@@ -23,11 +23,25 @@ class SvgPositionForm(forms.Form):
         label = 'Angle',
         required = True,
     )
- 
+
+    def __init__( self, *args, item_html_id = None, **kwargs ):
+        super(SvgPositionForm, self).__init__(*args, **kwargs)
+        self._item_html_id = item_html_id
+        return
+
+    @property
+    def item_html_id(self):
+        return self._item_html_id
+    
+    @property
+    def content_html_id(self):
+        return f'{self.item_html_id}-svg-position'
+    
     @classmethod
     def from_svg_position_model( cls, svg_position_model : SvgPositionModel ):
         if svg_position_model:
             return cls(
+                item_html_id = svg_position_model.svg_item.html_id,
                 initial = {
                     'svg_x': svg_position_model.svg_x,
                     'svg_y': svg_position_model.svg_y,
@@ -36,6 +50,7 @@ class SvgPositionForm(forms.Form):
                 },
             )
         return cls(
+            item_html_id = svg_position_model.svg_item.html_id,
             initial = {
                 'svg_scale': Decimal( 1.0 ),
                 'svg_rotate': Decimal( 0.0 ),

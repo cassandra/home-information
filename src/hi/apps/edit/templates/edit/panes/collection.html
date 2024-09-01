@@ -1,9 +1,11 @@
 <h4>{{ collection.name }}</h4>
 
 <h5>Position</h5>
-<div id="hi-edit-svg-position">
-  {% include "edit/panes/svg_position.html" with html_id=collection.html_id svg_position_form=svg_position_form %}
+{% with collection.html_id as html_id %}
+<div id="{{ svg_position_form.content_html_id }}">
+  {% include "edit/panes/svg_position.html" %}
 </div>
+{% endwith %}
 
 <h5>Views</h5>
 <div id="hi-edit-collection-views">

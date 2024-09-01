@@ -141,21 +141,23 @@ class EditSvgPositionView( View, EditViewMixin ):
         else:
             raise NotImplementedError( 'Not yet handling unknown edit detail type.' )
 
-        svg_position_form = SvgPositionForm( request.POST )
+        svg_position_form = SvgPositionForm(
+            request.POST,
+            item_html_id = svg_position_model.svg_item.html_id,
+        )
         if svg_position_form.is_valid():
             svg_position_form.to_svg_position_model( svg_position_model )
             svg_position_model.save()
 
         svg_position_item = svg_position_model.svg_item            
         context = {
-            'html_id': svg_position_item.html_id,
             'svg_position_form': svg_position_form,
         }
         template = get_template('edit/panes/svg_position.html')
         content = template.render( context, request = request )
 
         insert_map = {
-            DIVID['EDIT_SVG_POSITION']: content,
+            svg_position_form.content_html_id: content,
         }
         set_attributes_map = {
             svg_position_item.html_id: {
