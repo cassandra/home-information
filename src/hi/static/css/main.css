@@ -174,3 +174,7 @@ a.underline:visited {
     height: auto;
     display: block;
 }    
+
+svg .highlighted {
+    filter: drop-shadow(0 0 10px red);
+}

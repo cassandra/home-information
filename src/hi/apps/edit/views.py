@@ -84,7 +84,7 @@ class EditDetailsView( View, EditViewMixin ):
         content = template.render( context, request = request )
         
         insert_map = {
-            DIVID['EDIT_ENTITY']: content,
+            DIVID['EDIT_ITEM']: content,
         }
         return antinode.response(
             insert_map = insert_map,
@@ -112,7 +112,7 @@ class EditDetailsView( View, EditViewMixin ):
         content = template.render( context, request = request )
         
         insert_map = {
-            DIVID['EDIT_COLLECTION']: content,
+            DIVID['EDIT_ITEM']: content,
         }
         return antinode.response(
             insert_map = insert_map,

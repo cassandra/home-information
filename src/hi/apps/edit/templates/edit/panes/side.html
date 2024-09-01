@@ -7,9 +7,11 @@
     </a>
   </div>
 </div>
-<div id="hi-edit-entity">
+<div id="hi-edit-item">
   {% if entity %}
   {% include "edit/panes/entity.html" %}
+  {% elif collection %}
+  {% include "edit/panes/collection.html" %}
   {% else %}
   <div><em>Click to see details.</em></div>
   {% endif %}

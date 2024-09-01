@@ -13,11 +13,6 @@ DIVID = {
 
     # Editing
     'EDIT_SIDE': 'hi-edit-side-content',
-    'EDIT_ENTITY': 'hi-edit-entity',
-    'EDIT_COLLECTION': 'hi-edit-collection',
-    'EDIT_ENTITY_VIEWS': 'hi-edit-entity-views',
-    'EDIT_ENTITY_ATTRIBUTES': 'hi-edit-entity-attributes',
-    'EDIT_ENTITY_SENSORS': 'hi-edit-entity-sensors',
-    'EDIT_ENTITY_CONTROLLERS': 'hi-edit-entity-controllers',
+    'EDIT_ITEM': 'hi-edit-item',
         
 }

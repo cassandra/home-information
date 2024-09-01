@@ -15,6 +15,7 @@
     {% endfor %}
     
     {% for collection_position in location_view_data.collection_positions %}
+    {% include "location/svg_position_item.html" with svg_position_item=collection_position.svg_item %}
     {% endfor %}
 
   </svg>

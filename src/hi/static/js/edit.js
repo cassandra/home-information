@@ -22,6 +22,14 @@
     let dragData = null;
     const dragThreshold = 3;
 
+    let lastMousePosition = { x: 0, y: 0 };
+    let itemEditState = {
+	currentElement: null,
+	mode: 'move',
+	scaleStart: 1.0,
+	rotateStart: 0.0,
+    }
+    
     $(document).ready(function() {
 	$(document).on('mousedown', locationViewAreaSelector, function(event) {
 	    isDragging = false;
@@ -68,10 +76,33 @@
 		}, doubleClickDelayMs );
 	    }
 	});
-	$(document).on('keydown', locationViewAreaSelector, function(event) {
-	    handleKeyDown( event );
+	$(document).on('mousemove', function(event) {
+	    const currentMousePosition = {
+		x: event.pageX,
+		y: event.pageY
+	    };
+	    if ( itemEditState.mode == 'scale' ) {
+		itemEditScaleUpdate( currentMousePosition );
+	    } else if ( itemEditState.mode == 'rotate' ) {
+		itemEditRotateUpdate( currentMousePosition );
+	    }
+		
+            lastMousePosition = currentMousePosition;
+	});	
+	$(document).on('keydown', function(event) {
+	    const targetArea = $(locationViewAreaSelector);
+            const targetOffset = targetArea.offset();
+            const targetWidth = targetArea.outerWidth();
+            const targetHeight = targetArea.outerHeight();
+	    
+            if (lastMousePosition.x >= targetOffset.left && 
+		lastMousePosition.x <= targetOffset.left + targetWidth &&
+		lastMousePosition.y >= targetOffset.top &&
+		lastMousePosition.y <= targetOffset.top + targetHeight) {
+		handleKeyDown(event);
+            }	
 	});
-	$(document).on('keyup', locationViewAreaSelector, function(event) {
+	$(document).on('keyup', function(event) {
 	    handleKeyUp( event );
 	});
     });
@@ -91,6 +122,11 @@
 	    return;
 	}
 
+	itemEditState.currentElement = enclosingSvgGroup;
+	
+	$('.draggable').removeClass('highlighted');
+        $(enclosingSvgGroup).addClass('highlighted');
+	
         AN.get( `/edit/details/${svgItemId}` );
     }
     
@@ -105,9 +141,45 @@
         displayElementInfo( 'SVG Target Element', enclosingSvgGroup );
 	
     }
-
+    
     function handleKeyDown( event ) {
         displayEventInfo( 'Key Down', event );
+
+	if ( ! itemEditState.currentElement ) {
+	    return;
+	}
+
+	if ( event.key == 's' ) {
+	    itemEditRotateAbort();
+	    itemEditScaleStart();
+	    itemEditState.mode = 'scale';
+	    
+	} else if ( event.key == 'r' ) {
+	    itemEditScaleAbort();
+	    itemEditRotateStart();
+	    itemEditState.mode = 'rotate';	    
+	    
+	} else if ( event.key == 'Escape' ) {
+	    itemEditScaleAbort();
+	    itemEditRotateAbort();
+	    itemEditState.mode = 'move';
+	    
+	} else if ( event.key == 'Enter' ) {
+	    if ( itemEditState.mode == 'scale' ) {
+		itemEditScaleApply();
+	    }
+	    else if ( itemEditState.mode == 'rotate' ) {
+		itemEditRotateApply();
+	    } else {
+		return;
+	    }
+	    itemEditState.mode = 'move';
+	} else {
+	    return;
+	}
+	
+	event.stopPropagation();
+	event.preventDefault();   		
     }
 
     function handleKeyUp( event ) {
@@ -240,7 +312,10 @@
             if (rotateValues.length === 3) {
 		rotate.cx = rotateValues[1];
 		rotate.cy = rotateValues[2];
-            }
+            } else {
+		rotate.cx = 0;
+		rotate.cy = 0;
+	    }
 	}
 
 	if ( DEBUG ) {
@@ -250,6 +325,97 @@
 	}
 	
 	return { scale, translate, rotate };
+    }
+
+    function updateSvgTransform( element, scale, translate, rotate ) {
+        let newTransform = `scale(${scale.x} ${scale.y}) translate(${translate.x}, ${translate.y}) rotate(${rotate.angle}, ${rotate.cx}, ${rotate.cy})`;
+        element.attr('transform', newTransform);	    
+    }
+    
+    function saveSvgPosition( element ) {
+
+        let transform = element.attr('transform');
+        let { scale, translate, rotate } = getTransformValues( transform );
+
+	const baseSvgElement = $(baseSvgSelector);
+	const center = getSvgCenterPoint( element, baseSvgElement );
+
+	let svgItemId = element.attr('id');
+	data = {
+	    svg_x: center.x,
+	    svg_y: center.y,
+	    svg_scale: scale.x,
+	    svg_rotate: rotate.angle,
+	};
+	AN.post( `/edit/svg/position/${svgItemId}`, data );
+    }
+    
+    function itemEditScaleStart() {
+	console.log( 'Scale Start' );
+        let transform = itemEditState.currentElement.attr('transform');
+        let { scale, translate, rotate } = getTransformValues( transform );
+	itemEditState.scaleStart = scale;
+    }
+
+    function itemEditRotateStart() {
+        let transform = itemEditState.currentElement.attr('transform');
+        let { scale, translate, rotate } = getTransformValues( transform );
+	itemEditState.rotateStart = rotate;
+    }
+
+    function itemEditScaleUpdate( currentMousePosition ) {
+	console.log( 'Scale Update' );
+	const deltaX = currentMousePosition.x - lastMousePosition.x;
+	const deltaY = currentMousePosition.y - lastMousePosition.y;
+	if (( deltaX <= dragThreshold ) && ( deltaY <= dragThreshold )) {
+	    return;
+	}
+        let transform = itemEditState.currentElement.attr('transform');
+        let { scale, translate, rotate } = getTransformValues( transform );
+	scale.x = scale.x + deltaX;
+	updateSvgTransform( itemEditState.currentElement, scale, translate, rotate );
+    }
+    
+    function itemEditRotateUpdate( currentMousePosition ) {
+	const deltaX = currentMousePosition.x - lastMousePosition.x;
+	const deltaY = currentMousePosition.y - lastMousePosition.y;
+	if (( deltaX <= dragThreshold ) && ( deltaY <= dragThreshold )) {
+	    return;
+	}
+        let transform = itemEditState.currentElement.attr('transform');
+        let { scale, translate, rotate } = getTransformValues( transform );
+	rotate.angle = rotate.angle + deltaX;
+	updateSvgTransform( itemEditState.currentElement, scale, translate, rotate );
+    }
+    
+    function itemEditScaleApply() {
+	console.log( 'Scale Apply' );
+	saveSvgPosition( itemEditState.currentElement );
+    }
+
+    function itemEditRotateApply() {
+	saveSvgPosition( itemEditState.currentElement );
+    }
+    
+    function itemEditScaleAbort() {
+	if ( itemEditState.mode != 'scale' ) {
+	    return;
+	}
+	console.log( 'Scale Abort' );
+        let transform = itemEditState.currentElement.attr('transform');
+        let { scale, translate, rotate } = getTransformValues( transform );
+	scale = itemEditState.scaleStart;
+	updateSvgTransform( itemEditState.currentElement, scale, translate, rotate );
+    }
+
+    function itemEditRotateAbort() {
+	if ( itemEditState.mode != 'rotate' ) {
+	    return;
+	}
+        let transform = itemEditState.currentElement.attr('transform');
+        let { scale, translate, rotate } = getTransformValues( transform );
+	rotate = itemEditState.rotateStart;
+	updateSvgTransform( itemEditState.currentElement, scale, translate, rotate );
     }
 
     function getSvgCenterPoint( element, svgElement ) {

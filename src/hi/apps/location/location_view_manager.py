@@ -36,7 +36,7 @@ class LocationViewManager(Singleton):
             collection = collection_view.collection
             collection_position = collection.positions.filter( location = location ).first()
             if collection_position:
-                collection_positions.append( collection )
+                collection_positions.append( collection_position )
             else:
                 unpositioned_collections.append( collection )
             continue

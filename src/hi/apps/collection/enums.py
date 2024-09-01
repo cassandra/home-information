@@ -4,12 +4,18 @@ from hi.apps.common.svg_models import SvgViewBox
 
 class CollectionType(LabeledEnum):
 
-    DEFAULT   = ( 'Default', '' )
-    ZONE      = ( 'Zone', '' )
+    APPLIANCES   = ( 'Appliances', '' )
+    DEVICES      = ( 'Devices', '' )
+    ELECTRONICS  = ( 'Electronics', '' )
+    GARDENING    = ( 'Gardening', '' )
+    LANDSCAPING  = ( 'Landscaping', '' )
+    TOOLS        = ( 'Tools', '' )
+    OTHER        = ( 'Other', '' )
+    ZONE         = ( 'Zone', '' )
 
     @classmethod
     def default(cls):
-        return cls.DEFAULT
+        return cls.OTHER
 
     @property
     def svg_icon_bounding_box(self):
