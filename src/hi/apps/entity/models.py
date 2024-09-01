@@ -318,10 +318,8 @@ class EntityPosition( SvgPositionModel ):
             position_x = float( self.svg_x ),
             position_y = float( self.svg_y ),
             bounding_box = self.entity.entity_type.svg_icon_bounding_box,
-            # rotate = float( self.svg_rotate ),
-            # scale = float( self.svg_scale ),
-            rotate = 0,
-            scale = 4.0,
+            rotate = float( self.svg_rotate ),
+            scale = float( self.svg_scale ),
         )
             
 

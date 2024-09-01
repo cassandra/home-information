@@ -124,7 +124,7 @@ class EditSvgPositionView( View, EditViewMixin ):
     def post(self, request, *args, **kwargs):
         if request.view_parameters.edit_mode == EditMode.OFF:
             raise NotImplementedError( 'Not yet handling bad edit context' )
-
+        
         ( item_type, item_id ) = self.parse_html_id( kwargs.get('html_id'))
 
         location_view = request.view_parameters.location_view

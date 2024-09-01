@@ -9,22 +9,18 @@ class SvgPositionForm(forms.Form):
 
     svg_x = forms.DecimalField(
         label = 'X',
-        decimal_places = 3,
         required = True,
     )
     svg_y = forms.DecimalField(
         label = 'Y',
-        decimal_places = 3,
         required = True,
     )
     svg_scale = forms.DecimalField(
         label = 'Scale',
-        decimal_places = 3,
         required = True,
     )
     svg_rotate = forms.DecimalField(
         label = 'Angle',
-        decimal_places = 3,
         required = True,
     )
  
@@ -47,9 +43,10 @@ class SvgPositionForm(forms.Form):
         )
          
     def to_svg_position_model( self, svg_position_model : SvgPositionModel ):
-        svg_position_model.svg_x = self.svg_x
-        svg_position_model.svg_y = self.svg_y
-        svg_position_model.svg_scale = self.svg_scale
-        svg_position_model.svg_rotate = self.svg_rotate
+        cleaned_data = self.clean()
+        svg_position_model.svg_x = cleaned_data.get( 'svg_x' )
+        svg_position_model.svg_y = cleaned_data.get( 'svg_y' )
+        svg_position_model.svg_scale = cleaned_data.get( 'svg_scale' )
+        svg_position_model.svg_rotate = cleaned_data.get( 'svg_rotate' )
         return
     

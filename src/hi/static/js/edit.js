@@ -202,8 +202,8 @@
 	data = {
 	    svg_x: dragData.elementSvgCenterPoint.x,
 	    svg_y: dragData.elementSvgCenterPoint.y,
-	    svg_scale: dragData.originalSvgScale,
-	    svg_rotate: dragData.originalSvgRotate
+	    svg_scale: dragData.originalSvgScale.x,
+	    svg_rotate: dragData.originalSvgRotate.angle
 	};
 	AN.post( `/edit/svg/position/${svgItemId}`, data );
 

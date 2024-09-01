@@ -117,15 +117,15 @@
 	    });
 	},
 
-	post: function( url ) {
+	post: function( url, data ) {
 	    $.ajax({
 		type: 'POST',
 		url: url,
 		data: data,
 		async: true,
 		cache: false,
-		contentType: false,
-		processData: false,
+		contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+		processData: true,
 		
 		success: function(data, status, xhr) {
 		    asyncUpdateData( null, null, data, xhr );
