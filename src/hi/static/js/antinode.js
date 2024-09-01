@@ -61,7 +61,7 @@
 //
 //     onchange-async="true"
 //
-// If you define the javascript function "AN_handlePostAsyncUpdate()", this
+// If you define the javascript function "handlePostAsyncUpdate()", this
 // will be called after each async content update after all updated are
 // handled.
 //
@@ -96,6 +96,53 @@
 // synchronous refresh to ensure the latest version of the CSS and JS
 // assets are loaded.
 
+(function() {
+
+    const AN = {
+	get: function( url ) {
+	    $.ajax({
+		type: 'GET',
+		url: url,
+        
+		success: function(data, status, xhr) {
+		    asyncUpdateData( null, null, data, xhr );
+		    return false;
+		},
+		error: function (xhr, ajaxOptions, thrownError) {
+		    let http_code = xhr.status;
+		    let error_msg = thrownError;
+		    asyncUpdateData( null, null, xhr.responseText, xhr );
+		    return false;
+		} 
+	    });
+	},
+
+	post: function( url ) {
+	    $.ajax({
+		type: 'POST',
+		url: url,
+		data: data,
+		async: true,
+		cache: false,
+		contentType: false,
+		processData: false,
+		
+		success: function(data, status, xhr) {
+		    asyncUpdateData( null, null, data, xhr );
+		    return false;
+		},
+		error: function (xhr, ajaxOptions, thrownError) {
+		    let http_code = xhr.status;
+		    let error_msg = thrownError;
+		    asyncUpdateData( null, null, xhr.responseText, xhr );
+		    return false;
+		} 
+	    });
+	}
+    }
+    
+    window.AN = AN;
+
 //====================
 // The handle for forms that want to  trigger an ansynchonous (aka, ajax)
 // request.
@@ -104,7 +151,7 @@ function asyncSubmitHandler(event) {
     event.preventDefault();
     event.stopPropagation();
 
-    var $form = $(this);
+    let $form = $(this);
     return asyncSubmitHandlerHelper( $form );
 };
 
@@ -114,11 +161,11 @@ function asyncSubmitHandlerHelper( $form ) {
 	$form.find('button').prop('disabled', true);
     }
 
-    AN_handleHideShowIfNeeded( $form );
+    handleHideShowIfNeeded( $form );
 
-    var $target = getAsyncTarget( $form );
+    let $target = getAsyncTarget( $form );
 
-    var $mode = $form.attr('data-mode');
+    let $mode = $form.attr('data-mode');
     if ( ! $mode ) {
         $mode = 'insert';
     }
@@ -129,8 +176,8 @@ function asyncSubmitHandlerHelper( $form ) {
     // In case the last submit button data was saved.
     // (See: lastButtonClickHandler)
     //
-    var lastButtonName = $form.data('lastSubmitButtonName');
-    var lastButtonValue = null;
+    let lastButtonName = $form.data('lastSubmitButtonName');
+    let lastButtonValue = null;
     if ( lastButtonName ) {
         lastButtonValue = $form.data('lastSubmitButtonValue');
 
@@ -142,16 +189,15 @@ function asyncSubmitHandlerHelper( $form ) {
         $form.removeData('lastSubmitButtonValue');
     }
     
-    var formData = null;
-    var processData = true;
-    var contentType = null;
-    var async = true;
-    var cache = true;
-
+    let formData = null;
+    let processData = true;
+    let contentType = null;
+    let async = true;
+    let cache = true;
 
     if (( $($form).attr('method') )
         && ( $($form).attr('method').toUpperCase() == 'GET' )) {
-        var formData = $form.serializeArray();
+        let formData = $form.serializeArray();
         if ( lastButtonName ) {
             formData.push( { name: lastButtonName, value: lastButtonValue } );
         }
@@ -169,7 +215,7 @@ function asyncSubmitHandlerHelper( $form ) {
     }
 
     if ( $($form).attr('enctype') == 'multipart/form-data' ) {
-        var dummy = 0;
+        let dummy = 0;
     }
 
     $.ajax({
@@ -197,8 +243,8 @@ function asyncSubmitHandlerHelper( $form ) {
         // to use that to repopulate the content in the page.
 
         error: function (xhr, ajaxOptions, thrownError) {
-            var http_code = xhr.status;
-            var error_msg = thrownError;
+            let http_code = xhr.status;
+            let error_msg = thrownError;
             asyncUpdateData( $target, $mode, xhr.responseText, xhr );
             return false;
         }
@@ -215,9 +261,9 @@ function asyncClickHandler(event) {
     event.preventDefault();
     event.stopPropagation();
 
-    var $anchor = $(this);
+    let $anchor = $(this);
 
-    AN_handleHideShowIfNeeded( $anchor );
+    handleHideShowIfNeeded( $anchor );
 
     // Special case for bootstrap dropdown menus that have data-async links
     // in them.  Since we are suppressing the event propagation here, we
@@ -228,13 +274,13 @@ function asyncClickHandler(event) {
     $('.an-async-hide').hide();
     $('.an-async-show').show();
     
-    var $target = getAsyncTarget( $anchor );
-    var $mode = $anchor.attr('data-mode');
+    let $target = getAsyncTarget( $anchor );
+    let $mode = $anchor.attr('data-mode');
     if ( ! $mode ) {
         $mode = 'insert';
     }
 
-    var url = $anchor.attr('href');
+    let url = $anchor.attr('href');
     if ( $anchor.attr('data-params') ) {
         url += '?' + $anchor.attr('data-params');
     }
@@ -257,8 +303,8 @@ function asyncClickHandler(event) {
             return false;
         },
         error: function (xhr, ajaxOptions, thrownError) {
-            var http_code = xhr.status;
-            var error_msg = thrownError;
+            let http_code = xhr.status;
+            let error_msg = thrownError;
             asyncUpdateData( $target, $mode, xhr.responseText, xhr );
             return false;
         } 
@@ -271,27 +317,27 @@ function asyncClickHandler(event) {
 //====================
 // For modal dialogs
 
-var AN_lastModalId = 0;
+let lastModalId = 0;
 
-function AN_getNewModal() {
-    AN_lastModalId += 1;
-    var htmlId = "antinode-modal-"+AN_lastModalId;
-    var htmlString = '<div id="'+htmlId+'" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true"></div>';
-    var modalObj = $.parseHTML(htmlString);
+function getNewModal() {
+    lastModalId += 1;
+    let htmlId = "antinode-modal-"+lastModalId;
+    let htmlString = '<div id="'+htmlId+'" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true"></div>';
+    let modalObj = $.parseHTML(htmlString);
     $('body').append( modalObj );
     return $(modalObj);
 };
 
 
 //====================
-function AN_handleHideShowIfNeeded( $anchor ) {
+function handleHideShowIfNeeded( $anchor ) {
 
-    var hide_selector = $anchor.attr('data-hide');
+    let hide_selector = $anchor.attr('data-hide');
     if ( hide_selector ) {
 	$(hide_selector).hide();
     }
 
-    var show_selector = $anchor.attr('data-show');
+    let show_selector = $anchor.attr('data-show');
     if ( show_selector ) {
 	$(show_selector).show();
     }
@@ -303,11 +349,11 @@ function AN_handleHideShowIfNeeded( $anchor ) {
 // Common for POST and GET to find the target node for returned content
 
 function getAsyncTarget( anchorNode ) {
-    var targetSelector = $(anchorNode).attr('data-async');
+    let targetSelector = $(anchorNode).attr('data-async');
 
     // Special case to allow us to create a modal for the content
     if ( targetSelector == "modal" ) {
-        return AN_getNewModal();
+        return getNewModal();
     }
     return $(targetSelector);
 };
@@ -316,10 +362,10 @@ function getAsyncTarget( anchorNode ) {
 //====================
 // The Async "loading" spinner
 
-function AN_insertLoadingImage() {
+function insertLoadingImage() {
     // N.B. The negative margins in the css should be half the width of the loading image.
-    var htmlString = '<div id="antinode-loader" style="display:none; position: absolute; top: 50%; left: 50%; margin-left: -64px; margin-top: -64px; z-index: 1020;"><img src="/static/img/antinode-loading.gif" alt="Page Loading Interstitial"/></div>';
-    var loadingObj = $.parseHTML(htmlString);
+    let htmlString = '<div id="antinode-loader" style="display:none; position: absolute; top: 50%; left: 50%; margin-left: -64px; margin-top: -64px; z-index: 1020;"><img src="/static/img/antinode-loading.gif" alt="Page Loading Interstitial"/></div>';
+    let loadingObj = $.parseHTML(htmlString);
     $('body').append( loadingObj );
     return;
 };
@@ -341,7 +387,7 @@ function asyncUpdateData( $target, $mode, data, xhr ) {
     // patterns, and each of these are encoded as a JSON document with
     // corresponding content type.
     
-    var ct = xhr.getResponseHeader("content-type") || "";
+    let ct = xhr.getResponseHeader("content-type") || "";
     
     if (ct.indexOf('html') > -1) {
      if ( $target ) {
@@ -355,7 +401,7 @@ function asyncUpdateData( $target, $mode, data, xhr ) {
      }
     }
     if (ct.indexOf('json') > -1) {
-     var json = data;
+     let json = data;
      
      // The response data might be text that has to be parsed into JSON
      // This raises an exception if data is already a JSON object.
@@ -382,7 +428,7 @@ function asyncUpdateDataFromWebsocket( json ) {
 
 //====================
 function asyncUpdateDataFromJson( $target, $mode, json ) {
-
+    
     // To allow the server to decide to redirect the page rather than
     // render async content.
     //
@@ -391,7 +437,7 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     // If they were different, we would have to check for both here.
     //
     if ( 'location' in json ) {
-	var url = json['location'];
+	let url = json['location'];
 	this.document.location.href = url;
 	return;
     }
@@ -427,8 +473,8 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     // be replaced.  This includes replacing the target element itself.
     //
     if ( 'replace' in json ) {
-        for ( var htmlId in json['replace'] ) {
-            var targetObj = $("#"+htmlId);
+        for ( let htmlId in json['replace'] ) {
+            let targetObj = $("#"+htmlId);
             targetObj.replaceWith( json['replace'][htmlId] ).show();
             handleNewContentAdded( targetObj );
         }
@@ -438,8 +484,8 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     // be changed.  This does not include the target element itself.
     //
     if ( 'insert' in json ) {
-        for ( var htmlId in json['insert'] ) {
-            var targetObj = $("#"+htmlId);
+        for ( let htmlId in json['insert'] ) {
+            let targetObj = $("#"+htmlId);
 	    targetObj.empty();
             targetObj.html( json['insert'][htmlId] ).show();
             handleNewContentAdded( targetObj );
@@ -450,10 +496,25 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     // be appended. This add it as the last child of the target tag id.
     //
     if ( 'append' in json ) {
-        for ( var htmlId in json['append'] ) {
-            var targetObj = $("#"+htmlId);
+        for ( let htmlId in json['append'] ) {
+            let targetObj = $("#"+htmlId);
             targetObj.append( json['append'][htmlId] ).show();
             handleNewContentAdded( targetObj );
+        }
+    }
+    
+    // This entry should be a map from html ids to content that should
+    // be appended. This add it as the last child of the target tag id.
+    //
+    if ( 'setAttributes' in json ) {
+        for ( let htmlId in json['setAttributes'] ) {
+	    let targetObj = $("#"+htmlId);
+	    let attrMap = json['setAttributes'][htmlId];
+            for ( let attrName in attrMap ) {
+		let attrValue = attrMap[attrName];
+		targetObj.attr( attrName, attrValue );
+		handleNewContentAdded( targetObj );
+	    }
         }
     }
     
@@ -462,7 +523,7 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     afterAsyncRender();
     
     if ( 'modal' in json ) {
-        var targetObj = AN_getNewModal();
+        let targetObj = getNewModal();
         targetObj.append( json['modal'] )
         showModal( targetObj );
     }
@@ -476,11 +537,11 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
 	window.scrollTo(0, 0);
     }
     
-    if ( typeof AN_handlePostAsyncUpdate === "function") {
-	AN_handlePostAsyncUpdate();
+    if ( typeof handlePostAsyncUpdate === "function") {
+	handlePostAsyncUpdate();
     }
 };
-
+        
 //====================
 function handleNewContentAdded( contentObj ) {
     doAutofocusIfNeeded( contentObj );
@@ -503,11 +564,11 @@ function beforeAsyncCall( $node ) {
 //====================
 // Things that need to run after asynchronous content is rendered
 
-var afterAsyncRenderFunctionList = [];
+let afterAsyncRenderFunctionList = [];
     
 function afterAsyncRender() {
 
-    for ( var i = 0; i < afterAsyncRenderFunctionList.length; i++ ) {
+    for ( let i = 0; i < afterAsyncRenderFunctionList.length; i++ ) {
         afterAsyncRenderFunctionList[i]();
     }
     restoreScrollBarPositions();
@@ -524,7 +585,7 @@ function addAfterAsyncRenderFunction( func_name ) {
 // (for both form submissions and click events). Restoring them should come
 // after all async content is rendered.
 //
-var scrollTopMap = {};
+let scrollTopMap = {};
 
 function saveScrollBarPositions() {
 
@@ -532,7 +593,7 @@ function saveScrollBarPositions() {
     // save the position.
     //
     $('.preserve-scroll-bar').each( function( index ) {
-        var id = $(this).attr('id');
+        let id = $(this).attr('id');
         if ( id ) {
             scrollTopMap[id] = $(this).scrollTop();
         }
@@ -541,7 +602,7 @@ function saveScrollBarPositions() {
 };
 
 function restoreScrollBarPositions() {
-    for ( var id in scrollTopMap ) {
+    for ( let id in scrollTopMap ) {
         $('#'+id).scrollTop( scrollTopMap[id] );
     }
 };
@@ -564,25 +625,25 @@ function restoreScrollBarPositions() {
 // properly updated to be null and force it to null so that all future
 // dialogs are not blocked.
 //
-var AN_modalHideStartMs = null;
+let modalHideStartMs = null;
 
 // When a modal show event happens while the hide event is active, we will
 // stash the modal object to be show in this global variable so that when
 // the hide event triggers, we know that we need to re-show the new modal
 // content.
 //
-var AN_deferredModalShowObj = null;
+let deferredModalShowObj = null;
 
 // This is the safety check to make sure missing hidden.bsmodal events do
 // not prevent modals from showing forever (or page refresh really).
 //
 function checkModalHideState() {
-    if ( AN_modalHideStartMs ) {
-        var d = new Date();
-        var nowMs = d.getTime();
-        var diffMs = nowMs - AN_modalHideStartMs;
+    if ( modalHideStartMs ) {
+        let d = new Date();
+        let nowMs = d.getTime();
+        let diffMs = nowMs - modalHideStartMs;
         if ( diffMs > 5000 ) {
-            AN_modalHideStartMs = null;
+            modalHideStartMs = null;
         }
     }
 };
@@ -591,7 +652,7 @@ function checkModalHideState() {
 // it is contained in a modal, then we will close the modal.
 //
 function hideModalIfNeeded( eventObj ) {
-    var modalObj = $(eventObj).closest('.modal');
+    let modalObj = $(eventObj).closest('.modal');
     if ( modalObj.length > 0 ) {
         hideModal( modalObj.first() );
     }
@@ -601,7 +662,7 @@ function hideModalIfNeeded( eventObj ) {
 // show it if it is contained in a modal.
 //
 function showModalIfNeeded( targetObj ) {
-    var modalObj = $(targetObj).closest('.modal');
+    let modalObj = $(targetObj).closest('.modal');
     if ( modalObj.length > 0 ) {
         showModal( modalObj.first() );
     }
@@ -612,8 +673,8 @@ function showModal( modalObj ) {
         return;
     }
     checkModalHideState();
-    if ( AN_modalHideStartMs ) {
-        AN_deferredModalShowObj = modalObj;
+    if ( modalHideStartMs ) {
+        deferredModalShowObj = modalObj;
     } else {
         $(modalObj).modal("show");
     }
@@ -625,27 +686,27 @@ function hideModal( modalObj ) {
     }
     // Note that the globally registered hidden.bs.modal event will be
     // called once the hide is finished, and that will flip
-    // AN_modalHideStartMs to 'false'.
+    // modalHideStartMs to 'false'.
     //
-    var d = new Date();
-    AN_modalHideStartMs = d.getTime();
+    let d = new Date();
+    modalHideStartMs = d.getTime();
     $(modalObj).modal("hide");
 
 };
 
 function handleModalHiddenEvent( modalObj ) {
     try {
-        AN_modalHideStartMs = null;
-        if ( AN_deferredModalShowObj ) {
-            showModal( AN_deferredModalShowObj );
+        modalHideStartMs = null;
+        if ( deferredModalShowObj ) {
+            showModal( deferredModalShowObj );
         } 
         
     } catch (e) {
         console.error('Problem handling modal hidden event');
     }
     finally {
-        AN_modalHideStartMs = null;
-        AN_deferredModalShowObj = null;
+        modalHideStartMs = null;
+        deferredModalShowObj = null;
         $(modalObj).remove();
     }
 };
@@ -668,8 +729,8 @@ function asyncRedirect( $target, $mode, url ) {
             asyncUpdateData( $target, $mode, data, xhr );
         },
         error: function (xhr, ajaxOptions, thrownError) {
-            var http_code = xhr.status;
-            var error_msg = thrownError;
+            let http_code = xhr.status;
+            let error_msg = thrownError;
             asyncUpdateData( $target, $mode, xhr.responseText, xhr );
         }
     });
@@ -690,7 +751,7 @@ $.ajaxSetup({
             return;
         }
 
-        var csrftoken = Cookies.get('csrftoken');
+        let csrftoken = Cookies.get('csrftoken');
         if ( ! this.crossDomain ) {
             xhr.setRequestHeader("X-CSRFToken", csrftoken);
         }
@@ -706,7 +767,7 @@ $.ajaxSetup({
 // will pass that along with the rest of the form contents.
 //
 function lastButtonClickHandler(event) {
-    var theForm = $(this).closest('form');
+    let theForm = $(this).closest('form');
     $(theForm).data('lastSubmitButtonName', this.name);
     $(theForm).data('lastSubmitButtonValue', this.value);
 };
@@ -728,7 +789,7 @@ jQuery(function($) {
     // Always want to show some visual indication that an async request
     // is in progress.
     //
-    AN_insertLoadingImage();
+    insertLoadingImage();
 
     // These ensure that we'll pay attention to the special async attributes.
     //
@@ -740,7 +801,7 @@ jQuery(function($) {
     // This is to support auto-submitting from SELECT elements asnychronously.
     //
     $('body').on('change', 'select[onchange-async]', function() {
-        var $form = $(this.form);
+        let $form = $(this.form);
         return asyncSubmitHandlerHelper( $form );
     });
     
@@ -755,9 +816,9 @@ jQuery(function($) {
         $('body').find('[autofocus]').focus();
     });
 
-    var initial_modal_content = $('#antinode-initial-modal');
+    let initial_modal_content = $('#antinode-initial-modal');
     if ( initial_modal_content.length > 0 ) {
-	var targetObj = AN_getNewModal();
+	let targetObj = getNewModal();
         targetObj.append( initial_modal_content )
         showModal( targetObj );
     }
@@ -772,3 +833,4 @@ $(document)
         $('#antinode-loader').hide();
     });
 
+})();

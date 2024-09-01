@@ -303,8 +303,11 @@ class EntityPosition( SvgPositionModel ):
     class Meta:
         verbose_name = 'Entity Position'
         verbose_name_plural = 'Entity Positions'
-        indexes = [
-            models.Index( fields=[ 'location', 'entity' ] ),
+        constraints = [
+            models.UniqueConstraint(
+                fields = [ 'location', 'entity' ],
+                name = 'entity_position_location_entity',
+            ),
         ]
 
     @property
@@ -315,7 +318,7 @@ class EntityPosition( SvgPositionModel ):
             position_x = float( self.svg_x ),
             position_y = float( self.svg_y ),
             bounding_box = self.entity.entity_type.svg_icon_bounding_box,
-            # rotate = float( self.svg_rotation ),
+            # rotate = float( self.svg_rotate ),
             # scale = float( self.svg_scale ),
             rotate = 0,
             scale = 4.0,
@@ -354,8 +357,10 @@ class EntityPath( SvgPathModel ):
     class Meta:
         verbose_name = 'Entity Path'
         verbose_name_plural = 'Entity Paths'
-        indexes = [
-            models.Index( fields=[ 'location', 'entity' ] ),
+        constraints = [
+            models.UniqueConstraint(
+                fields = [ 'location', 'entity' ],
+                name = 'entity_path_location_entity', ),
         ]
 
         

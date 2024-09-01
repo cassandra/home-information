@@ -104,6 +104,12 @@ class CollectionPosition( SvgPositionModel ):
     class Meta:
         verbose_name = 'Collection Position'
         verbose_name_plural = 'Collection Positions'
+        constraints = [
+            models.UniqueConstraint(
+                fields = [ 'location', 'collection' ],
+                name = 'collection_position_location_entity',
+            ),
+        ]
 
     @property
     def svg_item(self):
@@ -113,7 +119,7 @@ class CollectionPosition( SvgPositionModel ):
             position_x = float( self.svg_x ),
             position_y = float( self.svg_y ),
             bounding_box = self.collection.collection_type.svg_icon_bounding_box,
-            rotate = float( self.svg_rotation ),
+            rotate = float( self.svg_rotate ),
             scale = float( self.svg_scale ),
         )
     

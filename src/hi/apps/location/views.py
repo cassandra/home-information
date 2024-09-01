@@ -4,7 +4,6 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.generic import View
 
-from hi.apps.api.api_translator import ApiTranslator
 from hi.apps.common.utils import is_ajax
 from hi.hi_grid_view import HiGridView
 
@@ -61,13 +60,9 @@ class LocationViewView( HiGridView ):
         location_view_data = LocationViewManager().get_location_view_data(
             location_view = location_view,
         )
-        svgOverlayData = ApiTranslator.toSvgOverlayData(
-            location_view_data = location_view_data,
-        )
         context = {
             'is_async_request': is_ajax( request ),
             'location_view_data': location_view_data,
-            'svgOverlayData': svgOverlayData,
         }
         return self.hi_grid_response( 
             request = request,

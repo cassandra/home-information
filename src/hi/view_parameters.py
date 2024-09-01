@@ -9,9 +9,11 @@ from .enums import EditMode
 class ViewParameters:
     
     location_view_id    : int       = None
-    edit_mode           : EditMode  = False
+    edit_mode           : EditMode  = None
     
     def __post_init__(self):
+        if self.edit_mode is None:
+            self.edit_mode = EditMode.default()
         self._location_view = None  # Lazy loaded
         return
 

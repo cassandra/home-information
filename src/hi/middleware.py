@@ -18,5 +18,6 @@ class ViewMiddleware:
 
     def _set_view_parameters( self, request ):
         request.view_parameters = ViewParameters.from_session( request )
+        request.is_editing = request.view_parameters.edit_mode.is_editing
         return
     

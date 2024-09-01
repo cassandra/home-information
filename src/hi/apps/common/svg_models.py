@@ -83,11 +83,11 @@ class SvgItem:
     #  - Translation does not dirrectly move the item, but insteadmodifies
     #    the coordinate systems zero point.
     #  - Scaling has to be accounted for in the translation cooridinates.
-    #  - Scaling does *not* affect the rotate center point.
-    #  - Translation does not affect the roatate center point.
+    #  - Translation does not affect the rotate center point.
+    #  - Scaling does not affect the rotate center point
     #  - Thus, though the transformation order matters, things that
     #    come before can impact things that come after.
-    #  - Also, scaling does not always need to be compensated for.
+    #  - Scaling does not always have to be taken into account.
     
     # Template name
     html_id        : str
@@ -98,6 +98,10 @@ class SvgItem:
     rotate         : float       = 0.0
     scale          : float       = 1.0
 
+    @property
+    def transform_str(self):
+        return f'scale( {self.scale} ) translate( {self.translate_x} {self.translate_y} ) rotate( {self.rotate} {self.bounds_center_x} {self.bounds_center_y} )'
+    
     @property
     def bounds_center_x(self):
         return self.bounding_box.x + ( self.bounding_box.width / 2.0 )
@@ -119,16 +123,3 @@ class SvgItem:
         if self.scale < 0.000001:
             return 0
         return ( self.position_y / self.scale ) - self.bounds_center_y
-
-    @property
-    def rotation_x(self):
-        if self.scale < 0.000001:
-            return 0
-        return ( self.position_x / self.scale )
-
-    @property
-    def rotation_y(self):
-        if self.scale < 0.000001:
-            return 0
-        return ( self.position_y / self.scale )
-    

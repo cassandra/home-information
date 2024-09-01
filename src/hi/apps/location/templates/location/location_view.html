@@ -1,21 +1,17 @@
 {% load common_template_helpers %}
 <div id="hi-location-view-main" class="hi-location-view">
-  <svg id="{{ location_view_data.location_view.html_id }}" xmlns="http://www.w3.org/2000/svg"
+  <svg id="{{ location_view_data.location_view.html_id }}"
+       xmlns="http://www.w3.org/2000/svg"
        viewBox="{{ location_view_data.location_view.svg_view_box }}"
-       transform="rotate({{ location_view_data.location_view.svg_rotation }} 0 0)">
+       width="100%" height="100%" preserveAspectRatio="xMidYMid meet"
+       transform="rotate({{ location_view_data.location_view.svg_rotate }} 0 0)">
     {% include_media_template location_view_data.location_view.location.svg_filename %}
 
     {% for entity_path in location_view_data.entity_paths %}
     {% endfor %}
 
     {% for entity_position in location_view_data.entity_positions %}
-    {% with entity_position.svg_item as svg_item %}
-    <g id="{{ svg_item.html_id }}"
-       class="draggable"
-       transform="scale( {{ svg_item.scale }} ) translate( {{ svg_item.translate_x }} {{ svg_item.translate_y }} ) rotate( {{ svg_item.rotate }} {{ svg_item.bounds_center_x }} {{ svg_item.bounds_center_y }} )">
-      {% include entity_position.svg_item.template_name %}
-    </g>
-    {% endwith %}
+    {% include "location/svg_position_item.html" with svg_position_item=entity_position.svg_item %}
     {% endfor %}
     
     {% for collection_position in location_view_data.collection_positions %}

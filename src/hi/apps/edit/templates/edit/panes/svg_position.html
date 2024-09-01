@@ -1,0 +1,46 @@
+{% if not svg_position_form.instance %}
+<div><em>Not positioned.</em></div>
+{% endif %}
+
+<form action="{% url 'edit_svg_position' html_id=html_id %}" method="post"
+      class="form" data-async="#hi-edit-svg-position">
+  {% csrf_token %}
+  
+  {% for hidden in svg_position_form.hidden_fields %}
+  {{ hidden }}
+  {% endfor %}
+
+  {% if svg_position_form.non_field_errors %}
+  <div class="non-field-errors alert alert-danger">
+    {% for err in svg_position_form.non_field_errors %}
+    <p class="form-error">{{ err }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="pt-4">
+    {{ svg_position_form.svg_x.label }}
+    {{ svg_position_form.svg_x }}
+    {{ svg_position_form.svg_x.errors }}
+  </div>
+
+  <div class="pt-4">
+    {{ svg_position_form.svg_y.label }}
+    {{ svg_position_form.svg_y }}
+    {{ svg_position_form.svg_y.errors }}
+  </div>
+
+  <div class="pt-4">
+    {{ svg_position_form.svg_scale.label }}
+    {{ svg_position_form.svg_scale }}
+    {{ svg_position_form.svg_scale.errors }}
+  </div>
+
+  <div class="pt-4">
+    {{ svg_position_form.svg_rotate.label }}
+    {{ svg_position_form.svg_rotate }}
+    {{ svg_position_form.svg_rotate.errors }}
+  </div>
+
+  <button type="submit" role="button" >SUBMIT</button>
+</form>

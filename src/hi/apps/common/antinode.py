@@ -58,6 +58,7 @@ def response_as_dict( main_content = None,
                       replace_map = None, 
                       insert_map = None, 
                       append_map = None,
+                      set_attributes_map = None,
                       modal_content = None,
                       push_url = None,
                       reset_scrollbar = False ):
@@ -91,6 +92,8 @@ def response_as_dict( main_content = None,
         response_dict['insert'] = insert_map
     if append_map is not None:
         response_dict['append'] = append_map
+    if set_attributes_map is not None:
+        response_dict['setAttributes'] = set_attributes_map
     if modal_content is not None:
         response_dict['modal'] = modal_content
     if push_url is not None:
@@ -104,19 +107,22 @@ def response( main_content = None,
               replace_map = None, 
               insert_map = None, 
               append_map = None,
+              set_attributes_map = None,
               modal_content = None,
               push_url = None,
               reset_scrollbar = False,
               status = 200 ):
     
-    response_dict = response_as_dict( main_content = main_content,
-                                      replace_map = replace_map,
-                                      insert_map = insert_map,
-                                      append_map = append_map,
-                                      modal_content = modal_content,
-                                      push_url = push_url,
-                                      reset_scrollbar = reset_scrollbar,
-                                      )
+    response_dict = response_as_dict(
+        main_content = main_content,
+        replace_map = replace_map,
+        insert_map = insert_map,
+        append_map = append_map,
+        set_attributes_map = set_attributes_map,
+        modal_content = modal_content,
+        push_url = push_url,
+        reset_scrollbar = reset_scrollbar,
+    )
     return http_response( response_dict, status=status )
 
     

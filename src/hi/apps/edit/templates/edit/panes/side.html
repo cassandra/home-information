@@ -1,1 +1,17 @@
-<h5>Edit Side</h5>
+<div id="hi-edit-side-content" class="d-flex justify-content-between">
+  <div class="h5">Editing</div>
+  <div class="">
+    <a href="{% url 'edit_end' %}"
+       class="btn btn-tertiary" role="button" >
+      EXIT
+    </a>
+  </div>
+</div>
+<div id="hi-edit-entity">
+  {% if entity %}
+  {% include "edit/panes/entity.html" %}
+  {% else %}
+  <div><em>Click to see details.</em></div>
+  {% endif %}
+</div>
+

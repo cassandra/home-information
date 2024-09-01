@@ -1,3 +1,6 @@
+{% if request.is_editing %}
+{% include "edit/panes/side.html" %}
+{% else %}
 <div class="border-left" >
   SIDE PANEL
 
@@ -16,3 +19,4 @@
   </div>
 
 </div>
+{% endif %}

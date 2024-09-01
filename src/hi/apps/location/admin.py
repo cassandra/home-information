@@ -39,7 +39,7 @@ class LocationViewAdmin(admin.ModelAdmin):
         'name',
         'location',
         'svg_view_box_str',
-        'svg_rotation',
+        'svg_rotate',
         'order_id',
         'created_datetime',
         'updated_datetime',

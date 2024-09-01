@@ -85,7 +85,13 @@
 	    return;
 	}
         displayElementInfo( 'SVG Target Element', enclosingSvgGroup );
-	
+
+	const svgItemId = enclosingSvgGroup.attr('id');
+	if ( ! svgItemId ) {
+	    return;
+	}
+
+        AN.get( `/edit/details/${svgItemId}` );
     }
     
     function handleDoubleClick( event ) {
@@ -186,10 +192,21 @@
         if ( dragData == null ) {
 	    return;
 	}
+
 	
         displayEventInfo( 'End Drag', event );
         displayElementInfo( 'Drag Element', dragData.element );
 	updateDrag( event );
+
+	let svgItemId = dragData.element.attr('id');
+	data = {
+	    svg_x: dragData.elementSvgCenterPoint.x,
+	    svg_y: dragData.elementSvgCenterPoint.y,
+	    svg_scale: dragData.originalSvgScale,
+	    svg_rotate: dragData.originalSvgRotate
+	};
+	AN.post( `/edit/svg/position/${svgItemId}`, data );
+
 	dragData = null;
     }
  

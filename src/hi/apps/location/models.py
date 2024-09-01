@@ -1,6 +1,6 @@
 from django.db import models
 
-from hi.apps.common.svg_models import SvgViewBox
+from hi.apps.common.svg_models import SvgItem, SvgViewBox
 
 from .enums import ViewType
 
@@ -95,8 +95,8 @@ class LocationView(models.Model):
         max_length = 64,
         null = False, blank = False,
     )
-    svg_rotation = models.DecimalField(
-        'Rotation',
+    svg_rotate = models.DecimalField(
+        'Rotate',
         max_digits = 9,
         decimal_places = 6,
     )
@@ -172,14 +172,18 @@ class SvgPositionModel(models.Model):
         decimal_places = 6,
         default = 1.0,
     )
-    svg_rotation = models.DecimalField(
-        'Rotation',
+    svg_rotate = models.DecimalField(
+        'Rotate',
         max_digits = 12,
         decimal_places = 6,
         default = 0.0,
     )
-    
 
+    @property
+    def svg_item(self) -> SvgItem:
+        raise NotImplementedError('Subclasses must implement this method.')
+
+    
 class SvgPathModel(models.Model):
     """
     For models that have a visual representaion that can be overlayed on
