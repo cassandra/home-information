@@ -371,9 +371,18 @@
 	    return;
 	}
         let transform = itemEditState.currentElement.attr('transform');
+	console.log( `T = ${transform}` );
         let { scale, translate, rotate } = getTransformValues( transform );
-	scale.x = scale.x + deltaX;
-	updateSvgTransform( itemEditState.currentElement, scale, translate, rotate );
+	console.log( `SCALE = ${scale}, T = ${translate}, R = ${rotate}` );
+	const newScale = {
+	    x: scale.x + 0.01 * deltaX,
+	    y: scale.x + 0.01 * deltaX
+	};
+	
+	translate.x = translate.x * scale.x / newScale.x;
+	translate.y = translate.y * scale.x / newScale.x;
+
+	updateSvgTransform( itemEditState.currentElement, newScale, translate, rotate );
     }
     
     function itemEditRotateUpdate( currentMousePosition ) {
@@ -404,8 +413,13 @@
 	console.log( 'Scale Abort' );
         let transform = itemEditState.currentElement.attr('transform');
         let { scale, translate, rotate } = getTransformValues( transform );
-	scale = itemEditState.scaleStart;
-	updateSvgTransform( itemEditState.currentElement, scale, translate, rotate );
+
+	const newScale = itemEditState.scaleStart;
+
+	translate.x = translate.x * scale.x / newScale.x;
+	translate.y = translate.y * scale.x / newScale.x;
+	
+	updateSvgTransform( itemEditState.currentElement, newScale, translate, rotate );
     }
 
     function itemEditRotateAbort() {
