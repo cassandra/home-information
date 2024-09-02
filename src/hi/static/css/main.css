@@ -173,8 +173,22 @@ a.underline:visited {
     width: auto;
     height: auto;
     display: block;
+    cursor: pointer;
 }    
+
+svg[action-state="move"] {
+    cursor: move;
+}
+svg[action-state="rotate"] {
+    cursor: url('/static/css/cursor-rotate.png') 16 16, auto;
+}
+svg[action-state="scale"] {
+    cursor: url('/static/css/cursor-scale.png') 16 16, auto;
+}
+
+
 
 svg .highlighted {
     filter: drop-shadow(0 0 10px red);
 }
+
