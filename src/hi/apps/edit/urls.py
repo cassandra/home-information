@@ -13,7 +13,7 @@ urlpatterns = [
              views.EditEndView.as_view(), 
              name='edit_end' ),
 
-    re_path( r'^details/(?P<html_id>[\w\-]+)$', 
+    re_path( r'^details/(?P<html_id>[\w\-]*)$', 
              views.EditDetailsView.as_view(), 
              name='edit_details' ),
 

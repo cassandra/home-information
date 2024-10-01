@@ -136,7 +136,7 @@
 	if ( gClickTimeout ) {
 	    const clickEndTime = Date.now();
 	    const elapsedTime = clickEndTime - gClickStart.time;
-	    console.log( `Click Elapsed: ${elapsedTime}` );
+	    if ( DEBUG ) { console.log( `Click Elapsed: ${elapsedTime}` ); }
 	    clearTimeout( gClickTimeout );
 	    gClickTimeout = null;
 	    handleDoubleClick( event );
@@ -144,7 +144,7 @@
 	    gClickTimeout = setTimeout(() => {
 		const clickEndTime = Date.now();
 		const elapsedTime = clickEndTime - gClickStart.time;
-		console.log( `Click Elapsed: ${elapsedTime}` );
+		if ( DEBUG ) { console.log( `Click Elapsed: ${elapsedTime}` ); }
 		handleClick( event );
 		gClickTimeout = null;
 	    }, DoubleClickDelayMs );
@@ -197,7 +197,10 @@
 
 	const enclosingSvgGroup = $(event.target).closest('g');
 	if ( enclosingSvgGroup.length < 1 ) {
-	    console.log( 'NO TARGET'  );
+	    if ( DEBUG ) { console.log( 'NO TARGET'  ); }
+	    gSelectedElement = null;
+	    $('.draggable').removeClass('highlighted');
+            AN.get( `/edit/details` );
 	    return;
 	}
         displayElementInfo( 'SVG Target Element', enclosingSvgGroup );
@@ -216,15 +219,8 @@
     }
     
     function handleDoubleClick( event ) {
-        displayEventInfo( 'Double Click', event );
-        displayElementInfo( 'Event Target', $(event.target) );
-
-	const enclosingSvgGroup = $(event.target).closest('g');
-	if ( enclosingSvgGroup.length < 1 ) {
-	    return;
-	}
-        displayElementInfo( 'SVG Target Element', enclosingSvgGroup );
-	
+	// Currently no special double click handling defined. Revert to single click for now.
+	handleClick( event );
     }
     
     function createDragData( event ) {	
@@ -417,7 +413,7 @@
     }
     
     function actionScaleApply() {
-	console.log( 'Scale Apply' );
+	if ( DEBUG ) { console.log( 'Scale Apply' ); }
 	saveSvgPosition( gEditActionData.element );
     }
 
@@ -444,6 +440,7 @@
         let transform = gEditActionData.element.attr('transform');
         let { scale, translate, rotate } = getSvgTransformValues( transform );
 	rotate.angle += deltaAngle;
+	rotate.angle = normalizeAngle( rotate.angle );
 	setSvgTransformAttr( gEditActionData.element, scale, translate, rotate );
     }
 
@@ -467,7 +464,6 @@
             angleDifference += 2 * Math.PI;
 	}
 
-	// Convert the angle to degrees (optional, depends on your rotation implementation)
 	const angleDifferenceDegrees = angleDifference * (180 / Math.PI);
 
 	return angleDifferenceDegrees;
@@ -597,6 +593,10 @@
 	return { x, y, width, height };
     }
 
+    function normalizeAngle(angle) {
+	return (angle % 360 + 360) % 360;
+    }
+    
     function displayEventInfo( label, event ) {
 	if ( ! DEBUG ) { return; }
 	if ( ! event ) {

@@ -64,6 +64,10 @@ class EditDetailsView( View, EditViewMixin ):
         if request.view_parameters.edit_mode == EditMode.OFF:
             raise NotImplementedError( 'Not yet handling bad edit context' )
 
+        html_id = kwargs.get('html_id')
+        if not html_id:
+            return self.get_default_details( request )
+            
         ( item_type, item_id ) = self.parse_html_id( kwargs.get('html_id'))
 
         if item_type == 'entity':
@@ -71,6 +75,20 @@ class EditDetailsView( View, EditViewMixin ):
         if item_type == 'collection':
             return self.get_collection_details( request, collection_id = item_id )
         raise NotImplementedError( 'Not yet handling unknown edit detail type.' )
+
+    def get_default_details( self, request ):
+
+        context = {
+        }
+        template = get_template('edit/panes/default.html')
+        content = template.render( context, request = request )
+        
+        insert_map = {
+            DIVID['EDIT_ITEM']: content,
+        }
+        return antinode.response(
+            insert_map = insert_map,
+        )
 
     def get_entity_details( self, request, entity_id : int ):
         try:
