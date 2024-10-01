@@ -4,6 +4,7 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.generic import View
 
+import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
 from hi.hi_grid_view import HiGridView
 
@@ -57,6 +58,15 @@ class LocationViewView( HiGridView ):
         request.view_parameters.location_view_id = location_view.id
         request.view_parameters.to_session( request )
 
+        # When in edit mode, a location view change needs a full
+        # synchronous page load to ensure any front-end editing state and
+        # views are invalidated. Else, the editing state and edit side
+        # panel will be invalid for the new view.
+        #
+        if is_ajax( request ) and request.view_parameters.edit_mode.should_reload_on_location_view_change:
+            sync_url = reverse( 'location_view', kwargs = kwargs )
+            return antinode.redirect_response( url = sync_url )
+        
         location_view_data = LocationViewManager().get_location_view_data(
             location_view = location_view,
         )

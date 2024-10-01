@@ -9,3 +9,8 @@ class EditMode(LabeledEnum):
     @property
     def is_editing(self):
         return bool( self != EditMode.OFF )
+
+    @property
+    def should_reload_on_location_view_change(self):
+        return bool( self != EditMode.OFF )
+    

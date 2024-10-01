@@ -323,6 +323,207 @@
 	gDragData = null;
     }
  
+    function saveSvgPosition( element ) {
+
+        let transform = element.attr('transform');
+        let { scale, translate, rotate } = getSvgTransformValues( transform );
+
+	const baseSvgElement = $(baseSvgSelector);
+	const center = getSvgCenterPoint( element, baseSvgElement );
+
+	let svgItemId = element.attr('id');
+	data = {
+	    svg_x: center.x,
+	    svg_y: center.y,
+	    svg_scale: scale.x,
+	    svg_rotate: rotate.angle,
+	};
+	AN.post( `/edit/svg/position/${svgItemId}`, data );
+    }
+
+    function createEditActionData( actionState ) {
+	if ( gSelectedElement ) {
+            let transform = gSelectedElement.attr('transform');
+            let { scale, translate, rotate } = getSvgTransformValues( transform );
+
+	    gEditActionData = {
+		element: gSelectedElement,
+		scaleStart: scale,
+		translateStart: translate,
+		rotateStart: rotate,
+		isScaling: false,
+		isRotating: false
+	    };
+
+	    gEditActionState = actionState;
+	    $(baseSvgSelector).attr( EditActionStateAttrName, actionState );
+	}
+    }
+
+    function revertAction( element ) {
+	if ( gEditActionData ) {
+	    setSvgTransformAttr( gEditActionData.element,
+				 gEditActionData.scaleStart,
+				 gEditActionData.translateStart,
+				 gEditActionData.rotateStart );
+	    gEditActionData = null;
+	}
+    }
+    
+    function actionScaleStart() {
+	createEditActionData( EditActionState.SCALE );	
+    }
+
+    function actionScaleUpdate( currentMousePosition ) {
+
+	let center = getScreenCenterPoint( gEditActionData.element );
+
+	let scaleFactor = getScaleFactor( center.x, center.y,
+					  gLastMousePosition.x, gLastMousePosition.y,
+					  currentMousePosition.x, currentMousePosition.y );
+        let transform = gEditActionData.element.attr('transform');
+        let { scale, translate, rotate } = getSvgTransformValues( transform );
+
+	const newScale = {
+	    x: scale.x * scaleFactor,
+	    y: scale.y * scaleFactor
+	};
+		
+	translate.x = translate.x * scale.x / newScale.x;
+	translate.y = translate.y * scale.y / newScale.y;
+
+	if ( DEBUG ) {
+	    console.log( `Scale Update:
+    Transform:  ${transform}
+    Scale = ${scale.x}, T = ${translate.x}, R = ${rotate.angle}` );
+	}
+
+	setSvgTransformAttr( gEditActionData.element, newScale, translate, rotate );
+
+    }
+
+    function getScaleFactor( centerX, centerY, startX, startY, endX, endY ) {
+
+	const startDistance = Math.sqrt( Math.pow(startX - centerX, 2) + Math.pow(startY - centerY, 2) );
+	const endDistance = Math.sqrt( Math.pow(endX - centerX, 2) + Math.pow(endY - centerY, 2) );
+
+	let scaleFactor = 1;
+	if (endDistance > startDistance) {
+            scaleFactor = 1 + (endDistance - startDistance) / 100;
+	} else if (endDistance < startDistance) {
+            scaleFactor = 1 - (startDistance - endDistance) / 100;
+	}
+	return scaleFactor;
+    }
+    
+    function actionScaleApply() {
+	console.log( 'Scale Apply' );
+	saveSvgPosition( gEditActionData.element );
+    }
+
+    function actionScaleAbort() {
+	if ( gEditActionState != EditActionState.SCALE ) {
+	    return;
+	}
+	revertAction();
+    }
+
+    function actionRotateStart() {
+	createEditActionData( EditActionState.ROTATE );	
+    }
+
+    function actionRotateUpdate( currentMousePosition ) {
+	if ( DEBUG ) { console.log( 'Rotate Update' ); }
+
+	center = getScreenCenterPoint( gEditActionData.element );
+
+	let deltaAngle = getRotationAngle( center.x, center.y,
+					   gLastMousePosition.x, gLastMousePosition.y,
+					   currentMousePosition.x, currentMousePosition.y );
+
+        let transform = gEditActionData.element.attr('transform');
+        let { scale, translate, rotate } = getSvgTransformValues( transform );
+	rotate.angle += deltaAngle;
+	setSvgTransformAttr( gEditActionData.element, scale, translate, rotate );
+    }
+
+    function getRotationAngle( centerX, centerY, startX, startY, endX, endY ) {
+
+	const startVectorX = startX - centerX;
+	const startVectorY = startY - centerY;
+
+	const endVectorX = endX - centerX;
+	const endVectorY = endY - centerY;
+
+	const startAngle = Math.atan2(startVectorY, startVectorX);
+	const endAngle = Math.atan2(endVectorY, endVectorX);
+
+	let angleDifference = endAngle - startAngle;
+
+	// Normalize the angle to be between -π and π
+	if (angleDifference > Math.PI) {
+            angleDifference -= 2 * Math.PI;
+	} else if (angleDifference < -Math.PI) {
+            angleDifference += 2 * Math.PI;
+	}
+
+	// Convert the angle to degrees (optional, depends on your rotation implementation)
+	const angleDifferenceDegrees = angleDifference * (180 / Math.PI);
+
+	return angleDifferenceDegrees;
+    }
+
+    
+    function actionRotateApply() {
+	saveSvgPosition( gEditActionData.element );
+    }
+    
+    function actionRotateAbort() {
+	if ( gEditActionState != EditActionState.ROTATE ) {
+	    return;
+	}	
+	revertAction();
+    }
+
+    function getScreenCenterPoint( element ) {
+	try {
+            let rect = element[0].getBoundingClientRect();
+	    if ( rect ) {
+		const screenCenterX = rect.left + ( rect.width / 2.0 );
+		const screenCenterY = rect.top + ( rect.height / 2.0 );
+		return {
+		    x: rect.left + ( rect.width / 2.0 ),
+		    y: rect.top + ( rect.height / 2.0 )
+		};
+	    }
+	} catch (e) {
+	    console.debug( `Problem getting bounding box: ${e}` );
+	}
+	return null;
+    }
+    
+    function getSvgCenterPoint( element, svgElement ) {
+
+	try {
+            let rect = element[0].getBoundingClientRect();
+	    if ( rect ) {
+		const screenCenterX = rect.left + ( rect.width / 2.0 );
+		const screenCenterY = rect.top + ( rect.height / 2.0 );
+		return toSvgPoint( svgElement, screenCenterX, screenCenterY );
+	    }
+	} catch (e) {
+	    console.debug( `Problem getting bounding box: ${e}` );
+	}
+	return { x: 0, y: 0 };
+    }
+    
+    function toSvgPoint( svgElement, clientX, clientY) {
+        let point = svgElement[0].createSVGPoint();
+        point.x = clientX;
+        point.y = clientY;
+        return point.matrixTransform( svgElement[0].getScreenCTM().inverse());
+    }
+    
     function getSvgTransformValues(transform) {
 	let scale = { x: 1, y: 1 }, rotate = { angle: 0, cx: 0, cy: 0 }, translate = { x: 0, y: 0 };
 
@@ -373,177 +574,6 @@
         element.attr('transform', newTransform);	    
     }
     
-    function saveSvgPosition( element ) {
-
-        let transform = element.attr('transform');
-        let { scale, translate, rotate } = getTransformValues( transform );
-
-	const baseSvgElement = $(baseSvgSelector);
-	const center = getSvgCenterPoint( element, baseSvgElement );
-
-	let svgItemId = element.attr('id');
-	data = {
-	    svg_x: center.x,
-	    svg_y: center.y,
-	    svg_scale: scale.x,
-	    svg_rotate: rotate.angle,
-	};
-	AN.post( `/edit/svg/position/${svgItemId}`, data );
-    }
-
-    function createEditActionData( actionState ) {
-	if ( gSelectedElement ) {
-            let transform = gSelectedElement.attr('transform');
-            let { scale, translate, rotate } = getTransformValues( transform );
-	    
-	    gEditActionData = {
-		element: gSelectedElement,
-		scaleStart: scale,
-		translateStart: translate,
-		rotateStart: rotate,
-		isScaling: false,
-		isRotating: false
-	    };
-
-	    gEditActionState = actionState;
-	    $(baseSvgSelector).attr( EditActionStateAttrName, actionState );
-	}
-    }
-
-    function revertAction( element ) {
-	if ( gEditActionData ) {
-	    setSvgTransformAttr( gEditActionData.element,
-				 gEditActionData.scaleStart,
-				 gEditActionData.translateStart,
-				 gEditActionData.rotateStart );
-	    gEditActionData = null;
-	}
-    }
-    
-    function actionScaleStart() {
-	createEditActionData( EditActionState.SCALE );	
-    }
-
-    function actionRotateStart() {
-	createEditActionData( EditActionState.ROTATE );	
-    }
-
-    function actionScaleUpdate( currentMousePosition ) {
-	console.log( 'Scale Update' );
-	const deltaX = currentMousePosition.x - gLastMousePosition.x;
-	const deltaY = currentMousePosition.y - gLastMousePosition.y;
-	if (( deltaX <= CursorMovementThreshold ) && ( deltaY <= CursorMovementThreshold )) {
-	    return;
-	}
-        let transform = gEditActionData.element.attr('transform');
-	console.log( `T = ${transform}` );
-        let { scale, translate, rotate } = getTransformValues( transform );
-	console.log( `SCALE = ${scale}, T = ${translate}, R = ${rotate}` );
-	const newScale = {
-	    x: scale.x + 0.01 * deltaX,
-	    y: scale.x + 0.01 * deltaX
-	};
-	
-	translate.x = translate.x * scale.x / newScale.x;
-	translate.y = translate.y * scale.x / newScale.x;
-
-	setSvgTransformAttr( gEditActionData.element, newScale, translate, rotate );
-    }
-    
-    function actionRotateUpdate( currentMousePosition ) {
-	const deltaX = currentMousePosition.x - gLastMousePosition.x;
-	const deltaY = currentMousePosition.y - gLastMousePosition.y;
-	if (( deltaX <= CursorMovementThreshold )
-	    && ( deltaY <= CursorMovementThreshold )) {
-	    return;
-	}
-
-	center = getScreenCenterPoint( gEditActionData.element );
-	
-	
-	const rotateDelta = {
-	    angle: deltaX
-	};
-        let transform = gEditActionData.element.attr('transform');
-        let { scale, translate, rotate } = getTransformValues( transform );
-	rotate.angle += deltaX;
-	setSvgTransformAttr( gEditActionData.element, scale, translate, rotate );
-    }
-    
-    function actionScaleApply() {
-	console.log( 'Scale Apply' );
-	saveSvgPosition( gEditActionData.element );
-    }
-
-    function actionRotateApply() {
-	saveSvgPosition( gEditActionData.element );
-    }
-    
-    function actionScaleAbort() {
-	if ( gEditActionState != EditActionState.SCALE ) {
-	    return;
-	}
-	revertAction();
-    }
-
-    function actionRotateAbort() {
-	if ( gEditActionState != EditActionState.ROTATE ) {
-	    return;
-	}	
-	revertAction();
-    }
-
-    function getScreenCenterPoint( element ) {
-	try {
-            rect = element[0].getBoundingClientRect();
-	    if ( rect ) {
-		const screenCenterX = rect.left + ( rect.width / 2.0 );
-		const screenCenterY = rect.top + ( rect.height / 2.0 );
-		return {
-		    x: rect.left + ( rect.width / 2.0 ),
-		    y: rect.top + ( rect.height / 2.0 )
-		};
-	    }
-	} catch (e) {
-	    console.debug( `Problem getting bounding box: ${e}` );
-	}
-	return null;
-    }
-    
-    function getSvgCenterPoint( element, svgElement ) {
-
-	try {
-            rect = element[0].getBoundingClientRect();
-	    if ( rect ) {
-		const screenCenterX = rect.left + ( rect.width / 2.0 );
-		const screenCenterY = rect.top + ( rect.height / 2.0 );
-		return toSvgPoint( svgElement, screenCenterX, screenCenterY );
-	    }
-	} catch (e) {
-	    console.debug( `Problem getting bounding box: ${e}` );
-	}
-	return { x: 0, y: 0 };
-    }
-    
-    function toSvgPoint( svgElement, clientX, clientY) {
-        let point = svgElement[0].createSVGPoint();
-        point.x = clientX;
-        point.y = clientY;
-        return point.matrixTransform( svgElement[0].getScreenCTM().inverse());
-    }
-    
-    function displayEventInfo( label, event ) {
-	if ( ! DEBUG ) { return; }
-	if ( ! event ) {
-            console.log( 'No element to display info for.' );
-	    return;
-	}
-        console.log( `${label} Event: 
-    Type: ${event.type}, 
-    Key: ${event.key},
-    Pos: ( ${event.clientX}, ${event.clientY} )` );
-    }
-    
     function getSvgViewBox( svgElement ) {
 	let x = null;
 	let y = null;
@@ -567,6 +597,18 @@
 	return { x, y, width, height };
     }
 
+    function displayEventInfo( label, event ) {
+	if ( ! DEBUG ) { return; }
+	if ( ! event ) {
+            console.log( 'No element to display info for.' );
+	    return;
+	}
+        console.log( `${label} Event: 
+    Type: ${event.type}, 
+    Key: ${event.key},
+    Pos: ( ${event.clientX}, ${event.clientY} )` );
+    }
+    
     function displayElementInfo( label, element ) {
 	if ( ! DEBUG ) { return; }
 	if ( ! element ) {
@@ -579,7 +621,7 @@
 
 	let rectStr = 'No Bounding Rect';
 	try {
-            rect = element[0].getBoundingClientRect();
+            let rect = element[0].getBoundingClientRect();
 	    if ( rect ) {
 		rectStr = `Dim: ${rect.width}px x ${rect.height}px,
     Pos: left=${rect.left}px, top=${rect.top}px`;
