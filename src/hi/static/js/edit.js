@@ -14,12 +14,12 @@
     const locationViewAreaSelector = '#hi-location-view-main';
     const baseSvgSelector = '#hi-location-view-main > svg';
 
-    const ActionState = {
+    const EditActionState = {
 	MOVE: 'move',
 	SCALE: 'scale',
 	ROTATE: 'rotate'
     };    
-    const ActionStateAttrName = 'action-state';
+    const EditActionStateAttrName = 'action-state';
     const ActionMoveKey = 'm';
     const ActionScaleKey = 's';
     const ActionRotateKey = 'r';
@@ -27,7 +27,7 @@
     const DoubleClickDelayMs = 300;
     const CursorMovementThreshold = 3;
     
-    let gActionState = ActionState.MOVE;
+    let gEditActionState = EditActionState.MOVE;
     let gSelectedElement = null;
 
     let gClickStart = null;
@@ -35,114 +35,161 @@
     let gLastMousePosition = { x: 0, y: 0 };
 
     let gDragData = null;
-    let gActionData = null;
+    let gEditActionData = null;
     
     $(document).ready(function() {
 	$(document).on('mousedown', locationViewAreaSelector, function(event) {
-
-	    // Need to track time to differentiate drag/scale/rotate actions from regular clicks.
-	    gClickStart = {
-		x: event.clientX,
-		y: event.clientY,
-		time: Date.now()
-	    };
-
-	    if ( gActionState == ActionState.MOVE ) {
-		createDragData( event );
-		return;
-	    } 
-	    if ( gActionData ) {
-		if ( gActionState == ActionState.SCALE ) {
-		    gActionData.isScaling = true;
-		} else if ( gActionState == ActionState.ROTATE ) {
-		    gActionData.isRotating = true;
-		}
-	    }
+	    if ( gHiEditMode == 'off' ) { return; }
+	    handleMouseDown( event );
+	    
 	});
 	$(document).on('mousemove', locationViewAreaSelector, function(event) {
-	    const currentMousePosition = {
-		x: event.clientX,
-		y: event.clientY
-	    };
-	    
-	    if ( gDragData ) {
-		const distanceX = Math.abs( currentMousePosition.x - gClickStart.x );
-		const distanceY = Math.abs( currentMousePosition.y - gClickStart.y );
-	    
-		if ( gDragData.isDragging || ( distanceX > CursorMovementThreshold ) || ( distanceY > CursorMovementThreshold )) {
-		    gDragData.isDragging = true;
-		    $(baseSvgSelector).attr( ActionStateAttrName, ActionState.MOVE);
-		    updateDrag(event);
-		}
-	    }
-	    else if ( gActionData ) {
-		if ( gActionData.isScaling ) {
-		    actionScaleUpdate( currentMousePosition );
-		} else if ( gActionData.isRotating ) {
-		    actionRotateUpdate( currentMousePosition );
-		}
-	    }
-
-	    gLastMousePosition = currentMousePosition;
+	    if ( gHiEditMode == 'off' ) { return; }
+	    handleMouseMove( event );
 	});
 	$(document).on('mouseup', locationViewAreaSelector, function(event) {
-	    if ( gDragData ) {
-		if ( gDragData.isDragging ) {
-		    endDrag( event );
-		    $(baseSvgSelector).attr( ActionStateAttrName, '');
-		    return;
-		}
-		$(baseSvgSelector).attr( ActionStateAttrName, '' );
-		gDragData = null;
-	    }
-
-	    else if ( gActionData ) {
-		if ( gActionState == ActionState.SCALE ) {
-		    gActionData.isScaling = false;
-		    actionScaleApply();
-		} else if ( gActionState == ActionState.ROTATE ) {
-		    gActionData.isRotating = false;
-		    actionRotateApply();
-		}
-		gActionState = ActionState.MOVE;
-		$(baseSvgSelector).attr( ActionStateAttrName, '');
-		gActionData = null;
-	    }
-	    
-	    if ( gClickTimeout ) {
-		const clickEndTime = Date.now();
-		const elapsedTime = clickEndTime - gClickStart.time;
-		console.log( `Click Elapsed: ${elapsedTime}` );
-		clearTimeout( gClickTimeout );
-		gClickTimeout = null;
-		handleDoubleClick( event );
-	    } else {
-		gClickTimeout = setTimeout(() => {
-		    const clickEndTime = Date.now();
-		    const elapsedTime = clickEndTime - gClickStart.time;
-		    console.log( `Click Elapsed: ${elapsedTime}` );
-		    handleClick( event );
-		    gClickTimeout = null;
-		}, DoubleClickDelayMs );
-	    }
+	    if ( gHiEditMode == 'off' ) { return; }
+	    handleMouseUp( event );
 	});
 	$(document).on('keydown', function(event) {
-	    const targetArea = $(locationViewAreaSelector);
-            const targetOffset = targetArea.offset();
-            const targetWidth = targetArea.outerWidth();
-            const targetHeight = targetArea.outerHeight();
-	    
-            if (gLastMousePosition.x >= targetOffset.left && 
-		gLastMousePosition.x <= targetOffset.left + targetWidth &&
-		gLastMousePosition.y >= targetOffset.top &&
-		gLastMousePosition.y <= targetOffset.top + targetHeight) {
-		handleKeyDown(event);
-            }	
+	    if ( gHiEditMode == 'off' ) { return; }
+	    handleKeyDown( event );
 	});
 	$(document).on('keyup', function(event) {
+	    if ( gHiEditMode == 'off' ) { return; }
 	    handleKeyUp( event );
 	});
     });
+
+    function handleMouseDown( event ) {
+	// Need to track start time to differentiate drag/scale/rotate actions from regular clicks.
+	gClickStart = {
+	    x: event.clientX,
+	    y: event.clientY,
+	    time: Date.now()
+	};
+	
+	if ( gEditActionState == EditActionState.MOVE ) {
+	    createDragData( event );
+	    return;
+	} 
+	if ( gEditActionData ) {
+	    if ( gEditActionState == EditActionState.SCALE ) {
+		gEditActionData.isScaling = true;
+	    } else if ( gEditActionState == EditActionState.ROTATE ) {
+		gEditActionData.isRotating = true;
+	    }
+	}
+    }
+    
+    function handleMouseMove( event ) {
+	const currentMousePosition = {
+	    x: event.clientX,
+	    y: event.clientY
+	};
+	
+	if ( gDragData ) {
+	    const distanceX = Math.abs( currentMousePosition.x - gClickStart.x );
+	    const distanceY = Math.abs( currentMousePosition.y - gClickStart.y );
+	    
+	    if ( gDragData.isDragging || ( distanceX > CursorMovementThreshold ) || ( distanceY > CursorMovementThreshold )) {
+		gDragData.isDragging = true;
+		$(baseSvgSelector).attr( EditActionStateAttrName, EditActionState.MOVE);
+		updateDrag(event);
+	    }
+	}
+	else if ( gEditActionData ) {
+	    if ( gEditActionData.isScaling ) {
+		actionScaleUpdate( currentMousePosition );
+	    } else if ( gEditActionData.isRotating ) {
+		actionRotateUpdate( currentMousePosition );
+	    }
+	}
+	
+	gLastMousePosition = currentMousePosition;
+    }
+    
+    function handleMouseUp( event ) {
+	if ( gDragData ) {
+	    if ( gDragData.isDragging ) {
+		endDrag( event );
+		$(baseSvgSelector).attr( EditActionStateAttrName, '');
+		return;
+	    }
+	    $(baseSvgSelector).attr( EditActionStateAttrName, '' );
+	    gDragData = null;
+	}
+	
+	else if ( gEditActionData ) {
+	    if ( gEditActionState == EditActionState.SCALE ) {
+		gEditActionData.isScaling = false;
+		actionScaleApply();
+	    } else if ( gEditActionState == EditActionState.ROTATE ) {
+		gEditActionData.isRotating = false;
+		actionRotateApply();
+	    }
+	    gEditActionState = EditActionState.MOVE;
+	    $(baseSvgSelector).attr( EditActionStateAttrName, '');
+	    gEditActionData = null;
+	}
+	
+	if ( gClickTimeout ) {
+	    const clickEndTime = Date.now();
+	    const elapsedTime = clickEndTime - gClickStart.time;
+	    console.log( `Click Elapsed: ${elapsedTime}` );
+	    clearTimeout( gClickTimeout );
+	    gClickTimeout = null;
+	    handleDoubleClick( event );
+	} else {
+	    gClickTimeout = setTimeout(() => {
+		const clickEndTime = Date.now();
+		const elapsedTime = clickEndTime - gClickStart.time;
+		console.log( `Click Elapsed: ${elapsedTime}` );
+		handleClick( event );
+		gClickTimeout = null;
+	    }, DoubleClickDelayMs );
+	}
+    }
+    
+    function handleKeyDown( event ) {
+	const targetArea = $(locationViewAreaSelector);
+        const targetOffset = targetArea.offset();
+        const targetWidth = targetArea.outerWidth();
+        const targetHeight = targetArea.outerHeight();
+	
+        if (gLastMousePosition.x >= targetOffset.left && 
+	    gLastMousePosition.x <= targetOffset.left + targetWidth &&
+	    gLastMousePosition.y >= targetOffset.top &&
+	    gLastMousePosition.y <= targetOffset.top + targetHeight) {
+
+            displayEventInfo( 'Key Down', event );
+
+	    if ( event.key == ActionScaleKey ) {
+		actionRotateAbort();
+		actionScaleStart();
+		
+	    } else if ( event.key == ActionRotateKey ) {
+		actionScaleAbort();
+		actionRotateStart();
+		
+	    } else if ( event.key == 'Escape' ) {
+		actionScaleAbort();
+		actionRotateAbort();
+		gEditActionState = EditActionState.MOVE;
+		$(baseSvgSelector).attr( EditActionStateAttrName, '');
+		
+	    } else {
+		return;
+	    }
+	
+	    event.stopPropagation();
+	    event.preventDefault();   		
+        }
+    }
+    
+    function handleKeyUp( event ) {
+        displayEventInfo( 'Key Up', event );
+    }
 
     function handleClick( event ) {
         displayEventInfo( 'Click', event );
@@ -150,6 +197,7 @@
 
 	const enclosingSvgGroup = $(event.target).closest('g');
 	if ( enclosingSvgGroup.length < 1 ) {
+	    console.log( 'NO TARGET'  );
 	    return;
 	}
         displayElementInfo( 'SVG Target Element', enclosingSvgGroup );
@@ -179,35 +227,6 @@
 	
     }
     
-    function handleKeyDown( event ) {
-        displayEventInfo( 'Key Down', event );
-
-	if ( event.key == ActionScaleKey ) {
-	    actionRotateAbort();
-	    actionScaleStart();
-	    
-	} else if ( event.key == ActionRotateKey ) {
-	    actionScaleAbort();
-	    actionRotateStart();
-	    
-	} else if ( event.key == 'Escape' ) {
-	    actionScaleAbort();
-	    actionRotateAbort();
-	    gActionState = ActionState.MOVE;
-	    $(baseSvgSelector).attr( ActionStateAttrName, '');
-	    
-	} else {
-	    return;
-	}
-	
-	event.stopPropagation();
-	event.preventDefault();   		
-    }
-
-    function handleKeyUp( event ) {
-        displayEventInfo( 'Key Up', event );
-    }
-
     function createDragData( event ) {	
         displayEventInfo( 'Create Drag', event );
         displayElementInfo( 'Event Target', $(event.target) );
@@ -224,13 +243,13 @@
 	displayElementInfo( 'Base SVG', baseSvgElement );
 
         let transform = dragElement.attr('transform') || '';
-        let { scale, translate, rotate } = getTransformValues( transform );
+        let { scale, translate, rotate } = getSvgTransformValues( transform );
         let cursorSvgPoint = toSvgPoint( baseSvgElement, event.clientX, event.clientY );
 
 	const cursorSvgOffset = {
 	    x : (cursorSvgPoint.x / scale.x) - translate.x,
 	    y : (cursorSvgPoint.y / scale.y) - translate.y
-	}
+	};
 
 	gDragData = {
 	    element: dragElement,
@@ -261,7 +280,7 @@
         let cursorSvgPoint = toSvgPoint( gDragData.baseSvgElement, event.clientX, event.clientY );
 
 	let scale = gDragData.originalSvgScale;
-	let rotate = gDragData.originalSvgRotate
+	let rotate = gDragData.originalSvgRotate;
 	
         let newX = (cursorSvgPoint.x / scale.x) - gDragData.cursorSvgOffset.x;
         let newY = (cursorSvgPoint.y / scale.y) - gDragData.cursorSvgOffset.y;
@@ -304,17 +323,17 @@
 	gDragData = null;
     }
  
-    function getTransformValues(transform) {
+    function getSvgTransformValues(transform) {
 	let scale = { x: 1, y: 1 }, rotate = { angle: 0, cx: 0, cy: 0 }, translate = { x: 0, y: 0 };
 
 	let scaleMatch = transform.match(/scale\(([^)]+)\)/);
 	if (scaleMatch) {
 	    let scaleValues = scaleMatch[1].trim().split(/[ ,]+/).map(parseFloat);
-	    scale.x = scaleValues[0]
+	    scale.x = scaleValues[0];
 	    if ( scaleValues.length == 1 ) {
 		scale.y = scale.x;
 	    } else {
-		scale.y = scaleValues[1]
+		scale.y = scaleValues[1];
 	    }
 	}
 
@@ -372,12 +391,12 @@
 	AN.post( `/edit/svg/position/${svgItemId}`, data );
     }
 
-    function createActionData( actionState ) {
+    function createEditActionData( actionState ) {
 	if ( gSelectedElement ) {
             let transform = gSelectedElement.attr('transform');
             let { scale, translate, rotate } = getTransformValues( transform );
 	    
-	    gActionData = {
+	    gEditActionData = {
 		element: gSelectedElement,
 		scaleStart: scale,
 		translateStart: translate,
@@ -386,27 +405,27 @@
 		isRotating: false
 	    };
 
-	    gActionState = actionState;
-	    $(baseSvgSelector).attr( ActionStateAttrName, actionState );
+	    gEditActionState = actionState;
+	    $(baseSvgSelector).attr( EditActionStateAttrName, actionState );
 	}
     }
 
     function revertAction( element ) {
-	if ( gActionData ) {
-	    setSvgTransformAttr( gActionData.element,
-				 gActionData.scaleStart,
-				 gActionData.translateStart,
-				 gActionData.rotateStart );
-	    gActionData = null;
+	if ( gEditActionData ) {
+	    setSvgTransformAttr( gEditActionData.element,
+				 gEditActionData.scaleStart,
+				 gEditActionData.translateStart,
+				 gEditActionData.rotateStart );
+	    gEditActionData = null;
 	}
     }
     
     function actionScaleStart() {
-	createActionData( ActionState.SCALE );	
+	createEditActionData( EditActionState.SCALE );	
     }
 
     function actionRotateStart() {
-	createActionData( ActionState.ROTATE );	
+	createEditActionData( EditActionState.ROTATE );	
     }
 
     function actionScaleUpdate( currentMousePosition ) {
@@ -416,7 +435,7 @@
 	if (( deltaX <= CursorMovementThreshold ) && ( deltaY <= CursorMovementThreshold )) {
 	    return;
 	}
-        let transform = gActionData.element.attr('transform');
+        let transform = gEditActionData.element.attr('transform');
 	console.log( `T = ${transform}` );
         let { scale, translate, rotate } = getTransformValues( transform );
 	console.log( `SCALE = ${scale}, T = ${translate}, R = ${rotate}` );
@@ -428,7 +447,7 @@
 	translate.x = translate.x * scale.x / newScale.x;
 	translate.y = translate.y * scale.x / newScale.x;
 
-	setSvgTransformAttr( gActionData.element, newScale, translate, rotate );
+	setSvgTransformAttr( gEditActionData.element, newScale, translate, rotate );
     }
     
     function actionRotateUpdate( currentMousePosition ) {
@@ -439,36 +458,36 @@
 	    return;
 	}
 
-	center = getScreenCenterPoint( gActionData.element );
+	center = getScreenCenterPoint( gEditActionData.element );
 	
 	
 	const rotateDelta = {
 	    angle: deltaX
 	};
-        let transform = gActionData.element.attr('transform');
+        let transform = gEditActionData.element.attr('transform');
         let { scale, translate, rotate } = getTransformValues( transform );
 	rotate.angle += deltaX;
-	setSvgTransformAttr( gActionData.element, scale, translate, rotate );
+	setSvgTransformAttr( gEditActionData.element, scale, translate, rotate );
     }
     
     function actionScaleApply() {
 	console.log( 'Scale Apply' );
-	saveSvgPosition( gActionData.element );
+	saveSvgPosition( gEditActionData.element );
     }
 
     function actionRotateApply() {
-	saveSvgPosition( gActionData.element );
+	saveSvgPosition( gEditActionData.element );
     }
     
     function actionScaleAbort() {
-	if ( gActionState != ActionState.SCALE ) {
+	if ( gEditActionState != EditActionState.SCALE ) {
 	    return;
 	}
 	revertAction();
     }
 
     function actionRotateAbort() {
-	if ( gActionState != ActionState.ROTATE ) {
+	if ( gEditActionState != EditActionState.ROTATE ) {
 	    return;
 	}	
 	revertAction();
@@ -503,7 +522,7 @@
 	} catch (e) {
 	    console.debug( `Problem getting bounding box: ${e}` );
 	}
-	return { x: 0, y: 0 }
+	return { x: 0, y: 0 };
     }
     
     function toSvgPoint( svgElement, clientX, clientY) {
@@ -545,7 +564,7 @@
 	width = viewBoxArray[2];
 	height = viewBoxArray[3];
 
-	return { x, y, width, height }
+	return { x, y, width, height };
     }
 
     function displayElementInfo( label, element ) {

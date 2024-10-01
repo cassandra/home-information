@@ -27,6 +27,11 @@ class EditViewMixin:
 class EditStartView( View ):
 
     def get(self, request, *args, **kwargs):
+
+        # This most do a full synchronous page load to ensure that the
+        # Javascript handling is consistent with the current operating
+        # state mode.
+        
         request.view_parameters.edit_mode = EditMode.ON
         request.view_parameters.to_session( request )
 
@@ -39,6 +44,11 @@ class EditStartView( View ):
 class EditEndView( View ):
 
     def get(self, request, *args, **kwargs):
+
+        # This most do a full synchronous page load to ensure that the
+        # Javascript handling is consistent with the current operating
+        # state mode.
+
         request.view_parameters.edit_mode = EditMode.OFF
         request.view_parameters.to_session( request )
 

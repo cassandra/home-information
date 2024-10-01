@@ -7,6 +7,12 @@ from .enums import EditMode
 
 @dataclass
 class ViewParameters:
+
+    # For anything in this view state that needs to be kept in sync with
+    # Javascript, add global variables in the base.html template at start
+    # of body and reference in Javascript as needed. e.g., The editing mode
+    # requires additional event registrations to handle mouse and gesture
+    # events..
     
     location_view_id    : int       = None
     edit_mode           : EditMode  = None
