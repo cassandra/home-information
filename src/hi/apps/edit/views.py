@@ -1,5 +1,7 @@
 import re
+from typing import Dict
 
+from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.template.loader import get_template
 from django.urls import reverse
@@ -9,10 +11,13 @@ import hi.apps.common.antinode as antinode
 from hi.apps.collection.models import Collection, CollectionPosition
 from hi.apps.entity.models import Entity, EntityPosition
 from hi.apps.location.forms import SvgPositionForm
-from hi.apps.location.models import Location
+from hi.apps.location.location_view_manager import LocationViewManager
+from hi.apps.location.models import Location, LocationView
 
 from hi.constants import DIVID
 from hi.enums import EditMode
+
+from .helpers import EditHelpers
 
 
 class EditViewMixin:
@@ -23,6 +28,33 @@ class EditViewMixin:
             raise NotImplementedError( 'Not yet handling bad edit details html id' )
         return ( m.group(1), int(m.group(2)) )
 
+    def get_edit_side_panel_response( self,
+                                      request        : HttpRequest,
+                                      template_name  : str,
+                                      context        : Dict  = None):
+        if context is None:
+            context = dict()
+        template = get_template( template_name )
+        content = template.render( context, request = request )
+        insert_map = {
+            DIVID['EDIT_ITEM']: content,
+        }
+        return antinode.response(
+            insert_map = insert_map,
+        )
+
+    def render_location_view_content( self,
+                                      request        : HttpRequest,
+                                      location_view : LocationView ) -> str:
+        location_view_data = LocationViewManager().get_location_view_data(
+            location_view = location_view,
+        )
+        context = {
+            'location_view_data': location_view_data,
+        }
+        template = get_template( 'location/location_view.html' )
+        return template.render( context, request = request )
+        
     
 class EditStartView( View ):
 
@@ -77,17 +109,9 @@ class EditDetailsView( View, EditViewMixin ):
         raise NotImplementedError( 'Not yet handling unknown edit detail type.' )
 
     def get_default_details( self, request ):
-
-        context = {
-        }
-        template = get_template('edit/panes/default.html')
-        content = template.render( context, request = request )
-        
-        insert_map = {
-            DIVID['EDIT_ITEM']: content,
-        }
-        return antinode.response(
-            insert_map = insert_map,
+        return self.get_edit_side_panel_response(
+            request = request,
+            template_name = 'edit/panes/default.html',
         )
 
     def get_entity_details( self, request, entity_id : int ):
@@ -108,14 +132,10 @@ class EditDetailsView( View, EditViewMixin ):
             'entity': entity,
             'svg_position_form': svg_position_form,
         }
-        template = get_template('edit/panes/entity.html')
-        content = template.render( context, request = request )
-        
-        insert_map = {
-            DIVID['EDIT_ITEM']: content,
-        }
-        return antinode.response(
-            insert_map = insert_map,
+        return self.get_edit_side_panel_response(
+            request = request,
+            template_name = 'edit/panes/entity.html',
+            context = context,
         )
         
     def get_collection_details( self, request, collection_id : int ):
@@ -136,14 +156,10 @@ class EditDetailsView( View, EditViewMixin ):
             'collection': collection,
             'svg_position_form': svg_position_form,
         }
-        template = get_template('edit/panes/collection.html')
-        content = template.render( context, request = request )
-        
-        insert_map = {
-            DIVID['EDIT_ITEM']: content,
-        }
-        return antinode.response(
-            insert_map = insert_map,
+        return self.get_edit_side_panel_response(
+            request = request,
+            template_name = 'edit/panes/collection.html',
+            context = context,
         )
         
                 
@@ -234,4 +250,92 @@ class EditSvgPositionView( View, EditViewMixin ):
         return CollectionPosition(
             collection = collection,
             location = location,
+        )
+
+
+class EditAddRemoveView( View, EditViewMixin ):
+
+    def get(self, request, *args, **kwargs):
+
+        location_view = request.view_parameters.location_view
+
+        entity_view_group_list = EditHelpers.create_entity_view_group_list( location_view = location_view )
+        collection_view_group = EditHelpers.create_collection_view_group( location_view = location_view )
+        
+        context = {
+            'entity_view_group_list': entity_view_group_list,
+            'collection_view_group': collection_view_group,
+        }
+        return self.get_edit_side_panel_response(
+            request = request,
+            template_name = 'edit/panes/add_remove.html',
+            context = context,
+        )
+
+    
+class EditViewEntityToggleView( View, EditViewMixin ):
+
+    def post(self, request, *args, **kwargs):
+
+        location_view_id = kwargs.get('location_view_id')
+        entity_id = kwargs.get('entity_id')
+
+        entity = Entity.objects.get( id = entity_id )
+        location_view = LocationView.objects.get( id = location_view_id )
+        exists_in_view = EditHelpers.toggle_entity_in_view(
+            entity = entity,
+            location_view = location_view,
+        )
+            
+        context = {
+            'location_view': location_view,
+            'entity': entity,
+            'exists_in_view': exists_in_view,
+        }
+        template = get_template( 'edit/panes/edit_view_entity_toggle.html' )
+        main_content = template.render( context, request = request )
+
+        location_view_content = self.render_location_view_content(
+            request = request,
+            location_view = location_view,
+        )
+        return antinode.response(
+            main_content = main_content,
+            insert_map = {
+                DIVID['MAIN'] : location_view_content,
+            },
+        )
+
+    
+class EditViewCollectionToggleView( View, EditViewMixin ):
+
+    def post(self, request, *args, **kwargs):
+
+        location_view_id = kwargs.get('location_view_id')
+        collection_id = kwargs.get('collection_id')
+
+        collection = Collection.objects.get( id = collection_id )
+        location_view = LocationView.objects.get( id = location_view_id )
+        exists_in_view = EditHelpers.toggle_collection_in_view(
+            collection = collection,
+            location_view = location_view,
+        )
+            
+        context = {
+            'location_view': location_view,
+            'collection': collection,
+            'exists_in_view': exists_in_view,
+        }
+        template = get_template( 'edit/panes/edit_view_collection_toggle.html' )
+        main_content = template.render( context, request = request )
+
+        location_view_content = self.render_location_view_content(
+            request = request,
+            location_view = location_view,
+        )
+        return antinode.response(
+            main_content = main_content,
+            insert_map = {
+                DIVID['MAIN'] : location_view_content,
+            },
         )

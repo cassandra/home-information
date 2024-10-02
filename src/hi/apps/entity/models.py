@@ -385,4 +385,9 @@ class EntityView(models.Model):
         verbose_name = 'Entity View'
         verbose_name_plural = 'Entity Views'
 
-    
+        constraints = [
+            models.UniqueConstraint(
+                fields = [ 'entity', 'location_view' ],
+                name = 'entity_view_entity_location_view', ),
+        ]
+

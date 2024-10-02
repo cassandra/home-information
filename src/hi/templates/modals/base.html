@@ -1,0 +1,43 @@
+{% load static %}
+<div class="modal-dialog hi-modal">
+  <div class="modal-content">
+    <div class="modal-title">
+      <div class="row {% block header_class %}bg-secondary{% endblock %} m-0 py-2">
+	<div class="col-md-2 col-3 align-self-center text-center">
+	  {% block title_image %}
+	  <img class="img-fluid"
+	       src="{% static 'img/hi-logo-196x196.png' %}"
+	       alt="HI Logo" \>
+	  {% endblock %}
+	</div>
+	<div class="col-md-9 col-8 align-self-center h4 m-0 px-1">
+	  {% block title_text %}
+	  {% endblock %}
+	</div>
+	<div class="col-md-1 col-1 align-self-center m-0 pl-1 text-right">
+	  {% block dismiss_button %}
+	  <button id="modal_dismiss_x"
+		  type="button" class=" w-100 text-center text-white close"
+		  data-dismiss="modal" aria-hidden="true">X</button>
+	  {% endblock %}
+	</div>
+      </div>
+    </div>
+    {% block preamble %}
+    {% endblock %}
+    <div class="modal-body {% block body_class %}{% endblock %}">
+      {% block subheader %}
+      {% endblock %}
+      {% block body %}
+      {% endblock %}
+    </div>
+    <div class="modal-footer d-flex justify-content-around {% block footer_class %}{% endblock %}">
+      {% block footer %}
+      {% endblock %}
+    </div>  
+    {% block after_footer %}
+    {% endblock %}
+    {% block postamble %}
+    {% endblock %}
+  </div>
+</div>

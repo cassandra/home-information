@@ -1,19 +1,27 @@
-<div id="hi-edit-side-content" class="d-flex justify-content-between">
-  <div class="h5">Editing</div>
+<div id="hi-edit-side-content" class="">
+  <div class="">EDIT PANEL</div>
+
+  <div class="">
+    <a href="{% url 'edit_add_remove' %}"
+       class="btn btn-tertiary btn-control" role="button" data-async="true">
+      ADD/REMOVE
+    </a>
+  </div>
   <div class="">
     <a href="{% url 'edit_end' %}"
-       class="btn btn-tertiary" role="button" >
+       class="btn btn-tertiary btn-control" role="button" >
       EXIT
     </a>
   </div>
-</div>
-<div id="hi-edit-item">
-  {% if entity %}
-  {% include "edit/panes/entity.html" %}
-  {% elif collection %}
-  {% include "edit/panes/collection.html" %}
-  {% else %}
-  {% include "edit/panes/default.html" %}
-  {% endif %}
-</div>
 
+  <div id="hi-edit-item">
+    {% if entity %}
+    {% include "edit/panes/entity.html" %}
+    {% elif collection %}
+    {% include "edit/panes/collection.html" %}
+    {% else %}
+    {% include "edit/panes/default.html" %}
+    {% endif %}
+  </div>
+
+</div>

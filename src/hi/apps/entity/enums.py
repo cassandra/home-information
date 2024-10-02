@@ -9,6 +9,13 @@ class EntityType(LabeledEnum):
     - SVG file is needed for each of these, else will use a default.
     - SVG filename is by convention:  
     """
+    def __init__( self,
+                  label        : str,
+                  description  : str,
+                  is_path      : bool = False ):
+        super().__init__( label, description )
+        self.is_path = is_path
+        return
     
     AIR_CONDITIONER      = ( 'Air Conditioner', '' )  # Controls area
     APPLIANCE            = ( 'Appliance', '' )
@@ -18,14 +25,14 @@ class EntityType(LabeledEnum):
     BAROMETER            = ( 'Barometer', '' )
     CAMERA               = ( 'Camera', '' )
     COMPUTER             = ( 'Computer', '' )
-    CONTROL_WIRE         = ( 'Control Wire', '' )
+    CONTROL_WIRE         = ( 'Control Wire', '', True )
     DISPLAY              = ( 'Display', '' )
     DOOR                 = ( 'Door', '' )
     DOOR_LOCK            = ( 'Door Lock', '' )  # Controls doors
     ELECTRICAL_OUTLET    = ( 'Electrical Outlet', '' )
     ELECTRICY_METER      = ( 'Electric Meter', '' )
     ELECTRIC_PANEL       = ( 'Electric Panel', '' )
-    ELECTRIC_WIRE        = ( 'Electric Wire', '' )
+    ELECTRIC_WIRE        = ( 'Electric Wire', '', True )
     HEALTHCHECK          = ( 'Healthcheck', '' )
     HEATER               = ( 'Heater', '' )  # Controls area
     HVAC_AIR_HANDLER     = ( 'HVAC Air Handler', '' )  # Controls area
@@ -39,15 +46,16 @@ class EntityType(LabeledEnum):
     OPEN_CLOSE_DETECTOR  = ( 'Open/Close Sensor', '' )
     OTHER                = ( 'Other', '' )  # Will use generic visual element
     PRESENCE_SENSOR      = ( 'Presence Sensor', '' )
-    SEWER_LINE           = ( 'Sewer Wire', '' )
+    SEWER_LINE           = ( 'Sewer Wire', '', True )
     SHOWER               = ( 'Shower', '' ) 
     SINK                 = ( 'Sink', '' ) 
     SPEAKER              = ( 'Speaker', '' )
     SPINKLER_CONTROLLER  = ( 'Spinkler Controller', '' )
     SPINKLER_VALVE       = ( 'Spinkler Valve', '' )  # Controls sprinkler heads
     SPRINKLER_HEAD       = ( 'Sprinkler Head', '' )
+    SPRINKLER_WIRE       = ( 'Sprinkler Wire', '', True )
     TELECOM_BOX          = ( 'Telecom Box', '' )
-    TELECOM_WIRE         = ( 'Telecom Wire', '' )
+    TELECOM_WIRE         = ( 'Telecom Wire', '', True )
     THERMOMETER          = ( 'Thermometer', '' )
     THERMOSTAT           = ( 'Thermostat', '' )
     TIME_SOURCE          = ( 'Time Source', '' )
@@ -55,9 +63,9 @@ class EntityType(LabeledEnum):
     TOOL                 = ( 'Tool', '' )
     VIDEO_PLAYER         = ( 'Video Player', '' )
     WALL_SWITCH          = ( 'Wall Switch', '' )
-    WASTE_PIPE           = ( 'Waste Pipe', '' ) 
+    WASTE_PIPE           = ( 'Waste Pipe', '', True ) 
     WATER_HEATER         = ( 'Water Heater', '' )
-    WATER_LINE           = ( 'Water Line', '' )
+    WATER_LINE           = ( 'Water Line', '', True )
     WATER_METER          = ( 'Water Meter', '' )
     WATER_SHUTOFF_VALVE  = ( 'Water Shutoff Valve', '' )
     WEATHER_STATION      = ( 'Weather Station', '' )

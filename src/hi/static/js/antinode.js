@@ -14,7 +14,7 @@
 //========================================
 // jQuery asynchronous form submission
 
-// For any anchor tag (<a>) or form submission, you can turn them into an
+// For any anchor tag (<a>) or form tag (<form>), you can turn them into an
 // asynchonous (aka, AJAX) request by adding the attribute:
 //  
 //      data-async="mnemonic-or-jquery-selector"
@@ -55,9 +55,9 @@
 // submissions by adding the form property "debounce". Set this on the form
 // HTML element, not the buttons.
 //
-// To support "onchange" submission for SELECT elements, add the following
-// attribute to the SELECT (and also add the data-async/data-mode
-// attributes to the form)
+// To support "onchange" submission for Select or checkbox elements, add
+// the following attribute to the SELECT (and also add the
+// data-async/data-mode attributes to the form)
 //
 //     onchange-async="true"
 //
@@ -801,6 +801,10 @@ jQuery(function($) {
     // This is to support auto-submitting from SELECT elements asnychronously.
     //
     $('body').on('change', 'select[onchange-async]', function() {
+        let $form = $(this.form);
+        return asyncSubmitHandlerHelper( $form );
+    });
+    $('body').on('change', 'input[onchange-async]', function() {
         let $form = $(this.form);
         return asyncSubmitHandlerHelper( $form );
     });
