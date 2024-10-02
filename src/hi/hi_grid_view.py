@@ -11,6 +11,7 @@ from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
+from hi.apps.collection.models import Collection
 
 from hi.constants import DIVID
 
@@ -70,6 +71,11 @@ class HiGridView(View):
                 location = request.view_parameters.location_view.location
                 location_view_list = list( location.views.order_by( 'order_id' ))
                 context['location_view_list'] = location_view_list
+            
+            # This list of collections is needed for bottom buttons
+            if 'collection_list' not in context:
+                collection_list = list( Collection.objects.all().order_by( 'order_id' ))
+                context['collection_list'] = collection_list
             
             return render( request, self.HI_GRID_TEMPLATE_NAME, context )
 

@@ -24,7 +24,7 @@ from .transient_models import (
 )
 
 
-class EditHelpers:
+class CollectionEditHelpers:
 
     @classmethod
     def create_entity_view_group_list( cls, location_view : LocationView ) -> List[EntityViewItem]:
@@ -182,7 +182,10 @@ class EditHelpers:
         return entity_path
         
     @classmethod
-    def toggle_collection_in_view( cls, collection : Collection, location_view : LocationView ) -> bool:
+    def toggle_collection_in_view( cls,
+                                   collection              : Collection,
+                                   location_view           : LocationView,
+                                   add_position_if_needed  : bool ) -> bool:
 
         try:
             collection_view = CollectionView.objects.get(
@@ -193,20 +196,25 @@ class EditHelpers:
             return False
             
         except CollectionView.DoesNotExist:
-            cls.add_collection_to_view( collection = collection, location_view = location_view )
+            cls.add_collection_to_view(
+                collection = collection,
+                location_view = location_view,
+                add_position_if_needed = add_position_if_needed,
+            )
             return True
         
     @classmethod
     def add_collection_to_view( cls,
-                                collection : Collection,
-                                location_view : LocationView ):
+                                collection              : Collection,
+                                location_view           : LocationView,
+                                add_position_if_needed  : bool ):
         
         with transaction.atomic():
-            # Need to make sure it has some visible representation in the view if none exists.
-            cls.add_collection_position_if_needed(
-                collection = collection,
-                location_view = location_view,
-            )
+            if add_position_if_needed:
+                cls.add_collection_position_if_needed(
+                    collection = collection,
+                    location_view = location_view,
+                )
             _ = CollectionView.objects.create(
                 collection = collection,
                 location_view = location_view,

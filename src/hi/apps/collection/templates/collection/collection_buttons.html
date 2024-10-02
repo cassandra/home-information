@@ -1,0 +1,9 @@
+{% for collection in collection_list %}
+<div class="col-1">
+  <a href="{% url 'collection_view' id=collection.id %}"
+      class="btn btn-secondary btn-control" role="button"
+     data-async="#{{ DIVID.MAIN }}" >
+    {{ collection.name }}
+  </a>
+</div>
+{% endfor %}

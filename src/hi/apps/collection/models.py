@@ -22,6 +22,10 @@ class Collection( models.Model ):
         max_length = 32,
         null = False, blank = False,
     )
+    order_id = models.PositiveIntegerField(
+        'Order Id',
+        default = 0,
+    )
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,
@@ -137,10 +141,6 @@ class CollectionView(models.Model):
         related_name = 'collection_views',
         verbose_name = 'Location',
         on_delete = models.CASCADE,
-    )
-    order_id = models.PositiveIntegerField(
-        'Order Id',
-        default = 0,
     )
     created_datetime = models.DateTimeField(
         'Created',

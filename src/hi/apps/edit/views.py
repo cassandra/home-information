@@ -15,9 +15,10 @@ from hi.apps.location.location_view_manager import LocationViewManager
 from hi.apps.location.models import Location, LocationView
 
 from hi.constants import DIVID
-from hi.enums import EditMode
+from hi.enums import ViewMode
 
-from .helpers import EditHelpers
+from .helpers_location_view import LocationViewEditHelpers
+from .helpers_collection import CollectionEditHelpers
 
 
 class EditViewMixin:
@@ -64,7 +65,7 @@ class EditStartView( View ):
         # Javascript handling is consistent with the current operating
         # state mode.
         
-        request.view_parameters.edit_mode = EditMode.ON
+        request.view_parameters.view_mode = ViewMode.EDIT
         request.view_parameters.to_session( request )
 
         redirect_url = request.META.get('HTTP_REFERER')
@@ -81,7 +82,7 @@ class EditEndView( View ):
         # Javascript handling is consistent with the current operating
         # state mode.
 
-        request.view_parameters.edit_mode = EditMode.OFF
+        request.view_parameters.view_mode = ViewMode.MONITOR
         request.view_parameters.to_session( request )
 
         redirect_url = request.META.get('HTTP_REFERER')
@@ -93,7 +94,7 @@ class EditEndView( View ):
 class EditDetailsView( View, EditViewMixin ):
 
     def get(self, request, *args, **kwargs):
-        if request.view_parameters.edit_mode == EditMode.OFF:
+        if not request.view_parameters.view_mode.is_editing:
             raise NotImplementedError( 'Not yet handling bad edit context' )
 
         html_id = kwargs.get('html_id')
@@ -134,7 +135,7 @@ class EditDetailsView( View, EditViewMixin ):
         }
         return self.get_edit_side_panel_response(
             request = request,
-            template_name = 'edit/panes/entity.html',
+            template_name = 'edit/panes/details_entity.html',
             context = context,
         )
         
@@ -158,7 +159,7 @@ class EditDetailsView( View, EditViewMixin ):
         }
         return self.get_edit_side_panel_response(
             request = request,
-            template_name = 'edit/panes/collection.html',
+            template_name = 'edit/panes/details_collection.html',
             context = context,
         )
         
@@ -166,7 +167,7 @@ class EditDetailsView( View, EditViewMixin ):
 class EditSvgPositionView( View, EditViewMixin ):
 
     def post(self, request, *args, **kwargs):
-        if request.view_parameters.edit_mode == EditMode.OFF:
+        if not request.view_parameters.view_mode.is_editing:
             raise NotImplementedError( 'Not yet handling bad edit context' )
         
         ( item_type, item_id ) = self.parse_html_id( kwargs.get('html_id'))
@@ -253,14 +254,14 @@ class EditSvgPositionView( View, EditViewMixin ):
         )
 
 
-class EditAddRemoveView( View, EditViewMixin ):
+class AddRemoveView( View, EditViewMixin ):
 
     def get(self, request, *args, **kwargs):
 
         location_view = request.view_parameters.location_view
 
-        entity_view_group_list = EditHelpers.create_entity_view_group_list( location_view = location_view )
-        collection_view_group = EditHelpers.create_collection_view_group( location_view = location_view )
+        entity_view_group_list = LocationViewEditHelpers.create_entity_view_group_list( location_view = location_view )
+        collection_view_group = LocationViewEditHelpers.create_collection_view_group( location_view = location_view )
         
         context = {
             'entity_view_group_list': entity_view_group_list,
@@ -282,7 +283,7 @@ class EditViewEntityToggleView( View, EditViewMixin ):
 
         entity = Entity.objects.get( id = entity_id )
         location_view = LocationView.objects.get( id = location_view_id )
-        exists_in_view = EditHelpers.toggle_entity_in_view(
+        exists_in_view = LocationViewEditHelpers.toggle_entity_in_view(
             entity = entity,
             location_view = location_view,
         )
@@ -316,9 +317,10 @@ class EditViewCollectionToggleView( View, EditViewMixin ):
 
         collection = Collection.objects.get( id = collection_id )
         location_view = LocationView.objects.get( id = location_view_id )
-        exists_in_view = EditHelpers.toggle_collection_in_view(
+        exists_in_view = LocationViewEditHelpers.toggle_collection_in_view(
             collection = collection,
             location_view = location_view,
+            add_position_if_needed = True,
         )
             
         context = {

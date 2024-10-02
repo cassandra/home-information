@@ -39,24 +39,24 @@
     
     $(document).ready(function() {
 	$(document).on('mousedown', locationViewAreaSelector, function(event) {
-	    if ( gHiEditMode == 'off' ) { return; }
+	    if ( gHiViewMode != 'edit' ) { return; }
 	    handleMouseDown( event );
 	    
 	});
 	$(document).on('mousemove', locationViewAreaSelector, function(event) {
-	    if ( gHiEditMode == 'off' ) { return; }
+	    if ( gHiViewMode != 'edit' ) { return; }
 	    handleMouseMove( event );
 	});
 	$(document).on('mouseup', locationViewAreaSelector, function(event) {
-	    if ( gHiEditMode == 'off' ) { return; }
+	    if ( gHiViewMode != 'edit' ) { return; }
 	    handleMouseUp( event );
 	});
 	$(document).on('keydown', function(event) {
-	    if ( gHiEditMode == 'off' ) { return; }
+	    if ( gHiViewMode != 'edit' ) { return; }
 	    handleKeyDown( event );
 	});
 	$(document).on('keyup', function(event) {
-	    if ( gHiEditMode == 'off' ) { return; }
+	    if ( gHiViewMode != 'edit' ) { return; }
 	    handleKeyUp( event );
 	});
     });

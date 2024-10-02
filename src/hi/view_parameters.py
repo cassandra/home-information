@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 
+from hi.apps.collection.models import Collection
 from hi.apps.location.models import LocationView
 
-from .enums import EditMode
+from .enums import ViewMode, ViewType
 
 
 @dataclass
@@ -14,13 +15,18 @@ class ViewParameters:
     # requires additional event registrations to handle mouse and gesture
     # events..
     
-    location_view_id    : int       = None
-    edit_mode           : EditMode  = None
+    view_type         : ViewType  = None
+    view_mode         : ViewMode  = None
+    location_view_id  : int       = None
+    collection_id     : int       = None
     
     def __post_init__(self):
-        if self.edit_mode is None:
-            self.edit_mode = EditMode.default()
+        if self.view_type is None:
+            self.view_type = ViewType.default()
+        if self.view_mode is None:
+            self.view_mode = ViewMode.default()
         self._location_view = None  # Lazy loaded
+        self._collection = None  # Lazy loaded
         return
 
     @property
@@ -35,11 +41,25 @@ class ViewParameters:
         except LocationView.DoesNotExist:
             return None
         
+    @property
+    def collection(self):
+        if self._collection:
+            return self._collection
+        if self.collection_id is None:
+            return None
+        try:
+            self._collection_ = Collection.objects.get( id = self.collection_id )
+            return self._collection
+        except Collection.DoesNotExist:
+            return None
+        
     def to_session( self, request ):
         if not hasattr( request, 'session' ):
             return
+        request.session['view_type'] = str(self.view_type)
+        request.session['view_mode'] = str(self.view_mode)
         request.session['location_view_id'] = self.location_view_id
-        request.session['edit_mode'] = str(self.edit_mode)
+        request.session['collection_id'] = self.collection_id
         return
 
     @staticmethod
@@ -48,15 +68,23 @@ class ViewParameters:
             return ViewParameters()
         if not hasattr( request, 'session' ):
             return ViewParameters()
+
+        view_type = ViewType.from_name_safe( name = request.session.get( 'view_type' ))
+        view_mode = ViewMode.from_name_safe( name = request.session.get( 'view_mode' ))
+
         try:
             location_view_id = int( request.session.get( 'location_view_id' ))
         except ( TypeError, ValueError ):
             location_view_id = None
-
-        edit_mode = EditMode.from_name_safe( name = request.session.get( 'edit_mode' ))
+        try:
+            collection_id = int( request.session.get( 'collection_id' ))
+        except ( TypeError, ValueError ):
+            collection_id = None
 
         return ViewParameters(
+            view_type = view_type,
+            view_mode = view_mode,
             location_view_id = location_view_id,
-            edit_mode = edit_mode,
+            collection_id = collection_id,
         )
     

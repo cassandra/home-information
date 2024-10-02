@@ -6,6 +6,7 @@ from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
+from hi.enums import ViewType
 from hi.hi_grid_view import HiGridView
 
 from .location_view_manager import LocationViewManager
@@ -31,12 +32,13 @@ class LocationViewDefaultView( View ):
 
         location = Location.objects.order_by( 'order_id' ).first()
         if not location:
-            raise NotImplementedError('Handling no defined locations not yet implemengted')
+            raise NotImplementedError('Handling no defined locations not yet implemented')
         
         location_view = location.views.order_by( 'order_id' ).first()
         if not location_view:
-            raise NotImplementedError('Handling no defined views not yet implemengted')
+            raise NotImplementedError('Handling no defined views not yet implemented')
 
+        request.view_parameters.view_type = ViewType.LOCATION
         request.view_parameters.location_view_id = location_view.id
         request.view_parameters.to_session( request )
         return location_view
@@ -54,7 +56,8 @@ class LocationViewView( HiGridView ):
             logger.warning( f'Location view "{location_view_id}" does not exist.' )
             raise NotImplementedError('Handling bad location view not yet implemengted')
 
-        # Remember last view chosen
+        # Remember last location view chosen
+        request.view_parameters.view_type = ViewType.LOCATION
         request.view_parameters.location_view_id = location_view.id
         request.view_parameters.to_session( request )
 
@@ -63,7 +66,7 @@ class LocationViewView( HiGridView ):
         # views are invalidated. Else, the editing state and edit side
         # panel will be invalid for the new view.
         #
-        if is_ajax( request ) and request.view_parameters.edit_mode.should_reload_on_location_view_change:
+        if is_ajax( request ) and request.view_parameters.view_mode.should_reload_on_view_change:
             sync_url = reverse( 'location_view', kwargs = kwargs )
             return antinode.redirect_response( url = sync_url )
         

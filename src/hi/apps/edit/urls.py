@@ -6,7 +6,7 @@ from . import views
 urlpatterns = [
 
     re_path( r'^start$', 
-             views.EditStartView.as_view(), 
+             views.EditStartView.as_view(),
              name='edit_start' ),
 
     re_path( r'^end$', 
@@ -22,7 +22,7 @@ urlpatterns = [
              name='edit_svg_position' ),
 
     re_path( r'^add-remove$', 
-             views.EditAddRemoveView.as_view(), 
+             views.AddRemoveView.as_view(), 
              name='edit_add_remove' ),
 
     re_path( r'^view/entity/toggle/(?P<location_view_id>[\w\-]+)/(?P<entity_id>[\w\-]+)$', 

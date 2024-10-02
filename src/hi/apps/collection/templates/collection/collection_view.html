@@ -1,0 +1,14 @@
+<div id="hi-collection-view-main" class="hi-collection-view">
+  <h5><sub>COLLECTION:</sub> {{ collection_data.collection.name }}</h5>
+
+  {% for entity in collection_data.entity_list %}
+  <div class="">
+    <a href="#"
+       data-async="true">
+      {{ entity.name }}
+    </a>
+  </div>
+  {% empty %}
+  <div><em>No entities in collection.</em></div>
+  {% endfor %}
+</div>
