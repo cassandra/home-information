@@ -187,7 +187,7 @@ class DeleteLocationViewView( View ):
             logger.warning( message )
             return bad_request_response( request, message = message )
 
-        #location_view.delete()
+        location_view.delete()
 
         next_location_view = LocationView.objects.all().order_by( 'order_id' ).first()
         if next_location_view:
@@ -218,7 +218,7 @@ class DeleteCollectionView( View ):
             logger.warning( message )
             return bad_request_response( request, message = message )
 
-        #collection.delete()
+        collection.delete()
 
         next_collection = Collection.objects.all().order_by( 'order_id' ).first()
         if next_collection:
