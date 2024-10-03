@@ -1,7 +1,7 @@
 import json
 from typing import Dict
 
-from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.shortcuts import render
 from django.urls import reverse
 from django.views.generic import View
@@ -46,9 +46,73 @@ def bad_request_response( request, message : str = None, force_json : bool = Fal
     return error_response( request = request,
                            sync_template_name = "pages/bad_request.html",
                            async_template_name = "modals/bad_request.html",
-                           status_code = 200,  # Needed for PWA (not 403)
+                           status_code = 400,
                            force_json = force_json,
                            context = context )
+
+
+def not_authorized_response( request, message : str = None, force_json : bool = False ):
+    if not message:
+        message = 'Not authorized.'
+    context = { 'message': message }
+    return error_response( request = request,
+                           sync_template_name = "pages/not_authorized.html",
+                           async_template_name = "modals/not_authorized.html",
+                           status_code = 403,
+                           force_json = force_json,
+                           context = context )
+
+
+def method_not_allowed_response( request, message : str = None, force_json : bool = False ):
+    if not message:
+        message = 'Method not allowed.'
+    context = { 'message': message }
+    return error_response( request = request,
+                           sync_template_name = "pages/method_not_allowed.html",
+                           async_template_name = "modals/method_not_allowed.html",
+                           status_code = 405,
+                           force_json = force_json,
+                           context = context )
+
+
+def page_not_found_response( request, message : str = None, force_json : bool = False ):
+    if not message:
+        message = 'Page not found.'
+    context = { 'message': message }
+    return error_response( request = request,
+                           sync_template_name = "pages/page_not_found.html",
+                           async_template_name = "modals/page_not_found.html",
+                           status_code = 404,
+                           force_json = force_json,
+                           context = context )
+
+
+def internal_error_response( request, message : str = None, force_json : bool = False ):
+    if not message:
+        message = 'Internal error.'
+    context = { 'message': message }
+    return error_response( request = request,
+                           sync_template_name = "pages/internal_error.html",
+                           async_template_name = "modals/internal_error.html",
+                           status_code = 500,
+                           force_json = force_json,
+                           context = context )
+
+
+def transient_error_response( request, message : str = None, force_json : bool = False ):
+    if not message:
+        message = 'Transient error.'
+    context = { 'message': message }
+    return error_response( request = request,
+                           sync_template_name = "pages/transient_error.html",
+                           async_template_name = "modals/transient_error.html",
+                           status_code = 503,
+                           force_json = force_json,
+                           context = context )
+
+
+def custom_404_handler( request, exception):
+    return HttpResponseNotFound( page_not_found_response( request ))     
 
 
 def edit_required_response( request, message : str = None, force_json : bool = False ):

@@ -1,3 +1,4 @@
+from decimal import Decimal
 import logging
 import re
 from typing import Dict
@@ -11,17 +12,21 @@ from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
 from hi.apps.collection.collection_manager import CollectionManager
+from hi.apps.collection.enums import CollectionType
 from hi.apps.collection.models import Collection, CollectionPosition
 from hi.apps.entity.models import Entity, EntityPosition
+from hi.apps.location.enums import LocationViewType
 from hi.apps.location.forms import SvgPositionForm
 from hi.apps.location.location_view_manager import LocationViewManager
 from hi.apps.location.models import Location, LocationView
 from hi.decorators import edit_required
+from hi.enums import ViewType
 from hi.views import bad_request_response
 
 from hi.constants import DIVID
 from hi.enums import ViewMode
 
+from . import forms
 from .helpers_location_view import LocationViewEditHelpers
 from .helpers_collection import CollectionEditHelpers
 
@@ -165,6 +170,112 @@ class EditDeleteView( View ):
             template_name = 'edit/modals/delete_collection_confirm.html',
             context = context,
         )
+
+    
+@method_decorator( edit_required, name='dispatch' )
+class AddLocationViewView( View ):
+
+    def get( self, request, *args, **kwargs ):
+        context = {
+            'name_form': forms.NameForm(),
+        }
+        return antinode.modal_from_template(
+            request = request,
+            template_name = 'edit/modals/add_location_view.html',
+            context = context,
+        )
+    
+    def post( self, request, *args, **kwargs ):
+        name_form = forms.NameForm( request.POST )
+        if not name_form.is_valid():
+            context = {
+                'name_form': name_form,
+            }
+            return antinode.modal_from_template(
+                request = request,
+                template_name = 'edit/modals/add_location_view.html',
+                context = context,
+            )
+
+
+
+        # Move to helper class
+        # Extend NameForm to add type dropdown
+
+
+        
+        location = self.get_location_for_new_location_view( request )
+        if not location:
+            return bad_request_response( request, message = 'No locations defined.' )
+ 
+        last_location_view = location.views.order_by( '-order_id' ).first()
+
+        location_view = LocationView.objects.create(
+            location = location,
+            location_view_type_str = LocationViewType.default(),
+            name = name_form.cleaned_data.get('name'),
+            svg_view_box_str = str( location.svg_view_box ),
+            svg_rotate = Decimal( 0.0 ),
+            order_id = last_location_view.order_id + 1,
+        )
+        
+        request.view_parameters.view_type = ViewType.LOCATION_VIEW
+        request.view_parameters.location_view_id = location_view.id
+        request.view_parameters.to_session( request )
+        
+        redirect_url = reverse('home')
+        return redirect( redirect_url )
+
+    def get_location_for_new_location_view( self, request : HttpRequest ) -> Location:
+        if request.view_parameters.location_view:
+            return request.view_parameters.location_view.location
+        return Location.objects.order_by( 'order_id' ).first()
+
+    
+@method_decorator( edit_required, name='dispatch' )
+class AddCollectionView( View ):
+
+    def get( self, request, *args, **kwargs ):
+        context = {
+            'name_form': forms.NameForm(),
+        }
+        return antinode.modal_from_template(
+            request = request,
+            template_name = 'edit/modals/add_collection.html',
+            context = context,
+        )
+    
+    def post( self, request, *args, **kwargs ):
+        name_form = forms.NameForm( request.POST )
+        if not name_form.is_valid():
+            context = {
+                'name_form': name_form,
+            }
+            return antinode.modal_from_template(
+                request = request,
+                template_name = 'edit/modals/add_location_view.html',
+                context = context,
+            )
+
+        # Move to helper class
+        # Extend NameForm to add type dropdown
+        
+
+
+        last_collection = Collection.objects.all().order_by( '-order_id' ).first()
+        
+        collection = Collection.objects.create(
+            name = name_form.cleaned_data.get('name'),
+            collection_type_str = CollectionType.default(),
+            order_id = last_collection.order_id + 1,
+        )
+        
+        request.view_parameters.view_type = ViewType.COLLECTION
+        request.view_parameters.collection_id = collection.id
+        request.view_parameters.to_session( request )
+ 
+        redirect_url = reverse('home')
+        return redirect( redirect_url )
 
     
 @method_decorator( edit_required, name='dispatch' )

@@ -32,7 +32,18 @@ urlpatterns = [
     re_path( r'^integration/', include('hi.integrations.core.urls' )),
     re_path( r'^location/', include('hi.apps.location.urls' )),
     re_path( r'^collection/', include('hi.apps.collection.urls' )),
-     
+
+    # Custom error pages
+    re_path( r'^400.html$', views.bad_request_response, name='bad_request' ),
+    re_path( r'^403.html$', views.not_authorized_response, name='not_authorized' ),
+    re_path( r'^404.html$', views.page_not_found_response, name='page_not_found' ),
+    re_path( r'^405.html$', views.method_not_allowed_response, name='method_not_allowed' ),
+    re_path( r'^500.html$', views.internal_error_response, name='internal_error' ),
+    re_path( r'^503.html$', views.transient_error_response, name='transient_error' ),
+
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+handler404 = 'hi.views.custom_404_handler'
+

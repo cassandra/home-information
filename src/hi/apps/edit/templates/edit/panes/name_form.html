@@ -1,0 +1,17 @@
+{% for hidden in name_form.hidden_fields %}
+{{ hidden }}
+{% endfor %}
+
+{% if name_form.non_field_errors %}
+<div class="non-field-errors">
+  {% for err in name_form.non_field_errors %}
+  <p class="form-error text-danger">ERROR: {{ err }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div>
+  {{ name_form.name.label }}
+  {{ name_form.name }}
+  {{ name_form.name.errors }}
+</div>

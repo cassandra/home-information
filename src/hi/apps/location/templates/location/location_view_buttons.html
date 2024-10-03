@@ -7,3 +7,12 @@
   </a>
 </div>
 {% endfor %}
+{% if request.is_editing %}
+<div class="col-1">
+  <a href="{% url 'edit_add_location_view' %}"
+     class="btn btn-success btn-control" role="button"
+     data-async="modal" >
+    ADD
+  </a>
+</div>
+{% endif %}

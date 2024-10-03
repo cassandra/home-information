@@ -1,0 +1,28 @@
+{% extends "modals/action_with_cancel.html" %}
+
+{% block preamble %}
+<form action="{% url 'edit_add_collection' %}" method="post"
+      class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+New Collection
+{% endblock %}
+
+{% block body %}
+<div>
+{% include "edit/panes/name_form.html" %}
+</div>
+{% endblock %}
+
+{% block action_right %}
+<button id="hi-add-collection-button" type="submit" class="btn btn-lg btn-success"
+	name="action" value="add">
+  ADD
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}
