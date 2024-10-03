@@ -1,4 +1,3 @@
-from decimal import Decimal
 import logging
 import re
 from typing import Dict
@@ -11,24 +10,21 @@ from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
-from hi.apps.collection.collection_manager import CollectionManager
-from hi.apps.collection.enums import CollectionType
-from hi.apps.collection.models import Collection, CollectionPosition
-from hi.apps.entity.models import Entity, EntityPosition
-from hi.apps.location.enums import LocationViewType
+import hi.apps.collection.edit.views as collection_edit_views
+from hi.apps.collection.helpers import CollectionHelpers
+from hi.apps.collection.models import Collection
+import hi.apps.entity.edit.views as entity_edit_views
+from hi.apps.entity.helpers import EntityHelpers
+from hi.apps.entity.models import Entity
+import hi.apps.location.edit.views as location_edit_views
 from hi.apps.location.forms import SvgPositionForm
 from hi.apps.location.location_view_manager import LocationViewManager
-from hi.apps.location.models import Location, LocationView
+from hi.apps.location.models import LocationView
 from hi.decorators import edit_required
-from hi.enums import ViewType
 from hi.views import bad_request_response
 
 from hi.constants import DIVID
 from hi.enums import ViewMode
-
-from . import forms
-from .helpers_location_view import LocationViewEditHelpers
-from .helpers_collection import CollectionEditHelpers
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +34,7 @@ class EditViewMixin:
     def parse_html_id( self, html_id : str ):
         m = re.match( r'^hi-(\w+)-(\d+)$', html_id )
         if not m:
-            raise NotImplementedError( 'Not yet handling bad edit details html id' )
+            raise ValueError( 'Bad html id "{html_id}".' )
         return ( m.group(1), int(m.group(2)) )
 
     def get_edit_side_panel_response( self,
@@ -55,30 +51,6 @@ class EditViewMixin:
         return antinode.response(
             insert_map = insert_map,
         )
-
-    def render_location_view_content( self,
-                                      request        : HttpRequest,
-                                      location_view : LocationView ) -> str:
-        location_view_data = LocationViewManager().get_location_view_data(
-            location_view = location_view,
-        )
-        context = {
-            'location_view_data': location_view_data,
-        }
-        template = get_template( 'location/location_view.html' )
-        return template.render( context, request = request )
-
-    def render_collection_content( self,
-                                   request     : HttpRequest,
-                                   collection  : Collection ) -> str:
-        collection_data = CollectionManager().get_collection_data(
-            collection = collection,
-        )
-        context = {
-            'collection_data': collection_data,
-        }
-        template = get_template( 'collection/collection_view.html' )
-        return template.render( context, request = request )
         
     
 class EditStartView( View ):
@@ -90,7 +62,7 @@ class EditStartView( View ):
         # state mode.
         
         if request.view_parameters.view_mode.is_editing:
-            raise NotImplementedError( 'Not yet handling bad edit context' )
+            return bad_request_response( request, message = 'Edit mode already started.' )
 
         request.view_parameters.view_mode = ViewMode.EDIT
         request.view_parameters.to_session( request )
@@ -125,222 +97,15 @@ class EditDeleteView( View ):
     def get(self, request, *args, **kwargs):
 
         if request.view_parameters.view_type.is_location_view:
-            return self.get_location_view_confirm_response( request )
+            return location_edit_views.LocationViewDeleteView().get( request, *args, **kwargs )
 
         if request.view_parameters.view_type.is_collection:
-            return self.get_collection_confirm_response( request )
+            return collection_edit_views.CollectionDeleteView().get( request, *args, **kwargs )
             
         else:
             return bad_request_response( request,
                                          message = f'Bad view type "{request.view_parameters.view_type}".' )
-    
-    def get_location_view_confirm_response( self, request ):
-        location_view_id = request.view_parameters.location_view_id
-        try:
-            location_view = LocationView.objects.select_related(
-                'location' ).get( id = location_view_id )
-        except LocationView.DoesNotExist:
-            message = f'Location view "{location_view_id}" does not exist.'
-            logger.warning( message )
-            return bad_request_response( request, message = message )
 
-        context = {
-            'location_view': location_view,
-        }
-        return antinode.modal_from_template(
-            request = request,
-            template_name = 'edit/modals/delete_location_view_confirm.html',
-            context = context,
-        )
-
-    def get_collection_confirm_response( self, request ):
-        collection_id = request.view_parameters.collection_id
-        try:
-            collection = Collection.objects.get( id = collection_id )
-        except Collection.DoesNotExist:
-            message = f'Collection "{collection_id}" does not exist.'
-            logger.warning( message )
-            return bad_request_response( request, message = message )
-
-        context = {
-            'collection': collection,
-        }
-        return antinode.modal_from_template(
-            request = request,
-            template_name = 'edit/modals/delete_collection_confirm.html',
-            context = context,
-        )
-
-    
-@method_decorator( edit_required, name='dispatch' )
-class AddLocationViewView( View ):
-
-    def get( self, request, *args, **kwargs ):
-        context = {
-            'name_form': forms.NameForm(),
-        }
-        return antinode.modal_from_template(
-            request = request,
-            template_name = 'edit/modals/add_location_view.html',
-            context = context,
-        )
-    
-    def post( self, request, *args, **kwargs ):
-        name_form = forms.NameForm( request.POST )
-        if not name_form.is_valid():
-            context = {
-                'name_form': name_form,
-            }
-            return antinode.modal_from_template(
-                request = request,
-                template_name = 'edit/modals/add_location_view.html',
-                context = context,
-            )
-
-
-
-        # Move to helper class
-        # Extend NameForm to add type dropdown
-
-
-        
-        location = self.get_location_for_new_location_view( request )
-        if not location:
-            return bad_request_response( request, message = 'No locations defined.' )
- 
-        last_location_view = location.views.order_by( '-order_id' ).first()
-
-        location_view = LocationView.objects.create(
-            location = location,
-            location_view_type_str = LocationViewType.default(),
-            name = name_form.cleaned_data.get('name'),
-            svg_view_box_str = str( location.svg_view_box ),
-            svg_rotate = Decimal( 0.0 ),
-            order_id = last_location_view.order_id + 1,
-        )
-        
-        request.view_parameters.view_type = ViewType.LOCATION_VIEW
-        request.view_parameters.location_view_id = location_view.id
-        request.view_parameters.to_session( request )
-        
-        redirect_url = reverse('home')
-        return redirect( redirect_url )
-
-    def get_location_for_new_location_view( self, request : HttpRequest ) -> Location:
-        if request.view_parameters.location_view:
-            return request.view_parameters.location_view.location
-        return Location.objects.order_by( 'order_id' ).first()
-
-    
-@method_decorator( edit_required, name='dispatch' )
-class AddCollectionView( View ):
-
-    def get( self, request, *args, **kwargs ):
-        context = {
-            'name_form': forms.NameForm(),
-        }
-        return antinode.modal_from_template(
-            request = request,
-            template_name = 'edit/modals/add_collection.html',
-            context = context,
-        )
-    
-    def post( self, request, *args, **kwargs ):
-        name_form = forms.NameForm( request.POST )
-        if not name_form.is_valid():
-            context = {
-                'name_form': name_form,
-            }
-            return antinode.modal_from_template(
-                request = request,
-                template_name = 'edit/modals/add_location_view.html',
-                context = context,
-            )
-
-        # Move to helper class
-        # Extend NameForm to add type dropdown
-        
-
-
-        last_collection = Collection.objects.all().order_by( '-order_id' ).first()
-        
-        collection = Collection.objects.create(
-            name = name_form.cleaned_data.get('name'),
-            collection_type_str = CollectionType.default(),
-            order_id = last_collection.order_id + 1,
-        )
-        
-        request.view_parameters.view_type = ViewType.COLLECTION
-        request.view_parameters.collection_id = collection.id
-        request.view_parameters.to_session( request )
- 
-        redirect_url = reverse('home')
-        return redirect( redirect_url )
-
-    
-@method_decorator( edit_required, name='dispatch' )
-class DeleteLocationViewView( View ):
-
-    def post( self, request, *args, **kwargs ):
-        action = request.POST.get( 'action' )
-        if action != 'confirm':
-            return bad_request_response( request, message = 'Missing confirmation value.' )
-
-        location_view_id = request.POST.get( 'location_view_id' )
-        if not location_view_id:
-            return bad_request_response( request, message = 'Missing location view id.' )
-            
-        try:
-            location_view = LocationView.objects.select_related(
-                'location' ).get( id = location_view_id )
-        except LocationView.DoesNotExist:
-            message = f'Location view "{location_view_id}" does not exist.'
-            logger.warning( message )
-            return bad_request_response( request, message = message )
-
-        location_view.delete()
-
-        next_location_view = LocationView.objects.all().order_by( 'order_id' ).first()
-        if next_location_view:
-            request.view_parameters.location_view_id = next_location_view.id
-        else:
-            request.view_parameters.location_view_id = None
-        request.view_parameters.to_session( request )
-        
-        redirect_url = reverse('home')
-        return redirect( redirect_url )
-
-    
-@method_decorator( edit_required, name='dispatch' )
-class DeleteCollectionView( View ):
-
-    def post( self, request, *args, **kwargs ):
-        action = request.POST.get( 'action' )
-        if action != 'confirm':
-            return bad_request_response( request, message = 'Missing confirmation value.' )
-
-        collection_id = request.POST.get( 'collection_id' )
-        if not collection_id:
-            return bad_request_response( request, message = 'Missing collection id.' )
-        try:
-            collection = Collection.objects.get( id = collection_id )
-        except Collection.DoesNotExist:
-            message = f'Collection "{collection_id}" does not exist.'
-            logger.warning( message )
-            return bad_request_response( request, message = message )
-
-        collection.delete()
-
-        next_collection = Collection.objects.all().order_by( 'order_id' ).first()
-        if next_collection:
-            request.view_parameters.collection_id = next_collection.id
-        else:
-            request.view_parameters.collection_id = None
-        request.view_parameters.to_session( request )
-        
-        redirect_url = reverse('home')
-        return redirect( redirect_url )
-    
     
 @method_decorator( edit_required, name='dispatch' )
 class EditDetailsView( View, EditViewMixin ):
@@ -354,69 +119,23 @@ class EditDetailsView( View, EditViewMixin ):
         ( item_type, item_id ) = self.parse_html_id( kwargs.get('html_id'))
 
         if item_type == 'entity':
-            return self.get_entity_details( request, entity_id = item_id )
+            return entity_edit_views.EntityDetailsView().get(
+                request = request,
+                entity_id = item_id,
+            )            
+
         if item_type == 'collection':
-            return self.get_collection_details( request, collection_id = item_id )
-        raise NotImplementedError( 'Not yet handling unknown edit detail type.' )
+            return collection_edit_views.CollectionDetailsView().get(
+                request = request,
+                collection_id = item_id,
+            )            
+
+        return bad_request_response( request, message = 'Unknown item type "{item_type}".' )
 
     def get_default_details( self, request ):
         return self.get_edit_side_panel_response(
             request = request,
             template_name = 'edit/panes/default.html',
-        )
-
-    def get_entity_details( self, request, entity_id : int ):
-        try:
-            entity = Entity.objects.get( id = entity_id )
-        except Entity.DoesNotExist:
-            raise NotImplementedError( 'Handling bad entity Id not yet implemented' )
-
-        location_view = request.view_parameters.location_view
-
-        svg_position_form = None
-        if request.view_parameters.view_type.is_location_view:
-            entity_position = EntityPosition.objects.filter(
-                entity = entity,
-                location = location_view.location,
-            ).first()
-            if entity_position:
-                svg_position_form = SvgPositionForm.from_svg_position_model( entity_position )
-
-        context = {
-            'entity': entity,
-            'svg_position_form': svg_position_form,
-        }
-        return self.get_edit_side_panel_response(
-            request = request,
-            template_name = 'edit/panes/details_entity.html',
-            context = context,
-        )
-        
-    def get_collection_details( self, request, collection_id : int ):
-        try:
-            collection = Collection.objects.get( id = collection_id )
-        except Collection.DoesNotExist:
-            raise NotImplementedError( 'Handling bad collection Id not yet implemented' )
-
-        location_view = request.view_parameters.location_view
-
-        svg_position_form = None
-        if request.view_parameters.view_type.is_location_view:
-            collection_position = CollectionPosition.objects.filter(
-                collection = collection,
-                location = location_view.location,
-            ).first()
-            if collection_position:
-                svg_position_form = SvgPositionForm.from_svg_position_model( collection_position )
-            
-        context = {
-            'collection': collection,
-            'svg_position_form': svg_position_form,
-        }
-        return self.get_edit_side_panel_response(
-            request = request,
-            template_name = 'edit/panes/details_collection.html',
-            context = context,
         )
         
                 
@@ -429,12 +148,12 @@ class EditSvgPositionView( View, EditViewMixin ):
 
         location_view = request.view_parameters.location_view
         if item_type == 'entity':
-            svg_position_model = self.get_entity_position(
+            svg_position_model = EntityHelpers.get_entity_position(
                 entity_id = item_id,
                 location = location_view.location,
             )
         elif item_type == 'collection':
-            svg_position_model = self.get_collection_position(
+            svg_position_model = CollectionHelpers.get_collection_position(
                 collection_id = item_id,
                 location = location_view.location,
             )
@@ -469,56 +188,17 @@ class EditSvgPositionView( View, EditViewMixin ):
             set_attributes_map = set_attributes_map,
         )
 
-    def get_entity_position( self,
-                             entity_id  : int,
-                             location   : Location ):
-        try:
-            entity = Entity.objects.get( id = entity_id )
-        except Entity.DoesNotExist:
-            raise NotImplementedError( 'Handling bad entity Id not yet implemented' )
-        
-        entity_position = EntityPosition.objects.filter(
-            entity = entity,
-            location = location,
-        ).first()
-        if entity_position:
-            return entity_position
-        return EntityPosition(
-            entity = entity,
-            location = location,
-        )
-        
-    def get_collection_position( self,
-                                 collection_id  : int,
-                                 location   : Location ):
-        try:
-            collection = Collection.objects.get( id = collection_id )
-        except Collection.DoesNotExist:
-            raise NotImplementedError( 'Handling bad collection Id not yet implemented' )
-        
-        collection_position = CollectionPosition.objects.filter(
-            collection = collection,
-            location = location,
-        ).first()
-        if collection_position:
-            return collection_position
-        
-        return CollectionPosition(
-            collection = collection,
-            location = location,
-        )
-
 
 @method_decorator( edit_required, name='dispatch' )
 class AddRemoveView( View, EditViewMixin ):
 
-    def get(self, request, *args, **kwargs):
+    def get( self, request, *args, **kwargs ):
 
         if request.view_parameters.view_type.is_location_view:
-            return self.get_location_add_remove_response( request = request )
+            return location_edit_views.LocationViewAddRemoveItemView().get( request, *args, **kwargs )
 
         if request.view_parameters.view_type.is_collection:
-            return self.get_collection_add_remove_response( request = request )
+            return collection_edit_views.CollectionAddRemoveItemView().get( request, *args, **kwargs )
 
         context = {
         }
@@ -527,150 +207,5 @@ class AddRemoveView( View, EditViewMixin ):
             template_name = 'edit/panes/default.html',
             context = context,
         )
-    
-    def get_location_add_remove_response( self, request ):
-        
-        location_view = request.view_parameters.location_view
 
-        entity_view_group_list = LocationViewEditHelpers.create_entity_view_group_list(
-            location_view = location_view,
-        )
-        collection_view_group = LocationViewEditHelpers.create_collection_view_group(
-            location_view = location_view,
-        )
-        
-        context = {
-            'entity_view_group_list': entity_view_group_list,
-            'collection_view_group': collection_view_group,
-        }
-        return self.get_edit_side_panel_response(
-            request = request,
-            template_name = 'edit/panes/add_remove_location.html',
-            context = context,
-        )
-    
-    def get_collection_add_remove_response( self, request ):
-        
-        collection = request.view_parameters.collection
-        
-        entity_collection_group_list = CollectionEditHelpers.create_entity_collection_group_list(
-            collection = collection,
-        )
-        
-        context = {
-            'entity_collection_group_list': entity_collection_group_list,
-        }
-        return self.get_edit_side_panel_response(
-            request = request,
-            template_name = 'edit/panes/add_remove_collection.html',
-            context = context,
-        )
 
-    
-@method_decorator( edit_required, name='dispatch' )
-class EntityToggleLocationView( View, EditViewMixin ):
-
-    def post(self, request, *args, **kwargs):
-
-        location_view_id = kwargs.get('location_view_id')
-        entity_id = kwargs.get('entity_id')
-
-        entity = Entity.objects.get( id = entity_id )
-        location_view = LocationView.objects.get( id = location_view_id )
-        exists_in_view = LocationViewEditHelpers.toggle_entity_in_view(
-            entity = entity,
-            location_view = location_view,
-        )
-            
-        context = {
-            'location_view': location_view,
-            'entity': entity,
-            'exists_in_view': exists_in_view,
-        }
-        template = get_template( 'edit/panes/entity_toggle_location.html' )
-        main_content = template.render( context, request = request )
-
-        location_view_content = self.render_location_view_content(
-            request = request,
-            location_view = location_view,
-        )
-        return antinode.response(
-            main_content = main_content,
-            insert_map = {
-                DIVID['MAIN'] : location_view_content,
-            },
-        )
-
-    
-@method_decorator( edit_required, name='dispatch' )
-class CollectionToggleLocationView( View, EditViewMixin ):
-
-    def post(self, request, *args, **kwargs):
-
-        location_view_id = kwargs.get('location_view_id')
-        collection_id = kwargs.get('collection_id')
-
-        collection = Collection.objects.get( id = collection_id )
-        location_view = LocationView.objects.get( id = location_view_id )
-        exists_in_view = LocationViewEditHelpers.toggle_collection_in_view(
-            collection = collection,
-            location_view = location_view,
-            add_position_if_needed = True,
-        )
-            
-        context = {
-            'location_view': location_view,
-            'collection': collection,
-            'exists_in_view': exists_in_view,
-        }
-        template = get_template( 'edit/panes/collection_toggle_location.html' )
-        main_content = template.render( context, request = request )
-
-        location_view_content = self.render_location_view_content(
-            request = request,
-            location_view = location_view,
-        )
-        return antinode.response(
-            main_content = main_content,
-            insert_map = {
-                DIVID['MAIN'] : location_view_content,
-            },
-        )
-
-    
-@method_decorator( edit_required, name='dispatch' )
-class EntityToggleCollectionView( View, EditViewMixin ):
-
-    def post(self, request, *args, **kwargs):
-
-        collection_id = kwargs.get('collection_id')
-        entity_id = kwargs.get('entity_id')
-
-        entity = Entity.objects.get( id = entity_id )
-        collection = Collection.objects.get( id = collection_id )
-        exists_in_collection = CollectionEditHelpers.toggle_entity_in_collection(
-            entity = entity,
-            collection = collection,
-        )
-            
-        context = {
-            'collection': collection,
-            'entity': entity,
-            'exists_in_collection': exists_in_collection,
-        }
-        template = get_template( 'edit/panes/entity_toggle_collection.html' )
-        main_content = template.render( context, request = request )
-
-        collection_content = self.render_collection_content(
-            request = request,
-            collection = collection,
-        )
-        return antinode.response(
-            main_content = main_content,
-            insert_map = {
-                DIVID['MAIN'] : collection_content,
-            },
-        )
-
-    
-    

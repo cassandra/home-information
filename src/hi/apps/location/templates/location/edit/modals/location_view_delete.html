@@ -1,15 +1,14 @@
 {% extends "modals/action_with_cancel.html" %}
 
 {% block title_text %}
-Delete Collection?
+Delete Location View?
 {% endblock %}
 
 {% block body %}
-
 <div>
   Please confirm that you want to delete the location view:
   <ul>
-    {{ collection.name }}
+    {{ location_view.name }}
   </ul>
 </div>
 <div>
@@ -18,11 +17,11 @@ Delete Collection?
 {% endblock %}
 
 {% block action_right %}
-<form action="{% url 'edit_delete_collection' %}" method="post" class="form"
+<form action="{% url 'location_edit_location_view_delete' %}" method="post" class="form"
       data-async="true" >
   {% csrf_token %}
-  <input type="hidden" name="collection_id" value="{{ collection.id }}" />
-  <button id="hi-delete-collection-button" type="submit" class="btn btn-lg btn-danger"
+  <input type="hidden" name="location_view_id" value="{{ location_view.id }}" />
+  <button id="hi-delete-location-view-button" type="submit" class="btn btn-lg btn-danger"
 	  name="action" value="confirm">
     DELETE
   </button>

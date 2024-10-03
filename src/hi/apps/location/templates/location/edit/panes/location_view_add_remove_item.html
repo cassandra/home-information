@@ -4,7 +4,7 @@
 <div class="">
   <div class="">{{ entity_view_group.entity_type.label }}</div>
   {% for entity_view_item in entity_view_group.item_list %}
-  {% include "edit/panes/entity_toggle_location.html" with location_view=entity_view_group.location_view entity=entity_view_item.entity exists_in_view=entity_view_item.exists_in_view %}
+  {% include "location/edit/panes/location_view_entity_toggle.html" with location_view=entity_view_group.location_view entity=entity_view_item.entity exists_in_view=entity_view_item.exists_in_view %}
   {% endfor %}
 </div>
 {% empty %}
@@ -14,6 +14,6 @@
 <div class="">
   <div class="">Collections</div>
   {% for collection_view_item in collection_view_group.item_list %}
-  {% include "edit/panes/collection_toggle_location.html" with location_view=collection_view_group.location_view collection=collection_view_item.collection exists_in_view=collection_view_item.exists_in_view %}
+  {% include "location/edit/panes/location_view_collection_toggle.html" with location_view=collection_view_group.location_view collection=collection_view_item.collection exists_in_view=collection_view_item.exists_in_view %}
   {% endfor %}
 </div>

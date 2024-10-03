@@ -17,22 +17,6 @@ urlpatterns = [
              views.EditDeleteView.as_view(), 
              name='edit_delete' ),
 
-    re_path( r'^location-view/add$', 
-             views.AddLocationViewView.as_view(), 
-             name='edit_add_location_view' ),
-
-    re_path( r'^collection/add$', 
-             views.AddCollectionView.as_view(), 
-             name='edit_add_collection' ),
-
-    re_path( r'^location-view/delete$', 
-             views.DeleteLocationViewView.as_view(), 
-             name='edit_delete_location_view' ),
-
-    re_path( r'^collection/delete$', 
-             views.DeleteCollectionView.as_view(), 
-             name='edit_delete_collection' ),
-
     re_path( r'^details/(?P<html_id>[\w\-]*)$', 
              views.EditDetailsView.as_view(), 
              name='edit_details' ),
@@ -44,17 +28,5 @@ urlpatterns = [
     re_path( r'^add-remove$', 
              views.AddRemoveView.as_view(), 
              name='edit_add_remove' ),
-
-    re_path( r'^location-view/entity/toggle/(?P<location_view_id>[\w\-]+)/(?P<entity_id>[\w\-]+)$', 
-             views.EntityToggleLocationView.as_view(), 
-             name='edit_entity_toggle_location' ),
-
-    re_path( r'^location-view/collection/toggle/(?P<location_view_id>[\w\-]+)/(?P<collection_id>[\w\-]+)$', 
-             views.CollectionToggleLocationView.as_view(), 
-             name='edit_collection_toggle_location' ),
-
-    re_path( r'^collection/entity/toggle/(?P<collection_id>[\w\-]+)/(?P<entity_id>[\w\-]+)$', 
-             views.EntityToggleCollectionView.as_view(), 
-             name='edit_entity_toggle_collection' ),
 
 ]

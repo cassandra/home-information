@@ -2,7 +2,7 @@
      class="d-flex justify-content-start">
   <div  class="">
     <form method="POST" role="form"
-	  action="{% url 'edit_entity_toggle_location' location_view_id=location_view.id entity_id=entity.id %}"
+	  action="{% url 'location_edit_location_view_entity_toggle' location_view_id=location_view.id entity_id=entity.id %}"
 	  data-async="#hi-entity-toggle-location-{{ entity.id }}" data-mode="replace" >
       {% csrf_token %}
       <input type="checkbox" id="entity-toggle-location-checkbox-{{ entity.id }}" name="checkbox_state" 

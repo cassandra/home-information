@@ -4,7 +4,7 @@
 <div class="">
   <div class="">{{ entity_collection_group.entity_type.label }}</div>
   {% for entity_collection_item in entity_collection_group.item_list %}
-  {% include "edit/panes/entity_toggle_collection.html" with collection=entity_collection_group.collection entity=entity_collection_item.entity exists_in_collection=entity_collection_item.exists_in_collection %}
+  {% include "collection/edit/panes/collection_entity_toggle.html" with collection=entity_collection_group.collection entity=entity_collection_item.entity exists_in_collection=entity_collection_item.exists_in_collection %}
   {% endfor %}
 </div>
 {% empty %}

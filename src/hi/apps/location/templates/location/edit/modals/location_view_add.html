@@ -1,13 +1,13 @@
 {% extends "modals/action_with_cancel.html" %}
 
 {% block preamble %}
-<form action="{% url 'edit_add_collection' %}" method="post"
+<form action="{% url 'location_edit_location_view_add' %}" method="post"
       class="form" data-async="modal">
   {% csrf_token %}
 {% endblock %}
 
 {% block title_text %}
-New Collection
+New Location View
 {% endblock %}
 
 {% block body %}
@@ -17,7 +17,7 @@ New Collection
 {% endblock %}
 
 {% block action_right %}
-<button id="hi-add-collection-button" type="submit" class="btn btn-lg btn-success"
+<button id="hi-add-location-view-button" type="submit" class="btn btn-lg btn-success"
 	name="action" value="add">
   ADD
 </button>
