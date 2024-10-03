@@ -1,0 +1,9 @@
+{% extends "pages/base.html" %}
+
+{% block content %}
+<h1>{% block title %}Error{% endblock %}</h1>
+
+<div>
+  {{ error_message }}
+</div>
+{% endblock %}

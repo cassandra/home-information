@@ -13,6 +13,10 @@ urlpatterns = [
              views.EditEndView.as_view(), 
              name='edit_end' ),
 
+    re_path( r'^delete$', 
+             views.EditDeleteView.as_view(), 
+             name='edit_delete' ),
+
     re_path( r'^details/(?P<html_id>[\w\-]*)$', 
              views.EditDetailsView.as_view(), 
              name='edit_details' ),

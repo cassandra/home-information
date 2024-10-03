@@ -3,12 +3,12 @@ from hi.apps.common.enums import LabeledEnum
 
 class ViewType(LabeledEnum):
 
-    LOCATION       = ('Location', '' )
+    LOCATION_VIEW  = ('Location View', '' )
     COLLECTION     = ('Collection', '' )
 
     @property
-    def is_location(self):
-        return bool( self == ViewType.LOCATION )
+    def is_location_view(self):
+        return bool( self == ViewType.LOCATION_VIEW )
 
     @property
     def is_collection(self):

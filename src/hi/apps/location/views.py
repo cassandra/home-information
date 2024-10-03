@@ -38,11 +38,11 @@ class LocationViewDefaultView( View ):
         if not location_view:
             raise NotImplementedError('Handling no defined views not yet implemented')
 
-        request.view_parameters.view_type = ViewType.LOCATION
+        request.view_parameters.view_type = ViewType.LOCATION_VIEW
         request.view_parameters.location_view_id = location_view.id
         request.view_parameters.to_session( request )
         return location_view
-    
+
     
 class LocationViewView( HiGridView ):
 
@@ -57,7 +57,7 @@ class LocationViewView( HiGridView ):
             raise NotImplementedError('Handling bad location view not yet implemengted')
 
         # Remember last location view chosen
-        request.view_parameters.view_type = ViewType.LOCATION
+        request.view_parameters.view_type = ViewType.LOCATION_VIEW
         request.view_parameters.location_view_id = location_view.id
         request.view_parameters.to_session( request )
 

@@ -4,21 +4,21 @@
   <div class="">
     <a href="{% url 'edit_end' %}"
        class="btn btn-tertiary btn-control" role="button" >
-      EXIT
+      EXIT EDITING
     </a>
   </div>
 
   <div class="">
     <a href="{% url 'edit_add_remove' %}"
        class="btn btn-tertiary btn-control" role="button" data-async="true">
-      ADD/REMOVE
+      ADD/REMOVE for {{ request.view_parameters.view_type.label.upper }}
     </a>
   </div>
 
   <div class="">
     <a href="{% url 'edit_delete' %}"
        class="btn btn-danger btn-control" role="button" data-async="true">
-      DELETE
+      DELETE {{ request.view_parameters.view_type.label.upper }}
     </a>
   </div>
 

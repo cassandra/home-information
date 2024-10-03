@@ -5,6 +5,7 @@ from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.template.loader import get_template
 from django.urls import reverse
+from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
@@ -14,6 +15,7 @@ from hi.apps.entity.models import Entity, EntityPosition
 from hi.apps.location.forms import SvgPositionForm
 from hi.apps.location.location_view_manager import LocationViewManager
 from hi.apps.location.models import Location, LocationView
+from hi.decorators import edit_required
 
 from hi.constants import DIVID
 from hi.enums import ViewMode
@@ -78,6 +80,9 @@ class EditStartView( View ):
         # Javascript handling is consistent with the current operating
         # state mode.
         
+        if request.view_parameters.view_mode.is_editing:
+            raise NotImplementedError( 'Not yet handling bad edit context' )
+
         request.view_parameters.view_mode = ViewMode.EDIT
         request.view_parameters.to_session( request )
 
@@ -87,6 +92,7 @@ class EditStartView( View ):
         return redirect( redirect_url )
 
     
+@method_decorator( edit_required, name='dispatch' )
 class EditEndView( View ):
 
     def get(self, request, *args, **kwargs):
@@ -104,11 +110,17 @@ class EditEndView( View ):
         return redirect( redirect_url )
 
     
+@method_decorator( edit_required, name='dispatch' )
+class EditDeleteView( View ):
+
+    def get(self, request, *args, **kwargs):
+        raise NotImplementedError( 'Delete not yet implemented.' )
+        
+    
+@method_decorator( edit_required, name='dispatch' )
 class EditDetailsView( View, EditViewMixin ):
 
     def get(self, request, *args, **kwargs):
-        if not request.view_parameters.view_mode.is_editing:
-            raise NotImplementedError( 'Not yet handling bad edit context' )
 
         html_id = kwargs.get('html_id')
         if not html_id:
@@ -137,7 +149,7 @@ class EditDetailsView( View, EditViewMixin ):
         location_view = request.view_parameters.location_view
 
         svg_position_form = None
-        if request.view_parameters.view_type.is_location:
+        if request.view_parameters.view_type.is_location_view:
             entity_position = EntityPosition.objects.filter(
                 entity = entity,
                 location = location_view.location,
@@ -164,7 +176,7 @@ class EditDetailsView( View, EditViewMixin ):
         location_view = request.view_parameters.location_view
 
         svg_position_form = None
-        if request.view_parameters.view_type.is_location:
+        if request.view_parameters.view_type.is_location_view:
             collection_position = CollectionPosition.objects.filter(
                 collection = collection,
                 location = location_view.location,
@@ -183,11 +195,10 @@ class EditDetailsView( View, EditViewMixin ):
         )
         
                 
+@method_decorator( edit_required, name='dispatch' )
 class EditSvgPositionView( View, EditViewMixin ):
 
     def post(self, request, *args, **kwargs):
-        if not request.view_parameters.view_mode.is_editing:
-            raise NotImplementedError( 'Not yet handling bad edit context' )
         
         ( item_type, item_id ) = self.parse_html_id( kwargs.get('html_id'))
 
@@ -273,11 +284,12 @@ class EditSvgPositionView( View, EditViewMixin ):
         )
 
 
+@method_decorator( edit_required, name='dispatch' )
 class AddRemoveView( View, EditViewMixin ):
 
     def get(self, request, *args, **kwargs):
 
-        if request.view_parameters.view_type.is_location:
+        if request.view_parameters.view_type.is_location_view:
             return self.get_location_add_remove_response( request = request )
 
         if request.view_parameters.view_type.is_collection:
@@ -330,6 +342,7 @@ class AddRemoveView( View, EditViewMixin ):
         )
 
     
+@method_decorator( edit_required, name='dispatch' )
 class EntityToggleLocationView( View, EditViewMixin ):
 
     def post(self, request, *args, **kwargs):
@@ -364,6 +377,7 @@ class EntityToggleLocationView( View, EditViewMixin ):
         )
 
     
+@method_decorator( edit_required, name='dispatch' )
 class CollectionToggleLocationView( View, EditViewMixin ):
 
     def post(self, request, *args, **kwargs):
@@ -399,6 +413,7 @@ class CollectionToggleLocationView( View, EditViewMixin ):
         )
 
     
+@method_decorator( edit_required, name='dispatch' )
 class EntityToggleCollectionView( View, EditViewMixin ):
 
     def post(self, request, *args, **kwargs):

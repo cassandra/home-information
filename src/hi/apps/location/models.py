@@ -2,7 +2,7 @@ from django.db import models
 
 from hi.apps.common.svg_models import SvgItem, SvgViewBox
 
-from .enums import ViewType
+from .enums import LocationViewType
 
 
 class Location(models.Model):
@@ -80,7 +80,7 @@ class LocationView(models.Model):
         on_delete = models.CASCADE,
         null = False, blank = False,
     )
-    view_type_str = models.CharField(
+    location_view_type_str = models.CharField(
         'View Type',
         max_length = 32,
         null = False, blank = False,
@@ -129,12 +129,12 @@ class LocationView(models.Model):
         return f'hi-location-view-{self.id}'
     
     @property
-    def view_type(self):
-        return ViewType.from_name_safe( self.view_type_str )
+    def location_view_type(self):
+        return LocationViewType.from_name_safe( self.location_view_type_str )
 
-    @view_type.setter
-    def view_type( self, view_type : ViewType ):
-        self.view_type_str = str(view_type)
+    @location_view_type.setter
+    def location_view_type( self, location_view_type : LocationViewType ):
+        self.location_view_type_str = str(location_view_type)
         return
     
     @property
