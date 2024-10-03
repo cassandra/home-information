@@ -1,18 +1,23 @@
-{% for collection in collection_list %}
-<div class="col-1">
-  <a href="{% url 'collection_view' id=collection.id %}"
-      class="btn btn-secondary btn-control" role="button"
-     data-async="#{{ DIVID.MAIN }}" >
-    {{ collection.name }}
-  </a>
+<div class="d-flex justify-content-start draggable-container">
+  {% for collection in collection_list %}
+  <div class="col-1 {% if request.is_editing %}draggable{% endif %}"
+       {% if request.is_editing %}draggable="true"{% endif %}
+       data-id="{{ collection.html_id }}">
+    <a href="{% url 'collection_view' id=collection.id %}"
+       class="btn btn-secondary btn-control"
+       role="button"
+       data-async="#{{ DIVID.MAIN }}" >
+      {{ collection.name }}
+    </a>
+  </div>
+  {% endfor %}
+  {% if request.is_editing %}
+  <div class="col-1">
+    <a href="{% url 'collection_edit_collection_add' %}"
+       class="btn btn-success btn-control" role="button"
+       data-async="modal" >
+      ADD
+    </a>
+  </div>
+  {% endif %}
 </div>
-{% endfor %}
-{% if request.is_editing %}
-<div class="col-1">
-  <a href="{% url 'collection_edit_collection_add' %}"
-     class="btn btn-success btn-control" role="button"
-     data-async="modal" >
-    ADD
-  </a>
-</div>
-{% endif %}

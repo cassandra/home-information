@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 from typing import Dict
@@ -12,14 +13,10 @@ from django.views.generic import View
 import hi.apps.common.antinode as antinode
 import hi.apps.collection.edit.views as collection_edit_views
 from hi.apps.collection.helpers import CollectionHelpers
-from hi.apps.collection.models import Collection
 import hi.apps.entity.edit.views as entity_edit_views
 from hi.apps.entity.helpers import EntityHelpers
-from hi.apps.entity.models import Entity
 import hi.apps.location.edit.views as location_edit_views
 from hi.apps.location.forms import SvgPositionForm
-from hi.apps.location.location_view_manager import LocationViewManager
-from hi.apps.location.models import LocationView
 from hi.decorators import edit_required
 from hi.views import bad_request_response
 
@@ -32,7 +29,7 @@ logger = logging.getLogger(__name__)
 class EditViewMixin:
 
     def parse_html_id( self, html_id : str ):
-        m = re.match( r'^hi-(\w+)-(\d+)$', html_id )
+        m = re.match( r'^hi-([\w\-]+)-(\d+)$', html_id )
         if not m:
             raise ValueError( 'Bad html id "{html_id}".' )
         return ( m.group(1), int(m.group(2)) )
@@ -214,4 +211,54 @@ class AddRemoveView( View, EditViewMixin ):
             context = context,
         )
 
+    
+@method_decorator( edit_required, name='dispatch' )
+class ReorderItemsView( View, EditViewMixin ):
 
+    def post( self, request, *args, **kwargs ):
+        try:
+            html_id_list = json.loads( request.POST.get( 'html_id_list' ) )
+        except Exception as e:
+            return bad_request_response( request, message = str(e) )
+
+        try:
+            item_types = set()
+            item_id_list = list()
+            for html_id in html_id_list:
+                ( item_type, item_id ) = self.parse_html_id( html_id )
+                item_types.add( item_type )
+                item_id_list.append( item_id )
+                continue
+        except ValueError as ve:
+            return bad_request_response( request, message = str(ve) )
+            
+        if len(item_types) < 1:
+            return bad_request_response( request, message = 'No ids found' )
+
+        if len(item_types) > 1:
+            return bad_request_response( request, message = f'Too many item types: {item_types}' )
+
+        item_type = next(iter(item_types))
+        if item_type == 'entity':
+            if not request.view_parameters.view_type.is_collection:
+                return bad_request_response( request, message = f'Entity reordering for collections only.' )
+            return collection_edit_views.CollectionReorderEntitiesView().post(
+                request,
+                collection_id = request.view_parameters.collection_id,
+                entity_id_list = json.dumps( item_id_list ),
+            )
+
+        elif item_type == 'collection':
+            return collection_edit_views.CollectionReorder().post(
+                request,
+                collection_id_list = json.dumps( item_id_list ),
+            )
+
+        elif item_type == 'location-view':
+            return location_edit_views.LocationViewReorder().post(
+                request,
+                location_view_id_list = json.dumps( item_id_list ),
+            )
+
+        else:
+            return bad_request_response( request, message = f'Unknown item type: {item_type}' )

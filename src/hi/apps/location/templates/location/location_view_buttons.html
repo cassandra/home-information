@@ -1,18 +1,23 @@
-{% for location_view in location_view_list %}
-<div class="col-1">
-  <a href="{% url 'location_view' id=location_view.id %}"
-      class="btn btn-primary btn-control" role="button"
-     data-async="#{{ DIVID.MAIN }}" >
-    {{ location_view.name }}
-  </a>
+<div class="d-flex justify-content-start draggable-container">
+  {% for location_view in location_view_list %}
+  <div class="col-1 {% if request.is_editing %}draggable{% endif %}"
+       {% if request.is_editing %}draggable="true"{% endif %}
+       data-id="{{ location_view.html_id }}" >
+    <a href="{% url 'location_view' id=location_view.id %}"
+       class="btn btn-primary btn-control"
+       role="button"
+       data-async="#{{ DIVID.MAIN }}" >
+      {{ location_view.name }}
+    </a>
+  </div>
+  {% endfor %}
+  {% if request.is_editing %}
+  <div class="col-1">
+    <a href="{% url 'location_edit_location_view_add' %}"
+       class="btn btn-success btn-control" role="button"
+       data-async="modal" >
+      ADD
+    </a>
+  </div>
+  {% endif %}
 </div>
-{% endfor %}
-{% if request.is_editing %}
-<div class="col-1">
-  <a href="{% url 'location_edit_location_view_add' %}"
-     class="btn btn-success btn-control" role="button"
-     data-async="modal" >
-    ADD
-  </a>
-</div>
-{% endif %}

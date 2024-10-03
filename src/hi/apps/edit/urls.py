@@ -29,4 +29,8 @@ urlpatterns = [
              views.AddRemoveView.as_view(), 
              name='edit_add_remove' ),
 
+    re_path( r'^reorder-items$', 
+             views.ReorderItemsView.as_view(), 
+             name='edit_reorder_items' ),
+
 ]

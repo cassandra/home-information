@@ -276,4 +276,19 @@ class LocationEditHelpers:
             svg_rotate = Decimal( 0.0 ),
         )
         return collection_position
+
+    @classmethod
+    def set_location_view_order( cls, location_view_id_list  : List[int] ):
+
+        item_id_to_order_id = {
+            item_id: order_id for order_id, item_id in enumerate( location_view_id_list )
+        }
+
+        location_view_queryset = LocationView.objects.filter( id__in = location_view_id_list )
+        with transaction.atomic():
+            for location_view in location_view_queryset:
+                location_view.order_id = item_id_to_order_id.get( location_view.id )
+                location_view.save()
+                continue
+        return
     

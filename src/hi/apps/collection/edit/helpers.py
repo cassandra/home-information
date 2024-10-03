@@ -1,5 +1,6 @@
 from typing import List
 
+from django.db import transaction
 from django.http import HttpRequest
 
 from hi.apps.collection.enums import CollectionType
@@ -84,3 +85,37 @@ class CollectionEditHelpers:
                 order_id = last_item.order_id + 1,
             )
             return True
+        
+    @classmethod
+    def set_collection_entity_order( cls,
+                                     collection_id   : int,
+                                     entity_id_list  : List[int] ):
+        item_id_to_order_id = {
+            item_id: order_id for order_id, item_id in enumerate( entity_id_list )
+        }
+        
+        collection_entity_queryset = CollectionEntity.objects.filter(
+            collection_id = collection_id,
+            entity_id__in = entity_id_list,
+        )
+        with transaction.atomic():
+            for collection_entity in collection_entity_queryset:
+                collection_entity.order_id = item_id_to_order_id.get( collection_entity.entity.id )
+                collection_entity.save()
+                continue
+        return
+
+    @classmethod
+    def set_collection_order( cls, collection_id_list  : List[int] ):
+        item_id_to_order_id = {
+            item_id: order_id for order_id, item_id in enumerate( collection_id_list )
+        }
+        
+        collection_queryset = Collection.objects.filter( id__in = collection_id_list )
+        with transaction.atomic():
+            for collection in collection_queryset:
+                collection.order_id = item_id_to_order_id.get( collection.id )
+                collection.save()
+                continue
+        return
+    

@@ -176,6 +176,10 @@ a.underline:visited {
     cursor: pointer;
 }    
 
+.drag-over {
+  border: 2px dashed #888888;
+}
+
 svg[action-state="move"] {
     cursor: move;
 }
@@ -186,9 +190,8 @@ svg[action-state="scale"] {
     cursor: url('/static/css/cursor-scale.png') 16 16, auto;
 }
 
-
-
 svg .highlighted {
     filter: drop-shadow(0 0 10px red);
 }
+
 

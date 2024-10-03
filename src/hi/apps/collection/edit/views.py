@@ -1,3 +1,4 @@
+import json
 import logging
 
 from django.shortcuts import redirect
@@ -220,5 +221,42 @@ class CollectionEntityToggleView( View ):
         )
 
     
+@method_decorator( edit_required, name='dispatch' )
+class CollectionReorderEntitiesView( View ):
     
+    def post(self, request, *args, **kwargs):
+        collection_id = kwargs.get('collection_id')
+        if not collection_id:
+            return bad_request_response( request, message = 'Missing collection id.' )
+            
+        try:
+            entity_id_list = json.loads( kwargs.get( 'entity_id_list' ) )
+        except Exception as e:
+            return bad_request_response( request, message = str(e) )
+
+        if not entity_id_list:
+            return bad_request_response( request, message = 'Missing entity ids.' )
+
+        CollectionEditHelpers.set_collection_entity_order(
+            collection_id = collection_id,
+            entity_id_list = entity_id_list,
+        )
+        return antinode.response( main_content = 'OK' )
+
+        
+@method_decorator( edit_required, name='dispatch' )
+class CollectionReorder( View ):
     
+    def post(self, request, *args, **kwargs):
+        try:
+            collection_id_list = json.loads( kwargs.get( 'collection_id_list' ) )
+        except Exception as e:
+            return bad_request_response( request, message = str(e) )
+
+        if not collection_id_list:
+            return bad_request_response( request, message = 'Missing collection ids.' )
+
+        CollectionEditHelpers.set_collection_order(
+            collection_id_list = collection_id_list,
+        )
+        return antinode.response( main_content = 'OK' )

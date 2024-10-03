@@ -1,3 +1,4 @@
+import json
 import logging
 
 from django.shortcuts import redirect
@@ -228,3 +229,21 @@ class LocationViewEntityToggleCollectionView( View ):
         )
 
     
+@method_decorator( edit_required, name='dispatch' )
+class LocationViewReorder( View ):
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            location_view_id_list = json.loads( kwargs.get( 'location_view_id_list' ) )
+        except Exception as e:
+            return bad_request_response( request, message = str(e) )
+
+        if not location_view_id_list:
+            return bad_request_response( request, message = 'Missing location view ids.' )
+
+        LocationEditHelpers.set_location_view_order(
+            location_view_id_list = location_view_id_list,
+        )            
+        return antinode.response( main_content = 'OK' )
+        
+        

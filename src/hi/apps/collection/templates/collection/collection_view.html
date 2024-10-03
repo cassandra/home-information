@@ -1,8 +1,10 @@
-<div id="hi-collection-view-main" class="hi-collection-view">
+<div id="hi-collection-view-main" class="hi-collection-view draggable-container"">
   <h5><sub>COLLECTION:</sub> {{ collection_data.collection.name }}</h5>
 
   {% for entity in collection_data.entity_list %}
-  <div class="">
+  <div class="{% if request.is_editing %}draggable{% endif %}"
+       {% if request.is_editing %}draggable="true"{% endif %}
+       data-id="{{ entity.html_id }}" >
     {% if request.is_editing %}
     <a href="{% url 'entity_edit_entity_details' entity_id=entity.id %}"
        data-async="true">
