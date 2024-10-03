@@ -17,10 +17,10 @@ Delete Location View?
 {% endblock %}
 
 {% block action_right %}
-<form action="{% url 'location_edit_location_view_delete' %}" method="post" class="form"
+<form action="{% url 'location_edit_location_view_delete' location_view_id=location_view.id %}"
+      method="post" class="form"
       data-async="true" >
   {% csrf_token %}
-  <input type="hidden" name="location_view_id" value="{{ location_view.id }}" />
   <button id="hi-delete-location-view-button" type="submit" class="btn btn-lg btn-danger"
 	  name="action" value="confirm">
     DELETE

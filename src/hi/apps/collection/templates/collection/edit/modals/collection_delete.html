@@ -18,10 +18,10 @@ Delete Collection?
 {% endblock %}
 
 {% block action_right %}
-<form action="{% url 'collection_edit_collection_delete' %}" method="post" class="form"
+<form action="{% url 'collection_edit_collection_delete' collection_id=collection.id %}"
+      method="post" class="form"
       data-async="true" >
   {% csrf_token %}
-  <input type="hidden" name="collection_id" value="{{ collection.id }}" />
   <button id="hi-delete-collection-button" type="submit" class="btn btn-lg btn-danger"
 	  name="action" value="confirm">
     DELETE

@@ -92,7 +92,7 @@ class LocationViewAddView( View ):
 class LocationViewDeleteView( View ):
 
     def get(self, request, *args, **kwargs):
-        location_view_id = request.view_parameters.location_view_id
+        location_view_id = kwargs.get( 'location_view_id' )
         if not location_view_id:
             return bad_request_response( request, message = 'No current location view found.' )
             
@@ -118,7 +118,7 @@ class LocationViewDeleteView( View ):
         if action != 'confirm':
             return bad_request_response( request, message = 'Missing confirmation value.' )
 
-        location_view_id = request.POST.get( 'location_view_id' )
+        location_view_id = kwargs.get( 'location_view_id' )
         if not location_view_id:
             return bad_request_response( request, message = 'Missing location view id.' )
             

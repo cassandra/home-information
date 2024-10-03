@@ -97,10 +97,16 @@ class EditDeleteView( View ):
     def get(self, request, *args, **kwargs):
 
         if request.view_parameters.view_type.is_location_view:
-            return location_edit_views.LocationViewDeleteView().get( request, *args, **kwargs )
+            return location_edit_views.LocationViewDeleteView().get(
+                request,
+                location_view_id = request.view_parameters.location_view_id,
+            )
 
         if request.view_parameters.view_type.is_collection:
-            return collection_edit_views.CollectionDeleteView().get( request, *args, **kwargs )
+            return collection_edit_views.CollectionDeleteView().get(
+                request,
+                collection_id = request.view_parameters.collection_id,
+            )
             
         else:
             return bad_request_response( request,

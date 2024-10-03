@@ -9,7 +9,7 @@ urlpatterns = [
              views.CollectionAddView.as_view(), 
              name='collection_edit_collection_add' ),
 
-    re_path( r'^collection/delete$', 
+    re_path( r'^collection/delete/(?P<collection_id>\d+)$', 
              views.CollectionDeleteView.as_view(), 
              name='collection_edit_collection_delete' ),
 
@@ -21,7 +21,7 @@ urlpatterns = [
              views.CollectionAddRemoveItemView.as_view(), 
              name='collection_edit_collection_add_remove_item' ),
 
-    re_path( r'^collection/entity/toggle/(?P<collection_id>[\w\-]+)/(?P<entity_id>[\w\-]+)$', 
+    re_path( r'^collection/entity/toggle/(?P<collection_id>\d+)/(?P<entity_id>\d+)$', 
              views.CollectionEntityToggleView.as_view(), 
              name='collection_edit_collection_entity_toggle' ),
     

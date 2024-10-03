@@ -74,7 +74,7 @@ class CollectionAddView( View ):
 class CollectionDeleteView( View ):
 
     def get(self, request, *args, **kwargs):
-        collection_id = request.view_parameters.collection_id
+        collection_id = kwargs.get( 'collection_id' )
         if not collection_id:
             return bad_request_response( request, message = 'No current collection found.' )
             
@@ -99,7 +99,7 @@ class CollectionDeleteView( View ):
         if action != 'confirm':
             return bad_request_response( request, message = 'Missing confirmation value.' )
 
-        collection_id = request.POST.get( 'collection_id' )
+        collection_id = kwargs.get( 'collection_id' )
         if not collection_id:
             return bad_request_response( request, message = 'Missing collection id.' )
         try:
