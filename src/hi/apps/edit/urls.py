@@ -25,12 +25,16 @@ urlpatterns = [
              views.AddRemoveView.as_view(), 
              name='edit_add_remove' ),
 
-    re_path( r'^view/entity/toggle/(?P<location_view_id>[\w\-]+)/(?P<entity_id>[\w\-]+)$', 
-             views.EditViewEntityToggleView.as_view(), 
-             name='edit_view_entity_toggle' ),
+    re_path( r'^location/entity/toggle/(?P<location_view_id>[\w\-]+)/(?P<entity_id>[\w\-]+)$', 
+             views.EntityToggleLocationView.as_view(), 
+             name='edit_entity_toggle_location' ),
 
-    re_path( r'^view/collection/toggle/(?P<location_view_id>[\w\-]+)/(?P<collection_id>[\w\-]+)$', 
-             views.EditViewCollectionToggleView.as_view(), 
-             name='edit_view_collection_toggle' ),
+    re_path( r'^location/collection/toggle/(?P<location_view_id>[\w\-]+)/(?P<collection_id>[\w\-]+)$', 
+             views.CollectionToggleLocationView.as_view(), 
+             name='edit_collection_toggle_location' ),
+
+    re_path( r'^collection/entity/toggle/(?P<collection_id>[\w\-]+)/(?P<entity_id>[\w\-]+)$', 
+             views.EntityToggleCollectionView.as_view(), 
+             name='edit_entity_toggle_collection' ),
 
 ]

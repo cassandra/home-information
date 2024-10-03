@@ -1,0 +1,14 @@
+<div id="hi-collection-toggle-location{{ collection.id }}"
+     class="d-flex justify-content-start">
+  <div  class="">
+    <form method="POST" role="form"
+	  action="{% url 'edit_collection_toggle_location' location_view_id=location_view.id collection_id=collection.id %}"
+	  data-async="#hi-collection-toggle-location{{ collection.id }}" data-mode="replace" >
+      {% csrf_token %}
+      <input type="checkbox" id="collection-toggle-location-checkbox-{{ collection.id }}" name="checkbox_state" 
+             {% if exists_in_view %}checked{% endif %} 
+	     onchange-async="true" >
+      <label for="collection-toggle-location-checkbox-{{ collection.id }}">{{ collection.name }}</label>
+    </form>
+  </div>
+</div>

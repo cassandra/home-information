@@ -3,10 +3,14 @@
 
   {% for entity in collection_data.entity_list %}
   <div class="">
-    <a href="#"
+    {% if request.is_editing %}
+    <a href="{% url 'edit_details' html_id=entity.html_id %}"
        data-async="true">
       {{ entity.name }}
     </a>
+    {% else %}
+    {{ entity.name }}
+    {% endif %}
   </div>
   {% empty %}
   <div><em>No entities in collection.</em></div>

@@ -1,11 +1,13 @@
 <h4>{{ entity.name }}</h4>
 
+{% if svg_position_form %}
 <h5>Position</h5>
 {% with entity.html_id as html_id %}
 <div id="{{ svg_position_form.content_html_id }}">
   {% include "edit/panes/svg_position.html" %}
 </div>
 {% endwith %}
+{% endif %}
 
 <h5>Attributes</h5>
 <div id="hi-edit-entity-attributes">

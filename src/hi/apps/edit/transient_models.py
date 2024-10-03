@@ -34,5 +34,19 @@ class CollectionViewGroup:
 
     location_view  : LocationView
     item_list      : List[CollectionViewItem]  = field( default_factory = list )
-    
+
+
+@dataclass
+class EntityCollectionItem:
+
+    entity                : Entity
+    exists_in_collection  : bool
+
+
+@dataclass
+class EntityCollectionGroup:
+
+    collection   : Collection
+    entity_type  : EntityType
+    item_list    : List[EntityViewItem]  = field( default_factory = list )
     

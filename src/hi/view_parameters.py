@@ -48,7 +48,7 @@ class ViewParameters:
         if self.collection_id is None:
             return None
         try:
-            self._collection_ = Collection.objects.get( id = self.collection_id )
+            self._collection = Collection.objects.get( id = self.collection_id )
             return self._collection
         except Collection.DoesNotExist:
             return None

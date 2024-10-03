@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
+from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection, CollectionPosition
 from hi.apps.entity.models import Entity, EntityPosition
 from hi.apps.location.forms import SvgPositionForm
@@ -54,6 +55,18 @@ class EditViewMixin:
             'location_view_data': location_view_data,
         }
         template = get_template( 'location/location_view.html' )
+        return template.render( context, request = request )
+
+    def render_collection_content( self,
+                                   request     : HttpRequest,
+                                   collection  : Collection ) -> str:
+        collection_data = CollectionManager().get_collection_data(
+            collection = collection,
+        )
+        context = {
+            'collection_data': collection_data,
+        }
+        template = get_template( 'collection/collection_view.html' )
         return template.render( context, request = request )
         
     
@@ -122,13 +135,16 @@ class EditDetailsView( View, EditViewMixin ):
             raise NotImplementedError( 'Handling bad entity Id not yet implemented' )
 
         location_view = request.view_parameters.location_view
-        entity_position = EntityPosition.objects.filter(
-            entity = entity,
-            location = location_view.location,
-        ).first()
 
-        svg_position_form = SvgPositionForm.from_svg_position_model( entity_position )
-            
+        svg_position_form = None
+        if request.view_parameters.view_type.is_location:
+            entity_position = EntityPosition.objects.filter(
+                entity = entity,
+                location = location_view.location,
+            ).first()
+            if entity_position:
+                svg_position_form = SvgPositionForm.from_svg_position_model( entity_position )
+
         context = {
             'entity': entity,
             'svg_position_form': svg_position_form,
@@ -146,12 +162,15 @@ class EditDetailsView( View, EditViewMixin ):
             raise NotImplementedError( 'Handling bad collection Id not yet implemented' )
 
         location_view = request.view_parameters.location_view
-        collection_position = CollectionPosition.objects.filter(
-            collection = collection,
-            location = location_view.location,
-        ).first()
 
-        svg_position_form = SvgPositionForm.from_svg_position_model( collection_position )
+        svg_position_form = None
+        if request.view_parameters.view_type.is_location:
+            collection_position = CollectionPosition.objects.filter(
+                collection = collection,
+                location = location_view.location,
+            ).first()
+            if collection_position:
+                svg_position_form = SvgPositionForm.from_svg_position_model( collection_position )
             
         context = {
             'collection': collection,
@@ -258,10 +277,30 @@ class AddRemoveView( View, EditViewMixin ):
 
     def get(self, request, *args, **kwargs):
 
+        if request.view_parameters.view_type.is_location:
+            return self.get_location_add_remove_response( request = request )
+
+        if request.view_parameters.view_type.is_collection:
+            return self.get_collection_add_remove_response( request = request )
+
+        context = {
+        }
+        return self.get_edit_side_panel_response(
+            request = request,
+            template_name = 'edit/panes/default.html',
+            context = context,
+        )
+    
+    def get_location_add_remove_response( self, request ):
+        
         location_view = request.view_parameters.location_view
 
-        entity_view_group_list = LocationViewEditHelpers.create_entity_view_group_list( location_view = location_view )
-        collection_view_group = LocationViewEditHelpers.create_collection_view_group( location_view = location_view )
+        entity_view_group_list = LocationViewEditHelpers.create_entity_view_group_list(
+            location_view = location_view,
+        )
+        collection_view_group = LocationViewEditHelpers.create_collection_view_group(
+            location_view = location_view,
+        )
         
         context = {
             'entity_view_group_list': entity_view_group_list,
@@ -269,12 +308,29 @@ class AddRemoveView( View, EditViewMixin ):
         }
         return self.get_edit_side_panel_response(
             request = request,
-            template_name = 'edit/panes/add_remove.html',
+            template_name = 'edit/panes/add_remove_location.html',
+            context = context,
+        )
+    
+    def get_collection_add_remove_response( self, request ):
+        
+        collection = request.view_parameters.collection
+        
+        entity_collection_group_list = CollectionEditHelpers.create_entity_collection_group_list(
+            collection = collection,
+        )
+        
+        context = {
+            'entity_collection_group_list': entity_collection_group_list,
+        }
+        return self.get_edit_side_panel_response(
+            request = request,
+            template_name = 'edit/panes/add_remove_collection.html',
             context = context,
         )
 
     
-class EditViewEntityToggleView( View, EditViewMixin ):
+class EntityToggleLocationView( View, EditViewMixin ):
 
     def post(self, request, *args, **kwargs):
 
@@ -293,7 +349,7 @@ class EditViewEntityToggleView( View, EditViewMixin ):
             'entity': entity,
             'exists_in_view': exists_in_view,
         }
-        template = get_template( 'edit/panes/edit_view_entity_toggle.html' )
+        template = get_template( 'edit/panes/entity_toggle_location.html' )
         main_content = template.render( context, request = request )
 
         location_view_content = self.render_location_view_content(
@@ -308,7 +364,7 @@ class EditViewEntityToggleView( View, EditViewMixin ):
         )
 
     
-class EditViewCollectionToggleView( View, EditViewMixin ):
+class CollectionToggleLocationView( View, EditViewMixin ):
 
     def post(self, request, *args, **kwargs):
 
@@ -328,7 +384,7 @@ class EditViewCollectionToggleView( View, EditViewMixin ):
             'collection': collection,
             'exists_in_view': exists_in_view,
         }
-        template = get_template( 'edit/panes/edit_view_collection_toggle.html' )
+        template = get_template( 'edit/panes/collection_toggle_location.html' )
         main_content = template.render( context, request = request )
 
         location_view_content = self.render_location_view_content(
@@ -341,3 +397,40 @@ class EditViewCollectionToggleView( View, EditViewMixin ):
                 DIVID['MAIN'] : location_view_content,
             },
         )
+
+    
+class EntityToggleCollectionView( View, EditViewMixin ):
+
+    def post(self, request, *args, **kwargs):
+
+        collection_id = kwargs.get('collection_id')
+        entity_id = kwargs.get('entity_id')
+
+        entity = Entity.objects.get( id = entity_id )
+        collection = Collection.objects.get( id = collection_id )
+        exists_in_collection = CollectionEditHelpers.toggle_entity_in_collection(
+            entity = entity,
+            collection = collection,
+        )
+            
+        context = {
+            'collection': collection,
+            'entity': entity,
+            'exists_in_collection': exists_in_collection,
+        }
+        template = get_template( 'edit/panes/entity_toggle_collection.html' )
+        main_content = template.render( context, request = request )
+
+        collection_content = self.render_collection_content(
+            request = request,
+            collection = collection,
+        )
+        return antinode.response(
+            main_content = main_content,
+            insert_map = {
+                DIVID['MAIN'] : collection_content,
+            },
+        )
+
+    
+    

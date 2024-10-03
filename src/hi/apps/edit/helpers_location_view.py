@@ -27,7 +27,7 @@ from .transient_models import (
 class LocationViewEditHelpers:
 
     @classmethod
-    def create_entity_view_group_list( cls, location_view : LocationView ) -> List[EntityViewItem]:
+    def create_entity_view_group_list( cls, location_view : LocationView ) -> List[EntityViewGroup]:
 
         entity_queryset = Entity.objects.all()
         

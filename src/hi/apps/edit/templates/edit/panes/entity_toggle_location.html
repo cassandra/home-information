@@ -1,0 +1,14 @@
+<div id="hi-entity-toggle-location-{{ entity.id }}"
+     class="d-flex justify-content-start">
+  <div  class="">
+    <form method="POST" role="form"
+	  action="{% url 'edit_entity_toggle_location' location_view_id=location_view.id entity_id=entity.id %}"
+	  data-async="#hi-entity-toggle-location-{{ entity.id }}" data-mode="replace" >
+      {% csrf_token %}
+      <input type="checkbox" id="entity-toggle-location-checkbox-{{ entity.id }}" name="checkbox_state" 
+             {% if exists_in_view %}checked{% endif %} 
+	     onchange-async="true" >
+       <label for="entity-toggle-location-checkbox-{{ entity.id }}">{{ entity.name }}</label>
+    </form>
+  </div>
+</div>
