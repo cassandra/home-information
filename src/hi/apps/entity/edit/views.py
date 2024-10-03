@@ -43,7 +43,7 @@ class EntityDetailsView( View ):
             'entity': entity,
             'svg_position_form': svg_position_form,
         }
-        template = get_template( 'edit/panes/entity_details.html' )
+        template = get_template( 'entity/edit/panes/entity_details.html' )
         content = template.render( context, request = request )
         return antinode.response(
             insert_map = {

@@ -4,7 +4,7 @@
   {% for entity in collection_data.entity_list %}
   <div class="">
     {% if request.is_editing %}
-    <a href="{% url 'edit_details' html_id=entity.html_id %}"
+    <a href="{% url 'entity_edit_entity_details' entity_id=entity.id %}"
        data-async="true">
       {{ entity.name }}
     </a>
