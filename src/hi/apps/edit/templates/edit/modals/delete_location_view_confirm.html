@@ -1,0 +1,29 @@
+{% extends "modals/action_with_cancel.html" %}
+
+{% block title_text %}
+Delete Location View?
+{% endblock %}
+
+{% block body %}
+<div>
+  Please confirm that you want to delete the location view:
+  <ul>
+    {{ location_view.name }}
+  </ul>
+</div>
+<div>
+  This action cannot be undone.
+</div>
+{% endblock %}
+
+{% block action_right %}
+<form action="{% url 'edit_delete_location_view' %}" method="post" class="form"
+      data-async="true" >
+  {% csrf_token %}
+  <input type="hidden" name="location_view_id" value="{{ location_view.id }}" />
+  <button id="hi-delete-location-view-button" type="submit" class="btn btn-lg btn-danger"
+	  name="action" value="confirm">
+    DELETE
+  </button>
+</form>
+{% endblock %}

@@ -8,6 +8,7 @@ import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
 from hi.enums import ViewType
 from hi.hi_grid_view import HiGridView
+from hi.views import bad_request_response
 
 from .collection_manager import CollectionManager
 from .models import Collection
@@ -32,7 +33,7 @@ class CollectionViewDefaultView( View ):
 
         collection = Collection.objects.order_by( 'order_id' ).first()
         if not collection:
-            raise NotImplementedError('Handling no defined collections not yet implemented')
+            return bad_request_response( request, message = 'No collections defined.' )
 
         request.view_parameters.view_type = ViewType.COLLECTION
         request.view_parameters.collection_id = collection.id
@@ -48,8 +49,9 @@ class CollectionView( HiGridView ):
         try:
             collection = Collection.objects.get( id = collection_id )
         except Collection.DoesNotExist:
-            logger.warning( f'Collection "{collection_id}" does not exist.' )
-            raise NotImplementedError('Handling bad collection not yet implemented')
+            message = f'Collection "{collection_id}" does not exist.'
+            logger.warning( message )
+            return bad_request_response( request, message = message )
 
         # Remember last collection chosen
         request.view_parameters.view_type = ViewType.COLLECTION

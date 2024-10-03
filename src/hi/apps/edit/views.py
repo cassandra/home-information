@@ -1,3 +1,4 @@
+import logging
 import re
 from typing import Dict
 
@@ -16,12 +17,15 @@ from hi.apps.location.forms import SvgPositionForm
 from hi.apps.location.location_view_manager import LocationViewManager
 from hi.apps.location.models import Location, LocationView
 from hi.decorators import edit_required
+from hi.views import bad_request_response
 
 from hi.constants import DIVID
 from hi.enums import ViewMode
 
 from .helpers_location_view import LocationViewEditHelpers
 from .helpers_collection import CollectionEditHelpers
+
+logger = logging.getLogger(__name__)
 
 
 class EditViewMixin:
@@ -114,8 +118,118 @@ class EditEndView( View ):
 class EditDeleteView( View ):
 
     def get(self, request, *args, **kwargs):
-        raise NotImplementedError( 'Delete not yet implemented.' )
+
+        if request.view_parameters.view_type.is_location_view:
+            return self.get_location_view_confirm_response( request )
+
+        if request.view_parameters.view_type.is_collection:
+            return self.get_collection_confirm_response( request )
+            
+        else:
+            return bad_request_response( request,
+                                         message = f'Bad view type "{request.view_parameters.view_type}".' )
+    
+    def get_location_view_confirm_response( self, request ):
+        location_view_id = request.view_parameters.location_view_id
+        try:
+            location_view = LocationView.objects.select_related(
+                'location' ).get( id = location_view_id )
+        except LocationView.DoesNotExist:
+            message = f'Location view "{location_view_id}" does not exist.'
+            logger.warning( message )
+            return bad_request_response( request, message = message )
+
+        context = {
+            'location_view': location_view,
+        }
+        return antinode.modal_from_template(
+            request = request,
+            template_name = 'edit/modals/delete_location_view_confirm.html',
+            context = context,
+        )
+
+    def get_collection_confirm_response( self, request ):
+        collection_id = request.view_parameters.collection_id
+        try:
+            collection = Collection.objects.get( id = collection_id )
+        except Collection.DoesNotExist:
+            message = f'Collection "{collection_id}" does not exist.'
+            logger.warning( message )
+            return bad_request_response( request, message = message )
+
+        context = {
+            'collection': collection,
+        }
+        return antinode.modal_from_template(
+            request = request,
+            template_name = 'edit/modals/delete_collection_confirm.html',
+            context = context,
+        )
+
+    
+@method_decorator( edit_required, name='dispatch' )
+class DeleteLocationViewView( View ):
+
+    def post( self, request, *args, **kwargs ):
+        action = request.POST.get( 'action' )
+        if action != 'confirm':
+            return bad_request_response( request, message = 'Missing confirmation value.' )
+
+        location_view_id = request.POST.get( 'location_view_id' )
+        if not location_view_id:
+            return bad_request_response( request, message = 'Missing location view id.' )
+            
+        try:
+            location_view = LocationView.objects.select_related(
+                'location' ).get( id = location_view_id )
+        except LocationView.DoesNotExist:
+            message = f'Location view "{location_view_id}" does not exist.'
+            logger.warning( message )
+            return bad_request_response( request, message = message )
+
+        #location_view.delete()
+
+        next_location_view = LocationView.objects.all().order_by( 'order_id' ).first()
+        if next_location_view:
+            request.view_parameters.location_view_id = next_location_view.id
+        else:
+            request.view_parameters.location_view_id = None
+        request.view_parameters.to_session( request )
         
+        redirect_url = reverse('home')
+        return redirect( redirect_url )
+
+    
+@method_decorator( edit_required, name='dispatch' )
+class DeleteCollectionView( View ):
+
+    def post( self, request, *args, **kwargs ):
+        action = request.POST.get( 'action' )
+        if action != 'confirm':
+            return bad_request_response( request, message = 'Missing confirmation value.' )
+
+        collection_id = request.POST.get( 'collection_id' )
+        if not collection_id:
+            return bad_request_response( request, message = 'Missing collection id.' )
+        try:
+            collection = Collection.objects.get( id = collection_id )
+        except Collection.DoesNotExist:
+            message = f'Collection "{collection_id}" does not exist.'
+            logger.warning( message )
+            return bad_request_response( request, message = message )
+
+        #collection.delete()
+
+        next_collection = Collection.objects.all().order_by( 'order_id' ).first()
+        if next_collection:
+            request.view_parameters.collection_id = next_collection.id
+        else:
+            request.view_parameters.collection_id = None
+        request.view_parameters.to_session( request )
+        
+        redirect_url = reverse('home')
+        return redirect( redirect_url )
+    
     
 @method_decorator( edit_required, name='dispatch' )
 class EditDetailsView( View, EditViewMixin ):

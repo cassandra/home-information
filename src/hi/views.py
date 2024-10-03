@@ -39,6 +39,18 @@ def error_response( request             : HttpRequest,
     return response
 
 
+def bad_request_response( request, message : str = None, force_json : bool = False ):
+    if not message:
+        message = 'Bad request.'
+    context = { 'message': message }
+    return error_response( request = request,
+                           sync_template_name = "pages/bad_request.html",
+                           async_template_name = "modals/bad_request.html",
+                           status_code = 200,  # Needed for PWA (not 403)
+                           force_json = force_json,
+                           context = context )
+
+
 def edit_required_response( request, message : str = None, force_json : bool = False ):
     if not message:
         message = 'Edit mode is required for this request.'

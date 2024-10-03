@@ -8,6 +8,7 @@ import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
 from hi.enums import ViewType
 from hi.hi_grid_view import HiGridView
+from hi.views import bad_request_response
 
 from .location_view_manager import LocationViewManager
 from .models import Location, LocationView
@@ -32,11 +33,11 @@ class LocationViewDefaultView( View ):
 
         location = Location.objects.order_by( 'order_id' ).first()
         if not location:
-            raise NotImplementedError('Handling no defined locations not yet implemented')
+            return bad_request_response( request, message = 'No locations defined.' )
         
         location_view = location.views.order_by( 'order_id' ).first()
         if not location_view:
-            raise NotImplementedError('Handling no defined views not yet implemented')
+            return bad_request_response( request, message = 'No views defined for this location.' )
 
         request.view_parameters.view_type = ViewType.LOCATION_VIEW
         request.view_parameters.location_view_id = location_view.id
@@ -53,8 +54,9 @@ class LocationViewView( HiGridView ):
             location_view = LocationView.objects.select_related(
                 'location' ).get( id = location_view_id )
         except LocationView.DoesNotExist:
-            logger.warning( f'Location view "{location_view_id}" does not exist.' )
-            raise NotImplementedError('Handling bad location view not yet implemengted')
+            message = f'Location view "{location_view_id}" does not exist.'
+            logger.warning( message )
+            return bad_request_response( request, message = message )
 
         # Remember last location view chosen
         request.view_parameters.view_type = ViewType.LOCATION_VIEW
