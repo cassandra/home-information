@@ -21,13 +21,14 @@ class CollectionEditHelpers:
 
     @classmethod
     def create_collection( cls,
-                           request  : HttpRequest,
-                           name     : str          ) -> Collection:
+                           request          : HttpRequest,
+                           collection_type  : CollectionType,
+                           name             : str          ) -> Collection:
         last_collection = Collection.objects.all().order_by( '-order_id' ).first()
         
         return Collection.objects.create(
             name = name,
-            collection_type_str = CollectionType.default(),
+            collection_type_str = str(collection_type),
             order_id = last_collection.order_id + 1,
         )
         

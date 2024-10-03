@@ -8,7 +8,6 @@ from django.views.generic import View
 
 from hi.apps.collection.models import Collection
 import hi.apps.common.antinode as antinode
-from hi.apps.edit.forms import NameForm
 from hi.apps.entity.models import Entity
 from hi.apps.location.location_view_manager import LocationViewManager
 from hi.apps.location.models import LocationView
@@ -18,6 +17,7 @@ from hi.views import bad_request_response
 
 from hi.constants import DIVID
 
+from . import forms
 from .helpers import LocationEditHelpers
 
 
@@ -29,7 +29,7 @@ class LocationViewAddView( View ):
 
     def get( self, request, *args, **kwargs ):
         context = {
-            'name_form': NameForm(),
+            'location_view_form': forms.LocationViewForm(),
         }
         return antinode.modal_from_template(
             request = request,
@@ -38,10 +38,10 @@ class LocationViewAddView( View ):
         )
     
     def post( self, request, *args, **kwargs ):
-        name_form = NameForm( request.POST )
+        name_form = forms.LocationViewForm( request.POST )
         if not name_form.is_valid():
             context = {
-                'name_form': name_form,
+                'location_view_form': name_form,
             }
             return antinode.modal_from_template(
                 request = request,

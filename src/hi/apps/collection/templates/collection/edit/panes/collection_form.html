@@ -1,0 +1,28 @@
+{% for hidden in collection_form.hidden_fields %}
+{{ hidden }}
+{% endfor %}
+
+{% if collection_form.non_field_errors %}
+<div class="non-field-errors">
+  {% for err in collection_form.non_field_errors %}
+  <p class="form-error text-danger">ERROR: {{ err }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div>
+  <div class="input-group mb-2 mr-sm-2">
+    <div class="input-group-prepend">
+      <div class="input-group-text">{{ collection_form.collection_type.label_tag }}</div>
+    </div>
+    {{ collection_form.collection_type }}
+  </div>
+  {{ ollection_form.collection_type.errors }}
+</div>
+  
+<div>
+  {{ collection_form.name.label }}
+  {{ collection_form.name }}
+  {{ collection_form.name.errors }}
+</div>
+

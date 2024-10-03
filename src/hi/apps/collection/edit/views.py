@@ -10,7 +10,6 @@ import hi.apps.common.antinode as antinode
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.enums import CollectionType
 from hi.apps.collection.models import Collection, CollectionPosition
-from hi.apps.edit.forms import NameForm
 from hi.apps.entity.models import Entity
 from hi.apps.location.forms import SvgPositionForm
 from hi.decorators import edit_required
@@ -19,6 +18,7 @@ from hi.views import bad_request_response, page_not_found_response
 
 from hi.constants import DIVID
 
+from . import forms
 from .helpers import CollectionEditHelpers
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class CollectionAddView( View ):
 
     def get( self, request, *args, **kwargs ):
         context = {
-            'name_form': NameForm(),
+            'collection_form': forms.CollectionForm(),
         }
         return antinode.modal_from_template(
             request = request,
@@ -38,10 +38,10 @@ class CollectionAddView( View ):
         )
     
     def post( self, request, *args, **kwargs ):
-        name_form = NameForm( request.POST )
+        name_form = forms.CollectionForm( request.POST )
         if not name_form.is_valid():
             context = {
-                'name_form': name_form,
+                'collection_form': name_form,
             }
             return antinode.modal_from_template(
                 request = request,
@@ -49,10 +49,15 @@ class CollectionAddView( View ):
                 context = context,
             )
 
+        cleaned_data = name_form.clean()
+        collection_type = CollectionType.from_name_safe( cleaned_data.get('collection_type') )
+        name = cleaned_data.get('name')
+        
         try:
             collection = CollectionEditHelpers.create_collection(
                 request = request,
-                name = name_form.cleaned_data.get('name'),
+                collection_type = collection_type,
+                name = name,
             )
         except ValueError as e:
             return bad_request_response( request, message = str(e) )
