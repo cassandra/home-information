@@ -49,18 +49,13 @@ class CollectionAddView( View ):
                 context = context,
             )
 
-        # Move to helper class
-        # Extend NameForm to add type dropdown
-        
-
-
-        last_collection = Collection.objects.all().order_by( '-order_id' ).first()
-        
-        collection = Collection.objects.create(
-            name = name_form.cleaned_data.get('name'),
-            collection_type_str = CollectionType.default(),
-            order_id = last_collection.order_id + 1,
-        )
+        try:
+            collection = CollectionEditHelpers.create_collection(
+                request = request,
+                name = name_form.cleaned_data.get('name'),
+            )
+        except ValueError as e:
+            return bad_request_response( request, message = str(e) )
         
         request.view_parameters.view_type = ViewType.COLLECTION
         request.view_parameters.collection_id = collection.id

@@ -1,5 +1,8 @@
 from typing import List
 
+from django.http import HttpRequest
+
+from hi.apps.collection.enums import CollectionType
 from hi.apps.collection.models import (
     Collection,
     CollectionEntity,
@@ -16,6 +19,18 @@ from .transient_models import (
 
 class CollectionEditHelpers:
 
+    @classmethod
+    def create_collection( cls,
+                           request  : HttpRequest,
+                           name     : str          ) -> Collection:
+        last_collection = Collection.objects.all().order_by( '-order_id' ).first()
+        
+        return Collection.objects.create(
+            name = name,
+            collection_type_str = CollectionType.default(),
+            order_id = last_collection.order_id + 1,
+        )
+        
     @classmethod
     def create_entity_collection_group_list( cls, collection : Collection ) -> List[EntityCollectionGroup]:
 

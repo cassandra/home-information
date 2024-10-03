@@ -1,7 +1,5 @@
-from decimal import Decimal
 import logging
 
-from django.http import HttpRequest
 from django.shortcuts import redirect
 from django.template.loader import get_template
 from django.urls import reverse
@@ -12,9 +10,8 @@ from hi.apps.collection.models import Collection
 import hi.apps.common.antinode as antinode
 from hi.apps.edit.forms import NameForm
 from hi.apps.entity.models import Entity
-from hi.apps.location.enums import LocationViewType
 from hi.apps.location.location_view_manager import LocationViewManager
-from hi.apps.location.models import Location, LocationView
+from hi.apps.location.models import LocationView
 from hi.decorators import edit_required
 from hi.enums import ViewType
 from hi.views import bad_request_response
@@ -52,40 +49,20 @@ class LocationViewAddView( View ):
                 context = context,
             )
 
+        try:
+            location_view = LocationEditHelpers.create_location_view(
+                request = request,
+                name = name_form.cleaned_data.get('name'),
+            )
+        except ValueError as e:
+            return bad_request_response( request, message = str(e) )
 
-        
-
-        # Move to helper class
-        # Extend NameForm to add type dropdown
-
-
-        
-        location = self.get_location_for_new_location_view( request )
-        if not location:
-            return bad_request_response( request, message = 'No locations defined.' )
- 
-        last_location_view = location.views.order_by( '-order_id' ).first()
-
-        location_view = LocationView.objects.create(
-            location = location,
-            location_view_type_str = LocationViewType.default(),
-            name = name_form.cleaned_data.get('name'),
-            svg_view_box_str = str( location.svg_view_box ),
-            svg_rotate = Decimal( 0.0 ),
-            order_id = last_location_view.order_id + 1,
-        )
-        
         request.view_parameters.view_type = ViewType.LOCATION_VIEW
         request.view_parameters.location_view_id = location_view.id
         request.view_parameters.to_session( request )
         
         redirect_url = reverse('home')
         return redirect( redirect_url )
-
-    def get_location_for_new_location_view( self, request : HttpRequest ) -> Location:
-        if request.view_parameters.location_view:
-            return request.view_parameters.location_view.location
-        return Location.objects.order_by( 'order_id' ).first()
 
     
 @method_decorator( edit_required, name='dispatch' )
