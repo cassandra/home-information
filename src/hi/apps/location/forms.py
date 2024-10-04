@@ -41,7 +41,7 @@ class SvgPositionForm(forms.Form):
     def from_svg_position_model( cls, svg_position_model : SvgPositionModel ):
         if svg_position_model:
             return cls(
-                item_html_id = svg_position_model.svg_item.html_id,
+                item_html_id = svg_position_model.svg_icon_item.html_id,
                 initial = {
                     'svg_x': svg_position_model.svg_x,
                     'svg_y': svg_position_model.svg_y,
@@ -50,7 +50,7 @@ class SvgPositionForm(forms.Form):
                 },
             )
         return cls(
-            item_html_id = svg_position_model.svg_item.html_id,
+            item_html_id = svg_position_model.svg_icon_item.html_id,
             initial = {
                 'svg_scale': Decimal( 1.0 ),
                 'svg_rotate': Decimal( 0.0 ),

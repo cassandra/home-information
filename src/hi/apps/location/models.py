@@ -1,6 +1,6 @@
 from django.db import models
 
-from hi.apps.common.svg_models import SvgItem, SvgViewBox
+from hi.apps.common.svg_models import SvgIconItem, SvgPathItem, SvgViewBox
 
 from .enums import LocationViewType
 
@@ -180,7 +180,7 @@ class SvgPositionModel(models.Model):
     )
 
     @property
-    def svg_item(self) -> SvgItem:
+    def svg_icon_item(self) -> SvgIconItem:
         raise NotImplementedError('Subclasses must implement this method.')
 
     
@@ -197,3 +197,7 @@ class SvgPathModel(models.Model):
         'Path',
         null = False, blank = False,
     )
+
+    @property
+    def svg_path_item(self) -> SvgPathItem:
+        raise NotImplementedError('Subclasses must implement this method.')

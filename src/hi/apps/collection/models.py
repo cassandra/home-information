@@ -1,6 +1,6 @@
 from django.db import models
 
-from hi.apps.common.svg_models import SvgItem
+from hi.apps.common.svg_models import SvgIconItem
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import (
     Location,
@@ -116,8 +116,8 @@ class CollectionPosition( SvgPositionModel ):
         ]
 
     @property
-    def svg_item(self):
-        return SvgItem(
+    def svg_icon_item(self) -> SvgIconItem:
+        return SvgIconItem(
             html_id = f'hi-collection-{self.collection.id}',
             template_name = self.collection.collection_type.svg_icon_template_name,
             position_x = float( self.svg_x ),

@@ -39,10 +39,10 @@ class CollectionAddView( View ):
         )
     
     def post( self, request, *args, **kwargs ):
-        name_form = forms.CollectionForm( request.POST )
-        if not name_form.is_valid():
+        collection_form = forms.CollectionForm( request.POST )
+        if not collection_form.is_valid():
             context = {
-                'collection_form': name_form,
+                'collection_form': collection_form,
             }
             return antinode.modal_from_template(
                 request = request,
@@ -50,7 +50,7 @@ class CollectionAddView( View ):
                 context = context,
             )
 
-        cleaned_data = name_form.clean()
+        cleaned_data = collection_form.clean()
         collection_type = CollectionType.from_name_safe( cleaned_data.get('collection_type') )
         name = cleaned_data.get('name')
         

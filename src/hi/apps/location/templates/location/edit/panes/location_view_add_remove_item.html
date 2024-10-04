@@ -1,6 +1,14 @@
 <div class="">ADD/REMOVE</div>
 
-{% for entity_view_group in entity_view_group_list %}
+<div class="">
+  <a href="{% url 'entity_edit_entity_add' %}"
+     class="btn btn-success btn-control" role="button"
+     data-async="modal" >
+    NEW ITEM
+  </a>
+</div>
+
+  {% for entity_view_group in entity_view_group_list %}
 <div class="">
   <div class="">{{ entity_view_group.entity_type.label }}</div>
   {% for entity_view_item in entity_view_group.item_list %}

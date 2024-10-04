@@ -1,10 +1,13 @@
 import logging
 
+from django.shortcuts import redirect
 from django.template.loader import get_template
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
+from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity, EntityPosition
 from hi.apps.location.forms import SvgPositionForm
 
@@ -12,6 +15,8 @@ from hi.constants import DIVID
 from hi.decorators import edit_required
 from hi.views import bad_request_response, page_not_found_response
 
+from . import forms
+from .helpers import EntityEditHelpers
 
 logger = logging.getLogger(__name__)
 
@@ -50,3 +55,48 @@ class EntityDetailsView( View ):
                 DIVID['EDIT_ITEM']: content,
             },
         )     
+
+    
+@method_decorator( edit_required, name='dispatch' )
+class EntityAddView( View ):
+
+    def get( self, request, *args, **kwargs ):
+        context = {
+            'entity_form': forms.EntityForm(),
+        }
+        return antinode.modal_from_template(
+            request = request,
+            template_name = 'entity/edit/modals/entity_add.html',
+            context = context,
+        )
+    
+    def post( self, request, *args, **kwargs ):
+        entity_form = forms.EntityForm( request.POST )
+        if not entity_form.is_valid():
+            context = {
+                'entity_form': entity_form,
+            }
+            return antinode.modal_from_template(
+                request = request,
+                template_name = 'entity/edit/modals/entity_add.html',
+                context = context,
+            )
+
+        cleaned_data = entity_form.clean()
+        entity_type = EntityType.from_name_safe( cleaned_data.get('entity_type') )
+        name = cleaned_data.get('name')
+        
+        try:
+            _ = EntityEditHelpers.create_entity(
+                request = request,
+                entity_type = entity_type,
+                name = name,
+            )
+        except ValueError as e:
+            return bad_request_response( request, message = str(e) )
+        
+        redirect_url = reverse('home')
+        return redirect( redirect_url )
+
+    
+    

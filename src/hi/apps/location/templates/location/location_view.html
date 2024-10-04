@@ -8,14 +8,15 @@
     {% include_media_template location_view_data.location_view.location.svg_filename %}
 
     {% for entity_path in location_view_data.entity_paths %}
+    {% include "location/svg_path_item.html" with svg_path_item=entity_path.svg_path_item %}
     {% endfor %}
 
     {% for entity_position in location_view_data.entity_positions %}
-    {% include "location/svg_position_item.html" with svg_position_item=entity_position.svg_item %}
+    {% include "location/svg_icon_item.html" with svg_icon_item=entity_position.svg_icon_item %}
     {% endfor %}
     
     {% for collection_position in location_view_data.collection_positions %}
-    {% include "location/svg_position_item.html" with svg_position_item=collection_position.svg_item %}
+    {% include "location/svg_icon_item.html" with svg_icon_item=collection_position.svg_icon_item %}
     {% endfor %}
 
   </svg>

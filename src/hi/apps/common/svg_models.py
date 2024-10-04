@@ -68,12 +68,12 @@ class SvgPathStyle:
     
 
 @dataclass
-class SvgItem:
+class SvgIconItem:
     """
-    Encapsulates an iten to be inserted in a base SVG file.  A item is a
-    sequence of drawing commands stored in a template.  The shape that the
-    drawing commands define can be transformed to scale, roate and chnage
-    its position as provided.
+    Encapsulates an iten to be inserted in a base SVG file as an icon.  The
+    icon is defined as a sequence of drawing commands stored in a template
+    file.  The shape that the icon drawing commands define can be
+    transformed to scale, roate and change its position as provided.
     """
 
     # The SVG Transformations needed to move, scale and rotate SVG
@@ -89,14 +89,13 @@ class SvgItem:
     #    come before can impact things that come after.
     #  - Scaling does not always have to be taken into account.
     
-    # Template name
     html_id        : str
     template_name  : str
     bounding_box   : SvgViewBox
     position_x     : float
     position_y     : float
-    rotate         : float       = 0.0
-    scale          : float       = 1.0
+    rotate         : float
+    scale          : float
 
     @property
     def transform_str(self):
@@ -123,3 +122,16 @@ class SvgItem:
         if self.scale < 0.000001:
             return 0
         return ( self.position_y / self.scale ) - self.bounds_center_y
+
+
+@dataclass
+class SvgPathItem:
+    """
+    Encapsulates an item to be inserted in a base SVG file as a path.  A path item is a
+    sequence of drawing commands defined in 'svg_path'.
+    """
+
+    html_id     : str
+    svg_path    : str
+    path_style  : SvgPathStyle
+    

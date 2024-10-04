@@ -165,13 +165,13 @@ class EditSvgPositionView( View, EditViewMixin ):
 
         svg_position_form = SvgPositionForm(
             request.POST,
-            item_html_id = svg_position_model.svg_item.html_id,
+            item_html_id = svg_position_model.svg_icon_item.html_id,
         )
         if svg_position_form.is_valid():
             svg_position_form.to_svg_position_model( svg_position_model )
             svg_position_model.save()
 
-        svg_position_item = svg_position_model.svg_item            
+        svg_icon_item = svg_position_model.svg_icon_item            
         context = {
             'svg_position_form': svg_position_form,
         }
@@ -182,8 +182,8 @@ class EditSvgPositionView( View, EditViewMixin ):
             svg_position_form.content_html_id: content,
         }
         set_attributes_map = {
-            svg_position_item.html_id: {
-                'transform': svg_position_item.transform_str,
+            svg_icon_item.html_id: {
+                'transform': svg_icon_item.transform_str,
             }
         }            
         return antinode.response(

@@ -1,6 +1,6 @@
 from django.db import models
 
-from hi.apps.common.svg_models import SvgItem
+from hi.apps.common.svg_models import SvgIconItem, SvgPathItem
 from hi.apps.location.models import (
     Location,
     LocationView,
@@ -311,8 +311,8 @@ class EntityPosition( SvgPositionModel ):
         ]
 
     @property
-    def svg_item(self):
-        return SvgItem(
+    def svg_icon_item(self) -> SvgIconItem:
+        return SvgIconItem(
             html_id = f'hi-entity-{self.entity.id}',
             template_name = self.entity.entity_type.svg_icon_template_name,
             position_x = float( self.svg_x ),
@@ -361,7 +361,15 @@ class EntityPath( SvgPathModel ):
                 name = 'entity_path_location_entity', ),
         ]
 
-        
+    @property
+    def svg_path_item(self) -> SvgPathItem:
+        return SvgPathItem(
+            html_id = f'hi-entity-{self.entity.id}',
+            svg_path = self.svg_path,
+            path_style = self.entity.entity_type.svg_path_style,
+        )
+
+    
 class EntityView(models.Model):
 
     entity = models.ForeignKey(

@@ -107,8 +107,8 @@ class EntityType(LabeledEnum):
     def svg_path_style(self):
         # TODO: Change this to be based on type
         return SvgPathStyle(
-            stroke_color = '888888',
-            stroke_width = 1.0,
+            stroke_color = '#40f040',
+            stroke_width = 5.0,
             fill_color = 'none',
         )
                 
