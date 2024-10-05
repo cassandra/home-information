@@ -24,7 +24,8 @@
     const ActionScaleKey = 's';
     const ActionRotateKey = 'r';
 
-    const DoubleClickDelayMs = 300;
+    const ClickHoldThreshold = 50; // For ignoreing very short, transient clicks
+    const DoubleClickDelayMs = 250;
     const CursorMovementThreshold = 3;
     
     let gSvgIconActionState = SvgActionStateType.MOVE;
@@ -38,7 +39,6 @@
     let gClickStart = null;
     let gClickTimeout = null;
     let gLastMousePosition = { x: 0, y: 0 };
-
 
     // For re-ordering items (buttons, lists, etc)
     let gDraggedElement = null;
@@ -195,6 +195,53 @@
 	}
     }
     
+    function handleMouseUp( event ) {
+	if ( gSvgIconDragData ) {
+	    if ( gSvgIconDragData.isDragging ) {
+		endDrag( event );
+		$(baseSvgSelector).attr( SvgActionStateAttrName, '');
+		return;
+	    }
+	    $(baseSvgSelector).attr( SvgActionStateAttrName, '' );
+	    gSvgIconDragData = null;
+	}
+	
+	else if ( gSvgIconActionData ) {
+	    if ( gSvgIconActionState == SvgActionStateType.SCALE ) {
+		gSvgIconActionData.isScaling = false;
+		iconActionScaleApply();
+	    } else if ( gSvgIconActionState == SvgActionStateType.ROTATE ) {
+		gSvgIconActionData.isRotating = false;
+		iconActionRotateApply();
+	    }
+	    gSvgIconActionState = SvgActionStateType.MOVE;
+	    $(baseSvgSelector).attr( SvgActionStateAttrName, '');
+	    gSvgIconActionData = null;
+
+	} else if ( gSvgPathEditData && gSvgPathEditData.dragControlPoint ) {
+	    return;
+	} else {
+	    const clickEndTime = Date.now();
+	    const elapsedTime = clickEndTime - gClickStart.time;
+	    if ( DEBUG ) { console.log( `Click Elapsed: ${elapsedTime}` ); }
+	    if (elapsedTime < ClickHoldThreshold) {
+		return;
+	    }
+	    if ( gClickTimeout ) {
+		clearTimeout( gClickTimeout );
+		gClickTimeout = null;
+		if ( elapsedTime < DoubleClickDelayMs ) {
+		    handleDoubleClick( event );
+		}
+	    } else {
+		gClickTimeout = setTimeout(() => {
+		    gClickTimeout = null;
+		    handleClick( event );
+		}, DoubleClickDelayMs );
+	    }
+	}
+    }
+    
     function handleMouseMove( event ) {
 
 	const currentMousePosition = {
@@ -221,48 +268,6 @@
 	}
 	
 	gLastMousePosition = currentMousePosition;
-    }
-    
-    function handleMouseUp( event ) {
-	if ( gSvgIconDragData ) {
-	    if ( gSvgIconDragData.isDragging ) {
-		endDrag( event );
-		$(baseSvgSelector).attr( SvgActionStateAttrName, '');
-		return;
-	    }
-	    $(baseSvgSelector).attr( SvgActionStateAttrName, '' );
-	    gSvgIconDragData = null;
-	}
-	
-	else if ( gSvgIconActionData ) {
-	    if ( gSvgIconActionState == SvgActionStateType.SCALE ) {
-		gSvgIconActionData.isScaling = false;
-		iconActionScaleApply();
-	    } else if ( gSvgIconActionState == SvgActionStateType.ROTATE ) {
-		gSvgIconActionData.isRotating = false;
-		iconActionRotateApply();
-	    }
-	    gSvgIconActionState = SvgActionStateType.MOVE;
-	    $(baseSvgSelector).attr( SvgActionStateAttrName, '');
-	    gSvgIconActionData = null;
-	}
-	
-	if ( gClickTimeout ) {
-	    const clickEndTime = Date.now();
-	    const elapsedTime = clickEndTime - gClickStart.time;
-	    if ( DEBUG ) { console.log( `Click Elapsed: ${elapsedTime}` ); }
-	    clearTimeout( gClickTimeout );
-	    gClickTimeout = null;
-	    handleDoubleClick( event );
-	} else {
-	    gClickTimeout = setTimeout(() => {
-		const clickEndTime = Date.now();
-		const elapsedTime = clickEndTime - gClickStart.time;
-		if ( DEBUG ) { console.log( `Click Elapsed: ${elapsedTime}` ); }
-		handleClick( event );
-		gClickTimeout = null;
-	    }, DoubleClickDelayMs );
-	}
     }
     
     function handleKeyDown( event ) {
@@ -813,7 +818,8 @@
 	
 	gSvgPathEditData = {
 	    proxyPathContainer: proxyPathContainer,
-	    selectedProxyElement: null
+	    selectedProxyElement: null,
+	    dragControlPoint: null,
 	};
 	
 	let svgPathElement = $(pathSvgGroup).find('path');
@@ -832,10 +838,13 @@
 	   - If it is a closed path, we also need to add an extra line to close the figure.
 	   - We organize all the proxy item into SVG groups:
 	   - A SVG group excloses all with one child SVG group for each line segment (called a proxyPath)
+	   - Insert items in DOM in order since we rely on this ordering as a data structure.
+	   - Lines should be drawn before control points, so use a subgrouping for each type.
 	*/
 
-	// Create all control points.
+	// - Create all control points.
 	let currentProxyPathGroup = null;
+	let currentProxyPointsGroup = null;
 	for ( let i = 0; i < segments.length; i++ ) {
 	    
             let command = segments[i].charAt(0);  // M or L or Z
@@ -846,11 +855,24 @@
 		currentProxyPathGroup.setAttribute('id', `hi-proxy-path-${i}` );
 		currentProxyPathGroup.setAttribute('class', 'hi-proxy-path' );
 		currentProxyPathGroup.setAttribute('hi-proxy-path-type', 'open' );
-		proxyPathContainer.appendChild( currentProxyPathGroup );
-		createProxyPathControlPoint( currentProxyPathGroup, coords[0], coords[1] );
 
+		// Lines gets populated after first adding all control points.
+		let proxyLinesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+		proxyLinesGroup.setAttribute('class', 'hi-proxy-lines' );
+
+		currentProxyPointsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+		currentProxyPointsGroup.setAttribute('class', 'hi-proxy-points' );
+		
+		proxyPathContainer.appendChild( currentProxyPathGroup );
+		currentProxyPathGroup.appendChild( proxyLinesGroup );
+		currentProxyPathGroup.appendChild( currentProxyPointsGroup );
+
+		let newControlPoint = createProxyPathControlPoint( coords[0], coords[1] );
+		$(currentProxyPointsGroup).append( newControlPoint );
+		
             } else if (command === 'L' && currentProxyPathGroup ) {
-		createProxyPathControlPoint( currentProxyPathGroup, coords[0], coords[1] );
+		let newControlPoint = createProxyPathControlPoint( coords[0], coords[1] );
+		$(currentProxyPointsGroup).append( newControlPoint );
 
             } else if (command === 'Z' && currentProxyPathGroup ) {
 		currentProxyPathGroup.setAttribute('hi-proxy-path-type', 'closed' );
@@ -868,6 +890,7 @@
 	    let firstLine = null;
 	    let previousLine = null;
 
+	    let proxyLinesGroup = $(proxyPathGroup).find( 'g.hi-proxy-lines' );
 	    let controlPoints = $(proxyPathGroup).find( 'circle.proxy-point' );
 	    
 	    $(controlPoints).each(function( index, currentControlPoint ) {
@@ -877,7 +900,8 @@
 		    const y1 = parseFloat(previousControlPoint.getAttribute('cy'));
 		    const x2 = parseFloat(currentControlPoint.getAttribute('cx'));
 		    const y2 = parseFloat(currentControlPoint.getAttribute('cy'));
-		    let currentLine = createProxyPathLine( proxyPathGroup, x1, y1, x2, y2 );
+		    let currentLine = createProxyPathLine( x1, y1, x2, y2 );
+		    $(proxyLinesGroup).append( currentLine );
 		    
 		    if ( previousLine ) {
 			addControlPointEventHandler( previousControlPoint, previousLine, currentLine );
@@ -909,7 +933,8 @@
 		const y1 = parseFloat(lastControlPoint.getAttribute('cy'));
 		const x2 = parseFloat(firstControlPoint.getAttribute('cx'));
 		const y2 = parseFloat(firstControlPoint.getAttribute('cy'));
-		let closureLine = createProxyPathLine( proxyPathGroup, x1, y1, x2, y2 );
+		let closureLine = createProxyPathLine( x1, y1, x2, y2 );
+		$(proxyLinesGroup).append( closureLine );
 		addControlPointEventHandler( firstControlPoint, closureLine, firstLine );
 		addControlPointEventHandler( lastControlPoint, previousLine, closureLine );
 	    }
@@ -929,28 +954,90 @@
 	    let proxyPathGroup = $(referenceElement).closest('g.hi-proxy-path');
 	    if ( $(proxyPathGroup).attr('hi-proxy-path-type') == 'open' ) {
 		if ( $(referenceElement).is(':first-of-type') ) {
-		    // TODO: prepend new control point to path
+		    newControlPoint = prependNewProxyControlPoint( event, proxyPathGroup );
+
 		} else {
-		    // TODO: append new control point to path
+		    newControlPoint = appendNewProxyControlPoint( event, proxyPathGroup );
 		}
 	    } else {
-		// TODO: add new control point by splitting line of "after" line of reference point
+		newControlPoint = insertNewProxyControlPoint( event, referenceElement );
+
 	    }
 	} else if (  $(referenceElement).hasClass('proxy-line') ) {
-	    // TODO: add new control point by splitting reference line
+	    let referenceControlPoint = getReferenceControlPointFromProxyLine( referenceElement );
+	    newControlPoint = insertNewProxyControlPoint( event, referenceControlPoint );
 	} else {
 	    console.log( 'Unrecognized reference proxy element.' );
 	    return;
 	}
 	
-	
-	if ( gSvgPathEditData.selectedProxyElement ) {
-	} else {
-	}
-
 	if ( newControlPoint ) {
 	    setSelectedProxyElement( newControlPoint );
 	}
+    }
+    
+    function prependNewProxyControlPoint( event, proxyPathGroup ) {
+
+	let firstControlPoint = proxyPathGroup.find('circle.proxy-point').first();
+	let firstLine = proxyPathGroup.find('line.proxy-line').first();
+
+	if ( DEBUG ) { console.log( 'First point and line: ', firstControlPoint, firstLine ); }
+	
+	const baseSvgElement = $(baseSvgSelector);
+	let newSvgPoint = toSvgPoint( baseSvgElement, event.clientX, event.clientY );
+	
+	const firstX = parseFloat( $(firstControlPoint).attr('cx') );
+	const firstY = parseFloat( $(firstControlPoint).attr('cy') );
+
+	let newControlPoint = createProxyPathControlPoint( newSvgPoint.x, newSvgPoint.y );
+	let newLine = createProxyPathLine( newSvgPoint.x, newSvgPoint.y, firstX, firstY );
+
+	let proxyPointsGroup = $(proxyPathGroup).find( 'g.hi-proxy-points' );
+	let proxyLinesGroup = $(proxyPathGroup).find( 'g.hi-proxy-lines' );
+	$(proxyPointsGroup).prepend( newControlPoint );
+	$(proxyLinesGroup).prepend( newLine );
+	
+	$(firstControlPoint).off();  // Removes event listeners
+	addControlPointEventHandler( firstControlPoint, newLine, firstLine );
+	addControlPointEventHandler( newControlPoint, null, newLine );
+
+	return newControlPoint;
+    }
+
+    function appendNewProxyControlPoint( event, proxyPathGroup ) {
+
+	let lastControlPoint = proxyPathGroup.find('circle.proxy-point').last();
+	let lastLine = proxyPathGroup.find('line.proxy-line').last();
+
+	if ( DEBUG ) { console.log( 'Last point and line: ', lastControlPoint, lastLine ); }
+	
+	const baseSvgElement = $(baseSvgSelector);
+	let newSvgPoint = toSvgPoint( baseSvgElement, event.clientX, event.clientY );
+	
+	const lastX = parseFloat($(lastControlPoint).attr('cx'));
+	const lastY = parseFloat($(lastControlPoint).attr('cy'));
+
+	let newControlPoint = createProxyPathControlPoint( newSvgPoint.x, newSvgPoint.y );
+	let newLine = createProxyPathLine( lastX, lastY, newSvgPoint.x, newSvgPoint.y );
+
+	let proxyPointsGroup = $(proxyPathGroup).find( 'g.hi-proxy-points' );
+	let proxyLinesGroup = $(proxyPathGroup).find( 'g.hi-proxy-lines' );
+	$(proxyPointsGroup).append( newControlPoint );
+	$(proxyLinesGroup).append( newLine );
+	
+	$(lastControlPoint).off();  // Removes event listeners
+	addControlPointEventHandler( lastControlPoint, lastLine, newLine );
+	addControlPointEventHandler( newControlPoint, newLine, null );
+
+	return newControlPoint;	
+    }
+
+
+    function insertNewProxyControlPoint( event, referenceControlPoint ) {
+
+	return;
+	zzz;
+	
     }
 
     function getReferenceElementForExtendingProxyPath( ) {
@@ -962,7 +1049,16 @@
 	return lastControlPoint;
     }
     
-    function createProxyPathControlPoint( svg, cx, cy ) {
+    function getReferenceControlPointFromProxyLine( referenceProxyLine ) {
+
+	return;
+	zzz;
+	
+    }
+
+    
+    
+    function createProxyPathControlPoint( cx, cy ) {
 	const controlPoint = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 	controlPoint.setAttribute('cx', cx);
 	controlPoint.setAttribute('cy', cy);
@@ -970,11 +1066,10 @@
 	controlPoint.setAttribute('fill', 'red');
 	controlPoint.setAttribute('class', 'draggable proxy proxy-point');
 	controlPoint.setAttribute('vector-effect', 'non-scaling-stroke');
-	svg.appendChild(controlPoint);
 	return controlPoint;
     }
 
-    function createProxyPathLine( svg, x1, y1, x2, y2 ) {
+    function createProxyPathLine( x1, y1, x2, y2, ) {
 	const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
 	line.setAttribute('x1', x1);
 	line.setAttribute('y1', y1);
@@ -984,44 +1079,46 @@
 	line.setAttribute('stroke', 'red');
 	line.setAttribute('stroke-width', '5');
 	line.setAttribute('vector-effect', 'non-scaling-stroke');
-	$(svg).prepend(line);  // Need control points to draw after lines (else selection is wonky).
 	return line;
     }
     
     function addControlPointEventHandler( controlPoint, beforeLine, afterLine ) {
-	
 	// Drag logic for the control point
-	controlPoint.addEventListener('mousedown', function(e) {
-            e.preventDefault();
-            const offsetX = e.clientX - parseFloat(controlPoint.getAttribute('cx'));
-            const offsetY = e.clientY - parseFloat(controlPoint.getAttribute('cy'));
-	    
-            function onMouseMove(e) {
-		const newCx = e.clientX - offsetX;
-		const newCy = e.clientY - offsetY;
-		controlPoint.setAttribute('cx', newCx);
-		controlPoint.setAttribute('cy', newCy);
+	$(controlPoint).on('mousedown', function( event ) {
+            event.preventDefault();
+            const offsetX = event.clientX - parseFloat($(controlPoint).attr('cx'));
+            const offsetY = event.clientY - parseFloat($(controlPoint).attr('cy'));
+            
+            // Function to handle mouse movement
+            function onMouseMove( event ) {
+		event.preventDefault();
+		gSvgPathEditData.dragControlPoint = event.target;
+		const newCx = event.clientX - offsetX;
+		const newCy = event.clientY - offsetY;
+		$(controlPoint).attr('cx', newCx).attr('cy', newCy);
 
 		// Update the line endpoints to follow control point movement
-		if ( beforeLine ) {
-                    beforeLine.setAttribute('x2', newCx);
-                    beforeLine.setAttribute('y2', newCy);
+		if (beforeLine) {
+                    $(beforeLine).attr('x2', newCx).attr('y2', newCy);
 		}
-		if ( afterLine ) {
-                    afterLine.setAttribute('x1', newCx);
-                    afterLine.setAttribute('y1', newCy);
+		if (afterLine) {
+                    $(afterLine).attr('x1', newCx).attr('y1', newCy);
 		}
 
-		setSelectedProxyElement( controlPoint );
+		setSelectedProxyElement(controlPoint);
             }
-	    
-            function onMouseUp() {
-		document.removeEventListener('mousemove', onMouseMove);
-		document.removeEventListener('mouseup', onMouseUp);
+
+            // Function to handle mouse up (end of drag)
+            function onMouseUp( event ) {
+		event.preventDefault();
+		gSvgPathEditData.dragControlPoint = null;
+		$(document).off('mousemove', onMouseMove);
+		$(document).off('mouseup', onMouseUp);
             }
-	    
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
+
+            // Bind the mousemove and mouseup handlers using jQuery
+            $(document).on('mousemove', onMouseMove);
+            $(document).on('mouseup', onMouseUp);
 	});
     }
     
