@@ -900,7 +900,8 @@
 		    const y1 = parseFloat(previousControlPoint.getAttribute('cy'));
 		    const x2 = parseFloat(currentControlPoint.getAttribute('cx'));
 		    const y2 = parseFloat(currentControlPoint.getAttribute('cy'));
-		    let currentLine = createProxyPathLine( x1, y1, x2, y2 );
+		    let currentLine = createProxyPathLine( previousControlPoint, currentControlPoint,
+							   x1, y1, x2, y2 );
 		    $(proxyLinesGroup).append( currentLine );
 		    
 		    if ( previousLine ) {
@@ -933,7 +934,8 @@
 		const y1 = parseFloat(lastControlPoint.getAttribute('cy'));
 		const x2 = parseFloat(firstControlPoint.getAttribute('cx'));
 		const y2 = parseFloat(firstControlPoint.getAttribute('cy'));
-		let closureLine = createProxyPathLine( x1, y1, x2, y2 );
+		let closureLine = createProxyPathLine( lastControlPoint, firstControlPoint,
+						       x1, y1, x2, y2 );
 		$(proxyLinesGroup).append( closureLine );
 		addControlPointEventHandler( firstControlPoint, closureLine, firstLine );
 		addControlPointEventHandler( lastControlPoint, previousLine, closureLine );
@@ -948,10 +950,10 @@
 	let svgPoint = toSvgPoint( baseSvgElement, event.clientX, event.clientY );
 
 	let referenceElement = getReferenceElementForExtendingProxyPath();
+	let proxyPathGroup = $(referenceElement).closest('g.hi-proxy-path');
 	let newControlPoint = null;
 	
 	if (  $(referenceElement).hasClass('proxy-point') ) {
-	    let proxyPathGroup = $(referenceElement).closest('g.hi-proxy-path');
 	    if ( $(proxyPathGroup).attr('hi-proxy-path-type') == 'open' ) {
 		if ( $(referenceElement).is(':first-of-type') ) {
 		    newControlPoint = prependNewProxyControlPoint( event, proxyPathGroup );
@@ -960,12 +962,13 @@
 		    newControlPoint = appendNewProxyControlPoint( event, proxyPathGroup );
 		}
 	    } else {
-		newControlPoint = insertNewProxyControlPoint( event, referenceElement );
+		const referenceElementId = $(referenceElement).attr('id');
+		let followingProxyLine = $('line[before-proxy-point-id="' + referenceElementId + '"]');
+		newControlPoint = insertNewProxyControlPoint( event, proxyPathGroup, followingProxyLine );
 
 	    }
 	} else if (  $(referenceElement).hasClass('proxy-line') ) {
-	    let referenceControlPoint = getReferenceControlPointFromProxyLine( referenceElement );
-	    newControlPoint = insertNewProxyControlPoint( event, referenceControlPoint );
+	    newControlPoint = insertNewProxyControlPoint( event, proxyPathGroup, referenceElement );
 	} else {
 	    console.log( 'Unrecognized reference proxy element.' );
 	    return;
@@ -981,7 +984,7 @@
 	let firstControlPoint = proxyPathGroup.find('circle.proxy-point').first();
 	let firstLine = proxyPathGroup.find('line.proxy-line').first();
 
-	if ( DEBUG ) { console.log( 'First point and line: ', firstControlPoint, firstLine ); }
+	if ( DEBUG ) { console.log( 'Prepend: First point and line: ', firstControlPoint, firstLine ); }
 	
 	const baseSvgElement = $(baseSvgSelector);
 	let newSvgPoint = toSvgPoint( baseSvgElement, event.clientX, event.clientY );
@@ -990,7 +993,8 @@
 	const firstY = parseFloat( $(firstControlPoint).attr('cy') );
 
 	let newControlPoint = createProxyPathControlPoint( newSvgPoint.x, newSvgPoint.y );
-	let newLine = createProxyPathLine( newSvgPoint.x, newSvgPoint.y, firstX, firstY );
+	let newLine = createProxyPathLine( newControlPoint, firstControlPoint,
+					   newSvgPoint.x, newSvgPoint.y, firstX, firstY );
 
 	let proxyPointsGroup = $(proxyPathGroup).find( 'g.hi-proxy-points' );
 	let proxyLinesGroup = $(proxyPathGroup).find( 'g.hi-proxy-lines' );
@@ -1009,7 +1013,7 @@
 	let lastControlPoint = proxyPathGroup.find('circle.proxy-point').last();
 	let lastLine = proxyPathGroup.find('line.proxy-line').last();
 
-	if ( DEBUG ) { console.log( 'Last point and line: ', lastControlPoint, lastLine ); }
+	if ( DEBUG ) { console.log( 'Append: Last point and line: ', lastControlPoint, lastLine ); }
 	
 	const baseSvgElement = $(baseSvgSelector);
 	let newSvgPoint = toSvgPoint( baseSvgElement, event.clientX, event.clientY );
@@ -1018,7 +1022,8 @@
 	const lastY = parseFloat($(lastControlPoint).attr('cy'));
 
 	let newControlPoint = createProxyPathControlPoint( newSvgPoint.x, newSvgPoint.y );
-	let newLine = createProxyPathLine( lastX, lastY, newSvgPoint.x, newSvgPoint.y );
+	let newLine = createProxyPathLine( lastControlPoint, newControlPoint,
+					   lastX, lastY, newSvgPoint.x, newSvgPoint.y );
 
 	let proxyPointsGroup = $(proxyPathGroup).find( 'g.hi-proxy-points' );
 	let proxyLinesGroup = $(proxyPathGroup).find( 'g.hi-proxy-lines' );
@@ -1033,11 +1038,43 @@
     }
 
 
-    function insertNewProxyControlPoint( event, referenceControlPoint ) {
+    function insertNewProxyControlPoint( event, proxyPathGroup, referenceProxyLine ) {
 
-	return;
-	zzz;
+	const beforeProxyPointId = $(referenceProxyLine).attr('before-proxy-point-id');
+	const afterProxyPointId = $(referenceProxyLine).attr('after-proxy-point-id');
+
+	let beforeProxyPoint = $('#' + beforeProxyPointId );
+	let afterProxyPoint = $('#' + afterProxyPointId );
+	let followingProxyLine = $('line[before-proxy-point-id="' + afterProxyPointId + '"]');
+
+	if ( DEBUG ) { console.log( 'Insert: ', referenceProxyLine, beforeProxyPoint,
+				    afterProxyPoint, followingProxyLine ); }
 	
+	const baseSvgElement = $(baseSvgSelector);
+	let newSvgPoint = toSvgPoint( baseSvgElement, event.clientX, event.clientY );
+
+	const beforeX = parseFloat($(beforeProxyPoint).attr('cx'));
+	const beforeY = parseFloat($(beforeProxyPoint).attr('cy'));
+
+	const afterX = parseFloat($(afterProxyPoint).attr('cx'));
+	const afterY = parseFloat($(afterProxyPoint).attr('cy'));
+
+	let newControlPoint = createProxyPathControlPoint( newSvgPoint.x, newSvgPoint.y );
+	let newLine = createProxyPathLine( newControlPoint, afterProxyPoint,
+					   newSvgPoint.x, newSvgPoint.y, afterX, afterY );
+
+	$(referenceProxyLine).attr( 'after-proxy-point-id', $(newControlPoint).attr('id') );
+	$(referenceProxyLine).attr( 'x2', newSvgPoint.x );
+	$(referenceProxyLine).attr( 'y2', newSvgPoint.y );
+
+	$(beforeProxyPoint).after( newControlPoint );
+	$(referenceProxyLine).after( newLine );
+	
+	$(afterProxyPoint).off();  // Removes event listeners
+	addControlPointEventHandler( afterProxyPoint, newLine, followingProxyLine );
+	addControlPointEventHandler( newControlPoint, referenceProxyLine, newLine );
+
+	return newControlPoint;	
     }
 
     function getReferenceElementForExtendingProxyPath( ) {
@@ -1049,33 +1086,27 @@
 	return lastControlPoint;
     }
     
-    function getReferenceControlPointFromProxyLine( referenceProxyLine ) {
-
-	return;
-	zzz;
-	
-    }
-
-    
-    
     function createProxyPathControlPoint( cx, cy ) {
 	const controlPoint = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 	controlPoint.setAttribute('cx', cx);
 	controlPoint.setAttribute('cy', cy);
 	controlPoint.setAttribute('r', 25);
-	controlPoint.setAttribute('fill', 'red');
+	controlPoint.setAttribute('id', generateUniqueId() );
 	controlPoint.setAttribute('class', 'draggable proxy proxy-point');
+	controlPoint.setAttribute('fill', 'red');
 	controlPoint.setAttribute('vector-effect', 'non-scaling-stroke');
 	return controlPoint;
     }
 
-    function createProxyPathLine( x1, y1, x2, y2, ) {
+    function createProxyPathLine( beforeProxyPoint, afterProxyPoint, x1, y1, x2, y2, ) {
 	const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
 	line.setAttribute('x1', x1);
 	line.setAttribute('y1', y1);
 	line.setAttribute('x2', x2);
 	line.setAttribute('y2', y2);
 	line.setAttribute('class', 'proxy proxy-line');
+	line.setAttribute('before-proxy-point-id', $(beforeProxyPoint).attr('id') );
+	line.setAttribute('after-proxy-point-id', $(afterProxyPoint).attr('id'));
 	line.setAttribute('stroke', 'red');
 	line.setAttribute('stroke-width', '5');
 	line.setAttribute('vector-effect', 'non-scaling-stroke');
@@ -1161,9 +1192,9 @@
 
 
 
-
-    
-
+    function generateUniqueId() {
+	return 'id-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+    }
     
     function displayEventInfo( label, event ) {
 	if ( ! DEBUG ) { return; }
