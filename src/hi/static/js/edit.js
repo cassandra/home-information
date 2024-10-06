@@ -14,6 +14,22 @@
     const LOCATION_VIEW_AREA_SELECTOR = '#hi-location-view-main';
     const BASE_SVG_SELECTOR = '#hi-location-view-main > svg';
     const HIGHLIGHTED_CLASS = 'highlighted';
+
+    const DRAGGABLE_CONTAINER_CLASS = 'draggable-container';
+    const DRAGGABLE_CONTAINER_SELECTOR = '.' + DRAGGABLE_CONTAINER_CLASS;
+    const DRAGGABLE_CLASS = 'draggable';
+    const DRAGGABLE_SELECTOR = '.' + DRAGGABLE_CLASS;
+    const DRAG_OVER_CLASS = 'drag-over';
+    const DATA_ID_ATTR = 'data-id';
+    const DATA_TYPE_ATTR = 'data-type';
+    const DATA_TYPE_ICON_VALUE = 'svg-icon';
+    const DATA_TYPE_PATH_VALUE = 'svg-path';
+    const SELECTABLE_CLASS = 'selectable';
+    const SELECTABLE_SELECTOR = '.' + SELECTABLE_CLASS;
+    
+    const API_REORDER_ITEMS_URL = '/edit/reorder-items';
+    const API_EDIT_DETAILS_URL = '/edit/details';
+    const API_EDIT_SVG_POSITION_URL = '/edit/svg/position';
     
     const ICON_ACTION_STATE_ATTR_NAME = 'action-state';
     const ICON_ACTION_SCALE_KEY = 's';
@@ -148,21 +164,21 @@
 	if ( DEBUG ) { console.log('Drag end:'); }
         $(gDraggedElement).show();
         gDraggedElement = null;
-	$('.draggable').removeClass('drag-over');
-	$('.draggable').css('transform', '');
+	$( DRAGGABLE_SELECTOR ).removeClass( DRAG_OVER_CLASS );
+	$( DRAGGABLE_SELECTOR ).css('transform', '');
 	
         var htmlIdList = [];
-	var parentContainer = $(event.currentTarget).closest('.draggable-container');
-        parentContainer.find('.draggable').each(function() {
-            htmlIdList.push($(this).attr('data-id'));
+	var parentContainer = $(event.currentTarget).closest( DRAGGABLE_CONTAINER_SELECTOR );
+        parentContainer.find( DRAGGABLE_SELECTOR ).each(function() {
+            htmlIdList.push( $(this).attr( DATA_ID_ATTR ));
         });
 	
 	if ( DEBUG ) { console.log(`Drag end ids: ${htmlIdList}`); }
 
-	data = {
+	let data = {
 	    html_id_list: JSON.stringify( htmlIdList ),
 	};
-	AN.post( `/edit/reorder-items`, data );
+	AN.post( API_REORDER_ITEMS_URL, data );
     }
     
     function handleDragOver( event ) {
@@ -190,13 +206,13 @@
 	if ( DEBUG ) { console.log('Drag enter:'); }
 	// Only allow visual feedback if in the same parent container
         if ( $(event.currentTarget).parent()[0] === $(gDraggedElement).parent()[0] ) {
-            $(event.currentTarget).addClass('drag-over');
+            $(event.currentTarget).addClass( DRAG_OVER_CLASS );
         }
     }
     
     function handleDragLeave( event ) {
 	if ( DEBUG ) { console.log('Drag leave:'); }
-	$(event.currentTarget).removeClass('drag-over');
+	$(event.currentTarget).removeClass( DRAG_OVER_CLASS );
 	$(event.currentTarget).css('transform', '');  
     }
     
@@ -224,8 +240,8 @@
 	    if ( enclosingSvgGroup.length < 1 ) {
 		return;
 	    }
-	    const svgDataType = $(enclosingSvgGroup).attr('data-type');
-	    if ( svgDataType == 'svg-icon' ) {
+	    const svgDataType = $(enclosingSvgGroup).attr( DATA_TYPE_ATTR );
+	    if ( svgDataType == DATA_TYPE_ICON_VALUE ) {
 		createIconDragData( event, enclosingSvgGroup );
 	    }
 	    return;
@@ -375,7 +391,7 @@
 	const enclosingSvgGroup = $(event.target).closest('g');
 	if ( enclosingSvgGroup.length > 0 ) {
             displayElementInfo( 'SVG Target Element', enclosingSvgGroup );
-	    const selectable = $(enclosingSvgGroup).hasClass('selectable');
+	    const selectable = $(enclosingSvgGroup).hasClass( SELECTABLE_CLASS );
 	    const svgItemId = enclosingSvgGroup.attr('id');
 	    if ( selectable && svgItemId ) {
 		handleSvgItemClick( event, enclosingSvgGroup );
@@ -388,25 +404,25 @@
 	} else {
 	    if ( DEBUG ) { console.log( 'No SVG group for click target'  ); }
 	    clearSelectedAll();
-            AN.get( `/edit/details` );
+            AN.get( API_EDIT_DETAILS_URL );
 	    return;
 	}
     }
 
     function handleSvgItemClick( event, enclosingSvgGroup ) {
 	const svgItemId = $(enclosingSvgGroup).attr('id');
-	const svgDataType = $(enclosingSvgGroup).attr('data-type');
-	if ( svgDataType == 'svg-icon' ) {
+	const svgDataType = $(enclosingSvgGroup).attr( DATA_TYPE_ATTR );
+	if ( svgDataType == DATA_TYPE_ICON_VALUE ) {
 	    clearSelectedAll();
 	    gSelectedIconSvgGroup = enclosingSvgGroup;
             $(enclosingSvgGroup).addClass( HIGHLIGHTED_CLASS );
-            AN.get( `/edit/details/${svgItemId}` );
+            AN.get( `${API_EDIT_DETAILS_URL}/${svgItemId}` );
 	    
-	} else if ( svgDataType == 'svg-path' ) {
+	} else if ( svgDataType == DATA_TYPE_PATH_VALUE ) {
 	    clearSelectedAll();
 	    gSelectedPathSvgGroup = enclosingSvgGroup;
 	    expandSvgPath( enclosingSvgGroup );
-            AN.get( `/edit/details/${svgItemId}` );
+            AN.get( `${API_EDIT_DETAILS_URL}/${svgItemId}` );
 	    
 	} else {
 	    if ( DEBUG ) { console.log( `Unrecognized SVG group "${svgDataType}" for click target`  ); }
@@ -422,7 +438,7 @@
     function clearSelectedAll() {
 	clearSelectedSvgIcon();
 	clearSelectedSvgPath();
-	$('.selectable').removeClass( HIGHLIGHTED_CLASS );
+	$( SELECTABLE_SELECTOR ).removeClass( HIGHLIGHTED_CLASS );
     }
 
     function clearSelectedSvgIcon() {
@@ -510,20 +526,19 @@
         if ( gSvgIconDragData == null ) {
 	    return;
 	}
-
 	
         displayEventInfo( 'End Drag', event );
         displayElementInfo( 'Drag Element', gSvgIconDragData.element );
 	updateDrag( event );
 
 	let svgItemId = gSvgIconDragData.element.attr('id');
-	data = {
+	let data = {
 	    svg_x: gSvgIconDragData.elementSvgCenterPoint.x,
 	    svg_y: gSvgIconDragData.elementSvgCenterPoint.y,
 	    svg_scale: gSvgIconDragData.originalSvgScale.x,
 	    svg_rotate: gSvgIconDragData.originalSvgRotate.angle
 	};
-	AN.post( `/edit/svg/position/${svgItemId}`, data );
+	AN.post( `${API_EDIT_SVG_POSITION_URL}/${svgItemId}`, data );
 
 	gSvgIconDragData = null;
     }
@@ -537,13 +552,13 @@
 	const center = getSvgCenterPoint( element, baseSvgElement );
 
 	let svgItemId = element.attr('id');
-	data = {
+	let data = {
 	    svg_x: center.x,
 	    svg_y: center.y,
 	    svg_scale: scale.x,
 	    svg_rotate: rotate.angle,
 	};
-	AN.post( `/edit/svg/position/${svgItemId}`, data );
+	AN.post( `${API_EDIT_SVG_POSITION_URL}/${svgItemId}`, data );
     }
 
     function createIconEditActionData( actionState ) {
@@ -1528,6 +1543,7 @@
         console.log( `${label} Event: 
     Type: ${event.type}, 
     Key: ${event.key},
+    KeyCode: ${event.keyCode},
     Pos: ( ${event.clientX}, ${event.clientY} )` );
     }
     
