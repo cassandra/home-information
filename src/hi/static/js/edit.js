@@ -11,22 +11,32 @@
     
     window.Hi.edit = HiEdit;
 
-    const locationViewAreaSelector = '#hi-location-view-main';
-    const baseSvgSelector = '#hi-location-view-main > svg';
+    const LOCATION_VIEW_AREA_SELECTOR = '#hi-location-view-main';
+    const BASE_SVG_SELECTOR = '#hi-location-view-main > svg';
+
+    const ICON_ACTION_STATE_ATTR_NAME = 'action-state';
+    const ICON_ACTION_SCALE_KEY = 's';
+    const ICON_ACTION_ROTATE_KEY = 'r';
+
+    const PATH_ACTION_DELETE_KEY_CODES = [
+	88, // 'x'
+	8,  // Backspace
+	46  // Delete
+    ];
+    const PATH_ACTION_INSERT_KEY_CODES = [
+	73, // 'i'
+	45 // Insert
+    ];;
+
+    const CLICK_HOLD_THRESHOLD_MS = 50; // For ignoreing very short, transient clicks
+    const DOUBLE_CLICK_DELAY_MS = 250;
+    const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3;
 
     const SvgActionStateType = {
 	MOVE: 'move',
 	SCALE: 'scale',
 	ROTATE: 'rotate'
-    };    
-    const SvgActionStateAttrName = 'action-state';
-    const ActionMoveKey = 'm';
-    const ActionScaleKey = 's';
-    const ActionRotateKey = 'r';
-
-    const ClickHoldThreshold = 50; // For ignoreing very short, transient clicks
-    const DoubleClickDelayMs = 250;
-    const CursorMovementThreshold = 3;
+    };
     
     let gSvgIconActionState = SvgActionStateType.MOVE;
     let gSelectedIconSvgGroup = null;
@@ -66,15 +76,15 @@
 	    handleDragLeave( event );
 	});
 
-	$(document).on('mousedown', locationViewAreaSelector, function(event) {
+	$(document).on('mousedown', LOCATION_VIEW_AREA_SELECTOR, function(event) {
 	    if ( gHiViewMode != 'edit' ) { return; }
 	    handleMouseDown( event );
 	});
-	$(document).on('mousemove', locationViewAreaSelector, function(event) {
+	$(document).on('mousemove', LOCATION_VIEW_AREA_SELECTOR, function(event) {
 	    if ( gHiViewMode != 'edit' ) { return; }
 	    handleMouseMove( event );
 	});
-	$(document).on('mouseup', locationViewAreaSelector, function(event) {
+	$(document).on('mouseup', LOCATION_VIEW_AREA_SELECTOR, function(event) {
 	    if ( gHiViewMode != 'edit' ) { return; }
 	    handleMouseUp( event );
 	});
@@ -199,10 +209,10 @@
 	if ( gSvgIconDragData ) {
 	    if ( gSvgIconDragData.isDragging ) {
 		endDrag( event );
-		$(baseSvgSelector).attr( SvgActionStateAttrName, '');
+		$(BASE_SVG_SELECTOR).attr( ICON_ACTION_STATE_ATTR_NAME, '');
 		return;
 	    }
-	    $(baseSvgSelector).attr( SvgActionStateAttrName, '' );
+	    $(BASE_SVG_SELECTOR).attr( ICON_ACTION_STATE_ATTR_NAME, '' );
 	    gSvgIconDragData = null;
 	}
 	
@@ -215,7 +225,7 @@
 		iconActionRotateApply();
 	    }
 	    gSvgIconActionState = SvgActionStateType.MOVE;
-	    $(baseSvgSelector).attr( SvgActionStateAttrName, '');
+	    $(BASE_SVG_SELECTOR).attr( ICON_ACTION_STATE_ATTR_NAME, '');
 	    gSvgIconActionData = null;
 
 	} else if ( gSvgPathEditData && gSvgPathEditData.dragControlPoint ) {
@@ -224,20 +234,20 @@
 	    const clickEndTime = Date.now();
 	    const elapsedTime = clickEndTime - gClickStart.time;
 	    if ( DEBUG ) { console.log( `Click Elapsed: ${elapsedTime}` ); }
-	    if (elapsedTime < ClickHoldThreshold) {
+	    if (elapsedTime < CLICK_HOLD_THRESHOLD_MS) {
 		return;
 	    }
 	    if ( gClickTimeout ) {
 		clearTimeout( gClickTimeout );
 		gClickTimeout = null;
-		if ( elapsedTime < DoubleClickDelayMs ) {
+		if ( elapsedTime < DOUBLE_CLICK_DELAY_MS ) {
 		    handleDoubleClick( event );
 		}
 	    } else {
 		gClickTimeout = setTimeout(() => {
 		    gClickTimeout = null;
 		    handleClick( event );
-		}, DoubleClickDelayMs );
+		}, DOUBLE_CLICK_DELAY_MS );
 	    }
 	}
     }
@@ -253,9 +263,11 @@
 	    const distanceX = Math.abs( currentMousePosition.x - gClickStart.x );
 	    const distanceY = Math.abs( currentMousePosition.y - gClickStart.y );
 	    
-	    if ( gSvgIconDragData.isDragging || ( distanceX > CursorMovementThreshold ) || ( distanceY > CursorMovementThreshold )) {
+	    if ( gSvgIconDragData.isDragging
+		 || ( distanceX > CURSOR_MOVEMENT_THRESHOLD_PIXELS )
+		 || ( distanceY > CURSOR_MOVEMENT_THRESHOLD_PIXELS )) {
 		gSvgIconDragData.isDragging = true;
-		$(baseSvgSelector).attr( SvgActionStateAttrName, SvgActionStateType.MOVE);
+		$(BASE_SVG_SELECTOR).attr( ICON_ACTION_STATE_ATTR_NAME, SvgActionStateType.MOVE);
 		updateDrag(event);
 	    }
 	}
@@ -283,7 +295,7 @@
     }
 
     function handleSvgIconSelectedKeyDown( event ) {
-	const targetArea = $(locationViewAreaSelector);
+	const targetArea = $(LOCATION_VIEW_AREA_SELECTOR);
         const targetOffset = targetArea.offset();
         const targetWidth = targetArea.outerWidth();
         const targetHeight = targetArea.outerHeight();
@@ -295,11 +307,11 @@
 
             displayEventInfo( 'Key Down', event );
 
-	    if ( event.key == ActionScaleKey ) {
+	    if ( event.key == ICON_ACTION_SCALE_KEY ) {
 		iconActionRotateAbort();
 		iconActionScaleStart();
 		
-	    } else if ( event.key == ActionRotateKey ) {
+	    } else if ( event.key == ICON_ACTION_ROTATE_KEY ) {
 		iconActionScaleAbort();
 		iconActionRotateStart();
 		
@@ -307,7 +319,7 @@
 		iconActionScaleAbort();
 		iconActionRotateAbort();
 		gSvgIconActionState = SvgActionStateType.MOVE;
-		$(baseSvgSelector).attr( SvgActionStateAttrName, '');
+		$(BASE_SVG_SELECTOR).attr( ICON_ACTION_STATE_ATTR_NAME, '');
 		
 	    } else {
 		return;
@@ -398,7 +410,7 @@
 	const dragElement = enclosingSvgGroup;
         displayElementInfo( 'Drag Element', dragElement );
 	
-	const baseSvgElement = $(baseSvgSelector);
+	const baseSvgElement = $(BASE_SVG_SELECTOR);
 	displayElementInfo( 'Base SVG', baseSvgElement );
 
         let transform = dragElement.attr('transform') || '';
@@ -487,7 +499,7 @@
         let transform = element.attr('transform');
         let { scale, translate, rotate } = getSvgTransformValues( transform );
 
-	const baseSvgElement = $(baseSvgSelector);
+	const baseSvgElement = $(BASE_SVG_SELECTOR);
 	const center = getSvgCenterPoint( element, baseSvgElement );
 
 	let svgItemId = element.attr('id');
@@ -515,7 +527,7 @@
 	    };
 
 	    gSvgIconActionState = actionState;
-	    $(baseSvgSelector).attr( SvgActionStateAttrName, actionState );
+	    $(BASE_SVG_SELECTOR).attr( ICON_ACTION_STATE_ATTR_NAME, actionState );
 	}
     }
 
@@ -788,13 +800,50 @@
     }
 
     function handleSvgPathEditKeyDown( event ) {
-
-	/*
-	  DEL/x = if control, delete and connecting lines (must always have two control points
-	  'a/i' = add control, extend line from end of selected. If closed, subdivide line connected to current
-	*/
+        displayEventInfo( 'Key Down', event );
+	console.log( `KEY '${event.key}', CODE = ${event.keyCode}` );
 	
-	console.log( 'PATH EDIT KEYDOWN' );
+	if ( ! gSvgPathEditData.selectedProxyElement ) {
+	    return;
+	}
+
+	if ( PATH_ACTION_DELETE_KEY_CODES.includes( event.keyCode )) {
+	    if ( $(gSvgPathEditData.selectedProxyElement).hasClass('proxy-point') ) {
+		deleteProxyPoint( gSvgPathEditData.selectedProxyElement );
+		
+	    } else if ( $(gSvgPathEditData.selectedProxyElement).hasClass('proxy-line') ) {
+		deleteProxyLine( gSvgPathEditData.selectedProxyElement );
+
+	    } else {
+		return;
+	    }
+		
+	} else if ( PATH_ACTION_INSERT_KEY_CODES.includes( event.keyCode ) ) {
+	    if ( $(gSvgPathEditData.selectedProxyElement).hasClass('proxy-line') ) {
+		divideProxyLine( gSvgPathEditData.selectedProxyElement );
+		
+	    } else if ( $(gSvgPathEditData.selectedProxyElement).hasClass('proxy-point') ) {
+		let svgProxyPointId = $(gSvgPathEditData.selectedProxyElement).attr('id');
+		let svgProxyLine = $('line[after-proxy-point-id="' + svgProxyPointId + '"]');
+		if ( svgProxyLine.length > 0 ) {
+		    divideProxyLine( svgProxyLine );
+		    
+		} else {
+		    // Fallback for case of last proxy point selected.
+		    let svgProxyLine = $('line[before-proxy-point-id="' + svgProxyPointId + '"]');
+		    if( svgProxyLine.length > 0 ) {
+			divideProxyLine( svgProxyLine );
+		    }
+		}
+	    } else {
+		return;
+	    }
+	} else {
+	    return;
+	}
+	
+	event.stopPropagation();
+	event.preventDefault();
     }
 
     function setSelectedProxyElement( proxyElement ) {
@@ -802,7 +851,9 @@
 	    return;
 	}
 	$(gSvgPathEditData.proxyPathContainer).find('.proxy').removeClass('highlighted');
-	$(proxyElement).addClass('highlighted');
+	if ( proxyElement ) {
+	    $(proxyElement).addClass('highlighted');
+	}
 	gSvgPathEditData.selectedProxyElement = proxyElement;
     }
     
@@ -811,7 +862,7 @@
 
 	pathSvgGroup.hide();
 
-	const baseSvgElement = $(baseSvgSelector)[0];
+	const baseSvgElement = $(BASE_SVG_SELECTOR)[0];
 	const proxyPathContainer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 	proxyPathContainer.setAttribute('id', 'hi-proxy-path-container');
 	baseSvgElement.appendChild( proxyPathContainer );
@@ -946,7 +997,7 @@
     function extendProxyPath( event ) {
 	    
 	console.log( 'Extending proxy path' );
-	const baseSvgElement = $(baseSvgSelector);
+	const baseSvgElement = $(BASE_SVG_SELECTOR);
 	let svgPoint = toSvgPoint( baseSvgElement, event.clientX, event.clientY );
 
 	let referenceElement = getReferenceElementForExtendingProxyPath();
@@ -956,19 +1007,19 @@
 	if (  $(referenceElement).hasClass('proxy-point') ) {
 	    if ( $(proxyPathGroup).attr('hi-proxy-path-type') == 'open' ) {
 		if ( $(referenceElement).is(':first-of-type') ) {
-		    newControlPoint = prependNewProxyControlPoint( event, proxyPathGroup );
+		    newControlPoint = prependNewProxyControlPoint( svgPoint, proxyPathGroup );
 
 		} else {
-		    newControlPoint = appendNewProxyControlPoint( event, proxyPathGroup );
+		    newControlPoint = appendNewProxyControlPoint( svgPoint, proxyPathGroup );
 		}
 	    } else {
 		const referenceElementId = $(referenceElement).attr('id');
 		let followingProxyLine = $('line[before-proxy-point-id="' + referenceElementId + '"]');
-		newControlPoint = insertNewProxyControlPoint( event, proxyPathGroup, followingProxyLine );
+		newControlPoint = insertNewProxyControlPoint( svgPoint, followingProxyLine );
 
 	    }
 	} else if (  $(referenceElement).hasClass('proxy-line') ) {
-	    newControlPoint = insertNewProxyControlPoint( event, proxyPathGroup, referenceElement );
+	    newControlPoint = insertNewProxyControlPoint( svgPoint, referenceElement );
 	} else {
 	    console.log( 'Unrecognized reference proxy element.' );
 	    return;
@@ -979,15 +1030,12 @@
 	}
     }
     
-    function prependNewProxyControlPoint( event, proxyPathGroup ) {
+    function prependNewProxyControlPoint( newSvgPoint, proxyPathGroup ) {
 
 	let firstControlPoint = proxyPathGroup.find('circle.proxy-point').first();
 	let firstLine = proxyPathGroup.find('line.proxy-line').first();
 
 	if ( DEBUG ) { console.log( 'Prepend: First point and line: ', firstControlPoint, firstLine ); }
-	
-	const baseSvgElement = $(baseSvgSelector);
-	let newSvgPoint = toSvgPoint( baseSvgElement, event.clientX, event.clientY );
 	
 	const firstX = parseFloat( $(firstControlPoint).attr('cx') );
 	const firstY = parseFloat( $(firstControlPoint).attr('cy') );
@@ -1008,15 +1056,12 @@
 	return newControlPoint;
     }
 
-    function appendNewProxyControlPoint( event, proxyPathGroup ) {
+    function appendNewProxyControlPoint( newSvgPoint, proxyPathGroup ) {
 
 	let lastControlPoint = proxyPathGroup.find('circle.proxy-point').last();
 	let lastLine = proxyPathGroup.find('line.proxy-line').last();
 
 	if ( DEBUG ) { console.log( 'Append: Last point and line: ', lastControlPoint, lastLine ); }
-	
-	const baseSvgElement = $(baseSvgSelector);
-	let newSvgPoint = toSvgPoint( baseSvgElement, event.clientX, event.clientY );
 	
 	const lastX = parseFloat($(lastControlPoint).attr('cx'));
 	const lastY = parseFloat($(lastControlPoint).attr('cy'));
@@ -1037,8 +1082,7 @@
 	return newControlPoint;	
     }
 
-
-    function insertNewProxyControlPoint( event, proxyPathGroup, referenceProxyLine ) {
+    function insertNewProxyControlPoint( newSvgPoint, referenceProxyLine ) {
 
 	const beforeProxyPointId = $(referenceProxyLine).attr('before-proxy-point-id');
 	const afterProxyPointId = $(referenceProxyLine).attr('after-proxy-point-id');
@@ -1049,9 +1093,6 @@
 
 	if ( DEBUG ) { console.log( 'Insert: ', referenceProxyLine, beforeProxyPoint,
 				    afterProxyPoint, followingProxyLine ); }
-	
-	const baseSvgElement = $(baseSvgSelector);
-	let newSvgPoint = toSvgPoint( baseSvgElement, event.clientX, event.clientY );
 
 	const beforeX = parseFloat($(beforeProxyPoint).attr('cx'));
 	const beforeY = parseFloat($(beforeProxyPoint).attr('cy'));
@@ -1084,6 +1125,104 @@
 	let lastProxyPath = $(gSvgPathEditData.proxyPathContainer).find('g.hi-proxy-path').last();
 	let lastControlPoint = lastProxyPath.find('circle.proxy-point').last();
 	return lastControlPoint;
+    }
+
+    function deleteProxyPoint( svgProxyPoint ) {
+	let svgProxyPointId = $(svgProxyPoint).attr('id');
+	let beforeProxyLine = $('line[after-proxy-point-id="' + svgProxyPointId + '"]');
+	let afterProxyLine = $('line[before-proxy-point-id="' + svgProxyPointId + '"]');
+
+	if (( beforeProxyLine.length > 0 ) && ( afterProxyLine.length > 0)) {
+
+	    let afterProxyPointId = $(afterProxyLine).attr( 'after-proxy-point-id' );
+	    let afterProxyPoint = $('#' + afterProxyPointId);
+	    let followingProxyLine = $('line[before-proxy-point-id="' + afterProxyPointId + '"]');
+
+	    const afterX = parseFloat( $(afterProxyPoint).attr('cx') );
+	    const afterY = parseFloat( $(afterProxyPoint).attr('cy') );
+	    $(beforeProxyLine).attr( 'after-proxy-point-id', $(afterProxyPoint).attr('id') );
+	    $(beforeProxyLine).attr( 'x2', afterX );
+	    $(beforeProxyLine).attr( 'y2', afterY );
+
+	    $(afterProxyPoint).off();  // Removes event listeners
+	    addControlPointEventHandler( afterProxyPoint, beforeProxyLine, followingProxyLine );
+
+	    $(svgProxyPoint).remove();
+	    $(afterProxyLine).remove();
+
+	    setSelectedProxyElement( afterProxyPoint );
+	    
+	} else if ( afterProxyLine.length > 0 ) {
+
+	    let afterProxyPointId = $(afterProxyLine).attr( 'after-proxy-point-id' );
+	    let afterProxyPoint = $('#' + afterProxyPointId);
+	    let followingProxyLine = $('line[before-proxy-point-id="' + afterProxyPointId + '"]');
+
+	    $(afterProxyPoint).off();  // Removes event listeners
+	    addControlPointEventHandler( afterProxyPoint, null, followingProxyLine );
+
+	    $(svgProxyPoint).remove();
+	    $(afterProxyLine).remove();
+
+	    setSelectedProxyElement( afterProxyPoint );	    
+	    
+	} else if ( beforeProxyLine.length > 0 ) {
+	    let beforeProxyPointId = $(beforeProxyLine).attr( 'before-proxy-point-id' );
+	    let beforeProxyPoint = $('#' + beforeProxyPointId);
+	    let precedingProxyLine = $('line[after-proxy-point-id="' + beforeProxyPointId + '"]');
+
+	    $(beforeProxyPoint).off();  // Removes event listeners
+	    addControlPointEventHandler( beforeProxyPoint, precedingProxyLine, null );
+
+	    $(svgProxyPoint).remove();
+	    $(beforeProxyLine).remove();
+
+	    setSelectedProxyElement( beforeProxyPoint );	    
+	    
+	} else {
+	    $(svgProxyPoint).remove();
+	    setSelectedProxyElement( null );	    
+	}
+    }
+    
+    function deleteProxyLine( svgProxyLine ) {
+	let beforeProxyPointId = $(svgProxyLine).attr('before-proxy-point-id');
+	let afterProxyPointId = $(svgProxyLine).attr('after-proxy-point-id');
+	let beforeProxyPoint = $('#' + beforeProxyPointId);
+	let afterProxyPoint = $('#' + afterProxyPointId);
+	let precedingProxyLine = $('line[after-proxy-point-id="' + beforeProxyPointId + '"]');
+	let followingProxyLine = $('line[before-proxy-point-id="' + afterProxyPointId + '"]');
+
+	$(beforeProxyPoint).off();  // Removes event listeners
+	addControlPointEventHandler( beforeProxyPoint, precedingProxyLine, null );
+
+	$(afterProxyPoint).off();  // Removes event listeners
+	addControlPointEventHandler( afterProxyPoint, null, followingProxyLine );
+	
+	$(svgProxyLine).remove();
+
+	setSelectedProxyElement( null );	    
+    }
+    
+    function divideProxyLine( svgProxyLine ) {
+	// Same as inserting via mouse click, but use midpoint as the insertion point.
+
+	let beforeProxyPointId = $(svgProxyLine).attr('before-proxy-point-id');
+	let afterProxyPointId = $(svgProxyLine).attr('after-proxy-point-id');
+	let beforeProxyPoint = $('#' + beforeProxyPointId);
+	let afterProxyPoint = $('#' + afterProxyPointId);
+
+	const beforeX = parseFloat($(beforeProxyPoint).attr('cx'));
+	const beforeY = parseFloat($(beforeProxyPoint).attr('cy'));
+
+	const afterX = parseFloat($(afterProxyPoint).attr('cx'));
+	const afterY = parseFloat($(afterProxyPoint).attr('cy'));
+
+	let midSvgPoint = {
+	    x: ( beforeX + afterX ) / 2,
+	    y: ( beforeY + afterY ) / 2
+	};
+	insertNewProxyControlPoint( midSvgPoint, svgProxyLine );
     }
     
     function createProxyPathControlPoint( cx, cy ) {
@@ -1129,10 +1268,10 @@
 		$(controlPoint).attr('cx', newCx).attr('cy', newCy);
 
 		// Update the line endpoints to follow control point movement
-		if (beforeLine) {
+		if ( $(beforeLine).length > 0 ) {
                     $(beforeLine).attr('x2', newCx).attr('y2', newCy);
 		}
-		if (afterLine) {
+		if ( $(afterLine).length > 0 ) {
                     $(afterLine).attr('x1', newCx).attr('y1', newCy);
 		}
 
@@ -1155,8 +1294,6 @@
     
     function collapseSvgPath( pathSvgGroup ) {
 	if ( DEBUG ) { console.log( 'Collapse SVG Path', pathSvgGroup ); }
-
-	// zzz adjust path
 
 
 	/*
@@ -1181,7 +1318,10 @@
         selectedPath.style.display = '';  // Make the path visible again
     }
 */
-	
+
+
+
+	//  ZZZ error if less than 2 points
 	
 	pathSvgGroup.show();
 
