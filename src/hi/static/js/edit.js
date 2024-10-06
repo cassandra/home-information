@@ -13,33 +13,16 @@
 
     const LOCATION_VIEW_AREA_SELECTOR = '#hi-location-view-main';
     const BASE_SVG_SELECTOR = '#hi-location-view-main > svg';
-
+    const HIGHLIGHTED_CLASS = 'highlighted';
+    
     const ICON_ACTION_STATE_ATTR_NAME = 'action-state';
     const ICON_ACTION_SCALE_KEY = 's';
     const ICON_ACTION_ROTATE_KEY = 'r';
-
-    const PATH_ACTION_DELETE_KEY_CODES = [
-	88, // 'x'
-	8,  // Backspace
-	46  // Delete
-    ];
-    const PATH_ACTION_INSERT_KEY_CODES = [
-	73, // 'i'
-	45 // Insert
-    ];
-    const PATH_ACTION_ADD_KEY_CODES = [
-	65, // 'a'
-	61 // '+'
-    ];
 
     const CLICK_HOLD_THRESHOLD_MS = 50; // For ignoreing very short, transient clicks
     const DOUBLE_CLICK_DELAY_MS = 250;
     const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3;
 
-    const PATH_EDIT_PROXY_POINT_RADIUS_PIXELS = 12;
-    const PATH_EDIT_PROXY_LINE_WIDTH_PIXELS = 5;
-    const PATH_EDIT_NEW_PATH_RADIUS_PERCENT = 5; // Better if it matches server default path sizing.
-    
     const SvgActionStateType = {
 	MOVE: 'move',
 	SCALE: 'scale',
@@ -60,6 +43,49 @@
 
     // For re-ordering items (buttons, lists, etc)
     let gDraggedElement = null;
+
+    const PROXY_PATH_CONTAINER_ID = 'hi-proxy-path-container';
+    
+    const PROXY_PATH_CLASS = 'hi-proxy-path';
+    const PROXY_PATH_GROUP_SELECTOR = 'g.' + PROXY_PATH_CLASS;
+    const PROXY_POINTS_CLASS = 'hi-proxy-points';
+    const PROXY_POINTS_GROUP_SELECTOR = 'g.' + PROXY_POINTS_CLASS;
+    const PROXY_LINES_CLASS = 'hi-proxy-lines';
+    const PROXY_LINES_GROUP_SELECTOR = 'g.' + PROXY_LINES_CLASS;
+    const PROXY_ITEM_CLASS = 'proxy';
+    const PROXY_POINT_CLASS = 'proxy-point';
+    const PROXY_LINE_CLASS = 'proxy-line';
+    const PROXY_POINT_SELECTOR = 'circle.' + PROXY_POINT_CLASS;
+    const PROXY_LINE_SELECTOR = 'line.' + PROXY_LINE_CLASS;
+    const PROXY_PATH_TYPE_ATTR = 'hi-proxy-path-type';
+    const BEFORE_PROXY_POINT_ID = 'before-proxy-point-id';
+    const AFTER_PROXY_POINT_ID = 'after-proxy-point-id';
+    
+    const PATH_ACTION_DELETE_KEY_CODES = [
+	88, // 'x'
+	8,  // Backspace
+	46  // Delete
+    ];
+    const PATH_ACTION_INSERT_KEY_CODES = [
+	73, // 'i'
+	45 // Insert
+    ];
+    const PATH_ACTION_ADD_KEY_CODES = [
+	65, // 'a'
+	61 // '+'
+    ];
+
+    const PATH_EDIT_PROXY_POINT_RADIUS_PIXELS = 12;
+    const PATH_EDIT_PROXY_LINE_WIDTH_PIXELS = 5;
+    const PATH_EDIT_NEW_PATH_RADIUS_PERCENT = 5; // Better if it matches server default path sizing.
+    const PATH_EDIT_PROXY_LINE_COLOR = 'red';
+    const PATH_EDIT_PROXY_POINT_COLOR = 'red';
+    
+    const ProxyPathType = {
+	OPEN: 'open',
+	CLOSED: 'closed'
+    };
+    
     
     $(document).ready(function() {
 
@@ -373,7 +399,7 @@
 	if ( svgDataType == 'svg-icon' ) {
 	    clearSelectedAll();
 	    gSelectedIconSvgGroup = enclosingSvgGroup;
-            $(enclosingSvgGroup).addClass('highlighted');
+            $(enclosingSvgGroup).addClass( HIGHLIGHTED_CLASS );
             AN.get( `/edit/details/${svgItemId}` );
 	    
 	} else if ( svgDataType == 'svg-path' ) {
@@ -396,12 +422,12 @@
     function clearSelectedAll() {
 	clearSelectedSvgIcon();
 	clearSelectedSvgPath();
-	$('.selectable').removeClass('highlighted');
+	$('.selectable').removeClass( HIGHLIGHTED_CLASS );
     }
 
     function clearSelectedSvgIcon() {
 	if ( gSelectedIconSvgGroup ) {
-	    $(gSelectedIconSvgGroup).removeClass('highlighted');
+	    $(gSelectedIconSvgGroup).removeClass( HIGHLIGHTED_CLASS );
 	    gSelectedIconSvgGroup = null;
 	}
     }
@@ -806,7 +832,7 @@
     function handleSvgPathEditClick( event ) {
 	if ( DEBUG ) { console.log( 'Path Edit Click' ); }
 
-	const isProxyElement = $(event.target).hasClass('proxy');
+	const isProxyElement = $(event.target).hasClass( PROXY_ITEM_CLASS );
 	if ( isProxyElement ) {
 	    setSelectedProxyElement( event.target );
 	}
@@ -827,10 +853,10 @@
 	    }
 
 	    if ( PATH_ACTION_DELETE_KEY_CODES.includes( event.keyCode )) {
-		if ( $(gSvgPathEditData.selectedProxyElement).hasClass('proxy-point') ) {
+		if ( $(gSvgPathEditData.selectedProxyElement).hasClass( PROXY_POINT_CLASS ) ) {
 		    deleteProxyPoint( gSvgPathEditData.selectedProxyElement );
 		    
-		} else if ( $(gSvgPathEditData.selectedProxyElement).hasClass('proxy-line') ) {
+		} else if ( $(gSvgPathEditData.selectedProxyElement).hasClass( PROXY_LINE_CLASS ) ) {
 		    deleteProxyLine( gSvgPathEditData.selectedProxyElement );
 
 		} else {
@@ -838,18 +864,17 @@
 		}
 		
 	    } else if ( PATH_ACTION_INSERT_KEY_CODES.includes( event.keyCode ) ) {
-		if ( $(gSvgPathEditData.selectedProxyElement).hasClass('proxy-line') ) {
+		if ( $(gSvgPathEditData.selectedProxyElement).hasClass( PROXY_LINE_CLASS ) ) {
 		    divideProxyLine( gSvgPathEditData.selectedProxyElement );
 		    
-		} else if ( $(gSvgPathEditData.selectedProxyElement).hasClass('proxy-point') ) {
-		    let svgProxyPointId = $(gSvgPathEditData.selectedProxyElement).attr('id');
-		    let svgProxyLine = $('line[after-proxy-point-id="' + svgProxyPointId + '"]');
+		} else if ( $(gSvgPathEditData.selectedProxyElement).hasClass( PROXY_POINT_CLASS ) ) {
+		    let svgProxyLine = getPrecedingProxyLine( gSvgPathEditData.selectedProxyElement );
 		    if ( svgProxyLine.length > 0 ) {
 			divideProxyLine( svgProxyLine );
 			
 		    } else {
 			// Fallback for case of last proxy point selected.
-			let svgProxyLine = $('line[before-proxy-point-id="' + svgProxyPointId + '"]');
+			let svgProxyLine = getFollowingProxyLine( gSvgPathEditData.selectedProxyElement );
 			if( svgProxyLine.length > 0 ) {
 			    divideProxyLine( svgProxyLine );
 			}
@@ -870,9 +895,9 @@
 	if ( ! gSvgPathEditData ) {
 	    return;
 	}
-	$(gSvgPathEditData.proxyPathContainer).find('.proxy').removeClass('highlighted');
+	$(gSvgPathEditData.proxyPathContainer).find('.' + PROXY_ITEM_CLASS).removeClass( HIGHLIGHTED_CLASS );
 	if ( proxyElement ) {
-	    $(proxyElement).addClass('highlighted');
+	    $(proxyElement).addClass( HIGHLIGHTED_CLASS );
 	}
 	gSvgPathEditData.selectedProxyElement = proxyElement;
     }
@@ -884,7 +909,7 @@
 
 	const baseSvgElement = $(BASE_SVG_SELECTOR)[0];
 	const proxyPathContainer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-	proxyPathContainer.setAttribute('id', 'hi-proxy-path-container');
+	proxyPathContainer.setAttribute('id', PROXY_PATH_CONTAINER_ID );
 	baseSvgElement.appendChild( proxyPathContainer );
 	
 	gSvgPathEditData = {
@@ -922,24 +947,24 @@
             let coords = segments[i].substring(1).trim().split(/[\s,]+/).map(Number);
 
             if (command === 'M') {
-		currentProxyPathGroup = createProxyPathGroup( 'open' );
+		currentProxyPathGroup = createProxyPathGroup( ProxyPathType.OPEN );
 		$(proxyPathContainer).append( currentProxyPathGroup );
 		
 		let newProxyPoint = createProxyPathProxyPoint( coords[0], coords[1] );
-		$(currentProxyPathGroup).find('.hi-proxy-points').append( newProxyPoint );
+		$(currentProxyPathGroup).find( PROXY_POINTS_GROUP_SELECTOR ).append( newProxyPoint );
 		
             } else if (command === 'L' && currentProxyPathGroup ) {
 		let newProxyPoint = createProxyPathProxyPoint( coords[0], coords[1] );
-		$(currentProxyPathGroup).find('.hi-proxy-points').append( newProxyPoint );
+		$(currentProxyPathGroup).find( PROXY_POINTS_GROUP_SELECTOR ).append( newProxyPoint );
 
             } else if (command === 'Z' && currentProxyPathGroup ) {
-		$(currentProxyPathGroup).attr('hi-proxy-path-type', 'closed' );
+		$(currentProxyPathGroup).attr( PROXY_PATH_TYPE_ATTR, ProxyPathType.CLOSED );
 		currentProxyPathGroup = null;
             }
 	}
 
 	// Paths can have multiple segments
-	$(proxyPathContainer).find( 'g.hi-proxy-path' ).each(function( index, proxyPathGroup ) {
+	$(proxyPathContainer).find( PROXY_PATH_GROUP_SELECTOR ).each(function( index, proxyPathGroup ) {
 
 	    if ( DEBUG ) { console.log( 'Proxy path group: ', proxyPathGroup ); }
 	    
@@ -948,8 +973,8 @@
 	    let firstLine = null;
 	    let previousLine = null;
 
-	    let proxyLinesGroup = $(proxyPathGroup).find( 'g.hi-proxy-lines' );
-	    let proxyPoints = $(proxyPathGroup).find( 'circle.proxy-point' );
+	    let proxyLinesGroup = $(proxyPathGroup).find( PROXY_LINES_GROUP_SELECTOR );
+	    let proxyPoints = $(proxyPathGroup).find( PROXY_POINT_SELECTOR );
 	    
 	    $(proxyPoints).each(function( index, currentProxyPoint ) {
 
@@ -984,7 +1009,7 @@
 	    let firstProxyPoint = proxyPoints[0];
 	    let lastProxyPoint = proxyPoints[proxyPoints.length -1];
 	    
-	    if ( $(proxyPathGroup).attr('hi-proxy-path-type') == 'open' ) {
+	    if ( $(proxyPathGroup).attr( PROXY_PATH_TYPE_ATTR ) == ProxyPathType.OPEN ) {
 		addProxyPointEventHandler( firstProxyPoint, null, firstLine );
 		addProxyPointEventHandler( lastProxyPoint, previousLine, null );
 	    } else {
@@ -1017,11 +1042,11 @@
 	}
 
 	let referenceElement = getReferenceElementForExtendingProxyPath();
-	let proxyPathGroup = $(referenceElement).closest('g.hi-proxy-path');
+	let proxyPathGroup = $(referenceElement).closest(PROXY_PATH_GROUP_SELECTOR);
 	let newProxyPoint = null;
 	
-	if (  $(referenceElement).hasClass('proxy-point') ) {
-	    if ( $(proxyPathGroup).attr('hi-proxy-path-type') == 'open' ) {
+	if (  $(referenceElement).hasClass( PROXY_POINT_CLASS) ) {
+	    if ( $(proxyPathGroup).attr( PROXY_PATH_TYPE_ATTR ) == ProxyPathType.OPEN ) {
 		if ( $(referenceElement).is(':first-of-type') ) {
 		    newProxyPoint = prependNewProxyPoint( svgPoint, proxyPathGroup );
 
@@ -1029,12 +1054,11 @@
 		    newProxyPoint = appendNewProxyPoint( svgPoint, proxyPathGroup );
 		}
 	    } else {
-		const referenceElementId = $(referenceElement).attr('id');
-		let followingProxyLine = $('line[before-proxy-point-id="' + referenceElementId + '"]');
+		let followingProxyLine = getFollowingProxyLine( referenceElement );
 		newProxyPoint = insertNewProxyPoint( svgPoint, followingProxyLine );
 
 	    }
-	} else if (  $(referenceElement).hasClass('proxy-line') ) {
+	} else if (  $(referenceElement).hasClass( PROXY_LINE_CLASS ) ) {
 	    newProxyPoint = insertNewProxyPoint( svgPoint, referenceElement );
 	} else {
 	    console.log( 'Unrecognized reference proxy element.' );
@@ -1048,8 +1072,8 @@
     
     function prependNewProxyPoint( newSvgPoint, proxyPathGroup ) {
 
-	let firstProxyPoint = proxyPathGroup.find('circle.proxy-point').first();
-	let firstLine = proxyPathGroup.find('line.proxy-line').first();
+	let firstProxyPoint = proxyPathGroup.find( PROXY_POINT_SELECTOR ).first();
+	let firstLine = proxyPathGroup.find( PROXY_LINE_SELECTOR ).first();
 
 	if ( DEBUG ) { console.log( 'Prepend: First point and line: ', firstProxyPoint, firstLine ); }
 	
@@ -1060,8 +1084,8 @@
 	let newLine = createProxyPathLine( newProxyPoint, firstProxyPoint,
 					   newSvgPoint.x, newSvgPoint.y, firstX, firstY );
 
-	let proxyPointsGroup = $(proxyPathGroup).find( 'g.hi-proxy-points' );
-	let proxyLinesGroup = $(proxyPathGroup).find( 'g.hi-proxy-lines' );
+	let proxyPointsGroup = $(proxyPathGroup).find( PROXY_POINTS_GROUP_SELECTOR );
+	let proxyLinesGroup = $(proxyPathGroup).find( PROXY_LINES_GROUP_SELECTOR );
 	$(proxyPointsGroup).prepend( newProxyPoint );
 	$(proxyLinesGroup).prepend( newLine );
 	
@@ -1074,8 +1098,8 @@
 
     function appendNewProxyPoint( newSvgPoint, proxyPathGroup ) {
 
-	let lastProxyPoint = proxyPathGroup.find('circle.proxy-point').last();
-	let lastLine = proxyPathGroup.find('line.proxy-line').last();
+	let lastProxyPoint = proxyPathGroup.find( PROXY_POINT_SELECTOR ).last();
+	let lastLine = proxyPathGroup.find( PROXY_LINE_SELECTOR ).last();
 
 	if ( DEBUG ) { console.log( 'Append: Last point and line: ', lastProxyPoint, lastLine ); }
 	
@@ -1086,8 +1110,8 @@
 	let newLine = createProxyPathLine( lastProxyPoint, newProxyPoint,
 					   lastX, lastY, newSvgPoint.x, newSvgPoint.y );
 
-	let proxyPointsGroup = $(proxyPathGroup).find( 'g.hi-proxy-points' );
-	let proxyLinesGroup = $(proxyPathGroup).find( 'g.hi-proxy-lines' );
+	let proxyPointsGroup = $(proxyPathGroup).find( PROXY_POINTS_GROUP_SELECTOR );
+	let proxyLinesGroup = $(proxyPathGroup).find( PROXY_LINES_GROUP_SELECTOR );
 	$(proxyPointsGroup).append( newProxyPoint );
 	$(proxyLinesGroup).append( newLine );
 	
@@ -1100,13 +1124,13 @@
 
     function insertNewProxyPoint( newSvgPoint, referenceProxyLine ) {
 
-	const beforeProxyPointId = $(referenceProxyLine).attr('before-proxy-point-id');
-	const afterProxyPointId = $(referenceProxyLine).attr('after-proxy-point-id');
+	const beforeProxyPointId = $(referenceProxyLine).attr( BEFORE_PROXY_POINT_ID );
+	const afterProxyPointId = $(referenceProxyLine).attr( AFTER_PROXY_POINT_ID );
 
 	let beforeProxyPoint = $('#' + beforeProxyPointId );
 	let afterProxyPoint = $('#' + afterProxyPointId );
-	let followingProxyLine = $('line[before-proxy-point-id="' + afterProxyPointId + '"]');
-
+	let followingProxyLine = getFollowingProxyLine( afterProxyPoint );
+	
 	if ( DEBUG ) { console.log( 'Insert: ', referenceProxyLine, beforeProxyPoint,
 				    afterProxyPoint, followingProxyLine ); }
 
@@ -1120,7 +1144,7 @@
 	let newLine = createProxyPathLine( newProxyPoint, afterProxyPoint,
 					   newSvgPoint.x, newSvgPoint.y, afterX, afterY );
 
-	$(referenceProxyLine).attr( 'after-proxy-point-id', $(newProxyPoint).attr('id') );
+	$(referenceProxyLine).attr( AFTER_PROXY_POINT_ID, $(newProxyPoint).attr('id') );
 	$(referenceProxyLine).attr( 'x2', newSvgPoint.x );
 	$(referenceProxyLine).attr( 'y2', newSvgPoint.y );
 
@@ -1134,22 +1158,13 @@
 	return newProxyPoint;	
     }
 
-    function getReferenceElementForExtendingProxyPath( ) {
-	if ( gSvgPathEditData.selectedProxyElement ) {
-	    return gSvgPathEditData.selectedProxyElement;
-	}
-	let lastProxyPath = $(gSvgPathEditData.proxyPathContainer).find('g.hi-proxy-path').last();
-	let lastProxyPoint = lastProxyPath.find('circle.proxy-point').last();
-	return lastProxyPoint;
-    }
-
     function deleteProxyPoint( svgProxyPoint ) {
 
-	let proxyPathGroup = $(svgProxyPoint).closest('g.hi-proxy-path');
-	let proxyPathType = $(proxyPathGroup).attr('hi-proxy-path-type' );
-	let proxyPointsGroup = $(svgProxyPoint).closest('g.hi-proxy-points');
+	let proxyPathGroup = $(svgProxyPoint).closest( PROXY_PATH_GROUP_SELECTOR );
+	let proxyPathType = $(proxyPathGroup).attr( PROXY_PATH_TYPE_ATTR );
+	let proxyPointsGroup = $(svgProxyPoint).closest( PROXY_POINTS_GROUP_SELECTOR );
 	let minPoints = 2;
-	if ( proxyPathType == 'closed' ) {
+	if ( proxyPathType == ProxyPathType.CLOSED ) {
 	    minPoints = 3;
 	}
 	if ( $(proxyPointsGroup).children().length <= minPoints ) {
@@ -1157,18 +1172,19 @@
 	}
 	
 	let svgProxyPointId = $(svgProxyPoint).attr('id');
-	let beforeProxyLine = $('line[after-proxy-point-id="' + svgProxyPointId + '"]');
-	let afterProxyLine = $('line[before-proxy-point-id="' + svgProxyPointId + '"]');
 
+	let beforeProxyLine = getPrecedingProxyLine( svgProxyPoint );
+	let afterProxyLine = getFollowingProxyLine( svgProxyPoint );
+	
 	if (( beforeProxyLine.length > 0 ) && ( afterProxyLine.length > 0)) {
 
-	    let afterProxyPointId = $(afterProxyLine).attr( 'after-proxy-point-id' );
+	    let afterProxyPointId = $(afterProxyLine).attr( AFTER_PROXY_POINT_ID );
 	    let afterProxyPoint = $('#' + afterProxyPointId);
-	    let followingProxyLine = $('line[before-proxy-point-id="' + afterProxyPointId + '"]');
+	    let followingProxyLine = getFollowingProxyLine( afterProxyPoint );
 
 	    const afterX = parseFloat( $(afterProxyPoint).attr('cx') );
 	    const afterY = parseFloat( $(afterProxyPoint).attr('cy') );
-	    $(beforeProxyLine).attr( 'after-proxy-point-id', $(afterProxyPoint).attr('id') );
+	    $(beforeProxyLine).attr( AFTER_PROXY_POINT_ID, $(afterProxyPoint).attr('id') );
 	    $(beforeProxyLine).attr( 'x2', afterX );
 	    $(beforeProxyLine).attr( 'y2', afterY );
 
@@ -1182,9 +1198,9 @@
 	    
 	} else if ( afterProxyLine.length > 0 ) {
 
-	    let afterProxyPointId = $(afterProxyLine).attr( 'after-proxy-point-id' );
+	    let afterProxyPointId = $(afterProxyLine).attr( AFTER_PROXY_POINT_ID );
 	    let afterProxyPoint = $('#' + afterProxyPointId);
-	    let followingProxyLine = $('line[before-proxy-point-id="' + afterProxyPointId + '"]');
+	    let followingProxyLine = getFollowingProxyLine( afterProxyPoint );
 
 	    $(afterProxyPoint).off();  // Removes event listeners
 	    addProxyPointEventHandler( afterProxyPoint, null, followingProxyLine );
@@ -1195,9 +1211,9 @@
 	    setSelectedProxyElement( afterProxyPoint );	    
 	    
 	} else if ( beforeProxyLine.length > 0 ) {
-	    let beforeProxyPointId = $(beforeProxyLine).attr( 'before-proxy-point-id' );
+	    let beforeProxyPointId = $(beforeProxyLine).attr( BEFORE_PROXY_POINT_ID );
 	    let beforeProxyPoint = $('#' + beforeProxyPointId);
-	    let precedingProxyLine = $('line[after-proxy-point-id="' + beforeProxyPointId + '"]');
+	    let precedingProxyLine =getPrecedingProxyLine( beforeProxyPoint );
 
 	    $(beforeProxyPoint).off();  // Removes event listeners
 	    addProxyPointEventHandler( beforeProxyPoint, precedingProxyLine, null );
@@ -1215,7 +1231,7 @@
     
     function deleteProxyLine( svgProxyLine ) {
 	// Acts like a delete for 'before' proxy point.
-	let beforeProxyPointId = $(svgProxyLine).attr('before-proxy-point-id');
+	let beforeProxyPointId = $(svgProxyLine).attr( BEFORE_PROXY_POINT_ID );
 	let beforeProxyPoint = $('#' + beforeProxyPointId);
 	deleteProxyPoint( beforeProxyPoint );
     }
@@ -1223,8 +1239,8 @@
     function divideProxyLine( svgProxyLine ) {
 	// Same as inserting via mouse click, but use midpoint as the insertion point.
 
-	let beforeProxyPointId = $(svgProxyLine).attr('before-proxy-point-id');
-	let afterProxyPointId = $(svgProxyLine).attr('after-proxy-point-id');
+	let beforeProxyPointId = $(svgProxyLine).attr( BEFORE_PROXY_POINT_ID );
+	let afterProxyPointId = $(svgProxyLine).attr( AFTER_PROXY_POINT_ID );
 	let beforeProxyPoint = $('#' + beforeProxyPointId);
 	let afterProxyPoint = $('#' + afterProxyPointId);
 
@@ -1243,9 +1259,9 @@
 
     function addProxyPath( ) {
 
-	let proxyPathContainer = $('#hi-proxy-path-container');
-	let firstProxyPath = $(proxyPathContainer).find('.hi-proxy-path').first();
-	let proxyPathType = $(firstProxyPath).attr('hi-proxy-path-type' );
+	let proxyPathContainer = $('#' + PROXY_PATH_CONTAINER_ID );
+	let firstProxyPath = $(proxyPathContainer).find( PROXY_PATH_GROUP_SELECTOR ).first();
+	let proxyPathType = $(firstProxyPath).attr( PROXY_PATH_TYPE_ATTR );
 	let newProxyPathGroup = createProxyPathGroup( proxyPathType );
 	$(proxyPathContainer).append( newProxyPathGroup );
 
@@ -1262,10 +1278,10 @@
 
 	if ( DEBUG ) { console.log( 'Add proxy path.', svgViewBox, svgCenter ); }
 		       
-	let proxyPointsGroup = $(newProxyPathGroup).find('.hi-proxy-points');
-	let proxyLinesGroup = $(newProxyPathGroup).find('.hi-proxy-lines');
+	let proxyPointsGroup = $(newProxyPathGroup).find( PROXY_POINTS_GROUP_SELECTOR );
+	let proxyLinesGroup = $(newProxyPathGroup).find( PROXY_LINES_GROUP_SELECTOR );
 
-	if ( proxyPathType == 'open' ) {
+	if ( proxyPathType == ProxyPathType.OPEN ) {
 
 	    const leftSvgPoint = {
 		x: svgCenter.x - svgUnitRadius.x,
@@ -1289,7 +1305,7 @@
 	    addProxyPointEventHandler( beforeProxyPoint, null, newProxyLine );
 	    addProxyPointEventHandler( afterProxyPoint, newProxyLine, null );
 	    
-	} else if ( proxyPathType == 'closed' ) {
+	} else if ( proxyPathType == ProxyPathType.CLOSED ) {
 
 	    const topLeftSvgPoint = {
 		x: svgCenter.x - svgUnitRadius.x,
@@ -1351,16 +1367,16 @@
     function createProxyPathGroup( proxyPathType ) {
 	let proxyPathGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 	proxyPathGroup.setAttribute('id', generateUniqueId() );
-	proxyPathGroup.setAttribute('class', 'hi-proxy-path' );
-	proxyPathGroup.setAttribute('hi-proxy-path-type', proxyPathType );
+	proxyPathGroup.setAttribute('class', PROXY_PATH_CLASS );
+	proxyPathGroup.setAttribute( PROXY_PATH_TYPE_ATTR, proxyPathType );
 
 	// Lines should come before points so mouse clicks land on points before lines.
 	let proxyLinesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-	proxyLinesGroup.setAttribute('class', 'hi-proxy-lines' );
+	proxyLinesGroup.setAttribute('class', PROXY_LINES_CLASS );
 	proxyPathGroup.appendChild( proxyLinesGroup );
 
 	let proxyPointsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-	proxyPointsGroup.setAttribute('class', 'hi-proxy-points' );
+	proxyPointsGroup.setAttribute('class', PROXY_POINTS_CLASS );
 	proxyPathGroup.appendChild( proxyPointsGroup );
 
 	return proxyPathGroup;
@@ -1376,8 +1392,10 @@
 	proxyPoint.setAttribute('cy', cy);
 	proxyPoint.setAttribute('r', svgRadius);
 	proxyPoint.setAttribute('id', generateUniqueId() );
-	proxyPoint.setAttribute('class', 'draggable proxy proxy-point');
-	proxyPoint.setAttribute('fill', 'red');
+	$(proxyPoint).addClass( 'draggable');
+	$(proxyPoint).addClass( PROXY_ITEM_CLASS );
+	$(proxyPoint).addClass( PROXY_POINT_CLASS );
+	proxyPoint.setAttribute('fill', PATH_EDIT_PROXY_POINT_COLOR );
 	proxyPoint.setAttribute('vector-effect', 'non-scaling-stroke');
 	return proxyPoint;
     }
@@ -1388,10 +1406,11 @@
 	proxyLine.setAttribute('y1', y1);
 	proxyLine.setAttribute('x2', x2);
 	proxyLine.setAttribute('y2', y2);
-	proxyLine.setAttribute('class', 'proxy proxy-line');
-	proxyLine.setAttribute('before-proxy-point-id', $(beforeProxyPoint).attr('id') );
-	proxyLine.setAttribute('after-proxy-point-id', $(afterProxyPoint).attr('id'));
-	proxyLine.setAttribute('stroke', 'red');
+	$(proxyLine).addClass( PROXY_ITEM_CLASS );
+	$(proxyLine).addClass( PROXY_LINE_CLASS );
+	proxyLine.setAttribute( BEFORE_PROXY_POINT_ID, $(beforeProxyPoint).attr('id') );
+	proxyLine.setAttribute( AFTER_PROXY_POINT_ID, $(afterProxyPoint).attr('id'));
+	proxyLine.setAttribute('stroke', PATH_EDIT_PROXY_LINE_COLOR );
 	proxyLine.setAttribute('stroke-width', PATH_EDIT_PROXY_LINE_WIDTH_PIXELS );
 	proxyLine.setAttribute('vector-effect', 'non-scaling-stroke');
 	return proxyLine;
@@ -1440,6 +1459,7 @@
     function collapseSvgPath( pathSvgGroup ) {
 	if ( DEBUG ) { console.log( 'Collapse SVG Path', pathSvgGroup ); }
 
+	
 
 	/*
     const svg = document.getElementById('my-svg');
@@ -1476,7 +1496,25 @@
     }
 
 
+    function getReferenceElementForExtendingProxyPath( ) {
+	if ( gSvgPathEditData.selectedProxyElement ) {
+	    return gSvgPathEditData.selectedProxyElement;
+	}
+	let lastProxyPath = $(gSvgPathEditData.proxyPathContainer).find( PROXY_PATH_GROUP_SELECTOR ).last();
+	let lastProxyPoint = lastProxyPath.find( PROXY_POINT_SELECTOR ).last();
+	return lastProxyPoint;
+    }
 
+    function getPrecedingProxyLine( proxyPoint ) {
+	const proxyPointId = $(proxyPoint).attr('id');
+	return $('line[' + AFTER_PROXY_POINT_ID + '="' + proxyPointId + '"]');
+    }
+    
+    function getFollowingProxyLine( proxyPoint ) {
+	const proxyPointId = $(proxyPoint).attr('id');
+	return $('line[' + BEFORE_PROXY_POINT_ID + '="' + proxyPointId + '"]');
+    }
+    
     function generateUniqueId() {
 	return 'id-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
     }
