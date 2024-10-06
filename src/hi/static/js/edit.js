@@ -30,6 +30,7 @@
     const API_REORDER_ITEMS_URL = '/edit/reorder-items';
     const API_EDIT_DETAILS_URL = '/edit/details';
     const API_EDIT_SVG_POSITION_URL = '/edit/svg/position';
+    const API_EDIT_SVG_PATH_URL = '/edit/svg/path';
     
     const ICON_ACTION_STATE_ATTR_NAME = 'action-state';
     const ICON_ACTION_SCALE_KEY = 's';
@@ -450,7 +451,7 @@
 
     function clearSelectedSvgPath() {
 	if ( gSelectedPathSvgGroup ) {
-	    collapseSvgPath( gSelectedPathSvgGroup );
+	    collapseSvgPath( );
 	    gSelectedPathSvgGroup = null;
 	}
     }
@@ -1082,6 +1083,7 @@
 	
 	if ( newProxyPoint ) {
 	    setSelectedProxyElement( newProxyPoint );
+	    saveSvgPath();
 	}
     }
     
@@ -1242,6 +1244,8 @@
 	    $(svgProxyPoint).remove();
 	    setSelectedProxyElement( null );	    
 	}
+
+	saveSvgPath();
     }
     
     function deleteProxyLine( svgProxyLine ) {
@@ -1270,6 +1274,7 @@
 	    y: ( beforeY + afterY ) / 2
 	};
 	insertNewProxyPoint( midSvgPoint, svgProxyLine );
+	saveSvgPath();
     }
 
     function addProxyPath( ) {
@@ -1377,6 +1382,7 @@
 	} else {
 	    console.log( `Unknown proxy path type: ${proxyPathType}` );
 	}
+	saveSvgPath();	
     }
 
     function createProxyPathGroup( proxyPathType ) {
@@ -1460,6 +1466,7 @@
             // Function to handle mouse up (end of drag)
             function onMouseUp( event ) {
 		event.preventDefault();
+		saveSvgPath();
 		gSvgPathEditData.dragProxyPoint = null;
 		$(document).off('mousemove', onMouseMove);
 		$(document).off('mouseup', onMouseUp);
@@ -1471,46 +1478,59 @@
 	});
     }
     
-    function collapseSvgPath( pathSvgGroup ) {
-	if ( DEBUG ) { console.log( 'Collapse SVG Path', pathSvgGroup ); }
+    function collapseSvgPath( ) {
+	if ( DEBUG ) { console.log( 'Collapse SVG Path' ); }
 
-	
+	let newSvgPath = getSvgPathStringFromProxyPaths();
+	$(gSelectedPathSvgGroup).find('path').attr( 'd', newSvgPath );
 
-	/*
-    const svg = document.getElementById('my-svg');
-    const lines = svg.querySelectorAll('line');
-    let newPathData = '';
+	const proxyPathContainer = $( '#' + PROXY_PATH_CONTAINER_ID );
+	$(proxyPathContainer).remove();
 
-    // Loop through lines and recombine them into a single path
-    lines.forEach(line => {
-        const x1 = line.getAttribute('x1');
-        const y1 = line.getAttribute('y1');
-        const x2 = line.getAttribute('x2');
-        const y2 = line.getAttribute('y2');
-        Newpathdata += `M ${x1} ${y1} L ${x2} ${y2} `;
-        svg.removeChild(line);  // Remove each line after processing
-    });
-
-    proxyPoints.forEach(point => svg.removeChild(point));  // Remove proxy points
-
-    if (selectedPath) {
-        selectedPath.setAttribute('d', newPathData.trim());  // Set the new path data
-        selectedPath.style.display = '';  // Make the path visible again
-    }
-*/
-
-
-
-	//  ZZZ error if less than 2 points
-	
-	pathSvgGroup.show();
-
-
+	gSelectedPathSvgGroup.show();
 
 	gSvgPathEditData = null;
     }
 
+    function saveSvgPath() {
+	if ( ! gSelectedPathSvgGroup ) {
+	    return;
+	}
 
+	let svgItemId = $(gSelectedPathSvgGroup).attr('id');
+	let svgPathString = getSvgPathStringFromProxyPaths();
+	let data = {
+	    svg_path: svgPathString
+	};
+	AN.post( `${API_EDIT_SVG_PATH_URL}/${svgItemId}`, data );
+    }
+    
+    function getSvgPathStringFromProxyPaths() {
+	const proxyPathContainer = $( '#' + PROXY_PATH_CONTAINER_ID );
+	const proxyPathGroups = $(proxyPathContainer).find( PROXY_PATH_GROUP_SELECTOR );
+	
+	let pathString = '';
+	$(proxyPathGroups).each(function( index, proxyPathGroup ) {
+
+	    let proxyPoints = $(proxyPathGroup).find( PROXY_POINT_SELECTOR );
+	    $(proxyPoints).each(function( index, proxyPoint ) {
+		if ( index == 0 ) {
+		    pathString += ' M ';
+		} else {
+		    pathString += ' L ';
+		}
+		pathString += proxyPoint.getAttribute('cx') + ',' + proxyPoint.getAttribute('cy');
+	    });
+	    if ( $(proxyPathGroup).attr( PROXY_PATH_TYPE_ATTR ) == ProxyPathType.CLOSED ) {
+		pathString += ' Z';
+	    }
+
+	});
+
+	console.log( `PATH = ${pathString}` );
+	return pathString;
+    }
+    
     function getReferenceElementForExtendingProxyPath( ) {
 	if ( gSvgPathEditData.selectedProxyElement ) {
 	    return gSvgPathEditData.selectedProxyElement;

@@ -14,6 +14,7 @@ import hi.apps.common.antinode as antinode
 import hi.apps.collection.edit.views as collection_edit_views
 from hi.apps.collection.helpers import CollectionHelpers
 import hi.apps.entity.edit.views as entity_edit_views
+from hi.apps.entity.edit.helpers import EntityEditHelpers
 from hi.apps.entity.helpers import EntityHelpers
 import hi.apps.location.edit.views as location_edit_views
 from hi.apps.location.forms import SvgPositionForm
@@ -161,7 +162,7 @@ class EditSvgPositionView( View, EditViewMixin ):
                 location = location_view.location,
             )
         else:
-            raise NotImplementedError( 'Not yet handling unknown edit detail type.' )
+            return bad_request_response( request, message = f'Cannot set SVG position for "{item_type}"' )
 
         svg_position_form = SvgPositionForm(
             request.POST,
@@ -189,6 +190,31 @@ class EditSvgPositionView( View, EditViewMixin ):
         return antinode.response(
             insert_map = insert_map,
             set_attributes_map = set_attributes_map,
+        )
+
+
+@method_decorator( edit_required, name='dispatch' )
+class EditSvgPathView( View, EditViewMixin ):
+
+    def post(self, request, *args, **kwargs):
+        
+        ( item_type, item_id ) = self.parse_html_id( kwargs.get('html_id'))
+        svg_path_str = request.POST.get('svg_path')
+        if not svg_path_str:
+            return bad_request_response( request, message = 'Missing SVG path' );
+        
+        location_view = request.view_parameters.location_view
+        if item_type == 'entity':
+            EntityEditHelpers.set_entity_path(
+                entity_id = item_id,
+                location = location_view.location,
+                svg_path_str = svg_path_str,
+            )
+        else:
+            return bad_request_response( request, message = f'Cannot set SVG path for "{item_type}"' )
+
+        return antinode.response(
+            main_content = 'OK',
         )
 
 

@@ -25,6 +25,10 @@ urlpatterns = [
              views.EditSvgPositionView.as_view(), 
              name='edit_svg_position' ),
 
+    re_path( r'^svg/path/(?P<html_id>[\w\-]+)$', 
+             views.EditSvgPathView.as_view(), 
+             name='edit_svg_path' ),
+
     re_path( r'^add-remove$', 
              views.AddRemoveView.as_view(), 
              name='edit_add_remove' ),
