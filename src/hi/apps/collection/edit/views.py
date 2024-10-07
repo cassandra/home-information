@@ -82,9 +82,7 @@ class CollectionDeleteView( View ):
         try:
             collection = Collection.objects.get( id = collection_id )
         except Collection.DoesNotExist:
-            message = f'Collection "{collection_id}" does not exist.'
-            logger.warning( message )
-            return bad_request_response( request, message = message )
+            return page_not_found_response( request )
 
         context = {
             'collection': collection,
@@ -106,9 +104,7 @@ class CollectionDeleteView( View ):
         try:
             collection = Collection.objects.get( id = collection_id )
         except Collection.DoesNotExist:
-            message = f'Collection "{collection_id}" does not exist.'
-            logger.warning( message )
-            return bad_request_response( request, message = message )
+            return page_not_found_response( request )
 
         collection.delete()
 
@@ -133,7 +129,7 @@ class CollectionDetailsView( View ):
         try:
             collection = Collection.objects.get( id = collection_id )
         except Collection.DoesNotExist:
-            return page_not_found_response( request, message = f'No collection with id "{collection_id}".' )
+            return page_not_found_response( request )
 
         location_view = request.view_parameters.location_view
 

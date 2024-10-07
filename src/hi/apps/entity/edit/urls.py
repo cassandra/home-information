@@ -13,5 +13,9 @@ urlpatterns = [
              views.EntityAddView.as_view(), 
              name='entity_edit_entity_add' ),
 
+    re_path( r'^entity/delete/(?P<entity_id>\d+)$', 
+             views.EntityDeleteView.as_view(), 
+             name='entity_edit_entity_delete' ),
+
     
 ]

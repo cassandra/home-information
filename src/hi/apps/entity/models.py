@@ -59,13 +59,17 @@ class Entity( IntegrationIdModel ):
         return self.__str__()
     
     @property
-    def html_id(self):
+    def html_id(self) -> str:
         return f'hi-entity-{self.id}'
     
     @property
-    def entity_type(self):
+    def entity_type(self) -> EntityType:
         return EntityType.from_name_safe( self.entity_type_str )
 
+    @property
+    def can_user_delete(self) -> bool:
+        return self.integration_type.allow_entity_deletion
+    
     @entity_type.setter
     def entity_type( self, entity_type : EntityType ):
         self.entity_type_str = str(entity_type)

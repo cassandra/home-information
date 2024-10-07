@@ -13,3 +13,10 @@
 <div id="hi-edit-collection-views">
   {% include "edit/panes/collection_views.html" %}
 </div>
+
+<div class="">
+  <a href="{% url 'collection_edit_collection_delete' collection_id=collection.id %}"
+     class="btn btn-danger btn-control" role="button" data-async="true">
+    DELETE COLLECTION
+  </a>
+</div>

@@ -38,3 +38,16 @@
 <div id="hi-edit-entity-controllers">
   <div>TBD - PRINCIPALS</div>
 </div>
+
+{% if entity.can_user_delete %}
+<div class="">
+  <a href="{% url 'entity_edit_entity_delete' entity_id=entity.id %}"
+     class="btn btn-danger btn-control" role="button" data-async="true">
+    DELETE ENTITY
+  </a>
+</div>
+{% else %}
+<h5>Integration</h5>
+<div>{{ entity.integration_type }} [{{ entity.integration_key }}]</div>
+
+{% endif %}

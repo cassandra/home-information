@@ -98,4 +98,33 @@ class EntityAddView( View ):
         return redirect( redirect_url )
 
     
+@method_decorator( edit_required, name='dispatch' )
+class EntityDeleteView( View ):
+
+    def get( self, request, *args, **kwargs ):
+        entity_id = kwargs.get( 'entity_id' )
+        if not entity_id:
+            return bad_request_response( request, message = 'Missing entity id in request.' )
+
+        try:
+            entity = Entity.objects.get( id = entity_id )
+        except Entity.DoesNotExist:
+            return page_not_found_response( request )
+
+        context = {
+            'entity': entity,
+        }
+        return antinode.modal_from_template(
+            request = request,
+            template_name = 'entity/edit/modals/entity_delete.html',
+            context = context,
+        )
     
+    def post( self, request, *args, **kwargs ):
+        entity_id = kwargs.get( 'entity_id' )
+        if not entity_id:
+            return bad_request_response( request, message = 'Missing entity id in request.' )
+
+
+
+        pass

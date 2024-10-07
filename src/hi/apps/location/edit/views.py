@@ -189,6 +189,22 @@ class LocationViewEntityToggleView( View ):
 
     
 @method_decorator( edit_required, name='dispatch' )
+class LocationViewEntityRemoveView( View ):
+
+    def post( self, request, *args, **kwargs ):
+
+        location_view_id = kwargs.get('location_view_id')
+        if not location_view_id:
+            return bad_request_response( request, message = 'Missing location view id in request.' )
+
+        entity_id = kwargs.get('entity_id')
+        if not entity_id:
+            return bad_request_response( request, message = 'Missing entity id in request.' )
+        
+        pass
+
+    
+@method_decorator( edit_required, name='dispatch' )
 class LocationViewEntityToggleCollectionView( View ):
 
     def post(self, request, *args, **kwargs):
