@@ -63,10 +63,13 @@
 	65, // 'a'
 	61 // '+'
     ];
+    const PATH_ACTION_END_KEY_CODES = [
+	27 // Escape
+    ];
 
     const PATH_EDIT_PROXY_POINT_RADIUS_PIXELS = 12;
     const PATH_EDIT_PROXY_LINE_WIDTH_PIXELS = 5;
-    const PATH_EDIT_NEW_PATH_RADIUS_PERCENT = 5; // Better if it matches server default path sizing.
+    const PATH_EDIT_NEW_PATH_RADIUS_PERCENT = 5; // Preferrable if this matches server new path sizing.
     const PATH_EDIT_PROXY_LINE_COLOR = 'red';
     const PATH_EDIT_PROXY_POINT_COLOR = 'red';
 
@@ -79,6 +82,7 @@
 
     let gSelectedPathSvgGroup = null;
     let gSvgPathEditData = null;
+    let gIgnoreCLick = false;  // Set by mouseup handling when non-click actions are needed
             
     $(document).ready(function() {
 
@@ -97,6 +101,13 @@
             Hi.displayEventInfo( 'Path Edit Click', event );
             Hi.displayElementInfo( 'Event Target', $(event.target) );
 	}
+	if ( gSelectedPathSvgGroup && gIgnoreCLick ) {
+	    if ( Hi.DEBUG ) { console.log( 'Ignoring click', event ); }
+	    gIgnoreCLick = false;
+	    event.preventDefault(); 
+	    return;
+	}
+	gIgnoreCLick = false;
 	
 	const enclosingSvgGroup = $(event.target).closest('g');
 	if ( enclosingSvgGroup.length > 0 ) {
@@ -132,6 +143,10 @@
 
 	if ( PATH_ACTION_ADD_KEY_CODES.includes( event.keyCode ) ) {
 	    addProxyPath();
+	    
+	} else if ( PATH_ACTION_END_KEY_CODES.includes( event.keyCode ) ) {
+	    clearSelectedPathSvgGroup();
+	    
 	} else {
 	    if ( ! gSvgPathEditData.selectedProxyElement ) {
 		return;
@@ -631,12 +646,12 @@
 		x: svgCenter.x + svgUnitRadius.x,
 		y: svgCenter.y - svgUnitRadius.y,
 	    };
-	    const bottomLeftSvgPoint = {
-		x: svgCenter.x - svgUnitRadius.x,
-		y: svgCenter.y + svgUnitRadius.y,
-	    };
 	    const bottomRightSvgPoint = {
 		x: svgCenter.x + svgUnitRadius.x,
+		y: svgCenter.y + svgUnitRadius.y,
+	    };
+	    const bottomLeftSvgPoint = {
+		x: svgCenter.x - svgUnitRadius.x,
 		y: svgCenter.y + svgUnitRadius.y,
 	    };
 
@@ -764,6 +779,7 @@
 		event.preventDefault();
 		saveSvgPath();
 		gSvgPathEditData.dragProxyPoint = null;
+		gIgnoreCLick = true;
 		$(document).off('mousemove', onMouseMove);
 		$(document).off('mouseup', onMouseUp);
             }

@@ -28,6 +28,8 @@ from .transient_models import (
 
 class LocationEditHelpers:
 
+    PATH_EDIT_NEW_PATH_RADIUS_PERCENT = 5.0  # Preferrable if this matches Javascript new path sizing.
+    
     @classmethod
     def create_location_view( cls,
                               request  : HttpRequest,
@@ -192,17 +194,28 @@ class LocationEditHelpers:
         except EntityPath.DoesNotExist:
             pass
 
-        # Default display a line in middle of current view with length 10% of viewbox width
-        length = location_view.svg_view_box.width / 10.0
+        # Default display a line in middle of current view with radius 10% of viewbox width
         center_x = location_view.svg_view_box.x + ( location_view.svg_view_box.width / 2.0 )
         center_y = location_view.svg_view_box.y + ( location_view.svg_view_box.height / 2.0 )
-        start_x = center_x - ( length / 2.0 )
-        start_y = center_y
-        end_x = start_x + length
-        end_y = start_y
-        
-        svg_path = f'M {start_x},{start_y} L {end_x},{end_y}'
+        radius = location_view.svg_view_box.width * ( cls.PATH_EDIT_NEW_PATH_RADIUS_PERCENT / 100.0 )
 
+        if entity.entity_type.is_path_closed:
+            top_left_x = center_x - radius
+            top_left_y = center_y - radius
+            top_right_x = center_x + radius
+            top_right_y = center_y - radius
+            bottom_right_x = center_x + radius
+            bottom_right_y = center_y + radius
+            bottom_left_x = center_x - radius
+            bottom_left_y = center_y + radius
+            svg_path = f'M {top_left_x},{top_left_y} L {top_right_x},{top_right_y} L {bottom_right_x},{bottom_right_y} L {bottom_left_x},{bottom_left_y} Z'
+        else:
+            start_x = center_x - radius
+            start_y = center_y
+            end_x = start_x + radius
+            end_y = start_y
+            svg_path = f'M {start_x},{start_y} L {end_x},{end_y}'
+        
         entity_path = EntityPath.objects.create(
             entity = entity,
             location = location_view.location,

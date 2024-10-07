@@ -10,11 +10,13 @@ class EntityType(LabeledEnum):
     - SVG filename is by convention:  
     """
     def __init__( self,
-                  label        : str,
-                  description  : str,
-                  is_path      : bool = False ):
+                  label           : str,
+                  description     : str,
+                  is_path         : bool = False,
+                  is_path_closed  : bool = False ):
         super().__init__( label, description )
         self.is_path = is_path
+        self.is_path_closed = is_path_closed
         return
     
     AIR_CONDITIONER      = ( 'Air Conditioner', '' )  # Controls area
@@ -69,7 +71,9 @@ class EntityType(LabeledEnum):
     WATER_METER          = ( 'Water Meter', '' )
     WATER_SHUTOFF_VALVE  = ( 'Water Shutoff Valve', '' )
     WEATHER_STATION      = ( 'Weather Station', '' )
-
+    WINDOW               = ( 'Window', '' )
+    ZONE                 = ( 'Zone', '', True, True )
+    
     @classmethod
     def default(cls):
         return cls.OTHER
@@ -115,6 +119,14 @@ class EntityType(LabeledEnum):
     
 class EntityStateType(LabeledEnum):
 
+    def __init__( self,
+                  label             : str,
+                  description       : str,
+                  use_default_zone  : bool = False ):
+        super().__init__( label, description )
+        self.use_default_zone = use_default_zone
+        return
+    
     # General types
     DISCRETE         = ( 'Discrete'         , 'Single value, fixed set of possible values' )
     CONTINUOUS       = ( 'Continuous'       , 'For single value with a float type value' )
@@ -130,20 +142,19 @@ class EntityStateType(LabeledEnum):
     AIR_PRESSURE     = ( 'Air Pressure'     , '' )
     BANDWIDTH_USAGE  = ( 'Bandwidth Usage'  , '' )
     CONNECTIVITY     = ( 'Connectivity'     , '' )    
-    ELECTRIC_USAGE   = ( 'Electric Usage'   , '' )
-    HUMIDITY         = ( 'Humidity'         , '' )
-    VIDEO_STREAM     = ( 'Video Stream'     , '' )
-    LIGHT_LEVEL      = ( 'Light Level'      , '' )
-    MOISTURE         = ( 'Moisture'         , '' )
-    MOVEMENT         = ( 'Movement'         , '' )    
-    NOISE_LEVEL      = ( 'Noise Level'      , '' )
-    ON_OFF           = ( 'On/Off'           , '' )    
-    HIGH_LOW         = ( 'High/Low'         , '' )    
-    OPEN_CLOSE       = ( 'Open/Close'       , '' )    
-    PRESENCE         = ( 'Presence'         , '' )
-    SOUND_LEVEL      = ( 'Sound Level'      , '' )
     DATETIME         = ( 'Date/Time'        , '' )
-    TEMPERATURE      = ( 'Temperature'      , '' )
+    ELECTRIC_USAGE   = ( 'Electric Usage'   , '' )
+    HIGH_LOW         = ( 'High/Low'         , '' )    
+    HUMIDITY         = ( 'Humidity'         , '' )
+    LIGHT_LEVEL      = ( 'Light Level'      , '', True )
+    MOISTURE         = ( 'Moisture'         , '' )
+    MOVEMENT         = ( 'Movement'         , '', True )    
+    ON_OFF           = ( 'On/Off'           , '' )    
+    OPEN_CLOSE       = ( 'Open/Close'       , '' )    
+    PRESENCE         = ( 'Presence'         , '', True )
+    SOUND_LEVEL      = ( 'Sound Level'      , '', True )
+    TEMPERATURE      = ( 'Temperature'      , '', True )
+    VIDEO_STREAM     = ( 'Video Stream'     , '', True )
     WATER_FLOW       = ( 'Water Flow'       , '' )
     WIND_SPEED       = ( 'Wind Speed'       , '' )
         

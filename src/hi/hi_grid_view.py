@@ -66,8 +66,7 @@ class HiGridView(View):
             })
 
             # This list of views is needed for top buttons
-            if ( request.view_parameters.location_view
-                 and 'location_view_list' not in context ):
+            if ( 'location_view_list' not in context ):
                 location = request.view_parameters.location_view.location
                 location_view_list = list( location.views.order_by( 'order_id' ))
                 context['location_view_list'] = location_view_list
