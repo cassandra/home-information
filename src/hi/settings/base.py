@@ -281,8 +281,11 @@ PIPELINE = {
             'source_filenames': (
                 'js/svg-utils.js',
                 'js/polling.js',
-                'js/edit.js',
                 'js/main.js',
+                'js/edit.js',
+                'js/edit-dragdrop.js',
+                'js/edit-svg-icon.js',
+                'js/edit-svg-path.js',
             ),
             'output_filename': 'js/js_after_content_custom.js',
         }
