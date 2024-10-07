@@ -27,8 +27,8 @@ class PathInLine(admin.TabularInline):
     show_change_link = True
 
     
-class ProxyStateInLine(admin.TabularInline):
-    model = models.ProxyState
+class EntityStateDelegationInLine(admin.TabularInline):
+    model = models.EntityStateDelegation
     extra = 0
     show_change_link = True
 
@@ -60,21 +60,21 @@ class EntityAdmin(admin.ModelAdmin):
         EntityViewInLine,
         PositionInLine,
         PathInLine,
-        ProxyStateInLine,
+        EntityStateDelegationInLine,
     ]
     
 
-@admin.register(models.ProxyState)
-class ProxyStateAdmin(admin.ModelAdmin):
+@admin.register(models.EntityStateDelegation)
+class EntityStateDelegationAdmin(admin.ModelAdmin):
 
     show_full_result_count = False
     
     list_display = (
         'entity_state',
-        'entity',
+        'delegate_entity',
         'created_datetime',
     )
 
     search_fields = ['entity__name']
-    readonly_fields = ( 'entity_state', 'entity', )
+    readonly_fields = ( 'entity_state', 'delegate_entity', )
     

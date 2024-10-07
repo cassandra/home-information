@@ -9,11 +9,11 @@ from hi.apps.collection.models import (
     CollectionView,
     CollectionPosition,
 )
+from hi.apps.entity.delegation_manager import DelegationManager
+from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import (
     Entity,
     EntityView,
-    EntityPosition,
-    EntityPath,
 )
 from hi.apps.location.enums import LocationViewType
 from hi.apps.location.models import Location, LocationView
@@ -28,8 +28,6 @@ from .transient_models import (
 
 class LocationEditHelpers:
 
-    PATH_EDIT_NEW_PATH_RADIUS_PERCENT = 5.0  # Preferrable if this matches Javascript new path sizing.
-    
     @classmethod
     def create_location_view( cls,
                               request  : HttpRequest,
@@ -121,107 +119,55 @@ class LocationEditHelpers:
     def toggle_entity_in_view( cls, entity : Entity, location_view : LocationView ) -> bool:
 
         try:
-            entity_view = EntityView.objects.get(
-                entity = entity,
-                location_view = location_view,
-            )
-            entity_view.delete()
+            cls.remove_entity_from_view( entity = entity, location_view = location_view )
             return False
-            
         except EntityView.DoesNotExist:
             cls.add_entity_to_view( entity = entity, location_view = location_view )
             return True
         
     @classmethod
-    def add_entity_to_view( cls, entity : Entity, location_view : LocationView ):
-        
-        with transaction.atomic():
-            # Need to make sure it has some visible representation in the view if none exists.
-            if entity.entity_type.is_path:
-                cls.add_entity_path_if_needed(
-                    entity = entity,
-                    location_view = location_view,
-                )
-            else:
-                cls.add_entity_position_if_needed(
-                    entity = entity,
-                    location_view = location_view,
-                )
+    def remove_entity_from_view( cls, entity : Entity, location_view : LocationView ):
 
-            _ = EntityView.objects.create(
+        with transaction.atomic():
+            EntityManager().remove_entity_view(
                 entity = entity,
                 location_view = location_view,
             )
-        return 
-        
-    @classmethod
-    def add_entity_position_if_needed( cls, entity : Entity, location_view : LocationView ) -> EntityPosition:
-        assert not entity.entity_type.is_path
 
-        try:
-            _ = EntityPosition.objects.get(
-                location = location_view.location,
+            DelegationManager().remove_delegate_entities_from_view_if_needed(
                 entity = entity,
+                location_view = location_view,
             )
-            return
-        except EntityPosition.DoesNotExist:
-            pass
-
-        # Default display in middle of current view
-        svg_x = location_view.svg_view_box.x + ( location_view.svg_view_box.width / 2.0 )
-        svg_y = location_view.svg_view_box.y + ( location_view.svg_view_box.height / 2.0 )
-        
-        entity_position = EntityPosition.objects.create(
-            entity = entity,
-            location = location_view.location,
-            svg_x = Decimal( svg_x ),
-            svg_y = Decimal( svg_y ),
-            svg_scale = Decimal( 1.0 ),
-            svg_rotate = Decimal( 0.0 ),
-        )
-        return entity_position
+            
+        return
     
     @classmethod
-    def add_entity_path_if_needed( cls, entity : Entity, location_view : LocationView ) -> EntityPath:
-        assert entity.entity_type.is_path
+    def add_entity_to_view( cls, entity : Entity, location_view : LocationView ):
 
-        try:
-            _ = EntityPath.objects.get(
-                location = location_view.location,
+        with transaction.atomic():
+            # Only create delegate entities the first time an entity is added to a view.
+            if not entity.entity_views.all().exists():
+                delegate_entity_list = DelegationManager().get_delegate_entities_with_defaults(
+                    entity = entity,
+                )
+            else:
+                delegate_entity_list = DelegationManager().get_delegate_entities(
+                    entity = entity,
+                )
+
+            _ = EntityManager().create_entity_view(
                 entity = entity,
+                location_view = location_view,
             )
-            return
-        except EntityPath.DoesNotExist:
-            pass
-
-        # Default display a line in middle of current view with radius 10% of viewbox width
-        center_x = location_view.svg_view_box.x + ( location_view.svg_view_box.width / 2.0 )
-        center_y = location_view.svg_view_box.y + ( location_view.svg_view_box.height / 2.0 )
-        radius = location_view.svg_view_box.width * ( cls.PATH_EDIT_NEW_PATH_RADIUS_PERCENT / 100.0 )
-
-        if entity.entity_type.is_path_closed:
-            top_left_x = center_x - radius
-            top_left_y = center_y - radius
-            top_right_x = center_x + radius
-            top_right_y = center_y - radius
-            bottom_right_x = center_x + radius
-            bottom_right_y = center_y + radius
-            bottom_left_x = center_x - radius
-            bottom_left_y = center_y + radius
-            svg_path = f'M {top_left_x},{top_left_y} L {top_right_x},{top_right_y} L {bottom_right_x},{bottom_right_y} L {bottom_left_x},{bottom_left_y} Z'
-        else:
-            start_x = center_x - radius
-            start_y = center_y
-            end_x = start_x + radius
-            end_y = start_y
-            svg_path = f'M {start_x},{start_y} L {end_x},{end_y}'
-        
-        entity_path = EntityPath.objects.create(
-            entity = entity,
-            location = location_view.location,
-            svg_path = svg_path,
-        )
-        return entity_path
+                            
+            for delegate_entity in delegate_entity_list:
+                _ = EntityManager().create_entity_view(
+                    entity = delegate_entity,
+                    location_view = location_view,
+                )
+                continue
+            
+        return 
         
     @classmethod
     def toggle_collection_in_view( cls,

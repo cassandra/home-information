@@ -7,6 +7,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
+from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity, EntityPosition
 from hi.apps.location.forms import SvgPositionForm
@@ -16,7 +17,6 @@ from hi.decorators import edit_required
 from hi.views import bad_request_response, page_not_found_response
 
 from . import forms
-from .helpers import EntityEditHelpers
 
 logger = logging.getLogger(__name__)
 
@@ -87,8 +87,7 @@ class EntityAddView( View ):
         name = cleaned_data.get('name')
         
         try:
-            _ = EntityEditHelpers.create_entity(
-                request = request,
+            _ = EntityManager().create_entity(
                 entity_type = entity_type,
                 name = name,
             )

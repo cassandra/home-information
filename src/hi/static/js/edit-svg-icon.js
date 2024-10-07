@@ -19,6 +19,14 @@
 
     window.Hi.edit.icon = HiEditSvgIcon;
     HiEditSvgIcon.init();
+
+    /* 
+      SVG ICON EDITING
+      
+      - Icons can be selected to show the entity details in the side edit panel.
+      - Icons can be dragged to chnage their location.
+      - Selected icons can be rotated and scaled to change their appearance.
+    */
     
     const SELECTABLE_CLASS = 'selectable';
     const SELECTABLE_SELECTOR = '.' + SELECTABLE_CLASS;

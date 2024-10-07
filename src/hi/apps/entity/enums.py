@@ -18,10 +18,14 @@ class EntityType(LabeledEnum):
         self.is_path = is_path
         self.is_path_closed = is_path_closed
         return
+
+    @property
+    def is_icon(self):
+        return bool( not self.is_path )
     
     AIR_CONDITIONER      = ( 'Air Conditioner', '' )  # Controls area
     APPLIANCE            = ( 'Appliance', '' )
-    AREA                 = ( 'Area', '' )
+    AREA                 = ( 'Area', '', True, True )
     AUDIO_AMPLIFIER      = ( 'Audio Amplifier', '' )  # Controls Speaker
     AUDIO_PLAYER         = ( 'Audio Player', '' )
     BAROMETER            = ( 'Barometer', '' )
@@ -72,7 +76,6 @@ class EntityType(LabeledEnum):
     WATER_SHUTOFF_VALVE  = ( 'Water Shutoff Valve', '' )
     WEATHER_STATION      = ( 'Weather Station', '' )
     WINDOW               = ( 'Window', '' )
-    ZONE                 = ( 'Zone', '', True, True )
     
     @classmethod
     def default(cls):
@@ -121,10 +124,8 @@ class EntityStateType(LabeledEnum):
 
     def __init__( self,
                   label             : str,
-                  description       : str,
-                  use_default_zone  : bool = False ):
+                  description       : str ):
         super().__init__( label, description )
-        self.use_default_zone = use_default_zone
         return
     
     # General types
@@ -146,15 +147,15 @@ class EntityStateType(LabeledEnum):
     ELECTRIC_USAGE   = ( 'Electric Usage'   , '' )
     HIGH_LOW         = ( 'High/Low'         , '' )    
     HUMIDITY         = ( 'Humidity'         , '' )
-    LIGHT_LEVEL      = ( 'Light Level'      , '', True )
+    LIGHT_LEVEL      = ( 'Light Level'      , '' )
     MOISTURE         = ( 'Moisture'         , '' )
-    MOVEMENT         = ( 'Movement'         , '', True )    
+    MOVEMENT         = ( 'Movement'         , '' )    
     ON_OFF           = ( 'On/Off'           , '' )    
     OPEN_CLOSE       = ( 'Open/Close'       , '' )    
-    PRESENCE         = ( 'Presence'         , '', True )
-    SOUND_LEVEL      = ( 'Sound Level'      , '', True )
-    TEMPERATURE      = ( 'Temperature'      , '', True )
-    VIDEO_STREAM     = ( 'Video Stream'     , '', True )
+    PRESENCE         = ( 'Presence'         , '' )
+    SOUND_LEVEL      = ( 'Sound Level'      , '' )
+    TEMPERATURE      = ( 'Temperature'      , '' )
+    VIDEO_STREAM     = ( 'Video Stream'     , '' )
     WATER_FLOW       = ( 'Water Flow'       , '' )
     WIND_SPEED       = ( 'Wind Speed'       , '' )
         

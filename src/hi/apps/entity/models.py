@@ -214,54 +214,62 @@ class EntityState(models.Model):
         return
     
     
-class ProxyState(models.Model):
-    """An EntityState associated with a Sensors or Controller is
-    implicitly a "sensing" or "controlling" the internals of the
-    entity/device. However, this may really just be a proxy for another entity's
-    (hidden) state.
+class EntityStateDelegation(models.Model):
+    """An EntityState associated with a Sensor or Controller is often serving
+    representing the state of some other entity. In those cases, the entity
+    containing the sensors/controllers is really just a proxy for some
+    other entity's (hidden) state.  If we want to explicitly represent that
+    relationship between two entities, we can define a delegation where some
+    other entity becomes the "delegate" and the original entity containing the
+    sensor/controller being the "principal".
 
-        e.g., An open/close sensor is directly sensing the proximity sensor in
-        the device, but it is indirectly trying to sense the state of a door or window.
+        e.g., An open/close switch entity with an open/close sensor is
+        directly sensing the state of the switch in the device, but it is
+        indirectly trying to sense the state of a door or window. Thus, the
+        door open/close "state" is being proxied by the open/close sensor's
+        swith.  The open/close swith device is the principal entity while
+        the door/window is the delegate entity.
 
         e.g., A sprinkler controller valve is directly sensing and controlling
         whether it is on or off, but also serves as a proxy for all the
         sprinkler heads connected to it.
 
         e.g., A temperature sensor's internal temperature states is really just
-        a proxy for an area (and area is also an Entity).
+        a proxy for a area (and a Area is also an Entity).
 
         e.g., A motion detectors's internal "movement" state about reflected
-        infrared signals is just a proxy for movement associated with an area.
+        infrared signals is just a proxy for movement associated with a Area.
 
-    This relationship between an EntityState and proxy for another Entity
-    can either be one-to-many or many-to-one.
+    This delegation relationship between an Entities can either be
+    one-to-many or many-to-one.
     
         e.g., A thermostat may be aggregating the readings from multiple
         remote sensors so that the internal temperature state of the
         thermostat is a proxy for all the remote sensor states.
 
-    The purpose of representing the proxy relationships is to allow
+    The purpose of representing the delegation relationships is to allow
     visually changing the display of an Entity based on the sensors
-    that are serving as a proxy for it.  It also allows clicks/taps on the 
+    that are serving as a proxy for it.  It also allows clicks/taps on the delegate
     entity to be associated with the sensors or controllers that are proxying 
     for it.  
 
-        e.g., A common case is for defining "AREA" entities and visually
+        e.g., A common case is for defining "Area" entities and visually
         displaying them so that they can change colors based on movement
         sensors that proxy for the area and showing the video stream for
         the camera entity proxying for the area.
+
     """
     
     entity_state = models.ForeignKey(
         EntityState,
-        related_name = 'proxy_for_entities',
+        related_name = 'entity_state_delegations',
         verbose_name = 'Entity State',
         on_delete=models.CASCADE,
     )
-    entity = models.ForeignKey(
+    delegate_entity = models.ForeignKey(
         Entity,
-        related_name = 'proxy_by_states',
-        verbose_name = 'Entity',
+        related_name = 'entity_state_delegations',
+        verbose_name = 'Deleage Entity',
         on_delete = models.CASCADE,
     )
     created_datetime = models.DateTimeField(
@@ -269,6 +277,16 @@ class ProxyState(models.Model):
         auto_now_add = True,
     )
 
+    class Meta:
+        verbose_name = 'Entity State Delegation'
+        verbose_name_plural = 'Entity State Delegations'
+        constraints = [
+            models.UniqueConstraint(
+                fields = [ 'delegate_entity', 'entity_state' ],
+                name = 'entity_state_delegation_uniqueness',
+            ),
+        ]
+    
     
 class EntityPosition( SvgPositionModel ):
     """

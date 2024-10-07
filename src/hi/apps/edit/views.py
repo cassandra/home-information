@@ -14,8 +14,7 @@ import hi.apps.common.antinode as antinode
 import hi.apps.collection.edit.views as collection_edit_views
 from hi.apps.collection.helpers import CollectionHelpers
 import hi.apps.entity.edit.views as entity_edit_views
-from hi.apps.entity.edit.helpers import EntityEditHelpers
-from hi.apps.entity.helpers import EntityHelpers
+from hi.apps.entity.entity_manager import EntityManager
 import hi.apps.location.edit.views as location_edit_views
 from hi.apps.location.forms import SvgPositionForm
 from hi.decorators import edit_required
@@ -152,7 +151,7 @@ class EditSvgPositionView( View, EditViewMixin ):
 
         location_view = request.view_parameters.location_view
         if item_type == 'entity':
-            svg_position_model = EntityHelpers.get_entity_position(
+            svg_position_model = EntityManager().get_entity_position(
                 entity_id = item_id,
                 location = location_view.location,
             )
@@ -205,7 +204,7 @@ class EditSvgPathView( View, EditViewMixin ):
         
         location_view = request.view_parameters.location_view
         if item_type == 'entity':
-            EntityEditHelpers.set_entity_path(
+            EntityManager().set_entity_path(
                 entity_id = item_id,
                 location = location_view.location,
                 svg_path_str = svg_path_str,

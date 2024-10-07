@@ -23,15 +23,21 @@
     /* 
       SVG PATH EDITING
       
+      - When a path is selected, the original SVG element/group is hidden and proxy elements created.
+      - Proxy elements are points and lines with points being way to move path endpoint location.
+      - During editing, control proxy popionts can be moved, added and deleted.
       - Two types of paths: closed (with ending 'Z') and open.
-      - The type is determined by the initial path and not editable.
+      - The type is determined by the initial path and not changeable during editing.
       - An open path must have at least two proxy points (control points for manipulation).
       - A closed path must have at least 3 proxy points.
       - The behavior of adding to the path depends on its type.
-      - An open path gets extended when adding.
-      - A closed path has its lines subdivided when adding.
       - Adding is relative to the last selected item.
-      - You can select a line or a proxy point.
+      - You can select a line or a proxy point during editing.
+      - An open path gets extended when adding (can also subdivide a line if it is selected).
+      - A closed path has its lines subdivided when adding.
+      - A entity's path can consist of multiple, disconnected segments.
+      - Add a new proxy path adds a line or a rectangle for open and closed paths respectively.
+      - A selected path aso shows the entity details in the side edit panel.
     */    
 
     const PROXY_PATH_CONTAINER_ID = 'hi-proxy-path-container';    
