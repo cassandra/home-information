@@ -31,13 +31,10 @@
     const SELECTABLE_CLASS = 'selectable';
     const SELECTABLE_SELECTOR = '.' + SELECTABLE_CLASS;
     
-    const ICON_ACTION_STATE_ATTR_NAME = 'action-state';
     const ICON_ACTION_SCALE_KEY = 's';
     const ICON_ACTION_ROTATE_KEY = 'r';
 
-    const CLICK_HOLD_THRESHOLD_MS = 50; // For ignoreing very short, transient clicks
-    const DOUBLE_CLICK_DELAY_MS = 250;
-    const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3;
+    const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3; // Differentiate between move events and sloppy clicks
 
     const API_EDIT_SVG_POSITION_URL = '/edit/svg/position';
         
@@ -53,37 +50,35 @@
     let gSvgIconEditData = null;
 
     let gClickStart = null;
-    let gClickTimeout = null;
     let gLastMousePosition = { x: 0, y: 0 };
-    let gIgnoreCLick = false;  // Set by mouseup handling when non-click actions are needed
-    
-    
+    let gIgnoreCLick = false;  // Set by mouseup handling when no click handling should be done
+     
     $(document).ready(function() {
 
 	$(document).on('mousedown', Hi.LOCATION_VIEW_AREA_SELECTOR, function(event) {
-	    if ( gHiViewMode != 'edit' ) { return; }
+	    if ( ! Hi.isEditMode ) { return; }
 	    handleMouseDown( event );
 	});
 	$(document).on('mousemove', Hi.LOCATION_VIEW_AREA_SELECTOR, function(event) {
-	    if ( gHiViewMode != 'edit' ) { return; }
+	    if ( ! Hi.isEditMode ) { return; }
 	    handleMouseMove( event );
 	});
 	$(document).on('mouseup', Hi.LOCATION_VIEW_AREA_SELECTOR, function(event) {
-	    if ( gHiViewMode != 'edit' ) { return; }
+	    if ( ! Hi.isEditMode ) { return; }
 	    handleMouseUp( event );
 	});
 	$(document).on('click', function(event) {
-	    if ( gHiViewMode != 'edit' ) { return; }
+	    if ( ! Hi.isEditMode ) { return; }
 	    handleClick( event );
 	});
 	$(document).on('keydown', function(event) {
-	    if ( gHiViewMode != 'edit' ) { return; }
+	    if ( ! Hi.isEditMode ) { return; }
 	    handleKeyDown( event );
 	});
     });
 
     function handleMouseDown( event ) {
-	if ( Hi.DEBUG ) { Hi.displayEventInfo( `Mouse down event [${MODULE_NAME}]`, event ); }
+	if ( Hi.DEBUG ) { console.log( `Mouse down event [${MODULE_NAME}]`, event ); }
 
 	// Need to track start time to differentiate drag/scale/rotate actions from regular clicks.
 	gClickStart = {
@@ -99,6 +94,7 @@
 		gSvgIconEditData.isRotating = true;
 	    }
 	    event.preventDefault();
+	    event.stopImmediatePropagation();
 	    return;
 	} else {
             if ( Hi.DEBUG ) { Hi.displayElementInfo( 'Event target: ', $(event.target) ); }
@@ -108,6 +104,7 @@
 		if ( svgDataType == Hi.DATA_TYPE_ICON_VALUE ) {
 		    createIconDragData( event, enclosingSvgGroup );
 		    event.preventDefault();
+		    event.stopImmediatePropagation();
 		    return;
 		}
 	    }
@@ -116,16 +113,17 @@
     }
     
     function handleMouseUp( event ) {
-	if ( Hi.DEBUG ) { Hi.displayEventInfo( `Mouse up event [${MODULE_NAME}]`, event ); }
+	if ( Hi.DEBUG ) { console.log( `Mouse up event [${MODULE_NAME}]`, event ); }
 	
 	if ( gSvgIconDragData ) {
 	    if ( gSvgIconDragData.isDragging ) {
 		endDrag( event );
-		$(Hi.BASE_SVG_SELECTOR).attr( ICON_ACTION_STATE_ATTR_NAME, '');
+		$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '');
 	    }
-	    $(Hi.BASE_SVG_SELECTOR).attr( ICON_ACTION_STATE_ATTR_NAME, '' );
+	    $(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
 	    gSvgIconDragData = null;
 	    event.preventDefault(); 
+	    event.stopImmediatePropagation();
 	    return;
 	}
 	
@@ -138,10 +136,11 @@
 		iconActionRotateApply();
 	    }
 	    gSvgIconActionState = SvgActionStateType.MOVE;
-	    $(Hi.BASE_SVG_SELECTOR).attr( ICON_ACTION_STATE_ATTR_NAME, '');
+	    $(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '');
 	    gSvgIconEditData = null;
 	    gIgnoreCLick = true;
 	    event.preventDefault(); 
+	    event.stopImmediatePropagation();
 	    return;
 	}
 	if ( Hi.DEBUG ) { console.log( `Mouse up skipped [${MODULE_NAME}]` ); }
@@ -162,19 +161,20 @@
 		 || ( distanceX > CURSOR_MOVEMENT_THRESHOLD_PIXELS )
 		 || ( distanceY > CURSOR_MOVEMENT_THRESHOLD_PIXELS )) {
 		gSvgIconDragData.isDragging = true;
-		$(Hi.BASE_SVG_SELECTOR).attr( ICON_ACTION_STATE_ATTR_NAME, SvgActionStateType.MOVE);
+		$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, SvgActionStateType.MOVE);
 		updateDrag(event);
 		event.preventDefault(); 
+	    	event.stopImmediatePropagation();
 	    }
 	}
 	else if ( gSvgIconEditData ) {
 	    if ( gSvgIconEditData.isScaling ) {
 		iconActionScaleUpdate( currentMousePosition );
-		event.preventDefault(); 
 	    } else if ( gSvgIconEditData.isRotating ) {
 		iconActionRotateUpdate( currentMousePosition );
-		event.preventDefault(); 
 	    }
+	    event.preventDefault(); 
+	    event.stopImmediatePropagation();
 	}
 	
 	gLastMousePosition = currentMousePosition;
@@ -184,7 +184,8 @@
 	if ( gIgnoreCLick ) {
 	    if ( Hi.DEBUG ) { console.log( `Ignoring click [${MODULE_NAME}]`, event ); }
 	    gIgnoreCLick = false;
-	    event.preventDefault(); 
+	    event.preventDefault();
+	    event.stopImmediatePropagation();
 	    return;
 	}
 	gIgnoreCLick = false;
@@ -203,6 +204,7 @@
 	    if ( isSvgIcon && svgItemId ) {
 		handleSvgIconClick( event, enclosingSvgGroup );
 		event.preventDefault(); 
+		event.stopImmediatePropagation();
 		return;
 	    }
 	}
@@ -214,8 +216,10 @@
             return;
 	}
 	if ( gSelectedIconSvgGroup ) {
+	    if ( Hi.DEBUG ) { console.log( `Key Down [${MODULE_NAME}]`, event ); }
 	    handleSvgIconSelectedKeyDown( event );
 	    event.preventDefault();
+	    event.stopImmediatePropagation();
 	    return;
 	}
 	if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
@@ -227,10 +231,10 @@
         const targetWidth = targetArea.outerWidth();
         const targetHeight = targetArea.outerHeight();
 	
-        if (gLastMousePosition.x >= targetOffset.left && 
-	    gLastMousePosition.x <= targetOffset.left + targetWidth &&
-	    gLastMousePosition.y >= targetOffset.top &&
-	    gLastMousePosition.y <= targetOffset.top + targetHeight) {
+        if (( gLastMousePosition.x >= targetOffset.left )
+	    && ( gLastMousePosition.x <= ( targetOffset.left + targetWidth ))
+	    && ( gLastMousePosition.y >= targetOffset.top )
+	    && ( gLastMousePosition.y <= ( targetOffset.top + targetHeight ))) {
 
        	    if ( Hi.DEBUG ) { Hi.displayEventInfo( 'Key Down', event ); }
 
@@ -246,14 +250,14 @@
 		iconActionScaleAbort();
 		iconActionRotateAbort();
 		gSvgIconActionState = SvgActionStateType.MOVE;
-		$(Hi.BASE_SVG_SELECTOR).attr( ICON_ACTION_STATE_ATTR_NAME, '');
+		$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '');
 		
 	    } else {
 		return;
 	    }
 	
-	    event.stopPropagation();
 	    event.preventDefault();   		
+	    event.stopImmediatePropagation();
         }
     }
     
@@ -283,7 +287,7 @@
 	Hi.displayElementInfo( 'Base SVG', baseSvgElement );
 
         let transform = dragElement.attr('transform') || '';
-        let { scale, translate, rotate } = getSvgTransformValues( transform );
+        let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
         let cursorSvgPoint = Hi.toSvgPoint( baseSvgElement, event.clientX, event.clientY );
 
 	const cursorSvgOffset = {
@@ -295,7 +299,7 @@
 	    element: dragElement,
 	    baseSvgElement: baseSvgElement,
 	    cursorSvgOffset: cursorSvgOffset,
-	    elementSvgCenterPoint: getSvgCenterPoint( dragElement, baseSvgElement ),
+	    elementSvgCenterPoint: Hi.getSvgCenterPoint( dragElement, baseSvgElement ),
 	    originalSvgScale: scale,
 	    originalSvgRotate: rotate,
 	    isDragging: false
@@ -331,7 +335,8 @@
 
         gSvgIconDragData.element.attr('transform', newTransform);	    
 
-	gSvgIconDragData.elementSvgCenterPoint = getSvgCenterPoint( gSvgIconDragData.element, gSvgIconDragData.baseSvgElement );
+	gSvgIconDragData.elementSvgCenterPoint = Hi.getSvgCenterPoint( gSvgIconDragData.element,
+								       gSvgIconDragData.baseSvgElement );
 	
 	if ( Hi.DEBUG ) {
 	    console.log( `Drag Update:
@@ -365,10 +370,10 @@
     function saveIconSvgPosition( element ) {
 
         let transform = element.attr('transform');
-        let { scale, translate, rotate } = getSvgTransformValues( transform );
+        let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
 
 	const baseSvgElement = $(Hi.BASE_SVG_SELECTOR);
-	const center = getSvgCenterPoint( element, baseSvgElement );
+	const center = Hi.getSvgCenterPoint( element, baseSvgElement );
 
 	let svgItemId = element.attr('id');
 	let data = {
@@ -383,7 +388,7 @@
     function createIconEditActionData( actionState ) {
 	if ( gSelectedIconSvgGroup ) {
             let transform = gSelectedIconSvgGroup.attr('transform');
-            let { scale, translate, rotate } = getSvgTransformValues( transform );
+            let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
 
 	    gSvgIconEditData = {
 		element: gSelectedIconSvgGroup,
@@ -395,7 +400,7 @@
 	    };
 
 	    gSvgIconActionState = actionState;
-	    $(Hi.BASE_SVG_SELECTOR).attr( ICON_ACTION_STATE_ATTR_NAME, actionState );
+	    $(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, actionState );
 	}
     }
 
@@ -414,14 +419,15 @@
     }
 
     function iconActionScaleUpdate( currentMousePosition ) {
+	if ( Hi.DEBUG ) { console.log( `updateScale [${MODULE_NAME}]` ); }
 
-	let center = getScreenCenterPoint( gSvgIconEditData.element );
+	let center = Hi.getScreenCenterPoint( gSvgIconEditData.element );
 
 	let scaleFactor = getScaleFactor( center.x, center.y,
 					  gLastMousePosition.x, gLastMousePosition.y,
 					  currentMousePosition.x, currentMousePosition.y );
         let transform = gSvgIconEditData.element.attr('transform');
-        let { scale, translate, rotate } = getSvgTransformValues( transform );
+        let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
 
 	const newScale = {
 	    x: scale.x * scaleFactor,
@@ -458,46 +464,20 @@
     }
 
     function iconActionRotateUpdate( currentMousePosition ) {
-	if ( Hi.DEBUG ) { console.log( 'Rotate Update' ); }
+	if ( Hi.DEBUG ) { console.log( `updateRotation [${MODULE_NAME}]` ); }
 
-	let center = getScreenCenterPoint( gSvgIconEditData.element );
+	let center = Hi.getScreenCenterPoint( gSvgIconEditData.element );
 
-	let deltaAngle = getIconRotationAngle( center.x, center.y,
-					   gLastMousePosition.x, gLastMousePosition.y,
-					   currentMousePosition.x, currentMousePosition.y );
+	let deltaAngle = Hi.getRotationAngle( center.x, center.y,
+					      gLastMousePosition.x, gLastMousePosition.y,
+					      currentMousePosition.x, currentMousePosition.y );
 
         let transform = gSvgIconEditData.element.attr('transform');
-        let { scale, translate, rotate } = getSvgTransformValues( transform );
+        let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
 	rotate.angle += deltaAngle;
-	rotate.angle = normalizeAngle( rotate.angle );
+	rotate.angle = Hi.normalizeAngle( rotate.angle );
 	setSvgTransformAttr( gSvgIconEditData.element, scale, translate, rotate );
     }
-
-    function getIconRotationAngle( centerX, centerY, startX, startY, endX, endY ) {
-
-	const startVectorX = startX - centerX;
-	const startVectorY = startY - centerY;
-
-	const endVectorX = endX - centerX;
-	const endVectorY = endY - centerY;
-
-	const startAngle = Math.atan2(startVectorY, startVectorX);
-	const endAngle = Math.atan2(endVectorY, endVectorX);
-
-	let angleDifference = endAngle - startAngle;
-
-	// Normalize the angle to be between -π and π
-	if (angleDifference > Math.PI) {
-            angleDifference -= 2 * Math.PI;
-	} else if (angleDifference < -Math.PI) {
-            angleDifference += 2 * Math.PI;
-	}
-
-	const angleDifferenceDegrees = angleDifference * (180 / Math.PI);
-
-	return angleDifferenceDegrees;
-    }
-
     
     function iconActionRotateApply() {
 	saveIconSvgPosition( gSvgIconEditData.element );
@@ -508,83 +488,6 @@
 	    return;
 	}	
 	revertIconAction();
-    }
-
-    function getScreenCenterPoint( element ) {
-	try {
-            let rect = element[0].getBoundingClientRect();
-	    if ( rect ) {
-		const screenCenterX = rect.left + ( rect.width / 2.0 );
-		const screenCenterY = rect.top + ( rect.height / 2.0 );
-		return {
-		    x: rect.left + ( rect.width / 2.0 ),
-		    y: rect.top + ( rect.height / 2.0 )
-		};
-	    }
-	} catch (e) {
-	    console.debug( `Problem getting bounding box: ${e}` );
-	}
-	return null;
-    }
-    
-    function getSvgCenterPoint( element, svgElement ) {
-
-	try {
-            let rect = element[0].getBoundingClientRect();
-	    if ( rect ) {
-		const screenCenterX = rect.left + ( rect.width / 2.0 );
-		const screenCenterY = rect.top + ( rect.height / 2.0 );
-		return Hi.toSvgPoint( svgElement, screenCenterX, screenCenterY );
-	    }
-	} catch (e) {
-	    console.debug( `Problem getting bounding box: ${e}` );
-	}
-	return { x: 0, y: 0 };
-    }
-        
-    function getSvgTransformValues(transform) {
-	let scale = { x: 1, y: 1 }, rotate = { angle: 0, cx: 0, cy: 0 }, translate = { x: 0, y: 0 };
-
-	let scaleMatch = transform.match(/scale\(([^)]+)\)/);
-	if (scaleMatch) {
-	    let scaleValues = scaleMatch[1].trim().split(/[ ,]+/).map(parseFloat);
-	    scale.x = scaleValues[0];
-	    if ( scaleValues.length == 1 ) {
-		scale.y = scale.x;
-	    } else {
-		scale.y = scaleValues[1];
-	    }
-	}
-
-	let translateMatch = transform.match(/translate\(([^)]+)\)/);
-	if (translateMatch) {
-            let [x, y] = translateMatch[1].trim().split(/[ ,]+/).map(parseFloat);
-            translate.x = x;
-            translate.y = y;
-	}
-
-	let rotateMatch = transform.match(/rotate\(([^)]+)\)/);
-	if (rotateMatch) {
-            let rotateValues = rotateMatch[1].trim().split(/[ ,]+/).map(parseFloat);
-            rotate.angle = rotateValues[0];
-
-            // Check if cx and cy are provided
-            if (rotateValues.length === 3) {
-		rotate.cx = rotateValues[1];
-		rotate.cy = rotateValues[2];
-            } else {
-		rotate.cx = 0;
-		rotate.cy = 0;
-	    }
-	}
-
-	if ( Hi.DEBUG ) {
-	    console.log( `TRANSFORM:
-    Raw: ${transform},
-    Parsed: scale=${JSON.stringify(scale)} translate=${JSON.stringify(translate)} rotate=${JSON.stringify(rotate)}` );
-	}
-	
-	return { scale, translate, rotate };
     }
 
     function setSvgTransformAttr( element, scale, translate, rotate ) {
@@ -605,11 +508,5 @@
 	}
 	return scaleFactor;
     }
-    
-    function normalizeAngle(angle) {
-	return (angle % 360 + 360) % 360;
-    }
-
-
     
 })();

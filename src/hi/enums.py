@@ -5,6 +5,7 @@ class ViewType(LabeledEnum):
 
     LOCATION_VIEW  = ('Location View', '' )
     COLLECTION     = ('Collection', '' )
+    CONFIGURATION  = ('Configuration', '' )
 
     @property
     def is_location_view(self):
@@ -13,6 +14,15 @@ class ViewType(LabeledEnum):
     @property
     def is_collection(self):
         return bool( self == ViewType.COLLECTION )
+
+    @property
+    def is_configuration(self):
+        return bool( self == ViewType.CONFIGURATION )
+
+    @property
+    def allows_edit_mode(self):
+        return bool( self in [ ViewType.LOCATION_VIEW,
+                               ViewType.COLLECTION ] )
 
 
 class ViewMode(LabeledEnum):
@@ -23,8 +33,3 @@ class ViewMode(LabeledEnum):
     @property
     def is_editing(self):
         return bool( self == ViewMode.EDIT )
-
-    @property
-    def should_reload_on_view_change(self):
-        return bool( self == ViewMode.EDIT )
-    

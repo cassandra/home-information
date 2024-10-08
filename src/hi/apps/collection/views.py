@@ -54,6 +54,7 @@ class CollectionView( HiGridView ):
             return bad_request_response( request, message = message )
 
         # Remember last collection chosen
+        view_type_changed = bool( request.view_parameters.view_type != ViewType.COLLECTION )
         request.view_parameters.view_type = ViewType.COLLECTION
         request.view_parameters.collection_id = collection.id
         request.view_parameters.to_session( request )
@@ -63,7 +64,7 @@ class CollectionView( HiGridView ):
         # views are invalidated. Else, the editing state and edit side
         # panel will be invalid for the new view.
         #
-        if is_ajax( request ) and request.view_parameters.view_mode.should_reload_on_view_change:
+        if view_type_changed and is_ajax( request ):
             sync_url = reverse( 'collection_view', kwargs = kwargs )
             return antinode.redirect_response( url = sync_url )
 

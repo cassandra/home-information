@@ -1,22 +1,20 @@
+{% if request.view_parameters.view_type.is_location_view %}
+
 {% if request.is_editing %}
 {% include "edit/panes/side.html" %}
 {% else %}
-<div class="border-left" >
-  SIDE PANEL
+{% include "panes/side_default.html" %}
+{% endif %}
 
-  <div class="">
-    <a href="{% url 'config_home_pane' %}"
-       class="btn btn-tertiary btn-control" role="button"
-       data-async="true" >
-      ADMIN
-    </a>
-  </div>
-  <div class="">
-    <a href="{% url 'edit_start' %}"
-       class="btn btn-tertiary btn-control" role="button" >
-      EDIT
-    </a>
-  </div>
+{% elif request.view_parameters.view_type.is_collection %}
 
-</div>
+{% if request.is_editing %}
+{% include "edit/panes/side.html" %}
+{% else %}
+{% include "panes/side_default.html" %}
+{% endif %}
+
+{% else %}
+{% include "panes/side_default.html" %}
+
 {% endif %}

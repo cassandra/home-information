@@ -58,9 +58,6 @@ class EditStartView( View ):
         # Javascript handling is consistent with the current operating
         # state mode.
         
-        if request.view_parameters.view_mode.is_editing:
-            return bad_request_response( request, message = 'Edit mode already started.' )
-
         request.view_parameters.view_mode = ViewMode.EDIT
         request.view_parameters.to_session( request )
 

@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-start draggable-container">
   {% for location_view in location_view_list %}
-  <div class="col-1 {% if request.is_editing %}draggable{% endif %}"
+  <div class="{% if request.is_editing %}draggable{% endif %}"
        {% if request.is_editing %}draggable="true"{% endif %}
        data-id="{{ location_view.html_id }}" >
     <a href="{% url 'location_view' id=location_view.id %}"
@@ -12,7 +12,7 @@
   </div>
   {% endfor %}
   {% if request.is_editing %}
-  <div class="col-1">
+  <div class="">
     <a href="{% url 'location_edit_location_view_add' %}"
        class="btn btn-success btn-control" role="button"
        data-async="modal" >

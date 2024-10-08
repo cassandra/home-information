@@ -1,3 +1,12 @@
 <div class="bg-white p-1">
-  {% include "collection/collection_buttons.html" %}
+  <div class="d-flex justify-content-between">
+    {% include "collection/collection_buttons.html" %}
+    <div>
+      <a href="{% url 'config_home_pane' %}"
+	 class="btn btn-tertiary btn-control" role="button"
+	 data-async="true" >
+	ADMIN
+      </a>
+    </div>
+  </div>
 </div>

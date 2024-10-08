@@ -73,12 +73,12 @@
 	27 // Escape
     ];
 
+    const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3; // Differentiate between move events and sloppy clicks
     const PATH_EDIT_PROXY_POINT_RADIUS_PIXELS = 12;
     const PATH_EDIT_PROXY_LINE_WIDTH_PIXELS = 5;
     const PATH_EDIT_NEW_PATH_RADIUS_PERCENT = 5; // Preferrable if this matches server new path sizing.
     const PATH_EDIT_PROXY_LINE_COLOR = 'red';
     const PATH_EDIT_PROXY_POINT_COLOR = 'red';
-    const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3;
 
     const API_EDIT_SVG_PATH_URL = '/edit/svg/path';
     
@@ -89,16 +89,16 @@
 
     let gSelectedPathSvgGroup = null;
     let gSvgPathEditData = null;
-    let gIgnoreCLick = false;  // Set by mouseup handling when non-click actions are needed
+    let gIgnoreCLick = false;  // Set by mouseup handling when no click handling should be done
             
     $(document).ready(function() {
 
 	$(document).on('click', function(event) {
-	    if ( gHiViewMode != 'edit' ) { return; }
+	    if ( ! Hi.isEditMode ) { return; }
 	    handleClick( event );
 	});
 	$(document).on('keydown', function(event) {
-	    if ( gHiViewMode != 'edit' ) { return; }
+	    if ( ! Hi.isEditMode ) { return; }
 	    handleKeyDown( event );
 	});
     });
@@ -108,6 +108,7 @@
 	    if ( Hi.DEBUG ) { console.log( `Ignoring click [${MODULE_NAME}]`, event ); }
 	    gIgnoreCLick = false;
 	    event.preventDefault(); 
+	    event.stopImmediatePropagation();
 	    return;
 	}
 	gIgnoreCLick = false;
@@ -126,6 +127,7 @@
 	    if ( isSvgIcon && svgItemId ) {
 		handleSvgPathClick( event, enclosingSvgGroup );
 		event.preventDefault(); 
+		event.stopImmediatePropagation();
 		return;
 	    }
 	}
@@ -135,6 +137,7 @@
 	    if ( $(enclosingSvg).hasClass( Hi.LOCATION_VIEW_SVG_CLASS ) ) { 
 		handleProxyPathClick( event );
 		event.preventDefault(); 
+		event.stopImmediatePropagation();
 		return;
 	    }
 	}
@@ -146,9 +149,10 @@
             return;
 	}
 	if ( ! gSvgPathEditData ) {
+	    if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
 	    return;
 	}
-	if ( Hi.DEBUG ) { console.log( 'Key Down', event ); }
+	if ( Hi.DEBUG ) { console.log( `Key Down [${MODULE_NAME}]`, event ); }
 	
 	if ( PATH_ACTION_ADD_KEY_CODES.includes( event.keyCode ) ) {
 	    addProxyPath();
@@ -158,6 +162,7 @@
 	    
 	} else {
 	    if ( ! gSvgPathEditData.selectedProxyElement ) {
+		if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
 		return;
 	    }
 
@@ -169,6 +174,7 @@
 		    deleteProxyLine( gSvgPathEditData.selectedProxyElement );
 
 		} else {
+		    if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
 		    return;
 		}
 		
@@ -189,15 +195,17 @@
 			}
 		    }
 		} else {
+		    if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
 		    return;
 		}
 	    } else {
+		if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
 		return;
 	    }
 	}
 	
-	event.stopPropagation();
 	event.preventDefault();
+	event.stopImmediatePropagation();
     }
 
     function handleSvgPathClick( event, enclosingSvgGroup ) {
@@ -761,6 +769,7 @@
 	// Drag logic for the proxy point
 	$(proxyPoint).on('mousedown', function( event ) {
             event.preventDefault();
+	    event.stopImmediatePropagation();
 
 	    let startMousePosition = {
 		x: event.clientX,
@@ -786,6 +795,7 @@
 		     || ( distanceY > CURSOR_MOVEMENT_THRESHOLD_PIXELS )) {
 		    isDragging = true;
 		    event.preventDefault();
+		    event.stopImmediatePropagation();
 		    gSvgPathEditData.dragProxyPoint = event.target;
 		    const newCx = event.clientX - offsetX;
 		    const newCy = event.clientY - offsetY;
@@ -806,6 +816,7 @@
             // Function to handle mouse up (end of drag)
             function onMouseUp( event ) {
 		event.preventDefault();
+		event.stopImmediatePropagation();
 		saveSvgPath();
 		gSvgPathEditData.dragProxyPoint = null;
 
