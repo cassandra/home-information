@@ -78,6 +78,7 @@
     const PATH_EDIT_NEW_PATH_RADIUS_PERCENT = 5; // Preferrable if this matches server new path sizing.
     const PATH_EDIT_PROXY_LINE_COLOR = 'red';
     const PATH_EDIT_PROXY_POINT_COLOR = 'red';
+    const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3;
 
     const API_EDIT_SVG_PATH_URL = '/edit/svg/path';
     
@@ -103,17 +104,18 @@
     });
 
     function handleClick( event ) {
-	if ( Hi.DEBUG ) {
-            Hi.displayEventInfo( 'Path Edit Click', event );
-            Hi.displayElementInfo( 'Event Target', $(event.target) );
-	}
 	if ( gSelectedPathSvgGroup && gIgnoreCLick ) {
-	    if ( Hi.DEBUG ) { console.log( 'Ignoring click', event ); }
+	    if ( Hi.DEBUG ) { console.log( `Ignoring click [${MODULE_NAME}]`, event ); }
 	    gIgnoreCLick = false;
 	    event.preventDefault(); 
 	    return;
 	}
 	gIgnoreCLick = false;
+
+	if ( Hi.DEBUG ) {
+            console.log( `Click [${MODULE_NAME}]`, event );
+            Hi.displayElementInfo( 'Event Target', $(event.target) );
+	}
 	
 	const enclosingSvgGroup = $(event.target).closest('g');
 	if ( enclosingSvgGroup.length > 0 ) {
@@ -129,11 +131,14 @@
 	}
 
 	if ( gSelectedPathSvgGroup ) {
-	    handleProxyPathClick( event );
-	    event.preventDefault(); 
-	    return;
+	    const enclosingSvg = $(event.target).closest('svg');
+	    if ( $(enclosingSvg).hasClass( Hi.LOCATION_VIEW_SVG_CLASS ) ) { 
+		handleProxyPathClick( event );
+		event.preventDefault(); 
+		return;
+	    }
 	}
-		
+	if ( Hi.DEBUG ) { console.log( `Click skipped [${MODULE_NAME}]` ); }
     }
 
     function handleKeyDown( event ) {
@@ -143,10 +148,8 @@
 	if ( ! gSvgPathEditData ) {
 	    return;
 	}
+	if ( Hi.DEBUG ) { console.log( 'Key Down', event ); }
 	
-        Hi.displayEventInfo( 'Key Down', event );
-	console.log( `KEY '${event.key}', CODE = ${event.keyCode}` );
-
 	if ( PATH_ACTION_ADD_KEY_CODES.includes( event.keyCode ) ) {
 	    addProxyPath();
 	    
@@ -758,26 +761,46 @@
 	// Drag logic for the proxy point
 	$(proxyPoint).on('mousedown', function( event ) {
             event.preventDefault();
+
+	    let startMousePosition = {
+		x: event.clientX,
+		y: event.clientY
+	    };
             const offsetX = event.clientX - parseFloat($(proxyPoint).attr('cx'));
             const offsetY = event.clientY - parseFloat($(proxyPoint).attr('cy'));
-            
+
+	    let isDragging = false;
+	    
             // Function to handle mouse movement
             function onMouseMove( event ) {
-		event.preventDefault();
-		gSvgPathEditData.dragProxyPoint = event.target;
-		const newCx = event.clientX - offsetX;
-		const newCy = event.clientY - offsetY;
-		$(proxyPoint).attr('cx', newCx).attr('cy', newCy);
 
-		// Update the line endpoints to follow proxy point movement
-		if ( $(beforeProxyLine).length > 0 ) {
-                    $(beforeProxyLine).attr('x2', newCx).attr('y2', newCy);
-		}
-		if ( $(afterProxyLine).length > 0 ) {
-                    $(afterProxyLine).attr('x1', newCx).attr('y1', newCy);
-		}
+		let currentMousePosition = {
+		    x: event.clientX,
+		    y: event.clientY
+		};
+		const distanceX = Math.abs( currentMousePosition.x - startMousePosition.x );
+		const distanceY = Math.abs( currentMousePosition.y - startMousePosition.y );
 
-		setSelectedProxyElement(proxyPoint);
+		if ( isDragging
+		     || ( distanceX > CURSOR_MOVEMENT_THRESHOLD_PIXELS )
+		     || ( distanceY > CURSOR_MOVEMENT_THRESHOLD_PIXELS )) {
+		    isDragging = true;
+		    event.preventDefault();
+		    gSvgPathEditData.dragProxyPoint = event.target;
+		    const newCx = event.clientX - offsetX;
+		    const newCy = event.clientY - offsetY;
+		    $(proxyPoint).attr('cx', newCx).attr('cy', newCy);
+
+		    // Update the line endpoints to follow proxy point movement
+		    if ( $(beforeProxyLine).length > 0 ) {
+			$(beforeProxyLine).attr('x2', newCx).attr('y2', newCy);
+		    }
+		    if ( $(afterProxyLine).length > 0 ) {
+			$(afterProxyLine).attr('x1', newCx).attr('y1', newCy);
+		    }
+
+		    setSelectedProxyElement(proxyPoint);
+		}
             }
 
             // Function to handle mouse up (end of drag)
@@ -785,7 +808,10 @@
 		event.preventDefault();
 		saveSvgPath();
 		gSvgPathEditData.dragProxyPoint = null;
-		gIgnoreCLick = true;
+
+		if ( isDragging ) {
+		    gIgnoreCLick = true;
+		}
 		$(document).off('mousemove', onMouseMove);
 		$(document).off('mouseup', onMouseUp);
             }

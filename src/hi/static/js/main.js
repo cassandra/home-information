@@ -4,6 +4,7 @@
 
 	DEBUG: true,
 	LOCATION_VIEW_AREA_SELECTOR: '#hi-location-view-main',
+	LOCATION_VIEW_SVG_CLASS: 'hi-location-view',
 	BASE_SVG_SELECTOR: '#hi-location-view-main > svg',
 	HIGHLIGHTED_CLASS: 'highlighted',
 	DATA_TYPE_ATTR: 'data-type',

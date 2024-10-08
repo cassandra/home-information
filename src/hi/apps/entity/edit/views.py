@@ -14,7 +14,7 @@ from hi.apps.location.forms import SvgPositionForm
 
 from hi.constants import DIVID
 from hi.decorators import edit_required
-from hi.views import bad_request_response, page_not_found_response
+from hi.views import bad_request_response, not_authorized_response, page_not_found_response
 
 from . import forms
 
@@ -111,6 +111,9 @@ class EntityDeleteView( View ):
         except Entity.DoesNotExist:
             return page_not_found_response( request )
 
+        if not entity.can_user_delete:
+            return not_authorized_response( request, message = 'This entity cannot be deleted.' )
+        
         context = {
             'entity': entity,
         }
@@ -121,10 +124,22 @@ class EntityDeleteView( View ):
         )
     
     def post( self, request, *args, **kwargs ):
+        action = request.POST.get( 'action' )
+        if action != 'confirm':
+            return bad_request_response( request, message = 'Missing confirmation value.' )
+
         entity_id = kwargs.get( 'entity_id' )
         if not entity_id:
-            return bad_request_response( request, message = 'Missing entity id in request.' )
+            return bad_request_response( request, message = 'Missing entity id.' )
+        try:
+            entity = Entity.objects.get( id = entity_id )
+        except Entity.DoesNotExist:
+            return page_not_found_response( request )
 
+        if not entity.can_user_delete:
+            return not_authorized_response( request, message = 'This entity cannot be deleted.' )
+                
+        entity.delete()
 
-
-        pass
+        redirect_url = reverse('home')
+        return redirect( redirect_url )

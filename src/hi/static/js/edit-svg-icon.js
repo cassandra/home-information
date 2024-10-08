@@ -50,7 +50,7 @@
     let gSvgIconActionState = SvgActionStateType.MOVE;
     let gSelectedIconSvgGroup = null;
     let gSvgIconDragData = null;
-    let gSvgIconActionData = null;
+    let gSvgIconEditData = null;
 
     let gClickStart = null;
     let gClickTimeout = null;
@@ -83,10 +83,7 @@
     });
 
     function handleMouseDown( event ) {
-	if ( Hi.DEBUG ) {
-            Hi.displayEventInfo( 'Mouse down event: ', event );
-            Hi.displayElementInfo( 'Event target: ', $(event.target) );
-	}
+	if ( Hi.DEBUG ) { Hi.displayEventInfo( `Mouse down event [${MODULE_NAME}]`, event ); }
 
 	// Need to track start time to differentiate drag/scale/rotate actions from regular clicks.
 	gClickStart = {
@@ -95,57 +92,59 @@
 	    time: Date.now()
 	};
 	
-	if ( gSvgIconActionState == SvgActionStateType.MOVE ) {
-
-	    const enclosingSvgGroup = $(event.target).closest('g');
-	    if ( enclosingSvgGroup.length < 1 ) {
-		return;
-	    }
-	    const svgDataType = $(enclosingSvgGroup).attr( Hi.DATA_TYPE_ATTR );
-	    if ( svgDataType == Hi.DATA_TYPE_ICON_VALUE ) {
-		createIconDragData( event, enclosingSvgGroup );
-	    }
-            event.preventDefault();
-	    return;
-	} 
-	if ( gSvgIconActionData ) {
+	if ( gSvgIconEditData ) {
 	    if ( gSvgIconActionState == SvgActionStateType.SCALE ) {
-		gSvgIconActionData.isScaling = true;
-		event.preventDefault();
+		gSvgIconEditData.isScaling = true;
 	    } else if ( gSvgIconActionState == SvgActionStateType.ROTATE ) {
-		gSvgIconActionData.isRotating = true;
-		event.preventDefault();
+		gSvgIconEditData.isRotating = true;
+	    }
+	    event.preventDefault();
+	    return;
+	} else {
+            if ( Hi.DEBUG ) { Hi.displayElementInfo( 'Event target: ', $(event.target) ); }
+	    const enclosingSvgGroup = $(event.target).closest('g');
+	    if ( enclosingSvgGroup.length > 0 ) {
+		const svgDataType = $(enclosingSvgGroup).attr( Hi.DATA_TYPE_ATTR );
+		if ( svgDataType == Hi.DATA_TYPE_ICON_VALUE ) {
+		    createIconDragData( event, enclosingSvgGroup );
+		    event.preventDefault();
+		    return;
+		}
 	    }
 	}
+	if ( Hi.DEBUG ) { console.log( `Mouse down skipped [${MODULE_NAME}]` ); }
     }
     
     function handleMouseUp( event ) {
+	if ( Hi.DEBUG ) { Hi.displayEventInfo( `Mouse up event [${MODULE_NAME}]`, event ); }
+	
 	if ( gSvgIconDragData ) {
 	    if ( gSvgIconDragData.isDragging ) {
 		endDrag( event );
 		$(Hi.BASE_SVG_SELECTOR).attr( ICON_ACTION_STATE_ATTR_NAME, '');
-		event.preventDefault(); 
-		return;
 	    }
 	    $(Hi.BASE_SVG_SELECTOR).attr( ICON_ACTION_STATE_ATTR_NAME, '' );
 	    gSvgIconDragData = null;
+	    event.preventDefault(); 
+	    return;
 	}
 	
-	else if ( gSvgIconActionData ) {
+	else if ( gSvgIconEditData ) {
 	    if ( gSvgIconActionState == SvgActionStateType.SCALE ) {
-		gSvgIconActionData.isScaling = false;
+		gSvgIconEditData.isScaling = false;
 		iconActionScaleApply();
 	    } else if ( gSvgIconActionState == SvgActionStateType.ROTATE ) {
-		gSvgIconActionData.isRotating = false;
+		gSvgIconEditData.isRotating = false;
 		iconActionRotateApply();
 	    }
 	    gSvgIconActionState = SvgActionStateType.MOVE;
 	    $(Hi.BASE_SVG_SELECTOR).attr( ICON_ACTION_STATE_ATTR_NAME, '');
-	    gSvgIconActionData = null;
+	    gSvgIconEditData = null;
 	    gIgnoreCLick = true;
 	    event.preventDefault(); 
-
+	    return;
 	}
+	if ( Hi.DEBUG ) { console.log( `Mouse up skipped [${MODULE_NAME}]` ); }
     }
     
     function handleMouseMove( event ) {
@@ -168,11 +167,11 @@
 		event.preventDefault(); 
 	    }
 	}
-	else if ( gSvgIconActionData ) {
-	    if ( gSvgIconActionData.isScaling ) {
+	else if ( gSvgIconEditData ) {
+	    if ( gSvgIconEditData.isScaling ) {
 		iconActionScaleUpdate( currentMousePosition );
 		event.preventDefault(); 
-	    } else if ( gSvgIconActionData.isRotating ) {
+	    } else if ( gSvgIconEditData.isRotating ) {
 		iconActionRotateUpdate( currentMousePosition );
 		event.preventDefault(); 
 	    }
@@ -183,19 +182,21 @@
     
     function handleClick( event ) {
 	if ( gIgnoreCLick ) {
-	    if ( Hi.DEBUG ) { console.log( 'Ignoring click', event ); }
+	    if ( Hi.DEBUG ) { console.log( `Ignoring click [${MODULE_NAME}]`, event ); }
 	    gIgnoreCLick = false;
 	    event.preventDefault(); 
 	    return;
 	}
 	gIgnoreCLick = false;
 
-        Hi.displayEventInfo( 'Click', event );
-        Hi.displayElementInfo( 'Event Target', $(event.target) );
-		
+	if ( Hi.DEBUG ) {
+            console.log( `Click [${MODULE_NAME}]`, event );
+            Hi.displayElementInfo( 'Event Target', $(event.target) );
+	}
+	
 	const enclosingSvgGroup = $(event.target).closest('g');
 	if ( enclosingSvgGroup.length > 0 ) {
-            Hi.displayElementInfo( 'SVG Target Element', enclosingSvgGroup );
+            if ( Hi.DEBUG ) { console.log( 'SVG Target Element', enclosingSvgGroup ); }
 	    let svgDataType = $(enclosingSvgGroup).attr( Hi.DATA_TYPE_ATTR );
 	    const isSvgIcon = ( svgDataType == Hi.DATA_TYPE_ICON_VALUE );
 	    const svgItemId = enclosingSvgGroup.attr('id');
@@ -205,6 +206,7 @@
 		return;
 	    }
 	}
+	if ( Hi.DEBUG ) { console.log( `Click skipped [${MODULE_NAME}]` ); }
     }
 
     function handleKeyDown( event ) {
@@ -213,8 +215,10 @@
 	}
 	if ( gSelectedIconSvgGroup ) {
 	    handleSvgIconSelectedKeyDown( event );
-	    event.preventDefault(); 
+	    event.preventDefault();
+	    return;
 	}
+	if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
     }
 
     function handleSvgIconSelectedKeyDown( event ) {
@@ -228,7 +232,7 @@
 	    gLastMousePosition.y >= targetOffset.top &&
 	    gLastMousePosition.y <= targetOffset.top + targetHeight) {
 
-            Hi.displayEventInfo( 'Key Down', event );
+       	    if ( Hi.DEBUG ) { Hi.displayEventInfo( 'Key Down', event ); }
 
 	    if ( event.key == ICON_ACTION_SCALE_KEY ) {
 		iconActionRotateAbort();
@@ -381,7 +385,7 @@
             let transform = gSelectedIconSvgGroup.attr('transform');
             let { scale, translate, rotate } = getSvgTransformValues( transform );
 
-	    gSvgIconActionData = {
+	    gSvgIconEditData = {
 		element: gSelectedIconSvgGroup,
 		scaleStart: scale,
 		translateStart: translate,
@@ -396,12 +400,12 @@
     }
 
     function revertIconAction( element ) {
-	if ( gSvgIconActionData ) {
-	    setSvgTransformAttr( gSvgIconActionData.element,
-				 gSvgIconActionData.scaleStart,
-				 gSvgIconActionData.translateStart,
-				 gSvgIconActionData.rotateStart );
-	    gSvgIconActionData = null;
+	if ( gSvgIconEditData ) {
+	    setSvgTransformAttr( gSvgIconEditData.element,
+				 gSvgIconEditData.scaleStart,
+				 gSvgIconEditData.translateStart,
+				 gSvgIconEditData.rotateStart );
+	    gSvgIconEditData = null;
 	}
     }
     
@@ -411,12 +415,12 @@
 
     function iconActionScaleUpdate( currentMousePosition ) {
 
-	let center = getScreenCenterPoint( gSvgIconActionData.element );
+	let center = getScreenCenterPoint( gSvgIconEditData.element );
 
 	let scaleFactor = getScaleFactor( center.x, center.y,
 					  gLastMousePosition.x, gLastMousePosition.y,
 					  currentMousePosition.x, currentMousePosition.y );
-        let transform = gSvgIconActionData.element.attr('transform');
+        let transform = gSvgIconEditData.element.attr('transform');
         let { scale, translate, rotate } = getSvgTransformValues( transform );
 
 	const newScale = {
@@ -433,13 +437,13 @@
     Scale = ${scale.x}, T = ${translate.x}, R = ${rotate.angle}` );
 	}
 
-	setSvgTransformAttr( gSvgIconActionData.element, newScale, translate, rotate );
+	setSvgTransformAttr( gSvgIconEditData.element, newScale, translate, rotate );
 
     }
 
     function iconActionScaleApply() {
 	if ( Hi.DEBUG ) { console.log( 'Scale Apply' ); }
-	saveIconSvgPosition( gSvgIconActionData.element );
+	saveIconSvgPosition( gSvgIconEditData.element );
     }
 
     function iconActionScaleAbort() {
@@ -456,17 +460,17 @@
     function iconActionRotateUpdate( currentMousePosition ) {
 	if ( Hi.DEBUG ) { console.log( 'Rotate Update' ); }
 
-	let center = getScreenCenterPoint( gSvgIconActionData.element );
+	let center = getScreenCenterPoint( gSvgIconEditData.element );
 
 	let deltaAngle = getIconRotationAngle( center.x, center.y,
 					   gLastMousePosition.x, gLastMousePosition.y,
 					   currentMousePosition.x, currentMousePosition.y );
 
-        let transform = gSvgIconActionData.element.attr('transform');
+        let transform = gSvgIconEditData.element.attr('transform');
         let { scale, translate, rotate } = getSvgTransformValues( transform );
 	rotate.angle += deltaAngle;
 	rotate.angle = normalizeAngle( rotate.angle );
-	setSvgTransformAttr( gSvgIconActionData.element, scale, translate, rotate );
+	setSvgTransformAttr( gSvgIconEditData.element, scale, translate, rotate );
     }
 
     function getIconRotationAngle( centerX, centerY, startX, startY, endX, endY ) {
@@ -496,7 +500,7 @@
 
     
     function iconActionRotateApply() {
-	saveIconSvgPosition( gSvgIconActionData.element );
+	saveIconSvgPosition( gSvgIconEditData.element );
     }
     
     function iconActionRotateAbort() {

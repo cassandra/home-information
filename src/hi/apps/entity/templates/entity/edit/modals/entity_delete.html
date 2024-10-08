@@ -1,0 +1,30 @@
+{% extends "modals/action_with_cancel.html" %}
+
+{% block title_text %}
+Delete Entity?
+{% endblock %}
+
+{% block body %}
+
+<div>
+  Please confirm that you want to delete the entity:
+  <ul>
+    {{ entity.name }}
+  </ul>
+</div>
+<div>
+  This action cannot be undone.
+</div>
+{% endblock %}
+
+{% block action_right %}
+<form action="{% url 'entity_edit_entity_delete' entity_id=entity.id %}"
+      method="post" class="form"
+      data-async="true" >
+  {% csrf_token %}
+  <button id="hi-delete-entity-button" type="submit" class="btn btn-lg btn-danger"
+	  name="action" value="confirm">
+    DELETE
+  </button>
+</form>
+{% endblock %}
