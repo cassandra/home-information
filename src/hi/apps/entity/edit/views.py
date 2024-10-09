@@ -1,15 +1,18 @@
 import logging
 
+from django.db import transaction
 from django.shortcuts import redirect
 from django.template.loader import get_template
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
+from hi.apps.collection.edit.helpers import CollectionEditHelpers
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity, EntityPosition
+from hi.apps.location.edit.helpers import LocationEditHelpers
 from hi.apps.location.forms import SvgPositionForm
 
 from hi.constants import DIVID
@@ -87,17 +90,32 @@ class EntityAddView( View ):
         name = cleaned_data.get('name')
         
         try:
-            _ = EntityManager().create_entity(
-                entity_type = entity_type,
-                name = name,
-            )
+            with transaction.atomic():
+                entity = EntityManager().create_entity(
+                    entity_type = entity_type,
+                    name = name,
+                )
+                if ( request.view_parameters.view_type.is_location_view
+                     and request.view_parameters.location_view_id ):
+                    LocationEditHelpers.add_entity_to_view_by_id(
+                        entity = entity,
+                        location_view_id = request.view_parameters.location_view_id,
+                    )
+                    
+                elif ( request.view_parameters.view_type.is_collection
+                       and request.view_parameters.collection_id ):
+                    CollectionEditHelpers.add_entity_to_collection_by_id(
+                        entity = entity,
+                        collection_id = request.view_parameters.collection_id,
+                    )
+                    
+                redirect_url = reverse('home')
+                return redirect( redirect_url )
+    
         except ValueError as e:
             return bad_request_response( request, message = str(e) )
         
-        redirect_url = reverse('home')
-        return redirect( redirect_url )
 
-    
 @method_decorator( edit_required, name='dispatch' )
 class EntityDeleteView( View ):
 

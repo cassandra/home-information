@@ -1,4 +1,5 @@
-<h4>{{ collection.name }}</h4>
+<h5>Collection</h5>
+<div>{{ collection.name }}</div>
 
 {% if svg_position_form %}
 <h5>Position</h5>
@@ -8,6 +9,12 @@
 </div>
 {% endwith %}
 {% endif %}
+
+<h5>View Type</h5>
+<div>{{ collection.collection_type.label }}</div>
+
+<h5>Order Index</h5>
+<div>{{ collection.order_id }}</div>
 
 <h5>Views</h5>
 <div id="hi-edit-collection-views">

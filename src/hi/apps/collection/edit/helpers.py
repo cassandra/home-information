@@ -3,6 +3,7 @@ from typing import List
 from django.db import transaction
 from django.http import HttpRequest
 
+from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.enums import CollectionType
 from hi.apps.collection.models import (
     Collection,
@@ -69,22 +70,38 @@ class CollectionEditHelpers:
     @classmethod
     def toggle_entity_in_collection( cls, entity : Entity, collection : Collection ) -> bool:
 
-        try:
-            collection_entity = CollectionEntity.objects.get(
-                entity = entity,
-                collection = collection,
-            )
-            collection_entity.delete()
+        if CollectionEntity.objects.filter( entity = entity, collection = collection ).exists():
+            cls.remove_entity_from_collection( entity = entity, collection = collection )
             return False
-            
-        except CollectionEntity.DoesNotExist:
-            last_item = CollectionEntity.objects.order_by( '-order_id' ).first()
-            _ = CollectionEntity.objects.create(
+        else:
+            cls.add_entity_to_collection( entity = entity, collection = collection )
+            return True
+
+    @classmethod
+    def add_entity_to_collection_by_id( cls, entity : Entity, collection_id : int ) -> bool:
+        collection = Collection.objects.get( id = collection_id )
+        cls.add_entity_to_collection( entity = entity, collection = collection )
+        return
+
+    @classmethod
+    def add_entity_to_collection( cls, entity : Entity, collection : Collection ) -> bool:
+
+        with transaction.atomic():
+            CollectionManager().create_collection_entity( 
                 entity = entity,
                 collection = collection,
-                order_id = last_item.order_id + 1,
             )
-            return True
+        return
+            
+    @classmethod
+    def remove_entity_from_collection( cls, entity : Entity, collection : Collection ) -> bool:
+
+        with transaction.atomic():
+            CollectionManager().remove_collection_entity( 
+                entity = entity,
+                collection = collection,
+            )
+        return
         
     @classmethod
     def set_collection_entity_order( cls,

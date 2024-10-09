@@ -73,12 +73,19 @@ class CollectionView( HiGridView ):
         )
         context = {
             'is_async_request': is_ajax( request ),
+            'collection': collection,
             'collection_data': collection_data,
         }
+
+        side_template_name = None
+        if request.is_editing:
+            side_template_name = 'edit/panes/side.html'
+
         return self.hi_grid_response( 
             request = request,
             context = context,
             main_template_name = 'collection/collection_view.html',
+            side_template_name = side_template_name,
             push_url_name = 'collection_view',
             push_url_kwargs = kwargs,
         )

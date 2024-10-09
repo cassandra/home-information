@@ -31,6 +31,7 @@ class EntityType(LabeledEnum):
     BAROMETER            = ( 'Barometer', '' )
     CAMERA               = ( 'Camera', '' )
     COMPUTER             = ( 'Computer', '' )
+    CONSUMABLE           = ( 'Consumable', '' )
     CONTROL_WIRE         = ( 'Control Wire', '', True )
     DISPLAY              = ( 'Display', '' )
     DOOR                 = ( 'Door', '' )

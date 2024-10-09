@@ -78,10 +78,16 @@ class LocationViewView( HiGridView ):
             'is_async_request': is_ajax( request ),
             'location_view_data': location_view_data,
         }
+
+        side_template_name = None
+        if request.is_editing:
+            side_template_name = 'edit/panes/side.html'
+            
         return self.hi_grid_response( 
             request = request,
             context = context,
             main_template_name = 'location/location_view.html',
+            side_template_name = side_template_name,
             push_url_name = 'location_view',
             push_url_kwargs = kwargs,
         )

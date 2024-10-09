@@ -142,6 +142,12 @@ class LocationEditHelpers:
         return
     
     @classmethod
+    def add_entity_to_view_by_id( cls, entity : Entity, location_view_id : int ):
+        location_view = LocationView.objects.get( id = location_view_id )
+        cls.add_entity_to_view( entity = entity, location_view = location_view )
+        return
+    
+    @classmethod
     def add_entity_to_view( cls, entity : Entity, location_view : LocationView ):
 
         with transaction.atomic():

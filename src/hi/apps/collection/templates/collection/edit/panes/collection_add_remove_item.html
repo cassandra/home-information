@@ -1,5 +1,14 @@
 <div class="">ADD/REMOVE</div>
 
+<div class="">
+  <a href="{% url 'entity_edit_entity_add' %}"
+     class="btn btn-success btn-control" role="button"
+     data-async="modal" >
+    NEW ITEM
+  </a>
+</div>
+
+
 {% for entity_collection_group in entity_collection_group_list %}
 <div class="">
   <div class="">{{ entity_collection_group.entity_type.label }}</div>
