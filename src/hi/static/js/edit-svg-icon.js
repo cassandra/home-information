@@ -11,7 +11,8 @@
 					this.clearSelection.bind(this) );
         },
         clearSelection: function( data ) {
-	    if ( data != MODULE_NAME ) {
+	    gCurrentSelectionModule = data.moduleName;
+	    if ( data.moduleName != MODULE_NAME ) {
 		clearSelectedIconSvgGroup();
             }
         }	
@@ -47,6 +48,7 @@
 	ROTATE: 'rotate'
     };
     
+    let gCurrentSelectionModule = null;
     let gSvgIconActionState = SvgActionStateType.MOVE;
     let gSelectedIconSvgGroup = null;
     let gSvgIconDragData = null;
@@ -81,7 +83,6 @@
     });
 
     function handleMouseDown( event ) {
-	if ( Hi.DEBUG ) { console.log( `Mouse down event [${MODULE_NAME}]`, event ); }
 
 	// Need to track start time to differentiate drag/scale/rotate actions from regular clicks.
 	gClickStart = {
@@ -91,6 +92,7 @@
 	};
 	
 	if ( gSvgIconEditData ) {
+	    if ( Hi.DEBUG ) { console.log( `Mouse down event [${MODULE_NAME}]`, event ); }
 	    if ( gSvgIconActionState == SvgActionStateType.SCALE ) {
 		gSvgIconEditData.isScaling = true;
 	    } else if ( gSvgIconActionState == SvgActionStateType.ROTATE ) {
@@ -100,11 +102,11 @@
 	    event.stopImmediatePropagation();
 	    return;
 	} else {
-            if ( Hi.DEBUG ) { Hi.displayElementInfo( 'Event target: ', $(event.target) ); }
 	    const enclosingSvgGroup = $(event.target).closest('g');
 	    if ( enclosingSvgGroup.length > 0 ) {
 		const svgDataType = $(enclosingSvgGroup).attr( Hi.DATA_TYPE_ATTR );
 		if ( svgDataType == Hi.DATA_TYPE_ICON_VALUE ) {
+		    if ( Hi.DEBUG ) { console.log( `Mouse down event [${MODULE_NAME}]`, event ); }
 		    createIconDragData( event, enclosingSvgGroup );
 		    event.preventDefault();
 		    event.stopImmediatePropagation();
@@ -120,7 +122,7 @@
 	
 	if ( gSvgIconDragData ) {
 	    if ( gSvgIconDragData.isDragging ) {
-		endDrag( event );
+		applyDrag( event );
 		$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '');
 	    }
 	    $(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
@@ -193,13 +195,9 @@
 	}
 	gIgnoreCLick = false;
 
-	if ( Hi.DEBUG ) {
-            console.log( `Click [${MODULE_NAME}]`, event );
-            Hi.displayElementInfo( 'Event Target', $(event.target) );
-	}
-	
 	const enclosingSvgGroup = $(event.target).closest('g');
 	if ( enclosingSvgGroup.length > 0 ) {
+            console.log( `Click [${MODULE_NAME}]`, event );
             if ( Hi.DEBUG ) { console.log( 'SVG Target Element', enclosingSvgGroup ); }
 	    let svgDataType = $(enclosingSvgGroup).attr( Hi.DATA_TYPE_ATTR );
 	    const isSvgIcon = ( svgDataType == Hi.DATA_TYPE_ICON_VALUE );
@@ -279,7 +277,10 @@
 	clearSelectedIconSvgGroup();
 	gSelectedIconSvgGroup = enclosingSvgGroup;
         $(enclosingSvgGroup).addClass( Hi.HIGHLIGHTED_CLASS );
-	Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, MODULE_NAME );
+	let data = {
+	    moduleName: MODULE_NAME,
+	};
+	Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
         AN.get( `${Hi.API_SHOW_DETAILS_URL}/${svgItemId}` );
     }
     
@@ -359,7 +360,7 @@
 	}
     }
     
-    function endDrag( event ) {
+    function applyDrag( event ) {
         if ( gSvgIconDragData == null ) {
 	    return;
 	}

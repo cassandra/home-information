@@ -1,3 +1,4 @@
+from decimal import Decimal
 import json
 import logging
 
@@ -9,6 +10,7 @@ from django.views.generic import View
 
 from hi.apps.collection.models import Collection
 import hi.apps.common.antinode as antinode
+from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.entity.models import Entity
 from hi.apps.location.location_view_manager import LocationViewManager
 from hi.apps.location.models import LocationView
@@ -287,6 +289,33 @@ class LocationViewReorder( View ):
         LocationEditHelpers.set_location_view_order(
             location_view_id_list = location_view_id_list,
         )            
+        return antinode.response( main_content = 'OK' )        
+        
+
+class LocationViewGeometryView( View ):
+
+    def post(self, request, *args, **kwargs):
+
+        location_view_id = kwargs.get('location_view_id')
+        try:
+            location_view = LocationView.objects.select_related(
+                'location' ).get( id = location_view_id )
+        except LocationView.DoesNotExist:
+            return page_not_found_response( request )
+
+        try:
+            svg_view_box_str = request.POST.get('view_box')
+            svg_view_box = SvgViewBox.from_attribute_value( svg_view_box_str )
+        except (TypeError, ValueError ) as e:
+            return bad_request_response( request, message = f'Bad viewbox: {svg_view_box_str}' )
+
+        try:
+            svg_rotate_angle = float( request.POST.get('rotate_angle'))
+        except (TypeError, ValueError ) as e:
+            return bad_request_response( request, message = f'Bad rotate angle: {svg_rotate_angle}' )
+
+        location_view.svg_view_box_str = str(svg_view_box)
+        location_view.svg_rotate = Decimal( svg_rotate_angle )
+        location_view.save()
+
         return antinode.response( main_content = 'OK' )
-        
-        

@@ -11,7 +11,8 @@
 					this.clearSelection.bind( this ) );
         },
         clearSelection: function( data ) {
-	    if ( data != MODULE_NAME ) {
+	    gCurrentSelectionModule = data.moduleName;
+	    if ( data.moduleName != MODULE_NAME ) {
 		clearSelectedPathSvgGroup();
             }
         }
@@ -87,6 +88,7 @@
 	CLOSED: 'closed'
     };
 
+    let gCurrentSelectionModule = null;
     let gSelectedPathSvgGroup = null;
     let gSvgPathEditData = null;
     let gIgnoreCLick = false;  // Set by mouseup handling when no click handling should be done
@@ -113,13 +115,9 @@
 	}
 	gIgnoreCLick = false;
 
-	if ( Hi.DEBUG ) {
-            console.log( `Click [${MODULE_NAME}]`, event );
-            Hi.displayElementInfo( 'Event Target', $(event.target) );
-	}
-	
 	const enclosingSvgGroup = $(event.target).closest('g');
 	if ( enclosingSvgGroup.length > 0 ) {
+            console.log( `Click [${MODULE_NAME}]`, event );
             Hi.displayElementInfo( 'SVG Target Element', enclosingSvgGroup );
 	    let svgDataType = $(enclosingSvgGroup).attr( Hi.DATA_TYPE_ATTR );
 	    const isSvgIcon = ( svgDataType == Hi.DATA_TYPE_PATH_VALUE );
@@ -159,7 +157,9 @@
 	    
 	} else if ( PATH_ACTION_END_KEY_CODES.includes( event.keyCode ) ) {
 	    clearSelectedPathSvgGroup();
-	    
+	    let data = { moduleName: null };
+	    Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
+
 	} else {
 	    if ( ! gSvgPathEditData.selectedProxyElement ) {
 		if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
@@ -213,7 +213,10 @@
 	clearSelectedPathSvgGroup();
 	gSelectedPathSvgGroup = enclosingSvgGroup;
 	expandSvgPath( enclosingSvgGroup );
-	Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, MODULE_NAME );
+	let data = {
+	    moduleName: MODULE_NAME,
+	};
+	Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
         AN.get( `${Hi.API_SHOW_DETAILS_URL}/${svgItemId}` );
     }
 

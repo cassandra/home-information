@@ -11,7 +11,8 @@
 					this.clearSelection.bind(this) );
         },
         clearSelection: function( data ) {
-	    if ( data != MODULE_NAME ) {
+	    gCurrentSelectionModule = data.moduleName;
+	    if ( data.moduleName != MODULE_NAME ) {
 		clearSelectedLocationViewSvg();
             }
         }	
@@ -34,6 +35,8 @@
     const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3; // Differentiate between move events and sloppy clicks
     const PIXEL_MOVE_DISTANCE_SCALE_FACTOR = 500.0;
     const ZOOM_SCALE_FACTOR_PERCENT = 10.0;
+
+    const API_EDIT_LOCATION_VIEW_GEOMETRY_URL = '/location/edit/location-view/geometry';
     
     const SvgTransformType = {
 	MOVE: 'move',
@@ -42,6 +45,7 @@
     };
     let gSvgTransformType = SvgTransformType.MOVE;
 
+    let gCurrentSelectionModule = null;
     let gSelectedLocationViewSvg = null;
     let gSvgTransformData = null;
     let gLastMousePosition = { x: 0, y: 0 };
@@ -67,28 +71,37 @@
     });
 
     function handleMouseDown( event ) {
-	if ( Hi.DEBUG ) { console.log( `Mouse down event [${MODULE_NAME}]`, event ); }
-
 	if ( gSelectedLocationViewSvg ) {
+	    if ( Hi.DEBUG ) { console.log( `Mouse down event [${MODULE_NAME}]`, event ); }
 	    createTransformData( event, gSelectedLocationViewSvg );
 	    event.preventDefault();
 	    event.stopImmediatePropagation();
 	    return;
+	} else if ( $(event.target).hasClass( Hi.LOCATION_VIEW_SVG_CLASS ) ) {
+	    if ( gCurrentSelectionModule != 'svg-path' ) {
+		if ( Hi.DEBUG ) { console.log( `Mouse down event [${MODULE_NAME}]`, event ); }
+		handleLocationViewSvgClick( event, event.target );
+		createTransformData( event, gSelectedLocationViewSvg );
+		event.preventDefault(); 
+		event.stopImmediatePropagation();
+		return;
+	    }
 	}
+	
 	if ( Hi.DEBUG ) { console.log( `Mouse down skipped [${MODULE_NAME}]` ); }
     }
     
     function handleMouseUp( event ) {
-	if ( Hi.DEBUG ) { console.log( `Mouse up event [${MODULE_NAME}]`, event ); }
 	
 	if ( gSvgTransformData ) {
+	    if ( Hi.DEBUG ) { console.log( `Mouse up event [${MODULE_NAME}]`, event ); }
 	    if ( gSvgTransformType == SvgTransformType.SCALE ) {
 		applyScale( event );
 	    } else if( gSvgTransformType == SvgTransformType.ROTATE ) {
 		applyRotation( event );
 	    } else {
 		if ( gSvgTransformData.isDragging ) {
-		    endDrag( event );
+		    applyDrag( event );
 		}
 	    }
 	    gSvgTransformData = null;
@@ -142,10 +155,8 @@
 	}
 	gIgnoreCLick = false;
 
-	if ( Hi.DEBUG ) { console.log( `Click [${MODULE_NAME}]`, event ); }
-	
 	if ( $(event.target).hasClass( Hi.LOCATION_VIEW_SVG_CLASS ) ) {
-            if ( Hi.DEBUG ) { console.log( 'SVG Target', event.target ); }
+	    if ( Hi.DEBUG ) { console.log( `Click [${MODULE_NAME}]`, event ); }
 	    handleLocationViewSvgClick( event, event.target );
 	    event.preventDefault(); 
 	    event.stopImmediatePropagation();
@@ -236,7 +247,10 @@
 	gSelectedLocationViewSvg = locationViewSvg;
 
 	if ( Hi.isEditMode ) {
-	    Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, MODULE_NAME );
+	    let data = {
+		moduleName: MODULE_NAME,
+	    };
+	    Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
             AN.get( `${Hi.API_SHOW_DETAILS_URL}` );
 	}
     }
@@ -272,17 +286,11 @@
 	return;
     }
 
-    function endDrag( event ) {
-	if ( Hi.DEBUG ) { console.log( `endDrag [${MODULE_NAME}]` ); }
+    function applyDrag( event ) {
+	if ( Hi.DEBUG ) { console.log( `applyDrag [${MODULE_NAME}]` ); }
 	if ( gSvgTransformData && gSvgTransformData.isDragging ) {
 	    gSvgTransformData.isDragging = false;
-	    if ( Hi.isEditMode ) { 
-		let data = {
-		    view_box: $(gSelectedLocationViewSvg).attr('viewBox'),
-		};
-		
-		// ZZZ TODO: AN.post( `${API_EDIT_LOCATION_VIEW_VIEWBOX_URL}/${locationViewId}`, data );
-	    }
+	    saveSvgGeometryIfNeeded();
 	}
     }
 
@@ -291,12 +299,14 @@
 	let scaleFactor = 1.0 / ( 1.0 + ( ZOOM_SCALE_FACTOR_PERCENT / 100.0 ));
 	let initialSvgViewBox = Hi.getSvgViewBox( gSelectedLocationViewSvg );
 	scaleSvgViewBox( initialSvgViewBox, scaleFactor );
+	saveSvgGeometryIfNeeded();
     }
     
     function zoomOut( event ) {
 	let scaleFactor = 1.0 + ( ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
 	let initialSvgViewBox = Hi.getSvgViewBox( gSelectedLocationViewSvg );
 	scaleSvgViewBox( initialSvgViewBox, scaleFactor );
+	saveSvgGeometryIfNeeded();
     }
     
     function startScale( event ) {
@@ -335,13 +345,9 @@
 
     function applyScale( event ) {
 	if ( Hi.DEBUG ) { console.log( `applyScale [${MODULE_NAME}]` ); }
-
-	// ZZZ
-
-
-
 	gSvgTransformType = SvgTransformType.MOVE;	
 	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );	
+	saveSvgGeometryIfNeeded();
     }
 
     function abortScale( event ) {
@@ -386,15 +392,9 @@
     
     function applyRotation( event ) {
 	if ( Hi.DEBUG ) { console.log( `applyRotation [${MODULE_NAME}]` ); }
-
-
-	
-	// ZZZ
-
-
 	gSvgTransformType = SvgTransformType.MOVE;	
 	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
-	
+	saveSvgGeometryIfNeeded();	
     }
     
     function abortRotation( event ) {
@@ -496,6 +496,25 @@
 	let newX = point.x * Math.cos(radians) - point.y * Math.sin(radians);
 	let newY = point.x * Math.sin(radians) + point.y * Math.cos(radians);
 	return { x: newX, y: newY };
+    }
+
+    function saveSvgGeometryIfNeeded( ) {
+	if ( ! Hi.isEditMode || ! gSelectedLocationViewSvg ) {
+	    return;
+	}
+	if ( Hi.DEBUG ) { console.log( `Saving SVG geometry [${MODULE_NAME}]` ); }
+
+	let locationViewId = $(gSelectedLocationViewSvg).attr('location-view-id');
+	
+	let svgViewBoxStr = $(gSelectedLocationViewSvg).attr('viewBox');
+        let transform = $(gSelectedLocationViewSvg).attr('transform');
+        let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
+	let data = {
+	    view_box: svgViewBoxStr,
+	    rotate_angle: rotate.angle
+	};
+	
+	AN.post( `${API_EDIT_LOCATION_VIEW_GEOMETRY_URL}/${locationViewId}`, data );
     }
     
 })();
