@@ -133,6 +133,12 @@ class EditDetailsView( View, EditViewMixin ):
         return bad_request_response( request, message = 'Unknown item type "{item_type}".' )
 
     def get_default_details( self, request ):
+        if request.view_parameters.view_type.is_location_view:
+            return location_edit_views.LocationViewDetailsView().get(
+                request = request,
+                location_view_id = request.view_parameters.location_view_id,
+            )
+            
         return self.get_edit_side_panel_response(
             request = request,
             template_name = 'edit/panes/default.html',

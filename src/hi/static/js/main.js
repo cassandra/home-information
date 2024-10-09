@@ -30,6 +30,9 @@
 	getSvgViewBox: function( svgElement ) {
 	    return _getSvgViewBox( svgElement );
 	},
+	getExtentsSvgViewBox: function( svgElement ) {
+	    return _getExtentsSvgViewBox( svgElement );
+	},
 	getSvgCenterPoint: function( element, svgElement ) {
 	    return _getSvgCenterPoint( element, svgElement );
 	},
@@ -103,7 +106,7 @@
 	return (angle % 360 + 360) % 360;
     }
 
-    function _getSvgViewBox( svgElement ) {
+    function _getSvgViewBox( svgElement, attrName = 'viewBox' ) {
 	let x = null;
 	let y = null;
 	let width = null;
@@ -112,7 +115,7 @@
 	if (svgElement.length < 1 ) {
 	    return { x, y, width, height };
 	}
-        let viewBoxValue = $(svgElement).attr('viewBox');
+        let viewBoxValue = $(svgElement).attr( attrName );
         if ( ! viewBoxValue) {
 	    return { x, y, width, height };
 	}
@@ -124,6 +127,11 @@
 	height = viewBoxArray[3];
 	
 	return { x, y, width, height };
+    }
+
+    function _getExtentsSvgViewBox( svgElement ) {
+	// Hi-specific attribute used for pan, zoom and edit operations.
+	return _getSvgViewBox( svgElement, 'extents' );
     }
     
     function _getSvgCenterPoint( element, svgElement ) {

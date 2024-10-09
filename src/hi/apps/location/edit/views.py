@@ -14,7 +14,7 @@ from hi.apps.location.location_view_manager import LocationViewManager
 from hi.apps.location.models import LocationView
 from hi.decorators import edit_required
 from hi.enums import ViewType
-from hi.views import bad_request_response
+from hi.views import bad_request_response, page_not_found_response
 
 from hi.constants import DIVID
 
@@ -23,6 +23,33 @@ from .helpers import LocationEditHelpers
 
 
 logger = logging.getLogger(__name__)
+
+
+@method_decorator( edit_required, name='dispatch' )
+class LocationViewDetailsView( View ):
+
+    def get( self, request, *args, **kwargs ):
+        location_view_id = kwargs.get( 'location_view_id' )
+        if not location_view_id:
+            return bad_request_response( request, message = 'Missing location_view id in request.' )
+        try:
+            location_view = LocationView.objects.get( id = location_view_id )
+        except LocationView.DoesNotExist:
+            return page_not_found_response( request )
+                
+        location_view_data = LocationViewManager().get_location_view_data(
+            location_view = location_view,
+        )
+        context = {
+            'location_view_data': location_view_data,
+        }
+        template = get_template( 'location/edit/panes/location_view_details.html' )
+        content = template.render( context, request = request )
+        return antinode.response(
+            insert_map = {
+                DIVID['EDIT_ITEM']: content,
+            },
+        )     
 
 
 @method_decorator( edit_required, name='dispatch' )

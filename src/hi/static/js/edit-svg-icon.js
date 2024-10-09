@@ -459,6 +459,18 @@
 	adjustIconScale( gSvgIconEditData.element, scaleFactor );
     }
 
+    function iconActionScaleApply() {
+	if ( Hi.DEBUG ) { console.log( 'Scale Apply' ); }
+	saveIconSvgPosition( gSvgIconEditData.element );
+    }
+
+    function iconActionScaleAbort() {
+	if ( gSvgIconActionState != SvgActionStateType.SCALE ) {
+	    return;
+	}
+	revertIconAction();
+    }
+
     function adjustIconScale( svgIconElement, scaleFactor ) {
         let transform = svgIconElement.attr('transform');
         let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
@@ -480,18 +492,6 @@
 	setSvgTransformAttr( svgIconElement, newScale, translate, rotate );
     }
     
-    function iconActionScaleApply() {
-	if ( Hi.DEBUG ) { console.log( 'Scale Apply' ); }
-	saveIconSvgPosition( gSvgIconEditData.element );
-    }
-
-    function iconActionScaleAbort() {
-	if ( gSvgIconActionState != SvgActionStateType.SCALE ) {
-	    return;
-	}
-	revertIconAction();
-    }
-
     function iconActionRotateStart() {
 	createIconEditActionData( SvgActionStateType.ROTATE );	
     }

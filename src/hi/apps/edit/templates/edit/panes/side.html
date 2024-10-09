@@ -18,9 +18,11 @@
 
   <div id="hi-edit-item">
     {% if entity %}
-    {% include "edit/panes/entity_details.html" %}
+    {% include "entity/edit/panes/entity_details.html" %}
     {% elif collection %}
-    {% include "edit/panes/details_collection.html" %}
+    {% include "collection/edit/panes/collection_details.html" %}
+    {% elif request.view_parameters.view_type.is_location_view %}
+    {% include "location/edit/panes/location_view_details.html" %}
     {% else %}
     {% include "edit/panes/default.html" %}
     {% endif %}

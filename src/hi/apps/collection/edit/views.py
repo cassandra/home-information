@@ -26,6 +26,42 @@ logger = logging.getLogger(__name__)
 
 
 @method_decorator( edit_required, name='dispatch' )
+class CollectionDetailsView( View ):
+
+    def get( self, request, *args, **kwargs ):
+        collection_id = kwargs.get( 'collection_id' )
+        if not collection_id:
+            return bad_request_response( request, message = 'Missing collection id in request.' )
+        try:
+            collection = Collection.objects.get( id = collection_id )
+        except Collection.DoesNotExist:
+            return page_not_found_response( request )
+
+        location_view = request.view_parameters.location_view
+
+        svg_position_form = None
+        if request.view_parameters.view_type.is_location_view:
+            collection_position = CollectionPosition.objects.filter(
+                collection = collection,
+                location = location_view.location,
+            ).first()
+            if collection_position:
+                svg_position_form = SvgPositionForm.from_svg_position_model( collection_position )
+            
+        context = {
+            'collection': collection,
+            'svg_position_form': svg_position_form,
+        }
+        template = get_template( 'collection/edit/panes/collection_details.html' )
+        content = template.render( context, request = request )
+        return antinode.response(
+            insert_map = {
+                DIVID['EDIT_ITEM']: content,
+            },
+        )     
+
+    
+@method_decorator( edit_required, name='dispatch' )
 class CollectionAddView( View ):
 
     def get( self, request, *args, **kwargs ):
@@ -118,42 +154,6 @@ class CollectionDeleteView( View ):
         redirect_url = reverse('home')
         return redirect( redirect_url )
     
-    
-@method_decorator( edit_required, name='dispatch' )
-class CollectionDetailsView( View ):
-
-    def get( self, request, *args, **kwargs ):
-        collection_id = kwargs.get( 'collection_id' )
-        if not collection_id:
-            return bad_request_response( request, message = 'Missing collection id in request.' )
-        try:
-            collection = Collection.objects.get( id = collection_id )
-        except Collection.DoesNotExist:
-            return page_not_found_response( request )
-
-        location_view = request.view_parameters.location_view
-
-        svg_position_form = None
-        if request.view_parameters.view_type.is_location_view:
-            collection_position = CollectionPosition.objects.filter(
-                collection = collection,
-                location = location_view.location,
-            ).first()
-            if collection_position:
-                svg_position_form = SvgPositionForm.from_svg_position_model( collection_position )
-            
-        context = {
-            'collection': collection,
-            'svg_position_form': svg_position_form,
-        }
-        template = get_template( 'collection/edit/panes/collection_details.html' )
-        content = template.render( context, request = request )
-        return antinode.response(
-            insert_map = {
-                DIVID['EDIT_ITEM']: content,
-            },
-        )     
-
     
 @method_decorator( edit_required, name='dispatch' )
 class CollectionAddRemoveItemView( View ):

@@ -81,13 +81,15 @@
     function handleMouseUp( event ) {
 	if ( Hi.DEBUG ) { console.log( `Mouse up event [${MODULE_NAME}]`, event ); }
 	
-	if ( gSvgTransformData && gSvgTransformData.isDragging ) {
+	if ( gSvgTransformData ) {
 	    if ( gSvgTransformType == SvgTransformType.SCALE ) {
 		applyScale( event );
 	    } else if( gSvgTransformType == SvgTransformType.ROTATE ) {
 		applyRotation( event );
 	    } else {
-		endDrag( event );
+		if ( gSvgTransformData.isDragging ) {
+		    endDrag( event );
+		}
 	    }
 	    gSvgTransformData = null;
 	    gSvgTransformType = SvgTransformType.MOVE;
@@ -217,8 +219,8 @@
 		x: event.clientX,
 		y: event.clientY,
 	    },
-	    originalSvgRotate: rotate,
-	    originalSvgViewBox: svgViewBox
+	    initialSvgRotate: rotate,
+	    initialSvgViewBox: svgViewBox
 	};
     }
 
@@ -253,16 +255,21 @@
 	    x: ( event.clientX - gSvgTransformData.clickStart.x ) / pixelsPerSvgUnit.scaleX,
 	    y: ( event.clientY - gSvgTransformData.clickStart.y ) / pixelsPerSvgUnit.scaleX
 	};
+
+	let transform = $(gSelectedLocationViewSvg).attr('transform');
+        let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
+	deltaSvgUnits = rotateVector( deltaSvgUnits, -1.0 * rotate.angle );
 	
-	let svgViewBox = {
-	    x: gSvgTransformData.originalSvgViewBox.x - deltaSvgUnits.x,
-	    y: gSvgTransformData.originalSvgViewBox.y - deltaSvgUnits.y,
-	    width: gSvgTransformData.originalSvgViewBox.width,
-	    height: gSvgTransformData.originalSvgViewBox.height
-	};
-	
-	let svgViewBoxStr = `${svgViewBox.x} ${svgViewBox.y} ${svgViewBox.width} ${svgViewBox.height}`;
-        $(gSelectedLocationViewSvg).attr('viewBox', svgViewBoxStr );	    
+	let newX = gSvgTransformData.initialSvgViewBox.x - deltaSvgUnits.x;
+	let newY = gSvgTransformData.initialSvgViewBox.y - deltaSvgUnits.y;
+
+	adjustSvgViewBox( gSvgTransformData.initialSvgViewBox,
+			  gSvgTransformData.initialSvgViewBox.width,
+			  gSvgTransformData.initialSvgViewBox.height,
+			  newX,
+			  newY );
+
+	return;
     }
 
     function endDrag( event ) {
@@ -282,14 +289,14 @@
 
     function zoomIn( event ) {
 	let scaleFactor = 1.0 / ( 1.0 + ( ZOOM_SCALE_FACTOR_PERCENT / 100.0 ));
-	let originalSvgViewBox = Hi.getSvgViewBox( gSelectedLocationViewSvg );
-	adjustSvgViewBox( originalSvgViewBox, scaleFactor );
+	let initialSvgViewBox = Hi.getSvgViewBox( gSelectedLocationViewSvg );
+	scaleSvgViewBox( initialSvgViewBox, scaleFactor );
     }
     
     function zoomOut( event ) {
 	let scaleFactor = 1.0 + ( ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
-	let originalSvgViewBox = Hi.getSvgViewBox( gSelectedLocationViewSvg );
-	adjustSvgViewBox( originalSvgViewBox, scaleFactor );
+	let initialSvgViewBox = Hi.getSvgViewBox( gSelectedLocationViewSvg );
+	scaleSvgViewBox( initialSvgViewBox, scaleFactor );
     }
     
     function startScale( event ) {
@@ -321,31 +328,11 @@
 					   + ( endVector.y * endVector.y ));
 	const vectorLengthDelta = endVectorLength - startVectorLength;
 
-	let scale = ( 1.0 - ( vectorLengthDelta / PIXEL_MOVE_DISTANCE_SCALE_FACTOR ));
+	let scaleFactor = ( 1.0 - ( vectorLengthDelta / PIXEL_MOVE_DISTANCE_SCALE_FACTOR ));
 
-	adjustSvgViewBox( scale, gSvgTransformData.originalSvgViewBox );
+	scaleSvgViewBox( gSvgTransformData.initialSvgViewBox, scaleFactor );
     }
 
-    function adjustSvgViewBox( originalSvgViewBox, scaleFactor ) {
-	
-	let svgViewBox = {
-	    x: originalSvgViewBox.x,
-	    y: originalSvgViewBox.y,
-	    width: scaleFactor * originalSvgViewBox.width,
-	    height: scaleFactor * originalSvgViewBox.height
-	};
-
-	let svgOffset = {
-	    x: ( originalSvgViewBox.width - svgViewBox.width ) / 2.0,
-	    y: ( originalSvgViewBox.height - svgViewBox.height ) / 2.0
-	};
-	svgViewBox.x += svgOffset.x;
-	svgViewBox.y += svgOffset.y;
-	
-	let svgViewBoxStr = `${svgViewBox.x} ${svgViewBox.y} ${svgViewBox.width} ${svgViewBox.height}`;
-        $(gSelectedLocationViewSvg).attr('viewBox', svgViewBoxStr );	    
-    }
-    
     function applyScale( event ) {
 	if ( Hi.DEBUG ) { console.log( `applyScale [${MODULE_NAME}]` ); }
 
@@ -364,6 +351,14 @@
 	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
     }
 
+    function scaleSvgViewBox( initialSvgViewBox, scaleFactor ) {
+
+	let newWidth = scaleFactor * initialSvgViewBox.width;
+	let newHeight = scaleFactor * initialSvgViewBox.height;
+	adjustSvgViewBox( initialSvgViewBox, newWidth, newHeight );
+	return;
+    }
+    
     function startRotation( event ) {
 	if ( Hi.DEBUG ) { console.log( `startRotation [${MODULE_NAME}]` ); }
 	gSvgTransformType = SvgTransformType.ROTATE;	
@@ -409,6 +404,98 @@
 	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
     }
 
+    function adjustSvgViewBox( initialSvgViewBox, newWidth, newHeight, newX = null, newY = null ) {
+
+	// Need to account for possible SVG rotation
+        let transform = $(gSelectedLocationViewSvg).attr('transform');
+        let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
+
+	// Adjust the dimensions to fill as much as the screen as possible
+	let containerRect = $(Hi.LOCATION_VIEW_AREA_SELECTOR)[0].getBoundingClientRect();
+	let containerAspectRatio = containerRect.width / containerRect.height;
+	let newAspectRatio = newWidth / newHeight;
+
+	if ( newAspectRatio > containerAspectRatio ) {
+	    newHeight = newWidth / containerAspectRatio;
+	} else if ( newAspectRatio < containerAspectRatio ) {
+	    newWidth = newHeight * containerAspectRatio;
+	}
+
+	// Ensure the new viewBox is clamped within the extents of the SVG
+	let extentsSvgViewBox = Hi.getExtentsSvgViewBox( gSelectedLocationViewSvg );
+
+	extentsSvgViewBox = calculateRotatedRectangle( extentsSvgViewBox, rotate.angle );
+	
+	newWidth = Math.min( newWidth, extentsSvgViewBox.width );
+	newHeight = Math.min( newHeight, extentsSvgViewBox.height );
+
+	// Center the new viewBox within the initial viewBox (if no explicit newX/newY)
+	if ( ! newX ) {
+	    newX = initialSvgViewBox.x + ( initialSvgViewBox.width - newWidth ) / 2.0;
+	}
+	if ( ! newY ) {
+	    newY = initialSvgViewBox.y + ( initialSvgViewBox.height - newHeight ) / 2.0;
+	}
+	
+	if (newX < extentsSvgViewBox.x) {
+            newX = extentsSvgViewBox.x;
+	}
+	if (newY < extentsSvgViewBox.y) {
+            newY = extentsSvgViewBox.y;
+	}
+	if (( newX + newWidth ) > ( extentsSvgViewBox.x + extentsSvgViewBox.width )) {
+            newX = extentsSvgViewBox.x + extentsSvgViewBox.width - newWidth;
+	}
+	if (( newY + newHeight ) > ( extentsSvgViewBox.y + extentsSvgViewBox.height )) {
+            newY = extentsSvgViewBox.y + extentsSvgViewBox.height - newHeight;
+	}
+
+	let svgViewBoxStr = `${newX} ${newY} ${newWidth} ${newHeight}`;
+        $(gSelectedLocationViewSvg).attr('viewBox', svgViewBoxStr );	    	
+    }
     
+    function calculateRotatedRectangle( initialRect, rotationAngle ) {
+
+	let corners = [
+            { x: initialRect.x, y: initialRect.y },
+            { x: initialRect.x + initialRect.width, y: initialRect.y },
+            { x: initialRect.x, y: initialRect.y + initialRect.height },
+            { x: initialRect.x + initialRect.width, y: initialRect.y + initialRect.height }
+	];
+	
+	// Rotate the corners around the center of the viewBox
+	let centerX = initialRect.x + ( initialRect.width / 2.0 );
+	let centerY = initialRect.y + ( initialRect.height / 2.0 );
+	let radians = (Math.PI / 180) * rotationAngle;
+	
+	let rotatedCorners = corners.map((corner) => {
+            let dx = corner.x - centerX;
+            let dy = corner.y - centerY;
+            return {
+		x: centerX + (dx * Math.cos(radians) - dy * Math.sin(radians)),
+		y: centerY + (dx * Math.sin(radians) + dy * Math.cos(radians)),
+            };
+	});
+	
+	// Calculate the new bounding box from the rotated corners
+	let minX = Math.min(...rotatedCorners.map(c => c.x));
+	let minY = Math.min(...rotatedCorners.map(c => c.y));
+	let maxX = Math.max(...rotatedCorners.map(c => c.x));
+	let maxY = Math.max(...rotatedCorners.map(c => c.y));
+	
+	return {
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY,
+	};
+    }
+
+    function rotateVector( point, rotationAngle ) {
+	let radians = (Math.PI / 180) * rotationAngle;
+	let newX = point.x * Math.cos(radians) - point.y * Math.sin(radians);
+	let newY = point.x * Math.sin(radians) + point.y * Math.cos(radians);
+	return { x: newX, y: newY };
+    }
     
 })();
