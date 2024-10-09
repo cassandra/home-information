@@ -33,8 +33,11 @@
     
     const ICON_ACTION_SCALE_KEY = 's';
     const ICON_ACTION_ROTATE_KEY = 'r';
+    const ICON_ACTION_ZOOM_IN_KEY = '+';
+    const ICON_ACTION_ZOOM_OUT_KEY = '-';
 
     const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3; // Differentiate between move events and sloppy clicks
+    const ZOOM_SCALE_FACTOR_PERCENT = 10.0;
 
     const API_EDIT_SVG_POSITION_URL = '/edit/svg/position';
         
@@ -246,6 +249,16 @@
 		iconActionScaleAbort();
 		iconActionRotateStart();
 		
+	    } else if ( event.key == ICON_ACTION_ZOOM_IN_KEY ) {
+		iconActionScaleAbort();
+		iconActionRotateAbort();
+		iconActionZoomIn();
+		
+	    } else if ( event.key == ICON_ACTION_ZOOM_OUT_KEY ) {
+		iconActionScaleAbort();
+		iconActionRotateAbort();
+		iconActionZoomOut();
+		
 	    } else if ( event.key == 'Escape' ) {
 		iconActionScaleAbort();
 		iconActionRotateAbort();
@@ -413,6 +426,22 @@
 	    gSvgIconEditData = null;
 	}
     }
+
+    function iconActionZoomIn() {
+	if ( gSelectedIconSvgGroup ) {
+	    let scaleFactor = 1.0 + ( ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
+	    adjustIconScale( gSelectedIconSvgGroup, scaleFactor );
+	    saveIconSvgPosition( gSelectedIconSvgGroup );
+	}
+    }
+    
+    function iconActionZoomOut() {
+	if ( gSelectedIconSvgGroup ) {
+	    let scaleFactor = 1.0 / ( 1.0 + ( ZOOM_SCALE_FACTOR_PERCENT / 100.0 ));
+	    adjustIconScale( gSelectedIconSvgGroup, scaleFactor );
+	    saveIconSvgPosition( gSelectedIconSvgGroup );
+	}
+    }
     
     function iconActionScaleStart() {
 	createIconEditActionData( SvgActionStateType.SCALE );	
@@ -426,7 +455,12 @@
 	let scaleFactor = getScaleFactor( center.x, center.y,
 					  gLastMousePosition.x, gLastMousePosition.y,
 					  currentMousePosition.x, currentMousePosition.y );
-        let transform = gSvgIconEditData.element.attr('transform');
+
+	adjustIconScale( gSvgIconEditData.element, scaleFactor );
+    }
+
+    function adjustIconScale( svgIconElement, scaleFactor ) {
+        let transform = svgIconElement.attr('transform');
         let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
 
 	const newScale = {
@@ -439,14 +473,13 @@
 
 	if ( Hi.DEBUG ) {
 	    console.log( `Scale Update:
-    Transform:  ${transform}
-    Scale = ${scale.x}, T = ${translate.x}, R = ${rotate.angle}` );
+    Original:  ${transform}
+         New: ${scale.x}, T = ${translate.x}, R = ${rotate.angle}` );
 	}
 
-	setSvgTransformAttr( gSvgIconEditData.element, newScale, translate, rotate );
-
+	setSvgTransformAttr( svgIconElement, newScale, translate, rotate );
     }
-
+    
     function iconActionScaleApply() {
 	if ( Hi.DEBUG ) { console.log( 'Scale Apply' ); }
 	saveIconSvgPosition( gSvgIconEditData.element );

@@ -26,10 +26,14 @@
       - For panning, zooming and rotating of the underlying background SVG of a location view.
     */
 
-    const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3; // Differentiate between move events and sloppy clicks
     const SVG_TRANSFORM_ACTION_SCALE_KEY = 's';
     const SVG_TRANSFORM_ACTION_ROTATE_KEY = 'r';
+    const SVG_TRANSFORM_ACTION_ZOOM_IN_KEY = '+';
+    const SVG_TRANSFORM_ACTION_ZOOM_OUT_KEY = '-';
+
+    const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3; // Differentiate between move events and sloppy clicks
     const PIXEL_MOVE_DISTANCE_SCALE_FACTOR = 500.0;
+    const ZOOM_SCALE_FACTOR_PERCENT = 10.0;
     
     const SvgTransformType = {
 	MOVE: 'move',
@@ -174,6 +178,16 @@
 		    abortScale();
 		    startRotation();
 		    
+		} else if ( event.key == SVG_TRANSFORM_ACTION_ZOOM_IN_KEY ) {
+		    abortScale();
+		    abortRotation();
+		    zoomIn( event );
+		    
+		} else if ( event.key == SVG_TRANSFORM_ACTION_ZOOM_OUT_KEY ) {
+		    abortScale();
+		    abortRotation();
+		    zoomOut( event );
+		    
 		} else if ( event.key == 'Escape' ) {
 		    abortScale();
 		    abortRotation();
@@ -218,8 +232,11 @@
 
     function handleLocationViewSvgClick( event, locationViewSvg ) {
 	gSelectedLocationViewSvg = locationViewSvg;
-	Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, MODULE_NAME );
-        AN.get( `${Hi.API_SHOW_DETAILS_URL}` );
+
+	if ( Hi.isEditMode ) {
+	    Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, MODULE_NAME );
+            AN.get( `${Hi.API_SHOW_DETAILS_URL}` );
+	}
     }
 
     function startDrag( event ) {
@@ -250,21 +267,36 @@
 
     function endDrag( event ) {
 	if ( Hi.DEBUG ) { console.log( `endDrag [${MODULE_NAME}]` ); }
-
-	if ( Hi.isEditMode ) { 
-	    let data = {
-		view_box: $(gSelectedLocationViewSvg).attr('viewBox'),
-	    };
-
-	    // ZZZ TODO: AN.post( `${API_EDIT_LOCATION_VIEW_VIEWBOX_URL}/${locationViewId}`, data );
+	if ( gSvgTransformData && gSvgTransformData.isDragging ) {
+	    gSvgTransformData.isDragging = false;
+	    if ( Hi.isEditMode ) { 
+		let data = {
+		    view_box: $(gSelectedLocationViewSvg).attr('viewBox'),
+		};
+		
+		// ZZZ TODO: AN.post( `${API_EDIT_LOCATION_VIEW_VIEWBOX_URL}/${locationViewId}`, data );
+	    }
 	}
     }
 
+
+    function zoomIn( event ) {
+	let scaleFactor = 1.0 / ( 1.0 + ( ZOOM_SCALE_FACTOR_PERCENT / 100.0 ));
+	let originalSvgViewBox = Hi.getSvgViewBox( gSelectedLocationViewSvg );
+	adjustSvgViewBox( originalSvgViewBox, scaleFactor );
+    }
+    
+    function zoomOut( event ) {
+	let scaleFactor = 1.0 + ( ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
+	let originalSvgViewBox = Hi.getSvgViewBox( gSelectedLocationViewSvg );
+	adjustSvgViewBox( originalSvgViewBox, scaleFactor );
+    }
+    
     function startScale( event ) {
 	if ( Hi.DEBUG ) { console.log( `startScale [${MODULE_NAME}]` ); }
 
 	gSvgTransformType = SvgTransformType.SCALE;
-	$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, gSvgTransformType );
+	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, gSvgTransformType );
     }
 
     function updateScale( event ) {
@@ -290,28 +322,30 @@
 	const vectorLengthDelta = endVectorLength - startVectorLength;
 
 	let scale = ( 1.0 - ( vectorLengthDelta / PIXEL_MOVE_DISTANCE_SCALE_FACTOR ));
+
+	adjustSvgViewBox( scale, gSvgTransformData.originalSvgViewBox );
+    }
+
+    function adjustSvgViewBox( originalSvgViewBox, scaleFactor ) {
 	
 	let svgViewBox = {
-	    x: gSvgTransformData.originalSvgViewBox.x,
-	    y: gSvgTransformData.originalSvgViewBox.y,
-	    width: scale * gSvgTransformData.originalSvgViewBox.width,
-	    height: scale * gSvgTransformData.originalSvgViewBox.height
+	    x: originalSvgViewBox.x,
+	    y: originalSvgViewBox.y,
+	    width: scaleFactor * originalSvgViewBox.width,
+	    height: scaleFactor * originalSvgViewBox.height
 	};
 
 	let svgOffset = {
-	    x: ( gSvgTransformData.originalSvgViewBox.width - svgViewBox.width ) / 2.0,
-	    y: ( gSvgTransformData.originalSvgViewBox.height - svgViewBox.height ) / 2.0
+	    x: ( originalSvgViewBox.width - svgViewBox.width ) / 2.0,
+	    y: ( originalSvgViewBox.height - svgViewBox.height ) / 2.0
 	};
 	svgViewBox.x += svgOffset.x;
 	svgViewBox.y += svgOffset.y;
-    
-    
-	    
 	
 	let svgViewBoxStr = `${svgViewBox.x} ${svgViewBox.y} ${svgViewBox.width} ${svgViewBox.height}`;
         $(gSelectedLocationViewSvg).attr('viewBox', svgViewBoxStr );	    
     }
-
+    
     function applyScale( event ) {
 	if ( Hi.DEBUG ) { console.log( `applyScale [${MODULE_NAME}]` ); }
 
@@ -320,19 +354,20 @@
 
 
 	gSvgTransformType = SvgTransformType.MOVE;	
-	$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );	
+	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );	
     }
 
     function abortScale( event ) {
 	if ( Hi.DEBUG ) { console.log( `abortScale [${MODULE_NAME}]` ); }
+	gSvgTransformData = null;
 	gSvgTransformType = SvgTransformType.MOVE;	
-	$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
+	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
     }
 
     function startRotation( event ) {
 	if ( Hi.DEBUG ) { console.log( `startRotation [${MODULE_NAME}]` ); }
 	gSvgTransformType = SvgTransformType.ROTATE;	
-	$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, gSvgTransformType );
+	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, gSvgTransformType );
     }
     
     function updateRotation( event ) {
@@ -363,14 +398,15 @@
 
 
 	gSvgTransformType = SvgTransformType.MOVE;	
-	$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
+	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
 	
     }
     
     function abortRotation( event ) {
 	if ( Hi.DEBUG ) { console.log( `abortRotation [${MODULE_NAME}]` ); }
+	gSvgTransformData = null;
 	gSvgTransformType = SvgTransformType.MOVE;	
-	$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
+	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
     }
 
     
