@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Set
 
-from hi.apps.collection.models import Collection, CollectionPosition
+from hi.apps.collection.models import Collection, CollectionPath, CollectionPosition
 from hi.apps.entity.models import Entity, EntityPosition, EntityPath
 
 from .models import LocationView
@@ -17,5 +17,6 @@ class LocationViewData:
     entity_positions          : List[ EntityPosition ]
     entity_paths              : List[ EntityPath ]
     collection_positions      : List[ CollectionPosition ]
+    collection_paths          : List[ CollectionPath ]
     unpositioned_collections  : List[ Collection ]
     orphan_entities           : Set[ Entity ]

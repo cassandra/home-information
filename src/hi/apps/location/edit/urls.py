@@ -26,7 +26,7 @@ urlpatterns = [
              name='location_edit_location_view_entity_toggle' ),
 
     re_path( r'^location-view/collection/toggle/(?P<location_view_id>\d+)/(?P<collection_id>\d+)$', 
-             views.LocationViewEntityToggleCollectionView.as_view(), 
+             views.LocationViewCollectionToggleView.as_view(), 
              name='location_edit_location_view_collection_toggle' ),
 
     re_path( r'^location-view/geometry/(?P<location_view_id>\d+)$', 

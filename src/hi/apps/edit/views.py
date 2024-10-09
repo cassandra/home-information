@@ -12,7 +12,7 @@ from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
 import hi.apps.collection.edit.views as collection_edit_views
-from hi.apps.collection.helpers import CollectionHelpers
+from hi.apps.collection.collection_manager import CollectionManager
 import hi.apps.entity.edit.views as entity_edit_views
 from hi.apps.entity.entity_manager import EntityManager
 import hi.apps.location.edit.views as location_edit_views
@@ -159,7 +159,7 @@ class EditSvgPositionView( View, EditViewMixin ):
                 location = location_view.location,
             )
         elif item_type == 'collection':
-            svg_position_model = CollectionHelpers.get_collection_position(
+            svg_position_model = CollectionManager().get_collection_position(
                 collection_id = item_id,
                 location = location_view.location,
             )
@@ -209,6 +209,12 @@ class EditSvgPathView( View, EditViewMixin ):
         if item_type == 'entity':
             EntityManager().set_entity_path(
                 entity_id = item_id,
+                location = location_view.location,
+                svg_path_str = svg_path_str,
+            )
+        elif item_type == 'collection':
+            CollectionManager().set_collection_path(
+                collection_id = item_id,
                 location = location_view.location,
                 svg_path_str = svg_path_str,
             )

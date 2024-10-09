@@ -18,6 +18,10 @@
     {% include "location/svg_icon_item.html" with svg_icon_item=entity_position.svg_icon_item %}
     {% endfor %}
     
+    {% for collection_path in location_view_data.collection_paths %}
+    {% include "location/svg_path_item.html" with svg_path_item=collection_path.svg_path_item %}
+    {% endfor %}
+
     {% for collection_position in location_view_data.collection_positions %}
     {% include "location/svg_icon_item.html" with svg_icon_item=collection_position.svg_icon_item %}
     {% endfor %}

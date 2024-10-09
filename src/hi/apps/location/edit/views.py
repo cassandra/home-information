@@ -234,7 +234,7 @@ class LocationViewEntityRemoveView( View ):
 
     
 @method_decorator( edit_required, name='dispatch' )
-class LocationViewEntityToggleCollectionView( View ):
+class LocationViewCollectionToggleView( View ):
 
     def post(self, request, *args, **kwargs):
 
@@ -246,7 +246,6 @@ class LocationViewEntityToggleCollectionView( View ):
         exists_in_view = LocationEditHelpers.toggle_collection_in_view(
             collection = collection,
             location_view = location_view,
-            add_position_if_needed = True,
         )
             
         context = {

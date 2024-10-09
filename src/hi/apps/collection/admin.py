@@ -21,6 +21,12 @@ class CollectionPositionInLine(admin.TabularInline):
     show_change_link = True
 
 
+class PathInLine(admin.TabularInline):
+    model = models.CollectionPath
+    extra = 0
+    show_change_link = True
+
+    
 @admin.register(models.Collection)
 class CollectionAdmin(admin.ModelAdmin):
 
@@ -36,4 +42,5 @@ class CollectionAdmin(admin.ModelAdmin):
         CollectionEntityInLine,
         CollectionViewInLine,
         CollectionPositionInLine,
+        PathInLine,
     ]

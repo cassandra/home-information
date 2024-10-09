@@ -354,7 +354,7 @@ class EntityPath( SvgPathModel ):
     
     location = models.ForeignKey(
         Location,
-        related_name = 'paths',
+        related_name = 'entity_paths',
         verbose_name = 'Location',
         on_delete = models.CASCADE,
     )

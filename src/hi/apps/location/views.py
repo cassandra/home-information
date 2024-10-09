@@ -78,7 +78,7 @@ class LocationViewView( HiGridView ):
             'is_async_request': is_ajax( request ),
             'location_view_data': location_view_data,
         }
-
+        
         side_template_name = None
         if request.is_editing:
             side_template_name = 'edit/panes/side.html'

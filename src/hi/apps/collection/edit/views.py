@@ -1,6 +1,7 @@
 import json
 import logging
 
+from django.db import transaction
 from django.shortcuts import redirect
 from django.template.loader import get_template
 from django.urls import reverse
@@ -13,6 +14,7 @@ from hi.apps.collection.enums import CollectionType
 from hi.apps.collection.models import Collection, CollectionPosition
 from hi.apps.entity.models import Entity
 from hi.apps.location.forms import SvgPositionForm
+from hi.apps.location.edit.helpers import LocationEditHelpers
 from hi.decorators import edit_required
 from hi.enums import ViewType
 from hi.views import bad_request_response, page_not_found_response
@@ -91,11 +93,19 @@ class CollectionAddView( View ):
         name = cleaned_data.get('name')
         
         try:
-            collection = CollectionEditHelpers.create_collection(
-                request = request,
-                collection_type = collection_type,
-                name = name,
-            )
+            with transaction.atomic():
+                collection = CollectionManager().create_collection(
+                    request = request,
+                    collection_type = collection_type,
+                    name = name,
+                )
+                if ( request.view_parameters.view_type.is_location_view
+                     and request.view_parameters.location_view_id ):
+                    LocationEditHelpers.add_collection_to_view_by_id(
+                        collection = collection,
+                        location_view_id = request.view_parameters.location_view_id,
+                    )
+
         except ValueError as e:
             return bad_request_response( request, message = str(e) )
         

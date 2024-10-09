@@ -1,8 +1,24 @@
 from hi.apps.common.enums import LabeledEnum
-from hi.apps.common.svg_models import SvgViewBox
+from hi.apps.common.svg_models import SvgPathStyle, SvgViewBox
 
 
 class CollectionType(LabeledEnum):
+
+    """ 
+    - This helps define the default visual appearance.
+    - No assumptions are made about what sensors or controllers are associated with a given EntityType.
+    - SVG file is needed for each of these, else will use a default.
+    - SVG filename is by convention:  
+    """
+    def __init__( self,
+                  label           : str,
+                  description     : str,
+                  is_path         : bool = True,
+                  is_path_closed  : bool = True ):
+        super().__init__( label, description )
+        self.is_path = is_path
+        self.is_path_closed = is_path_closed
+        return
 
     APPLIANCES   = ( 'Appliances', '' )
     DEVICES      = ( 'Devices', '' )
@@ -11,12 +27,15 @@ class CollectionType(LabeledEnum):
     LANDSCAPING  = ( 'Landscaping', '' )
     TOOLS        = ( 'Tools', '' )
     OTHER        = ( 'Other', '' )
-    ZONE         = ( 'Zone', '' )
 
     @classmethod
     def default(cls):
         return cls.OTHER
 
+    @property
+    def is_icon(self):
+        return bool( not self.is_path )
+    
     @property
     def svg_icon_bounding_box(self):
         """
@@ -45,3 +64,13 @@ class CollectionType(LabeledEnum):
         #
         #    return f'templates/entity/svg/type.{self.name.lower()}.svg'
         return 'entity/svg/type.other.svg'
+    
+    @property
+    def svg_path_style(self):
+        # TODO: Change this to be based on type
+        return SvgPathStyle(
+            stroke_color = '#40f040',
+            stroke_width = 5.0,
+            fill_color = 'none',
+        )
+ 

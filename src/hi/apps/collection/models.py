@@ -1,10 +1,11 @@
 from django.db import models
 
-from hi.apps.common.svg_models import SvgIconItem
+from hi.apps.common.svg_models import SvgIconItem, SvgPathItem
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import (
     Location,
     LocationView,
+    SvgPathModel,
     SvgPositionModel,
 )
 
@@ -127,6 +128,53 @@ class CollectionPosition( SvgPositionModel ):
             scale = float( self.svg_scale ),
         )
     
+    
+class CollectionPath( SvgPathModel ):
+    """
+    - For collection represented by an arbitary (usually closed) SVG path.
+    - The styling of the path is determined by the CollectionType. 
+    - An Collection is not required to have an CollectionPath.  
+    """
+    
+    location = models.ForeignKey(
+        Location,
+        related_name = 'collection_paths',
+        verbose_name = 'Location',
+        on_delete = models.CASCADE,
+    )
+    collection = models.ForeignKey(
+        Collection,
+        related_name = 'paths',
+        verbose_name = 'Collection',
+        on_delete = models.CASCADE,
+    )
+    created_datetime = models.DateTimeField(
+        'Created',
+        auto_now_add = True,
+    )
+    updated_datetime = models.DateTimeField(
+        'Updated',
+        auto_now=True,
+        blank = True,
+    )
+
+    class Meta:
+        verbose_name = 'Collection Path'
+        verbose_name_plural = 'Collection Paths'
+        constraints = [
+            models.UniqueConstraint(
+                fields = [ 'location', 'collection' ],
+                name = 'collection_path_location_collection', ),
+        ]
+
+    @property
+    def svg_path_item(self) -> SvgPathItem:
+        return SvgPathItem(
+            html_id = f'hi-collection-{self.collection.id}',
+            svg_path = self.svg_path,
+            path_style = self.collection.collection_type.svg_path_style,
+        )
+
     
 class CollectionView(models.Model):
     

@@ -778,8 +778,13 @@
 		x: event.clientX,
 		y: event.clientY
 	    };
-            const offsetX = event.clientX - parseFloat($(proxyPoint).attr('cx'));
-            const offsetY = event.clientY - parseFloat($(proxyPoint).attr('cy'));
+
+	    const baseSvgElement = $(Hi.BASE_SVG_SELECTOR);	    
+            const eventSvgPoint = Hi.toSvgPoint( baseSvgElement, event.clientX, event.clientY );
+
+	    
+            const offsetX = eventSvgPoint.x - parseFloat($(proxyPoint).attr('cx'));
+            const offsetY = eventSvgPoint.y - parseFloat($(proxyPoint).attr('cy'));
 
 	    let isDragging = false;
 	    
@@ -799,9 +804,12 @@
 		    isDragging = true;
 		    event.preventDefault();
 		    event.stopImmediatePropagation();
+
+		    const eventSvgPoint = Hi.toSvgPoint( baseSvgElement, event.clientX, event.clientY );
+		    
 		    gSvgPathEditData.dragProxyPoint = event.target;
-		    const newCx = event.clientX - offsetX;
-		    const newCy = event.clientY - offsetY;
+		    const newCx = eventSvgPoint.x - offsetX;
+		    const newCy = eventSvgPoint.y - offsetY;
 		    $(proxyPoint).attr('cx', newCx).attr('cy', newCy);
 
 		    // Update the line endpoints to follow proxy point movement

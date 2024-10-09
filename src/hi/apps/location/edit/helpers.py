@@ -4,10 +4,12 @@ from typing import List
 from django.db import transaction
 from django.http import HttpRequest
 
+from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import (
     Collection,
-    CollectionView,
+    CollectionPath,
     CollectionPosition,
+    CollectionView,
 )
 from hi.apps.entity.delegation_manager import DelegationManager
 from hi.apps.entity.entity_manager import EntityManager
@@ -19,10 +21,10 @@ from hi.apps.location.enums import LocationViewType
 from hi.apps.location.models import Location, LocationView
 
 from .transient_models import (
+    EntityViewGroup,
+    EntityViewItem,
     CollectionViewItem,
     CollectionViewGroup,
-    EntityViewItem,
-    EntityViewGroup,
 )
 
 
@@ -178,70 +180,45 @@ class LocationEditHelpers:
     @classmethod
     def toggle_collection_in_view( cls,
                                    collection              : Collection,
-                                   location_view           : LocationView,
-                                   add_position_if_needed  : bool ) -> bool:
+                                   location_view           : LocationView ) -> bool:
 
         try:
-            collection_view = CollectionView.objects.get(
-                collection = collection,
-                location_view = location_view,
-            )
-            collection_view.delete()
+            cls.remove_collection_from_view( collection = collection, location_view = location_view )
             return False
             
         except CollectionView.DoesNotExist:
-            cls.add_collection_to_view(
-                collection = collection,
-                location_view = location_view,
-                add_position_if_needed = add_position_if_needed,
-            )
+            cls.add_collection_to_view( collection = collection, location_view = location_view )
             return True
         
     @classmethod
-    def add_collection_to_view( cls,
-                                collection              : Collection,
-                                location_view           : LocationView,
-                                add_position_if_needed  : bool ):
-        
+    def remove_collection_from_view( cls,
+                                     collection              : Collection,
+                                     location_view           : LocationView ):
         with transaction.atomic():
-            if add_position_if_needed:
-                cls.add_collection_position_if_needed(
-                    collection = collection,
-                    location_view = location_view,
-                )
-            _ = CollectionView.objects.create(
+            CollectionManager().remove_collection_view(
                 collection = collection,
                 location_view = location_view,
             )
         return
         
     @classmethod
-    def add_collection_position_if_needed( cls,
-                                           collection : Collection,
-                                           location_view : LocationView ) -> CollectionPosition:
-        try:
-            _ = CollectionPosition.objects.get(
-                location = location_view.location,
-                collection = collection,
-            )
-            return
-        except CollectionPosition.DoesNotExist:
-            pass
-
-        # Default display in middle of current view
-        svg_x = location_view.svg_view_box.x + ( location_view.svg_view_box.width / 2.0 )
-        svg_y = location_view.svg_view_box.y + ( location_view.svg_view_box.height / 2.0 )
+    def add_collection_to_view_by_id( cls, collection : Collection, location_view_id : int ):
+        location_view = LocationView.objects.get( id = location_view_id )
+        cls.add_collection_to_view( collection = collection, location_view = location_view )
+        return
+    
+    @classmethod
+    def add_collection_to_view( cls,
+                                collection              : Collection,
+                                location_view           : LocationView ):
         
-        collection_position = CollectionPosition.objects.create(
-            collection = collection,
-            location = location_view.location,
-            svg_x = Decimal( svg_x ),
-            svg_y = Decimal( svg_y ),
-            svg_scale = Decimal( 1.0 ),
-            svg_rotate = Decimal( 0.0 ),
-        )
-        return collection_position
-
+        with transaction.atomic():
+            _ = CollectionManager().create_collection_view(
+                collection = collection,
+                location_view = location_view,
+            )
+        return
+        
     @classmethod
     def set_location_view_order( cls, location_view_id_list  : List[int] ):
 

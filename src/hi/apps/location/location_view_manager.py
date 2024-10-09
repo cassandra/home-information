@@ -31,6 +31,7 @@ class LocationViewManager(Singleton):
             continue
 
         collection_positions = list()
+        collection_paths = list()
         unpositioned_collections = list()
         for collection_view in location_view.collection_views.all():
             collection = collection_view.collection
@@ -39,6 +40,9 @@ class LocationViewManager(Singleton):
                 collection_positions.append( collection_position )
             else:
                 unpositioned_collections.append( collection )
+            collection_path = collection.paths.filter( location = location ).first()
+            if collection_path:
+                collection_paths.append( collection_path )
             continue
 
         # These are used for reporting entities that might otherwise be
@@ -59,6 +63,7 @@ class LocationViewManager(Singleton):
             entity_positions = entity_positions,
             entity_paths = entity_paths,
             collection_positions = collection_positions,
+            collection_paths = collection_paths,
             unpositioned_collections = unpositioned_collections,
             orphan_entities = orphan_entities,
         )

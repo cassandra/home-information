@@ -19,10 +19,6 @@ class EntityType(LabeledEnum):
         self.is_path_closed = is_path_closed
         return
 
-    @property
-    def is_icon(self):
-        return bool( not self.is_path )
-    
     AIR_CONDITIONER      = ( 'Air Conditioner', '' )  # Controls area
     APPLIANCE            = ( 'Appliance', '' )
     AREA                 = ( 'Area', '', True, True )
@@ -82,6 +78,10 @@ class EntityType(LabeledEnum):
     def default(cls):
         return cls.OTHER
 
+    @property
+    def is_icon(self):
+        return bool( not self.is_path )
+    
     @property
     def svg_icon_bounding_box(self):
         """
