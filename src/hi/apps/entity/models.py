@@ -3,11 +3,14 @@ from django.db import models
 from hi.apps.common.svg_models import SvgIconItem, SvgPathItem
 from hi.apps.location.models import (
     Location,
+    LocationItemModelMixin,
+    LocationItemPositionModel,
+    LocationItemPathModel,
     LocationView,
-    SvgPositionModel,
-    SvgPathModel,
 )
 from hi.integrations.core.models import IntegrationIdModel
+from hi.enums import ItemType
+from hi.models import ItemTypeModelMixin
 
 from .enums import (
     EntityType,
@@ -17,7 +20,7 @@ from .enums import (
 )
 
 
-class Entity( IntegrationIdModel ):
+class Entity( IntegrationIdModel, ItemTypeModelMixin, LocationItemModelMixin ):
     """
     - A physical feature, device or software artifact.
     - May have a fixed physical location (or can just be part of a collection)
@@ -59,8 +62,8 @@ class Entity( IntegrationIdModel ):
         return self.__str__()
     
     @property
-    def html_id(self) -> str:
-        return f'hi-entity-{self.id}'
+    def item_type(self) -> ItemType:
+        return ItemType.ENTITY
     
     @property
     def entity_type(self) -> EntityType:
@@ -292,7 +295,7 @@ class EntityStateDelegation(models.Model):
         ]
     
     
-class EntityPosition( SvgPositionModel ):
+class EntityPosition( LocationItemPositionModel ):
     """
     - For entities represented by an SVG icon.
     - This is the most common case.
@@ -345,7 +348,7 @@ class EntityPosition( SvgPositionModel ):
         )
             
 
-class EntityPath( SvgPathModel ):
+class EntityPath( LocationItemPathModel ):
     """
     - For entities represented by an arbitary SVG path. e.g., The path of a utility line, 
     - The styling of the path is determined by the EntityType. 

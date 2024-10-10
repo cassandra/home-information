@@ -8,14 +8,17 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
+import hi.apps.collection.edit.views as collection_edit_views
 from hi.apps.collection.models import Collection
 import hi.apps.common.antinode as antinode
 from hi.apps.common.svg_models import SvgViewBox
+import hi.apps.entity.edit.views as entity_edit_views
 from hi.apps.entity.models import Entity
 from hi.apps.location.location_view_manager import LocationViewManager
 from hi.apps.location.models import LocationView
 from hi.decorators import edit_required
-from hi.enums import ViewType
+from hi.enums import ItemType, ViewType
+from hi.hi_grid_view import HiGridView
 from hi.views import bad_request_response, page_not_found_response
 
 from hi.constants import DIVID
@@ -93,6 +96,53 @@ class LocationViewAddView( View ):
         
         redirect_url = reverse('home')
         return redirect( redirect_url )
+
+    
+class LocationViewGeometryView( View ):
+
+    def post(self, request, *args, **kwargs):
+
+        location_view_id = kwargs.get('location_view_id')
+        try:
+            location_view = LocationView.objects.select_related(
+                'location' ).get( id = location_view_id )
+        except LocationView.DoesNotExist:
+            return page_not_found_response( request )
+
+        try:
+            svg_view_box_str = request.POST.get('view_box')
+            svg_view_box = SvgViewBox.from_attribute_value( svg_view_box_str )
+        except (TypeError, ValueError ):
+            return bad_request_response( request, message = f'Bad viewbox: {svg_view_box_str}' )
+
+        try:
+            svg_rotate_angle = float( request.POST.get('rotate_angle'))
+        except (TypeError, ValueError ):
+            return bad_request_response( request, message = f'Bad rotate angle: {svg_rotate_angle}' )
+
+        location_view.svg_view_box_str = str(svg_view_box)
+        location_view.svg_rotate = Decimal( svg_rotate_angle )
+        location_view.save()
+
+        return antinode.response( main_content = 'OK' )
+
+    
+@method_decorator( edit_required, name='dispatch' )
+class LocationViewReorder( View ):
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            location_view_id_list = json.loads( kwargs.get( 'location_view_id_list' ) )
+        except Exception as e:
+            return bad_request_response( request, message = str(e) )
+
+        if not location_view_id_list:
+            return bad_request_response( request, message = 'Missing location view ids.' )
+
+        LocationEditHelpers.set_location_view_order(
+            location_view_id_list = location_view_id_list,
+        )            
+        return antinode.response( main_content = 'OK' )        
 
     
 @method_decorator( edit_required, name='dispatch' )
@@ -218,22 +268,6 @@ class LocationViewEntityToggleView( View ):
 
     
 @method_decorator( edit_required, name='dispatch' )
-class LocationViewEntityRemoveView( View ):
-
-    def post( self, request, *args, **kwargs ):
-
-        location_view_id = kwargs.get('location_view_id')
-        if not location_view_id:
-            return bad_request_response( request, message = 'Missing location view id in request.' )
-
-        entity_id = kwargs.get('entity_id')
-        if not entity_id:
-            return bad_request_response( request, message = 'Missing entity id in request.' )
-        
-        pass
-
-    
-@method_decorator( edit_required, name='dispatch' )
 class LocationViewCollectionToggleView( View ):
 
     def post(self, request, *args, **kwargs):
@@ -274,47 +308,43 @@ class LocationViewCollectionToggleView( View ):
 
     
 @method_decorator( edit_required, name='dispatch' )
-class LocationViewReorder( View ):
-    
-    def post(self, request, *args, **kwargs):
+class LocationItemDetailsView( HiGridView ):
+
+    def get(self, request, *args, **kwargs):
+
+        if not kwargs.get( ItemType.HTML_ID_ARG() ):
+            return self.get_default_details( request )
+
         try:
-            location_view_id_list = json.loads( kwargs.get( 'location_view_id_list' ) )
-        except Exception as e:
-            return bad_request_response( request, message = str(e) )
-
-        if not location_view_id_list:
-            return bad_request_response( request, message = 'Missing location view ids.' )
-
-        LocationEditHelpers.set_location_view_order(
-            location_view_id_list = location_view_id_list,
-        )            
-        return antinode.response( main_content = 'OK' )        
+            ( item_type, item_id ) = ItemType.parse_from_dict( kwargs )
+        except ValueError:
+            return bad_request_response( request, message = 'Bad item id.' )
         
+        if item_type == ItemType.ENTITY:
+            return entity_edit_views.EntityDetailsView().get(
+                request = request,
+                entity_id = item_id,
+            )            
 
-class LocationViewGeometryView( View ):
+        if item_type == ItemType.COLLECTION:
+            return collection_edit_views.CollectionDetailsView().get(
+                request = request,
+                collection_id = item_id,
+            )            
 
-    def post(self, request, *args, **kwargs):
+        return bad_request_response( request, message = 'Unknown item type "{item_type}".' )
 
-        location_view_id = kwargs.get('location_view_id')
-        try:
-            location_view = LocationView.objects.select_related(
-                'location' ).get( id = location_view_id )
-        except LocationView.DoesNotExist:
-            return page_not_found_response( request )
+    def get_default_details( self, request ):
+        if request.view_parameters.view_type.is_location_view:
+            return LocationViewDetailsView().get(
+                request = request,
+                location_view_id = request.view_parameters.location_view_id,
+            )
+            
+        return self.side_panel_response(
+            request = request,
+            template_name = 'edit/panes/default.html',
+        )
+        
+                
 
-        try:
-            svg_view_box_str = request.POST.get('view_box')
-            svg_view_box = SvgViewBox.from_attribute_value( svg_view_box_str )
-        except (TypeError, ValueError ) as e:
-            return bad_request_response( request, message = f'Bad viewbox: {svg_view_box_str}' )
-
-        try:
-            svg_rotate_angle = float( request.POST.get('rotate_angle'))
-        except (TypeError, ValueError ) as e:
-            return bad_request_response( request, message = f'Bad rotate angle: {svg_rotate_angle}' )
-
-        location_view.svg_view_box_str = str(svg_view_box)
-        location_view.svg_rotate = Decimal( svg_rotate_angle )
-        location_view.save()
-
-        return antinode.response( main_content = 'OK' )

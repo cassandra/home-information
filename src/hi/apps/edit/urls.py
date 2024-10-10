@@ -17,16 +17,12 @@ urlpatterns = [
              views.EditDeleteView.as_view(), 
              name='edit_delete' ),
 
-    re_path( r'^details/(?P<html_id>[\w\-]*)$', 
-             views.EditDetailsView.as_view(), 
-             name='edit_details' ),
-
     re_path( r'^svg/position/(?P<html_id>[\w\-]+)$', 
-             views.EditSvgPositionView.as_view(), 
+             views.EditLocationItemPositionView.as_view(), 
              name='edit_svg_position' ),
 
     re_path( r'^svg/path/(?P<html_id>[\w\-]+)$', 
-             views.EditSvgPathView.as_view(), 
+             views.EditLocationItemPathView.as_view(), 
              name='edit_svg_path' ),
 
     re_path( r'^add-remove$', 

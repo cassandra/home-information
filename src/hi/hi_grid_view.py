@@ -105,3 +105,21 @@ class HiGridView(View):
             insert_map = insert_map,
             push_url = push_url,
         )
+
+    def side_panel_response( self,
+                             request        : HttpRequest,
+                             template_name  : str,
+                             context        : Dict  = None):
+        if context is None:
+            context = dict()
+        template = get_template( template_name )
+        content = template.render( context, request = request )
+        insert_map = {
+            DIVID['EDIT_ITEM']: content,
+        }
+        return antinode.response(
+            insert_map = insert_map,
+        )
+        
+    
+    

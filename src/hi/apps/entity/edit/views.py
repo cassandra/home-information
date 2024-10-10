@@ -13,7 +13,7 @@ from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity, EntityPosition
 from hi.apps.location.edit.helpers import LocationEditHelpers
-from hi.apps.location.forms import SvgPositionForm
+from hi.apps.location.forms import LocationItemPositionForm
 
 from hi.constants import DIVID
 from hi.decorators import edit_required
@@ -38,18 +38,20 @@ class EntityDetailsView( View ):
 
         location_view = request.view_parameters.location_view
 
-        svg_position_form = None
+        location_item_position_form = None
         if request.view_parameters.view_type.is_location_view:
             entity_position = EntityPosition.objects.filter(
                 entity = entity,
                 location = location_view.location,
             ).first()
             if entity_position:
-                svg_position_form = SvgPositionForm.from_svg_position_model( entity_position )
+                location_item_position_form = LocationItemPositionForm.from_svg_position_model(
+                    entity_position,
+                )
 
         context = {
             'entity': entity,
-            'svg_position_form': svg_position_form,
+            'location_item_position_form': location_item_position_form,
         }
         template = get_template( 'entity/edit/panes/entity_details.html' )
         content = template.render( context, request = request )

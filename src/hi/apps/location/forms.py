@@ -2,10 +2,10 @@ from decimal import Decimal
 
 from django import forms
 
-from .models import SvgPositionModel
+from .models import LocationItemPositionModel
 
 
-class SvgPositionForm(forms.Form):
+class LocationItemPositionForm(forms.Form):
 
     svg_x = forms.DecimalField(
         label = 'X',
@@ -25,7 +25,7 @@ class SvgPositionForm(forms.Form):
     )
 
     def __init__( self, *args, item_html_id = None, **kwargs ):
-        super(SvgPositionForm, self).__init__(*args, **kwargs)
+        super(LocationItemPositionForm, self).__init__(*args, **kwargs)
         self._item_html_id = item_html_id
         return
 
@@ -38,7 +38,7 @@ class SvgPositionForm(forms.Form):
         return f'{self.item_html_id}-svg-position'
     
     @classmethod
-    def from_svg_position_model( cls, svg_position_model : SvgPositionModel ):
+    def from_svg_position_model( cls, svg_position_model : LocationItemPositionModel ):
         if svg_position_model:
             return cls(
                 item_html_id = svg_position_model.svg_icon_item.html_id,
@@ -57,7 +57,7 @@ class SvgPositionForm(forms.Form):
             },
         )
          
-    def to_svg_position_model( self, svg_position_model : SvgPositionModel ):
+    def to_svg_position_model( self, svg_position_model : LocationItemPositionModel ):
         cleaned_data = self.clean()
         svg_position_model.svg_x = cleaned_data.get( 'svg_x' )
         svg_position_model.svg_y = cleaned_data.get( 'svg_y' )

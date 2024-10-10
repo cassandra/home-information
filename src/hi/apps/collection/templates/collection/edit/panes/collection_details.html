@@ -1,13 +1,11 @@
 <h5>Collection</h5>
 <div>{{ collection.name }}</div>
 
-{% if svg_position_form %}
+{% if location_item_position_form %}
 <h5>Position</h5>
-{% with collection.html_id as html_id %}
-<div id="{{ svg_position_form.content_html_id }}">
-  {% include "edit/panes/svg_position.html" %}
+<div id="{{ location_item_position_form.content_html_id }}">
+  {% include "location/edit/panes/location_item_position.html" %}
 </div>
-{% endwith %}
 {% endif %}
 
 <h5>View Type</h5>

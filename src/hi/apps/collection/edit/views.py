@@ -13,7 +13,7 @@ from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.enums import CollectionType
 from hi.apps.collection.models import Collection, CollectionPosition
 from hi.apps.entity.models import Entity
-from hi.apps.location.forms import SvgPositionForm
+from hi.apps.location.forms import LocationItemPositionForm
 from hi.apps.location.edit.helpers import LocationEditHelpers
 from hi.decorators import edit_required
 from hi.enums import ViewType
@@ -41,18 +41,20 @@ class CollectionDetailsView( View ):
 
         location_view = request.view_parameters.location_view
 
-        svg_position_form = None
+        location_item_position_form = None
         if request.view_parameters.view_type.is_location_view:
             collection_position = CollectionPosition.objects.filter(
                 collection = collection,
                 location = location_view.location,
             ).first()
             if collection_position:
-                svg_position_form = SvgPositionForm.from_svg_position_model( collection_position )
+                location_item_position_form = LocationItemPositionForm.from_svg_position_model(
+                    collection_position,
+                )
             
         context = {
             'collection': collection,
-            'svg_position_form': svg_position_form,
+            'location_item_position_form': location_item_position_form,
         }
         template = get_template( 'collection/edit/panes/collection_details.html' )
         content = template.render( context, request = request )

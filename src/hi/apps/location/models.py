@@ -1,11 +1,13 @@
 from django.db import models
 
 from hi.apps.common.svg_models import SvgIconItem, SvgPathItem, SvgViewBox
+from hi.enums import ItemType
+from hi.models import ItemTypeModelMixin
 
 from .enums import LocationViewType
 
 
-class Location(models.Model):
+class Location( models.Model, ItemTypeModelMixin ):
     
     name = models.CharField(
         'Name',
@@ -62,6 +64,10 @@ class Location(models.Model):
         return self.__str__()
     
     @property
+    def item_type(self) -> ItemType:
+        return ItemType.LOCATION
+    
+    @property
     def svg_view_box(self):
         return SvgViewBox.from_attribute_value( self.svg_view_box_str )
 
@@ -71,7 +77,7 @@ class Location(models.Model):
         return
 
 
-class LocationView(models.Model):
+class LocationView( models.Model, ItemTypeModelMixin ):
 
     location = models.ForeignKey(
         Location,
@@ -125,8 +131,8 @@ class LocationView(models.Model):
         return self.__str__()
 
     @property
-    def html_id(self):
-        return f'hi-location-view-{self.id}'
+    def item_type(self) -> ItemType:
+        return ItemType.LOCATION_VIEW
     
     @property
     def location_view_type(self):
@@ -147,10 +153,17 @@ class LocationView(models.Model):
         return
 
     
-class SvgPositionModel(models.Model):
+class LocationItemModelMixin:
+    # A Location Item is a model that can be associated with a Location
+    # and that can visually appeay in one or more Location Views.  This
+    # defined an interface that specific instance need to conform to.
+    pass
+
+    
+class LocationItemPositionModel( models.Model ):
     """
     For models that have a visual representaion that can be overlayed on
-    the Location's SVG as an icon with a center position, rotartion and scale.
+    the Location's SVG as an icon with a center position, rotation and scale.
     """
     
     class Meta:
@@ -183,8 +196,8 @@ class SvgPositionModel(models.Model):
     def svg_icon_item(self) -> SvgIconItem:
         raise NotImplementedError('Subclasses must implement this method.')
 
-    
-class SvgPathModel(models.Model):
+
+class LocationItemPathModel( models.Model ):
     """
     For models that have a visual representaion that can be overlayed on
     the Location's SVG as a general SVG path.

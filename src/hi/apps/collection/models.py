@@ -4,15 +4,18 @@ from hi.apps.common.svg_models import SvgIconItem, SvgPathItem
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import (
     Location,
+    LocationItemModelMixin,
+    LocationItemPositionModel,
+    LocationItemPathModel,
     LocationView,
-    SvgPathModel,
-    SvgPositionModel,
 )
+from hi.enums import ItemType
+from hi.models import ItemTypeModelMixin
 
 from .enums import CollectionType
 
 
-class Collection( models.Model ):
+class Collection( models.Model, ItemTypeModelMixin, LocationItemModelMixin ):
     
     name = models.CharField(
         'Name',
@@ -37,8 +40,8 @@ class Collection( models.Model ):
         verbose_name_plural = 'Collections'
 
     @property
-    def html_id(self):
-        return f'hi-collection-{self.id}'
+    def item_type(self) -> ItemType:
+        return ItemType.COLLECTION
     
     @property
     def collection_type(self):
@@ -82,7 +85,7 @@ class CollectionEntity(models.Model):
         ]
 
         
-class CollectionPosition( SvgPositionModel ):
+class CollectionPosition( LocationItemPositionModel ):
 
     location = models.ForeignKey(
         Location,
@@ -129,7 +132,7 @@ class CollectionPosition( SvgPositionModel ):
         )
     
     
-class CollectionPath( SvgPathModel ):
+class CollectionPath( LocationItemPathModel ):
     """
     - For collection represented by an arbitary (usually closed) SVG path.
     - The styling of the path is determined by the CollectionType. 

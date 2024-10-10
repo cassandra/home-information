@@ -2,7 +2,8 @@
   <h5><sub>COLLECTION:</sub> {{ collection_data.collection.name }}</h5>
 
   {% for entity in collection_data.entity_list %}
-  <div class="{% if request.is_editing %}draggable{% endif %}"
+  <div id="{{ entity.html_id }}" 
+       class="{% if request.is_editing %}draggable{% endif %}"
        {% if request.is_editing %}draggable="true"{% endif %}
        data-id="{{ entity.html_id }}" >
     {% if request.is_editing %}
