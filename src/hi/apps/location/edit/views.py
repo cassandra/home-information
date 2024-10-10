@@ -8,12 +8,15 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
+from hi.apps.collection.collection_manager import CollectionManager
 import hi.apps.collection.edit.views as collection_edit_views
 from hi.apps.collection.models import Collection
 import hi.apps.common.antinode as antinode
 from hi.apps.common.svg_models import SvgViewBox
+from hi.apps.entity.entity_manager import EntityManager
 import hi.apps.entity.edit.views as entity_edit_views
 from hi.apps.entity.models import Entity
+from hi.apps.location.forms import LocationItemPositionForm
 from hi.apps.location.location_view_manager import LocationViewManager
 from hi.apps.location.models import LocationView
 from hi.decorators import edit_required
@@ -345,6 +348,93 @@ class LocationItemDetailsView( HiGridView ):
             request = request,
             template_name = 'edit/panes/default.html',
         )
+
+    
+@method_decorator( edit_required, name='dispatch' )
+class LocationItemPositionView( View ):
+
+    def post(self, request, *args, **kwargs):
         
-                
+        try:
+            ( item_type, item_id ) = ItemType.parse_from_dict( kwargs )
+        except ValueError:
+            return bad_request_response( request, messahe = 'Bad item id.' )
+        
+        location_view = request.view_parameters.location_view
+        if item_type == ItemType.ENTITY:
+            svg_position_model = EntityManager().get_entity_position(
+                entity_id = item_id,
+                location = location_view.location,
+            )
+        elif item_type == ItemType.COLLECTION:
+            svg_position_model = CollectionManager().get_collection_position(
+                collection_id = item_id,
+                location = location_view.location,
+            )
+        else:
+            return bad_request_response( request, message = f'Cannot set SVG position for "{item_type}"' )
+
+        location_item_position_form = LocationItemPositionForm(
+            request.POST,
+            item_html_id = svg_position_model.svg_icon_item.html_id,
+        )
+        if location_item_position_form.is_valid():
+            location_item_position_form.to_svg_position_model( svg_position_model )
+            svg_position_model.save()
+
+        svg_icon_item = svg_position_model.svg_icon_item            
+        context = {
+            'location_item_position_form': location_item_position_form,
+        }
+        template = get_template('location/edit/panes/location_item_position.html')
+        content = template.render( context, request = request )
+
+        insert_map = {
+            location_item_position_form.content_html_id: content,
+        }
+        set_attributes_map = {
+            svg_icon_item.html_id: {
+                'transform': svg_icon_item.transform_str,
+            }
+        }            
+        return antinode.response(
+            insert_map = insert_map,
+            set_attributes_map = set_attributes_map,
+        )
+
+
+@method_decorator( edit_required, name='dispatch' )
+class LocationItemPathView( View ):
+
+    def post(self, request, *args, **kwargs):
+        
+        try:
+            ( item_type, item_id ) = ItemType.parse_from_dict( kwargs )
+        except ValueError:
+            return bad_request_response( request, messahe = 'Bad item id.' )
+
+        svg_path_str = request.POST.get('svg_path')
+        if not svg_path_str:
+            return bad_request_response( request, message = 'Missing SVG path' )
+        
+        location_view = request.view_parameters.location_view
+        if item_type == ItemType.ENTITY:
+            EntityManager().set_entity_path(
+                entity_id = item_id,
+                location = location_view.location,
+                svg_path_str = svg_path_str,
+            )
+        elif item_type == ItemType.COLLECTION:
+            CollectionManager().set_collection_path(
+                collection_id = item_id,
+                location = location_view.location,
+                svg_path_str = svg_path_str,
+            )
+        else:
+            return bad_request_response( request, message = f'Cannot set SVG path for "{item_type}"' )
+
+        return antinode.response(
+            main_content = 'OK',
+        )
+
 

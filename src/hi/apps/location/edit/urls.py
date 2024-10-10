@@ -32,5 +32,13 @@ urlpatterns = [
     re_path( r'^location-item/details/(?P<html_id>[\w\-]*)$', 
              views.LocationItemDetailsView.as_view(), 
              name='location_edit_location_item_details' ),
+
+    re_path( r'^location-item/position/(?P<html_id>[\w\-]+)$', 
+             views.LocationItemPositionView.as_view(), 
+             name='location_edit_location_item_position' ),
+
+    re_path( r'^location-item/path/(?P<html_id>[\w\-]+)$', 
+             views.LocationItemPathView.as_view(), 
+             name='location_edit_location_item_path' ),
     
 ]

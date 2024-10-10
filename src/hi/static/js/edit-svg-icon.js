@@ -40,7 +40,7 @@
     const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3; // Differentiate between move events and sloppy clicks
     const ZOOM_SCALE_FACTOR_PERCENT = 10.0;
 
-    const API_EDIT_SVG_POSITION_URL = '/edit/svg/position';
+    const API_EDIT_SVG_POSITION_URL = '/location/edit/location-item/position';
         
     const SvgActionStateType = {
 	MOVE: 'move',

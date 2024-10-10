@@ -3,7 +3,7 @@
   <div id="{{ location_view.html_id }}" 
        class="{% if request.is_editing %}draggable{% endif %}"
        {% if request.is_editing %}draggable="true"{% endif %}
-       data-id="{{ location_view.html_id }}" >
+       >
     <a href="{% url 'location_view' id=location_view.id %}"
        class="btn btn-primary btn-control"
        role="button"

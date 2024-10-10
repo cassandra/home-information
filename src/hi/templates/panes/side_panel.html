@@ -1,20 +1,5 @@
-{% if request.view_parameters.view_type.is_location_view %}
-
 {% if request.is_editing %}
 {% include "edit/panes/side.html" %}
 {% else %}
 {% include "panes/side_default.html" %}
-{% endif %}
-
-{% elif request.view_parameters.view_type.is_collection %}
-
-{% if request.is_editing %}
-{% include "edit/panes/side.html" %}
-{% else %}
-{% include "panes/side_default.html" %}
-{% endif %}
-
-{% else %}
-{% include "panes/side_default.html" %}
-
 {% endif %}

@@ -20,7 +20,6 @@
     const DRAGGABLE_CLASS = 'draggable';
     const DRAGGABLE_SELECTOR = '.' + DRAGGABLE_CLASS;
     const DRAG_OVER_CLASS = 'drag-over';
-    const DATA_ID_ATTR = 'data-id';
 
     const API_REORDER_ITEMS_URL = '/edit/reorder-items';
     
@@ -72,7 +71,7 @@
         var htmlIdList = [];
 	var parentContainer = $(event.currentTarget).closest( DRAGGABLE_CONTAINER_SELECTOR );
         parentContainer.find( DRAGGABLE_SELECTOR ).each(function() {
-            htmlIdList.push( $(this).attr( DATA_ID_ATTR ));
+            htmlIdList.push( $(this).attr('id'));
         });
 	
 	if ( Hi.DEBUG ) { console.log(`Drag end ids: ${htmlIdList}`); }

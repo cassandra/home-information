@@ -1,4 +1,4 @@
-<form action="{% url 'edit_svg_position' html_id=location_item_position_form.item_html_id %}" method="post"
+<form action="{% url 'location_edit_location_item_position' html_id=location_item_position_form.item_html_id %}" method="post"
       class="form" data-async="#{{ location_item_position_form.content_html_id }}-svg-position">
   {% csrf_token %}
   

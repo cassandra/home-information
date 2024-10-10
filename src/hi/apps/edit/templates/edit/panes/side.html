@@ -1,20 +1,9 @@
 <div id="hi-edit-side-content" class="">
-  <div class="">EDIT PANEL</div>
-
-
-  <div class="">
-    <a href="{% url 'edit_add_remove' %}"
-       class="btn btn-tertiary btn-control" role="button" data-async="true">
-      ADD/REMOVE for {{ request.view_parameters.view_type.label.upper }}
-    </a>
-  </div>
-
-  <div class="">
-    <a href="{% url 'edit_delete' %}"
-       class="btn btn-danger btn-control" role="button" data-async="true">
-      DELETE {{ request.view_parameters.view_type.label.upper }}
-    </a>
-  </div>
+  {% if request.view_parameters.view_type.is_location_view %}
+  {% include "location/edit/panes/side_header.html" %}
+  {% elif request.view_parameters.view_type.is_collection %}
+  {% include "collection/edit/panes/side_header.html" %}
+  {% endif %}
 
   <div id="hi-edit-item">
     {% if entity %}

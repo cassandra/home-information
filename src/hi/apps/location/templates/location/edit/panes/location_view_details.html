@@ -1,7 +1,7 @@
+<h4><small>Location View:</small> {{ location_view_data.location_view.name }}</h4>
+
 <h5>Location</h5>
 <div>{{ location_view_data.location_view.location.name }}</div>
-<h5>Location View</h5>
-<div>{{ location_view_data.location_view.name }}</div>
 
 <h5>View Type</h5>
 <div>{{ location_view_data.location_view.location_view_type.label }}</div>
@@ -14,3 +14,10 @@
 
 <h5>Order Index</h5>
 <div>{{ location_view_data.location_view.order_id }}</div>
+
+<div class="">
+  <a href="{% url 'location_edit_location_view_delete' location_view_id=location_view_data.location_view.id %}"
+     class="btn btn-danger btn-control" role="button" data-async="true">
+    DELETE VIEW
+  </a>
+</div>
