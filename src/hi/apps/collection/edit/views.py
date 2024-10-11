@@ -111,13 +111,13 @@ class CollectionAddView( View ):
 
         except ValueError as e:
             return bad_request_response( request, message = str(e) )
-        
-        request.view_parameters.view_type = ViewType.COLLECTION
-        request.view_parameters.collection_id = collection.id
-        request.view_parameters.to_session( request )
- 
+
+        if request.view_parameters.view_type == ViewType.COLLECTION:
+            request.view_parameters.collection_id = collection.id
+            request.view_parameters.to_session( request )
+
         redirect_url = reverse('home')
-        return redirect( redirect_url )
+        return antinode.redirect_response( redirect_url )
 
     
 @method_decorator( edit_required, name='dispatch' )
@@ -157,15 +157,16 @@ class CollectionDeleteView( View ):
 
         collection.delete()
 
-        next_collection = Collection.objects.all().order_by( 'order_id' ).first()
-        if next_collection:
-            request.view_parameters.collection_id = next_collection.id
-        else:
-            request.view_parameters.collection_id = None
-        request.view_parameters.to_session( request )
-        
+        if request.view_parameters.view_type == ViewType.COLLECTION:
+            next_collection = Collection.objects.all().order_by( 'order_id' ).first()
+            if next_collection:
+                request.view_parameters.collection_id = next_collection.id
+            else:
+                request.view_parameters.collection_id = None
+            request.view_parameters.to_session( request )
+
         redirect_url = reverse('home')
-        return redirect( redirect_url )
+        return antinode.redirect_response( redirect_url )
     
     
 @method_decorator( edit_required, name='dispatch' )
