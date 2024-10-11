@@ -5,6 +5,7 @@ from django.db import transaction
 from hi.apps.common.singleton import Singleton
 from hi.integrations.core.enums import IntegrationType
 from hi.apps.location.models import Location, LocationView
+from hi.apps.location.svg_item_factory import SvgItemFactory
 
 from .enums import (
     EntityType,
@@ -19,8 +20,6 @@ from .models import (
 
 class EntityManager(Singleton):
 
-    PATH_EDIT_NEW_PATH_RADIUS_PERCENT = 5.0  # Preferrable if this matches Javascript new path sizing.
-        
     def __init_singleton__(self):
         return
 
@@ -84,10 +83,12 @@ class EntityManager(Singleton):
         with transaction.atomic():
 
             # Need to make sure it has some visible representation in the view if none exists.
-            if entity.entity_type.is_path:
+            svg_item_type = SvgItemFactory().get_svg_item_type( entity )
+            if svg_item_type.is_path:
                 self.add_entity_path_if_needed(
                     entity = entity,
                     location_view = location_view,
+                    is_path_closed = svg_item_type.is_path_closed,
                 )
             else:
                 self.add_entity_position_if_needed(
@@ -119,9 +120,9 @@ class EntityManager(Singleton):
             
         return
     
-    def add_entity_position_if_needed( self, entity : Entity, location_view : LocationView ) -> EntityPosition:
-        assert not entity.entity_type.is_path
-
+    def add_entity_position_if_needed( self,
+                                       entity : Entity,
+                                       location_view : LocationView ) -> EntityPosition:
         try:
             _ = EntityPosition.objects.get(
                 location = location_view.location,
@@ -145,9 +146,10 @@ class EntityManager(Singleton):
         )
         return entity_position
     
-    def add_entity_path_if_needed( self, entity : Entity, location_view : LocationView ) -> EntityPath:
-        assert entity.entity_type.is_path
-
+    def add_entity_path_if_needed( self,
+                                   entity          : Entity,
+                                   location_view   : LocationView,
+                                   is_path_closed  : bool         ) -> EntityPath:
         try:
             _ = EntityPath.objects.get(
                 location = location_view.location,
@@ -157,35 +159,10 @@ class EntityManager(Singleton):
         except EntityPath.DoesNotExist:
             pass
 
-        # Note that this server-side creation of a new path is just one
-        # place new paths can be created. During client-side path editing,
-        # the Javascript code also uses logic to add new path segments.
-        # These do not have to behave identical, but it is preferrable for
-        # there to be some consistency.
-        
-        # Default display a line or rectangle in middle of current view with radius X% of viewbox
-        center_x = location_view.svg_view_box.x + ( location_view.svg_view_box.width / 2.0 )
-        center_y = location_view.svg_view_box.y + ( location_view.svg_view_box.height / 2.0 )
-        radius_x = location_view.svg_view_box.width * ( self.PATH_EDIT_NEW_PATH_RADIUS_PERCENT / 100.0 )
-        radius_y = location_view.svg_view_box.height * ( self.PATH_EDIT_NEW_PATH_RADIUS_PERCENT / 100.0 )
-
-        if entity.entity_type.is_path_closed:
-            top_left_x = center_x - radius_x
-            top_left_y = center_y - radius_y
-            top_right_x = center_x + radius_x
-            top_right_y = center_y - radius_y
-            bottom_right_x = center_x + radius_x
-            bottom_right_y = center_y + radius_y
-            bottom_left_x = center_x - radius_x
-            bottom_left_y = center_y + radius_y
-            svg_path = f'M {top_left_x},{top_left_y} L {top_right_x},{top_right_y} L {bottom_right_x},{bottom_right_y} L {bottom_left_x},{bottom_left_y} Z'
-        else:
-            start_x = center_x - radius_x
-            start_y = center_y
-            end_x = start_x + radius_x
-            end_y = start_y
-            svg_path = f'M {start_x},{start_y} L {end_x},{end_y}'
-        
+        svg_path = SvgItemFactory().get_default_svg_path_str(
+            location_view = location_view,
+            is_path_closed = is_path_closed,
+        )        
         entity_path = EntityPath.objects.create(
             entity = entity,
             location = location_view.location,

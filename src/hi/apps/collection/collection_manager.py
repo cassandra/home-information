@@ -6,6 +6,7 @@ from django.http import HttpRequest
 from hi.apps.common.singleton import Singleton
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location, LocationView
+from hi.apps.location.svg_item_factory import SvgItemFactory
 
 from .collection_data import CollectionData
 from .enums import CollectionType
@@ -20,8 +21,6 @@ from .models import (
 
 class CollectionManager(Singleton):
 
-    PATH_EDIT_NEW_PATH_RADIUS_PERCENT = 5.0  # Preferrable if this matches Javascript new path sizing.
-        
     def __init_singleton__(self):
         return
 
@@ -86,10 +85,12 @@ class CollectionManager(Singleton):
         with transaction.atomic():
 
             # Need to make sure it has some visible representation in the view if none exists.
-            if collection.collection_type.is_path:
+            svg_item_type = SvgItemFactory().get_svg_item_type( collection )
+            if svg_item_type.is_path:
                 self.add_collection_path_if_needed(
                     collection = collection,
                     location_view = location_view,
+                    is_path_closed = svg_item_type.is_path_closed,
                 )
             else:
                 self.add_collection_position_if_needed(
@@ -157,8 +158,6 @@ class CollectionManager(Singleton):
     def add_collection_position_if_needed( cls,
                                            collection : Collection,
                                            location_view : LocationView ) -> CollectionPosition:
-        assert not collection.collection_type.is_path
-
         try:
             _ = CollectionPosition.objects.get(
                 location = location_view.location,
@@ -183,10 +182,9 @@ class CollectionManager(Singleton):
         return collection_position
     
     def add_collection_path_if_needed( self,
-                                       collection : Collection,
-                                       location_view : LocationView ) -> CollectionPath:
-        assert collection.collection_type.is_path
-
+                                       collection      : Collection,
+                                       location_view   : LocationView,
+                                       is_path_closed  : bool         ) -> CollectionPath:
         try:
             _ = CollectionPath.objects.get(
                 location = location_view.location,
@@ -196,35 +194,10 @@ class CollectionManager(Singleton):
         except CollectionPath.DoesNotExist:
             pass
 
-        # Note that this server-side creation of a new path is just one
-        # place new paths can be created. During client-side path editing,
-        # the Javascript code also uses logic to add new path segments.
-        # These do not have to behave identical, but it is preferrable for
-        # there to be some consistency.
-        
-        # Default display a line or rectangle in middle of current view with radius X% of viewbox
-        center_x = location_view.svg_view_box.x + ( location_view.svg_view_box.width / 2.0 )
-        center_y = location_view.svg_view_box.y + ( location_view.svg_view_box.height / 2.0 )
-        radius_x = location_view.svg_view_box.width * ( self.PATH_EDIT_NEW_PATH_RADIUS_PERCENT / 100.0 )
-        radius_y = location_view.svg_view_box.height * ( self.PATH_EDIT_NEW_PATH_RADIUS_PERCENT / 100.0 )
-
-        if collection.collection_type.is_path_closed:
-            top_left_x = center_x - radius_x
-            top_left_y = center_y - radius_y
-            top_right_x = center_x + radius_x
-            top_right_y = center_y - radius_y
-            bottom_right_x = center_x + radius_x
-            bottom_right_y = center_y + radius_y
-            bottom_left_x = center_x - radius_x
-            bottom_left_y = center_y + radius_y
-            svg_path = f'M {top_left_x},{top_left_y} L {top_right_x},{top_right_y} L {bottom_right_x},{bottom_right_y} L {bottom_left_x},{bottom_left_y} Z'
-        else:
-            start_x = center_x - radius_x
-            start_y = center_y
-            end_x = start_x + radius_x
-            end_y = start_y
-            svg_path = f'M {start_x},{start_y} L {end_x},{end_y}'
-        
+        svg_path = SvgItemFactory().get_default_svg_path_str(
+            location_view = location_view,
+            is_path_closed = is_path_closed,
+        )
         collection_path = CollectionPath.objects.create(
             collection = collection,
             location = location_view.location,

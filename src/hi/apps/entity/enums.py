@@ -8,33 +8,24 @@ class EntityType(LabeledEnum):
     - SVG file is needed for each of these, else will use a default.
     - SVG filename is by convention:  
     """
-    def __init__( self,
-                  label           : str,
-                  description     : str,
-                  is_path         : bool = False,
-                  is_path_closed  : bool = False ):
-        super().__init__( label, description )
-        self.is_path = is_path
-        self.is_path_closed = is_path_closed
-        return
 
     AIR_CONDITIONER      = ( 'Air Conditioner', '' )  # Controls area
     APPLIANCE            = ( 'Appliance', '' )
-    AREA                 = ( 'Area', '', True, True )
+    AREA                 = ( 'Area', '' )
     AUDIO_AMPLIFIER      = ( 'Audio Amplifier', '' )  # Controls Speaker
     AUDIO_PLAYER         = ( 'Audio Player', '' )
     BAROMETER            = ( 'Barometer', '' )
     CAMERA               = ( 'Camera', '' )
     COMPUTER             = ( 'Computer', '' )
     CONSUMABLE           = ( 'Consumable', '' )
-    CONTROL_WIRE         = ( 'Control Wire', '', True )
+    CONTROL_WIRE         = ( 'Control Wire', '' )
     DISPLAY              = ( 'Display', '' )
     DOOR                 = ( 'Door', '' )
     DOOR_LOCK            = ( 'Door Lock', '' )  # Controls doors
     ELECTRICAL_OUTLET    = ( 'Electrical Outlet', '' )
     ELECTRICY_METER      = ( 'Electric Meter', '' )
     ELECTRIC_PANEL       = ( 'Electric Panel', '' )
-    ELECTRIC_WIRE        = ( 'Electric Wire', '', True )
+    ELECTRIC_WIRE        = ( 'Electric Wire', '' )
     HEALTHCHECK          = ( 'Healthcheck', '' )
     HEATER               = ( 'Heater', '' )  # Controls area
     HVAC_AIR_HANDLER     = ( 'HVAC Air Handler', '' )  # Controls area
@@ -48,16 +39,16 @@ class EntityType(LabeledEnum):
     OPEN_CLOSE_DETECTOR  = ( 'Open/Close Sensor', '' )
     OTHER                = ( 'Other', '' )  # Will use generic visual element
     PRESENCE_SENSOR      = ( 'Presence Sensor', '' )
-    SEWER_LINE           = ( 'Sewer Wire', '', True )
+    SEWER_LINE           = ( 'Sewer Wire', '' )
     SHOWER               = ( 'Shower', '' ) 
     SINK                 = ( 'Sink', '' ) 
     SPEAKER              = ( 'Speaker', '' )
     SPINKLER_CONTROLLER  = ( 'Spinkler Controller', '' )
     SPINKLER_VALVE       = ( 'Spinkler Valve', '' )  # Controls sprinkler heads
     SPRINKLER_HEAD       = ( 'Sprinkler Head', '' )
-    SPRINKLER_WIRE       = ( 'Sprinkler Wire', '', True )
+    SPRINKLER_WIRE       = ( 'Sprinkler Wire', '' )
     TELECOM_BOX          = ( 'Telecom Box', '' )
-    TELECOM_WIRE         = ( 'Telecom Wire', '', True )
+    TELECOM_WIRE         = ( 'Telecom Wire', '' )
     THERMOMETER          = ( 'Thermometer', '' )
     THERMOSTAT           = ( 'Thermostat', '' )
     TIME_SOURCE          = ( 'Time Source', '' )
@@ -65,9 +56,9 @@ class EntityType(LabeledEnum):
     TOOL                 = ( 'Tool', '' )
     VIDEO_PLAYER         = ( 'Video Player', '' )
     WALL_SWITCH          = ( 'Wall Switch', '' )
-    WASTE_PIPE           = ( 'Waste Pipe', '', True ) 
+    WASTE_PIPE           = ( 'Waste Pipe', '' ) 
     WATER_HEATER         = ( 'Water Heater', '' )
-    WATER_LINE           = ( 'Water Line', '', True )
+    WATER_LINE           = ( 'Water Line', '' )
     WATER_METER          = ( 'Water Meter', '' )
     WATER_SHUTOFF_VALVE  = ( 'Water Shutoff Valve', '' )
     WEATHER_STATION      = ( 'Weather Station', '' )
@@ -76,10 +67,6 @@ class EntityType(LabeledEnum):
     @classmethod
     def default(cls):
         return cls.OTHER
-
-    @property
-    def is_icon(self):
-        return bool( not self.is_path )
                     
     
 class EntityStateType(LabeledEnum):
