@@ -18,6 +18,7 @@ ET.register_namespace('', 'http://www.w3.org/2000/svg')
 class LocationForm(forms.Form):
 
     LOCATION_DEFAULT_FILENAME = 'location-default.svg'
+    MEDIA_DIRECTORY = 'location/svg'
     MAX_SVG_FILE_SIZE_MEGABYTES = 5
     MAX_SVG_FILE_SIZE_BYTES = MAX_SVG_FILE_SIZE_MEGABYTES * 1024 * 1024
 
@@ -95,7 +96,12 @@ class LocationForm(forms.Form):
             
             inner_content = ''.join( ET.tostring( element, encoding = 'unicode' ) for element in root )
             cleaned_data['svg_fragment_content'] = inner_content
-            cleaned_data['svg_fragment_filename'] = self.generate_unique_filename( svg_filename )
+
+            svg_fragment_filename = os.path.join(
+                self.MEDIA_DIRECTORY,
+                self.generate_unique_filename( svg_filename ),
+            )
+            cleaned_data['svg_fragment_filename'] = svg_fragment_filename
             
         except ET.ParseError:
             raise ValidationError( 'The uploaded file is not a valid XML (SVG) file.' )
@@ -107,7 +113,7 @@ class LocationForm(forms.Form):
     def generate_unique_filename( self, filename : str ):
         original_name, extension = os.path.splitext( filename )
         timestamp = int( time.time() )
-        unique_name = f'{original_name}_{timestamp}{extension}'
+        unique_name = f'{original_name}-{timestamp}{extension}'
         return unique_name
 
     

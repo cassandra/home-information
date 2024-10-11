@@ -4,15 +4,17 @@ from typing import Dict
 
 from django.db import transaction
 
-from hi.apps.entity.enums import (
-    AttributeName,
+from hi.apps.attribute.enums import (
     AttributeType,
     AttributeValueType,
+)
+from hi.apps.entity.enums import (
+    AttributeName,
     EntityType,
     HumidityUnit,
     TemperatureUnit,
 )
-from hi.apps.entity.models import Entity, Attribute
+from hi.apps.entity.models import Entity, EntityAttribute
 from hi.apps.model_helper import HiModelHelper
 
 from hi.integrations.core.enums import IntegrationType
@@ -235,7 +237,7 @@ class HassConverter:
             
             insteon_address = cls.hass_device_to_insteon_address( hass_device )
             if insteon_address:
-                Attribute.objects.create(
+                EntityAttribute.objects.create(
                     entity = entity,
                     name = AttributeName.INSTEON_ADDRESS,
                     value = insteon_address,

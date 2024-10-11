@@ -4,6 +4,7 @@ from django.core.files.storage import default_storage
 from django.db import models
 
 from hi.apps.common.svg_models import SvgViewBox
+from hi.apps.attribute.models import AttributeModel
 from hi.enums import ItemType
 from hi.models import ItemTypeModelMixin
 
@@ -87,6 +88,27 @@ class Location( models.Model, ItemTypeModelMixin ):
         super().delete( *args, **kwargs )
         return
 
+    
+class LocationAttribute( AttributeModel ):
+    """
+    - Information related to an location, e.g., specs, docs, notes, configs
+    - The 'attribute type' is used to help define what information the user might need to provide.
+    """
+    
+    location = models.ForeignKey(
+        Location,
+        related_name = 'attributes',
+        verbose_name = 'Location',
+        on_delete = models.CASCADE,
+    )
+
+    class Meta:
+        verbose_name = 'Attribute'
+        verbose_name_plural = 'Attributes'
+        indexes = [
+            models.Index( fields=[ 'name', 'value' ] ),
+        ]
+    
     
 class LocationView( models.Model, ItemTypeModelMixin ):
 

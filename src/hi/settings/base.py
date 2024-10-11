@@ -137,6 +137,7 @@ INSTALLED_APPS = [
     'constance',
     'hi.apps.common',
     'hi.apps.config',
+    'hi.apps.attribute',
     'hi.apps.location',
     'hi.apps.entity',
     'hi.apps.collection',

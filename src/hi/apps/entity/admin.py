@@ -3,13 +3,13 @@ from django.contrib import admin
 from . import models
 
 
-class AttributesInLine(admin.TabularInline):
-    model = models.Attribute
+class EntityAttributeInLine(admin.TabularInline):
+    model = models.EntityAttribute
     extra = 0
     show_change_link = True
 
     
-class StatesInLine(admin.TabularInline):
+class StateInLine(admin.TabularInline):
     model = models.EntityState
     extra = 0
     show_change_link = True
@@ -55,8 +55,8 @@ class EntityAdmin(admin.ModelAdmin):
     search_fields = ['name']
 
     inlines = [
-        AttributesInLine,
-        StatesInLine,
+        EntityAttributeInLine,
+        StateInLine,
         EntityViewInLine,
         PositionInLine,
         PathInLine,

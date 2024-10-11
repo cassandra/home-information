@@ -1,4 +1,6 @@
-from django.core.files.storage import default_storage
+import os
+
+from django.core.files.storage import default_storage, FileSystemStorage
 from django.db import transaction
 
 from hi.apps.common.singleton import Singleton
@@ -30,6 +32,7 @@ class LocationManager(Singleton):
         else:
             order_id = 0
             
+        self._ensure_directory_exists( svg_fragment_filename )
         with default_storage.open( svg_fragment_filename, 'w') as destination:
             destination.write( svg_fragment_content )
         
@@ -47,3 +50,11 @@ class LocationManager(Singleton):
             )
             
         return location
+    
+    def _ensure_directory_exists( self, filepath ):
+        if isinstance( default_storage, FileSystemStorage ):
+            directory = os.path.dirname( default_storage.path( filepath ))
+
+            if not os.path.exists( directory ):
+                os.makedirs( directory, exist_ok = True )
+        return
