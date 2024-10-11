@@ -17,18 +17,29 @@ class ViewParameters:
     
     view_type         : ViewType  = None
     view_mode         : ViewMode  = None
-    location_view_id  : int       = None
-    collection_id     : int       = None
+    location_view_id  : int       = None  # Last LocationView viewed
+    collection_id     : int       = None  # Last Collection viewed
     
     def __post_init__(self):
         if self.view_type is None:
             self.view_type = ViewType.default()
         if self.view_mode is None:
             self.view_mode = ViewMode.default()
+        self._location = None  # Lazy loaded
         self._location_view = None  # Lazy loaded
         self._collection = None  # Lazy loaded
         return
 
+    @property
+    def location(self):
+        if self._location:
+            return self._location
+        location_view = self.location_view
+        if not location_view:
+            return None
+        self._location = location_view.location
+        return self._location
+    
     @property
     def location_view(self):
         if self._location_view:

@@ -1,22 +1,23 @@
 <div class="bg-white p-1">
   <div class="d-flex justify-content-between">
     {% include "location/location_view_buttons.html" %}
-    {% if request.is_editing %}
-    <div class="">
-      <a href="{% url 'edit_end' %}"
-	 class="btn btn-tertiary btn-control" role="button" >
-	EXIT EDITING
-      </a>
+    <div class="d-flex justify-content-end">
+      {% include "location/location_drop_down.html" %}
+      <div>
+	{% if request.is_editing %}
+	<a href="{% url 'edit_end' %}"
+	   class="btn btn-tertiary btn-control" role="button" >
+	  EXIT EDITING
+	</a>
+	{% else %}
+	{% if request.view_parameters.view_type.allows_edit_mode %}
+	<a href="{% url 'edit_start' %}"
+	   class="btn btn-tertiary btn-control" role="button" >
+	  EDIT
+	</a>
+	{% endif %}
+	{% endif %}
+      </div>
     </div>
-    {% else %}
-    {% if request.view_parameters.view_type.allows_edit_mode %}
-    <div>
-      <a href="{% url 'edit_start' %}"
-	 class="btn btn-tertiary btn-control" role="button" >
-	EDIT
-      </a>
-    </div>
-    {% endif %}
-    {% endif %}
   </div>
 </div>

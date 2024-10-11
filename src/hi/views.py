@@ -8,6 +8,8 @@ from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
+from hi.apps.location.edit.forms import LocationForm
+from hi.apps.location.models import Location
 
 
 def error_response( request             : HttpRequest,
@@ -135,8 +137,32 @@ class HomeView( View ):
 
     def get(self, request, *args, **kwargs):
 
-        if request.view_parameters.view_type.is_collection:
+        current_location = request.view_parameters.location
+        if not current_location:
+            redirect_url = reverse('start')
+        elif request.view_parameters.view_type.is_collection:
             redirect_url = reverse( 'collection_view_default' )
         else:
             redirect_url = reverse( 'location_view_default' )
         return HttpResponseRedirect( redirect_url )
+
+    
+class StartView( View ):
+
+    def get(self, request, *args, **kwargs):
+
+
+
+        # ZZZ TODO: REMOVE ME
+        if False:
+            if Location.objects.all().exists():
+                return HomeView().get( request )
+
+
+
+
+            
+        context = {
+            'location_form': LocationForm(),
+        }
+        return render( request, 'pages/start.html', context )

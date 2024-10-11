@@ -1,0 +1,28 @@
+{% extends "modals/action_with_cancel.html" %}
+
+{% block preamble %}
+<form action="{% url 'location_edit_location_add' %}" method="post"
+      class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+New Location
+{% endblock %}
+
+{% block body %}
+<div>
+{% include "location/edit/panes/location_form.html" %}
+</div>
+{% endblock %}
+
+{% block action_right %}
+<button id="hi-add-location-button" type="submit" class="btn btn-lg btn-success"
+	name="action" value="add">
+  ADD
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

@@ -5,6 +5,10 @@ from . import views
 
 urlpatterns = [
 
+    re_path( r'^switch/(?P<location_id>\d+)$', 
+             views.LocationSwitchView.as_view(), 
+             name='location_switch'),
+
     re_path( r'^view/(?P<id>\d+)$', 
              views.LocationViewView.as_view(), 
              name='location_view'),

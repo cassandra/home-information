@@ -5,6 +5,10 @@ from . import views
 
 urlpatterns = [
 
+    re_path( r'^location/add$', 
+             views.LocationAddView.as_view(), 
+             name='location_edit_location_add'),
+
     re_path( r'^location-view/add$', 
              views.LocationViewAddView.as_view(), 
              name='location_edit_location_view_add' ),

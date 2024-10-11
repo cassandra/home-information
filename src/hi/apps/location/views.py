@@ -16,6 +16,10 @@ from .models import Location, LocationView
 logger = logging.getLogger(__name__)
 
 
+class LocationSwitchView( View ):
+    pass
+
+
 class LocationViewDefaultView( View ):
 
     def get(self, request, *args, **kwargs):

@@ -8,8 +8,10 @@
        extents="{{ location_view_data.location_view.location.svg_view_box }}" 
        width="100%" height="100%" preserveAspectRatio="xMidYMid meet"
        transform="rotate({{ location_view_data.location_view.svg_rotate }} 0 0)">
-    {% include_media_template location_view_data.location_view.location.svg_filename %}
-
+    <g class="hi-location-view-base">
+      {% include_media_template location_view_data.location_view.location.svg_filename %}
+    </g>
+    
     {% for svg_path_item in location_view_data.svg_path_items %}
     {% include "location/svg_path_item.html" with svg_path_item=svg_path_item %}
     {% endfor %}

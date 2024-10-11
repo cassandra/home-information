@@ -2,7 +2,7 @@ import logging
 from typing import Dict
 
 from django.http import HttpRequest
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.template import Context
 from django.template.loader import get_template
 from django.urls import NoReverseMatch
@@ -12,6 +12,7 @@ from django.views.generic import View
 import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
 from hi.apps.collection.models import Collection
+from hi.apps.location.models import Location
 
 from hi.constants import DIVID
 
@@ -47,6 +48,14 @@ class HiGridView(View):
         if not context:
             context = dict()
 
+        current_location = request.view_parameters.location
+        if not current_location:
+            redirect_url = reverse('start')
+            if is_ajax( request ):
+                antinode.redirect( redirect_url )
+            else:
+                return redirect( redirect_url )
+            
         if not is_ajax( request ):
             # For full syncronous render, we need all content, so we fill
             # in defaults for any missing.
@@ -67,15 +76,16 @@ class HiGridView(View):
 
             # This list of views is needed for top buttons
             if ( 'location_view_list' not in context ):
-                location = request.view_parameters.location_view.location
-                location_view_list = list( location.views.order_by( 'order_id' ))
+                location_view_list = list( current_location.views.order_by( 'order_id' ))
                 context['location_view_list'] = location_view_list
             
             # This list of collections is needed for bottom buttons
             if 'collection_list' not in context:
                 collection_list = list( Collection.objects.all().order_by( 'order_id' ))
                 context['collection_list'] = collection_list
-            
+
+            context['current_location'] = current_location
+            context['location_list'] = list( Location.objects.all() )
             return render( request, self.HI_GRID_TEMPLATE_NAME, context )
 
         div_id_to_template_name = {

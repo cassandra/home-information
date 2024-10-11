@@ -1,0 +1,22 @@
+{% for hidden in location_form.hidden_fields %}
+{{ hidden }}
+{% endfor %}
+
+{% if location_form.non_field_errors %}
+<div class="non-field-errors">
+  {% for err in location_form.non_field_errors %}
+  <p class="form-error text-danger">ERROR: {{ err }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div>
+  {{ location_form.name.label }}
+  {{ location_form.name }}
+  {{ location_form.name.errors }}
+</div>
+
+<div>
+  <label for="id_svg_file">Select an SVG file:</label>
+  <input type="file" name="svg_file" required="" id="id_svg_file">
+</div>

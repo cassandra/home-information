@@ -35,6 +35,89 @@ logger = logging.getLogger(__name__)
 
 
 @method_decorator( edit_required, name='dispatch' )
+class LocationAddView( View ):
+
+    def get( self, request, *args, **kwargs ):
+        return self._show_modal( request, location_form = forms.LocationForm() )
+    
+    def post( self, request, *args, **kwargs ):
+        location_form = forms.LocationForm( request.POST, request.FILES )
+        if not location_form.is_valid():
+            return self._show_modal( request, location_form = location_form )
+
+        svg_file = request.FILES['svg_file']
+        try:
+            svg_file_path = self._handle_uploaded_svg_file( svg_file )
+
+        except ValueError as e:
+            location_form.add_error( 'svg_file', str(e) )
+            return self._show_modal( request, location_form = location_form )
+
+        try:
+            location = LocationEditHelpers.create_location(
+                request = request,
+                name = location_form.cleaned_data.get('name'),
+            )
+        except ValueError as e:
+            return bad_request_response( request, message = str(e) )
+
+
+
+
+        
+        
+        location_view = create_all_zzz
+
+
+
+        
+        request.view_parameters.view_type = ViewType.LOCATION_VIEW
+        request.view_parameters.location_view_id = location_view.id
+        request.view_parameters.to_session( request )
+        
+        redirect_url = reverse('home')
+        return redirect( redirect_url )
+
+    def _show_modal( self, request, location_form : forms.LocationForm ):
+        context = {
+            'location_form': location_form,
+        }
+        return antinode.modal_from_template(
+            request = request,
+            template_name = 'location/edit/modals/location_add.html',
+            context = context,
+        )
+
+    def _handle_uploaded_svg_file( self, svg_file ):
+
+        if svg_file.size > 1024 * 1024 * 5:  # Example: Limit file size to 5 MB
+            raise ValueError("File is too large")
+
+        for chunk in svg_file.chunks():
+            # Process each chunk of the file (optional)
+            pass
+
+
+
+
+        
+
+        return svg_file.name
+
+    
+
+
+
+        
+        # Save the file to MEDIA_ROOT after processing
+        file_path = os.path.join( settings.MEDIA_ROOT, svg_file.name )
+        with default_storage.open( file_path, 'wb+' ) as destination:
+            for chunk in svg_file.chunks():
+                destination.write(chunk)
+        return file_path
+        
+    
+@method_decorator( edit_required, name='dispatch' )
 class LocationViewDetailsView( View ):
 
     def get( self, request, *args, **kwargs ):
@@ -75,10 +158,10 @@ class LocationViewAddView( View ):
         )
     
     def post( self, request, *args, **kwargs ):
-        name_form = forms.LocationViewForm( request.POST )
-        if not name_form.is_valid():
+        location_view_form = forms.LocationViewForm( request.POST )
+        if not location_view_form.is_valid():
             context = {
-                'location_view_form': name_form,
+                'location_view_form': location_view_form,
             }
             return antinode.modal_from_template(
                 request = request,
@@ -89,7 +172,7 @@ class LocationViewAddView( View ):
         try:
             location_view = LocationEditHelpers.create_location_view(
                 request = request,
-                name = name_form.cleaned_data.get('name'),
+                name = location_view_form.cleaned_data.get('name'),
             )
         except ValueError as e:
             return bad_request_response( request, message = str(e) )

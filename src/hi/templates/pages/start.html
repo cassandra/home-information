@@ -1,0 +1,14 @@
+{% extends "pages/base.html" %}
+
+{% block content %}
+<h1>Start Page</h1>
+
+<div>
+  <a role="button" class="btn btn-success"
+     href="{% url 'location_edit_location_add' %}"
+     data-async="modal">
+	ADD NEW LOCATION
+  </a>
+</div>
+
+{% endblock %}
