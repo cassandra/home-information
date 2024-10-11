@@ -9,7 +9,7 @@
        width="100%" height="100%" preserveAspectRatio="xMidYMid meet"
        transform="rotate({{ location_view_data.location_view.svg_rotate }} 0 0)">
     <g class="hi-location-view-base">
-      {% include_media_template location_view_data.location_view.location.svg_filename %}
+      {% include_media_template location_view_data.location_view.location.svg_fragment_filename %}
     </g>
     
     {% for svg_path_item in location_view_data.svg_path_items %}

@@ -9,6 +9,10 @@ urlpatterns = [
              views.LocationAddView.as_view(), 
              name='location_edit_location_add'),
 
+    re_path( r'^location/delete/(?P<location_id>\d+)$', 
+             views.LocationDeleteView.as_view(), 
+             name='location_edit_location_delete' ),
+
     re_path( r'^location-view/add$', 
              views.LocationViewAddView.as_view(), 
              name='location_edit_location_view_add' ),

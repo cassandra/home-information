@@ -36,6 +36,7 @@ class Collection( models.Model, LocationItemModelMixin ):
     class Meta:
         verbose_name = 'Collection'
         verbose_name_plural = 'Collections'
+        ordering = [ 'order_id' ]
 
     @property
     def item_type(self) -> ItemType:

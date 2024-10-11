@@ -9,7 +9,6 @@ from django.views.generic import View
 import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
 from hi.apps.location.edit.forms import LocationForm
-from hi.apps.location.models import Location
 
 
 def error_response( request             : HttpRequest,
@@ -24,9 +23,13 @@ def error_response( request             : HttpRequest,
     if context is None:
         context = {}
 
+    if 'error_message' not in context:
+        context['error_message'] = 'Error (details missing).'
+    if 'message' in context:
+        context['error_message'] = context['message']
+        
     if force_json or ( request.META.get('HTTP_ACCEPT', '') == 'application/json' ):
-        data = { 'error_message': context.get( 'message', 'Error (details missing).' ) }
-        return HttpResponse( json.dumps( data ),
+        return HttpResponse( json.dumps( context ),
                              content_type = "application/json",
                              status = status_code )
     
@@ -137,10 +140,7 @@ class HomeView( View ):
 
     def get(self, request, *args, **kwargs):
 
-        current_location = request.view_parameters.location
-        if not current_location:
-            redirect_url = reverse('start')
-        elif request.view_parameters.view_type.is_collection:
+        if request.view_parameters.view_type.is_collection:
             redirect_url = reverse( 'collection_view_default' )
         else:
             redirect_url = reverse( 'location_view_default' )
@@ -150,18 +150,6 @@ class HomeView( View ):
 class StartView( View ):
 
     def get(self, request, *args, **kwargs):
-
-
-
-        # ZZZ TODO: REMOVE ME
-        if False:
-            if Location.objects.all().exists():
-                return HomeView().get( request )
-
-
-
-
-            
         context = {
             'location_form': LocationForm(),
         }

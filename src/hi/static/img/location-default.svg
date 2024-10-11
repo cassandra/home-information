@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+              "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="40pc" height="40pc"
+     viewBox="0 0 2000 2000">
+  <path class="property-boundary"
+        fill="none" stroke="black" stroke-width="1"
+        d="M 64.00,81.00
+           C 64.00,81.00 1905.00,78.00 1905.00,78.00
+             1905.00,78.00 1905.00,1903.00 1905.00,1903.00
+             1905.00,1903.00 64.00,1907.00 65.00,1906.00
+             66.00,1905.00 64.00,81.00 64.00,81.00 Z" />
+  <path class="house-outer-wall"
+        fill="none" stroke="black" stroke-width="8"
+        d="M 143.00,610.00
+           C 143.00,610.00 1762.00,609.00 1762.00,609.00
+             1762.00,609.00 1776.00,1609.00 1776.00,1608.00
+             1776.00,1607.00 142.00,1610.00 144.00,1610.00
+             146.00,1610.00 143.00,610.00 143.00,610.00 Z" />
+</svg>

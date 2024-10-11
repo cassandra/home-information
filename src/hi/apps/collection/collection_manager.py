@@ -41,11 +41,15 @@ class CollectionManager(Singleton):
                            collection_type  : CollectionType,
                            name             : str          ) -> Collection:
         last_collection = Collection.objects.all().order_by( '-order_id' ).first()
-        
+        if last_collection:
+            order_id = last_collection.order_id + 1
+        else:
+            order_id = 0
+            
         return Collection.objects.create(
             name = name,
             collection_type_str = str(collection_type),
-            order_id = last_collection.order_id + 1,
+            order_id = order_id,
         )
         
     def create_collection_entity( self,
@@ -53,10 +57,15 @@ class CollectionManager(Singleton):
                                   collection  : Collection ) -> CollectionEntity:
         
         last_item = CollectionEntity.objects.order_by( '-order_id' ).first()
+        if last_item:
+            order_id = last_item.order_id + 1
+        else:
+            order_id = 0
+        
         return CollectionEntity.objects.create(
             entity = entity,
             collection = collection,
-            order_id = last_item.order_id + 1,
+            order_id = order_id,
         )
 
     def remove_collection_entity( self,

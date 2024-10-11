@@ -53,7 +53,7 @@ class ExceptionMiddleware(object):
     def process_request( self, request ):
         return None
         
-    def process_exception(self, request, exception):
+    def process_exception( self, request, exception ):
         ip_address = request.META.get( 'HTTP_X_FORWARDED_FOR' )  # nginx forwarded
         logger.warning( f'Exception caught in middleware [{ip_address}]: {exception}' )
         
@@ -85,6 +85,7 @@ class ExceptionMiddleware(object):
         if isinstance(response, HttpResponseNotAllowed):
             return views.method_not_allowed_response(request)
         if isinstance(response, HttpResponseServerError):
+            logger.warning( f'Internal error in middleware' )
             return views.internal_error_response(request)
         return response
 

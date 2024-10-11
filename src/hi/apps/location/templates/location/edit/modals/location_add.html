@@ -1,7 +1,7 @@
 {% extends "modals/action_with_cancel.html" %}
 
 {% block preamble %}
-<form action="{% url 'location_edit_location_add' %}" method="post"
+<form action="{% url 'location_edit_location_add' %}" method="post" enctype="multipart/form-data"
       class="form" data-async="modal">
   {% csrf_token %}
 {% endblock %}

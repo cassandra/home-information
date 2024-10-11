@@ -9,14 +9,12 @@ from hi.apps.collection.models import (
     Collection,
     CollectionView,
 )
-from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.entity.delegation_manager import DelegationManager
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import (
     Entity,
     EntityView,
 )
-from hi.apps.location.enums import LocationViewType
 from hi.apps.location.models import Location, LocationView
 
 from .transient_models import (
@@ -29,57 +27,6 @@ from .transient_models import (
 
 class LocationEditHelpers:
 
-    @classmethod
-    def create_location( cls,
-                         request       : HttpRequest,
-                         name          : str,
-                         svg_filename  : str,
-                         svg_view_box  : SvgViewBox
-                         
-                        ) -> LocationView:
-
-        location = cls.get_location_for_new_location_view( request )
-        if not location:
-            raise ValueError( 'No locations defined.' )
-        
-        last_location_view = location.views.order_by( '-order_id' ).first()
-        
-        return LocationView.objects.create(
-            location = location,
-            location_view_type_str = LocationViewType.default(),
-            name = name,
-            svg_view_box_str = str( location.svg_view_box ),
-            svg_rotate = Decimal( 0.0 ),
-            order_id = last_location_view.order_id + 1,
-        )
-
-    @classmethod
-    def create_location_view( cls,
-                              request  : HttpRequest,
-                              name     : str          ) -> LocationView:
-
-        location = cls.get_location_for_new_location_view( request )
-        if not location:
-            raise ValueError( 'No locations defined.' )
-        
-        last_location_view = location.views.order_by( '-order_id' ).first()
-        
-        return LocationView.objects.create(
-            location = location,
-            location_view_type_str = LocationViewType.default(),
-            name = name,
-            svg_view_box_str = str( location.svg_view_box ),
-            svg_rotate = Decimal( 0.0 ),
-            order_id = last_location_view.order_id + 1,
-        )
-
-    @classmethod
-    def get_location_for_new_location_view( cls, request : HttpRequest ) -> Location:
-        if request.view_parameters.location_view:
-            return request.view_parameters.location_view.location
-        return Location.objects.order_by( 'order_id' ).first()
-    
-        
     @classmethod
     def create_entity_view_group_list( cls, location_view : LocationView ) -> List[EntityViewGroup]:
 

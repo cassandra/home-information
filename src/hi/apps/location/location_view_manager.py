@@ -1,7 +1,10 @@
+from decimal import Decimal
+
 from hi.apps.common.singleton import Singleton
 
+from .enums import LocationViewType
 from .location_view_data import LocationViewData
-from .models import LocationView
+from .models import Location, LocationView
 
 
 class LocationViewManager(Singleton):
@@ -9,6 +12,25 @@ class LocationViewManager(Singleton):
     def __init_singleton__(self):
         return
 
+    def create_location_view( self,
+                              location  : Location,
+                              name      : str          ) -> LocationView:
+
+        last_location_view = location.views.order_by( '-order_id' ).first()
+        if last_location_view:
+            order_id = last_location_view.order_id + 1
+        else:
+            order_id = 0
+            
+        return LocationView.objects.create(
+            location = location,
+            location_view_type_str = LocationViewType.default(),
+            name = name,
+            svg_view_box_str = str( location.svg_view_box ),
+            svg_rotate = Decimal( 0.0 ),
+            order_id = order_id,
+        )
+    
     def get_location_view_data( self, location_view : LocationView ):
 
         location = location_view.location

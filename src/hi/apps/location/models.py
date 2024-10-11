@@ -1,10 +1,15 @@
+import logging
+
+from django.core.files.storage import default_storage
 from django.db import models
 
-from hi.apps.common.svg_models import SvgIconItem, SvgPathItem, SvgViewBox
+from hi.apps.common.svg_models import SvgViewBox
 from hi.enums import ItemType
 from hi.models import ItemTypeModelMixin
 
 from .enums import LocationViewType
+
+logger = logging.getLogger(__name__)
 
 
 class Location( models.Model, ItemTypeModelMixin ):
@@ -14,30 +19,15 @@ class Location( models.Model, ItemTypeModelMixin ):
         max_length = 64,
         null = False, blank = False,
     )
-    svg_filename = models.CharField(
-        'SVG File',
-        max_length = 256,
+    svg_fragment_filename = models.CharField(
+        'SVG Filename',
+        max_length = 255,
         null = False, blank = False,
     )
     svg_view_box_str = models.CharField(
         'Viewbox',
-        max_length = 64,
+        max_length = 128,
         null = False, blank = False,
-    )
-    latitude = models.DecimalField(
-        'Latitude',
-        max_digits = 11,
-        decimal_places = 8,
-    )
-    longitude = models.DecimalField(
-        'Longitude',
-        max_digits = 11,
-        decimal_places = 8,
-    )
-    elevation_feet = models.DecimalField(
-        'Elevation (ft)',
-        max_digits = 9,
-        decimal_places = 3,
     )
     order_id = models.PositiveIntegerField(
         'Order Id',
@@ -56,6 +46,7 @@ class Location( models.Model, ItemTypeModelMixin ):
     class Meta:
         verbose_name = 'Location'
         verbose_name_plural = 'Locations'
+        ordering = [ 'order_id' ]
 
     def __str__(self):
         return f'{self.name} ({self.id})'
@@ -66,7 +57,7 @@ class Location( models.Model, ItemTypeModelMixin ):
     @property
     def item_type(self) -> ItemType:
         return ItemType.LOCATION
-    
+
     @property
     def svg_view_box(self):
         return SvgViewBox.from_attribute_value( self.svg_view_box_str )
@@ -76,7 +67,27 @@ class Location( models.Model, ItemTypeModelMixin ):
         self.svg_view_box_str = str(svg_view_box)
         return
 
+    def delete( self, *args, **kwargs ):
+        """ Deleting SVG file from MEDIA_ROOT on best effort basis.  Ignore if fails. """
+        
+        if self.svg_fragment_filename:
+            try:
+                if default_storage.exists( self.svg_fragment_filename ):
+                    default_storage.delete( self.svg_fragment_filename )
+                    logger.debug( f'Deleted SVG file: {self.svg_fragment_filename}' )
+                else:
+                    logger.warn( f'SVG file not found: {self.svg_fragment_filename}' )
+            except Exception as e:
+                # Log the error or handle it accordingly
+                logger.warn( f'Error deleting file {self.svg_fragment_filename}: {e}' )
 
+        else:
+            logger.warn( 'No SVG filename for model deletion.' )
+
+        super().delete( *args, **kwargs )
+        return
+
+    
 class LocationView( models.Model, ItemTypeModelMixin ):
 
     location = models.ForeignKey(
@@ -98,7 +109,7 @@ class LocationView( models.Model, ItemTypeModelMixin ):
     )
     svg_view_box_str = models.CharField(
         'Viewbox',
-        max_length = 64,
+        max_length = 128,
         null = False, blank = False,
     )
     svg_rotate = models.DecimalField(
@@ -123,6 +134,7 @@ class LocationView( models.Model, ItemTypeModelMixin ):
     class Meta:
         verbose_name = 'View'
         verbose_name_plural = 'Views'
+        ordering = [ 'order_id' ]
 
     def __str__(self):
         return f'{self.name} ({self.id})'

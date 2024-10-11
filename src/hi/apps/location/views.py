@@ -17,18 +17,43 @@ logger = logging.getLogger(__name__)
 
 
 class LocationSwitchView( View ):
-    pass
+
+    def get(self, request, *args, **kwargs):
+
+        location_id = kwargs.get('location_id')
+        try:
+            location = Location.objects.get( id = location_id )
+        except Location.DoesNotExist:
+            return page_not_found_response( request )
+
+        location_view = location.views.order_by( 'order_id' ).first()
+        if not location_view:
+            return bad_request_response( request, message = 'No views defined for this location.' )
+
+        request.view_parameters.view_type = ViewType.LOCATION_VIEW
+        request.view_parameters.location_view_id = location_view.id
+        request.view_parameters.to_session( request )
+
+        redirect_url = reverse(
+            'location_view',
+            kwargs = { 'id': location_view.id }
+        )
+        return HttpResponseRedirect( redirect_url )
 
 
 class LocationViewDefaultView( View ):
 
     def get(self, request, *args, **kwargs):
 
-        location_view = self._get_default_location_view( request )
-        redirect_url = reverse(
-            'location_view',
-            kwargs = { 'id': location_view.id }
-        )
+        try:
+            location_view = self._get_default_location_view( request )
+            redirect_url = reverse(
+                'location_view',
+                kwargs = { 'id': location_view.id }
+            )
+        except Location.DoesNotExist:
+            redirect_url = reverse( 'start' )
+            
         return HttpResponseRedirect( redirect_url )
 
     def _get_default_location_view( self, request ):
@@ -37,8 +62,8 @@ class LocationViewDefaultView( View ):
 
         location = Location.objects.order_by( 'order_id' ).first()
         if not location:
-            return bad_request_response( request, message = 'No locations defined.' )
-        
+            raise Location.DoesNotExist()
+                
         location_view = location.views.order_by( 'order_id' ).first()
         if not location_view:
             return bad_request_response( request, message = 'No views defined for this location.' )

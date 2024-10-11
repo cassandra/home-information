@@ -17,13 +17,18 @@ from hi.apps.entity.entity_manager import EntityManager
 import hi.apps.entity.edit.views as entity_edit_views
 from hi.apps.entity.models import Entity
 from hi.apps.location.forms import LocationItemPositionForm
+from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.location_view_manager import LocationViewManager
-from hi.apps.location.models import LocationView
+from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 from hi.decorators import edit_required
 from hi.enums import ItemType, ViewType
 from hi.hi_grid_view import HiGridView
-from hi.views import bad_request_response, page_not_found_response
+from hi.views import (
+    bad_request_response,
+    internal_error_response,
+    page_not_found_response,
+)
 
 from hi.constants import DIVID
 
@@ -45,38 +50,26 @@ class LocationAddView( View ):
         if not location_form.is_valid():
             return self._show_modal( request, location_form = location_form )
 
-        svg_file = request.FILES['svg_file']
         try:
-            svg_file_path = self._handle_uploaded_svg_file( svg_file )
-
-        except ValueError as e:
-            location_form.add_error( 'svg_file', str(e) )
-            return self._show_modal( request, location_form = location_form )
-
-        try:
-            location = LocationEditHelpers.create_location(
-                request = request,
+            location = LocationManager().create_location(
                 name = location_form.cleaned_data.get('name'),
+                svg_fragment_filename = location_form.cleaned_data.get('svg_fragment_filename'),
+                svg_fragment_content = location_form.cleaned_data.get('svg_fragment_content'),
+                svg_viewbox = location_form.cleaned_data.get('svg_viewbox'),
             )
-        except ValueError as e:
-            return bad_request_response( request, message = str(e) )
+        except ValueError as ve:
+            return bad_request_response( request, message = str(ve) )
+        except Exception as e:
+            logger.exception( e )
+            return internal_error_response( request, message = str(e) )
 
-
-
-
-        
-        
-        location_view = create_all_zzz
-
-
-
-        
+        location_view = location.views.order_by( 'order_id' ).first()
         request.view_parameters.view_type = ViewType.LOCATION_VIEW
         request.view_parameters.location_view_id = location_view.id
         request.view_parameters.to_session( request )
         
         redirect_url = reverse('home')
-        return redirect( redirect_url )
+        return antinode.redirect_response( redirect_url )
 
     def _show_modal( self, request, location_form : forms.LocationForm ):
         context = {
@@ -88,35 +81,56 @@ class LocationAddView( View ):
             context = context,
         )
 
-    def _handle_uploaded_svg_file( self, svg_file ):
-
-        if svg_file.size > 1024 * 1024 * 5:  # Example: Limit file size to 5 MB
-            raise ValueError("File is too large")
-
-        for chunk in svg_file.chunks():
-            # Process each chunk of the file (optional)
-            pass
-
-
-
-
-        
-
-        return svg_file.name
-
     
+@method_decorator( edit_required, name='dispatch' )
+class LocationDeleteView( View ):
 
+    def get(self, request, *args, **kwargs):
+        location_id = kwargs.get( 'location_id' )
+        if not location_id:
+            return bad_request_response( request, message = 'Missing location id.' )
+            
+        try:
+            location = Location.objects.get( id = location_id )
+        except Location.DoesNotExist:
+            return page_not_found_response( request )
 
-
-        
-        # Save the file to MEDIA_ROOT after processing
-        file_path = os.path.join( settings.MEDIA_ROOT, svg_file.name )
-        with default_storage.open( file_path, 'wb+' ) as destination:
-            for chunk in svg_file.chunks():
-                destination.write(chunk)
-        return file_path
-        
+        context = {
+            'location': location,
+        }
+        return antinode.modal_from_template(
+            request = request,
+            template_name = 'location/edit/modals/location_delete.html',
+            context = context,
+        )
     
+    def post( self, request, *args, **kwargs ):
+        action = request.POST.get( 'action' )
+        if action != 'confirm':
+            return bad_request_response( request, message = 'Missing confirmation value.' )
+
+        location_id = kwargs.get( 'location_id' )
+        if not location_id:
+            return bad_request_response( request, message = 'Missing location id.' )
+            
+        try:
+            location = Location.objects.get( id = location_id )
+        except Location.DoesNotExist:
+            return page_not_found_response( request )
+
+        location.delete()
+
+        next_location = Location.objects.all().order_by( 'order_id' ).first()
+        if next_location:
+            request.view_parameters.location_id = next_location.id
+        else:
+            request.view_parameters.location_id = None
+        request.view_parameters.to_session( request )
+        
+        redirect_url = reverse('home')
+        return antinode.redirect_response( redirect_url )
+
+        
 @method_decorator( edit_required, name='dispatch' )
 class LocationViewDetailsView( View ):
 
@@ -169,9 +183,14 @@ class LocationViewAddView( View ):
                 context = context,
             )
 
+        if request.view_parameters.location_view:
+            location = request.view_parameters.location_view.location
+        else:
+            location = Location.objects.order_by( 'order_id' ).first()
+        
         try:
-            location_view = LocationEditHelpers.create_location_view(
-                request = request,
+            location_view = LocationViewManager().create_location_view(
+                location = location,
                 name = location_view_form.cleaned_data.get('name'),
             )
         except ValueError as e:
@@ -238,15 +257,13 @@ class LocationViewDeleteView( View ):
     def get(self, request, *args, **kwargs):
         location_view_id = kwargs.get( 'location_view_id' )
         if not location_view_id:
-            return bad_request_response( request, message = 'No current location view found.' )
+            return bad_request_response( request, message = 'Missing location view id.' )
             
         try:
             location_view = LocationView.objects.select_related(
                 'location' ).get( id = location_view_id )
         except LocationView.DoesNotExist:
-            message = f'Location view "{location_view_id}" does not exist.'
-            logger.warning( message )
-            return bad_request_response( request, message = message )
+            return page_not_found_response( request )
 
         context = {
             'location_view': location_view,
@@ -270,9 +287,7 @@ class LocationViewDeleteView( View ):
             location_view = LocationView.objects.select_related(
                 'location' ).get( id = location_view_id )
         except LocationView.DoesNotExist:
-            message = f'Location view "{location_view_id}" does not exist.'
-            logger.warning( message )
-            return bad_request_response( request, message = message )
+            return page_not_found_response( request )
 
         location_view.delete()
 
@@ -284,7 +299,7 @@ class LocationViewDeleteView( View ):
         request.view_parameters.to_session( request )
         
         redirect_url = reverse('home')
-        return redirect( redirect_url )
+        return antinode.redirect_response( redirect_url )
 
     
 @method_decorator( edit_required, name='dispatch' )
