@@ -1,15 +1,19 @@
 import logging
 
 from django.http import HttpResponseRedirect
+from django.template.loader import get_template
 from django.urls import reverse
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
+
+from hi.constants import DIVID
 from hi.enums import ViewType
 from hi.hi_grid_view import HiGridView
 from hi.views import bad_request_response, page_not_found_response
 
+from .location_manager import LocationManager
 from .location_view_manager import LocationViewManager
 from .models import Location, LocationView
 
@@ -110,6 +114,10 @@ class LocationViewView( HiGridView ):
         
         side_template_name = None
         if request.is_editing:
+            location_detail_data = LocationManager().get_location_detail_data(
+                location = location_view.location,
+            )
+            context['location_detail_data'] = location_detail_data
             side_template_name = 'edit/panes/side.html'
             
         return self.hi_grid_response( 
@@ -120,3 +128,32 @@ class LocationViewView( HiGridView ):
             push_url_name = 'location_view',
             push_url_kwargs = kwargs,
         )
+
+    
+class LocationDetailsView( View ):
+
+    def get( self, request, *args, **kwargs ):
+        location_id = kwargs.get( 'location_id' )
+        if not location_id:
+            return bad_request_response( request, message = 'Missing location id in request.' )
+        try:
+            location = Location.objects.get( id = location_id )
+        except Location.DoesNotExist:
+            return page_not_found_response( request )
+                
+        location_detail_data = LocationManager().get_location_detail_data(
+            location = location,
+        )
+        context = {
+            'location_detail_data': location_detail_data,
+        }
+        template = get_template( 'location/panes/location_details.html' )
+        content = template.render( context, request = request )
+        return antinode.response(
+            insert_map = {
+                DIVID['EDIT_ITEM']: content,
+            },
+        )     
+
+
+    

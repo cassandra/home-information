@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-start draggable-container">
   {% for collection in collection_list %}
-  <div id="{{ collection.html_id }}"
+  <div id="{{ collection.html_id }}-button"
        class="{% if request.is_editing %}draggable{% endif %}"
        {% if request.is_editing %}draggable="true"{% endif %}
        >

@@ -1,0 +1,51 @@
+<h4>{{ entity_detail_data.entity.name }}</h4>
+
+{% if entity_detail_data.location_item_position_form %}
+<h5>Position</h5>
+<div id="{{ entity_detail_data.location_item_position_form.content_html_id }}">
+  {% include "location/edit/panes/location_item_position.html" with location_item_position_form=entity_detail_data.location_item_position_form %}
+</div>
+{% endif %}
+
+<h5>Attributes</h5>
+<div id="hi-edit-entity-attributes">
+  {% include "entity/panes/entity_attributes.html" %}
+</div>
+
+<h5>Views</h5>
+<div id="hi-edit-entity-views">
+  {% include "entity/panes/entity_views.html" %}
+</div>
+
+<h5>Sensors</h5>
+<div id="hi-edit-entity-sensors">
+  {% include "entity/panes/entity_sensors.html" %}
+</div>
+
+<h5>Controllers</h5>
+<div id="hi-edit-entity-controllers">
+  {% include "entity/panes/entity_controllers.html" %}
+</div>
+
+<h5>Delegates</h5>
+<div id="hi-edit-entity-controllers">
+  <div>TBD - DELEGATES</div>
+</div>
+
+<h5>Principals</h5>
+<div id="hi-edit-entity-controllers">
+  <div>TBD - PRINCIPALS</div>
+</div>
+
+{% if entity_detail_data.entity.can_user_delete %}
+<div class="">
+  <a href="{% url 'entity_edit_entity_delete' entity_id=entity_detail_data.entity.id %}"
+     class="btn btn-danger btn-control" role="button" data-async="true">
+    DELETE ENTITY
+  </a>
+</div>
+{% else %}
+<h5>Integration</h5>
+<div>{{ entity_detail_data.entity.integration_type }} [{{ entity_detail_data.entity.integration_key }}]</div>
+
+{% endif %}

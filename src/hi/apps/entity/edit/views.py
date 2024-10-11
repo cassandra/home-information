@@ -2,7 +2,6 @@ import logging
 
 from django.db import transaction
 from django.shortcuts import redirect
-from django.template.loader import get_template
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.generic import View
@@ -11,11 +10,9 @@ from hi.apps.collection.edit.helpers import CollectionEditHelpers
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.enums import EntityType
-from hi.apps.entity.models import Entity, EntityPosition
+from hi.apps.entity.models import Entity
 from hi.apps.location.edit.helpers import LocationEditHelpers
-from hi.apps.location.forms import LocationItemPositionForm
 
-from hi.constants import DIVID
 from hi.decorators import edit_required
 from hi.views import bad_request_response, not_authorized_response, page_not_found_response
 
@@ -24,45 +21,6 @@ from . import forms
 logger = logging.getLogger(__name__)
 
 
-@method_decorator( edit_required, name='dispatch' )
-class EntityDetailsView( View ):
-
-    def get( self, request, *args, **kwargs ):
-        entity_id = kwargs.get( 'entity_id' )
-        if not entity_id:
-            return bad_request_response( request, message = 'Missing entity id in request.' )
-        try:
-            entity = Entity.objects.get( id = entity_id )
-        except Entity.DoesNotExist:
-            return page_not_found_response( request, message = f'No entity with id "{entity_id}".' )
-
-        location_view = request.view_parameters.location_view
-
-        location_item_position_form = None
-        if request.view_parameters.view_type.is_location_view:
-            entity_position = EntityPosition.objects.filter(
-                entity = entity,
-                location = location_view.location,
-            ).first()
-            if entity_position:
-                location_item_position_form = LocationItemPositionForm.from_models(
-                    location_item = entity_position.entity,
-                    location_item_position = entity_position,
-                )
-
-        context = {
-            'entity': entity,
-            'location_item_position_form': location_item_position_form,
-        }
-        template = get_template( 'entity/edit/panes/entity_details.html' )
-        content = template.render( context, request = request )
-        return antinode.response(
-            insert_map = {
-                DIVID['EDIT_ITEM']: content,
-            },
-        )     
-
-    
 @method_decorator( edit_required, name='dispatch' )
 class EntityAddView( View ):
 

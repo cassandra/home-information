@@ -6,6 +6,7 @@ from django.db import transaction
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.svg_models import SvgViewBox
 
+from .location_detail_data import LocationDetailData
 from .location_view_manager import LocationViewManager
 from .models import (
     Location,
@@ -58,3 +59,10 @@ class LocationManager(Singleton):
             if not os.path.exists( directory ):
                 os.makedirs( directory, exist_ok = True )
         return
+    
+    def get_location_detail_data( self, location : Location ) -> LocationDetailData:
+        # TODO: Add attributes and other data
+        return LocationDetailData(
+            location = location,
+        )
+    

@@ -13,10 +13,6 @@ urlpatterns = [
              views.CollectionDeleteView.as_view(), 
              name='collection_edit_collection_delete' ),
 
-    re_path( r'^collection/details/(?P<collection_id>\d+)$', 
-             views.CollectionDetailsView.as_view(), 
-             name='collection_edit_collection_details' ),
-
     re_path( r'^collection/add-remove-item$', 
              views.CollectionAddRemoveItemView.as_view(), 
              name='collection_edit_collection_add_remove_item' ),

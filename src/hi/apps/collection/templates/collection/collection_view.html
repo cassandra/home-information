@@ -7,7 +7,7 @@
        {% if request.is_editing %}draggable="true"{% endif %}
         >
     {% if request.is_editing %}
-    <a href="{% url 'entity_edit_entity_details' entity_id=entity.id %}"
+    <a href="{% url 'entity_details' entity_id=entity.id %}"
        data-async="true">
       {{ entity.name }}
     </a>

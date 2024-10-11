@@ -80,8 +80,8 @@
 	} else if ( $(event.target).hasClass( Hi.LOCATION_VIEW_SVG_CLASS ) ) {
 	    if ( gCurrentSelectionModule != 'svg-path' ) {
 		if ( Hi.DEBUG ) { console.log( `Mouse down event [${MODULE_NAME}]`, event ); }
+		createTransformData( event, event.target );
 		handleLocationViewSvgClick( event, event.target );
-		createTransformData( event, gSelectedLocationViewSvg );
 		event.preventDefault(); 
 		event.stopImmediatePropagation();
 		return;
@@ -107,7 +107,7 @@
 	    gSvgTransformData = null;
 	    gSvgTransformType = SvgTransformType.MOVE;
 	    gIgnoreCLick = true;
-	    
+
 	    event.preventDefault(); 
 	    event.stopImmediatePropagation();
 	    return;

@@ -118,9 +118,9 @@
     }
     
     function handleMouseUp( event ) {
-	if ( Hi.DEBUG ) { console.log( `Mouse up event [${MODULE_NAME}]`, event ); }
 	
 	if ( gSvgIconDragData ) {
+	    if ( Hi.DEBUG ) { console.log( `Mouse up event [${MODULE_NAME}]`, event ); }
 	    if ( gSvgIconDragData.isDragging ) {
 		applyDrag( event );
 		$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '');
@@ -133,6 +133,7 @@
 	}
 	
 	else if ( gSvgIconEditData ) {
+	    if ( Hi.DEBUG ) { console.log( `Mouse up event [${MODULE_NAME}]`, event ); }
 	    if ( gSvgIconActionState == SvgActionStateType.SCALE ) {
 		gSvgIconEditData.isScaling = false;
 		iconActionScaleApply();

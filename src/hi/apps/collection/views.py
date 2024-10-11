@@ -1,6 +1,7 @@
 import logging
 
 from django.http import HttpResponseRedirect
+from django.template.loader import get_template
 from django.urls import reverse
 from django.views.generic import View
 
@@ -8,7 +9,9 @@ import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
 from hi.enums import ViewType
 from hi.hi_grid_view import HiGridView
-from hi.views import bad_request_response
+from hi.views import bad_request_response, page_not_found_response
+
+from hi.constants import DIVID
 
 from .collection_manager import CollectionManager
 from .models import Collection
@@ -79,6 +82,12 @@ class CollectionView( HiGridView ):
 
         side_template_name = None
         if request.is_editing:
+            collection_detail_data = CollectionManager().get_collection_detail_data(
+                collection = collection,
+                current_location_view = None,
+                is_editing = request.is_editing,
+            )
+            context['collection_detail_data'] = collection_detail_data
             side_template_name = 'edit/panes/side.html'
 
         return self.hi_grid_response( 
@@ -89,3 +98,39 @@ class CollectionView( HiGridView ):
             push_url_name = 'collection_view',
             push_url_kwargs = kwargs,
         )
+
+    
+class CollectionDetailsView( View ):
+
+    def get( self, request, *args, **kwargs ):
+        collection_id = kwargs.get( 'collection_id' )
+        if not collection_id:
+            return bad_request_response( request, message = 'Missing collection id in request.' )
+        try:
+            collection = Collection.objects.get( id = collection_id )
+        except Collection.DoesNotExist:
+            return page_not_found_response( request )
+
+        current_location_view = None
+        if request.view_parameters.view_type.is_location_view:
+            current_location_view = request.view_parameters.location_view
+
+        collection_detail_data = CollectionManager().get_collection_detail_data(
+            collection = collection,
+            current_location_view = current_location_view,
+            is_editing = request.is_editing,
+        )
+        
+        context = {
+            'collection_detail_data': collection_detail_data,
+        }
+        template = get_template( 'collection/panes/collection_details.html' )
+        content = template.render( context, request = request )
+        return antinode.response(
+            insert_map = {
+                DIVID['EDIT_ITEM']: content,
+            },
+        )     
+
+    
+    

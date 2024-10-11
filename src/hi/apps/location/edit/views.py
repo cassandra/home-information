@@ -9,18 +9,19 @@ from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 from hi.apps.collection.collection_manager import CollectionManager
-import hi.apps.collection.edit.views as collection_edit_views
+import hi.apps.collection.views as collection_views
 from hi.apps.collection.models import Collection
 import hi.apps.common.antinode as antinode
 from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.entity.entity_manager import EntityManager
-import hi.apps.entity.edit.views as entity_edit_views
+import hi.apps.entity.views as entity_views
 from hi.apps.entity.models import Entity
 from hi.apps.location.forms import LocationItemPositionForm
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.location_view_manager import LocationViewManager
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
+import hi.apps.location.views as location_views
 from hi.decorators import edit_required
 from hi.enums import ItemType, ViewType
 from hi.hi_grid_view import HiGridView
@@ -131,33 +132,6 @@ class LocationDeleteView( View ):
         return antinode.redirect_response( redirect_url )
 
         
-@method_decorator( edit_required, name='dispatch' )
-class LocationViewDetailsView( View ):
-
-    def get( self, request, *args, **kwargs ):
-        location_view_id = kwargs.get( 'location_view_id' )
-        if not location_view_id:
-            return bad_request_response( request, message = 'Missing location_view id in request.' )
-        try:
-            location_view = LocationView.objects.get( id = location_view_id )
-        except LocationView.DoesNotExist:
-            return page_not_found_response( request )
-                
-        location_view_data = LocationViewManager().get_location_view_data(
-            location_view = location_view,
-        )
-        context = {
-            'location_view_data': location_view_data,
-        }
-        template = get_template( 'location/edit/panes/location_view_details.html' )
-        content = template.render( context, request = request )
-        return antinode.response(
-            insert_map = {
-                DIVID['EDIT_ITEM']: content,
-            },
-        )     
-
-
 @method_decorator( edit_required, name='dispatch' )
 class LocationViewAddView( View ):
 
@@ -423,13 +397,13 @@ class LocationItemDetailsView( HiGridView ):
             return bad_request_response( request, message = 'Bad item id.' )
         
         if item_type == ItemType.ENTITY:
-            return entity_edit_views.EntityDetailsView().get(
+            return entity_views.EntityDetailsView().get(
                 request = request,
                 entity_id = item_id,
             )            
 
         if item_type == ItemType.COLLECTION:
-            return collection_edit_views.CollectionDetailsView().get(
+            return collection_views.CollectionDetailsView().get(
                 request = request,
                 collection_id = item_id,
             )            
@@ -437,15 +411,17 @@ class LocationItemDetailsView( HiGridView ):
         return bad_request_response( request, message = 'Unknown item type "{item_type}".' )
 
     def get_default_details( self, request ):
-        if request.view_parameters.view_type.is_location_view:
-            return LocationViewDetailsView().get(
+        if request.view_parameters.view_type.is_collection:
+            return collection_views.CollectionDetailsView().get(
                 request = request,
-                location_view_id = request.view_parameters.location_view_id,
+                location_view_id = request.view_parameters.collection_id,
             )
-            
-        return self.side_panel_response(
+        if not request.view_parameters.location_view:
+            raise ValueError( 'No current location view was set.' )
+        location_id = request.view_parameters.location_view.location.id
+        return location_views.LocationDetailsView().get(
             request = request,
-            template_name = 'edit/panes/default.html',
+            location_id = location_id,
         )
 
     
@@ -499,7 +475,7 @@ class LocationItemPositionView( View ):
             svg_icon_item.html_id: {
                 'transform': svg_icon_item.transform_str,
             }
-        }            
+        }
         return antinode.response(
             insert_map = insert_map,
             set_attributes_map = set_attributes_map,

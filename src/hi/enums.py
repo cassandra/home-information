@@ -66,7 +66,8 @@ class ItemType(LabeledEnum):
     
     @classmethod
     def parse_html_id( self, html_id_str : str ) -> Tuple[ 'ItemType', int ]:
-        m = re.match( r'^hi-([\w\-]+)-(\d+)$', html_id_str )
+        # Prefix is important and an optional suffix must not have digits.
+        m = re.match( r'^hi-([\w\-]+)-(\d+)(-\D*|)$', html_id_str )
         if not m:
             raise ValueError( f'Bad html id "{html_id_str}".' )
         return ( ItemType.from_name( m.group(1) ), int(m.group(2)) )

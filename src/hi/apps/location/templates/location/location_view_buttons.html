@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-start draggable-container">
   {% for location_view in location_view_list %}
-  <div id="{{ location_view.html_id }}" 
+  <div id="{{ location_view.html_id }}-button" 
        class="{% if request.is_editing %}draggable{% endif %}"
        {% if request.is_editing %}draggable="true"{% endif %}
        >
