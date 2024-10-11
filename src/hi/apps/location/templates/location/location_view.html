@@ -10,12 +10,12 @@
        transform="rotate({{ location_view_data.location_view.svg_rotate }} 0 0)">
     {% include_media_template location_view_data.location_view.location.svg_filename %}
 
-    {% for location_item_path in location_view_data.location_item_paths %}
-    {% include "location/svg_path_item.html" with svg_path_item=location_item_path.svg_path_item %}
+    {% for svg_path_item in location_view_data.svg_path_items %}
+    {% include "location/svg_path_item.html" with svg_path_item=svg_path_item %}
     {% endfor %}
 
-    {% for location_item_position in location_view_data.location_item_positions %}
-    {% include "location/svg_icon_item.html" with svg_icon_item=location_item_position.svg_icon_item %}
+    {% for svg_icon_item in location_view_data.svg_icon_items %}
+    {% include "location/svg_icon_item.html" with svg_icon_item=svg_icon_item %}
     {% endfor %}
 
   </svg>

@@ -2,7 +2,9 @@ from decimal import Decimal
 
 from django import forms
 
-from .models import LocationItemPositionModel
+from hi.enums import ItemType
+
+from .models import LocationItemModelMixin, LocationItemPositionModel
 
 
 class LocationItemPositionForm(forms.Form):
@@ -38,30 +40,24 @@ class LocationItemPositionForm(forms.Form):
         return f'{self.item_html_id}-svg-position'
     
     @classmethod
-    def from_svg_position_model( cls, svg_position_model : LocationItemPositionModel ):
-        if svg_position_model:
-            return cls(
-                item_html_id = svg_position_model.svg_icon_item.html_id,
-                initial = {
-                    'svg_x': svg_position_model.svg_x,
-                    'svg_y': svg_position_model.svg_y,
-                    'svg_scale': svg_position_model.svg_scale,
-                    'svg_rotate': svg_position_model.svg_rotate,
-                },
-            )
+    def from_models( cls,
+                     location_item          : LocationItemModelMixin,
+                     location_item_position : LocationItemPositionModel ):
         return cls(
-            item_html_id = svg_position_model.svg_icon_item.html_id,
+            item_html_id = location_item.html_id,
             initial = {
-                'svg_scale': Decimal( 1.0 ),
-                'svg_rotate': Decimal( 0.0 ),
+                'svg_x': location_item_position.svg_x,
+                'svg_y': location_item_position.svg_y,
+                'svg_scale': location_item_position.svg_scale,
+                'svg_rotate': location_item_position.svg_rotate,
             },
         )
          
-    def to_svg_position_model( self, svg_position_model : LocationItemPositionModel ):
+    def to_location_item_position_model( self, location_item_position_model : LocationItemPositionModel ):
         cleaned_data = self.clean()
-        svg_position_model.svg_x = cleaned_data.get( 'svg_x' )
-        svg_position_model.svg_y = cleaned_data.get( 'svg_y' )
-        svg_position_model.svg_scale = cleaned_data.get( 'svg_scale' )
-        svg_position_model.svg_rotate = cleaned_data.get( 'svg_rotate' )
+        location_item_position_model.svg_x = cleaned_data.get( 'svg_x' )
+        location_item_position_model.svg_y = cleaned_data.get( 'svg_y' )
+        location_item_position_model.svg_scale = cleaned_data.get( 'svg_scale' )
+        location_item_position_model.svg_rotate = cleaned_data.get( 'svg_rotate' )
         return
     

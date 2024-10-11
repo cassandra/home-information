@@ -48,8 +48,9 @@ class CollectionDetailsView( View ):
                 location = location_view.location,
             ).first()
             if collection_position:
-                location_item_position_form = LocationItemPositionForm.from_svg_position_model(
-                    collection_position,
+                location_item_position_form = LocationItemPositionForm.from_models(
+                    location_item = collection_position.collection,
+                    location_item_position = collection_position,
                 )
             
         context = {

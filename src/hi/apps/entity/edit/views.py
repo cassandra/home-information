@@ -45,8 +45,9 @@ class EntityDetailsView( View ):
                 location = location_view.location,
             ).first()
             if entity_position:
-                location_item_position_form = LocationItemPositionForm.from_svg_position_model(
-                    entity_position,
+                location_item_position_form = LocationItemPositionForm.from_models(
+                    location_item = entity_position.entity,
+                    location_item_position = entity_position,
                 )
 
         context = {

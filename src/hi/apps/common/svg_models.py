@@ -54,40 +54,41 @@ class SvgViewBox:
 
 
 @dataclass
-class SvgPathStyle:
-    stroke_color  : str
-    stroke_width  : float
-    fill_color    : str
-
-    def to_dict(self):
-        return {
-            'stroke_color': self.stroke_color,
-            'stroke_width': self.stroke_width,
-            'fill_color': self.fill_color,
-        }    
-    
-
-@dataclass
 class SvgIconItem:
     """
     Encapsulates an iten to be inserted in a base SVG file as an icon.  The
     icon is defined as a sequence of drawing commands stored in a template
     file.  The shape that the icon drawing commands define can be
     transformed to scale, roate and change its position as provided.
-    """
 
-    # The SVG Transformations needed to move, scale and rotate SVG
-    # fragments are tricky and inconsistent.
-    #
-    #  - Scaling changes the coordinate system.
-    #  - Translation does not dirrectly move the item, but insteadmodifies
-    #    the coordinate systems zero point.
-    #  - Scaling has to be accounted for in the translation cooridinates.
-    #  - Translation does not affect the rotate center point.
-    #  - Scaling does not affect the rotate center point
-    #  - Thus, though the transformation order matters, things that
-    #    come before can impact things that come after.
-    #  - Scaling does not always have to be taken into account.
+    The template contains SVG drawing commands for the icon.  It should not
+    contain the <svg> tag as this template will be inserted as part of
+    the base location SVG. This file can be one or more SVG drawing
+    commands.  A <g> tag will be automatically provided to wrap the
+    content os this since that <g> wrapper also need to define the SVG
+    transformations needed to properly position, scale and rotate the
+    icon. For entities with states, this should also use the "hi-state"
+    attribute in order to adjust its appearance (via CSS) based on its 
+    state.
+
+    The bounding box or extents of the SVG drawing commands, is needed
+    in order to properly position, rotate and scale the icon.  We need to
+    be able to compute the center, since the adjustable icon location is
+    defining the center point of the icon.
+
+    The SVG Transformations needed to move, scale and rotate SVG
+    fragments are tricky and inconsistent.
+    
+      - Scaling changes the coordinate system.
+      - Translation does not dirrectly move the item, but insteadmodifies
+        the coordinate systems zero point.
+      - Scaling has to be accounted for in the translation cooridinates.
+      - Translation does not affect the rotate center point.
+      - Scaling does not affect the rotate center point
+      - Thus, though the transformation order matters, things that
+        come before can impact things that come after.
+      - Scaling does not always have to be taken into account.
+    """
     
     html_id        : str
     template_name  : str
@@ -127,11 +128,13 @@ class SvgIconItem:
 @dataclass
 class SvgPathItem:
     """
-    Encapsulates an item to be inserted in a base SVG file as a path.  A path item is a
-    sequence of drawing commands defined in 'svg_path'.
+    Encapsulates an item to be inserted in a base SVG file as a path.  A
+    path item is a sequence of drawing commands defined in 'svg_path'.
     """
 
-    html_id     : str
-    svg_path    : str
-    path_style  : SvgPathStyle
+    html_id       : str
+    svg_path      : str
+    stroke_color  : str
+    stroke_width  : float
+    fill_color    : str
     

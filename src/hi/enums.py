@@ -63,7 +63,7 @@ class ItemType(LabeledEnum):
     
     def html_id( self, item_id : int ):
         return f'hi-{self}-{item_id}'
-        
+    
     @classmethod
     def parse_html_id( self, html_id_str : str ) -> Tuple[ 'ItemType', int ]:
         m = re.match( r'^hi-([\w\-]+)-(\d+)$', html_id_str )

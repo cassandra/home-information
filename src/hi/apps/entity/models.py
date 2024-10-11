@@ -1,6 +1,5 @@
 from django.db import models
 
-from hi.apps.common.svg_models import SvgIconItem, SvgPathItem
 from hi.apps.location.models import (
     Location,
     LocationItemModelMixin,
@@ -10,7 +9,6 @@ from hi.apps.location.models import (
 )
 from hi.integrations.core.models import IntegrationIdModel
 from hi.enums import ItemType
-from hi.models import ItemTypeModelMixin
 
 from .enums import (
     EntityType,
@@ -20,7 +18,7 @@ from .enums import (
 )
 
 
-class Entity( IntegrationIdModel, ItemTypeModelMixin, LocationItemModelMixin ):
+class Entity( IntegrationIdModel, LocationItemModelMixin ):
     """
     - A physical feature, device or software artifact.
     - May have a fixed physical location (or can just be part of a collection)
@@ -334,20 +332,12 @@ class EntityPosition( LocationItemPositionModel ):
                 name = 'entity_position_location_entity',
             ),
         ]
-
-    @property
-    def svg_icon_item(self) -> SvgIconItem:
-        return SvgIconItem(
-            html_id = f'hi-entity-{self.entity.id}',
-            template_name = self.entity.entity_type.svg_icon_template_name,
-            position_x = float( self.svg_x ),
-            position_y = float( self.svg_y ),
-            bounding_box = self.entity.entity_type.svg_icon_bounding_box,
-            rotate = float( self.svg_rotate ),
-            scale = float( self.svg_scale ),
-        )
             
+    @property
+    def location_item(self) -> LocationItemModelMixin:
+        return self.entity
 
+    
 class EntityPath( LocationItemPathModel ):
     """
     - For entities represented by an arbitary SVG path. e.g., The path of a utility line, 
@@ -385,14 +375,10 @@ class EntityPath( LocationItemPathModel ):
                 fields = [ 'location', 'entity' ],
                 name = 'entity_path_location_entity', ),
         ]
-
+            
     @property
-    def svg_path_item(self) -> SvgPathItem:
-        return SvgPathItem(
-            html_id = f'hi-entity-{self.entity.id}',
-            svg_path = self.svg_path,
-            path_style = self.entity.entity_type.svg_path_style,
-        )
+    def location_item(self) -> LocationItemModelMixin:
+        return self.entity
 
     
 class EntityView(models.Model):

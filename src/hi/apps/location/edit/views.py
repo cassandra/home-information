@@ -19,6 +19,7 @@ from hi.apps.entity.models import Entity
 from hi.apps.location.forms import LocationItemPositionForm
 from hi.apps.location.location_view_manager import LocationViewManager
 from hi.apps.location.models import LocationView
+from hi.apps.location.svg_item_factory import SvgItemFactory
 from hi.decorators import edit_required
 from hi.enums import ItemType, ViewType
 from hi.hi_grid_view import HiGridView
@@ -362,12 +363,12 @@ class LocationItemPositionView( View ):
         
         location_view = request.view_parameters.location_view
         if item_type == ItemType.ENTITY:
-            svg_position_model = EntityManager().get_entity_position(
+            location_item_position_model = EntityManager().get_entity_position(
                 entity_id = item_id,
                 location = location_view.location,
             )
         elif item_type == ItemType.COLLECTION:
-            svg_position_model = CollectionManager().get_collection_position(
+            location_item_position_model = CollectionManager().get_collection_position(
                 collection_id = item_id,
                 location = location_view.location,
             )
@@ -376,13 +377,17 @@ class LocationItemPositionView( View ):
 
         location_item_position_form = LocationItemPositionForm(
             request.POST,
-            item_html_id = svg_position_model.svg_icon_item.html_id,
+            item_html_id = location_item_position_model.location_item.html_id,
         )
         if location_item_position_form.is_valid():
-            location_item_position_form.to_svg_position_model( svg_position_model )
-            svg_position_model.save()
+            location_item_position_form.to_location_item_position_model( location_item_position_model )
+            location_item_position_model.save()
 
-        svg_icon_item = svg_position_model.svg_icon_item            
+        svg_icon_item = SvgItemFactory().create_svg_icon_item(
+            item = location_item_position_model.location_item,
+            position = location_item_position_model,
+        )
+        
         context = {
             'location_item_position_form': location_item_position_form,
         }

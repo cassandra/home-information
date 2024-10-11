@@ -153,7 +153,7 @@ class LocationView( models.Model, ItemTypeModelMixin ):
         return
 
     
-class LocationItemModelMixin:
+class LocationItemModelMixin( ItemTypeModelMixin ):
     # A Location Item is a model that can be associated with a Location
     # and that can visually appeay in one or more Location Views.  This
     # defined an interface that specific instance need to conform to.
@@ -193,10 +193,10 @@ class LocationItemPositionModel( models.Model ):
     )
 
     @property
-    def svg_icon_item(self) -> SvgIconItem:
+    def location_item(self) -> LocationItemModelMixin:
         raise NotImplementedError('Subclasses must implement this method.')
 
-
+    
 class LocationItemPathModel( models.Model ):
     """
     For models that have a visual representaion that can be overlayed on
@@ -212,5 +212,5 @@ class LocationItemPathModel( models.Model ):
     )
 
     @property
-    def svg_path_item(self) -> SvgPathItem:
+    def location_item(self) -> LocationItemModelMixin:
         raise NotImplementedError('Subclasses must implement this method.')

@@ -2,11 +2,9 @@ from dataclasses import dataclass
 from typing import Generator, List, Set
 
 from hi.apps.collection.models import Collection, CollectionPath, CollectionPosition
+from hi.apps.common.svg_models import SvgIconItem, SvgPathItem
 from hi.apps.entity.models import Entity, EntityPosition, EntityPath
-from hi.apps.location.models import (
-    LocationItemPositionModel,
-    LocationItemPathModel,
-)
+from hi.apps.location.svg_item_factory import SvgItemFactory
 
 from .models import LocationView
 
@@ -26,22 +24,40 @@ class LocationViewData:
     orphan_entities           : Set[ Entity ]
 
     @property
-    def location_item_positions(self) -> Generator[ LocationItemPositionModel, None, None ]:
+    def svg_icon_items(self) -> Generator[ SvgIconItem, None, None ]:
+        svg_item_factory = SvgItemFactory()
         for entity_position in self.entity_positions:
-            yield entity_position
+            svg_icon_item = svg_item_factory.create_svg_icon_item(
+                item = entity_position.entity,
+                position = entity_position,
+            )
+            yield svg_icon_item
             continue
         for collection_position in self.collection_positions:
-            yield collection_position
+            svg_icon_item = svg_item_factory.create_svg_icon_item(
+                item = collection_position.collection,
+                position = collection_position,
+            )
+            yield svg_icon_item
             continue
         return
 
     @property
-    def location_item_paths(self) -> Generator[ LocationItemPathModel, None, None ]:
+    def svg_path_items(self) -> Generator[ SvgPathItem, None, None ]:
+        svg_item_factory = SvgItemFactory()
         for entity_path in self.entity_paths:
-            yield entity_path
+            svg_path_item = svg_item_factory.create_svg_path_item(
+                item = entity_path.entity,
+                path = entity_path,
+            )
+            yield svg_path_item
             continue
         for collection_path in self.collection_paths:
-            yield collection_path
+            svg_path_item = svg_item_factory.create_svg_path_item(
+                item = collection_path.collection,
+                path = collection_path,
+            )
+            yield svg_path_item
             continue
         return
     

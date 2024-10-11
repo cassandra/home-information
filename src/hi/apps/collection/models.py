@@ -1,6 +1,5 @@
 from django.db import models
 
-from hi.apps.common.svg_models import SvgIconItem, SvgPathItem
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import (
     Location,
@@ -10,12 +9,11 @@ from hi.apps.location.models import (
     LocationView,
 )
 from hi.enums import ItemType
-from hi.models import ItemTypeModelMixin
 
 from .enums import CollectionType
 
 
-class Collection( models.Model, ItemTypeModelMixin, LocationItemModelMixin ):
+class Collection( models.Model, LocationItemModelMixin ):
     
     name = models.CharField(
         'Name',
@@ -118,18 +116,10 @@ class CollectionPosition( LocationItemPositionModel ):
                 name = 'collection_position_location_entity',
             ),
         ]
-
+            
     @property
-    def svg_icon_item(self) -> SvgIconItem:
-        return SvgIconItem(
-            html_id = f'hi-collection-{self.collection.id}',
-            template_name = self.collection.collection_type.svg_icon_template_name,
-            position_x = float( self.svg_x ),
-            position_y = float( self.svg_y ),
-            bounding_box = self.collection.collection_type.svg_icon_bounding_box,
-            rotate = float( self.svg_rotate ),
-            scale = float( self.svg_scale ),
-        )
+    def location_item(self) -> LocationItemModelMixin:
+        return self.collection
     
     
 class CollectionPath( LocationItemPathModel ):
@@ -169,14 +159,10 @@ class CollectionPath( LocationItemPathModel ):
                 fields = [ 'location', 'collection' ],
                 name = 'collection_path_location_collection', ),
         ]
-
+            
     @property
-    def svg_path_item(self) -> SvgPathItem:
-        return SvgPathItem(
-            html_id = f'hi-collection-{self.collection.id}',
-            svg_path = self.svg_path,
-            path_style = self.collection.collection_type.svg_path_style,
-        )
+    def location_item(self) -> LocationItemModelMixin:
+        return self.collection
 
     
 class CollectionView(models.Model):

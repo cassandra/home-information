@@ -40,7 +40,7 @@
     const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3; // Differentiate between move events and sloppy clicks
     const ZOOM_SCALE_FACTOR_PERCENT = 10.0;
 
-    const API_EDIT_SVG_POSITION_URL = '/location/edit/location-item/position';
+    const API_EDIT_LOCATION_ITEM_POSITION_URL = '/location/edit/location-item/position';
         
     const SvgActionStateType = {
 	MOVE: 'move',
@@ -213,65 +213,57 @@
     }
 
     function handleKeyDown( event ) {
-	if ( $(event.target).is('input[type="text"], textarea') ) {
+	if ( $(event.target).is('input, textarea') ) {
             return;
 	}
 	if ( gSelectedIconSvgGroup ) {
-	    if ( Hi.DEBUG ) { console.log( `Key Down [${MODULE_NAME}]`, event ); }
-	    handleSvgIconSelectedKeyDown( event );
-	    event.preventDefault();
-	    event.stopImmediatePropagation();
-	    return;
+	    const targetArea = $(Hi.LOCATION_VIEW_AREA_SELECTOR);
+            const targetOffset = targetArea.offset();
+            const targetWidth = targetArea.outerWidth();
+            const targetHeight = targetArea.outerHeight();
+	
+            if (( gLastMousePosition.x >= targetOffset.left )
+		&& ( gLastMousePosition.x <= ( targetOffset.left + targetWidth ))
+		&& ( gLastMousePosition.y >= targetOffset.top )
+		&& ( gLastMousePosition.y <= ( targetOffset.top + targetHeight ))) {
+
+		if ( Hi.DEBUG ) { console.log( `Key Down [${MODULE_NAME}]`, event ); }
+
+		if ( event.key == ICON_ACTION_SCALE_KEY ) {
+		    iconActionRotateAbort();
+		    iconActionScaleStart();
+		    
+		} else if ( event.key == ICON_ACTION_ROTATE_KEY ) {
+		    iconActionScaleAbort();
+		    iconActionRotateStart();
+		    
+		} else if ( event.key == ICON_ACTION_ZOOM_IN_KEY ) {
+		    iconActionScaleAbort();
+		    iconActionRotateAbort();
+		    iconActionZoomIn();
+		    
+		} else if ( event.key == ICON_ACTION_ZOOM_OUT_KEY ) {
+		    iconActionScaleAbort();
+		    iconActionRotateAbort();
+		    iconActionZoomOut();
+		    
+		} else if ( event.key == 'Escape' ) {
+		    iconActionScaleAbort();
+		    iconActionRotateAbort();
+		    gSvgIconActionState = SvgActionStateType.MOVE;
+		    $(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '');
+		    
+		} else {
+		    return;
+		}
+		
+		event.preventDefault();   		
+		event.stopImmediatePropagation();
+            }
 	}
 	if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
     }
 
-    function handleSvgIconSelectedKeyDown( event ) {
-	const targetArea = $(Hi.LOCATION_VIEW_AREA_SELECTOR);
-        const targetOffset = targetArea.offset();
-        const targetWidth = targetArea.outerWidth();
-        const targetHeight = targetArea.outerHeight();
-	
-        if (( gLastMousePosition.x >= targetOffset.left )
-	    && ( gLastMousePosition.x <= ( targetOffset.left + targetWidth ))
-	    && ( gLastMousePosition.y >= targetOffset.top )
-	    && ( gLastMousePosition.y <= ( targetOffset.top + targetHeight ))) {
-
-       	    if ( Hi.DEBUG ) { Hi.displayEventInfo( 'Key Down', event ); }
-
-	    if ( event.key == ICON_ACTION_SCALE_KEY ) {
-		iconActionRotateAbort();
-		iconActionScaleStart();
-		
-	    } else if ( event.key == ICON_ACTION_ROTATE_KEY ) {
-		iconActionScaleAbort();
-		iconActionRotateStart();
-		
-	    } else if ( event.key == ICON_ACTION_ZOOM_IN_KEY ) {
-		iconActionScaleAbort();
-		iconActionRotateAbort();
-		iconActionZoomIn();
-		
-	    } else if ( event.key == ICON_ACTION_ZOOM_OUT_KEY ) {
-		iconActionScaleAbort();
-		iconActionRotateAbort();
-		iconActionZoomOut();
-		
-	    } else if ( event.key == 'Escape' ) {
-		iconActionScaleAbort();
-		iconActionRotateAbort();
-		gSvgIconActionState = SvgActionStateType.MOVE;
-		$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '');
-		
-	    } else {
-		return;
-	    }
-	
-	    event.preventDefault();   		
-	    event.stopImmediatePropagation();
-        }
-    }
-    
     function handleSvgIconClick( event, enclosingSvgGroup ) {
 	const svgItemId = $(enclosingSvgGroup).attr('id');
 	clearSelectedIconSvgGroup();
@@ -376,7 +368,7 @@
 	    svg_scale: gSvgIconDragData.originalSvgScale.x,
 	    svg_rotate: gSvgIconDragData.originalSvgRotate.angle
 	};
-	AN.post( `${API_EDIT_SVG_POSITION_URL}/${svgItemId}`, data );
+	AN.post( `${API_EDIT_LOCATION_ITEM_POSITION_URL}/${svgItemId}`, data );
 
 	gSvgIconDragData = null;
     }
@@ -396,7 +388,7 @@
 	    svg_scale: scale.x,
 	    svg_rotate: rotate.angle,
 	};
-	AN.post( `${API_EDIT_SVG_POSITION_URL}/${svgItemId}`, data );
+	AN.post( `${API_EDIT_LOCATION_ITEM_POSITION_URL}/${svgItemId}`, data );
     }
 
     function createIconEditActionData( actionState ) {
