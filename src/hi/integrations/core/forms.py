@@ -10,7 +10,6 @@ class IntegrationAttributeForm( AttributeForm ):
     class Meta:
         model = IntegrationAttribute
         fields = (
-            'name',
             'value',
         )
         

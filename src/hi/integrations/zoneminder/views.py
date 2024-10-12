@@ -26,7 +26,9 @@ class ZmEnableView( View ):
 
         integration_attribute_formset = IntegrationAttributeFormSet(
             instance = integration,
-            form_kwargs = { 'is_editable': True },
+            form_kwargs = {
+                'is_editable': True,
+            },
         )
         return self.get_modal_response(
             request = request,
@@ -36,6 +38,8 @@ class ZmEnableView( View ):
     def post(self, request, *args, **kwargs):
 
         integration = self.get_or_create_integration()
+        if integration.is_enabled:
+            return bad_request_response( request, message = 'ZoneMinder is already enabled' )
 
         integration_attribute_formset = IntegrationAttributeFormSet(
             request.POST,
@@ -48,22 +52,12 @@ class ZmEnableView( View ):
                 status = 400,
             )
 
-        # TODO:
-        # Check if have all needed properties
-        # If not, render form for entering with button to activate
+        with transaction.atomic():
+            integration.is_enabled = True
+            integration.save()
+            integration_attribute_formset.save()
 
-
-
-
-        
-        raise NotImplementedError('FORCED')
-
-
-        integration_attribute_formset.save()
-    
-        context = {
-        }
-        return render( request, 'zoneminder/panes/activate.html', context )
+        return antinode.refresh_response()
 
     def get_or_create_integration( self ):
         try:

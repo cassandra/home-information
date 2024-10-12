@@ -13,23 +13,11 @@ class AttributeForm(forms.ModelForm):
 
     class Meta:
         abstract = True
-        fields = (
-            'name',
-            'value',
-        )
-        widgets = {
-            'name': forms.TextInput(
-                attrs = {
-                    'class': 'form-control',
-                }
-            ),
-            'value': forms.TextInput(
-                attrs = {
-                    'class': 'form-control',
-                }
-            ),
-        }
 
+    @property
+    def is_editable(self):
+        return self._is_editable
+        
     def __init__(self, *args, **kwargs):
         self._is_editable = kwargs.pop( 'is_editable', True )
         super().__init__(*args, **kwargs)
@@ -37,8 +25,9 @@ class AttributeForm(forms.ModelForm):
         # Access the instance's value_type field
         instance = kwargs.get('instance')
 
-        # Always set the name field as a TextInput widget
-        self.fields['name'].widget = forms.TextInput(attrs={'class': 'form-control'})
+        # Name is not always present and editable
+        if 'name' in self.fields:
+            self.fields['name'].widget = forms.TextInput(attrs={'class': 'form-control'})
 
         # Customize the value field based on the value_type in the instance
         if instance and instance.value_type:
@@ -53,7 +42,8 @@ class AttributeForm(forms.ModelForm):
                     attrs={'step': 'any', 'class': 'form-control'},
                 )
             elif value_type == AttributeValueType.BOOLEAN:
-                self.fields['value'].widget = forms.CheckboxInput()
+                self.fields['value'].widget = forms.CheckboxInput(
+                )
             elif value_type == AttributeValueType.DATE:
                 self.fields['value'].widget = forms.DateInput(
                     attrs={'type': 'date', 'class': 'form-control'},
@@ -78,13 +68,10 @@ class AttributeForm(forms.ModelForm):
                 self.fields['value'].widget = forms.URLInput(
                     attrs={'class': 'form-control'},
                 )
-            elif value_type == AttributeValueType.PASSWORD:
-                self.fields['value'].widget = forms.PasswordInput(
-                    attrs={'class': 'form-control'},
-                )
             elif value_type in { AttributeValueType.IMAGE,
                                  AttributeValueType.PDF,
-                                 AttributeValueType.VIDEO, AttributeValueType.AUDIO }:
+                                 AttributeValueType.VIDEO,
+                                 AttributeValueType.AUDIO }:
                 # File input for media types
                 self.fields['value'].widget = forms.FileInput(
                     attrs={'class': 'form-control'},
@@ -99,6 +86,13 @@ class AttributeForm(forms.ModelForm):
             self.fields['value'].widget = forms.TextInput(
                 attrs={'class': 'form-control'},
             )
+
+        if not self._is_editable:
+            for field in self.fields.values():
+                field.widget.attrs['disabled'] = 'disabled'
+                continue
+            
+        return
             
     def clean(self):
         cleaned_data = super().clean()
@@ -130,9 +124,8 @@ class AttributeForm(forms.ModelForm):
                 self.add_error('value', 'Not a valid email address.')
 
         elif value_type == AttributeValueType.LINK:
-            validate_url = URLValidator()
             try:
-                validate_url(value)
+                URLValidator(value)
             except ValidationError:
                 self.add_error('value', 'Not a valid URL.')
 
@@ -172,7 +165,4 @@ class AttributeForm(forms.ModelForm):
 
         return cleaned_data
 
-    @property
-    def is_editable(self):
-        return self._is_editable
     
