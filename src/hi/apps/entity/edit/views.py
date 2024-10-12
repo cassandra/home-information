@@ -6,12 +6,12 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
-from hi.apps.collection.edit.helpers import CollectionEditHelpers
+from hi.apps.collection.collection_manager import CollectionManager
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
-from hi.apps.location.edit.helpers import LocationEditHelpers
+from hi.apps.location.location_manager import LocationManager
 
 from hi.decorators import edit_required
 from hi.views import bad_request_response, not_authorized_response, page_not_found_response
@@ -58,14 +58,14 @@ class EntityAddView( View ):
                 )
                 if ( request.view_parameters.view_type.is_location_view
                      and request.view_parameters.location_view_id ):
-                    LocationEditHelpers.add_entity_to_view_by_id(
+                    LocationManager().add_entity_to_view_by_id(
                         entity = entity,
                         location_view_id = request.view_parameters.location_view_id,
                     )
                     
                 elif ( request.view_parameters.view_type.is_collection
                        and request.view_parameters.collection_id ):
-                    CollectionEditHelpers.add_entity_to_collection_by_id(
+                    CollectionManager().add_entity_to_collection_by_id(
                         entity = entity,
                         collection_id = request.view_parameters.collection_id,
                     )

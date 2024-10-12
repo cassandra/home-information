@@ -18,7 +18,6 @@ import hi.apps.entity.views as entity_views
 from hi.apps.entity.models import Entity
 from hi.apps.location.forms import LocationItemPositionForm
 from hi.apps.location.location_manager import LocationManager
-from hi.apps.location.location_view_manager import LocationViewManager
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 import hi.apps.location.views as location_views
@@ -34,7 +33,6 @@ from hi.views import (
 from hi.constants import DIVID
 
 from . import forms
-from .helpers import LocationEditHelpers
 
 
 logger = logging.getLogger(__name__)
@@ -163,7 +161,7 @@ class LocationViewAddView( View ):
             location = Location.objects.order_by( 'order_id' ).first()
         
         try:
-            location_view = LocationViewManager().create_location_view(
+            location_view = LocationManager().create_location_view(
                 location = location,
                 name = location_view_form.cleaned_data.get('name'),
             )
@@ -219,7 +217,7 @@ class LocationViewReorder( View ):
         if not location_view_id_list:
             return bad_request_response( request, message = 'Missing location view ids.' )
 
-        LocationEditHelpers.set_location_view_order(
+        LocationManager().set_location_view_order(
             location_view_id_list = location_view_id_list,
         )            
         return antinode.response( main_content = 'OK' )        
@@ -283,10 +281,11 @@ class LocationViewAddRemoveItemView( View ):
 
         location_view = request.view_parameters.location_view
 
-        entity_view_group_list = LocationEditHelpers.create_entity_view_group_list(
+        location_manager = LocationManager()
+        entity_view_group_list = location_manager.create_entity_view_group_list(
             location_view = location_view,
         )
-        collection_view_group = LocationEditHelpers.create_collection_view_group(
+        collection_view_group = location_manager.create_collection_view_group(
             location_view = location_view,
         )
         
@@ -313,7 +312,7 @@ class LocationViewEntityToggleView( View ):
 
         entity = Entity.objects.get( id = entity_id )
         location_view = LocationView.objects.get( id = location_view_id )
-        exists_in_view = LocationEditHelpers.toggle_entity_in_view(
+        exists_in_view = LocationManager().toggle_entity_in_view(
             entity = entity,
             location_view = location_view,
         )
@@ -326,7 +325,7 @@ class LocationViewEntityToggleView( View ):
         template = get_template( 'location/edit/panes/location_view_entity_toggle.html' )
         main_content = template.render( context, request = request )
 
-        location_view_data = LocationViewManager().get_location_view_data(
+        location_view_data = LocationManager().get_location_view_data(
             location_view = location_view,
         )
         context = {
@@ -353,7 +352,7 @@ class LocationViewCollectionToggleView( View ):
 
         collection = Collection.objects.get( id = collection_id )
         location_view = LocationView.objects.get( id = location_view_id )
-        exists_in_view = LocationEditHelpers.toggle_collection_in_view(
+        exists_in_view = LocationManager().toggle_collection_in_view(
             collection = collection,
             location_view = location_view,
         )
@@ -366,7 +365,7 @@ class LocationViewCollectionToggleView( View ):
         template = get_template( 'location/edit/panes/location_view_collection_toggle.html' )
         main_content = template.render( context, request = request )
 
-        location_view_data = LocationViewManager().get_location_view_data(
+        location_view_data = LocationManager().get_location_view_data(
             location_view = location_view,
         )
         context = {

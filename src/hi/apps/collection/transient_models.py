@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
 from typing import List
 
-from hi.apps.collection.models import Collection
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
+
+from .models import Collection
 
 
 @dataclass

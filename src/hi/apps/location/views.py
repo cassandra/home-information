@@ -14,7 +14,6 @@ from hi.hi_grid_view import HiGridView
 from hi.views import bad_request_response, page_not_found_response
 
 from .location_manager import LocationManager
-from .location_view_manager import LocationViewManager
 from .models import Location, LocationView
 
 logger = logging.getLogger(__name__)
@@ -104,7 +103,7 @@ class LocationViewView( HiGridView ):
             sync_url = reverse( 'location_view', kwargs = kwargs )
             return antinode.redirect_response( url = sync_url )
         
-        location_view_data = LocationViewManager().get_location_view_data(
+        location_view_data = LocationManager().get_location_view_data(
             location_view = location_view,
         )
         context = {

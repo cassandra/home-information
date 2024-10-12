@@ -4,7 +4,8 @@ from typing import List
 from hi.apps.collection.models import Collection
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
-from hi.apps.location.models import LocationView
+
+from .models import LocationView
 
 
 @dataclass

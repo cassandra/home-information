@@ -12,7 +12,6 @@ from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.enums import CollectionType
 from hi.apps.collection.models import Collection
 from hi.apps.entity.models import Entity
-from hi.apps.location.edit.helpers import LocationEditHelpers
 from hi.decorators import edit_required
 from hi.enums import ViewType
 from hi.views import bad_request_response, page_not_found_response
@@ -20,7 +19,6 @@ from hi.views import bad_request_response, page_not_found_response
 from hi.constants import DIVID
 
 from . import forms
-from .helpers import CollectionEditHelpers
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +61,7 @@ class CollectionAddView( View ):
                 )
                 if ( request.view_parameters.view_type.is_location_view
                      and request.view_parameters.location_view_id ):
-                    LocationEditHelpers.add_collection_to_view_by_id(
+                    CollectionManager().create_collection_view_by_id(
                         collection = collection,
                         location_view_id = request.view_parameters.location_view_id,
                     )
@@ -134,7 +132,7 @@ class CollectionAddRemoveItemView( View ):
     def get(self, request, *args, **kwargs):
         collection = request.view_parameters.collection
         
-        entity_collection_group_list = CollectionEditHelpers.create_entity_collection_group_list(
+        entity_collection_group_list = CollectionManager().create_entity_collection_group_list(
             collection = collection,
         )
         
@@ -160,7 +158,7 @@ class CollectionEntityToggleView( View ):
 
         entity = Entity.objects.get( id = entity_id )
         collection = Collection.objects.get( id = collection_id )
-        exists_in_collection = CollectionEditHelpers.toggle_entity_in_collection(
+        exists_in_collection = CollectionManager().toggle_entity_in_collection(
             entity = entity,
             collection = collection,
         )
@@ -206,7 +204,7 @@ class CollectionReorderEntitiesView( View ):
         if not entity_id_list:
             return bad_request_response( request, message = 'Missing entity ids.' )
 
-        CollectionEditHelpers.set_collection_entity_order(
+        CollectionManager().set_collection_entity_order(
             collection_id = collection_id,
             entity_id_list = entity_id_list,
         )
@@ -225,7 +223,7 @@ class CollectionReorder( View ):
         if not collection_id_list:
             return bad_request_response( request, message = 'Missing collection ids.' )
 
-        CollectionEditHelpers.set_collection_order(
+        CollectionManager().set_collection_order(
             collection_id_list = collection_id_list,
         )
         return antinode.response( main_content = 'OK' )
