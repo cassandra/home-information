@@ -11,13 +11,13 @@ logger = logging.getLogger(__name__)
 
 class HassGateway( IntegrationGateway ):
 
-    def enable( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
+    def enable_modal_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
         return views.HassEnableView().post( request )
     
-    def disable( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
+    def disable_modal_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
         return views.HassDisableView().post( request )
 
-    def manage( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
+    def manage_pane_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
 
         post_action = request.POST.get('action')
         if post_action == 'sync':

@@ -11,18 +11,13 @@ logger = logging.getLogger(__name__)
 
 class ZoneMinderGateway( IntegrationGateway ):
 
-    def enable( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
+    def enable_modal_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
         return views.ZmEnableView().get( request )
     
-    def disable( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
+    def disable_modal_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
         return views.ZmDisableView().get( request )
 
-    def manage( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
-
-        post_action = request.POST.get('action')
-        if post_action == 'sync':
-            return views.ZmSyncView().post( request, *args, **kwargs )
-            
+    def manage_pane_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
         return views.ZmManageView().get( request, *args, **kwargs )
     
     

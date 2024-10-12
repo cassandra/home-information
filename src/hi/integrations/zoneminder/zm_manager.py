@@ -66,6 +66,7 @@ class ZoneMinderManager( Singleton ):
         # Verify integration
         attribute_dict = zm_integration.attribute_dict
         for zm_attr_name in ZmAttributeName:
+            print( f'\nATTR NAME = {zm_attr_name} DICT  {attribute_dict}' )
             zm_prop = attribute_dict.get( zm_attr_name.name )
             if not zm_prop:
                 raise IntegrationAttributeError( f'Missing ZM attribute {zm_attr_name.name}' ) 

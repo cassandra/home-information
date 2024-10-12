@@ -1,6 +1,5 @@
 import logging
 
-from django.shortcuts import render
 from django.views.generic import View
 
 from hi.views import bad_request_response
@@ -19,7 +18,7 @@ class IntegrationViewMixin:
         }
 
     
-class IntegrationActionView( View, IntegrationViewMixin ):
+class IntegrationActionView( View ):
 
     def get(self, request, *args, **kwargs):
 
@@ -33,11 +32,11 @@ class IntegrationActionView( View, IntegrationViewMixin ):
             )
         
             if action == 'enable':
-                return integration_gateway.enable( request = request, *args, **kwargs )
+                return integration_gateway.enable_modal_view( request = request, *args, **kwargs )
             elif action == 'disable':
-                return integration_gateway.disable( request = request, *args, **kwargs )
+                return integration_gateway.disable_modal_view( request = request, *args, **kwargs )
             elif action == 'manage':
-                return integration_gateway.manage( request = request, *args, **kwargs )
+                return integration_gateway.manage_pane_view( request = request, *args, **kwargs )
 
             error_message = f'Unknown integration action "{action}".'
         except Exception as e:

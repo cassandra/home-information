@@ -5,7 +5,7 @@
 {% endif %}
 
 <div class="col-2">
-  <form action="{% url 'integration_manage' name=integration_type.name %}"
+  <form action="{% url 'hass_sync' %}"
 	method="POST" role="form" data-async="#hi-config-integration-tab">
     {% csrf_token %}
     <button type="submit" class="btn btn-primary btn-control" role="button"

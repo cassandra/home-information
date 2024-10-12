@@ -3,7 +3,6 @@ from typing import Dict
 
 from django.db import models
 
-from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.attribute.models import AttributeModel
 
 from .enums import IntegrationType
@@ -49,19 +48,19 @@ class Integration( models.Model ):
         return
 
     @property
-    def property_dict(self) -> Dict[ str, 'IntegrationAttribute' ] :
-        property_dict = dict()
-        for prop in self.properties.all():
-            property_dict[prop.name] = prop
+    def attribute_dict(self) -> Dict[ str, 'IntegrationAttribute' ] :
+        attribute_dict = dict()
+        for prop in self.attributes.all():
+            attribute_dict[prop.name] = prop
             continue
-        return property_dict
+        return attribute_dict
     
 
 class IntegrationAttribute( AttributeModel ):
     
     integration = models.ForeignKey(
         Integration,
-        related_name = 'properties',
+        related_name = 'attributes',
         verbose_name = 'Integration',
         on_delete=models.CASCADE,
     )
