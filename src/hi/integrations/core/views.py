@@ -19,6 +19,10 @@ class IntegrationViewMixin:
     
 class IntegrationConfigTabView( View, IntegrationViewMixin ):
 
+    def get(self, request, *args, **kwargs):
+        context = self.get_integration_config_tab_context()
+        return render( request, 'core/panes/config_tab.html', context )
+
     def post(self, request, *args, **kwargs):
 
         error_message = None
@@ -44,7 +48,7 @@ class IntegrationConfigTabView( View, IntegrationViewMixin ):
         }
         context.update( self.get_integration_config_tab_context() )
         return render( request, 'core/panes/config_tab.html', context )
-
+    
     
 class IntegrationManageView( View, IntegrationViewMixin ):
 
@@ -69,3 +73,5 @@ class IntegrationManageView( View, IntegrationViewMixin ):
     
     def post(self, request, *args, **kwargs):
         return self.get( request, *args, **kwargs)
+
+    

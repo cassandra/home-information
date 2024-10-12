@@ -31,8 +31,10 @@ class LocationForm(forms.Form):
         'href',
     }
 
-    name = forms.CharField()
-
+    name = forms.CharField(
+        label = 'Location Name',
+        required = True,
+    )
     svg_file = forms.FileField(
         label = 'SVG file',
         required = False,

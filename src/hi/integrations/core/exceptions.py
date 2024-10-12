@@ -1,4 +1,4 @@
-class IntegrationPropertyError(Exception):
+class IntegrationAttributeError(Exception):
     pass
 
 

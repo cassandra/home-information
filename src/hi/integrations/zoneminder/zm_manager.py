@@ -14,11 +14,11 @@ from hi.apps.entity.models import Entity
 from hi.apps.model_helper import HiModelHelper
 
 from hi.integrations.core.enums import IntegrationType
-from hi.integrations.core.exceptions import IntegrationPropertyError
+from hi.integrations.core.exceptions import IntegrationAttributeError
 from hi.integrations.core.models import Integration, IntegrationId
 
 from .enums import (
-    ZmPropertyName,
+    ZmAttributeName,
     ZmMonitorState,
 )
 
@@ -64,21 +64,21 @@ class ZoneMinderManager( Singleton ):
             return None
 
         # Verify integration
-        property_dict = zm_integration.property_dict
-        for zm_prop_name in ZmPropertyName:
-            zm_prop = property_dict.get( zm_prop_name.name )
+        attribute_dict = zm_integration.attribute_dict
+        for zm_attr_name in ZmAttributeName:
+            zm_prop = attribute_dict.get( zm_attr_name.name )
             if not zm_prop:
-                raise IntegrationPropertyError( f'Missing ZM property {zm_prop_name.name}' ) 
+                raise IntegrationAttributeError( f'Missing ZM attribute {zm_attr_name.name}' ) 
             if zm_prop.is_required and not zm_prop.value.strip():
-                raise IntegrationPropertyError( f'Missing ZM property value for {zm_prop_name.name}' ) 
+                raise IntegrationAttributeError( f'Missing ZM attribute value for {zm_attr_name.name}' ) 
 
             continue
         
         api_options = {
-            'apiurl': property_dict.get( ZmPropertyName.API_URL.name ).value,
-            'portalurl': property_dict.get( ZmPropertyName.PORTAL_URL.name ).value,
-            'user': property_dict.get( ZmPropertyName.API_USER.name ).value,
-            'password': property_dict.get( ZmPropertyName.API_PASSWORD.name ).value,
+            'apiurl': attribute_dict.get( ZmAttributeName.API_URL.name ).value,
+            'portalurl': attribute_dict.get( ZmAttributeName.PORTAL_URL.name ).value,
+            'user': attribute_dict.get( ZmAttributeName.API_USER.name ).value,
+            'password': attribute_dict.get( ZmAttributeName.API_PASSWORD.name ).value,
             # 'disable_ssl_cert_check': True
         }
 

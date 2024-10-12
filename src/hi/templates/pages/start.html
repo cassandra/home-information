@@ -1,14 +1,24 @@
 {% extends "pages/base.html" %}
 
 {% block content %}
-<h1>Start Page</h1>
+<div class="container-fluid">
+  <h1>Home Information Center</h1>
+  <h2>Welcome!</h2>
 
-<div>
-  <a role="button" class="btn btn-success"
-     href="{% url 'location_edit_location_add' %}"
-     data-async="modal">
-	ADD NEW LOCATION
-  </a>
+  <p>
+    To get started, we need to set up your location.
+  </p>
+  <p>
+    Give your location a new and optionally upload an SVG image of your property and/or house.
+  </p>
+  
+  <div>
+    <a role="button" class="btn btn-success"
+       href="{% url 'location_edit_location_add' %}"
+       data-async="modal">
+      ADD MY LOCATION
+    </a>
+  </div>
 </div>
 
 {% endblock %}

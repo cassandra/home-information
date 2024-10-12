@@ -21,6 +21,8 @@ class IntegrationFactory( Singleton ):
     def get_all_integrations( self ) -> List[ Integration ]:
         integration_list = list()
         for integration_type in IntegrationType:
+            if integration_type == IntegrationType.NONE:
+                continue
             integration = self.get_integration( integration_type = integration_type )
             integration_list.append( integration )
             continue

@@ -3,8 +3,8 @@ from django.contrib import admin
 from . import models
 
 
-class IntegrationPropertyInLine(admin.TabularInline):
-    model = models.IntegrationProperty
+class IntegrationAttributeInLine(admin.TabularInline):
+    model = models.IntegrationAttribute
     extra = 0
     show_change_link = True
 
@@ -20,4 +20,4 @@ class IntegrationAdmin(admin.ModelAdmin):
         'updated_datetime',
     )
 
-    inlines = [ IntegrationPropertyInLine, ]
+    inlines = [ IntegrationAttributeInLine, ]

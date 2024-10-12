@@ -1,54 +1,56 @@
-{% if error_message %}
-<div class="alert alert-danger">
-  <b>Error</b>: {{ error_message }}
-</div>
-{% endif %}
+<div class="m-2" >
+  {% if error_message %}
+  <div class="alert alert-danger">
+    <b>Error</b>: {{ error_message }}
+  </div>
+  {% endif %}
 
-{% if info_message %}
-<div class="alert alert-info">
-  {{ info_message }}
-</div>
-{% endif %}
+  {% if info_message %}
+  <div class="alert alert-info">
+    {{ info_message }}
+  </div>
+  {% endif %}
 
-{% for integration in integration_list %}
-<div class="row hi-config-integration">
-  <div class="col-2">
-    {{ integration.integration_type.label }}
+  {% for integration in integration_list %}
+  <div class="row hi-config-integration">
+    <div class="col-3">
+      {{ integration.integration_type.label }}
+    </div>
+    <div class="col-2">
+      {% if integration.is_enabled %}
+      <span class="text-success">ENABLED</span>
+      {% else %}
+      <span class="text-danger">DISABLED</span>
+      {% endif %}
+    </div>
+    <div class="col-2">
+      {% if integration.is_enabled %}
+      <form action="{% url 'integration_config' name=integration.integration_type.name action='disable' %}"
+	    method="POST" role="form" data-async="#{{ DIVID.INTEGRATION_TAB }}">
+	{% csrf_token %}
+	<button type="submit" class="btn btn-danger btn-control" role="button"">DISABLE</button>
+      </form>
+      
+      {% else %}
+      <form action="{% url 'integration_config' name=integration.integration_type.name action='enable' %}"
+	    method="POST" role="form" data-async="#{{ DIVID.INTEGRATION_TAB }}">
+	{% csrf_token %}
+	<button type="submit" class="btn btn-success btn-control" role="button" >ENABLE</button>
+      </form>
+      {% endif %}
+    </div>
+    <div class="col-2">
+      {% if integration.is_enabled %}
+      <a href="{% url 'integration_manage' name=integration.integration_type.name %}"
+	 class="btn btn-info btn-control" role="button" 
+	 data-async="#{{ DIVID.INTEGRATION_TAB }}" >
+	MANAGE
+      </a>
+      </form>
+      {% else %}
+      &nbsp;
+      {% endif %}
+    </div>
   </div>
-  <div class="col-2">
-    {% if integration.is_enabled %}
-    <span class="text-success">ENABLED</span>
-    {% else %}
-    <span class="text-danger">DISABLED</span>
-    {% endif %}
-  </div>
-  <div class="col-2">
-    {% if integration.is_enabled %}
-    <form action="{% url 'integration_config' name=integration.integration_type.name action='disable' %}"
-	  method="POST" role="form" data-async="#{{ DIVID.INTEGRATION_TAB }}">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-danger btn-control" role="button"">DISABLE</button>
-    </form>
-    
-    {% else %}
-    <form action="{% url 'integration_config' name=integration.integration_type.name action='enable' %}"
-	  method="POST" role="form" data-async="#{{ DIVID.INTEGRATION_TAB }}">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-success btn-control" role="button" >ENABLE</button>
-    </form>
-    {% endif %}
-  </div>
-  <div class="col-2">
-    {% if integration.is_enabled %}
-    <a href="{% url 'integration_manage' name=integration.integration_type.name %}"
-       class="btn btn-info btn-control" role="button" 
-       data-async="#{{ DIVID.INTEGRATION_TAB }}" >
-      MANAGE
-    </a>
-    </form>
-    {% else %}
-    ---
-    {% endif %}
-  </div>
+  {% endfor %}
 </div>
-{% endfor %}

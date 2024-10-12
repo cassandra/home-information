@@ -10,13 +10,21 @@
 </div>
 {% endif %}
 
-<div>
+<p>
   {{ location_form.name.label }}
   {{ location_form.name }}
   {{ location_form.name.errors }}
-</div>
+</p>
 
-<div>
+<p>
+  Optionally add an image (SVG format) showing your property and/or house layout.  Skip this and we'll uses a predefined image for you. You'll be able to update this image later.
+</p>
+
+<p>
   <label for="id_svg_file">Select an SVG file:</label>
   <input type="file" name="svg_file" id="id_svg_file">
-</div>
+</p>
+
+<p>
+  
+</p>

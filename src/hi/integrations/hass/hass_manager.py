@@ -7,10 +7,10 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.entity.models import Entity
 
 from hi.integrations.core.enums import IntegrationType
-from hi.integrations.core.exceptions import IntegrationPropertyError
+from hi.integrations.core.exceptions import IntegrationAttributeError
 from hi.integrations.core.models import Integration
 
-from .enums import HassPropertyName
+from .enums import HassAttributeName
 from .hass_client import HassClient
 from .hass_converter import HassConverter
 from .hass_models import HassState, HassDevice
@@ -56,19 +56,19 @@ class HassManager( Singleton ):
             return None
 
         # Verify integration
-        property_dict = hass_integration.property_dict
-        for hass_prop_name in HassPropertyName:
-            hass_prop = property_dict.get( hass_prop_name.name )
+        attribute_dict = hass_integration.attribute_dict
+        for hass_attr_name in HassAttributeName:
+            hass_prop = attribute_dict.get( hass_attr_name.name )
             if not hass_prop:
-                raise IntegrationPropertyError( f'Missing HAss property {hass_prop_name.name}' ) 
+                raise IntegrationAttributeError( f'Missing HAss attribute {hass_attr_name.name}' ) 
             if hass_prop.is_required and not hass_prop.value.strip():
-                raise IntegrationPropertyError( f'Missing HAss property value for {hass_prop_name.name}' ) 
+                raise IntegrationAttributeError( f'Missing HAss attribute value for {hass_attr_name.name}' ) 
 
             continue
         
         api_options = {
-            HassClient.API_BASE_URL: property_dict.get( HassPropertyName.API_BASE_URL.name ).value,
-            HassClient.API_TOKEN: property_dict.get( HassPropertyName.API_TOKEN.name ).value,
+            HassClient.API_BASE_URL: attribute_dict.get( HassAttributeName.API_BASE_URL.name ).value,
+            HassClient.API_TOKEN: attribute_dict.get( HassAttributeName.API_TOKEN.name ).value,
         }
         return HassClient( api_options = api_options )
         

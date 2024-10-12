@@ -9,7 +9,9 @@ from django.views.generic import View
 import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
 from hi.apps.location.edit.forms import LocationForm
+from hi.apps.location.models import Location
 
+from hi.enums import ViewMode
 
 def error_response( request             : HttpRequest,
                     sync_template_name  : str,
@@ -150,6 +152,16 @@ class HomeView( View ):
 class StartView( View ):
 
     def get(self, request, *args, **kwargs):
+
+        # Only for first time users (when no Locations exist)
+        if Location.objects.all().exists():
+            redirect_url = reverse( 'home' )
+            return HttpResponseRedirect( redirect_url )
+
+        # First actions need edit ability.
+        request.view_parameters.view_mode = ViewMode.EDIT
+        request.view_parameters.to_session( request )
+    
         context = {
             'location_form': LocationForm(),
         }
