@@ -25,28 +25,18 @@
     </div>
     <div class="col-2">
       {% if integration.is_enabled %}
-      <form action="{% url 'integration_config' name=integration.integration_type.name action='disable' %}"
-	    method="POST" role="form" data-async="#{{ DIVID.INTEGRATION_TAB }}">
-	{% csrf_token %}
-	<button type="submit" class="btn btn-danger btn-control" role="button"">DISABLE</button>
-      </form>
+      <a href="{% url 'integration_action' name=integration.integration_type.name action='disable' %}"
+	 role="button" class="btn btn-danger btn-control" data-async="modal">DISABLE</a>
       
       {% else %}
-      <form action="{% url 'integration_config' name=integration.integration_type.name action='enable' %}"
-	    method="POST" role="form" data-async="#{{ DIVID.INTEGRATION_TAB }}">
-	{% csrf_token %}
-	<button type="submit" class="btn btn-success btn-control" role="button" >ENABLE</button>
-      </form>
+      <a href="{% url 'integration_action' name=integration.integration_type.name action='enable' %}"
+	 class="btn btn-success btn-control" role="button" data-async="modal">ENABLE</a>
       {% endif %}
     </div>
     <div class="col-2">
       {% if integration.is_enabled %}
-      <a href="{% url 'integration_manage' name=integration.integration_type.name %}"
-	 class="btn btn-info btn-control" role="button" 
-	 data-async="#{{ DIVID.INTEGRATION_TAB }}" >
-	MANAGE
-      </a>
-      </form>
+      <a href="{% url 'integration_action' name=integration.integration_type.name action='manage' %}"
+	 class="btn btn-info btn-control" role="button"  data-async="modal">MANAGE</a>
       {% else %}
       &nbsp;
       {% endif %}

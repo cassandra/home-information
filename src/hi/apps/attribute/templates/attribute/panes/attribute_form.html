@@ -1,0 +1,27 @@
+<div class="">
+  {{ attribute_formset.management_form }}
+  
+  {% for attribute_form in attribute_formset %}
+  {{ attribute_form.id }}
+
+  {% if attribute_form.non_field_errors %}
+  <div class="non-field-errors">
+    {% for err in attribute_form.non_field_errors %}
+    <p class="form-error">{{ err }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="row p-3">
+    <div class="col-8">
+      <div class="input-group" >
+	<div class="input-group-prepend" >
+	  <span class="input-group-text" >{{ attribute_form.instance.name }}</span>
+	</div>
+	{{ attribute_form.value }}
+      </div>
+      <div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>

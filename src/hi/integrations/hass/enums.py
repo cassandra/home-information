@@ -6,13 +6,13 @@ from hi.apps.attribute.enums import AttributeValueType
 class HassAttributeName(LabeledEnum):
 
     def __init__( self,
-                  label                 : str,
-                  description           : str,
-                  attribute_value_type  : AttributeValueType,
-                  is_editable           : bool,
-                  is_required           : bool ):
+                  label        : str,
+                  description  : str,
+                  value_type   : AttributeValueType,
+                  is_editable  : bool,
+                  is_required  : bool ):
         super().__init__( label, description )
-        self.attribute_value_type = attribute_value_type,
+        self.value_type = value_type,
         self.is_editable = is_editable
         self.is_required = is_required
         return

@@ -11,17 +11,17 @@ class AttributeModel(models.Model):
     class Meta:
         abstract = True
  
-    attribute_value_type_str = models.CharField(
-        'Attribute Value Type',
-        max_length = 32,
-        null = False, blank = False,
-    )
     name = models.CharField(
         'Name',
         max_length = 64,
     )
     value = models.TextField(
         'Value',
+    )
+    value_type_str = models.CharField(
+        'Value Type',
+        max_length = 32,
+        null = False, blank = False,
     )
     attribute_type_str = models.CharField(
         'Attribute Type',
@@ -47,22 +47,22 @@ class AttributeModel(models.Model):
     )
 
     def __str__(self):
-        return f'Attr[{self}] {self.name}={self.value} [{self.attribute_value_type_str}] [{self.attribute_type_str}]'
+        return f'Attr: {self.name}={self.value} [{self.value_type_str}] [{self.attribute_type_str}]'
     
     def __repr__(self):
         return self.__str__()
     
     @property
-    def attribute_value_type(self):
-        return AttributeValueType.from_name_safe( self.attribute_value_type_str )
+    def value_type(self) -> AttributeValueType:
+        return AttributeValueType.from_name_safe( self.value_type_str )
 
-    @attribute_value_type.setter
-    def attribute_value_type( self, attribute_value_type : AttributeValueType ):
-        self.attribute_value_type_str = str(attribute_value_type)
+    @value_type.setter
+    def value_type( self, value_type : AttributeValueType ):
+        self.value_type_str = str(value_type)
         return
 
     @property
-    def attribute_type(self):
+    def attribute_type(self) -> AttributeType:
         return AttributeType.from_name_safe( self.attribute_type_str )
 
     @attribute_type.setter

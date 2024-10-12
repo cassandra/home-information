@@ -241,7 +241,7 @@ class HassConverter:
                     entity = entity,
                     name = AttributeName.INSTEON_ADDRESS,
                     value = insteon_address,
-                    attribute_value_type_str = str( AttributeValueType.STRING ),
+                    value_type_str = str( AttributeValueType.STRING ),
                     attribute_type_str = str( AttributeType.PREDEFINED ),
                     is_editable = False,
                     is_required = False,

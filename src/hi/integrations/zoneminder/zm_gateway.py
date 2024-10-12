@@ -11,11 +11,11 @@ logger = logging.getLogger(__name__)
 
 class ZoneMinderGateway( IntegrationGateway ):
 
-    def enable( self, request : HttpRequest ) -> HttpResponse:
-        return views.ZmEnableView().post( request )
+    def enable( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
+        return views.ZmEnableView().get( request )
     
-    def disable( self, request : HttpRequest ) -> HttpResponse:
-        return views.ZmDisableView().post( request )
+    def disable( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
+        return views.ZmDisableView().get( request )
 
     def manage( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
 

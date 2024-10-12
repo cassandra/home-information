@@ -3,6 +3,8 @@ import logging
 from django.shortcuts import render
 from django.views.generic import View
 
+from hi.views import bad_request_response
+
 from .enums import IntegrationType
 from .integration_factory import IntegrationFactory
 
@@ -17,13 +19,9 @@ class IntegrationViewMixin:
         }
 
     
-class IntegrationConfigTabView( View, IntegrationViewMixin ):
+class IntegrationActionView( View, IntegrationViewMixin ):
 
     def get(self, request, *args, **kwargs):
-        context = self.get_integration_config_tab_context()
-        return render( request, 'core/panes/config_tab.html', context )
-
-    def post(self, request, *args, **kwargs):
 
         error_message = None
         try:        
@@ -35,43 +33,14 @@ class IntegrationConfigTabView( View, IntegrationViewMixin ):
             )
         
             if action == 'enable':
-                return integration_gateway.enable( request = request )
+                return integration_gateway.enable( request = request, *args, **kwargs )
             elif action == 'disable':
-                return integration_gateway.disable( request = request )
+                return integration_gateway.disable( request = request, *args, **kwargs )
+            elif action == 'manage':
+                return integration_gateway.manage( request = request, *args, **kwargs )
 
-            error_message = f'Unknown integration config action "{action}".'
+            error_message = f'Unknown integration action "{action}".'
         except Exception as e:
             error_message = str(e)
-            
-        context = {
-            'error_message': error_message,
-        }
-        context.update( self.get_integration_config_tab_context() )
-        return render( request, 'core/panes/config_tab.html', context )
-    
-    
-class IntegrationManageView( View, IntegrationViewMixin ):
 
-    def get(self, request, *args, **kwargs):
-
-        error_message = None
-        try:        
-            integration_type = IntegrationType.from_name( kwargs.get('name') )
-            integration_gateway = IntegrationFactory().get_integration_gateway(
-                integration_type = integration_type,
-            )
-            return integration_gateway.manage( request = request, *args, **kwargs )
-        except Exception as e:
-            logger.exception( e )
-            error_message = str(e)
-            
-        context = {
-            'error_message': error_message,
-        }
-        context.update( self.get_integration_config_tab_context() )
-        return render( request, 'core/panes/config_tab.html', context )
-    
-    def post(self, request, *args, **kwargs):
-        return self.get( request, *args, **kwargs)
-
-    
+        return bad_request_response( request, message = error_message )

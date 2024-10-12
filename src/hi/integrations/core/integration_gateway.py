@@ -9,13 +9,16 @@ class IntegrationGateway:
     Each integration needs to provide an Integration Manager that implements these methods.
     """
     
-    def enable( self, request : HttpRequest ) -> HttpResponse:
+    def enable( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
+        # Should return a modal via antinode.modal_from_template() (called async)
         raise NotImplementedError('Subclasses must override this method')
     
-    def disable( self, request : HttpRequest ) -> HttpResponse:
+    def disable( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
+        # Should return a modal via antinode.modal_from_template() (called async)
         raise NotImplementedError('Subclasses must override this method')
     
     def manage( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
+        # Should return HTML fragment for the management pane of the integration.
         raise NotImplementedError('Subclasses must override this method')
 
     def get_integration( self, integration_type : IntegrationType ) -> Integration:

@@ -1,0 +1,26 @@
+from django import forms
+
+from hi.apps.attribute.forms import AttributeForm
+
+from .models import Integration, IntegrationAttribute
+
+
+class IntegrationAttributeForm( AttributeForm ):
+
+    class Meta:
+        model = IntegrationAttribute
+        fields = (
+            'name',
+            'value',
+        )
+        
+
+IntegrationAttributeFormSet = forms.inlineformset_factory(
+    Integration,
+    IntegrationAttribute,
+    form = IntegrationAttributeForm,
+    extra = 0,
+    max_num = 100,
+    absolute_max = 100,
+    can_delete = False,
+)
