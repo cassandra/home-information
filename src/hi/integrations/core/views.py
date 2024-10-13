@@ -4,7 +4,6 @@ from django.views.generic import View
 
 from hi.views import bad_request_response
 
-from .enums import IntegrationType
 from .integration_factory import IntegrationFactory
 
 logger = logging.getLogger(__name__)
@@ -14,7 +13,7 @@ class IntegrationViewMixin:
 
     def get_integration_config_tab_context(self):
         return {
-            'integration_list': IntegrationFactory().get_all_integrations(),
+            'integration_data_list': IntegrationFactory().get_integration_data_list(),
         }
 
     
@@ -24,11 +23,11 @@ class IntegrationActionView( View ):
 
         error_message = None
         try:        
-            integration_type = IntegrationType.from_name( kwargs.get('name') )
+            integration_id = kwargs.get('integration_id')
             action = kwargs.get('action')
 
             integration_gateway = IntegrationFactory().get_integration_gateway(
-                integration_type = integration_type,
+                integration_id = integration_id,
             )
         
             if action == 'enable':

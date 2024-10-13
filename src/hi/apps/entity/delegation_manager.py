@@ -1,7 +1,6 @@
 from typing import List
 
 from hi.apps.common.singleton import Singleton
-from hi.integrations.core.enums import IntegrationType
 from hi.apps.location.models import LocationView
 
 from . import enums
@@ -98,8 +97,9 @@ class DelegationManager(Singleton):
                 delegate_entity = models.Entity.objects.create(
                     name = f'{entity.name} - {entity_type.label}',
                     entity_type = entity_type,
-                    integration_type_str = str(IntegrationType.NONE),
-                    integration_key = None,
+                    can_user_delete = True,
+                    integration_id = None,
+                    integration_name = None,
                 )
                 delegate_entity_list.append( delegate_entity )
                 

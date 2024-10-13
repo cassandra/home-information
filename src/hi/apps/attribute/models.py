@@ -1,5 +1,7 @@
 from django.db import models
 
+from hi.integrations.core.integration_key import IntegrationKey
+
 from .enums import (
     AttributeValueType,
     AttributeType,
@@ -22,6 +24,16 @@ class AttributeModel(models.Model):
         'Value Type',
         max_length = 32,
         null = False, blank = False,
+    )
+    value_type_str = models.CharField(
+        'Value Type',
+        max_length = 32,
+        null = False, blank = False,
+    )
+    integration_key_str = models.CharField(
+        'Integration Key',
+        max_length = 128,
+        null = True, blank = True,
     )
     attribute_type_str = models.CharField(
         'Attribute Type',
@@ -59,6 +71,20 @@ class AttributeModel(models.Model):
     @value_type.setter
     def value_type( self, value_type : AttributeValueType ):
         self.value_type_str = str(value_type)
+        return
+
+    @property
+    def integration_key(self) -> IntegrationKey:
+        if not self.integration_key_str:
+            return None
+        return IntegrationKey.from_string( self.integration_key_str )
+
+    @integration_key.setter
+    def integration_key( self, integration_key : IntegrationKey ):
+        if integration_key:
+            self.integration_key_str = str(integration_key)
+        else:
+            self.integration_key_str = None
         return
 
     @property

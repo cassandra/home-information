@@ -6,7 +6,7 @@
 
 <div class="col-2">
   <form action="{% url 'zm_sync' %}"
-	method="POST" role="form" data-async="#hi-config-integration-tab">
+	method="POST" role="form" data-async="#{{ DIVID.INTEGRATION_TAB }}">
     {% csrf_token %}
     <button type="submit" class="btn btn-primary btn-control" role="button"
 	    name="action" value="sync" >SYNC</button>

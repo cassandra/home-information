@@ -8,7 +8,7 @@ from hi.apps.location.models import (
     LocationView,
 )
 from hi.apps.attribute.models import AttributeModel
-from hi.integrations.core.models import IntegrationIdModel
+from hi.integrations.core.models import IntegrationKeyModel
 from hi.enums import ItemType
 
 from .enums import (
@@ -17,7 +17,7 @@ from .enums import (
 )
 
 
-class Entity( IntegrationIdModel, LocationItemModelMixin ):
+class Entity( IntegrationKeyModel, LocationItemModelMixin ):
     """
     - A physical feature, device or software artifact.
     - May have a fixed physical location (or can just be part of a collection)
@@ -43,6 +43,10 @@ class Entity( IntegrationIdModel, LocationItemModelMixin ):
         max_length = 32,
         null = False, blank = False,
     )    
+    can_user_delete = models.BooleanField(
+        'User Delete?',
+        default = True,
+    )
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,
@@ -66,10 +70,6 @@ class Entity( IntegrationIdModel, LocationItemModelMixin ):
     def entity_type(self) -> EntityType:
         return EntityType.from_name_safe( self.entity_type_str )
 
-    @property
-    def can_user_delete(self) -> bool:
-        return self.integration_type.allow_entity_deletion
-    
     @entity_type.setter
     def entity_type( self, entity_type : EntityType ):
         self.entity_type_str = str(entity_type)

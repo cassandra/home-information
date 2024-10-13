@@ -1,17 +1,16 @@
-from dataclasses import dataclass
 from typing import Dict
 
 from django.db import models
 
 from hi.apps.attribute.models import AttributeModel
 
-from .enums import IntegrationType
+from .integration_key import IntegrationKey
 
 
 class Integration( models.Model ):
 
-    integration_type_str = models.CharField(
-        'Integration Type',
+    integration_id = models.CharField(
+        'Integration Id',
         max_length = 64,
         null = False, blank = False,
         unique = True,
@@ -36,24 +35,15 @@ class Integration( models.Model ):
         verbose_name_plural = 'Integrations'
 
     def __str__(self):
-        return f'{self.integration_type_str}'
+        return self.integration_id
    
     @property
-    def integration_type(self):
-        return IntegrationType.from_name_safe( self.integration_type_str )
-
-    @integration_type.setter
-    def integration_type( self, integration_type : IntegrationType ):
-        self.integration_type_str = str(integration_type)
-        return
+    def attributes_by_name(self) -> Dict[ str, 'IntegrationAttribute' ]:
+        return { attr.name: attr for attr in self.attributes.all() }
 
     @property
-    def attribute_dict(self) -> Dict[ str, 'IntegrationAttribute' ] :
-        attribute_dict = dict()
-        for prop in self.attributes.all():
-            attribute_dict[prop.name] = prop
-            continue
-        return attribute_dict
+    def attributes_by_integration_key(self) -> Dict[ IntegrationKey, 'IntegrationAttribute' ]:
+        return { attr.integration_key: attr for attr in self.attributes.all() }
     
 
 class IntegrationAttribute( AttributeModel ):
@@ -69,65 +59,42 @@ class IntegrationAttribute( AttributeModel ):
         verbose_name = 'Attribute'
         verbose_name_plural = 'Attributes'
 
-
-@dataclass
-class IntegrationId:
-    """ Internal data corresponding to/from IntegrationIdModel """
-
-    integration_type  : IntegrationType
-    key   : str
-
-    @property
-    def integration_type_str(self):
-        if self.integration_type:
-            return str(self.integration_type)
-        return None
-
-    
-class IntegrationIdModel( models.Model ):
+        
+class IntegrationKeyModel( models.Model ):
     """
     For use in DB objects that need to be associated with an integration
-    device/sensor/control.
+    device, sensor, controller, attribute, etc.
     """
     
     class Meta:
         abstract = True
 
-    integration_type_str = models.CharField(
-        'Integration Type',
+    integration_id = models.CharField(
+        'Integration Id',
         max_length = 32,
         null = True, blank = True,
     )
-    integration_key = models.CharField(
-        'Integration Key',
+    integration_name = models.CharField(
+        'Integration Name',
         max_length = 128,
         null = True, blank = True,
     )
 
     @property
-    def integration_type(self):
-        return IntegrationType.from_name_safe( self.integration_type_str )
-
-    @integration_type.setter
-    def integration_type( self, integration_type : IntegrationType ):
-        self.integration_type_str = str(integration_type)
-        return 
-
-    @property
-    def integration_id(self):
-        return IntegrationId(
-            integration_type = self.integration_type,
-            key = self.integration_key,
+    def integration_key(self) -> IntegrationKey:
+        return IntegrationKey(
+            integration_id = self.integration_id,
+            integration_name = self.integration_name,
         )
 
-    @integration_id.setter
-    def integration_id( self, integration_id : IntegrationId ):
-        if not integration_id:
-            self.integration_type_str = None
-            self.integration_key = None
+    @integration_key.setter
+    def integration_key( self, integration_key : IntegrationKey ):
+        if not integration_key:
+            self.integration_id = None
+            self.integration_name = None
             return            
-        self.integration_type_str = integration_id.integration_type_str
-        self.integration_key = integration_id.key
+        self.integration_id = integration_key.integration_id
+        self.integration_name = integration_key.integration_name
         return 
     
     

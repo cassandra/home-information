@@ -13,14 +13,15 @@ from hi.apps.entity.models import Entity
 
 from hi.apps.model_helper import HiModelHelper
 
-from hi.integrations.core.enums import IntegrationType
 from hi.integrations.core.exceptions import IntegrationAttributeError
-from hi.integrations.core.models import Integration, IntegrationId
+from hi.integrations.core.integration_key import IntegrationKey
+from hi.integrations.core.models import Integration
 
 from .enums import (
-    ZmAttributeName,
+    ZmAttributeType,
     ZmMonitorState,
 )
+from .zm_metadata import ZmMetaData
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class ZoneMinderManager( Singleton ):
 
     def create_zm_client(self):
         try:
-            zm_integration = Integration.objects.get( integration_type_str = str(IntegrationType.ZONEMINDER) )
+            zm_integration = Integration.objects.get( integration_id = ZmMetaData.integration_id )
         except Integration.DoesNotExist:
             logger.debug( 'ZoneMinder integration is not implemented.' )
 
@@ -63,26 +64,37 @@ class ZoneMinderManager( Singleton ):
             logger.debug( 'ZoneMinder integration is not enabled.' )
             return None
 
-        # Verify integration
-        attribute_dict = zm_integration.attribute_dict
-        for zm_attr_name in ZmAttributeName:
-            print( f'\nATTR NAME = {zm_attr_name} DICT  {attribute_dict}' )
-            zm_prop = attribute_dict.get( zm_attr_name.name )
-            if not zm_prop:
-                raise IntegrationAttributeError( f'Missing ZM attribute {zm_attr_name.name}' ) 
-            if zm_prop.is_required and not zm_prop.value.strip():
-                raise IntegrationAttributeError( f'Missing ZM attribute value for {zm_attr_name.name}' ) 
-
-            continue
-        
+        # Verify integration and build API data payload
         api_options = {
-            'apiurl': attribute_dict.get( ZmAttributeName.API_URL.name ).value,
-            'portalurl': attribute_dict.get( ZmAttributeName.PORTAL_URL.name ).value,
-            'user': attribute_dict.get( ZmAttributeName.API_USER.name ).value,
-            'password': attribute_dict.get( ZmAttributeName.API_PASSWORD.name ).value,
             # 'disable_ssl_cert_check': True
         }
+        attr_to_api_option_key = {
+            ZmAttributeType.API_URL: 'apiurl',
+            ZmAttributeType.PORTAL_URL: 'portalurl',
+            ZmAttributeType.API_USER: 'user',
+            ZmAttributeType.API_PASSWORD: 'password',
+        }
+        
+        attribute_dict = zm_integration.attributes_by_integration_key
+        for zm_attr_type in ZmAttributeType:
+            integration_key = IntegrationKey(
+                integration_id = zm_integration.integration_id,
+                integration_name = str(zm_attr_type),
+            )
+            zm_attr = attribute_dict.get( integration_key )
+            if not zm_attr:
+                raise IntegrationAttributeError( f'Missing ZM attribute {zm_attr_type}' ) 
+            if zm_attr.is_required and not zm_attr.value.strip():
+                raise IntegrationAttributeError( f'Missing ZM attribute value for {zm_attr_type}' )
 
+            if zm_attr_type in attr_to_api_option_key:
+                options_key = attr_to_api_option_key[zm_attr_type]
+                api_options[options_key] = zm_attr.value
+            
+            continue
+        
+        logger.debug( f'ZoneMinder client options: {api_options}' )
+        
         return pyzm_api.ZMApi( options = api_options )
         
     def sync( self ) -> ProcessingResult:
@@ -107,59 +119,42 @@ class ZoneMinderManager( Singleton ):
             result.error_list.append( 'Sync problem. ZM integration disabled?' )
             return result
                     
-        zm_id_to_entity = self._get_zm_entities( result = result )
-        result.message_list.append( f'Found {len(zm_id_to_entity)} existing ZM entities.' )
+        integration_key_to_monitor = self._fetch_zm_monitors( result = result )
+        result.message_list.append( f'Found {len(integration_key_to_monitor)} current ZM monitors.' )
+        
+        integration_key_to_entity = self._get_existing_zm_entities( result = result )
+        result.message_list.append( f'Found {len(integration_key_to_entity)} existing ZM entities.' )
 
-        zm_id_to_monitor = self._get_zm_monitors( result = result )
-        result.message_list.append( f'Found {len(zm_id_to_monitor)} current ZM monitors.' )
-        
-        for zm_id, monitor in zm_id_to_monitor.items():
-            entity = zm_id_to_entity.get( zm_id )
-            if entity:
-                self._update_entity( entity = entity,
-                                     monitor = monitor,
-                                     result = result )
-            else:
-                self._create_entity( monitor = monitor,
-                                     result = result )
-            continue
-        
-        for zm_id, entity in zm_id_to_entity.items():
-            if zm_id not in zm_id_to_monitor:
-                self._remove_entity( entity = entity,
-                                     result = result )
-            continue
+        with transaction.atomic():
+            for integration_key, zm_monitor in integration_key_to_monitor.items():
+                entity = integration_key_to_entity.get( integration_key )
+                if entity:
+                    self._update_entity( entity = entity,
+                                         zm_monitor = zm_monitor,
+                                         result = result )
+                else:
+                    self._create_entity( zm_monitor = zm_monitor,
+                                         result = result )
+                continue
+
+            for integration_key, entity in integration_key_to_entity.items():
+                if integration_key not in integration_key_to_monitor:
+                    self._remove_entity( entity = entity,
+                                         result = result )
+                continue
         
         return result
 
-    def _get_zm_entities( self, result : ProcessingResult ) -> Dict[ int, Entity ]:
-        logger.debug( 'Getting existing ZM entities.' )
-        zm_id_to_entity = dict()
-        
-        entity_queryset = Entity.objects.filter( integration_type_str = str(IntegrationType.ZONEMINDER) )
-        for entity in entity_queryset:
-            integration_id = entity.integration_id
-            try:
-                zm_id = int( integration_id.key )
-            except ( TypeError, ValueError ):
-                result.error_list.append( f'ZM entity found without valid ZM Id: {entity}' )
-                zm_id = 1000000 + entity.id  # We need a (unique) placeholder (will remove this later)
-            zm_id_to_entity[zm_id] = entity
-            
-            continue
-        
-        return zm_id_to_entity
-
-    def _get_zm_monitors( self, result : ProcessingResult ) -> Dict[ int, ZmMonitor ]:
+    def _fetch_zm_monitors( self, result : ProcessingResult ) -> Dict[ IntegrationKey, ZmMonitor ]:
         
         logger.debug( 'Getting current ZM monitors.' )
-        zm_id_to_monitor = dict()
+        integration_key_to_monitor = dict()
         for zm_monitor in self.zm_client.monitors().list():
-            zm_id = zm_monitor.id()
+            integration_key = self._monitor_to_integration_key( zm_monitor = zm_monitor )
             
             result.message_list.append(
                 '[ZM Monitor] Id:{} Name:{} Enabled:{} Status:{} Type:{} Dims:{}'.format(
-                    zm_id,
+                    zm_monitor.id(),
                     zm_monitor.name(),
                     zm_monitor.enabled(),
                     zm_monitor.status(),
@@ -167,39 +162,55 @@ class ZoneMinderManager( Singleton ):
                     zm_monitor.dimensions(),
                 )
             )
-            zm_id_to_monitor[zm_id] = zm_monitor
+            integration_key_to_monitor[integration_key] = zm_monitor
             continue
 
-        return zm_id_to_monitor
+        return integration_key_to_monitor
     
-    def _create_entity( self,
-                        monitor  : ZmMonitor,
-                        result   : ProcessingResult ):
+    def _get_existing_zm_entities( self, result : ProcessingResult ) -> Dict[ IntegrationKey, Entity ]:
+        logger.debug( 'Getting existing ZM entities.' )
+        integration_key_to_entity = dict()
+        
+        entity_queryset = Entity.objects.filter( integration_id = ZmMetaData.integration_id )
+        for entity in entity_queryset:
+            integration_key = entity.integration_key
+            if not integration_key:
+                result.error_list.append( f'ZM entity found without integration name: {entity}' )
+                mock_monitor_id = 1000000 + entity.id  # We need a (unique) placeholder (will remove later)
+                integration_key = IntegrationKey(
+                    integration_id = ZmMetaData.integration_id,
+                    integration_name = str( mock_monitor_id ),
+                )
+            integration_key_to_entity[integration_key] = entity
+            continue
+        
+        return integration_key_to_entity
 
-        integration_id = IntegrationId(
-            integration_type = IntegrationType.ZONEMINDER,
-            key = str( monitor.id() ),
-            
-        )
+    def _create_entity( self,
+                        zm_monitor  : ZmMonitor,
+                        result      : ProcessingResult ):
+
+        integration_key = self._monitor_to_integration_key( zm_monitor = zm_monitor )
         with transaction.atomic():
 
             entity = Entity(
-                name = monitor.name(),
+                name = zm_monitor.name(),
                 entity_type_str = str(EntityType.CAMERA),
+                can_user_delete = ZmMetaData.allow_entity_deletion,
             )
-            entity.integration_id = integration_id
+            entity.integration_key = integration_key
             entity.save()
             HiModelHelper.create_video_stream_sensor(
                 entity = entity,
-                integration_id = integration_id,
+                integration_key = integration_key,
             )
             HiModelHelper.create_movement_sensor(
                 entity = entity,
-                integration_id = integration_id,
+                integration_key = integration_key,
             )
             HiModelHelper.create_discrete_controller(
                 entity = entity,
-                integration_id = integration_id,
+                integration_key = integration_key,
                 name = f'{entity.name} State',
                 value_list = [ str(x) for x in ZmMonitorState ],
             )
@@ -207,9 +218,9 @@ class ZoneMinderManager( Singleton ):
         return
     
     def _update_entity( self,
-                        entity   : Entity,
-                        monitor  : ZmMonitor,
-                        result   : ProcessingResult ):
+                        entity     : Entity,
+                        zm_monitor  : ZmMonitor,
+                        result     : ProcessingResult ):
 
         # Currently nothing stored locally that will change (other than entity existence)
 
@@ -223,4 +234,11 @@ class ZoneMinderManager( Singleton ):
         entity.delete()  # Deletion cascades to attributes, positions, sensors, controllers, etc.
         result.message_list.append( f'Removed stale ZM entity: {entity}' )
         return
+    
+    def _monitor_to_integration_key( self, zm_monitor  : ZmMonitor ) -> IntegrationKey:
+        return IntegrationKey(
+            integration_id = ZmMetaData.integration_id,
+            integration_name = str( zm_monitor.id() ),
+            
+        )
     

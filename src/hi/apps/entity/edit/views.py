@@ -53,8 +53,9 @@ class EntityAddView( View ):
         try:
             with transaction.atomic():
                 entity = EntityManager().create_entity(
-                    entity_type = entity_type,
                     name = name,
+                    entity_type = entity_type,
+                    can_user_delete = True,
                 )
                 if ( request.view_parameters.view_type.is_location_view
                      and request.view_parameters.location_view_id ):

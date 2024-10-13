@@ -1,18 +1,21 @@
 import logging
 from typing import Dict
 
+from django.db import transaction
+
 from hi.apps.common.database_lock import ExclusionLockContext
 from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.common.singleton import Singleton
 from hi.apps.entity.models import Entity
 
-from hi.integrations.core.enums import IntegrationType
 from hi.integrations.core.exceptions import IntegrationAttributeError
+from hi.integrations.core.integration_key import IntegrationKey
 from hi.integrations.core.models import Integration
 
-from .enums import HassAttributeName
+from .enums import HassAttributeType
 from .hass_client import HassClient
 from .hass_converter import HassConverter
+from .hass_metadata import HassMetaData
 from .hass_models import HassState, HassDevice
 
 logger = logging.getLogger(__name__)
@@ -47,7 +50,7 @@ class HassManager( Singleton ):
 
     def create_hass_client(self):
         try:
-            hass_integration = Integration.objects.get( integration_type_str = str(IntegrationType.HASS) )
+            hass_integration = Integration.objects.get( integration_id = HassMetaData.integration_id )
         except Integration.DoesNotExist:
             logger.debug( 'HAss integration is not implemented.' )
 
@@ -55,21 +58,34 @@ class HassManager( Singleton ):
             logger.debug( 'HAss integration is not enabled.' )
             return None
 
-        # Verify integration
-        attribute_dict = hass_integration.attribute_dict
-        for hass_attr_name in HassAttributeName:
-            hass_prop = attribute_dict.get( hass_attr_name.name )
-            if not hass_prop:
-                raise IntegrationAttributeError( f'Missing HAss attribute {hass_attr_name.name}' ) 
-            if hass_prop.is_required and not hass_prop.value.strip():
-                raise IntegrationAttributeError( f'Missing HAss attribute value for {hass_attr_name.name}' ) 
+        # Verify integration and build API data payload
+        api_options = {
+            # 'disable_ssl_cert_check': True
+        }
+        attr_to_api_option_key = {
+            HassAttributeType.API_BASE_URL: HassClient.API_BASE_URL,
+            HassAttributeType.API_TOKEN: HassClient.API_TOKEN,
+        }
+        
+        attribute_dict = hass_integration.attributes_by_integration_key
+        for hass_attr_type in HassAttributeType:
+            integration_key = IntegrationKey(
+                integration_id = hass_integration.integration_id,
+                integration_name = str(hass_attr_type),
+            )
+            hass_attr = attribute_dict.get( integration_key )
+            if not hass_attr:
+                raise IntegrationAttributeError( f'Missing HAss attribute {hass_attr_type}' ) 
+            if hass_attr.is_required and not hass_attr.value.strip():
+                raise IntegrationAttributeError( f'Missing HAss attribute value for {hass_attr_type}' )
 
+            if hass_attr_type in attr_to_api_option_key:
+                options_key = attr_to_api_option_key[hass_attr_type]
+                api_options[options_key] = hass_attr.value
+            
             continue
         
-        api_options = {
-            HassClient.API_BASE_URL: attribute_dict.get( HassAttributeName.API_BASE_URL.name ).value,
-            HassClient.API_TOKEN: attribute_dict.get( HassAttributeName.API_TOKEN.name ).value,
-        }
+        logger.debug( f'Home Assistant client options: {api_options}' )
         return HassClient( api_options = api_options )
         
     def sync( self ) -> ProcessingResult:
@@ -95,53 +111,43 @@ class HassManager( Singleton ):
             result.error_list.append( 'Sync problem. HAss integration disabled?' )
             return result
                     
-        hass_device_id_to_entity = self._get_existing_hass_entities( result = result )
-        result.message_list.append( f'Found {len(hass_device_id_to_entity)} existing HAss entities.' )
-
-        hass_entity_id_to_state = self._get_hass_states_from_api( result = result )
+        hass_entity_id_to_state = self._fetch_hass_states_from_api( result = result )
         result.message_list.append( f'Found {len(hass_entity_id_to_state)} current HAss states.' )
+
+        integration_key_to_entity = self._get_existing_hass_entities( result = result )
+        result.message_list.append( f'Found {len(integration_key_to_entity)} existing HAss entities.' )
 
         hass_device_id_to_device = HassConverter.hass_states_to_hass_devices(
             hass_entity_id_to_state = hass_entity_id_to_state,
         )
         result.message_list.append( f'Found {len(hass_device_id_to_device)} current HAss devices.' )
-        
-        for hass_device_id, hass_device in hass_device_id_to_device.items():
-            entity = hass_device_id_to_entity.get( hass_device_id )
-            if entity:
-                self._update_entity( entity = entity,
-                                     hass_device = hass_device,
-                                     result = result )
-            else:
-                self._create_entity( hass_device = hass_device,
-                                     result = result )
-            continue
-        
-        for hass_device_id, entity in hass_device_id_to_entity.items():
-            if hass_device_id not in hass_device_id_to_device:
-                self._remove_entity( entity = entity,
-                                     result = result )
-            continue
+
+        integration_key_to_hass_device = {
+            HassConverter.hass_device_to_integration_key( hass_device ): hass_device
+            for hass_device in hass_device_id_to_device.values()
+        }
+    
+        with transaction.atomic():
+            for integration_key, hass_device in integration_key_to_hass_device.items():
+                entity = integration_key_to_entity.get( integration_key )
+                if entity:
+                    self._update_entity( entity = entity,
+                                         hass_device = hass_device,
+                                         result = result )
+                else:
+                    self._create_entity( hass_device = hass_device,
+                                         result = result )
+                continue
+
+            for integration_key, entity in integration_key_to_entity.items():
+                if integration_key not in integration_key_to_hass_device:
+                    self._remove_entity( entity = entity,
+                                         result = result )
+                continue
         
         return result
 
-    def _get_existing_hass_entities( self, result : ProcessingResult ) -> Dict[ str, Entity ]:
-        logger.debug( 'Getting existing HAss entities.' )
-        hass_device_id_to_entity = dict()
-
-        entity_queryset = Entity.objects.filter( integration_type_str = str(IntegrationType.HASS) )
-        for entity in entity_queryset:
-            integration_id = entity.integration_id
-            hass_device_id = integration_id.key
-            if not hass_device_id:
-                result.error_list.append( f'Entity found without valid HAss Id: {entity}' )
-                hass_device_id = 1000000 + entity.id  # We need a (unique) placeholder for removals
-            hass_device_id_to_entity[hass_device_id] = entity
-            continue
-
-        return hass_device_id_to_entity
-
-    def _get_hass_states_from_api( self, result : ProcessingResult ) -> Dict[ int, HassState ]:
+    def _fetch_hass_states_from_api( self, result : ProcessingResult ) -> Dict[ str, HassState ]:
         
         logger.debug( 'Getting current HAss states.' )
         hass_entity_id_to_state = dict()
@@ -152,6 +158,25 @@ class HassManager( Singleton ):
 
         return hass_entity_id_to_state
     
+    def _get_existing_hass_entities( self, result : ProcessingResult ) -> Dict[ IntegrationKey, Entity ]:
+        logger.debug( 'Getting existing HAss entities.' )
+        integration_key_to_entity = dict()
+
+        entity_queryset = Entity.objects.filter( integration_id = HassMetaData.integration_id )
+        for entity in entity_queryset:
+            integration_key = entity.integration_key
+            if not integration_key:
+                result.error_list.append( f'Entity found without valid HAss Id: {entity}' )
+                mock_hass_device_id = 1000000 + entity.id  # We need a (unique) placeholder for removals
+                integration_key = IntegrationKey(
+                    integration_id = HassMetaData.integration_id,
+                    integration_name = str( mock_hass_device_id ),
+                )
+            integration_key_to_entity[integration_key] = entity
+            continue
+
+        return integration_key_to_entity
+
     def _create_entity( self,
                         hass_device  : HassDevice,
                         result       : ProcessingResult ):

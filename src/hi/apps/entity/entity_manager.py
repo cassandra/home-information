@@ -3,7 +3,6 @@ from decimal import Decimal
 from django.db import transaction
 
 from hi.apps.common.singleton import Singleton
-from hi.integrations.core.enums import IntegrationType
 from hi.apps.location.forms import LocationItemPositionForm
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
@@ -28,13 +27,15 @@ class EntityManager(Singleton):
     def create_entity( self,
                        entity_type       : EntityType,
                        name              : str,
-                       integration_type  : IntegrationType  = IntegrationType.NONE,
-                       integration_key   : str              = None) -> Entity:
+                       can_user_delete   : bool        = True,
+                       integration_id    : str         = None,
+                       integration_name  : str         = None  ) -> Entity:
         return Entity.objects.create(
             name = name,
             entity_type_str = str(entity_type),
-            integration_type_str = str(integration_type),
-            integration_key = integration_key,
+            can_user_delete = can_user_delete,
+            integration_id = integration_id,
+            integration_name = integration_name,
         )
     
     def set_entity_path( self,

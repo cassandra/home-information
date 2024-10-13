@@ -11,31 +11,31 @@
   </div>
   {% endif %}
 
-  {% for integration in integration_list %}
+  {% for integration_data in integration_data_list %}
   <div class="row hi-config-integration">
     <div class="col-3">
-      {{ integration.integration_type.label }}
+      {{ integration_data.integration_metadata.label }}
     </div>
     <div class="col-2">
-      {% if integration.is_enabled %}
+      {% if integration_data.integration.is_enabled %}
       <span class="text-success">ENABLED</span>
       {% else %}
       <span class="text-danger">DISABLED</span>
       {% endif %}
     </div>
     <div class="col-2">
-      {% if integration.is_enabled %}
-      <a href="{% url 'integration_action' name=integration.integration_type.name action='disable' %}"
+      {% if integration_data.integration.is_enabled %}
+      <a href="{% url 'integration_action' integration_id=integration_data.integration.integration_id action='disable' %}"
 	 role="button" class="btn btn-danger btn-control" data-async="modal">DISABLE</a>
       
       {% else %}
-      <a href="{% url 'integration_action' name=integration.integration_type.name action='enable' %}"
+      <a href="{% url 'integration_action' integration_id=integration_data.integration.integration_id action='enable' %}"
 	 class="btn btn-success btn-control" role="button" data-async="modal">ENABLE</a>
       {% endif %}
     </div>
     <div class="col-2">
-      {% if integration.is_enabled %}
-      <a href="{% url 'integration_action' name=integration.integration_type.name action='manage' %}"
+      {% if integration_data.integration.is_enabled %}
+      <a href="{% url 'integration_action' integration_id=integration_data.integration.integration_id  action='manage' %}"
 	 class="btn btn-info btn-control" role="button"  data-async="#{{ DIVID.INTEGRATION_TAB }}">MANAGE</a>
       {% else %}
       &nbsp;

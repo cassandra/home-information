@@ -12,8 +12,8 @@ class SensorAdmin(admin.ModelAdmin):
         'name',
         'entity_state',
         'sensor_type_str',
-        'integration_type_str',
-        'integration_key',
+        'integration_id',
+        'integration_name',
     )
 
     search_fields = ['name']

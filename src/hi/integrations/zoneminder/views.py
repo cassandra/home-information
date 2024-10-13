@@ -4,23 +4,23 @@ from django.shortcuts import render
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
-from hi.apps.attribute.enums import AttributeType
 
-from hi.integrations.core.enums import IntegrationType
 from hi.integrations.core.forms import IntegrationAttributeFormSet
-from hi.integrations.core.models import Integration, IntegrationAttribute
+from hi.integrations.core.helpers import IntegrationHelperMixin
 
 from hi.views import bad_request_response
 
-from .enums import ZmAttributeName
 from .zm_manager import ZoneMinderManager
+from .zm_metadata import ZmMetaData
 
 
-class ZmEnableView( View ):
+class ZmEnableView( View, IntegrationHelperMixin ):
 
     def get(self, request, *args, **kwargs):
         
-        integration = self.get_or_create_integration()
+        integration = self.get_or_create_integration(
+            integration_metadata = ZmMetaData,
+        )
         if integration.is_enabled:
             return bad_request_response( request, message = 'ZoneMinder is already enabled' )
 
@@ -37,7 +37,9 @@ class ZmEnableView( View ):
 
     def post(self, request, *args, **kwargs):
 
-        integration = self.get_or_create_integration()
+        integration = self.get_or_create_integration(
+            integration_metadata = ZmMetaData,
+        )
         if integration.is_enabled:
             return bad_request_response( request, message = 'ZoneMinder is already enabled' )
 
@@ -59,32 +61,6 @@ class ZmEnableView( View ):
 
         return antinode.refresh_response()
 
-    def get_or_create_integration( self ):
-        try:
-            return Integration.objects.get(
-                integration_type_str = IntegrationType.ZONEMINDER,
-            )
-        except Integration.DoesNotExist:
-            pass
-
-        with transaction.atomic():
-            integration = Integration.objects.create(
-                integration_type_str = IntegrationType.ZONEMINDER,
-                is_enabled = False,
-            )
-            for attribute in ZmAttributeName:
-                IntegrationAttribute.objects.create(
-                    integration = integration,
-                    value_type_str = str(attribute.value_type),
-                    name = attribute.label,
-                    value = '',
-                    attribute_type_str = AttributeType.PREDEFINED,
-                    is_editable = attribute.is_editable,
-                    is_required = attribute.is_required,
-                )
-                continue
-        return integration
-
     def get_modal_response( self,
                             request                        : HttpRequest,
                             integration_attribute_formset  : IntegrationAttributeFormSet,
@@ -102,11 +78,11 @@ class ZmEnableView( View ):
     
 class ZmDisableView( View ):
 
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
 
         context = {
         }
-        return render( request, 'zoneminder/panes/deactivate.html', context )
+        return render( request, 'zoneminder/modals/zm_disable.html', context )
     
     
 class ZmManageView( View ):
@@ -114,7 +90,7 @@ class ZmManageView( View ):
     def get(self, request, *args, **kwargs):
 
         context = {
-            'integration_type': IntegrationType.ZONEMINDER
+            'integration_metadata': ZmMetaData,
         }
         return render( request, 'zoneminder/panes/manage.html', context )
     
@@ -126,7 +102,7 @@ class ZmSyncView( View ):
         processing_result = ZoneMinderManager().sync()
         
         context = {
-            'integration_type': IntegrationType.ZONEMINDER,
+            'integration_metadata': ZmMetaData,
             'processing_result': processing_result,
         }
         return render( request, 'zoneminder/panes/manage.html', context )

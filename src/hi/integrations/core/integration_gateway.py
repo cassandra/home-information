@@ -1,14 +1,16 @@
 from django.http import HttpRequest, HttpResponse
 
-from .enums import IntegrationType
-from .models import Integration
+from .transient_models import IntegrationMetaData
 
 
 class IntegrationGateway:
     """ 
     Each integration needs to provide an Integration Manager that implements these methods.
     """
-    
+
+    def get_meta_data(self) -> IntegrationMetaData:
+        raise NotImplementedError('Subclasses must override this method')
+        
     def enable_modal_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
         # Should return a modal via antinode.modal_from_template() (called async)
         raise NotImplementedError('Subclasses must override this method')
@@ -20,14 +22,3 @@ class IntegrationGateway:
     def manage_pane_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
         # Should return HTML fragment for the management pane of the integration.
         raise NotImplementedError('Subclasses must override this method')
-
-    def get_integration( self, integration_type : IntegrationType ) -> Integration:
-        try:
-            return Integration.objects.get( integration_type_str = str(integration_type) )
-        except Integration.DoesNotExist:
-            return Integration(
-                integration_type_str = str(integration_type),
-                is_enabled = False,
-            )
-
-    

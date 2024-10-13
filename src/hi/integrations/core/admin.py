@@ -14,7 +14,7 @@ class IntegrationAdmin(admin.ModelAdmin):
     show_full_result_count = False
     
     list_display = (
-        'integration_type_str',
+        'integration_id',
         'is_enabled',
         'created_datetime',
         'updated_datetime',
