@@ -1,4 +1,12 @@
-<h3>ZoneMinder Integration</h3>
+<div class="d-flex justify-content-between">
+  <div cLASS="h3">ZoneMinder Integration</div>
+  <div>
+    <a href="{% url 'config_tab_pane' %}"
+       class="btn btn-tertiary btn-control" role="button"  data-async="#{{ DIVID.INTEGRATION_TAB }}">
+      BACK
+    </a>
+  </div>
+</div>
 
 {% if processing_result %}
 {% include "common/processing_result.html" with processing_result=processing_result  %}
@@ -8,7 +16,7 @@
   <form action="{% url 'zm_sync' %}"
 	method="POST" role="form" data-async="#{{ DIVID.INTEGRATION_TAB }}">
     {% csrf_token %}
-    <button type="submit" class="btn btn-primary btn-control" role="button"
+    <button type="submit" class="btn btn-primary" role="button"
 	    name="action" value="sync" >SYNC</button>
   </form>
 </div>

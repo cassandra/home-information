@@ -1,4 +1,12 @@
-<h3>HAss Integration</h3>
+<div class="d-flex justify-content-between">
+  <div cLASS="h3">HAss Integration</div>
+  <div>
+    <a href="{% url 'config_tab_pane' %}"
+       class="btn btn-tertiary btn-control" role="button"  data-async="#{{ DIVID.INTEGRATION_TAB }}">
+      BACK
+    </a>
+  </div>
+</div>
 
 {% if processing_result %}
 {% include "common/processing_result.html" with processing_result=processing_result  %}

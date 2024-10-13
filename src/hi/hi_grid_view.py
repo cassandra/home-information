@@ -78,7 +78,7 @@ class HiGridView(View):
             if ( 'location_view_list' not in context ):
                 location_view_list = list( current_location.views.order_by( 'order_id' ))
                 context['location_view_list'] = location_view_list
-            
+                
             # This list of collections is needed for bottom buttons
             if 'collection_list' not in context:
                 collection_list = list( Collection.objects.all().order_by( 'order_id' ))

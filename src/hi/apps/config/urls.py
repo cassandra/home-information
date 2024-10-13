@@ -9,4 +9,8 @@ urlpatterns = [
              views.ConfigHomePaneView.as_view(), 
              name='config_home_pane' ),
 
+    re_path( r'^tab$', 
+             views.ConfigTabPaneView.as_view(), 
+             name='config_tab_pane' ),
+
 ]

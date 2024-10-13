@@ -1,3 +1,4 @@
+from django.shortcuts import render
 from django.urls import reverse
 
 import hi.apps.common.antinode as antinode
@@ -29,3 +30,11 @@ class ConfigHomePaneView( HiGridView, IntegrationViewMixin ):
             main_template_name = 'config/panes/home.html',
             push_url_name = 'config_home_pane',
         )
+
+    
+class ConfigTabPaneView( HiGridView, IntegrationViewMixin ):
+
+    def get(self, request, *args, **kwargs):
+
+        context = self.get_integration_config_tab_context()
+        return render( request, 'core/panes/integration_config_tab.html', context )

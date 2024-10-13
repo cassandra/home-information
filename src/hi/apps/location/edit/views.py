@@ -173,7 +173,7 @@ class LocationViewAddView( View ):
         request.view_parameters.to_session( request )
         
         redirect_url = reverse('home')
-        return redirect( redirect_url )
+        return antinode.redirect_response( redirect_url )
 
     
 class LocationViewGeometryView( View ):
