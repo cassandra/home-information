@@ -8,19 +8,18 @@ TBD
 <div>{{ location_detail_data.location.order_id }}</div>
 
 <div>
-  <a href="{% url 'location_edit_location_view_delete' location_view_id=request.view_parameters.location_view_id %}"
-     id="hi-delete-location-view-link" class="btn btn-danger btn-control" role="button"
+  <a href="{% url 'location_edit_location_edit' location_id=location_detail_data.location.id %}"
+     id="hi-location-edit-link" class="btn btn-primary btn-control" role="button"
      data-async="true">
-    DELETE THIS VIEW
+    EDIT LOCATION
   </a>
 </div>
 
-
 <div>
-  <a href="{% url 'location_edit_location_delete' location_id=location_detail_data.location.id %}"
-     id="hi-delete-location-link" class="btn btn-danger btn-control" role="button"
+  <a href="{% url 'location_edit_location_view_edit' location_view_id=request.view_parameters.location_view_id %}"
+     id="hi-location-view-edit-link" class="btn btn-info btn-control" role="button"
      data-async="true">
-    DELETE LOCATION AND ALL VIEWS
+    EDIT VIEW
   </a>
 </div>
 

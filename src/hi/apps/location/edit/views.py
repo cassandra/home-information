@@ -45,6 +45,7 @@ class LocationAddView( View ):
         return self._show_modal( request, location_form = forms.LocationForm() )
     
     def post( self, request, *args, **kwargs ):
+        
         location_form = forms.LocationForm( request.POST, request.FILES )
         if not location_form.is_valid():
             return self._show_modal( request, location_form = location_form )
@@ -79,6 +80,13 @@ class LocationAddView( View ):
             template_name = 'location/edit/modals/location_add.html',
             context = context,
         )
+
+    
+@method_decorator( edit_required, name='dispatch' )
+class LocationEditView( View ):
+
+    def get( self, request, *args, **kwargs ):
+        raise NotImplementedError()
 
     
 @method_decorator( edit_required, name='dispatch' )
@@ -174,6 +182,13 @@ class LocationViewAddView( View ):
         
         redirect_url = reverse('home')
         return antinode.redirect_response( redirect_url )
+
+    
+@method_decorator( edit_required, name='dispatch' )
+class LocationViewEditView( View ):
+
+    def get( self, request, *args, **kwargs ):
+        raise NotImplementedError()
 
     
 class LocationViewGeometryView( View ):

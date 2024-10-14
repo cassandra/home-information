@@ -23,8 +23,14 @@
 <p>
   <label for="id_svg_file">Select an SVG file:</label>
   <input type="file" name="svg_file" id="id_svg_file">
+  {{ location_form.svg_file.errors }}
 </p>
 
+{% if location_form.show_remove_dangerous_svg_items %}
 <p>
-  
+  <div class="form-check">
+    {{ location_form.remove_dangerous_svg_items }}
+    {{ location_form.remove_dangerous_svg_items.label }}
+  </div>
 </p>
+{% endif %}

@@ -1,8 +1,4 @@
-from decimal import Decimal
-
 from django import forms
-
-from hi.enums import ItemType
 
 from .models import LocationItemModelMixin, LocationItemPositionModel
 
