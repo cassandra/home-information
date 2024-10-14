@@ -9,7 +9,7 @@ from hi.apps.common.svg_file_form import SvgFileForm
 logger = logging.getLogger(__name__)
 
 
-class LocationForm( SvgFileForm ):
+class LocationAddForm( SvgFileForm ):
 
     name = forms.CharField(
         label = 'Location Name',
@@ -30,6 +30,6 @@ class LocationForm( SvgFileForm ):
         return 'location/svg'
 
     
-class LocationViewForm(forms.Form):
+class LocationViewAddForm(forms.Form):
 
     name = forms.CharField()

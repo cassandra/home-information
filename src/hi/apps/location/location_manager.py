@@ -80,10 +80,11 @@ class LocationManager(Singleton):
                 os.makedirs( directory, exist_ok = True )
         return
     
-    def get_location_detail_data( self, location : Location ) -> LocationDetailData:
+    def get_location_detail_data( self, location_view : LocationView ) -> LocationDetailData:
         # TODO: Add attributes and other data
         return LocationDetailData(
-            location = location,
+            location = location_view.location,
+            location_view = location_view,
         )
     
     def create_location_view( self,

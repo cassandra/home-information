@@ -1,5 +1,49 @@
+<h5>Location View</h5>
+<div>{{ location_detail_data.location_view.name }}</div>
+
+
+<form action="{% url 'location_edit_location_view_add' %}" method="post"
+      class="form" data-async="modal">
+  {% csrf_token %}
+ 
+<div>
+{% include "location/edit/panes/location_view_edit_form.html" %}
+</div>
+
+<button id="hi-add-location-view-button" type="submit" class="btn btn-info"
+	name="action" value="add">
+  UPDATE
+</button>
+</form>
+
+
+
+<div>
+  <a href="{% url 'location_edit_location_view_delete' location_view_id=location_detail_data.location_view.id %}"
+     id="hi-delete-location-view-link" class="btn btn-danger btn-control" role="button"
+     data-async="true">
+    DELETE THIS VIEW
+  </a>
+</div>
+
 <h5>Location</h5>
 <div>{{ location_detail_data.location.name }}</div>
+
+
+<form action="{% url 'location_edit_location_edit' location_id=location_detail_data.location.id %}" method="post" enctype="multipart/form-data"
+      class="form" data-async="modal">
+  {% csrf_token %}
+
+<div>
+{% include "location/edit/panes/location_edit_form.html" %}
+</div>
+
+<button id="hi-add-location-button" type="submit" class="btn btn-info"
+	name="action" value="add">
+  UPDATE
+</button>
+</form>
+
 
 <h5>Attributes</h5>
 TBD
@@ -8,18 +52,9 @@ TBD
 <div>{{ location_detail_data.location.order_id }}</div>
 
 <div>
-  <a href="{% url 'location_edit_location_edit' location_id=location_detail_data.location.id %}"
-     id="hi-location-edit-link" class="btn btn-primary btn-control" role="button"
+  <a href="{% url 'location_edit_location_delete' location_id=location_detail_data.location.id %}"
+     id="hi-delete-location-link" class="btn btn-danger btn-control" role="button"
      data-async="true">
-    EDIT LOCATION
+    DELETE LOCATION AND ALL VIEWS
   </a>
 </div>
-
-<div>
-  <a href="{% url 'location_edit_location_view_edit' location_view_id=request.view_parameters.location_view_id %}"
-     id="hi-location-view-edit-link" class="btn btn-info btn-control" role="button"
-     data-async="true">
-    EDIT VIEW
-  </a>
-</div>
-

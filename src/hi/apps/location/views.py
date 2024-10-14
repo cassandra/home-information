@@ -114,7 +114,7 @@ class LocationViewView( HiGridView ):
         side_template_name = None
         if request.is_editing:
             location_detail_data = LocationManager().get_location_detail_data(
-                location = location_view.location,
+                location_view = location_view,
             )
             context['location_detail_data'] = location_detail_data
             side_template_name = 'edit/panes/side.html'
@@ -132,16 +132,16 @@ class LocationViewView( HiGridView ):
 class LocationDetailsView( View ):
 
     def get( self, request, *args, **kwargs ):
-        location_id = kwargs.get( 'location_id' )
-        if not location_id:
-            return bad_request_response( request, message = 'Missing location id in request.' )
+        location_view_id = kwargs.get( 'location_view_id' )
+        if not location_view_id:
+            return bad_request_response( request, message = 'Missing location view id in request.' )
         try:
-            location = Location.objects.get( id = location_id )
-        except Location.DoesNotExist:
+            location_view = LocationView.objects.get( id = location_view_id )
+        except LocationView.DoesNotExist:
             return page_not_found_response( request )
                 
         location_detail_data = LocationManager().get_location_detail_data(
-            location = location,
+            location_view = location_view,
         )
         context = {
             'location_detail_data': location_detail_data,
@@ -153,6 +153,6 @@ class LocationDetailsView( View ):
                 DIVID['EDIT_ITEM']: content,
             },
         )     
-
+ 
 
     

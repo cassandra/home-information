@@ -8,10 +8,10 @@ from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
-from hi.apps.location.edit.forms import LocationForm
 from hi.apps.location.models import Location
 
 from hi.enums import ViewMode
+
 
 def error_response( request             : HttpRequest,
                     sync_template_name  : str,
@@ -163,6 +163,5 @@ class StartView( View ):
         request.view_parameters.to_session( request )
     
         context = {
-            'location_form': LocationForm(),
         }
         return render( request, 'pages/start.html', context )

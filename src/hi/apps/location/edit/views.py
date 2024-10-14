@@ -42,20 +42,20 @@ logger = logging.getLogger(__name__)
 class LocationAddView( View ):
 
     def get( self, request, *args, **kwargs ):
-        return self._show_modal( request, location_form = forms.LocationForm() )
+        return self._show_modal( request, location_add_form = forms.LocationAddForm() )
     
     def post( self, request, *args, **kwargs ):
         
-        location_form = forms.LocationForm( request.POST, request.FILES )
-        if not location_form.is_valid():
-            return self._show_modal( request, location_form = location_form )
+        location_add_form = forms.LocationAddForm( request.POST, request.FILES )
+        if not location_add_form.is_valid():
+            return self._show_modal( request, location_add_form = location_add_form )
 
         try:
             location = LocationManager().create_location(
-                name = location_form.cleaned_data.get('name'),
-                svg_fragment_filename = location_form.cleaned_data.get('svg_fragment_filename'),
-                svg_fragment_content = location_form.cleaned_data.get('svg_fragment_content'),
-                svg_viewbox = location_form.cleaned_data.get('svg_viewbox'),
+                name = location_add_form.cleaned_data.get('name'),
+                svg_fragment_filename = location_add_form.cleaned_data.get('svg_fragment_filename'),
+                svg_fragment_content = location_add_form.cleaned_data.get('svg_fragment_content'),
+                svg_viewbox = location_add_form.cleaned_data.get('svg_viewbox'),
             )
         except ValueError as ve:
             return bad_request_response( request, message = str(ve) )
@@ -71,9 +71,9 @@ class LocationAddView( View ):
         redirect_url = reverse('home')
         return antinode.redirect_response( redirect_url )
 
-    def _show_modal( self, request, location_form : forms.LocationForm ):
+    def _show_modal( self, request, location_add_form : forms.LocationAddForm ):
         context = {
-            'location_form': location_form,
+            'location_add_form': location_add_form,
         }
         return antinode.modal_from_template(
             request = request,
@@ -85,7 +85,7 @@ class LocationAddView( View ):
 @method_decorator( edit_required, name='dispatch' )
 class LocationEditView( View ):
 
-    def get( self, request, *args, **kwargs ):
+    def post( self, request, *args, **kwargs ):
         raise NotImplementedError()
 
     
@@ -143,7 +143,7 @@ class LocationViewAddView( View ):
 
     def get( self, request, *args, **kwargs ):
         context = {
-            'location_view_form': forms.LocationViewForm(),
+            'location_view_add_form': forms.LocationViewAddForm(),
         }
         return antinode.modal_from_template(
             request = request,
@@ -152,10 +152,10 @@ class LocationViewAddView( View ):
         )
     
     def post( self, request, *args, **kwargs ):
-        location_view_form = forms.LocationViewForm( request.POST )
-        if not location_view_form.is_valid():
+        location_view_add_form = forms.LocationViewAddForm( request.POST )
+        if not location_view_add_form.is_valid():
             context = {
-                'location_view_form': location_view_form,
+                'location_view_add_form': location_view_add_form,
             }
             return antinode.modal_from_template(
                 request = request,
@@ -171,7 +171,7 @@ class LocationViewAddView( View ):
         try:
             location_view = LocationManager().create_location_view(
                 location = location,
-                name = location_view_form.cleaned_data.get('name'),
+                name = location_view_add_form.cleaned_data.get('name'),
             )
         except ValueError as e:
             return bad_request_response( request, message = str(e) )
@@ -187,7 +187,7 @@ class LocationViewAddView( View ):
 @method_decorator( edit_required, name='dispatch' )
 class LocationViewEditView( View ):
 
-    def get( self, request, *args, **kwargs ):
+    def post( self, request, *args, **kwargs ):
         raise NotImplementedError()
 
     
@@ -430,12 +430,11 @@ class LocationItemDetailsView( HiGridView ):
                 request = request,
                 location_view_id = request.view_parameters.collection_id,
             )
-        if not request.view_parameters.location_view:
+        if not request.view_parameters.location_view_id:
             raise ValueError( 'No current location view was set.' )
-        location_id = request.view_parameters.location_view.location.id
         return location_views.LocationDetailsView().get(
             request = request,
-            location_id = location_id,
+            location_view_id = request.view_parameters.location_view_id,
         )
 
     
