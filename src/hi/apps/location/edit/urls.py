@@ -45,10 +45,6 @@ urlpatterns = [
              views.LocationViewCollectionToggleView.as_view(), 
              name='location_edit_location_view_collection_toggle' ),
 
-    re_path( r'^location-item/details/(?P<html_id>[\w\-]*)$', 
-             views.LocationItemDetailsView.as_view(), 
-             name='location_edit_location_item_details' ),
-
     re_path( r'^location-item/position/(?P<html_id>[\w\-]+)$', 
              views.LocationItemPositionView.as_view(), 
              name='location_edit_location_item_position' ),

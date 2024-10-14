@@ -1,0 +1,13 @@
+<p>
+  <label for="id_svg_file">{{ label }}</label>
+  <input type="file" name="svg_file" id="id_svg_file">
+  {{ svg_file_form.svg_file.errors }}
+</p>
+{% if svg_file_form.show_remove_dangerous_svg_items %}
+<p>
+  <div class="form-check">
+    {{ svg_file_form.remove_dangerous_svg_items }}
+    {{ svg_file_form.remove_dangerous_svg_items.label }}
+  </div>
+</p>
+{% endif %}

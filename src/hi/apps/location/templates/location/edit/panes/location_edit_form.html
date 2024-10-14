@@ -17,20 +17,15 @@
 </p>
 
 <p>
-  Optionally add an image (SVG format) showing your property and/or house layout.  Skip this and we'll uses a predefined image for you. You'll be able to update this image later.
+  {{ location_edit_form.order_id.label }}
+  {{ location_edit_form.order_id }}
+  {{ location_edit_form.order_id.errors }}
 </p>
 
-<p>
-  <label for="id_svg_file">Select an SVG file:</label>
-  <input type="file" name="svg_file" id="id_svg_file">
-  {{ location_edit_form.svg_file.errors }}
-</p>
-
-{% if location_edit_form.show_remove_dangerous_svg_items %}
-<p>
-  <div class="form-check">
-    {{ location_edit_form.remove_dangerous_svg_items }}
-    {{ location_edit_form.remove_dangerous_svg_items.label }}
-  </div>
-</p>
+<div>
+  {% include "attribute/panes/attribute_form.html" with attribute_formset=location_attribute_formset %}
+</div>
+ 
+{% if location_svg_file_form %}
+{% include "common/svg_file_form.html" with svg_file_form=location_svg_file_form label='Replace SVG file:' %}
 {% endif %}

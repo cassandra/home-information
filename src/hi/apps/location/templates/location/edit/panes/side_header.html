@@ -1,8 +1,3 @@
 <div>
-  <div class="">
-    <a href="{% url 'location_edit_location_view_add_remove_item' %}"
-       class="btn btn-tertiary btn-control" role="button" data-async="true">
-      ADD/REMOVE {{ request.view_parameters.location_view.name }} ITEMS
-    </a>
-  </div>
+  <div class="h3">View: {{ location_view.name }} <small>[{{ location_view.location.name }}]</small></div>
 </div>

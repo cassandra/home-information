@@ -13,7 +13,8 @@
 	DATA_TYPE_ATTR: 'data-type',
 	DATA_TYPE_ICON_VALUE: 'svg-icon',
 	DATA_TYPE_PATH_VALUE: 'svg-path',
-	API_SHOW_DETAILS_URL: '/location/edit/location-item/details',
+	API_LOCATION_ITEM_DETAILS_URL: '/location/item/details',
+	API_LOCATION_DETAILS_URL: '/location/details',
 	
 	generateUniqueId: function() {
 	    return _generateUniqueId();

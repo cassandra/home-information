@@ -1,4 +1,12 @@
-<h4>{{ entity_detail_data.entity.name }}</h4>
+<div class="d-flex justify-content-between">
+  <div class="h5"><small>Entity</small>: {{ entity_detail_data.entity.name }}</div>
+  <div class="">
+    <a href="{% url 'edit_item_details_close' %}"
+       class="btn btn-tertiary" role="button" data-async="true">
+      X
+    </a>
+  </div>
+</div>
 
 {% if entity_detail_data.location_item_position_form %}
 <h5>Position</h5>

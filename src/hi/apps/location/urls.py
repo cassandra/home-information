@@ -17,6 +17,14 @@ urlpatterns = [
              views.LocationViewDefaultView.as_view(), 
              name='location_view_default'),
 
+    re_path( r'^item/details/(?P<html_id>[\w\-]+)$', 
+             views.LocationItemDetailsView.as_view(), 
+             name='location_item_details' ),
+    
+    re_path( r'^details/(?P<location_view_id>\d*)$', 
+             views.LocationViewDetailsView.as_view(), 
+             name='location_details' ),
+    
     re_path( r'^edit/', include('hi.apps.location.edit.urls' )),
 
 ]

@@ -53,6 +53,19 @@ class EditEndView( View ):
 
     
 @method_decorator( edit_required, name='dispatch' )
+class ItemDetailsCloseView( View ):
+
+    def get(self, request, *args, **kwargs ):
+        if request.view_parameters.view_type.is_location_view:
+            return location_edit_views.LocationViewAddRemoveItemView().get( request, *args, **kwargs )
+            
+        elif request.view_parameters.view_type.is_collection:
+            return collection_edit_views.CollectionAddRemoveItemView().get( request, *args, **kwargs )
+
+        raise bad_request_response( request, 'Add/remove items not supported for current view type.' )
+
+    
+@method_decorator( edit_required, name='dispatch' )
 class ReorderItemsView( View ):
 
     def post( self, request, *args, **kwargs ):

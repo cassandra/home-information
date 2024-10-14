@@ -274,7 +274,7 @@
 	    moduleName: MODULE_NAME,
 	};
 	Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
-        AN.get( `${Hi.API_SHOW_DETAILS_URL}/${svgItemId}` );
+        AN.get( `${Hi.API_LOCATION_ITEM_DETAILS_URL}/${svgItemId}` );
     }
     
     function clearSelectedIconSvgGroup() {

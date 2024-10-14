@@ -5,6 +5,7 @@ from django.template.loader import get_template
 from django.urls import reverse
 from django.views.generic import View
 
+from hi.apps.collection.edit.views import CollectionAddRemoveItemView
 import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
 from hi.enums import ViewType
@@ -82,12 +83,11 @@ class CollectionView( HiGridView ):
 
         side_template_name = None
         if request.is_editing:
-            collection_detail_data = CollectionManager().get_collection_detail_data(
-                collection = collection,
-                current_location_view = None,
-                is_editing = request.is_editing,
+            context.update(
+                CollectionAddRemoveItemView.get_add_remove_template_context(
+                    collection = collection,
+                )
             )
-            context['collection_detail_data'] = collection_detail_data
             side_template_name = 'edit/panes/side.html'
 
         return self.hi_grid_response( 

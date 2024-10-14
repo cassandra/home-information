@@ -1,0 +1,33 @@
+<h5>Location</h5>
+<div>{{ location_detail_data.location.name }}</div>
+
+
+<form action="{% url 'location_edit_location_edit' location_id=location_detail_data.location.id %}" method="post" enctype="multipart/form-data"
+      class="form" data-async="modal">
+  {% csrf_token %}
+
+<div>
+{% include "location/edit/panes/location_edit_form.html" %}
+</div>
+
+<h5>Attributes</h5>
+TBD
+
+<button id="hi-add-location-button" type="submit" class="btn btn-info"
+	name="action" value="add">
+  UPDATE
+</button>
+</form>
+
+
+
+<h5>Order Index</h5>
+<div>{{ location_detail_data.location.order_id }}</div>
+
+<div>
+  <a href="{% url 'location_edit_location_delete' location_id=location_detail_data.location.id %}"
+     id="hi-delete-location-link" class="btn btn-danger btn-control" role="button"
+     data-async="true">
+    DELETE LOCATION AND ALL VIEWS
+  </a>
+</div>

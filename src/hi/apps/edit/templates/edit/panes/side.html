@@ -12,6 +12,10 @@
     {% include "collection/panes/collection_details.html" %}
     {% elif location_detail_data %}
     {% include "location/panes/location_details.html" %}
+    {% elif entity_view_group_list and collection_view_group %}
+    {% include "location/edit/panes/location_view_add_remove_item.html" %}
+    {% elif entity_collection_group_list %}
+    {% include "collection/edit/panes/collection_add_remove_item.html" %}
     {% endif %}
   </div>
   

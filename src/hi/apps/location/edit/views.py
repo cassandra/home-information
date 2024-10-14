@@ -2,28 +2,23 @@ from decimal import Decimal
 import json
 import logging
 
-from django.shortcuts import redirect
 from django.template.loader import get_template
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 from hi.apps.collection.collection_manager import CollectionManager
-import hi.apps.collection.views as collection_views
 from hi.apps.collection.models import Collection
 import hi.apps.common.antinode as antinode
 from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.entity.entity_manager import EntityManager
-import hi.apps.entity.views as entity_views
 from hi.apps.entity.models import Entity
 from hi.apps.location.forms import LocationItemPositionForm
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
-import hi.apps.location.views as location_views
 from hi.decorators import edit_required
 from hi.enums import ItemType, ViewType
-from hi.hi_grid_view import HiGridView
 from hi.views import (
     bad_request_response,
     internal_error_response,
@@ -288,26 +283,14 @@ class LocationViewDeleteView( View ):
         redirect_url = reverse('home')
         return antinode.redirect_response( redirect_url )
 
-    
+       
 @method_decorator( edit_required, name='dispatch' )
 class LocationViewAddRemoveItemView( View ):
 
     def get(self, request, *args, **kwargs):
 
         location_view = request.view_parameters.location_view
-
-        location_manager = LocationManager()
-        entity_view_group_list = location_manager.create_entity_view_group_list(
-            location_view = location_view,
-        )
-        collection_view_group = location_manager.create_collection_view_group(
-            location_view = location_view,
-        )
-        
-        context = {
-            'entity_view_group_list': entity_view_group_list,
-            'collection_view_group': collection_view_group,
-        }
+        context = self.get_add_remove_template_context( location_view )
         template = get_template( 'location/edit/panes/location_view_add_remove_item.html' )
         content = template.render( context, request = request )
         return antinode.response(
@@ -316,6 +299,20 @@ class LocationViewAddRemoveItemView( View ):
             },
         )     
 
+    @classmethod
+    def get_add_remove_template_context( self, location_view : LocationView ):
+        location_manager = LocationManager()
+        entity_view_group_list = location_manager.create_entity_view_group_list(
+            location_view = location_view,
+        )
+        collection_view_group = location_manager.create_collection_view_group(
+            location_view = location_view,
+        )
+        return {
+            'entity_view_group_list': entity_view_group_list,
+            'collection_view_group': collection_view_group,
+        }
+        
     
 @method_decorator( edit_required, name='dispatch' )
 class LocationViewEntityToggleView( View ):
@@ -394,47 +391,6 @@ class LocationViewCollectionToggleView( View ):
             insert_map = {
                 DIVID['MAIN'] : location_view_content,
             },
-        )
-
-    
-@method_decorator( edit_required, name='dispatch' )
-class LocationItemDetailsView( HiGridView ):
-
-    def get(self, request, *args, **kwargs):
-
-        if not kwargs.get( ItemType.HTML_ID_ARG() ):
-            return self.get_default_details( request )
-
-        try:
-            ( item_type, item_id ) = ItemType.parse_from_dict( kwargs )
-        except ValueError:
-            return bad_request_response( request, message = 'Bad item id.' )
-        
-        if item_type == ItemType.ENTITY:
-            return entity_views.EntityDetailsView().get(
-                request = request,
-                entity_id = item_id,
-            )            
-
-        if item_type == ItemType.COLLECTION:
-            return collection_views.CollectionDetailsView().get(
-                request = request,
-                collection_id = item_id,
-            )            
-
-        return bad_request_response( request, message = 'Unknown item type "{item_type}".' )
-
-    def get_default_details( self, request ):
-        if request.view_parameters.view_type.is_collection:
-            return collection_views.CollectionDetailsView().get(
-                request = request,
-                location_view_id = request.view_parameters.collection_id,
-            )
-        if not request.view_parameters.location_view_id:
-            raise ValueError( 'No current location view was set.' )
-        return location_views.LocationDetailsView().get(
-            request = request,
-            location_view_id = request.view_parameters.location_view_id,
         )
 
     

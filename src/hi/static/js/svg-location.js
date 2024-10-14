@@ -102,6 +102,9 @@
 	    } else {
 		if ( gSvgTransformData.isDragging ) {
 		    applyDrag( event );
+		} else {
+		    if ( Hi.DEBUG ) { console.log( `Mouse up skipped [${MODULE_NAME}]` ); }
+		    return;
 		}
 	    }
 	    gSvgTransformData = null;
@@ -153,11 +156,12 @@
 	    event.stopImmediatePropagation();
 	    return;
 	}
-	gIgnoreCLick = false;
 
 	if ( $(event.target).hasClass( Hi.LOCATION_VIEW_SVG_CLASS ) ) {
 	    if ( Hi.DEBUG ) { console.log( `Click [${MODULE_NAME}]`, event ); }
 	    handleLocationViewSvgClick( event, event.target );
+	    gSvgTransformData = null;
+	    gSvgTransformType = SvgTransformType.MOVE;
 	    event.preventDefault(); 
 	    event.stopImmediatePropagation();
 	    return;
@@ -251,7 +255,7 @@
 		moduleName: MODULE_NAME,
 	    };
 	    Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
-            AN.get( `${Hi.API_SHOW_DETAILS_URL}` );
+            AN.get( `${Hi.API_LOCATION_DETAILS_URL}` );
 	}
     }
 

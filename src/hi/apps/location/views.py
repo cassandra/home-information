@@ -5,11 +5,14 @@ from django.template.loader import get_template
 from django.urls import reverse
 from django.views.generic import View
 
+from hi.apps.collection.views import CollectionDetailsView
 import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
+from hi.apps.entity.views import EntityDetailsView
+from hi.apps.location.edit.views import LocationViewAddRemoveItemView
 
 from hi.constants import DIVID
-from hi.enums import ViewType
+from hi.enums import ItemType, ViewType
 from hi.hi_grid_view import HiGridView
 from hi.views import bad_request_response, page_not_found_response
 
@@ -108,15 +111,17 @@ class LocationViewView( HiGridView ):
         )
         context = {
             'is_async_request': is_ajax( request ),
+            'location_view': location_view,
             'location_view_data': location_view_data,
         }
         
         side_template_name = None
         if request.is_editing:
-            location_detail_data = LocationManager().get_location_detail_data(
-                location_view = location_view,
+            context.update(
+                LocationViewAddRemoveItemView.get_add_remove_template_context(
+                    location_view = location_view,
+                )
             )
-            context['location_detail_data'] = location_detail_data
             side_template_name = 'edit/panes/side.html'
             
         return self.hi_grid_response( 
@@ -129,17 +134,50 @@ class LocationViewView( HiGridView ):
         )
 
     
-class LocationDetailsView( View ):
+class LocationItemDetailsView( HiGridView ):
+
+    def get(self, request, *args, **kwargs):
+        try:
+            ( item_type, item_id ) = ItemType.parse_from_dict( kwargs )
+        except ValueError:
+            return bad_request_response( request, message = 'Bad item id.' )
+        
+        if item_type == ItemType.ENTITY:
+            return EntityDetailsView().get(
+                request = request,
+                entity_id = item_id,
+            )            
+
+        if item_type == ItemType.COLLECTION:
+            return CollectionDetailsView().get(
+                request = request,
+                collection_id = item_id,
+            )            
+
+        return bad_request_response( request, message = 'Unknown item type "{item_type}".' )
+
+    
+class LocationViewDetailsView( View ):
 
     def get( self, request, *args, **kwargs ):
         location_view_id = kwargs.get( 'location_view_id' )
-        if not location_view_id:
-            return bad_request_response( request, message = 'Missing location view id in request.' )
-        try:
-            location_view = LocationView.objects.get( id = location_view_id )
-        except LocationView.DoesNotExist:
-            return page_not_found_response( request )
-                
+        if location_view_id:
+            location_view_id = int(location_view_id)
+        default_location_view_id = request.view_parameters.location_view_id
+        if default_location_view_id:
+            default_location_view_id = int(default_location_view_id)
+
+        if not location_view_id and not default_location_view_id:
+            return bad_request_response( request, message = 'No location given and no default available.' )
+            
+        if location_view_id and ( location_view_id != default_location_view_id ):
+            try:
+                location_view = LocationView.objects.get( id = location_view_id )
+            except LocationView.DoesNotExist:
+                return page_not_found_response( request )
+        else:
+            location_view = request.view_parameters.location_view
+
         location_detail_data = LocationManager().get_location_detail_data(
             location_view = location_view,
         )
@@ -153,6 +191,3 @@ class LocationDetailsView( View ):
                 DIVID['EDIT_ITEM']: content,
             },
         )     
- 
-
-    
