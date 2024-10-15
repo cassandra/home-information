@@ -24,8 +24,21 @@ logger = logging.getLogger(__name__)
     
 
 class HiGridView(View):
-
-    # ZZZ Add description and how it works
+    """
+    - The Hi app 'grid' is an HTML layout that is defined in pages/home.html.
+    - Most views participate in keeping that same four-pane layout.
+    - There is a top and bottom control button areas with middle section of 'main' and 'side' content.
+    - In normal (non-editing) view mode, the side, top and bottom panes  stays mostly indepedenent main area.
+    - In editing view mode, the side panel is used to show and edit details of what is in the main area.
+    - When only changing the main content, we prefer to do this asynchronously.
+    - But we want to retain the context in the browser so a page refresh renders what was last displayed.
+    - The browser URL will dictate what is displayed in the main content area.
+    - When editing, a page URL parameter will contain a URL to the view of the side content.
+    - This URL parameter for the side content also allows page refresh keeping the context of the display.
+    - For this to work, the view that produces the dioe content (async) should subclass HiSideView.
+    - For normal case for a View that only wants to populate the main content pane asynchronously:
+      - Subclass this and provide get_main_template_name() and get_template_context()
+    """
     
     HI_GRID_TEMPLATE_NAME = 'pages/home.html'    
     TOP_TEMPLATE_NAME = 'panes/top_buttons.html'    
