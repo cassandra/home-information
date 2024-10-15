@@ -1,5 +1,6 @@
 from django.urls import re_path
 
+from . import async_views
 from . import views
 
 
@@ -13,9 +14,9 @@ urlpatterns = [
              views.CollectionDeleteView.as_view(), 
              name='collection_edit_collection_delete' ),
 
-    re_path( r'^collection/add-remove-item$', 
-             views.CollectionAddRemoveItemView.as_view(), 
-             name='collection_edit_collection_add_remove_item' ),
+    re_path( r'^collection/manage-item$', 
+             async_views.CollectionManageItemsView.as_view(), 
+             name='collection_edit_collection_manage_items' ),
 
     re_path( r'^collection/entity/toggle/(?P<collection_id>\d+)/(?P<entity_id>\d+)$', 
              views.CollectionEntityToggleView.as_view(), 

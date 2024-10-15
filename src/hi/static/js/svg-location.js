@@ -170,7 +170,7 @@
     }
 
     function handleKeyDown( event ) {
-	if ( $(event.target).is('input[type="text"], textarea') ) {
+	if ( $(event.target).is('input, textarea') ) {
             return;
 	}
 	if ( gSelectedLocationViewSvg ) {

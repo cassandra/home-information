@@ -1,3 +1,7 @@
+{% if request.is_editing %}
+{% include "edit/panes/side_header.html" %}
+{% endif %}
+
 <div class="d-flex justify-content-between">
   <div></div>
   <div class="">
@@ -7,5 +11,9 @@
     </a>
   </div>
 </div>
-{% include "location/edit/panes/location_view_edit.html" %}
-{% include "location/edit/panes/location_edit.html" %}
+<div id="{{ DIVID.LOCATION_VIEW_EDIT_PANE }}">
+  {% include "location/edit/panes/location_view_edit.html" %}
+</div>
+<div id="{{ DIVID.LOCATION_EDIT_PANE }}">
+  {% include "location/edit/panes/location_edit.html" %}
+</div>

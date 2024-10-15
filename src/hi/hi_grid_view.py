@@ -1,135 +1,180 @@
 import logging
 from typing import Dict
+import urllib.parse
 
-from django.http import HttpRequest
 from django.shortcuts import redirect, render
-from django.template import Context
 from django.template.loader import get_template
-from django.urls import NoReverseMatch
-from django.urls import reverse
+from django.urls import resolve, reverse
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
+
+from hi.apps.location.edit.async_views import LocationViewManageItemsView
+from hi.apps.collection.edit.async_views import CollectionManageItemsView
+
 from hi.apps.collection.models import Collection
 from hi.apps.location.models import Location
 
 from hi.constants import DIVID
+from hi.exceptions import ForceRedirectException
+from hi.hi_async_view import HiSideView
 
 logger = logging.getLogger(__name__)
-
+    
 
 class HiGridView(View):
 
-    """ 
-    - Helpers for views that use the main "HI Grid View" layout.
-    - The HI Grid view layout has the top and bottom fixed rows (usually buttons)
-      and main panel and a side panel.
-    - Helps to populate areas asynchronously, but can handle sychconous requests too.
-    - Good for views that populate all or just some of the tiled areas of the HIU Grid.
-    - Main HI Grid layout defined in the template: pages/hi_grid.html
-    """
-
+    # ZZZ Add description and how it works
+    
     HI_GRID_TEMPLATE_NAME = 'pages/home.html'    
     TOP_TEMPLATE_NAME = 'panes/top_buttons.html'    
     BOTTOM_TEMPLATE_NAME = 'panes/bottom_buttons.html'    
-    MAIN_TEMPLATE_NAME = 'panes/main_default.html'    
-    SIDE_TEMPLATE_NAME = 'panes/side_panel.html'    
+    SIDE_DEFAULT_TEMPLATE_NAME = 'panes/side.html'    
+    
+    def get_main_template_name( self ) -> str:
+        raise NotImplementedError('Subclasses must override this method.')
 
-    def hi_grid_response( self,
-                          request               : HttpRequest,
-                          context               : Context,
-                          top_template_name     : str                = None,
-                          bottom_template_name  : str                = None,
-                          main_template_name    : str                = None,
-                          side_template_name    : str                = None,
-                          push_url_name         : str                = None,
-                          push_url_kwargs       : Dict[ str, str ]   = None ):
-        if not context:
-            context = dict()
+    def get_template_context( self, request, *args, **kwargs ) -> Dict[ str, str ]:
+        """ Can raise exceptions like BadRequest, Http404, etc. """
+        raise NotImplementedError('Subclasses must override this method.')
+
+    def get_top_template_name( self ) -> str:
+        return self.TOP_TEMPLATE_NAME
+    
+    def get_bottom_template_name( self ) -> str:
+        return self.BOTTOM_TEMPLATE_NAME
+
+    def get_top_template_context( self, request, *args, **kwargs ):
+        if not request.view_parameters.location:
+            return dict()
+        location_view_list = list( request.view_parameters.location.views.order_by( 'order_id' ))
+        return { 'location_view_list': location_view_list }
+
+    def get_bottom_template_context( self, request, *args, **kwargs ):
+        collection_list = list( Collection.objects.all().order_by( 'order_id' ))
+        return { 'collection_list': collection_list }
+
+    def get_content( self, request, *args, **kwargs ) -> str:
+        template_name = self.get_main_template_name()
+        template = get_template( template_name )
+        context = self.get_template_context( request, *args, **kwargs )
+        return template.render( context, request = request )
+
+    def get(self, request, *args, **kwargs):
 
         current_location = request.view_parameters.location
         if not current_location:
             redirect_url = reverse('start')
             if is_ajax( request ):
-                antinode.redirect( redirect_url )
+                return antinode.redirect( redirect_url )
             else:
                 return redirect( redirect_url )
-            
-        if not is_ajax( request ):
-            # For full syncronous render, we need all content, so we fill
-            # in defaults for any missing.
-            if not top_template_name:
-                top_template_name = self.TOP_TEMPLATE_NAME
-            if not bottom_template_name:
-                bottom_template_name = self.BOTTOM_TEMPLATE_NAME
-            if not main_template_name:
-                main_template_name = self.MAIN_TEMPLATE_NAME
-            if not side_template_name:
-                side_template_name = self.SIDE_TEMPLATE_NAME
-            context.update({
-                'top_template_name': top_template_name,
-                'bottom_template_name': bottom_template_name,
-                'main_template_name': main_template_name,
-                'side_template_name': side_template_name,
-            })
-
-            # This list of views is needed for top buttons
-            if ( 'location_view_list' not in context ):
-                location_view_list = list( current_location.views.order_by( 'order_id' ))
-                context['location_view_list'] = location_view_list
-                
-            # This list of collections is needed for bottom buttons
-            if 'collection_list' not in context:
-                collection_list = list( Collection.objects.all().order_by( 'order_id' ))
-                context['collection_list'] = collection_list
-
-            context['current_location'] = current_location
-            context['location_list'] = list( Location.objects.all() )
-            return render( request, self.HI_GRID_TEMPLATE_NAME, context )
-
-        div_id_to_template_name = {
-            DIVID['TOP'] : top_template_name,
-            DIVID['BOTTOM'] : bottom_template_name,
-            DIVID['MAIN'] : main_template_name,
-            DIVID['SIDE'] : side_template_name,
-        }
-        insert_map = dict()
-        for div_id, template_name in div_id_to_template_name.items():
-            if not template_name:
-                continue
-            template = get_template( template_name )
-            content = template.render( context, request = request )
-            insert_map[div_id] = content,
-            continue
-
-        push_url = None
-        if push_url_name:
-            try:
-                push_url = reverse( push_url_name, kwargs = push_url_kwargs )
-            except NoReverseMatch:
-                logger.warning( f'No reverse url for {push_url_name}' )
-                pass
         
+        if is_ajax( request ):
+            return self.get_async_response( request, *args, **kwargs )
+
+        try:
+            context = self.get_template_context( request, *args, **kwargs )
+        except ForceRedirectException as fde:
+            return redirect( fde.url )
+        
+        ( side_template_name,
+          side_template_context ) = self.get_side_template_name_and_context( request, *args, **kwargs )
+
+        context.update( side_template_context )
+        context.update({
+            'top_template_name': self.get_top_template_name(),
+            'bottom_template_name': self.get_bottom_template_name(),
+            'main_template_name': self.get_main_template_name(),
+            'side_template_name': side_template_name,
+        })
+        context.update( self.get_top_template_context( request, *args, **kwargs ))
+        context.update( self.get_bottom_template_context( request, *args, **kwargs ))
+
+        context['location_list'] = list( Location.objects.all() )
+        return render( request, self.HI_GRID_TEMPLATE_NAME, context )
+
+    def get_async_response( self, request, *args, **kwargs ):
+        try:
+            main_content = self.get_content( request, *args, **kwargs )
+        except ForceRedirectException as fde:
+            return antinode.redirect_response( url = fde.url )
+        
+        insert_map = { DIVID['MAIN']: main_content }
+        push_url = self.get_push_url( request )
+
         return antinode.response(
             insert_map = insert_map,
             push_url = push_url,
         )
 
-    def side_panel_response( self,
-                             request        : HttpRequest,
-                             template_name  : str,
-                             context        : Dict  = None):
-        if context is None:
-            context = dict()
-        template = get_template( template_name )
-        content = template.render( context, request = request )
-        insert_map = {
-            DIVID['EDIT_ITEM']: content,
-        }
-        return antinode.response(
-            insert_map = insert_map,
-        )
+    def get_push_url( self, request ):
+        referrer_url = request.META.get('HTTP_REFERER', '')
+        if referrer_url:
+            parsed_url = urllib.parse.urlparse( referrer_url )
+            query_params = urllib.parse.parse_qs( parsed_url.query )
+            new_details_value = query_params.get( 'details', [ None ] )[0]
+        else:
+            new_details_value = None
+
+        if new_details_value:
+            full_url = request.get_full_path()
+            parsed_url = urllib.parse.urlparse( full_url )
+            query_params = urllib.parse.parse_qs(parsed_url.query)
+            query_params['details'] = [ new_details_value ]
+            new_query_string = urllib.parse.urlencode(query_params, doseq=True)
+            push_url = urllib.parse.urlunparse((
+                parsed_url.path,
+                parsed_url.params,
+                new_query_string,
+                parsed_url.fragment
+            ))
+        else:
+            push_url = request.get_full_path()
+
+        return push_url
         
-    
-    
+    def get_side_template_name_and_context( self, request, *args, **kwargs ):
+        try:
+            side_url = self.get_side_url_from_request_url( request )
+            side_view, side_kwargs = self.get_side_view_from_url( side_url )
+            
+            if not side_view:
+                if request.is_editing:
+                    if request.view_parameters.view_type.is_location_view:
+                        side_view = LocationViewManageItemsView()
+
+                    elif request.view_parameters.view_type.is_collection:
+                        side_view = CollectionManageItemsView()
+
+            if not side_view:
+                return ( self.SIDE_DEFAULT_TEMPLATE_NAME, dict() )
+
+            if not isinstance( side_view, HiSideView ):
+                raise ValueError( f'Side URL has view not side class: {side_view.__class__.__name__}' )
+
+            template_name = side_view.get_template_name()
+            template_context = side_view.get_template_context( request, **side_kwargs )
+            return ( template_name, template_context )
+        
+        except Exception as e:
+            logger.exception( e )
+            return ( self.SIDE_DEFAULT_TEMPLATE_NAME, dict() )
+
+    def get_side_url_from_request_url( self, request ):
+        
+        full_url = request.get_full_path()
+        parsed_url = urllib.parse.urlparse( full_url )
+        query_params = urllib.parse.parse_qs( parsed_url.query )
+        side_url = query_params.get( 'details', [ None ] )[0]
+        return side_url
+
+    def get_side_view_from_url( self, url ):
+        if not url:
+            return ( None, dict() )
+        resolved_match = resolve( url )
+        view_kwargs = resolved_match.kwargs
+        view_class = resolved_match.func.view_class
+        view = view_class()
+        return ( view, view_kwargs )

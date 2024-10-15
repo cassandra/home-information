@@ -1,5 +1,6 @@
 from django.urls import re_path
 
+from . import async_views
 from . import views
 
 
@@ -10,7 +11,7 @@ urlpatterns = [
              name='config_home_pane' ),
 
     re_path( r'^tab$', 
-             views.ConfigTabPaneView.as_view(), 
+             async_views.ConfigTabPaneView.as_view(), 
              name='config_tab_pane' ),
 
 ]

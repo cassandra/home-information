@@ -11,8 +11,6 @@ DIVID = {
     # Config
     'INTEGRATION_TAB': 'hi-config-integration-tab',
 
-    # Editing
-    'EDIT_SIDE': 'hi-edit-side-content',
-    'EDIT_ITEM': 'hi-edit-item',
-        
+    'LOCATION_EDIT_PANE': 'hi-location-edit',
+    'LOCATION_VIEW_EDIT_PANE': 'hi-location-view-edit',
 }

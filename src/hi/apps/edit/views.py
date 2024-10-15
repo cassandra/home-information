@@ -6,8 +6,8 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
-import hi.apps.collection.edit.views as collection_edit_views
-import hi.apps.location.edit.views as location_edit_views
+from hi.apps.collection.edit.async_views import CollectionManageItemsView
+from hi.apps.location.edit.async_views import LocationViewManageItemsView
 from hi.decorators import edit_required
 from hi.enums import ItemType
 from hi.views import bad_request_response
@@ -57,10 +57,10 @@ class ItemDetailsCloseView( View ):
 
     def get(self, request, *args, **kwargs ):
         if request.view_parameters.view_type.is_location_view:
-            return location_edit_views.LocationViewAddRemoveItemView().get( request, *args, **kwargs )
+            return LocationViewManageItemsView().get( request, *args, **kwargs )
             
         elif request.view_parameters.view_type.is_collection:
-            return collection_edit_views.CollectionAddRemoveItemView().get( request, *args, **kwargs )
+            return CollectionManageItemsView().get( request, *args, **kwargs )
 
         raise bad_request_response( request, 'Add/remove items not supported for current view type.' )
 

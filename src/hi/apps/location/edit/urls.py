@@ -1,5 +1,6 @@
 from django.urls import re_path
 
+from . import async_views
 from . import views
 
 
@@ -33,9 +34,9 @@ urlpatterns = [
              views.LocationViewDeleteView.as_view(), 
              name='location_edit_location_view_delete' ),
 
-    re_path( r'^location-view/add-remove-item$', 
-             views.LocationViewAddRemoveItemView.as_view(), 
-             name='location_edit_location_view_add_remove_item' ),
+    re_path( r'^location-view/manage-item$', 
+             async_views.LocationViewManageItemsView.as_view(), 
+             name='location_edit_location_view_manage_items' ),
 
     re_path( r'^location-view/entity/toggle/(?P<location_view_id>\d+)/(?P<entity_id>\d+)$', 
              views.LocationViewEntityToggleView.as_view(), 

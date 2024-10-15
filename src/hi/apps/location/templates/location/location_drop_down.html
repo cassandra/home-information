@@ -2,7 +2,7 @@
   <div class="dropdown">
     <button class="btn btn-secondary btn-control dropdown-toggle" type="button"
 	    id="hi-location-menu" data-toggle="dropdown">
-      {{ current_location.name }}
+      {{ request.view_parameters.location.name }}
       <span class="caret"></span>
     </button>
     <div class="dropdown-menu"

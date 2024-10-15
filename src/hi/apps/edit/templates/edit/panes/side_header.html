@@ -1,0 +1,7 @@
+<div>
+  {% if request.view_parameters.view_type.is_location_view %}
+  <div class="h3"><small>View:</small> {{ request.view_parameters.location_view.name }}</div>
+  {% elif request.view_parameters.view_type.is_collection %}
+  <div class="h3"><small>Collection:</small> {{ request.view_parameters.collection.name }}</div>
+  {% endif %}
+</div>

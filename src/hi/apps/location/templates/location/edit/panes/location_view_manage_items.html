@@ -1,4 +1,8 @@
-<div class="h5">Item Management</div>
+{% if request.is_editing %}
+{% include "edit/panes/side_header.html" %}
+{% endif %}
+
+<div class="h5">Items in View</div>
 
 <div class="">
   <a href="{% url 'entity_edit_entity_add' %}"

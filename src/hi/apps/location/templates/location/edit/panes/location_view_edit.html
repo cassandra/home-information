@@ -1,8 +1,7 @@
 <h5>Location View</h5>
-<div>{{ location_detail_data.location_view.name }}</div>
-
-<form action="{% url 'location_edit_location_view_add' %}" method="post"
-      class="form" data-async="modal">
+<form action="{% url 'location_edit_location_view_edit' location_view_id=location_view.id %}"
+      method="post"
+      class="form" data-async="#{{ DIVID.LOCATION_VIEW_EDIT_PANE }}">
   {% csrf_token %}
   
   <div>
@@ -10,15 +9,15 @@
   </div>
 
   <button id="hi-add-location-view-button" type="submit" class="btn btn-info"
-	name="action" value="add">
-  UPDATE
-</button>
+	  name="action" value="update">
+    UPDATE
+  </button>
 </form>
 
 
 
 <div>
-  <a href="{% url 'location_edit_location_view_delete' location_view_id=location_detail_data.location_view.id %}"
+  <a href="{% url 'location_edit_location_view_delete' location_view_id=location_view.id %}"
      id="hi-delete-location-view-link" class="btn btn-danger btn-control" role="button"
      data-async="true">
     DELETE THIS VIEW

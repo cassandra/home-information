@@ -127,30 +127,6 @@ class CollectionDeleteView( View ):
     
     
 @method_decorator( edit_required, name='dispatch' )
-class CollectionAddRemoveItemView( View ):
-
-    def get(self, request, *args, **kwargs):
-        collection = request.view_parameters.collection
-        context = self.get_add_remove_template_context( collection )
-        template = get_template( 'collection/edit/panes/collection_add_remove_item.html' )
-        content = template.render( context, request = request )
-        return antinode.response(
-            insert_map = {
-                DIVID['EDIT_ITEM']: content,
-            },
-        )     
-
-    @classmethod
-    def get_add_remove_template_context( self, collection : Collection ):
-        entity_collection_group_list = CollectionManager().create_entity_collection_group_list(
-            collection = collection,
-        )
-        return {
-            'entity_collection_group_list': entity_collection_group_list,
-        }
- 
-    
-@method_decorator( edit_required, name='dispatch' )
 class CollectionEntityToggleView( View ):
 
     def post(self, request, *args, **kwargs):

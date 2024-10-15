@@ -11,7 +11,6 @@ from hi.apps.collection.models import (
     CollectionView,
 )
 from hi.apps.common.singleton import Singleton
-from hi.apps.common.svg_file_form import SvgFileForm
 from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.entity.delegation_manager import DelegationManager
 from hi.apps.entity.entity_manager import EntityManager
@@ -19,15 +18,8 @@ from hi.apps.entity.models import (
     Entity,
     EntityView,
 )
-from hi.apps.location.edit.forms import (
-    LocationAttributeFormset,
-    LocationEditForm,
-    LocationSvgFileForm,
-    LocationViewEditForm,
-)
 
 from .enums import LocationViewType
-from .location_detail_data import LocationDetailData
 from .location_view_data import LocationViewData
 from .models import (
     Location,
@@ -86,22 +78,6 @@ class LocationManager(Singleton):
             if not os.path.exists( directory ):
                 os.makedirs( directory, exist_ok = True )
         return
-    
-    def get_location_detail_data( self, location_view : LocationView ) -> LocationDetailData:
-        # TODO: Add attributes and other data
-        return LocationDetailData(
-            location = location_view.location,
-            location_edit_form = LocationEditForm( instance = location_view.location ),
-            location_attribute_formset = LocationAttributeFormset(
-                instance = location_view.location,
-                form_kwargs = {
-                    'is_editable': True,
-                },
-            ),
-            location_svg_file_form = LocationSvgFileForm( ),
-            location_view = location_view,
-            location_view_edit_form = LocationViewEditForm(  instance = location_view ),
-        )
     
     def create_location_view( self,
                               location  : Location,

@@ -1,3 +1,7 @@
+{% if request.is_editing %}
+{% include "edit/panes/side_header.html" %}
+{% endif %}
+
 <div class="d-flex justify-content-between">
   <div class="h5"><small>Collection:</small>{{ collection_detail_data.collection.name }}</div>
   <div class="">

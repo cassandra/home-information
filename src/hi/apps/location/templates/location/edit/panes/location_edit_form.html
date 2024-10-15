@@ -10,17 +10,17 @@
 </div>
 {% endif %}
 
-<p>
+<div>
   {{ location_edit_form.name.label }}
   {{ location_edit_form.name }}
   {{ location_edit_form.name.errors }}
-</p>
+</div>
 
-<p>
+<div>
   {{ location_edit_form.order_id.label }}
   {{ location_edit_form.order_id }}
   {{ location_edit_form.order_id.errors }}
-</p>
+</div>
 
 <div>
   {% include "attribute/panes/attribute_form.html" with attribute_formset=location_attribute_formset %}

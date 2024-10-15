@@ -1,12 +1,12 @@
 from django.urls import include, re_path
 
-from . import views
+from . import async_views
 
 
 urlpatterns = [
 
     re_path( r'^details/(?P<entity_id>\d+)$', 
-             views.EntityDetailsView.as_view(), 
+             async_views.EntityDetailsView.as_view(), 
              name='entity_details' ),
 
     re_path( r'^edit/', include('hi.apps.entity.edit.urls' )),

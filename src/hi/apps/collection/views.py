@@ -1,14 +1,14 @@
 import logging
 
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, Http404
 from django.template.loader import get_template
 from django.urls import reverse
 from django.views.generic import View
 
-from hi.apps.collection.edit.views import CollectionAddRemoveItemView
 import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
 from hi.enums import ViewType
+from hi.exceptions import ForceRedirectException
 from hi.hi_grid_view import HiGridView
 from hi.views import bad_request_response, page_not_found_response
 
@@ -47,18 +47,21 @@ class CollectionViewDefaultView( View ):
     
 class CollectionView( HiGridView ):
 
-    def get(self, request, *args, **kwargs):
+    def get_main_template_name( self ) -> str:
+        return 'collection/collection_view.html'
+
+    def get_template_context( self, request, *args, **kwargs ):
 
         collection_id = kwargs.get('id')
         try:
             collection = Collection.objects.get( id = collection_id )
         except Collection.DoesNotExist:
-            message = f'Collection "{collection_id}" does not exist.'
-            logger.warning( message )
-            return bad_request_response( request, message = message )
+            raise Http404()
 
         # Remember last collection chosen
         view_type_changed = bool( request.view_parameters.view_type != ViewType.COLLECTION )
+        view_id_changed = bool( request.view_parameters.collection_id != collection.id )
+
         request.view_parameters.view_type = ViewType.COLLECTION
         request.view_parameters.collection_id = collection.id
         request.view_parameters.to_session( request )
@@ -68,69 +71,21 @@ class CollectionView( HiGridView ):
         # views are invalidated. Else, the editing state and edit side
         # panel will be invalid for the new view.
         #
-        if view_type_changed and is_ajax( request ):
-            sync_url = reverse( 'collection_view', kwargs = kwargs )
-            return antinode.redirect_response( url = sync_url )
+        if ( request.is_editing
+             and is_ajax( request )
+             and ( view_type_changed or view_id_changed )):
+            redirect_url = reverse( 'collection_view', kwargs = kwargs )
+            raise ForceRedirectException( url = redirect_url )
 
         collection_data = CollectionManager().get_collection_data(
             collection = collection,
         )
-        context = {
+        return {
             'is_async_request': is_ajax( request ),
             'collection': collection,
             'collection_data': collection_data,
         }
 
-        side_template_name = None
-        if request.is_editing:
-            context.update(
-                CollectionAddRemoveItemView.get_add_remove_template_context(
-                    collection = collection,
-                )
-            )
-            side_template_name = 'edit/panes/side.html'
-
-        return self.hi_grid_response( 
-            request = request,
-            context = context,
-            main_template_name = 'collection/collection_view.html',
-            side_template_name = side_template_name,
-            push_url_name = 'collection_view',
-            push_url_kwargs = kwargs,
-        )
-
-    
-class CollectionDetailsView( View ):
-
-    def get( self, request, *args, **kwargs ):
-        collection_id = kwargs.get( 'collection_id' )
-        if not collection_id:
-            return bad_request_response( request, message = 'Missing collection id in request.' )
-        try:
-            collection = Collection.objects.get( id = collection_id )
-        except Collection.DoesNotExist:
-            return page_not_found_response( request )
-
-        current_location_view = None
-        if request.view_parameters.view_type.is_location_view:
-            current_location_view = request.view_parameters.location_view
-
-        collection_detail_data = CollectionManager().get_collection_detail_data(
-            collection = collection,
-            current_location_view = current_location_view,
-            is_editing = request.is_editing,
-        )
-        
-        context = {
-            'collection_detail_data': collection_detail_data,
-        }
-        template = get_template( 'collection/panes/collection_details.html' )
-        content = template.render( context, request = request )
-        return antinode.response(
-            insert_map = {
-                DIVID['EDIT_ITEM']: content,
-            },
-        )     
 
     
     

@@ -183,7 +183,30 @@ class LocationViewAddView( View ):
 class LocationViewEditView( View ):
 
     def post( self, request, *args, **kwargs ):
-        raise NotImplementedError()
+
+        location_view_id = kwargs.get('location_view_id')
+        try:
+            location_view = LocationView.objects.select_related(
+                'location' ).get( id = location_view_id )
+        except LocationView.DoesNotExist:
+            return page_not_found_response( request )
+
+        location_view_edit_form = forms.LocationViewEditForm( request.POST, instance = location_view )
+        if not location_view_edit_form.is_valid():
+            context = {
+                'location_view': location_view,
+                'location_view_edit_form': location_view_edit_form,
+            }
+            template = get_template( 'location/edit/panes/location_view_edit.html' )
+            content = template.render( context, request = request )
+            return antinode.response(
+                insert_map = {
+                    DIVID['LOCATION_VIEW_EDIT_PANE']: content,
+                },
+            )
+        
+        location_view_edit_form.save()     
+        return antinode.refresh_response()
 
     
 class LocationViewGeometryView( View ):
@@ -284,36 +307,6 @@ class LocationViewDeleteView( View ):
         return antinode.redirect_response( redirect_url )
 
        
-@method_decorator( edit_required, name='dispatch' )
-class LocationViewAddRemoveItemView( View ):
-
-    def get(self, request, *args, **kwargs):
-
-        location_view = request.view_parameters.location_view
-        context = self.get_add_remove_template_context( location_view )
-        template = get_template( 'location/edit/panes/location_view_add_remove_item.html' )
-        content = template.render( context, request = request )
-        return antinode.response(
-            insert_map = {
-                DIVID['EDIT_ITEM']: content,
-            },
-        )     
-
-    @classmethod
-    def get_add_remove_template_context( self, location_view : LocationView ):
-        location_manager = LocationManager()
-        entity_view_group_list = location_manager.create_entity_view_group_list(
-            location_view = location_view,
-        )
-        collection_view_group = location_manager.create_collection_view_group(
-            location_view = location_view,
-        )
-        return {
-            'entity_view_group_list': entity_view_group_list,
-            'collection_view_group': collection_view_group,
-        }
-        
-    
 @method_decorator( edit_required, name='dispatch' )
 class LocationViewEntityToggleView( View ):
 
