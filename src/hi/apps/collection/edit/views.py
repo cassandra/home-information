@@ -1,7 +1,8 @@
-import json
 import logging
 
+from django.core.exceptions import BadRequest
 from django.db import transaction
+from django.http import Http404
 from django.template.loader import get_template
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -14,7 +15,6 @@ from hi.apps.collection.models import Collection
 from hi.apps.entity.models import Entity
 from hi.decorators import edit_required
 from hi.enums import ViewType
-from hi.views import bad_request_response, page_not_found_response
 
 from hi.constants import DIVID
 
@@ -67,7 +67,7 @@ class CollectionAddView( View ):
                     )
 
         except ValueError as e:
-            return bad_request_response( request, message = str(e) )
+            raise BadRequest( str(e) )
 
         if request.view_parameters.view_type == ViewType.COLLECTION:
             request.view_parameters.collection_id = collection.id
@@ -83,12 +83,12 @@ class CollectionDeleteView( View ):
     def get(self, request, *args, **kwargs):
         collection_id = kwargs.get( 'collection_id' )
         if not collection_id:
-            return bad_request_response( request, message = 'No current collection found.' )
+            raise BadRequest( 'No current collection found.' )
             
         try:
             collection = Collection.objects.get( id = collection_id )
         except Collection.DoesNotExist:
-            return page_not_found_response( request )
+            raise Http404( request )
 
         context = {
             'collection': collection,
@@ -102,15 +102,15 @@ class CollectionDeleteView( View ):
     def post( self, request, *args, **kwargs ):
         action = request.POST.get( 'action' )
         if action != 'confirm':
-            return bad_request_response( request, message = 'Missing confirmation value.' )
+            raise BadRequest( 'Missing confirmation value.' )
 
         collection_id = kwargs.get( 'collection_id' )
         if not collection_id:
-            return bad_request_response( request, message = 'Missing collection id.' )
+            raise BadRequest( 'Missing collection id.' )
         try:
             collection = Collection.objects.get( id = collection_id )
         except Collection.DoesNotExist:
-            return page_not_found_response( request )
+            raise Http404( request )
 
         collection.delete()
 
@@ -164,44 +164,3 @@ class CollectionEntityToggleView( View ):
                 DIVID['MAIN'] : collection_content,
             },
         )
-
-    
-@method_decorator( edit_required, name='dispatch' )
-class CollectionReorderEntitiesView( View ):
-    
-    def post(self, request, *args, **kwargs):
-        collection_id = kwargs.get('collection_id')
-        if not collection_id:
-            return bad_request_response( request, message = 'Missing collection id.' )
-            
-        try:
-            entity_id_list = json.loads( kwargs.get( 'entity_id_list' ) )
-        except Exception as e:
-            return bad_request_response( request, message = str(e) )
-
-        if not entity_id_list:
-            return bad_request_response( request, message = 'Missing entity ids.' )
-
-        CollectionManager().set_collection_entity_order(
-            collection_id = collection_id,
-            entity_id_list = entity_id_list,
-        )
-        return antinode.response( main_content = 'OK' )
-
-        
-@method_decorator( edit_required, name='dispatch' )
-class CollectionReorder( View ):
-    
-    def post(self, request, *args, **kwargs):
-        try:
-            collection_id_list = json.loads( kwargs.get( 'collection_id_list' ) )
-        except Exception as e:
-            return bad_request_response( request, message = str(e) )
-
-        if not collection_id_list:
-            return bad_request_response( request, message = 'Missing collection ids.' )
-
-        CollectionManager().set_collection_order(
-            collection_id_list = collection_id_list,
-        )
-        return antinode.response( main_content = 'OK' )

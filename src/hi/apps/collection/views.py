@@ -1,18 +1,14 @@
 import logging
 
+from django.core.exceptions import BadRequest
 from django.http import HttpResponseRedirect, Http404
-from django.template.loader import get_template
 from django.urls import reverse
 from django.views.generic import View
 
-import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
 from hi.enums import ViewType
 from hi.exceptions import ForceRedirectException
 from hi.hi_grid_view import HiGridView
-from hi.views import bad_request_response, page_not_found_response
-
-from hi.constants import DIVID
 
 from .collection_manager import CollectionManager
 from .models import Collection
@@ -37,7 +33,7 @@ class CollectionViewDefaultView( View ):
 
         collection = Collection.objects.order_by( 'order_id' ).first()
         if not collection:
-            return bad_request_response( request, message = 'No collections defined.' )
+            raise BadRequest( 'No collections defined.' )
 
         request.view_parameters.view_type = ViewType.COLLECTION
         request.view_parameters.collection_id = collection.id

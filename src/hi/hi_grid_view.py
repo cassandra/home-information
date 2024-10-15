@@ -114,7 +114,7 @@ class HiGridView(View):
         if referrer_url:
             parsed_url = urllib.parse.urlparse( referrer_url )
             query_params = urllib.parse.parse_qs( parsed_url.query )
-            new_details_value = query_params.get( 'details', [ None ] )[0]
+            new_details_value = query_params.get( HiSideView.SIDE_URL_PARAM_NAME, [ None ] )[0]
         else:
             new_details_value = None
 
@@ -122,9 +122,11 @@ class HiGridView(View):
             full_url = request.get_full_path()
             parsed_url = urllib.parse.urlparse( full_url )
             query_params = urllib.parse.parse_qs(parsed_url.query)
-            query_params['details'] = [ new_details_value ]
+            query_params[HiSideView.SIDE_URL_PARAM_NAME] = [ new_details_value ]
             new_query_string = urllib.parse.urlencode(query_params, doseq=True)
             push_url = urllib.parse.urlunparse((
+                '',
+                '',
                 parsed_url.path,
                 parsed_url.params,
                 new_query_string,
@@ -167,7 +169,7 @@ class HiGridView(View):
         full_url = request.get_full_path()
         parsed_url = urllib.parse.urlparse( full_url )
         query_params = urllib.parse.parse_qs( parsed_url.query )
-        side_url = query_params.get( 'details', [ None ] )[0]
+        side_url = query_params.get( HiSideView.SIDE_URL_PARAM_NAME, [ None ] )[0]
         return side_url
 
     def get_side_view_from_url( self, url ):

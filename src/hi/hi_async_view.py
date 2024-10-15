@@ -13,7 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 class HiAsyncView( View ):
-
+    """
+    Use this when async calls always populate the same <div> Id.
+    """
+    
     def get_target_div_id( self ) -> str:
         raise NotImplementedError('Subclasses must override this method.')
 
@@ -40,6 +43,8 @@ class HiAsyncView( View ):
 
 class HiSideView( HiAsyncView ):
 
+    SIDE_URL_PARAM_NAME = 'details'
+    
     def should_push_url( self ):
         """
         Subclasses can override this if they want full page refresh to retain
@@ -69,9 +74,9 @@ class HiSideView( HiAsyncView ):
         referrer_url = urllib.parse.urlparse( referrer_url_str )
         referrer_query_params = urllib.parse.parse_qs( referrer_url.query )
         if self.should_push_url():
-            referrer_query_params['details'] = side_url
+            referrer_query_params[self.SIDE_URL_PARAM_NAME] = side_url
         else:
-            del referrer_query_params['details']
+            del referrer_query_params[self.SIDE_URL_PARAM_NAME]
             
         updated_query_string = urllib.parse.urlencode( referrer_query_params )
         return f"{referrer_url.path}?{updated_query_string}"

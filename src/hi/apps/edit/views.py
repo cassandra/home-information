@@ -1,16 +1,23 @@
 import json
 import logging
 
+from django.core.exceptions import BadRequest
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
-from hi.apps.collection.edit.async_views import CollectionManageItemsView
-from hi.apps.location.edit.async_views import LocationViewManageItemsView
+from hi.apps.collection.edit.async_views import (
+    CollectionManageItemsView,
+    CollectionReorder,
+    CollectionReorderEntitiesView,
+)
+from hi.apps.location.edit.async_views import (
+    LocationViewManageItemsView,
+    LocationViewReorder,
+)
 from hi.decorators import edit_required
 from hi.enums import ItemType
-from hi.views import bad_request_response
 
 from hi.enums import ViewMode
 
@@ -62,7 +69,7 @@ class ItemDetailsCloseView( View ):
         elif request.view_parameters.view_type.is_collection:
             return CollectionManageItemsView().get( request, *args, **kwargs )
 
-        raise bad_request_response( request, 'Add/remove items not supported for current view type.' )
+        raise BadRequest( 'Add/remove items not supported for current view type.' )
 
     
 @method_decorator( edit_required, name='dispatch' )
@@ -72,7 +79,7 @@ class ReorderItemsView( View ):
         try:
             item_type_id_list = ItemType.parse_list_from_dict( request.POST )
         except ValueError as e:
-            return bad_request_response( request, message = str(e) )
+            raise BadRequest( str(e) )
 
         try:
             item_types = set()
@@ -82,35 +89,37 @@ class ReorderItemsView( View ):
                 item_id_list.append( item_id )
                 continue
         except ValueError as ve:
-            return bad_request_response( request, message = str(ve) )
+            raise BadRequest( str(ve) )
             
         if len(item_types) < 1:
-            return bad_request_response( request, message = 'No ids found' )
+            raise BadRequest( 'No ids found' )
 
         if len(item_types) > 1:
-            return bad_request_response( request, message = f'Too many item types: {item_types}' )
+            raise BadRequest( f'Too many item types: {item_types}' )
 
         item_type = next(iter(item_types))
         if item_type == ItemType.ENTITY:
             if not request.view_parameters.view_type.is_collection:
-                return bad_request_response( request, message = 'Entity reordering for collections only.' )
-            return collection_edit_views.CollectionReorderEntitiesView().post(
+                raise BadRequest( 'Entity reordering for collections only.' )
+            return CollectionReorderEntitiesView().post(
                 request,
                 collection_id = request.view_parameters.collection_id,
                 entity_id_list = json.dumps( item_id_list ),
             )
 
         elif item_type == ItemType.COLLECTION:
-            return collection_edit_views.CollectionReorder().post(
+            return CollectionReorder().post(
                 request,
                 collection_id_list = json.dumps( item_id_list ),
             )
 
         elif item_type == ItemType.LOCATION_VIEW:
-            return location_edit_views.LocationViewReorder().post(
+            return LocationViewReorder().post(
                 request,
                 location_view_id_list = json.dumps( item_id_list ),
             )
 
         else:
-            return bad_request_response( request, message = f'Unknown item type: {item_type}' )
+            raise BadRequest( f'Unknown item type: {item_type}' )
+
+

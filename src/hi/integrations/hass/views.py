@@ -1,3 +1,4 @@
+from django.core.exceptions import BadRequest
 from django.db import transaction
 from django.http import HttpRequest
 from django.shortcuts import render
@@ -7,8 +8,6 @@ import hi.apps.common.antinode as antinode
 
 from hi.integrations.core.forms import IntegrationAttributeFormSet
 from hi.integrations.core.helpers import IntegrationHelperMixin
-
-from hi.views import bad_request_response
 
 from .hass_metadata import HassMetaData
 from .hass_manager import HassManager
@@ -22,7 +21,7 @@ class HassEnableView( View, IntegrationHelperMixin ):
             integration_metadata = HassMetaData,
         )
         if integration.is_enabled:
-            return bad_request_response( request, message = 'HAss is already enabled' )
+            raise BadRequest( 'HAss is already enabled' )
 
         integration_attribute_formset = IntegrationAttributeFormSet(
             instance = integration,
@@ -41,7 +40,7 @@ class HassEnableView( View, IntegrationHelperMixin ):
             integration_metadata = HassMetaData,
         )
         if integration.is_enabled:
-            return bad_request_response( request, message = 'HAss is already enabled' )
+            raise BadRequest( 'HAss is already enabled' )
 
         integration_attribute_formset = IntegrationAttributeFormSet(
             request.POST,

@@ -1,8 +1,7 @@
 import logging
 
+from django.core.exceptions import BadRequest
 from django.views.generic import View
-
-from hi.views import bad_request_response
 
 from .integration_factory import IntegrationFactory
 
@@ -41,4 +40,4 @@ class IntegrationActionView( View ):
         except Exception as e:
             error_message = str(e)
 
-        return bad_request_response( request, message = error_message )
+        raise BadRequest( error_message )

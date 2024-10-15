@@ -1,6 +1,8 @@
 import logging
 
+from django.core.exceptions import BadRequest, PermissionDenied
 from django.db import transaction
+from django.http import Http404
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -14,7 +16,6 @@ from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
 
 from hi.decorators import edit_required
-from hi.views import bad_request_response, not_authorized_response, page_not_found_response
 
 from . import forms
 
@@ -75,7 +76,7 @@ class EntityAddView( View ):
                 return redirect( redirect_url )
     
         except ValueError as e:
-            return bad_request_response( request, message = str(e) )
+            raise BadRequest( str(e) )
         
 
 @method_decorator( edit_required, name='dispatch' )
@@ -84,15 +85,15 @@ class EntityDeleteView( View ):
     def get( self, request, *args, **kwargs ):
         entity_id = kwargs.get( 'entity_id' )
         if not entity_id:
-            return bad_request_response( request, message = 'Missing entity id in request.' )
+            raise BadRequest( 'Missing entity id in request.' )
 
         try:
             entity = Entity.objects.get( id = entity_id )
         except Entity.DoesNotExist:
-            return page_not_found_response( request )
+            raise Http404( request )
 
         if not entity.can_user_delete:
-            return not_authorized_response( request, message = 'This entity cannot be deleted.' )
+            raise PermissionDenied( 'This entity cannot be deleted.' )
         
         context = {
             'entity': entity,
@@ -106,18 +107,18 @@ class EntityDeleteView( View ):
     def post( self, request, *args, **kwargs ):
         action = request.POST.get( 'action' )
         if action != 'confirm':
-            return bad_request_response( request, message = 'Missing confirmation value.' )
+            raise BadRequest( 'Missing confirmation value.' )
 
         entity_id = kwargs.get( 'entity_id' )
         if not entity_id:
-            return bad_request_response( request, message = 'Missing entity id.' )
+            raise BadRequest( 'Missing entity id.' )
         try:
             entity = Entity.objects.get( id = entity_id )
         except Entity.DoesNotExist:
-            return page_not_found_response( request )
+            raise Http404( request )
 
         if not entity.can_user_delete:
-            return not_authorized_response( request, message = 'This entity cannot be deleted.' )
+            raise PermissionDenied( request, message = 'This entity cannot be deleted.' )
                 
         entity.delete()
 

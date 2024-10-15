@@ -1,27 +1,15 @@
 import logging
 
+from django.core.exceptions import BadRequest
 from django.http import HttpResponseRedirect, Http404
-from django.template.loader import get_template
 from django.urls import reverse
 from django.views.generic import View
 
-from hi.apps.collection.async_views import CollectionDetailsView
-import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
-from hi.apps.entity.async_views import EntityDetailsView
-from hi.apps.location.edit.forms import (
-    LocationAttributeFormset,
-    LocationEditForm,
-    LocationSvgFileForm,
-    LocationViewEditForm,
-)
-from hi.apps.location.edit.async_views import LocationViewManageItemsView
 
-from hi.constants import DIVID
-from hi.enums import ItemType, ViewType
+from hi.enums import ViewType
 from hi.exceptions import ForceRedirectException
 from hi.hi_grid_view import HiGridView
-from hi.views import bad_request_response, page_not_found_response
 
 from .location_manager import LocationManager
 from .models import Location, LocationView
@@ -54,7 +42,7 @@ class LocationViewDefaultView( View ):
                 
         location_view = location.views.order_by( 'order_id' ).first()
         if not location_view:
-            return bad_request_response( request, message = 'No views defined for this location.' )
+            raise BadRequest( 'No views defined for this location.' )
 
         request.view_parameters.view_type = ViewType.LOCATION_VIEW
         request.view_parameters.location_view_id = location_view.id
@@ -113,11 +101,11 @@ class LocationSwitchView( View ):
         try:
             location = Location.objects.get( id = location_id )
         except Location.DoesNotExist:
-            return page_not_found_response( request )
+            raise Http404( request )
 
         location_view = location.views.order_by( 'order_id' ).first()
         if not location_view:
-            return bad_request_response( request, message = 'No views defined for this location.' )
+            raise BadRequest( 'No views defined for this location.' )
 
         request.view_parameters.view_type = ViewType.LOCATION_VIEW
         request.view_parameters.location_view_id = location_view.id
