@@ -1,5 +1,6 @@
 import json
 import logging
+import urllib.parse
 
 from django.core.exceptions import BadRequest
 from django.shortcuts import redirect
@@ -16,10 +17,11 @@ from hi.apps.location.edit.async_views import (
     LocationViewManageItemsView,
     LocationViewReorder,
 )
-from hi.decorators import edit_required
-from hi.enums import ItemType
 
-from hi.enums import ViewMode
+from hi.decorators import edit_required
+from hi.enums import ItemType, ViewMode
+from hi.hi_async_view import HiSideView
+
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +55,24 @@ class EditEndView( View ):
         request.view_parameters.view_mode = ViewMode.MONITOR
         request.view_parameters.to_session( request )
 
-        redirect_url = request.META.get('HTTP_REFERER')
-        if not redirect_url:
+        referrer_url = request.META.get('HTTP_REFERER')
+        if referrer_url:
+            parsed_url = urllib.parse.urlparse( referrer_url )
+            query_params = urllib.parse.parse_qs( parsed_url.query )
+            query_params[HiSideView.SIDE_URL_PARAM_NAME] = [ '' ]
+            new_query_string = urllib.parse.urlencode(query_params, doseq=True)
+            redirect_url = urllib.parse.urlunparse((
+                '',
+                '',
+                parsed_url.path,
+                parsed_url.params,
+                new_query_string,
+                parsed_url.fragment
+            ))
+
+        else:
             redirect_url = reverse('home')
+            
         return redirect( redirect_url )
 
     
