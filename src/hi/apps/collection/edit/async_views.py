@@ -2,12 +2,16 @@ import json
 import logging
 
 from django.core.exceptions import BadRequest
+from django.template.loader import get_template
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 from hi.apps.collection.collection_manager import CollectionManager
+from hi.apps.collection.models import Collection
 import hi.apps.common.antinode as antinode
+from hi.apps.entity.models import Entity
 
+from hi.constants import DIVID
 from hi.decorators import edit_required
 from hi.hi_async_view import HiSideView
 
@@ -71,3 +75,42 @@ class CollectionReorder( View ):
         )
         return antinode.response( main_content = 'OK' )
     
+    
+@method_decorator( edit_required, name='dispatch' )
+class CollectionEntityToggleView( View ):
+
+    def post(self, request, *args, **kwargs):
+
+        collection_id = kwargs.get('collection_id')
+        entity_id = kwargs.get('entity_id')
+
+        entity = Entity.objects.get( id = entity_id )
+        collection = Collection.objects.get( id = collection_id )
+        exists_in_collection = CollectionManager().toggle_entity_in_collection(
+            entity = entity,
+            collection = collection,
+        )
+            
+        context = {
+            'collection': collection,
+            'entity': entity,
+            'exists_in_collection': exists_in_collection,
+        }
+        template = get_template( 'collection/edit/panes/collection_entity_toggle.html' )
+        main_content = template.render( context, request = request )
+
+        collection_data = CollectionManager().get_collection_data(
+            collection = collection,
+        )
+        context = {
+            'collection_data': collection_data,
+        }
+        template = get_template( 'collection/collection_view.html' )
+        collection_content = template.render( context, request = request )
+        
+        return antinode.response(
+            main_content = main_content,
+            insert_map = {
+                DIVID['MAIN'] : collection_content,
+            },
+        )

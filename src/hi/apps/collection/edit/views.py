@@ -3,20 +3,16 @@ import logging
 from django.core.exceptions import BadRequest
 from django.db import transaction
 from django.http import Http404
-from django.template.loader import get_template
 from django.urls import reverse
 from django.utils.decorators import method_decorator
-from django.views.generic import View
 
-import hi.apps.common.antinode as antinode
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.enums import CollectionType
 from hi.apps.collection.models import Collection
-from hi.apps.entity.models import Entity
+
 from hi.decorators import edit_required
 from hi.enums import ViewType
-
-from hi.constants import DIVID
+from hi.hi_async_view import HiModalView
 
 from . import forms
 
@@ -24,17 +20,16 @@ logger = logging.getLogger(__name__)
 
 
 @method_decorator( edit_required, name='dispatch' )
-class CollectionAddView( View ):
+class CollectionAddView( HiModalView ):
+
+    def get_template_name( self ) -> str:
+        return 'collection/edit/modals/collection_add.html'
 
     def get( self, request, *args, **kwargs ):
         context = {
             'collection_form': forms.CollectionForm(),
         }
-        return antinode.modal_from_template(
-            request = request,
-            template_name = 'collection/edit/modals/collection_add.html',
-            context = context,
-        )
+        return self.modal_response( request, context )
     
     def post( self, request, *args, **kwargs ):
         collection_form = forms.CollectionForm( request.POST )
@@ -42,11 +37,7 @@ class CollectionAddView( View ):
             context = {
                 'collection_form': collection_form,
             }
-            return antinode.modal_from_template(
-                request = request,
-                template_name = 'collection/edit/modals/collection_add.html',
-                context = context,
-            )
+            return self.modal_response( request, context )
 
         cleaned_data = collection_form.clean()
         collection_type = CollectionType.from_name_safe( cleaned_data.get('collection_type') )
@@ -74,11 +65,14 @@ class CollectionAddView( View ):
             request.view_parameters.to_session( request )
 
         redirect_url = reverse('home')
-        return antinode.redirect_response( redirect_url )
+        return self.redirect_response( request, redirect_url )
 
     
 @method_decorator( edit_required, name='dispatch' )
-class CollectionDeleteView( View ):
+class CollectionDeleteView( HiModalView ):
+
+    def get_template_name( self ) -> str:
+        return 'collection/edit/modals/collection_delete.html'
 
     def get(self, request, *args, **kwargs):
         collection_id = kwargs.get( 'collection_id' )
@@ -93,11 +87,7 @@ class CollectionDeleteView( View ):
         context = {
             'collection': collection,
         }
-        return antinode.modal_from_template(
-            request = request,
-            template_name = 'collection/edit/modals/collection_delete.html',
-            context = context,
-        )
+        return self.modal_response( request, context )
 
     def post( self, request, *args, **kwargs ):
         action = request.POST.get( 'action' )
@@ -123,44 +113,5 @@ class CollectionDeleteView( View ):
             request.view_parameters.to_session( request )
 
         redirect_url = reverse('home')
-        return antinode.redirect_response( redirect_url )
+        return self.redirect_response( request, redirect_url )
     
-    
-@method_decorator( edit_required, name='dispatch' )
-class CollectionEntityToggleView( View ):
-
-    def post(self, request, *args, **kwargs):
-
-        collection_id = kwargs.get('collection_id')
-        entity_id = kwargs.get('entity_id')
-
-        entity = Entity.objects.get( id = entity_id )
-        collection = Collection.objects.get( id = collection_id )
-        exists_in_collection = CollectionManager().toggle_entity_in_collection(
-            entity = entity,
-            collection = collection,
-        )
-            
-        context = {
-            'collection': collection,
-            'entity': entity,
-            'exists_in_collection': exists_in_collection,
-        }
-        template = get_template( 'collection/edit/panes/collection_entity_toggle.html' )
-        main_content = template.render( context, request = request )
-
-        collection_data = CollectionManager().get_collection_data(
-            collection = collection,
-        )
-        context = {
-            'collection_data': collection_data,
-        }
-        template = get_template( 'collection/collection_view.html' )
-        collection_content = template.render( context, request = request )
-        
-        return antinode.response(
-            main_content = main_content,
-            insert_map = {
-                DIVID['MAIN'] : collection_content,
-            },
-        )

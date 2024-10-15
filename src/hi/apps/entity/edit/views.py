@@ -3,10 +3,8 @@ import logging
 from django.core.exceptions import BadRequest, PermissionDenied
 from django.db import transaction
 from django.http import Http404
-from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.decorators import method_decorator
-from django.views.generic import View
 
 from hi.apps.collection.collection_manager import CollectionManager
 import hi.apps.common.antinode as antinode
@@ -16,6 +14,7 @@ from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
 
 from hi.decorators import edit_required
+from hi.hi_async_view import HiModalView
 
 from . import forms
 
@@ -23,17 +22,16 @@ logger = logging.getLogger(__name__)
 
 
 @method_decorator( edit_required, name='dispatch' )
-class EntityAddView( View ):
+class EntityAddView( HiModalView ):
 
+    def get_template_name( self ) -> str:
+        return 'entity/edit/modals/entity_add.html'
+    
     def get( self, request, *args, **kwargs ):
         context = {
             'entity_form': forms.EntityForm(),
         }
-        return antinode.modal_from_template(
-            request = request,
-            template_name = 'entity/edit/modals/entity_add.html',
-            context = context,
-        )
+        return self.modal_response( request, context )
     
     def post( self, request, *args, **kwargs ):
         entity_form = forms.EntityForm( request.POST )
@@ -72,15 +70,18 @@ class EntityAddView( View ):
                         collection_id = request.view_parameters.collection_id,
                     )
                     
-                redirect_url = reverse('home')
-                return redirect( redirect_url )
+            redirect_url = reverse('home')
+            return self.redirect_response( request, redirect_url )
     
         except ValueError as e:
             raise BadRequest( str(e) )
         
 
 @method_decorator( edit_required, name='dispatch' )
-class EntityDeleteView( View ):
+class EntityDeleteView( HiModalView ):
+
+    def get_template_name( self ) -> str:
+        return 'entity/edit/modals/entity_delete.html'
 
     def get( self, request, *args, **kwargs ):
         entity_id = kwargs.get( 'entity_id' )
@@ -98,11 +99,7 @@ class EntityDeleteView( View ):
         context = {
             'entity': entity,
         }
-        return antinode.modal_from_template(
-            request = request,
-            template_name = 'entity/edit/modals/entity_delete.html',
-            context = context,
-        )
+        return self.modal_response( request, context )
     
     def post( self, request, *args, **kwargs ):
         action = request.POST.get( 'action' )
@@ -123,4 +120,5 @@ class EntityDeleteView( View ):
         entity.delete()
 
         redirect_url = reverse('home')
-        return redirect( redirect_url )
+        return self.redirect_response( request, redirect_url )
+    

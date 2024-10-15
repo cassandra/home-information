@@ -84,5 +84,19 @@ class HiSideView( HiAsyncView ):
         
 class HiModalView( View ):
 
-    def get_modal( self, request, *args, **kwargs ) -> str:
+    def get_template_name( self ) -> str:
         raise NotImplementedError('Subclasses must override this method.')
+
+    def modal_response( self, request, context ):
+        template_name = self.get_template_name()
+        return antinode.modal_from_template(
+            request = request,
+            template_name = template_name,
+            context = context,
+        )
+
+    def redirect_response( self, request, redirect_url ):
+        return antinode.redirect_response( redirect_url )
+
+    def refresh_response( self, request ):
+        return antinode.refresh_response()

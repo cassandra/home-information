@@ -19,7 +19,7 @@ urlpatterns = [
              name='collection_edit_collection_manage_items' ),
 
     re_path( r'^collection/entity/toggle/(?P<collection_id>\d+)/(?P<entity_id>\d+)$', 
-             views.CollectionEntityToggleView.as_view(), 
+             async_views.CollectionEntityToggleView.as_view(), 
              name='collection_edit_collection_entity_toggle' ),
     
 ]
