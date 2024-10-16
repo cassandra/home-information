@@ -12,7 +12,7 @@ from hi.apps.common.utils import is_ajax
 
 from hi.apps.location.edit.async_views import LocationViewManageItemsView
 from hi.apps.collection.edit.async_views import CollectionManageItemsView
-
+from hi.apps.location.location_manager import LocationManager
 from hi.apps.collection.models import Collection
 from hi.apps.location.models import Location
 
@@ -76,7 +76,7 @@ class HiGridView(View):
 
     def get(self, request, *args, **kwargs):
 
-        current_location = request.view_parameters.location
+        current_location = LocationManager().get_default_location( request = request )
         if not current_location:
             redirect_url = reverse('start')
             if is_ajax( request ):

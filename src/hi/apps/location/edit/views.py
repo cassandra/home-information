@@ -52,7 +52,7 @@ class LocationAddView( HiModalView ):
 
         location_view = location.views.order_by( 'order_id' ).first()
         request.view_parameters.view_type = ViewType.LOCATION_VIEW
-        request.view_parameters.location_view_id = location_view.id
+        request.view_parameters.update_location_view( location_view )
         request.view_parameters.to_session( request )
         
         redirect_url = reverse('home')
@@ -66,13 +66,18 @@ class LocationSvgReplaceView( HiModalView ):
         return 'location/edit/modals/location_svg_replace.html'
 
     def get( self, request, *args, **kwargs ):
-        location_id = kwargs.get( 'location_id' )
-        if not location_id:
-            raise BadRequest( 'Missing location id.' )
         try:
-            location = Location.objects.get( id = location_id )
+            location_id = int( kwargs.get( 'location_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location id.' )
+        try:
+            location = LocationManager().get_location(
+                request = request,
+                location_id = location_id,
+            )
         except Location.DoesNotExist:
             raise Http404( request )
+
         context = {
             'location': location,
             'location_svg_file_form': forms.LocationSvgReplaceForm(),
@@ -80,11 +85,15 @@ class LocationSvgReplaceView( HiModalView ):
         return self.modal_response( request, context )
     
     def post( self, request, *args, **kwargs ):
-        location_id = kwargs.get( 'location_id' )
-        if not location_id:
-            raise BadRequest( 'Missing location id.' )
         try:
-            location = Location.objects.get( id = location_id )
+            location_id = int( kwargs.get( 'location_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location id.' )
+        try:
+            location = LocationManager().get_location(
+                request = request,
+                location_id = location_id,
+            )
         except Location.DoesNotExist:
             raise Http404( request )
         
@@ -117,11 +126,15 @@ class LocationDeleteView( HiModalView ):
         return 'location/edit/modals/location_delete.html'
 
     def get(self, request, *args, **kwargs):
-        location_id = kwargs.get( 'location_id' )
-        if not location_id:
-            raise BadRequest( 'Missing location id.' )
         try:
-            location = Location.objects.get( id = location_id )
+            location_id = int( kwargs.get('location_id'))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location id.' )
+        try:
+            location = LocationManager().get_location(
+                request = request,
+                location_id = location_id,
+            )
         except Location.DoesNotExist:
             raise Http404( request )
 
@@ -131,27 +144,27 @@ class LocationDeleteView( HiModalView ):
         return self.modal_response( request, context )
     
     def post( self, request, *args, **kwargs ):
+        try:
+            location_id = int( kwargs.get('location_id'))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location id.' )
+        try:
+            location = LocationManager().get_location(
+                request = request,
+                location_id = location_id,
+            )
+        except Location.DoesNotExist:
+            raise Http404( request )
+
         action = request.POST.get( 'action' )
         if action != 'confirm':
             raise BadRequest( 'Missing confirmation value.' )
 
-        location_id = kwargs.get( 'location_id' )
-        if not location_id:
-            raise BadRequest( 'Missing location id.' )
-            
-        try:
-            location = Location.objects.get( id = location_id )
-        except Location.DoesNotExist:
-            raise Http404( request )
-
         location.delete()
 
-        next_location = Location.objects.all().order_by( 'order_id' ).first()
-        if next_location:
-            request.view_parameters.location_id = next_location.id
-        else:
-            request.view_parameters.location_id = None
-        request.view_parameters.to_session( request )
+        if request.view_parameters.location_id == location_id:
+            request.view_parameters.update_location_view( location_view = None )
+            request.view_parameters.to_session( request )
         
         redirect_url = reverse('home')
         return self.redirect_response( request, redirect_url )
@@ -164,12 +177,22 @@ class LocationViewAddView( HiModalView ):
         return 'location/edit/modals/location_view_add.html'
     
     def get( self, request, *args, **kwargs ):
+        try:
+            # Ensure we have a location to add the view to.
+            _ = LocationManager().get_default_location( request = request )
+        except Location.DoesNotExist:
+            raise BadRequest( 'No locations defined.' )
         context = {
             'location_view_add_form': forms.LocationViewAddForm(),
         }
         return self.modal_response( request, context )
     
     def post( self, request, *args, **kwargs ):
+        try:
+            current_location = LocationManager().get_default_location( request = request )
+        except Location.DoesNotExist:
+            raise BadRequest( 'No locations defined.' )
+
         location_view_add_form = forms.LocationViewAddForm( request.POST )
         if not location_view_add_form.is_valid():
             context = {
@@ -177,21 +200,16 @@ class LocationViewAddView( HiModalView ):
             }
             return self.modal_response( request, context )
 
-        if request.view_parameters.location_view:
-            location = request.view_parameters.location_view.location
-        else:
-            location = Location.objects.order_by( 'order_id' ).first()
-        
         try:
             location_view = LocationManager().create_location_view(
-                location = location,
+                location = current_location,
                 name = location_view_add_form.cleaned_data.get('name'),
             )
         except ValueError as e:
             raise BadRequest( str(e) )
 
         request.view_parameters.view_type = ViewType.LOCATION_VIEW
-        request.view_parameters.location_view_id = location_view.id
+        request.view_parameters.update_location_view( location_view = location_view )
         request.view_parameters.to_session( request )
         
         redirect_url = reverse('home')
@@ -205,13 +223,15 @@ class LocationViewDeleteView( HiModalView ):
         return 'location/edit/modals/location_view_delete.html'
     
     def get(self, request, *args, **kwargs):
-        location_view_id = kwargs.get( 'location_view_id' )
-        if not location_view_id:
-            raise BadRequest( 'Missing location view id.' )
-            
         try:
-            location_view = LocationView.objects.select_related(
-                'location' ).get( id = location_view_id )
+            location_view_id = int( kwargs.get( 'location_view_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location view id.' )
+        try:
+            location_view = LocationManager().get_location_view(
+                request = request,
+                location_view_id = location_view_id,
+            )
         except LocationView.DoesNotExist:
             raise Http404( request )
 
@@ -221,28 +241,27 @@ class LocationViewDeleteView( HiModalView ):
         return self.modal_response( request, context )
     
     def post( self, request, *args, **kwargs ):
+        try:
+            location_view_id = int( kwargs.get( 'location_view_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location view id.' )
+        try:
+            location_view = LocationManager().get_location_view(
+                request = request,
+                location_view_id = location_view_id,
+            )
+        except LocationView.DoesNotExist:
+            raise Http404( request )
+
         action = request.POST.get( 'action' )
         if action != 'confirm':
             raise BadRequest( 'Missing confirmation value.' )
 
-        location_view_id = kwargs.get( 'location_view_id' )
-        if not location_view_id:
-            raise BadRequest( 'Missing location view id.' )
-            
-        try:
-            location_view = LocationView.objects.select_related(
-                'location' ).get( id = location_view_id )
-        except LocationView.DoesNotExist:
-            raise Http404( request )
-
         location_view.delete()
 
-        next_location_view = LocationView.objects.all().order_by( 'order_id' ).first()
-        if next_location_view:
-            request.view_parameters.location_view_id = next_location_view.id
-        else:
-            request.view_parameters.location_view_id = None
-        request.view_parameters.to_session( request )
+        if request.view_parameters.location_view_id == location_view_id:
+            request.view_parameters.update_location_view( location_view = None )
+            request.view_parameters.to_session( request )
         
         redirect_url = reverse('home')
         return self.redirect_response( request, redirect_url )

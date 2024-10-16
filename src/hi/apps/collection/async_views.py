@@ -3,6 +3,8 @@ import logging
 from django.core.exceptions import BadRequest
 from django.http import Http404
 
+from hi.apps.location.location_manager import LocationManager
+
 from hi.hi_async_view import HiSideView
 
 from .collection_manager import CollectionManager
@@ -20,18 +22,19 @@ class CollectionDetailsView( HiSideView ):
         return True
     
     def get_template_context( self, request, *args, **kwargs ):
-        collection_id = kwargs.get( 'collection_id' )
-        if not collection_id:
-            raise BadRequest( 'Missing collection id in request.' )
         try:
-            collection = Collection.objects.get( id = collection_id )
+            collection_id = int( kwargs.get( 'collection_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location view id.' )
+        try:
+            collection = CollectionManager().get_collection(
+                request = request,
+                collection_id = collection_id,
+            )
         except Collection.DoesNotExist:
-            raise Http404()
-
-        current_location_view = None
-        if request.view_parameters.view_type.is_location_view:
-            current_location_view = request.view_parameters.location_view
-
+            raise Http404( request )
+        
+        current_location_view = LocationManager().get_default_location_view( request =request )
         collection_detail_data = CollectionManager().get_collection_detail_data(
             collection = collection,
             current_location_view = current_location_view,

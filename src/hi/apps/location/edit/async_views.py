@@ -32,9 +32,15 @@ logger = logging.getLogger(__name__)
 class LocationEditView( View ):
 
     def post( self, request, *args, **kwargs ):
-        location_id = kwargs.get('location_id')
         try:
-            location = Location.objects.get( id = location_id )
+            location_id = int( kwargs.get( 'location_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location id.' )
+        try:
+            location = LocationManager().get_location(
+                request = request,
+                location_id = location_id,
+            )
         except Location.DoesNotExist:
             raise Http404( request )
 
@@ -78,12 +84,11 @@ class LocationViewManageItemsView( HiSideView ):
 
     def get_template_context( self, request, *args, **kwargs ):
 
-        location_view = request.view_parameters.location_view
-        location_manager = LocationManager()
-        entity_view_group_list = location_manager.create_entity_view_group_list(
+        location_view = LocationManager().get_default_location_view( request = request )
+        entity_view_group_list = EntityManager().create_entity_view_group_list(
             location_view = location_view,
         )
-        collection_view_group = location_manager.create_collection_view_group(
+        collection_view_group = CollectionManager().create_collection_view_group(
             location_view = location_view,
         )
         return {
@@ -114,11 +119,15 @@ class LocationViewReorder( View ):
 class LocationViewEditView( View ):
 
     def post( self, request, *args, **kwargs ):
-
-        location_view_id = kwargs.get('location_view_id')
         try:
-            location_view = LocationView.objects.select_related(
-                'location' ).get( id = location_view_id )
+            location_view_id = int( kwargs.get( 'location_view_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location view id.' )
+        try:
+            location_view = LocationManager().get_location_view(
+                request = request,
+                location_view_id = location_view_id,
+            )
         except LocationView.DoesNotExist:
             raise Http404( request )
 
@@ -143,11 +152,15 @@ class LocationViewEditView( View ):
 class LocationViewGeometryView( View ):
 
     def post(self, request, *args, **kwargs):
-
-        location_view_id = kwargs.get('location_view_id')
         try:
-            location_view = LocationView.objects.select_related(
-                'location' ).get( id = location_view_id )
+            location_view_id = int( kwargs.get( 'location_view_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location view id.' )
+        try:
+            location_view = LocationManager().get_location_view(
+                request = request,
+                location_view_id = location_view_id,
+            )
         except LocationView.DoesNotExist:
             raise Http404( request )
 
@@ -176,13 +189,28 @@ class LocationViewGeometryView( View ):
 class LocationViewEntityToggleView( View ):
 
     def post( self, request, *args, **kwargs ):
+        try:
+            location_view_id = int( kwargs.get( 'location_view_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location view id.' )
+        try:
+            location_view = LocationManager().get_location_view(
+                request = request,
+                location_view_id = location_view_id,
+            )
+        except LocationView.DoesNotExist:
+            raise Http404( request )
 
-        location_view_id = kwargs.get('location_view_id')
-        entity_id = kwargs.get('entity_id')
+        try:
+            entity_id = int( kwargs.get('entity_id'))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid entity id.' )
+        try:
+            entity = Entity.objects.get( id = entity_id )
+        except Entity.DoesNotExist:
+            raise Http404( request )
 
-        entity = Entity.objects.get( id = entity_id )
-        location_view = LocationView.objects.get( id = location_view_id )
-        exists_in_view = LocationManager().toggle_entity_in_view(
+        exists_in_view = EntityManager().toggle_entity_in_view(
             entity = entity,
             location_view = location_view,
         )
@@ -216,13 +244,31 @@ class LocationViewEntityToggleView( View ):
 class LocationViewCollectionToggleView( View ):
 
     def post(self, request, *args, **kwargs):
+        try:
+            location_view_id = int( kwargs.get( 'location_view_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location view id.' )
+        try:
+            location_view = LocationManager().get_location_view(
+                request = request,
+                location_view_id = location_view_id,
+            )
+        except LocationView.DoesNotExist:
+            raise Http404( request )
 
-        location_view_id = kwargs.get('location_view_id')
-        collection_id = kwargs.get('collection_id')
+        try:
+            collection_id = int( kwargs.get('collection_id'))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid collection id.' )
+        try:
+            collection = CollectionManager().get_collection(
+                request = request,
+                collection_id = collection_id,
+            )
+        except Collection.DoesNotExist:
+            raise Http404( request )
 
-        collection = Collection.objects.get( id = collection_id )
-        location_view = LocationView.objects.get( id = location_view_id )
-        exists_in_view = LocationManager().toggle_collection_in_view(
+        exists_in_view = CollectionManager().toggle_collection_in_view(
             collection = collection,
             location_view = location_view,
         )
@@ -290,17 +336,21 @@ class LocationItemPathView( View ):
         if not svg_path_str:
             raise BadRequest( 'Missing SVG path' )
         
-        location_view = request.view_parameters.location_view
+        location = LocationManager().get_default_location( request = request )
         if item_type == ItemType.ENTITY:
             EntityManager().set_entity_path(
                 entity_id = item_id,
-                location = location_view.location,
+                location = location,
                 svg_path_str = svg_path_str,
             )
         elif item_type == ItemType.COLLECTION:
-            CollectionManager().set_collection_path(
+            collection = CollectionManager().get_collection(
+                request = request,
                 collection_id = item_id,
-                location = location_view.location,
+            )
+            CollectionManager().set_collection_path(
+                collection = collection,
+                location = location,
                 svg_path_str = svg_path_str,
             )
         else:

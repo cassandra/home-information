@@ -7,9 +7,10 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 
 from hi.apps.collection.collection_manager import CollectionManager
-import hi.apps.common.antinode as antinode
+from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
+from hi.apps.location.models import LocationView
 
 from hi.decorators import edit_required
 from hi.hi_async_view import HiModalView
@@ -37,36 +38,46 @@ class EntityAddView( HiModalView ):
             context = {
                 'entity_form': entity_form,
             }
-            return antinode.modal_from_template(
+            return self.modal_response( request, context )
+
+        with transaction.atomic():
+            entity = entity_form.save()
+            self._add_to_current_view_type(
                 request = request,
-                template_name = 'entity/edit/modals/entity_add.html',
-                context = context,
+                entity = entity,
             )
+            
+        redirect_url = reverse('home')
+        return self.redirect_response( request, redirect_url )
 
-        try:
-            with transaction.atomic():
-                entity = entity_form.save()
-                if ( request.view_parameters.view_type.is_location_view
-                     and request.view_parameters.location_view_id ):
-                    LocationManager().add_entity_to_view_by_id(
-                        entity = entity,
-                        location_view_id = request.view_parameters.location_view_id,
-                    )
-                    
-                elif ( request.view_parameters.view_type.is_collection
-                       and request.view_parameters.collection_id ):
-                    CollectionManager().add_entity_to_collection_by_id(
-                        entity = entity,
-                        collection_id = request.view_parameters.collection_id,
-                    )
-                    
-            redirect_url = reverse('home')
-            return self.redirect_response( request, redirect_url )
-    
-        except ValueError as e:
-            raise BadRequest( str(e) )
+    def _add_to_current_view_type( self, request, entity : Entity ):
         
+        if request.view_parameters.view_type.is_location_view:
+            try:
+                current_location_view = LocationManager().get_default_location_view( request = request )
+                EntityManager().add_entity_to_view(
+                    entity = entity,
+                    location_view = current_location_view,
+                )
+            except LocationView.DoesNotExist:
+                logger.warning( 'No current location view to add new entity to.')
 
+        elif request.view_parameters.view_type.is_collection:
+            try:
+                current_collection = CollectionManager().get_default_collection( request = request )
+                CollectionManager().add_entity_to_collection(
+                    entity = entity,
+                    collection = current_collection,
+                )
+            except LocationView.DoesNotExist:
+                logger.warning( 'No current collection to add new entity to.')
+            
+        else:
+            logger.warning( 'No valid current view type to add new entity to.')
+
+        return
+
+    
 @method_decorator( edit_required, name='dispatch' )
 class EntityDeleteView( HiModalView ):
 
@@ -74,10 +85,10 @@ class EntityDeleteView( HiModalView ):
         return 'entity/edit/modals/entity_delete.html'
 
     def get( self, request, *args, **kwargs ):
-        entity_id = kwargs.get( 'entity_id' )
-        if not entity_id:
-            raise BadRequest( 'Missing entity id in request.' )
-
+        try:
+            entity_id = int( kwargs.get('entity_id'))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid entity id.' )
         try:
             entity = Entity.objects.get( id = entity_id )
         except Entity.DoesNotExist:

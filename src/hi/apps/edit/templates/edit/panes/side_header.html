@@ -3,14 +3,21 @@
   <div class="d-flex justify-content-between">
     <div class="h3"><small>View:</small> {{ request.view_parameters.location_view.name }}</div>
     <div>
-     <a href="{% url 'location_details' location_view_id=request.view_parameters.view_type.location_view_id %}"
+     <a href="{% url 'location_details' location_view_id=request.view_parameters.location_view_id %}"
        class="btn btn-tertiary" role="button" data-async="true">
        Location/View Details
-    </a>
-     
+     </a>
     </div>
   </div>
   {% elif request.view_parameters.view_type.is_collection %}
-  <div class="h3"><small>Collection:</small> {{ request.view_parameters.collection.name }}</div>
+  <div class="d-flex justify-content-between">
+    <div class="h3"><small>Collection:</small> {{ request.view_parameters.collection.name }}</div>
+    <div>
+      <a href="{% url 'collection_details' collection_id=request.view_parameters.collection_id %}"
+	 class="btn btn-tertiary" role="button" data-async="true">
+	Collection Details
+      </a>
+    </div>
+  </div>
   {% endif %}
 </div>

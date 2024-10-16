@@ -21,7 +21,7 @@
     const DRAGGABLE_SELECTOR = '.' + DRAGGABLE_CLASS;
     const DRAG_OVER_CLASS = 'drag-over';
 
-    const API_REORDER_ITEMS_URL = '/edit/reorder-items';
+    const API_REORDER_ITEMS_URL = '/edit/item/reorder';
     
     let gDraggedElement = null;
     

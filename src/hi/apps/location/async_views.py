@@ -16,6 +16,8 @@ from hi.apps.location.edit.forms import (
 from hi.enums import ItemType
 from hi.hi_async_view import HiSideView
 
+from .location_manager import LocationManager
+
 from .models import LocationView
 
 logger = logging.getLogger(__name__)
@@ -30,24 +32,17 @@ class LocationViewDetailsView( HiSideView ):
         return True
     
     def get_template_context( self, request, *args, **kwargs ):
-
-        location_view_id = kwargs.get( 'location_view_id' )
-        if location_view_id:
-            location_view_id = int(location_view_id)
-        default_location_view_id = request.view_parameters.location_view_id
-        if default_location_view_id:
-            default_location_view_id = int(default_location_view_id)
-
-        if not location_view_id and not default_location_view_id:
-            raise BadRequest( 'No location given and no default available.' )
-            
-        if location_view_id and ( location_view_id != default_location_view_id ):
-            try:
-                location_view = LocationView.objects.get( id = location_view_id )
-            except LocationView.DoesNotExist:
-                raise Http404()
-        else:
-            location_view = request.view_parameters.location_view
+        try:
+            location_view_id = int( kwargs.get( 'location_view_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location view id.' )
+        try:
+            location_view = LocationManager().get_location_view(
+                request = request,
+                location_view_id = location_view_id,
+            )
+        except LocationView.DoesNotExist:
+            raise Http404( request )
 
         return {
             'location': location_view.location,

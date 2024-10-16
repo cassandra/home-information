@@ -4,32 +4,16 @@ from typing import List
 
 from django.core.files.storage import default_storage, FileSystemStorage
 from django.db import transaction
+from django.http import HttpRequest
 
-from hi.apps.collection.collection_manager import CollectionManager
-from hi.apps.collection.models import (
-    Collection,
-    CollectionView,
-)
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.svg_models import SvgViewBox
-from hi.apps.entity.delegation_manager import DelegationManager
-from hi.apps.entity.entity_manager import EntityManager
-from hi.apps.entity.models import (
-    Entity,
-    EntityView,
-)
 
 from .enums import LocationViewType
 from .location_view_data import LocationViewData
 from .models import (
     Location,
     LocationView,
-)
-from .transient_models import (
-    EntityViewGroup,
-    EntityViewItem,
-    CollectionViewItem,
-    CollectionViewGroup,
 )
 
 
@@ -40,6 +24,30 @@ class LocationManager(Singleton):
     def __init_singleton__(self):
         return
 
+    def get_location( self, request : HttpRequest, location_id : int ) -> Location:
+        """
+        This should always be used to fetch from the database and never using
+        the "objects" query interface. The view_parameters loads the
+        current default Location, so any out-of-band loading risks the
+        cached view_parameters version to be different from the one
+        loaded. Since so much of the app features revolve around the
+        current location, not having the default update can result in hard
+        to detect issues.
+        """
+        current_location = request.view_parameters.location
+        if current_location and ( current_location.id == int(location_id) ):
+            return current_location
+        return Location.objects.get( id = location_id )
+
+    def get_default_location( self, request : HttpRequest ) -> Location:
+        current_location = request.view_parameters.location
+        if current_location:
+            return current_location
+        location = Location.objects.order_by( 'order_id' ).first()
+        if location:
+            return location
+        raise Location.DoesNotExist()
+    
     def create_location( self,
                          name                   : str,
                          svg_fragment_filename  : str,
@@ -114,6 +122,36 @@ class LocationManager(Singleton):
             order_id = order_id,
         )
     
+    def get_location_view( self, request : HttpRequest, location_view_id : int ) -> LocationView:
+        """
+        This should always be used to fetch from the database and never using
+        the "objects" query interface.  The view_parameters loads the
+        current default LocationView, so any out-of-band loading risks the
+        cached view_parameters version to be different from the one
+        loaded. Since so much of the app features revolve around the
+        current location view, not having the default update can result in
+        hard to detect issues.
+        """
+        current_location_view = request.view_parameters.location_view
+        if current_location_view and ( current_location_view.id == int(location_view_id) ):
+            return current_location_view
+        return LocationView.objects.select_related('location').get( id = location_view_id )
+        
+    def get_default_location_view( self, request : HttpRequest ) -> LocationView:
+        current_location_view = request.view_parameters.location_view
+        if current_location_view:
+            return current_location_view
+
+        location = self.get_default_location( request = request )
+        if not location:
+            raise LocationView.DoesNotExist()
+                
+        location_view = location.views.order_by( 'order_id' ).first()
+        if not location_view:
+            raise LocationView.DoesNotExist()
+
+        return location_view
+    
     def get_location_view_data( self, location_view : LocationView ):
 
         location = location_view.location
@@ -173,150 +211,18 @@ class LocationManager(Singleton):
             orphan_entities = orphan_entities,
         )
 
-    def create_entity_view_group_list( self, location_view : LocationView ) -> List[EntityViewGroup]:
-
-        entity_queryset = Entity.objects.all()
-        
-        entity_view_group_dict = dict()
-        for entity in entity_queryset:
-        
-            exists_in_view = False
-            for entity_view in entity.entity_views.all():
-                if entity_view.location_view == location_view:
-                    exists_in_view = True
-                    break
-                continue
-
-            entity_view_item = EntityViewItem(
-                entity = entity,
-                exists_in_view = exists_in_view,
-            )
-            
-            if entity.entity_type not in entity_view_group_dict:
-                entity_view_group = EntityViewGroup(
-                    location_view = location_view,
-                    entity_type = entity.entity_type,
-                )
-                entity_view_group_dict[entity.entity_type] = entity_view_group
-            entity_view_group_dict[entity.entity_type].item_list.append( entity_view_item )
-            continue
-
-        entity_view_group_list = list( entity_view_group_dict.values() )
-        entity_view_group_list.sort( key = lambda item : item.entity_type.label )
-        return entity_view_group_list
-
-    def create_collection_view_group( self, location_view : LocationView ) -> CollectionViewGroup:
-
-        collection_queryset = Collection.objects.all()
-        
-        collection_view_group = CollectionViewGroup(
-            location_view = location_view,
-        )
-        for collection in collection_queryset:
-        
-            exists_in_view = False
-            for collection_view in collection.collection_views.all():
-                if collection_view.location_view == location_view:
-                    exists_in_view = True
-                    break
-                continue
-
-            collection_view_item = CollectionViewItem(
-                collection = collection,
-                exists_in_view = exists_in_view,
-            )
-            collection_view_group.item_list.append( collection_view_item )
-            continue
-
-        collection_view_group.item_list.sort( key = lambda item : item.collection.name )
-        return collection_view_group
-
-    def toggle_entity_in_view( self, entity : Entity, location_view : LocationView ) -> bool:
-
-        try:
-            self.remove_entity_from_view( entity = entity, location_view = location_view )
-            return False
-        except EntityView.DoesNotExist:
-            self.add_entity_to_view( entity = entity, location_view = location_view )
-            return True
-        
-    def remove_entity_from_view( self, entity : Entity, location_view : LocationView ):
-
-        with transaction.atomic():
-            EntityManager().remove_entity_view(
-                entity = entity,
-                location_view = location_view,
-            )
-
-            DelegationManager().remove_delegate_entities_from_view_if_needed(
-                entity = entity,
-                location_view = location_view,
-            )
-            
-        return
-    
-    def add_entity_to_view_by_id( self, entity : Entity, location_view_id : int ):
-        location_view = LocationView.objects.get( id = location_view_id )
-        self.add_entity_to_view( entity = entity, location_view = location_view )
-        return
-    
-    def add_entity_to_view( self, entity : Entity, location_view : LocationView ):
-
-        with transaction.atomic():
-            # Only create delegate entities the first time an entity is added to a view.
-            if not entity.entity_views.all().exists():
-                delegate_entity_list = DelegationManager().get_delegate_entities_with_defaults(
-                    entity = entity,
-                )
-            else:
-                delegate_entity_list = DelegationManager().get_delegate_entities(
-                    entity = entity,
-                )
-
-            _ = EntityManager().create_entity_view(
-                entity = entity,
-                location_view = location_view,
-            )
-                            
-            for delegate_entity in delegate_entity_list:
-                _ = EntityManager().create_entity_view(
-                    entity = delegate_entity,
-                    location_view = location_view,
-                )
-                continue
-            
-        return 
-        
-    def toggle_collection_in_view( self,
-                                   collection              : Collection,
-                                   location_view           : LocationView ) -> bool:
-
-        try:
-            with transaction.atomic():
-                CollectionManager().remove_collection_view(
-                    collection = collection,
-                    location_view = location_view,
-                )
-            return False
-            
-        except CollectionView.DoesNotExist:
-            with transaction.atomic():
-                _ = CollectionManager().create_collection_view(
-                    collection = collection,
-                    location_view = location_view,
-                )
-            return True
-        
     def set_location_view_order( self, location_view_id_list  : List[int] ):
 
-        item_id_to_order_id = {
+        item_id_to_idx = {
             item_id: order_id for order_id, item_id in enumerate( location_view_id_list )
         }
 
         location_view_queryset = LocationView.objects.filter( id__in = location_view_id_list )
         with transaction.atomic():
             for location_view in location_view_queryset:
-                location_view.order_id = item_id_to_order_id.get( location_view.id )
+                item_idx = item_id_to_idx.get( location_view.id )
+                order_id = 2 * ( item_idx + 1)  # Leave gaps to make one-off insertions easier
+                location_view.order_id = order_id
                 location_view.save()
                 continue
         return

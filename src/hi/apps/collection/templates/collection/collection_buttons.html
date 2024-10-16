@@ -4,7 +4,7 @@
        class="{% if request.is_editing %}draggable{% endif %}"
        {% if request.is_editing %}draggable="true"{% endif %}
        >
-    <a href="{% url 'collection_view' id=collection.id %}"
+    <a href="{% url 'collection_view' collection_id=collection.id %}"
        class="btn btn-secondary btn-control"
        role="button"
        data-async="true" >

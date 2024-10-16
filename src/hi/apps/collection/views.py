@@ -28,38 +28,41 @@ class CollectionViewDefaultView( View ):
         return HttpResponseRedirect( redirect_url )
 
     def _get_default_collection( self, request ):
-        if request.view_parameters.collection:
-            return request.view_parameters.collection
-
-        collection = Collection.objects.order_by( 'order_id' ).first()
-        if not collection:
+        try:
+            collection = CollectionManager().get_default_collection( request = request )
+        except Collection.DoesNotExist:
             raise BadRequest( 'No collections defined.' )
 
         request.view_parameters.view_type = ViewType.COLLECTION
-        request.view_parameters.collection_id = collection.id
+        request.view_parameters.update_collection( collection )
         request.view_parameters.to_session( request )
         return collection
     
     
-class CollectionView( HiGridView ):
+class CollectionViewView( HiGridView ):
 
     def get_main_template_name( self ) -> str:
         return 'collection/collection_view.html'
 
     def get_template_context( self, request, *args, **kwargs ):
-
-        collection_id = kwargs.get('id')
         try:
-            collection = Collection.objects.get( id = collection_id )
+            collection_id = int( kwargs.get( 'collection_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location view id.' )
+        try:
+            collection = CollectionManager().get_collection(
+                request = request,
+                collection_id = collection_id,
+            )
         except Collection.DoesNotExist:
-            raise Http404()
+            raise Http404( request )
 
         # Remember last collection chosen
         view_type_changed = bool( request.view_parameters.view_type != ViewType.COLLECTION )
         view_id_changed = bool( request.view_parameters.collection_id != collection.id )
 
         request.view_parameters.view_type = ViewType.COLLECTION
-        request.view_parameters.collection_id = collection.id
+        request.view_parameters.update_collection( collection )
         request.view_parameters.to_session( request )
 
         # When in edit mode, a collection change needs a full

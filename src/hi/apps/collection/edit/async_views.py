@@ -12,6 +12,7 @@ from hi.apps.collection.models import Collection, CollectionPosition
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.models import Entity
 from hi.apps.location.svg_item_factory import SvgItemFactory
+from hi.apps.location.location_manager import LocationManager
 
 from hi.constants import DIVID
 from hi.decorators import edit_required
@@ -25,10 +26,15 @@ logger = logging.getLogger(__name__)
 class CollectionEditView( View ):
     
     def post( self, request, *args, **kwargs ):
-
-        collection_id = kwargs.get('collection_id')
         try:
-            collection = Collection.objects.get( id = collection_id )
+            collection_id = int( kwargs.get( 'collection_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location view id.' )
+        try:
+            collection = CollectionManager().get_collection(
+                request = request,
+                collection_id = collection_id,
+            )
         except Collection.DoesNotExist:
             raise Http404( request )
 
@@ -73,9 +79,12 @@ class CollectionReorder( View ):
 class CollectionPositionEditView( View ):
 
     def post(self, request, *args, **kwargs):
+        try:
+            collection_id = int( kwargs.get( 'collection_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location view id.' )
 
-        collection_id = kwargs.get('collection_id')
-        location = request.view_parameters.location
+        location = LocationManager().get_default_location( request = request )
         try:
             collection_position = CollectionPosition.objects.get(
                 collection_id = collection_id,
@@ -140,9 +149,10 @@ class CollectionManageItemsView( HiSideView ):
 class CollectionReorderEntitiesView( View ):
     
     def post(self, request, *args, **kwargs):
-        collection_id = kwargs.get('collection_id')
-        if not collection_id:
-            raise BadRequest( 'Missing collection id.' )
+        try:
+            collection_id = int( kwargs.get( 'collection_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location view id.' )
             
         try:
             entity_id_list = json.loads( kwargs.get( 'entity_id_list' ) )
@@ -163,12 +173,27 @@ class CollectionReorderEntitiesView( View ):
 class CollectionEntityToggleView( View ):
 
     def post(self, request, *args, **kwargs):
+        try:
+            collection_id = int( kwargs.get( 'collection_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location view id.' )
+        try:
+            collection = CollectionManager().get_collection(
+                request = request,
+                collection_id = collection_id,
+            )
+        except Collection.DoesNotExist:
+            raise Http404( request )
 
-        collection_id = kwargs.get('collection_id')
-        entity_id = kwargs.get('entity_id')
+        try:
+            entity_id = int( kwargs.get('entity_id'))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid entity id.' )
+        try:
+            entity = Entity.objects.get( id = entity_id )
+        except Entity.DoesNotExist:
+            raise Http404( request )
 
-        entity = Entity.objects.get( id = entity_id )
-        collection = Collection.objects.get( id = collection_id )
         exists_in_collection = CollectionManager().toggle_entity_in_collection(
             entity = entity,
             collection = collection,

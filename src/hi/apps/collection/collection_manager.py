@@ -23,6 +23,8 @@ from .models import (
 from .transient_models import (
     EntityCollectionItem,
     EntityCollectionGroup,
+    CollectionViewItem,
+    CollectionViewGroup,
 )
 
 
@@ -31,18 +33,30 @@ class CollectionManager(Singleton):
     def __init_singleton__(self):
         return
 
-    def get_collection_data( self, collection : Collection ):
+    def get_collection( self, request : HttpRequest, collection_id : int ) -> Collection:
+        """
+        This should always be used to fetch from the database and never using
+        the "objects" query interface. The view_parameters loads the
+        current default Collection, so any out-of-band loading risks the
+        cached view_parameters version to be different from the one
+        loaded. Since so much of the app features revolve around the
+        current collection, not having the default update can result in hard
+        to detect issues.
+        """
+        current_collection = request.view_parameters.collection
+        if current_collection and ( current_collection.id == int(collection_id) ):
+            return current_collection
+        return Collection.objects.get( id = collection_id )
 
-        entity_list = list()
-        for collection_entity in collection.entities.all().order_by('order_id'):
-            entity_list.append( collection_entity.entity )
-            continue
-
-        return CollectionData(
-            collection = collection,
-            entity_list = entity_list,
-        )
-
+    def get_default_collection( self, request : HttpRequest ) -> Collection:
+        current_collection = request.view_parameters.collection
+        if current_collection:
+            return current_collection
+        collection = Collection.objects.order_by( 'order_id' ).first()
+        if collection:
+            return collection
+        raise Collection.DoesNotExist()
+    
     def create_collection( self,
                            request          : HttpRequest,
                            collection_type  : CollectionType,
@@ -59,6 +73,18 @@ class CollectionManager(Singleton):
             order_id = order_id,
         )
         
+    def get_collection_data( self, collection : Collection ):
+
+        entity_list = list()
+        for collection_entity in collection.entities.all().order_by('order_id'):
+            entity_list.append( collection_entity.entity )
+            continue
+
+        return CollectionData(
+            collection = collection,
+            entity_list = entity_list,
+        )
+
     def create_collection_entity( self,
                                   entity      : Entity,
                                   collection  : Collection ) -> CollectionEntity:
@@ -85,25 +111,6 @@ class CollectionManager(Singleton):
         except CollectionEntity.DoesNotExist:
             return False
 
-    def remove_collection_view( self, collection : Collection, location_view : LocationView ):
-
-        with transaction.atomic():
-            collection_view = CollectionView.objects.get(
-                collection = collection,
-                location_view = location_view,
-            )
-            collection_view.delete()
-            
-        return
-
-    def create_collection_view_by_id( self, collection : Collection, location_view_id : int ):
-        location_view = LocationView.objects.get( id = location_view_id )
-        _ = self.create_collection_view(
-            collection = collection,
-            location_view = location_view,
-        )
-        return
-    
     def create_collection_view( self, collection : Collection, location_view : LocationView ):
 
         with transaction.atomic():
@@ -135,50 +142,61 @@ class CollectionManager(Singleton):
             
         return collection_view
     
+    def toggle_collection_in_view( self,
+                                   collection              : Collection,
+                                   location_view           : LocationView ) -> bool:
+
+        try:
+            with transaction.atomic():
+                self.remove_collection_view(
+                    collection = collection,
+                    location_view = location_view,
+                )
+            return False
+            
+        except CollectionView.DoesNotExist:
+            with transaction.atomic():
+                _ = self.create_collection_view(
+                    collection = collection,
+                    location_view = location_view,
+                )
+            return True
+        
+    def remove_collection_view( self, collection : Collection, location_view : LocationView ):
+
+        with transaction.atomic():
+            collection_view = CollectionView.objects.get(
+                collection = collection,
+                location_view = location_view,
+            )
+            collection_view.delete()
+            
+        return
+
     def set_collection_path( self,
-                             collection_id     : int,
+                             collection    : Collection,
                              location      : Location,
                              svg_path_str  : str        ) -> CollectionPath:
 
-        try:
-            collection_path = CollectionPath.objects.get(
-                location = location,
-                collection_id = collection_id,
-            )
-            collection_path.svg_path = svg_path_str
-            collection_path.save()
-            return collection_path
-        
-        except CollectionPath.DoesNotExist:
-            pass
+        with transaction.atomic():
+            try:
+                collection_path = CollectionPath.objects.get(
+                    location = location,
+                    collection = collection,
+                )
+                collection_path.svg_path = svg_path_str
+                collection_path.save()
+                return collection_path
 
-        collection = Collection.objects.get( id = collection_id )
-        return CollectionPath.objects.create(
-            collection = collection,
-            location = location,
-            svg_path = svg_path_str,
-        )
+            except CollectionPath.DoesNotExist:
+                pass
+
+            return CollectionPath.objects.create(
+                collection = collection,
+                location = location,
+                svg_path = svg_path_str,
+            )
             
-    def get_collection_position( self,
-                                 collection_id  : int,
-                                 location       : Location ) -> CollectionPosition:
-        try:
-            collection = Collection.objects.get( id = collection_id )
-        except Collection.DoesNotExist:
-            return None
-        
-        collection_position = CollectionPosition.objects.filter(
-            collection = collection,
-            location = location,
-        ).first()
-        if collection_position:
-            return collection_position
-        
-        return CollectionPosition(
-            collection = collection,
-            location = location,
-        )
-    
     def add_collection_position_if_needed( self,
                                            collection : Collection,
                                            location_view : LocationView ) -> CollectionPosition:
@@ -291,11 +309,6 @@ class CollectionManager(Singleton):
             self.add_entity_to_collection( entity = entity, collection = collection )
             return True
 
-    def add_entity_to_collection_by_id( self, entity : Entity, collection_id : int ) -> bool:
-        collection = Collection.objects.get( id = collection_id )
-        self.add_entity_to_collection( entity = entity, collection = collection )
-        return
-
     def add_entity_to_collection( self, entity : Entity, collection : Collection ) -> bool:
 
         with transaction.atomic():
@@ -317,7 +330,7 @@ class CollectionManager(Singleton):
     def set_collection_entity_order( self,
                                      collection_id   : int,
                                      entity_id_list  : List[int] ):
-        item_id_to_order_id = {
+        item_id_to_idx = {
             item_id: order_id for order_id, item_id in enumerate( entity_id_list )
         }
         
@@ -327,21 +340,51 @@ class CollectionManager(Singleton):
         )
         with transaction.atomic():
             for collection_entity in collection_entity_queryset:
-                collection_entity.order_id = item_id_to_order_id.get( collection_entity.entity.id )
+                item_idx = item_id_to_idx.get( collection_entity.entity.id )
+                order_id = 2 * ( item_idx + 1)  # Leave gaps to make one-off insertions easier
+                collection_entity.order_id = order_id
                 collection_entity.save()
                 continue
         return
 
     def set_collection_order( self, collection_id_list  : List[int] ):
-        item_id_to_order_id = {
+        item_id_to_idx = {
             item_id: order_id for order_id, item_id in enumerate( collection_id_list )
         }
         
         collection_queryset = Collection.objects.filter( id__in = collection_id_list )
         with transaction.atomic():
             for collection in collection_queryset:
-                collection.order_id = item_id_to_order_id.get( collection.id )
+                item_idx = item_id_to_idx.get( collection.id )
+                order_id = 2 * ( item_idx + 1)  # Leave gaps to make one-off insertions easier
+                collection.order_id = order_id
                 collection.save()
                 continue
         return
     
+    def create_collection_view_group( self, location_view : LocationView ) -> CollectionViewGroup:
+
+        collection_queryset = Collection.objects.all()
+        
+        collection_view_group = CollectionViewGroup(
+            location_view = location_view,
+        )
+        for collection in collection_queryset:
+        
+            exists_in_view = False
+            for collection_view in collection.collection_views.all():
+                if collection_view.location_view == location_view:
+                    exists_in_view = True
+                    break
+                continue
+
+            collection_view_item = CollectionViewItem(
+                collection = collection,
+                exists_in_view = exists_in_view,
+            )
+            collection_view_group.item_list.append( collection_view_item )
+            continue
+
+        collection_view_group.item_list.sort( key = lambda item : item.collection.name )
+        return collection_view_group
+

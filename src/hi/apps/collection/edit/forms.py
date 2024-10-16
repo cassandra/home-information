@@ -12,6 +12,7 @@ class CollectionForm( forms.ModelForm ):
         fields = (
             'name',
             'collection_type_str',
+            'order_id',
         )
         
     collection_type_str = forms.ChoiceField(

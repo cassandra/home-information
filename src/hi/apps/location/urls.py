@@ -10,11 +10,11 @@ urlpatterns = [
              views.LocationSwitchView.as_view(), 
              name='location_switch'),
 
-    re_path( r'^details/(?P<location_view_id>\d*)$', 
+    re_path( r'^details/(?P<location_view_id>\d+)$', 
              async_views.LocationViewDetailsView.as_view(), 
              name='location_details' ),
     
-    re_path( r'^view/(?P<id>\d+)$', 
+    re_path( r'^view/(?P<location_view_id>\d+)$', 
              views.LocationViewView.as_view(), 
              name='location_view'),
 

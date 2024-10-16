@@ -8,6 +8,8 @@ from django.utils.decorators import method_decorator
 
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection
+from hi.apps.location.location_manager import LocationManager
+from hi.apps.location.models import LocationView
 
 from hi.decorators import edit_required
 from hi.enums import ViewType
@@ -38,25 +40,32 @@ class CollectionAddView( HiModalView ):
             }
             return self.modal_response( request, context )
 
-        try:
-            with transaction.atomic():
-                collection = collection_form.save()
-                if ( request.view_parameters.view_type.is_location_view
-                     and request.view_parameters.location_view_id ):
-                    CollectionManager().create_collection_view_by_id(
-                        collection = collection,
-                        location_view_id = request.view_parameters.location_view_id,
-                    )
-
-        except ValueError as e:
-            raise BadRequest( str(e) )
+        with transaction.atomic():
+            collection = collection_form.save()
+            self._add_to_location_view(
+                request = request,
+                collection = collection,
+            )
 
         if request.view_parameters.view_type == ViewType.COLLECTION:
-            request.view_parameters.collection_id = collection.id
+            request.view_parameters.update_collection( collection = collection )
             request.view_parameters.to_session( request )
 
         redirect_url = reverse('home')
         return self.redirect_response( request, redirect_url )
+
+    def _add_to_location_view( self, request, collection : Collection ):
+        try:
+            # Ensure we have a location view to add the entity to.
+            current_location_view = LocationManager().get_default_location_view( request = request )
+            CollectionManager().create_collection_view(
+                collection = collection,
+                location_view = current_location_view,
+            )
+        except LocationView.DoesNotExist:
+            logger.warning( 'No current location view to add new collection to.')
+
+        return
 
     
 @method_decorator( edit_required, name='dispatch' )
@@ -66,12 +75,15 @@ class CollectionDeleteView( HiModalView ):
         return 'collection/edit/modals/collection_delete.html'
 
     def get(self, request, *args, **kwargs):
-        collection_id = kwargs.get( 'collection_id' )
-        if not collection_id:
-            raise BadRequest( 'No current collection found.' )
-            
         try:
-            collection = Collection.objects.get( id = collection_id )
+            collection_id = int( kwargs.get( 'collection_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location view id.' )
+        try:
+            collection = CollectionManager().get_collection(
+                request = request,
+                collection_id = collection_id,
+            )
         except Collection.DoesNotExist:
             raise Http404( request )
 
@@ -81,26 +93,26 @@ class CollectionDeleteView( HiModalView ):
         return self.modal_response( request, context )
 
     def post( self, request, *args, **kwargs ):
+        try:
+            collection_id = int( kwargs.get( 'collection_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location view id.' )
+        try:
+            collection = CollectionManager().get_collection(
+                request = request,
+                collection_id = collection_id,
+            )
+        except Collection.DoesNotExist:
+            raise Http404( request )
+
         action = request.POST.get( 'action' )
         if action != 'confirm':
             raise BadRequest( 'Missing confirmation value.' )
 
-        collection_id = kwargs.get( 'collection_id' )
-        if not collection_id:
-            raise BadRequest( 'Missing collection id.' )
-        try:
-            collection = Collection.objects.get( id = collection_id )
-        except Collection.DoesNotExist:
-            raise Http404( request )
-
         collection.delete()
 
-        if request.view_parameters.view_type == ViewType.COLLECTION:
-            next_collection = Collection.objects.all().order_by( 'order_id' ).first()
-            if next_collection:
-                request.view_parameters.collection_id = next_collection.id
-            else:
-                request.view_parameters.collection_id = None
+        if request.view_parameters.collection_id == collection_id:
+            request.view_parameters.update_collection( collection = None )
             request.view_parameters.to_session( request )
 
         redirect_url = reverse('home')

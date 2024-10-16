@@ -3,6 +3,8 @@ import logging
 from django.core.exceptions import BadRequest
 from django.http import Http404
 
+from hi.apps.location.location_manager import LocationManager
+
 from hi.hi_async_view import HiSideView
 
 from .entity_manager import EntityManager
@@ -31,7 +33,7 @@ class EntityDetailsView( HiSideView ):
 
         current_location_view = None
         if request.view_parameters.view_type.is_location_view:
-            current_location_view = request.view_parameters.location_view
+            current_location_view = LocationManager().get_default_location_view( request = request )
 
         entity_detail_data = EntityManager().get_entity_detail_data(
             entity = entity,

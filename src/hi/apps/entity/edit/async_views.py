@@ -1,5 +1,6 @@
 import logging
 
+from django.core.exceptions import BadRequest
 from django.http import Http404
 from django.template.loader import get_template
 from django.utils.decorators import method_decorator
@@ -8,6 +9,7 @@ from django.views.generic import View
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.models import Entity, EntityPosition
 from hi.apps.location.svg_item_factory import SvgItemFactory
+from hi.apps.location.location_manager import LocationManager
 
 from hi.constants import DIVID
 from hi.decorators import edit_required
@@ -20,8 +22,10 @@ logger = logging.getLogger(__name__)
 class EntityEditView( View ):
 
     def post( self, request, *args, **kwargs ):
-
-        entity_id = kwargs.get('entity_id')
+        try:
+            entity_id = int( kwargs.get('entity_id'))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid entity id.' )
         try:
             entity = Entity.objects.get( id = entity_id )
         except Entity.DoesNotExist:
@@ -48,9 +52,12 @@ class EntityEditView( View ):
 class EntityPositionEditView( View ):
 
     def post(self, request, *args, **kwargs):
+        try:
+            entity_id = int( kwargs.get('entity_id'))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid entity id.' )
 
-        entity_id = kwargs.get('entity_id')
-        location = request.view_parameters.location
+        location = LocationManager().get_default_location( request = request )
         try:
             entity_position = EntityPosition.objects.get(
                 entity_id = entity_id,

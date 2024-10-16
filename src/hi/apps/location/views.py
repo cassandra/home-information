@@ -33,19 +33,13 @@ class LocationViewDefaultView( View ):
         return HttpResponseRedirect( redirect_url )
 
     def _get_default_location_view( self, request ):
-        if request.view_parameters.location_view:
-            return request.view_parameters.location_view
-
-        location = Location.objects.order_by( 'order_id' ).first()
-        if not location:
-            raise Location.DoesNotExist()
-                
-        location_view = location.views.order_by( 'order_id' ).first()
-        if not location_view:
-            raise BadRequest( 'No views defined for this location.' )
+        try:
+            location_view = LocationManager().get_default_location_view( request = request )
+        except LocationView.DoesNotExist:
+            raise BadRequest( 'No views and no locations defined.' )
 
         request.view_parameters.view_type = ViewType.LOCATION_VIEW
-        request.view_parameters.location_view_id = location_view.id
+        request.view_parameters.update_location_view( location_view )
         request.view_parameters.to_session( request )
         return location_view
 
@@ -56,20 +50,24 @@ class LocationViewView( HiGridView ):
         return 'location/location_view.html'
 
     def get_template_context( self, request, *args, **kwargs ):
-
-        location_view_id = kwargs.get('id')
         try:
-            location_view = LocationView.objects.select_related(
-                'location' ).get( id = location_view_id )
+            location_view_id = int( kwargs.get( 'location_view_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location view id.' )
+        try:
+            location_view = LocationManager().get_location_view(
+                request = request,
+                location_view_id = location_view_id,
+            )
         except LocationView.DoesNotExist:
-            raise Http404()
+            raise Http404( request )
 
         # Remember last location view chosen
         view_type_changed = bool( request.view_parameters.view_type != ViewType.LOCATION_VIEW )
         view_id_changed = bool( request.view_parameters.location_view_id != location_view.id )
 
         request.view_parameters.view_type = ViewType.LOCATION_VIEW
-        request.view_parameters.location_view_id = location_view.id
+        request.view_parameters.update_location_view( location_view )
         request.view_parameters.to_session( request )
 
         # When in edit mode, a location view change needs a full
@@ -96,10 +94,15 @@ class LocationViewView( HiGridView ):
 class LocationSwitchView( View ):
 
     def get(self, request, *args, **kwargs):
-
-        location_id = kwargs.get('location_id')
         try:
-            location = Location.objects.get( id = location_id )
+            location_id = int( kwargs.get('location_id'))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid location id.' )
+        try:
+            location = LocationManager().get_location(
+                request = request,
+                location_id = location_id,
+            )
         except Location.DoesNotExist:
             raise Http404( request )
 
@@ -108,7 +111,7 @@ class LocationSwitchView( View ):
             raise BadRequest( 'No views defined for this location.' )
 
         request.view_parameters.view_type = ViewType.LOCATION_VIEW
-        request.view_parameters.location_view_id = location_view.id
+        request.view_parameters.update_location_view( location_view = location_view )
         request.view_parameters.to_session( request )
 
         redirect_url = reverse(

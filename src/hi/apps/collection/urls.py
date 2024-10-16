@@ -6,8 +6,8 @@ from . import views
 
 urlpatterns = [
 
-    re_path( r'^view/(?P<id>\d+)$', 
-             views.CollectionView.as_view(), 
+    re_path( r'^view/(?P<collection_id>\d+)$', 
+             views.CollectionViewView.as_view(), 
              name='collection_view'),
 
     re_path( r'^view$', 
