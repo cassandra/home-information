@@ -108,6 +108,9 @@ class LocationAttribute( AttributeModel ):
         indexes = [
             models.Index( fields=[ 'name', 'value' ] ),
         ]
+
+    def get_upload_to(self):
+        return 'location/attributes/'
     
     
 class LocationView( models.Model, ItemTypeModelMixin ):

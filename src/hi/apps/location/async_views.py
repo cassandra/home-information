@@ -8,7 +8,7 @@ from django.views.generic import View
 from hi.apps.collection.async_views import CollectionDetailsView
 from hi.apps.entity.async_views import EntityDetailsView
 from hi.apps.location.edit.forms import (
-    LocationAttributeFormset,
+    LocationAttributeFormSet,
     LocationEditForm,
     LocationViewEditForm,
 )
@@ -35,8 +35,9 @@ class LocationViewDetailsView( HiSideView, LocationViewMixin ):
         return {
             'location': location_view.location,
             'location_edit_form': LocationEditForm( instance = location_view.location ),
-            'location_attribute_formset': LocationAttributeFormset(
+            'location_attribute_formset': LocationAttributeFormSet(
                 instance = location_view.location,
+                prefix = f'location-{location_view.location.id}',
                 form_kwargs = {
                     'show_as_editable': True,
                 },

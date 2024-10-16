@@ -9,28 +9,28 @@ class ZmAttributeType( IntegrationAttributeType ):
     API_URL = (
         'API URL',
         'e.g., https://myserver:8443/zm/api',
-        AttributeValueType.LINK,
+        AttributeValueType.TEXT,
         True,
         True,
     )
     PORTAL_URL = (
         'Portal URL',
         'e.g., https://myserver:8443/zm',
-        AttributeValueType.LINK,
+        AttributeValueType.TEXT,
         True,
         True,
     )
     API_USER = (
         'Username',
         '',
-        AttributeValueType.STRING,
+        AttributeValueType.TEXT,
         True,
         True,
     )
     API_PASSWORD = (
         'Password',
         '',
-        AttributeValueType.PASSWORD,
+        AttributeValueType.SECRET,
         True,
         True,
     )

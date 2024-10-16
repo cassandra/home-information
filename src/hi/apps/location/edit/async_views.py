@@ -38,9 +38,11 @@ class LocationEditView( View, LocationViewMixin ):
             request.POST,
             instance = location,
         )
-        location_attribute_formset = forms.LocationAttributeFormset(
+        location_attribute_formset = forms.LocationAttributeFormSet(
             request.POST,
+            request.FILES,
             instance = location,
+            prefix = f'location-{location.id}',
         )
 
         context = {
@@ -51,6 +53,11 @@ class LocationEditView( View, LocationViewMixin ):
         
         if ( not location_edit_form.is_valid()
              or not location_attribute_formset.is_valid() ):
+            # Recreate to preserve "max" to show new form
+            location_attribute_formset = forms.LocationAttributeFormSet(
+                instance = location,
+                prefix = f'location-{location.id}',
+            )
             template = get_template( 'location/edit/panes/location_edit.html' )
             content = template.render( context, request = request )
             return antinode.response(

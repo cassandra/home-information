@@ -26,15 +26,21 @@ class EntityEditView( View, EntityViewMixin ):
         entity = self.get_entity( request, *args, **kwargs )
 
         entity_form = forms.EntityForm( request.POST, instance = entity )
-        entity_attribute_formset = forms.EntityAttributeFormset(
+        entity_attribute_formset = forms.EntityAttributeFormSet(
             request.POST,
             request.FILES,
             instance = entity,
+            prefix = f'entity-{entity.id}',
         )
         if entity_form.is_valid() and entity_attribute_formset.is_valid():
             with transaction.atomic():
                 entity_form.save()     
                 entity_attribute_formset.save()
+            # Recreate to preserve "max" to show new form
+            entity_attribute_formset = forms.EntityAttributeFormSet(
+                instance = entity,
+                prefix = f'entity-{entity.id}',
+            )
                 
         context = {
             'entity': entity,

@@ -102,7 +102,10 @@ class EntityAttribute( AttributeModel ):
         indexes = [
             models.Index( fields=[ 'name', 'value' ] ),
         ]
-    
+
+    def get_upload_to(self):
+        return 'entity/attributes/'
+        
     
 class EntityState( models.Model ):
     """

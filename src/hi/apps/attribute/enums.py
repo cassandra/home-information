@@ -18,23 +18,8 @@ class AttributeValueType(LabeledEnum):
         return
     
     TEXT      = ('Text', '' )
-    STRING    = ('String', '' )
-    PDF       = ('PDF', '', True )  # relative filename of MEDIA_ROOT
-    IMAGE     = ('Image', '', True )  # relative filename of MEDIA_ROOT
-    VIDEO     = ('Video', '', True )  # relative filename of MEDIA_ROOT
-    AUDIO     = ('Audio', '', True )  # relative filename of MEDIA_ROOT
     FILE      = ('File', '', True )  # relative filename of MEDIA_ROOT
-    DATETIME  = ('DateTime', '' )
-    DATE      = ('Date', '' )
-    LINK      = ('Link', '' )
-    PASSWORD  = ('Password', '' )
-    EMAIL     = ('Email', '' )
-    PHONE     = ('Phone', '' )
-    INTEGER   = ('Integer', '' )
-    FLOAT     = ('Float', '' )
-    BOOLEAN   = ('Boolean', '' )
-    TIME      = ('Time', '' )
-    JSON      = ('JSON', '' )
+    SECRET    = ('Secret', '' )
 
     @classmethod
     def default(cls):

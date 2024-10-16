@@ -7,14 +7,14 @@ class HassAttributeType( IntegrationAttributeType ):
     API_BASE_URL = (
         'Server URL',
         'e.g., https://myhassserver:8123',
-        AttributeValueType.STRING,
+        AttributeValueType.TEXT,
         True,
         True,
     )
     API_TOKEN = (
         'API Token',
         '',
-        AttributeValueType.STRING,
+        AttributeValueType.TEXT,
         True,
         True,
     )

@@ -1,5 +1,7 @@
 from django.db import models
 
+from hi.apps.common.file_utils import generate_unique_filename
+
 from hi.integrations.core.integration_key import IntegrationKey
 
 from .enums import (
@@ -21,7 +23,7 @@ class AttributeModel(models.Model):
         'Value',
     )
     file_value = models.FileField(
-        upload_to = 'uploads/attributes/',
+        upload_to = 'attributes/',  # Subclasses override via get_upload_to()
         blank = True, null = True,
     )
     value_type_str = models.CharField(
@@ -93,5 +95,15 @@ class AttributeModel(models.Model):
     @attribute_type.setter
     def attribute_type( self, attribute_type : AttributeType ):
         self.attribute_type_str = str(attribute_type)
+        return
+    
+    def get_upload_to(self):
+        raise NotImplementedError('Subclasses should override this method.' )
+
+    def save(self, *args, **kwargs):
+        if self.file_value and self.file_value.name:
+            self.file_value.field.upload_to = self.get_upload_to()
+            self.file_value.name = generate_unique_filename( self.file_value.name )
+        super().save(*args, **kwargs)
         return
     

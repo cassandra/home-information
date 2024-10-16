@@ -65,7 +65,7 @@
 // will be called after each async content update after all updated are
 // handled.
 //
-// You can use the following atributes on a form/link with the data-async
+// You can use the following attributes on a form/link with the data-async
 // attribute. These allow you to show or hide content when the async
 // submission/click is triggered.
 //

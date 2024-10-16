@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 from django import forms
 from django.core.exceptions import ValidationError
 
+from hi.apps.common.file_utils import generate_unique_filename
 from hi.apps.common.svg_models import SvgViewBox
 
 logger = logging.getLogger(__name__)
@@ -176,7 +177,7 @@ class SvgFileForm(forms.Form):
 
             svg_fragment_filename = os.path.join(
                 self.get_media_destination_directory(),
-                self.generate_unique_filename( svg_filename ),
+                generate_unique_filename( svg_filename ),
             )
             cleaned_data['svg_fragment_filename'] = svg_fragment_filename
             
@@ -217,9 +218,3 @@ class SvgFileForm(forms.Form):
             self.add_error( 'svg_file', f'- Attr: {attr_name}, Count: {count:,} ' )
             continue
         return
-    
-    def generate_unique_filename( self, filename : str ):
-        original_name, extension = os.path.splitext( filename )
-        timestamp = int( time.time() )
-        unique_name = f'{original_name}-{timestamp}{extension}'
-        return unique_name

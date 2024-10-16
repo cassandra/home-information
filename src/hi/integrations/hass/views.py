@@ -28,6 +28,7 @@ class HassEnableView( View, IntegrationHelperMixin ):
 
         integration_attribute_formset = IntegrationAttributeFormSet(
             instance = integration,
+            prefix = f'integration-{integration.id}',
             form_kwargs = {
                 'show_as_editable': True,
             },
@@ -49,6 +50,7 @@ class HassEnableView( View, IntegrationHelperMixin ):
             request.POST,
             request.FILES,
             instance = integration,
+            prefix = f'integration-{integration.id}',
         )
         if not integration_attribute_formset.is_valid():
             return self.get_modal_response(
@@ -100,6 +102,7 @@ class HassManageView( View, IntegrationHelperMixin ):
 
         integration_attribute_formset = IntegrationAttributeFormSet(
             instance = integration,
+            prefix = f'integration-{integration.id}',
             form_kwargs = {
                 'show_as_editable': True,
             },
@@ -125,6 +128,7 @@ class HassSettingsView( View, IntegrationHelperMixin ):
             request.POST,
             request.FILES,
             instance = integration,
+            prefix = f'integration-{integration.id}',
         )
         if not integration_attribute_formset.is_valid():
             context = {

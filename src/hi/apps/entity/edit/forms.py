@@ -29,7 +29,7 @@ class EntityAttributeForm( GeneralAttributeForm ):
         model = EntityAttribute
 
         
-EntityAttributeFormset = forms.inlineformset_factory(
+EntityAttributeFormSet = forms.inlineformset_factory(
     Entity,
     EntityAttribute,
     form = EntityAttributeForm,

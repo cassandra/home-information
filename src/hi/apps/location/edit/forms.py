@@ -71,7 +71,7 @@ class LocationAttributeForm( GeneralAttributeForm ):
         model = LocationAttribute
         
         
-LocationAttributeFormset = forms.inlineformset_factory(
+LocationAttributeFormSet = forms.inlineformset_factory(
     Location,
     LocationAttribute,
     form = LocationAttributeForm,

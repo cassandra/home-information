@@ -59,6 +59,9 @@ class IntegrationAttribute( AttributeModel ):
         verbose_name = 'Attribute'
         verbose_name_plural = 'Attributes'
 
+    def get_upload_to(self):
+        return 'integration/attributes/'
+        
         
 class IntegrationKeyModel( models.Model ):
     """
