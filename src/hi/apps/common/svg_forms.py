@@ -49,13 +49,21 @@ class SvgFileForm(forms.Form):
         required = False,
     )
 
+    def allow_default_svg_file(self) -> bool:
+        """ If returns 'True', then also need to implement these:
+
+                get_default_source_directory()
+                get_default_basename()
+        """
+        raise NotImplementedError( 'Subclasses must override this method.' )
+
     def get_default_source_directory(self):
         # e.g., static image area
-        raise NotImplementedError( 'Subclasses must override this method.' )
+        return None
 
     def get_default_basename(self):
         # Base filename for the default source (and destination) files.
-        raise NotImplementedError( 'Subclasses must override this method.' )
+        return None
 
     def get_media_destination_directory(self):
         # Relative to MEDIA_ROOT.
@@ -91,11 +99,15 @@ class SvgFileForm(forms.Form):
         )
         if self._has_dangerous_svg_items:
             require_svg_file = True
+        else:
+            require_svg_file = False
             
         remove_dangerous_svg_items = cleaned_data.get( 'remove_dangerous_svg_items' )
 
         svg_file_handle = cleaned_data.get('svg_file')
         if not svg_file_handle:
+            if not self.allow_default_svg_file():
+                raise ValidationError( 'You need to select an SVG file.' )
             if require_svg_file:
                 raise ValidationError( 'You need to re-select the SVG file.' )
 

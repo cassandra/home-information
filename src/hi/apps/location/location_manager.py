@@ -71,6 +71,22 @@ class LocationManager(Singleton):
             
         return location
     
+    def update_location_svg( self,
+                             location               : Location,
+                             svg_fragment_filename  : str,
+                             svg_fragment_content   : str,
+                             svg_viewbox            : SvgViewBox ) -> LocationView:
+
+        self._ensure_directory_exists( svg_fragment_filename )
+        with default_storage.open( svg_fragment_filename, 'w') as destination:
+            destination.write( svg_fragment_content )
+        
+        location.svg_fragment_filename = svg_fragment_filename
+        location.svg_view_box_str = str( svg_viewbox )
+        location.save()
+        
+        return
+    
     def _ensure_directory_exists( self, filepath ):
         if isinstance( default_storage, FileSystemStorage ):
             directory = os.path.dirname( default_storage.path( filepath ))

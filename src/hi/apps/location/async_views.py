@@ -10,7 +10,6 @@ from hi.apps.entity.async_views import EntityDetailsView
 from hi.apps.location.edit.forms import (
     LocationAttributeFormset,
     LocationEditForm,
-    LocationSvgFileForm,
     LocationViewEditForm,
 )
 
@@ -59,7 +58,6 @@ class LocationViewDetailsView( HiSideView ):
                     'is_editable': True,
                 },
             ),
-            'location_svg_file_form': LocationSvgFileForm( ),
             'location_view': location_view,
             'location_view_edit_form': LocationViewEditForm(  instance = location_view ),
         }

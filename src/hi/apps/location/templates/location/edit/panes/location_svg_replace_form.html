@@ -1,0 +1,16 @@
+{% for hidden in location_svg_file_form.hidden_fields %}
+{{ hidden }}
+{% endfor %}
+
+{% if location_svg_file_form.non_field_errors %}
+<div class="non-field-errors">
+  {% for err in location_svg_file_form.non_field_errors %}
+  <p class="form-error text-danger">ERROR: {{ err }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<p>
+  Replace the background SVG image for this location.
+</p>
+{% include "common/svg_file_form.html" with svg_file_form=location_svg_file_form label='Select a replacement SVG file:' %}

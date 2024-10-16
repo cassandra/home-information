@@ -10,6 +10,10 @@ urlpatterns = [
              views.LocationSwitchView.as_view(), 
              name='location_switch'),
 
+    re_path( r'^details/(?P<location_view_id>\d*)$', 
+             async_views.LocationViewDetailsView.as_view(), 
+             name='location_details' ),
+    
     re_path( r'^view/(?P<id>\d+)$', 
              views.LocationViewView.as_view(), 
              name='location_view'),
@@ -21,10 +25,6 @@ urlpatterns = [
     re_path( r'^item/details/(?P<html_id>[\w\-]+)$', 
              async_views.LocationItemDetailsView.as_view(), 
              name='location_item_details' ),
-    
-    re_path( r'^details/(?P<location_view_id>\d*)$', 
-             async_views.LocationViewDetailsView.as_view(), 
-             name='location_details' ),
     
     re_path( r'^edit/', include('hi.apps.location.edit.urls' )),
 

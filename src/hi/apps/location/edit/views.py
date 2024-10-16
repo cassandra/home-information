@@ -60,6 +60,57 @@ class LocationAddView( HiModalView ):
 
     
 @method_decorator( edit_required, name='dispatch' )
+class LocationSvgReplaceView( HiModalView ):
+
+    def get_template_name( self ) -> str:
+        return 'location/edit/modals/location_svg_replace.html'
+
+    def get( self, request, *args, **kwargs ):
+        location_id = kwargs.get( 'location_id' )
+        if not location_id:
+            raise BadRequest( 'Missing location id.' )
+        try:
+            location = Location.objects.get( id = location_id )
+        except Location.DoesNotExist:
+            raise Http404( request )
+        context = {
+            'location': location,
+            'location_svg_file_form': forms.LocationSvgReplaceForm(),
+        }
+        return self.modal_response( request, context )
+    
+    def post( self, request, *args, **kwargs ):
+        location_id = kwargs.get( 'location_id' )
+        if not location_id:
+            raise BadRequest( 'Missing location id.' )
+        try:
+            location = Location.objects.get( id = location_id )
+        except Location.DoesNotExist:
+            raise Http404( request )
+        
+        location_svg_file_form = forms.LocationSvgReplaceForm( request.POST, request.FILES )
+        if not location_svg_file_form.is_valid():
+            context = {
+                'location': location,
+                'location_svg_file_form': location_svg_file_form,
+            }
+            return self.modal_response( request, context )
+
+        try:
+            location = LocationManager().update_location_svg(
+                location = location,
+                svg_fragment_filename = location_svg_file_form.cleaned_data.get('svg_fragment_filename'),
+                svg_fragment_content = location_svg_file_form.cleaned_data.get('svg_fragment_content'),
+                svg_viewbox = location_svg_file_form.cleaned_data.get('svg_viewbox'),
+            )
+        except ValueError as ve:
+            raise BadRequest( str(ve) )
+
+        redirect_url = reverse('home')
+        return antinode.redirect_response( redirect_url )
+
+    
+@method_decorator( edit_required, name='dispatch' )
 class LocationDeleteView( HiModalView ):
 
     def get_template_name( self ) -> str:

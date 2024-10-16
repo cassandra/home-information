@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class LocationSvgFileForm( SvgFileForm ):
-
+    
     def get_default_source_directory(self):
         return os.path.join(
             settings.BASE_DIR,
@@ -43,18 +43,14 @@ class LocationAddForm( LocationSvgFileForm ):
         required = True,
     )
 
-    def get_default_source_directory(self):
-        return os.path.join(
-            settings.BASE_DIR,
-            'static',
-            'img',
-        )
+    def allow_default_svg_file(self):
+        return True
 
-    def get_default_basename(self):
-        return 'location-default.svg'
     
-    def get_media_destination_directory(self):
-        return 'location/svg'
+class LocationSvgReplaceForm( LocationSvgFileForm ):
+
+    def allow_default_svg_file(self):
+        return False
 
     
 class LocationEditForm( forms.ModelForm ):

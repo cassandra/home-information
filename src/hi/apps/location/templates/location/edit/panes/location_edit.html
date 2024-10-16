@@ -15,9 +15,13 @@
 </form>
 
 
-
-<h5>Order Index</h5>
-<div>{{ location.order_id }}</div>
+<div>
+  <a href="{% url 'location_edit_svg_replace' location_id=location.id %}"
+     id="hi-svg-replace-link" class="btn btn-info btn-control" role="button"
+     data-async="true">
+    REPLACE IMAGE
+  </a>
+</div>
 
 <div>
   <a href="{% url 'location_edit_location_delete' location_id=location.id %}"

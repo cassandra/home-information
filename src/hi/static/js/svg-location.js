@@ -81,7 +81,7 @@
 	    if ( gCurrentSelectionModule != 'svg-path' ) {
 		if ( Hi.DEBUG ) { console.log( `Mouse down event [${MODULE_NAME}]`, event ); }
 		createTransformData( event, event.target );
-		handleLocationViewSvgClick( event, event.target );
+		gSelectedLocationViewSvg = event.target;
 		event.preventDefault(); 
 		event.stopImmediatePropagation();
 		return;
@@ -159,7 +159,7 @@
 
 	if ( $(event.target).hasClass( Hi.LOCATION_VIEW_SVG_CLASS ) ) {
 	    if ( Hi.DEBUG ) { console.log( `Click [${MODULE_NAME}]`, event ); }
-	    handleLocationViewSvgClick( event, event.target );
+	    gSelectedLocationViewSvg = event.target;
 	    gSvgTransformData = null;
 	    gSvgTransformType = SvgTransformType.MOVE;
 	    event.preventDefault(); 
@@ -244,18 +244,6 @@
             if ( Hi.DEBUG ) { console.log('Clearing location view svg transform data'); }
 	    gSelectedLocationViewSvg = null;
 	    gSvgTransformData = null;
-	}
-    }
-
-    function handleLocationViewSvgClick( event, locationViewSvg ) {
-	gSelectedLocationViewSvg = locationViewSvg;
-
-	if ( Hi.isEditMode ) {
-	    let data = {
-		moduleName: MODULE_NAME,
-	    };
-	    Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
-            AN.get( `${Hi.API_LOCATION_DETAILS_URL}` );
 	}
     }
 

@@ -2,6 +2,7 @@ import json
 import logging
 
 from django.core.exceptions import BadRequest
+from django.db import transaction
 from django.http import Http404
 from django.template.loader import get_template
 from django.utils.decorators import method_decorator
@@ -15,7 +16,7 @@ from hi.apps.entity.edit.async_views import EntityPositionEditView
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
-from hi.apps.location.models import LocationView
+from hi.apps.location.models import Location, LocationView
 
 from hi.constants import DIVID
 from hi.decorators import edit_required
@@ -27,6 +28,48 @@ from . import forms
 logger = logging.getLogger(__name__)
 
 
+@method_decorator( edit_required, name='dispatch' )
+class LocationEditView( View ):
+
+    def post( self, request, *args, **kwargs ):
+        location_id = kwargs.get('location_id')
+        try:
+            location = Location.objects.get( id = location_id )
+        except Location.DoesNotExist:
+            raise Http404( request )
+
+        location_edit_form = forms.LocationEditForm(
+            request.POST,
+            instance = location,
+        )
+        location_attribute_formset = forms.LocationAttributeFormset(
+            request.POST,
+            instance = location,
+        )
+
+        context = {
+            'location': location,
+            'location_edit_form': location_edit_form,
+            'location_attribute_formset': location_attribute_formset,
+        }
+        
+        if ( not location_edit_form.is_valid()
+             or not location_attribute_formset.is_valid() ):
+            template = get_template( 'location/edit/panes/location_edit.html' )
+            content = template.render( context, request = request )
+            return antinode.response(
+                insert_map = {
+                    DIVID['LOCATION_EDIT_PANE']: content,
+                },
+            )
+
+        with transaction.atomic():
+            location_edit_form.save()
+            location_attribute_formset.save()
+
+        return antinode.refresh_response()
+            
+    
 @method_decorator( edit_required, name='dispatch' )
 class LocationViewManageItemsView( HiSideView ):
 
@@ -65,13 +108,6 @@ class LocationViewReorder( View ):
             location_view_id_list = location_view_id_list,
         )            
         return antinode.response( main_content = 'OK' )        
-
-    
-@method_decorator( edit_required, name='dispatch' )
-class LocationEditView( View ):
-
-    def post( self, request, *args, **kwargs ):
-        raise NotImplementedError()
 
     
 @method_decorator( edit_required, name='dispatch' )
