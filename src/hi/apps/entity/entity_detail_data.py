@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from hi.apps.entity.edit.forms import EntityPositionForm
+from hi.apps.entity.edit.forms import EntityForm, EntityPositionForm
 
 from .models import Entity
 
@@ -9,5 +9,6 @@ from .models import Entity
 class EntityDetailData:
 
     entity                : Entity
+    entity_form           : EntityForm
     entity_position_form  : EntityPositionForm
     

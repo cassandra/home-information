@@ -1,1 +1,14 @@
-COLLECTION EDIT PANE
+<form action="{% url 'collection_edit' collection_id=collection.id %}"
+      method="post"
+      class="form" data-async="#{{ DIVID.COLLECTION_EDIT_PANE }}">
+  {% csrf_token %}
+  
+  <div>
+    {% include "collection/edit/panes/collection_form.html" %}
+  </div>
+
+  <button id="hi-add-collection-edit-button" type="submit" class="btn btn-info"
+	  name="action" value="update">
+    UPDATE
+  </button>
+</form>

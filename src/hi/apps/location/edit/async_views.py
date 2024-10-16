@@ -16,7 +16,6 @@ from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import LocationView
-from hi.apps.location.svg_item_factory import SvgItemFactory
 
 from hi.constants import DIVID
 from hi.decorators import edit_required

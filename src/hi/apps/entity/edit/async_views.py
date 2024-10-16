@@ -17,6 +17,33 @@ from . import forms
 logger = logging.getLogger(__name__)
 
 
+class EntityEditView( View ):
+
+    def post( self, request, *args, **kwargs ):
+
+        entity_id = kwargs.get('entity_id')
+        try:
+            entity = Entity.objects.get( id = entity_id )
+        except Entity.DoesNotExist:
+            raise Http404( request )
+
+        entity_form = forms.EntityForm( request.POST, instance = entity )
+        if entity_form.is_valid():
+            entity_form.save()     
+
+        context = {
+            'entity': entity,
+            'entity_form': entity_form,
+        }
+        template = get_template( 'entity/edit/panes/entity_edit.html' )
+        content = template.render( context, request = request )
+        return antinode.response(
+            insert_map = {
+                DIVID['ENTITY_EDIT_PANE']: content,
+            },
+        )
+
+        
 @method_decorator( edit_required, name='dispatch' )
 class EntityPositionEditView( View ):
 
@@ -26,10 +53,10 @@ class EntityPositionEditView( View ):
         location = request.view_parameters.location
         try:
             entity_position = EntityPosition.objects.get(
-                id = entity_id,
+                entity_id = entity_id,
                 location = location,
             )
-        except Entity.DoesNotExist:
+        except EntityPosition.DoesNotExist:
             raise Http404( request )
         
         entity_position_form = forms.EntityPositionForm(

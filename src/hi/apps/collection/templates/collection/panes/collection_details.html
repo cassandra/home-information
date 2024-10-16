@@ -13,7 +13,7 @@
 </div>
 
 <div id="{{ DIVID.COLLECTION_EDIT_PANE }}">
-  {% include "collection/edit/panes/collection_edit.html" %}
+  {% include "collection/edit/panes/collection_edit.html" with collection=collection_detail_data.collection collection_form=collection_detail_data.collection_form %}
 </div>
 
 {% if collection_detail_data.collection_position_form %}

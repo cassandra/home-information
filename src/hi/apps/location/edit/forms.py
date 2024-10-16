@@ -7,11 +7,10 @@ from django.conf import settings
 from hi.apps.attribute.forms import AttributeForm
 from hi.apps.common.svg_forms import SvgDecimalFormField, SvgFileForm
 
+from hi.apps.location.enums import LocationViewType
 from hi.apps.location.models import (
     Location,
     LocationAttribute,
-    LocationItemModelMixin,
-    LocationItemPositionModel,
     LocationView,
 )
 
@@ -115,6 +114,14 @@ class LocationViewEditForm( forms.ModelForm ):
         
     svg_rotate = SvgDecimalFormField()
 
+    location_view_type_str = forms.ChoiceField(
+        label = 'View Type',
+        choices = LocationViewType.choices,
+        initial = LocationViewType.default_value(),
+        required = True,
+        widget = forms.Select( attrs = { 'class' : 'custom-select' } ),
+    )
+    
     
 class LocationViewGeometryForm( forms.ModelForm ):
     class Meta:

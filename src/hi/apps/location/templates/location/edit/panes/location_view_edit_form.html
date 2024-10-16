@@ -2,12 +2,6 @@
 {{ hidden }}
 {% endfor %}
 
-
-
-<div>Errors: {{ location_view_edit_form.errors }}</div>
-
-
-
 {% if location_view_edit_form.non_field_errors %}
 <div class="non-field-errors">
   {% for err in location_view_edit_form.non_field_errors %}
@@ -38,7 +32,11 @@
   {{ location_view_edit_form.svg_rotate.errors }}
 </div>
 <div>
-  {{ location_view_edit_form.location_view_type_str.label }}
-  {{ location_view_edit_form.location_view_type_str }}
+  <div class="input-group mb-2 mr-sm-2">
+    <div class="input-group-prepend">
+      <div class="input-group-text">{{ location_view_edit_form.location_view_type_str.label_tag }}</div>
+    </div>
+    {{ location_view_edit_form.location_view_type_str }}
+  </div>
   {{ location_view_edit_form.location_view_type_str.errors }}
 </div>

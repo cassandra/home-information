@@ -22,6 +22,35 @@ from . import forms
 logger = logging.getLogger(__name__)
 
 
+class CollectionEditView( View ):
+    
+    def post( self, request, *args, **kwargs ):
+
+        collection_id = kwargs.get('collection_id')
+        try:
+            collection = Collection.objects.get( id = collection_id )
+        except Collection.DoesNotExist:
+            raise Http404( request )
+
+        collection_form = forms.CollectionForm( request.POST, instance = collection )
+        if collection_form.is_valid():
+            collection_form.save()     
+            return antinode.refresh_response()  # Collection name shows on bottom of screen
+            
+        # On error, show form errors
+        context = {
+            'collection': collection,
+            'collection_form': collection_form,
+        }
+        template = get_template( 'collection/edit/panes/collection_edit.html' )
+        content = template.render( context, request = request )
+        return antinode.response(
+            insert_map = {
+                DIVID['COLLECTION_EDIT_PANE']: content,
+            },
+        )
+
+        
 @method_decorator( edit_required, name='dispatch' )
 class CollectionReorder( View ):
     
@@ -49,10 +78,11 @@ class CollectionPositionEditView( View ):
         location = request.view_parameters.location
         try:
             collection_position = CollectionPosition.objects.get(
-                id = collection_id,
+                collection_id = collection_id,
                 location = location,
             )
-        except Collection.DoesNotExist:
+        except CollectionPosition.DoesNotExist:
+            logger.warning( f'Not collection position found for {collection_id} at {location}' )
             raise Http404( request )
 
         collection_position_form = forms.CollectionPositionForm(

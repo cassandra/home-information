@@ -4,7 +4,7 @@ from typing import List
 from django.db import transaction
 from django.http import HttpRequest
 
-from hi.apps.collection.edit.forms import CollectionPositionForm
+from hi.apps.collection.edit.forms import CollectionForm, CollectionPositionForm
 from hi.apps.common.singleton import Singleton
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location, LocationView
@@ -246,6 +246,7 @@ class CollectionManager(Singleton):
         # TODO: Add attributes and other data
         return CollectionDetailData(
             collection = collection,
+            collection_form = CollectionForm( instance = collection ),
             collection_position_form = collection_position_form,
         )
 

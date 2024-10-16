@@ -1,1 +1,14 @@
-ENTITY EDIT PANE
+<form action="{% url 'entity_edit' entity_id=entity.id %}"
+      method="post"
+      class="form" data-async="#{{ DIVID.ENTITY_EDIT_PANE }}">
+  {% csrf_token %}
+  
+  <div>
+    {% include "entity/edit/panes/entity_form.html" %}
+  </div>
+
+  <button id="hi-add-entity-edit-button" type="submit" class="btn btn-info"
+	  name="action" value="update">
+    UPDATE
+  </button>
+</form>

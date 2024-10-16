@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from hi.apps.collection.edit.forms import CollectionPositionForm
+from hi.apps.collection.edit.forms import CollectionForm, CollectionPositionForm
 
 from .models import Collection
 
@@ -9,5 +9,6 @@ from .models import Collection
 class CollectionDetailData:
 
     collection                : Collection
+    collection_form           : CollectionForm
     collection_position_form  : CollectionPositionForm
     

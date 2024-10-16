@@ -10,6 +10,10 @@ urlpatterns = [
              views.CollectionAddView.as_view(), 
              name='collection_edit_collection_add' ),
 
+    re_path( r'^collection/edit/(?P<collection_id>\d+)$', 
+             async_views.CollectionEditView.as_view(), 
+             name='collection_edit'),
+
     re_path( r'^collection/delete/(?P<collection_id>\d+)$', 
              views.CollectionDeleteView.as_view(), 
              name='collection_edit_collection_delete' ),

@@ -7,7 +7,6 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 
 from hi.apps.collection.collection_manager import CollectionManager
-from hi.apps.collection.enums import CollectionType
 from hi.apps.collection.models import Collection
 
 from hi.decorators import edit_required
@@ -39,17 +38,9 @@ class CollectionAddView( HiModalView ):
             }
             return self.modal_response( request, context )
 
-        cleaned_data = collection_form.clean()
-        collection_type = CollectionType.from_name_safe( cleaned_data.get('collection_type') )
-        name = cleaned_data.get('name')
-        
         try:
             with transaction.atomic():
-                collection = CollectionManager().create_collection(
-                    request = request,
-                    collection_type = collection_type,
-                    name = name,
-                )
+                collection = collection_form.save()
                 if ( request.view_parameters.view_type.is_location_view
                      and request.view_parameters.location_view_id ):
                     CollectionManager().create_collection_view_by_id(

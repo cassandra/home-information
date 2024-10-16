@@ -13,10 +13,11 @@
 </div>
 
 <div id="{{ DIVID.ENTITY_EDIT_PANE }}">
-  {% include "entity/edit/panes/entity_edit.html" %}
+  {% include "entity/edit/panes/entity_edit.html" with entity=entity_detail_data.entity entity_form=entity_detail_data.entity_form %}
 </div>
 
 {% if entity_detail_data.entity_position_form %}
+<h5>Geometry</h5>
 <div id="{{ DIVID.ENTITY_POSITION_EDIT_PANE }}">
   {% include "entity/edit/panes/entity_position_edit.html" with entity=entity_detail_data.entity entity_position_form=entity_detail_data.entity_position_form %}
 </div>

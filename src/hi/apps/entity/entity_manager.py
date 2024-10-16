@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.db import transaction
 
 from hi.apps.common.singleton import Singleton
-from hi.apps.entity.edit.forms import EntityPositionForm
+from hi.apps.entity.edit.forms import EntityForm, EntityPositionForm
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 
@@ -190,6 +190,7 @@ class EntityManager(Singleton):
         # TODO: Add attributes and other data
         return EntityDetailData(
             entity = entity,
+            entity_form = EntityForm( instance = entity ),
             entity_position_form = entity_position_form,
         )
 
