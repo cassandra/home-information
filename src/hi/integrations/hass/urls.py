@@ -18,6 +18,10 @@ urlpatterns = [
              views.HassManageView.as_view(), 
              name='hass_manage' ),
 
+    re_path( r'^settings$', 
+             views.HassSettingsView.as_view(), 
+             name='hass_settings' ),
+
     re_path( r'^sync$', 
              views.HassSyncView.as_view(), 
              name='hass_sync' ),

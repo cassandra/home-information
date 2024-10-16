@@ -9,20 +9,33 @@ class AttributeType(LabeledEnum):
     
 class AttributeValueType(LabeledEnum):
 
+    def __init__( self,
+                  label        : str,
+                  description  : str,
+                  is_file      : bool    = False ):
+        super().__init__( label, description )
+        self.is_file = is_file
+        return
+    
+    TEXT      = ('Text', '' )
     STRING    = ('String', '' )
-    INTEGER   = ('Integer', '' )
-    FLOAT     = ('Float', '' )
-    TEXT      = ('Text', '' )  # relative filename in MEDIA_ROOT
-    PDF       = ('PDF', '' )  # relative filename in MEDIA_ROOT
-    IMAGE     = ('Image', '' )  # relative filename in MEDIA_ROOT
-    VIDEO     = ('Video', '' )  # relative filename in MEDIA_ROOT
-    AUDIO     = ('Audio', '' )  # relative filename in MEDIA_ROOT
+    PDF       = ('PDF', '', True )  # relative filename of MEDIA_ROOT
+    IMAGE     = ('Image', '', True )  # relative filename of MEDIA_ROOT
+    VIDEO     = ('Video', '', True )  # relative filename of MEDIA_ROOT
+    AUDIO     = ('Audio', '', True )  # relative filename of MEDIA_ROOT
+    FILE      = ('File', '', True )  # relative filename of MEDIA_ROOT
+    DATETIME  = ('DateTime', '' )
+    DATE      = ('Date', '' )
     LINK      = ('Link', '' )
     PASSWORD  = ('Password', '' )
     EMAIL     = ('Email', '' )
     PHONE     = ('Phone', '' )
+    INTEGER   = ('Integer', '' )
+    FLOAT     = ('Float', '' )
     BOOLEAN   = ('Boolean', '' )
-    DATETIME  = ('DateTime', '' )
-    DATE      = ('Date', '' )
     TIME      = ('Time', '' )
     JSON      = ('JSON', '' )
+
+    @classmethod
+    def default(cls):
+        return cls.TEXT

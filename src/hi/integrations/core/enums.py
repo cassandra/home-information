@@ -16,3 +16,4 @@ class IntegrationAttributeType(LabeledEnum):
         self.is_editable = is_editable
         self.is_required = is_required
         return
+    

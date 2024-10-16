@@ -26,3 +26,7 @@
   {{ entity_form.name.errors }}
 </div>
 
+<div>
+  {% include "attribute/panes/attribute_form.html" with attribute_formset=entity_attribute_formset %}
+</div>
+

@@ -1,5 +1,6 @@
 import logging
 
+from django.db import transaction
 from django.http import Http404
 from django.template.loader import get_template
 from django.utils.decorators import method_decorator
@@ -25,12 +26,20 @@ class EntityEditView( View, EntityViewMixin ):
         entity = self.get_entity( request, *args, **kwargs )
 
         entity_form = forms.EntityForm( request.POST, instance = entity )
-        if entity_form.is_valid():
-            entity_form.save()     
-
+        entity_attribute_formset = forms.EntityAttributeFormset(
+            request.POST,
+            request.FILES,
+            instance = entity,
+        )
+        if entity_form.is_valid() and entity_attribute_formset.is_valid():
+            with transaction.atomic():
+                entity_form.save()     
+                entity_attribute_formset.save()
+                
         context = {
             'entity': entity,
             'entity_form': entity_form,
+            'entity_attribute_formset': entity_attribute_formset,
         }
         template = get_template( 'entity/edit/panes/entity_edit.html' )
         content = template.render( context, request = request )

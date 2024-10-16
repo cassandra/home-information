@@ -20,10 +20,9 @@ class AttributeModel(models.Model):
     value = models.TextField(
         'Value',
     )
-    value_type_str = models.CharField(
-        'Value Type',
-        max_length = 32,
-        null = False, blank = False,
+    file_value = models.FileField(
+        upload_to = 'uploads/attributes/',
+        blank = True, null = True,
     )
     value_type_str = models.CharField(
         'Value Type',

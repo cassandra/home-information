@@ -4,7 +4,7 @@ import os
 from django import forms
 from django.conf import settings
 
-from hi.apps.attribute.forms import AttributeForm
+from hi.apps.attribute.forms import GeneralAttributeForm
 from hi.apps.common.svg_forms import SvgDecimalFormField, SvgFileForm
 
 from hi.apps.location.enums import LocationViewType
@@ -66,16 +66,10 @@ class LocationEditForm( forms.ModelForm ):
         )
     
 
-class LocationAttributeForm( AttributeForm ):
-
-    class Meta:
+class LocationAttributeForm( GeneralAttributeForm ):
+    class Meta( GeneralAttributeForm.Meta ):
         model = LocationAttribute
-        fields = (
-            'name',
-            'value',
-            'value_type_str',
-        )
-
+        
         
 LocationAttributeFormset = forms.inlineformset_factory(
     Location,

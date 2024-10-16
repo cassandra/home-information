@@ -18,6 +18,10 @@ urlpatterns = [
              views.ZmManageView.as_view(), 
              name='zm_manage' ),
 
+    re_path( r'^settings$', 
+             views.ZmSettingsView.as_view(), 
+             name='zm_settings' ),
+
     re_path( r'^sync$', 
              views.ZmSyncView.as_view(), 
              name='zm_sync' ),

@@ -15,11 +15,11 @@ class AttributeForm(forms.ModelForm):
         abstract = True
 
     @property
-    def is_editable(self):
-        return self._is_editable
+    def show_as_editable(self):
+        return self._show_as_editable
         
     def __init__(self, *args, **kwargs):
-        self._is_editable = kwargs.pop( 'is_editable', True )
+        self._show_as_editable = kwargs.pop( 'show_as_editable', True )
         super().__init__(*args, **kwargs)
 
         # Access the instance's value_type field
@@ -87,7 +87,7 @@ class AttributeForm(forms.ModelForm):
                 attrs={'class': 'form-control'},
             )
 
-        if not self._is_editable:
+        if not self._show_as_editable:
             for field in self.fields.values():
                 field.widget.attrs['disabled'] = 'disabled'
                 continue
@@ -166,3 +166,20 @@ class AttributeForm(forms.ModelForm):
         return cleaned_data
 
     
+class GeneralAttributeForm( AttributeForm ):
+
+    class Meta:
+        fields = (
+            'name',
+            'value',
+            'file_value',
+            'value_type_str',
+        )
+
+    value_type_str = forms.ChoiceField(
+        label = 'Value Type',
+        choices = AttributeValueType.choices,
+        initial = AttributeValueType.default_value(),
+        required = True,
+        widget = forms.Select( attrs = { 'class' : 'custom-select' } ),
+    )

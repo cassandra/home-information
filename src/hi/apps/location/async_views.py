@@ -38,7 +38,7 @@ class LocationViewDetailsView( HiSideView, LocationViewMixin ):
             'location_attribute_formset': LocationAttributeFormset(
                 instance = location_view.location,
                 form_kwargs = {
-                    'is_editable': True,
+                    'show_as_editable': True,
                 },
             ),
             'location_view': location_view,

@@ -71,12 +71,6 @@ class EntityType(LabeledEnum):
                     
     
 class EntityStateType(LabeledEnum):
-
-    def __init__( self,
-                  label             : str,
-                  description       : str ):
-        super().__init__( label, description )
-        return
     
     # General types
     DISCRETE         = ( 'Discrete'         , 'Single value, fixed set of possible values' )

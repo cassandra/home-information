@@ -10,6 +10,7 @@ DIVID = {
 
     # Config
     'INTEGRATION_TAB': 'hi-config-integration-tab',
+    'INTEGRATION_SETTINGS_PANE': 'hi-integration-settings',
 
     'LOCATION_EDIT_PANE': 'hi-location-edit',
     'LOCATION_VIEW_EDIT_PANE': 'hi-location-view-edit',
@@ -17,4 +18,5 @@ DIVID = {
     'COLLECTION_EDIT_PANE': 'hi-collection-edit',
     'ENTITY_POSITION_EDIT_PANE': 'hi-entity-position-edit',
     'COLLECTION_POSITION_EDIT_PANE': 'hi-collection-position-edit',
+
 }

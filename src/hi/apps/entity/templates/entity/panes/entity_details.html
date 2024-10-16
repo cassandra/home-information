@@ -13,7 +13,7 @@
 </div>
 
 <div id="{{ DIVID.ENTITY_EDIT_PANE }}">
-  {% include "entity/edit/panes/entity_edit.html" with entity=entity_detail_data.entity entity_form=entity_detail_data.entity_form %}
+  {% include "entity/edit/panes/entity_edit.html" with entity=entity_detail_data.entity entity_form=entity_detail_data.entity_form entity_attribute_formset=entity_detail_data.entity_attribute_formset %}
 </div>
 
 {% if entity_detail_data.entity_position_form %}

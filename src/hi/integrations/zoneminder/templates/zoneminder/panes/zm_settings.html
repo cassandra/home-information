@@ -1,0 +1,15 @@
+<form action="{% url 'zm_settings' %}" method="post"
+      class="form" data-async="true">
+  {% csrf_token %}
+
+  <div class="h4">Settings</div>
+
+  <div>
+    {% include "attribute/panes/attribute_form.html" with attribute_formset=integration_attribute_formset %}
+  </div>
+
+  <button id="hi-zm-setting-button" type="submit" class="btn btn-info"
+	  name="action" value="update">
+    UPDATE
+  </button>
+</form>

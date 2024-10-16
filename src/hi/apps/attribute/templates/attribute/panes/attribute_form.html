@@ -1,9 +1,9 @@
-<div class="">
+<div class="hi-attribute">
   {{ attribute_formset.management_form }}
   
   {% for attribute_form in attribute_formset %}
   {{ attribute_form.id }}
-
+  
   {% if attribute_form.non_field_errors %}
   <div class="non-field-errors">
     {% for err in attribute_form.non_field_errors %}
@@ -12,16 +12,23 @@
   </div>
   {% endif %}
 
-  <div class="row p-3">
-    <div class="col-8">
-      <div class="input-group" >
-	<div class="input-group-prepend" >
-	  <span class="input-group-text" >{{ attribute_form.instance.name }}</span>
-	</div>
-	{{ attribute_form.value }}
-      </div>
-      <div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
+  Instance = {{ attribute_form.instance.pk }}
+  {% if attribute_form.instance.pk %}
+  <div class="hi-attribute-existing">
+    {% if attribute_form.instance.is_editable %}
+    <div class="hi-attribute-editable">
+      {% include "attribute/panes/attribute_form_existing.html" %}
     </div>
+    {% else %}
+    <div class="hi-attribute-not-editable">
+      {% include "attribute/panes/attribute_form_read_only.html" %}
+    </div>
+    {% endif %}
   </div>
+  {% else %}
+  <div class="hi-attribute-new">
+    {% include "attribute/panes/attribute_form_new.html" %}
+  </div>
+  {% endif %}
   {% endfor %}
 </div>
