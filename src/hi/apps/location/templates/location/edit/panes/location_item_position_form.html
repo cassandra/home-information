@@ -1,0 +1,37 @@
+{% for hidden in location_item_position_form.hidden_fields %}
+{{ hidden }}
+{% endfor %}
+
+{% if location_item_position_form.non_field_errors %}
+<div class="non-field-errors alert alert-danger">
+  {% for err in location_item_position_form.non_field_errors %}
+  <p class="form-error">{{ err }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="pt-4">
+  {{ location_item_position_form.svg_x.label }}
+  {{ location_item_position_form.svg_x }}
+  {{ location_item_position_form.svg_x.errors }}
+</div>
+
+<div class="pt-4">
+  {{ location_item_position_form.svg_y.label }}
+  {{ location_item_position_form.svg_y }}
+  {{ location_item_position_form.svg_y.errors }}
+</div>
+
+<div class="pt-4">
+  {{ location_item_position_form.svg_scale.label }}
+  {{ location_item_position_form.svg_scale }}
+  {{ location_item_position_form.svg_scale.errors }}
+</div>
+
+<div class="pt-4">
+  {{ location_item_position_form.svg_rotate.label }}
+  {{ location_item_position_form.svg_rotate }}
+  {{ location_item_position_form.svg_rotate.errors }}
+</div>
+
+<button type="submit" role="button" >SUBMIT</button>

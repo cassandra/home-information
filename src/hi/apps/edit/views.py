@@ -55,6 +55,7 @@ class EditEndView( View ):
         request.view_parameters.view_mode = ViewMode.MONITOR
         request.view_parameters.to_session( request )
 
+        # Do a page refresh, but remove any side bar url set during editing.
         referrer_url = request.META.get('HTTP_REFERER')
         if referrer_url:
             parsed_url = urllib.parse.urlparse( referrer_url )

@@ -1,6 +1,8 @@
 from django import forms
 
 from hi.apps.collection.enums import CollectionType
+from hi.apps.collection.models import CollectionPosition
+from hi.apps.location.edit.forms import LocationItemPositionForm
 
 
 class CollectionForm(forms.Form):
@@ -29,3 +31,8 @@ class CollectionForm(forms.Form):
             cleaned_data['name'] = collection_type.label
 
         return cleaned_data
+
+    
+class CollectionPositionForm( LocationItemPositionForm ):
+    class Meta( LocationItemPositionForm.Meta ):
+        model = CollectionPosition

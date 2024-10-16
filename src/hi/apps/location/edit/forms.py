@@ -5,9 +5,15 @@ from django import forms
 from django.conf import settings
 
 from hi.apps.attribute.forms import AttributeForm
-from hi.apps.common.svg_file_form import SvgFileForm
+from hi.apps.common.svg_forms import SvgDecimalFormField, SvgFileForm
 
-from hi.apps.location.models import Location, LocationAttribute, LocationView
+from hi.apps.location.models import (
+    Location,
+    LocationAttribute,
+    LocationItemModelMixin,
+    LocationItemPositionModel,
+    LocationView,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -106,4 +112,37 @@ class LocationViewEditForm( forms.ModelForm ):
             'svg_rotate',
             'location_view_type_str',
         )
+        
+    svg_rotate = SvgDecimalFormField()
+
     
+class LocationViewGeometryForm( forms.ModelForm ):
+    class Meta:
+        model = LocationView
+        fields = (
+            'svg_view_box_str',
+            'svg_rotate',
+        )
+
+    svg_rotate = SvgDecimalFormField()
+
+   
+class LocationItemPositionForm( forms.ModelForm ):
+    # Abstract class.  Subclasses need to add model. e.g.,
+    #
+    #    class MySubclassForm(LocationItemPositionForm):
+    #      class Meta(LocationItemPositionForm.Meta):
+    #          model = MySubclassModel
+
+    class Meta:
+        fields = (
+            'svg_x',
+            'svg_y',
+            'svg_scale',
+            'svg_rotate',
+        )
+
+    svg_x = SvgDecimalFormField()
+    svg_y = SvgDecimalFormField()
+    svg_scale = SvgDecimalFormField()
+    svg_rotate = SvgDecimalFormField()

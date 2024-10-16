@@ -2,6 +2,12 @@
 {{ hidden }}
 {% endfor %}
 
+
+
+<div>Errors: {{ location_view_edit_form.errors }}</div>
+
+
+
 {% if location_view_edit_form.non_field_errors %}
 <div class="non-field-errors">
   {% for err in location_view_edit_form.non_field_errors %}

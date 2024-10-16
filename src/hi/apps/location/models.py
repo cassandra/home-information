@@ -3,7 +3,7 @@ import logging
 from django.core.files.storage import default_storage
 from django.db import models
 
-from hi.apps.common.svg_models import SvgViewBox
+from hi.apps.common.svg_models import SvgDecimalField, SvgViewBox
 from hi.apps.attribute.models import AttributeModel
 from hi.enums import ItemType
 from hi.models import ItemTypeModelMixin
@@ -134,10 +134,8 @@ class LocationView( models.Model, ItemTypeModelMixin ):
         max_length = 128,
         null = False, blank = False,
     )
-    svg_rotate = models.DecimalField(
+    svg_rotate = SvgDecimalField(
         'Rotate',
-        max_digits = 9,
-        decimal_places = 6,
     )
     order_id = models.PositiveIntegerField(
         'Order Id',
@@ -203,23 +201,23 @@ class LocationItemPositionModel( models.Model ):
     class Meta:
         abstract = True
         
-    svg_x = models.DecimalField(
+    svg_x = SvgDecimalField(
         'X',
         max_digits = 12,
         decimal_places = 6,
     )
-    svg_y = models.DecimalField(
+    svg_y = SvgDecimalField(
         'Y',
         max_digits = 12,
         decimal_places = 6,
     )
-    svg_scale = models.DecimalField(
+    svg_scale = SvgDecimalField(
         'Scale',
         max_digits = 12,
         decimal_places = 6,
         default = 1.0,
     )
-    svg_rotate = models.DecimalField(
+    svg_rotate = SvgDecimalField(
         'Rotate',
         max_digits = 12,
         decimal_places = 6,

@@ -1,6 +1,8 @@
 from django import forms
 
 from hi.apps.entity.enums import EntityType
+from hi.apps.entity.models import EntityPosition
+from hi.apps.location.edit.forms import LocationItemPositionForm
 
 
 class EntityForm(forms.Form):
@@ -29,3 +31,8 @@ class EntityForm(forms.Form):
             cleaned_data['name'] = entity_type.label
 
         return cleaned_data
+
+    
+class EntityPositionForm( LocationItemPositionForm ):
+    class Meta( LocationItemPositionForm.Meta ):
+        model = EntityPosition

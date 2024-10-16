@@ -509,13 +509,13 @@
 	if ( Hi.DEBUG ) { console.log( `Saving SVG geometry [${MODULE_NAME}]` ); }
 
 	let locationViewId = $(gSelectedLocationViewSvg).attr('location-view-id');
-	
 	let svgViewBoxStr = $(gSelectedLocationViewSvg).attr('viewBox');
         let transform = $(gSelectedLocationViewSvg).attr('transform');
         let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
+
 	let data = {
-	    view_box: svgViewBoxStr,
-	    rotate_angle: rotate.angle
+	    svg_view_box_str: svgViewBoxStr,
+	    svg_rotate: rotate.angle
 	};
 	
 	AN.post( `${API_EDIT_LOCATION_VIEW_GEOMETRY_URL}/${locationViewId}`, data );

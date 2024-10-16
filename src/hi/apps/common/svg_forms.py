@@ -14,8 +14,21 @@ logger = logging.getLogger(__name__)
 ET.register_namespace('', 'http://www.w3.org/2000/svg')
 
 
-class SvgFileForm(forms.Form):
+class SvgDecimalFormField( forms.FloatField ):
+    """
+    Use this for ModelForm that have SvgDecimalField model fields.  Using
+    a Decimal field in to form is fraught with issues if submitting
+    higher precision than Decimal field allows.
+    """
+    pass
 
+
+class SvgFileForm(forms.Form):
+    """
+    For uploading SVG files while extracting the viewbox and writing
+    without the enclosing <svg> element as needed by various HI app views. Also
+    detects and can remove dangerous tags and attributes.
+    """
     svg_file = forms.FileField(
         label = 'SVG file',
         required = False,

@@ -2,20 +2,91 @@ import json
 import logging
 
 from django.core.exceptions import BadRequest
+from django.http import Http404
 from django.template.loader import get_template
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 from hi.apps.collection.collection_manager import CollectionManager
-from hi.apps.collection.models import Collection
+from hi.apps.collection.models import Collection, CollectionPosition
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.models import Entity
+from hi.apps.location.svg_item_factory import SvgItemFactory
 
 from hi.constants import DIVID
 from hi.decorators import edit_required
 from hi.hi_async_view import HiSideView
 
+from . import forms
+
 logger = logging.getLogger(__name__)
+
+
+@method_decorator( edit_required, name='dispatch' )
+class CollectionReorder( View ):
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            collection_id_list = json.loads( kwargs.get( 'collection_id_list' ) )
+        except Exception as e:
+            raise BadRequest( str(e) )
+
+        if not collection_id_list:
+            raise BadRequest( 'Missing collection ids.' )
+
+        CollectionManager().set_collection_order(
+            collection_id_list = collection_id_list,
+        )
+        return antinode.response( main_content = 'OK' )
+    
+    
+@method_decorator( edit_required, name='dispatch' )
+class CollectionPositionEditView( View ):
+
+    def post(self, request, *args, **kwargs):
+
+        collection_id = kwargs.get('collection_id')
+        location = request.view_parameters.location
+        try:
+            collection_position = CollectionPosition.objects.get(
+                id = collection_id,
+                location = location,
+            )
+        except Collection.DoesNotExist:
+            raise Http404( request )
+
+        collection_position_form = forms.CollectionPositionForm(
+            request.POST,
+            instance = collection_position,
+        )
+        if collection_position_form.is_valid():
+            collection_position_form.save()
+        else:
+            logger.warning( 'CollectionPosition form is invalid.' )
+            
+        context = {
+            'collection': collection_position.collection,
+            'collection_position_form': collection_position_form,
+        }
+        template = get_template( 'collection/edit/panes/collection_position_edit.html' )
+        content = template.render( context, request = request )
+        insert_map = {
+            DIVID['COLLECTION_POSITION_EDIT_PANE']: content,
+        }
+
+        svg_icon_item = SvgItemFactory().create_svg_icon_item(
+            item = collection_position.collection,
+            position = collection_position,
+        )
+        set_attributes_map = {
+            svg_icon_item.html_id: {
+                'transform': svg_icon_item.transform_str,
+            }
+        }
+        return antinode.response(
+            insert_map = insert_map,
+            set_attributes_map = set_attributes_map,
+        )
 
 
 @method_decorator( edit_required, name='dispatch' )
@@ -58,24 +129,6 @@ class CollectionReorderEntitiesView( View ):
         return antinode.response( main_content = 'OK' )
 
         
-@method_decorator( edit_required, name='dispatch' )
-class CollectionReorder( View ):
-    
-    def post(self, request, *args, **kwargs):
-        try:
-            collection_id_list = json.loads( kwargs.get( 'collection_id_list' ) )
-        except Exception as e:
-            raise BadRequest( str(e) )
-
-        if not collection_id_list:
-            raise BadRequest( 'Missing collection ids.' )
-
-        CollectionManager().set_collection_order(
-            collection_id_list = collection_id_list,
-        )
-        return antinode.response( main_content = 'OK' )
-    
-    
 @method_decorator( edit_required, name='dispatch' )
 class CollectionEntityToggleView( View ):
 

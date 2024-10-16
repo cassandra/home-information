@@ -4,9 +4,9 @@ from typing import List
 from django.db import transaction
 from django.http import HttpRequest
 
+from hi.apps.collection.edit.forms import CollectionPositionForm
 from hi.apps.common.singleton import Singleton
 from hi.apps.entity.models import Entity
-from hi.apps.location.forms import LocationItemPositionForm
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 
@@ -194,7 +194,7 @@ class CollectionManager(Singleton):
         # Default display in middle of current view
         svg_x = location_view.svg_view_box.x + ( location_view.svg_view_box.width / 2.0 )
         svg_y = location_view.svg_view_box.y + ( location_view.svg_view_box.height / 2.0 )
-        
+
         collection_position = CollectionPosition.objects.create(
             collection = collection,
             location = location_view.location,
@@ -234,22 +234,19 @@ class CollectionManager(Singleton):
                                     current_location_view  : LocationView,
                                     is_editing             : bool ) -> CollectionDetailData:
         
-        location_item_position_form = None
+        collection_position_form = None
         if is_editing and current_location_view:
             collection_position = CollectionPosition.objects.filter(
                 collection = collection,
                 location = current_location_view.location,
             ).first()
             if collection_position:
-                location_item_position_form = LocationItemPositionForm.from_models(
-                    location_item = collection_position.collection,
-                    location_item_position = collection_position,
-                )
+                collection_position_form = CollectionPositionForm( instance = collection_position )
         
         # TODO: Add attributes and other data
         return CollectionDetailData(
             collection = collection,
-            location_item_position_form = location_item_position_form,
+            collection_position_form = collection_position_form,
         )
 
     def create_entity_collection_group_list( self, collection : Collection ) -> List[EntityCollectionGroup]:

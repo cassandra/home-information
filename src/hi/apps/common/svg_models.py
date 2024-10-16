@@ -1,4 +1,8 @@
 from dataclasses import dataclass
+from decimal import Decimal, ROUND_HALF_UP
+
+from django.core.exceptions import ValidationError
+from django.db import models
 
 
 @dataclass
@@ -137,4 +141,37 @@ class SvgPathItem:
     stroke_color  : str
     stroke_width  : float
     fill_color    : str
+    
+
+class SvgDecimalField( models.DecimalField ):
+    """
+    Custom model field for SVG-related decimal values to fix precision and
+    round higher precision values.
+    """
+
+    def __init__( self, *args, **kwargs ):
+        # Set default precision values for SVG fields (can be customized)
+        kwargs['max_digits'] = 11
+        kwargs['decimal_places'] = 6
+        super().__init__( *args, **kwargs )
+
+    def to_python(self, value):
+        return self._round_value( value )
+
+    def get_prep_value( self, value ):
+        value = super().get_prep_value(value)
+        return self._round_value( value )
+
+    def _round_value( self, value ):
+        if value is None:
+            return value
+        try:
+            value = Decimal( value )
+        except ( TypeError, ValueError ):
+            raise ValidationError( f'Invalid decimal value: {value}.')
+        
+        precision_str = f'1.{"0" * self.decimal_places}'
+        precision = Decimal( precision_str )
+        return value.quantize( precision, rounding = ROUND_HALF_UP )
+
     

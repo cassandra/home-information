@@ -12,18 +12,15 @@
   </div>
 </div>
 
-{% if collection_detail_data.location_item_position_form %}
-<h5>Position</h5>
-<div id="{{ collection_detail_data.location_item_position_form.content_html_id }}">
-  {% include "location/edit/panes/location_item_position.html" with location_item_position_form=collection_detail_data.location_item_position_form %}
+<div id="{{ DIVID.COLLECTION_EDIT_PANE }}">
+  {% include "collection/edit/panes/collection_edit.html" %}
+</div>
+
+{% if collection_detail_data.collection_position_form %}
+<div id="{{ DIVID.COLLECTION_POSITION_EDIT_PANE }}">
+  {% include "collection/edit/panes/collection_position_edit.html" with collection=collection_detail_data.collection collection_position_form=collection_detail_data.collection_position_form %}
 </div>
 {% endif %}
-
-<h5>View Type</h5>
-<div>{{ collection_detail_data.collection.collection_type.label }}</div>
-
-<h5>Order Index</h5>
-<div>{{ collection_detail_data.collection.order_id }}</div>
 
 <h5>Views</h5>
 <div id="hi-edit-collection-views">

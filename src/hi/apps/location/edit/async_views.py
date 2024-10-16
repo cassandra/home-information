@@ -1,4 +1,3 @@
-from decimal import Decimal
 import json
 import logging
 
@@ -9,12 +8,12 @@ from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 from hi.apps.collection.collection_manager import CollectionManager
+from hi.apps.collection.edit.async_views import CollectionPositionEditView
 from hi.apps.collection.models import Collection
 import hi.apps.common.antinode as antinode
-from hi.apps.common.svg_models import SvgViewBox
+from hi.apps.entity.edit.async_views import EntityPositionEditView
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity
-from hi.apps.location.forms import LocationItemPositionForm
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
@@ -117,22 +116,25 @@ class LocationViewGeometryView( View ):
         except LocationView.DoesNotExist:
             raise Http404( request )
 
-        try:
-            svg_view_box_str = request.POST.get('view_box')
-            svg_view_box = SvgViewBox.from_attribute_value( svg_view_box_str )
-        except (TypeError, ValueError ):
-            raise BadRequest( f'Bad viewbox: {svg_view_box_str}' )
+        location_view_geometry_form = forms.LocationViewGeometryForm( request.POST, instance = location_view )
+        if location_view_geometry_form.is_valid():
+            location_view_geometry_form.save()
+        else:
+            logger.warning( 'LocationView geometry form is invalid.' )
+            
+        location_view_edit_form = forms.LocationViewEditForm( instance = location_view )
 
-        try:
-            svg_rotate_angle = float( request.POST.get('rotate_angle'))
-        except (TypeError, ValueError ):
-            raise BadRequest( f'Bad rotate angle: {svg_rotate_angle}' )
-
-        location_view.svg_view_box_str = str(svg_view_box)
-        location_view.svg_rotate = Decimal( svg_rotate_angle )
-        location_view.save()
-
-        return antinode.response( main_content = 'OK' )
+        context = {
+            'location_view': location_view,
+            'location_view_edit_form': location_view_edit_form,
+        }
+        template = get_template( 'location/edit/panes/location_view_edit.html' )
+        content = template.render( context, request = request )
+        return antinode.response(
+            insert_map = {
+                DIVID['LOCATION_VIEW_EDIT_PANE']: content,
+            },
+        )
 
     
 @method_decorator( edit_required, name='dispatch' )
@@ -225,51 +227,18 @@ class LocationItemPositionView( View ):
         except ValueError:
             raise BadRequest( 'Bad item id.' )
         
-        location_view = request.view_parameters.location_view
         if item_type == ItemType.ENTITY:
-            location_item_position_model = EntityManager().get_entity_position(
+            return EntityPositionEditView().post(
+                request,
                 entity_id = item_id,
-                location = location_view.location,
             )
         elif item_type == ItemType.COLLECTION:
-            location_item_position_model = CollectionManager().get_collection_position(
+            return CollectionPositionEditView().post(
+                request,
                 collection_id = item_id,
-                location = location_view.location,
             )
         else:
-            raise BadRequest( f'Cannot set SVG position for "{item_type}"' )
-
-        location_item_position_form = LocationItemPositionForm(
-            request.POST,
-            item_html_id = location_item_position_model.location_item.html_id,
-        )
-        if location_item_position_form.is_valid():
-            location_item_position_form.to_location_item_position_model( location_item_position_model )
-            location_item_position_model.save()
-
-        svg_icon_item = SvgItemFactory().create_svg_icon_item(
-            item = location_item_position_model.location_item,
-            position = location_item_position_model,
-        )
-        
-        context = {
-            'location_item_position_form': location_item_position_form,
-        }
-        template = get_template('location/edit/panes/location_item_position.html')
-        content = template.render( context, request = request )
-
-        insert_map = {
-            location_item_position_form.content_html_id: content,
-        }
-        set_attributes_map = {
-            svg_icon_item.html_id: {
-                'transform': svg_icon_item.transform_str,
-            }
-        }
-        return antinode.response(
-            insert_map = insert_map,
-            set_attributes_map = set_attributes_map,
-        )
+            raise BadRequest( f'Cannot set item position for "{item_type}"' )
 
 
 @method_decorator( edit_required, name='dispatch' )

@@ -1,0 +1,6 @@
+<form action="{% url 'entity_position_edit' entity_id=entity.id %}" method="post"
+      class="form" data-async="#{{ DIVID.ENTITY_POSITION_EDIT_PANE }}">
+  {% csrf_token %}
+  
+  {% include "location/edit/panes/location_item_position_form.html" with location_item_position_form=entity_position_form %}
+</form>
