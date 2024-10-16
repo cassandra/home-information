@@ -1,7 +1,7 @@
 import logging
 
 from django.core.exceptions import BadRequest
-from django.http import Http404, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.generic import View
 
@@ -16,14 +16,12 @@ from hi.apps.location.edit.forms import (
 from hi.enums import ItemType
 from hi.hi_async_view import HiSideView
 
-from .location_manager import LocationManager
-
-from .models import LocationView
+from .view_mixin import LocationViewMixin
 
 logger = logging.getLogger(__name__)
 
 
-class LocationViewDetailsView( HiSideView ):
+class LocationViewDetailsView( HiSideView, LocationViewMixin ):
 
     def get_template_name( self ) -> str:
         return 'location/panes/location_details.html'
@@ -32,17 +30,7 @@ class LocationViewDetailsView( HiSideView ):
         return True
     
     def get_template_context( self, request, *args, **kwargs ):
-        try:
-            location_view_id = int( kwargs.get( 'location_view_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location view id.' )
-        try:
-            location_view = LocationManager().get_location_view(
-                request = request,
-                location_view_id = location_view_id,
-            )
-        except LocationView.DoesNotExist:
-            raise Http404( request )
+        location_view = self.get_location_view( request, *args, **kwargs )
 
         return {
             'location': location_view.location,

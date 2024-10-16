@@ -16,7 +16,7 @@ from hi.apps.entity.edit.async_views import EntityPositionEditView
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
-from hi.apps.location.models import Location, LocationView
+from hi.apps.location.view_mixin import LocationViewMixin
 
 from hi.constants import DIVID
 from hi.decorators import edit_required
@@ -29,20 +29,10 @@ logger = logging.getLogger(__name__)
 
 
 @method_decorator( edit_required, name='dispatch' )
-class LocationEditView( View ):
+class LocationEditView( View, LocationViewMixin ):
 
     def post( self, request, *args, **kwargs ):
-        try:
-            location_id = int( kwargs.get( 'location_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location id.' )
-        try:
-            location = LocationManager().get_location(
-                request = request,
-                location_id = location_id,
-            )
-        except Location.DoesNotExist:
-            raise Http404( request )
+        location = self.get_location( request, *args, **kwargs )
 
         location_edit_form = forms.LocationEditForm(
             request.POST,
@@ -116,20 +106,10 @@ class LocationViewReorder( View ):
 
     
 @method_decorator( edit_required, name='dispatch' )
-class LocationViewEditView( View ):
+class LocationViewEditView( View, LocationViewMixin ):
 
     def post( self, request, *args, **kwargs ):
-        try:
-            location_view_id = int( kwargs.get( 'location_view_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location view id.' )
-        try:
-            location_view = LocationManager().get_location_view(
-                request = request,
-                location_view_id = location_view_id,
-            )
-        except LocationView.DoesNotExist:
-            raise Http404( request )
+        location_view = self.get_location_view( request, *args, **kwargs )
 
         location_view_edit_form = forms.LocationViewEditForm( request.POST, instance = location_view )
         if not location_view_edit_form.is_valid():
@@ -149,20 +129,10 @@ class LocationViewEditView( View ):
         return antinode.refresh_response()
 
     
-class LocationViewGeometryView( View ):
+class LocationViewGeometryView( View, LocationViewMixin ):
 
     def post(self, request, *args, **kwargs):
-        try:
-            location_view_id = int( kwargs.get( 'location_view_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location view id.' )
-        try:
-            location_view = LocationManager().get_location_view(
-                request = request,
-                location_view_id = location_view_id,
-            )
-        except LocationView.DoesNotExist:
-            raise Http404( request )
+        location_view = self.get_location_view( request, *args, **kwargs )
 
         location_view_geometry_form = forms.LocationViewGeometryForm( request.POST, instance = location_view )
         if location_view_geometry_form.is_valid():
@@ -186,20 +156,10 @@ class LocationViewGeometryView( View ):
 
     
 @method_decorator( edit_required, name='dispatch' )
-class LocationViewEntityToggleView( View ):
+class LocationViewEntityToggleView( View, LocationViewMixin ):
 
     def post( self, request, *args, **kwargs ):
-        try:
-            location_view_id = int( kwargs.get( 'location_view_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location view id.' )
-        try:
-            location_view = LocationManager().get_location_view(
-                request = request,
-                location_view_id = location_view_id,
-            )
-        except LocationView.DoesNotExist:
-            raise Http404( request )
+        location_view = self.get_location_view( request, *args, **kwargs )
 
         try:
             entity_id = int( kwargs.get('entity_id'))
@@ -241,20 +201,10 @@ class LocationViewEntityToggleView( View ):
 
     
 @method_decorator( edit_required, name='dispatch' )
-class LocationViewCollectionToggleView( View ):
+class LocationViewCollectionToggleView( View, LocationViewMixin ):
 
     def post(self, request, *args, **kwargs):
-        try:
-            location_view_id = int( kwargs.get( 'location_view_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location view id.' )
-        try:
-            location_view = LocationManager().get_location_view(
-                request = request,
-                location_view_id = location_view_id,
-            )
-        except LocationView.DoesNotExist:
-            raise Http404( request )
+        location_view = self.get_location_view( request, *args, **kwargs )
 
         try:
             collection_id = int( kwargs.get('collection_id'))

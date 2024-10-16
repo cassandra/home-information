@@ -2,12 +2,12 @@ import logging
 
 from django.core.exceptions import BadRequest
 from django.db import transaction
-from django.http import Http404
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection
+from hi.apps.collection.view_mixin import CollectionViewMixin
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import LocationView
 
@@ -69,23 +69,13 @@ class CollectionAddView( HiModalView ):
 
     
 @method_decorator( edit_required, name='dispatch' )
-class CollectionDeleteView( HiModalView ):
+class CollectionDeleteView( HiModalView, CollectionViewMixin ):
 
     def get_template_name( self ) -> str:
         return 'collection/edit/modals/collection_delete.html'
 
     def get(self, request, *args, **kwargs):
-        try:
-            collection_id = int( kwargs.get( 'collection_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location view id.' )
-        try:
-            collection = CollectionManager().get_collection(
-                request = request,
-                collection_id = collection_id,
-            )
-        except Collection.DoesNotExist:
-            raise Http404( request )
+        collection = self.get_collection( request, *args, **kwargs )
 
         context = {
             'collection': collection,
@@ -93,17 +83,7 @@ class CollectionDeleteView( HiModalView ):
         return self.modal_response( request, context )
 
     def post( self, request, *args, **kwargs ):
-        try:
-            collection_id = int( kwargs.get( 'collection_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location view id.' )
-        try:
-            collection = CollectionManager().get_collection(
-                request = request,
-                collection_id = collection_id,
-            )
-        except Collection.DoesNotExist:
-            raise Http404( request )
+        collection = self.get_collection( request, *args, **kwargs )
 
         action = request.POST.get( 'action' )
         if action != 'confirm':
@@ -111,7 +91,7 @@ class CollectionDeleteView( HiModalView ):
 
         collection.delete()
 
-        if request.view_parameters.collection_id == collection_id:
+        if request.view_parameters.collection_id == collection.id:
             request.view_parameters.update_collection( collection = None )
             request.view_parameters.to_session( request )
 

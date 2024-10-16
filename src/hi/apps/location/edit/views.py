@@ -8,6 +8,7 @@ from django.utils.decorators import method_decorator
 import hi.apps.common.antinode as antinode
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
+from hi.apps.location.view_mixin import LocationViewMixin
 
 from hi.decorators import edit_required
 from hi.enums import ViewType
@@ -60,23 +61,13 @@ class LocationAddView( HiModalView ):
 
     
 @method_decorator( edit_required, name='dispatch' )
-class LocationSvgReplaceView( HiModalView ):
+class LocationSvgReplaceView( HiModalView, LocationViewMixin ):
 
     def get_template_name( self ) -> str:
         return 'location/edit/modals/location_svg_replace.html'
 
     def get( self, request, *args, **kwargs ):
-        try:
-            location_id = int( kwargs.get( 'location_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location id.' )
-        try:
-            location = LocationManager().get_location(
-                request = request,
-                location_id = location_id,
-            )
-        except Location.DoesNotExist:
-            raise Http404( request )
+        location = self.get_location( request, *args, **kwargs )
 
         context = {
             'location': location,
@@ -120,23 +111,13 @@ class LocationSvgReplaceView( HiModalView ):
 
     
 @method_decorator( edit_required, name='dispatch' )
-class LocationDeleteView( HiModalView ):
+class LocationDeleteView( HiModalView, LocationViewMixin ):
 
     def get_template_name( self ) -> str:
         return 'location/edit/modals/location_delete.html'
 
     def get(self, request, *args, **kwargs):
-        try:
-            location_id = int( kwargs.get('location_id'))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location id.' )
-        try:
-            location = LocationManager().get_location(
-                request = request,
-                location_id = location_id,
-            )
-        except Location.DoesNotExist:
-            raise Http404( request )
+        location = self.get_location( request, *args, **kwargs )
 
         context = {
             'location': location,
@@ -217,23 +198,13 @@ class LocationViewAddView( HiModalView ):
 
     
 @method_decorator( edit_required, name='dispatch' )
-class LocationViewDeleteView( HiModalView ):
+class LocationViewDeleteView( HiModalView, LocationViewMixin ):
 
     def get_template_name( self ) -> str:
         return 'location/edit/modals/location_view_delete.html'
     
     def get(self, request, *args, **kwargs):
-        try:
-            location_view_id = int( kwargs.get( 'location_view_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location view id.' )
-        try:
-            location_view = LocationManager().get_location_view(
-                request = request,
-                location_view_id = location_view_id,
-            )
-        except LocationView.DoesNotExist:
-            raise Http404( request )
+        location_view = self.get_location_view( request, *args, **kwargs )
 
         context = {
             'location_view': location_view,
@@ -241,17 +212,7 @@ class LocationViewDeleteView( HiModalView ):
         return self.modal_response( request, context )
     
     def post( self, request, *args, **kwargs ):
-        try:
-            location_view_id = int( kwargs.get( 'location_view_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location view id.' )
-        try:
-            location_view = LocationManager().get_location_view(
-                request = request,
-                location_view_id = location_view_id,
-            )
-        except LocationView.DoesNotExist:
-            raise Http404( request )
+        location_view = self.get_location_view( request, *args, **kwargs )
 
         action = request.POST.get( 'action' )
         if action != 'confirm':
@@ -259,7 +220,7 @@ class LocationViewDeleteView( HiModalView ):
 
         location_view.delete()
 
-        if request.view_parameters.location_view_id == location_view_id:
+        if request.view_parameters.location_view_id == location_view.id:
             request.view_parameters.update_location_view( location_view = None )
             request.view_parameters.to_session( request )
         

@@ -8,9 +8,10 @@ from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 from hi.apps.collection.collection_manager import CollectionManager
-from hi.apps.collection.models import Collection, CollectionPosition
+from hi.apps.collection.models import CollectionPosition
+from hi.apps.collection.view_mixin import CollectionViewMixin
 import hi.apps.common.antinode as antinode
-from hi.apps.entity.models import Entity
+from hi.apps.entity.view_mixin import EntityViewMixin
 from hi.apps.location.svg_item_factory import SvgItemFactory
 from hi.apps.location.location_manager import LocationManager
 
@@ -23,20 +24,10 @@ from . import forms
 logger = logging.getLogger(__name__)
 
 
-class CollectionEditView( View ):
+class CollectionEditView( View, CollectionViewMixin ):
     
     def post( self, request, *args, **kwargs ):
-        try:
-            collection_id = int( kwargs.get( 'collection_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location view id.' )
-        try:
-            collection = CollectionManager().get_collection(
-                request = request,
-                collection_id = collection_id,
-            )
-        except Collection.DoesNotExist:
-            raise Http404( request )
+        collection = self.get_collection( request, *args, **kwargs )
 
         collection_form = forms.CollectionForm( request.POST, instance = collection )
         if collection_form.is_valid():
@@ -79,19 +70,16 @@ class CollectionReorder( View ):
 class CollectionPositionEditView( View ):
 
     def post(self, request, *args, **kwargs):
-        try:
-            collection_id = int( kwargs.get( 'collection_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location view id.' )
+        collection = self.get_collection( request, *args, **kwargs )
 
         location = LocationManager().get_default_location( request = request )
         try:
             collection_position = CollectionPosition.objects.get(
-                collection_id = collection_id,
+                collection = collection,
                 location = location,
             )
         except CollectionPosition.DoesNotExist:
-            logger.warning( f'Not collection position found for {collection_id} at {location}' )
+            logger.warning( f'Not collection position found for {collection} at {location}' )
             raise Http404( request )
 
         collection_position_form = forms.CollectionPositionForm(
@@ -136,7 +124,7 @@ class CollectionManageItemsView( HiSideView ):
 
     def get_template_context( self, request, *args, **kwargs ):
 
-        collection = request.view_parameters.collection
+        collection = CollectionManager().get_default_collection( request = request )
         entity_collection_group_list = CollectionManager().create_entity_collection_group_list(
             collection = collection,
         )
@@ -146,13 +134,10 @@ class CollectionManageItemsView( HiSideView ):
 
     
 @method_decorator( edit_required, name='dispatch' )
-class CollectionReorderEntitiesView( View ):
+class CollectionReorderEntitiesView( View, CollectionViewMixin ):
     
     def post(self, request, *args, **kwargs):
-        try:
-            collection_id = int( kwargs.get( 'collection_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location view id.' )
+        collection = self.get_collection( request, *args, **kwargs )
             
         try:
             entity_id_list = json.loads( kwargs.get( 'entity_id_list' ) )
@@ -163,36 +148,18 @@ class CollectionReorderEntitiesView( View ):
             raise BadRequest( 'Missing entity ids.' )
 
         CollectionManager().set_collection_entity_order(
-            collection_id = collection_id,
+            collection = collection,
             entity_id_list = entity_id_list,
         )
         return antinode.response( main_content = 'OK' )
 
         
 @method_decorator( edit_required, name='dispatch' )
-class CollectionEntityToggleView( View ):
+class CollectionEntityToggleView( View, CollectionViewMixin, EntityViewMixin ):
 
     def post(self, request, *args, **kwargs):
-        try:
-            collection_id = int( kwargs.get( 'collection_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location view id.' )
-        try:
-            collection = CollectionManager().get_collection(
-                request = request,
-                collection_id = collection_id,
-            )
-        except Collection.DoesNotExist:
-            raise Http404( request )
-
-        try:
-            entity_id = int( kwargs.get('entity_id'))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid entity id.' )
-        try:
-            entity = Entity.objects.get( id = entity_id )
-        except Entity.DoesNotExist:
-            raise Http404( request )
+        collection = self.get_collection( request, *args, **kwargs )
+        entity = self.get_entity( request, *args, **kwargs )
 
         exists_in_collection = CollectionManager().toggle_entity_in_collection(
             entity = entity,

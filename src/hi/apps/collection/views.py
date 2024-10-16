@@ -12,6 +12,7 @@ from hi.hi_grid_view import HiGridView
 
 from .collection_manager import CollectionManager
 from .models import Collection
+from .view_mixin import CollectionViewMixin
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ class CollectionViewDefaultView( View ):
         collection = self._get_default_collection( request )
         redirect_url = reverse(
             'collection_view',
-            kwargs = { 'id': collection.id }
+            kwargs = { 'collection_id': collection.id }
         )
         return HttpResponseRedirect( redirect_url )
 
@@ -39,23 +40,13 @@ class CollectionViewDefaultView( View ):
         return collection
     
     
-class CollectionViewView( HiGridView ):
+class CollectionViewView( HiGridView, CollectionViewMixin ):
 
     def get_main_template_name( self ) -> str:
         return 'collection/collection_view.html'
 
     def get_template_context( self, request, *args, **kwargs ):
-        try:
-            collection_id = int( kwargs.get( 'collection_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location view id.' )
-        try:
-            collection = CollectionManager().get_collection(
-                request = request,
-                collection_id = collection_id,
-            )
-        except Collection.DoesNotExist:
-            raise Http404( request )
+        collection = self.get_collection( request, *args, **kwargs )
 
         # Remember last collection chosen
         view_type_changed = bool( request.view_parameters.view_type != ViewType.COLLECTION )

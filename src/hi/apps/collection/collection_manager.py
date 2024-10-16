@@ -328,14 +328,14 @@ class CollectionManager(Singleton):
         return
         
     def set_collection_entity_order( self,
-                                     collection_id   : int,
+                                     collection      : Collection,
                                      entity_id_list  : List[int] ):
         item_id_to_idx = {
             item_id: order_id for order_id, item_id in enumerate( entity_id_list )
         }
         
         collection_entity_queryset = CollectionEntity.objects.filter(
-            collection_id = collection_id,
+            collection = collection,
             entity_id__in = entity_id_list,
         )
         with transaction.atomic():

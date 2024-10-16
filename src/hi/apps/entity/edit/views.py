@@ -2,13 +2,13 @@ import logging
 
 from django.core.exceptions import BadRequest, PermissionDenied
 from django.db import transaction
-from django.http import Http404
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity
+from hi.apps.entity.view_mixin import EntityViewMixin
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import LocationView
 
@@ -79,20 +79,13 @@ class EntityAddView( HiModalView ):
 
     
 @method_decorator( edit_required, name='dispatch' )
-class EntityDeleteView( HiModalView ):
+class EntityDeleteView( HiModalView, EntityViewMixin ):
 
     def get_template_name( self ) -> str:
         return 'entity/edit/modals/entity_delete.html'
 
     def get( self, request, *args, **kwargs ):
-        try:
-            entity_id = int( kwargs.get('entity_id'))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid entity id.' )
-        try:
-            entity = Entity.objects.get( id = entity_id )
-        except Entity.DoesNotExist:
-            raise Http404( request )
+        entity = self.get_entity( request, *args, **kwargs )
 
         if not entity.can_user_delete:
             raise PermissionDenied( 'This entity cannot be deleted.' )
@@ -103,17 +96,11 @@ class EntityDeleteView( HiModalView ):
         return self.modal_response( request, context )
     
     def post( self, request, *args, **kwargs ):
+        entity = self.get_entity( request, *args, **kwargs )
+
         action = request.POST.get( 'action' )
         if action != 'confirm':
             raise BadRequest( 'Missing confirmation value.' )
-
-        entity_id = kwargs.get( 'entity_id' )
-        if not entity_id:
-            raise BadRequest( 'Missing entity id.' )
-        try:
-            entity = Entity.objects.get( id = entity_id )
-        except Entity.DoesNotExist:
-            raise Http404( request )
 
         if not entity.can_user_delete:
             raise PermissionDenied( request, message = 'This entity cannot be deleted.' )

@@ -1,13 +1,13 @@
 import logging
 
-from django.core.exceptions import BadRequest
 from django.http import Http404
 from django.template.loader import get_template
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
-from hi.apps.entity.models import Entity, EntityPosition
+from hi.apps.entity.models import EntityPosition
+from hi.apps.entity.view_mixin import EntityViewMixin
 from hi.apps.location.svg_item_factory import SvgItemFactory
 from hi.apps.location.location_manager import LocationManager
 
@@ -19,17 +19,10 @@ from . import forms
 logger = logging.getLogger(__name__)
 
 
-class EntityEditView( View ):
+class EntityEditView( View, EntityViewMixin ):
 
     def post( self, request, *args, **kwargs ):
-        try:
-            entity_id = int( kwargs.get('entity_id'))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid entity id.' )
-        try:
-            entity = Entity.objects.get( id = entity_id )
-        except Entity.DoesNotExist:
-            raise Http404( request )
+        entity = self.get_entity( request, *args, **kwargs )
 
         entity_form = forms.EntityForm( request.POST, instance = entity )
         if entity_form.is_valid():
@@ -49,18 +42,14 @@ class EntityEditView( View ):
 
         
 @method_decorator( edit_required, name='dispatch' )
-class EntityPositionEditView( View ):
+class EntityPositionEditView( View, EntityViewMixin ):
 
     def post(self, request, *args, **kwargs):
-        try:
-            entity_id = int( kwargs.get('entity_id'))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid entity id.' )
-
+        entity = self.get_entity( request, *args, **kwargs )
         location = LocationManager().get_default_location( request = request )
         try:
             entity_position = EntityPosition.objects.get(
-                entity_id = entity_id,
+                entity = entity,
                 location = location,
             )
         except EntityPosition.DoesNotExist:

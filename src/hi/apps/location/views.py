@@ -1,7 +1,7 @@
 import logging
 
 from django.core.exceptions import BadRequest
-from django.http import HttpResponseRedirect, Http404
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.generic import View
 
@@ -13,6 +13,7 @@ from hi.hi_grid_view import HiGridView
 
 from .location_manager import LocationManager
 from .models import Location, LocationView
+from .view_mixin import LocationViewMixin
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class LocationViewDefaultView( View ):
             location_view = self._get_default_location_view( request )
             redirect_url = reverse(
                 'location_view',
-                kwargs = { 'id': location_view.id }
+                kwargs = { 'location_view_id': location_view.id }
             )
         except Location.DoesNotExist:
             redirect_url = reverse( 'start' )
@@ -44,23 +45,13 @@ class LocationViewDefaultView( View ):
         return location_view
 
     
-class LocationViewView( HiGridView ):
+class LocationViewView( HiGridView, LocationViewMixin ):
 
     def get_main_template_name( self ) -> str:
         return 'location/location_view.html'
 
     def get_template_context( self, request, *args, **kwargs ):
-        try:
-            location_view_id = int( kwargs.get( 'location_view_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location view id.' )
-        try:
-            location_view = LocationManager().get_location_view(
-                request = request,
-                location_view_id = location_view_id,
-            )
-        except LocationView.DoesNotExist:
-            raise Http404( request )
+        location_view = self.get_location_view( request, *args, **kwargs )
 
         # Remember last location view chosen
         view_type_changed = bool( request.view_parameters.view_type != ViewType.LOCATION_VIEW )
@@ -91,20 +82,10 @@ class LocationViewView( HiGridView ):
         }
 
     
-class LocationSwitchView( View ):
+class LocationSwitchView( View, LocationViewMixin ):
 
     def get(self, request, *args, **kwargs):
-        try:
-            location_id = int( kwargs.get('location_id'))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location id.' )
-        try:
-            location = LocationManager().get_location(
-                request = request,
-                location_id = location_id,
-            )
-        except Location.DoesNotExist:
-            raise Http404( request )
+        location = self.get_location( request, *args, **kwargs )
 
         location_view = location.views.order_by( 'order_id' ).first()
         if not location_view:
@@ -116,6 +97,6 @@ class LocationSwitchView( View ):
 
         redirect_url = reverse(
             'location_view',
-            kwargs = { 'id': location_view.id }
+            kwargs = { 'location_id': location_view.id }
         )
         return HttpResponseRedirect( redirect_url )

@@ -1,19 +1,16 @@
 import logging
 
-from django.core.exceptions import BadRequest
-from django.http import Http404
-
 from hi.apps.location.location_manager import LocationManager
 
 from hi.hi_async_view import HiSideView
 
 from .collection_manager import CollectionManager
-from .models import Collection
+from .view_mixin import CollectionViewMixin
 
 logger = logging.getLogger(__name__)
 
 
-class CollectionDetailsView( HiSideView ):
+class CollectionDetailsView( HiSideView, CollectionViewMixin ):
 
     def get_template_name( self ) -> str:
         return 'collection/panes/collection_details.html'
@@ -22,17 +19,7 @@ class CollectionDetailsView( HiSideView ):
         return True
     
     def get_template_context( self, request, *args, **kwargs ):
-        try:
-            collection_id = int( kwargs.get( 'collection_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid location view id.' )
-        try:
-            collection = CollectionManager().get_collection(
-                request = request,
-                collection_id = collection_id,
-            )
-        except Collection.DoesNotExist:
-            raise Http404( request )
+        collection = self.get_collection( request, *args, **kwargs )
         
         current_location_view = LocationManager().get_default_location_view( request =request )
         collection_detail_data = CollectionManager().get_collection_detail_data(
@@ -44,6 +31,3 @@ class CollectionDetailsView( HiSideView ):
         return {
             'collection_detail_data': collection_detail_data,
         }
-
-    
-    

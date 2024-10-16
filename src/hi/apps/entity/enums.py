@@ -26,6 +26,7 @@ class EntityType(LabeledEnum):
     ELECTRICY_METER      = ( 'Electric Meter', '' )
     ELECTRIC_PANEL       = ( 'Electric Panel', '' )
     ELECTRIC_WIRE        = ( 'Electric Wire', '' )
+    FURNITURE            = ( 'Furniture', '' )
     HEALTHCHECK          = ( 'Healthcheck', '' )
     HEATER               = ( 'Heater', '' )  # Controls area
     HVAC_AIR_HANDLER     = ( 'HVAC Air Handler', '' )  # Controls area
