@@ -8,15 +8,24 @@
 	LOCATION_VIEW_SVG_CLASS: 'hi-location-view',
 	BASE_SVG_SELECTOR: '#hi-location-view-main > svg',
 	HIGHLIGHTED_CLASS: 'highlighted',
+	ATTRIBUTE_CONTAINER_SELECTOR: '.hi-attribute',
+	FORM_FIELD_CONTAINER_SELECTOR: '.input-group',
 	SVG_ACTION_STATE_ATTR_NAME: 'action-state',
 
 	DATA_TYPE_ATTR: 'data-type',
 	DATA_TYPE_ICON_VALUE: 'svg-icon',
 	DATA_TYPE_PATH_VALUE: 'svg-path',
+	
 	API_LOCATION_ITEM_DETAILS_URL: '/location/item/details',
 
 	generateUniqueId: function() {
 	    return _generateUniqueId();
+	},
+	togglePasswordField: function( toggleCheckbox ) {
+	    return _togglePasswordField( toggleCheckbox );
+	},
+	changeAttributeValueType: function( selectElement ) {
+	    return _changeAttributeValueType( selectElement );
 	},
 	getScreenCenterPoint: function( element ) {
 	    return _getScreenCenterPoint( element );
@@ -60,6 +69,23 @@
 	return 'id-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
     }
 
+    function _togglePasswordField( toggleCheckbox ) {
+
+        let passwordField = $(toggleCheckbox).closest(Hi.FORM_FIELD_CONTAINER_SELECTOR).find('input[type="password"], input[type="text"]');
+        if ( toggleCheckbox.checked ) {
+            passwordField.attr('type', 'text');
+        } else {
+            passwordField.attr('type', 'password');
+        }
+    }
+
+    function _changeAttributeValueType( selectElement ) {
+	const value_type = $(selectElement).val();
+	$(selectElement).closest(Hi.ATTRIBUTE_CONTAINER_SELECTOR).find('[value-type]').hide();
+	$(selectElement).closest(Hi.ATTRIBUTE_CONTAINER_SELECTOR).find(`[value-type="${value_type}"`).show();
+	
+    }
+    
     function _getScreenCenterPoint( element ) {
 	try {
             let rect = $(element)[0].getBoundingClientRect();

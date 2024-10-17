@@ -1,26 +1,18 @@
-EXISTING
-<div class="row p-3">
-  <div class="col-8">
-    <div class="input-group" >
-      <div class="input-group-prepend" >
-	{% if 'name'  in attribute_form.fields %}
-	{{ attribute_form.name }}
-	{% else %}
-	<span class="input-group-text" >{{ attribute_form.instance.name }}</span>
-	{% endif %}
-      </div>
-      {{ attribute_form.value }}
-    </div>
-    <div class="form-error text-danger" >{{ attribute_form.name.errors }}</div>
-    <div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
-    <div class="form-error text-danger" >{{ attribute_form.file_value.errors }}</div>
+<div class="input-group" >
+  <div class="input-group-prepend" >
+    <span class="input-group-text" >{{ attribute_form.instance.name }}</span>
   </div>
+  {{ attribute_form.value }}
 </div>
+<div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
+
 <div>
   {{ attribute_form.value_type_str.label }}
   {{ attribute_form.value_type_str }}
   {{ attribute_form.value_type_str.errors }}
 </div>
-<div class="col-lg-2 col-12">
+{% if attribute_form.show_as_editable and instance.is_editable %}
+<div class="">
   {{ attribute_form.DELETE }} Delete
 </div>
+{% endif %}

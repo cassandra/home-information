@@ -19,4 +19,5 @@ DIVID = {
     'ENTITY_POSITION_EDIT_PANE': 'hi-entity-position-edit',
     'COLLECTION_POSITION_EDIT_PANE': 'hi-collection-position-edit',
 
+    'ATTRIBUTE_CONTAINER_CLASS': 'hi-attribute',
 }
