@@ -14,6 +14,14 @@ def is_ajax( request : HttpRequest ):
     return bool( request.headers.get('x-requested-with') == 'XMLHttpRequest' )
 
 
+def is_blank( obj ):
+    if obj is None:
+        return True
+    if not isinstance( obj, str ):
+        return False
+    return bool( obj.strip() == '' )
+
+    
 def get_long_display_name( user_obj ):
     if not user_obj:
         return settings.USER_DISPLAY_NAME_DEFAULT

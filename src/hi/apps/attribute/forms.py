@@ -1,7 +1,9 @@
-from django.core.files.storage import default_storage
+from django.core.exceptions import ValidationError
 from django import forms
 
-from .enums import AttributeValueType
+from hi.apps.common.utils import is_blank
+
+from .enums import AttributeType, AttributeValueType
 
 
 class AttributeForm(forms.ModelForm):
@@ -30,18 +32,39 @@ class AttributeForm(forms.ModelForm):
             
     def clean(self):
         cleaned_data = super().clean()
+        
+        if not self.instance.is_editable:
+            raise ValidationError( 'This attribute is not editable.' )
+        
+        value_type = AttributeValueType.from_name( cleaned_data.get('value_type_str') )
+        name = cleaned_data.get('name')
         value = cleaned_data.get('value')
-        value_type = self.instance.value_type
+        file_value = cleaned_data.get('file_value')
 
-        if value_type in { AttributeValueType.TEXT }:
-            if not isinstance(value, str):
-                self.add_error('value', 'Value must be a string.')
+        if is_blank( name ):
+            self.add_error( 'name', 'A name is required' )
+            
+        if value_type == AttributeValueType.FILE:
+            if not file_value:
+                self.add_error( 'file_value', 'A file is required.')
 
-        elif value_type in { AttributeValueType.FILE }:
-            if not default_storage.exists( value ):
-                self.add_error('value', f'{value_type} file does not exist.')
+        elif value_type in { AttributeValueType.TEXT, AttributeValueType.SECRET }:
+            if self.instance.is_required and is_blank( value ):
+                self.add_error( 'value', 'A value is required' )
 
         return cleaned_data
+
+    def save( self, commit = True ):
+        instance = super().save( commit = False )
+        
+        if not instance.pk:
+            instance.attribute_type_str = AttributeType.CUSTOM
+            instance.is_editable = True
+            instance.iis_required = False
+        
+        if commit:
+            instance.save()
+        return instance
 
     
 class GeneralAttributeForm( AttributeForm ):

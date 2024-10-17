@@ -61,8 +61,7 @@
     <textarea rows="2" cols="40"
 	      id="{{ attribute_form.value.id_for_label }}"
 	      name="{{ attribute_form.value.html_name }}"
-	      value="{{ attribute_form.value.value|default_if_none:'' }}">
-    </textarea>
+    >{{ attribute_form.value.value|default_if_none:'' }}</textarea>
     <div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
   </div>
 </div>

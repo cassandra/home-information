@@ -1,5 +1,5 @@
 
-# HTML div ids that are commonly referenced
+# HTML div ids (classes and attributes) that app logic depends on.
 DIVID = {
 
     # Main HI Grid Structure

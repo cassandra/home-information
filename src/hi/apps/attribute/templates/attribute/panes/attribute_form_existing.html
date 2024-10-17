@@ -1,17 +1,21 @@
+<input type="hidden" id="{{ attribute_form.value_type_str.id_for_label }}"
+       name="{{ attribute_form.value_type_str.html_name }}"
+       value="{{ attribute_form.instance.value_type_str }}" />
+<input type="hidden" id="{{ attribute_form.name.id_for_label }}"
+       name="{{ attribute_form.name.html_name }}"
+       value="{{ attribute_form.instance.name }}" />
 <div class="input-group" >
   <div class="input-group-prepend" >
     <span class="input-group-text" >{{ attribute_form.instance.name }}</span>
   </div>
-  {{ attribute_form.value }}
+  <textarea rows="2" cols="40"
+	    id="{{ attribute_form.value.id_for_label }}"
+	    name="{{ attribute_form.value.html_name }}"
+  >{{ attribute_form.value.value|default_if_none:'' }}</textarea>
+  <div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
 </div>
-<div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
 
-<div>
-  {{ attribute_form.value_type_str.label }}
-  {{ attribute_form.value_type_str }}
-  {{ attribute_form.value_type_str.errors }}
-</div>
-{% if attribute_form.show_as_editable and instance.is_editable %}
+{% if attribute_form.show_as_editable and attribute_form.instance.is_editable %}
 <div class="">
   {{ attribute_form.DELETE }} Delete
 </div>

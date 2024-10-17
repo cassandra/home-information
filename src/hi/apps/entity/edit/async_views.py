@@ -41,7 +41,10 @@ class EntityEditView( View, EntityViewMixin ):
                 instance = entity,
                 prefix = f'entity-{entity.id}',
             )
-                
+            status_code = 200
+        else:
+            status_code = 400
+            
         context = {
             'entity': entity,
             'entity_form': entity_form,
@@ -53,6 +56,7 @@ class EntityEditView( View, EntityViewMixin ):
             insert_map = {
                 DIVID['ENTITY_EDIT_PANE']: content,
             },
+            status = status_code,
         )
 
         

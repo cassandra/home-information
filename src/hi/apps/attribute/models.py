@@ -1,3 +1,6 @@
+import logging
+
+from django.core.files.storage import default_storage
 from django.db import models
 
 from hi.apps.common.file_utils import generate_unique_filename
@@ -8,6 +11,8 @@ from .enums import (
     AttributeValueType,
     AttributeType,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class AttributeModel(models.Model):
@@ -107,3 +112,19 @@ class AttributeModel(models.Model):
         super().save(*args, **kwargs)
         return
     
+    def delete( self, *args, **kwargs ):
+        """ Deleting file from MEDIA_ROOT on best effort basis.  Ignore if fails. """
+        
+        if self.file_value:
+            try:
+                if default_storage.exists( self.file_value ):
+                    default_storage.delete( self.file_value )
+                    logger.debug( f'Deleted Attribute file: {self.file_value}' )
+                else:
+                    logger.warn( f'Attribute file not found: {self.file_value}' )
+            except Exception as e:
+                # Log the error or handle it accordingly
+                logger.warn( f'Error deleting Attribute file {self.file_value}: {e}' )
+
+        super().delete( *args, **kwargs )
+        return
