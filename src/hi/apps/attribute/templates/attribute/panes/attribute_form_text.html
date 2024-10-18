@@ -1,6 +1,3 @@
-<input type="hidden" id="{{ attribute_form.value_type_str.id_for_label }}"
-       name="{{ attribute_form.value_type_str.html_name }}"
-       value="{{ attribute_form.instance.value_type_str }}" />
 <input type="hidden" id="{{ attribute_form.name.id_for_label }}"
        name="{{ attribute_form.name.html_name }}"
        value="{{ attribute_form.instance.name }}" />
@@ -8,10 +5,23 @@
   <div class="input-group-prepend" >
     <span class="input-group-text" >{{ attribute_form.instance.name }}</span>
   </div>
+  {% if attribute_form.instance.value_type.is_secret %}
+  <input type="password"
+         id="{{ attribute_form.value.id_for_label }}"
+         name="{{ attribute_form.value.html_name }}"
+         value="{{ attribute_form.value.value|default_if_none:'' }}">
+  <span>
+    <input type="checkbox" name="{{ attribute_form.value.html_name }}-show"
+	   id="{{ attribute_form.value.id_for_label }}-show"
+	   onclick="Hi.togglePasswordField( this );">
+    <label for="{{ attribute_form.value.id_for_label }}-show">Show</label>
+  </span>
+  {% else %}  
   <textarea rows="2" cols="40"
 	    id="{{ attribute_form.value.id_for_label }}"
 	    name="{{ attribute_form.value.html_name }}"
   >{{ attribute_form.value.value|default_if_none:'' }}</textarea>
+  {% endif %}
   <div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
 </div>
 

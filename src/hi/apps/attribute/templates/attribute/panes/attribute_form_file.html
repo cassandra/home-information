@@ -1,0 +1,23 @@
+<input type="hidden" id="{{ attribute_form.name.id_for_label }}"
+       name="{{ attribute_form.name.html_name }}"
+       value="{{ attribute_form.instance.name }}" />
+<div class="input-group" >
+  <div>
+    File: <a href="{{ attribute_form.instance.file_value.url }}"
+	     {% if attribute_form.instance.file_mime_type %}type="{{ attribute_form.instance.file_mime_type }}"{% endif %}
+	     target="_blank">
+      {{ attribute_form.instance.name }}
+    </a>
+  </div>
+  
+  <textarea rows="2" cols="40"
+	    id="{{ attribute_form.value.id_for_label }}"
+	    name="{{ attribute_form.value.html_name }}">{{ attribute_form.value.value|default_if_none:'' }}</textarea>
+  <div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
+
+  {% if attribute_form.show_as_editable and attribute_form.instance.is_editable %}
+  <div class="">
+    {{ attribute_form.DELETE }} Delete
+  </div>
+  {% endif %}
+</div>

@@ -1,67 +1,27 @@
 <div class="h5">Add</div>
 
-<div>    
-  {{ attribute_form.value_type_str.label }}
-  {{ attribute_form.value_type_str }}
-  {{ attribute_form.value_type_str.errors }}
-</div>
-
-<div class=""
-     {% if attribute_form.value_type_str.value != 'file' %}style="display: none;"{% endif %}
-     value-type="file">
+<div class="input-group" >
   <label for="{{ attribute_form.name.id_for_label }}">{{ attribute_form.name.label }}</label>
   <input type="text"
          id="{{ attribute_form.name.id_for_label }}"
          name="{{ attribute_form.name.html_name }}"
          value="{{ attribute_form.name.value|default_if_none:'' }}">
-  <div>
-    Choose file:
-    {{ attribute_form.file_value }}
-    {{ attribute_form.file_value.errors }}
-  </div>
+  <div class="form-error text-danger" >{{ attribute_form.name.errors }}</div>
 </div>
-
-<div class=""
-     {% if attribute_form.value_type_str.value != 'secret' %}style="display: none;"{% endif %}
-     value-type="secret">
-  <div class="input-group" >
-    <div>
-      <label for="{{ attribute_form.name.id_for_label }}">{{ attribute_form.name.label }}</label>
-      <input type="text"
-             id="{{ attribute_form.name.id_for_label }}"
-             name="{{ attribute_form.name.html_name }}"
-             value="{{ attribute_form.name.value|default_if_none:'' }}">
-      <input type="checkbox" onclick="Hi.togglePasswordField(this);">Show
-      <div class="form-error text-danger" >{{ attribute_form.name.errors }}</div>
-    </div>
-    <div>
-      <label for="{{ attribute_form.value.id_for_label }}">{{ attribute_form.value.label }}</label>
-      <input type="password"
-             id="{{ attribute_form.value.id_for_label }}"
-             name="{{ attribute_form.value.html_name }}"
-             value="{{ attribute_form.value.value|default_if_none:'' }}">
-      <div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
-    </div>
-  </div>
-</div>
-
-<div class=""
-     {% if attribute_form.value_type_str.value != 'text' %}style="display: none;"{% endif %}
-     value-type="text">
-  <div class="input-group" >
-    <label for="{{ attribute_form.name.id_for_label }}">{{ attribute_form.name.label }}</label>
-    <input type="text"
-           id="{{ attribute_form.name.id_for_label }}"
-           name="{{ attribute_form.name.html_name }}"
-           value="{{ attribute_form.name.value|default_if_none:'' }}">
-    <div class="form-error text-danger" >{{ attribute_form.name.errors }}</div>
-  </div>
-  <div class="input-group">
-    <label for="{{ attribute_form.value.id_for_label }}">{{ attribute_form.value.label }}</label>
-    <textarea rows="2" cols="40"
-	      id="{{ attribute_form.value.id_for_label }}"
+<div class="input-group">
+  <label for="{{ attribute_form.value.id_for_label }}">{{ attribute_form.value.label }}</label>
+  <textarea rows="2" cols="40"
+	    id="{{ attribute_form.value.id_for_label }}"
 	      name="{{ attribute_form.value.html_name }}"
-    >{{ attribute_form.value.value|default_if_none:'' }}</textarea>
-    <div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
-  </div>
+  >{{ attribute_form.value.value|default_if_none:'' }}</textarea>
+  <div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
+
 </div>
+
+<span>
+  <input type="checkbox" name="{{ attribute_form.secret.html_name }}"
+	 id="{{ attribute_form.secret.id_for_label }}"
+	 {% if attribute_form.secret.value %}checked="on"{% endif %} >
+  <label for="{{ attribute_form.secret.id_for_label }}">Mark as secret</label>
+</span>
+  {{ attribute_form.secret.errors }}

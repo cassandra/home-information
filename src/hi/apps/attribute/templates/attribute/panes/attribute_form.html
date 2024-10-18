@@ -14,7 +14,13 @@
     {% endif %}
 
     {% if attribute_form.instance.pk %}
-    {% include "attribute/panes/attribute_form_existing.html" %}
+
+    {% if attribute_form.instance.value_type.is_file %}
+    {% include "attribute/panes/attribute_form_file.html" %}
+    {% else %}
+    {% include "attribute/panes/attribute_form_text.html" %}
+    {% endif %}
+    
     {% else %}
     {% include "attribute/panes/attribute_form_new.html" %}
     {% endif %}

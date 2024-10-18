@@ -27,9 +27,6 @@
 	togglePasswordField: function( toggleCheckbox ) {
 	    return _togglePasswordField( toggleCheckbox );
 	},
-	changeAttributeValueType: function( selectElement ) {
-	    return _changeAttributeValueType( selectElement );
-	},
 	getScreenCenterPoint: function( element ) {
 	    return _getScreenCenterPoint( element );
 	},
@@ -83,18 +80,13 @@
         let passwordField = $(toggleCheckbox).closest(Hi.FORM_FIELD_CONTAINER_SELECTOR).find('input[type="password"], input[type="text"]');
         if ( toggleCheckbox.checked ) {
             passwordField.attr('type', 'text');
+	    $('label[for="' +  $(toggleCheckbox).attr('id') + '"]').text('Hide');
         } else {
             passwordField.attr('type', 'password');
+	    $('label[for="' +  $(toggleCheckbox).attr('id') + '"]').text('Show');
         }
     }
 
-    function _changeAttributeValueType( selectElement ) {
-	const value_type = $(selectElement).val();
-	$(selectElement).closest(Hi.ATTRIBUTE_CONTAINER_SELECTOR).find('[value-type]').hide();
-	$(selectElement).closest(Hi.ATTRIBUTE_CONTAINER_SELECTOR).find(`[value-type="${value_type}"`).show();
-	
-    }
-    
     function _getScreenCenterPoint( element ) {
 	try {
             let rect = $(element)[0].getBoundingClientRect();

@@ -9,18 +9,23 @@ class AttributeType(LabeledEnum):
     
 class AttributeValueType(LabeledEnum):
 
-    def __init__( self,
-                  label        : str,
-                  description  : str,
-                  is_file      : bool    = False ):
-        super().__init__( label, description )
-        self.is_file = is_file
-        return
-    
     TEXT      = ('Text', '' )
-    FILE      = ('File', '', True )  # relative filename of MEDIA_ROOT
+    FILE      = ('File', '' )  # relative filename of MEDIA_ROOT
     SECRET    = ('Secret', '' )
 
     @classmethod
     def default(cls):
         return cls.TEXT
+
+    @property
+    def is_file(self):
+        return bool( self == AttributeValueType.FILE )
+
+    @property
+    def is_text(self):
+        return bool( self == AttributeValueType.TEXT )
+
+    @property
+    def is_secret(self):
+        return bool( self == AttributeValueType.SECRET )
+    

@@ -26,10 +26,16 @@ class AttributeModel(models.Model):
     )
     value = models.TextField(
         'Value',
+        blank = True, null = True,
     )
     file_value = models.FileField(
         upload_to = 'attributes/',  # Subclasses override via get_upload_to()
         blank = True, null = True,
+    )
+    file_mime_type = models.CharField(
+        'Mime Type',
+        max_length = 128,
+        null = True, blank = True,
     )
     value_type_str = models.CharField(
         'Value Type',
