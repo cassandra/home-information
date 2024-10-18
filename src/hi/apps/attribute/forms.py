@@ -51,14 +51,17 @@ class AttributeForm( forms.ModelForm ):
             
     def clean(self):
         cleaned_data = super().clean()
-
-        form_is_bound = bool( self.instance.pk )
-        if form_is_bound and not self.instance.is_editable:
-            raise ValidationError( 'This attribute is not editable.' )
-
         name = cleaned_data.get('name')
         value = cleaned_data.get('value')
 
+        form_is_bound = bool( self.instance.pk )
+        if form_is_bound:
+            if not self.instance.is_editable:
+                raise ValidationError( f'The attribute "{self.instance.name}" is not editable.' )
+            if ( self.instance.attribute_type == AttributeType.PREDEFINED
+                 and ( name != self.instance.name )):
+                raise ValidationError( 'Changing name forbidden for predefined attributes.' )
+                
         if is_blank( name ):
             self.add_error( 'name', 'A name is required' )
 

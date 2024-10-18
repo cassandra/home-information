@@ -267,6 +267,7 @@ PIPELINE = {
             'source_filenames': (
                 'js/jquery-3.7.0.min.js',
                 'js/antinode.js',
+                'js/autosize.min.js',
             ),
             'output_filename': 'js/js_before_content.js',
         },

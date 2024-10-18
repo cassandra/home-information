@@ -9,11 +9,7 @@
       {{ attribute_form.instance.name }}
     </a>
   </div>
-  
-  <textarea rows="2" cols="40"
-	    id="{{ attribute_form.value.id_for_label }}"
-	    name="{{ attribute_form.value.html_name }}">{{ attribute_form.value.value|default_if_none:'' }}</textarea>
-  <div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
+  {% include "attribute/panes/attribute_form_field_value.html" %}
 
   {% if attribute_form.show_as_editable and attribute_form.instance.is_editable %}
   <div class="">

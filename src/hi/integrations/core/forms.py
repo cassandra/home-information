@@ -6,12 +6,8 @@ from .models import Integration, IntegrationAttribute
 
 
 class IntegrationAttributeForm( AttributeForm ):
-
-    class Meta:
+    class Meta( AttributeForm.Meta ):
         model = IntegrationAttribute
-        fields = (
-            'value',
-        )
         
 
 IntegrationAttributeFormSet = forms.inlineformset_factory(

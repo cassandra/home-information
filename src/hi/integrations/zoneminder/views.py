@@ -134,7 +134,7 @@ class ZmSettingsView( View, IntegrationHelperMixin ):
             context = {
                 'integration_attribute_formset': integration_attribute_formset,
             }
-            template = get_template( 'zoneminder/panes/zm_setings.html' )
+            template = get_template( 'zoneminder/panes/zm_settings.html' )
             content = template.render( context, request = request )
             return antinode.response(
                 insert_map = {
