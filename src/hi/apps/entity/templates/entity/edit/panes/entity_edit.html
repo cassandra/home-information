@@ -12,3 +12,13 @@
     UPDATE
   </button>
 </form>
+
+<form action="{% url 'entity_attribute_upload' entity_id=entity.id %}"
+      method="post"
+      class="form" data-async="#{{ DIVID.ENTITY_EDIT_PANE }}">
+  {% csrf_token %}
+  <div>
+    {% include "attribute/panes/attribute_upload_form.html" with attribute_upload_form=entity_attribute_upload_form  %}
+  </div>
+</form>
+

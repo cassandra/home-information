@@ -21,6 +21,9 @@
 	generateUniqueId: function() {
 	    return _generateUniqueId();
 	},
+	submitForm: function( formElement ) {
+	    return _submitForm( formElement );
+	},
 	togglePasswordField: function( toggleCheckbox ) {
 	    return _togglePasswordField( toggleCheckbox );
 	},
@@ -69,6 +72,12 @@
 	return 'id-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
     }
 
+    function _submitForm( formElement ) {
+	let form = $(formElement).closest('form');
+	if ( Hi.DEBUG ) { console.debug( 'Submitting form:', formElement, form ); }
+	$(form).submit();
+    }
+    
     function _togglePasswordField( toggleCheckbox ) {
 
         let passwordField = $(toggleCheckbox).closest(Hi.FORM_FIELD_CONTAINER_SELECTOR).find('input[type="password"], input[type="text"]');

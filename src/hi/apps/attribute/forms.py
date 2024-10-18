@@ -6,10 +6,35 @@ from hi.apps.common.utils import is_blank
 from .enums import AttributeType, AttributeValueType
 
 
-class AttributeForm(forms.ModelForm):
-
+class AttributeForm( forms.ModelForm ):
+    """
+    Abstract mode form class the corresponds to the abstract model calss
+    Attribute.  When subclassing the Attribute model, you likely also want
+    a subclass of this model form.  Subclassing this fomr looks something
+    like this:
+    
+        class MyAttributeForm( AttributeForm ):
+            class Meta( AttributeForm.Meta ):
+                model = MyAttribute
+    """
     class Meta:
-        abstract = True
+        fields = (
+            'name',
+            'value',
+            'file_value',
+            'value_type_str',
+        )
+
+    value_type_str = forms.ChoiceField(
+        label = 'Value Type',
+        choices = AttributeValueType.choices,
+        initial = AttributeValueType.default_value(),
+        required = True,
+        widget = forms.Select( attrs = {
+            'class' : 'custom-select',
+            'onchange': 'Hi.changeAttributeValueType( this );',
+        } ),
+    )
 
     @property
     def show_as_editable(self):
@@ -32,15 +57,19 @@ class AttributeForm(forms.ModelForm):
             
     def clean(self):
         cleaned_data = super().clean()
-        
-        if not self.instance.is_editable:
+
+        form_is_bound = bool( self.instance.pk )
+        if form_is_bound and not self.instance.is_editable:
             raise ValidationError( 'This attribute is not editable.' )
-        
+
         value_type = AttributeValueType.from_name( cleaned_data.get('value_type_str') )
         name = cleaned_data.get('name')
         value = cleaned_data.get('value')
         file_value = cleaned_data.get('file_value')
 
+        if form_is_bound and ( self.instance.value_type != value_type ):
+            raise ValidationError( 'Changing an attribute value type is not supported.' )
+        
         if is_blank( name ):
             self.add_error( 'name', 'A name is required' )
             
@@ -58,32 +87,40 @@ class AttributeForm(forms.ModelForm):
         instance = super().save( commit = False )
         
         if not instance.pk:
-            instance.attribute_type_str = AttributeType.CUSTOM
+            instance.attribute_type_str = str(AttributeType.CUSTOM)
             instance.is_editable = True
-            instance.iis_required = False
+            instance.is_required = False
         
         if commit:
             instance.save()
         return instance
 
     
-class GeneralAttributeForm( AttributeForm ):
+class AttributeUploadForm( forms.ModelForm ):
 
     class Meta:
         fields = (
-            'name',
-            'value',
             'file_value',
-            'value_type_str',
         )
+        
+    def clean(self):
+        cleaned_data = super().clean()
 
-    value_type_str = forms.ChoiceField(
-        label = 'Value Type',
-        choices = AttributeValueType.choices,
-        initial = AttributeValueType.default_value(),
-        required = True,
-        widget = forms.Select( attrs = {
-            'class' : 'custom-select',
-            'onchange': 'Hi.changeAttributeValueType( this );',
-        } ),
-    )
+        file_value = cleaned_data.get('file_value')
+        if not file_value:
+            self.add_error( 'file_value', 'A file is required.')
+
+        return cleaned_data
+
+    def save( self, commit = True ):
+        instance = super().save( commit = False )
+        
+        instance.attribute_type_str = str(AttributeType.CUSTOM)
+        instance.value_type_str = str( AttributeValueType.FILE )
+        instance.name = instance.file_value.name
+        instance.is_editable = True
+        instance.is_required = False
+        
+        if commit:
+            instance.save()
+        return instance

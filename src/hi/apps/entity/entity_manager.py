@@ -4,7 +4,12 @@ from typing import List
 from django.db import transaction
 
 from hi.apps.common.singleton import Singleton
-from hi.apps.entity.edit.forms import EntityAttributeFormSet, EntityForm, EntityPositionForm
+from hi.apps.entity.edit.forms import (
+    EntityAttributeFormSet,
+    EntityForm,
+    EntityPositionForm,
+    EntityAttributeUploadForm,
+)
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 
@@ -236,6 +241,7 @@ class EntityManager(Singleton):
                     'show_as_editable': True,
                 },
             ),
+            entity_attribute_upload_form = EntityAttributeUploadForm(),
             entity_position_form = entity_position_form,
         )
 

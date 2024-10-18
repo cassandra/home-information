@@ -14,6 +14,14 @@
 </button>
 </form>
 
+<form action="{% url 'location_attribute_upload' location_id=location.id %}"
+      method="post"
+      class="form" data-async="#{{ DIVID.LOCATION_EDIT_PANE }}">
+  {% csrf_token %}
+  <div>
+    {% include "attribute/panes/attribute_upload_form.html" with attribute_upload_form=location_attribute_upload_form  %}
+  </div>
+</form>
 
 <div>
   <a href="{% url 'location_edit_svg_replace' location_id=location.id %}"

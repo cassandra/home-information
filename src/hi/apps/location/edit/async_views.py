@@ -16,6 +16,7 @@ from hi.apps.entity.edit.async_views import EntityPositionEditView
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
+from hi.apps.location.models import LocationAttribute
 from hi.apps.location.view_mixin import LocationViewMixin
 
 from hi.constants import DIVID
@@ -43,12 +44,20 @@ class LocationEditView( View, LocationViewMixin ):
             request.FILES,
             instance = location,
             prefix = f'location-{location.id}',
+            form_kwargs = {
+                'show_as_editable': True,
+            },
         )
 
+        location_attribute_upload_form = forms.LocationAttributeUploadForm(
+            request.POST,
+            instance = location,
+        )    
         context = {
             'location': location,
             'location_edit_form': location_edit_form,
             'location_attribute_formset': location_attribute_formset,
+            'location_attribute_upload_form': location_attribute_upload_form,
         }
         
         if ( not location_edit_form.is_valid()
@@ -71,6 +80,53 @@ class LocationEditView( View, LocationViewMixin ):
             location_attribute_formset.save()
 
         return antinode.refresh_response()
+            
+    
+@method_decorator( edit_required, name='dispatch' )
+class LocationAttributeUploadView( View, LocationViewMixin ):
+
+    def post( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+        location_attribute = LocationAttribute( location = location )
+        location_attribute_upload_form = forms.LocationAttributeUploadForm(
+            request.POST,
+            request.FILES,
+            instance = location_attribute,
+        )
+
+        if location_attribute_upload_form.is_valid():
+            with transaction.atomic():
+                location_attribute_upload_form.save()   
+            status_code = 200
+        else:
+            status_code = 400
+
+        location_edit_form = forms.LocationEditForm(
+            instance = location,
+        )
+        location_attribute_formset = forms.LocationAttributeFormSet(
+            instance = location,
+            prefix = f'location-{location.id}',
+            form_kwargs = {
+                'show_as_editable': True,
+            },
+        )
+
+        context = {
+            'location': location,
+            'location_edit_form': location_edit_form,
+            'location_attribute_formset': location_attribute_formset,
+            'location_attribute_upload_form': location_attribute_upload_form,
+        }
+        
+        template = get_template( 'location/edit/panes/location_edit.html' )
+        content = template.render( context, request = request )
+        return antinode.response(
+            insert_map = {
+                DIVID['LOCATION_EDIT_PANE']: content,
+            },
+            status = status_code,
+        )
             
     
 @method_decorator( edit_required, name='dispatch' )

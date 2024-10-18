@@ -1,0 +1,9 @@
+<label for="{{ attribute_upload_form.file_value.id_for_label }}"
+       class="btn btn-info">
+  UPLOAD
+</label>
+<input type="file" name="{{ attribute_upload_form.file_value.html_name }}"
+       id="{{ attribute_upload_form.file_value.id_for_label }}"
+       style="display: none;"
+       onchange="Hi.submitForm( this );">
+

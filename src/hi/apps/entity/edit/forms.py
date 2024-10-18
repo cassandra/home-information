@@ -1,6 +1,6 @@
 from django import forms
 
-from hi.apps.attribute.forms import GeneralAttributeForm
+from hi.apps.attribute.forms import AttributeForm, AttributeUploadForm
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity, EntityAttribute, EntityPosition
 from hi.apps.location.edit.forms import LocationItemPositionForm
@@ -24,8 +24,8 @@ class EntityForm( forms.ModelForm ):
     )
 
     
-class EntityAttributeForm( GeneralAttributeForm ):
-    class Meta( GeneralAttributeForm.Meta ):
+class EntityAttributeForm( AttributeForm ):
+    class Meta( AttributeForm.Meta ):
         model = EntityAttribute
 
         
@@ -38,6 +38,11 @@ EntityAttributeFormSet = forms.inlineformset_factory(
     absolute_max = 100,
     can_delete = True,
 )
+
+
+class EntityAttributeUploadForm( AttributeUploadForm ):
+    class Meta( AttributeUploadForm.Meta ):
+        model = EntityAttribute
 
 
 class EntityPositionForm( LocationItemPositionForm ):

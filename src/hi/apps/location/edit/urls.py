@@ -14,6 +14,10 @@ urlpatterns = [
              async_views.LocationEditView.as_view(), 
              name='location_edit_location_edit'),
 
+    re_path( r'^location/attribute/upload/(?P<location_id>\d+)$', 
+             async_views.LocationAttributeUploadView.as_view(), 
+             name='location_attribute_upload'),
+
     re_path( r'^location/svg/replace/(?P<location_id>\d+)$', 
              views.LocationSvgReplaceView.as_view(), 
              name='location_edit_svg_replace'),

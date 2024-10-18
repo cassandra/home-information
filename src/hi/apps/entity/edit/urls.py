@@ -14,6 +14,10 @@ urlpatterns = [
              async_views.EntityEditView.as_view(), 
              name='entity_edit'),
 
+    re_path( r'^entity/attribute/upload/(?P<entity_id>\d+)$', 
+             async_views.EntityAttributeUploadView.as_view(), 
+             name='entity_attribute_upload'),
+    
     re_path( r'^entity/delete/(?P<entity_id>\d+)$', 
              views.EntityDeleteView.as_view(), 
              name='entity_edit_entity_delete' ),
