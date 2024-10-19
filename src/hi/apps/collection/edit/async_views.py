@@ -9,6 +9,7 @@ from django.views.generic import View
 
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import CollectionPosition
+from hi.apps.collection.transient_models import CollectionEditData
 from hi.apps.collection.view_mixin import CollectionViewMixin
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.view_mixin import EntityViewMixin
@@ -31,20 +32,19 @@ class CollectionEditView( View, CollectionViewMixin ):
 
         collection_form = forms.CollectionForm( request.POST, instance = collection )
         if collection_form.is_valid():
-            collection_form.save()     
-            return antinode.refresh_response()  # Collection name shows on bottom of screen
-            
-        # On error, show form errors
-        context = {
-            'collection': collection,
-            'collection_form': collection_form,
-        }
-        template = get_template( 'collection/edit/panes/collection_edit.html' )
-        content = template.render( context, request = request )
-        return antinode.response(
-            insert_map = {
-                DIVID['COLLECTION_EDIT_PANE']: content,
-            },
+            collection_form.save()
+            # Change can impact other parts of UI. e.g., Collection name shows on bottom of screen
+            return antinode.refresh_response()
+
+        # On error, show form errors        
+        collection_edit_data = CollectionEditData(
+            collection = collection,
+            collection_form = collection_form,
+        )
+        return self.collection_edit_response(
+            request = request,
+            collection_edit_data = collection_edit_data,
+            status_code = 400,
         )
 
         
@@ -67,7 +67,7 @@ class CollectionReorder( View ):
     
     
 @method_decorator( edit_required, name='dispatch' )
-class CollectionPositionEditView( View ):
+class CollectionPositionEditView( View, CollectionViewMixin ):
 
     def post(self, request, *args, **kwargs):
         collection = self.get_collection( request, *args, **kwargs )

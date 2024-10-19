@@ -8,6 +8,7 @@ from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.models import EntityAttribute, EntityPosition
+from hi.apps.entity.transient_models import EntityEditData
 from hi.apps.entity.view_mixin import EntityViewMixin
 from hi.apps.location.svg_item_factory import SvgItemFactory
 from hi.apps.location.location_manager import LocationManager
@@ -46,11 +47,14 @@ class EntityEditView( View, EntityViewMixin ):
         else:
             status_code = 400
 
-        return self.entity_edit_response(
-            request = request,
-            entity= entity,
+        entity_edit_data = EntityEditData(
+            entity = entity,
             entity_form = entity_form,
             entity_attribute_formset = entity_attribute_formset,
+        )
+        return self.entity_edit_response(
+            request = request,
+            entity_edit_data = entity_edit_data,
             status_code = status_code,
         )
 
@@ -74,10 +78,13 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
         else:
             status_code = 400
 
+        entity_edit_data = EntityEditData(
+            entity = entity,
+            entity_attribute_upload_form = entity_attribute_upload_form,
+        )            
         return self.entity_edit_response(
             request = request,
-            entity= entity,
-            entity_attribute_upload_form = entity_attribute_upload_form,
+            entity_edit_data = entity_edit_data,
             status_code = status_code,
         )
     

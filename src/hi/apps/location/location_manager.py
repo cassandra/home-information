@@ -10,7 +10,7 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.common.svg_models import SvgViewBox
 
 from .enums import LocationViewType
-from .location_view_data import LocationViewData
+from .transient_models import LocationViewData
 from .models import (
     Location,
     LocationView,

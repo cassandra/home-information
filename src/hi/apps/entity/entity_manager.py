@@ -4,17 +4,11 @@ from typing import List
 from django.db import transaction
 
 from hi.apps.common.singleton import Singleton
-from hi.apps.entity.edit.forms import (
-    EntityAttributeFormSet,
-    EntityForm,
-    EntityPositionForm,
-    EntityAttributeUploadForm,
-)
+from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 
 from .delegation_manager import DelegationManager
-from .entity_detail_data import EntityDetailData
 from .enums import (
     EntityType,
 )
@@ -25,6 +19,8 @@ from .models import (
     EntityView,
 )
 from .transient_models import (
+    EntityDetailsData,
+    EntityEditData,
     EntityViewGroup,
     EntityViewItem,
 )
@@ -35,6 +31,26 @@ class EntityManager(Singleton):
     def __init_singleton__(self):
         return
 
+    def get_entity_details_data( self,
+                                 entity         : Entity,
+                                 location_view  : LocationView,
+                                 is_editing     : bool )        -> EntityDetailsData:
+
+        entity_position_form = None
+        if is_editing and location_view:
+            entity_position = EntityPosition.objects.filter(
+                entity = entity,
+                location = location_view.location,
+            ).first()
+            if entity_position:
+                entity_position_form = EntityPositionForm( instance = entity_position )
+        
+        entity_edit_data = EntityEditData( entity = entity )
+        return EntityDetailsData(
+            entity_edit_data = entity_edit_data,
+            entity_position_form = entity_position_form,
+        )
+        
     def create_entity( self,
                        entity_type       : EntityType,
                        name              : str,
@@ -216,34 +232,6 @@ class EntityManager(Singleton):
             svg_path = svg_path,
         )
         return entity_path
-        
-    def get_entity_detail_data( self,
-                                entity                 : Entity,
-                                current_location_view  : LocationView,
-                                is_editing             : bool ) -> EntityDetailData:
-
-        entity_position_form = None
-        if is_editing and current_location_view:
-            entity_position = EntityPosition.objects.filter(
-                entity = entity,
-                location = current_location_view.location,
-            ).first()
-            if entity_position:
-                entity_position_form = EntityPositionForm( instance = entity_position )
-        
-        return EntityDetailData(
-            entity = entity,
-            entity_form = EntityForm( instance = entity ),
-            entity_attribute_formset = EntityAttributeFormSet(
-                instance = entity,
-                prefix = f'entity-{entity.id}',
-                form_kwargs = {
-                    'show_as_editable': True,
-                },
-            ),
-            entity_attribute_upload_form = EntityAttributeUploadForm(),
-            entity_position_form = entity_position_form,
-        )
 
     def create_entity_view_group_list( self, location_view : LocationView ) -> List[EntityViewGroup]:
 

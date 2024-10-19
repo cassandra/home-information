@@ -17,6 +17,7 @@ from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import LocationAttribute
+from hi.apps.location.transient_models import LocationEditData, LocationViewEditData
 from hi.apps.location.view_mixin import LocationViewMixin
 
 from hi.constants import DIVID
@@ -67,12 +68,15 @@ class LocationEditView( View, LocationViewMixin ):
             status_code = 200
         else:
             status_code = 400
-       
-        return self.location_edit_response(
-            request = request,
+
+        location_edit_data = LocationEditData(
             location = location,
             location_edit_form = location_edit_form,
             location_attribute_formset = location_attribute_formset,
+        )
+        return self.location_edit_response(
+            request = request,
+            location_edit_data = location_edit_data,
             status_code = status_code,
         )
             
@@ -96,13 +100,68 @@ class LocationAttributeUploadView( View, LocationViewMixin ):
         else:
             status_code = 400
 
-        return self.location_edit_response(
-            request = request,
+        location_edit_data = LocationEditData(
             location = location,
             location_attribute_upload_form = location_attribute_upload_form,
+        )
+        return self.location_edit_response(
+            request = request,
+            location_edit_data = location_edit_data,
             status_code = status_code,
         )
-                  
+
+    
+@method_decorator( edit_required, name='dispatch' )
+class LocationViewEditView( View, LocationViewMixin ):
+
+    def post( self, request, *args, **kwargs ):
+        location_view = self.get_location_view( request, *args, **kwargs )
+        location_view_edit_form = forms.LocationViewEditForm( request.POST, instance = location_view )
+
+        if not location_view_edit_form.is_valid():
+            location_view_edit_data = LocationViewEditData(
+                location_view = location_view,
+                location_view_edit_form = location_view_edit_form,
+            )
+            return self.location_view_edit_response(
+                request = request,
+                location_view_edit_data = location_view_edit_data,
+                status_code = 400,
+            )
+        
+        # Location View name/order can impact many parts of UI. Full refresh is safest in this case.
+        location_view_edit_form.save()     
+        return antinode.refresh_response()
+
+    
+class LocationViewGeometryView( View, LocationViewMixin ):
+
+    def post(self, request, *args, **kwargs):
+        location_view = self.get_location_view( request, *args, **kwargs )
+
+        location_view_geometry_form = forms.LocationViewGeometryForm( request.POST, instance = location_view )
+        if location_view_geometry_form.is_valid():
+            location_view_geometry_form.save()
+            status_code = 200
+        else:
+            # LocationViewGeometryForm is just a subset of
+            # LocationViewEditForm used when Javascript mouse/key editing
+            # causes a change to the geometry.  This could give some visual
+            # indicator to the user, but if this chag7e was successfully
+            # applied in the DOM, then the only issue would be some
+            # internal or API issue.
+            logger.warning( 'LocationView geometry form is invalid.' )
+            status_code = 400
+
+        location_view_edit_data = LocationViewEditData(
+            location_view = location_view,
+        )       
+        return self.location_view_edit_response(
+            request = request,
+            location_view_edit_data = location_view_edit_data,
+            status_code = status_code,
+        )
+
     
 @method_decorator( edit_required, name='dispatch' )
 class LocationViewManageItemsView( HiSideView ):
@@ -141,52 +200,6 @@ class LocationViewReorder( View ):
             location_view_id_list = location_view_id_list,
         )            
         return antinode.response( main_content = 'OK' )        
-
-    
-@method_decorator( edit_required, name='dispatch' )
-class LocationViewEditView( View, LocationViewMixin ):
-
-    def post( self, request, *args, **kwargs ):
-        location_view = self.get_location_view( request, *args, **kwargs )
-        location_view_edit_form = forms.LocationViewEditForm( request.POST, instance = location_view )
-
-        if not location_view_edit_form.is_valid():
-            return self.location_view_edit_response(
-                request = request,
-                location_view = location_view,
-                location_view_edit_form = location_view_edit_form,
-                status_code = 400,
-            )
-        
-        # Location View name/order can impact many parts of UI. Full refresh is safest in this case.
-        location_view_edit_form.save()     
-        return antinode.refresh_response()
-
-    
-class LocationViewGeometryView( View, LocationViewMixin ):
-
-    def post(self, request, *args, **kwargs):
-        location_view = self.get_location_view( request, *args, **kwargs )
-
-        location_view_geometry_form = forms.LocationViewGeometryForm( request.POST, instance = location_view )
-        if location_view_geometry_form.is_valid():
-            location_view_geometry_form.save()
-            status_code = 200
-        else:
-            # LocationViewGeometryForm is just a subset of
-            # LocationViewEditForm used when Javascript mouse/key editing
-            # causes a change to the geometry.  This could give some visual
-            # indicator to the user, but if this chag7e was successfully
-            # applied in the DOM, then the only issue would be some
-            # internal or API issue.
-            logger.warning( 'LocationView geometry form is invalid.' )
-            status_code = 400
-            
-        return self.location_view_edit_response(
-            request = request,
-            location_view = location_view,
-            status_code = status_code,
-        )
 
     
 @method_decorator( edit_required, name='dispatch' )

@@ -65,14 +65,6 @@
     
     window.Hi = Hi;
 
-
-    $(document).ready(function() {
-	$(document).on('mousedown', Hi.LOCATION_VIEW_AREA_SELECTOR, function(event) {
-	    if ( ! Hi.isEditMode ) { return; }
-	    handleMouseDown( event );
-	});
-    });
-
     function _generateUniqueId() {
 	return 'id-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
     }

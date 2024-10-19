@@ -7,16 +7,11 @@ from django.views.generic import View
 
 from hi.apps.collection.async_views import CollectionDetailsView
 from hi.apps.entity.async_views import EntityDetailsView
-from hi.apps.location.edit.forms import (
-    LocationAttributeFormSet,
-    LocationAttributeUploadForm,
-    LocationEditForm,
-    LocationViewEditForm,
-)
 
 from hi.enums import ItemType
 from hi.hi_async_view import HiSideView
 
+from .transient_models import LocationEditData, LocationViewEditData
 from .view_mixin import LocationViewMixin
 
 logger = logging.getLogger(__name__)
@@ -33,20 +28,15 @@ class LocationViewDetailsView( HiSideView, LocationViewMixin ):
     def get_template_context( self, request, *args, **kwargs ):
         location_view = self.get_location_view( request, *args, **kwargs )
 
-        return {
-            'location': location_view.location,
-            'location_edit_form': LocationEditForm( instance = location_view.location ),
-            'location_attribute_formset': LocationAttributeFormSet(
-                instance = location_view.location,
-                prefix = f'location-{location_view.location.id}',
-                form_kwargs = {
-                    'show_as_editable': True,
-                },
-            ),
-            'location_attribute_upload_form': LocationAttributeUploadForm(),
-            'location_view': location_view,
-            'location_view_edit_form': LocationViewEditForm(  instance = location_view ),
-        }
+        location_edit_data = LocationEditData(
+            location = location_view.location,
+        )
+        location_view_edit_data = LocationViewEditData(
+            location_view = location_view,
+        )
+        context = location_edit_data.to_template_context()
+        context.update( location_view_edit_data.to_template_context() )
+        return context
 
 
 class LocationItemDetailsViewNEW( HiSideView ):

@@ -25,11 +25,9 @@ class EntityDetailsView( HiSideView, EntityViewMixin ):
         if request.view_parameters.view_type.is_location_view:
             current_location_view = LocationManager().get_default_location_view( request = request )
 
-        entity_detail_data = EntityManager().get_entity_detail_data(
+        entity_details_data = EntityManager().get_entity_details_data(
             entity = entity,
-            current_location_view = current_location_view,
+            location_view = current_location_view,
             is_editing = request.is_editing,
         )
-        return {
-            'entity_detail_data': entity_detail_data,
-        }
+        return entity_details_data.to_template_context()

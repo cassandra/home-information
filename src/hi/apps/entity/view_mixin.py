@@ -3,9 +3,8 @@ from django.http import Http404, HttpRequest
 from django.template.loader import get_template
 
 import hi.apps.common.antinode as antinode
-import hi.apps.entity.edit.forms as forms
-
 from hi.apps.entity.models import Entity
+from hi.apps.entity.transient_models import EntityEditData
 
 from hi.constants import DIVID
 
@@ -24,36 +23,11 @@ class EntityViewMixin:
             raise Http404( request )
 
     def entity_edit_response( self,
-                              request                       : HttpRequest,
-                              entity                        : Entity,
-                              entity_form                   : forms.EntityAttributeFormSet     = None,
-                              entity_attribute_formset      : forms.EntityAttributeFormSet     = None,
-                              entity_attribute_upload_form  : forms.EntityAttributeUploadForm  = None,
-                              status_code                   : int                              = 200 ):
+                              request           : HttpRequest,
+                              entity_edit_data  : EntityEditData,
+                              status_code       : int             = 200 ):
 
-        if not entity_form:
-            entity_form = forms.EntityForm(
-                instance = entity,
-            )
-        if not entity_attribute_formset:
-            entity_attribute_formset = forms.EntityAttributeFormSet(
-                instance = entity,
-                prefix = f'entity-{entity.id}',
-                form_kwargs = {
-                    'show_as_editable': True,
-                },
-            )
-        if not entity_attribute_upload_form:
-            entity_attribute_upload_form = forms.EntityAttributeUploadForm(
-                instance = entity,
-            )
-            
-        context = {
-            'entity': entity,
-            'entity_form': entity_form,
-            'entity_attribute_formset': entity_attribute_formset,
-            'entity_attribute_upload_form': entity_attribute_upload_form,
-        }
+        context = entity_edit_data.to_template_context()
         template = get_template( 'entity/edit/panes/entity_edit.html' )
         content = template.render( context, request = request )
         return antinode.response(

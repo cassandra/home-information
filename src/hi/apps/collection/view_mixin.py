@@ -1,8 +1,13 @@
 from django.core.exceptions import BadRequest
-from django.http import Http404
+from django.http import Http404, HttpRequest
+from django.template.loader import get_template
 
+import hi.apps.common.antinode as antinode
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection
+from hi.apps.collection.transient_models import CollectionEditData
+
+from hi.constants import DIVID
 
 
 class CollectionViewMixin:
@@ -21,3 +26,17 @@ class CollectionViewMixin:
         except Collection.DoesNotExist:
             raise Http404( request )
  
+    def collection_edit_response( self,
+                                  request               : HttpRequest,
+                                  collection_edit_data  : CollectionEditData,
+                                  status_code           : int             = 200 ):
+
+        context = collection_edit_data.to_template_context()
+        template = get_template( 'collection/edit/panes/collection_edit.html' )
+        content = template.render( context, request = request )
+        return antinode.response(
+            insert_map = {
+                DIVID['COLLECTION_EDIT_PANE']: content,
+            },
+            status = status_code,
+        )

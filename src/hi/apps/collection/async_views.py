@@ -21,13 +21,13 @@ class CollectionDetailsView( HiSideView, CollectionViewMixin ):
     def get_template_context( self, request, *args, **kwargs ):
         collection = self.get_collection( request, *args, **kwargs )
         
-        current_location_view = LocationManager().get_default_location_view( request =request )
-        collection_detail_data = CollectionManager().get_collection_detail_data(
+        current_location_view = None
+        if request.view_parameters.view_type.is_location_view:
+            current_location_view = LocationManager().get_default_location_view( request = request )
+
+        collections_detail_data = CollectionManager().get_collection_details_data(
             collection = collection,
-            current_location_view = current_location_view,
+            location_view = current_location_view,
             is_editing = request.is_editing,
         )
-        
-        return {
-            'collection_detail_data': collection_detail_data,
-        }
+        return collections_detail_data.to_template_context()

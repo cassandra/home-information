@@ -3,9 +3,9 @@ from django.http import Http404, HttpRequest
 from django.template.loader import get_template
 
 import hi.apps.common.antinode as antinode
-import hi.apps.location.edit.forms as forms
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
+from hi.apps.location.transient_models import LocationEditData, LocationViewEditData
 
 from hi.constants import DIVID
 
@@ -43,37 +43,10 @@ class LocationViewMixin:
     def location_edit_response(
             self,
             request                         : HttpRequest,
-            location                        : Location,
-            location_edit_form              : forms.LocationEditForm             = None,
-            location_attribute_formset      : forms.LocationAttributeFormSet     = None,
-            location_attribute_upload_form  : forms.LocationAttributeUploadForm  = None,
+            location_edit_data              : LocationEditData,
             status_code                     : int                                = 200 ):
 
-        if not location_edit_form:
-            location_edit_form = forms.LocationEditForm(
-                instance = location,
-            )
-        if not location_attribute_formset:
-            location_attribute_formset = forms.LocationAttributeFormSet(
-                instance = location,
-                prefix = f'location-{location.id}',
-                form_kwargs = {
-                    'show_as_editable': True,
-                },
-            )
-        if not location_attribute_upload_form:
-            location_attribute_upload_form = forms.LocationAttributeUploadForm(
-                request.POST,
-                instance = location,
-            )    
-        
-        context = {
-            'location': location,
-            'location_edit_form': location_edit_form,
-            'location_attribute_formset': location_attribute_formset,
-            'location_attribute_upload_form': location_attribute_upload_form,
-        }
-        
+        context = location_edit_data.to_template_context()
         template = get_template( 'location/edit/panes/location_edit.html' )
         content = template.render( context, request = request )
         return antinode.response(
@@ -86,17 +59,10 @@ class LocationViewMixin:
     def location_view_edit_response(
             self,
             request                  : HttpRequest,
-            location_view            : LocationView,
-            location_view_edit_form  : forms.LocationViewEditForm  = None,
+            location_view_edit_data  : LocationViewEditData,
             status_code              : int                         = 200 ):
 
-        if not location_view_edit_form:
-            location_view_edit_form = forms.LocationViewEditForm( instance = location_view )
-            
-        context = {
-            'location_view': location_view,
-            'location_view_edit_form': location_view_edit_form,
-        }
+        context = location_view_edit_data.to_template_context()
         template = get_template( 'location/edit/panes/location_view_edit.html' )
         content = template.render( context, request = request )
         return antinode.response(

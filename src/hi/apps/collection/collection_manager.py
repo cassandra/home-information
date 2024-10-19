@@ -4,14 +4,12 @@ from typing import List
 from django.db import transaction
 from django.http import HttpRequest
 
-from hi.apps.collection.edit.forms import CollectionForm, CollectionPositionForm
+from hi.apps.collection.edit.forms import CollectionPositionForm
 from hi.apps.common.singleton import Singleton
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 
-from .collection_data import CollectionData
-from .collection_detail_data import CollectionDetailData
 from .enums import CollectionType
 from .models import (
     Collection,
@@ -21,10 +19,13 @@ from .models import (
     CollectionView,
 )
 from .transient_models import (
-    EntityCollectionItem,
-    EntityCollectionGroup,
-    CollectionViewItem,
+    CollectionData,
+    CollectionDetailsData,
+    CollectionEditData,
     CollectionViewGroup,
+    CollectionViewItem,
+    EntityCollectionGroup,
+    EntityCollectionItem,
 )
 
 
@@ -247,24 +248,23 @@ class CollectionManager(Singleton):
         )
         return collection_path
         
-    def get_collection_detail_data( self,
-                                    collection             : Collection,
-                                    current_location_view  : LocationView,
-                                    is_editing             : bool ) -> CollectionDetailData:
+    def get_collection_details_data( self,
+                                     collection      : Collection,
+                                     location_view  : LocationView,
+                                     is_editing      : bool ) -> CollectionDetailsData:
         
         collection_position_form = None
-        if is_editing and current_location_view:
+        if is_editing and location_view:
             collection_position = CollectionPosition.objects.filter(
                 collection = collection,
-                location = current_location_view.location,
+                location = location_view.location,
             ).first()
             if collection_position:
                 collection_position_form = CollectionPositionForm( instance = collection_position )
         
-        # TODO: Add attributes and other data
-        return CollectionDetailData(
-            collection = collection,
-            collection_form = CollectionForm( instance = collection ),
+        collection_edit_data = CollectionEditData( collection = collection )
+        return CollectionDetailsData(
+            collection_edit_data = collection_edit_data,
             collection_position_form = collection_position_form,
         )
 
