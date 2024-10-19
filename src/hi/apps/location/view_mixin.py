@@ -40,13 +40,14 @@ class LocationViewMixin:
         except LocationView.DoesNotExist:
             raise Http404( request )
            
-    def location_edit_response( self,
-                                request                         : HttpRequest,
-                                location                        : Location,
-                                location_edit_form              : forms.LocationEditForm             = None,
-                                location_attribute_formset      : forms.LocationAttributeFormSet     = None,
-                                location_attribute_upload_form  : forms.LocationAttributeUploadForm  = None,
-                                status_code                     : int                                = 200 ):
+    def location_edit_response(
+            self,
+            request                         : HttpRequest,
+            location                        : Location,
+            location_edit_form              : forms.LocationEditForm             = None,
+            location_attribute_formset      : forms.LocationAttributeFormSet     = None,
+            location_attribute_upload_form  : forms.LocationAttributeUploadForm  = None,
+            status_code                     : int                                = 200 ):
 
         if not location_edit_form:
             location_edit_form = forms.LocationEditForm(
@@ -79,4 +80,29 @@ class LocationViewMixin:
             insert_map = {
                 DIVID['LOCATION_EDIT_PANE']: content,
             },
+            status = status_code,
         )
+    
+    def location_view_edit_response(
+            self,
+            request                  : HttpRequest,
+            location_view            : LocationView,
+            location_view_edit_form  : forms.LocationViewEditForm  = None,
+            status_code              : int                         = 200 ):
+
+        if not location_view_edit_form:
+            location_view_edit_form = forms.LocationViewEditForm( instance = location_view )
+            
+        context = {
+            'location_view': location_view,
+            'location_view_edit_form': location_view_edit_form,
+        }
+        template = get_template( 'location/edit/panes/location_view_edit.html' )
+        content = template.render( context, request = request )
+        return antinode.response(
+            insert_map = {
+                DIVID['LOCATION_VIEW_EDIT_PANE']: content,
+            },
+            status = status_code,
+        )
+        

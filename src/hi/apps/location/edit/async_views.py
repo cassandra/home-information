@@ -55,7 +55,7 @@ class LocationEditView( View, LocationViewMixin ):
                 location_edit_form.save()
                 location_attribute_formset.save()
 
-            # Location name/oreder can impact many parts of UI. Full refresh is safest in that case.
+            # Location name/order can impact many parts of UI. Full refresh is safest in this case.
             if location_edit_form.has_changed():
                 return antinode.refresh_response()
                 
@@ -148,21 +148,17 @@ class LocationViewEditView( View, LocationViewMixin ):
 
     def post( self, request, *args, **kwargs ):
         location_view = self.get_location_view( request, *args, **kwargs )
-
         location_view_edit_form = forms.LocationViewEditForm( request.POST, instance = location_view )
+
         if not location_view_edit_form.is_valid():
-            context = {
-                'location_view': location_view,
-                'location_view_edit_form': location_view_edit_form,
-            }
-            template = get_template( 'location/edit/panes/location_view_edit.html' )
-            content = template.render( context, request = request )
-            return antinode.response(
-                insert_map = {
-                    DIVID['LOCATION_VIEW_EDIT_PANE']: content,
-                },
+            return self.location_view_edit_response(
+                request = request,
+                location_view = location_view,
+                location_view_edit_form = location_view_edit_form,
+                status_code = 400,
             )
         
+        # Location View name/order can impact many parts of UI. Full refresh is safest in this case.
         location_view_edit_form.save()     
         return antinode.refresh_response()
 
@@ -175,21 +171,21 @@ class LocationViewGeometryView( View, LocationViewMixin ):
         location_view_geometry_form = forms.LocationViewGeometryForm( request.POST, instance = location_view )
         if location_view_geometry_form.is_valid():
             location_view_geometry_form.save()
+            status_code = 200
         else:
+            # LocationViewGeometryForm is just a subset of
+            # LocationViewEditForm used when Javascript mouse/key editing
+            # causes a change to the geometry.  This could give some visual
+            # indicator to the user, but if this chag7e was successfully
+            # applied in the DOM, then the only issue would be some
+            # internal or API issue.
             logger.warning( 'LocationView geometry form is invalid.' )
+            status_code = 400
             
-        location_view_edit_form = forms.LocationViewEditForm( instance = location_view )
-
-        context = {
-            'location_view': location_view,
-            'location_view_edit_form': location_view_edit_form,
-        }
-        template = get_template( 'location/edit/panes/location_view_edit.html' )
-        content = template.render( context, request = request )
-        return antinode.response(
-            insert_map = {
-                DIVID['LOCATION_VIEW_EDIT_PANE']: content,
-            },
+        return self.location_view_edit_response(
+            request = request,
+            location_view = location_view,
+            status_code = status_code,
         )
 
     

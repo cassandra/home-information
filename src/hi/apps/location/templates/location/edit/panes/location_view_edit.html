@@ -1,7 +1,7 @@
 <h5>Location View</h5>
 <form action="{% url 'location_edit_location_view_edit' location_view_id=location_view.id %}"
       method="post"
-      class="form" data-async="#{{ DIVID.LOCATION_VIEW_EDIT_PANE }}">
+      class="form" data-async="true">
   {% csrf_token %}
   
   <div>

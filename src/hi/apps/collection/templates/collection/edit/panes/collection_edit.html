@@ -1,6 +1,6 @@
 <form action="{% url 'collection_edit' collection_id=collection.id %}"
       method="post"
-      class="form" data-async="#{{ DIVID.COLLECTION_EDIT_PANE }}">
+      class="form" data-async="true">
   {% csrf_token %}
   
   <div>
