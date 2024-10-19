@@ -64,7 +64,8 @@ class LocationEditForm( forms.ModelForm ):
             'name',
             'order_id',
         )
-    
+
+        
 
 class LocationAttributeForm( AttributeForm ):
     class Meta( AttributeForm.Meta ):

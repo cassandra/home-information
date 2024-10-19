@@ -48,38 +48,33 @@ class LocationEditView( View, LocationViewMixin ):
                 'show_as_editable': True,
             },
         )
-
-        location_attribute_upload_form = forms.LocationAttributeUploadForm(
-            request.POST,
-            instance = location,
-        )    
-        context = {
-            'location': location,
-            'location_edit_form': location_edit_form,
-            'location_attribute_formset': location_attribute_formset,
-            'location_attribute_upload_form': location_attribute_upload_form,
-        }
         
-        if ( not location_edit_form.is_valid()
-             or not location_attribute_formset.is_valid() ):
+        if ( location_edit_form.is_valid()
+             and location_attribute_formset.is_valid() ):
+            with transaction.atomic():
+                location_edit_form.save()
+                location_attribute_formset.save()
+
+            # Location name/oreder can impact many parts of UI. Full refresh is safest in that case.
+            if location_edit_form.has_changed():
+                return antinode.refresh_response()
+                
             # Recreate to preserve "max" to show new form
             location_attribute_formset = forms.LocationAttributeFormSet(
                 instance = location,
                 prefix = f'location-{location.id}',
             )
-            template = get_template( 'location/edit/panes/location_edit.html' )
-            content = template.render( context, request = request )
-            return antinode.response(
-                insert_map = {
-                    DIVID['LOCATION_EDIT_PANE']: content,
-                },
-            )
-
-        with transaction.atomic():
-            location_edit_form.save()
-            location_attribute_formset.save()
-
-        return antinode.refresh_response()
+            status_code = 200
+        else:
+            status_code = 400
+       
+        return self.location_edit_response(
+            request = request,
+            location = location,
+            location_edit_form = location_edit_form,
+            location_attribute_formset = location_attribute_formset,
+            status_code = status_code,
+        )
             
     
 @method_decorator( edit_required, name='dispatch' )
@@ -101,33 +96,13 @@ class LocationAttributeUploadView( View, LocationViewMixin ):
         else:
             status_code = 400
 
-        location_edit_form = forms.LocationEditForm(
-            instance = location,
+        return self.location_edit_response(
+            request = request,
+            location = location,
+            location_attribute_upload_form = location_attribute_upload_form,
+            status_code = status_code,
         )
-        location_attribute_formset = forms.LocationAttributeFormSet(
-            instance = location,
-            prefix = f'location-{location.id}',
-            form_kwargs = {
-                'show_as_editable': True,
-            },
-        )
-
-        context = {
-            'location': location,
-            'location_edit_form': location_edit_form,
-            'location_attribute_formset': location_attribute_formset,
-            'location_attribute_upload_form': location_attribute_upload_form,
-        }
-        
-        template = get_template( 'location/edit/panes/location_edit.html' )
-        content = template.render( context, request = request )
-        return antinode.response(
-            insert_map = {
-                DIVID['LOCATION_EDIT_PANE']: content,
-            },
-            status = status_code,
-        )
-            
+                  
     
 @method_decorator( edit_required, name='dispatch' )
 class LocationViewManageItemsView( HiSideView ):

@@ -36,6 +36,7 @@ class EntityEditView( View, EntityViewMixin ):
             with transaction.atomic():
                 entity_form.save()   
                 entity_attribute_formset.save()
+                
             # Recreate to preserve "max" to show new form
             entity_attribute_formset = forms.EntityAttributeFormSet(
                 instance = entity,
@@ -45,23 +46,12 @@ class EntityEditView( View, EntityViewMixin ):
         else:
             status_code = 400
 
-        entity_attribute_upload_form = forms.EntityAttributeUploadForm(
-            request.POST,
-            instance = entity,
-        )    
-        context = {
-            'entity': entity,
-            'entity_form': entity_form,
-            'entity_attribute_formset': entity_attribute_formset,
-            'entity_attribute_upload_form': entity_attribute_upload_form,
-        }
-        template = get_template( 'entity/edit/panes/entity_edit.html' )
-        content = template.render( context, request = request )
-        return antinode.response(
-            insert_map = {
-                DIVID['ENTITY_EDIT_PANE']: content,
-            },
-            status = status_code,
+        return self.entity_edit_response(
+            request = request,
+            entity= entity,
+            entity_form = entity_form,
+            entity_attribute_formset = entity_attribute_formset,
+            status_code = status_code,
         )
 
         
@@ -84,29 +74,12 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
         else:
             status_code = 400
 
-        entity_form = forms.EntityForm( instance = entity )
-        entity_attribute_formset = forms.EntityAttributeFormSet(
-            instance = entity,
-            prefix = f'entity-{entity.id}',
-            form_kwargs = {
-                'show_as_editable': True,
-            },
+        return self.entity_edit_response(
+            request = request,
+            entity= entity,
+            entity_attribute_upload_form = entity_attribute_upload_form,
+            status_code = status_code,
         )
-            
-        context = {
-            'entity': entity,
-            'entity_form': entity_form,
-            'entity_attribute_formset': entity_attribute_formset,
-            'entity_attribute_upload_form': entity_attribute_upload_form,
-        }
-        template = get_template( 'entity/edit/panes/entity_edit.html' )
-        content = template.render( context, request = request )
-        return antinode.response(
-            insert_map = {
-                DIVID['ENTITY_EDIT_PANE']: content,
-            },
-            status = status_code,
-        )    
     
     
 @method_decorator( edit_required, name='dispatch' )
