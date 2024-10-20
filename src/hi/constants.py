@@ -11,6 +11,7 @@ DIVID = {
     # Config
     'INTEGRATION_TAB': 'hi-config-integration-tab',
     'INTEGRATION_SETTINGS_PANE': 'hi-integration-settings',
+    'INTEGRATION_CONTENT_PANE': 'hi-integration-content',
 
     'LOCATION_EDIT_PANE': 'hi-location-edit',
     'LOCATION_VIEW_EDIT_PANE': 'hi-location-view-edit',

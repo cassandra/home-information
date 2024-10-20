@@ -1,8 +1,8 @@
 from django.core.exceptions import BadRequest
 from django.db import transaction
-from django.http import HttpRequest
 from django.shortcuts import render
 from django.template.loader import get_template
+from django.urls import reverse
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
@@ -12,12 +12,16 @@ from hi.integrations.core.helpers import IntegrationHelperMixin
 from hi.integrations.core.views import IntegrationPageView
 
 from hi.constants import DIVID
+from hi.hi_async_view import HiAsyncView, HiModalView
 
 from .zm_manager import ZoneMinderManager
 from .zm_metadata import ZmMetaData
 
 
-class ZmEnableView( View, IntegrationHelperMixin ):
+class ZmEnableView( HiModalView, IntegrationHelperMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'zoneminder/modals/zm_enable.html'
 
     def get(self, request, *args, **kwargs):
         
@@ -34,10 +38,10 @@ class ZmEnableView( View, IntegrationHelperMixin ):
                 'show_as_editable': True,
             },
         )
-        return self.get_modal_response(
-            request = request,
-            integration_attribute_formset = integration_attribute_formset,
-        )
+        context = {
+            'integration_attribute_formset': integration_attribute_formset,
+        }
+        return self.modal_response( request, context )
 
     def post(self, request, *args, **kwargs):
 
@@ -54,41 +58,29 @@ class ZmEnableView( View, IntegrationHelperMixin ):
             prefix = f'integration-{integration.id}',
         )
         if not integration_attribute_formset.is_valid():
-            return self.get_modal_response(
-                request = request,
-                integration_attribute_formset = integration_attribute_formset,
-                status = 400,
-            )
+            context = {
+                'integration_attribute_formset': integration_attribute_formset,
+            }
+            return self.modal_response( request, context, status_code = 400 )
 
         with transaction.atomic():
             integration.is_enabled = True
             integration.save()
             integration_attribute_formset.save()
 
-        return antinode.refresh_response()
+        redirect_url = reverse( 'zm_manage' )
+        return self.redirect_response( request, redirect_url )
+    
+    
+class ZmDisableView( HiModalView, IntegrationHelperMixin ):
 
-    def get_modal_response( self,
-                            request                        : HttpRequest,
-                            integration_attribute_formset  : IntegrationAttributeFormSet,
-                            status                         : int                        = 200 ):
-        context = {
-            'integration_attribute_formset': integration_attribute_formset,
-        }
-        return antinode.modal_from_template(
-            request = request,
-            template_name = 'zoneminder/modals/zm_enable.html',
-            context = context,
-            status = status,
-        )
-    
-    
-class ZmDisableView( View ):
+    def get_template_name( self ) -> str:
+        return 'zoneminder/modals/zm_disable.html'
 
     def get(self, request, *args, **kwargs):
-
         context = {
         }
-        return render( request, 'zoneminder/modals/zm_disable.html', context )
+        return self.modal_response( request, context )
     
     
 class ZmManageView( IntegrationPageView, IntegrationHelperMixin ):
@@ -98,7 +90,7 @@ class ZmManageView( IntegrationPageView, IntegrationHelperMixin ):
         return ZmMetaData
     
     def get_main_template_name( self ) -> str:
-        return 'zoneminder/panes/manage.html'
+        return 'zoneminder/panes/zm_manage.html'
 
     def get_template_context( self, request, *args, **kwargs ):
 
@@ -121,9 +113,15 @@ class ZmManageView( IntegrationPageView, IntegrationHelperMixin ):
         }
 
 
-class ZmSettingsView( View, IntegrationHelperMixin ):
+class ZmSettingsView( HiAsyncView, IntegrationHelperMixin ):
 
-    def post(self, request, *args, **kwargs):
+    def get_target_div_id( self ) -> str:
+        return DIVID['INTEGRATION_SETTINGS_PANE']
+
+    def get_template_name( self ) -> str:
+        return 'zoneminder/panes/zm_settings.html'
+
+    def post_template_context( self, request, *args, **kwargs ):
 
         integration = self.get_or_create_integration(
             integration_metadata = ZmMetaData,
@@ -137,33 +135,26 @@ class ZmSettingsView( View, IntegrationHelperMixin ):
             instance = integration,
             prefix = f'integration-{integration.id}',
         )
-        if not integration_attribute_formset.is_valid():
-            context = {
-                'integration_attribute_formset': integration_attribute_formset,
-            }
-            template = get_template( 'zoneminder/panes/zm_settings.html' )
-            content = template.render( context, request = request )
-            return antinode.response(
-                insert_map = {
-                    DIVID['INTEGRATION_SETTINGS_PANE']: content,
-                },
-            )
-            
-        with transaction.atomic():
-            integration_attribute_formset.save()
+        if integration_attribute_formset.is_valid():
+            with transaction.atomic():
+                integration_attribute_formset.save()
 
-        return antinode.refresh_response()
+        context = {
+            'integration_attribute_formset': integration_attribute_formset,
+        }
+        return context
     
     
-class ZmSyncView( View ):
+class ZmSyncView( HiModalView ):
+
+    def get_template_name( self ) -> str:
+        return 'common/modals/processing_result.html'
 
     def post(self, request, *args, **kwargs):
 
         processing_result = ZoneMinderManager().sync()
-        
         context = {
-            'integration_metadata': ZmMetaData,
             'processing_result': processing_result,
         }
-        return render( request, 'zoneminder/panes/manage.html', context )
+        return self.modal_response( request, context )
     

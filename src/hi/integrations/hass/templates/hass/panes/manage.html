@@ -1,5 +1,6 @@
 {% extends "core/pages/integration_base.html" %}
 {% block integration_content %}
+
 <div class="col-2">
   <form action="{% url 'hass_sync' %}"
 	method="POST" role="form" data-async="#{{ DIVID.INTEGRATION_TAB }}">

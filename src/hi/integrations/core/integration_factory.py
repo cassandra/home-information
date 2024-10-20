@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import Dict, List
 
 from hi.apps.common.singleton import Singleton
 
@@ -13,8 +13,39 @@ logger = logging.getLogger(__name__)
 class IntegrationFactory( Singleton ):
 
     def __init_singleton__( self ):
-        self._integration_gateway_map = dict()
+        self._integration_gateway_map : Dict[ str, IntegrationGateway ] = dict()
         return
+
+    def get_active_integration_data_list( self ) -> List[ IntegrationData ]:
+        integration_data_list = list()
+        integration_queryset = Integration.objects.filter( is_enabled = True )
+        for integration in integration_queryset:
+            integration_gateway = self._integration_gateway_map.get( integration.integration_id )
+            if not integration_gateway:
+                logger.error( f'Integration "{integration.integration_id }" in DB, but not registered.' )
+                continue
+            integration_metadata = integration_gateway.get_meta_data()
+            integration_data = IntegrationData(
+                integration_metadata = integration_metadata,
+                integration = integration,
+            )
+            integration_data_list.apend( integration_data )
+            continue
+        integration_data_list.sort( key = lambda data : data.integration_metadata.label )
+        return integration_data_list
+    
+    def get_default_integration_data( self ):
+        integration_data_list = self.get_active_integration_data_list()
+        if not integration_data_list:
+            return None
+        return integration_data_list[0]
+
+
+
+
+
+
+
 
     def get_integration_gateway_list( self ):
         integration_gateway_list = list( self._integration_gateway_map.values() )
@@ -50,12 +81,6 @@ class IntegrationFactory( Singleton ):
             return self._integration_gateway_map[integration_id]
         raise KeyError( f'Unknown integration id "{integration_id}".' )
         
-    def get_default_integration_gateway( self ):
-        integration_gateway_list = self.get_integration_gateway_list()
-        if not integration_gateway_list:
-            return None
-        return integration_gateway_list[0]
-
     def register( self, integration_gateway  : IntegrationGateway ):
         integration_metadata = integration_gateway.get_meta_data()
         integration_id = integration_metadata.integration_id

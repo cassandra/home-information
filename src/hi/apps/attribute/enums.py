@@ -6,6 +6,10 @@ class AttributeType(LabeledEnum):
     PREDEFINED  = ('Predefined', '' )
     CUSTOM = ('Custom', '' )
 
+    @property
+    def can_delete(self):
+        return bool( self == AttributeType.CUSTOM )
+
     
 class AttributeValueType(LabeledEnum):
 

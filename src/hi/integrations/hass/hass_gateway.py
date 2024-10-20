@@ -22,9 +22,6 @@ class HassGateway( IntegrationGateway ):
     
     def disable_modal_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
         return views.HassDisableView().get( request )
-
-    def manage_pane_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
-        return views.HassManageView().get( request, *args, **kwargs )
     
     
 IntegrationFactory().register( HassGateway() )

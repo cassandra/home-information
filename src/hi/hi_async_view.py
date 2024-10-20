@@ -39,6 +39,23 @@ class HiAsyncView( View ):
         return antinode.response(
             insert_map = { div_id: content },
         )
+
+    def post_template_context( self, request, *args, **kwargs ) -> Dict[ str, str ]:
+        """ Can raise exceptions like BadRequest, Http404, etc. """
+        raise NotImplementedError('Subclasses must override this method.')
+
+    def post_content( self, request, *args, **kwargs ) -> str:
+        template_name = self.get_template_name()
+        template = get_template( template_name )
+        context = self.post_template_context( request, *args, **kwargs )
+        return template.render( context, request = request )
+
+    def post( self, request, *args, **kwargs ):
+        div_id = self.get_target_div_id()
+        content = self.post_content( request, *args, **kwargs )
+        return antinode.response(
+            insert_map = { div_id: content },
+        )
         
 
 class HiSideView( HiAsyncView ):

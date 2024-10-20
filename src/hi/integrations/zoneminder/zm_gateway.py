@@ -21,6 +21,3 @@ class ZoneMinderGateway( IntegrationGateway ):
     
     def disable_modal_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
         return views.ZmDisableView().get( request )
-
-    def manage_pane_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
-        return views.ZmManageView().get( request, *args, **kwargs )

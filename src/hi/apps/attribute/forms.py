@@ -60,10 +60,10 @@ class AttributeForm( forms.ModelForm ):
                 raise ValidationError( f'The attribute "{self.instance.name}" is not editable.' )
             if ( self.instance.attribute_type == AttributeType.PREDEFINED
                  and ( name != self.instance.name )):
-                raise ValidationError( 'Changing name forbidden for predefined attributes.' )
-                
-        if is_blank( name ):
-            self.add_error( 'name', 'A name is required' )
+                raise ValidationError( 'Changing name forbidden for predefined attributes.' ) 
+            value = cleaned_data.get('value')
+            if self.instance.is_required and is_blank( value ):
+                self.add_error( 'value', 'A value is required.')
 
         if self.cleaned_data.get('secret'):
             stripped_value = value.strip()

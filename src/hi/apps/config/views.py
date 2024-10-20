@@ -48,7 +48,7 @@ class ConfigPageView( HiGridView ):
         #
         if view_type_changed and is_ajax( request ):
             redirect_url = request.get_full_path()
-            raise antinode.redirect_response( redirect_url )
+            return antinode.redirect_response( redirect_url )
 
         request.config_page_type_list = list( ConfigPageType )
         request.current_config_page_type = self.config_page_type

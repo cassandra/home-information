@@ -42,7 +42,7 @@ class IntegrationPageView( ConfigPageView ):
     """
 
     def dispatch( self, request, *args, **kwargs ):
-        request.integration_data_list = IntegrationFactory().get_integration_data_list()
+        request.integration_data_list = IntegrationFactory().get_active_integration_data_list()
         request.current_integration_metadata = self.integration_metadata
         return super().dispatch( request, *args, **kwargs )
     
@@ -64,11 +64,11 @@ class IntegrationsHomeView( ConfigPageView ):
 
     def get_template_context( self, request, *args, **kwargs ):
 
-        integration_gateway = IntegrationFactory().get_default_integration_gateway()
-        if not integration_gateway:
+        integration_data = IntegrationFactory().get_default_integration_data()
+        if not integration_data:
             return dict()
 
-        redirect_url = reverse( integration_gateway.get_meta_data().manage_url_name )
+        redirect_url = reverse( integration_data.integration_metadata.manage_url_name )
         raise ForceRedirectException( redirect_url )
 
     
@@ -101,8 +101,6 @@ class IntegrationActionView( View ):
                 return integration_gateway.enable_modal_view( request = request, *args, **kwargs )
             elif action == 'disable':
                 return integration_gateway.disable_modal_view( request = request, *args, **kwargs )
-            elif action == 'manage':
-                return integration_gateway.manage_pane_view( request = request, *args, **kwargs )
 
             error_message = f'Unknown integration action "{action}".'
         except Exception as e:

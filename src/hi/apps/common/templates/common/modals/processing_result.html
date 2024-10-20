@@ -1,0 +1,9 @@
+{% extends "modals/action_ok.html" %}
+
+{% block title_text %}
+{{ processing_result.title }}
+{% endblock %}
+
+{% block body %}
+{% include "common/panes/processing_result.html" with processing_result=processing_result  %}
+{% endblock %}
