@@ -1,17 +1,5 @@
-<div class="d-flex justify-content-between">
-  <div cLASS="h3">ZoneMinder Integration</div>
-  <div>
-    <a href="{% url 'config_tab_pane' %}"
-       class="btn btn-tertiary btn-control" role="button"  data-async="#{{ DIVID.INTEGRATION_TAB }}">
-      BACK
-    </a>
-  </div>
-</div>
-
-{% if processing_result %}
-{% include "common/processing_result.html" with processing_result=processing_result  %}
-{% endif %}
-
+{% extends "core/pages/integration_base.html" %}
+{% block integration_content %}
 <div class="col-2">
   <form action="{% url 'zm_sync' %}"
 	method="POST" role="form" data-async="#{{ DIVID.INTEGRATION_TAB }}">
@@ -24,3 +12,4 @@
 <div id="{{ DIVID.INTEGRATION_SETTINGS_PANE }}">
   {% include "zoneminder/panes/zm_settings.html" %}
 </div>
+{% endblock %}

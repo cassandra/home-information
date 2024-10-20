@@ -1,0 +1,20 @@
+<div class="">
+  <h1>Administration</h1>
+
+  <ul id="hi-config-tab" class="nav nav-tabs" role="tablist">
+    {% for config_page_type in request.config_page_type_list %}
+    <li class="nav-item">
+      <a id="hi-config-tab-{{ config_page_type }}" role="tab"
+	 class="nav-link {% if request.current_config_page_type == config_page_type %}active{% endif %}"
+	 href="{% url config_page_type.url_name %}" 
+	 data-async="true">{{ config_page_type.label }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+  
+  <div class="tab-content" id="hi-config-tab-content">
+    {% block config_content %}
+    {% endblock %}
+  </div>
+  
+</div>

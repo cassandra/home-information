@@ -8,8 +8,8 @@ from .models import Integration, IntegrationAttribute
 class IntegrationAttributeForm( AttributeForm ):
     class Meta( AttributeForm.Meta ):
         model = IntegrationAttribute
-        
 
+    
 IntegrationAttributeFormSet = forms.inlineformset_factory(
     Integration,
     IntegrationAttribute,

@@ -16,9 +16,14 @@ class IntegrationFactory( Singleton ):
         self._integration_gateway_map = dict()
         return
 
+    def get_integration_gateway_list( self ):
+        integration_gateway_list = list( self._integration_gateway_map.values() )
+        integration_gateway_list.sort( key = lambda gateway : gateway.get_meta_data().label )
+        return integration_gateway_list
+    
     def get_integration_data_list( self ) -> List[ IntegrationData ]:
         integration_data_list = list()
-        for integration_gateway in self._integration_gateway_map.values():
+        for integration_gateway in self.get_integration_gateway_list():
             integration_metadata = integration_gateway.get_meta_data()
             integration = self.get_integration( integration_id = integration_metadata.integration_id )
             integration_data = IntegrationData(
@@ -45,6 +50,12 @@ class IntegrationFactory( Singleton ):
             return self._integration_gateway_map[integration_id]
         raise KeyError( f'Unknown integration id "{integration_id}".' )
         
+    def get_default_integration_gateway( self ):
+        integration_gateway_list = self.get_integration_gateway_list()
+        if not integration_gateway_list:
+            return None
+        return integration_gateway_list[0]
+
     def register( self, integration_gateway  : IntegrationGateway ):
         integration_metadata = integration_gateway.get_meta_data()
         integration_id = integration_metadata.integration_id
@@ -54,3 +65,4 @@ class IntegrationFactory( Singleton ):
         logger.debug( f'Registering integration: {integration_metadata.label}' )
         self._integration_gateway_map[integration_id] = integration_gateway
         return
+

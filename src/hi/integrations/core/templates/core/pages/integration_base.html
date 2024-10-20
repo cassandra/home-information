@@ -1,0 +1,51 @@
+{% extends "config/pages/config_base.html" %}
+
+{% block config_content %}
+<div class="row">
+  <nav class="nav flex-column">
+    {% for integration_data in request.integration_data_list %}
+    <a class="nav-link {% if request.current_integration_metadata == integration_data.integration_metadata %}active{% endif %}"
+       href="{% url integration_data.integration_metadata.manage_url_name %}">
+      {{ integration_data.integration_metadata.label }}
+    </a>
+    {% endfor %}
+  </nav>
+  <div class=" flex-colum flex-grow-1">
+    <div class="tab-content">
+      <div class="d-flex justify-content-between">
+	<div class="h3">{{ request.current_integration_metadata.label }}</div>
+	<div>
+	  <a class="btn btn-info" role="button"
+	     href="{% url 'integrations_manage' %}"
+	     data-async="modal">
+	    ADD INTEGRATIONS
+	  </a>
+	</div>
+      </div>
+
+      {% if error_message %}
+      <div class="alert alert-danger">
+	<b>Error</b>: {{ error_message }}
+      </div>
+      {% endif %}
+
+      {% if info_message %}
+      <div class="alert alert-info">
+	{{ info_message }}
+      </div>
+      {% endif %}
+
+      {% if processing_result %}
+      {% include "common/processing_result.html" with processing_result=processing_result  %}
+      {% endif %}
+
+
+
+
+
+      {% block integration_content %}
+      {% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

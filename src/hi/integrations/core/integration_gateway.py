@@ -22,3 +22,4 @@ class IntegrationGateway:
     def manage_pane_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
         # Should return HTML fragment for the management pane of the integration.
         raise NotImplementedError('Subclasses must override this method')
+    

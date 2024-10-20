@@ -1,22 +1,10 @@
-<div class="d-flex justify-content-between">
-  <div cLASS="h3">HAss Integration</div>
-  <div>
-    <a href="{% url 'config_tab_pane' %}"
-       class="btn btn-tertiary btn-control" role="button"  data-async="#{{ DIVID.INTEGRATION_TAB }}">
-      BACK
-    </a>
-  </div>
-</div>
-
-{% if processing_result %}
-{% include "common/processing_result.html" with processing_result=processing_result  %}
-{% endif %}
-
+{% extends "core/pages/integration_base.html" %}
+{% block integration_content %}
 <div class="col-2">
   <form action="{% url 'hass_sync' %}"
 	method="POST" role="form" data-async="#{{ DIVID.INTEGRATION_TAB }}">
     {% csrf_token %}
-    <button type="submit" class="btn btn-primary btn-control" role="button"
+    <button type="submit" class="btn btn-primary" role="button"
 	    name="action" value="sync" >SYNC</button>
   </form>
 </div>
@@ -24,3 +12,4 @@
 <div id="{{ DIVID.INTEGRATION_SETTINGS_PANE }}">
   {% include "hass/panes/hass_settings.html" %}
 </div>
+{% endblock %}

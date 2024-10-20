@@ -9,6 +9,7 @@ import hi.apps.common.antinode as antinode
 
 from hi.integrations.core.forms import IntegrationAttributeFormSet
 from hi.integrations.core.helpers import IntegrationHelperMixin
+from hi.integrations.core.views import IntegrationPageView
 
 from hi.constants import DIVID
 
@@ -90,9 +91,16 @@ class ZmDisableView( View ):
         return render( request, 'zoneminder/modals/zm_disable.html', context )
     
     
-class ZmManageView( View, IntegrationHelperMixin ):
+class ZmManageView( IntegrationPageView, IntegrationHelperMixin ):
 
-    def get(self, request, *args, **kwargs):
+    @property
+    def integration_metadata(self):
+        return ZmMetaData
+    
+    def get_main_template_name( self ) -> str:
+        return 'zoneminder/panes/manage.html'
+
+    def get_template_context( self, request, *args, **kwargs ):
 
         integration = self.get_or_create_integration(
             integration_metadata = ZmMetaData,
@@ -107,11 +115,10 @@ class ZmManageView( View, IntegrationHelperMixin ):
                 'show_as_editable': True,
             },
         )
-        context = {
+        return {
             'integration_metadata': ZmMetaData,
             'integration_attribute_formset': integration_attribute_formset,
         }
-        return render( request, 'zoneminder/panes/manage.html', context )
 
 
 class ZmSettingsView( View, IntegrationHelperMixin ):

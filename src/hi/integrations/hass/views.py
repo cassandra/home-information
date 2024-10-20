@@ -9,6 +9,7 @@ import hi.apps.common.antinode as antinode
 
 from hi.integrations.core.forms import IntegrationAttributeFormSet
 from hi.integrations.core.helpers import IntegrationHelperMixin
+from hi.integrations.core.views import IntegrationPageView
 
 from hi.constants import DIVID
 
@@ -90,9 +91,16 @@ class HassDisableView( View ):
         return render( request, 'hass/modals/hass_disable.html', context )
     
     
-class HassManageView( View, IntegrationHelperMixin ):
+class HassManageView( IntegrationPageView, IntegrationHelperMixin ):
 
-    def get(self, request, *args, **kwargs):
+    @property
+    def integration_metadata(self):
+        return HassMetaData
+
+    def get_main_template_name( self ) -> str:
+        return 'hass/panes/manage.html'
+
+    def get_template_context( self, request, *args, **kwargs ):
 
         integration = self.get_or_create_integration(
             integration_metadata = HassMetaData,
@@ -107,11 +115,10 @@ class HassManageView( View, IntegrationHelperMixin ):
                 'show_as_editable': True,
             },
         )
-        context = {
+        return {
             'integration_metadata': HassMetaData,
             'integration_attribute_formset': integration_attribute_formset,
         }
-        return render( request, 'hass/panes/manage.html', context )
 
 
 class HassSettingsView( View, IntegrationHelperMixin ):
@@ -122,7 +129,7 @@ class HassSettingsView( View, IntegrationHelperMixin ):
             integration_metadata = HassMetaData,
         )
         if not integration.is_enabled:
-            raise BadRequest( 'HAss not is enabled' )
+            raise BadRequest( 'HAss is not enabled' )
 
         integration_attribute_formset = IntegrationAttributeFormSet(
             request.POST,
