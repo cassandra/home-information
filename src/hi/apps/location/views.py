@@ -23,26 +23,18 @@ class LocationViewDefaultView( View ):
     def get(self, request, *args, **kwargs):
 
         try:
-            location_view = self._get_default_location_view( request )
+            location_view = LocationManager().get_default_location_view( request = request )
+            request.view_parameters.view_type = ViewType.LOCATION_VIEW
+            request.view_parameters.update_location_view( location_view )
+            request.view_parameters.to_session( request )
             redirect_url = reverse(
                 'location_view',
                 kwargs = { 'location_view_id': location_view.id }
             )
-        except Location.DoesNotExist:
+        except LocationView.DoesNotExist:
             redirect_url = reverse( 'start' )
             
         return HttpResponseRedirect( redirect_url )
-
-    def _get_default_location_view( self, request ):
-        try:
-            location_view = LocationManager().get_default_location_view( request = request )
-        except LocationView.DoesNotExist:
-            raise BadRequest( 'No views and no locations defined.' )
-
-        request.view_parameters.view_type = ViewType.LOCATION_VIEW
-        request.view_parameters.update_location_view( location_view )
-        request.view_parameters.to_session( request )
-        return location_view
 
     
 class LocationViewView( HiGridView, LocationViewMixin ):
@@ -53,6 +45,13 @@ class LocationViewView( HiGridView, LocationViewMixin ):
     def get_template_context( self, request, *args, **kwargs ):
         location_view = self.get_location_view( request, *args, **kwargs )
 
+
+        try:
+            zzz
+            except ForceSynchronousException
+
+
+        
         # Remember last location view chosen
         view_type_changed = bool( request.view_parameters.view_type != ViewType.LOCATION_VIEW )
         view_id_changed = bool( request.view_parameters.location_view_id != location_view.id )
@@ -61,11 +60,6 @@ class LocationViewView( HiGridView, LocationViewMixin ):
         request.view_parameters.update_location_view( location_view )
         request.view_parameters.to_session( request )
 
-        # When in edit mode, a location view change needs a full
-        # synchronous page load to ensure any front-end editing state and
-        # views are invalidated. Else, the editing state and edit side
-        # panel will be invalid for the new view.
-        #
         if ( request.is_editing
              and is_ajax( request )
              and ( view_type_changed or view_id_changed )):

@@ -8,3 +8,7 @@ class ForceRedirectException( Exception ):
     @property
     def url(self):
         return self._url
+
+
+class ForceSynchronousException( Exception ):
+    pass

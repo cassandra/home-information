@@ -4,7 +4,7 @@ import urllib.parse
 
 from django.shortcuts import redirect, render
 from django.template.loader import get_template
-from django.urls import resolve, reverse
+from django.urls import resolve
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
@@ -12,7 +12,6 @@ from hi.apps.common.utils import is_ajax
 
 from hi.apps.location.edit.async_views import LocationViewManageItemsView
 from hi.apps.collection.edit.async_views import CollectionManageItemsView
-from hi.apps.location.location_manager import LocationManager
 from hi.apps.collection.models import Collection
 from hi.apps.location.models import Location
 
@@ -76,14 +75,6 @@ class HiGridView(View):
 
     def get(self, request, *args, **kwargs):
 
-        current_location = LocationManager().get_default_location( request = request )
-        if not current_location:
-            redirect_url = reverse('start')
-            if is_ajax( request ):
-                return antinode.redirect( redirect_url )
-            else:
-                return redirect( redirect_url )
-        
         if is_ajax( request ):
             return self.get_async_response( request, *args, **kwargs )
 
@@ -113,6 +104,9 @@ class HiGridView(View):
             main_content = self.get_content( request, *args, **kwargs )
         except ForceRedirectException as fde:
             return antinode.redirect_response( url = fde.url )
+        except ForceSynchronousException as fse:
+            redirect_url = request.get_full_path()
+            return antinode.redirect_response( redirect_url )
         
         insert_map = { DIVID['MAIN']: main_content }
         push_url = self.get_push_url( request )

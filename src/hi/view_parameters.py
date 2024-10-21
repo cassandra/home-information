@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from django.http import HttpRequest
+
 from hi.apps.collection.models import Collection
 from hi.apps.location.models import Location, LocationView
 
@@ -29,7 +31,7 @@ class ViewParameters:
         self._location_view = None  # Lazy loaded
         self._collection = None  # Lazy loaded
         return
-
+        
     @property
     def location_id(self) -> int:
         location = self.location
@@ -93,7 +95,7 @@ class ViewParameters:
             self._collection = collection
         return
         
-    def to_session( self, request ):
+    def to_session( self, request : HttpRequest ):
         if not hasattr( request, 'session' ):
             return
         request.session['view_type'] = str(self.view_type)
@@ -103,7 +105,7 @@ class ViewParameters:
         return
 
     @staticmethod
-    def from_session( request ):
+    def from_session( request : HttpRequest ):
         if not request:
             return ViewParameters()
         if not hasattr( request, 'session' ):
