@@ -3,14 +3,14 @@
 
 <div class="col-2">
   <form action="{% url 'hass_sync' %}"
-	method="POST" role="form" data-async="#{{ DIVID.INTEGRATION_TAB }}">
+	method="POST" role="form" data-async="true">
     {% csrf_token %}
     <button type="submit" class="btn btn-primary" role="button"
 	    name="action" value="sync" >SYNC</button>
   </form>
 </div>
 
-<div id="{{ DIVID.INTEGRATION_SETTINGS_PANE }}">
+<div id="">
   {% include "hass/panes/hass_settings.html" %}
 </div>
 {% endblock %}

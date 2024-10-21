@@ -16,66 +16,40 @@ class IntegrationFactory( Singleton ):
         self._integration_gateway_map : Dict[ str, IntegrationGateway ] = dict()
         return
 
-    def get_active_integration_data_list( self ) -> List[ IntegrationData ]:
-        integration_data_list = list()
-        integration_queryset = Integration.objects.filter( is_enabled = True )
-        for integration in integration_queryset:
-            integration_gateway = self._integration_gateway_map.get( integration.integration_id )
-            if not integration_gateway:
-                logger.error( f'Integration "{integration.integration_id }" in DB, but not registered.' )
-                continue
-            integration_metadata = integration_gateway.get_meta_data()
-            integration_data = IntegrationData(
-                integration_metadata = integration_metadata,
-                integration = integration,
-            )
-            integration_data_list.apend( integration_data )
-            continue
-        integration_data_list.sort( key = lambda data : data.integration_metadata.label )
-        return integration_data_list
-    
     def get_default_integration_data( self ):
-        integration_data_list = self.get_active_integration_data_list()
+        integration_data_list = self.get_integration_data_list( enabled_only = True )
         if not integration_data_list:
             return None
         return integration_data_list[0]
 
-
-
-
-
-
-
-
-    def get_integration_gateway_list( self ):
-        integration_gateway_list = list( self._integration_gateway_map.values() )
-        integration_gateway_list.sort( key = lambda gateway : gateway.get_meta_data().label )
-        return integration_gateway_list
-    
-    def get_integration_data_list( self ) -> List[ IntegrationData ]:
+    def get_integration_data_list( self, enabled_only = False ) -> List[ IntegrationData ]:
         integration_data_list = list()
-        for integration_gateway in self.get_integration_gateway_list():
+        if enabled_only:
+            integration_queryset = Integration.objects.filter( is_enabled = True )
+        else:
+            integration_queryset = Integration.objects.all()
+        integration_map = { x.integration_id: x for x in integration_queryset }
+
+        for integration_id, integration_gateway in self._integration_gateway_map.items():
             integration_metadata = integration_gateway.get_meta_data()
-            integration = self.get_integration( integration_id = integration_metadata.integration_id )
+            integration = integration_map.get( integration_id )
+            if not integration and enabled_only:
+                continue
+            elif not integration:
+                integration = Integration(
+                    integration_id = integration_id,
+                    is_enabled = False,
+                )
             integration_data = IntegrationData(
                 integration_metadata = integration_metadata,
                 integration = integration,
             )
             integration_data_list.append( integration_data )
             continue
+
+        integration_data_list.sort( key = lambda data : data.integration_metadata.label )
         return integration_data_list
     
-    def get_integration( self, integration_id : str ) -> Integration:
-        if integration_id not in self._integration_gateway_map:
-            raise KeyError( f'Unknown integration id "{integration_id}".' )
-        try:
-            return Integration.objects.get( integration_id = integration_id )
-        except Integration.DoesNotExist:
-            return Integration(
-                integration_id = integration_id,
-                is_enabled = False,
-            )
-        
     def get_integration_gateway( self, integration_id : str ) -> IntegrationGateway:
         if integration_id in self._integration_gateway_map:
             return self._integration_gateway_map[integration_id]

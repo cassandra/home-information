@@ -44,10 +44,10 @@ class HiGridView(View):
     TOP_TEMPLATE_NAME = 'panes/top_buttons.html'    
     BOTTOM_TEMPLATE_NAME = 'panes/bottom_buttons.html'    
     SIDE_DEFAULT_TEMPLATE_NAME = 'panes/side.html'    
-    
+        
     def get_main_template_name( self ) -> str:
         raise NotImplementedError('Subclasses must override this method.')
-
+    
     def get_template_context( self, request, *args, **kwargs ) -> Dict[ str, str ]:
         """ Can raise exceptions like BadRequest, Http404, etc. """
         raise NotImplementedError('Subclasses must override this method.')

@@ -42,7 +42,7 @@ class IntegrationPageView( ConfigPageView ):
     """
 
     def dispatch( self, request, *args, **kwargs ):
-        request.integration_data_list = IntegrationFactory().get_active_integration_data_list()
+        request.integration_data_list = IntegrationFactory().get_integration_data_list( enabled_only = True )
         request.current_integration_metadata = self.integration_metadata
         return super().dispatch( request, *args, **kwargs )
     
