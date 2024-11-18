@@ -8,9 +8,6 @@ DIVID = {
     'MAIN': 'hi-main-content',
     'SIDE': 'hi-side-content',
 
-    # Config
-    'INTEGRATION_SETTINGS_PANE': 'hi-integration-settings',
-
     'LOCATION_EDIT_PANE': 'hi-location-edit',
     'LOCATION_VIEW_EDIT_PANE': 'hi-location-view-edit',
     'ENTITY_EDIT_PANE': 'hi-entity-edit',

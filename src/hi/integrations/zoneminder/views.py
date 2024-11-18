@@ -113,15 +113,9 @@ class ZmManageView( IntegrationPageView, IntegrationHelperMixin ):
         }
 
 
-class ZmSettingsView( HiAsyncView, IntegrationHelperMixin ):
+class ZmSettingsView( View, IntegrationHelperMixin ):
 
-    def get_target_div_id( self ) -> str:
-        return DIVID['INTEGRATION_SETTINGS_PANE']
-
-    def get_template_name( self ) -> str:
-        return 'zoneminder/panes/zm_settings.html'
-
-    def post_template_context( self, request, *args, **kwargs ):
+    def post( self, request, *args, **kwargs ):
 
         integration = self.get_or_create_integration(
             integration_metadata = ZmMetaData,
@@ -142,7 +136,7 @@ class ZmSettingsView( HiAsyncView, IntegrationHelperMixin ):
         context = {
             'integration_attribute_formset': integration_attribute_formset,
         }
-        return context
+        return render( request, 'zoneminder/panes/zm_settings.html', context )
     
     
 class ZmSyncView( HiModalView ):
