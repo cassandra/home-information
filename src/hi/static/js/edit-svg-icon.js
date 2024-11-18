@@ -64,13 +64,17 @@
 	    if ( ! Hi.isEditMode ) { return; }
 	    handleMouseDown( event );
 	});
-	$(document).on('mousemove', Hi.LOCATION_VIEW_AREA_SELECTOR, function(event) {
+	$(document).on('mousemove', function(event) {
 	    if ( ! Hi.isEditMode ) { return; }
 	    handleMouseMove( event );
 	});
 	$(document).on('mouseup', Hi.LOCATION_VIEW_AREA_SELECTOR, function(event) {
 	    if ( ! Hi.isEditMode ) { return; }
 	    handleMouseUp( event );
+	});
+	$(document).on('wheel', function(event) {
+	    if ( ! Hi.isEditMode ) { return; }
+	    handleMouseWheel( event );
 	});
 	$(document).on('click', function(event) {
 	    if ( ! Hi.isEditMode ) { return; }
@@ -80,6 +84,7 @@
 	    if ( ! Hi.isEditMode ) { return; }
 	    handleKeyDown( event );
 	});
+
     });
 
     function handleMouseDown( event ) {
@@ -184,6 +189,24 @@
 	}
 	
 	gLastMousePosition = currentMousePosition;
+    }
+
+    function handleMouseWheel( event ) {
+	if ( gSvgIconDragData ) {
+	    return;
+	}
+
+	if ( gSvgIconEditData ) {
+	    const e = event.originalEvent;
+	    const scaleFactor = e.deltaY < 0 ? 1.1 : 0.9;
+
+	    console.log( `Scale factor = ${scaleFactor} [${gSvgIconEditData.isScaling}]` );
+	    if ( gSvgIconActionState == SvgActionStateType.SCALE ) {
+		adjustIconScale( gSvgIconEditData.element, scaleFactor );
+		event.preventDefault(); 
+		event.stopImmediatePropagation();
+	    }
+	}
     }
     
     function handleClick( event ) {

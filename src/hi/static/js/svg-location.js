@@ -56,11 +56,14 @@
 	$(document).on('mousedown', Hi.LOCATION_VIEW_AREA_SELECTOR, function(event) {
 	    handleMouseDown( event );
 	});
-	$(document).on('mousemove', Hi.LOCATION_VIEW_AREA_SELECTOR, function(event) {
+	$(document).on('mousemove', function(event) {
 	    handleMouseMove( event );
 	});
 	$(document).on('mouseup', Hi.LOCATION_VIEW_AREA_SELECTOR, function(event) {
 	    handleMouseUp( event );
+	});
+	$(document).on('wheel', function(event) {
+	    handleMouseWheel( event );
 	});
 	$(document).on('click', function(event) {
 	    handleClick( event );
@@ -148,6 +151,21 @@
 	gLastMousePosition = currentMousePosition;
     }
     
+    function handleMouseWheel( event ) {
+	if ( gSelectedLocationViewSvg && isEventInLocationArea( event )) {
+	    event.preventDefault(); 
+	    event.stopImmediatePropagation();
+	    abortScale();
+	    abortRotation();
+	    const e = event.originalEvent;
+	    if ( e.deltaY < 0 ) {
+		zoomIn();
+	    } else {
+		zoomOut();
+	    }
+	}
+    }
+    
     function handleClick( event ) {
 	if ( gIgnoreCLick ) {
 	    if ( Hi.DEBUG ) { console.log( `Ignoring click [${MODULE_NAME}]`, event ); }
@@ -169,6 +187,22 @@
 	if ( Hi.DEBUG ) { console.log( `Click skipped [${MODULE_NAME}]` ); }
     }
 
+    function isEventInLocationArea( event ) {
+	if ( $(event.target).is('input, textarea') ) {
+            return false;
+	}
+
+	const targetArea = $(Hi.LOCATION_VIEW_AREA_SELECTOR);
+        const targetOffset = targetArea.offset();
+        const targetWidth = targetArea.outerWidth();
+        const targetHeight = targetArea.outerHeight();
+
+        return (( gLastMousePosition.x >= targetOffset.left )
+		&& ( gLastMousePosition.x <= ( targetOffset.left + targetWidth ))
+		&& ( gLastMousePosition.y >= targetOffset.top )
+		&& ( gLastMousePosition.y <= ( targetOffset.top + targetHeight )));
+    }
+    
     function handleKeyDown( event ) {
 	if ( $(event.target).is('input, textarea') ) {
             return;
