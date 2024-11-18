@@ -236,7 +236,7 @@ class LocationViewEntityToggleView( View, LocationViewMixin ):
         context = {
             'location_view_data': location_view_data,
         }
-        template = get_template( 'location/location_view.html' )
+        template = get_template( self.LOCATION_VIEW_TEMPLATE_NAME )
         location_view_content = template.render( context, request = request )
         
         return antinode.response(
@@ -284,7 +284,7 @@ class LocationViewCollectionToggleView( View, LocationViewMixin ):
         context = {
             'location_view_data': location_view_data,
         }
-        template = get_template( 'location/location_view.html' )
+        template = get_template( self.LOCATION_VIEW_TEMPLATE_NAME )
         location_view_content = template.render( context, request = request )
         
         return antinode.response(

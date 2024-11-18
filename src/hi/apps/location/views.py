@@ -39,7 +39,7 @@ class LocationViewDefaultView( View ):
 class LocationViewView( HiGridView, LocationViewMixin ):
 
     def get_main_template_name( self ) -> str:
-        return 'location/location_view.html'
+        return self.LOCATION_VIEW_TEMPLATE_NAME
 
     def get_template_context( self, request, *args, **kwargs ):
         location_view = self.get_location_view( request, *args, **kwargs )

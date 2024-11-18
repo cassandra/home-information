@@ -13,11 +13,11 @@
     </g>
     
     {% for svg_path_item in location_view_data.svg_path_items %}
-    {% include "location/svg_path_item.html" with svg_path_item=svg_path_item %}
+    {% include "location/panes/svg_path_item.html" with svg_path_item=svg_path_item %}
     {% endfor %}
 
     {% for svg_icon_item in location_view_data.svg_icon_items %}
-    {% include "location/svg_icon_item.html" with svg_icon_item=svg_icon_item %}
+    {% include "location/panes/svg_icon_item.html" with svg_icon_item=svg_icon_item %}
     {% endfor %}
 
   </svg>

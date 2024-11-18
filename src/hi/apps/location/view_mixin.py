@@ -12,6 +12,8 @@ from hi.constants import DIVID
 
 class LocationViewMixin:
 
+    LOCATION_VIEW_TEMPLATE_NAME = 'location/panes/location_view.html'
+    
     def get_location( self, request, *args, **kwargs ) -> Location:
         """ Assumes there is a required location_id in kwargs """
         try:

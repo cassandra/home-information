@@ -1,8 +1,8 @@
 <div class="bg-white p-1">
   <div class="d-flex justify-content-between">
-    {% include "location/location_view_buttons.html" %}
+    {% include "location/panes/location_view_buttons.html" %}
     <div class="d-flex justify-content-end">
-      {% include "location/location_drop_down.html" %}
+      {% include "location/panes/location_drop_down.html" %}
       <div>
 	{% if request.is_editing %}
 	<a href="{% url 'edit_end' %}"
