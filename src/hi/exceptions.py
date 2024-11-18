@@ -1,6 +1,6 @@
 class ForceRedirectException( Exception ):
 
-    def __init__(self, url, message = f'Force redirect' ):
+    def __init__(self, url, message = 'Force redirect' ):
         self._url = url
         super().__init__(message)
         return

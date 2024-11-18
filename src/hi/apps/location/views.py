@@ -8,11 +8,11 @@ from django.views.generic import View
 from hi.apps.common.utils import is_ajax
 
 from hi.enums import ViewType
-from hi.exceptions import ForceRedirectException
+from hi.exceptions import ForceSynchronousException
 from hi.hi_grid_view import HiGridView
 
 from .location_manager import LocationManager
-from .models import Location, LocationView
+from .models import LocationView
 from .view_mixin import LocationViewMixin
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 class LocationViewDefaultView( View ):
 
     def get(self, request, *args, **kwargs):
-
         try:
             location_view = LocationManager().get_default_location_view( request = request )
             request.view_parameters.view_type = ViewType.LOCATION_VIEW
@@ -45,27 +44,16 @@ class LocationViewView( HiGridView, LocationViewMixin ):
     def get_template_context( self, request, *args, **kwargs ):
         location_view = self.get_location_view( request, *args, **kwargs )
 
-
-        try:
-            zzz
-            except ForceSynchronousException
-
-
+        if self.should_force_sync_request(
+                request = request,
+                next_view_type = ViewType.LOCATION_VIEW,
+                next_id = location_view.id ):
+            raise ForceSynchronousException()
         
-        # Remember last location view chosen
-        view_type_changed = bool( request.view_parameters.view_type != ViewType.LOCATION_VIEW )
-        view_id_changed = bool( request.view_parameters.location_view_id != location_view.id )
-
         request.view_parameters.view_type = ViewType.LOCATION_VIEW
         request.view_parameters.update_location_view( location_view )
         request.view_parameters.to_session( request )
 
-        if ( request.is_editing
-             and is_ajax( request )
-             and ( view_type_changed or view_id_changed )):
-            redirect_url = reverse( 'location_view', kwargs = kwargs )
-            raise ForceRedirectException( url = redirect_url )
-        
         location_view_data = LocationManager().get_location_view_data(
             location_view = location_view,
         )

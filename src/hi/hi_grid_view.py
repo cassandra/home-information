@@ -2,6 +2,7 @@ import logging
 from typing import Dict
 import urllib.parse
 
+from django.http import HttpRequest
 from django.shortcuts import redirect, render
 from django.template.loader import get_template
 from django.urls import resolve
@@ -16,7 +17,8 @@ from hi.apps.collection.models import Collection
 from hi.apps.location.models import Location
 
 from hi.constants import DIVID
-from hi.exceptions import ForceRedirectException
+from hi.enums import ViewType
+from hi.exceptions import ForceRedirectException, ForceSynchronousException
 from hi.hi_async_view import HiSideView
 
 logger = logging.getLogger(__name__)
@@ -48,7 +50,7 @@ class HiGridView(View):
         raise NotImplementedError('Subclasses must override this method.')
     
     def get_template_context( self, request, *args, **kwargs ) -> Dict[ str, str ]:
-        """ Can raise exceptions like BadRequest, Http404, etc. """
+        """ Can raise exceptions like BadRequest, Http404, ForceRedirectException, etc. """
         raise NotImplementedError('Subclasses must override this method.')
 
     def get_top_template_name( self ) -> str:
@@ -60,24 +62,23 @@ class HiGridView(View):
     def get_top_template_context( self, request, *args, **kwargs ):
         if not request.view_parameters.location:
             return dict()
+        location_list = list( Location.objects.all() )
         location_view_list = list( request.view_parameters.location.views.order_by( 'order_id' ))
-        return { 'location_view_list': location_view_list }
+        return {
+            'location_view_list': location_view_list,
+            'location_list': location_list,
+        }
 
     def get_bottom_template_context( self, request, *args, **kwargs ):
         collection_list = list( Collection.objects.all().order_by( 'order_id' ))
         return { 'collection_list': collection_list }
 
-    def get_content( self, request, *args, **kwargs ) -> str:
-        template_name = self.get_main_template_name()
-        template = get_template( template_name )
-        context = self.get_template_context( request, *args, **kwargs )
-        return template.render( context, request = request )
-
     def get(self, request, *args, **kwargs):
-
         if is_ajax( request ):
             return self.get_async_response( request, *args, **kwargs )
+        return self.get_synchronous_response( request, *args, **kwargs )
 
+    def get_synchronous_response( self, request, *args, **kwargs ):
         try:
             context = self.get_template_context( request, *args, **kwargs )
         except ForceRedirectException as fde:
@@ -96,15 +97,14 @@ class HiGridView(View):
         context.update( self.get_top_template_context( request, *args, **kwargs ))
         context.update( self.get_bottom_template_context( request, *args, **kwargs ))
 
-        context['location_list'] = list( Location.objects.all() )
         return render( request, self.HI_GRID_TEMPLATE_NAME, context )
-
+        
     def get_async_response( self, request, *args, **kwargs ):
         try:
             main_content = self.get_content( request, *args, **kwargs )
-        except ForceRedirectException as fde:
-            return antinode.redirect_response( url = fde.url )
-        except ForceSynchronousException as fse:
+        except ForceRedirectException as fre:
+            return antinode.redirect_response( url = fre.url )
+        except ForceSynchronousException:
             redirect_url = request.get_full_path()
             return antinode.redirect_response( redirect_url )
         
@@ -115,6 +115,12 @@ class HiGridView(View):
             insert_map = insert_map,
             push_url = push_url,
         )
+
+    def get_content( self, request, *args, **kwargs ) -> str:
+        template_name = self.get_main_template_name()
+        template = get_template( template_name )
+        context = self.get_template_context( request, *args, **kwargs )
+        return template.render( context, request = request )
 
     def get_push_url( self, request ):
         referrer_url = request.META.get('HTTP_REFERER', '')
@@ -187,3 +193,37 @@ class HiGridView(View):
         view_class = resolved_match.func.view_class
         view = view_class()
         return ( view, view_kwargs )
+    
+    def should_force_sync_request( self,
+                                   request         : HttpRequest,
+                                   next_view_type  : ViewType,
+                                   next_id         : int ):
+        """ Helper method for HiGridView subclases to know if they should force
+        a full page refresh (turning an async request into a sync request. """
+        
+        # When in edit mode, a location view change needs a full
+        # synchronous page load to ensure any front-end editing state and
+        # views are invalidated. Else, the editing state and edit side
+        # panel will be invalid for the new view.
+        #
+        
+        if not is_ajax( request ):
+            return False
+        view_type_changed = bool( request.view_parameters.view_type != next_view_type )
+
+        if ( view_type_changed
+             and (( request.view_parameters.view_type == ViewType.CONFIGURATION )
+                  or ( next_view_type == ViewType.CONFIGURATION ))):
+            return True
+        
+        if next_view_type == ViewType.LOCATION_VIEW:
+            view_id_changed = bool( request.view_parameters.location_view_id  != next_id )
+            return bool( request.is_editing
+                         and ( view_type_changed or view_id_changed ))
+
+        elif next_view_type == ViewType.COLLECTION:
+            view_id_changed = bool( request.view_parameters.collection_id != next_id )
+            return bool( request.is_editing
+                         and ( view_type_changed or view_id_changed ))
+
+        return False
