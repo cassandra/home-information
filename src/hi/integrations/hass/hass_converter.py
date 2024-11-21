@@ -127,7 +127,15 @@ class HassConverter:
     def hass_states_to_hass_devices( cls,
                                      hass_entity_id_to_state : Dict[ str, HassState ]
                                      ) -> Dict[ str, HassDevice ]:
-
+        """
+        The Home Assistant (HAss) model we see by fetching the HAss states does
+        not explicitly define the 'devices' that those states are attached
+        to.  These devices are the model equivalent of the 'Entity' model,
+        while HAss states will map 1-to-1 with the 'EntityState' models.
+        Thus, we use this routine to heuristally collate the HA states into
+        HAss devices to help map from the HAss model to this app's model.
+        """
+        
         ##########
         # First pass to gather candidate device names.
         
@@ -217,19 +225,19 @@ class HassConverter:
     
     @classmethod
     def create_models_for_hass_device( cls, hass_device : HassDevice ) -> Entity:
-
-        integration_key = cls.hass_device_to_integration_key( hass_device = hass_device )
-        entity_name = cls.hass_device_to_entity_name( hass_device )
-        entity_type = cls.hass_device_to_entity_type( hass_device )
         
         with transaction.atomic():
 
+            entity_integration_key = cls.hass_device_to_integration_key( hass_device = hass_device )
+            entity_name = cls.hass_device_to_entity_name( hass_device )
+            entity_type = cls.hass_device_to_entity_type( hass_device )
+            
             entity = Entity(
                 name = entity_name,
                 entity_type_str = str(entity_type),
                 can_user_delete = HassMetaData.allow_entity_deletion,
             )
-            entity.integration_key = integration_key
+            entity.integration_key = entity_integration_key
             entity.save()
             
             insteon_address = cls.hass_device_to_insteon_address( hass_device )
@@ -249,11 +257,13 @@ class HassConverter:
             #
             for hass_state in hass_device.hass_state_list:
                 
+                state_integration_key = cls.hass_state_to_integration_key( hass_state = hass_state )
+                
                 cls._create_hass_state_sensor_or_controller(
                     hass_device = hass_device,
                     hass_state = hass_state,
                     entity = entity,
-                    integration_key = integration_key,
+                    integration_key = state_integration_key,
                 )
                 continue
             
@@ -486,3 +496,11 @@ class HassConverter:
             integration_id = HassMetaData.integration_id,
             integration_name = hass_device.device_id,
         )
+
+    @classmethod
+    def hass_state_to_integration_key( cls, hass_state : HassState ) -> IntegrationKey:
+        return IntegrationKey(
+            integration_id = HassMetaData.integration_id,
+            integration_name = hass_state.entity_id,
+        )
+    

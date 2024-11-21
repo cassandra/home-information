@@ -55,6 +55,12 @@ class Entity( IntegrationKeyModel, LocationItemModelMixin ):
     class Meta:
         verbose_name = 'Entity'
         verbose_name_plural = 'Entities'
+        constraints = [
+            models.UniqueConstraint(
+                fields = [ 'integration_id', 'integration_name' ],
+                name = 'entity_integration_key',
+            ),
+        ]
 
     def __str__(self):
         return f'Entity[{self.id}]: {self.name} [{self.entity_type_str}]'
@@ -213,7 +219,7 @@ class EntityStateDelegation(models.Model):
         EntityState,
         related_name = 'entity_state_delegations',
         verbose_name = 'Entity State',
-        on_delete=models.CASCADE,
+        on_delete = models.CASCADE,
     )
     delegate_entity = models.ForeignKey(
         Entity,

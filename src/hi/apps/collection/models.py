@@ -58,13 +58,13 @@ class CollectionEntity(models.Model):
         Collection,
         related_name = 'entities',
         verbose_name = 'Collection',
-        on_delete=models.CASCADE,
+        on_delete = models.CASCADE,
     )
     entity = models.ForeignKey(
         Entity,
         related_name = 'collections',
         verbose_name = 'Entity',
-        on_delete=models.CASCADE,
+        on_delete = models.CASCADE,
     )
     order_id = models.PositiveIntegerField(
         'Order Id',

@@ -21,7 +21,7 @@ class Controller( IntegrationKeyModel ):
         EntityState,
         related_name = 'controllers',
         verbose_name = 'Entity State',
-        on_delete=models.CASCADE,
+        on_delete = models.CASCADE,
     )
     controller_type_str = models.CharField(
         'Controller Type',
@@ -32,6 +32,12 @@ class Controller( IntegrationKeyModel ):
     class Meta:
         verbose_name = 'Controller'
         verbose_name_plural = 'Controllers'
+        constraints = [
+            models.UniqueConstraint(
+                fields = [ 'integration_id', 'integration_name' ],
+                name = 'controller_integration_key',
+            ),
+        ]
 
     @property
     def controller_type(self):

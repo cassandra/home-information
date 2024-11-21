@@ -21,7 +21,7 @@ class Sensor( IntegrationKeyModel ):
         EntityState,
         related_name = 'sensors',
         verbose_name = 'Entity State',
-        on_delete=models.CASCADE,
+        on_delete = models.CASCADE,
     )
     sensor_type_str = models.CharField(
         'Sensor Type',
@@ -32,7 +32,13 @@ class Sensor( IntegrationKeyModel ):
     class Meta:
         verbose_name = 'Sensor'
         verbose_name_plural = 'Sensors'
-
+        constraints = [
+            models.UniqueConstraint(
+                fields = [ 'integration_id', 'integration_name' ],
+                name = 'sensor_integration_key',
+            ),
+        ]
+        
     @property
     def sensor_type(self):
         return SensorType.from_name_safe( self.sensor_type_str )

@@ -52,7 +52,7 @@ class IntegrationAttribute( AttributeModel ):
         Integration,
         related_name = 'attributes',
         verbose_name = 'Integration',
-        on_delete=models.CASCADE,
+        on_delete = models.CASCADE,
     )
 
     class Meta:

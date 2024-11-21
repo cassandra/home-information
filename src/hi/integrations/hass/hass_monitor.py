@@ -3,6 +3,7 @@ import logging
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.monitor.state_monitor_mixin import EntityStateMonitorMixin
 
+from .hass_converter import HassConverter
 from .hass_manager import HassManager
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,11 @@ class HassMonitor( PeriodicMonitor, EntityStateMonitorMixin ):
         
         id_to_hass_state_map = self._manager.fetch_hass_states_from_api( verbose = False )
         for hass_state in id_to_hass_state_map.values():
+            state_integration_key = HassConverter.hass_state_to_integration_key( hass_state = hass_state )
 
+
+            hass_state.state_value
+            
 
 
 

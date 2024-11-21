@@ -94,6 +94,10 @@ class HassState:
         return self.attributes.get( HassApi.FRIENDLY_NAME_ATTR )
 
     @property
+    def state_value(self):
+        return self.attributes.get( HassApi.STATE_FIELD )
+        
+    @property
     def device_class(self):
         return self.attributes.get( HassApi.DEVICE_CLASS_ATTR )
 
@@ -124,7 +128,7 @@ class HassDevice:
     
     def __init__( self, device_id : str ):
         self._device_id = device_id
-        self._state_list = list()
+        self._hass_state_list = list()
         return
 
     def __str__(self):
@@ -138,25 +142,25 @@ class HassDevice:
         return self._device_id
 
     def add_state( self, hass_state : HassState ):
-        self._state_list.append( hass_state )
+        self._hass_state_list.append( hass_state )
         return
 
     @property
     def hass_state_list(self):
-        return self._state_list
+        return self._hass_state_list
     
     @property
     def device_class_set(self):
-        return { x.device_class for x in self._state_list if x.device_class }
+        return { x.device_class for x in self._hass_state_list if x.device_class }
     
     @property
     def entity_id_prefix_set(self):
-        return { x.entity_id_prefix for x in self._state_list }
+        return { x.entity_id_prefix for x in self._hass_state_list }
     
     def to_dict(self):
         return {
             'device_id': self.device_id,
-            'num_states': len(self._state_list),
+            'num_states': len(self._hass_state_list),
             'prefixes': list( self.entity_id_prefix_set ),
-            'states': [ x.api_dict for x in self._state_list ],
+            'states': [ x.api_dict for x in self._hass_state_list ],
         }
