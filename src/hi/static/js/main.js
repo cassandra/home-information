@@ -17,6 +17,7 @@
 	DATA_TYPE_PATH_VALUE: 'svg-path',
 	
 	API_LOCATION_ITEM_DETAILS_URL: '/location/item/details',
+	API_LOCATION_ITEM_INFO_URL: '/location/item/info',
 
 	generateUniqueId: function() {
 	    return _generateUniqueId();

@@ -141,6 +141,7 @@ class SvgPathItem:
     stroke_color  : str
     stroke_width  : float
     fill_color    : str
+    fill_opacity  : float
     
 
 class SvgDecimalField( models.DecimalField ):

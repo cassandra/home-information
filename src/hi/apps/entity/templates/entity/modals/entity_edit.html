@@ -1,0 +1,13 @@
+{% extends "modals/action_done.html" %}
+
+{% block title_text %}
+{{ entity.name }}
+{% endblock %}
+
+{% block body %}
+
+<div>
+  {% include "entity/edit/panes/entity_edit.html" %}
+</div>
+
+{% endblock %}

@@ -81,7 +81,6 @@ class LocationEditView( View, LocationViewMixin ):
         )
             
     
-@method_decorator( edit_required, name='dispatch' )
 class LocationAttributeUploadView( View, LocationViewMixin ):
 
     def post( self, request, *args, **kwargs ):

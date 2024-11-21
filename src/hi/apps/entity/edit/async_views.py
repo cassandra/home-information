@@ -59,7 +59,6 @@ class EntityEditView( View, EntityViewMixin ):
         )
 
         
-@method_decorator( edit_required, name='dispatch' )
 class EntityAttributeUploadView( View, EntityViewMixin ):
 
     def post( self, request, *args, **kwargs ):

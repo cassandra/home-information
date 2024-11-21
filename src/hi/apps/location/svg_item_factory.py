@@ -1,6 +1,5 @@
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.svg_models import SvgIconItem, SvgPathItem, SvgViewBox
-from hi.apps.collection.enums import CollectionType
 from hi.apps.collection.models import Collection
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
@@ -41,7 +40,8 @@ class SvgItemFactory( Singleton ):
             svg_path = path.svg_path,
             stroke_color = '#40f040',
             stroke_width = 5.0,
-            fill_color = 'none',
+            fill_color = 'yellow',
+            fill_opacity = 0.5,
         )
 
     def get_svg_item_type( self, obj ) -> SvgItemType:

@@ -22,6 +22,10 @@ urlpatterns = [
              views.LocationViewDefaultView.as_view(), 
              name='location_view_default'),
 
+    re_path( r'^item/info/(?P<html_id>[\w\-]+)$', 
+             async_views.LocationItemInfoView.as_view(), 
+             name='location_item_info' ),
+    
     re_path( r'^item/details/(?P<html_id>[\w\-]+)$', 
              async_views.LocationItemDetailsView.as_view(), 
              name='location_item_details' ),

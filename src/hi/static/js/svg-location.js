@@ -190,19 +190,14 @@
     }
 
     function isEventInLocationArea( event ) {
+
 	if ( $(event.target).is('input, textarea') ) {
             return false;
 	}
-
-	const targetArea = $(Hi.LOCATION_VIEW_AREA_SELECTOR);
-        const targetOffset = targetArea.offset();
-        const targetWidth = targetArea.outerWidth();
-        const targetHeight = targetArea.outerHeight();
-
-        return (( gLastMousePosition.x >= targetOffset.left )
-		&& ( gLastMousePosition.x <= ( targetOffset.left + targetWidth ))
-		&& ( gLastMousePosition.y >= targetOffset.top )
-		&& ( gLastMousePosition.y <= ( targetOffset.top + targetHeight )));
+	if ($(event.target).closest('.modal').length > 0) {
+            return false;
+	}
+	return $(event.target).closest(Hi.LOCATION_VIEW_AREA_SELECTOR).length > 0;
     }
     
     function handleKeyDown( event ) {

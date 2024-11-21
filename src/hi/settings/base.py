@@ -286,8 +286,8 @@ PIPELINE = {
                 'js/main.js',
                 'js/edit.js',
                 'js/edit-dragdrop.js',
-                'js/edit-svg-icon.js',
-                'js/edit-svg-path.js',
+                'js/svg-icon.js',
+                'js/svg-path.js',
                 'js/svg-location.js',  # Should come last: edit event handlers should be registered first.
             ),
             'output_filename': 'js/js_after_content_custom.js',

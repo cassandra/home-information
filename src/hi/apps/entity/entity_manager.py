@@ -20,6 +20,7 @@ from .models import (
 )
 from .transient_models import (
     EntityDetailsData,
+    EntityInfoData,
     EntityEditData,
     EntityViewGroup,
     EntityViewItem,
@@ -30,6 +31,26 @@ class EntityManager(Singleton):
 
     def __init_singleton__(self):
         return
+
+    def get_entity_info_data( self,
+                              entity         : Entity,
+                              is_editing     : bool )        -> EntityDetailsData:
+        entity_edit_data = EntityEditData( entity = entity )
+        entity_state_list = list(
+            entity.states.all()
+        )
+        entity_state_delegation_list = list(
+            entity.entity_state_delegations.select_related('entity_state', 'entity_state__entity').all()
+        )
+        principal_state_list = [ x.entity_state for x in entity_state_delegation_list ]
+        principal_entity_list = list({ x.entity for x in principal_state_list })  # de-dupe
+        
+        return EntityInfoData(
+            entity_edit_data = entity_edit_data,
+            entity_state_list = entity_state_list,
+            principal_state_list = principal_state_list,
+            principal_entity_list = principal_entity_list,
+        )
 
     def get_entity_details_data( self,
                                  entity         : Entity,

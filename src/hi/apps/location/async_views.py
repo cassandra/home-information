@@ -39,35 +39,25 @@ class LocationViewDetailsView( HiSideView, LocationViewMixin ):
         return context
 
 
-class LocationItemDetailsViewNEW( HiSideView ):
+class LocationItemInfoView( View ):
 
-    def dispatch( self, request, *args, **kwargs ):
+    def get(self, request, *args, **kwargs):
         try:
-            self._item_type, self._item_id = ItemType.parse_from_dict( kwargs )
-            if self._item_type == ItemType.ENTITY:
-                self._view = EntityDetailsView()
-                self._kwargs = { 'entity_id': self._item_id }
-            elif self._item_type == ItemType.COLLECTION:
-                self._view = CollectionDetailsView()
-                self._kwargs = { 'collection_id': self._item_id }
-            else:
-                raise BadRequest( 'Unsupported item type.' )
-                  
+            ( item_type, item_id ) = ItemType.parse_from_dict( kwargs )
         except ValueError:
-            raise BadRequest( 'Bad item id.' )
+            raise BadRequest( request, message = 'Bad item id.' )
         
-        return super().dispatch( request, *args, **kwargs )
-     
-    def get_template_name( self ) -> str:
-        return self._view.get_template_name()
-
-    def should_push_url( self ):
-        return True
+        if item_type == ItemType.ENTITY:
+            redirect_url = reverse( 'entity_info', kwargs = { 'entity_id': item_id } )
+            return HttpResponseRedirect( redirect_url )
     
-    def get_template_context( self, request, *args, **kwargs ):
-        return self._view.get_template_context( request, **self._kwargs )
+        if item_type == ItemType.COLLECTION:
+            redirect_url = reverse( 'collection_view', kwargs = { 'collection_id': item_id } )
+            return HttpResponseRedirect( redirect_url )
 
-    
+        raise BadRequest( 'Unknown item type "{item_type}".' )
+
+
 class LocationItemDetailsView( View ):
 
     def get(self, request, *args, **kwargs):
@@ -79,22 +69,9 @@ class LocationItemDetailsView( View ):
         if item_type == ItemType.ENTITY:
             redirect_url = reverse( 'entity_details', kwargs = { 'entity_id': item_id } )
             return HttpResponseRedirect( redirect_url )
-            return EntityDetailsView().get(
-                request = request,
-                entity_id = item_id,
-            )            
     
         if item_type == ItemType.COLLECTION:
             redirect_url = reverse( 'collection_details', kwargs = { 'collection_id': item_id } )
             return HttpResponseRedirect( redirect_url )
-            return CollectionDetailsView().get(
-                request = request,
-                collection_id = item_id,
-            )            
 
         raise BadRequest( 'Unknown item type "{item_type}".' )
-
-
-
-        
-    

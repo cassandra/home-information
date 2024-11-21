@@ -180,7 +180,7 @@ class CollectionEntityToggleView( View, CollectionViewMixin, EntityViewMixin ):
         context = {
             'collection_data': collection_data,
         }
-        template = get_template( 'collection/collection_view.html' )
+        template = get_template( 'collection/panes/collection_view.html' )
         collection_content = template.render( context, request = request )
         
         return antinode.response(

@@ -77,7 +77,6 @@
 	    handleMouseWheel( event );
 	});
 	$(document).on('click', function(event) {
-	    if ( ! Hi.isEditMode ) { return; }
 	    handleClick( event );
 	});
 	$(document).on('keydown', function(event) {
@@ -221,12 +220,12 @@
 
 	const enclosingSvgGroup = $(event.target).closest('g');
 	if ( enclosingSvgGroup.length > 0 ) {
-            console.log( `Click [${MODULE_NAME}]`, event );
-            if ( Hi.DEBUG ) { console.log( 'SVG Target Element', enclosingSvgGroup ); }
 	    let svgDataType = $(enclosingSvgGroup).attr( Hi.DATA_TYPE_ATTR );
 	    const isSvgIcon = ( svgDataType == Hi.DATA_TYPE_ICON_VALUE );
 	    const svgItemId = enclosingSvgGroup.attr('id');
 	    if ( isSvgIcon && svgItemId ) {
+		console.log( `Click [${MODULE_NAME}]`, event );
+		if ( Hi.DEBUG ) { console.log( 'SVG Target Element', enclosingSvgGroup ); }
 		handleSvgIconClick( event, enclosingSvgGroup );
 		event.preventDefault(); 
 		event.stopImmediatePropagation();
@@ -238,6 +237,9 @@
 
     function handleKeyDown( event ) {
 	if ( $(event.target).is('input, textarea') ) {
+            return;
+	}
+	if ($(event.target).closest('.modal').length > 0) {
             return;
 	}
 	if ( gSelectedIconSvgGroup ) {
@@ -290,14 +292,20 @@
 
     function handleSvgIconClick( event, enclosingSvgGroup ) {
 	const svgItemId = $(enclosingSvgGroup).attr('id');
-	clearSelectedIconSvgGroup();
-	gSelectedIconSvgGroup = enclosingSvgGroup;
-        $(enclosingSvgGroup).addClass( Hi.HIGHLIGHTED_CLASS );
-	let data = {
-	    moduleName: MODULE_NAME,
-	};
-	Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
-        AN.get( `${Hi.API_LOCATION_ITEM_DETAILS_URL}/${svgItemId}` );
+
+	if ( Hi.isEditMode ) {
+	    clearSelectedIconSvgGroup();
+	    gSelectedIconSvgGroup = enclosingSvgGroup;
+            $(enclosingSvgGroup).addClass( Hi.HIGHLIGHTED_CLASS );
+	    let data = {
+		moduleName: MODULE_NAME,
+	    };
+	    Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
+            AN.get( `${Hi.API_LOCATION_ITEM_DETAILS_URL}/${svgItemId}` );
+
+	} else {
+            AN.get( `${Hi.API_LOCATION_ITEM_INFO_URL}/${svgItemId}` );
+	}
     }
     
     function clearSelectedIconSvgGroup() {

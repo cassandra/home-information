@@ -10,7 +10,7 @@ from hi.apps.entity.edit.forms import (
 from hi.apps.location.models import LocationView
 
 from .enums import EntityType
-from .models import Entity
+from .models import Entity, EntityState
 
 
 @dataclass
@@ -64,6 +64,26 @@ class EntityEditData:
             'entity_attribute_formset': self.entity_attribute_formset,
             'entity_attribute_upload_form': self.entity_attribute_upload_form,
         }
+
+    
+@dataclass
+class EntityInfoData:
+    """ All the data needed to render the Entity info modal. """
+
+    entity_edit_data       : EntityEditData
+    entity_state_list      : List[ EntityState ]
+    principal_state_list   : List[ EntityState ]
+    principal_entity_list  : List[ Entity ]
+    
+    def to_template_context(self):
+        context = {
+            'entity': self.entity_edit_data.entity,
+            'entity_state_list': self.entity_state_list,
+            'principal_state_list': self.principal_state_list,
+            'principal_entity_list': self.principal_entity_list,
+        }
+        context.update( self.entity_edit_data.to_template_context() )
+        return context
 
     
 @dataclass

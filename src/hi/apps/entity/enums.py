@@ -57,7 +57,7 @@ class EntityType(LabeledEnum):
     TOOL                 = ( 'Tool', '' )
     VIDEO_PLAYER         = ( 'Video Player', '' )
     WALL_SWITCH          = ( 'Wall Switch', '' )
-    WASTE_PIPE           = ( 'Waste Pipe', '' ) 
+    WASTE_PIPE           = ( 'Waste Pipe', '' )
     WATER_HEATER         = ( 'Water Heater', '' )
     WATER_LINE           = ( 'Water Line', '' )
     WATER_METER          = ( 'Water Meter', '' )

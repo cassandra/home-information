@@ -1,0 +1,34 @@
+<div>
+  <h4>{{ title }}</h4>
+  <ul>
+    {% for entity_state in entity_state_list %}
+    <li>
+      {{ entity_state.name }}
+      <ul>
+	<li>
+	  Sensors
+	  <ul>
+	    {% for sensor in entity_state.sensors.all %}
+	    <li>{{ sensor.name }}</li>
+	    {% empty %}
+	    <em>No sensors</em>
+	    {% endfor %}
+	  </ul>
+	</li>
+	<li>
+	  Controllers
+	  <ul>
+	    {% for controller in entity_state.controllers.all %}
+	    <li>{{ controller.name }}</li>
+	    {% empty %}
+	    <em>No controllers</em>
+	    {% endfor %}
+	  </ul>
+	</li>
+      </ul>
+    </li>
+    {% empty %}
+    <em>No states</em>
+    {% endfor %}
+  </ul>
+</div>

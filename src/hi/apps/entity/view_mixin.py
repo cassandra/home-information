@@ -26,14 +26,18 @@ class EntityViewMixin:
                               request           : HttpRequest,
                               entity_edit_data  : EntityEditData,
                               status_code       : int             = 200 ):
-
         context = entity_edit_data.to_template_context()
-        template = get_template( 'entity/edit/panes/entity_edit.html' )
-        content = template.render( context, request = request )
-        return antinode.response(
-            insert_map = {
-                DIVID['ENTITY_EDIT_PANE']: content,
-            },
-            status = status_code,
+        if request.is_editing:
+            template = get_template( 'entity/edit/panes/entity_edit.html' )
+            content = template.render( context, request = request )
+            return antinode.response(
+                insert_map = {
+                    DIVID['ENTITY_EDIT_PANE']: content,
+                },
+                status = status_code,
+            )
+        return antinode.modal_from_template(
+            request = request,
+            template_name = 'entity/modals/entity_edit.html',
+            context = context,
         )
- 

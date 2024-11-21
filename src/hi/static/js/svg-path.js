@@ -96,7 +96,6 @@
     $(document).ready(function() {
 
 	$(document).on('click', function(event) {
-	    if ( ! Hi.isEditMode ) { return; }
 	    handleClick( event );
 	});
 	$(document).on('keydown', function(event) {
@@ -210,14 +209,19 @@
 
     function handleSvgPathClick( event, enclosingSvgGroup ) {
 	const svgItemId = $(enclosingSvgGroup).attr('id');
-	clearSelectedPathSvgGroup();
-	gSelectedPathSvgGroup = enclosingSvgGroup;
-	expandSvgPath( enclosingSvgGroup );
-	let data = {
-	    moduleName: MODULE_NAME,
-	};
-	Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
-        AN.get( `${Hi.API_LOCATION_ITEM_DETAILS_URL}/${svgItemId}` );
+
+	if ( Hi.isEditMode ) {
+	    clearSelectedPathSvgGroup();
+	    gSelectedPathSvgGroup = enclosingSvgGroup;
+	    expandSvgPath( enclosingSvgGroup );
+	    let data = {
+		moduleName: MODULE_NAME,
+	    };
+	    Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
+            AN.get( `${Hi.API_LOCATION_ITEM_DETAILS_URL}/${svgItemId}` );
+	} else {
+            AN.get( `${Hi.API_LOCATION_ITEM_INFO_URL}/${svgItemId}` );
+	}
     }
 
     function clearSelectedPathSvgGroup() {
