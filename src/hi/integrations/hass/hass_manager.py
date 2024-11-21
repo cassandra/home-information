@@ -111,7 +111,7 @@ class HassManager( Singleton ):
             result.error_list.append( 'Sync problem. HAss integration disabled?' )
             return result
                     
-        hass_entity_id_to_state = self._fetch_hass_states_from_api( result = result )
+        hass_entity_id_to_state = self.fetch_hass_states_from_api()
         result.message_list.append( f'Found {len(hass_entity_id_to_state)} current HAss states.' )
 
         integration_key_to_entity = self._get_existing_hass_entities( result = result )
@@ -147,9 +147,10 @@ class HassManager( Singleton ):
         
         return result
 
-    def _fetch_hass_states_from_api( self, result : ProcessingResult ) -> Dict[ str, HassState ]:
-        
-        logger.debug( 'Getting current HAss states.' )
+    def fetch_hass_states_from_api( self, verbose : bool = True ) -> Dict[ str, HassState ]:
+        if verbose:
+            logger.debug( 'Getting current HAss states.' )
+            
         hass_entity_id_to_state = dict()
         for hass_state in self.hass_client.states():
             hass_entity_id = hass_state.entity_id

@@ -2,6 +2,7 @@ import logging
 from typing import Dict, List
 
 from hi.apps.common.singleton import Singleton
+from hi.apps.monitor.monitor_manager import MonitorManager
 
 from .integration_gateway import IntegrationGateway
 from .models import Integration
@@ -63,5 +64,11 @@ class IntegrationFactory( Singleton ):
             return
         logger.debug( f'Registering integration: {integration_metadata.label}' )
         self._integration_gateway_map[integration_id] = integration_gateway
+        try:
+            integration = Integration.objects.get( integration_id = integration_id )
+            if integration.is_enabled:
+                MonitorManager().register( integration_gateway.get_monitor() )
+        except Integration.DoesNotExist:
+            pass
         return
 

@@ -43,7 +43,7 @@ class ZoneMinderManager( Singleton ):
     
     def reload( self ):
         if self._is_loading:
-            logger.warning( 'ZoneMinder is already loading.' )
+            logger.warning( 'ZoneMinder manager is already loading.' )
             return
         try:
             self._is_loading = True
@@ -51,7 +51,7 @@ class ZoneMinderManager( Singleton ):
         
         finally:
             self._is_loading = False
-            logger.debug( 'ZoneMinder loading completed.' )
+            logger.debug( 'ZoneMinder manager loading completed.' )
         return
 
     def create_zm_client(self):
