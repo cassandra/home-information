@@ -10,4 +10,3 @@ class ZoneminderConfig(AppConfig):
         from .zm_gateway import ZoneMinderGateway
         IntegrationFactory().register( ZoneMinderGateway() )
         return
-    

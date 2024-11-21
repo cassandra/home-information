@@ -2,18 +2,14 @@ from django.core.exceptions import BadRequest
 from django.db import transaction
 
 from django.shortcuts import render
-from django.template.loader import get_template
 from django.urls import reverse
 from django.views.generic import View
-
-import hi.apps.common.antinode as antinode
 
 from hi.integrations.core.forms import IntegrationAttributeFormSet
 from hi.integrations.core.helpers import IntegrationHelperMixin
 from hi.integrations.core.views import IntegrationPageView
 
-from hi.constants import DIVID
-from hi.hi_async_view import HiAsyncView, HiModalView
+from hi.hi_async_view import HiModalView
 
 from .hass_metadata import HassMetaData
 from .hass_manager import HassManager
