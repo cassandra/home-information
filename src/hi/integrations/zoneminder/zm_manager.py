@@ -1,6 +1,7 @@
 import logging
-import pyzm.api as pyzm_api
+from pyzm.api import ZMApi
 from pyzm.helpers.Monitor import Monitor as ZmMonitor
+from pyzm.helpers.globals import logger as pyzm_logger
 from typing import Dict
 
 from django.db import transaction
@@ -24,10 +25,20 @@ from .enums import (
 from .zm_metadata import ZmMetaData
 
 logger = logging.getLogger(__name__)
+pyzm_logger.set_level( 0 )  # pyzm does not use standard 'logging' module. ugh.
 
 
 class ZoneMinderManager( Singleton ):
+    """
+    References:
+      ZM Api code: https://github.com/ZoneMinder/zoneminder/tree/master/web/api/app/Controller
+      PyZM code: https://github.com/pliablepixels/pyzm/tree/357fdbd1937dab8027882598b61258ef43dc366a
+    """
 
+    VIDEO_STREAM_SENSOR_PREFIX = 'monitor.video_stream'
+    MOVEMENT_SENSOR_PREFIX = 'monitor.motion'
+    MONITOR_STATE_SENSOR_PREFIX = 'monitor.state'
+    
     SYNCHRONIZATION_LOCK_NAME = 'zm_integration_sync'
 
     def __init_singleton__( self ):
@@ -94,9 +105,8 @@ class ZoneMinderManager( Singleton ):
             continue
         
         logger.debug( f'ZoneMinder client options: {api_options}' )
-        
-        return pyzm_api.ZMApi( options = api_options )
-        
+        return ZMApi( options = api_options )
+    
     def sync( self ) -> ProcessingResult:
         try:
             with ExclusionLockContext( name = self.SYNCHRONIZATION_LOCK_NAME ):
@@ -150,7 +160,7 @@ class ZoneMinderManager( Singleton ):
         logger.debug( 'Getting current ZM monitors.' )
         integration_key_to_monitor = dict()
         for zm_monitor in self.zm_client.monitors().list():
-            integration_key = self._monitor_to_integration_key( zm_monitor = zm_monitor )
+            integration_key = self._monitor_to_integration_key( zm_monitor_id = zm_monitor.id() )
             
             result.message_list.append(
                 '[ZM Monitor] Id:{} Name:{} Enabled:{} Status:{} Type:{} Dims:{}'.format(
@@ -190,27 +200,37 @@ class ZoneMinderManager( Singleton ):
                         zm_monitor  : ZmMonitor,
                         result      : ProcessingResult ):
 
-        integration_key = self._monitor_to_integration_key( zm_monitor = zm_monitor )
         with transaction.atomic():
 
+            entity_integration_key = self._monitor_to_integration_key( zm_monitor_id = zm_monitor.id() )
             entity = Entity(
                 name = zm_monitor.name(),
                 entity_type_str = str(EntityType.CAMERA),
                 can_user_delete = ZmMetaData.allow_entity_deletion,
             )
-            entity.integration_key = integration_key
+            entity.integration_key = entity_integration_key
             entity.save()
+            
             HiModelHelper.create_video_stream_sensor(
                 entity = entity,
-                integration_key = integration_key,
+                integration_key = self._sensor_to_integration_key(
+                    sensor_prefix = self.VIDEO_STREAM_SENSOR_PREFIX,
+                    zm_monitor_id = zm_monitor.id(),
+                ),
             )
             HiModelHelper.create_movement_sensor(
                 entity = entity,
-                integration_key = integration_key,
+                integration_key = self._sensor_to_integration_key(
+                    sensor_prefix = self.MOVEMENT_SENSOR_PREFIX,
+                    zm_monitor_id = zm_monitor.id(),
+                ),
             )
             HiModelHelper.create_discrete_controller(
                 entity = entity,
-                integration_key = integration_key,
+                integration_key = self._sensor_to_integration_key(
+                    sensor_prefix = self.MONITOR_STATE_SENSOR_PREFIX,
+                    zm_monitor_id = zm_monitor.id(),
+                ),
                 name = f'{entity.name} State',
                 value_list = [ str(x) for x in ZmMonitorState ],
             )
@@ -218,9 +238,9 @@ class ZoneMinderManager( Singleton ):
         return
     
     def _update_entity( self,
-                        entity     : Entity,
+                        entity      : Entity,
                         zm_monitor  : ZmMonitor,
-                        result     : ProcessingResult ):
+                        result      : ProcessingResult ):
 
         # Currently nothing stored locally that will change (other than entity existence)
 
@@ -229,16 +249,22 @@ class ZoneMinderManager( Singleton ):
         return
     
     def _remove_entity( self,
-                        entity   : Entity,
-                        result   : ProcessingResult ):
+                        entity  : Entity,
+                        result  : ProcessingResult ):
         entity.delete()  # Deletion cascades to attributes, positions, sensors, controllers, etc.
         result.message_list.append( f'Removed stale ZM entity: {entity}' )
         return
     
-    def _monitor_to_integration_key( self, zm_monitor  : ZmMonitor ) -> IntegrationKey:
+    def _monitor_to_integration_key( self, zm_monitor_id  : ZmMonitor ) -> IntegrationKey:
         return IntegrationKey(
             integration_id = ZmMetaData.integration_id,
-            integration_name = str( zm_monitor.id() ),
+            integration_name = str( zm_monitor_id ),
             
+        )
+    
+    def _sensor_to_integration_key( self, sensor_prefix : str, zm_monitor_id  : int ) -> IntegrationKey:
+        return IntegrationKey(
+            integration_id = ZmMetaData.integration_id,
+            integration_name = f'{sensor_prefix}.{zm_monitor_id}',
         )
     

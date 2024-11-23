@@ -360,3 +360,10 @@ def day_month_name_year_to_datetime( date_str : str ):
 def year_to_datetime( date_str : str ):
     return datetime.datetime.strptime( date_str, "%Y" )
 
+
+def iso_naive_to_datetime_utc( iso_str : str, tzname : str  ):
+    to_zone = pytz.timezone( tzname )
+    naive_time = datetime.datetime.fromisoformat( iso_str )
+    aware_time = to_zone.localize(naive_time)
+    utc_time = aware_time.astimezone( pytz.UTC )
+    return utc_time

@@ -1,7 +1,7 @@
 import logging
 
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
-from hi.apps.monitor.state_monitor_mixin import EntityStateMonitorMixin
+from hi.apps.monitor.monitor_mixin import SensorMonitorMixin
 
 from .hass_converter import HassConverter
 from .hass_manager import HassManager
@@ -9,7 +9,7 @@ from .hass_manager import HassManager
 logger = logging.getLogger(__name__)
 
 
-class HassMonitor( PeriodicMonitor, EntityStateMonitorMixin ):
+class HassMonitor( PeriodicMonitor, SensorMonitorMixin ):
 
     def __init__( self ):
         super().__init__(
@@ -20,10 +20,12 @@ class HassMonitor( PeriodicMonitor, EntityStateMonitorMixin ):
         return
 
     async def do_work(self):
-        if self.TRACE:
-            logger.debug( 'Fetched HAss States' )
-        
         id_to_hass_state_map = self._manager.fetch_hass_states_from_api( verbose = False )
+
+        if self.TRACE:
+            logger.debug( f'Fetched {len(id_to_hass_state_map)} HAss States' )
+        
+        
         for hass_state in id_to_hass_state_map.values():
             state_integration_key = HassConverter.hass_state_to_integration_key( hass_state = hass_state )
 

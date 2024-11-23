@@ -8,7 +8,7 @@ class PeriodicMonitor:
     and periodically updated from some external source.
     """
 
-    TRACE = False
+    TRACE = True
     
     def __init__( self, id: str, interval_secs: int ) -> None:
         self._id = id
