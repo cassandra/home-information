@@ -16,6 +16,7 @@ from hi.apps.entity.enums import (
 )
 from hi.apps.entity.models import Entity, EntityAttribute
 from hi.apps.model_helper import HiModelHelper
+from hi.apps.sense.enums import SensorValue
 
 from hi.integrations.core.integration_key import IntegrationKey
 
@@ -504,3 +505,34 @@ class HassConverter:
             integration_name = hass_state.entity_id,
         )
     
+    @classmethod
+    def hass_state_to_sensor_value_str( self, hass_state : HassState ) -> str:
+
+        if hass_state.entity_id_prefix == HassApi.SUN_ID_PREFIX:
+            return hass_state.state_value
+        
+        elif hass_state.entity_id_prefix == HassApi.WEATHER_ID_PREFIX:
+            return hass_state.state_value
+        
+        elif hass_state.entity_id_prefix == HassApi.BINARY_SENSOR_ID_PREFIX:
+            if hass_state.state_value.lower() == 'on':
+                return str(SensorValue.BINARY_ON)
+            elif hass_state.state_value.lower() == 'off':
+                return str(SensorValue.BINARY_OFF)
+            else:
+                logger.warning( f'Unknown HAss binary stae value "{hass_state.state_value}".' )
+                return None
+            
+        elif hass_state.device_class == HassApi.TEMPERATURE_DEVICE_CLASS:
+            return hass_state.state_value
+            
+        elif hass_state.device_class == HassApi.HUMIDITY_DEVICE_CLASS:
+            return hass_state.state_value
+
+        elif hass_state.device_class == HassApi.TIMESTAMP_DEVICE_CLASS:
+            return hass_state.state_value
+
+        elif hass_state.device_class == HassApi.ENUM_DEVICE_CLASS:
+            return hass_state.state_value
+
+        return hass_state.state_value

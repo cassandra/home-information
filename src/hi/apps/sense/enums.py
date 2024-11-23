@@ -10,3 +10,7 @@ class SensorValue(LabeledEnum):
 
     MOVEMENT_ACTIVE    = ( 'Active', '' )
     MOVEMENT_IDLE      = ( 'Idle', '' )
+
+    BINARY_ON          = ( 'On', '' )
+    BINARY_OFF         = ( 'Off', '' )
+    

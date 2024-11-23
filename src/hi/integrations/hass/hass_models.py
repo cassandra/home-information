@@ -95,7 +95,7 @@ class HassState:
 
     @property
     def state_value(self):
-        return self.attributes.get( HassApi.STATE_FIELD )
+        return self.api_dict.get( HassApi.STATE_FIELD )
         
     @property
     def device_class(self):

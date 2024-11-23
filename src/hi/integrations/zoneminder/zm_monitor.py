@@ -7,7 +7,7 @@ from hi.apps.monitor.monitor_mixin import SensorMonitorMixin
 from hi.apps.monitor.transient_models import SensorResponse
 from hi.apps.sense.enums import SensorValue
 
-from .transient_models import ZmEvent
+from .zm_models import ZmEvent
 from .zm_manager import ZoneMinderManager
 
 logger = logging.getLogger(__name__)
