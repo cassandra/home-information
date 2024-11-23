@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from cachetools import TTLCache
 import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
@@ -7,6 +7,7 @@ from hi.apps.monitor.monitor_mixin import SensorMonitorMixin
 from hi.apps.monitor.transient_models import SensorResponse
 from hi.apps.sense.enums import SensorValue
 
+from .transient_models import ZmEvent
 from .zm_manager import ZoneMinderManager
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class ZoneMinderMonitor( PeriodicMonitor, SensorMonitorMixin ):
 
-    # TODO: MOve this into the integrations attributes for users to setAllCameraStatus
+    # TODO: Move this into the integrations attributes for users to set
     ZONEMINDER_SERVER_TIMEZONE = 'America/Chicago'
     
     def __init__( self ):
@@ -23,108 +24,126 @@ class ZoneMinderMonitor( PeriodicMonitor, SensorMonitorMixin ):
             interval_secs = 10,
         )
         self._manager = ZoneMinderManager()
-        self._last_event_datetime = datetimeproxy.now( self.ZONEMINDER_SERVER_TIMEZONE )
+        self._fully_processed_event_ids = TTLCache( maxsize = 1000, ttl = 100000 )
+        self._start_processed_event_ids = TTLCache( maxsize = 1000, ttl = 100000 )
+
+        # pyzm parses the "from" time as a naive time and applies thje
+        # timezone separately. It will parse an ISO time with a timezone,
+        # but ignores it ignores its encoded timezone.  Thus, it is
+        # important that we have this in the same TZ as the ZoneMinder
+        # server and also pass in the TZ when filtering events.
+        #
+        self._poll_from_datetime = datetimeproxy.now( self.ZONEMINDER_SERVER_TIMEZONE )
         return
 
     async def do_work(self):
         options = {
-            'from': self._last_event_datetime.isoformat(),
+            'from': self._poll_from_datetime.isoformat(),  # This "from" only looks at event start time
             'tz': self.ZONEMINDER_SERVER_TIMEZONE,
         }
-
-
-
-        
-        print( f'FROM: {options}' )
-
-
-
-            
         response = self._manager.zm_client.events( options )
         events = response.list()
         if self.TRACE:
             logger.debug( f"Found {len(events)} new ZM events" )
 
-        sensor_response_list = list()
-        for zm_event in events:
+        # Sensor readings and state value transitions are points in time,
+        # but ZoneMinder events are intervals.  Thus, one ZoneMinder event
+        # really represents two sensor reading: one when the event (motion)
+        # started and one when it ended.
+        #
+        # However, we may be seeing a ZM event in progress where there is
+        # no end time (a.k.a., an "open" event). Open events are trickier
+        # since we need to make sure that future polling will also pick up
+        # these events so we can know when they become closed.  However,
+        # needing to see the same event more than once during polling means
+        # there is a risk of double counting.  The tension this creates
+        # is what complicated the logic here.
+        
+        # First collate events into open and closed.
+        #
+        open_zm_event_list = list()
+        closed_zm_event_list = list()
+        for zm_api_event in events:
             if self.TRACE:
-                logger.debug( f'ZM Event: {zm_event.get()}' )
+                logger.debug( f'ZM Api Event: {zm_api_event.get()}' )
+            zm_event = ZmEvent( zm_api_event = zm_api_event,
+                                zm_tzname = self.ZONEMINDER_SERVER_TIMEZONE )
 
-            event_id = zm_event.id()
-            monitor_id = zm_event.monitor_id()
-            # Currently unused values:
-            #
-            # event_image_url = '{}/index.php?view=image&eid={}&fid=snapshot'.format(
-            #     self._manager.zm_client.get_portalbase(),
-            #     event_id,
-            # )
-            # event_cause = zm_event.cause()
-            # event_duration_secs = zm_event.duration()
-            # total_frame_count = zm_event.total_frames()
-            # alarm_frame_count = zm_event.alarmed_frames()
-            # score = zm_event.score()
-            # notes = zm_event.notes()
-            # max_score_frame_id = zm_event.get()['MaxScoreFrameId']
+            if zm_event.event_id in self._fully_processed_event_ids:
+                continue
             
-            event_video_url = '{}/index.php?view=event&eid={}'.format(
-                self._manager.zm_client.get_portalbase(),
-                event_id,
-            )
-            stream_response = SensorResponse(
-                integration_key = self._manager._sensor_to_integration_key(
-                    sensor_prefix = self._manager.VIDEO_STREAM_SENSOR_PREFIX,
-                    zm_monitor_id = monitor_id,
-                ),
-                timestamp = self._last_event_datetime,
-                value = event_video_url,
-            )
-            sensor_response_list.append( stream_response )
-
-            start_datetime = self.zm_response_to_datetime( zm_event.get()['StartTime'] )
-            event_start_response = SensorResponse(
-                integration_key = self._manager._sensor_to_integration_key(
-                    sensor_prefix = self._manager.MOVEMENT_SENSOR_PREFIX,
-                    zm_monitor_id = monitor_id,
-                ),
-                value = str(SensorValue.MOVEMENT_ACTIVE),
-                timestamp = start_datetime,
-            )
-            sensor_response_list.append( event_start_response )
-
-
-
-            #self.add_to_sensor_response_history( event_start_response )
-
-
-
-            
-            end_datetime = self.zm_response_to_datetime( zm_event.get()['EndTime'] )
-            if end_datetime:
-                event_end_response = SensorResponse(
-                    integration_key = self._manager._sensor_to_integration_key(
-                        sensor_prefix = self._manager.MOVEMENT_SENSOR_PREFIX,
-                        zm_monitor_id = monitor_id,
-                    ),
-                    value = str(SensorValue.MOVEMENT_IDLE),
-                    timestamp = end_datetime,
-                )
-                sensor_response_list.append( event_end_response )
-
-                
-                # self.add_to_sensor_response_history( event_end_response )
-
-
-                
-            self._last_event_datetime = max( self._last_event_datetime, start_datetime )
+            if zm_event.is_open:
+                open_zm_event_list.append( zm_event )
+            else:
+                closed_zm_event_list.append( zm_event )
             continue
 
+        sensor_response_history_list = list()
+        sensor_response_latest_list = list()
+
+        for zm_event in closed_zm_event_list:
+            if zm_event.event_id not in self._start_processed_event_ids:
+                active_sensor_response = self._create_movement_active_sensor_response( zm_event )
+                sensor_response_history_list.append( active_sensor_response )
+                
+            idle_sensor_response = self._create_movement_idle_sensor_response( zm_event )
+            sensor_response_history_list.append( idle_sensor_response )
+            sensor_response_latest_list.append( idle_sensor_response )
+            self._fully_processed_event_ids[zm_event.event_id] = True
+            continue
+        
+        for zm_event in open_zm_event_list:
+            if zm_event.event_id not in self._start_processed_event_ids:
+                active_sensor_response = self._create_movement_active_sensor_response( zm_event )
+                sensor_response_latest_list.append( active_sensor_response )
+                self._start_processed_event_ids[zm_event.event_id] = True
+            continue
+
+        self.add_to_sensor_response_history( sensor_response_list = sensor_response_history_list )
+        self.add_latest_sensor_responses( sensor_response_list = sensor_response_latest_list )
+
+        if open_zm_event_list:
+            # Ensure that we will continue to poll for all the open events we
+            # currently see.
+            #
+            open_zm_event_list.sort( key = lambda zm_event : zm_event.start_datetime )
+            self._poll_from_datetime = open_zm_event_list[0].start_datetime
+
+        elif closed_zm_event_list:
+            # Maximum end time from ZM server (via events) ensures there are no
+            # events starting earlier than this time that we will not have
+            # already seen.
+            #
+            closed_zm_event_list.sort( key = lambda zm_event : zm_event.end_datetime )
+            self._poll_from_datetime = closed_zm_event_list[-1].end_datetime
+            
+        else:
+            # N.B. When there are no events, we do not advance the polling
+            # base time. We do not know whether an event might have started
+            # right after this poll attempt. Thus, any attempt to increment
+            # the polling base time would risk missing an event that
+            # started in less than that chosen increment.
+            #
+            pass
+        
         return
 
-    def zm_response_to_datetime( self, zm_response_time : str ):
-        if not zm_response_time:
-            return None
-        return datetimeproxy.iso_naive_to_datetime_utc(
-            zm_response_time,
-            self.ZONEMINDER_SERVER_TIMEZONE,
+    def _create_movement_active_sensor_response( self, zm_event : ZmEvent ):
+        return SensorResponse(
+            integration_key = self._manager._sensor_to_integration_key(
+                sensor_prefix = self._manager.MOVEMENT_SENSOR_PREFIX,
+                zm_monitor_id = zm_event.monitor_id,
+            ),
+            value = str(SensorValue.MOVEMENT_ACTIVE),
+            timestamp = zm_event.start_datetime,
         )
-    
+
+    def _create_movement_idle_sensor_response( self, zm_event : ZmEvent ):
+        return SensorResponse(
+            integration_key = self._manager._sensor_to_integration_key(
+                sensor_prefix = self._manager.MOVEMENT_SENSOR_PREFIX,
+                zm_monitor_id = zm_event.monitor_id,
+            ),
+            value = str(SensorValue.MOVEMENT_IDLE),
+            timestamp = zm_event.end_datetime,
+        )
