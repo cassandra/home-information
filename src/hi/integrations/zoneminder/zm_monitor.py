@@ -3,9 +3,9 @@ import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
-from hi.apps.monitor.monitor_mixin import SensorMonitorMixin
 from hi.apps.monitor.transient_models import SensorResponse
 from hi.apps.sense.enums import SensorValue
+from hi.apps.sense.sensor_response_manager import SensorResponseManager
 
 from .zm_models import ZmEvent
 from .zm_manager import ZoneMinderManager
@@ -13,7 +13,7 @@ from .zm_manager import ZoneMinderManager
 logger = logging.getLogger(__name__)
 
 
-class ZoneMinderMonitor( PeriodicMonitor, SensorMonitorMixin ):
+class ZoneMinderMonitor( PeriodicMonitor ):
 
     # TODO: Move this into the integrations attributes for users to set
     ZONEMINDER_SERVER_TIMEZONE = 'America/Chicago'
@@ -23,7 +23,8 @@ class ZoneMinderMonitor( PeriodicMonitor, SensorMonitorMixin ):
             id = 'zm-monitor',
             interval_secs = 10,
         )
-        self._manager = ZoneMinderManager()
+        self._zm_manager = ZoneMinderManager()
+        self._sensor_response_manager = SensorResponseManager()
         self._fully_processed_event_ids = TTLCache( maxsize = 1000, ttl = 100000 )
         self._start_processed_event_ids = TTLCache( maxsize = 1000, ttl = 100000 )
 
@@ -41,7 +42,7 @@ class ZoneMinderMonitor( PeriodicMonitor, SensorMonitorMixin ):
             'from': self._poll_from_datetime.isoformat(),  # This "from" only looks at event start time
             'tz': self.ZONEMINDER_SERVER_TIMEZONE,
         }
-        response = self._manager.zm_client.events( options )
+        response = self._zm_manager.zm_client.events( options )
         events = response.list()
         if self.TRACE:
             logger.debug( f"Found {len(events)} new ZM events" )
@@ -99,8 +100,12 @@ class ZoneMinderMonitor( PeriodicMonitor, SensorMonitorMixin ):
                 self._start_processed_event_ids[zm_event.event_id] = True
             continue
 
-        self.add_to_sensor_response_history( sensor_response_list = sensor_response_history_list )
-        self.add_latest_sensor_responses( sensor_response_list = sensor_response_latest_list )
+        self._sensor_response_manager.add_to_sensor_response_history(
+            sensor_response_list = sensor_response_history_list,
+        )
+        self._sensor_response_manager.add_latest_sensor_responses(
+            sensor_response_list = sensor_response_latest_list,
+        )
 
         if open_zm_event_list:
             # Ensure that we will continue to poll for all the open events we
@@ -130,8 +135,8 @@ class ZoneMinderMonitor( PeriodicMonitor, SensorMonitorMixin ):
 
     def _create_movement_active_sensor_response( self, zm_event : ZmEvent ):
         return SensorResponse(
-            integration_key = self._manager._sensor_to_integration_key(
-                sensor_prefix = self._manager.MOVEMENT_SENSOR_PREFIX,
+            integration_key = self._zm_manager._sensor_to_integration_key(
+                sensor_prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
                 zm_monitor_id = zm_event.monitor_id,
             ),
             value = str(SensorValue.MOVEMENT_ACTIVE),
@@ -140,8 +145,8 @@ class ZoneMinderMonitor( PeriodicMonitor, SensorMonitorMixin ):
 
     def _create_movement_idle_sensor_response( self, zm_event : ZmEvent ):
         return SensorResponse(
-            integration_key = self._manager._sensor_to_integration_key(
-                sensor_prefix = self._manager.MOVEMENT_SENSOR_PREFIX,
+            integration_key = self._zm_manager._sensor_to_integration_key(
+                sensor_prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
                 zm_monitor_id = zm_event.monitor_id,
             ),
             value = str(SensorValue.MOVEMENT_IDLE),

@@ -9,8 +9,15 @@ from hi.integrations.core.integration_key import IntegrationKey
 logger = logging.getLogger(__name__)
 
 
-class SensorMonitorMixin:
-
+class SensorResponseManager:
+    """
+    Integrations are responsible for monitoring sensor values and
+    normalizing them into SensorResponse objects.  This module take it from
+    there to store these for tracking the latest state and sensor history.
+    i.e., Integrations should be using this module to submit sensor
+    values changes.
+    """
+    
     def add_to_sensor_response_history( self, sensor_response_list : List[ SensorResponse ] ):
         if not sensor_response_list:
             return
@@ -56,8 +63,7 @@ class SensorMonitorMixin:
         
         self.add_to_sensor_response_history( changed_sensor_response_list )
         self.add_latest_sensor_responses( changed_sensor_response_list )
-        if self.TRACE:
-            logger.debug( f'HAss Changed: {len(changed_sensor_response_list)} of {len(sensor_response_map)}' )
+        logger.debug( f'Sensor changed: {len(changed_sensor_response_list)} of {len(sensor_response_map)}' )
         return
 
     def to_sensor_value_cache_key( self, integration_key : IntegrationKey ):
