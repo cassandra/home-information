@@ -3,9 +3,10 @@ from typing import Dict, List
 
 from hi.apps.common.redis_client import get_redis_client
 from hi.apps.common.singleton import Singleton
-
+from hi.apps.entity.models import Entity
 from hi.integrations.core.integration_key import IntegrationKey
 
+from .models import Sensor
 from .sensor_history_manager import SensorHistoryManager
 from .transient_models import SensorResponse
 
@@ -71,12 +72,28 @@ class SensorResponseManager( Singleton ):
         logger.debug( f'Sensor changed: {len(changed_sensor_response_list)} of {len(sensor_response_map)}' )
         return
 
-    def get_latest_sensor_responses( self ) -> Dict[ IntegrationKey, SensorResponse ]:
+    def get_all_latest_sensor_responses( self ) -> Dict[ IntegrationKey, SensorResponse ]:
         key_to_sensor_response_dict = self._redis_client.hgetall( self.LATEST_SENSOR_RESPONSE_HASH_NAME )
         key_to_sensor_response = { k: SensorResponse.from_string( v )
                                    for k, v in key_to_sensor_response_dict.items() }
         return { v.integration_key: v for k, v in key_to_sensor_response.items() }
 
-    def to_sensor_value_cache_key( self, integration_key : IntegrationKey ):
+    def get_entity_latest_sensor_responses( self, entity : Entity ) -> Dict[ Sensor, SensorResponse ]:
+        """ Maps all sensors to the latest response, but possibly 'None' if not latest response """
+        
+        sensor_response_map = dict()
+        for entity_state in entity.states.all():
+            for sensor in entity_state.sensors.all():
+                cache_key = self.to_sensor_value_cache_key( sensor.integration_key )
+                sensor_response_str = self._redis_client.hget( self.LATEST_SENSOR_RESPONSE_HASH_NAME,
+                                                               cache_key )
+                sensor_response = SensorResponse.from_string( sensor_response_str )
+                sensor_response_map[sensor] = sensor_response
+                continue
+            continue
+
+        return sensor_response_map
+        
+    def to_sensor_value_cache_key( self, integration_key : IntegrationKey ) -> str:
         return f'hi.sr.{integration_key}' 
     

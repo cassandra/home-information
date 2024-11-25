@@ -10,7 +10,7 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.common.svg_models import SvgViewBox
 
 from .enums import LocationViewType
-from .status_display_helper import StatusDisplayHelper
+from .status_display_helper import StatusDisplayLocationHelper
 from .transient_models import LocationViewData
 from .models import (
     Location,
@@ -208,7 +208,7 @@ class LocationManager(Singleton):
         unpositioned_collections.sort( key = lambda item : item.order_id )
 
         if include_status_display_data:
-            status_display_helper = StatusDisplayHelper( location_view = location_view )
+            status_display_helper = StatusDisplayLocationHelper( location_view = location_view )
             status_display_data_map = status_display_helper.get_status_display_data_map(
                 displayed_entities = displayed_entities,
             )

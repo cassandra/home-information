@@ -60,6 +60,7 @@ class CollectionViewView( HiGridView, CollectionViewMixin ):
 
         collection_data = CollectionManager().get_collection_data(
             collection = collection,
+            is_editing = request.is_editing,
         )
         return {
             'is_async_request': is_ajax( request ),

@@ -7,6 +7,7 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
+from hi.apps.sense.sensor_response_manager import SensorResponseManager
 
 from .delegation_manager import DelegationManager
 from .enums import (
@@ -36,6 +37,8 @@ class EntityManager(Singleton):
                               entity         : Entity,
                               is_editing     : bool )        -> EntityDetailsData:
         entity_edit_data = EntityEditData( entity = entity )
+        sensor_response_map = SensorResponseManager().get_entity_latest_sensor_responses( entity = entity )
+
         entity_state_list = list(
             entity.states.all()
         )
@@ -44,9 +47,10 @@ class EntityManager(Singleton):
         )
         principal_state_list = [ x.entity_state for x in entity_state_delegation_list ]
         principal_entity_list = list({ x.entity for x in principal_state_list })  # de-dupe
-        
+
         return EntityInfoData(
             entity_edit_data = entity_edit_data,
+            sensor_response_map = sensor_response_map,
             entity_state_list = entity_state_list,
             principal_state_list = principal_state_list,
             principal_entity_list = principal_entity_list,

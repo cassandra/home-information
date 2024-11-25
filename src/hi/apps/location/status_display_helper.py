@@ -3,18 +3,20 @@ from typing import Dict, List, Set
 from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
+from hi.apps.sense.models import Sensor
+from hi.apps.sense.transient_models import SensorResponse
 
 from .enums import StatusDisplayType
 from .models import LocationView
 from .transient_models import StatusDisplayData
 
 
-class StatusDisplayHelper:
+class StatusDisplayLocationHelper:
 
     def __init__( self, location_view : LocationView ):
         self._status_display_type = location_view.status_display_type
         self._entity_state_type_priority_list = self._status_display_type.entity_state_type_priority_list
-        self._latest_sensor_response_map = SensorResponseManager().get_latest_sensor_responses()
+        self._latest_sensor_response_map = SensorResponseManager().get_all_latest_sensor_responses()
         return
 
     def get_status_display_data_map(
@@ -89,4 +91,3 @@ class StatusDisplayHelper:
 
         # This code should not really be reachable. Should always match one in fallback case.
         return None
-    

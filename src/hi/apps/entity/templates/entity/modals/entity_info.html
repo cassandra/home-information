@@ -6,6 +6,15 @@
 
 {% block body %}
 
+<h5>Sensor Responses</h5>
+<ul>
+  {% for sensor, sensor_response in sensor_response_map.items %}
+  <li>Sensor: {{ sensor.name }}, Response: {{ sensor_response.value }}</li>
+  {% empty %}
+  <div><em>No sensors</em></div>
+  {% endfor %}
+</ul>
+
 <h5>Principal Entities</h5>
 <ul>
   {% for principal_entity in principal_entity_list %}

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List
+from typing import Dict, List
 
 from hi.apps.entity.edit.forms import (
     EntityAttributeFormSet,
@@ -8,6 +8,8 @@ from hi.apps.entity.edit.forms import (
     EntityAttributeUploadForm,
 )
 from hi.apps.location.models import LocationView
+from hi.apps.sense.models import Sensor
+from hi.apps.sense.transient_models import SensorResponse
 
 from .enums import EntityType
 from .models import Entity, EntityState
@@ -71,13 +73,19 @@ class EntityInfoData:
     """ All the data needed to render the Entity info modal. """
 
     entity_edit_data       : EntityEditData
+    sensor_response_map    : Dict[ Sensor, SensorResponse ] 
     entity_state_list      : List[ EntityState ]
     principal_state_list   : List[ EntityState ]
     principal_entity_list  : List[ Entity ]
+
+    @property
+    def entity(self):
+        return self.entity_edit_data.entity
     
     def to_template_context(self):
         context = {
-            'entity': self.entity_edit_data.entity,
+            'entity': self.entity,
+            'sensor_response_map': self.sensor_response_map,
             'entity_state_list': self.entity_state_list,
             'principal_state_list': self.principal_state_list,
             'principal_entity_list': self.principal_entity_list,

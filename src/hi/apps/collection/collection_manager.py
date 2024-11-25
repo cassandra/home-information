@@ -6,6 +6,7 @@ from django.http import HttpRequest
 
 from hi.apps.collection.edit.forms import CollectionPositionForm
 from hi.apps.common.singleton import Singleton
+from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
@@ -74,16 +75,24 @@ class CollectionManager(Singleton):
             order_id = order_id,
         )
         
-    def get_collection_data( self, collection : Collection ):
+    def get_collection_data( self,
+                             collection     : Collection,
+                             is_editing     : bool ):
 
-        entity_list = list()
+        entity_manager = EntityManager()
+
+        entity_info_data_list = list()
         for collection_entity in collection.entities.all().order_by('order_id'):
-            entity_list.append( collection_entity.entity )
+            entity_info_data = entity_manager.get_entity_info_data(
+                entity = collection_entity.entity,
+                is_editing = is_editing,
+            )
+            entity_info_data_list.append( entity_info_data )
             continue
 
         return CollectionData(
             collection = collection,
-            entity_list = entity_list,
+            entity_info_data_list = entity_info_data_list,
         )
 
     def create_collection_entity( self,
