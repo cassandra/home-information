@@ -2,8 +2,8 @@ import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
-from hi.apps.monitor.transient_models import SensorResponse
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
+from hi.apps.sense.transient_models import SensorResponse
 
 from .hass_converter import HassConverter
 from .hass_manager import HassManager

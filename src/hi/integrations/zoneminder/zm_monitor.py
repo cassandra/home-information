@@ -3,9 +3,10 @@ import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
-from hi.apps.monitor.transient_models import SensorResponse
 from hi.apps.sense.enums import SensorValue
+from hi.apps.sense.sensor_history_manager import SensorHistoryManager
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
+from hi.apps.sense.transient_models import SensorResponse
 
 from .zm_models import ZmEvent
 from .zm_manager import ZoneMinderManager
@@ -24,6 +25,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
             interval_secs = 10,
         )
         self._zm_manager = ZoneMinderManager()
+        self._sensor_history_manager = SensorHistoryManager()
         self._sensor_response_manager = SensorResponseManager()
         self._fully_processed_event_ids = TTLCache( maxsize = 1000, ttl = 100000 )
         self._start_processed_event_ids = TTLCache( maxsize = 1000, ttl = 100000 )
@@ -100,7 +102,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
                 self._start_processed_event_ids[zm_event.event_id] = True
             continue
 
-        self._sensor_response_manager.add_to_sensor_response_history(
+        self._sensor_history_manager.add_to_sensor_response_history(
             sensor_response_list = sensor_response_history_list,
         )
         self._sensor_response_manager.add_latest_sensor_responses(

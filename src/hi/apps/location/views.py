@@ -56,7 +56,9 @@ class LocationViewView( HiGridView, LocationViewMixin ):
 
         location_view_data = LocationManager().get_location_view_data(
             location_view = location_view,
+            include_status_display_data = bool( not request.is_editing ),
         )
+
         return {
             'is_async_request': is_ajax( request ),
             'location_view': location_view,

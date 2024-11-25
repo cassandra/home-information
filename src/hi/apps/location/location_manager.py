@@ -10,6 +10,7 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.common.svg_models import SvgViewBox
 
 from .enums import LocationViewType
+from .status_display_helper import StatusDisplayHelper
 from .transient_models import LocationViewData
 from .models import (
     Location,
@@ -152,23 +153,28 @@ class LocationManager(Singleton):
 
         return location_view
     
-    def get_location_view_data( self, location_view : LocationView ):
+    def get_location_view_data( self,
+                                location_view                : LocationView,
+                                include_status_display_data  : bool ):
 
         location = location_view.location
         entity_positions = list()
         entity_paths = list()
+        displayed_entities = set()
         non_displayed_entities = set()
-        for entity_view in location_view.entity_views.all():
+        for entity_view in location_view.entity_views.select_related('entity').all():
             entity = entity_view.entity
             is_visible = False
             entity_position = entity.positions.filter( location = location ).first()
             if entity_position:
                 is_visible = True
                 entity_positions.append( entity_position )
+                displayed_entities.add( entity )
             entity_path = entity.paths.filter( location = location ).first()
             if entity_path:
                 is_visible = True
                 entity_paths.append( entity_path )
+                displayed_entities.add( entity )
             if not is_visible:
                 non_displayed_entities.add( entity )
             continue
@@ -176,7 +182,7 @@ class LocationManager(Singleton):
         collection_positions = list()
         collection_paths = list()
         unpositioned_collections = list()
-        for collection_view in location_view.collection_views.all():
+        for collection_view in location_view.collection_views.select_related('collection').all():
             collection = collection_view.collection
             collection_position = collection.positions.filter( location = location ).first()
             if collection_position:
@@ -201,6 +207,14 @@ class LocationManager(Singleton):
         # These become bottom buttons, which can be ordered
         unpositioned_collections.sort( key = lambda item : item.order_id )
 
+        if include_status_display_data:
+            status_display_helper = StatusDisplayHelper( location_view = location_view )
+            status_display_data_map = status_display_helper.get_status_display_data_map(
+                displayed_entities = displayed_entities,
+            )
+        else:
+            status_display_data_map = dict()
+            
         return LocationViewData(
             location_view = location_view,
             entity_positions = entity_positions,
@@ -209,6 +223,7 @@ class LocationManager(Singleton):
             collection_paths = collection_paths,
             unpositioned_collections = unpositioned_collections,
             orphan_entities = orphan_entities,
+            status_display_data_map = status_display_data_map,
         )
 
     def set_location_view_order( self, location_view_id_list  : List[int] ):

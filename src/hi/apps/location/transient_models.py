@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Generator, List, Set
+from typing import Dict, Generator, List, Set
 
 from hi.apps.collection.models import Collection, CollectionPath, CollectionPosition
 from hi.apps.common.svg_models import SvgIconItem, SvgPathItem
@@ -11,10 +11,17 @@ from hi.apps.location.edit.forms import (
     LocationViewEditForm,
 )
 from hi.apps.location.svg_item_factory import SvgItemFactory
+from hi.apps.sense.transient_models import SensorResponse
 
 from .models import Location, LocationView
 
 
+@dataclass
+class StatusDisplayData:
+    entity           : Entity
+    sensor_response  : SensorResponse
+
+    
 @dataclass
 class LocationViewData:
     """
@@ -28,7 +35,8 @@ class LocationViewData:
     collection_paths          : List[ CollectionPath ]
     unpositioned_collections  : List[ Collection ]
     orphan_entities           : Set[ Entity ]
-
+    status_display_data_map   : Dict[ Entity, StatusDisplayData ]
+    
     @property
     def svg_icon_items(self) -> Generator[ SvgIconItem, None, None ]:
         svg_item_factory = SvgItemFactory()
