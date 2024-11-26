@@ -8,7 +8,7 @@ from hi.apps.attribute.models import AttributeModel
 from hi.enums import ItemType
 from hi.models import ItemTypeModelMixin
 
-from .enums import LocationViewType, StatusDisplayType
+from .enums import LocationViewType
 
 logger = logging.getLogger(__name__)
 
@@ -144,12 +144,6 @@ class LocationView( models.Model, ItemTypeModelMixin ):
         'Order Id',
         default = 0,
     )
-    status_display_type_str = models.CharField(
-        'Status Display Type',
-        max_length = 32,
-        default = StatusDisplayType.default_value(),
-        null = False, blank = False,
-    )
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,
@@ -191,15 +185,6 @@ class LocationView( models.Model, ItemTypeModelMixin ):
     @svg_view_box.setter
     def svg_view_box( self, svg_view_box : SvgViewBox ):
         self.svg_view_box_str = str(svg_view_box)
-        return
-    
-    @property
-    def status_display_type(self) -> StatusDisplayType:
-        return StatusDisplayType.from_name_safe( self.status_display_type_str )
-
-    @status_display_type.setter
-    def status_display_type( self, status_display_type : StatusDisplayType ):
-        self.status_display_type_str = str(status_display_type)
         return
 
 

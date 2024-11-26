@@ -116,7 +116,7 @@ class LocationManager(Singleton):
             
         return LocationView.objects.create(
             location = location,
-            location_view_type_str = LocationViewType.default(),
+            location_view_type_str = str(LocationViewType.default()),
             name = name,
             svg_view_box_str = str( location.svg_view_box ),
             svg_rotate = Decimal( 0.0 ),

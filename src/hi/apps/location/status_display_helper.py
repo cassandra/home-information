@@ -4,7 +4,7 @@ from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
 
-from .enums import StatusDisplayType
+from .enums import LocationViewType
 from .models import LocationView
 from .transient_models import StatusDisplayData
 
@@ -20,7 +20,7 @@ class StatusDisplayLocationHelper:
     def get_status_display_data_map(
             self,
             displayed_entities  : Set[ Entity ] ) -> Dict[ Entity, StatusDisplayData ]:
-        if self._status_display_type == StatusDisplayType.SUPPRESS:
+        if self._status_display_type == LocationViewType.SUPPRESS:
             return dict()
         
         entity_to_status_display_data = dict()

@@ -6,31 +6,6 @@ from hi.apps.entity.enums import EntityStateType
 
 class LocationViewType(LabeledEnum):
 
-    CONTROL      = ('Control', '' )
-    INFORMATION  = ('Information', '' )
-
-
-class SvgItemType(LabeledEnum):
-
-    ICON  = ( 'Icon', '' )
-    OPEN_PATH  = ( 'Open Path ', '' )
-    CLOSED_PATH  = ( 'Closed Path ', '' )
-
-    @property
-    def is_icon(self):
-        return bool( self == SvgItemType.ICON )
-
-    @property
-    def is_path(self):
-        return bool( self in [ SvgItemType.OPEN_PATH, SvgItemType.CLOSED_PATH ] )
-
-    @property
-    def is_path_closed(self):
-        return bool( self == SvgItemType.CLOSED_PATH )
-
-    
-class StatusDisplayType(LabeledEnum):
-
     def __init__( self,
                   label                            : str,
                   description                      : str,
@@ -39,7 +14,7 @@ class StatusDisplayType(LabeledEnum):
         self.entity_state_type_priority_list = entity_state_type_priority_list
         return
     
-    DEFAULT      = (
+    DEFAULT = (
         'Default',
         '',
         [ EntityStateType.MOVEMENT,
@@ -59,7 +34,7 @@ class StatusDisplayType(LabeledEnum):
           ],
 
     )
-    SECURITY     = (
+    SECURITY = (
         'Security',
         '',
         [ EntityStateType.MOVEMENT,
@@ -67,19 +42,19 @@ class StatusDisplayType(LabeledEnum):
           EntityStateType.OPEN_CLOSE,
           ],
     )
-    LIGHT        = (
-        'Light',
+    LIGHTS = (
+        'Lights',
         '',
         [ EntityStateType.LIGHT_LEVEL,
           ],
     )
-    SOUND        = (
-        'Sound',
+    SOUNDS = (
+        'Sounds',
         '',
         [ EntityStateType.SOUND_LEVEL,
           ],
     )
-    CLIMATE      = (
+    CLIMATE = (
         'Climate',
         '',
         [ EntityStateType.TEMPERATURE,
@@ -90,7 +65,7 @@ class StatusDisplayType(LabeledEnum):
           EntityStateType.AIR_PRESSURE,
           ],
     )
-    ENERGY       = (
+    ENERGY = (
         'Energy',
         '',
         [ EntityStateType.ELECTRIC_USAGE,
@@ -98,9 +73,27 @@ class StatusDisplayType(LabeledEnum):
           EntityStateType.HIGH_LOW,
           ],
     )
-    SUPPRESS     = (
+    SUPPRESS = (
         'Suppress',
         '',
         [],
     )
 
+
+class SvgItemType(LabeledEnum):
+
+    ICON  = ( 'Icon', '' )
+    OPEN_PATH  = ( 'Open Path ', '' )
+    CLOSED_PATH  = ( 'Closed Path ', '' )
+
+    @property
+    def is_icon(self):
+        return bool( self == SvgItemType.ICON )
+
+    @property
+    def is_path(self):
+        return bool( self in [ SvgItemType.OPEN_PATH, SvgItemType.CLOSED_PATH ] )
+
+    @property
+    def is_path_closed(self):
+        return bool( self == SvgItemType.CLOSED_PATH )
