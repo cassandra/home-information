@@ -11,7 +11,7 @@ from hi.apps.common.svg_models import SvgViewBox
 
 from .enums import LocationViewType
 from .status_display_helper import StatusDisplayLocationHelper
-from .transient_models import LocationViewData
+from .location_view_data import LocationViewData
 from .models import (
     Location,
     LocationView,

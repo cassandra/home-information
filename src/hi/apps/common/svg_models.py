@@ -101,7 +101,8 @@ class SvgIconItem:
     position_y     : float
     rotate         : float
     scale          : float
-
+    status_value   : str
+    
     @property
     def transform_str(self):
         return f'scale( {self.scale} ) translate( {self.translate_x} {self.translate_y} ) rotate( {self.rotate} {self.bounds_center_x} {self.bounds_center_y} )'

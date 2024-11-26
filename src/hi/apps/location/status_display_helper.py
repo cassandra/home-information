@@ -12,15 +12,15 @@ from .transient_models import StatusDisplayData
 class StatusDisplayLocationHelper:
 
     def __init__( self, location_view : LocationView ):
-        self._status_display_type = location_view.status_display_type
-        self._entity_state_type_priority_list = self._status_display_type.entity_state_type_priority_list
+        self._location_view_type = location_view.location_view_type
+        self._entity_state_type_priority_list = self._location_view_type.entity_state_type_priority_list
         self._latest_sensor_response_list_map = SensorResponseManager().get_all_latest_sensor_responses()
         return
 
     def get_status_display_data_map(
             self,
             displayed_entities  : Set[ Entity ] ) -> Dict[ Entity, StatusDisplayData ]:
-        if self._status_display_type == LocationViewType.SUPPRESS:
+        if self._location_view_type == LocationViewType.SUPPRESS:
             return dict()
         
         entity_to_status_display_data = dict()
@@ -52,28 +52,32 @@ class StatusDisplayLocationHelper:
         # single sensor.  In the (rare) cases there are multiples of these,
         # we will always use the most recent sensor response.
         
-        sensors_for_status = set()
+        candidate_sensors_for_status = set()
         for entity_state in entity_state_list:
             if entity_state.entity_state_type == entity_state_type_for_status:
-                sensors_for_status.update( entity_state.sensors.all() )
+                candidate_sensors_for_status.update( entity_state.sensors.all() )
             continue
         
         latest_sensor_response_list_list = list()
-        for sensor in sensors_for_status:
+        sensor_map = dict()
+        for sensor in candidate_sensors_for_status:
             latest_sensor_response_list = self._latest_sensor_response_list_map.get( sensor.integration_key )
             if latest_sensor_response_list:
                 latest_sensor_response_list_list.append( latest_sensor_response_list )
+                sensor_map[sensor.integration_key] = sensor
             continue
         
         if not latest_sensor_response_list_list:
             return None
         
         latest_sensor_response_list_list.sort( key = lambda item: item[0].timestamp, reverse = True )
-        sensors_response_list_for_status = latest_sensor_response_list_list[0]
+        sensor_response_list_for_status = latest_sensor_response_list_list[0]
+        sensor_for_status = sensor_map.get( sensor_response_list_for_status[0].integration_key )
         
         return StatusDisplayData(
             entity = entity,
-            sensor_response_list = sensors_response_list_for_status,
+            sensor = sensor_for_status,
+            sensor_response_list = sensor_response_list_for_status,
         )
 
     def _get_entity_state_type_for_status( self, entity_state_list : List[ EntityState ] ) -> EntityStateType:
