@@ -4,13 +4,16 @@ import json
 
 from hi.integrations.core.integration_key import IntegrationKey
 
+from .models import Sensor
+
 
 @dataclass
 class SensorResponse:
     integration_key  : IntegrationKey
     value            : str
     timestamp        : datetime
-
+    sensor           : Sensor         = None
+    
     def __str__(self):
         return json.dumps( self.to_dict() )
     
@@ -19,6 +22,7 @@ class SensorResponse:
             'key': str(self.integration_key),
             'value': self.value,
             'timestamp': self.timestamp.isoformat(),
+            'sensor_id': self.sensor.id if self.sensor else None,
         }
 
     @classmethod

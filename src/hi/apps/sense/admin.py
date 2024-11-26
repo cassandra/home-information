@@ -28,10 +28,10 @@ class SensorHistoryAdmin(admin.ModelAdmin):
     list_display = (
         'sensor',
         'value',
-        'created_datetime',
+        'response_datetime',
     )
 
     search_fields = ['sensor__name']
     readonly_fields = ( 'sensor', )
-    ordering = ( '-created_datetime', )
+    ordering = ( '-response_datetime', )
 

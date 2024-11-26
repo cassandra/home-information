@@ -176,7 +176,6 @@ class StatusDisplayData:
         if self.entity_state.entity_state_type == EntityStateType.HIGH_LOW:
             return self._get_high_low_status_style()
 
-
         # TODO: These should map the latest value into a continuous range of colors/opacity
         #
         # EntityStateType.AIR_PRESSURE

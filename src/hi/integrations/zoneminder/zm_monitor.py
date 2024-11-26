@@ -100,7 +100,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
             self._fully_processed_event_ids[zm_event.event_id] = True
             continue
         
-        self._sensor_response_manager.add_latest_sensor_responses(
+        await self._sensor_response_manager.add_latest_sensor_responses(
             sensor_response_list = sensor_response_list,
         )
 

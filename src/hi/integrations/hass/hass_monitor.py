@@ -45,7 +45,7 @@ class HassMonitor( PeriodicMonitor ):
             sensor_response_latest_map[integration_key] = sensor_response
             continue
 
-        self._sensor_response_manager.update_with_latest_sensor_responses(
+        await self._sensor_response_manager.update_with_latest_sensor_responses(
             sensor_response_map = sensor_response_latest_map,
         )
         return

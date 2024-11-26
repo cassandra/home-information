@@ -45,7 +45,7 @@ class SensorResponseManager( Singleton ):
         self._sensor_cache = TTLCache( maxsize = 1000, ttl = 3600 )
         return
     
-    def add_latest_sensor_responses( self, sensor_response_list : List[ SensorResponse ] ):
+    async def add_latest_sensor_responses( self, sensor_response_list : List[ SensorResponse ] ):
         if not sensor_response_list:
             return
 
@@ -59,13 +59,14 @@ class SensorResponseManager( Singleton ):
             continue
         pipeline.execute()
 
-        self._sensor_history_manager.add_to_sensor_response_history(
+        self._add_sensors( sensor_response_list = sensor_response_list )
+        await self._sensor_history_manager.add_to_sensor_response_history(
             sensor_response_list = sensor_response_list,
         )        
         return
 
-    def update_with_latest_sensor_responses( self,
-                                             sensor_response_map : Dict[ IntegrationKey, SensorResponse ] ):
+    async def update_with_latest_sensor_responses( self,
+                                                   sensor_response_map : Dict[ IntegrationKey, SensorResponse ] ):
         """
         Used when states are polled and get current state at a point in time
         which may or may not represent a change in state.  We only want to
@@ -95,7 +96,7 @@ class SensorResponseManager( Singleton ):
             changed_sensor_response_list.append( latest_sensor_response )
             continue
         
-        self.add_latest_sensor_responses( changed_sensor_response_list )
+        await self.add_latest_sensor_responses( changed_sensor_response_list )
         logger.debug( f'Sensor changed: {len(changed_sensor_response_list)} of {len(sensor_response_map)}' )
         return
 
@@ -152,6 +153,13 @@ class SensorResponseManager( Singleton ):
     def to_sensor_response_list_cache_key( self, integration_key : IntegrationKey ) -> str:
         return f'hi.sr.latest.{integration_key}' 
     
+    def _add_sensors( self, sensor_response_list : List[ SensorResponse ] ):
+        for sensor_response in sensor_response_list:
+            if sensor_response.sensor is None:
+                sensor_response.sensor = self._get_sensor( integration_key = sensor_response.integration_key )
+            continue
+        return
+        
     def _get_sensor( self, integration_key : IntegrationKey ):
         if integration_key not in self._sensor_cache:
             try:

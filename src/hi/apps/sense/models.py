@@ -65,11 +65,15 @@ class SensorHistory(models.Model):
         'Value',
         max_length = 255
     )
-    created_datetime = models.DateTimeField(
-        'Created',
-        auto_now_add = True,
+    response_datetime = models.DateTimeField(
+        'Timestamp',
     )
     
     class Meta:
         verbose_name = 'Sensor History'
         verbose_name_plural = 'Sensor History'
+        ordering = [ '-response_datetime' ]
+        indexes = [
+            models.Index( fields = [ 'sensor', '-response_datetime'] ),
+        ]
+        

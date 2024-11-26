@@ -1,4 +1,4 @@
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Sequence
 
 from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.models import Entity, EntityState
@@ -30,36 +30,42 @@ class StatusDisplayLocationHelper:
 
     def get_status_entity_state( self, entity : Entity ) -> EntityState:
 
-        entity_state_type_map = dict()
-
         # Delegate entities include will include all their principal entity
         # states, though any direct state will take precendence
-        
+
         delegations_queryset = entity.entity_state_delegations.select_related('entity_state').all()
-        for entity_state_delegation in delegations_queryset:
-            entity_state = entity_state_delegation.entity_state
-            entity_state_type_map[entity_state.entity_state_type] = entity_state
+        all_entity_states = [ x.entity_state for x in delegations_queryset ]
+        all_entity_states.extend( entity.states.all() )
+
+        entity_state_list_map = dict()
+        for entity_state in all_entity_states:
+            if entity_state.entity_state_type not in entity_state_list_map:
+                entity_state_list_map[entity_state.entity_state_type] = list()
+            entity_state_list_map[entity_state.entity_state_type].append( entity_state )
             continue
 
-        states_queryset = entity.states.all()
-        for entity_state in states_queryset:
-            entity_state_type_map[entity_state.entity_state_type] = entity_state
-            continue
-
-        if not entity_state_type_map:
+        if not entity_state_list_map:
             return None
 
         entity_state_type_for_status = self._get_entity_state_type_for_status(
-            entity_states = entity_state_type_map.values(),
+            entity_state_types = entity_state_list_map.keys(),
         )
+        entity_state_list = entity_state_list_map.get( entity_state_type_for_status )
 
-        return entity_state_type_map.get( entity_state_type_for_status )
+        # TODO: It is possible to have multiple EntityState instances with
+        # the same EntityStateType, but it is rare in the cases where we
+        # care about showing dynamic status display changes.  If/when it
+        # matters, we would need to add some reconcilliation logic here for
+        # picking the entity state to use.
+        #
+        return entity_state_list[0]
 
-    def _get_entity_state_type_for_status( self, entity_states : List[ EntityState ] ) -> EntityStateType:
-        entity_state_type_list = [ x.entity_state_type for x in entity_states ]
+    def _get_entity_state_type_for_status(
+            self,
+            entity_state_types : Sequence[ EntityStateType ] ) -> EntityStateType:
 
         for priority_entity_state_type in self._entity_state_type_priority_list:
-            if priority_entity_state_type in entity_state_type_list:
+            if priority_entity_state_type in entity_state_types:
                 return priority_entity_state_type
             continue
 
@@ -67,7 +73,7 @@ class StatusDisplayLocationHelper:
         # arbitrary, but deterministic choice by using all defined values.
         #
         for default_entity_state_type in EntityStateType:
-            if default_entity_state_type in entity_state_type_list:
+            if default_entity_state_type in entity_state_types:
                 return default_entity_state_type
             continue
 
