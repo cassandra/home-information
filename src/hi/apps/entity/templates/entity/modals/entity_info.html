@@ -8,8 +8,14 @@
 
 <h5>Sensor Responses</h5>
 <ul>
-  {% for sensor, sensor_response in sensor_response_map.items %}
-  <li>Sensor: {{ sensor.name }}, Response: {{ sensor_response.value }}</li>
+  {% for sensor, sensor_response_list in sensor_response_list_map.items %}
+  <li>Sensor: {{ sensor.name }}
+    <ul>
+      {% for sensor_response in sensor_response_list %}
+      <li>Response: {{ sensor_response.value }} [{{ sensor_response.timestamp }}]</li>
+      {% endfor %}
+    </ul>
+  </li>
   {% empty %}
   <div><em>No sensors</em></div>
   {% endfor %}

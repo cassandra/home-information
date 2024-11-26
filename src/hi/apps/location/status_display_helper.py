@@ -3,8 +3,6 @@ from typing import Dict, List, Set
 from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
-from hi.apps.sense.models import Sensor
-from hi.apps.sense.transient_models import SensorResponse
 
 from .enums import StatusDisplayType
 from .models import LocationView
@@ -16,7 +14,7 @@ class StatusDisplayLocationHelper:
     def __init__( self, location_view : LocationView ):
         self._status_display_type = location_view.status_display_type
         self._entity_state_type_priority_list = self._status_display_type.entity_state_type_priority_list
-        self._latest_sensor_response_map = SensorResponseManager().get_all_latest_sensor_responses()
+        self._latest_sensor_response_list_map = SensorResponseManager().get_all_latest_sensor_responses()
         return
 
     def get_status_display_data_map(
@@ -38,8 +36,13 @@ class StatusDisplayLocationHelper:
     def get_status_display_data( self, entity : Entity ) -> StatusDisplayData:
 
         entity_state_list = list( entity.states.all() )
+
+        # Delegate entities include all their principal entity states as well.
+        entity_state_delegations = entity.entity_state_delegations.select_related('entity_state').all()
+        entity_state_list.extend([ x.entity_state for x in entity_state_delegations ])
         if not entity_state_list:
             return None
+
         entity_state_type_for_status = self._get_entity_state_type_for_status(
             entity_state_list = entity_state_list,
         )
@@ -54,12 +57,12 @@ class StatusDisplayLocationHelper:
             if entity_state.entity_state_type == entity_state_type_for_status:
                 sensors_for_status.update( entity_state.sensors.all() )
             continue
-
+        
         sensor_response_list = list()
         for sensor in sensors_for_status:
-            sensor_response = self._latest_sensor_response_map.get( sensor.integration_key )
-            if sensor_response:
-                sensor_response_list.append( sensor_response )
+            sensor_response_list = self._latest_sensor_response_list_map.get( sensor.integration_key )
+            if sensor_response_list:
+                sensor_response_list.append( sensor_response_list[0] )
             continue
 
         if not sensor_response_list:

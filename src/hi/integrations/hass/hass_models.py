@@ -61,8 +61,11 @@ class HassApi:
     OUTLET_DEVICE_CLASS = 'outlet'
     TEMPERATURE_DEVICE_CLASS = 'temperature'
     TIMESTAMP_DEVICE_CLASS = 'timestamp'
+    WINDOW_DEVICE_CLASS = 'window'
 
-    DOOR_DEVICE_CLASS_SET = { DOOR_DEVICE_CLASS, GARAGE_DOOR_DEVICE_CLASS }
+    OPEN_CLOSE_DEVICE_CLASS_SET = { DOOR_DEVICE_CLASS,
+                                    GARAGE_DOOR_DEVICE_CLASS,
+                                    WINDOW_DEVICE_CLASS }
     
 
 @dataclass

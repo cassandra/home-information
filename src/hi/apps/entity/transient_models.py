@@ -72,11 +72,11 @@ class EntityEditData:
 class EntityInfoData:
     """ All the data needed to render the Entity info modal. """
 
-    entity_edit_data       : EntityEditData
-    sensor_response_map    : Dict[ Sensor, SensorResponse ] 
-    entity_state_list      : List[ EntityState ]
-    principal_state_list   : List[ EntityState ]
-    principal_entity_list  : List[ Entity ]
+    entity_edit_data          : EntityEditData
+    sensor_response_list_map  : Dict[ Sensor, List[ SensorResponse ] ]
+    entity_state_list         : List[ EntityState ]
+    principal_state_list      : List[ EntityState ]
+    principal_entity_list     : List[ Entity ]
 
     @property
     def entity(self):
@@ -85,7 +85,7 @@ class EntityInfoData:
     def to_template_context(self):
         context = {
             'entity': self.entity,
-            'sensor_response_map': self.sensor_response_map,
+            'sensor_response_list_map': self.sensor_response_list_map,
             'entity_state_list': self.entity_state_list,
             'principal_state_list': self.principal_state_list,
             'principal_entity_list': self.principal_entity_list,

@@ -14,3 +14,5 @@ class SensorValue(LabeledEnum):
     BINARY_ON          = ( 'On', '' )
     BINARY_OFF         = ( 'Off', '' )
     
+    OPEN               = ( 'Open', '' )
+    CLOSE              = ( 'Close', '' )

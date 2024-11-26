@@ -37,7 +37,7 @@ class EntityManager(Singleton):
                               entity         : Entity,
                               is_editing     : bool )        -> EntityDetailsData:
         entity_edit_data = EntityEditData( entity = entity )
-        sensor_response_map = SensorResponseManager().get_entity_latest_sensor_responses( entity = entity )
+        sensor_response_list_map = SensorResponseManager().get_entity_latest_sensor_responses( entity = entity )
 
         entity_state_list = list(
             entity.states.all()
@@ -50,7 +50,7 @@ class EntityManager(Singleton):
 
         return EntityInfoData(
             entity_edit_data = entity_edit_data,
-            sensor_response_map = sensor_response_map,
+            sensor_response_list_map = sensor_response_list_map,
             entity_state_list = entity_state_list,
             principal_state_list = principal_state_list,
             principal_entity_list = principal_entity_list,

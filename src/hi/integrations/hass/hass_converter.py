@@ -400,7 +400,7 @@ class HassConverter:
                 integration_key = integration_key,
                 name = name,
             )
-        elif hass_state.device_class in HassApi.DOOR_DEVICE_CLASS_SET:
+        elif hass_state.device_class in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
             HiModelHelper.create_open_close_sensor(
                 entity = entity,
                 integration_key = integration_key,
@@ -467,7 +467,7 @@ class HassConverter:
         if HassApi.TIMESTAMP_DEVICE_CLASS in device_class_set:
             return EntityType.TIME_SOURCE
         if ( HassApi.BINARY_SENSOR_ID_PREFIX in prefix_set
-             and device_class_set.intersection( HassApi.DOOR_DEVICE_CLASS_SET )):
+             and device_class_set.intersection( HassApi.OPEN_CLOSE_DEVICE_CLASS_SET )):
             return EntityType.OPEN_CLOSE_DETECTOR
         if HassApi.MOTION_DEVICE_CLASS in device_class_set:
             return EntityType.MOTION_SENSOR
@@ -515,12 +515,20 @@ class HassConverter:
             return hass_state.state_value
         
         elif hass_state.entity_id_prefix == HassApi.BINARY_SENSOR_ID_PREFIX:
+
             if hass_state.state_value.lower() == 'on':
-                return str(SensorValue.BINARY_ON)
+                if hass_state.device_class in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
+                    return str(SensorValue.OPEN)
+                else:
+                    return str(SensorValue.BINARY_ON)
+                
             elif hass_state.state_value.lower() == 'off':
-                return str(SensorValue.BINARY_OFF)
+                if hass_state.device_class in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
+                    return str(SensorValue.CLOSE)
+                else:
+                    return str(SensorValue.BINARY_OFF)
             else:
-                logger.warning( f'Unknown HAss binary stae value "{hass_state.state_value}".' )
+                logger.warning( f'Unknown HAss binary state value "{hass_state.state_value}".' )
                 return None
             
         elif hass_state.device_class == HassApi.TEMPERATURE_DEVICE_CLASS:
