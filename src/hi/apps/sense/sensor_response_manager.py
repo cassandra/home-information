@@ -36,10 +36,8 @@ class SensorResponseManager( Singleton ):
 
     """
     SENSOR_RESPONSE_LIST_SIZE = 5
-    SENSOR_RESPONSE_LIST_KEYS = 'hi.sr.list.keys'
+    SENSOR_RESPONSE_LIST_SET_KEY = 'hi.sr.list.keys'
 
-    zzzLATEST_SENSOR_RESPONSE_HASH_NAME = 'hi.sr.all'  # Name of redis cache grouping
-    
     def __init_singleton__( self ):
         self._redis_client = get_redis_client()
         self._sensor_history_manager = SensorHistoryManager()
@@ -51,11 +49,11 @@ class SensorResponseManager( Singleton ):
 
         pipeline = self._redis_client.pipeline()
         for sensor_response in sensor_response_list:
-            list_cache_key = self.to_sensor_value_cache_key( sensor_response.integration_key )
+            list_cache_key = self.to_sensor_response_list_cache_key( sensor_response.integration_key )
             cache_value = str(sensor_response)
             pipeline.lpush( list_cache_key, cache_value )
             pipeline.ltrim( list_cache_key, 0, self.SENSOR_RESPONSE_LIST_SIZE - 1 )
-            pipeline.sadd( self.SENSOR_RESPONSE_LIST_KEYS, list_cache_key )
+            pipeline.sadd( self.SENSOR_RESPONSE_LIST_SET_KEY, list_cache_key )
             continue
         pipeline.execute()
 
@@ -76,11 +74,11 @@ class SensorResponseManager( Singleton ):
             return
         changed_sensor_response_list = list()
 
-        cache_keys = [ self.to_sensor_value_cache_key(x) for x in sensor_response_map.keys() ]
+        list_cache_keys = [ self.to_sensor_response_list_cache_key(x) for x in sensor_response_map.keys() ]
         integration_keys = list( sensor_response_map.keys() )
 
         pipeline = self._redis_client.pipeline()
-        for list_cache_key in cache_keys:
+        for list_cache_key in list_cache_keys:
             pipeline.lindex( list_cache_key, 0 )
             continue
         cached_values = pipeline.execute()
@@ -101,7 +99,7 @@ class SensorResponseManager( Singleton ):
 
     def get_all_latest_sensor_responses( self ) -> Dict[ IntegrationKey, List[ SensorResponse ] ]:
 
-        list_cache_keys = self._redis_client.smembers( self.SENSOR_RESPONSE_LIST_KEYS )
+        list_cache_keys = self._redis_client.smembers( self.SENSOR_RESPONSE_LIST_SET_KEY )
 
         pipeline = self._redis_client.pipeline()
         for list_cache_key in list_cache_keys:
@@ -132,10 +130,10 @@ class SensorResponseManager( Singleton ):
             sensor_list.extend( entity_state.sensors.all() )
             continue
 
-        cache_keys = [ self.to_sensor_value_cache_key( x.integration_key ) for x in sensor_list ]
+        list_cache_keys = [ self.to_sensor_response_list_cache_key( x.integration_key ) for x in sensor_list ]
         
         pipeline = self._redis_client.pipeline()
-        for list_cache_key in cache_keys:
+        for list_cache_key in list_cache_keys:
             pipeline.lrange( list_cache_key, 0, -1 )
             continue
         cached_list_list = pipeline.execute()
@@ -148,6 +146,6 @@ class SensorResponseManager( Singleton ):
 
         return sensor_response_list_map
         
-    def to_sensor_value_cache_key( self, integration_key : IntegrationKey ) -> str:
+    def to_sensor_response_list_cache_key( self, integration_key : IntegrationKey ) -> str:
         return f'hi.sr.latest.{integration_key}' 
     

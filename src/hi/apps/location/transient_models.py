@@ -18,8 +18,8 @@ from .models import Location, LocationView
 
 @dataclass
 class StatusDisplayData:
-    entity           : Entity
-    sensor_response  : SensorResponse
+    entity                : Entity
+    sensor_response_list  : List[ SensorResponse ]
 
     
 @dataclass
