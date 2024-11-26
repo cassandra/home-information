@@ -520,13 +520,13 @@ class HassConverter:
                 if hass_state.device_class in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
                     return str(SensorValue.OPEN)
                 else:
-                    return str(SensorValue.BINARY_ON)
+                    return str(SensorValue.ON)
                 
             elif hass_state.state_value.lower() == 'off':
                 if hass_state.device_class in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
-                    return str(SensorValue.CLOSE)
+                    return str(SensorValue.CLOSED)
                 else:
-                    return str(SensorValue.BINARY_OFF)
+                    return str(SensorValue.OFF)
             else:
                 logger.warning( f'Unknown HAss binary state value "{hass_state.state_value}".' )
                 return None

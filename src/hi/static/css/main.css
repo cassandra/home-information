@@ -198,14 +198,35 @@ g[status="active"] {
     outline: 2px solid red;
     filter: drop-shadow(0 0 5px red);
 }
-
 g[status="recent"] {
     outline: 2px solid orange;
     filter: drop-shadow(0 0 5px orange);
 }
-
-
 g[status="past"] {
     outline: 2px solid yellow;
     filter: drop-shadow(0 0 5px yellow);
+}
+g[status="on"] {
+    outline: 5px solid green;
+    filter: drop-shadow(0 0 5px green);
+}
+g[status="open"] {
+    outline: 5px solid red;
+    filter: drop-shadow(0 0 5px red);
+}
+g[status="connected"] {
+    outline: 5px solid green;
+    filter: drop-shadow(0 0 5px green);
+}
+g[status="disconnected"] {
+    outline: 5px solid red;
+    filter: drop-shadow(0 0 5px red);
+}
+g[status="high"] {
+    outline: 5px solid green;
+    filter: drop-shadow(0 0 5px green);
+}
+g[status="low"] {
+    outline: 5px solid red;
+    filter: drop-shadow(0 0 5px red);
 }

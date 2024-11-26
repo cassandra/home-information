@@ -36,7 +36,6 @@ class StatusStyle:
         fill_color = 'red',
         fill_opacity = 0.5,
     )
-
     MovementRecent = SvgStatusStyle(
         status_value = 'recent',
         stroke_color = 'orange',
@@ -44,7 +43,6 @@ class StatusStyle:
         fill_color = 'orange',
         fill_opacity = 0.5,
     )
-
     MovementPast = SvgStatusStyle(
         status_value = 'past',
         stroke_color = 'yellow',
@@ -52,13 +50,68 @@ class StatusStyle:
         fill_color = 'yellow',
         fill_opacity = 0.5,
     )
-    
     MovementIdle = SvgStatusStyle(
         status_value = 'idle',
         stroke_color = '#888888',
         stroke_width = None,
         fill_color = 'white',
         fill_opacity = 0.0,
+    )
+    On = SvgStatusStyle(
+        status_value = 'on',
+        stroke_color = 'green',
+        stroke_width = None,
+        fill_color = 'green',
+        fill_opacity = 0.5,
+    )
+    Off = SvgStatusStyle(
+        status_value = 'off',
+        stroke_color = '#888888',
+        stroke_width = None,
+        fill_color = '#888888',
+        fill_opacity = 0.5,
+    )
+    Open = SvgStatusStyle(
+        status_value = 'open',
+        stroke_color = 'green',
+        stroke_width = None,
+        fill_color = 'green',
+        fill_opacity = 0.5,
+    )
+    Closed = SvgStatusStyle(
+        status_value = 'closed',
+        stroke_color = '#888888',
+        stroke_width = None,
+        fill_color = '#888888',
+        fill_opacity = 0.5,
+    )
+    Connected = SvgStatusStyle(
+        status_value = 'connected',
+        stroke_color = 'green',
+        stroke_width = None,
+        fill_color = 'green',
+        fill_opacity = 0.5,
+    )
+    Disconnected = SvgStatusStyle(
+        status_value = 'disconnected',
+        stroke_color = 'red',
+        stroke_width = None,
+        fill_color = 'red',
+        fill_opacity = 0.5,
+    )
+    High = SvgStatusStyle(
+        status_value = 'high',
+        stroke_color = 'green',
+        stroke_width = None,
+        fill_color = 'green',
+        fill_opacity = 0.5,
+    )
+    Low = SvgStatusStyle(
+        status_value = 'low',
+        stroke_color = 'red',
+        stroke_width = None,
+        fill_color = 'red',
+        fill_opacity = 0.5,
     )
 
     
@@ -68,7 +121,7 @@ class StatusDisplayData:
     sensor_response_list  : List[ SensorResponse ]
 
     def __post_init__(self):
-        self._svg_status_style = self.get_svg_status_style()
+        self._svg_status_style = self._get_svg_status_style()
         return
 
     @property
@@ -103,14 +156,49 @@ class StatusDisplayData:
             return self.sensor_response_list[1].timestamp
         return None
     
-    def get_svg_status_style(self):
+    def _get_svg_status_style(self):
     
         if self.entity_state.entity_state_type == EntityStateType.MOVEMENT:
-            return self.get_movement_status_style()
+            return self._get_movement_status_style()
+        
+        if self.entity_state.entity_state_type == EntityStateType.PRESENCE:
+            return self._get_presence_status_style()
             
-        return None
+        if self.entity_state.entity_state_type == EntityStateType.ON_OFF:
+            return self._get_on_off_status_style()
 
-    def get_movement_status_style( self ):
+        if self.entity_state.entity_state_type == EntityStateType.OPEN_CLOSE:
+            return self._get_open_close_status_style()
+        
+        if self.entity_state.entity_state_type == EntityStateType.CONNECTIVITY:
+            return self._get_connectivity_status_style()
+        
+        if self.entity_state.entity_state_type == EntityStateType.HIGH_LOW:
+            return self._get_high_low_status_style()
+
+
+        # TODO: These should map the latest value into a continuous range of colors/opacity
+        #
+        # EntityStateType.AIR_PRESSURE
+        # EntityStateType.BANDWIDTH_USAGE
+        # EntityStateType.ELECTRIC_USAGE
+        # EntityStateType.HUMIDITY
+        # EntityStateType.LIGHT_LEVEL
+        # EntityStateType.MOISTURE
+        # EntityStateType.SOUND_LEVEL
+        # EntityStateType.TEMPERATURE
+        # EntityStateType.WATER_FLOW
+        # EntityStateType.WIND_SPEED
+    
+        return SvgStatusStyle(
+            status_value = self.latest_sensor_value,
+            stroke_color = None,
+            stroke_width = None,
+            fill_color = None,
+            fill_opacity = None,
+        )
+    
+    def _get_movement_status_style( self ):
 
         if self.latest_sensor_value == str(SensorValue.MOVEMENT_ACTIVE):
             return StatusStyle.MovementActive
@@ -124,4 +212,51 @@ class StatusDisplayData:
                 return StatusStyle.MovementPast
 
         return StatusStyle.MovementIdle
+        
+    def _get_presence_status_style( self ):
+
+        if self.latest_sensor_value == str(SensorValue.PRESENCE_ACTIVE):
+            return StatusStyle.PresenceActive
+
+        if self.penultimate_sensor_value == str(SensorValue.PRESENCE_ACTIVE):
+            presence_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
+            if presence_timedelta.seconds < 30:
+                return StatusStyle.MovementRecent
+
+            elif presence_timedelta.seconds < 60:
+                return StatusStyle.MovementPast
+
+        return StatusStyle.MovementIdle
+        
+    def _get_on_off_status_style( self ):
+
+        if self.latest_sensor_value == str(SensorValue.ON):
+            return StatusStyle.On
+        if self.latest_sensor_value == str(SensorValue.OFF):
+            return StatusStyle.Off
+        return None
+        
+    def _get_open_close_status_style( self ):
+
+        if self.latest_sensor_value == str(SensorValue.OPEN):
+            return StatusStyle.Open
+        if self.latest_sensor_value == str(SensorValue.CLOSED):
+            return StatusStyle.Closed
+        return None
+        
+    def _get_connectivity_status_style( self ):
+
+        if self.latest_sensor_value == str(SensorValue.CONNECTED):
+            return StatusStyle.Connected
+        if self.latest_sensor_value == str(SensorValue.DISCONNECTED):
+            return StatusStyle.Disconnected
+        return None
+        
+    def _get_high_low_status_style( self ):
+
+        if self.latest_sensor_value == str(SensorValue.HIGH):
+            return StatusStyle.High
+        if self.latest_sensor_value == str(SensorValue.LOW):
+            return StatusStyle.Low
+        return None
         
