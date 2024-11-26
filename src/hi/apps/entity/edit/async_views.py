@@ -124,6 +124,7 @@ class EntityPositionEditView( View, EntityViewMixin ):
         svg_icon_item = SvgItemFactory().create_svg_icon_item(
             item = entity_position.entity,
             position = entity_position,
+            css_class = '',
         )
         set_attributes_map = {
             svg_icon_item.html_id: {

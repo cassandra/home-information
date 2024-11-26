@@ -1,0 +1,127 @@
+import hi.apps.common.datetimeproxy as datetimeproxy
+from dataclasses import dataclass
+from typing import List
+
+from hi.apps.entity.enums import EntityStateType
+from hi.apps.entity.models import EntityState
+from hi.apps.sense.enums import SensorValue
+from hi.apps.sense.transient_models import SensorResponse
+
+
+@dataclass
+class SvgStatusStyle:
+    
+    status_value  : str
+    stroke_color  : str
+    stroke_width  : float
+    fill_color    : str
+    fill_opacity  : float
+
+    def to_dict(self):
+        return {
+            'status': self.status_value,
+            'stroke': self.stroke_color,
+            'stroke-width': self.stroke_width,
+            'fill': self.fill_color,
+            'fill-opacity': self.fill_opacity,
+        }
+
+    
+class StatusStyle:
+
+    MovementActive = SvgStatusStyle(
+        status_value = 'active',
+        stroke_color = 'red',
+        stroke_width = None,
+        fill_color = 'red',
+        fill_opacity = 0.5,
+    )
+
+    MovementRecent = SvgStatusStyle(
+        status_value = 'recent',
+        stroke_color = 'orange',
+        stroke_width = None,
+        fill_color = 'orange',
+        fill_opacity = 0.5,
+    )
+
+    MovementPast = SvgStatusStyle(
+        status_value = 'past',
+        stroke_color = 'yellow',
+        stroke_width = None,
+        fill_color = 'yellow',
+        fill_opacity = 0.5,
+    )
+    
+    MovementIdle = SvgStatusStyle(
+        status_value = 'idle',
+        stroke_color = '#888888',
+        stroke_width = None,
+        fill_color = 'white',
+        fill_opacity = 0.0,
+    )
+
+    
+@dataclass
+class StatusDisplayData:
+    entity_state          : EntityState
+    sensor_response_list  : List[ SensorResponse ]
+
+    def __post_init__(self):
+        self._svg_status_style = self.get_svg_status_style()
+        return
+
+    @property
+    def should_skip(self):
+        return bool( self._svg_status_style is None )
+    
+    @property
+    def css_class(self):
+        return self.entity_state.css_class
+
+    @property
+    def attribute_dict(self):
+        if self._svg_status_style:
+            return self._svg_status_style.to_dict()
+        return dict()
+            
+    @property
+    def latest_sensor_value(self):
+        if self.sensor_response_list:
+            return self.sensor_response_list[0].value
+        return None
+
+    @property
+    def penultimate_sensor_value(self):
+        if len(self.sensor_response_list) > 1:
+            return self.sensor_response_list[1].value
+        return None
+    
+    @property
+    def penultimate_sensor_timestamp(self):
+        if len(self.sensor_response_list) > 1:
+            return self.sensor_response_list[1].timestamp
+        return None
+    
+    def get_svg_status_style(self):
+    
+        if self.entity_state.entity_state_type == EntityStateType.MOVEMENT:
+            return self.get_movement_status_style()
+            
+        return None
+
+    def get_movement_status_style( self ):
+
+        if self.latest_sensor_value == str(SensorValue.MOVEMENT_ACTIVE):
+            return StatusStyle.MovementActive
+
+        if self.penultimate_sensor_value == str(SensorValue.MOVEMENT_ACTIVE):
+            movement_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
+            if movement_timedelta.seconds < 30:
+                return StatusStyle.MovementRecent
+
+            elif movement_timedelta.seconds < 60:
+                return StatusStyle.MovementPast
+
+        return StatusStyle.MovementIdle
+        

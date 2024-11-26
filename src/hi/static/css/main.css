@@ -193,3 +193,19 @@ svg[action-state="scale"] {
 svg .highlighted {
     filter: drop-shadow(0 0 10px red);
 }
+
+g[status="active"] {
+    outline: 2px solid red;
+    filter: drop-shadow(0 0 5px red);
+}
+
+g[status="recent"] {
+    outline: 2px solid orange;
+    filter: drop-shadow(0 0 5px orange);
+}
+
+
+g[status="past"] {
+    outline: 2px solid yellow;
+    filter: drop-shadow(0 0 5px yellow);
+}

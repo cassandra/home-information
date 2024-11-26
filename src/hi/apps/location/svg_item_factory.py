@@ -1,10 +1,8 @@
-import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.svg_models import SvgIconItem, SvgPathItem, SvgViewBox
 from hi.apps.collection.models import Collection
-from hi.apps.entity.enums import EntityStateType, EntityType
+from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
-from hi.apps.sense.enums import SensorValue
 
 from .enums import SvgItemType
 from .models import (
@@ -13,7 +11,6 @@ from .models import (
     LocationItemPathModel,
     LocationView,
 )
-from .transient_models import StatusDisplayData
 
 
 class SvgItemFactory( Singleton ):
@@ -24,77 +21,34 @@ class SvgItemFactory( Singleton ):
         return
 
     def create_svg_icon_item( self,
-                              item                 : LocationItemModelMixin,
-                              position             : LocationItemPositionModel,
-                              status_display_data  : StatusDisplayData          = None ) -> SvgIconItem:
+                              item       : LocationItemModelMixin,
+                              position   : LocationItemPositionModel,
+                              css_class  : str ) -> SvgIconItem:
 
-        status_value = 'placeholder'
-        
         return SvgIconItem(
             html_id = item.html_id,
+            css_class = css_class,
             position_x = float( position.svg_x ),
             position_y = float( position.svg_y ),
             rotate = float( position.svg_rotate ),
             scale = float( position.svg_scale ),
             template_name = 'entity/svg/type.other.svg',
             bounding_box = SvgViewBox( x = 0, y = 0, width = 32, height = 32 ),
-            status_value = status_value,
         )
 
     def create_svg_path_item( self,
-                              item                 : LocationItemModelMixin,
-                              path                 : LocationItemPathModel,
-                              status_display_data  : StatusDisplayData      = None ) -> SvgPathItem:
+                              item       : LocationItemModelMixin,
+                              path       : LocationItemPathModel,
+                              css_class  : str ) -> SvgPathItem:
 
-
-        
-
-        if status_display_data:
-
-            print( f'\n\n{status_display_data.sensor.entity_state.entity_state_type}' )
-            print( f'\n\n{status_display_data.sensor_response_list}' )
-            print( f'   First = {status_display_data.sensor_response_list[0].value}' )
-            if len(status_display_data.sensor_response_list) > 1:
-                print( f'  Second = {status_display_data.sensor_response_list[1].value}' )
-                
-            if status_display_data.sensor.entity_state.entity_state_type == EntityStateType.MOVEMENT:
-                if status_display_data.sensor_response_list[0].value == str(SensorValue.MOVEMENT_ACTIVE):
-                    fill_color = 'red'
-                    fill_opacity = 0.5
-                elif (( len(status_display_data.sensor_response_list) > 1 )
-                      and ( status_display_data.sensor_response_list[1].value == str(SensorValue.MOVEMENT_ACTIVE) )):
-                    movement_timedelta = datetimeproxy.now() - status_display_data.sensor_response_list[1].timestamp
-                    if movement_timedelta.seconds < 30:
-                        fill_color = 'orange'
-                        fill_opacity = 0.5
-                    elif movement_timedelta.seconds < 60:
-                        fill_color = 'yellow'
-                        fill_opacity = 0.5
-                    else:
-                        fill_color = 'white'
-                        fill_opacity = 0.5
-                else:
-                    fill_color = 'white'
-                    fill_opacity = 0.0
-            else:
-                fill_color = 'blue'
-                fill_opacity = 0.5
-        else:
-            fill_color = 'green'
-            fill_opacity = 0.5
-
-
-            
-
-        
-        
         return SvgPathItem(
             html_id = item.html_id,
+            css_class = css_class,
             svg_path = path.svg_path,
             stroke_color = '#40f040',
             stroke_width = 5.0,
-            fill_color = fill_color,
-            fill_opacity = fill_opacity,
+            fill_color = 'white',
+            fill_opacity = 0.0,
         )
 
     def get_svg_item_type( self, obj ) -> SvgItemType:

@@ -1,27 +1,15 @@
 from dataclasses import dataclass
-from typing import List
 
-from hi.apps.entity.models import Entity
 from hi.apps.location.edit.forms import (
     LocationAttributeFormSet,
     LocationAttributeUploadForm,
     LocationEditForm,
     LocationViewEditForm,
 )
-from hi.apps.sense.models import Sensor
-from hi.apps.sense.transient_models import SensorResponse
 
 from .models import Location, LocationView
 
 
-@dataclass
-class StatusDisplayData:
-    entity                : Entity
-    sensor                : Sensor
-    sensor_response_list  : List[ SensorResponse ]
-
-    
-    
 @dataclass
 class LocationEditData:
     """ All the data needed to render the Location edit pane. """

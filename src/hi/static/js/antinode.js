@@ -829,12 +829,17 @@ jQuery(function($) {
     
 });
 
-$(document)
-    .ajaxStart(function () {
-      $('#antinode-loader').show();
-    })
-    .ajaxStop(function () {
-        $('#antinode-loader').hide();
-    });
+// Extend jQuery to allow some requests to suppress the loading image.
+$.ajaxSuppressLoader = false;
 
+$(document)
+	.ajaxStart(function () {
+	    if ( ! $.ajaxSuppressLoader ) {
+		$('#antinode-loader').show();
+	    }
+	})
+	.ajaxStop(function () {
+            $('#antinode-loader').hide();
+	});
+    
 })();

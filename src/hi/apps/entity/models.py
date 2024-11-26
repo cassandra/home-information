@@ -152,7 +152,13 @@ class EntityState( models.Model ):
     class Meta:
         verbose_name = 'Entity State'
         verbose_name_plural = 'Entity States'
-
+        constraints = [
+            models.UniqueConstraint(
+                fields = [ 'entity_id', 'entity_state_type_str' ],
+                name = 'entity_state_entity_entity_type',
+            ),
+        ]
+        
     def __str__(self):
         return f'State[{self.id}]: {self.name} [{self.entity_state_type_str}]'
     
@@ -167,6 +173,10 @@ class EntityState( models.Model ):
     def entity_state_type( self, entity_state_type : EntityStateType ):
         self.entity_state_type_str = str(entity_state_type)
         return
+
+    @property
+    def css_class(self):
+        return f'hi-entity-state-{self.id}'
     
     
 class EntityStateDelegation(models.Model):

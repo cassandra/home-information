@@ -282,9 +282,10 @@ PIPELINE = {
         },
         'js_after_content_custom': {
             'source_filenames': (
-                'js/svg-utils.js',
-                'js/polling.js',
                 'js/main.js',
+                'js/svg-utils.js',
+                'js/watchdog.js',
+                'js/polling.js',
                 'js/edit.js',
                 'js/edit-dragdrop.js',
                 'js/svg-icon.js',

@@ -48,6 +48,10 @@ class Sensor( IntegrationKeyModel ):
         self.sensor_type_str = str(sensor_type)
         return
 
+    @property
+    def css_class(self):
+        return f'hi-sensor-{self.id}'
+
     
 class SensorHistory(models.Model):
 

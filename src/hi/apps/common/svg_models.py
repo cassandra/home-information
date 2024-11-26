@@ -95,13 +95,13 @@ class SvgIconItem:
     """
     
     html_id        : str
+    css_class      : str
     template_name  : str
     bounding_box   : SvgViewBox
     position_x     : float
     position_y     : float
     rotate         : float
     scale          : float
-    status_value   : str
     
     @property
     def transform_str(self):
@@ -138,13 +138,14 @@ class SvgPathItem:
     """
 
     html_id       : str
+    css_class     : str
     svg_path      : str
     stroke_color  : str
     stroke_width  : float
     fill_color    : str
     fill_opacity  : float
-    
 
+    
 class SvgDecimalField( models.DecimalField ):
     """
     Custom model field for SVG-related decimal values to fix precision and

@@ -1,3 +1,4 @@
+from cachetools import TTLCache
 import logging
 from typing import Dict, List
 
@@ -41,6 +42,7 @@ class SensorResponseManager( Singleton ):
     def __init_singleton__( self ):
         self._redis_client = get_redis_client()
         self._sensor_history_manager = SensorHistoryManager()
+        self._sensor_cache = TTLCache( maxsize = 1000, ttl = 3600 )
         return
     
     def add_latest_sensor_responses( self, sensor_response_list : List[ SensorResponse ] ):
@@ -112,8 +114,9 @@ class SensorResponseManager( Singleton ):
             if not cached_list:
                 continue
             sensor_response_list = [ SensorResponse.from_string( x ) for x in cached_list ]
-            integration_key = sensor_response_list[0].integration_key
-            sensor_response_list_map[integration_key] = sensor_response_list
+            sensor = self._get_sensor( integration_key = sensor_response_list[0].integration_key )
+            if sensor:
+                sensor_response_list_map[sensor] = sensor_response_list
             continue
 
         return sensor_response_list_map
@@ -149,3 +152,16 @@ class SensorResponseManager( Singleton ):
     def to_sensor_response_list_cache_key( self, integration_key : IntegrationKey ) -> str:
         return f'hi.sr.latest.{integration_key}' 
     
+    def _get_sensor( self, integration_key : IntegrationKey ):
+        if integration_key not in self._sensor_cache:
+            try:
+                sensor = Sensor.objects.select_related('entity_state').get(
+                    integration_id = integration_key.integration_id,
+                    integration_name = integration_key.integration_name,
+                )
+                self._sensor_cache[integration_key] = sensor
+            except Sensor.DoesNotExist:
+                return None
+
+        return self._sensor_cache[integration_key]
+        
