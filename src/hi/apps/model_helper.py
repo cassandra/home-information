@@ -17,6 +17,13 @@ from hi.integrations.core.integration_key import IntegrationKey
 
 class HiModelHelper:
     """ Model creation helpers. """
+
+    EXCLUDE_FROM_SENSOR_HISTORY = {
+        EntityStateType.DATETIME,
+        EntityStateType.VIDEO_STREAM,
+        EntityStateType.BLOB,
+        EntityStateType.MULTVALUED,
+    }
     
     @classmethod
     def create_blob_sensor( cls,
@@ -247,8 +254,9 @@ class HiModelHelper:
         )
         sensor = Sensor(
             entity_state = entity_state,
-            sensor_type_str = str( sensor_type ),
             name = name,
+            sensor_type_str = str( sensor_type ),
+            persist_history = bool( entity_state_type not in cls.EXCLUDE_FROM_SENSOR_HISTORY ),
         )
         sensor.integration_key = integration_key
         sensor.save()
@@ -280,6 +288,7 @@ class HiModelHelper:
                 entity_state = entity_state,
                 name = name,
                 sensor_type_str = str( SensorType.DEFAULT ),
+                persist_history = bool( entity_state_type not in cls.EXCLUDE_FROM_SENSOR_HISTORY ),
             )
             sensor.integration_key = integration_key
             sensor.save()

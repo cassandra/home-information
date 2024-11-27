@@ -1,3 +1,4 @@
+from asgiref.sync import sync_to_async
 from cachetools import TTLCache
 import logging
 from typing import Dict, List
@@ -59,7 +60,7 @@ class SensorResponseManager( Singleton ):
             continue
         pipeline.execute()
 
-        self._add_sensors( sensor_response_list = sensor_response_list )
+        await self._add_sensors( sensor_response_list = sensor_response_list )
         await self._sensor_history_manager.add_to_sensor_response_history(
             sensor_response_list = sensor_response_list,
         )        
@@ -153,10 +154,11 @@ class SensorResponseManager( Singleton ):
     def to_sensor_response_list_cache_key( self, integration_key : IntegrationKey ) -> str:
         return f'hi.sr.latest.{integration_key}' 
     
-    def _add_sensors( self, sensor_response_list : List[ SensorResponse ] ):
+    async def _add_sensors( self, sensor_response_list : List[ SensorResponse ] ):
         for sensor_response in sensor_response_list:
             if sensor_response.sensor is None:
-                sensor_response.sensor = self._get_sensor( integration_key = sensor_response.integration_key )
+                sensor_response.sensor = await sync_to_async(
+                    self._get_sensor )( integration_key = sensor_response.integration_key )
             continue
         return
         

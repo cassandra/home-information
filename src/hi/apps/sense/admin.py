@@ -3,6 +3,12 @@ from django.contrib import admin
 from . import models
 
 
+class SensorHistoryInLine(admin.TabularInline):
+    model = models.SensorHistory
+    extra = 0
+    show_change_link = True
+
+    
 @admin.register(models.Sensor)
 class SensorAdmin(admin.ModelAdmin):
 
@@ -14,10 +20,14 @@ class SensorAdmin(admin.ModelAdmin):
         'sensor_type_str',
         'integration_id',
         'integration_name',
+        'persist_history',
     )
 
     search_fields = ['name']
     readonly_fields = ( 'entity_state', )
+    inlines = [
+        SensorHistoryInLine,
+    ]
 
     
 @admin.register(models.SensorHistory)
@@ -29,6 +39,7 @@ class SensorHistoryAdmin(admin.ModelAdmin):
         'sensor',
         'value',
         'response_datetime',
+        'details',
     )
 
     search_fields = ['sensor__name']

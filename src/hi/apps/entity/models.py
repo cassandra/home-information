@@ -154,7 +154,7 @@ class EntityState( models.Model ):
         verbose_name_plural = 'Entity States'
         
     def __str__(self):
-        return f'State[{self.id}]: {self.name} [{self.entity_state_type_str}]'
+        return f'{self.name}[{self.id}] ({self.entity_state_type_str})'
     
     def __repr__(self):
         return self.__str__()

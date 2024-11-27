@@ -28,7 +28,11 @@ class Sensor( IntegrationKeyModel ):
         max_length = 32,
         null = False, blank = False,
     )
-
+    persist_history = models.BooleanField(
+        'Persist History',
+        default = True,
+    )
+    
     class Meta:
         verbose_name = 'Sensor'
         verbose_name_plural = 'Sensors'
@@ -38,7 +42,13 @@ class Sensor( IntegrationKeyModel ):
                 name = 'sensor_integration_key',
             ),
         ]
-        
+
+    def __repr__(self):
+        return f'{self.name} [{self.id}] ({self.integration_id})'
+            
+    def __str__(self):
+        return self.__repr__()
+    
     @property
     def sensor_type(self):
         return SensorType.from_name_safe( self.sensor_type_str )
@@ -67,6 +77,10 @@ class SensorHistory(models.Model):
     )
     response_datetime = models.DateTimeField(
         'Timestamp',
+    )
+    details = models.TextField(
+        'Details',
+        blank = True, null = True,
     )
     
     class Meta:

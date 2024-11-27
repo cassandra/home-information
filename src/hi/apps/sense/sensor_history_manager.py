@@ -1,4 +1,4 @@
-from asgiref.sync import async_to_sync, sync_to_async
+from asgiref.sync import sync_to_async
 import logging
 from typing import List
 
@@ -21,11 +21,11 @@ class SensorHistoryManager( Singleton ):
 
         sensor_history_list = list()
         for sensor_response in sensor_response_list:
-            if sensor_response.sensor:
+            if sensor_response.sensor and sensor_response.sensor.persist_history:
                 sensor_history_list.append(
                     SensorHistory(
                         sensor = sensor_response.sensor,
-                        value = sensor_response.value,
+                        value = sensor_response.value[0:255],
                         response_datetime = sensor_response.timestamp,
                     )
                 )

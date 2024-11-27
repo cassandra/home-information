@@ -1,5 +1,9 @@
 from cachetools import TTLCache
+from datetime import datetime
+import json
 import logging
+from pyzm.helpers.Monitor import Monitor as ZmMonitor
+from typing import List
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
@@ -18,6 +22,8 @@ class ZoneMinderMonitor( PeriodicMonitor ):
 
     # TODO: Move this into the integrations attributes for users to set
     ZONEMINDER_SERVER_TIMEZONE = 'America/Chicago'
+
+    MONITOR_RFEFRESH_INTERVAL_SECS = 600
     
     def __init__( self ):
         super().__init__(
@@ -27,6 +33,10 @@ class ZoneMinderMonitor( PeriodicMonitor ):
         self._zm_manager = ZoneMinderManager()
         self._sensor_history_manager = SensorHistoryManager()
         self._sensor_response_manager = SensorResponseManager()
+
+        self._zm_monitor_list = list()
+        self._zm_monitor_timestamp = datetimeproxy.min()
+        
         self._fully_processed_event_ids = TTLCache( maxsize = 1000, ttl = 100000 )
         self._start_processed_event_ids = TTLCache( maxsize = 1000, ttl = 100000 )
 
@@ -66,6 +76,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
         #
         open_zm_event_list = list()
         closed_zm_event_list = list()
+        zm_monitor_ids_seen = set()
         for zm_api_event in events:
             if self.TRACE:
                 logger.debug( f'ZM Api Event: {zm_api_event.get()}' )
@@ -74,7 +85,8 @@ class ZoneMinderMonitor( PeriodicMonitor ):
 
             if zm_event.event_id in self._fully_processed_event_ids:
                 continue
-            
+
+            zm_monitor_ids_seen.add( zm_event.monitor_id )
             if zm_event.is_open:
                 open_zm_event_list.append( zm_event )
             else:
@@ -99,7 +111,19 @@ class ZoneMinderMonitor( PeriodicMonitor ):
             sensor_response_list.append( idle_sensor_response )
             self._fully_processed_event_ids[zm_event.event_id] = True
             continue
-        
+
+        # If there are no events for a monitor, we want to emit the sensor
+        # response of it being idle.
+        #
+        for zm_monitor in self._get_zm_monitors():
+            if zm_monitor.id() not in zm_monitor_ids_seen:
+                idle_sensor_response = self._create_idle_sensor_response(
+                    zm_monitor = zm_monitor,
+                    timestamp = self._poll_from_datetime,
+                )
+                sensor_response_list.append( idle_sensor_response )
+            continue
+            
         await self._sensor_response_manager.add_latest_sensor_responses(
             sensor_response_list = sensor_response_list,
         )
@@ -130,7 +154,24 @@ class ZoneMinderMonitor( PeriodicMonitor ):
         
         return
 
+    def _get_zm_monitors(self) -> List[ ZmMonitor ]:
+        monitor_list_age = datetimeproxy.now() - self._zm_monitor_timestamp
+        if monitor_list_age.seconds > self.MONITOR_RFEFRESH_INTERVAL_SECS:
+            self._zm_monitor_list = self._zm_manager.zm_client.monitors().list()
+            self._zm_monitor_timestamp = datetimeproxy.now()
+        return self._zm_monitor_list
+        
     def _create_movement_active_sensor_response( self, zm_event : ZmEvent ):
+
+        event_details = {
+            'event_id': zm_event.id(),
+            'notes': zm_event.notes(),
+            'duration_secs': zm_event.duration(),
+            'total_frames': zm_event.total_frames(),
+            'alarmed_frames': zm_event.alarmed_frames(),
+            'score': zm_event.score(),
+        }
+        
         return SensorResponse(
             integration_key = self._zm_manager._sensor_to_integration_key(
                 sensor_prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
@@ -138,6 +179,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
             ),
             value = str(SensorValue.MOVEMENT_ACTIVE),
             timestamp = zm_event.start_datetime,
+            details = json.dumps( event_details ),
         )
 
     def _create_movement_idle_sensor_response( self, zm_event : ZmEvent ):
@@ -149,3 +191,14 @@ class ZoneMinderMonitor( PeriodicMonitor ):
             value = str(SensorValue.MOVEMENT_IDLE),
             timestamp = zm_event.end_datetime,
         )
+
+    def _create_idle_sensor_response( self, zm_monitor : ZmMonitor, timestamp : datetime ):
+        return SensorResponse(
+            integration_key = self._zm_manager._sensor_to_integration_key(
+                sensor_prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
+                zm_monitor_id = zm_monitor.id(),
+            ),
+            value = str(SensorValue.MOVEMENT_IDLE),
+            timestamp = timestamp,
+        )
+    

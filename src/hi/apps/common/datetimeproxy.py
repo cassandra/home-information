@@ -46,6 +46,22 @@ def now( tzname = None ):
     return utcnow.astimezone(to_zone)
 
 
+def min( tzname = None ):
+
+    # This assumes the Django system time is in UTC !!!
+    utcmax = timezone.now() - datetime.timedelta( weeks = 500 )
+    if tzname is None:
+        return utcmax
+
+    try:
+        to_zone = pytz.timezone( tzname )
+    except pytz.exceptions.UnknownTimeZoneError:
+        logger.warning( "Unrecognized time zone '%s'", tzname )
+        to_zone = pytz.timezone( DEFAULT_TIME_ZONE_NAME )
+    
+    return utcmax.astimezone(to_zone)
+    
+
 def max( tzname = None ):
 
     # This assumes the Django system time is in UTC !!!

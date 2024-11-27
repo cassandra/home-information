@@ -177,6 +177,7 @@ class CollectionEntityToggleView( View, CollectionViewMixin, EntityViewMixin ):
 
         collection_data = CollectionManager().get_collection_data(
             collection = collection,
+            is_editing = request.is_editing,
         )
         context = {
             'collection_data': collection_data,
