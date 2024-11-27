@@ -165,7 +165,7 @@ class SensorResponseDetailsView( View ):
             }
             template_name = 'zoneminder/modals/zm_event_details.html'
         else:
-            raise BadRequest( f'Unknown ZmDetails: {details_str}' )
+            raise BadRequest( f'Unknown ZmResponseDetails: {details_str}' )
 
         return antinode.modal_from_template(
             request = request,

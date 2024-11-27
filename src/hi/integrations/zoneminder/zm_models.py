@@ -95,13 +95,13 @@ class ZmEvent:
 
 
 @dataclass
-class ZmDetails:
+class ZmResponseDetails:
     """ Base class for all SensorResponse detail objects """
     pass
 
 
 @dataclass
-class ZmEventDetails( ZmDetails ):
+class ZmEventDetails( ZmResponseDetails ):
     event_id        : int
     notes           : str
     duration_secs   : int

@@ -1,6 +1,6 @@
 import json
 
-from .zm_models import ZmEvent, ZmDetails, ZmEventDetails
+from .zm_models import ZmEvent, ZmResponseDetails, ZmEventDetails
 
 
 class SensorResponseHelper:
@@ -18,7 +18,7 @@ class SensorResponseHelper:
         return json.dumps( event_details )
  
     @classmethod
-    def from_details( cls, details : str ) -> ZmDetails:
+    def from_details( cls, details : str ) -> ZmResponseDetails:
         details_dict = json.loads( details )
         if 'event_id' in details_dict:
             return ZmEventDetails(
@@ -30,4 +30,3 @@ class SensorResponseHelper:
                 score = details_dict.get('score'),  
             )
         return None
-    

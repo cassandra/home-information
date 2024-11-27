@@ -44,29 +44,10 @@ class SensorResponseManager( Singleton ):
         self._sensor_history_manager = SensorHistoryManager()
         self._sensor_cache = TTLCache( maxsize = 1000, ttl = 300 )
         return
-    
-    async def add_latest_sensor_responses( self, sensor_response_list : List[ SensorResponse ] ):
-        if not sensor_response_list:
-            return
 
-        pipeline = self._redis_client.pipeline()
-        for sensor_response in sensor_response_list:
-            list_cache_key = self.to_sensor_response_list_cache_key( sensor_response.integration_key )
-            cache_value = str(sensor_response)
-            pipeline.lpush( list_cache_key, cache_value )
-            pipeline.ltrim( list_cache_key, 0, self.SENSOR_RESPONSE_LIST_SIZE - 1 )
-            pipeline.sadd( self.SENSOR_RESPONSE_LIST_SET_KEY, list_cache_key )
-            continue
-        pipeline.execute()
-
-        await self._add_sensors( sensor_response_list = sensor_response_list )
-        await self._sensor_history_manager.add_to_sensor_response_history(
-            sensor_response_list = sensor_response_list,
-        )        
-        return
-
-    async def update_with_latest_sensor_responses( self,
-                                                   sensor_response_map : Dict[ IntegrationKey, SensorResponse ] ):
+    async def update_with_latest_sensor_responses(
+            self,
+            sensor_response_map : Dict[ IntegrationKey, SensorResponse ] ):
         """
         Used when states are polled and get current state at a point in time
         which may or may not represent a change in state.  We only want to
@@ -96,7 +77,7 @@ class SensorResponseManager( Singleton ):
             changed_sensor_response_list.append( latest_sensor_response )
             continue
         
-        await self.add_latest_sensor_responses( changed_sensor_response_list )
+        await self._add_latest_sensor_responses( changed_sensor_response_list )
         logger.debug( f'Sensor changed: {len(changed_sensor_response_list)} of {len(sensor_response_map)}' )
         return
 
@@ -121,6 +102,26 @@ class SensorResponseManager( Singleton ):
             continue
 
         return sensor_response_list_map
+    
+    async def _add_latest_sensor_responses( self, sensor_response_list : List[ SensorResponse ] ):
+        if not sensor_response_list:
+            return
+
+        pipeline = self._redis_client.pipeline()
+        for sensor_response in sensor_response_list:
+            list_cache_key = self.to_sensor_response_list_cache_key( sensor_response.integration_key )
+            cache_value = str(sensor_response)
+            pipeline.lpush( list_cache_key, cache_value )
+            pipeline.ltrim( list_cache_key, 0, self.SENSOR_RESPONSE_LIST_SIZE - 1 )
+            pipeline.sadd( self.SENSOR_RESPONSE_LIST_SET_KEY, list_cache_key )
+            continue
+        pipeline.execute()
+
+        await self._add_sensors( sensor_response_list = sensor_response_list )
+        await self._sensor_history_manager.add_to_sensor_response_history(
+            sensor_response_list = sensor_response_list,
+        )        
+        return
     
     def to_sensor_response_list_cache_key( self, integration_key : IntegrationKey ) -> str:
         return f'hi.sr.latest.{integration_key}' 

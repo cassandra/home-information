@@ -93,22 +93,22 @@ class ZoneMinderMonitor( PeriodicMonitor ):
                 closed_zm_event_list.append( zm_event )
             continue
 
-        sensor_response_list = list()
+        sensor_response_map = dict()
 
         for zm_event in open_zm_event_list:
             if zm_event.event_id not in self._start_processed_event_ids:
                 active_sensor_response = self._create_movement_active_sensor_response( zm_event )
-                sensor_response_list.append( active_sensor_response )
+                sensor_response_map[active_sensor_response.integration_key] = active_sensor_response
                 self._start_processed_event_ids[zm_event.event_id] = True
             continue
         
         for zm_event in closed_zm_event_list:
             if zm_event.event_id not in self._start_processed_event_ids:
                 active_sensor_response = self._create_movement_active_sensor_response( zm_event )
-                sensor_response_list.append( active_sensor_response )
+                sensor_response_map[active_sensor_response] = active_sensor_response
                 
             idle_sensor_response = self._create_movement_idle_sensor_response( zm_event )
-            sensor_response_list.append( idle_sensor_response )
+            sensor_response_map[idle_sensor_response.integration_key] = idle_sensor_response
             self._fully_processed_event_ids[zm_event.event_id] = True
             continue
 
@@ -121,11 +121,11 @@ class ZoneMinderMonitor( PeriodicMonitor ):
                     zm_monitor = zm_monitor,
                     timestamp = self._poll_from_datetime,
                 )
-                sensor_response_list.append( idle_sensor_response )
+                sensor_response_map[idle_sensor_response.integration_key] = idle_sensor_response
             continue
-            
-        await self._sensor_response_manager.add_latest_sensor_responses(
-            sensor_response_list = sensor_response_list,
+
+        await self._sensor_response_manager.update_with_latest_sensor_responses(
+            sensor_response_map = sensor_response_map,
         )
 
         if open_zm_event_list:
