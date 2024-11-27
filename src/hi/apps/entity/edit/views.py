@@ -1,4 +1,5 @@
 import logging
+import re
 
 from django.core.exceptions import BadRequest, PermissionDenied
 from django.db import transaction
@@ -6,6 +7,7 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 
 from hi.apps.collection.collection_manager import CollectionManager
+import hi.apps.common.antinode as antinode
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity
 from hi.apps.entity.view_mixin import EntityViewMixin
@@ -110,3 +112,47 @@ class EntityDeleteView( HiModalView, EntityViewMixin ):
         redirect_url = reverse('home')
         return self.redirect_response( request, redirect_url )
     
+
+@method_decorator( edit_required, name='dispatch' )
+class PrincipalManageView( HiModalView, EntityViewMixin ):
+
+    PRINCIPAL_ENTITY_ID_NAME_PREFIX = 'principal-entity-id-'
+
+    def get_template_name( self ) -> str:
+        return 'entity/edit/modals/principal_manage.html'
+
+    def get( self, request, *args, **kwargs ):
+        entity = self.get_entity( request, *args, **kwargs )
+
+        entity_manager = EntityManager()
+        entity_view_group_list = entity_manager.create_principal_entity_view_group_list(
+            entity= entity,
+        )
+        context = {
+            'entity': entity,
+            'entity_view_group_list': entity_view_group_list,
+            'principal_entity_id_name_prefix': self.PRINCIPAL_ENTITY_ID_NAME_PREFIX,
+        }
+        return self.modal_response( request, context )
+    
+    def post( self, request, *args, **kwargs ):
+        entity = self.get_entity( request, *args, **kwargs )
+
+        desired_principal_entity_ids = set()
+        for name, value in request.POST.items():
+            m = re.match( r'(\D+)(\d+)', name )
+            if not m:
+                continue
+            prefix = m.group(1)
+            if prefix == self.PRINCIPAL_ENTITY_ID_NAME_PREFIX:
+                desired_principal_entity_ids.add( int( m.group(2) ))
+            continue
+
+        EntityManager().adjust_principal_entities(
+            entity = entity,
+            desired_principal_entity_ids = desired_principal_entity_ids,
+        )
+        
+        return antinode.refresh_response()
+
+

@@ -7,7 +7,6 @@ from hi.apps.entity.edit.forms import (
     EntityPositionForm,
     EntityAttributeUploadForm,
 )
-from hi.apps.location.models import LocationView
 from hi.apps.sense.models import Sensor
 from hi.apps.sense.transient_models import SensorResponse
 
@@ -26,7 +25,6 @@ class EntityViewItem:
 class EntityViewGroup:
     """ All entities of a given type and flagged as in the view or not. """
     
-    location_view  : LocationView
     entity_type    : EntityType
     item_list      : List[EntityViewItem]  = field( default_factory = list )
 
@@ -75,7 +73,6 @@ class EntityInfoData:
     entity_edit_data          : EntityEditData
     sensor_response_list_map  : Dict[ Sensor, List[ SensorResponse ] ]
     entity_state_list         : List[ EntityState ]
-    principal_state_list      : List[ EntityState ]
     principal_entity_list     : List[ Entity ]
 
     @property
@@ -87,7 +84,6 @@ class EntityInfoData:
             'entity': self.entity,
             'sensor_response_list_map': self.sensor_response_list_map,
             'entity_state_list': self.entity_state_list,
-            'principal_state_list': self.principal_state_list,
             'principal_entity_list': self.principal_entity_list,
         }
         context.update( self.entity_edit_data.to_template_context() )
@@ -100,10 +96,12 @@ class EntityDetailsData:
 
     entity_edit_data      : EntityEditData
     entity_position_form  : EntityPositionForm  = None
+    principal_entity_list : List[ Entity ]      = None
 
     def to_template_context(self):
         context = {
             'entity_position_form': self.entity_position_form,
+            'principal_entity_list': self.principal_entity_list,
         }
         context.update( self.entity_edit_data.to_template_context() )
         return context

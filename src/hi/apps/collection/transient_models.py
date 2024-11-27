@@ -5,7 +5,6 @@ from hi.apps.collection.edit.forms import CollectionForm, CollectionPositionForm
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
 from hi.apps.entity.transient_models import EntityInfoData
-from hi.apps.location.models import LocationView
 
 from .models import Collection
 
@@ -27,7 +26,6 @@ class CollectionViewItem:
 @dataclass
 class CollectionViewGroup:
 
-    location_view  : LocationView
     item_list      : List[CollectionViewItem]  = field( default_factory = list )
 
 

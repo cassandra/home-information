@@ -5,9 +5,6 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.generic import View
 
-from hi.apps.collection.async_views import CollectionDetailsView
-from hi.apps.entity.async_views import EntityDetailsView
-
 from hi.enums import ItemType
 from hi.hi_async_view import HiSideView
 

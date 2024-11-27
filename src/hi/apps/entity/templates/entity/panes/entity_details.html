@@ -16,6 +16,25 @@
   {% include "entity/edit/panes/entity_edit.html" %}
 </div>
 
+<h5>Principals</h5>
+<div id="hi-edit-entity-principals">
+  <ul>
+    {% for principal_entity in principal_entity_list %}
+    <li>{{ principal_entity.name }}</li>
+    {% empty %}
+    <em>No principals</em>
+    {% endfor %}
+  </ul>
+  
+  <div class="">
+    <a href="{% url 'entity_edit_principal_manage' entity_id=entity.id %}"
+       class="btn btn-success btn-control" role="button" data-async="true">
+      MANAGE PRINCIPALS
+    </a>
+  </div>
+  
+</div>
+
 {% if entity_position_form %}
 <h5>Geometry</h5>
 <div id="{{ DIVID.ENTITY_POSITION_EDIT_PANE }}">
@@ -39,13 +58,8 @@
 </div>
 
 <h5>Delegates</h5>
-<div id="hi-edit-entity-controllers">
+<div id="hi-edit-entity-delegates">
   <div>TBD - DELEGATES</div>
-</div>
-
-<h5>Principals</h5>
-<div id="hi-edit-entity-controllers">
-  <div>TBD - PRINCIPALS</div>
 </div>
 
 {% if entity.can_user_delete %}

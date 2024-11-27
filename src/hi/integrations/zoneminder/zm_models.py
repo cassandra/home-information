@@ -15,7 +15,7 @@ class ZmEvent:
         self._cause = zm_api_event.cause()
         self._duration_secs = zm_api_event.duration()
         self._total_frame_count = zm_api_event.total_frames()
-        self._alarm_frame_count = zm_api_event.alarmed_frames()
+        self._alarmed_frame_count = zm_api_event.alarmed_frames()
         self._score = zm_api_event.score()
         self._notes = zm_api_event.notes()
         self._max_score_frame_id = zm_api_event.get()['MaxScoreFrameId']
@@ -58,8 +58,8 @@ class ZmEvent:
         return self._total_frame_count
     
     @property
-    def alarm_frame_count(self):
-        return self._alarm_frame_count
+    def alarmed_frame_count(self):
+        return self._alarmed_frame_count
     
     @property
     def score(self):

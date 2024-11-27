@@ -171,13 +171,14 @@ class LocationViewManageItemsView( HiSideView ):
     def get_template_context( self, request, *args, **kwargs ):
 
         location_view = LocationManager().get_default_location_view( request = request )
-        entity_view_group_list = EntityManager().create_entity_view_group_list(
+        entity_view_group_list = EntityManager().create_location_entity_view_group_list(
             location_view = location_view,
         )
-        collection_view_group = CollectionManager().create_collection_view_group(
+        collection_view_group = CollectionManager().create_location_collection_view_group(
             location_view = location_view,
         )
         return {
+            'location_view': location_view,
             'entity_view_group_list': entity_view_group_list,
             'collection_view_group': collection_view_group,
         }

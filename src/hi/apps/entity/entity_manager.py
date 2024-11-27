@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import List
+from typing import List, Set
 
 from django.db import transaction
 
@@ -17,6 +17,7 @@ from .models import (
     Entity,
     EntityPath,
     EntityPosition,
+    EntityStateDelegation,
     EntityView,
 )
 from .transient_models import (
@@ -37,22 +38,19 @@ class EntityManager(Singleton):
                               entity         : Entity,
                               is_editing     : bool )        -> EntityDetailsData:
         entity_edit_data = EntityEditData( entity = entity )
-        sensor_response_list_map = SensorResponseManager().get_entity_latest_sensor_responses( entity = entity )
+        sensor_response_list_map = SensorResponseManager().get_entity_latest_sensor_responses(
+            entity = entity,
+        )
 
         entity_state_list = list(
             entity.states.all()
         )
-        entity_state_delegation_list = list(
-            entity.entity_state_delegations.select_related('entity_state', 'entity_state__entity').all()
-        )
-        principal_state_list = [ x.entity_state for x in entity_state_delegation_list ]
-        principal_entity_list = list({ x.entity for x in principal_state_list })  # de-dupe
+        principal_entity_list = self.get_principal_entity_list( entity = entity )
 
         return EntityInfoData(
             entity_edit_data = entity_edit_data,
             sensor_response_list_map = sensor_response_list_map,
             entity_state_list = entity_state_list,
-            principal_state_list = principal_state_list,
             principal_entity_list = principal_entity_list,
         )
 
@@ -69,12 +67,22 @@ class EntityManager(Singleton):
             ).first()
             if entity_position:
                 entity_position_form = EntityPositionForm( instance = entity_position )
+
+        principal_entity_list = self.get_principal_entity_list( entity = entity )
         
         entity_edit_data = EntityEditData( entity = entity )
         return EntityDetailsData(
             entity_edit_data = entity_edit_data,
             entity_position_form = entity_position_form,
+            principal_entity_list = principal_entity_list,
         )
+
+    def get_principal_entity_list( self, entity : Entity ) -> List[ Entity ]:
+        entity_state_delegation_list = list(
+            entity.entity_state_delegations.select_related('entity_state', 'entity_state__entity').all()
+        )
+        principal_state_list = [ x.entity_state for x in entity_state_delegation_list ]
+        return list({ x.entity for x in principal_state_list })  # de-dupe
         
     def create_entity( self,
                        entity_type       : EntityType,
@@ -258,28 +266,38 @@ class EntityManager(Singleton):
         )
         return entity_path
 
-    def create_entity_view_group_list( self, location_view : LocationView ) -> List[EntityViewGroup]:
+    def create_location_entity_view_group_list( self, location_view : LocationView ) -> List[EntityViewGroup]:
+        existing_entities = [ x.entity
+                              for x in location_view.entity_views.select_related('entity').all() ]
+        return self.create_entity_view_group_list(
+            existing_entities = existing_entities,
+            exclude_delegates = False,
+        )
+    
+    def create_principal_entity_view_group_list( self, entity : Entity ) -> List[EntityViewGroup]:
+        existing_entities = self.get_principal_entity_list( entity = entity )
+        return self.create_entity_view_group_list(
+            existing_entities = existing_entities,
+            exclude_delegates = True,  # Do not allow delegates to delegate
+        )
 
+    def create_entity_view_group_list( self,
+                                       existing_entities : List[ Entity ],
+                                       exclude_delegates : bool ) -> List[EntityViewGroup]:
+        existing_entity_set = set( existing_entities )
         entity_queryset = Entity.objects.all()
         
         entity_view_group_dict = dict()
         for entity in entity_queryset:
-        
-            exists_in_view = False
-            for entity_view in entity.entity_views.all():
-                if entity_view.location_view == location_view:
-                    exists_in_view = True
-                    break
+            if exclude_delegates and entity.entity_state_delegations.exists():
                 continue
-
             entity_view_item = EntityViewItem(
                 entity = entity,
-                exists_in_view = exists_in_view,
+                exists_in_view = bool( entity in existing_entity_set ),
             )
             
             if entity.entity_type not in entity_view_group_dict:
                 entity_view_group = EntityViewGroup(
-                    location_view = location_view,
                     entity_type = entity.entity_type,
                 )
                 entity_view_group_dict[entity.entity_type] = entity_view_group
@@ -290,3 +308,33 @@ class EntityManager(Singleton):
         entity_view_group_list.sort( key = lambda item : item.entity_type.label )
         return entity_view_group_list
 
+    def adjust_principal_entities( self, entity : Entity, desired_principal_entity_ids : Set[ int ] ):
+
+        principal_entity_list = self.get_principal_entity_list( entity = entity )
+        previous_principal_entity_map = { x.id: x for x in principal_entity_list }
+        previous_principal_entity_ids = set( previous_principal_entity_map.keys() )
+
+        to_add_entity_ids = desired_principal_entity_ids - previous_principal_entity_ids
+        to_delete_entity_ids = previous_principal_entity_ids - desired_principal_entity_ids
+
+        to_add_principal_entities = list( Entity.objects.filter( id__in = list(to_add_entity_ids) ) )
+
+        with transaction.atomic():
+            for add_principal_entity in to_add_principal_entities:
+                for entity_state in add_principal_entity.states.all():
+                    EntityStateDelegation.objects.create(
+                        entity_state = entity_state,
+                        delegate_entity = entity,
+                    )
+                    continue
+                continue
+
+            delegation_queryset = entity.entity_state_delegations.select_related(
+                'entity_state',
+                'entity_state__entity' ).all()
+            for delegation in delegation_queryset:
+                if delegation.entity_state.entity.id in to_delete_entity_ids:
+                    delegation.delete()
+                continue
+        return
+    

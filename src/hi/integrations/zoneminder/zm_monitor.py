@@ -162,14 +162,14 @@ class ZoneMinderMonitor( PeriodicMonitor ):
         return self._zm_monitor_list
         
     def _create_movement_active_sensor_response( self, zm_event : ZmEvent ):
-
+        
         event_details = {
-            'event_id': zm_event.id(),
-            'notes': zm_event.notes(),
-            'duration_secs': zm_event.duration(),
-            'total_frames': zm_event.total_frames(),
-            'alarmed_frames': zm_event.alarmed_frames(),
-            'score': zm_event.score(),
+            'event_id': zm_event.event_id,
+            'notes': zm_event.notes,
+            'duration_secs': zm_event.duration_secs,
+            'total_frames': zm_event.total_frame_count,
+            'alarmed_frames': zm_event.alarmed_frame_count,
+            'score': zm_event.score,
         }
         
         return SensorResponse(

@@ -371,25 +371,22 @@ class CollectionManager(Singleton):
                 continue
         return
     
-    def create_collection_view_group( self, location_view : LocationView ) -> CollectionViewGroup:
-
+    def create_location_collection_view_group( self, location_view : LocationView ) -> CollectionViewGroup:
+        existing_collections = [ x.collection
+                                 for x in location_view.collection_views.select_related('collection').all() ]
+        return self.create_collection_view_group( existing_collections = existing_collections )
+    
+    def create_collection_view_group( self,
+                                      existing_collections : List[ Collection ] ) -> CollectionViewGroup:
+        existing_collection_set = set( existing_collections )
         collection_queryset = Collection.objects.all()
         
-        collection_view_group = CollectionViewGroup(
-            location_view = location_view,
-        )
+        collection_view_group = CollectionViewGroup()
         for collection in collection_queryset:
         
-            exists_in_view = False
-            for collection_view in collection.collection_views.all():
-                if collection_view.location_view == location_view:
-                    exists_in_view = True
-                    break
-                continue
-
             collection_view_item = CollectionViewItem(
                 collection = collection,
-                exists_in_view = exists_in_view,
+                exists_in_view = bool( collection in existing_collection_set ),
             )
             collection_view_group.item_list.append( collection_view_item )
             continue

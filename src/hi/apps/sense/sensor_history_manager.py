@@ -27,6 +27,7 @@ class SensorHistoryManager( Singleton ):
                         sensor = sensor_response.sensor,
                         value = sensor_response.value[0:255],
                         response_datetime = sensor_response.timestamp,
+                        details = sensor_response.details,
                     )
                 )
             continue

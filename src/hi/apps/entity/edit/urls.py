@@ -26,5 +26,8 @@ urlpatterns = [
              async_views.EntityPositionEditView.as_view(), 
              name='entity_position_edit' ),
 
+    re_path( r'^entity/principal/manage/(?P<entity_id>\d+)$', 
+             views.PrincipalManageView.as_view(), 
+             name='entity_edit_principal_manage' ),
     
 ]
