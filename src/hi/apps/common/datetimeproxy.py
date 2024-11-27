@@ -383,3 +383,8 @@ def iso_naive_to_datetime_utc( iso_str : str, tzname : str  ):
     aware_time = to_zone.localize(naive_time)
     utc_time = aware_time.astimezone( pytz.UTC )
     return utc_time
+
+
+def change_timezone( original_datetime : datetime, new_tzname : str  ):
+    new_tz = pytz.timezone( new_tzname )
+    return original_datetime.astimezone( new_tz )

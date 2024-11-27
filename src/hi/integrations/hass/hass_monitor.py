@@ -23,6 +23,10 @@ class HassMonitor( PeriodicMonitor ):
         self._logger = logging.getLogger(__name__)
         return
 
+    def refresh( self ):
+        """ Should be called when integration settings are changed. """
+        return
+    
     async def do_work(self):
         id_to_hass_state_map = self._hass_manager.fetch_hass_states_from_api( verbose = False )
 

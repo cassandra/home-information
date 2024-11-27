@@ -53,6 +53,7 @@ class ZoneMinderManager( Singleton ):
         return self._zm_client
     
     def reload( self ):
+        """ Should be called when integration settings are changed. """
         if self._is_loading:
             logger.warning( 'ZoneMinder manager is already loading.' )
             return
@@ -271,9 +272,13 @@ class ZoneMinderManager( Singleton ):
     def get_zm_tzname(self) -> str:
         try:
             zm_integration = Integration.objects.get( integration_id = ZmMetaData.integration_id )
+            integration_key = IntegrationKey(
+                integration_id = ZmMetaData.integration_id,
+                integration_name = str(ZmAttributeType.TIMEZONE),
+            )
             integration_attribute = IntegrationAttribute.objects.filter(
                 integration = zm_integration,
-                name = ZmAttributeType.TIMEZONE.label,
+                integration_key_str = str(integration_key),
             ).first()
             if integration_attribute:
                 return integration_attribute.value

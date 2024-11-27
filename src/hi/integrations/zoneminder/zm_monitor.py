@@ -23,7 +23,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
     # TODO: Move this into the integrations attributes for users to set
     ZONEMINDER_SERVER_TIMEZONE = 'America/Chicago'
 
-    MONITOR_RFEFRESH_INTERVAL_SECS = 600
+    MONITOR_REFRESH_INTERVAL_SECS = 600
     
     def __init__( self ):
         super().__init__(
@@ -46,13 +46,24 @@ class ZoneMinderMonitor( PeriodicMonitor ):
         # important that we have this in the same TZ as the ZoneMinder
         # server and also pass in the TZ when filtering events.
         #
-        # TODO: If the user changes the ZM timezone attribute value, this
-        # process needs to be restarted.
-        #
         self._zm_tzname = self._zm_manager.get_zm_tzname()
         self._poll_from_datetime = datetimeproxy.now( self._zm_tzname )
         return
 
+    def refresh( self ):
+        """ Should be called when integration settings are changed. """
+        new_tzname = self._zm_manager.get_zm_tzname()
+        if new_tzname == self._zm_tzname:
+            return
+
+        logger.info( f'Refreshing ZoneMinder monitor timezone: {self._zm_tzname} -> {new_tzname}' )
+        self._poll_from_datetime = datetimeproxy.change_timezone(
+            original_datetime = self._poll_from_datetime,
+            new_tzname = new_tzname,
+        )
+        self._zm_tzname = new_tzname
+        return
+    
     async def do_work(self):
         current_poll_datetime = datetimeproxy.min()
 
@@ -162,7 +173,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
 
     def _get_zm_monitors(self) -> List[ ZmMonitor ]:
         monitor_list_age = datetimeproxy.now() - self._zm_monitor_timestamp
-        if monitor_list_age.seconds > self.MONITOR_RFEFRESH_INTERVAL_SECS:
+        if monitor_list_age.seconds > self.MONITOR_REFRESH_INTERVAL_SECS:
             self._zm_monitor_list = self._zm_manager.zm_client.monitors().list()
             self._zm_monitor_timestamp = datetimeproxy.now()
         return self._zm_monitor_list

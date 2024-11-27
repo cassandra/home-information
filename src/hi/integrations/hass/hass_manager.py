@@ -36,6 +36,7 @@ class HassManager( Singleton ):
         return self._hass_client
     
     def reload( self ):
+        """ Should be called when integration settings are changed. """
         if self._is_loading:
             logger.warning( 'HAss is already loading.' )
             return
