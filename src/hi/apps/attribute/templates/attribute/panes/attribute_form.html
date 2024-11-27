@@ -17,8 +17,8 @@
     
     {% if attribute_form.instance.value_type.is_file %}
     {% include "attribute/panes/attribute_form_file.html" %}
-    {% elif attribute_form.instance.value_type.is_timezone %}
-    {% include "attribute/panes/attribute_form_timezone.html" %}
+    {% elif attribute_form.instance.value_type.is_enum %}
+    {% include "attribute/panes/attribute_form_enum.html" %}
     {% else %}
     {% include "attribute/panes/attribute_form_text.html" %}
     {% endif %}

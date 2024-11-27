@@ -1,9 +1,15 @@
+from django.db import transaction
+from django.shortcuts import render
+from django.views.generic import View
+
 import hi.apps.common.antinode as antinode
 
 from hi.enums import ViewMode, ViewType
 from hi.hi_grid_view import HiGridView
 
 from .enums import ConfigPageType
+from .forms import SubsystemAttributeFormSet
+from .system_settings import SystemSettings
 
 
 class ConfigPageView( HiGridView ):
@@ -69,5 +75,50 @@ class ConfigSettingsView( ConfigPageView ):
 
     def get_template_context( self, request, *args, **kwargs ):
 
+        subsystem_list = SystemSettings().get_subsystems()
+
+        subsystem_attribute_formset_list = list()
+        for subsystem in subsystem_list:
+            subsystem_attribute_formset = SubsystemAttributeFormSet(
+                instance = subsystem,
+                prefix = f'subsystem-{subsystem.id}',
+                form_kwargs = {
+                    'show_as_editable': True,
+                },
+            )
+            subsystem_attribute_formset_list.append( subsystem_attribute_formset )
+            continue
+        
         return {
+            'subsystem_attribute_formset_list': subsystem_attribute_formset_list,
         }
+
+    def post( self, request, *args, **kwargs ):
+
+        subsystem_list = SystemSettings().get_subsystems()
+
+        all_valid = True
+        subsystem_attribute_formset_list = list()
+        for subsystem in subsystem_list:
+            subsystem_attribute_formset = SubsystemAttributeFormSet(
+                request.POST,
+                request.FILES,
+                instance = subsystem,
+                prefix = f'subsystem-{subsystem.id}',
+            )
+            if not subsystem_attribute_formset.is_valid():
+                all_valid = False
+            subsystem_attribute_formset_list.append( subsystem_attribute_formset )           
+            continue
+
+        if all_valid:
+            with transaction.atomic():
+                for subsystem_attribute_formset in subsystem_attribute_formset_list:
+                    subsystem_attribute_formset.save()
+                    continue
+
+        context = {
+            'subsystem_attribute_formset_list': subsystem_attribute_formset_list,
+        }
+        return render( request, 'config/panes/settings_form.html', context )
+        

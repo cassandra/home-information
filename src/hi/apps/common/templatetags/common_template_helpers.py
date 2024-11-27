@@ -9,6 +9,11 @@ from django.urls import reverse
 register = template.Library()
 
 
+@register.filter
+def get_item(dictionary, key):
+    return dictionary.get(key)
+
+
 @register.simple_tag
 def pagination_url( page_number, existing_urlencoded_params = None ):
 

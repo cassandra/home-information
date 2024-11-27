@@ -37,9 +37,10 @@ class ZmAttributeType( IntegrationAttributeType ):
     TIMEZONE = (
         'Timezone',
         '',
-        AttributeValueType.TIMEZONE,
+        AttributeValueType.ENUM,
         True,
         True,
+        'America/Chicago',
     )
     
 

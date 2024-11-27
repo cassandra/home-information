@@ -1,0 +1,18 @@
+<div id="hi-config-settings-form">
+  <div>
+    <form action="{% url 'config_settings' %}" method="post"
+	class="form" data-async="#hi-config-settings-form" data-mode="replace">
+      {% csrf_token %}
+      
+      {% for subsystem_attribute_formset in subsystem_attribute_formset_list %}
+      <h5>{{ subsystem_attribute_formset.instance.name }}</h5>
+      {% include "attribute/panes/attribute_form.html" with attribute_formset=subsystem_attribute_formset %}
+      {% endfor %}
+
+     <button id="hi-config-setting-button" type="submit" class="btn btn-info"
+	    name="action" value="update">
+      UPDATE
+    </button>     
+    </form>
+  </div>
+</div>

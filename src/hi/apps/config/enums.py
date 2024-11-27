@@ -1,3 +1,4 @@
+from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.common.enums import LabeledEnum
 
 
@@ -21,4 +22,52 @@ class ConfigPageType(LabeledEnum):
 
     def default(self):
         return ConfigPageType.SETTINGS
+
     
+class SubsystemType(LabeledEnum):
+
+    LOCALE     = ('Locale'     , '' )
+    DISPLAY    = ('Display'     , '' )
+
+    
+class Theme(LabeledEnum):
+
+    DEFAULT  = ( 'Default', '' )
+    
+
+class SubsystemAttributeType(LabeledEnum):
+
+    TIMEZONE = (
+        'Timezone',
+        'Timezone to use for display',
+        SubsystemType.LOCALE,
+        AttributeValueType.ENUM,
+        True,
+        True,
+        'America/Chicago',
+    )
+    THEME = (
+        'Theme',
+        'Overall look and feel of interfaces',
+        SubsystemType.DISPLAY,
+        AttributeValueType.ENUM,
+        True,
+        True,
+        str( Theme.default() ),
+    )
+    
+    def __init__( self,
+                  label           : str,
+                  description     : str,
+                  subsystem_type  : SubsystemType,
+                  value_type      : AttributeValueType,
+                  is_editable     : bool,
+                  is_required     : bool,
+                  initial_value   : str ):
+        super().__init__( label, description )
+        self.subsystem_type = subsystem_type
+        self.value_type = value_type
+        self.is_editable = is_editable
+        self.is_required = is_required
+        self.initial_value = initial_value
+        return

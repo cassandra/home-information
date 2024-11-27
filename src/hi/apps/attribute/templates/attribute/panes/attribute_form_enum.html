@@ -1,3 +1,4 @@
+{% load common_template_helpers %}
 <input type="hidden" id="{{ attribute_form.name.id_for_label }}"
        name="{{ attribute_form.name.html_name }}"
        value="{{ attribute_form.instance.name }}" />
@@ -5,13 +6,15 @@
   <div class="input-group-prepend" >
     <span class="input-group-text" >{{ attribute_form.instance.name }}</span>
   </div>
+  {% with ATTRIBUTE_ENUMS|get_item:attribute_form.instance.name as choices_list %}
   <select name="{{ attribute_form.value.html_name }}" id="{{ attribute_form.value.id_for_label }}">
-    {% for tzname in TIMEZONE_NAME_LIST %}
-    <option value="{{ tzname }}" {% if attribute_form.value.value == tzname %}selected="true"{% endif %}>
-      {{ tzname }}
+    {% for value, label in choices_list %}
+    <option value="{{ value }}" {% if attribute_form.value.value == value %}selected="true"{% endif %}>
+      {{ label }}
     </option>
     {% endfor %}
   </select>
+  {% endwith %}
 </div>
 
 {% if attribute_form.show_as_editable and attribute_form.instance.is_editable and attribute_form.instance.attribute_type.can_delete %}
