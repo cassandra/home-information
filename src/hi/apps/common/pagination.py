@@ -22,20 +22,33 @@ class Pagination:
     next_page_number      : bool  = None
     has_pages_before      : bool  = False
     has_pages_after       : bool  = False
+    base_url              : str   = ''
+    async_urls            : bool  = False
 
-        
-def compute_pagination_from_queryset( request : HttpRequest, query_set : QuerySet, page_size : int = 10 ):
+    
+def compute_pagination_from_queryset( request     : HttpRequest,
+                                      queryset    : QuerySet,
+                                      base_url    : str          = '',
+                                      page_size   : int          = 10,
+                                      async_urls  : bool         = False ):
     try:
         page_number = int(request.GET.get( 'page', '1' ))
     except ( ValueError, TypeError ):
         page_number = 1
-    item_count = query_set.count()
+    item_count = queryset.count()
     return compute_pagination( page_number = page_number,
                                page_size = page_size,
-                               item_count = item_count )
+                               item_count = item_count,
+                               base_url = base_url,
+                               async_urls = async_urls )
 
 
-def compute_pagination( page_number : int, page_size : int, item_count : int, paging_window : int = 2 ):
+def compute_pagination( page_number    : int,
+                        page_size      : int,
+                        item_count     : int,
+                        base_url       : str   = '',
+                        paging_window  : int   = 2,
+                        async_urls     : bool  = False ):
 
     pagination = Pagination(
         page_number = page_number,
@@ -43,6 +56,8 @@ def compute_pagination( page_number : int, page_size : int, item_count : int, pa
         item_count = item_count,
         page_number_list = [ 1 ],
         end_offset = item_count - 1,
+        base_url = base_url,
+        async_urls = async_urls,
     )
 
     if pagination.page_size < 1:

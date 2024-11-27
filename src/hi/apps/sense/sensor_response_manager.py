@@ -5,7 +5,6 @@ from typing import Dict, List
 
 from hi.apps.common.redis_client import get_redis_client
 from hi.apps.common.singleton import Singleton
-from hi.apps.entity.models import Entity
 from hi.integrations.core.integration_key import IntegrationKey
 
 from .models import Sensor
@@ -43,7 +42,7 @@ class SensorResponseManager( Singleton ):
     def __init_singleton__( self ):
         self._redis_client = get_redis_client()
         self._sensor_history_manager = SensorHistoryManager()
-        self._sensor_cache = TTLCache( maxsize = 1000, ttl = 3600 )
+        self._sensor_cache = TTLCache( maxsize = 1000, ttl = 300 )
         return
     
     async def add_latest_sensor_responses( self, sensor_response_list : List[ SensorResponse ] ):
@@ -123,34 +122,6 @@ class SensorResponseManager( Singleton ):
 
         return sensor_response_list_map
     
-    def get_entity_latest_sensor_responses( self, entity : Entity ) -> Dict[ Sensor, List[ SensorResponse ] ]:
-        """ Maps all sensors to the latest response, but possibly 'None' if not latest response """
-
-        entity_state_list = list( entity.states.all() )
-        entity_state_delegations = entity.entity_state_delegations.select_related('entity_state').all()
-        entity_state_list.extend([ x.entity_state for x in entity_state_delegations ])
-
-        sensor_list = list()
-        for entity_state in entity_state_list:
-            sensor_list.extend( entity_state.sensors.all() )
-            continue
-
-        list_cache_keys = [ self.to_sensor_response_list_cache_key( x.integration_key ) for x in sensor_list ]
-        
-        pipeline = self._redis_client.pipeline()
-        for list_cache_key in list_cache_keys:
-            pipeline.lrange( list_cache_key, 0, -1 )
-            continue
-        cached_list_list = pipeline.execute()
-
-        sensor_response_list_map = dict()
-        for sensor, cached_list in zip( sensor_list, cached_list_list ):
-            sensor_response_list = [ SensorResponse.from_string( x ) for x in cached_list ]
-            sensor_response_list_map[sensor] = sensor_response_list
-            continue
-
-        return sensor_response_list_map
-        
     def to_sensor_response_list_cache_key( self, integration_key : IntegrationKey ) -> str:
         return f'hi.sr.latest.{integration_key}' 
     

@@ -1,0 +1,56 @@
+{% load humanize %}
+{% load common_template_helpers %}
+{% if pagination.required or show_total_items %}
+<div class="my-4">
+  {% if pagination and show_total_items %}
+  <h4 class="mx-auto text-center">{{ pagination.item_count | intcomma }} Results</h4>
+  {% endif %}
+  {% if pagination.required %}
+  <nav aria-label="Race answers">
+    {% with params=request.GET.urlencode %}
+    <ul class="pagination pagination-lg justify-content-center">
+      {% if pagination.has_previous_page %}
+      <li class="page-item"><a class="page-link" href="{{ pagination.base_url }}?page={{ pagination.previous_page_number }}" {% if pagination.async_urls %}data-async="true"{%endif %} >
+	<span class="d-none d-sm-block" >&lt; Previous</span>
+	<span class="d-xs d-sm-none" >&lt;</span>
+      </a></li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link text-muted">
+	<span class="d-none d-sm-block" >&lt; Previous</span>
+	<span class="d-xs d-sm-none" >&lt;</span>
+      </span></li>
+      {% endif %}
+      
+      {% if pagination.has_pages_before %}
+      <li class="page-item"><a class="page-link" href="{{ pagination.base_url }}?page=1" {% if pagination.async_urls %}data-async="true"{%endif %} >&laquo;</a></li>
+      {% endif %}
+      
+      {% for page_number in pagination.page_number_list %}
+      {% if page_number == pagination.page_number %}
+      <li class="page-item active"><span class="page-link">{{ page_number }}</span></li>
+      {% else %}
+      <li class="page-item"><a class="page-link" href="{{ pagination.base_url }}{% pagination_url page_number params %}" {% if pagination.async_urls %}data-async="true"{%endif %} >{{ page_number }}</a></li>
+      {% endif %}
+      {% endfor %}
+      
+      {% if pagination.has_pages_after %}
+      <li class="page-item"><a class="page-link" href="{{ pagination.base_url }}?page={{ pagination.page_count }}" {% if pagination.async_urls %}data-async="true"{%endif %} >&raquo;</a></li>
+      {% endif %}
+      
+      {% if pagination.has_next_page %}
+      <li class="page-item"><a class="page-link" href="{{ pagination.base_url }}?page={{ pagination.next_page_number }}" {% if pagination.async_urls %}data-async="true"{%endif %} >
+	<span class="d-none d-sm-block" >Next &gt;</span>
+	<span class="d-xs d-sm-none" >&gt;</span>
+      </a></li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link text-muted">
+	<span class="d-none d-sm-block" >Next &gt;</span>
+	<span class="d-xs d-sm-none" >&gt;</span>
+      </span></li>
+      {% endif %}
+    </ul>
+    {% endwith %}
+  </nav>
+  {% endif %}
+</div>
+{% endif %}

@@ -15,20 +15,20 @@ class StatusDisplayLocationHelper:
         self._entity_state_type_priority_list = self._location_view_type.entity_state_type_priority_list
         return
 
-    def get_status_entity_state_map( self, entities  : Set[ Entity ] ) -> Dict[ Entity, EntityState ]:
+    def get_status_entity_states_map( self, entities  : Set[ Entity ] ) -> Dict[ Entity, EntityState ]:
         if self._location_view_type == LocationViewType.SUPPRESS:
             return dict()
         
-        entity_to_entity_state_data = dict()
+        entity_to_entity_states_data = dict()
         for entity in entities:
-            entity_state = self.get_status_entity_state( entity = entity )
-            if entity_state:
-                entity_to_entity_state_data[entity] = entity_state
+            entity_states = self.get_status_entity_states( entity = entity )
+            if entity_states:
+                entity_to_entity_states_data[entity] = entity_states
             continue
         
-        return entity_to_entity_state_data
+        return entity_to_entity_states_data
 
-    def get_status_entity_state( self, entity : Entity ) -> EntityState:
+    def get_status_entity_states( self, entity : Entity ) -> List[ EntityState ]:
 
         # Delegate entities include will include all their principal entity
         # states, though any direct state will take precendence
@@ -52,13 +52,7 @@ class StatusDisplayLocationHelper:
         )
         entity_state_list = entity_state_list_map.get( entity_state_type_for_status )
 
-        # TODO: It is possible to have multiple EntityState instances with
-        # the same EntityStateType, but it is rare in the cases where we
-        # care about showing dynamic status display changes.  If/when it
-        # matters, we would need to add some reconcilliation logic here for
-        # picking the entity state to use.
-        #
-        return entity_state_list[0]
+        return entity_state_list
 
     def _get_entity_state_type_for_status(
             self,

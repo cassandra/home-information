@@ -4,7 +4,7 @@ import json
 
 from hi.integrations.core.integration_key import IntegrationKey
 
-from .models import Sensor
+from .models import Sensor, SensorHistory
 
 
 @dataclass
@@ -27,6 +27,15 @@ class SensorResponse:
             'details': self.details,
         }
 
+    def to_sensor_history(self):
+        return SensorHistory(
+            sensor = self.sensor,
+            value = self.value[0:255],
+            response_datetime = self.timestamp,
+            details = self.details,
+        )
+        
+        
     @classmethod
     def from_string( self, sensor_reading_str : str ) -> 'SensorResponse':
         sensor_reading_dict = json.loads( sensor_reading_str )
@@ -36,3 +45,5 @@ class SensorResponse:
             timestamp = datetime.fromisoformat( sensor_reading_dict.get('timestamp') ),
             details = sensor_reading_dict.get('details'),
         )
+
+    

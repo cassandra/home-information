@@ -7,8 +7,7 @@ from hi.apps.entity.edit.forms import (
     EntityPositionForm,
     EntityAttributeUploadForm,
 )
-from hi.apps.sense.models import Sensor
-from hi.apps.sense.transient_models import SensorResponse
+from hi.apps.sense.models import Sensor, SensorHistory
 
 from .enums import EntityType
 from .models import Entity, EntityState
@@ -71,7 +70,7 @@ class EntityInfoData:
     """ All the data needed to render the Entity info modal. """
 
     entity_edit_data          : EntityEditData
-    sensor_response_list_map  : Dict[ Sensor, List[ SensorResponse ] ]
+    sensor_history_list_map   : Dict[ Sensor, List[ SensorHistory ] ]
     entity_state_list         : List[ EntityState ]
     principal_entity_list     : List[ Entity ]
 
@@ -82,7 +81,7 @@ class EntityInfoData:
     def to_template_context(self):
         context = {
             'entity': self.entity,
-            'sensor_response_list_map': self.sensor_response_list_map,
+            'sensor_history_list_map': self.sensor_history_list_map,
             'entity_state_list': self.entity_state_list,
             'principal_entity_list': self.principal_entity_list,
         }

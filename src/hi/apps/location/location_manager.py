@@ -209,11 +209,11 @@ class LocationManager(Singleton):
 
         if include_status_display_data:
             status_display_helper = StatusDisplayLocationHelper( location_view = location_view )
-            status_entity_state_map = status_display_helper.get_status_entity_state_map(
+            status_entity_states_map = status_display_helper.get_status_entity_states_map(
                 entities = displayed_entities,
             )
         else:
-            status_entity_state_map = dict()
+            status_entity_states_map = dict()
             
         return LocationViewData(
             location_view = location_view,
@@ -223,7 +223,7 @@ class LocationManager(Singleton):
             collection_paths = collection_paths,
             unpositioned_collections = unpositioned_collections,
             orphan_entities = orphan_entities,
-            status_entity_state_map = status_entity_state_map,
+            status_entity_states_map = status_entity_states_map,
         )
 
     def set_location_view_order( self, location_view_id_list  : List[int] ):

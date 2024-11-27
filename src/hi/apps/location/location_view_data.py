@@ -22,7 +22,7 @@ class LocationViewData:
     collection_paths          : List[ CollectionPath ]
     unpositioned_collections  : List[ Collection ]
     orphan_entities           : Set[ Entity ]
-    status_entity_state_map   : Dict[ Entity, EntityState ]
+    status_entity_states_map  : Dict[ Entity, List[ EntityState ]]
 
     def __post_init__(self):
         self._svg_item_factory = SvgItemFactory()
@@ -31,10 +31,11 @@ class LocationViewData:
     def svg_icon_items(self) -> Generator[ SvgIconItem, None, None ]:
 
         for entity_position in self.entity_positions:            
-            entity_state = self.status_entity_state_map.get( entity_position.entity )
-            css_class = ''
-            if entity_state:
-                css_class = entity_state.css_class
+            entity_states = self.status_entity_states_map.get( entity_position.entity )
+            if entity_states:
+                css_class = ' '.join([ x.css_class for x in entity_states ])
+            else:
+                css_class = ''
             svg_icon_item = self._svg_item_factory.create_svg_icon_item(
                 item = entity_position.entity,
                 position = entity_position,
@@ -55,10 +56,11 @@ class LocationViewData:
     def svg_path_items(self) -> Generator[ SvgPathItem, None, None ]:
 
         for entity_path in self.entity_paths:
-            entity_state = self.status_entity_state_map.get( entity_path.entity )
-            css_class = ''
-            if entity_state:
-                css_class = entity_state.css_class
+            entity_states = self.status_entity_states_map.get( entity_path.entity )
+            if entity_states:
+                css_class = ' '.join([ x.css_class for x in entity_states ])
+            else:
+                css_class = ''
             svg_path_item = self._svg_item_factory.create_svg_path_item(
                 item = entity_path.entity,
                 path = entity_path,

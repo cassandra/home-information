@@ -8,13 +8,9 @@
 
 <h5>Sensor Responses</h5>
 <ul>
-  {% for sensor, sensor_response_list in sensor_response_list_map.items %}
+  {% for sensor, sensor_history_list in sensor_history_list_map.items %}
   <li>Sensor: {{ sensor.name }}
-    <ul>
-      {% for sensor_response in sensor_response_list %}
-      <li>Response: {{ sensor_response.value }} [{{ sensor_response.timestamp }}]</li>
-      {% endfor %}
-    </ul>
+    {% include "sense/panes/sensor_history_list.html" with sensor_history_list=sensor_history_list show_all_link=True %}
   </li>
   {% empty %}
   <div><em>No sensors</em></div>
