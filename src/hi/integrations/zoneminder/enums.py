@@ -34,6 +34,13 @@ class ZmAttributeType( IntegrationAttributeType ):
         True,
         True,
     )
+    TIMEZONE = (
+        'Timezone',
+        '',
+        AttributeValueType.TIMEZONE,
+        True,
+        True,
+    )
     
 
 class ZmMonitorState(LabeledEnum):

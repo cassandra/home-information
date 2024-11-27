@@ -16,7 +16,7 @@ from hi.apps.model_helper import HiModelHelper
 
 from hi.integrations.core.exceptions import IntegrationAttributeError
 from hi.integrations.core.integration_key import IntegrationKey
-from hi.integrations.core.models import Integration
+from hi.integrations.core.models import Integration, IntegrationAttribute
 
 from .enums import (
     ZmAttributeType,
@@ -87,7 +87,7 @@ class ZoneMinderManager( Singleton ):
         }
         
         attribute_dict = zm_integration.attributes_by_integration_key
-        for zm_attr_type in ZmAttributeType:
+        for zm_attr_type in attr_to_api_option_key.keys():
             integration_key = IntegrationKey(
                 integration_id = zm_integration.integration_id,
                 integration_name = str(zm_attr_type),
@@ -268,3 +268,17 @@ class ZoneMinderManager( Singleton ):
             integration_name = f'{sensor_prefix}.{zm_monitor_id}',
         )
     
+    def get_zm_tzname(self) -> str:
+        try:
+            zm_integration = Integration.objects.get( integration_id = ZmMetaData.integration_id )
+            integration_attribute = IntegrationAttribute.objects.get(
+                integration = zm_integration,
+                name = ZmAttributeType.TIMEZONE.label,
+            )
+            return integration_attribute.value
+        except Integration.DoesNotExist:
+            logger.error( 'ZoneMinder integration is not implemented.' )
+        except IntegrationAttribute.DoesNotExist:
+            logger.error( 'ZoneMinder timezone not found.' )
+
+        return 'UTC'

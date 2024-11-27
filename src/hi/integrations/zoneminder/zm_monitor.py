@@ -46,13 +46,19 @@ class ZoneMinderMonitor( PeriodicMonitor ):
         # important that we have this in the same TZ as the ZoneMinder
         # server and also pass in the TZ when filtering events.
         #
-        self._poll_from_datetime = datetimeproxy.now( self.ZONEMINDER_SERVER_TIMEZONE )
+        # TODO: If the user changes the ZM timezone attribute value, this
+        # process needs to be restarted.
+        #
+        self._zm_tzname = self._zm_manager.get_zm_tzname()
+        self._poll_from_datetime = datetimeproxy.now( self._zm_tzname )
         return
 
     async def do_work(self):
+        current_poll_datetime = datetimeproxy.min()
+
         options = {
             'from': self._poll_from_datetime.isoformat(),  # This "from" only looks at event start time
-            'tz': self.ZONEMINDER_SERVER_TIMEZONE,
+            'tz': self._zm_tzname,
         }
         response = self._zm_manager.zm_client.events( options )
         events = response.list()
@@ -81,7 +87,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
             if self.TRACE:
                 logger.debug( f'ZM Api Event: {zm_api_event.get()}' )
             zm_event = ZmEvent( zm_api_event = zm_api_event,
-                                zm_tzname = self.ZONEMINDER_SERVER_TIMEZONE )
+                                zm_tzname = self._zm_tzname )
 
             if zm_event.event_id in self._fully_processed_event_ids:
                 continue
@@ -112,14 +118,14 @@ class ZoneMinderMonitor( PeriodicMonitor ):
             self._fully_processed_event_ids[zm_event.event_id] = True
             continue
 
-        # If there are no events for a monitor, we want to emit the sensor
-        # response of it being idle.
+        # If there are no events for a monitor, we still want to emit the
+        # sensor response of it being idle.
         #
         for zm_monitor in self._get_zm_monitors():
             if zm_monitor.id() not in zm_monitor_ids_seen:
                 idle_sensor_response = self._create_idle_sensor_response(
                     zm_monitor = zm_monitor,
-                    timestamp = self._poll_from_datetime,
+                    timestamp = current_poll_datetime,
                 )
                 sensor_response_map[idle_sensor_response.integration_key] = idle_sensor_response
             continue
