@@ -85,7 +85,7 @@ class ExceptionMiddleware(object):
         if isinstance(response, HttpResponseNotAllowed):
             return views.method_not_allowed_response(request)
         if isinstance(response, HttpResponseServerError):
-            logger.warning( f'Internal error in middleware' )
+            logger.warning( 'Internal error in middleware' )
             return views.internal_error_response(request)
         return response
 

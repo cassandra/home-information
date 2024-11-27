@@ -47,14 +47,19 @@ class IntegrationHelperMixin:
         """
 
         new_attribute_types = set()
-        existing_attribute_names = set([ x.name for x in integration.attributes.all() ])
+        existing_attribute_integration_keys = set([ x.integration_key
+                                                    for x in integration.attributes.all() ])
         
         AttributeType = integration_metadata.attribute_type
         for attribute_type in AttributeType:
-            if attribute_type.label not in existing_attribute_names:
+            integration_key = IntegrationKey(
+                integration_id = integration.integration_id,
+                integration_name = str(attribute_type),
+            )
+            if integration_key not in existing_attribute_integration_keys:
                 new_attribute_types.add( attribute_type )
             continue
-
+        
         if new_attribute_types:
             with transaction.atomic():
                 for attribute_type in new_attribute_types:
@@ -77,7 +82,7 @@ class IntegrationHelperMixin:
             name = attribute_type.label,
             value = attribute_type.value_type.initial_value,
             value_type_str = str(attribute_type.value_type),
-            integration_key = integration_key,
+            integration_key_str = str(integration_key),
             attribute_type_str = AttributeType.PREDEFINED,
             is_editable = attribute_type.is_editable,
             is_required = attribute_type.is_required,

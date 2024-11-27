@@ -81,10 +81,10 @@ class AttributeForm( forms.ModelForm ):
             instance.is_editable = True
             instance.is_required = False
 
-        if self.cleaned_data.get('secret'):
-            instance.value_type_str = str( AttributeValueType.SECRET )
-        else:
-            instance.value_type_str = str(AttributeValueType.TEXT)
+            if self.cleaned_data.get('secret'):
+                instance.value_type_str = str( AttributeValueType.SECRET )
+            else:
+                instance.value_type_str = str(AttributeValueType.TEXT)
 
         if commit:
             instance.save()

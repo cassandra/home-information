@@ -271,13 +271,14 @@ class ZoneMinderManager( Singleton ):
     def get_zm_tzname(self) -> str:
         try:
             zm_integration = Integration.objects.get( integration_id = ZmMetaData.integration_id )
-            integration_attribute = IntegrationAttribute.objects.get(
+            integration_attribute = IntegrationAttribute.objects.filter(
                 integration = zm_integration,
                 name = ZmAttributeType.TIMEZONE.label,
-            )
-            return integration_attribute.value
-        except Integration.DoesNotExist:
+            ).first()
+            if integration_attribute:
+                return integration_attribute.value
             logger.error( 'ZoneMinder integration is not implemented.' )
+                
         except IntegrationAttribute.DoesNotExist:
             logger.error( 'ZoneMinder timezone not found.' )
 

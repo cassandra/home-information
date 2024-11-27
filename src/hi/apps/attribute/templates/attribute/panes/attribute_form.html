@@ -14,9 +14,11 @@
     {% endif %}
 
     {% if attribute_form.instance.pk %}
-
+    
     {% if attribute_form.instance.value_type.is_file %}
     {% include "attribute/panes/attribute_form_file.html" %}
+    {% elif attribute_form.instance.value_type.is_timezone %}
+    {% include "attribute/panes/attribute_form_timezone.html" %}
     {% else %}
     {% include "attribute/panes/attribute_form_text.html" %}
     {% endif %}
