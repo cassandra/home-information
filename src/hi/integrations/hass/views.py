@@ -1,3 +1,5 @@
+import json
+
 from django.core.exceptions import BadRequest
 from django.db import transaction
 
@@ -147,4 +149,18 @@ class HassSyncView( HiModalView ):
         context = {
             'processing_result': processing_result,
         }
+        return self.modal_response( request, context )
+
+    
+class SensorResponseDetailsView( HiModalView ):
+
+    def get_template_name( self ) -> str:
+        return 'hass/modals/sensor_response_details.html'
+
+    def get(self, request, *args, **kwargs):
+        details_str = kwargs.get( 'details_str' )
+
+        # TODO: No current HAss SensorResponse instances add any viewable details.
+        details_dict = json.loads( details_str )
+        context = details_dict
         return self.modal_response( request, context )

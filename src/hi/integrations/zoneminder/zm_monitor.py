@@ -1,6 +1,5 @@
 from cachetools import TTLCache
 from datetime import datetime
-import json
 import logging
 from pyzm.helpers.Monitor import Monitor as ZmMonitor
 from typing import List
@@ -12,6 +11,7 @@ from hi.apps.sense.sensor_history_manager import SensorHistoryManager
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
 from hi.apps.sense.transient_models import SensorResponse
 
+from .sensor_response_helper import SensorResponseHelper
 from .zm_models import ZmEvent
 from .zm_manager import ZoneMinderManager
 
@@ -162,16 +162,6 @@ class ZoneMinderMonitor( PeriodicMonitor ):
         return self._zm_monitor_list
         
     def _create_movement_active_sensor_response( self, zm_event : ZmEvent ):
-        
-        event_details = {
-            'event_id': zm_event.event_id,
-            'notes': zm_event.notes,
-            'duration_secs': zm_event.duration_secs,
-            'total_frames': zm_event.total_frame_count,
-            'alarmed_frames': zm_event.alarmed_frame_count,
-            'score': zm_event.score,
-        }
-        
         return SensorResponse(
             integration_key = self._zm_manager._sensor_to_integration_key(
                 sensor_prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
@@ -179,7 +169,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
             ),
             value = str(SensorValue.MOVEMENT_ACTIVE),
             timestamp = zm_event.start_datetime,
-            details = json.dumps( event_details ),
+            details = SensorResponseHelper.event_to_details( zm_event = zm_event ),
         )
 
     def _create_movement_idle_sensor_response( self, zm_event : ZmEvent ):

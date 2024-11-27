@@ -1,0 +1,35 @@
+{% extends "modals/action_ok.html" %}
+
+{% block title_text %}
+ZoneMinder Event Details
+{% endblock %}
+
+{% block body %}
+<div class="" >
+  RECORDED
+</div>
+
+<div>
+  <img class="img-fluid" src="https://bordeaux:8443/zm/cgi-bin/nph-zms?mode=jpeg&ampscale=100&amp;rate=100&amp;maxfps=30&amp;replay=single&amp;source=event&amp;event={{ zm_event_details.event_id }}" alt="ZoneMinder Camera Event {{ zm_event_details.event_id }}">
+</div>
+
+<div>
+  Id: {{ zm_event_details.event_id }}
+</div>
+<div>
+  Notes: {{ zm_event_details.notes }}
+</div>
+<div>
+  Duration_Secs: {{ zm_event_details.duration_secs }}
+</div>
+<div>
+  Total_Frames: {{ zm_event_details.total_frames }}
+</div>
+<div>
+  Alarmed_Frames: {{ zm_event_details.alarmed_frames }}
+</div>
+<div>
+  Scores: {{ zm_event_details.score.total }} / {{ zm_event_details.score.average }} / {{ zm_event_details.score.max }}
+</div>
+
+{% endblock %}

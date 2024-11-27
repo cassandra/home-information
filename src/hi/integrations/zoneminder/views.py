@@ -4,13 +4,17 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.views.generic import View
 
+import hi.apps.common.antinode as antinode
+
 from hi.integrations.core.forms import IntegrationAttributeFormSet
 from hi.integrations.core.helpers import IntegrationHelperMixin
 from hi.integrations.core.views import IntegrationPageView
 
 from hi.hi_async_view import HiModalView
 
+from .sensor_response_helper import SensorResponseHelper
 from .zm_manager import ZoneMinderManager
+from .zm_models import ZmEventDetails
 from .zm_metadata import ZmMetaData
 
 
@@ -147,4 +151,24 @@ class ZmSyncView( HiModalView ):
             'processing_result': processing_result,
         }
         return self.modal_response( request, context )
+
     
+class SensorResponseDetailsView( View ):
+
+    def get(self, request, *args, **kwargs):
+        details_str = kwargs.get( 'details_str' )
+        zm_details = SensorResponseHelper.from_details( details = details_str )
+
+        if isinstance( zm_details, ZmEventDetails ):
+            context = {
+                'zm_event_details': zm_details,
+            }
+            template_name = 'zoneminder/modals/zm_event_details.html'
+        else:
+            raise BadRequest( f'Unknown ZmDetails: {details_str}' )
+
+        return antinode.modal_from_template(
+            request = request,
+            template_name = template_name,
+            context = context,
+        )

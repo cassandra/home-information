@@ -2,7 +2,6 @@ import logging
 
 from django.http import HttpRequest, HttpResponse
 
-from hi.integrations.core.integration_factory import IntegrationFactory
 from hi.integrations.core.integration_gateway import IntegrationGateway
 from hi.integrations.core.transient_models import IntegrationMetaData
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
@@ -28,5 +27,10 @@ class HassGateway( IntegrationGateway ):
     def disable_modal_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
         return views.HassDisableView().get( request )
     
-    
-IntegrationFactory().register( HassGateway() )
+    def sensor_response_details_view( self,
+                                      request      : HttpRequest,
+                                      details_str  : str ) -> HttpResponse:
+        return views.SensorResponseDetailsView().get(
+            request,
+            details_str = details_str,
+        )

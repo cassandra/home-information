@@ -1,7 +1,7 @@
 from django.core.exceptions import BadRequest
 from django.http import Http404
 
-from hi.apps.sense.models import Sensor
+from hi.apps.sense.models import Sensor, SensorHistory
 
 
 class SenseViewMixin:

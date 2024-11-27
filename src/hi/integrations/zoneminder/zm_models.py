@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import hi.apps.common.datetimeproxy as datetimeproxy
 
 from pyzm.helpers.Event import Event as ZmApiEvent
@@ -90,5 +92,19 @@ class ZmEvent:
         if not zm_response_time:
             return None
         return datetimeproxy.iso_naive_to_datetime_utc( zm_response_time, tzname )
-    
 
+
+@dataclass
+class ZmDetails:
+    """ Base class for all SensorResponse detail objects """
+    pass
+
+
+@dataclass
+class ZmEventDetails( ZmDetails ):
+    event_id        : int
+    notes           : str
+    duration_secs   : int
+    total_frames    : int
+    alarmed_frames  : int
+    score           : int

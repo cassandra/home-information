@@ -35,7 +35,6 @@ class SensorResponse:
             details = self.details,
         )
         
-        
     @classmethod
     def from_string( self, sensor_reading_str : str ) -> 'SensorResponse':
         sensor_reading_dict = json.loads( sensor_reading_str )

@@ -23,7 +23,7 @@ class SensorHistoryManager( Singleton ):
         sensor_history_list = list()
         for sensor_response in sensor_response_list:
             if sensor_response.sensor and sensor_response.sensor.persist_history:
-                sensor_history_list.append( sensor_response.to_sensor_history )
+                sensor_history_list.append( sensor_response.to_sensor_history() )
             continue
 
         await self._bulk_create_sensor_history_async( sensor_history_list )

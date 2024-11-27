@@ -1,7 +1,6 @@
 import logging
 
 from django.urls import reverse
-from django.views.generic import View
 
 from hi.hi_async_view import HiModalView
 from hi.apps.common.pagination import compute_pagination_from_queryset
@@ -38,9 +37,3 @@ class SensorHistoryView( HiModalView, SenseViewMixin ):
             'pagination': pagination,
         }
         return self.modal_response( request, context )
-
-        
-class SensorHistoryDetailsView( View, SenseViewMixin ):
-
-    def get(self, request, *args, **kwargs):
-        pass

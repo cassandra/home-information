@@ -3,7 +3,7 @@
   <li>
     Response: {{ sensor_history.value }} [{{ sensor_history.response_datetime }}]
     {% if sensor_history.details %}
-    <a href="{% url 'sense_sensor_history_details' id=sensor_history.id %}"
+    <a href="{% url 'integration_sensor_response_details' sensor_history_id=sensor_history.id %}"
        data-async="true">Details</a>
     {% endif %}
   </li>
