@@ -3,6 +3,7 @@ from pyzm.api import ZMApi
 from pyzm.helpers.Monitor import Monitor as ZmMonitor
 from pyzm.helpers.globals import logger as pyzm_logger
 from typing import Dict
+from urllib.parse import urlparse
 
 from django.db import transaction
 
@@ -288,3 +289,10 @@ class ZoneMinderManager( Singleton ):
             logger.error( 'ZoneMinder timezone not found.' )
 
         return 'UTC'
+
+    def get_video_stream_url( self, monitor_id : int ):
+        return f'{self.zm_client.portal_url}/cgi-bin/nph-zms?mode=jpeg&scale=100&rate=100&maxfps=30&monitor={monitor_id}'
+
+    def get_event_video_stream_url( self, event_id : int ):
+        return f'{self.zm_client.portal_url}/cgi-bin/nph-zms?mode=jpeg&scale=100&rate=100&maxfps=30&replay=single&source=event&event={event_id}'
+

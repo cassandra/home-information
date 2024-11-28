@@ -102,9 +102,12 @@ class ZmResponseDetails:
 
 @dataclass
 class ZmEventDetails( ZmResponseDetails ):
-    event_id        : int
-    notes           : str
-    duration_secs   : int
-    total_frames    : int
-    alarmed_frames  : int
-    score           : int
+    event_id          : int
+    notes             : str
+    duration_secs     : int
+    total_frames      : int
+    alarmed_frames    : int
+    score             : int
+    video_stream_url  : str
+    start_datetime    : str
+    

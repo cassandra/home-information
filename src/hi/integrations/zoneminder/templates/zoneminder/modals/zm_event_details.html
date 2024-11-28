@@ -10,9 +10,8 @@ ZoneMinder Event Details
 </div>
 
 <div>
-  <img class="img-fluid" src="https://bordeaux:8443/zm/cgi-bin/nph-zms?mode=jpeg&ampscale=100&amp;rate=100&amp;maxfps=30&amp;replay=single&amp;source=event&amp;event={{ zm_event_details.event_id }}" alt="ZoneMinder Camera Event {{ zm_event_details.event_id }}">
+  <img class="img-fluid" src="{{ zm_event_details.video_stream_url }}" alt="ZoneMinder Camera Event {{ zm_event_details.event_id }}">
 </div>
-
 <div>
   Id: {{ zm_event_details.event_id }}
 </div>
@@ -20,7 +19,7 @@ ZoneMinder Event Details
   Notes: {{ zm_event_details.notes }}
 </div>
 <div>
-  Duration_Secs: {{ zm_event_details.duration_secs }}
+  Time: {{ zm_event_details.duration_secs }} secs. starting {{ zm_event_details.start_datetime }}
 </div>
 <div>
   Total_Frames: {{ zm_event_details.total_frames }}
