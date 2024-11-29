@@ -278,6 +278,18 @@ class HassConverter:
         messages = list()
         with transaction.atomic():
 
+            entity_name = cls.hass_device_to_entity_name( hass_device )
+            entity_type = cls.hass_device_to_entity_type( hass_device )
+            if entity.name != entity_name:
+                messages.append(f'Name changed for {entity}. Setting to "{entity_name}"')
+                entity.name = entity_name
+                entity.save()
+
+            if entity.entity_type != entity_type:
+                messages.append(f'Type changed for {entity}. Setting to "{entity_type}"')
+                entity.entity_type = entity_type
+                entity.save()
+            
             insteon_address = cls.hass_device_to_insteon_address( hass_device )
             try:
                 attribute = entity.attributes.get( name = cls.INSTEON_ADDRESS_ATTR_NAME )
@@ -286,7 +298,7 @@ class HassConverter:
 
             if attribute and insteon_address:
                 if attribute.value == insteon_address:
-                    messages.append(f'Insteon address unchanged for {entity}. Existing is {insteon_address}')
+                    pass
                     
                 else:
                     messages.append( f'Insteon address changed for {entity}. Setting to {insteon_address}' )
@@ -320,10 +332,13 @@ class HassConverter:
                 entiity_sensors.update({ x.integration_key: x for x in entity_state.sensors.all() })
                 entiity_controllers.update({ x.integration_key: x for x in entity_state.controllers.all() })
                 continue
-            
+
+            seen_state_integration_keys = set()
             for hass_state in hass_device.hass_state_list:
                 
                 state_integration_key = cls.hass_state_to_integration_key( hass_state = hass_state )
+                seen_state_integration_keys.add( state_integration_key )
+                
                 sensor = entiity_sensors.get( state_integration_key )
                 controller = entiity_controllers.get( state_integration_key )
 
@@ -335,11 +350,23 @@ class HassConverter:
                         entity = entity,
                         integration_key = state_integration_key,
                     )
-                else:
-                    messages.append(f'Existing sensors/controllers found for {entity}. Skipping {hass_state}')
                     
                 continue
-            
+
+            for integration_key, sensor in entiity_sensors.items():
+                if integration_key not in seen_state_integration_keys:
+                    messages.append(f'Removing sensor {sensor} from {entity}' )
+                    sensor.delete()
+                continue
+
+            for integration_key, controller in entiity_controllers.items():
+                if integration_key not in seen_state_integration_keys:
+                    messages.append(f'Removing controller {controller} from {entity}' )
+                    controller.delete()
+                continue
+
+        if not messages:
+            messages.append( f'No changes found for {entity}.' )
         return messages
     
     @classmethod
