@@ -66,7 +66,6 @@ class ZoneMinderMonitor( PeriodicMonitor ):
     
     async def do_work(self):
         current_poll_datetime = datetimeproxy.min()
-
         options = {
             'from': self._poll_from_datetime.isoformat(),  # This "from" only looks at event start time
             'tz': self._zm_tzname,
@@ -128,11 +127,24 @@ class ZoneMinderMonitor( PeriodicMonitor ):
             sensor_response_map[idle_sensor_response.integration_key] = idle_sensor_response
             self._fully_processed_event_ids[zm_event.event_id] = True
             continue
-
+        
         # If there are no events for a monitor, we still want to emit the
         # sensor response of it being idle.
         #
         for zm_monitor in self._get_zm_monitors():
+
+            video_stream_sensor_response = self._create_video_stream_sensor_response(
+                zm_monitor = zm_monitor,
+                timestamp = current_poll_datetime,
+            )
+            sensor_response_map[video_stream_sensor_response.integration_key] = video_stream_sensor_response
+            
+            function_sensor_response = self._create_monitor_function_sensor_response(
+                zm_monitor = zm_monitor,
+                timestamp = current_poll_datetime,
+            )
+            sensor_response_map[function_sensor_response.integration_key] = function_sensor_response
+            
             if zm_monitor.id() not in zm_monitor_ids_seen:
                 idle_sensor_response = self._create_idle_sensor_response(
                     zm_monitor = zm_monitor,
@@ -140,7 +152,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
                 )
                 sensor_response_map[idle_sensor_response.integration_key] = idle_sensor_response
             continue
-
+ 
         await self._sensor_response_manager.update_with_latest_sensor_responses(
             sensor_response_map = sensor_response_map,
         )
@@ -173,7 +185,8 @@ class ZoneMinderMonitor( PeriodicMonitor ):
 
     def _get_zm_monitors(self) -> List[ ZmMonitor ]:
         monitor_list_age = datetimeproxy.now() - self._zm_monitor_timestamp
-        if monitor_list_age.seconds > self.MONITOR_REFRESH_INTERVAL_SECS:
+        if (( not self._zm_monitor_list )
+            or ( monitor_list_age.seconds > self.MONITOR_REFRESH_INTERVAL_SECS )):
             self._zm_monitor_list = self._zm_manager.zm_client.monitors().list()
             self._zm_monitor_timestamp = datetimeproxy.now()
         return self._zm_monitor_list
@@ -206,6 +219,26 @@ class ZoneMinderMonitor( PeriodicMonitor ):
                 zm_monitor_id = zm_monitor.id(),
             ),
             value = str(SensorValue.MOVEMENT_IDLE),
+            timestamp = timestamp,
+        )
+
+    def _create_video_stream_sensor_response( self, zm_monitor : ZmMonitor, timestamp : datetime ):
+        return SensorResponse(
+            integration_key = self._zm_manager._sensor_to_integration_key(
+                sensor_prefix = self._zm_manager.VIDEO_STREAM_SENSOR_PREFIX,
+                zm_monitor_id = zm_monitor.id(),
+            ),
+            value = self._zm_manager.get_video_stream_url( monitor_id = zm_monitor.id() ),
+            timestamp = timestamp,
+        )
+
+    def _create_monitor_function_sensor_response( self, zm_monitor : ZmMonitor, timestamp : datetime ):
+        return SensorResponse(
+            integration_key = self._zm_manager._sensor_to_integration_key(
+                sensor_prefix = self._zm_manager.MONITOR_FUNCTION_SENSOR_PREFIX,
+                zm_monitor_id = zm_monitor.id(),
+            ),
+            value = str( zm_monitor.function() ),
             timestamp = timestamp,
         )
     

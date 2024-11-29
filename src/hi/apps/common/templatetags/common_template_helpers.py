@@ -4,6 +4,7 @@ import urllib
 from django import template
 from django.conf import settings
 from django.template import engines
+from django.template.loader import get_template
 from django.urls import reverse
 
 register = template.Library()
@@ -86,7 +87,22 @@ def include_media_template( context, file_path ):
         file_content = file.read()
 
     template_engine = engines['django']
-    template_obj = template_engine.from_string(file_content)
+    template_obj = template_engine.from_string( file_content )
 
     context_dict = context.flatten()
-    return template_obj.render(context_dict)
+    return template_obj.render( context_dict )
+
+
+@register.simple_tag( takes_context = True )
+def include_with_fallback( context, template_name : str, fallback_name : str ):
+    """
+    Use the specified template_name and falls back to fallback_name if the
+    first template does not exist.
+    """
+    try:
+        template_obj = get_template( template_name )
+    except Exception:
+        template_obj = get_template( fallback_name )
+    
+    context_dict = context.flatten()
+    return template_obj.render( context_dict )

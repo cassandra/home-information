@@ -44,7 +44,7 @@ class ZmAttributeType( IntegrationAttributeType ):
     )
     
 
-class ZmMonitorState(LabeledEnum):
+class ZmMonitorFunction(LabeledEnum):
 
     NONE      = ( 'None', '' )
     MONITOR   = ( 'Monitor', '' )

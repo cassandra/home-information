@@ -3,7 +3,6 @@ from pyzm.api import ZMApi
 from pyzm.helpers.Monitor import Monitor as ZmMonitor
 from pyzm.helpers.globals import logger as pyzm_logger
 from typing import Dict
-from urllib.parse import urlparse
 
 from django.db import transaction
 
@@ -21,7 +20,7 @@ from hi.integrations.core.models import Integration, IntegrationAttribute
 
 from .enums import (
     ZmAttributeType,
-    ZmMonitorState,
+    ZmMonitorFunction,
 )
 from .zm_metadata import ZmMetaData
 
@@ -38,7 +37,7 @@ class ZoneMinderManager( Singleton ):
 
     VIDEO_STREAM_SENSOR_PREFIX = 'monitor.video_stream'
     MOVEMENT_SENSOR_PREFIX = 'monitor.motion'
-    MONITOR_STATE_SENSOR_PREFIX = 'monitor.state'
+    MONITOR_FUNCTION_SENSOR_PREFIX = 'monitor.function'
     
     SYNCHRONIZATION_LOCK_NAME = 'zm_integration_sync'
 
@@ -230,11 +229,11 @@ class ZoneMinderManager( Singleton ):
             HiModelHelper.create_discrete_controller(
                 entity = entity,
                 integration_key = self._sensor_to_integration_key(
-                    sensor_prefix = self.MONITOR_STATE_SENSOR_PREFIX,
+                    sensor_prefix = self.MONITOR_FUNCTION_SENSOR_PREFIX,
                     zm_monitor_id = zm_monitor.id(),
                 ),
-                name = f'{entity.name} State',
-                value_list = [ str(x) for x in ZmMonitorState ],
+                name = f'{entity.name} Function',
+                value_list = [ str(x) for x in ZmMonitorFunction ],
             )
         result.message_list.append( f'Create new camera entity: {entity}' )
         return

@@ -1,4 +1,5 @@
 {% extends "modals/action_done.html" %}
+{% load common_template_helpers %}
 
 {% block title_text %}
 {{ entity.name }}
@@ -6,7 +7,18 @@
 
 {% block body %}
 
-<h5>Sensor Responses</h5>
+<h5>Latest Sensor Responses</h5>
+<ul>
+  {% for sensor, sensor_response in latest_sensor_response_map.items %}
+  <li>Sensor: {{ sensor.name }}
+    {% include_with_fallback sensor_response.sensor.entity_state.entity_state_type.value_template_name "entity/panes/sensor_value_default.html" %}
+  </li>
+  {% empty %}
+  <div><em>No sensors</em></div>
+  {% endfor %}
+</ul>
+
+<h5>Sensor History</h5>
 <ul>
   {% for sensor, sensor_history_list in sensor_history_list_map.items %}
   <li>Sensor: {{ sensor.name }}
@@ -25,8 +37,6 @@
   <em>No principals</em>
   {% endfor %}
 </ul>
-
-{% include "entity/panes/entity_state_info_list.html" with entity_state_list=entity_state_list title='States'%}
 
 <div>
   {% include "entity/edit/panes/entity_edit.html" %}

@@ -36,6 +36,16 @@ class SensorResponse:
         )
         
     @classmethod
+    def from_sensor_history( self, sensor_history : SensorHistory ) -> 'SensorResponse':
+        return SensorResponse(
+            integration_key = sensor_history.sensor.integration_key,
+            value = sensor_history.value,
+            timestamp = sensor_history.response_datetime,
+            sensor = sensor_history.sensor,
+            details = sensor_history.details,
+        )
+        
+    @classmethod
     def from_string( self, sensor_reading_str : str ) -> 'SensorResponse':
         sensor_reading_dict = json.loads( sensor_reading_str )
         return SensorResponse(
