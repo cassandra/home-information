@@ -8,6 +8,7 @@
   {% if attribute_form.instance.value_type.is_secret %}
   <input type="password"
          id="{{ attribute_form.value.id_for_label }}"
+	 {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %}
          name="{{ attribute_form.value.html_name }}"
          value="{{ attribute_form.value.value|default_if_none:'' }}">
   <span>

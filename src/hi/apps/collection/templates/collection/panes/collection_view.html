@@ -1,13 +1,13 @@
-<div id="hi-collection-view-main" class="hi-collection-view draggable-container"">
+<div id="hi-collection-view-main" class="hi-collection-view draggable-container">
   <h5><sub>COLLECTION:</sub> {{ collection_data.collection.name }}</h5>
 
-  {% for entity_info_data in collection_data.entity_info_data_list %}
-  {% with entity=entity_info_data.entity %}
-  <div id="{{ entity.html_id }}" 
-       class="{% if request.is_editing %}draggable{% endif %}"
-       {% if request.is_editing %}draggable="true"{% endif %}
-        >
-    <div class="d-flex justify-content-start">
+  <div class="row">
+    {% for entity_info_data in collection_data.entity_info_data_list %}
+    {% with entity=entity_info_data.entity %}
+    <div id="{{ entity.html_id }}" 
+	 class="col-4 {% if request.is_editing %}draggable{% endif %}"
+	 {% if request.is_editing %}draggable="true"{% endif %}
+    >
       <div>
 	{% if request.is_editing %}
 	<a href="{% url 'entity_details' entity_id=entity.id %}"
@@ -35,9 +35,9 @@
 	</ul>
       </div>
     </div>
+    {% endwith %}
+    {% empty %}
+    <div><em>No entities in collection.</em></div>
+    {% endfor %}
   </div>
-  {% endwith %}
-  {% empty %}
-  <div><em>No entities in collection.</em></div>
-  {% endfor %}
 </div>

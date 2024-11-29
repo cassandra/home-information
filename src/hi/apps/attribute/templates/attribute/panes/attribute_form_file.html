@@ -11,7 +11,7 @@
   </div>
   {% include "attribute/panes/attribute_form_field_value.html" %}
 
-  {% if attribute_form.show_as_editable and attribute_form.instance.is_editable %}
+  {% if attribute_form.show_as_editable and attribute_form.instance.is_editable and attribute_form.instance.attribute_type.can_delete %}
   <div class="">
     {{ attribute_form.DELETE }} Delete
   </div>

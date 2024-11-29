@@ -46,7 +46,7 @@ class EntityEditView( View, EntityViewMixin ):
             status_code = 200
         else:
             status_code = 400
-
+            
         entity_edit_data = EntityEditData(
             entity = entity,
             entity_form = entity_form,

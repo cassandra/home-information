@@ -7,7 +7,10 @@
     <span class="input-group-text" >{{ attribute_form.instance.name }}</span>
   </div>
   {% with ATTRIBUTE_ENUMS|get_item:attribute_form.instance.name as choices_list %}
-  <select name="{{ attribute_form.value.html_name }}" id="{{ attribute_form.value.id_for_label }}">
+  <select 
+      id="{{ attribute_form.value.id_for_label }}"
+      {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %}
+      name="{{ attribute_form.value.html_name }}" >
     {% for value, label in choices_list %}
     <option value="{{ value }}" {% if attribute_form.value.value == value %}selected="true"{% endif %}>
       {{ label }}
