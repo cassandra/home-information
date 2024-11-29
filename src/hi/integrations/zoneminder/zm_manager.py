@@ -162,8 +162,9 @@ class ZoneMinderManager( Singleton ):
         integration_key_to_monitor = dict()
         for zm_monitor in self.zm_client.monitors().list():
             integration_key = self._monitor_to_integration_key( zm_monitor_id = zm_monitor.id() )
+            integration_key_to_monitor[integration_key] = zm_monitor
             
-            result.message_list.append(
+            logger.debug(
                 '[ZM Monitor] Id:{} Name:{} Enabled:{} Status:{} Type:{} Dims:{}'.format(
                     zm_monitor.id(),
                     zm_monitor.name(),
@@ -173,7 +174,6 @@ class ZoneMinderManager( Singleton ):
                     zm_monitor.dimensions(),
                 )
             )
-            integration_key_to_monitor[integration_key] = zm_monitor
             continue
 
         return integration_key_to_monitor
@@ -243,10 +243,12 @@ class ZoneMinderManager( Singleton ):
                         zm_monitor  : ZmMonitor,
                         result      : ProcessingResult ):
 
-        # Currently nothing stored locally that will change (other than entity existence)
-
-        result.message_list.append( f'No updates needed for camera entity: {entity}' )
-        
+        if entity.name != zm_monitor.name():
+            result.message_list.append(f'Name changed for {entity}. Setting to "{zm_monitor.name()}"')
+            entity.name = zm_monitor.name()
+            entity.save()
+        else:
+            result.message_list.append( f'No changes found for {entity}.' )
         return
     
     def _remove_entity( self,
