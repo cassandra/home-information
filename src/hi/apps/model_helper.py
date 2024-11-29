@@ -203,8 +203,8 @@ class HiModelHelper:
     def create_on_off_controller( cls,
                                   entity           : Entity,
                                   integration_key  : IntegrationKey  = None,
-                                  name             : str            = None,
-                                  is_sensed        : bool           = True ):
+                                  name             : str             = None,
+                                  is_sensed        : bool            = True ):
         if not name:
             name = f'{entity.name} Controller'
         return cls.create_controller(
@@ -216,12 +216,29 @@ class HiModelHelper:
         )
 
     @classmethod
+    def add_on_off_controller( cls,
+                               entity           : Entity,
+                               entity_state     : EntityState,
+                               integration_key  : IntegrationKey  = None,
+                               name             : str             = None,
+                               is_sensed        : bool            = True  ):
+        if not name:
+            name = f'{entity.name} Controller'
+        return cls.add_controller(
+            entity = entity,
+            entity_state = entity_state,
+            name = name,
+            is_sensed = is_sensed,
+            integration_key = integration_key,
+        )
+
+    @classmethod
     def create_discrete_controller( cls,
                                     entity           : Entity,
                                     value_list       : List[ str ],
                                     integration_key  : IntegrationKey  = None,
-                                    name             : str            = None,
-                                    is_sensed        : bool           = True ):
+                                    name             : str             = None,
+                                    is_sensed        : bool            = True ):
         if not name:
             name = f'{entity.name} Controller'
         return cls.create_controller(
@@ -282,13 +299,33 @@ class HiModelHelper:
             value_range = value_range,
             units = units,
         )
-        
+
+        return cls.add_controller(
+            entity = entity,
+            entity_state = entity_state,
+            name = name,
+            is_sensed = is_sensed,
+            integration_key = integration_key,
+        )
+    
+    @classmethod
+    def add_controller( cls,
+                        entity             : Entity,
+                        entity_state       : EntityState,
+                        name               : str               = None,
+                        controller_type    : ControllerType    = ControllerType.DEFAULT,
+                        is_sensed          : bool              = True,
+                        integration_key    : IntegrationKey    = None ):
+        if not name:
+            name = f'{entity.name}'
+            
         if is_sensed:
             sensor = Sensor(
                 entity_state = entity_state,
                 name = name,
                 sensor_type_str = str( SensorType.DEFAULT ),
-                persist_history = bool( entity_state_type not in cls.EXCLUDE_FROM_SENSOR_HISTORY ),
+                persist_history = bool( entity_state.entity_state_type
+                                        not in cls.EXCLUDE_FROM_SENSOR_HISTORY ),
             )
             sensor.integration_key = integration_key
             sensor.save()
@@ -301,4 +338,3 @@ class HiModelHelper:
         controller.integration_key = integration_key
         controller.save()
         return controller
-    

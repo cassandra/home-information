@@ -13,7 +13,7 @@ from hi.apps.entity.enums import (
     HumidityUnit,
     TemperatureUnit,
 )
-from hi.apps.entity.models import Entity, EntityAttribute
+from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.model_helper import HiModelHelper
 from hi.apps.sense.enums import SensorValue
 
@@ -254,22 +254,12 @@ class HassConverter:
                     is_required = False,
                 )
 
-                
-            # Each HAss state of the device becomes a HI state with a Sensor.
-            # Some may have also require a Controller.
-            #
-            for hass_state in hass_device.hass_state_list:
-                
-                state_integration_key = cls.hass_state_to_integration_key( hass_state = hass_state )
-                
-                cls._create_hass_state_sensor_or_controller(
-                    hass_device = hass_device,
-                    hass_state = hass_state,
-                    entity = entity,
-                    integration_key = state_integration_key,
-                )
-                continue
-            
+            cls._create_hass_sensors_and_controllers(
+                entity = entity,
+                hass_device = hass_device,
+                hass_state_list = hass_device.hass_state_list,
+            )
+
         return entity
     
     @classmethod
@@ -333,6 +323,7 @@ class HassConverter:
                 entiity_controllers.update({ x.integration_key: x for x in entity_state.controllers.all() })
                 continue
 
+            new_hass_state_list = list()
             seen_state_integration_keys = set()
             for hass_state in hass_device.hass_state_list:
                 
@@ -343,16 +334,18 @@ class HassConverter:
                 controller = entiity_controllers.get( state_integration_key )
 
                 if not sensor and not controller:
-                    messages.append( f'No sensors/controllers found for {entity}. Adding {hass_state}' )
-                    cls._create_hass_state_sensor_or_controller(
-                        hass_device = hass_device,
-                        hass_state = hass_state,
-                        entity = entity,
-                        integration_key = state_integration_key,
-                    )
+                    messages.append( f'Missing sensors/controllers for {entity}. Adding {hass_state}' )
+                    new_hass_state_list.append( hass_state )
                     
                 continue
 
+            if new_hass_state_list:
+                cls._create_hass_sensors_and_controllers(
+                    entity = entity,
+                    hass_device = hass_device,
+                    hass_state_list = new_hass_state_list,
+                )
+            
             for integration_key, sensor in entiity_sensors.items():
                 if integration_key not in seen_state_integration_keys:
                     messages.append(f'Removing sensor {sensor} from {entity}' )
@@ -368,13 +361,17 @@ class HassConverter:
         if not messages:
             messages.append( f'No changes found for {entity}.' )
         return messages
-    
+
     @classmethod
-    def _create_hass_state_sensor_or_controller( cls,
-                                                 hass_device      : HassDevice,
-                                                 hass_state       : HassState,
-                                                 entity           : Entity,
-                                                 integration_key  : IntegrationKey ):
+    def _create_hass_sensors_and_controllers( cls,
+                                              entity           : Entity,
+                                              hass_device      : HassDevice,
+                                              hass_state_list  : List[ HassState ] ):
+        """
+        Each HAss state of the device becomes a HI state with a Sensor.
+        Some may have also require a Controller.
+        """
+        
         # Observations:
         #
         #   - Some light switches have both a 'switch' and 'light' HAss state.
@@ -387,7 +384,52 @@ class HassConverter:
         # mode and can support either.  Thus, if a device is both a light
         # and switch, either can be used, thought they are operating on the
         # same underlying state.
- 
+        #
+        # To deal with this, we have a special case so that we only create
+        # one underlying EntityState for the two different HAss
+        # perspectives.  A HassState is really the equivalent of a Sensor
+        # in our data model.
+
+        prefix_to_entity_state = dict()
+        for hass_state in hass_state_list:
+            state_integration_key = cls.hass_state_to_integration_key( hass_state = hass_state )
+
+            if (( hass_state.entity_id_prefix == HassApi.SWITCH_ID_PREFIX )
+                and ( HassApi.LIGHT_ID_PREFIX in prefix_to_entity_state )):
+                existing_entity_state = prefix_to_entity_state[HassApi.LIGHT_ID_PREFIX]
+
+            elif (( hass_state.entity_id_prefix == HassApi.LIGHT_ID_PREFIX )
+                  and ( HassApi.SWITCH_ID_PREFIX in prefix_to_entity_state )):
+                existing_entity_state = prefix_to_entity_state[HassApi.SWITCH_ID_PREFIX]
+
+            else:
+                existing_entity_state = None
+
+            if existing_entity_state:
+                HiModelHelper.add_on_off_controller(
+                    entity = entity,
+                    entity_state = existing_entity_state,
+                    integration_key = state_integration_key,
+                    name = hass_state.friendly_name,
+                )
+            else:
+                entity_state = cls._create_hass_state_sensor_or_controller(
+                    hass_device = hass_device,
+                    hass_state = hass_state,
+                    entity = entity,
+                    integration_key = state_integration_key,
+                )
+
+            prefix_to_entity_state[hass_state.entity_id_prefix] = entity_state
+            continue
+        return
+    
+    @classmethod
+    def _create_hass_state_sensor_or_controller( cls,
+                                                 hass_device      : HassDevice,
+                                                 hass_state       : HassState,
+                                                 entity           : Entity,
+                                                 integration_key  : IntegrationKey ) -> EntityState: 
         name = hass_state.friendly_name
         device_class = hass_state.device_class
         if not name:
@@ -397,35 +439,35 @@ class HassConverter:
         # Controllers - Only for states we explicitly know are controllable.
         
         if hass_state.entity_id_prefix in cls.SWITCH_PREFIXES:
-            HiModelHelper.create_on_off_controller(
+            controller = HiModelHelper.create_on_off_controller(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
             )
-            return
+            return controller.entity_state
 
         ##########
         # Sensors - All HAss states are at least a sensor except for those
         # we know are controllable.  
 
         if hass_state.entity_id_prefix == HassApi.SUN_ID_PREFIX:
-            HiModelHelper.create_multivalued_sensor(
+            sensor = HiModelHelper.create_multivalued_sensor(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
             )
-            return
+            return sensor.entity_state
 
         if hass_state.entity_id_prefix == HassApi.WEATHER_ID_PREFIX:
-            HiModelHelper.create_multivalued_sensor(
+            sensor = HiModelHelper.create_multivalued_sensor(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
             )
-            return
+            return sensor.entity_state
 
         if hass_state.entity_id_prefix == HassApi.BINARY_SENSOR_ID_PREFIX:
-            cls._create_hass_state_binary_sensor(
+            sensor = cls._create_hass_state_binary_sensor(
                 hass_device = hass_device,
                 hass_state = hass_state,
                 entity = entity,
@@ -439,13 +481,13 @@ class HassConverter:
             else:
                 temperature_unit = TemperatureUnit.FAHRENHEIT
 
-            HiModelHelper.create_temperature_sensor(
+            sensor = HiModelHelper.create_temperature_sensor(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
                 temperature_unit = temperature_unit,
             )
-            return
+            return sensor.entity_state
 
         if device_class == HassApi.HUMIDITY_DEVICE_CLASS:
             if 'kg' in hass_state.unit_of_measurement.lower():
@@ -455,37 +497,37 @@ class HassConverter:
             else:  
                 humidity_unit = HumidityUnit.PERCENT
 
-            HiModelHelper.create_humidity_sensor(
+            sensor = HiModelHelper.create_humidity_sensor(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
                 humidity_unit = humidity_unit,
             )
-            return
+            return sensor.entity_state
 
         if device_class == HassApi.TIMESTAMP_DEVICE_CLASS:
-            HiModelHelper.create_datetime_sensor(
+            sensor = HiModelHelper.create_datetime_sensor(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
             )
-            return
+            return sensor.entity_state
 
         if device_class == HassApi.ENUM_DEVICE_CLASS:
-            HiModelHelper.create_discrete_sensor(
+            sensor = HiModelHelper.create_discrete_sensor(
                 entity = entity,
                 values = hass_state.options,
                 integration_key = integration_key,
                 name = name,
             )
-            return
+            return sensor.entity_state
 
-        HiModelHelper.create_blob_sensor(
+        sensor = HiModelHelper.create_blob_sensor(
             entity = entity,
             integration_key = integration_key,
             name = name,
         )
-        return
+        return sensor.entity_state
     
     @classmethod
     def _create_hass_state_binary_sensor( cls,
