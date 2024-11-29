@@ -313,6 +313,10 @@ class EntityManager(Singleton):
             entity_view_group_dict[entity.entity_type].item_list.append( entity_view_item )
             continue
 
+        for entity_type, entity_view_group in entity_view_group_dict.items():
+            entity_view_group.item_list.sort( key = lambda item : item.entity.name )
+            continue
+        
         entity_view_group_list = list( entity_view_group_dict.values() )
         entity_view_group_list.sort( key = lambda item : item.entity_type.label )
         return entity_view_group_list

@@ -191,7 +191,13 @@ class HassManager( Singleton ):
                         hass_device  : HassDevice,
                         result       : ProcessingResult ):
 
-        result.message_list.append( f'No updates needed for HAss entity: {entity}' )        
+        message_list = HassConverter.update_models_for_hass_device(
+            entity = entity,
+            hass_device = hass_device,
+        )
+        for message in message_list:
+            result.message_list.append( message )
+            continue
         return
     
     def _remove_entity( self,

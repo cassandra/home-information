@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Dict
+from typing import Dict, List
 
 from django.db import transaction
 
@@ -9,7 +9,6 @@ from hi.apps.attribute.enums import (
     AttributeValueType,
 )
 from hi.apps.entity.enums import (
-    AttributeName,
     EntityType,
     HumidityUnit,
     TemperatureUnit,
@@ -94,7 +93,9 @@ class HassConverter:
     PREFERRED_NAME_DEVICE_CLASSES = {
         HassApi.MOTION_DEVICE_CLASS,
     }
-    
+
+    INSTEON_ADDRESS_ATTR_NAME = 'Insteon Address'
+
     @classmethod
     def create_hass_state( cls, api_dict : Dict ) -> HassState:
 
@@ -245,7 +246,7 @@ class HassConverter:
             if insteon_address:
                 EntityAttribute.objects.create(
                     entity = entity,
-                    name = AttributeName.INSTEON_ADDRESS,
+                    name = cls.INSTEON_ADDRESS_ATTR_NAME,
                     value = insteon_address,
                     value_type_str = str( AttributeValueType.TEXT ),
                     attribute_type_str = str( AttributeType.PREDEFINED ),
@@ -253,6 +254,7 @@ class HassConverter:
                     is_required = False,
                 )
 
+                
             # Each HAss state of the device becomes a HI state with a Sensor.
             # Some may have also require a Controller.
             #
@@ -271,6 +273,76 @@ class HassConverter:
         return entity
     
     @classmethod
+    def update_models_for_hass_device( cls, entity : Entity, hass_device : HassDevice ) -> List[str]:
+
+        messages = list()
+        with transaction.atomic():
+
+            insteon_address = cls.hass_device_to_insteon_address( hass_device )
+            try:
+                attribute = entity.attributes.get( name = cls.INSTEON_ADDRESS_ATTR_NAME )
+            except EntityAttribute.DoesNotExist:
+                attribute = None
+
+            if attribute and insteon_address:
+                if attribute.value == insteon_address:
+                    messages.append(f'Insteon address unchanged for {entity}. Existing is {insteon_address}')
+                    
+                else:
+                    messages.append( f'Insteon address changed for {entity}. Setting to {insteon_address}' )
+                    attribute.value = insteon_address
+                    attribute.save()
+                    
+            elif attribute and not insteon_address:
+                messages.append( f'Insteon address removed for {entity}. Removing {insteon_address}' )
+                attribute.delete()
+                
+            elif not attribute and insteon_address:
+                messages.append( f'No insteon address for {entity}. Adding {insteon_address}' )
+                EntityAttribute.objects.create(
+                    entity = entity,
+                    name = cls.INSTEON_ADDRESS_ATTR_NAME,
+                    value = insteon_address,
+                    value_type_str = str( AttributeValueType.TEXT ),
+                    attribute_type_str = str( AttributeType.PREDEFINED ),
+                    is_editable = False,
+                    is_required = False,
+                )
+            else:
+                pass
+                
+            # HAss states becomes a HI state with a Sensor and some may
+            # have also require a Controller.
+            #
+            entiity_sensors = dict()
+            entiity_controllers = dict()
+            for entity_state in entity.states.all():
+                entiity_sensors.update({ x.integration_key: x for x in entity_state.sensors.all() })
+                entiity_controllers.update({ x.integration_key: x for x in entity_state.controllers.all() })
+                continue
+            
+            for hass_state in hass_device.hass_state_list:
+                
+                state_integration_key = cls.hass_state_to_integration_key( hass_state = hass_state )
+                sensor = entiity_sensors.get( state_integration_key )
+                controller = entiity_controllers.get( state_integration_key )
+
+                if not sensor and not controller:
+                    messages.append( f'No sensors/controllers found for {entity}. Adding {hass_state}' )
+                    cls._create_hass_state_sensor_or_controller(
+                        hass_device = hass_device,
+                        hass_state = hass_state,
+                        entity = entity,
+                        integration_key = state_integration_key,
+                    )
+                else:
+                    messages.append(f'Existing sensors/controllers found for {entity}. Skipping {hass_state}')
+                    
+                continue
+            
+        return messages
+    
+    @classmethod
     def _create_hass_state_sensor_or_controller( cls,
                                                  hass_device      : HassDevice,
                                                  hass_state       : HassState,
@@ -281,6 +353,13 @@ class HassConverter:
         #   - Some light switches have both a 'switch' and 'light' HAss state.
         #   - Some light switches only have 'switch' HAss state.
         #   - Some light switches only have 'light' HAss state.
+        #
+        # In Home Assistant, a "switch" is a simple on/off device, while a
+        # "light" can have more advanced feature like dimming.  An insteon
+        # device reports it capabilities and some insteon devices are dual
+        # mode and can support either.  Thus, if a device is both a light
+        # and switch, either can be used, thought they are operating on the
+        # same underlying state.
  
         name = hass_state.friendly_name
         device_class = hass_state.device_class

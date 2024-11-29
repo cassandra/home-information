@@ -11,7 +11,7 @@ from hi.apps.sense.models import Sensor, SensorHistory
 from hi.apps.sense.transient_models import SensorResponse
 
 from .enums import EntityType
-from .models import Entity, EntityState
+from .models import Entity
 
 
 @dataclass

@@ -111,12 +111,6 @@ class EntityStateType(LabeledEnum):
         "entity/panes/sensor_value_default.html"
         """
         return f'entity/panes/sensor_value_{self.name.lower()}.html'
-    
-
-class AttributeName(LabeledEnum):
-    # Common attribute names
-    
-    INSTEON_ADDRESS = ( 'Insteon Address', '' )
 
 
 class TemperatureUnit(LabeledEnum):
