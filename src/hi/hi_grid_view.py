@@ -11,8 +11,8 @@ from django.views.generic import View
 import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
 
-from hi.apps.location.edit.async_views import LocationViewManageItemsView
-from hi.apps.collection.edit.async_views import CollectionManageItemsView
+from hi.apps.location.edit.views import LocationViewManageItemsView
+from hi.apps.collection.edit.views import CollectionManageItemsView
 from hi.apps.collection.models import Collection
 from hi.apps.location.models import Location
 

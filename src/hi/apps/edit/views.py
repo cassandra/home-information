@@ -8,12 +8,12 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
-from hi.apps.collection.edit.async_views import (
+from hi.apps.collection.edit.views import (
     CollectionManageItemsView,
     CollectionReorder,
     CollectionReorderEntitiesView,
 )
-from hi.apps.location.edit.async_views import (
+from hi.apps.location.edit.views import (
     LocationViewManageItemsView,
     LocationViewReorder,
 )

@@ -3,17 +3,23 @@ import re
 
 from django.core.exceptions import BadRequest, PermissionDenied
 from django.db import transaction
+from django.http import Http404
+from django.template.loader import get_template
 from django.urls import reverse
 from django.utils.decorators import method_decorator
+from django.views.generic import View
 
 from hi.apps.collection.collection_manager import CollectionManager
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.entity_manager import EntityManager
-from hi.apps.entity.models import Entity
+from hi.apps.entity.forms import EntityForm
+from hi.apps.entity.models import Entity, EntityPosition
 from hi.apps.entity.view_mixin import EntityViewMixin
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import LocationView
+from hi.apps.location.svg_item_factory import SvgItemFactory
 
+from hi.constants import DIVID
 from hi.decorators import edit_required
 from hi.hi_async_view import HiModalView
 
@@ -30,12 +36,12 @@ class EntityAddView( HiModalView ):
     
     def get( self, request, *args, **kwargs ):
         context = {
-            'entity_form': forms.EntityForm(),
+            'entity_form': EntityForm(),
         }
         return self.modal_response( request, context )
     
     def post( self, request, *args, **kwargs ):
-        entity_form = forms.EntityForm( request.POST )
+        entity_form = EntityForm( request.POST )
         if not entity_form.is_valid():
             context = {
                 'entity_form': entity_form,
@@ -111,7 +117,56 @@ class EntityDeleteView( HiModalView, EntityViewMixin ):
 
         redirect_url = reverse('home')
         return self.redirect_response( request, redirect_url )
-    
+
+
+@method_decorator( edit_required, name='dispatch' )
+class EntityPositionEditView( View, EntityViewMixin ):
+
+    def post(self, request, *args, **kwargs):
+        entity = self.get_entity( request, *args, **kwargs )
+        location = LocationManager().get_default_location( request = request )
+        try:
+            entity_position = EntityPosition.objects.get(
+                entity = entity,
+                location = location,
+            )
+        except EntityPosition.DoesNotExist:
+            raise Http404( request )
+        
+        entity_position_form = forms.EntityPositionForm(
+            request.POST,
+            instance = entity_position,
+        )
+        if entity_position_form.is_valid():
+            entity_position_form.save()
+        else:
+            logger.warning( 'EntityPosition form is invalid.' )
+            
+        context = {
+            'entity': entity_position.entity,
+            'entity_position_form': entity_position_form,
+        }
+        template = get_template( 'entity/edit/panes/entity_position_edit.html' )
+        content = template.render( context, request = request )
+        insert_map = {
+            DIVID['ENTITY_POSITION_EDIT_PANE']: content,
+        }
+
+        svg_icon_item = SvgItemFactory().create_svg_icon_item(
+            item = entity_position.entity,
+            position = entity_position,
+            css_class = '',
+        )
+        set_attributes_map = {
+            svg_icon_item.html_id: {
+                'transform': svg_icon_item.transform_str,
+            }
+        }
+        return antinode.response(
+            insert_map = insert_map,
+            set_attributes_map = set_attributes_map,
+        )
+
 
 @method_decorator( edit_required, name='dispatch' )
 class PrincipalManageView( HiModalView, EntityViewMixin ):

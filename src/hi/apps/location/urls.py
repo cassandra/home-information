@@ -1,6 +1,5 @@
 from django.urls import include, re_path
 
-from . import async_views
 from . import views
 
 
@@ -11,7 +10,7 @@ urlpatterns = [
              name='location_switch'),
 
     re_path( r'^details/(?P<location_view_id>\d+)$', 
-             async_views.LocationViewDetailsView.as_view(), 
+             views.LocationViewDetailsView.as_view(), 
              name='location_details' ),
     
     re_path( r'^view/(?P<location_view_id>\d+)$', 
@@ -23,11 +22,11 @@ urlpatterns = [
              name='location_view_default'),
 
     re_path( r'^item/info/(?P<html_id>[\w\-]+)$', 
-             async_views.LocationItemInfoView.as_view(), 
+             views.LocationItemInfoView.as_view(), 
              name='location_item_info' ),
     
     re_path( r'^item/details/(?P<html_id>[\w\-]+)$', 
-             async_views.LocationItemDetailsView.as_view(), 
+             views.LocationItemDetailsView.as_view(), 
              name='location_item_details' ),
     
     re_path( r'^edit/', include('hi.apps.location.edit.urls' )),

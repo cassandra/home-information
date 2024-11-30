@@ -1,6 +1,5 @@
 from django.urls import re_path
 
-from . import async_views
 from . import views
 
 
@@ -11,11 +10,11 @@ urlpatterns = [
              name='location_edit_location_add'),
 
     re_path( r'^location/edit/(?P<location_id>\d+)$', 
-             async_views.LocationEditView.as_view(), 
+             views.LocationEditView.as_view(), 
              name='location_edit_location_edit'),
 
     re_path( r'^location/attribute/upload/(?P<location_id>\d+)$', 
-             async_views.LocationAttributeUploadView.as_view(), 
+             views.LocationAttributeUploadView.as_view(), 
              name='location_attribute_upload'),
 
     re_path( r'^location/svg/replace/(?P<location_id>\d+)$', 
@@ -31,11 +30,11 @@ urlpatterns = [
              name='location_edit_location_view_add' ),
 
     re_path( r'^location-view/edit/(?P<location_view_id>\d+)$', 
-             async_views.LocationViewEditView.as_view(), 
+             views.LocationViewEditView.as_view(), 
              name='location_edit_location_view_edit' ),
 
     re_path( r'^location-view/geometry/(?P<location_view_id>\d+)$', 
-             async_views.LocationViewGeometryView.as_view(), 
+             views.LocationViewGeometryView.as_view(), 
              name='location_edit_location_view_geometry' ),
 
     re_path( r'^location-view/delete/(?P<location_view_id>\d+)$', 
@@ -43,23 +42,23 @@ urlpatterns = [
              name='location_edit_location_view_delete' ),
 
     re_path( r'^location-view/manage-item$', 
-             async_views.LocationViewManageItemsView.as_view(), 
+             views.LocationViewManageItemsView.as_view(), 
              name='location_edit_location_view_manage_items' ),
 
     re_path( r'^location-view/entity/toggle/(?P<location_view_id>\d+)/(?P<entity_id>\d+)$', 
-             async_views.LocationViewEntityToggleView.as_view(), 
+             views.LocationViewEntityToggleView.as_view(), 
              name='location_edit_location_view_entity_toggle' ),
 
     re_path( r'^location-view/collection/toggle/(?P<location_view_id>\d+)/(?P<collection_id>\d+)$', 
-             async_views.LocationViewCollectionToggleView.as_view(), 
+             views.LocationViewCollectionToggleView.as_view(), 
              name='location_edit_location_view_collection_toggle' ),
 
     re_path( r'^location-item/position/(?P<html_id>[\w\-]+)$', 
-             async_views.LocationItemPositionView.as_view(), 
+             views.LocationItemPositionView.as_view(), 
              name='location_edit_location_item_position' ),
 
     re_path( r'^location-item/path/(?P<html_id>[\w\-]+)$', 
-             async_views.LocationItemPathView.as_view(), 
+             views.LocationItemPathView.as_view(), 
              name='location_edit_location_item_path' ),
     
 ]

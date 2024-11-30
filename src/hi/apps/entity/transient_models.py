@@ -1,16 +1,16 @@
 from dataclasses import dataclass, field
 from typing import Dict, List
 
-from hi.apps.entity.edit.forms import (
-    EntityAttributeFormSet,
-    EntityForm,
-    EntityPositionForm,
-    EntityAttributeUploadForm,
-)
+from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.sense.models import Sensor, SensorHistory
 from hi.apps.sense.transient_models import SensorResponse
 
 from .enums import EntityType
+from .forms import (
+    EntityAttributeFormSet,
+    EntityForm,
+    EntityAttributeUploadForm,
+)
 from .models import Entity
 
 

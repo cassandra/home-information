@@ -1,24 +1,58 @@
 import logging
 
 from django.db import transaction
-from django.http import Http404
-from django.template.loader import get_template
-from django.utils.decorators import method_decorator
 from django.views.generic import View
 
-import hi.apps.common.antinode as antinode
-from hi.apps.entity.models import EntityAttribute, EntityPosition
-from hi.apps.entity.transient_models import EntityEditData
-from hi.apps.entity.view_mixin import EntityViewMixin
-from hi.apps.location.svg_item_factory import SvgItemFactory
 from hi.apps.location.location_manager import LocationManager
 
-from hi.constants import DIVID
-from hi.decorators import edit_required
+from hi.hi_async_view import HiModalView, HiSideView
 
+from .entity_manager import EntityManager
 from . import forms
+from .models import EntityAttribute
+from .transient_models import EntityEditData
+from .view_mixin import EntityViewMixin
 
 logger = logging.getLogger(__name__)
+
+
+class EntityInfoView( HiModalView, EntityViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'entity/modals/entity_info.html'
+
+    def get( self, request, *args, **kwargs ):
+        entity = self.get_entity( request, *args, **kwargs )
+
+        entity_info_data = EntityManager().get_entity_info_data(
+            entity = entity,
+            is_editing = request.is_editing,
+        )
+        context = entity_info_data.to_template_context()
+        return self.modal_response( request, context )
+
+
+class EntityDetailsView( HiSideView, EntityViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'entity/panes/entity_details.html'
+
+    def should_push_url( self ):
+        return True
+    
+    def get_template_context( self, request, *args, **kwargs ):
+        entity = self.get_entity( request, *args, **kwargs )
+
+        current_location_view = None
+        if request.view_parameters.view_type.is_location_view:
+            current_location_view = LocationManager().get_default_location_view( request = request )
+
+        entity_details_data = EntityManager().get_entity_details_data(
+            entity = entity,
+            location_view = current_location_view,
+            is_editing = request.is_editing,
+        )
+        return entity_details_data.to_template_context()
 
 
 class EntityEditView( View, EntityViewMixin ):
@@ -88,50 +122,4 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
         )
     
     
-@method_decorator( edit_required, name='dispatch' )
-class EntityPositionEditView( View, EntityViewMixin ):
-
-    def post(self, request, *args, **kwargs):
-        entity = self.get_entity( request, *args, **kwargs )
-        location = LocationManager().get_default_location( request = request )
-        try:
-            entity_position = EntityPosition.objects.get(
-                entity = entity,
-                location = location,
-            )
-        except EntityPosition.DoesNotExist:
-            raise Http404( request )
-        
-        entity_position_form = forms.EntityPositionForm(
-            request.POST,
-            instance = entity_position,
-        )
-        if entity_position_form.is_valid():
-            entity_position_form.save()
-        else:
-            logger.warning( 'EntityPosition form is invalid.' )
-            
-        context = {
-            'entity': entity_position.entity,
-            'entity_position_form': entity_position_form,
-        }
-        template = get_template( 'entity/edit/panes/entity_position_edit.html' )
-        content = template.render( context, request = request )
-        insert_map = {
-            DIVID['ENTITY_POSITION_EDIT_PANE']: content,
-        }
-
-        svg_icon_item = SvgItemFactory().create_svg_icon_item(
-            item = entity_position.entity,
-            position = entity_position,
-            css_class = '',
-        )
-        set_attributes_map = {
-            svg_icon_item.html_id: {
-                'transform': svg_icon_item.transform_str,
-            }
-        }
-        return antinode.response(
-            insert_map = insert_map,
-            set_attributes_map = set_attributes_map,
-        )
+    
