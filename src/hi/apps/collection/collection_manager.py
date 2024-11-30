@@ -11,7 +11,7 @@ from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 
-from .enums import CollectionType
+from .enums import CollectionType, CollectionViewType
 from .models import (
     Collection,
     CollectionEntity,
@@ -59,22 +59,6 @@ class CollectionManager(Singleton):
             return collection
         raise Collection.DoesNotExist()
     
-    def create_collection( self,
-                           request          : HttpRequest,
-                           collection_type  : CollectionType,
-                           name             : str          ) -> Collection:
-        last_collection = Collection.objects.all().order_by( '-order_id' ).first()
-        if last_collection:
-            order_id = last_collection.order_id + 1
-        else:
-            order_id = 0
-            
-        return Collection.objects.create(
-            name = name,
-            collection_type_str = str(collection_type),
-            order_id = order_id,
-        )
-        
     def get_collection_data( self,
                              collection     : Collection,
                              is_editing     : bool ):

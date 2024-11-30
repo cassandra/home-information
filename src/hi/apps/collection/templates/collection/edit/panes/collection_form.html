@@ -21,6 +21,16 @@
 </div>
   
 <div>
+  <div class="input-group mb-2 mr-sm-2">
+    <div class="input-group-prepend">
+      <div class="input-group-text">{{ collection_form.collection_view_type_str.label_tag }}</div>
+    </div>
+    {{ collection_form.collection_view_type_str }}
+  </div>
+  {{ collection_form.collection_view_type_str.errors }}
+</div>
+
+<div>
   {{ collection_form.name.label }}
   {{ collection_form.name }}
   {{ collection_form.name.errors }}

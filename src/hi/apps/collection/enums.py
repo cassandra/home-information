@@ -11,6 +11,7 @@ class CollectionType(LabeledEnum):
     """
 
     APPLIANCES   = ( 'Appliances', '' )
+    CAMERAS      = ( 'Cameras', '' )
     DEVICES      = ( 'Devices', '' )
     ELECTRONICS  = ( 'Electronics', '' )
     GARDENING    = ( 'Gardening', '' )
@@ -21,3 +22,10 @@ class CollectionType(LabeledEnum):
     @classmethod
     def default(cls):
         return cls.OTHER
+
+
+class CollectionViewType(LabeledEnum):
+
+    GRID   = ( 'Grid', '' )
+    LIST   = ( 'List', '' )
+

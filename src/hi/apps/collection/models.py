@@ -10,7 +10,7 @@ from hi.apps.location.models import (
 )
 from hi.enums import ItemType
 
-from .enums import CollectionType
+from .enums import CollectionType, CollectionViewType
 
 
 class Collection( models.Model, LocationItemModelMixin ):
@@ -21,6 +21,11 @@ class Collection( models.Model, LocationItemModelMixin ):
     )
     collection_type_str = models.CharField(
         'Collection Type',
+        max_length = 32,
+        null = False, blank = False,
+    )
+    collection_view_type_str = models.CharField(
+        'View Type',
         max_length = 32,
         null = False, blank = False,
     )
@@ -49,6 +54,15 @@ class Collection( models.Model, LocationItemModelMixin ):
     @collection_type.setter
     def collection_type( self, collection_type : CollectionType ):
         self.collection_type_str = str(collection_type)
+        return
+    
+    @property
+    def collection_view_type(self):
+        return CollectionViewType.from_name_safe( self.collection_view_type_str )
+
+    @collection_view_type.setter
+    def collection_view_type( self, collection_view_type : CollectionViewType ):
+        self.collection_view_type_str = str(collection_view_type)
         return
         
     
