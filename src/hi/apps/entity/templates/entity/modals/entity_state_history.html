@@ -1,0 +1,21 @@
+{% extends "modals/action_done.html" %}
+{% load common_template_helpers %}
+
+{% block title_text %}
+{{ entity.name }}
+{% endblock %}
+
+{% block body %}
+
+<h5>Sensor History</h5>
+<ul>
+  {% for sensor, sensor_history_list in sensor_history_list_map.items %}
+  <li>Sensor: {{ sensor.name }}
+    {% include "sense/panes/sensor_history_list.html" with sensor_history_list=sensor_history_list show_all_link=True %}
+  </li>
+  {% empty %}
+  <div><em>No sensors</em></div>
+  {% endfor %}
+</ul>
+
+{% endblock %}

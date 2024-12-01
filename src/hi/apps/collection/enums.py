@@ -29,3 +29,9 @@ class CollectionViewType(LabeledEnum):
     GRID   = ( 'Grid', '' )
     LIST   = ( 'List', '' )
 
+    def is_grid(self):
+        return self == CollectionViewType.GRID
+
+    def is_list(self):
+        return self == CollectionViewType.LIST
+    

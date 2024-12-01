@@ -262,9 +262,7 @@ class CollectionEntityToggleView( View, CollectionViewMixin, EntityViewMixin ):
             collection = collection,
             is_editing = request.is_editing,
         )
-        context = {
-            'collection_data': collection_data,
-        }
+        context = collection_data.to_template_context()
         template = get_template( 'collection/panes/collection_view.html' )
         collection_content = template.render( context, request = request )
         

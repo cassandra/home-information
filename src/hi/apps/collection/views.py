@@ -65,11 +65,9 @@ class CollectionViewView( HiGridView, CollectionViewMixin ):
             collection = collection,
             is_editing = request.is_editing,
         )
-        return {
-            'is_async_request': is_ajax( request ),
-            'collection': collection,
-            'collection_data': collection_data,
-        }
+        context = collection_data.to_template_context()
+        context['is_async_request'] = is_ajax( request )
+        return context
     
     
 class CollectionDetailsView( HiSideView, CollectionViewMixin ):

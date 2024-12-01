@@ -4,7 +4,7 @@ from typing import List
 from hi.apps.collection.edit.forms import CollectionForm, CollectionPositionForm
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
-from hi.apps.entity.transient_models import EntityInfoData
+from hi.apps.entity.transient_models import EntityStatusData
 
 from .models import Collection
 
@@ -12,8 +12,14 @@ from .models import Collection
 @dataclass
 class CollectionData:
 
-    collection             : Collection
-    entity_info_data_list  : List[ EntityInfoData ]
+    collection               : Collection
+    entity_status_data_list  : List[ EntityStatusData ]
+    
+    def to_template_context(self):
+        return {
+            'collection': self.collection,
+            'entity_status_data_list': self.entity_status_data_list,
+        }
 
     
 @dataclass

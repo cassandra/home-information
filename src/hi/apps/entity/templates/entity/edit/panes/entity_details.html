@@ -42,24 +42,30 @@
 </div>
 {% endif %}
 
-<h5>Views</h5>
-<div id="hi-edit-entity-views">
-  {% include "entity/panes/entity_views.html" %}
-</div>
-
-<h5>Sensors</h5>
-<div id="hi-edit-entity-sensors">
-  {% include "entity/panes/entity_sensors.html" %}
-</div>
-
-<h5>Controllers</h5>
-<div id="hi-edit-entity-controllers">
-  {% include "entity/panes/entity_controllers.html" %}
-</div>
-
 <h5>Delegates</h5>
 <div id="hi-edit-entity-delegates">
   <div>TBD - DELEGATES</div>
+</div>
+
+<h5>States/Sensors/Controllers</h5>
+{% for entity_state in entity.states.all %}
+<div class="h6">{{ entity_state.name }}</div>
+<ul>
+  {% for sensor in entity_state.sensors.all %}
+  <li>{{ sensor.name }} [sensor]</li>
+  {% endfor %}
+  {% for controller in entity_state.controllers.all %}
+  <li>{{ controller.name }} [controller]</li>
+  {% endfor %}
+</ul>
+
+{% empty %}
+<em>No states</em>
+{% endfor %}
+
+<h5>Views</h5>
+<div id="hi-edit-entity-views">
+  {% include "entity/panes/entity_views.html" %}
 </div>
 
 {% if entity.can_user_delete %}

@@ -23,8 +23,9 @@ from .models import (
 )
 from .transient_models import (
     EntityDetailsData,
-    EntityInfoData,
     EntityEditData,
+    EntityStateHistoryData,
+    EntityStatusData,
     EntityViewGroup,
     EntityViewItem,
 )
@@ -32,18 +33,17 @@ from .transient_models import (
 
 class EntityManager(Singleton):
 
-    ENTITY_INFO_SENSOR_HISTORY_ITEM_MAX = 5
+    ENTITY_STATE_HISTORY_ITEM_MAX = 5
     
     def __init_singleton__(self):
         return
 
-    def get_entity_info_data( self,
-                              entity         : Entity,
-                              is_editing     : bool )        -> EntityDetailsData:
-        entity_edit_data = EntityEditData( entity = entity )
+    def get_entity_status_data( self,
+                                entity         : Entity,
+                                is_editing     : bool )        -> EntityStatusData:
         sensor_history_list_map = SensorHistoryManager().get_latest_entity_sensor_history(
             entity = entity,
-            max_items = self.ENTITY_INFO_SENSOR_HISTORY_ITEM_MAX,
+            max_items = self.ENTITY_STATE_HISTORY_ITEM_MAX,
         )
         latest_sensor_response_map = dict()
         for sensor, sensor_history_list in sensor_history_list_map.items():
@@ -54,13 +54,30 @@ class EntityManager(Singleton):
             latest_sensor_response_map[sensor] = sensor_response
             continue
         
-        principal_entity_list = self.get_principal_entity_list( entity = entity )
-
-        return EntityInfoData(
-            entity_edit_data = entity_edit_data,
-            sensor_history_list_map = sensor_history_list_map,
+        return EntityStatusData(
+            entity = entity,
             latest_sensor_response_map = latest_sensor_response_map,
-            principal_entity_list = principal_entity_list,
+        )
+
+    def get_entity_state_history_data( self,
+                                       entity         : Entity,
+                                       is_editing     : bool )        -> EntityStateHistoryData:
+        sensor_history_list_map = SensorHistoryManager().get_latest_entity_sensor_history(
+            entity = entity,
+            max_items = self.ENTITY_STATE_HISTORY_ITEM_MAX,
+        )
+        latest_sensor_response_map = dict()
+        for sensor, sensor_history_list in sensor_history_list_map.items():
+            if sensor_history_list:
+                sensor_response = SensorResponse.from_sensor_history( sensor_history = sensor_history_list[0] )
+            else:
+                sensor_response = None
+            latest_sensor_response_map[sensor] = sensor_response
+            continue
+        
+        return EntityStateHistoryData(
+            entity = entity,
+            sensor_history_list_map = sensor_history_list_map,
         )
 
     def get_entity_details_data( self,

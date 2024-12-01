@@ -11,7 +11,6 @@ from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 
-from .enums import CollectionType, CollectionViewType
 from .models import (
     Collection,
     CollectionEntity,
@@ -65,18 +64,18 @@ class CollectionManager(Singleton):
 
         entity_manager = EntityManager()
 
-        entity_info_data_list = list()
+        entity_status_data_list = list()
         for collection_entity in collection.entities.all().order_by('order_id'):
-            entity_info_data = entity_manager.get_entity_info_data(
+            entity_status_data = entity_manager.get_entity_status_data(
                 entity = collection_entity.entity,
                 is_editing = is_editing,
             )
-            entity_info_data_list.append( entity_info_data )
+            entity_status_data_list.append( entity_status_data )
             continue
 
         return CollectionData(
             collection = collection,
-            entity_info_data_list = entity_info_data_list,
+            entity_status_data_list = entity_status_data_list,
         )
 
     def create_collection_entity( self,

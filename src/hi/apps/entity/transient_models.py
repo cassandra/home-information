@@ -23,7 +23,7 @@ class EntityViewItem:
 
 @dataclass
 class EntityViewGroup:
-    """ All entities of a given type and flagged as in the view or not. """
+    """All entities of a given type and flagged as in the view or not."""
     
     entity_type    : EntityType
     item_list      : List[EntityViewItem]  = field( default_factory = list )
@@ -31,7 +31,7 @@ class EntityViewGroup:
 
 @dataclass
 class EntityEditData:
-    """ All the data needed to render the Entity edit pane (subset of all entity details). """
+    """ Data needed for editing the entity object and its attributes."""
     
     entity                        : Entity
     entity_form                   : EntityForm                 = None
@@ -67,32 +67,37 @@ class EntityEditData:
 
     
 @dataclass
-class EntityInfoData:
-    """ All the data needed to render the Entity info modal. """
-
-    entity_edit_data            : EntityEditData
-    sensor_history_list_map     : Dict[ Sensor, List[ SensorHistory ] ]
+class EntityStatusData:
+    entity                      : Entity
     latest_sensor_response_map  : Dict[ Sensor, SensorResponse ]
-    principal_entity_list       : List[ Entity ]
 
-    @property
-    def entity(self):
-        return self.entity_edit_data.entity
+    def to_template_context(self):
+        context = {
+            'entity': self.entity,
+            'latest_sensor_response_map': self.latest_sensor_response_map,
+        }
+        return context
+    
+    
+@dataclass
+class EntityStateHistoryData:
+    entity                        : Entity
+    sensor_history_list_map     : Dict[ Sensor, List[ SensorHistory ] ]
     
     def to_template_context(self):
         context = {
             'entity': self.entity,
             'sensor_history_list_map': self.sensor_history_list_map,
-            'latest_sensor_response_map': self.latest_sensor_response_map,
-            'principal_entity_list': self.principal_entity_list,
         }
-        context.update( self.entity_edit_data.to_template_context() )
         return context
 
     
 @dataclass
 class EntityDetailsData:
-    """ All the data needed to render the Entity details pane. """
+    """
+    All the data needed about an entity to display in side bar during edit
+    mode.
+    """
 
     entity_edit_data      : EntityEditData
     entity_position_form  : EntityPositionForm  = None

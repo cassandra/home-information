@@ -119,7 +119,7 @@ class LocationItemInfoView( View ):
             raise BadRequest( request, message = 'Bad item id.' )
         
         if item_type == ItemType.ENTITY:
-            redirect_url = reverse( 'entity_info', kwargs = { 'entity_id': item_id } )
+            redirect_url = reverse( 'entity_status', kwargs = { 'entity_id': item_id } )
             return HttpResponseRedirect( redirect_url )
     
         if item_type == ItemType.COLLECTION:

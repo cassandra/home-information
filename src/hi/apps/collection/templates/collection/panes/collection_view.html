@@ -1,43 +1,32 @@
 <div id="hi-collection-view-main" class="hi-collection-view draggable-container">
-  <h5><sub>COLLECTION:</sub> {{ collection_data.collection.name }}</h5>
+  <h5><sub>COLLECTION:</sub> {{ collection.name }}</h5>
 
+  {% if collection.collection_view_type.is_grid %}
   <div class="row">
-    {% for entity_info_data in collection_data.entity_info_data_list %}
-    {% with entity=entity_info_data.entity %}
-    <div id="{{ entity.html_id }}" 
+    {% for entity_status_data in entity_status_data_list %}
+    <div id="{{ entity_status_data.entity.html_id }}" 
 	 class="col-4 {% if request.is_editing %}draggable{% endif %}"
-	 {% if request.is_editing %}draggable="true"{% endif %}
-    >
-      <div>
-	{% if request.is_editing %}
-	<a href="{% url 'entity_details' entity_id=entity.id %}"
-	   data-async="true">
-	  {{ entity.name }}
-	</a>
-	{% else %}
-	<a href="{% url 'entity_info' entity_id=entity.id %}"
-	   data-async="true">
-	  {{ entity.name }}
-	</a>
-	{% endif %}
-      </div>
-      <div>
-	Controls
-      </div>
-      <div>
-	<h5>Sensor Responses</h5>
-	<ul>
-	  {% for sensor, sensor_response in entity_info_data.sensor_response_map.items %}
-	  <li>Sensor: {{ sensor.name }}, Response: {{ sensor_response.value }}</li>
-	  {% empty %}
-	  <div><em>No sensors</em></div>
-	  {% endfor %}
-	</ul>
-      </div>
+	 {% if request.is_editing %}draggable="true"{% endif %} >
+      {% include "entity/panes/entity_status_card.html" with entity_status_data=entity_status_data %}
     </div>
-    {% endwith %}
     {% empty %}
     <div><em>No entities in collection.</em></div>
-    {% endfor %}
+  {% endfor %}
   </div>
+
+  {% else %}
+
+  {% for entity_status_data in entity_status_data_list %}
+  <div id="{{ entity_status_data.entity.html_id }}" 
+       class="{% if request.is_editing %}draggable{% endif %}"
+       {% if request.is_editing %}draggable="true"{% endif %} >
+    {% include "entity/panes/entity_status_row.html" with entity_status_data=entity_status_data %}
+  </div>
+  {% empty %}
+  <div><em>No entities in collection.</em></div>
+  {% endfor %}
+  
+  {% endif %}
+  
 </div>
+ 
