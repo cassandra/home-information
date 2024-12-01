@@ -1,7 +1,6 @@
-{% load common_template_helpers %}
-<div>
+<div class="row">
   {% with entity=entity_status_data.entity %}
-  <div>
+  <div class="col-3">
     {% if request.is_editing %}
     <a href="{% url 'entity_details' entity_id=entity.id %}"
        data-async="true">
@@ -16,11 +15,6 @@
   </div>
   {% endwith %}
 
-  {% for sensor, sensor_response in entity_status_data.latest_sensor_response_map.items %}
-  <li>Sensor: {{ sensor.name }}
-    {% include_with_fallback sensor_response.sensor.entity_state.entity_state_type.value_template_name "entity/panes/sensor_value_default.html" %}
-  </li>
-  {% empty %}
-  <div><em>No sensors</em></div>
-  {% endfor %}
+  {% include "entity/panes/entity_state_status_row.html" with entity_state_status_data_list=entity_status_data.entity_state_status_data_list %}
+
 </div>

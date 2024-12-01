@@ -3,7 +3,6 @@ from typing import Dict, List
 
 from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.sense.models import Sensor, SensorHistory
-from hi.apps.sense.transient_models import SensorResponse
 
 from .enums import EntityType
 from .forms import (
@@ -20,7 +19,7 @@ class EntityViewItem:
     entity          : Entity
     exists_in_view  : bool
 
-
+    
 @dataclass
 class EntityViewGroup:
     """All entities of a given type and flagged as in the view or not."""
@@ -64,32 +63,6 @@ class EntityEditData:
             'entity_attribute_formset': self.entity_attribute_formset,
             'entity_attribute_upload_form': self.entity_attribute_upload_form,
         }
-
-    
-@dataclass
-class EntityStatusData:
-    entity                      : Entity
-    latest_sensor_response_map  : Dict[ Sensor, SensorResponse ]
-
-    def to_template_context(self):
-        context = {
-            'entity': self.entity,
-            'latest_sensor_response_map': self.latest_sensor_response_map,
-        }
-        return context
-    
-    
-@dataclass
-class EntityStateHistoryData:
-    entity                        : Entity
-    sensor_history_list_map     : Dict[ Sensor, List[ SensorHistory ] ]
-    
-    def to_template_context(self):
-        context = {
-            'entity': self.entity,
-            'sensor_history_list_map': self.sensor_history_list_map,
-        }
-        return context
 
     
 @dataclass

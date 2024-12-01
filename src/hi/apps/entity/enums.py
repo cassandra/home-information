@@ -110,7 +110,16 @@ class EntityStateType(LabeledEnum):
         it will fallback to the default template of
         "entity/panes/sensor_value_default.html"
         """
-        return f'entity/panes/sensor_value_{self.name.lower()}.html'
+        return f'sense/panes/sensor_value_{self.name.lower()}.html'
+
+    def controller_template_name(self):
+        """
+        Template used to render a sensor's value for this state. Create the
+        template at the given location to define a state-specific rendering, else
+        it will fallback to the default template of
+        "entity/panes/sensor_value_default.html"
+        """
+        return f'control/panes/controller_{self.name.lower()}.html'
 
 
 class TemperatureUnit(LabeledEnum):

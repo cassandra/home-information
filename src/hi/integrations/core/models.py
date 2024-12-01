@@ -5,6 +5,7 @@ from django.db import models
 from hi.apps.attribute.models import AttributeModel
 
 from .integration_key import IntegrationKey
+from .managers import IntegrationKeyManager
 
 
 class Integration( models.Model ):
@@ -68,6 +69,7 @@ class IntegrationKeyModel( models.Model ):
     For use in DB objects that need to be associated with an integration
     device, sensor, controller, attribute, etc.
     """
+    objects = IntegrationKeyManager()
     
     class Meta:
         abstract = True

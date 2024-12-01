@@ -6,12 +6,14 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.entity.models import Entity
 
 from .models import Sensor, SensorHistory
-from .transient_models import SensorResponse
+from .transient_models import SensorResponse, EntityStateHistoryData
 
 logger = logging.getLogger(__name__)
 
 
 class SensorHistoryManager( Singleton ):
+    
+    ENTITY_STATE_HISTORY_ITEM_MAX = 5
     
     def __init_singleton__( self ):
         return
@@ -53,3 +55,17 @@ class SensorHistoryManager( Singleton ):
             continue
 
         return sensor_history_list_map
+    
+    def get_entity_state_history_data( self,
+                                       entity         : Entity,
+                                       is_editing     : bool )        -> EntityStateHistoryData:
+        sensor_history_list_map = self.get_latest_entity_sensor_history(
+            entity = entity,
+            max_items = self.ENTITY_STATE_HISTORY_ITEM_MAX,
+        )
+        
+        return EntityStateHistoryData(
+            entity = entity,
+            sensor_history_list_map = sensor_history_list_map,
+        )
+

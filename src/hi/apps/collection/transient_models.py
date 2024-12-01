@@ -4,7 +4,7 @@ from typing import List
 from hi.apps.collection.edit.forms import CollectionForm, CollectionPositionForm
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
-from hi.apps.entity.transient_models import EntityStatusData
+from hi.apps.monitor.transient_models import EntityStatusData
 
 from .models import Collection
 

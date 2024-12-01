@@ -4,6 +4,8 @@ from django.db import transaction
 from django.views.generic import View
 
 from hi.apps.location.location_manager import LocationManager
+from hi.apps.monitor.status_display_helpers import StatusDisplayEntityHelper
+from hi.apps.sense.sensor_history_manager import SensorHistoryManager
 
 from hi.hi_async_view import HiModalView, HiSideView
 
@@ -99,10 +101,13 @@ class EntityStatusView( HiModalView, EntityViewMixin ):
     def get( self, request, *args, **kwargs ):
         entity = self.get_entity( request, *args, **kwargs )
 
-        entity_status_data = EntityManager().get_entity_status_data(
+        entity_status_data = StatusDisplayEntityHelper().get_entity_status_data(
             entity = entity,
             is_editing = request.is_editing,
         )
+        if not entity_status_data.entity_state_status_data_list:
+            return EntityEditView().get( request, *args, **kwargs )
+        
         context = entity_status_data.to_template_context()
         return self.modal_response( request, context )
 
@@ -115,7 +120,7 @@ class EntityStateHistoryView( HiModalView, EntityViewMixin ):
     def get( self, request, *args, **kwargs ):
         entity = self.get_entity( request, *args, **kwargs )
 
-        entity_state_history_data = EntityManager().get_entity_state_history_data(
+        entity_state_history_data = SensorHistoryManager().get_entity_state_history_data(
             entity = entity,
             is_editing = request.is_editing,
         )

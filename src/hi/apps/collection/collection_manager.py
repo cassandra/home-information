@@ -6,10 +6,10 @@ from django.http import HttpRequest
 
 from hi.apps.collection.edit.forms import CollectionPositionForm
 from hi.apps.common.singleton import Singleton
-from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
+from hi.apps.monitor.status_display_helpers import StatusDisplayEntityHelper
 
 from .models import (
     Collection,
@@ -62,11 +62,9 @@ class CollectionManager(Singleton):
                              collection     : Collection,
                              is_editing     : bool ):
 
-        entity_manager = EntityManager()
-
         entity_status_data_list = list()
         for collection_entity in collection.entities.all().order_by('order_id'):
-            entity_status_data = entity_manager.get_entity_status_data(
+            entity_status_data = StatusDisplayEntityHelper().get_entity_status_data(
                 entity = collection_entity.entity,
                 is_editing = is_editing,
             )

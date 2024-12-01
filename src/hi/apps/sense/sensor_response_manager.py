@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class SensorResponseManager( Singleton ):
-    """Integrations are responsible for monitoring sensor values and
+    """
+    Integrations are responsible for monitoring sensor values and
     normalizing them into SensorResponse objects.  This module take it from
     there to store these for tracking the latest state.  i.e., Integrations
     should be using this module to submit sensor values changes.
@@ -34,7 +35,6 @@ class SensorResponseManager( Singleton ):
       - We will keep all the list cache keys in a Redis set so that we can
         easily fetch them all without needing to know all the integration
         keys (using the SADD and SMEMBERS Redis functions).
-
     """
     SENSOR_RESPONSE_LIST_SIZE = 5
     SENSOR_RESPONSE_LIST_SET_KEY = 'hi.sr.list.keys'
@@ -81,7 +81,7 @@ class SensorResponseManager( Singleton ):
         logger.debug( f'Sensor changed: {len(changed_sensor_response_list)} of {len(sensor_response_map)}' )
         return
 
-    def get_all_latest_sensor_responses( self ) -> Dict[ IntegrationKey, List[ SensorResponse ] ]:
+    def get_all_latest_sensor_responses( self ) -> Dict[ Sensor, List[ SensorResponse ] ]:
 
         list_cache_keys = self._redis_client.smembers( self.SENSOR_RESPONSE_LIST_SET_KEY )
 
@@ -96,9 +96,31 @@ class SensorResponseManager( Singleton ):
             if not cached_list:
                 continue
             sensor_response_list = [ SensorResponse.from_string( x ) for x in cached_list ]
-            sensor = self._get_sensor( integration_key = sensor_response_list[0].integration_key )
-            if sensor:
-                sensor_response_list_map[sensor] = sensor_response_list
+            if sensor_response_list:
+                sensor = self._get_sensor( integration_key = sensor_response_list[0].integration_key )
+                if sensor:
+                    
+                    sensor_response_list_map[sensor] = sensor_response_list
+            continue
+
+        return sensor_response_list_map
+    
+    def get_latest_sensor_responses( self,
+                                     sensor_list : List[ Sensor ] ) -> Dict[ Sensor, List[ SensorResponse ] ]:
+        
+        list_cache_keys = [ self.to_sensor_response_list_cache_key( x.integration_key )
+                            for x in sensor_list ]
+
+        pipeline = self._redis_client.pipeline()
+        for list_cache_key in list_cache_keys:
+            pipeline.lrange( list_cache_key, 0, -1 )
+            continue
+        cached_list_list = pipeline.execute()
+
+        sensor_response_list_map = dict()
+        for sensor, cached_list in zip( sensor_list, cached_list_list ):
+            sensor_response_list = [ SensorResponse.from_string( x ) for x in cached_list ]
+            sensor_response_list_map[sensor] = sensor_response_list
             continue
 
         return sensor_response_list_map
@@ -136,14 +158,12 @@ class SensorResponseManager( Singleton ):
         
     def _get_sensor( self, integration_key : IntegrationKey ):
         if integration_key not in self._sensor_cache:
-            try:
-                sensor = Sensor.objects.select_related('entity_state').get(
-                    integration_id = integration_key.integration_id,
-                    integration_name = integration_key.integration_name,
-                )
-                self._sensor_cache[integration_key] = sensor
-            except Sensor.DoesNotExist:
+            sensor_queryset = Sensor.objects.filter_by_integration_key(
+                integration_key = integration_key,
+            ).select_related('entity_state')
+            if not sensor_queryset.exists():
                 return None
+            self._sensor_cache[integration_key] = sensor_queryset[0]
 
         return self._sensor_cache[integration_key]
         

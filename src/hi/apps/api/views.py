@@ -4,7 +4,7 @@ import logging
 from django.http import HttpResponse
 from django.views.generic import View
 
-from hi.apps.monitor.status_display_helper import StatusDisplayStatusViewHelper
+from hi.apps.monitor.status_display_helpers import StatusDisplayStatusViewHelper
 
 
 logger = logging.getLogger(__name__)

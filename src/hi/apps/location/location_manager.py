@@ -8,7 +8,7 @@ from django.http import HttpRequest
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.svg_models import SvgViewBox
-from hi.apps.monitor.status_display_helper import StatusDisplayLocationHelper
+from hi.apps.monitor.status_display_helpers import StatusDisplayLocationHelper
 
 from .enums import LocationViewType
 from .location_view_data import LocationViewData

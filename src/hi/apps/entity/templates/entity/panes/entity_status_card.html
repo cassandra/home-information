@@ -1,4 +1,3 @@
-{% load common_template_helpers %}
 <div>
   {% with entity=entity_status_data.entity %}
   <div>
@@ -16,11 +15,6 @@
   </div>
   {% endwith %}
 
-  {% for sensor, sensor_response in entity_status_data.latest_sensor_response_map.items %}
-  <li>Sensor: {{ sensor.name }}
-    {% include_with_fallback sensor_response.sensor.entity_state.entity_state_type.value_template_name "entity/panes/sensor_value_default.html" %}
-  </li>
-  {% empty %}
-  <div><em>No sensors</em></div>
-  {% endfor %}
+  {% include "entity/panes/entity_state_status_card.html" with entity_state_status_data_list=entity_status_data.entity_state_status_data_list %}
+
 </div>

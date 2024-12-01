@@ -1,5 +1,4 @@
 {% extends "modals/action_done.html" %}
-{% load common_template_helpers %}
 
 {% block title_text %}
 {{ entity.name }}
@@ -7,15 +6,7 @@
 
 {% block body %}
 
-<ul>
-  {% for sensor, sensor_response in latest_sensor_response_map.items %}
-  <li>Sensor: {{ sensor.name }}
-    {% include_with_fallback sensor_response.sensor.entity_state.entity_state_type.value_template_name "entity/panes/sensor_value_default.html" %}
-  </li>
-  {% empty %}
-  <div><em>No sensors</em></div>
-  {% endfor %}
-</ul>
+{% include "entity/panes/entity_state_status_card.html" with entity_state_status_data_list=entity_state_status_data_list %}
 
 <div class="d-flex justify-content-between">
   <div>

@@ -4,8 +4,11 @@ from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.location.enums import LocationViewType
 from hi.apps.location.models import LocationView
-from hi.apps.monitor.status_display_data import StatusDisplayData
+from hi.apps.sense.models import Sensor
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
+
+from .status_display_data import StatusDisplayData
+from .transient_models import EntityStatusData, EntityStateStatusData
 
 
 class StatusDisplayLocationHelper:
@@ -79,21 +82,21 @@ class StatusDisplayStatusViewHelper:
     
     def get_status_display_data( self ) -> List[ StatusDisplayData ]:
 
-        sensor_response_list_map = SensorResponseManager().get_all_latest_sensor_responses()
-
+        sensor_to_sensor_response_list = SensorResponseManager().get_all_latest_sensor_responses()
+        
         # Since a given EntityState can have zero or more sensors, for each
         # EntityState, we need to collate all the sensor values to find the
         # latest status.
         
-        entity_state_sensor_response_list_map = dict()
-        for sensor, sensor_response_list in sensor_response_list_map.items():
-            if sensor.entity_state not in entity_state_sensor_response_list_map:
-                entity_state_sensor_response_list_map[sensor.entity_state] = list()
-                entity_state_sensor_response_list_map[sensor.entity_state].extend( sensor_response_list )
+        entity_state_to_sensor_response_list = dict()
+        for sensor, sensor_response_list in sensor_to_sensor_response_list.items():
+            if sensor.entity_state not in entity_state_to_sensor_response_list:
+                entity_state_to_sensor_response_list[sensor.entity_state] = list()
+                entity_state_to_sensor_response_list[sensor.entity_state].extend( sensor_response_list )
             continue
 
         status_display_data_list = list()
-        for entity_state, sensor_response_list in entity_state_sensor_response_list_map.items():
+        for entity_state, sensor_response_list in entity_state_to_sensor_response_list.items():
             sensor_response_list.sort( key = lambda item: item.timestamp, reverse = True )
             status_display_data = StatusDisplayData(
                 entity_state = entity_state,
@@ -103,3 +106,58 @@ class StatusDisplayStatusViewHelper:
             continue
 
         return status_display_data_list
+
+
+class StatusDisplayEntityHelper:
+    
+    def get_entity_status_data( self,
+                                entity      : Entity,
+                                is_editing  : bool ) -> EntityStatusData:
+
+        entity_state_set = set( entity.states.all() )
+
+        for entity_state_delegation in entity.entity_state_delegations.all():
+            entity_state_set.add( entity_state_delegation.entity_state )
+            continue
+        
+        entity_state_to_sensor_list = dict()
+        
+        sensor_list = list()
+        for entity_state in entity_state_set:
+            entity_state_sensor_list = list( entity_state.sensors.all() )
+            entity_state_to_sensor_list[entity_state] = entity_state_sensor_list
+            sensor_list.extend( entity_state_sensor_list )
+            continue
+
+        if not is_editing:
+            sensor_response_list_map = SensorResponseManager().get_latest_sensor_responses(
+                sensor_list = sensor_list,
+            )
+        else:
+            sensor_response_list_map = dict()
+            
+        entity_state_status_data_list = list()
+        for entity_state in entity_state_set:
+            entity_state_sensor_response_list = list()
+            for sensor in entity_state_to_sensor_list.get( entity_state ):
+                sensor_response_list = sensor_response_list_map.get( sensor )
+                if sensor_response_list:
+                    entity_state_sensor_response_list.extend( sensor_response_list )
+                continue
+            entity_state_sensor_response_list.sort( key = lambda item: item.timestamp, reverse = True )
+
+            controller_list = list( entity_state.controllers.all() )
+            
+            entity_state_status_data = EntityStateStatusData(
+                entity_state = entity_state,
+                sensor_response_list = entity_state_sensor_response_list,
+                controller_list = controller_list,
+            )
+            entity_state_status_data_list.append( entity_state_status_data )
+            continue
+
+        return EntityStatusData(
+            entity = entity,
+            entity_state_status_data_list = entity_state_status_data_list,
+        )
+
