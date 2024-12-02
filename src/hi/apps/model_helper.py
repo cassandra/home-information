@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import Dict, List
 
 from hi.apps.control.enums import ControllerType
 from hi.apps.control.models import Controller
@@ -84,7 +84,7 @@ class HiModelHelper:
     @classmethod
     def create_discrete_sensor( cls,
                                 entity           : Entity,
-                                values           : List[ str ],
+                                name_label_dict  : Dict[ str, str ],
                                 integration_key  : IntegrationKey  = None,
                                 name             : str             = None ):
         if not name:
@@ -94,7 +94,7 @@ class HiModelHelper:
             entity_state_type = EntityStateType.DISCRETE,
             name = name,
             integration_key = integration_key,
-            value_range = json.dumps( values ),
+            value_range = json.dumps( name_label_dict ),
         )
     
     @classmethod
@@ -235,7 +235,7 @@ class HiModelHelper:
     @classmethod
     def create_discrete_controller( cls,
                                     entity           : Entity,
-                                    value_list       : List[ str ],
+                                    name_label_dict  : Dict[ str, str ],
                                     integration_key  : IntegrationKey  = None,
                                     name             : str             = None,
                                     is_sensed        : bool            = True ):
@@ -247,7 +247,7 @@ class HiModelHelper:
             name = name,
             is_sensed = is_sensed,
             integration_key = integration_key,
-            value_range = json.dumps( value_list ),
+            value_range = json.dumps( name_label_dict ),
         )
 
     @classmethod

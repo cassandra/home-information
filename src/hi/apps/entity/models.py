@@ -1,3 +1,6 @@
+import json
+from typing import Dict
+
 from django.db import models
 
 from hi.apps.location.models import (
@@ -171,8 +174,25 @@ class EntityState( models.Model ):
     @property
     def css_class(self):
         return f'hi-entity-state-{self.id}'
+
+    @property
+    def value_range_dict(self):
+        try:
+            value_range = json.loads( self.value_range )
+            if isinstance( value_range, dict ):
+                return value_range
+            if isinstance( value_range, list ):
+                return { x: x for x in value_range }
+        except json.JSONDecodeError:
+            pass
+        return dict()
+
+    @value_range_dict.setter
+    def value_range_dict( self, value_dict : Dict[ str, str ] ):
+        self.value_range = json.dumps( value_dict )
+        return
     
-    
+
 class EntityStateDelegation(models.Model):
     """An EntityState associated with a Sensor or Controller is often serving
     representing the state of some other entity. In those cases, the entity

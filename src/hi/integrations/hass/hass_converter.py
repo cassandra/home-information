@@ -516,7 +516,7 @@ class HassConverter:
         if device_class == HassApi.ENUM_DEVICE_CLASS:
             sensor = HiModelHelper.create_discrete_sensor(
                 entity = entity,
-                values = hass_state.options,
+                name_label_dict = { x.lower(): x for x in hass_state.options },
                 integration_key = integration_key,
                 name = name,
             )

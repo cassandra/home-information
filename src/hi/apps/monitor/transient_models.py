@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from hi.apps.control.models import Controller
+from hi.apps.control.transient_models import ControllerData
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.transient_models import SensorResponse
 
@@ -10,7 +10,7 @@ from hi.apps.sense.transient_models import SensorResponse
 class EntityStateStatusData:
     entity_state          : EntityState
     sensor_response_list  : List[ SensorResponse ]
-    controller_list       : List[ Controller ]
+    controller_data_list  : List[ ControllerData ]
 
     @property
     def latest_sensor_response(self):

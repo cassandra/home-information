@@ -167,7 +167,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
 
         if active_run_state_name:
             run_state_sensor_response = self._create_run_state_sensor_response(
-                run_state_name = active_run_state_name,
+                run_state_name = active_run_state_name.lower(),
                 timestamp = current_poll_datetime,
             )
             sensor_response_map[run_state_sensor_response.integration_key] = run_state_sensor_response
@@ -265,7 +265,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
                 sensor_prefix = self._zm_manager.MONITOR_FUNCTION_SENSOR_PREFIX,
                 zm_monitor_id = zm_monitor.id(),
             ),
-            value = str( zm_monitor.function() ),
+            value = str( zm_monitor.function() ).lower(),
             timestamp = timestamp,
         )
 

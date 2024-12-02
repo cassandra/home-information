@@ -48,7 +48,11 @@ class Controller( IntegrationKeyModel ):
         self.controller_type_str = str(controller_type)
         return
 
-    
+    @property
+    def choices(self):
+        return [ ( k, v ) for k, v in self.entity_state.value_range_dict.items() ]
+
+        
 class ControllerHistory(models.Model):
 
     controller = models.ForeignKey(

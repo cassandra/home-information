@@ -1,21 +1,20 @@
-{% load common_template_helpers %}
 <ul>
   {% for entity_state_status_data in entity_state_status_data_list %}
   <li>State: {{ entity_state_status_data.entity_state.name }}
 
     {% with sensor_response=entity_state_status_data.latest_sensor_response %}
     {% if sensor_response %}
-    {% include_with_fallback entity_state_status_data.entity_state.entity_state_type.value_template_name "sense/panes/sensor_value_default.html" %}
+    {% include "sense/panes/sensor_response.html" with sensor_response=sensor_response %}
     {% else %}
     <div><em>No sensor responses.</em></div>
     {% endif %}
-    {% endwith %}
 
-    {% for controller in entity_state_status_data.controller_list %}
-    {% include_with_fallback entity_state_status_data.entity_state.entity_state_type.controller_template_name "control/panes/controller_default.html" %}
+    {% for controller_data in entity_state_status_data.controller_data_list %}
+    {% include "control/panes/controller_data.html" with controller_data=controller_data %}
     {% empty %}
     <div><em>No controllers.</em></div>
     {% endfor %}
+    {% endwith %}
     
     {% empty %}
     <div><em>No state info.</em></div>

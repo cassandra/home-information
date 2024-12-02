@@ -35,6 +35,7 @@ urlpatterns = [
     re_path( r'^entity/', include('hi.apps.entity.urls' )),
     re_path( r'^collection/', include('hi.apps.collection.urls' )),
     re_path( r'^sense/', include('hi.apps.sense.urls' )),
+    re_path( r'^control/', include('hi.apps.control.urls' )),
 
     # Custom error pages
     re_path( r'^400.html$', views.bad_request_response, name='bad_request' ),

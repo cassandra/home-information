@@ -1,10 +1,11 @@
 from typing import Dict, List, Set, Sequence
 
+from hi.apps.control.models import Controller
+from hi.apps.control.transient_models import ControllerData
 from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.location.enums import LocationViewType
 from hi.apps.location.models import LocationView
-from hi.apps.sense.models import Sensor
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
 
 from .status_display_data import StatusDisplayData
@@ -146,12 +147,24 @@ class StatusDisplayEntityHelper:
                 continue
             entity_state_sensor_response_list.sort( key = lambda item: item.timestamp, reverse = True )
 
-            controller_list = list( entity_state.controllers.all() )
+            if entity_state_sensor_response_list:
+                latest_sensor_response = entity_state_sensor_response_list[0]
+            else:
+                latest_sensor_response = None
+                
+            controller_data_list = list()
+            for controller in entity_state.controllers.all():
+                controller_data = ControllerData(
+                    controller = controller,
+                    latest_sensor_response = latest_sensor_response,
+                )
+                controller_data_list.append( controller_data )
+                continue
             
             entity_state_status_data = EntityStateStatusData(
                 entity_state = entity_state,
                 sensor_response_list = entity_state_sensor_response_list,
-                controller_list = controller_list,
+                controller_data_list = controller_data_list,
             )
             entity_state_status_data_list.append( entity_state_status_data )
             continue
@@ -161,3 +174,26 @@ class StatusDisplayEntityHelper:
             entity_state_status_data_list = entity_state_status_data_list,
         )
 
+    
+class StatusDisplayControllerHelper:
+
+    def get_latest_sensor_response( self, controller : Controller ):
+        entity_state = controller.entity_state
+        sensor_list = list( entity_state.sensors.all() )
+        
+        sensor_response_list_map = SensorResponseManager().get_latest_sensor_responses(
+            sensor_list = sensor_list,
+        )
+        entity_state_sensor_response_list = list()
+        for sensor in sensor_list:
+            sensor_response_list = sensor_response_list_map.get( sensor )
+            if sensor_response_list:
+                entity_state_sensor_response_list.extend( sensor_response_list )
+            continue
+        entity_state_sensor_response_list.sort( key = lambda item: item.timestamp, reverse = True )
+
+        if entity_state_sensor_response_list:
+            return entity_state_sensor_response_list[0]
+
+        return None
+        

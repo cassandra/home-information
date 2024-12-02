@@ -120,6 +120,9 @@ class SensorResponseManager( Singleton ):
         sensor_response_list_map = dict()
         for sensor, cached_list in zip( sensor_list, cached_list_list ):
             sensor_response_list = [ SensorResponse.from_string( x ) for x in cached_list ]
+            for sensor_response in sensor_response_list:
+                sensor_response.sensor = sensor
+                continue
             sensor_response_list_map[sensor] = sensor_response_list
             continue
 

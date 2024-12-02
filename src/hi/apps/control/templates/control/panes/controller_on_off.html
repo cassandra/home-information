@@ -1,0 +1,6 @@
+<label class="switch">
+  <input type="checkbox" name="value"
+	 {% if controller_data.latest_sensor_response.is_on %}checked="true"{% endif %}
+	 onchange-async="true">
+  <span class="slider"></span>
+</label>

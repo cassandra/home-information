@@ -144,7 +144,7 @@ class ZoneMinderManager( Singleton ):
     def _sync_states( self, result : ProcessingResult ) -> ProcessingResult:
 
         zm_run_state_list = self._fetch_zm_run_states()
-        zm_run_state_values = [ x.name() for x in zm_run_state_list ]
+        new_state_values_dict = { x.name().lower(): x.name() for x in zm_run_state_list }
         
         zm_entity = Entity.objects.filter_by_integration_key(
             integration_key = self._zm_integration_key(),
@@ -152,7 +152,7 @@ class ZoneMinderManager( Singleton ):
         
         if not zm_entity:
             _ = self._create_zm_entity(
-                zm_run_state_values = zm_run_state_values,
+                run_state_name_label_dict = new_state_values_dict,
                 result = result,
             )
         
@@ -165,12 +165,14 @@ class ZoneMinderManager( Singleton ):
             return
 
         entity_state = zm_run_state_sensor.entity_state
-        new_state_values = set( zm_run_state_values )
-        existing_state_values = set( json.loads( entity_state.value_range ) )
+        new_state_values = new_state_values_dict.keys()
+        existing_state_values_dict = entity_state.value_range_dict
+        existing_state_values = existing_state_values_dict.keys()
+
         if existing_state_values != new_state_values:
-            entity_state.value_range = json.dumps( zm_run_state_values )
+            entity_state.value_range_dict = new_state_values_dict
             entity_state.save()
-            result.message_list.append( f'Updated ZM state values to: {zm_run_state_values}' )
+            result.message_list.append( f'Updated ZM state values to: {new_state_values_dict}' )
 
         return
 
@@ -259,8 +261,8 @@ class ZoneMinderManager( Singleton ):
         return integration_key_to_entity
 
     def _create_zm_entity( self,
-                           zm_run_state_values  : List[ str ],
-                           result           : ProcessingResult ):
+                           run_state_name_label_dict  : Dict[ str, str ],
+                           result                     : ProcessingResult ):
         with transaction.atomic():
             zm_entity = Entity(
                 name = self.ZM_ENTITY_NAME,
@@ -274,7 +276,7 @@ class ZoneMinderManager( Singleton ):
                 entity = zm_entity,
                 integration_key = self._zm_run_state_integration_key(),
                 name = f'{zm_entity.name} Run State',
-                value_list = zm_run_state_values,
+                name_label_dict = run_state_name_label_dict,
             )
 
         result.message_list.append( f'Created ZM entity: {zm_entity}' )
@@ -315,7 +317,7 @@ class ZoneMinderManager( Singleton ):
                     zm_monitor_id = zm_monitor.id(),
                 ),
                 name = f'{entity.name} Function',
-                value_list = [ str(x) for x in ZmMonitorFunction ],
+                name_label_dict = { str(x): x.label for x in ZmMonitorFunction },
             )
         result.message_list.append( f'Create new camera entity: {entity}' )
         return

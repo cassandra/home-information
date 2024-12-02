@@ -7,6 +7,7 @@ from hi.apps.entity.models import Entity
 
 from hi.integrations.core.integration_key import IntegrationKey
 
+from .enums import SensorValue
 from .models import Sensor, SensorHistory
 
 
@@ -20,6 +21,9 @@ class SensorResponse:
     
     def __str__(self):
         return json.dumps( self.to_dict() )
+
+    def is_on(self):
+        return bool( self.value == str(SensorValue.ON) )
     
     def to_dict(self):
         return {

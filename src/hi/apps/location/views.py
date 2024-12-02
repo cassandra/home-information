@@ -83,7 +83,7 @@ class LocationSwitchView( View, LocationViewMixin ):
 
         redirect_url = reverse(
             'location_view',
-            kwargs = { 'location_id': location_view.id }
+            kwargs = { 'location_view_id': location_view.id }
         )
         return HttpResponseRedirect( redirect_url )
 

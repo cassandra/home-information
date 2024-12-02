@@ -1,0 +1,10 @@
+<select id="{{ attribute_form.value.id_for_label }}"
+	name="value"
+	onchange-async="true" >
+  
+  {% for value, label in controller_data.controller.choices %}
+  <option value="{{ value }}" {% if controller_data.latest_sensor_response.value == value %}selected="true"{% endif %}>
+    {{ label }}
+  </option>
+  {% endfor %}
+</select>
