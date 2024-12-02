@@ -128,14 +128,14 @@ class StatusDisplayEntityHelper:
             entity_state_to_sensor_list[entity_state] = entity_state_sensor_list
             sensor_list.extend( entity_state_sensor_list )
             continue
-
+        
         if not is_editing:
             sensor_response_list_map = SensorResponseManager().get_latest_sensor_responses(
                 sensor_list = sensor_list,
             )
         else:
             sensor_response_list_map = dict()
-            
+        
         entity_state_status_data_list = list()
         for entity_state in entity_state_set:
             entity_state_sensor_response_list = list()

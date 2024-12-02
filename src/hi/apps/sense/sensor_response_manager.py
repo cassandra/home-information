@@ -110,7 +110,7 @@ class SensorResponseManager( Singleton ):
         
         list_cache_keys = [ self.to_sensor_response_list_cache_key( x.integration_key )
                             for x in sensor_list ]
-
+        
         pipeline = self._redis_client.pipeline()
         for list_cache_key in list_cache_keys:
             pipeline.lrange( list_cache_key, 0, -1 )

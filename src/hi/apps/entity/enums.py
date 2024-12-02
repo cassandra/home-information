@@ -37,12 +37,14 @@ class EntityType(LabeledEnum):
     LIGHT                = ( 'Light', '' )
     LIGHT_SENSOR         = ( 'Light Sensor', '' )
     MOTION_SENSOR        = ( 'Motion Sensor', '' )
+    NETWORK_SWITCH       = ( 'Network Switch', '' )
     OPEN_CLOSE_DETECTOR  = ( 'Open/Close Sensor', '' )
     OTHER                = ( 'Other', '' )  # Will use generic visual element
     PRESENCE_SENSOR      = ( 'Presence Sensor', '' )
     SEWER_LINE           = ( 'Sewer Wire', '' )
     SHOWER               = ( 'Shower', '' ) 
     SINK                 = ( 'Sink', '' ) 
+    SERVICE              = ( 'Service'         , '' )
     SPEAKER              = ( 'Speaker', '' )
     SPINKLER_CONTROLLER  = ( 'Spinkler Controller', '' )
     SPINKLER_VALVE       = ( 'Spinkler Valve', '' )  # Controls sprinkler heads

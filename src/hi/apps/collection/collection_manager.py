@@ -61,7 +61,7 @@ class CollectionManager(Singleton):
     def get_collection_data( self,
                              collection     : Collection,
                              is_editing     : bool ):
-
+        
         entity_status_data_list = list()
         for collection_entity in collection.entities.all().order_by('order_id'):
             entity_status_data = StatusDisplayEntityHelper().get_entity_status_data(
