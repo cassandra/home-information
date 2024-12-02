@@ -144,7 +144,7 @@ class ZoneMinderManager( Singleton ):
     def _sync_states( self, result : ProcessingResult ) -> ProcessingResult:
 
         zm_run_state_list = self._fetch_zm_run_states()
-        new_state_values_dict = { x.name().lower(): x.name() for x in zm_run_state_list }
+        new_state_values_dict = { x.name(): x.name() for x in zm_run_state_list }
         
         zm_entity = Entity.objects.filter_by_integration_key(
             integration_key = self._zm_integration_key(),

@@ -1,7 +1,7 @@
 {% load common_template_helpers %}
 <div id="hi-controller-{{ controller_data.controller.id }}"
      class="h6" >{{ controller.name }}
-  <form action="{% url 'control_controller_on_off' controller_id=controller_data.controller.id %}"
+  <form action="{% url 'control_controller' controller_id=controller_data.controller.id %}"
 	method="post"
 	class="form" data-async="#hi-controller-{{ controller_data.controller.id }}" data-mode="replace">
     {% csrf_token %}

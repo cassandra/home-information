@@ -19,3 +19,8 @@ class IntegrationData:
 
     integration_metadata  : IntegrationMetaData
     integration           : Integration
+
+
+@dataclass
+class IntegrationControlResult:
+    pass

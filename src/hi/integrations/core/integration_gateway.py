@@ -2,7 +2,8 @@ from django.http import HttpRequest, HttpResponse
 
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
-from .transient_models import IntegrationMetaData
+from .integration_key import IntegrationKey
+from .transient_models import IntegrationControlResult, IntegrationMetaData
 
 
 class IntegrationGateway:
@@ -27,5 +28,11 @@ class IntegrationGateway:
     def sensor_response_details_view( self,
                                       request      : HttpRequest,
                                       details_str  : str ) -> HttpResponse:
+        # Should return a modal via antinode.modal_from_template() (called async)
+        raise NotImplementedError('Subclasses must override this method')
+
+    def do_control( self,
+                    controller_integration_key  : IntegrationKey,
+                    control_value               : str             ) -> IntegrationControlResult:
         # Should return a modal via antinode.modal_from_template() (called async)
         raise NotImplementedError('Subclasses must override this method')

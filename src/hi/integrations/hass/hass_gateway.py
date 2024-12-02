@@ -3,7 +3,8 @@ import logging
 from django.http import HttpRequest, HttpResponse
 
 from hi.integrations.core.integration_gateway import IntegrationGateway
-from hi.integrations.core.transient_models import IntegrationMetaData
+from hi.integrations.core.integration_key import IntegrationKey
+from hi.integrations.core.transient_models import IntegrationControlResult, IntegrationMetaData
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .hass_metadata import HassMetaData
@@ -34,3 +35,12 @@ class HassGateway( IntegrationGateway ):
             request,
             details_str = details_str,
         )
+
+    def do_control( self,
+                    controller_integration_key  : IntegrationKey,
+                    control_value               : str             ) -> IntegrationControlResult:
+
+        # zzz Needs implementation
+
+
+        return IntegrationControlResult()
