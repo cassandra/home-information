@@ -3,6 +3,7 @@ import logging
 from django.views.generic import View
 
 from hi.integrations.core.integration_factory import IntegrationFactory
+
 from .view_mixin import ControlViewMixin
 
 logger = logging.getLogger(__name__)
@@ -13,6 +14,7 @@ class ControllerView( View, ControlViewMixin ):
     def post( self, request, *args, **kwargs ):
         controller = self.get_controller( request, *args, **kwargs )
         control_value = request.POST.get( 'value' )
+
         logger.debug( f'Setting discrete controller = "{control_value}"' )
 
         integration_gateway = IntegrationFactory().get_integration_gateway(

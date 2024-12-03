@@ -20,8 +20,20 @@ class HassController( IntegrationController ):
                     control_value    : str             ) -> IntegrationControlResult:
         try:
 
-            raise ValueError( 'HAss controls not implemented.' )
-    
+            entity_id = integration_key.integration_name
+            if not control_value:
+                control_value = "off"
+                
+            response = self._hass_manager.hass_client.set_state(
+                entity_id = entity_id,
+                state = control_value,
+            )
+            logger.debug( f'HAss set state: {entity_id}={control_value}, response={response}' )
+            return IntegrationControlResult(
+                new_value = control_value,
+                error_list = [],
+            )
+
         except Exception as e:
             logger.warning( f'Exception in HAss do_control: {e}' )
             return IntegrationControlResult(

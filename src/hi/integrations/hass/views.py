@@ -16,6 +16,7 @@ from hi.hi_async_view import HiModalView
 
 from .hass_metadata import HassMetaData
 from .hass_manager import HassManager
+from .hass_sync import HassSynchronizer
 
 
 class HassEnableView( HiModalView, IntegrationHelperMixin ):
@@ -153,7 +154,7 @@ class HassSyncView( HiModalView ):
 
     def post(self, request, *args, **kwargs):
 
-        processing_result = HassManager().sync()
+        processing_result = HassSynchronizer().sync()
         context = {
             'processing_result': processing_result,
         }

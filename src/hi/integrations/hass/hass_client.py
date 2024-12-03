@@ -1,5 +1,5 @@
 import json
-from requests import get
+from requests import get, post
 from typing import Dict, List
 
 from .hass_converter import HassConverter
@@ -35,3 +35,20 @@ class HassClient:
         response = get( url, headers = self._headers )
         data = json.loads(response.text)
         return [ HassConverter.create_hass_state(x) for x in data ]
+
+    def set_state( self, entity_id: str, state: str, attributes: dict = None ) -> dict:
+
+        url = f'{self._api_base_url}/api/states/{entity_id}'
+        data = {
+            'state': state,
+        }
+        if attributes:
+            data["attributes"] = attributes
+            
+        response = post( url, json = data, headers = self._headers )
+        if response.status_code != 200:
+            raise ValueError( f"Failed to set state: {response.status_code} {response.text}" )
+        
+        return response.json()
+
+    
