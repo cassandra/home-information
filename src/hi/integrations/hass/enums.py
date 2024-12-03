@@ -18,3 +18,9 @@ class HassAttributeType( IntegrationAttributeType ):
         True,
         True,
     )
+
+    
+class HassStateValue:
+
+    ON = 'on'
+    OFF = 'off'

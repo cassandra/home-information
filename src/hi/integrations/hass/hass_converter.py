@@ -19,6 +19,7 @@ from hi.apps.sense.enums import SensorValue
 
 from hi.integrations.core.integration_key import IntegrationKey
 
+from .enums import HassStateValue
 from .hass_metadata import HassMetaData
 from .hass_models import HassApi, HassState, HassDevice
 
@@ -664,13 +665,13 @@ class HassConverter:
         
         elif hass_state.entity_id_prefix == HassApi.BINARY_SENSOR_ID_PREFIX:
 
-            if hass_state.state_value.lower() == 'on':
+            if hass_state.state_value.lower() == HassStateValue.ON:
                 if hass_state.device_class in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
                     return str(SensorValue.OPEN)
                 else:
                     return str(SensorValue.ON)
                 
-            elif hass_state.state_value.lower() == 'off':
+            elif hass_state.state_value.lower() == HassStateValue.OFF:
                 if hass_state.device_class in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
                     return str(SensorValue.CLOSED)
                 else:
@@ -692,3 +693,17 @@ class HassConverter:
             return hass_state.state_value
 
         return hass_state.state_value
+
+    @classmethod
+    def hass_entity_id_to_state_value_str( self,
+                                           hass_entity_id  : str,
+                                           hi_value        : str) -> str:
+        if hi_value is None:
+            return HassStateValue.OFF
+        if hi_value.lower() in [ str(SensorValue.OPEN), str(SensorValue.ON) ]:
+            return HassStateValue.ON
+        if hi_value.lower() in [ str(SensorValue.CLOSED), str(SensorValue.OFF) ]:
+            return HassStateValue.OFF
+        return hi_value
+    
+    
