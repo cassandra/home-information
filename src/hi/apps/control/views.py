@@ -15,34 +15,23 @@ class ControllerView( View, ControlViewMixin ):
         control_value = request.POST.get( 'value' )
         logger.debug( f'Setting discrete controller = "{control_value}"' )
 
-
-
-        
-
-        # Check the entity_state_type and sanity check/conmvert as needed.
-
-        # zzz Sanity check value is in value_range
-
-
-        # zzz Check against latest state value????
-
-        integration_factory = IntegrationFactory()
         integration_gateway = IntegrationFactory().get_integration_gateway(
             integration_id = controller.integration_id,
         )
         integration_controller = integration_gateway.get_controller()
         
-        
-        error_messages = list()
-
-
         control_result = integration_controller.do_control(
             integration_key = controller.integration_key,
             control_value = control_value,
         )
-
+        if control_result.has_errors:
+            override_sensor_value = None
+        else:
+            override_sensor_value = control_value
+            
         return self.controller_data_response(
             request = request,
             controller = controller,
-            error_messages = error_messages,
+            error_list = control_result.error_list,
+            override_sensor_value = override_sensor_value,
         )

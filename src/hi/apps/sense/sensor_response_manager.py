@@ -69,6 +69,7 @@ class SensorResponseManager( Singleton ):
 
         for integration_key, cached_value in zip( integration_keys, cached_values ):
             latest_sensor_response = sensor_response_map.get( integration_key )
+
             if cached_value:
                 previous_sensor_response = SensorResponse.from_string( cached_value )
                 if latest_sensor_response.value == previous_sensor_response.value:

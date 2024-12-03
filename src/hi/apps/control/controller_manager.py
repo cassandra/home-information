@@ -15,7 +15,7 @@ class ControllerManager( Singleton ):
     def __init_singleton__( self ):
         return
     
-    def get_controller_data( self, controller : Controller, error_messages : List[ str ] = None ):
+    def get_controller_data( self, controller : Controller, error_list : List[ str ] = None ):
 
         latest_sensor_response = StatusDisplayControllerHelper().get_latest_sensor_response(
             controller = controller,
@@ -23,5 +23,5 @@ class ControllerManager( Singleton ):
         return ControllerData(
             controller = controller,
             latest_sensor_response = latest_sensor_response,
-            error_messages = error_messages,
+            error_list = error_list,
         )

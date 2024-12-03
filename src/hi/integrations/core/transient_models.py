@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-
-from hi.apps.common.processing_result import ProcessingResult
+from typing import List
 
 from .enums import IntegrationAttributeType
 from .models import Integration
@@ -25,5 +24,11 @@ class IntegrationData:
 
 @dataclass
 class IntegrationControlResult:
-    new_value          : str
-    processing_result  : ProcessingResult
+
+    new_value    : str
+    error_list   : List[ str ]
+
+    @property
+    def has_errors(self):
+        return bool( self.error_list )
+    

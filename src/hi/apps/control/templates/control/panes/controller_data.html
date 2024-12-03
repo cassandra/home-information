@@ -7,6 +7,14 @@
     {% csrf_token %}
 
     {% include_with_fallback controller_data.controller.entity_state.entity_state_type.controller_template_name "control/panes/controller_default.html" %}
-    
+    {% if controller_data.error_list %}
+    <div class="text-danger">
+      <ul>
+	{% for msg in controller_data.error_list %}
+	<li>{{ msg }}</li>
+	{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
   </form>
 </div>

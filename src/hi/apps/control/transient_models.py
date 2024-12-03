@@ -10,6 +10,6 @@ from .models import Controller
 class ControllerData:
     controller              : Controller
     latest_sensor_response  : SensorResponse
-    error_messages          : List[ str ]    = None
+    error_list              : List[ str ]    = None
     
     
