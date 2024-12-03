@@ -2,8 +2,6 @@ from cachetools import TTLCache
 from datetime import datetime
 import logging
 from pyzm.helpers.Monitor import Monitor as ZmMonitor
-from pyzm.helpers.State import State as ZmState
-from typing import List
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
@@ -24,9 +22,6 @@ class ZoneMinderMonitor( PeriodicMonitor ):
     # TODO: Move this into the integrations attributes for users to set
     ZONEMINDER_SERVER_TIMEZONE = 'America/Chicago'
 
-    MONITOR_REFRESH_INTERVAL_SECS = 600
-    STATE_REFRESH_INTERVAL_SECS = 300
-    
     def __init__( self ):
         super().__init__(
             id = 'zm-monitor',
@@ -35,12 +30,6 @@ class ZoneMinderMonitor( PeriodicMonitor ):
         self._zm_manager = ZoneMinderManager()
         self._sensor_history_manager = SensorHistoryManager()
         self._sensor_response_manager = SensorResponseManager()
-
-        self._zm_monitor_list = list()
-        self._zm_monitor_timestamp = datetimeproxy.min()
-        
-        self._zm_state_list = list()
-        self._zm_state_timestamp = datetimeproxy.min()
         
         self._fully_processed_event_ids = TTLCache( maxsize = 1000, ttl = 100000 )
         self._start_processed_event_ids = TTLCache( maxsize = 1000, ttl = 100000 )
@@ -70,13 +59,23 @@ class ZoneMinderMonitor( PeriodicMonitor ):
         return
     
     async def do_work(self):
+        sensor_response_map = dict()
+        sensor_response_map.update( self._process_events( ) )
+        sensor_response_map.update( self._process_monitors() )
+        sensor_response_map.update( self._process_states() )
+
+        await self._sensor_response_manager.update_with_latest_sensor_responses(
+            sensor_response_map = sensor_response_map,
+        )
+        return
+    
+    def _process_events(self):
         current_poll_datetime = datetimeproxy.now()
         options = {
             'from': self._poll_from_datetime.isoformat(),  # This "from" only looks at event start time
             'tz': self._zm_tzname,
         }
-        response = self._zm_manager.zm_client.events( options )
-        events = response.list()
+        events = self._zm_manager.get_zm_events( options = options )
         if self.TRACE:
             logger.debug( f"Found {len(events)} new ZM events" )
 
@@ -132,24 +131,11 @@ class ZoneMinderMonitor( PeriodicMonitor ):
             sensor_response_map[idle_sensor_response.integration_key] = idle_sensor_response
             self._fully_processed_event_ids[zm_event.event_id] = True
             continue
-        
+
         # If there are no events for monitors/states, we still want to emit the
         # sensor response of it being idle.
         #
-        for zm_monitor in self._get_zm_monitors():
-
-            video_stream_sensor_response = self._create_video_stream_sensor_response(
-                zm_monitor = zm_monitor,
-                timestamp = current_poll_datetime,
-            )
-            sensor_response_map[video_stream_sensor_response.integration_key] = video_stream_sensor_response
-            
-            function_sensor_response = self._create_monitor_function_sensor_response(
-                zm_monitor = zm_monitor,
-                timestamp = current_poll_datetime,
-            )
-            sensor_response_map[function_sensor_response.integration_key] = function_sensor_response
-            
+        for zm_monitor in self._zm_manager.get_zm_monitors():
             if zm_monitor.id() not in zm_monitor_ids_seen:
                 idle_sensor_response = self._create_idle_sensor_response(
                     zm_monitor = zm_monitor,
@@ -157,25 +143,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
                 )
                 sensor_response_map[idle_sensor_response.integration_key] = idle_sensor_response
             continue
-
-        active_run_state_name = None
-        for zm_state in self._get_zm_states():
-            if zm_state.active():
-                active_run_state_name = zm_state.name()
-                break
-            continue
-
-        if active_run_state_name:
-            run_state_sensor_response = self._create_run_state_sensor_response(
-                run_state_name = active_run_state_name,
-                timestamp = current_poll_datetime,
-            )
-            sensor_response_map[run_state_sensor_response.integration_key] = run_state_sensor_response
-         
-        await self._sensor_response_manager.update_with_latest_sensor_responses(
-            sensor_response_map = sensor_response_map,
-        )
-
+        
         if open_zm_event_list:
             # Ensure that we will continue to poll for all the open events we
             # currently see.
@@ -200,24 +168,49 @@ class ZoneMinderMonitor( PeriodicMonitor ):
             #
             pass
         
-        return
+        return sensor_response_map
 
-    def _get_zm_monitors(self) -> List[ ZmMonitor ]:
-        monitor_list_age = datetimeproxy.now() - self._zm_monitor_timestamp
-        if (( not self._zm_monitor_list )
-            or ( monitor_list_age.seconds > self.MONITOR_REFRESH_INTERVAL_SECS )):
-            self._zm_monitor_list = self._zm_manager.zm_client.monitors().list()
-            self._zm_monitor_timestamp = datetimeproxy.now()
-        return self._zm_monitor_list
+    def _process_monitors(self):
+        current_poll_datetime = datetimeproxy.now()
+        sensor_response_map = dict()
+
+        for zm_monitor in self._zm_manager.get_zm_monitors():
+
+            video_stream_sensor_response = self._create_video_stream_sensor_response(
+                zm_monitor = zm_monitor,
+                timestamp = current_poll_datetime,
+            )
+            sensor_response_map[video_stream_sensor_response.integration_key] = video_stream_sensor_response
+            
+            function_sensor_response = self._create_monitor_function_sensor_response(
+                zm_monitor = zm_monitor,
+                timestamp = current_poll_datetime,
+            )
+            sensor_response_map[function_sensor_response.integration_key] = function_sensor_response
+            continue
         
-    def _get_zm_states(self) -> List[ ZmState ]:
-        state_list_age = datetimeproxy.now() - self._zm_state_timestamp
-        if (( not self._zm_state_list )
-            or ( state_list_age.seconds > self.STATE_REFRESH_INTERVAL_SECS )):
-            self._zm_state_list = self._zm_manager.zm_client.states().list()
-            self._zm_state_timestamp = datetimeproxy.now()
-        return self._zm_state_list
+        return sensor_response_map
+    
+    def _process_states(self):
+        current_poll_datetime = datetimeproxy.now()
+        sensor_response_map = dict()
+
+        active_run_state_name = None
+        for zm_state in self._zm_manager.get_zm_states():
+            if zm_state.active():
+                active_run_state_name = zm_state.name()
+                break
+            continue
+
+        if active_run_state_name:
+            run_state_sensor_response = self._create_run_state_sensor_response(
+                run_state_name = active_run_state_name,
+                timestamp = current_poll_datetime,
+            )
+            sensor_response_map[run_state_sensor_response.integration_key] = run_state_sensor_response
         
+        return sensor_response_map
+      
     def _create_movement_active_sensor_response( self, zm_event : ZmEvent ):
         return SensorResponse(
             integration_key = self._zm_manager._sensor_to_integration_key(

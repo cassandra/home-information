@@ -17,6 +17,7 @@ from .sensor_response_helper import SensorResponseHelper
 from .zm_manager import ZoneMinderManager
 from .zm_models import ZmEventDetails
 from .zm_metadata import ZmMetaData
+from .zm_sync import ZoneMinderSynchronizer
 
 
 class ZmEnableView( HiModalView, IntegrationHelperMixin ):
@@ -154,7 +155,7 @@ class ZmSyncView( HiModalView ):
 
     def post(self, request, *args, **kwargs):
 
-        processing_result = ZoneMinderManager().sync()
+        processing_result = ZoneMinderSynchronizer().sync()
         context = {
             'processing_result': processing_result,
         }

@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from hi.apps.common.processing_result import ProcessingResult
+
 from .enums import IntegrationAttributeType
 from .models import Integration
 
@@ -23,4 +25,5 @@ class IntegrationData:
 
 @dataclass
 class IntegrationControlResult:
-    pass
+    new_value          : str
+    processing_result  : ProcessingResult

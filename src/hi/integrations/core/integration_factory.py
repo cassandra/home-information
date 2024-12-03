@@ -72,7 +72,7 @@ class IntegrationFactory( Singleton ):
         try:
             integration = Integration.objects.get( integration_id = integration_id )
             if integration.is_enabled:
-                periodic_monitor = integration_gateway.get_monitor()
+                periodic_monitor = integration_gateway.get_sensor_monitor()
                 self._integration_monitor_map[integration_id] = periodic_monitor
                 MonitorManager().register( periodic_monitor )
         except Integration.DoesNotExist:

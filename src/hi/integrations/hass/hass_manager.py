@@ -206,4 +206,3 @@ class HassManager( Singleton ):
         entity.delete()  # Deletion cascades to attributes, positions, sensors, controllers, etc.
         result.message_list.append( f'Removed stale HAss entity: {entity}' )
         return
-    

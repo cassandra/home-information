@@ -26,18 +26,18 @@ class ControllerView( View, ControlViewMixin ):
 
         # zzz Check against latest state value????
 
-
-
+        integration_factory = IntegrationFactory()
+        integration_gateway = IntegrationFactory().get_integration_gateway(
+            integration_id = controller.integration_id,
+        )
+        integration_controller = integration_gateway.get_controller()
         
         
         error_messages = list()
 
-        integration_gateway = IntegrationFactory().get_integration_gateway(
-            integration_id = controller.integration_id,
-        )
 
-        control_result = integration_gateway.do_control(
-            controller_integration_key = controller.integration_key,
+        control_result = integration_controller.do_control(
+            integration_key = controller.integration_key,
             control_value = control_value,
         )
 
