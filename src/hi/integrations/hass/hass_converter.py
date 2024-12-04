@@ -666,14 +666,26 @@ class HassConverter:
         elif hass_state.entity_id_prefix == HassApi.BINARY_SENSOR_ID_PREFIX:
 
             if hass_state.state_value.lower() == HassStateValue.ON:
-                if hass_state.device_class in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
+                if hass_state.device_class in HassApi.MOTION_DEVICE_CLASS:
+                    return str(SensorValue.ACTIVE)
+                elif hass_state.device_class in HassApi.BATTERY_DEVICE_CLASS:
+                    return str(SensorValue.LOW)
+                elif hass_state.device_class in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
                     return str(SensorValue.OPEN)
+                elif hass_state.device_class in HassApi.CONNECTIVITY_DEVICE_CLASS:
+                    return str(SensorValue.CONNECTED)
                 else:
                     return str(SensorValue.ON)
                 
             elif hass_state.state_value.lower() == HassStateValue.OFF:
-                if hass_state.device_class in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
+                if hass_state.device_class in HassApi.MOTION_DEVICE_CLASS:
+                    return str(SensorValue.IDLE)
+                elif hass_state.device_class in HassApi.BATTERY_DEVICE_CLASS:
+                    return str(SensorValue.HIGH)
+                elif hass_state.device_class in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
                     return str(SensorValue.CLOSED)
+                elif hass_state.device_class in HassApi.CONNECTIVITY_DEVICE_CLASS:
+                    return str(SensorValue.DISCONNECTED)
                 else:
                     return str(SensorValue.OFF)
             else:

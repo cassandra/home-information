@@ -384,12 +384,6 @@ class StatusDisplayManager( Singleton ):
             if ( not sensor_response_list
                  or ( sensor.entity_state.id not in self._status_value_overrides )):
                 continue
-
-
-
-            print( f'\n\nAPPLYING OVERRIDE {sensor.entity_state} = {self._status_value_overrides[sensor.entity_state.id]}\n' )
-
-            
             sensor_response_list[0].value = self._status_value_overrides[sensor.entity_state.id]
             continue
 
