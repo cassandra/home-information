@@ -16,8 +16,14 @@ class ZmEvent:
         self._end_datetime = self._to_datetime( zm_api_event.get()['EndTime'], zm_tzname )
         self._cause = zm_api_event.cause()
         self._duration_secs = zm_api_event.duration()
-        self._total_frame_count = zm_api_event.total_frames()
-        self._alarmed_frame_count = zm_api_event.alarmed_frames()
+        try:
+            self._total_frame_count = zm_api_event.total_frames()
+        except (TypeError, ValueError):
+            self._total_frame_count = 0
+        try:
+            self._alarmed_frame_count = zm_api_event.alarmed_frames()
+        except (TypeError, ValueError):
+            self._alarmed_frame_count = 0
         self._score = zm_api_event.score()
         self._notes = zm_api_event.notes()
         self._max_score_frame_id = zm_api_event.get()['MaxScoreFrameId']

@@ -9,7 +9,7 @@ from hi.apps.sense.transient_models import SensorResponse
 @dataclass
 class EntityStateStatusData:
     entity_state          : EntityState
-    sensor_response_list  : List[ SensorResponse ]
+    sensor_response_list  : List[ SensorResponse ]  # Not grouped by sensor, but ordered by response time
     controller_data_list  : List[ ControllerData ]
 
     @property

@@ -8,7 +8,7 @@ from django.http import HttpRequest
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.svg_models import SvgViewBox
-from hi.apps.monitor.status_display_helpers import StatusDisplayLocationHelper
+from hi.apps.monitor.status_data_helpers import StatusDataHelper
 
 from .enums import LocationViewType
 from .location_view_data import LocationViewData
@@ -208,12 +208,13 @@ class LocationManager(Singleton):
         unpositioned_collections.sort( key = lambda item : item.order_id )
 
         if include_status_display_data:
-            status_display_helper = StatusDisplayLocationHelper( location_view = location_view )
-            status_entity_states_map = status_display_helper.get_status_entity_states_map(
+            helper = StatusDataHelper()
+            entity_to_entity_state_status_data_list = helper.get_entity_to_entity_state_status_data_list(
+                location_view = location_view,
                 entities = displayed_entities,
             )
         else:
-            status_entity_states_map = dict()
+            entity_to_entity_state_status_data_list = dict()
             
         return LocationViewData(
             location_view = location_view,
@@ -223,7 +224,7 @@ class LocationManager(Singleton):
             collection_paths = collection_paths,
             unpositioned_collections = unpositioned_collections,
             orphan_entities = orphan_entities,
-            status_entity_states_map = status_entity_states_map,
+            entity_to_entity_state_status_data_list = entity_to_entity_state_status_data_list,
         )
 
     def set_location_view_order( self, location_view_id_list  : List[int] ):

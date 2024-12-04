@@ -1,11 +1,10 @@
 import hi.apps.common.datetimeproxy as datetimeproxy
 from dataclasses import dataclass
-from typing import List
 
 from hi.apps.entity.enums import EntityStateType
-from hi.apps.entity.models import EntityState
 from hi.apps.sense.enums import SensorValue
-from hi.apps.sense.transient_models import SensorResponse
+
+from .transient_models import EntityStateStatusData
 
 
 @dataclass
@@ -115,15 +114,28 @@ class StatusStyle:
     )
 
     
-@dataclass
 class StatusDisplayData:
-    entity_state          : EntityState
-    sensor_response_list  : List[ SensorResponse ]
+    
+    def __init__( self, entity_state_status_data : EntityStateStatusData ):
+        self._entity_state = entity_state_status_data.entity_state
+        self._sensor_response_list = entity_state_status_data.sensor_response_list
+        self._controller_data_list = entity_state_status_data.controller_data_list
 
-    def __post_init__(self):
         self._svg_status_style = self._get_svg_status_style()
         return
 
+    @property
+    def entity_state(self):
+        return self._entity_state
+    
+    @property
+    def sensor_response_list(self):
+        return self._sensor_response_list
+    
+    @property
+    def controller_data_list(self):
+        return self._controller_data_list
+        
     @property
     def should_skip(self):
         return bool( self._svg_status_style is None )

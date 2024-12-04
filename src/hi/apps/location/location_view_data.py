@@ -5,6 +5,7 @@ from hi.apps.collection.models import Collection, CollectionPath, CollectionPosi
 from hi.apps.common.svg_models import SvgIconItem, SvgPathItem
 from hi.apps.entity.models import Entity, EntityPosition, EntityPath, EntityState
 from hi.apps.location.svg_item_factory import SvgItemFactory
+from hi.apps.monitor.transient_models import EntityStateStatusData
 
 from .models import LocationView
 
@@ -15,23 +16,28 @@ class LocationViewData:
     Encapsulates all the data needed to render overlaying a Location's SVG
     for a given LocationView.
     """
-    location_view             : LocationView
-    entity_positions          : List[ EntityPosition ]
-    entity_paths              : List[ EntityPath ]
-    collection_positions      : List[ CollectionPosition ]
-    collection_paths          : List[ CollectionPath ]
-    unpositioned_collections  : List[ Collection ]
-    orphan_entities           : Set[ Entity ]
-    status_entity_states_map  : Dict[ Entity, List[ EntityState ]]
-
+    location_view                            : LocationView
+    entity_positions                         : List[ EntityPosition ]
+    entity_paths                             : List[ EntityPath ]
+    collection_positions                     : List[ CollectionPosition ]
+    collection_paths                         : List[ CollectionPath ]
+    unpositioned_collections                 : List[ Collection ]
+    orphan_entities                          : Set[ Entity ]
+    entity_to_entity_state_status_data_list  : Dict[ Entity, List[ EntityStateStatusData ]]
+    
     def __post_init__(self):
         self._svg_item_factory = SvgItemFactory()
         return
     
     def svg_icon_items(self) -> Generator[ SvgIconItem, None, None ]:
 
-        for entity_position in self.entity_positions:            
-            entity_states = self.status_entity_states_map.get( entity_position.entity )
+        for entity_position in self.entity_positions:
+            entity_state_status_data_list = self.entity_to_entity_state_status_data_list.get(
+                entity_position.entity,
+            )
+            if entity_state_status_data_list is None:
+                entity_state_status_data_list = list()
+            entity_states = [ x.entity_state for x in entity_state_status_data_list ]
             if entity_states:
                 css_class = ' '.join([ x.css_class for x in entity_states ])
             else:
@@ -56,7 +62,12 @@ class LocationViewData:
     def svg_path_items(self) -> Generator[ SvgPathItem, None, None ]:
 
         for entity_path in self.entity_paths:
-            entity_states = self.status_entity_states_map.get( entity_path.entity )
+            entity_state_status_data_list = self.entity_to_entity_state_status_data_list.get(
+                entity_path.entity,
+            )
+            if entity_state_status_data_list is None:
+                entity_state_status_data_list = list()
+            entity_states = [ x.entity_state for x in entity_state_status_data_list ]
             if entity_states:
                 css_class = ' '.join([ x.css_class for x in entity_states ])
             else:
