@@ -22,6 +22,12 @@ class SensorResponse:
     def __str__(self):
         return json.dumps( self.to_dict() )
 
+    @property
+    def css_class(self):
+        if not self.sensor:
+            return ''
+        return self.sensor.entity_state.css_class
+    
     def is_on(self):
         return bool( self.value == str(SensorValue.ON) )
     

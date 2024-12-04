@@ -12,4 +12,7 @@ class ControllerData:
     latest_sensor_response  : SensorResponse
     error_list              : List[ str ]    = None
     
+    @property
+    def css_class(self):
+        return self.controller.entity_state.css_class
     

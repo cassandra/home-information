@@ -47,6 +47,7 @@ class StatusDataHelper:
         for entity_state, sensor_response_list in entity_state_to_sensor_response_list.items():
             sensor_response_list.sort( key = lambda item: item.timestamp, reverse = True )
             latest_sensor_response = sensor_response_list[0]
+
             controller_data_list = [
                 ControllerData(
                     controller = controller,

@@ -60,40 +60,84 @@
     function handleServerResponse( respObj, textStatus, jqXHR ) {
 	try {
 	    if ( Hi.DEBUG ) { console.log( "Server response: "+JSON.stringify( respObj)); }
-	    
 	    Hi.watchdog.ok( ServerPollingWatchdogType );
 	    clearPollingTimer();
+	    handleAttributeUpdates( respObj );
 	    
-	    for ( let cssClass in respObj[CssClassUpdateMap] ) {
-		let elements;
-		if ( cssClass in gCssClassElementCache ) {
-		    elements = gCssClassElementCache[cssClass];
-		} else {
-		    elements = $(`.${cssClass}`);
-		    gCssClassElementCache[cssClass] = elements;
-		}
-		let attrMap = respObj[CssClassUpdateMap][cssClass];
-		for ( let attrName in attrMap ) {		    
-		    let attrValue = attrMap[attrName];
-		    elements.each( function() {
-			if (this.hasAttribute(attrName)) {
-			    let currentValue = $(this).attr(attrName);
-			    if ( attrValue && ( currentValue !== String(attrValue) )) {
-				$(this).attr( attrName, attrValue );
-			    }
-			}
-		    });
-		}
-	    }
-	}
-	catch (e) {
+	} catch (e) {
 	    console.error( "Exception parsing server response: " + e
 			   + " (line="+e.lineNumber+")" );
-	}
-	finally {
+	    
+	} finally {
 	    gPollingTimer = setTimeout( fetchServerResponse,
 					ServerPollingIntervalMs );
 	}
+    }
+
+    function handleAttributeUpdates( respObj ) {
+
+	for ( let cssClass in respObj[CssClassUpdateMap] ) {
+	    let elements = getElementByCssClass( cssClass );
+	    let attrMap = respObj[CssClassUpdateMap][cssClass];
+	    for ( let attrName in attrMap ) {		    
+		let attrValue = attrMap[attrName];
+		elements.each( function() {
+		    if (this.hasAttribute(attrName)) {
+			let currentValue = $(this).attr(attrName);
+			if ( attrValue && ( currentValue !== String(attrValue) )) {
+			    $(this).attr( attrName, attrValue );
+			}
+		    } else {
+			// Special cases:
+			//    - descendent SELECT tag - assume select value is sensor value
+			//    - descendent checkbox - assumes status value 'on' when checked
+			//    - descendent DIV tag with status attr - assume attr and text needs updating
+			//
+			if ( attrName == 'status' ) {
+			    $(this).find('select').val( attrValue );
+			    
+			    $(this).find('input[type="checkbox"]').each( function(index, element) {
+				if ( attrValue == 'on' ) {
+				    $(element).attr( 'checked', 'true' );
+				} else {
+				    $(element).removeAttr( 'checked' );
+				}
+			    });
+			    
+			    $(this).find('div[status]').each( function(index, element) {
+				$(element).attr( attrName, attrValue );
+				$(element).text( attrValue );
+			    });
+			}
+		    }
+		});
+	    }
+	}
+    }
+
+    function getElementByCssClass( cssClass ) {
+
+	if ( cssClass in gCssClassElementCache ) {
+	    const cachedElements = gCssClassElementCache[cssClass];
+            const connectedElements = $(cachedElements).filter( function () {
+		if ( cssClass == 'hi-entity-state-203' ) { console.log( `Status ${this}=${this.isConnected}` ); }
+		return this.isConnected;
+            });
+            if ( cachedElements.length == connectedElements.length) {
+		if ( cssClass == 'hi-entity-state-203' ) { console.log( `Cached: ${cssClass}` ); }
+		return connectedElements;
+	    }
+	}
+
+	if ( cssClass == 'hi-entity-state-203' ) { console.log( `Querying: ${cssClass}` ); }
+	
+	let elements = $(`.${cssClass}`);
+	if ( elements.length > 0 ) {
+	    gCssClassElementCache[cssClass] = elements;
+	} else {
+	    delete gCssClassElementCache[cssClass];
+	}
+	return elements;
     }
     
     function clearPollingTimer() {
