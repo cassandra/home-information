@@ -94,7 +94,7 @@ class HiModelHelper:
             entity_state_type = EntityStateType.DISCRETE,
             name = name,
             integration_key = integration_key,
-            value_range = json.dumps( name_label_dict ),
+            value_range_str = json.dumps( name_label_dict ),
         )
     
     @classmethod
@@ -247,7 +247,7 @@ class HiModelHelper:
             name = name,
             is_sensed = is_sensed,
             integration_key = integration_key,
-            value_range = json.dumps( name_label_dict ),
+            value_range_str = json.dumps( name_label_dict ),
         )
 
     @classmethod
@@ -257,7 +257,7 @@ class HiModelHelper:
                        name               : str               = None,
                        sensor_type        : SensorType        = SensorType.DEFAULT,
                        integration_key    : IntegrationKey    = None,
-                       value_range        : str               = '',
+                       value_range_str    : str               = '',
                        units              : str               = None ):
         if not name:
             name = f'{entity.name}'
@@ -266,7 +266,7 @@ class HiModelHelper:
             entity = entity,
             entity_state_type_str = str( entity_state_type ),
             name = name,
-            value_range = value_range,
+            value_range_str = value_range_str,
             units = units,
         )
         sensor = Sensor(
@@ -287,7 +287,7 @@ class HiModelHelper:
                            controller_type    : ControllerType    = ControllerType.DEFAULT,
                            is_sensed          : bool              = True,
                            integration_key    : IntegrationKey    = None,
-                           value_range        : str               = '',
+                           value_range_str    : str               = '',
                            units              : str               = None ):
         if not name:
             name = f'{entity.name}'
@@ -296,7 +296,7 @@ class HiModelHelper:
             entity = entity,
             entity_state_type_str = str( entity_state_type ),
             name = name,
-            value_range = value_range,
+            value_range_str = value_range_str,
             units = units,
         )
 

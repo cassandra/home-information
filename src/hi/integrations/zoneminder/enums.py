@@ -1,7 +1,9 @@
+from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.common.enums import LabeledEnum
 
-from hi.apps.attribute.enums import AttributeValueType
 from hi.integrations.core.enums import IntegrationAttributeType
+
+from hi.constants import TIMEZONE_NAME_LIST
 
 
 class ZmAttributeType( IntegrationAttributeType ):
@@ -10,6 +12,7 @@ class ZmAttributeType( IntegrationAttributeType ):
         'API URL',
         'e.g., https://myserver:8443/zm/api',
         AttributeValueType.TEXT,
+        None,
         True,
         True,
     )
@@ -17,6 +20,7 @@ class ZmAttributeType( IntegrationAttributeType ):
         'Portal URL',
         'e.g., https://myserver:8443/zm',
         AttributeValueType.TEXT,
+        None,
         True,
         True,
     )
@@ -24,6 +28,7 @@ class ZmAttributeType( IntegrationAttributeType ):
         'Username',
         '',
         AttributeValueType.TEXT,
+        None,
         True,
         True,
     )
@@ -31,6 +36,7 @@ class ZmAttributeType( IntegrationAttributeType ):
         'Password',
         '',
         AttributeValueType.SECRET,
+        None,
         True,
         True,
     )
@@ -38,6 +44,7 @@ class ZmAttributeType( IntegrationAttributeType ):
         'Timezone',
         '',
         AttributeValueType.ENUM,
+        { x: x for x in TIMEZONE_NAME_LIST },
         True,
         True,
         'America/Chicago',

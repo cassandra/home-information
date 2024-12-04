@@ -88,7 +88,7 @@ class EntityStateAdmin(admin.ModelAdmin):
         'entity',
         'name',
         'entity_state_type_str',
-        'value_range',
+        'value_range_str',
         'units',
         'created_datetime',
     )

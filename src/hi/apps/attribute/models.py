@@ -1,8 +1,10 @@
+import json
 import logging
 
 from django.core.files.storage import default_storage
 from django.db import models
 
+from hi.apps.attribute.attribute_enums import AttributeEnums
 from hi.apps.common.file_utils import generate_unique_filename
 
 from hi.integrations.core.integration_key import IntegrationKey
@@ -42,6 +44,10 @@ class AttributeModel(models.Model):
         max_length = 32,
         null = False, blank = False,
     )
+    value_range_str = models.TextField(
+        'Value Range',
+        null = True, blank = True,
+    )
     integration_key_str = models.CharField(
         'Integration Key',
         max_length = 128,
@@ -69,6 +75,9 @@ class AttributeModel(models.Model):
         auto_now=True,
         blank = True,
     )
+
+    def get_upload_to(self):
+        raise NotImplementedError('Subclasses should override this method.' )
 
     def __str__(self):
         return f'Attr: {self.name}={self.value} [{self.value_type_str}] [{self.attribute_type_str}]'
@@ -107,9 +116,23 @@ class AttributeModel(models.Model):
     def attribute_type( self, attribute_type : AttributeType ):
         self.attribute_type_str = str(attribute_type)
         return
-    
-    def get_upload_to(self):
-        raise NotImplementedError('Subclasses should override this method.' )
+
+    def choices(self):
+        # First check predefined ids
+        choice_list = AttributeEnums.get_choices( self.value_range_str )
+        if choice_list:
+            return choice_list
+        if not self.value_range_str:
+            return list()
+        try:
+            value_range = json.loads( self.value_range_str )
+            if isinstance( value_range, dict ):
+                return [ ( k, v ) for k, v in value_range.items() ]
+            if isinstance( value_range, list ):
+                return [ ( x, x ) for x in value_range ]
+        except json.JSONDecodeError:
+            pass
+        return dict()
 
     def save(self, *args, **kwargs):
         if self.file_value and self.file_value.name:

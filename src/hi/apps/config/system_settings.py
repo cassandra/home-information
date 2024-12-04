@@ -1,3 +1,4 @@
+import json
 from typing import List
 
 from django.db import transaction
@@ -43,6 +44,7 @@ class SystemSettings( Singleton ):
                 name = subsystem_attribute_type.label,
                 value = subsystem_attribute_type.initial_value,
                 value_type_str = str(subsystem_attribute_type.value_type),
+                value_range_str = subsystem_attribute_type.value_range_str,
                 attribute_type_str = AttributeType.PREDEFINED,
                 is_editable = subsystem_attribute_type.is_editable,
                 is_required = subsystem_attribute_type.is_required,

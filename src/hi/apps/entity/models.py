@@ -138,7 +138,7 @@ class EntityState( models.Model ):
         max_length = 64,
         null = False, blank = False,
     )
-    value_range = models.TextField(
+    value_range_str = models.TextField(
         'Value Range',
         null = True, blank = True,
     )
@@ -178,7 +178,7 @@ class EntityState( models.Model ):
     @property
     def value_range_dict(self):
         try:
-            value_range = json.loads( self.value_range )
+            value_range = json.loads( self.value_range_str )
             if isinstance( value_range, dict ):
                 return value_range
             if isinstance( value_range, list ):
@@ -189,9 +189,22 @@ class EntityState( models.Model ):
 
     @value_range_dict.setter
     def value_range_dict( self, value_dict : Dict[ str, str ] ):
-        self.value_range = json.dumps( value_dict )
+        self.value_range_str = json.dumps( value_dict )
         return
-    
+
+    def choices(self):
+        if not self.value_range_str:
+            return list()
+        try:
+            value_range = json.loads( self.value_range_str )
+            if isinstance( value_range, dict ):
+                return [ ( k, v ) for k, v in value_range.items() ]
+            if isinstance( value_range, list ):
+                return [ ( x, x ) for x in value_range ]
+        except json.JSONDecodeError:
+            pass
+        return dict()
+
 
 class EntityStateDelegation(models.Model):
     """An EntityState associated with a Sensor or Controller is often serving

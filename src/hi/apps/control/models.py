@@ -57,7 +57,7 @@ class Controller( IntegrationKeyModel ):
 
     @property
     def choices(self):
-        return [ ( k, v ) for k, v in self.entity_state.value_range_dict.items() ]
+        return self.entity_state.choices()
 
         
 class ControllerHistory(models.Model):

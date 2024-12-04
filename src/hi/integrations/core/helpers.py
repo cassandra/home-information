@@ -1,3 +1,5 @@
+import json
+
 from django.db import transaction
 
 from hi.apps.attribute.enums import AttributeType
@@ -82,6 +84,7 @@ class IntegrationHelperMixin:
             name = attribute_type.label,
             value = attribute_type.initial_value,
             value_type_str = str(attribute_type.value_type),
+            value_range_str = json.dumps( attribute_type.value_range_dict ),
             integration_key_str = str(integration_key),
             attribute_type_str = AttributeType.PREDEFINED,
             is_editable = attribute_type.is_editable,

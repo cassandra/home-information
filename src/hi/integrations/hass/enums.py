@@ -8,6 +8,7 @@ class HassAttributeType( IntegrationAttributeType ):
         'Server URL',
         'e.g., https://myhassserver:8123',
         AttributeValueType.TEXT,
+        None,
         True,
         True,
     )
@@ -15,6 +16,7 @@ class HassAttributeType( IntegrationAttributeType ):
         'API Token',
         '',
         AttributeValueType.TEXT,
+        None,
         True,
         True,
     )
