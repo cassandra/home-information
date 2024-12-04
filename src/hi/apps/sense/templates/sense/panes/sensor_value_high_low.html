@@ -1,0 +1,5 @@
+{% if sensor_response.value == 'high' %}
+<div class="bg-success">{{ sensor_response.value }}</div>
+{% else %}
+<div class="bg-danger">{{ sensor_response.value }}</div>
+{% endif %}

@@ -1,22 +1,9 @@
 <ul>
   {% for entity_state_status_data in entity_state_status_data_list %}
   <li>State: {{ entity_state_status_data.entity_state.name }}
-
-    {% with sensor_response=entity_state_status_data.latest_sensor_response %}
-    {% if sensor_response %}
-    {% include "sense/panes/sensor_response.html" with sensor_response=sensor_response %}
-    {% else %}
-    <div><em>No sensor responses.</em></div>
-    {% endif %}
-
-    {% for controller_data in entity_state_status_data.controller_data_list %}
-    {% include "control/panes/controller_data.html" with controller_data=controller_data %}
-    {% empty %}
-    <div><em>No controllers.</em></div>
-    {% endfor %}
-    {% endwith %}
-    
-    {% empty %}
-    <div><em>No state info.</em></div>
-    {% endfor %}
+    {% include "entity/panes/entity_state_status_data.html" with entity_state_status_data=entity_state_status_data %}    
+  </li>
+  {% empty %}
+  <div><em>No state info.</em></div>
+  {% endfor %}
 </ul>

@@ -1,5 +1,8 @@
 from django.contrib import admin
 
+from hi.apps.control.models import Controller
+from hi.apps.sense.models import Sensor
+
 from . import models
 
 
@@ -23,6 +26,18 @@ class PositionInLine(admin.TabularInline):
     
 class PathInLine(admin.TabularInline):
     model = models.EntityPath
+    extra = 0
+    show_change_link = True
+
+    
+class ControllerInLine(admin.TabularInline):
+    model = Controller
+    extra = 0
+    show_change_link = True
+
+    
+class SensorInLine(admin.TabularInline):
+    model = Sensor
     extra = 0
     show_change_link = True
 
@@ -64,6 +79,28 @@ class EntityAdmin(admin.ModelAdmin):
     ]
     
 
+@admin.register(models.EntityState)
+class EntityStateAdmin(admin.ModelAdmin):
+
+    show_full_result_count = False
+    
+    list_display = (
+        'entity',
+        'name',
+        'entity_state_type_str',
+        'value_range',
+        'units',
+        'created_datetime',
+    )
+
+    search_fields = ['name']
+    readonly_fields = ( 'entity', 'created_datetime', )
+    inlines = [
+        ControllerInLine,
+        SensorInLine,
+    ]
+
+    
 @admin.register(models.EntityStateDelegation)
 class EntityStateDelegationAdmin(admin.ModelAdmin):
 

@@ -8,20 +8,17 @@ class SensorType(LabeledEnum):
     
 class SensorValue(LabeledEnum):
 
-    MOVEMENT_ACTIVE    = ( 'Active', '' )
-    MOVEMENT_IDLE      = ( 'Idle', '' )
+    ACTIVE         = ( 'Active', '' )
+    IDLE           = ( 'Idle', '' )
 
-    ON                 = ( 'On', '' )
-    OFF                = ( 'Off', '' )
+    ON             = ( 'On', '' )
+    OFF            = ( 'Off', '' )
     
-    OPEN               = ( 'Open', '' )
-    CLOSED             = ( 'Closed', '' )
+    OPEN           = ( 'Open', '' )
+    CLOSED         = ( 'Closed', '' )
 
-    CONNECTED          = ( 'Connected', '' )
-    DISCONNECTED       = ( 'Disconnected', '' )
+    CONNECTED      = ( 'Connected', '' )
+    DISCONNECTED   = ( 'Disconnected', '' )
 
-    HIGH               = ( 'High', '' )
-    LOW                = ( 'Low', '' )
-
-    PRESENCE_ACTIVE    = ( 'Active', '' )
-    PRESENCE_IDLE      = ( 'Idle', '' )
+    HIGH           = ( 'High', '' )
+    LOW            = ( 'Low', '' )

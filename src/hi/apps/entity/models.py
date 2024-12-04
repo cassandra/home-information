@@ -66,7 +66,7 @@ class Entity( IntegrationKeyModel, LocationItemModelMixin ):
         ]
 
     def __str__(self):
-        return f'Entity[{self.id}]: {self.name} [{self.entity_type_str}]'
+        return f'{self.name} ({self.entity_type_str}) [{self.id}]'
     
     def __repr__(self):
         return self.__str__()

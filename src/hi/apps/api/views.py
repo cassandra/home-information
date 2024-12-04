@@ -17,7 +17,7 @@ class StatusView( View ):
 
     def get( self, *args, **kwargs ):
 
-        entity_state_status_data_list = StatusDataHelper().get_entity_state_status_data_list()
+        entity_state_status_data_list = StatusDataHelper().get_all_entity_state_status_data_list()
         status_display_data_list = [ StatusDisplayData(x) for x in entity_state_status_data_list ]
 
         css_class_update_map = dict()

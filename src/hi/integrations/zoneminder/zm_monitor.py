@@ -217,7 +217,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
                 sensor_prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
                 zm_monitor_id = zm_event.monitor_id,
             ),
-            value = str(SensorValue.MOVEMENT_ACTIVE),
+            value = str(SensorValue.ACTIVE),
             timestamp = zm_event.start_datetime,
             details = SensorResponseHelper.event_to_details( zm_event = zm_event ),
         )
@@ -228,7 +228,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
                 sensor_prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
                 zm_monitor_id = zm_event.monitor_id,
             ),
-            value = str(SensorValue.MOVEMENT_IDLE),
+            value = str(SensorValue.IDLE),
             timestamp = zm_event.end_datetime,
         )
 
@@ -238,7 +238,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
                 sensor_prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
                 zm_monitor_id = zm_monitor.id(),
             ),
-            value = str(SensorValue.MOVEMENT_IDLE),
+            value = str(SensorValue.IDLE),
             timestamp = timestamp,
         )
 

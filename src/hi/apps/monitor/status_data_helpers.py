@@ -13,15 +13,68 @@ from .transient_models import EntityStatusData, EntityStateStatusData
 
 class StatusDataHelper:
 
+    def get_all_entity_state_status_data_list( self ) -> List[ EntityStateStatusData ]:
+        """
+        Gets the latest sensor responses for all EntityStates.  Used by client
+        background polling to refresh the UI visual display of the current
+        state.
+        """
+        
+        sensor_to_sensor_response_list = SensorResponseManager().get_all_latest_sensor_responses()
+        
+        # Since a given EntityState can have zero or more sensors, for each
+        # EntityState, we need to collate all the sensor values to find the
+        # latest status.
+        #
+        # For a given EntityState, we do not display multiple sensors if it
+        # has them. The display for the state uses an amalgam of all those
+        # sensors where the most recent response determines the current
+        # state.
+
+        # Collate latest sensor responses by EntityState.
+        #
+        entity_state_to_sensor_response_list = dict()
+        for sensor, sensor_response_list in sensor_to_sensor_response_list.items():
+            if sensor.entity_state not in entity_state_to_sensor_response_list:
+                entity_state_to_sensor_response_list[sensor.entity_state] = list()
+            entity_state_to_sensor_response_list[sensor.entity_state].extend( sensor_response_list )
+            continue
+
+        # Find the latest sensor response for each EntityState and create
+        # the EntityStateStatusData instance for each.
+        #
+        entity_state_status_data_list = list()
+        for entity_state, sensor_response_list in entity_state_to_sensor_response_list.items():
+            sensor_response_list.sort( key = lambda item: item.timestamp, reverse = True )
+            latest_sensor_response = sensor_response_list[0]
+            controller_data_list = [
+                ControllerData(
+                    controller = controller,
+                    latest_sensor_response = latest_sensor_response,
+                )
+                for controller in entity_state.controllers.all()
+            ]
+            entity_state_status_data = EntityStateStatusData(
+                entity_state = entity_state,
+                sensor_response_list = sensor_response_list,
+                controller_data_list = controller_data_list,
+            )
+            entity_state_status_data_list.append( entity_state_status_data )
+            continue
+
+        return entity_state_status_data_list
+
     def get_entity_status_data( self, entity : Entity ) -> EntityStatusData:
 
+        # The set of entity states used to define the state includes the
+        # principals when the entity is a delegate.
+        #
         entity_state_set = set( entity.states.all() )
-
         for entity_state_delegation in entity.entity_state_delegations.all():
             entity_state_set.add( entity_state_delegation.entity_state )
             continue
 
-        entity_state_to_status_data = self.get_entity_state_to_entity_state_status_data(
+        entity_state_to_status_data = self._get_entity_state_to_entity_state_status_data(
             entity_states = entity_state_set,
         )
         return EntityStatusData(
@@ -32,10 +85,19 @@ class StatusDataHelper:
     def get_entity_status_data_list(
             self,
             entities : Sequence[ Entity ] ) -> List[ EntityStatusData ]:
-
-        entity_to_entity_status_data = self.get_entity_to_entity_status_data(
+        """ 
+        Same as _get_entity_to_entity_status_data() but returns a List instead of a Dict.
+        Preserves the ordering so resulting list in same order as input list.
+        """
+        
+        entity_to_entity_status_data = self._get_entity_to_entity_status_data(
             entities = entities,
         )
+
+        # Reform dict values as a list matching input list order and ensure
+        # each entity has EntityStatusData (even if there are no latest
+        # sensor responses).
+        #
         entity_status_data_list = list()
         for entity in entities:
             entity_status_data = entity_to_entity_status_data.get( entity )
@@ -48,11 +110,13 @@ class StatusDataHelper:
             continue
         return entity_status_data_list
     
-    def get_entity_to_entity_status_data(
+    def _get_entity_to_entity_status_data(
             self,
             entities : Sequence[ Entity ] ) -> Dict[ Entity, EntityStatusData ]:
 
-        # Gather all EntityState of interest.
+        # Gather all EntityStates for all Entities so we can issue a single
+        # fetch of the latest SensorResponses.
+        #
         entity_to_entity_state_set = { x: set( x.states.all() ) for x in entities }
         all_entity_states = set()
         for entity, entity_state_set in entity_to_entity_state_set.items():
@@ -63,12 +127,14 @@ class StatusDataHelper:
                 continue
             continue
 
-        # Single fetch for getting all latest sensor data.
-        entity_state_to_status_data = self.get_entity_state_to_entity_state_status_data(
+        # Includes a single fetch for getting all latest sensor data.
+        #
+        entity_state_to_status_data = self._get_entity_state_to_entity_state_status_data(
             entity_states = all_entity_states,
         )
         
         # Collate EntityStateStatusData by Entity
+        #
         entity_to_entity_status_data = dict()
         for entity_state, entity_state_status_data in entity_state_to_status_data.items():
             entity = entity_state.entity
@@ -85,10 +151,13 @@ class StatusDataHelper:
 
         return entity_to_entity_status_data
 
-    def get_entity_state_to_entity_state_status_data(
+    def _get_entity_state_to_entity_state_status_data(
             self,
             entity_states : Sequence[ EntityState ] ) -> Dict[ EntityState, EntityStateStatusData ]:
 
+        # Collect all the sensors for al the input EntityStates, so we can
+        # issue one fetch of the latest SensorData.
+        #
         entity_state_to_sensor_list = dict()
         all_sensor_list = list()
         for entity_state in entity_states:
@@ -97,10 +166,15 @@ class StatusDataHelper:
             all_sensor_list.extend( entity_state_sensor_list )
             continue
         
+        # Single fetch for getting all latest sensor data.
+        #
         sensor_response_list_map = SensorResponseManager().get_latest_sensor_responses(
             sensor_list = all_sensor_list,
         )
-        
+
+        # Collates SensorResponses by EntityState, finds latest
+        # SensorResponse and creates the EntityStateStatusData instances.
+        #
         entity_state_to_entity_state_status_data_map = dict()
         for entity_state in entity_states:
             entity_state_sensor_response_list = list()
@@ -140,14 +214,18 @@ class StatusDataHelper:
             location_view  : LocationView,
             entities       : Set[ Entity ] ) -> Dict[ Entity, List[ EntityStateStatusData ] ]:
         """
-        A map from Entity to EntityStateStatusData for the single EntityState
-        that is the highest display priority for the given LocationView.
+        Builds a map from Entity to EntityStateStatusData for the single EntityState
+        that is the highest display priority for the given
+        LocationView. i.e., Picks a single EntityState for each Entity to
+        define the visual display used in the LocationView where we can
+        really only represent one thing at a time (visually).
         """
+        
         location_view_type = location_view.location_view_type
         if location_view_type == LocationViewType.SUPPRESS:
             return dict()
         
-        entity_to_entity_state_list = self.get_entity_to_entity_state_list(
+        entity_to_entity_state_list = self._get_entity_to_entity_state_list(
             location_view = location_view,
             entities = entities,
         )
@@ -156,7 +234,7 @@ class StatusDataHelper:
             all_entity_states.update( entity_state_list )
             continue
         
-        entity_state_to_status_data = self.get_entity_state_to_entity_state_status_data(
+        entity_state_to_status_data = self._get_entity_state_to_entity_state_status_data(
             entity_states = all_entity_states,
         )
 
@@ -173,7 +251,7 @@ class StatusDataHelper:
 
         return entity_to_entity_state_status_data_list
 
-    def get_entity_to_entity_state_list(
+    def _get_entity_to_entity_state_list(
             self,
             location_view  : LocationView,
             entities       : Set[ Entity ] ) -> Dict[ Entity, List[ EntityState ] ]:
@@ -190,7 +268,7 @@ class StatusDataHelper:
         
         entity_to_entity_state_list = dict()
         for entity in entities:
-            entity_state_list = self.get_status_entity_states(
+            entity_state_list = self._get_entity_state_list_for_status(
                 entity = entity,
                 entity_state_type_priority_list = entity_state_type_priority_list,
             )
@@ -200,7 +278,7 @@ class StatusDataHelper:
         
         return entity_to_entity_state_list
 
-    def get_status_entity_states(
+    def _get_entity_state_list_for_status(
             self,
             entity                           : Entity,
             entity_state_type_priority_list  : List[ EntityStateType ] ) -> List[ EntityState ]:
@@ -277,39 +355,3 @@ class StatusDataHelper:
             return entity_state_sensor_response_list[0]
 
         return None
-
-    def get_entity_state_status_data_list( self ) -> List[ EntityStateStatusData ]:
-
-        sensor_to_sensor_response_list = SensorResponseManager().get_all_latest_sensor_responses()
-        
-        # Since a given EntityState can have zero or more sensors, for each
-        # EntityState, we need to collate all the sensor values to find the
-        # latest status.
-        
-        entity_state_to_sensor_response_list = dict()
-        for sensor, sensor_response_list in sensor_to_sensor_response_list.items():
-            if sensor.entity_state not in entity_state_to_sensor_response_list:
-                entity_state_to_sensor_response_list[sensor.entity_state] = list()
-            entity_state_to_sensor_response_list[sensor.entity_state].extend( sensor_response_list )
-            continue
-
-        entity_state_status_data_list = list()
-        for entity_state, sensor_response_list in entity_state_to_sensor_response_list.items():
-            sensor_response_list.sort( key = lambda item: item.timestamp, reverse = True )
-            latest_sensor_response = sensor_response_list[0]
-            controller_data_list = [
-                ControllerData(
-                    controller = controller,
-                    latest_sensor_response = latest_sensor_response,
-                )
-                for controller in entity_state.controllers.all()
-            ]
-            entity_state_status_data = EntityStateStatusData(
-                entity_state = entity_state,
-                sensor_response_list = sensor_response_list,
-                controller_data_list = controller_data_list,
-            )
-            entity_state_status_data_list.append( entity_state_status_data )
-            continue
-
-        return entity_state_status_data_list

@@ -211,10 +211,10 @@ class StatusDisplayData:
     
     def _get_movement_status_style( self ):
 
-        if self.latest_sensor_value == str(SensorValue.MOVEMENT_ACTIVE):
+        if self.latest_sensor_value == str(SensorValue.ACTIVE):
             return StatusStyle.MovementActive
 
-        if self.penultimate_sensor_value == str(SensorValue.MOVEMENT_ACTIVE):
+        if self.penultimate_sensor_value == str(SensorValue.ACTIVE):
             movement_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
             if movement_timedelta.seconds < 30:
                 return StatusStyle.MovementRecent
@@ -226,10 +226,10 @@ class StatusDisplayData:
         
     def _get_presence_status_style( self ):
 
-        if self.latest_sensor_value == str(SensorValue.PRESENCE_ACTIVE):
+        if self.latest_sensor_value == str(SensorValue.ACTIVE):
             return StatusStyle.PresenceActive
 
-        if self.penultimate_sensor_value == str(SensorValue.PRESENCE_ACTIVE):
+        if self.penultimate_sensor_value == str(SensorValue.ACTIVE):
             presence_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
             if presence_timedelta.seconds < 30:
                 return StatusStyle.MovementRecent
