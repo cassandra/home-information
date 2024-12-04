@@ -17,7 +17,7 @@ class EntityStateStatusData:
         if self.sensor_response_list:
             return self.sensor_response_list[0]
         return None
-    
+
     
 @dataclass
 class EntityStatusData:

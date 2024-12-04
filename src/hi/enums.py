@@ -44,7 +44,7 @@ class ItemType(LabeledEnum):
     # the dimensions being overlapping between subsets.  This is mostly
     # used on the front-ends Javascript where we try to hide model details
     # and use more a more generic data model for 'items' that could be more
-    # than backend model one type.  When the Javascript needs to informt
+    # than one backend model type.  When the Javascript needs to inform
     # the server of an action, the server needs to be able to map that
     # Javascript concept back to the specifics class.
     

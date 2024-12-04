@@ -1,5 +1,5 @@
 import hi.apps.common.datetimeproxy as datetimeproxy
-from dataclasses import dataclass
+from hi.apps.common.svg_models import SvgStatusStyle
 
 from hi.apps.entity.enums import EntityStateType
 from hi.apps.sense.enums import SensorValue
@@ -7,111 +7,108 @@ from hi.apps.sense.enums import SensorValue
 from .transient_models import EntityStateStatusData
 
 
-@dataclass
-class SvgStatusStyle:
-    
-    status_value  : str
-    stroke_color  : str
-    stroke_width  : float
-    fill_color    : str
-    fill_opacity  : float
-
-    def to_dict(self):
-        return {
-            'status': self.status_value,
-            'stroke': self.stroke_color,
-            'stroke-width': self.stroke_width,
-            'fill': self.fill_color,
-            'fill-opacity': self.fill_opacity,
-        }
-
-    
 class StatusStyle:
 
+    DEFAULT_STATUS_VALUE = ''
+    DEFAULT_STROKE_COLOR = '#40f040'
+    DEFAULT_STROKE_WIDTH = 5.0
+    DEFAULT_FILL_COLOR = 'white'
+    DEFAULT_FILL_OPACITY = 0.0
+    
     MovementActive = SvgStatusStyle(
         status_value = 'active',
         stroke_color = 'red',
-        stroke_width = None,
+        stroke_width = DEFAULT_STROKE_WIDTH,
         fill_color = 'red',
         fill_opacity = 0.5,
     )
     MovementRecent = SvgStatusStyle(
         status_value = 'recent',
         stroke_color = 'orange',
-        stroke_width = None,
+        stroke_width = DEFAULT_STROKE_WIDTH,
         fill_color = 'orange',
         fill_opacity = 0.5,
     )
     MovementPast = SvgStatusStyle(
         status_value = 'past',
         stroke_color = 'yellow',
-        stroke_width = None,
+        stroke_width = DEFAULT_STROKE_WIDTH,
         fill_color = 'yellow',
         fill_opacity = 0.5,
     )
     MovementIdle = SvgStatusStyle(
         status_value = 'idle',
         stroke_color = '#888888',
-        stroke_width = None,
+        stroke_width = DEFAULT_STROKE_WIDTH,
         fill_color = 'white',
         fill_opacity = 0.0,
     )
     On = SvgStatusStyle(
         status_value = 'on',
         stroke_color = 'green',
-        stroke_width = None,
+        stroke_width = DEFAULT_STROKE_WIDTH,
         fill_color = 'green',
         fill_opacity = 0.5,
     )
     Off = SvgStatusStyle(
         status_value = 'off',
         stroke_color = '#888888',
-        stroke_width = None,
+        stroke_width = DEFAULT_STROKE_WIDTH,
         fill_color = '#888888',
         fill_opacity = 0.5,
     )
     Open = SvgStatusStyle(
         status_value = 'open',
         stroke_color = 'green',
-        stroke_width = None,
+        stroke_width = DEFAULT_STROKE_WIDTH,
         fill_color = 'green',
         fill_opacity = 0.5,
     )
     Closed = SvgStatusStyle(
         status_value = 'closed',
         stroke_color = '#888888',
-        stroke_width = None,
+        stroke_width = DEFAULT_STROKE_WIDTH,
         fill_color = '#888888',
         fill_opacity = 0.5,
     )
     Connected = SvgStatusStyle(
         status_value = 'connected',
         stroke_color = 'green',
-        stroke_width = None,
+        stroke_width = DEFAULT_STROKE_WIDTH,
         fill_color = 'green',
         fill_opacity = 0.5,
     )
     Disconnected = SvgStatusStyle(
         status_value = 'disconnected',
         stroke_color = 'red',
-        stroke_width = None,
+        stroke_width = DEFAULT_STROKE_WIDTH,
         fill_color = 'red',
         fill_opacity = 0.5,
     )
     High = SvgStatusStyle(
         status_value = 'high',
         stroke_color = 'green',
-        stroke_width = None,
+        stroke_width = DEFAULT_STROKE_WIDTH,
         fill_color = 'green',
         fill_opacity = 0.5,
     )
     Low = SvgStatusStyle(
         status_value = 'low',
         stroke_color = 'red',
-        stroke_width = None,
+        stroke_width = DEFAULT_STROKE_WIDTH,
         fill_color = 'red',
         fill_opacity = 0.5,
     )
+
+    @classmethod
+    def default(cls):
+        return SvgStatusStyle(
+            status_value = cls.DEFAULT_STATUS_VALUE,
+            stroke_color = cls.DEFAULT_STROKE_COLOR,
+            stroke_width = cls.DEFAULT_STROKE_WIDTH,
+            fill_color = cls.DEFAULT_FILL_COLOR,
+            fill_opacity = cls.DEFAULT_FILL_OPACITY,
+        )
 
     
 class StatusDisplayData:
@@ -135,7 +132,11 @@ class StatusDisplayData:
     @property
     def controller_data_list(self):
         return self._controller_data_list
-        
+
+    @property
+    def svg_status_style(self):
+        return self._svg_status_style
+
     @property
     def should_skip(self):
         return bool( self._svg_status_style is None )
@@ -200,13 +201,17 @@ class StatusDisplayData:
         # EntityStateType.TEMPERATURE
         # EntityStateType.WATER_FLOW
         # EntityStateType.WIND_SPEED
-    
+
+        status_value = self.latest_sensor_value
+        if not status_value:
+            status_value = StatusStyle.DEFAULT_STATUS_VALUE
+            
         return SvgStatusStyle(
-            status_value = self.latest_sensor_value,
-            stroke_color = None,
-            stroke_width = None,
-            fill_color = None,
-            fill_opacity = None,
+            status_value = status_value,
+            stroke_color = StatusStyle.DEFAULT_STROKE_COLOR,
+            stroke_width = StatusStyle.DEFAULT_STROKE_WIDTH,
+            fill_color = StatusStyle.DEFAULT_FILL_COLOR,
+            fill_opacity = StatusStyle.DEFAULT_FILL_OPACITY,
         )
     
     def _get_movement_status_style( self ):

@@ -10,7 +10,7 @@
     window.Hi.polling = HiPolling;
 
     window.addEventListener('load', function() {
-        HiPolling.init();
+	HiPolling.init();
     });
 
     /*

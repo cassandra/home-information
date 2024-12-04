@@ -96,6 +96,7 @@ class SvgIconItem:
     
     html_id        : str
     css_class      : str
+    status_value   : str
     template_name  : str
     bounding_box   : SvgViewBox
     position_x     : float
@@ -178,3 +179,21 @@ class SvgDecimalField( models.DecimalField ):
         return value.quantize( precision, rounding = ROUND_HALF_UP )
 
     
+@dataclass
+class SvgStatusStyle:
+    
+    status_value  : str
+    stroke_color  : str
+    stroke_width  : float
+    fill_color    : str
+    fill_opacity  : float
+
+    def to_dict(self):
+        return {
+            'status': self.status_value,
+            'stroke': self.stroke_color,
+            'stroke-width': self.stroke_width,
+            'fill': self.fill_color,
+            'fill-opacity': self.fill_opacity,
+        }
+

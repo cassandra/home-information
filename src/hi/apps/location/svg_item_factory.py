@@ -1,8 +1,9 @@
 from hi.apps.common.singleton import Singleton
-from hi.apps.common.svg_models import SvgIconItem, SvgPathItem, SvgViewBox
+from hi.apps.common.svg_models import SvgIconItem, SvgPathItem, SvgStatusStyle, SvgViewBox
 from hi.apps.collection.models import Collection
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
+from hi.apps.monitor.status_display_data import StatusStyle
 
 from .enums import SvgItemType
 from .models import (
@@ -21,13 +22,17 @@ class SvgItemFactory( Singleton ):
         return
 
     def create_svg_icon_item( self,
-                              item       : LocationItemModelMixin,
-                              position   : LocationItemPositionModel,
-                              css_class  : str ) -> SvgIconItem:
-
+                              item              : LocationItemModelMixin,
+                              position          : LocationItemPositionModel,
+                              css_class         : str,
+                              svg_status_style  : SvgStatusStyle              = None ) -> SvgIconItem:
+        if not svg_status_style:
+            svg_status_style = StatusStyle.default()
+            
         return SvgIconItem(
             html_id = item.html_id,
             css_class = css_class,
+            status_value = svg_status_style.status_value,
             position_x = float( position.svg_x ),
             position_y = float( position.svg_y ),
             rotate = float( position.svg_rotate ),
@@ -37,18 +42,21 @@ class SvgItemFactory( Singleton ):
         )
 
     def create_svg_path_item( self,
-                              item       : LocationItemModelMixin,
-                              path       : LocationItemPathModel,
-                              css_class  : str ) -> SvgPathItem:
-
+                              item              : LocationItemModelMixin,
+                              path              : LocationItemPathModel,
+                              css_class         : str,
+                              svg_status_style  : SvgStatusStyle              = None  ) -> SvgPathItem:
+        if not svg_status_style:
+            svg_status_style = StatusStyle.default()
+            
         return SvgPathItem(
             html_id = item.html_id,
             css_class = css_class,
             svg_path = path.svg_path,
-            stroke_color = '#40f040',
-            stroke_width = 5.0,
-            fill_color = 'white',
-            fill_opacity = 0.0,
+            stroke_color = svg_status_style.stroke_color,
+            stroke_width = svg_status_style.stroke_width,
+            fill_color = svg_status_style.fill_color,
+            fill_opacity = svg_status_style.fill_opacity,
         )
 
     def get_svg_item_type( self, obj ) -> SvgItemType:
