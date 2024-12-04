@@ -42,8 +42,7 @@ class JwtTokenManager( Singleton ):
     TOKEN_CACHE_EXPIRY_SECS = 15 * 60  # Max is 20 min for Apple Connect Store API
     
     def __init_singleton__( self ):
-        self._token_cache = TTLCache( maxsize=4,
-                                      ttl = self.TOKEN_CACHE_EXPIRY_SECS )
+        self._token_cache = TTLCache( maxsize = 4, ttl = self.TOKEN_CACHE_EXPIRY_SECS )
         return
     
     def get_token( self,

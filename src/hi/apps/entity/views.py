@@ -4,7 +4,7 @@ from django.db import transaction
 from django.views.generic import View
 
 from hi.apps.location.location_manager import LocationManager
-from hi.apps.monitor.status_data_helpers import StatusDataHelper
+from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.apps.sense.sensor_history_manager import SensorHistoryManager
 
 from hi.hi_async_view import HiModalView, HiSideView
@@ -101,7 +101,7 @@ class EntityStatusView( HiModalView, EntityViewMixin ):
     def get( self, request, *args, **kwargs ):
         entity = self.get_entity( request, *args, **kwargs )
 
-        entity_status_data = StatusDataHelper().get_entity_status_data( entity = entity )
+        entity_status_data = StatusDisplayManager().get_entity_status_data( entity = entity )
         if not entity_status_data.entity_state_status_data_list:
             return EntityEditView().get( request, *args, **kwargs )
         

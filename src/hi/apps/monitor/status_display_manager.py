@@ -1,18 +1,30 @@
+from cachetools import TTLCache
 from typing import Dict, List, Set, Sequence
 
 from hi.apps.control.transient_models import ControllerData
+from hi.apps.common.singleton import Singleton
 from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.location.enums import LocationViewType
 from hi.apps.location.models import LocationView
+from hi.apps.sense.models import Sensor
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
 from hi.apps.sense.transient_models import SensorResponse
 
 from .transient_models import EntityStatusData, EntityStateStatusData
 
 
-class StatusDataHelper:
+class StatusDisplayManager( Singleton ):
 
+    STATUS_VALUE_OVERRIDES_SECS = 11
+
+    def __init_singleton__( self ):
+        self._status_value_overrides = TTLCache(
+            maxsize = 100,
+            ttl = self.STATUS_VALUE_OVERRIDES_SECS,
+        )
+        return
+    
     def get_all_entity_state_status_data_list( self ) -> List[ EntityStateStatusData ]:
         """
         Gets the latest sensor responses for all EntityStates.  Used by client
@@ -20,7 +32,7 @@ class StatusDataHelper:
         state.
         """
         
-        sensor_to_sensor_response_list = SensorResponseManager().get_all_latest_sensor_responses()
+        sensor_to_sensor_response_list = self._get_latest_sensor_responses_helper()
         
         # Since a given EntityState can have zero or more sensors, for each
         # EntityState, we need to collate all the sensor values to find the
@@ -169,7 +181,7 @@ class StatusDataHelper:
         
         # Single fetch for getting all latest sensor data.
         #
-        sensor_response_list_map = SensorResponseManager().get_latest_sensor_responses(
+        sensor_to_sensor_response_list = self._get_latest_sensor_responses_helper(
             sensor_list = all_sensor_list,
         )
 
@@ -180,7 +192,7 @@ class StatusDataHelper:
         for entity_state in entity_states:
             entity_state_sensor_response_list = list()
             for sensor in entity_state_to_sensor_list.get( entity_state ):
-                sensor_response_list = sensor_response_list_map.get( sensor )
+                sensor_response_list = sensor_to_sensor_response_list.get( sensor )
                 if sensor_response_list:
                     entity_state_sensor_response_list.extend( sensor_response_list )
                 continue
@@ -341,12 +353,12 @@ class StatusDataHelper:
     def get_latest_sensor_response( self, entity_state : EntityState ) -> SensorResponse:
         sensor_list = list( entity_state.sensors.all() )
         
-        sensor_response_list_map = SensorResponseManager().get_latest_sensor_responses(
+        sensor_to_sensor_response_list =  self._get_latest_sensor_responses_helper(
             sensor_list = sensor_list,
         )
         entity_state_sensor_response_list = list()
         for sensor in sensor_list:
-            sensor_response_list = sensor_response_list_map.get( sensor )
+            sensor_response_list = sensor_to_sensor_response_list.get( sensor )
             if sensor_response_list:
                 entity_state_sensor_response_list.extend( sensor_response_list )
             continue
@@ -356,3 +368,39 @@ class StatusDataHelper:
             return entity_state_sensor_response_list[0]
 
         return None
+
+    def _get_latest_sensor_responses_helper(
+            self,
+            sensor_list : List[ Sensor ] = None ) -> Dict[ Sensor, List[ SensorResponse ] ] :
+
+        if sensor_list is None:
+            sensor_to_sensor_response_list = SensorResponseManager().get_all_latest_sensor_responses()
+        else:
+            sensor_to_sensor_response_list = SensorResponseManager().get_latest_sensor_responses(
+                sensor_list = sensor_list,
+            )
+
+        for sensor, sensor_response_list in sensor_to_sensor_response_list.items():
+            if ( not sensor_response_list
+                 or ( sensor.entity_state.id not in self._status_value_overrides )):
+                continue
+
+
+
+            print( f'\n\nAPPLYING OVERRIDE {sensor.entity_state} = {self._status_value_overrides[sensor.entity_state.id]}\n' )
+
+            
+            sensor_response_list[0].value = self._status_value_overrides[sensor.entity_state.id]
+            continue
+
+        return sensor_to_sensor_response_list
+        
+    def add_entity_state_value_override( self,
+                                         entity_state    : EntityState,
+                                         override_value  : str ):
+        """
+        Add a temporary override when values is explicitly chnaged by a controller to
+        compensate for the delays in value updates from the polling intervals.
+        """
+        self._status_value_overrides[entity_state.id] = override_value
+        return

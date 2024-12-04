@@ -13,10 +13,12 @@ logger = logging.getLogger(__name__)
 
 class HassMonitor( PeriodicMonitor ):
 
+    HASS_POLLING_INTERVAL_SECS = 10
+
     def __init__( self ):
         super().__init__(
             id = 'hass-monitor',
-            interval_secs = 10,
+            interval_secs = self.HASS_POLLING_INTERVAL_SECS,
         )
         self._hass_manager = HassManager()
         self._sensor_response_manager = SensorResponseManager()

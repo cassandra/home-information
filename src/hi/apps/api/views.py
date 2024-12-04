@@ -4,7 +4,7 @@ import logging
 from django.http import HttpResponse
 from django.views.generic import View
 
-from hi.apps.monitor.status_data_helpers import StatusDataHelper
+from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.apps.monitor.status_display_data import StatusDisplayData
 
 
@@ -17,7 +17,7 @@ class StatusView( View ):
 
     def get( self, *args, **kwargs ):
 
-        entity_state_status_data_list = StatusDataHelper().get_all_entity_state_status_data_list()
+        entity_state_status_data_list = StatusDisplayManager().get_all_entity_state_status_data_list()
         status_display_data_list = [ StatusDisplayData(x) for x in entity_state_status_data_list ]
 
         css_class_update_map = dict()

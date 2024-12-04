@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 from hi.apps.common.singleton import Singleton
-from hi.apps.monitor.status_data_helpers import StatusDataHelper
+from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
 from .models import Controller
 from .transient_models import ControllerData
@@ -17,7 +17,7 @@ class ControllerManager( Singleton ):
     
     def get_controller_data( self, controller : Controller, error_list : List[ str ] = None ):
 
-        latest_sensor_response = StatusDataHelper().get_latest_sensor_response(
+        latest_sensor_response = StatusDisplayManager().get_latest_sensor_response(
             entity_state = controller.entity_state,
         )
         return ControllerData(

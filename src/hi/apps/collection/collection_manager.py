@@ -9,7 +9,7 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
-from hi.apps.monitor.status_data_helpers import StatusDataHelper
+from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
 from .models import (
     Collection,
@@ -64,7 +64,7 @@ class CollectionManager(Singleton):
 
         collection_entity_list = list( collection.entities.all().order_by('order_id') )
         entity_list = [ x.entity for x in collection_entity_list ]
-        entity_status_data_list = StatusDataHelper().get_entity_status_data_list(
+        entity_status_data_list = StatusDisplayManager().get_entity_status_data_list(
             entities = entity_list,
         )
         return CollectionData(

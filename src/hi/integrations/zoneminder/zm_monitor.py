@@ -21,11 +21,12 @@ class ZoneMinderMonitor( PeriodicMonitor ):
 
     # TODO: Move this into the integrations attributes for users to set
     ZONEMINDER_SERVER_TIMEZONE = 'America/Chicago'
-
+    ZONEMINDER_POLLING_INTERVAL_SECS = 10
+    
     def __init__( self ):
         super().__init__(
             id = 'zm-monitor',
-            interval_secs = 10,
+            interval_secs = self.ZONEMINDER_POLLING_INTERVAL_SECS,
         )
         self._zm_manager = ZoneMinderManager()
         self._sensor_history_manager = SensorHistoryManager()
