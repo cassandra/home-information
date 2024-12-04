@@ -4,8 +4,8 @@ import logging
 from pyzm.helpers.Monitor import Monitor as ZmMonitor
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.entity.enums import EntityStateValue
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
-from hi.apps.sense.enums import SensorValue
 from hi.apps.sense.sensor_history_manager import SensorHistoryManager
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
 from hi.apps.sense.transient_models import SensorResponse
@@ -218,7 +218,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
                 sensor_prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
                 zm_monitor_id = zm_event.monitor_id,
             ),
-            value = str(SensorValue.ACTIVE),
+            value = str(EntityStateValue.ACTIVE),
             timestamp = zm_event.start_datetime,
             details = SensorResponseHelper.event_to_details( zm_event = zm_event ),
         )
@@ -229,7 +229,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
                 sensor_prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
                 zm_monitor_id = zm_event.monitor_id,
             ),
-            value = str(SensorValue.IDLE),
+            value = str(EntityStateValue.IDLE),
             timestamp = zm_event.end_datetime,
         )
 
@@ -239,7 +239,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
                 sensor_prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
                 zm_monitor_id = zm_monitor.id(),
             ),
-            value = str(SensorValue.IDLE),
+            value = str(EntityStateValue.IDLE),
             timestamp = timestamp,
         )
 

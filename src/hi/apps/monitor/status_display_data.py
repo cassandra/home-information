@@ -1,8 +1,7 @@
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.svg_models import SvgStatusStyle
 
-from hi.apps.entity.enums import EntityStateType
-from hi.apps.sense.enums import SensorValue
+from hi.apps.entity.enums import EntityStateType, EntityStateValue
 
 from .transient_models import EntityStateStatusData
 
@@ -216,10 +215,10 @@ class StatusDisplayData:
     
     def _get_movement_status_style( self ):
 
-        if self.latest_sensor_value == str(SensorValue.ACTIVE):
+        if self.latest_sensor_value == str(EntityStateValue.ACTIVE):
             return StatusStyle.MovementActive
 
-        if self.penultimate_sensor_value == str(SensorValue.ACTIVE):
+        if self.penultimate_sensor_value == str(EntityStateValue.ACTIVE):
             movement_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
             if movement_timedelta.seconds < 30:
                 return StatusStyle.MovementRecent
@@ -231,10 +230,10 @@ class StatusDisplayData:
         
     def _get_presence_status_style( self ):
 
-        if self.latest_sensor_value == str(SensorValue.ACTIVE):
+        if self.latest_sensor_value == str(EntityStateValue.ACTIVE):
             return StatusStyle.PresenceActive
 
-        if self.penultimate_sensor_value == str(SensorValue.ACTIVE):
+        if self.penultimate_sensor_value == str(EntityStateValue.ACTIVE):
             presence_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
             if presence_timedelta.seconds < 30:
                 return StatusStyle.MovementRecent
@@ -246,33 +245,33 @@ class StatusDisplayData:
         
     def _get_on_off_status_style( self ):
 
-        if self.latest_sensor_value == str(SensorValue.ON):
+        if self.latest_sensor_value == str(EntityStateValue.ON):
             return StatusStyle.On
-        if self.latest_sensor_value == str(SensorValue.OFF):
+        if self.latest_sensor_value == str(EntityStateValue.OFF):
             return StatusStyle.Off
         return None
         
     def _get_open_close_status_style( self ):
 
-        if self.latest_sensor_value == str(SensorValue.OPEN):
+        if self.latest_sensor_value == str(EntityStateValue.OPEN):
             return StatusStyle.Open
-        if self.latest_sensor_value == str(SensorValue.CLOSED):
+        if self.latest_sensor_value == str(EntityStateValue.CLOSED):
             return StatusStyle.Closed
         return None
         
     def _get_connectivity_status_style( self ):
 
-        if self.latest_sensor_value == str(SensorValue.CONNECTED):
+        if self.latest_sensor_value == str(EntityStateValue.CONNECTED):
             return StatusStyle.Connected
-        if self.latest_sensor_value == str(SensorValue.DISCONNECTED):
+        if self.latest_sensor_value == str(EntityStateValue.DISCONNECTED):
             return StatusStyle.Disconnected
         return None
         
     def _get_high_low_status_style( self ):
 
-        if self.latest_sensor_value == str(SensorValue.HIGH):
+        if self.latest_sensor_value == str(EntityStateValue.HIGH):
             return StatusStyle.High
-        if self.latest_sensor_value == str(SensorValue.LOW):
+        if self.latest_sensor_value == str(EntityStateValue.LOW):
             return StatusStyle.Low
         return None
         

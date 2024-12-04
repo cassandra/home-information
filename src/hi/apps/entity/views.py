@@ -3,6 +3,7 @@ import logging
 from django.db import transaction
 from django.views.generic import View
 
+from hi.apps.control.controller_history_manager import ControllerHistoryManager
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.apps.sense.sensor_history_manager import SensorHistoryManager
@@ -12,7 +13,7 @@ from hi.hi_async_view import HiModalView, HiSideView
 from .entity_manager import EntityManager
 from . import forms
 from .models import EntityAttribute
-from .transient_models import EntityEditData
+from .transient_models import EntityEditData, EntityStateHistoryData
 from .view_mixin import EntityViewMixin
 
 logger = logging.getLogger(__name__)
@@ -111,15 +112,25 @@ class EntityStatusView( HiModalView, EntityViewMixin ):
     
 class EntityStateHistoryView( HiModalView, EntityViewMixin ):
 
+    ENTITY_STATE_HISTORY_ITEM_MAX = 5
+    
     def get_template_name( self ) -> str:
         return 'entity/modals/entity_state_history.html'
 
     def get( self, request, *args, **kwargs ):
         entity = self.get_entity( request, *args, **kwargs )
-
-        entity_state_history_data = SensorHistoryManager().get_entity_state_history_data(
+        sensor_history_list_map = SensorHistoryManager().get_latest_entity_sensor_history(
             entity = entity,
-            is_editing = request.is_editing,
+            max_items = self.ENTITY_STATE_HISTORY_ITEM_MAX,
+        )
+        controller_history_list_map = ControllerHistoryManager().get_latest_entity_controller_history(
+            entity = entity,
+            max_items = self.ENTITY_STATE_HISTORY_ITEM_MAX,
+        )        
+        entity_state_history_data = EntityStateHistoryData(
+            entity = entity,
+            sensor_history_list_map = sensor_history_list_map,
+            controller_history_list_map = controller_history_list_map,
         )
         context = entity_state_history_data.to_template_context()
         return self.modal_response( request, context )

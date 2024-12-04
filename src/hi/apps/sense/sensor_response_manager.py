@@ -144,7 +144,7 @@ class SensorResponseManager( Singleton ):
         pipeline.execute()
 
         await self._add_sensors( sensor_response_list = sensor_response_list )
-        await self._sensor_history_manager.add_to_sensor_response_history(
+        await self._sensor_history_manager.add_to_sensor_history(
             sensor_response_list = sensor_response_list,
         )        
         return

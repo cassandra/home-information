@@ -3,11 +3,11 @@ from datetime import datetime
 import json
 from typing import Dict, List
 
+from hi.apps.entity.enums import EntityStateValue
 from hi.apps.entity.models import Entity
 
 from hi.integrations.core.integration_key import IntegrationKey
 
-from .enums import SensorValue
 from .models import Sensor, SensorHistory
 
 
@@ -29,7 +29,7 @@ class SensorResponse:
         return self.sensor.entity_state.css_class
     
     def is_on(self):
-        return bool( self.value == str(SensorValue.ON) )
+        return bool( self.value == str(EntityStateValue.ON) )
     
     def to_dict(self):
         return {
@@ -67,16 +67,3 @@ class SensorResponse:
             timestamp = datetime.fromisoformat( sensor_reading_dict.get('timestamp') ),
             details = sensor_reading_dict.get('details'),
         )
-
-    
-@dataclass
-class EntityStateHistoryData:
-    entity                   : Entity
-    sensor_history_list_map  : Dict[ Sensor, List[ SensorHistory ] ]
-    
-    def to_template_context(self):
-        context = {
-            'entity': self.entity,
-            'sensor_history_list_map': self.sensor_history_list_map,
-        }
-        return context

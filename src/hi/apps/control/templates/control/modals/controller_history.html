@@ -1,0 +1,13 @@
+{% extends "modals/action_done.html" %}
+
+{% block title_text %}
+{{ controller.name }}
+{% endblock %}
+
+{% block body %}
+<h5>Controller History</h5>
+{% include "control/panes/controller_history_list.html" with controller_history_list=controller_history_list %}
+
+{% include "common/panes/pagination.html" with pagination=pagination %}
+
+{% endblock %}

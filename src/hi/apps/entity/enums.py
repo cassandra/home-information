@@ -124,6 +124,24 @@ class EntityStateType(LabeledEnum):
         return f'control/panes/controller_{self.name.lower()}.html'
 
 
+class EntityStateValue(LabeledEnum):
+
+    ACTIVE         = ( 'Active', '' )
+    IDLE           = ( 'Idle', '' )
+
+    ON             = ( 'On', '' )
+    OFF            = ( 'Off', '' )
+    
+    OPEN           = ( 'Open', '' )
+    CLOSED         = ( 'Closed', '' )
+
+    CONNECTED      = ( 'Connected', '' )
+    DISCONNECTED   = ( 'Disconnected', '' )
+
+    HIGH           = ( 'High', '' )
+    LOW            = ( 'Low', '' )
+
+    
 class TemperatureUnit(LabeledEnum):
 
     FAHRENHEIT  = ( 'Fahrenheit', '' )

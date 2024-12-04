@@ -7,8 +7,6 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
-from hi.apps.sense.sensor_history_manager import SensorHistoryManager
-from hi.apps.sense.transient_models import EntityStateHistoryData
 
 from .delegation_manager import DelegationManager
 from .enums import (

@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Dict, List
 
+from hi.apps.control.models import Controller, ControllerHistory
 from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.sense.models import Sensor, SensorHistory
 
@@ -82,4 +83,20 @@ class EntityDetailsData:
             'principal_entity_list': self.principal_entity_list,
         }
         context.update( self.entity_edit_data.to_template_context() )
+        return context
+
+    
+@dataclass
+class EntityStateHistoryData:
+
+    entity                       : Entity
+    sensor_history_list_map      : Dict[ Sensor, List[ SensorHistory ] ]
+    controller_history_list_map  : Dict[ Controller, List[ ControllerHistory ] ]
+    
+    def to_template_context(self):
+        context = {
+            'entity': self.entity,
+            'sensor_history_list_map': self.sensor_history_list_map,
+            'controller_history_list_map': self.controller_history_list_map,
+        }
         return context

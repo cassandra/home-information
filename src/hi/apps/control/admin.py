@@ -14,6 +14,7 @@ class ControllerAdmin(admin.ModelAdmin):
         'controller_type_str',
         'integration_id',
         'integration_name',
+        'persist_history',
     )
 
     search_fields = ['name']

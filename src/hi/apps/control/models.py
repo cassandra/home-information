@@ -28,6 +28,10 @@ class Controller( IntegrationKeyModel ):
         max_length = 32,
         null = False, blank = False,
     )
+    persist_history = models.BooleanField(
+        'Persist History',
+        default = True,
+    )
 
     class Meta:
         verbose_name = 'Controller'
@@ -39,6 +43,9 @@ class Controller( IntegrationKeyModel ):
             ),
         ]
 
+    def __str__(self):
+        return f'{self.name} ({self.entity_state.entity_state_type}) [{self.id}] ({self.integration_id})'
+        
     @property
     def controller_type(self):
         return ControllerType.from_name_safe( self.controller_type_str )

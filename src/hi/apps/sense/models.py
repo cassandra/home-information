@@ -44,7 +44,7 @@ class Sensor( IntegrationKeyModel ):
         ]
 
     def __repr__(self):
-        return f'{self.name} [{self.id}] ({self.integration_id})'
+        return f'{self.name} ({self.entity_state.entity_state_type}) [{self.id}] ({self.integration_id})'
             
     def __str__(self):
         return self.__repr__()

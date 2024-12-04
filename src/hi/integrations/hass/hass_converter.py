@@ -10,12 +10,12 @@ from hi.apps.attribute.enums import (
 )
 from hi.apps.entity.enums import (
     EntityType,
+    EntityStateValue,
     HumidityUnit,
     TemperatureUnit,
 )
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.model_helper import HiModelHelper
-from hi.apps.sense.enums import SensorValue
 
 from hi.integrations.core.integration_key import IntegrationKey
 
@@ -667,27 +667,27 @@ class HassConverter:
 
             if hass_state.state_value.lower() == HassStateValue.ON:
                 if hass_state.device_class in HassApi.MOTION_DEVICE_CLASS:
-                    return str(SensorValue.ACTIVE)
+                    return str(EntityStateValue.ACTIVE)
                 elif hass_state.device_class in HassApi.BATTERY_DEVICE_CLASS:
-                    return str(SensorValue.LOW)
+                    return str(EntityStateValue.LOW)
                 elif hass_state.device_class in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
-                    return str(SensorValue.OPEN)
+                    return str(EntityStateValue.OPEN)
                 elif hass_state.device_class in HassApi.CONNECTIVITY_DEVICE_CLASS:
-                    return str(SensorValue.CONNECTED)
+                    return str(EntityStateValue.CONNECTED)
                 else:
-                    return str(SensorValue.ON)
+                    return str(EntityStateValue.ON)
                 
             elif hass_state.state_value.lower() == HassStateValue.OFF:
                 if hass_state.device_class in HassApi.MOTION_DEVICE_CLASS:
-                    return str(SensorValue.IDLE)
+                    return str(EntityStateValue.IDLE)
                 elif hass_state.device_class in HassApi.BATTERY_DEVICE_CLASS:
-                    return str(SensorValue.HIGH)
+                    return str(EntityStateValue.HIGH)
                 elif hass_state.device_class in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
-                    return str(SensorValue.CLOSED)
+                    return str(EntityStateValue.CLOSED)
                 elif hass_state.device_class in HassApi.CONNECTIVITY_DEVICE_CLASS:
-                    return str(SensorValue.DISCONNECTED)
+                    return str(EntityStateValue.DISCONNECTED)
                 else:
-                    return str(SensorValue.OFF)
+                    return str(EntityStateValue.OFF)
             else:
                 logger.warning( f'Unknown HAss binary state value "{hass_state.state_value}".' )
                 return None
@@ -712,9 +712,9 @@ class HassConverter:
                                            hi_value        : str) -> str:
         if hi_value is None:
             return HassStateValue.OFF
-        if hi_value.lower() in [ str(SensorValue.OPEN), str(SensorValue.ON) ]:
+        if hi_value.lower() in [ str(EntityStateValue.OPEN), str(EntityStateValue.ON) ]:
             return HassStateValue.ON
-        if hi_value.lower() in [ str(SensorValue.CLOSED), str(SensorValue.OFF) ]:
+        if hi_value.lower() in [ str(EntityStateValue.CLOSED), str(EntityStateValue.OFF) ]:
             return HassStateValue.OFF
         return hi_value
     

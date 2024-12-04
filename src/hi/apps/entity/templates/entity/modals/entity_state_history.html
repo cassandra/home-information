@@ -18,4 +18,15 @@
   {% endfor %}
 </ul>
 
+<h5>Controller History</h5>
+<ul>
+  {% for controller, controller_history_list in controller_history_list_map.items %}
+  <li>Controller: {{ controller.name }}
+    {% include "control/panes/controller_history_list.html" with controller_history_list=controller_history_list show_all_link=True %}
+  </li>
+  {% empty %}
+  <div><em>No controllers</em></div>
+  {% endfor %}
+</ul>
+
 {% endblock %}
