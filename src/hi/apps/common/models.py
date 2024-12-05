@@ -4,7 +4,6 @@ from django.db import models, transaction
 from django.utils import timezone
 
 
-
 class DatabaseLock(models.Model):
 
     name = models.CharField(

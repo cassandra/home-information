@@ -182,9 +182,8 @@ class SensorResponseManager( Singleton ):
             return None
         return EntityStateTransition(
             entity_state = sensor.entity_state,
-            from_value = previous_sensor_response.value,
-            to_value = latest_sensor_response.value,
-            timestamp = latest_sensor_response.timestamp,
+            latest_sensor_response = latest_sensor_response,
+            previous_value = previous_sensor_response.value,
         )
                   
     def _get_sensor( self, integration_key : IntegrationKey ):
