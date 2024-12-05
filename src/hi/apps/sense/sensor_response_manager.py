@@ -5,6 +5,9 @@ from typing import Dict, List
 
 from hi.apps.common.redis_client import get_redis_client
 from hi.apps.common.singleton import Singleton
+from hi.apps.event.event_detector import EventDetector
+from hi.apps.event.transient_models import EntityStateTransition
+
 from hi.integrations.core.integration_key import IntegrationKey
 
 from .models import Sensor
@@ -57,6 +60,7 @@ class SensorResponseManager( Singleton ):
         if not sensor_response_map:
             return
         changed_sensor_response_list = list()
+        entity_state_transition_list = list()
 
         list_cache_keys = [ self.to_sensor_response_list_cache_key(x) for x in sensor_response_map.keys() ]
         integration_keys = list( sensor_response_map.keys() )
@@ -74,11 +78,18 @@ class SensorResponseManager( Singleton ):
                 previous_sensor_response = SensorResponse.from_string( cached_value )
                 if latest_sensor_response.value == previous_sensor_response.value:
                     continue
+                entity_state_transition = self._create_entity_state_transition(
+                    previous_sensor_response = previous_sensor_response,
+                    latest_sensor_response = latest_sensor_response,
+                )
+                if entity_state_transition:
+                    entity_state_transition_list.append( entity_state_transition )
                 
             changed_sensor_response_list.append( latest_sensor_response )
             continue
         
         await self._add_latest_sensor_responses( changed_sensor_response_list )
+        EventDetector().add_entity_state_transitions( entity_state_transition_list )
         logger.debug( f'Sensor changed: {len(changed_sensor_response_list)} of {len(sensor_response_map)}' )
         return
 
@@ -155,11 +166,27 @@ class SensorResponseManager( Singleton ):
     async def _add_sensors( self, sensor_response_list : List[ SensorResponse ] ):
         for sensor_response in sensor_response_list:
             if sensor_response.sensor is None:
-                sensor_response.sensor = await sync_to_async(
-                    self._get_sensor )( integration_key = sensor_response.integration_key )
+                sensor_response.sensor = await sync_to_async( self._get_sensor )(
+                    integration_key = sensor_response.integration_key,
+                )
             continue
         return
-        
+    
+    async def _create_entity_state_transition( self,
+                                               previous_sensor_response  : SensorResponse,
+                                               latest_sensor_response    : SensorResponse ):
+        sensor = await sync_to_async( self._get_sensor )(
+            integration_key = latest_sensor_response.integration_key,
+        )
+        if not sensor:
+            return None
+        return EntityStateTransition(
+            entity_state = sensor.entity_state,
+            from_value = previous_sensor_response.value,
+            to_value = latest_sensor_response.value,
+            timestamp = latest_sensor_response.timestamp,
+        )
+                  
     def _get_sensor( self, integration_key : IntegrationKey ):
         if integration_key not in self._sensor_cache:
             sensor_queryset = Sensor.objects.filter_by_integration_key(

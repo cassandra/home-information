@@ -62,7 +62,10 @@
 	    if ( Hi.DEBUG ) { console.log( "Server response: "+JSON.stringify( respObj)); }
 	    Hi.watchdog.ok( ServerPollingWatchdogType );
 	    clearPollingTimer();
-	    handleAttributeUpdates( respObj );
+
+	    if ( CssClassUpdateMap in respObj ) {
+		handleCssClassUpdates( respObj[CssClassUpdateMap] );
+	    }
 	    
 	} catch (e) {
 	    console.error( "Exception parsing server response: " + e
@@ -74,11 +77,11 @@
 	}
     }
 
-    function handleAttributeUpdates( respObj ) {
+    function handleCssClassUpdates( updateMap ) {
 
-	for ( let cssClass in respObj[CssClassUpdateMap] ) {
+	for ( let cssClass in updateMap ) {
 	    let elements = getElementByCssClass( cssClass );
-	    let attrMap = respObj[CssClassUpdateMap][cssClass];
+	    let attrMap = updateMap[cssClass];
 	    for ( let attrName in attrMap ) {		    
 		let attrValue = attrMap[attrName];
 		elements.each( function() {
@@ -120,17 +123,13 @@
 	if ( cssClass in gCssClassElementCache ) {
 	    const cachedElements = gCssClassElementCache[cssClass];
             const connectedElements = $(cachedElements).filter( function () {
-		if ( cssClass == 'hi-entity-state-203' ) { console.log( `Status ${this}=${this.isConnected}` ); }
 		return this.isConnected;
             });
             if ( cachedElements.length == connectedElements.length) {
-		if ( cssClass == 'hi-entity-state-203' ) { console.log( `Cached: ${cssClass}` ); }
 		return connectedElements;
 	    }
 	}
 
-	if ( cssClass == 'hi-entity-state-203' ) { console.log( `Querying: ${cssClass}` ); }
-	
 	let elements = $(`.${cssClass}`);
 	if ( elements.length > 0 ) {
 	    gCssClassElementCache[cssClass] = elements;

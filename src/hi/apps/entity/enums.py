@@ -14,6 +14,7 @@ class EntityType(LabeledEnum):
     AREA                 = ( 'Area', '' )
     AUDIO_AMPLIFIER      = ( 'Audio Amplifier', '' )  # Controls Speaker
     AUDIO_PLAYER         = ( 'Audio Player', '' )
+    AUTOMOBILE           = ( 'Automobile', '' )
     BAROMETER            = ( 'Barometer', '' )
     CAMERA               = ( 'Camera', '' )
     COMPUTER             = ( 'Computer', '' )
