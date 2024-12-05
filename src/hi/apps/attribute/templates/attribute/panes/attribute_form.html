@@ -19,6 +19,8 @@
     {% include "attribute/panes/attribute_form_file.html" %}
     {% elif attribute_form.instance.value_type.is_enum %}
     {% include "attribute/panes/attribute_form_enum.html" %}
+    {% elif attribute_form.instance.value_type.is_boolean %}
+    {% include "attribute/panes/attribute_form_boolean.html" %}
     {% else %}
     {% include "attribute/panes/attribute_form_text.html" %}
     {% endif %}

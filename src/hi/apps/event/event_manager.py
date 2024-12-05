@@ -1,6 +1,7 @@
 from asgiref.sync import sync_to_async
 from cachetools import TTLCache
 from collections import deque
+from datetime import timedelta
 import logging
 from typing import List
 
@@ -28,19 +29,27 @@ class EventManager(Singleton):
     def reload(self):
         self._event_definitions = EventDefinition.objects.prefetch_related(
             'clauses',
+            'clauses__entity_state',
             'alarm_actions',
             'control_actions',
         ).filter( enabled = True )
-        self._max_event_window_secs = max([ x.event_window_secs for x in self._event_definitions ])
+        if self._event_definitions:
+            self._max_event_window_secs = max([ x.event_window_secs for x in self._event_definitions ])
+        else:
+            self._max_event_window_secs = 10
         return
     
     async def add_entity_state_transitions( self,
                                             entity_state_transition_list : List[ EntityStateTransition ] ):
         if not entity_state_transition_list:
             return
+        logger.debug( f'Adding state transitions: {entity_state_transition_list}' )
+
         self._recent_transitions.extend( entity_state_transition_list )
         self._purge_old_transitions()
         new_event_list = self._get_new_events()
+
+        logger.debug( f'New events found: {new_event_list}' )
 
         await self._do_new_event_action( event_list = new_event_list )
         await self._add_to_event_history( event_list = new_event_list )        
@@ -65,7 +74,7 @@ class EventManager(Singleton):
         if not recent_event:
             return False
         recent_event_timedelta = datetimeproxy.now() - recent_event.timestamp
-        return bool( recent_event_timedelta <= event_definition.event_window_secs )
+        return bool( recent_event_timedelta.seconds <= event_definition.event_window_secs )
     
     def _create_event_if_detected( self, event_definition : EventDefinition ) -> bool:
         if not event_definition.clauses.exists():
@@ -100,7 +109,7 @@ class EventManager(Singleton):
         current_timestamp = datetimeproxy.now()
         while ( self._recent_transitions
                 and (( current_timestamp - self._recent_transitions[0].timestamp )
-                     > self._max_event_window_secs )):
+                     > timedelta( seconds = self._max_event_window_secs ))):
             self._recent_transitions.popleft()
             continue
         return

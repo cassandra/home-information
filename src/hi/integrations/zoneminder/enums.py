@@ -49,6 +49,15 @@ class ZmAttributeType( IntegrationAttributeType ):
         True,
         'America/Chicago',
     )
+    ADD_ALARM_EVENTS = (
+        'Add Alarm Events',
+        '',
+        AttributeValueType.BOOLEAN,
+        None,
+        True,
+        False,
+        True,
+    )
     
 
 class ZmMonitorFunction(LabeledEnum):

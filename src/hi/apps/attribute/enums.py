@@ -17,7 +17,8 @@ class AttributeValueType(LabeledEnum):
     FILE      = ('File'     , '' )  # relative filename of MEDIA_ROOT
     SECRET    = ('Secret'   , '' )
     ENUM      = ('Enum'     , '' )
-
+    BOOLEAN   = ('Boolean'  , '' )
+    
     @classmethod
     def default(cls):
         return cls.TEXT
@@ -37,3 +38,7 @@ class AttributeValueType(LabeledEnum):
     @property
     def is_enum(self):
         return bool( self == AttributeValueType.ENUM )
+
+    @property
+    def is_boolean(self):
+        return bool( self == AttributeValueType.BOOLEAN )

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from typing import List
 
 from hi.apps.alert.transient_models import Alarm
@@ -26,21 +27,19 @@ class Event:
     sensor_response_list  : List[ SensorResponse ]
     
     @property
-    def timestamp(self):
+    def timestamp(self) -> datetime:
         return max([ x.timestamp for x in self.sensor_response_list ])
     
-    @property
-    def to_event_history(self):
+    def to_event_history(self) -> EventHistory:
         return EventHistory(
             event_definition = self.event_definition,
             event_datetime = self.timestamp,
         )
     
-    @property
-    def to_alarm( self, alarm_action : AlarmAction ):
+    def to_alarm( self, alarm_action : AlarmAction ) -> Alarm:
         return Alarm(
             title = self.event_definition.name,
-            details = ', '.join([ x.name for x in self.sensor_response_list ]),
+            details = ', '.join([ x.sensor.name for x in self.sensor_response_list ]),
             security_posture = alarm_action.security_posture,
             alarm_level = alarm_action.alarm_level,
             lifetime_secs = alarm_action.lifetime_secs,

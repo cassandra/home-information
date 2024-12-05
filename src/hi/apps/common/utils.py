@@ -21,12 +21,19 @@ def is_blank( obj ):
         return False
     return bool( obj.strip() == '' )
 
-    
+
+def str_to_bool( value: str ) -> bool:
+    truthy_values = {'true', '1', 'on', 'yes', 'y', 't', 'enabled'}
+    if isinstance( value, str ):
+        return value.strip().lower() in truthy_values
+    return False
+
+
 def get_long_display_name( user_obj ):
     if not user_obj:
         return settings.USER_DISPLAY_NAME_DEFAULT
     if user_obj.last_name and user_obj.first_name:
-        return "%s, %s" % ( user_obj.last_name, user_obj.first_name )
+        return '%s, %s' % ( user_obj.last_name, user_obj.first_name )
     if user_obj.last_name:
         return user_obj.last_name
     if user_obj.first_name:

@@ -89,9 +89,9 @@ class SensorResponseManager( Singleton ):
             changed_sensor_response_list.append( latest_sensor_response )
             continue
         
+        logger.debug( f'Sensors changed: {len(changed_sensor_response_list)} of {len(sensor_response_map)}' )
         await self._add_latest_sensor_responses( changed_sensor_response_list )
         await self._event_manager.add_entity_state_transitions( entity_state_transition_list )
-        logger.debug( f'Sensor changed: {len(changed_sensor_response_list)} of {len(sensor_response_map)}' )
         return
 
     def get_all_latest_sensor_responses( self ) -> Dict[ Sensor, List[ SensorResponse ] ]:

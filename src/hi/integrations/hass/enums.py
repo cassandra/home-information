@@ -20,6 +20,15 @@ class HassAttributeType( IntegrationAttributeType ):
         True,
         True,
     )
+    ADD_ALARM_EVENTS = (
+        'Add Alarm Events',
+        '',
+        AttributeValueType.BOOLEAN,
+        None,
+        True,
+        False,
+        True,
+    )
 
     
 class HassStateValue:

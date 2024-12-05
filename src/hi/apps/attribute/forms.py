@@ -3,7 +3,7 @@ import mimetypes
 from django.core.exceptions import ValidationError
 from django import forms
 
-from hi.apps.common.utils import is_blank
+from hi.apps.common.utils import is_blank, str_to_bool
 
 from .enums import AttributeType, AttributeValueType
 
@@ -41,6 +41,9 @@ class AttributeForm( forms.ModelForm ):
         # Access the instance's value_type field
         instance = kwargs.get('instance')
 
+        if instance and instance.value_type.is_boolean:
+            self.initial['value'] = str_to_bool( instance.value )
+                                                  
         for field in self.fields.values():
             if self._show_as_editable or ( instance and instance.is_editable ):
                 continue
@@ -64,7 +67,9 @@ class AttributeForm( forms.ModelForm ):
             value = cleaned_data.get('value')
             if self.instance.is_required and is_blank( value ):
                 self.add_error( 'value', 'A value is required.')
-
+            if self.instance.value_type.is_boolean:
+                cleaned_data['value'] = str(str_to_bool( value ))
+            
         if self.cleaned_data.get('secret'):
             stripped_value = value.strip()
             value_lines = stripped_value.splitlines()
