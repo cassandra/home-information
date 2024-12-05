@@ -602,7 +602,7 @@ class HassConverter:
         friendly_name = shortest_id_state.friendly_name
         if friendly_name:
             return friendly_name
-        return hass_device.entity_id
+        return hass_device.device_id
         
     @classmethod
     def hass_device_to_entity_type( cls, hass_device : HassDevice ) -> EntityType:

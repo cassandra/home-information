@@ -142,6 +142,10 @@ class HomeView( View ):
 
     def get(self, request, *args, **kwargs):
 
+        if not Location.objects.all().exists():
+            redirect_url = reverse( 'start' )
+            return HttpResponseRedirect( redirect_url )
+
         if request.view_parameters.view_type.is_collection:
             redirect_url = reverse( 'collection_view_default' )
         else:
@@ -153,7 +157,7 @@ class StartView( View ):
 
     def get(self, request, *args, **kwargs):
 
-        # Only for first time users (when no Locations exist)
+        # This view only for first time users (when no Locations exist)
         if Location.objects.all().exists():
             redirect_url = reverse( 'home' )
             return HttpResponseRedirect( redirect_url )
