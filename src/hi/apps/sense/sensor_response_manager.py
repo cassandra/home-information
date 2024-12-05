@@ -5,7 +5,7 @@ from typing import Dict, List
 
 from hi.apps.common.redis_client import get_redis_client
 from hi.apps.common.singleton import Singleton
-from hi.apps.event.event_detector import EventDetector
+from hi.apps.event.event_manager import EventManager
 from hi.apps.event.transient_models import EntityStateTransition
 
 from hi.integrations.core.integration_key import IntegrationKey
@@ -45,6 +45,7 @@ class SensorResponseManager( Singleton ):
     def __init_singleton__( self ):
         self._redis_client = get_redis_client()
         self._sensor_history_manager = SensorHistoryManager()
+        self._event_manager = EventManager()
         self._sensor_cache = TTLCache( maxsize = 1000, ttl = 300 )
         return
 
@@ -78,7 +79,7 @@ class SensorResponseManager( Singleton ):
                 previous_sensor_response = SensorResponse.from_string( cached_value )
                 if latest_sensor_response.value == previous_sensor_response.value:
                     continue
-                entity_state_transition = self._create_entity_state_transition(
+                entity_state_transition = await self._create_entity_state_transition(
                     previous_sensor_response = previous_sensor_response,
                     latest_sensor_response = latest_sensor_response,
                 )
@@ -89,7 +90,7 @@ class SensorResponseManager( Singleton ):
             continue
         
         await self._add_latest_sensor_responses( changed_sensor_response_list )
-        EventDetector().add_entity_state_transitions( entity_state_transition_list )
+        await self._event_manager.add_entity_state_transitions( entity_state_transition_list )
         logger.debug( f'Sensor changed: {len(changed_sensor_response_list)} of {len(sensor_response_map)}' )
         return
 
@@ -175,7 +176,7 @@ class SensorResponseManager( Singleton ):
     async def _create_entity_state_transition( self,
                                                previous_sensor_response  : SensorResponse,
                                                latest_sensor_response    : SensorResponse ):
-        sensor = await sync_to_async( self._get_sensor )(
+        sensor = await self._get_sensor_async(
             integration_key = latest_sensor_response.integration_key,
         )
         if not sensor:
@@ -185,7 +186,12 @@ class SensorResponseManager( Singleton ):
             latest_sensor_response = latest_sensor_response,
             previous_value = previous_sensor_response.value,
         )
-                  
+
+    async def _get_sensor_async( self, integration_key : IntegrationKey ):
+        return await sync_to_async( self._get_sensor )(
+            integration_key = integration_key,
+        )
+    
     def _get_sensor( self, integration_key : IntegrationKey ):
         if integration_key not in self._sensor_cache:
             sensor_queryset = Sensor.objects.filter_by_integration_key(
@@ -196,4 +202,3 @@ class SensorResponseManager( Singleton ):
             self._sensor_cache[integration_key] = sensor_queryset[0]
 
         return self._sensor_cache[integration_key]
-        

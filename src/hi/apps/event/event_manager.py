@@ -1,41 +1,52 @@
 from asgiref.sync import sync_to_async
 from cachetools import TTLCache
 from collections import deque
+import logging
 from typing import List
 
+from hi.apps.alert.alert_manager import AlertManager
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton import Singleton
+from hi.apps.control.controller_manager import ControllerManager
 
-from .models import EventDefinition
+from .models import EventDefinition, EventHistory
 from .transient_models import Event, EntityStateTransition
 
+logger = logging.getLogger(__name__)
 
-class EventDetector(Singleton):
+
+class EventManager(Singleton):
 
     def __init_singleton__(self):
         self._recent_transitions = deque()
         self._recent_events = TTLCache( maxsize = 1000, ttl = 300 )
+        self._alert_manager = AlertManager()
+        self._controller_manager = ControllerManager()
         self.reload()
         return
 
     def reload(self):
-        sync_to_async( self._reload_helper )()
-        return
-
-    def _reload_helper(self):
-        self._event_definitions = EventDefinition.objects.prefetch_related('clauses').filter( enabled = True )
+        self._event_definitions = EventDefinition.objects.prefetch_related(
+            'clauses',
+            'alarm_actions',
+            'control_actions',
+        ).filter( enabled = True )
         self._max_event_window_secs = max([ x.event_window_secs for x in self._event_definitions ])
         return
     
-    def add_entity_state_transitions( self, entity_state_transition_list : List[ EntityStateTransition ] ):
+    async def add_entity_state_transitions( self,
+                                            entity_state_transition_list : List[ EntityStateTransition ] ):
         if not entity_state_transition_list:
             return
         self._recent_transitions.extend( entity_state_transition_list )
         self._purge_old_transitions()
-        self._check_for_new_events()
+        new_event_list = self._get_new_events()
+
+        await self._do_new_event_action( event_list = new_event_list )
+        await self._add_to_event_history( event_list = new_event_list )        
         return
                                       
-    def _check_for_new_events( self ):
+    def _get_new_events( self ):
         new_event_list = list()
         for event_definition in self._event_definitions:
             if self._has_recent_event( event_definition ):
@@ -47,9 +58,7 @@ class EventDetector(Singleton):
             new_event_list.append( event )
             continue
 
-        self._handle_new_events( event_list = new_event_list )
-        self._add_to_event_history( event_list = new_event_list )        
-        return
+        return new_event_list
 
     def _has_recent_event( self, event_definition : EventDefinition ) -> bool:
         recent_event = self._recent_events.get( event_definition.id )
@@ -96,9 +105,30 @@ class EventDetector(Singleton):
             continue
         return
 
-    def _handle_new_events( self, event_list : List[ Event ] ):
-        raise NotImplementedError()
+    async def _do_new_event_action( self, event_list : List[ Event ] ):
 
-    def _add_to_event_history( self, event_list : List[ Event ] ):
-        raise NotImplementedError()
+        for event in event_list:
+
+            for alarm_action in event.event_definition.alarm_actions.all():
+                alarm = event.to_alarm( alarm_action = alarm_action )
+                await self._alert_manager.add_alarm( alarm )
+                continue
+            
+            for control_action in event.event_definition.control_actions.all():
+                await self._controller_manager.do_control_async(
+                    controller = control_action.controller,
+                    control_value = control_action.value,
+                )
+                continue
+            continue
+        return
     
+    async def _add_to_event_history( self, event_list : List[ Event ] ):
+        event_history_list = [ x.to_event_history() for x in event_list ]
+        await self._bulk_create_event_history_async( event_history_list )
+        return
+    
+    async def _bulk_create_event_history_async( self, event_history_list : List[ EventHistory ] ):
+        await sync_to_async( EventHistory.objects.bulk_create)( event_history_list )
+        return
+

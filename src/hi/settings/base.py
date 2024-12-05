@@ -143,6 +143,7 @@ INSTALLED_APPS = [
     'hi.apps.collection',
     'hi.apps.sense',
     'hi.apps.control',
+    'hi.apps.alert',
     'hi.apps.event',
     'hi.apps.edit',
     'hi.apps.api',

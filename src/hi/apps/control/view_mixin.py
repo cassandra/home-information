@@ -5,8 +5,9 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import render
 
 from hi.apps.control.models import Controller
+from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
-from .controller_manager import ControllerManager
+from .transient_models import ControllerData
 
 
 class ControlViewMixin:
@@ -28,8 +29,12 @@ class ControlViewMixin:
                                   error_list             : List[ str ],
                                   override_sensor_value  : str           = None ) -> HttpResponse:
 
-        controller_data = ControllerManager().get_controller_data(
+        latest_sensor_response = StatusDisplayManager().get_latest_sensor_response(
+            entity_state = controller.entity_state,
+        )
+        controller_data = ControllerData(
             controller = controller,
+            latest_sensor_response = latest_sensor_response,
             error_list = error_list,
         )
         if controller_data.latest_sensor_response and ( override_sensor_value is not None ):

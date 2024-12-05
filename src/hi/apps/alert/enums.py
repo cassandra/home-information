@@ -1,7 +1,7 @@
 from hi.apps.common.enums import LabeledEnum
 
 
-class EventLevel(LabeledEnum):
+class AlarmLevel(LabeledEnum):
     
     NONE          = ( 'None'      , ''               , 0 )
     INFO          = ( 'Info'      , ''              , 10 )
@@ -17,7 +17,7 @@ class EventLevel(LabeledEnum):
         return
 
     
-class SecurityLevel(LabeledEnum):
+class SecurityPosture(LabeledEnum):
     """
     This is the overall security level setting for security status monitoring
     that dictates what type of security events are relevant.

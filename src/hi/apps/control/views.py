@@ -7,11 +7,10 @@ from hi.apps.common.pagination import compute_pagination_from_queryset
 from hi.apps.entity.enums import EntityStateType, EntityStateValue
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
-from hi.integrations.core.integration_factory import IntegrationFactory
-
 from hi.hi_async_view import HiModalView
 
 from .controller_history_manager import ControllerHistoryManager
+from .controller_manager import ControllerManager
 from .models import Controller, ControllerHistory
 from .view_mixin import ControlViewMixin
 
@@ -39,15 +38,8 @@ class ControllerView( View, ControlViewMixin ):
         if control_value is None:
             control_value = self._get_value_for_missing_input( controller = controller )
 
-        logger.debug( f'Setting discrete controller = "{control_value}"' )
-
-        integration_gateway = IntegrationFactory().get_integration_gateway(
-            integration_id = controller.integration_id,
-        )
-        integration_controller = integration_gateway.get_controller()
-        
-        control_result = integration_controller.do_control(
-            integration_key = controller.integration_key,
+        control_result = ControllerManager().do_control(
+            controller = controller,
             control_value = control_value,
         )
 
@@ -65,7 +57,7 @@ class ControllerView( View, ControlViewMixin ):
         #     polling happening beforee the server has been able to update
         #     itrs values.  This override is temporary and expires in a
         #     time just longer than the polling intervals' maximum gaps.
-
+        
         if control_result.has_errors:
             override_sensor_value = None
         else:

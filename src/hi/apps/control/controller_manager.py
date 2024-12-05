@@ -1,11 +1,12 @@
+from asgiref.sync import sync_to_async
 import logging
-from typing import List
 
 from hi.apps.common.singleton import Singleton
-from hi.apps.monitor.status_display_manager import StatusDisplayManager
+
+from hi.integrations.core.integration_factory import IntegrationFactory
+from hi.integrations.core.transient_models import IntegrationControlResult
 
 from .models import Controller
-from .transient_models import ControllerData
 
 logger = logging.getLogger(__name__)
 
@@ -15,13 +16,27 @@ class ControllerManager( Singleton ):
     def __init_singleton__( self ):
         return
     
-    def get_controller_data( self, controller : Controller, error_list : List[ str ] = None ):
+    def do_control( self,
+                    controller     : Controller,
+                    control_value  : str ) -> IntegrationControlResult:
+        logger.debug( f'Controller action: {controller} = {control_value}' )
 
-        latest_sensor_response = StatusDisplayManager().get_latest_sensor_response(
-            entity_state = controller.entity_state,
+        integration_gateway = IntegrationFactory().get_integration_gateway(
+            integration_id = controller.integration_id,
         )
-        return ControllerData(
+        integration_controller = integration_gateway.get_controller()
+        
+        control_result = integration_controller.do_control(
+            integration_key = controller.integration_key,
+            control_value = control_value,
+        )
+        return control_result
+
+    async def do_control_async( self,
+                                controller    : Controller,
+                                control_value : str ) -> IntegrationControlResult:
+        return await sync_to_async( self.do_control )(
             controller = controller,
-            latest_sensor_response = latest_sensor_response,
-            error_list = error_list,
+            control_value = control_value,
         )
+    
