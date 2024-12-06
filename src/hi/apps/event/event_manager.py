@@ -1,16 +1,20 @@
 from asgiref.sync import sync_to_async
 from cachetools import TTLCache
 from collections import deque
-from datetime import timedelta
 import logging
+from threading import local
 from typing import List
+
+from django.db.models.signals import post_save, post_delete
+from django.db.transaction import on_commit
+from django.dispatch import receiver
 
 from hi.apps.alert.alert_manager import AlertManager
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton import Singleton
 from hi.apps.control.controller_manager import ControllerManager
 
-from .models import EventDefinition, EventHistory
+from .models import AlarmAction, ControlAction, EventClause, EventDefinition, EventHistory
 from .transient_models import Event, EntityStateTransition
 
 logger = logging.getLogger(__name__)
@@ -39,6 +43,7 @@ class EventManager(Singleton):
         return
 
     def reload(self):
+        """ Called when integration models are changed (via signals below). """
         self._event_definitions = list( EventDefinition.objects.prefetch_related(
             'event_clauses',
             'event_clauses__entity_state',
@@ -154,3 +159,40 @@ class EventManager(Singleton):
         await sync_to_async( EventHistory.objects.bulk_create)( event_history_list )
         return
 
+    
+_thread_local = local()
+
+
+def do_event_manager_reload():
+    logger.debug( 'Reloading EventManager from model changes.')
+    EventManager().reload()
+    _thread_local.reload_registered = False
+    return
+
+
+@receiver( post_save, sender = EventDefinition )
+@receiver( post_save, sender = EventClause )
+@receiver( post_save, sender = AlarmAction )
+@receiver( post_save, sender = ControlAction )
+@receiver( post_delete, sender = EventDefinition )
+@receiver( post_delete, sender = EventClause )
+@receiver( post_delete, sender = AlarmAction )
+@receiver( post_delete, sender = ControlAction )
+def event_manager_model_changed( sender, instance, **kwargs ):
+    """
+    Queue the EventManager.reload() call to execute after the transaction
+    is committed.  This prevents reloading multiple times if multiple
+    models saved as part of a transaction (which is the normal case for
+    EventDefinition and its related models.)
+    """
+    if not hasattr(_thread_local, "reload_registered"):
+        _thread_local.reload_registered = False
+
+    logger.debug( 'EventManager model change detected.')
+        
+    if not _thread_local.reload_registered:
+        logger.debug( 'Queuing EventManager reload on model change.')
+        _thread_local.reload_registered = True
+        on_commit( do_event_manager_reload )
+    
+    return

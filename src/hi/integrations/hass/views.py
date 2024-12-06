@@ -134,7 +134,6 @@ class HassSettingsView( View, IntegrationHelperMixin ):
             with transaction.atomic():
                 integration_attribute_formset.save()
 
-            HassManager().reload()
             hass_monitor = IntegrationFactory().get_integration_monitor(
                 integration_id = HassMetaData.integration_id,
             )

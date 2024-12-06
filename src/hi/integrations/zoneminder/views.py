@@ -135,7 +135,6 @@ class ZmSettingsView( View, IntegrationHelperMixin ):
             with transaction.atomic():
                 integration_attribute_formset.save()
 
-            ZoneMinderManager().reload()
             zm_monitor = IntegrationFactory().get_integration_monitor(
                 integration_id = ZmMetaData.integration_id,
             )

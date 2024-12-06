@@ -1,5 +1,10 @@
 import logging
+from threading import local
 from typing import Dict
+
+from django.db.models.signals import post_save, post_delete
+from django.db.transaction import on_commit
+from django.dispatch import receiver
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.utils import str_to_bool
@@ -30,7 +35,7 @@ class HassManager( Singleton ):
         return self._hass_client
     
     def reload( self ):
-        """ Should be called when integration settings are changed. """
+        """ Called when integration models are changed (via signals below). """
         if self._is_loading:
             logger.warning( 'HAss is already loading.' )
             return
@@ -127,3 +132,45 @@ class HassManager( Singleton ):
             continue
 
         return hass_entity_id_to_state
+
+    
+_thread_local = local()
+
+
+def do_hass_manager_reload():
+    logger.debug( 'Reloading HassManager from model changes.')
+    HassManager().reload()
+    _thread_local.reload_registered = False
+    return
+
+
+@receiver( post_save, sender = Integration )
+@receiver( post_save, sender = IntegrationAttribute )
+@receiver( post_delete, sender = Integration )
+@receiver( post_delete, sender = IntegrationAttribute )
+def hass_manager_model_changed( sender, instance, **kwargs ):
+    """
+    Queue the EventManager.reload() call to execute after the transaction
+    is committed.  This prevents reloading multiple times if multiple
+    models saved as part of a transaction (which is the normal case for
+    EventDefinition and its related models.)
+    """
+
+    if ( isinstance( instance, Integration )
+         and ( instance.integration_id != HassMetaData.integration_id )):
+        return
+    if ( isinstance( instance, IntegrationAttribute )
+         and ( instance.integration.integration_id != HassMetaData.integration_id )):
+        return
+    
+    if not hasattr(_thread_local, "reload_registered"):
+        _thread_local.reload_registered = False
+
+    logger.debug( 'HassManager model change detected.')
+        
+    if not _thread_local.reload_registered:
+        logger.debug( 'Queuing HassManager reload on model change.')
+        _thread_local.reload_registered = True
+        on_commit( do_hass_manager_reload )
+    
+    return

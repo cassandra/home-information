@@ -1,7 +1,6 @@
 from django.db import transaction
 from django.urls import reverse
 
-from hi.apps.entity.enums import EntityStateValue
 from hi.apps.event.view_mixin import EventViewMixin
 
 from hi.hi_async_view import HiModalView
@@ -110,7 +109,7 @@ class EventDefinitionEditView( HiModalView, EventViewMixin ):
             event_clause_formset.save()
             alarm_action_formset.save()
             control_action_formset.save()
-            
+
         redirect_url = reverse( 'event_definitions' )
         return self.redirect_response( request = request,
                                        redirect_url = redirect_url )
