@@ -1,0 +1,29 @@
+{% extends "modals/action_with_cancel.html" %}
+
+{% block preamble %}
+<form action="{% url 'event_definition_delete' id=event_definition.id %}"
+      method="post" enctype="multipart/form-data"
+      class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+Delete Event Definition?
+{% endblock %}
+
+{% block body %}
+<div>
+ZZZ
+</div>
+{% endblock %}
+
+{% block action_right %}
+<button id="hi-delete-event-definition-button" type="submit" class="btn btn-lg btn-danger"
+	name="action" value="delete">
+  DELETE
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

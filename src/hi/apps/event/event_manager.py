@@ -39,12 +39,12 @@ class EventManager(Singleton):
         return
 
     def reload(self):
-        self._event_definitions = EventDefinition.objects.prefetch_related(
+        self._event_definitions = list( EventDefinition.objects.prefetch_related(
             'clauses',
             'clauses__entity_state',
             'alarm_actions',
             'control_actions',
-        ).filter( enabled = True )
+        ).filter( enabled = True ))
         return
     
     async def add_entity_state_transitions( self,

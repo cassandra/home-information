@@ -1,0 +1,57 @@
+{% extends "config/pages/config_base.html" %}
+
+{% block config_content %}
+<div class="container-fluid">
+  <div class="h3">Event Definitions</div>
+  
+  <div>
+    <a role="button" class="btn btn-info btn-control"
+       href="{% url 'event_definition_add' %}"
+       data-async="modal" >
+      ADD NEW
+    </a>
+  </div>
+
+  <div class="row">
+    <div class="col-1 font-weight-bold"></div>
+    <div class="col-3 font-weight-bold">Name</div>
+    <div class="col-2 font-weight-bold">Actions</div>
+    <div class="col-1 font-weight-bold">Enabled?</div>
+    <div class="col-1 font-weight-bold"></div>
+  </div>
+  
+  {% for event_definition in event_definition_list %}
+  <div class="row">
+    <div class="col-1">
+      <a role="button" class="btn btn-info"
+	 href="{% url 'event_definition_edit' id=event_definition.id %}"
+	 data-async="modal" >
+	EDIT
+      </a>
+    </div>
+    <div class="col-3">
+      <a href="{% url 'event_definition_edit' id=event_definition.id %}"
+	 data-async="modal" >
+	{{ event_definition.name }}
+      </a>
+    </div>
+    <div class="col-2">
+      {% if event_definition.control_actions.all|length > 0 %}Control{%endif %}
+      {% if event_definition.alarm_actions.all|length > 0 %}Alarm{%endif %}
+    </div>
+    <div class="col-1">
+      {{ event_definition.enabled }}
+    </div>
+    <div class="col-1">
+      <a role="button" class="btn btn-danger"
+	 href="{% url 'event_definition_delete' id=event_definition.id %}"
+	 data-async="modal" >
+	X
+      </a>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12 alert alert-info" >No event definitions.</div>
+  {% endfor %}
+</div>
+{% endblock %}

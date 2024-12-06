@@ -1,9 +1,5 @@
-from typing import Dict
-
 from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.common.enums import LabeledEnum
-
-from hi.constants import TIMEZONE_NAME_LIST
 
 
 class ConfigPageType(LabeledEnum):
@@ -21,8 +17,9 @@ class ConfigPageType(LabeledEnum):
         self.url_name = url_name
         return
 
-    SETTINGS     = ('Settings'     , ''   , 'config_settings' )
-    INTEGRATIONS = ('Integrations' , ''   , 'integrations_home' )
+    SETTINGS      = ('Settings'     , ''   , 'config_settings' )
+    EVENTS        = ('Events'       , ''   , 'event_definitions' )
+    INTEGRATIONS  = ('Integrations' , ''   , 'integrations_home' )
 
     def default(self):
         return ConfigPageType.SETTINGS

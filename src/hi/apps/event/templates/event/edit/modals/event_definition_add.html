@@ -1,0 +1,29 @@
+{% extends "modals/action_with_cancel.html" %}
+
+{% block preamble %}
+<form action="{% url 'event_definition_add' %}"
+      method="post" enctype="multipart/form-data"
+      class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+New Event Definition
+{% endblock %}
+
+{% block body %}
+<div>
+{% include "event/edit/panes/event_definition_form.html" %}
+</div>
+{% endblock %}
+
+{% block action_right %}
+<button id="hi-add-event-definition-button" type="submit" class="btn btn-lg btn-success"
+	name="action" value="add">
+  ADD
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

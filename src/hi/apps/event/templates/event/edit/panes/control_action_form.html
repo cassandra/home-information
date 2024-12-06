@@ -1,0 +1,27 @@
+{% for hidden in control_action_form.hidden_fields %}
+{{ hidden }}
+{% endfor %}
+
+{% if control_action_form.non_field_errors %}
+<div class="non-field-errors">
+  {% for err in control_action_form.non_field_errors %}
+  <p class="form-error text-danger">ERROR: {{ err }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div>
+  {{ control_action_form.controller.label }}
+  {{ control_action_form.controller }}
+  {{ control_action_form.controller.errors }}
+</div>
+<div>
+  {{ control_action_form.value.label }}
+  {{ control_action_form.value }}
+  {{ control_action_form.value.errors }}
+</div>
+{% if control_action_form.instance.pk %}
+<div>
+  {{ control_action_form.DELETE }} Delete
+</div>
+{% endif %}

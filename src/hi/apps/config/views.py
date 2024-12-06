@@ -1,6 +1,5 @@
 from django.db import transaction
 from django.shortcuts import render
-from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
 

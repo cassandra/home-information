@@ -1,0 +1,27 @@
+{% for hidden in event_clause_form.hidden_fields %}
+{{ hidden }}
+{% endfor %}
+
+{% if event_clause_form.non_field_errors %}
+<div class="non-field-errors">
+  {% for err in event_clause_form.non_field_errors %}
+  <p class="form-error text-danger">ERROR: {{ err }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div>
+  {{ event_clause_form.entity_state.label }}
+  {{ event_clause_form.entity_state }}
+  {{ event_clause_form.entity_state.errors }}
+</div>
+<div>
+  {{ event_clause_form.value.label }}
+  {{ event_clause_form.value }}
+  {{ event_clause_form.value.errors }}
+</div>
+{% if event_clause_form.instance.pk %}
+<div>
+  {{ event_clause_form.DELETE }} Delete
+</div>
+{% endif %}

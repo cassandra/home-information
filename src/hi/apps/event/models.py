@@ -108,6 +108,17 @@ class AlarmAction( models.Model ):
     alarm_lifetime_secs = models.PositiveIntegerField(
         'Lifetime Secs',
     )
+
+    created_datetime = models.DateTimeField(
+        'Created',
+        auto_now_add = True,
+        blank = True,
+    )
+    updated_datetime = models.DateTimeField(
+        'Updated',
+        auto_now = True,
+        blank = True,
+    )
     
     class Meta:
         verbose_name = 'Alarm Actions'
@@ -153,6 +164,11 @@ class ControlAction( models.Model ):
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,
+        blank = True,
+    )
+    updated_datetime = models.DateTimeField(
+        'Updated',
+        auto_now = True,
         blank = True,
     )
 
