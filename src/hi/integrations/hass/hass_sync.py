@@ -47,7 +47,7 @@ class HassSynchronizer:
             logger.debug( 'HAss client not created. HAss integration disabled?' )
             result.error_list.append( 'Sync problem. HAss integration disabled?' )
             return result
-                    
+
         hass_entity_id_to_state = self._hass_manager.fetch_hass_states_from_api()
         result.message_list.append( f'Found {len(hass_entity_id_to_state)} current HAss states.' )
 
@@ -63,7 +63,7 @@ class HassSynchronizer:
             HassConverter.hass_device_to_integration_key( hass_device ): hass_device
             for hass_device in hass_device_id_to_device.values()
         }
-    
+        
         with transaction.atomic():
             for integration_key, hass_device in integration_key_to_hass_device.items():
                 entity = integration_key_to_entity.get( integration_key )
@@ -106,7 +106,10 @@ class HassSynchronizer:
     def _create_entity( self,
                         hass_device  : HassDevice,
                         result       : ProcessingResult ):
-        entity = HassConverter.create_models_for_hass_device( hass_device = hass_device )
+        entity = HassConverter.create_models_for_hass_device(
+            hass_device = hass_device,
+            add_alarm_events = self._hass_manager.should_add_alarm_events,
+        )
         result.message_list.append( f'Created HAss entity: {entity}' )
         return
     

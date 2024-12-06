@@ -1,14 +1,17 @@
 import json
-from typing import Dict, List
+from typing import Dict
 
+from hi.apps.alert.enums import SecurityPosture, AlarmLevel
 from hi.apps.control.enums import ControllerType
 from hi.apps.control.models import Controller
 from hi.apps.entity.enums import (
     EntityStateType,
+    EntityStateValue,
     HumidityUnit,
     TemperatureUnit,
 )    
 from hi.apps.entity.models import Entity, EntityState
+from hi.apps.event.models import AlarmAction, EventClause, EventDefinition
 from hi.apps.sense.enums import SensorType
 from hi.apps.sense.models import Sensor
 
@@ -24,12 +27,24 @@ class HiModelHelper:
         EntityStateType.BLOB,
         EntityStateType.MULTVALUED,
     }
+
+    DEFAULT_CONNECTIVITY_EVENT_WINDOW_SECS = 60
+    DEFAULT_CONNECTIVITY_ALARM_LIFETIME_SECS = 0
+
+    DEFAULT_OPEN_CLOSE_EVENT_WINDOW_SECS = 60
+    DEFAULT_OPEN_CLOSE_ALARM_LIFETIME_SECS = 180
+
+    DEFAULT_MOVEMENT_EVENT_WINDOW_SECS = 60
+    DEFAULT_MOVEMENT_ALARM_LIFETIME_SECS = 180
+
+    DEFAULT_BATTERY_EVENT_WINDOW_SECS = 60
+    DEFAULT_BATTERY_ALARM_LIFETIME_SECS = 0
     
     @classmethod
     def create_blob_sensor( cls,
                             entity           : Entity,
                             integration_key  : IntegrationKey  = None,
-                            name             : str             = None ):
+                            name             : str             = None ) -> Sensor:
         if not name:
             name = f'{entity.name} Blob'
         return cls.create_sensor(
@@ -43,7 +58,7 @@ class HiModelHelper:
     def create_multivalued_sensor( cls,
                                    entity           : Entity,
                                    integration_key  : IntegrationKey  = None,
-                                   name             : str             = None ):
+                                   name             : str             = None ) -> Sensor:
         if not name:
             name = f'{entity.name} Values'
         return cls.create_sensor(
@@ -57,7 +72,7 @@ class HiModelHelper:
     def create_connectivity_sensor( cls,
                                     entity           : Entity,
                                     integration_key  : IntegrationKey  = None,
-                                    name             : str             = None ):
+                                    name             : str             = None ) -> Sensor:
         if not name:
             name = f'{entity.name} Connection'
         return cls.create_sensor(
@@ -71,7 +86,7 @@ class HiModelHelper:
     def create_datetime_sensor( cls,
                                 entity           : Entity,
                                 integration_key  : IntegrationKey  = None,
-                                name             : str             = None ):
+                                name             : str             = None ) -> Sensor:
         if not name:
             name = f'{entity.name} Date/Time'
         return cls.create_sensor(
@@ -86,7 +101,7 @@ class HiModelHelper:
                                 entity           : Entity,
                                 name_label_dict  : Dict[ str, str ],
                                 integration_key  : IntegrationKey  = None,
-                                name             : str             = None ):
+                                name             : str             = None ) -> Sensor:
         if not name:
             name = f'{entity.name} Value'
         return cls.create_sensor(
@@ -101,7 +116,7 @@ class HiModelHelper:
     def create_high_low_sensor( cls,
                                 entity           : Entity,
                                 integration_key  : IntegrationKey  = None,
-                                name             : str             = None ):
+                                name             : str             = None ) -> Sensor:
         if not name:
             name = f'{entity.name} Level'
         return cls.create_sensor(
@@ -116,7 +131,7 @@ class HiModelHelper:
                                    entity           : Entity,
                                    temperature_unit : TemperatureUnit,
                                    integration_key  : IntegrationKey  = None,
-                                   name             : str             = None ):
+                                   name             : str             = None ) -> Sensor:
         if not name:
             name = f'{entity.name} Temperature'
         return cls.create_sensor(
@@ -132,7 +147,7 @@ class HiModelHelper:
                                 entity           : Entity,
                                 humidity_unit    : HumidityUnit,
                                 integration_key  : IntegrationKey  = None,
-                                name             : str             = None ):
+                                name             : str             = None ) -> Sensor:
         if not name:
             name = f'{entity.name} Humidity'
         return cls.create_sensor(
@@ -147,7 +162,7 @@ class HiModelHelper:
     def create_on_off_sensor( cls,
                               entity           : Entity,
                               integration_key  : IntegrationKey  = None,
-                              name             : str             = None ):
+                              name             : str             = None ) -> Sensor:
         if not name:
             name = f'{entity.name} On/Off'
         return cls.create_sensor(
@@ -161,7 +176,7 @@ class HiModelHelper:
     def create_open_close_sensor( cls,
                                   entity           : Entity,
                                   integration_key  : IntegrationKey  = None,
-                                  name             : str             = None ):
+                                  name             : str             = None ) -> Sensor:
         if not name:
             name = f'{entity.name} Open/Close'
         return cls.create_sensor(
@@ -175,7 +190,7 @@ class HiModelHelper:
     def create_movement_sensor( cls,
                                 entity           : Entity,
                                 integration_key  : IntegrationKey  = None,
-                                name             : str             = None ):
+                                name             : str             = None ) -> Sensor:
         if not name:
             name = f'{entity.name} Motion'
         return cls.create_sensor(
@@ -189,7 +204,7 @@ class HiModelHelper:
     def create_video_stream_sensor( cls,
                                     entity           : Entity,
                                     integration_key  : IntegrationKey  = None,
-                                    name             : str             = None ):
+                                    name             : str             = None ) -> Sensor:
         if not name:
             name = f'{entity.name} Stream'
         return cls.create_sensor(
@@ -204,7 +219,7 @@ class HiModelHelper:
                                   entity           : Entity,
                                   integration_key  : IntegrationKey  = None,
                                   name             : str             = None,
-                                  is_sensed        : bool            = True ):
+                                  is_sensed        : bool            = True ) -> Controller:
         if not name:
             name = f'{entity.name} Controller'
         return cls.create_controller(
@@ -221,7 +236,7 @@ class HiModelHelper:
                                entity_state     : EntityState,
                                integration_key  : IntegrationKey  = None,
                                name             : str             = None,
-                               is_sensed        : bool            = True  ):
+                               is_sensed        : bool            = True  ) -> Controller:
         if not name:
             name = f'{entity.name} Controller'
         return cls.add_controller(
@@ -238,7 +253,7 @@ class HiModelHelper:
                                     name_label_dict  : Dict[ str, str ],
                                     integration_key  : IntegrationKey  = None,
                                     name             : str             = None,
-                                    is_sensed        : bool            = True ):
+                                    is_sensed        : bool            = True ) -> Controller:
         if not name:
             name = f'{entity.name} Controller'
         return cls.create_controller(
@@ -258,7 +273,7 @@ class HiModelHelper:
                        sensor_type        : SensorType        = SensorType.DEFAULT,
                        integration_key    : IntegrationKey    = None,
                        value_range_str    : str               = '',
-                       units              : str               = None ):
+                       units              : str               = None ) -> Sensor:
         if not name:
             name = f'{entity.name}'
 
@@ -288,7 +303,7 @@ class HiModelHelper:
                            is_sensed          : bool              = True,
                            integration_key    : IntegrationKey    = None,
                            value_range_str    : str               = '',
-                           units              : str               = None ):
+                           units              : str               = None ) -> Controller:
         if not name:
             name = f'{entity.name}'
             
@@ -315,7 +330,7 @@ class HiModelHelper:
                         name               : str               = None,
                         controller_type    : ControllerType    = ControllerType.DEFAULT,
                         is_sensed          : bool              = True,
-                        integration_key    : IntegrationKey    = None ):
+                        integration_key    : IntegrationKey    = None ) -> Controller:
         if not name:
             name = f'{entity.name}'
             
@@ -338,3 +353,127 @@ class HiModelHelper:
         controller.integration_key = integration_key
         controller.save()
         return controller
+
+    @classmethod
+    def create_connectivity_event_definition(
+            cls,
+            name                 : str,
+            entity_state         : EntityState,
+            integration_key      : IntegrationKey  = None ) -> EventDefinition:
+        
+        return cls.create_simple_alarm_event_definition(
+            name = name,
+            entity_state = entity_state,
+            value = EntityStateValue.DISCONNECTED,
+            posture_to_level = {
+                SecurityPosture.AWAY: AlarmLevel.WARNING,
+                SecurityPosture.NIGHT: AlarmLevel.WARNING,
+                SecurityPosture.HOME: AlarmLevel.WARNING,
+            },
+            event_window_secs = cls.DEFAULT_CONNECTIVITY_EVENT_WINDOW_SECS,
+            dedupe_window_secs = cls.DEFAULT_CONNECTIVITY_DEDUPE_WINDOW_SECS,
+            alarm_lifetime_secs = cls.DEFAULT_CONNECTIVITY_ALARM_LIFETIME_SECS,
+            integration_key = integration_key,
+        )      
+
+    @classmethod
+    def create_open_close_event_definition(
+            cls,
+            name                 : str,
+            entity_state         : EntityState,
+            integration_key      : IntegrationKey  = None ) -> EventDefinition:
+        
+        return cls.create_simple_alarm_event_definition(
+            name = name,
+            entity_state = entity_state,
+            value = EntityStateValue.OPEN,
+            posture_to_level = {
+                SecurityPosture.AWAY: AlarmLevel.CRITICAL,
+                SecurityPosture.NIGHT: AlarmLevel.CRITICAL,
+                SecurityPosture.HOME: AlarmLevel.INFO,
+            },
+            event_window_secs = cls.DEFAULT_OPEN_CLOSE_EVENT_WINDOW_SECS,
+            dedupe_window_secs = cls.DEFAULT_OPEN_CLOSE_DEDUPE_WINDOW_SECS,
+            alarm_lifetime_secs = cls.DEFAULT_OPEN_CLOSE_ALARM_LIFETIME_SECS,
+            integration_key = integration_key,
+        )
+
+    @classmethod
+    def create_movement_event_definition(
+            cls,
+            name                 : str,
+            entity_state         : EntityState,
+            integration_key      : IntegrationKey  = None ) -> EventDefinition:
+        
+        return cls.create_simple_alarm_event_definition(
+            name = name,
+            entity_state = entity_state,
+            value = EntityStateValue.ACTIVE,
+            posture_to_level = {
+                SecurityPosture.AWAY: AlarmLevel.CRITICAL,
+                SecurityPosture.NIGHT: AlarmLevel.CRITICAL,
+                SecurityPosture.HOME: AlarmLevel.INFO,
+            },
+            event_window_secs = cls.DEFAULT_MOVEMENT_EVENT_WINDOW_SECS,
+            dedupe_window_secs = cls.DEFAULT_MOVEMENT_DEDUPE_WINDOW_SECS,
+            alarm_lifetime_secs = cls.DEFAULT_MOVEMENT_ALARM_LIFETIME_SECS,
+            integration_key = integration_key,
+        )
+
+    @classmethod
+    def create_battery_event_definition(
+            cls,
+            name                 : str,
+            entity_state         : EntityState,
+            integration_key      : IntegrationKey  = None ) -> EventDefinition:
+        
+        return cls.create_simple_alarm_event_definition(
+            name = name,
+            entity_state = entity_state,
+            value = EntityStateValue.LOW,
+            posture_to_level = {
+                SecurityPosture.AWAY: AlarmLevel.INFO,
+                SecurityPosture.NIGHT: AlarmLevel.INFO,
+                SecurityPosture.HOME: AlarmLevel.INFO,
+            },
+            event_window_secs = cls.DEFAULT_BATTERY_EVENT_WINDOW_SECS,
+            dedupe_window_secs = cls.DEFAULT_BATTERY_DEDUPE_WINDOW_SECS,
+            alarm_lifetime_secs = cls.DEFAULT_BATTERY_ALARM_LIFETIME_SECS,
+            integration_key = integration_key,
+        )
+    
+    @classmethod
+    def create_simple_alarm_event_definition(
+            cls,
+            name                 : str,
+            entity_state         : EntityState,
+            value                : str,
+            posture_to_level     : Dict[ SecurityPosture, AlarmLevel ],
+            event_window_secs    : int,
+            dedupe_window_secs   : int,
+            alarm_lifetime_secs  : int,
+            integration_key      : IntegrationKey  = None ) -> EventDefinition:
+
+        event_definition = EventDefinition(
+            name = name,
+            event_window_secs = event_window_secs,
+            dedupe_window_secs = dedupe_window_secs,
+            enabled = True,
+        )
+        event_definition.integration_key = integration_key
+        event_definition.save()
+        
+        _ = EventClause.objects.create(
+            event_definition = event_definition,
+            entity_state = entity_state,
+            value = value,
+        )
+        for security_posture, alarm_level in posture_to_level.items():
+            _ = AlarmAction.objects.create(
+                event_definition = event_definition,
+                security_posture_str = str(security_posture),
+                alarm_level_str = str(alarm_level),
+                alarm_lifetime_secs = alarm_lifetime_secs,
+            )
+            continue
+        return event_definition

@@ -214,8 +214,8 @@ class ZoneMinderMonitor( PeriodicMonitor ):
       
     def _create_movement_active_sensor_response( self, zm_event : ZmEvent ):
         return SensorResponse(
-            integration_key = self._zm_manager._sensor_to_integration_key(
-                sensor_prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
+            integration_key = self._zm_manager._to_integration_key(
+                prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
                 zm_monitor_id = zm_event.monitor_id,
             ),
             value = str(EntityStateValue.ACTIVE),
@@ -225,8 +225,8 @@ class ZoneMinderMonitor( PeriodicMonitor ):
 
     def _create_movement_idle_sensor_response( self, zm_event : ZmEvent ):
         return SensorResponse(
-            integration_key = self._zm_manager._sensor_to_integration_key(
-                sensor_prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
+            integration_key = self._zm_manager._to_integration_key(
+                prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
                 zm_monitor_id = zm_event.monitor_id,
             ),
             value = str(EntityStateValue.IDLE),
@@ -235,8 +235,8 @@ class ZoneMinderMonitor( PeriodicMonitor ):
 
     def _create_idle_sensor_response( self, zm_monitor : ZmMonitor, timestamp : datetime ):
         return SensorResponse(
-            integration_key = self._zm_manager._sensor_to_integration_key(
-                sensor_prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
+            integration_key = self._zm_manager._to_integration_key(
+                prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
                 zm_monitor_id = zm_monitor.id(),
             ),
             value = str(EntityStateValue.IDLE),
@@ -245,8 +245,8 @@ class ZoneMinderMonitor( PeriodicMonitor ):
 
     def _create_video_stream_sensor_response( self, zm_monitor : ZmMonitor, timestamp : datetime ):
         return SensorResponse(
-            integration_key = self._zm_manager._sensor_to_integration_key(
-                sensor_prefix = self._zm_manager.VIDEO_STREAM_SENSOR_PREFIX,
+            integration_key = self._zm_manager._to_integration_key(
+                prefix = self._zm_manager.VIDEO_STREAM_SENSOR_PREFIX,
                 zm_monitor_id = zm_monitor.id(),
             ),
             value = self._zm_manager.get_video_stream_url( monitor_id = zm_monitor.id() ),
@@ -255,8 +255,8 @@ class ZoneMinderMonitor( PeriodicMonitor ):
 
     def _create_monitor_function_sensor_response( self, zm_monitor : ZmMonitor, timestamp : datetime ):
         return SensorResponse(
-            integration_key = self._zm_manager._sensor_to_integration_key(
-                sensor_prefix = self._zm_manager.MONITOR_FUNCTION_SENSOR_PREFIX,
+            integration_key = self._zm_manager._to_integration_key(
+                prefix = self._zm_manager.MONITOR_FUNCTION_SENSOR_PREFIX,
                 zm_monitor_id = zm_monitor.id(),
             ),
             value = str( zm_monitor.function() ),

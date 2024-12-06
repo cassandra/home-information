@@ -42,6 +42,6 @@ class Event:
             details = ', '.join([ x.sensor.name for x in self.sensor_response_list ]),
             security_posture = alarm_action.security_posture,
             alarm_level = alarm_action.alarm_level,
-            lifetime_secs = alarm_action.lifetime_secs,
+            alarm_lifetime_secs = alarm_action.alarm_lifetime_secs,
             timestamp = self.timestamp,
         )

@@ -2,6 +2,7 @@ import logging
 from typing import Dict
 
 from hi.apps.common.singleton import Singleton
+from hi.apps.common.utils import str_to_bool
 
 from hi.integrations.core.exceptions import IntegrationAttributeError, IntegrationError
 from hi.integrations.core.integration_key import IntegrationKey
@@ -19,7 +20,7 @@ class HassManager( Singleton ):
 
     def __init_singleton__( self ):
         self._is_loading = False
-        self._hass_attributes = dict()
+        self._hass_attr_type_to_attribute = dict()
         self._hass_client = None
         self.reload()
         return
@@ -35,8 +36,8 @@ class HassManager( Singleton ):
             return
         try:
             self._is_loading = True
-            self._hass_attributes = self._load_attributes()
-            self._hass_client = self.create_hass_client( self._hass_attributes )
+            self._hass_attr_type_to_attribute = self._load_attributes()
+            self._hass_client = self.create_hass_client( self._hass_attr_type_to_attribute )
             self.clear_caches()
 
         finally:
@@ -47,7 +48,7 @@ class HassManager( Singleton ):
     def clear_caches(self):
         return
     
-    def _load_attributes(self) -> Dict[ str, IntegrationAttribute ]:
+    def _load_attributes(self) -> Dict[ HassAttributeType, IntegrationAttribute ]:
         try:
             hass_integration = Integration.objects.get( integration_id = HassMetaData.integration_id )
         except Integration.DoesNotExist:
@@ -56,13 +57,14 @@ class HassManager( Singleton ):
         if not hass_integration.is_enabled:
             raise IntegrationError( 'Home Assistant integration is not enabled.' )
         
-        attribute_dict = hass_integration.attributes_by_integration_key
+        hass_attr_type_to_attribute = dict()
+        integration_key_to_attribute = hass_integration.attributes_by_integration_key
         for hass_attr_type in HassAttributeType:
             integration_key = IntegrationKey(
                 integration_id = hass_integration.integration_id,
                 integration_name = str(hass_attr_type),
             )
-            hass_attr = attribute_dict.get( integration_key )
+            hass_attr = integration_key_to_attribute.get( integration_key )
             if not hass_attr:
                 if hass_attr_type.is_required:
                     raise IntegrationAttributeError( f'Missing HAss attribute {hass_attr_type}' )
@@ -71,11 +73,14 @@ class HassManager( Singleton ):
             if hass_attr.is_required and not hass_attr.value.strip():
                 raise IntegrationAttributeError( f'Missing HAss attribute value for {hass_attr_type}' )
             
+            hass_attr_type_to_attribute[hass_attr_type] = hass_attr
             continue
 
-        return { x.name: x for x in attribute_dict.values() }
+        return hass_attr_type_to_attribute
     
-    def create_hass_client( self, hass_attributes : Dict[ str, IntegrationAttribute ] ) -> HassClient:
+    def create_hass_client(
+            self,
+            hass_attr_type_to_attribute : Dict[ HassAttributeType, IntegrationAttribute ] ) -> HassClient:
         # Verify integration and build API data payload
         api_options = {
             # 'disable_ssl_cert_check': True
@@ -85,13 +90,13 @@ class HassManager( Singleton ):
             HassAttributeType.API_TOKEN: HassClient.API_TOKEN,
         }
         
-        attribute_dict = { x.integration_key: x for x in hass_attributes.values() }
+        integration_key_to_attribute = { x.integration_key: x for x in hass_attr_type_to_attribute.values() }
         for hass_attr_type in attr_to_api_option_key.keys():
             integration_key = IntegrationKey(
                 integration_id = HassMetaData.integration_id,
                 integration_name = str(hass_attr_type),
             )
-            hass_attr = attribute_dict.get( integration_key )
+            hass_attr = integration_key_to_attribute.get( integration_key )
             if not hass_attr:
                 raise IntegrationAttributeError( f'Missing HAss API attribute {hass_attr_type}' )
             if not hass_attr.value.strip():
@@ -104,8 +109,12 @@ class HassManager( Singleton ):
         logger.debug( f'Home Assistant client options: {api_options}' )
         return HassClient( api_options = api_options )
 
-    def get_hass_attribute( self, attr_name : str ) -> str:
-        return self._hass_attributes.get( attr_name )
+    @property
+    def should_add_alarm_events( self ) -> bool:
+        attribute = self._hass_attr_type_to_attribute.get( HassAttributeType.ADD_ALARM_EVENTS )
+        if attribute:
+            return str_to_bool( attribute.value )
+        return False
         
     def fetch_hass_states_from_api( self, verbose : bool = True ) -> Dict[ str, HassState ]:
         if verbose:

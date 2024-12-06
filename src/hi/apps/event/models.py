@@ -4,16 +4,31 @@ from hi.apps.alert.enums import AlarmLevel, SecurityPosture
 from hi.apps.control.models import Controller
 from hi.apps.entity.models import EntityState
 
+from hi.integrations.core.models import IntegrationKeyModel
 
-class EventDefinition( models.Model ):
+
+class EventDefinition( IntegrationKeyModel ):
 
     name = models.CharField(
         'Name',
         max_length = 64,
     )
+
+    # For multi-clause event definitions, the span in which all clauses
+    # need to satisfied.
+    #
     event_window_secs = models.PositiveIntegerField(
         'Event Window Secs',
     )
+
+    # Rate limits how many events will be generated for this
+    # EventDefinition by ensuring at least this time elapsed before a new
+    # event would be generated.
+    #
+    dedupe_window_secs = models.PositiveIntegerField(
+        'Desupe Window Secs',
+    )
+    
     enabled = models.BooleanField(
         default = True,
     )
@@ -85,7 +100,12 @@ class AlarmAction( models.Model ):
         max_length = 32,
         null = False, blank = False,
     )
-    lifetime_secs = models.PositiveIntegerField(
+
+    # How long will this alarm be relevant to the user.  Alarms exist until
+    # they expire or are acknowledged.  Set this to zero for ann alarm that
+    # will only be dismissed by a user acknowledgement.
+    #
+    alarm_lifetime_secs = models.PositiveIntegerField(
         'Lifetime Secs',
     )
     

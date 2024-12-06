@@ -91,7 +91,7 @@ class ZoneMinderSynchronizer:
         return
 
     def _sync_monitors( self, result : ProcessingResult ) -> ProcessingResult:
-        
+
         integration_key_to_monitor = self._fetch_zm_monitors( result = result )
         result.message_list.append( f'Found {len(integration_key_to_monitor)} current ZM monitors.' )
         
@@ -122,7 +122,10 @@ class ZoneMinderSynchronizer:
         logger.debug( 'Getting current ZM monitors.' )
         integration_key_to_monitor = dict()
         for zm_monitor in self._zm_manager.get_zm_monitors( force_load = True ):
-            integration_key = self._zm_manager._monitor_to_integration_key( zm_monitor_id = zm_monitor.id() )
+            integration_key = self._zm_manager._to_integration_key(
+                prefix = self._zm_manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX,
+                zm_monitor_id = zm_monitor.id(),
+            )
             integration_key_to_monitor[integration_key] = zm_monitor
             continue
 
@@ -176,8 +179,10 @@ class ZoneMinderSynchronizer:
                                 result      : ProcessingResult ):
 
         with transaction.atomic():
-            entity_integration_key = self._zm_manager._monitor_to_integration_key(
-                zm_monitor_id = zm_monitor.id() )
+            entity_integration_key = self._zm_manager._to_integration_key(
+                prefix = self._zm_manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX,
+                zm_monitor_id = zm_monitor.id(),
+            )
             entity = Entity(
                 name = zm_monitor.name(),
                 entity_type_str = str(EntityType.CAMERA),
@@ -188,27 +193,38 @@ class ZoneMinderSynchronizer:
 
             HiModelHelper.create_video_stream_sensor(
                 entity = entity,
-                integration_key = self._zm_manager._sensor_to_integration_key(
-                    sensor_prefix = self._zm_manager.VIDEO_STREAM_SENSOR_PREFIX,
+                integration_key = self._zm_manager._to_integration_key(
+                    prefix = self._zm_manager.VIDEO_STREAM_SENSOR_PREFIX,
                     zm_monitor_id = zm_monitor.id(),
                 ),
             )
-            HiModelHelper.create_movement_sensor(
+            movement_sensor = HiModelHelper.create_movement_sensor(
                 entity = entity,
-                integration_key = self._zm_manager._sensor_to_integration_key(
-                    sensor_prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
+                integration_key = self._zm_manager._to_integration_key(
+                    prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
                     zm_monitor_id = zm_monitor.id(),
                 ),
             )
             HiModelHelper.create_discrete_controller(
                 entity = entity,
-                integration_key = self._zm_manager._sensor_to_integration_key(
-                    sensor_prefix = self._zm_manager.MONITOR_FUNCTION_SENSOR_PREFIX,
+                integration_key = self._zm_manager._to_integration_key(
+                    prefix = self._zm_manager.MONITOR_FUNCTION_SENSOR_PREFIX,
                     zm_monitor_id = zm_monitor.id(),
                 ),
                 name = f'{entity.name} Function',
                 name_label_dict = { str(x): x.label for x in ZmMonitorFunction },
             )
+            
+            if self._zm_manager.should_add_alarm_events:
+                HiModelHelper.create_movement_event_definition(
+                    name = f'{movement_sensor.name} Alarm',
+                    entity_state = movement_sensor.entity_state,
+                    integration_key = self._zm_manager._to_integration_key(
+                        prefix = self._zm_manager.MOVEMENT_EVENT_PREFIX,
+                        zm_monitor_id = zm_monitor.id(),
+                    ),
+                )
+                
         result.message_list.append( f'Create new camera entity: {entity}' )
         return
     
@@ -228,11 +244,9 @@ class ZoneMinderSynchronizer:
     def _remove_entity( self,
                         entity  : Entity,
                         result  : ProcessingResult ):
+
+        # TODO: Should we remove the EventDefinitions that were auto-created (with integration key)?
+        
         entity.delete()  # Deletion cascades to attributes, positions, sensors, controllers, etc.
         result.message_list.append( f'Removed stale ZM entity: {entity}' )
         return
-    
-
-    
-    
-    

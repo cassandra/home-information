@@ -4,6 +4,7 @@ from typing import Dict, List
 
 from django.db import transaction
 
+from hi.apps.alert.enums import SecurityPosture, AlarmLevel
 from hi.apps.attribute.enums import (
     AttributeType,
     AttributeValueType,
@@ -227,7 +228,9 @@ class HassConverter:
         return hass_device_id_to_device
     
     @classmethod
-    def create_models_for_hass_device( cls, hass_device : HassDevice ) -> Entity:
+    def create_models_for_hass_device( cls,
+                                       hass_device       : HassDevice,
+                                       add_alarm_events  : bool  ) -> Entity:
         
         with transaction.atomic():
 
@@ -259,6 +262,7 @@ class HassConverter:
                 entity = entity,
                 hass_device = hass_device,
                 hass_state_list = hass_device.hass_state_list,
+                add_alarm_events = add_alarm_events,
             )
 
         return entity
@@ -345,6 +349,7 @@ class HassConverter:
                     entity = entity,
                     hass_device = hass_device,
                     hass_state_list = new_hass_state_list,
+                    add_alarm_events = False,
                 )
             
             for integration_key, sensor in entiity_sensors.items():
@@ -365,9 +370,10 @@ class HassConverter:
 
     @classmethod
     def _create_hass_sensors_and_controllers( cls,
-                                              entity           : Entity,
-                                              hass_device      : HassDevice,
-                                              hass_state_list  : List[ HassState ] ):
+                                              entity            : Entity,
+                                              hass_device       : HassDevice,
+                                              hass_state_list   : List[ HassState ],
+                                              add_alarm_events  : bool ):
         """
         Each HAss state of the device becomes a HI state with a Sensor.
         Some may have also require a Controller.
@@ -419,6 +425,7 @@ class HassConverter:
                     hass_state = hass_state,
                     entity = entity,
                     integration_key = state_integration_key,
+                    add_alarm_events = add_alarm_events,
                 )
 
             prefix_to_entity_state[hass_state.entity_id_prefix] = entity_state
@@ -427,10 +434,11 @@ class HassConverter:
     
     @classmethod
     def _create_hass_state_sensor_or_controller( cls,
-                                                 hass_device      : HassDevice,
-                                                 hass_state       : HassState,
-                                                 entity           : Entity,
-                                                 integration_key  : IntegrationKey ) -> EntityState: 
+                                                 hass_device       : HassDevice,
+                                                 hass_state        : HassState,
+                                                 entity            : Entity,
+                                                 integration_key   : IntegrationKey,
+                                                 add_alarm_events  : bool ) -> EntityState: 
         name = hass_state.friendly_name
         device_class = hass_state.device_class
         if not name:
@@ -473,6 +481,7 @@ class HassConverter:
                 hass_state = hass_state,
                 entity = entity,
                 integration_key = integration_key,
+                add_alarm_events = add_alarm_events,
             )
             return        
         
@@ -532,35 +541,54 @@ class HassConverter:
     
     @classmethod
     def _create_hass_state_binary_sensor( cls,
-                                          hass_device      : HassDevice,
-                                          hass_state       : HassState,
-                                          entity           : Entity,
-                                          integration_key  : IntegrationKey ):
+                                          hass_device       : HassDevice,
+                                          hass_state        : HassState,
+                                          entity            : Entity,
+                                          integration_key   : IntegrationKey,
+                                          add_alarm_events  : bool ):
         name = hass_state.friendly_name
         device_class = hass_state.device_class
         if not name and device_class:
             name = f'{entity.name} ({device_class})'
         elif not name:
             name = f'{entity.name} ({hass_state.entity_id_prefix})'
-            
+
         if hass_state.device_class == HassApi.CONNECTIVITY_DEVICE_CLASS:
-            HiModelHelper.create_connectivity_sensor(
+            sensor = HiModelHelper.create_connectivity_sensor(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
             )
+            if add_alarm_events:
+                HiModelHelper.create_connectivity_event_definition(
+                    name = f'{sensor.name} Alarm',
+                    entity_state = sensor.entity_state,
+                    integration_key = integration_key,
+                )
         elif hass_state.device_class in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
-            HiModelHelper.create_open_close_sensor(
+            sensor = HiModelHelper.create_open_close_sensor(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
             )
+            if add_alarm_events:
+                HiModelHelper.create_open_close_event_definition(
+                    name = f'{sensor.name} Alarm',
+                    entity_state = sensor.entity_state,
+                    integration_key = integration_key,
+                )
         elif hass_state.device_class == HassApi.MOTION_DEVICE_CLASS:
-            HiModelHelper.create_movement_sensor(
+            sensor = HiModelHelper.create_movement_sensor(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
             )
+            if add_alarm_events:
+                HiModelHelper.create_movement_event_definition(
+                    name = f'{sensor.name} Alarm',
+                    entity_state = sensor.entity_state,
+                    integration_key = integration_key,
+                )
         elif hass_state.device_class == HassApi.LIGHT_DEVICE_CLASS:
             HiModelHelper.create_on_off_sensor(
                 entity = entity,
@@ -568,11 +596,17 @@ class HassConverter:
                 name = name,
             )
         elif hass_state.device_class == HassApi.BATTERY_DEVICE_CLASS:
-            HiModelHelper.create_high_low_sensor(
+            sensor = HiModelHelper.create_high_low_sensor(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
             )
+            if add_alarm_events:
+                HiModelHelper.create_battery_event_definition(
+                    name = f'{sensor.name} Alarm',
+                    entity_state = sensor.entity_state,
+                    integration_key = integration_key,
+                )
         else:
             HiModelHelper.create_on_off_sensor(
                 entity = entity,

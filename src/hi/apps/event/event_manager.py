@@ -18,9 +18,21 @@ logger = logging.getLogger(__name__)
 
 class EventManager(Singleton):
 
+    RECENT_EVENT_CACHE_SIZE = 1000
+    RECENT_EVENT_CACHE_TTL_SECS = 3600
+    RECENT_TRANSITION_QUEUE_MAX_WINDOW_SECS = 300
+
+    # We need to put some bounds to keep memory/cpu requirements for
+    # managing events managable, but this will put impose bounds on how the
+    # EventDefinitions parameters.
+    #
+    MAX_EVENT_WINDOW_SECS = RECENT_EVENT_CACHE_TTL_SECS
+    MAX_DEDUPE_WINDOW_SECS = RECENT_TRANSITION_QUEUE_MAX_WINDOW_SECS
+    
     def __init_singleton__(self):
         self._recent_transitions = deque()
-        self._recent_events = TTLCache( maxsize = 1000, ttl = 300 )
+        self._recent_events = TTLCache( maxsize = self.RECENT_EVENT_CACHE_SIZE,
+                                        ttl = self.RECENT_EVENT_CACHE_TTL_SECS )
         self._alert_manager = AlertManager()
         self._controller_manager = ControllerManager()
         self.reload()
@@ -33,10 +45,6 @@ class EventManager(Singleton):
             'alarm_actions',
             'control_actions',
         ).filter( enabled = True )
-        if self._event_definitions:
-            self._max_event_window_secs = max([ x.event_window_secs for x in self._event_definitions ])
-        else:
-            self._max_event_window_secs = 10
         return
     
     async def add_entity_state_transitions( self,
@@ -74,7 +82,7 @@ class EventManager(Singleton):
         if not recent_event:
             return False
         recent_event_timedelta = datetimeproxy.now() - recent_event.timestamp
-        return bool( recent_event_timedelta.seconds <= event_definition.event_window_secs )
+        return bool( recent_event_timedelta.seconds <= event_definition.dedupe_window_secs )
     
     def _create_event_if_detected( self, event_definition : EventDefinition ) -> bool:
         if not event_definition.clauses.exists():
@@ -107,9 +115,14 @@ class EventManager(Singleton):
     
     def _purge_old_transitions( self ):
         current_timestamp = datetimeproxy.now()
-        while ( self._recent_transitions
-                and (( current_timestamp - self._recent_transitions[0].timestamp )
-                     > timedelta( seconds = self._max_event_window_secs ))):
+
+        # Pop from front those that are too old until encounter one that is not too old.
+        while True:
+            if not self._recent_transitions:
+                return
+            transition_age = current_timestamp - self._recent_transitions[0].timestamp
+            if transition_age.seconds < self.RECENT_TRANSITION_QUEUE_MAX_WINDOW_SECS:
+                return
             self._recent_transitions.popleft()
             continue
         return

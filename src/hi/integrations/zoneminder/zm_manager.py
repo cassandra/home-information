@@ -8,6 +8,7 @@ from typing import Dict, List
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton import Singleton
+from hi.apps.common.utils import str_to_bool
 
 from hi.integrations.core.exceptions import IntegrationAttributeError, IntegrationError
 from hi.integrations.core.integration_key import IntegrationKey
@@ -33,6 +34,7 @@ class ZoneMinderManager( Singleton ):
     ZM_MONITOR_INTEGRATION_NAME_PREFIX = 'monitor'
     VIDEO_STREAM_SENSOR_PREFIX = 'monitor.video_stream'
     MOVEMENT_SENSOR_PREFIX = 'monitor.motion'
+    MOVEMENT_EVENT_PREFIX = 'monitor.motion'
     MONITOR_FUNCTION_SENSOR_PREFIX = 'monitor.function'
     ZM_RUN_STATE_SENSOR_INTEGRATION_NAME = 'run.state'
 
@@ -44,7 +46,7 @@ class ZoneMinderManager( Singleton ):
    
     def __init_singleton__( self ):
         self._is_loading = False
-        self._zm_attributes = dict()
+        self._zm_attr_type_to_attribute = dict()
         self._zm_client = None
 
         self._zm_state_list = list()
@@ -68,8 +70,8 @@ class ZoneMinderManager( Singleton ):
             return
         try:
             self._is_loading = True
-            self._zm_attributes = self._load_attributes()
-            self._zm_client = self.create_zm_client( self._zm_attributes )
+            self._zm_attr_type_to_attribute = self._load_attributes()
+            self._zm_client = self.create_zm_client( self._zm_attr_type_to_attribute )
             self.clear_caches()
             
         finally:
@@ -82,7 +84,7 @@ class ZoneMinderManager( Singleton ):
         self._zm_monitor_list = list()
         return
     
-    def _load_attributes(self) -> Dict[ str, IntegrationAttribute ]:
+    def _load_attributes(self) -> Dict[ ZmAttributeType, IntegrationAttribute ]:
         try:
             zm_integration = Integration.objects.get( integration_id = ZmMetaData.integration_id )
         except Integration.DoesNotExist:
@@ -90,14 +92,15 @@ class ZoneMinderManager( Singleton ):
         
         if not zm_integration.is_enabled:
             raise IntegrationError( 'ZoneMinder integration is not enabled.' )
-        
-        attribute_dict = zm_integration.attributes_by_integration_key
+
+        zm_attr_type_to_attribute = dict()
+        integration_key_to_attribute = zm_integration.attributes_by_integration_key
         for zm_attr_type in ZmAttributeType:
             integration_key = IntegrationKey(
                 integration_id = zm_integration.integration_id,
                 integration_name = str(zm_attr_type),
             )
-            zm_attr = attribute_dict.get( integration_key )
+            zm_attr = integration_key_to_attribute.get( integration_key )
             if not zm_attr:
                 if zm_attr_type.is_required:
                     raise IntegrationAttributeError( f'Missing ZM attribute {zm_attr_type}' )
@@ -105,12 +108,15 @@ class ZoneMinderManager( Singleton ):
                     continue
             if zm_attr.is_required and not zm_attr.value.strip():
                 raise IntegrationAttributeError( f'Missing ZM attribute value for {zm_attr_type}' )
-            
+
+            zm_attr_type_to_attribute[zm_attr_type] = zm_attr
             continue
 
-        return { x.name: x for x in attribute_dict.values() }
+        return zm_attr_type_to_attribute
         
-    def create_zm_client( self, zm_attributes : Dict[ str, IntegrationAttribute ] ) -> ZMApi:
+    def create_zm_client(
+            self,
+            zm_attr_type_to_attribute : Dict[ ZmAttributeType, IntegrationAttribute ] ) -> ZMApi:
 
         # Verify integration and build API data payload
         api_options = {
@@ -123,13 +129,13 @@ class ZoneMinderManager( Singleton ):
             ZmAttributeType.API_PASSWORD: 'password',
         }
         
-        attribute_dict = { x.integration_key: x for x in zm_attributes.values() }
+        integration_key_to_attribute = { x.integration_key: x for x in zm_attr_type_to_attribute.values() }
         for zm_attr_type in attr_to_api_option_key.keys():
             integration_key = IntegrationKey(
                 integration_id = ZmMetaData.integration_id,
                 integration_name = str(zm_attr_type),
             )
-            zm_attr = attribute_dict.get( integration_key )
+            zm_attr = integration_key_to_attribute.get( integration_key )
             if not zm_attr:
                 raise IntegrationAttributeError( f'Missing ZM API attribute {zm_attr_type}' )
             if not zm_attr.value.strip():
@@ -142,8 +148,12 @@ class ZoneMinderManager( Singleton ):
         logger.debug( f'ZoneMinder client options: {api_options}' )
         return ZMApi( options = api_options )
 
-    def get_zm_attribute( self, attr_name : str ) -> str:
-        return self._zm_attributes.get( attr_name )
+    @property
+    def should_add_alarm_events( self ) -> bool:
+        attribute = self._zm_attr_type_to_attribute.get( ZmAttributeType.ADD_ALARM_EVENTS )
+        if attribute:
+            return str_to_bool( attribute.value )
+        return False
         
     def get_zm_states( self, force_load : bool = False ) -> List[ ZmState ]:
         state_list_age = datetimeproxy.now() - self._zm_state_timestamp
@@ -188,16 +198,10 @@ class ZoneMinderManager( Singleton ):
             
         )
     
-    def _monitor_to_integration_key( self, zm_monitor_id  : ZmMonitor ) -> IntegrationKey:
+    def _to_integration_key( self, prefix : str, zm_monitor_id  : ZmMonitor ) -> IntegrationKey:
         return IntegrationKey(
             integration_id = ZmMetaData.integration_id,
-            integration_name = f'{self.ZM_MONITOR_INTEGRATION_NAME_PREFIX}.{zm_monitor_id}',
-        )
-    
-    def _sensor_to_integration_key( self, sensor_prefix : str, zm_monitor_id  : int ) -> IntegrationKey:
-        return IntegrationKey(
-            integration_id = ZmMetaData.integration_id,
-            integration_name = f'{sensor_prefix}.{zm_monitor_id}',
+            integration_name = f'{prefix}.{zm_monitor_id}',
         )
     
     def get_zm_tzname(self) -> str:
