@@ -48,10 +48,9 @@ def now( tzname = None ):
 
 def min( tzname = None ):
 
-    # This assumes the Django system time is in UTC !!!
-    utcmax = timezone.now() - datetime.timedelta( weeks = 500 )
+    utcmin = datetime.datetime( 1970, 1, 2, tzinfo = pytz.utc )
     if tzname is None:
-        return utcmax
+        return utcmin
 
     try:
         to_zone = pytz.timezone( tzname )
@@ -59,23 +58,7 @@ def min( tzname = None ):
         logger.warning( "Unrecognized time zone '%s'", tzname )
         to_zone = pytz.timezone( DEFAULT_TIME_ZONE_NAME )
     
-    return utcmax.astimezone(to_zone)
-    
-
-def max( tzname = None ):
-
-    # This assumes the Django system time is in UTC !!!
-    utcmax = timezone.now() + datetime.timedelta( weeks = 500 )
-    if tzname is None:
-        return utcmax
-
-    try:
-        to_zone = pytz.timezone( tzname )
-    except pytz.exceptions.UnknownTimeZoneError:
-        logger.warning( "Unrecognized time zone '%s'", tzname )
-        to_zone = pytz.timezone( DEFAULT_TIME_ZONE_NAME )
-    
-    return utcmax.astimezone(to_zone)
+    return utcmin.astimezone(to_zone)
 
 
 def is_dst( date_time=None ):
@@ -377,7 +360,7 @@ def year_to_datetime( date_str : str ):
     return datetime.datetime.strptime( date_str, "%Y" )
 
 
-def iso_naive_to_datetime_utc( iso_str : str, tzname : str  ):
+def iso_naive_to_datetime_utc( iso_str : str, tzname : str = 'UTC' ):
     to_zone = pytz.timezone( tzname )
     naive_time = datetime.datetime.fromisoformat( iso_str )
     aware_time = to_zone.localize(naive_time)

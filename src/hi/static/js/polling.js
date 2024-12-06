@@ -22,10 +22,15 @@
     const ServerPollingWatchdogType = 'serverPolling';
     const ServerPollingIntervalMs = 5 * 1000;
     const ServerPollingUrl = '/api/status';
+    const ServerStartTimestampAttr = 'startTimestamp';
+    const ServerTimestampAttr = 'timestamp';
+    const LastServerTimestampParam = 'lastTimestamp';
     const CssClassUpdateMap = 'cssClassUpdateMap';
     
     let gPollingTimer = null;
     let gCssClassElementCache = {};
+    let gLastStartServerDate = null;
+    let gLastServerDate = null;
     
     function startPolling() {
 	Hi.watchdog.add( ServerPollingWatchdogType, 
@@ -38,10 +43,16 @@
 	if ( Hi.DEBUG ) { console.log( "Polling server..." ); }
 	clearPollingTimer();
 
+	let url = ServerPollingUrl;
+	if ( gLastServerDate ) {
+	    const lastTimestampString = gLastServerDate.toISOString();
+	    url += `?${LastServerTimestampParam}=${lastTimestampString}`;
+	}
+	
 	$.ajaxSuppressLoader = true;
 	$.ajax({
 	    type: 'GET',
-	    url: ServerPollingUrl,
+	    url: url,
 
 	    complete: function (jqXHR, textStatus) {
 		$.ajaxSuppressLoader = false;
@@ -63,6 +74,12 @@
 	    Hi.watchdog.ok( ServerPollingWatchdogType );
 	    clearPollingTimer();
 
+	    doServerStartTimeCheck( respObj );
+	    
+	    if ( ServerTimestampAttr in respObj ) {
+		gLastServerDate = new Date( respObj[ServerTimestampAttr] );
+	    }
+	    
 	    if ( CssClassUpdateMap in respObj ) {
 		handleCssClassUpdates( respObj[CssClassUpdateMap] );
 	    }
@@ -77,6 +94,21 @@
 	}
     }
 
+    function doServerStartTimeCheck( respObj ) {
+	if ( ServerStartTimestampAttr in respObj ) {
+	    let startServerDate = new Date( respObj[ServerStartTimestampAttr] );
+	    if ( gLastStartServerDate ) {
+		if ( startServerDate.getTime() != gLastStartServerDate.getTime() ) {
+		    if ( Hi.DEBUG ) { console.log( "Server restart detected. Reloading page." ); }
+		    gLastStartServerDate = startServerDate;
+		    location.reload(true);
+		}
+	    } else {
+		gLastStartServerDate = startServerDate;
+	    }
+	}
+    }
+    
     function handleCssClassUpdates( updateMap ) {
 
 	for ( let cssClass in updateMap ) {

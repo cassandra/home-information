@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 from threading import local
 from typing import List
@@ -7,6 +8,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 from hi.apps.attribute.enums import AttributeType
+import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton import Singleton
 
 from .enums import SubsystemType, SubsystemAttributeType
@@ -18,6 +20,7 @@ logger = logging.getLogger(__name__)
 class SettingsManager( Singleton ):
 
     def __init_singleton__( self ):
+        self._server_start_datetime = datetimeproxy.now()
         self._subsystem_list = list()
         self._attribute_value_map = dict()
         self.reload()
@@ -34,6 +37,9 @@ class SettingsManager( Singleton ):
                 continue
             continue
         return
+
+    def get_server_start_datetime( self ) -> datetime:
+        return self._server_start_datetime
     
     def get_subsystems(self) -> List[ Subsystem ]:
         return self._subsystem_list
