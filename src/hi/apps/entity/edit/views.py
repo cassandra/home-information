@@ -209,5 +209,3 @@ class PrincipalManageView( HiModalView, EntityViewMixin ):
         )
         
         return antinode.refresh_response()
-
-

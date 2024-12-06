@@ -142,6 +142,26 @@ class EntityStateValue(LabeledEnum):
     HIGH           = ( 'High', '' )
     LOW            = ( 'Low', '' )
 
+    @classmethod
+    def entity_state_value_choices(cls):
+        return {
+            EntityStateType.CONNECTIVITY: [ ( str(x), x.label )
+                                            for x in [ EntityStateValue.CONNECTED,
+                                                       EntityStateValue.DISCONNECTED ]],
+            EntityStateType.HIGH_LOW: [ ( str(x), x.label )
+                                        for x in [ EntityStateValue.HIGH,
+                                                   EntityStateValue.LOW ]],
+            EntityStateType.MOVEMENT: [ ( str(x), x.label )
+                                        for x in [ EntityStateValue.ACTIVE,
+                                                   EntityStateValue.IDLE ]],
+            EntityStateType.ON_OFF: [ ( str(x), x.label )
+                                      for x in [ EntityStateValue.ON,
+                                                 EntityStateValue.OFF ]],
+            EntityStateType.OPEN_CLOSE: [ ( str(x), x.label )
+                                          for x in [ EntityStateValue.OPEN,
+                                                     EntityStateValue.CLOSED ]],
+        }
+
     
 class TemperatureUnit(LabeledEnum):
 

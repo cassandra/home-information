@@ -3,6 +3,7 @@ import logging
 import urllib.parse
 
 from django.core.exceptions import BadRequest
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -13,6 +14,8 @@ from hi.apps.collection.edit.views import (
     CollectionReorder,
     CollectionReorderEntitiesView,
 )
+from hi.apps.control.models import Controller
+from hi.apps.entity.models import EntityState
 from hi.apps.location.edit.views import (
     LocationViewManageItemsView,
     LocationViewReorder,
@@ -140,4 +143,39 @@ class ReorderItemsView( View ):
         else:
             raise BadRequest( f'Unknown item type: {item_type}' )
 
+
+class EntityStateValueChoicesView( View ):
+
+    def get( self, request, *args, **kwargs ):
+        instance_name = kwargs.get( 'instance_name' )
+        instance_id_str = kwargs.get( 'instance_id' )
+
+        if not instance_name:
+            raise BadRequest( 'Missing instance name.' )
+        if not instance_id_str:
+            raise BadRequest( 'Missing instance id.' )
+        try:
+            instance_id = int( instance_id_str )
+        except (TypeError, ValueError):
+            raise BadRequest( 'Instance id not an integer.' )
+
+        if instance_name == 'entity_state':
+            try:
+                entity_state = EntityState.objects.get( id = instance_id )
+            except EntityState.DoesNotExist:
+                raise Http404( 'Unknown entity state.' )
+
+        elif instance_name == 'controller':
+            try:
+                controller = Controller.objects.select_related('entity_state').get( id = instance_id )
+                entity_state = controller.entity_state
+            except EntityState.DoesNotExist:
+                raise Http404( 'Unknown entity state.' )
+
+        else:
+            raise BadRequest( f'Unsupported instance name "{instance_name}".' )
+
+        return HttpResponse( json.dumps( entity_state.choices() ),
+                             content_type='application/json' )
+        
 

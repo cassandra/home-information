@@ -20,5 +20,4 @@ urlpatterns = [
     re_path( r'^entity/principal/manage/(?P<entity_id>\d+)$', 
              views.PrincipalManageView.as_view(), 
              name='entity_edit_principal_manage' ),
-    
 ]

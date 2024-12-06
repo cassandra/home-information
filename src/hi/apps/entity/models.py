@@ -17,6 +17,7 @@ from hi.enums import ItemType
 from .enums import (
     EntityType,
     EntityStateType,
+    EntityStateValue,
 )
 
 
@@ -193,17 +194,18 @@ class EntityState( models.Model ):
         return
 
     def choices(self):
-        if not self.value_range_str:
-            return list()
-        try:
-            value_range = json.loads( self.value_range_str )
-            if isinstance( value_range, dict ):
-                return [ ( k, v ) for k, v in value_range.items() ]
-            if isinstance( value_range, list ):
-                return [ ( x, x ) for x in value_range ]
-        except json.JSONDecodeError:
-            pass
-        return dict()
+        if self.value_range_str:
+            try:
+                value_range = json.loads( self.value_range_str )
+                if isinstance( value_range, dict ):
+                    return [ ( k, v ) for k, v in value_range.items() ]
+                if isinstance( value_range, list ):
+                    return [ ( x, x ) for x in value_range ]
+            except json.JSONDecodeError:
+                pass
+
+        choices_map = EntityStateValue.entity_state_value_choices()
+        return choices_map.get( self.entity_state_type, [] )
 
 
 class EntityStateDelegation(models.Model):

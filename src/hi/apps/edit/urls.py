@@ -21,4 +21,8 @@ urlpatterns = [
              views.ItemDetailsCloseView.as_view(), 
              name='edit_item_details_close' ),
 
+    re_path( r'^entity/state/values/(?P<instance_name>\w+)/(?P<instance_id>\d+)$', 
+             views.EntityStateValueChoicesView.as_view(), 
+             name='edit_entity_state_value_choices' ),
+    
 ]

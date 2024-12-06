@@ -157,8 +157,3 @@ class EntityDetailsView( HiSideView, EntityViewMixin ):
             is_editing = request.is_editing,
         )
         return entity_details_data.to_template_context()
-
-
-    
-    
-    

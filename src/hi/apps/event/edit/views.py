@@ -1,10 +1,12 @@
 from django.db import transaction
 from django.urls import reverse
 
+from hi.apps.entity.enums import EntityStateValue
 from hi.apps.event.view_mixin import EventViewMixin
-import hi.apps.event.forms as forms
 
 from hi.hi_async_view import HiModalView
+
+from . import forms
 
 
 class EventDefinitionEditView( HiModalView, EventViewMixin ):

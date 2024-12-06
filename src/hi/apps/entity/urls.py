@@ -24,7 +24,7 @@ urlpatterns = [
     re_path( r'^entity/attribute/upload/(?P<entity_id>\d+)$', 
              views.EntityAttributeUploadView.as_view(), 
              name='entity_attribute_upload'),
-    
+
     re_path( r'^edit/', include('hi.apps.entity.edit.urls' )),
 
 ]

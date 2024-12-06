@@ -18,7 +18,8 @@
 	
 	API_LOCATION_ITEM_DETAILS_URL: '/location/item/details',
 	API_LOCATION_ITEM_INFO_URL: '/location/item/info',
-
+	ENTITY_STATE_VALUE_CHOICES_URL_PREFIX: '/edit/entity/state/values',
+	
 	generateUniqueId: function() {
 	    return _generateUniqueId();
 	},
@@ -27,6 +28,9 @@
 	},
 	togglePasswordField: function( toggleCheckbox ) {
 	    return _togglePasswordField( toggleCheckbox );
+	},
+	setEntityStateValueSelect: function( valueFieldId, instanceName, instanceId ) {
+	    return _setEntityStateValueSelect( valueFieldId, instanceName, instanceId );
 	},
 	getScreenCenterPoint: function( element ) {
 	    return _getScreenCenterPoint( element );
@@ -88,6 +92,44 @@
         }
     }
 
+    function _setEntityStateValueSelect( valueFieldId, instanceName, instanceId ) {
+	$.ajax({
+	    type: 'GET',
+	    url: `${Hi.ENTITY_STATE_VALUE_CHOICES_URL_PREFIX}/${instanceName}/${instanceId}`,
+
+	    success: function( data, status, xhr ) {
+		const choices_list = data;
+		const valueElement = $(`#${valueFieldId}`);
+		const valueElementId = $(valueElement).attr('id');
+		const valueElementName = $(valueElement).attr('name');
+
+		if (choices_list.length > 0) {
+		    const selectElement = $('<select>')
+			  .attr( 'id', valueElementId )
+			  .attr( 'name', valueElementName );
+
+		    selectElement.append( $('<option>').val('').text('------'));
+		    choices_list.forEach( choice => {
+			const [value, label] = choice;
+			selectElement.append( $('<option>').val(value).text(label) );
+		    });
+		    valueElement.replaceWith(selectElement);
+		} else {
+		    const inputElement = $('<input>')
+			  .attr( 'type', 'text' )
+			  .attr( 'id', valueElementId )
+			  .attr( 'name', valueElementName );
+		    valueElement.replaceWith(inputElement);
+		}
+		return false;
+	    },
+	    error: function (xhr, ajaxOptions, thrownError) {
+		console.error( `Fetch entity state choices error [${xhr.status}] : ${thrownError}` );
+		return false;
+	    } 
+	});
+    }
+    
     function _getScreenCenterPoint( element ) {
 	try {
             let rect = $(element)[0].getBoundingClientRect();
