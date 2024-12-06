@@ -2,7 +2,7 @@ from django.db import models
 
 from hi.apps.attribute.models import AttributeModel
 
-from .enums import SubsystemType
+from .enums import SubsystemAttributeType, SubsystemType
 
 
 class Subsystem( models.Model ):
@@ -49,11 +49,24 @@ class SubsystemAttribute( AttributeModel ):
         verbose_name = 'Subsystem',
         on_delete = models.CASCADE,
     )
- 
+    subsystem_attribute_type_str = models.CharField(
+        'Subsystem Attribute Type',
+        max_length = 32,
+        null = False, blank = False,
+    )  
+
     class Meta:
         verbose_name = 'Subsystem Attribute'
         verbose_name_plural = 'Subsystem Attributes'
 
     def get_upload_to(self):
-        return 'subsystem/attributes/'
+        return 'settings/'
         
+    @property
+    def subsystem_attribute_type(self):
+        return SubsystemAttributeType.from_name_safe( self.subsystem_attribute_type_str )
+
+    @subsystem_attribute_type.setter
+    def subsystem_attribute_type( self, subsystem_attribute_type : SubsystemAttributeType ):
+        self.subsystem_attribute_type_str = str(subsystem_attribute_type)
+        return

@@ -31,7 +31,7 @@ class SecurityPosture(LabeledEnum):
     ERROR     = ( 'Error'    , '' )
 
 
-class SecurityState(LabeledEnum):
+class AlertState(LabeledEnum):
 
     ERROR         = ( 'Error'           , ''   , -12 )
     UNKNOWN       = ( 'Unknown'         , ''    , -3 )
@@ -54,7 +54,7 @@ class SecurityState(LabeledEnum):
         return
 
     @staticmethod
-    def get_recent_variant( cls, security_state : 'SecurityState' ):
+    def get_recent_variant( cls, security_state : 'AlertState' ):
         """
         Converts a state to its 'recent' version if one exists.
         Otherwise, just returns the state passed in.

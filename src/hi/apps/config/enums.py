@@ -28,7 +28,8 @@ class ConfigPageType(LabeledEnum):
 class SubsystemType(LabeledEnum):
 
     LOCALE     = ('Locale'     , '' )
-    DISPLAY    = ('Display'     , '' )
+    DISPLAY    = ('Display'    , '' )
+    ALERTS     = ('Alerts'     , '' )
 
     
 class Theme(LabeledEnum):
@@ -57,6 +58,16 @@ class SubsystemAttributeType(LabeledEnum):
         True,
         True,
         str( Theme.default() ),
+    )
+    AWAY_ALERT_EMAILS = (
+        'Away Alert Emails',
+        'Email addresses to send critical alerts to when away.',
+        SubsystemType.ALERTS,
+        AttributeValueType.TEXT,
+        '',
+        True,
+        False,
+        '',
     )
     
     def __init__( self,
