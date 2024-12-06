@@ -3,7 +3,7 @@ from threading import local
 from typing import Dict
 
 from django.db.models.signals import post_save, post_delete
-from django.db.transaction import on_commit
+from django.db import transaction
 from django.dispatch import receiver
 
 from hi.apps.common.singleton import Singleton
@@ -171,6 +171,6 @@ def hass_manager_model_changed( sender, instance, **kwargs ):
     if not _thread_local.reload_registered:
         logger.debug( 'Queuing HassManager reload on model change.')
         _thread_local.reload_registered = True
-        on_commit( do_hass_manager_reload )
+        transaction.on_commit( do_hass_manager_reload )
     
     return

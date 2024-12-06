@@ -8,7 +8,7 @@ from threading import local
 from typing import Dict, List
 
 from django.db.models.signals import post_save, post_delete
-from django.db.transaction import on_commit
+from django.db import transaction
 from django.dispatch import receiver
 
 import hi.apps.common.datetimeproxy as datetimeproxy
@@ -273,6 +273,6 @@ def zm_manager_model_changed( sender, instance, **kwargs ):
     if not _thread_local.reload_registered:
         logger.debug( 'Queuing ZoneMinderManager reload on model change.')
         _thread_local.reload_registered = True
-        on_commit( do_zm_manager_reload )
+        transaction.on_commit( do_zm_manager_reload )
     
     return

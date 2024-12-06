@@ -6,7 +6,7 @@ from threading import local
 from typing import List
 
 from django.db.models.signals import post_save, post_delete
-from django.db.transaction import on_commit
+from django.db import transaction
 from django.dispatch import receiver
 
 from hi.apps.alert.alert_manager import AlertManager
@@ -193,6 +193,6 @@ def event_manager_model_changed( sender, instance, **kwargs ):
     if not _thread_local.reload_registered:
         logger.debug( 'Queuing EventManager reload on model change.')
         _thread_local.reload_registered = True
-        on_commit( do_event_manager_reload )
+        transaction.on_commit( do_event_manager_reload )
     
     return
