@@ -19,8 +19,8 @@ class EventViewMixin:
             raise BadRequest( 'Invalid event definition id.' )
         try:
             return EventDefinition.objects.prefetch_related(
-                'clauses',
-                'clauses__entity_state',
+                'event_clauses',
+                'event_clauses__entity_state',
                 'alarm_actions',
                 'control_actions',
             ).get( id = event_definition_id )

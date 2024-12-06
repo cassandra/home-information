@@ -68,6 +68,7 @@ class EventDefinitionEditView( HiModalView, EventViewMixin ):
 
         def error_response():
             context = {
+                'event_definition': event_definition,
                 'event_definition_form': event_definition_form,
                 'event_clause_formset': event_clause_formset,
                 'alarm_action_formset': alarm_action_formset,
@@ -75,42 +76,19 @@ class EventDefinitionEditView( HiModalView, EventViewMixin ):
             }
             return self.modal_response( request, context )
             
-        if ( not event_definition_form.is_valid()
-             or not event_clause_formset.is_valid()
-             or not alarm_action_formset.is_valid()
-             or not control_action_formset.is_valid() ):
-            return error_response()
-        
-        event_clause_formset_stats = event_clause_formset.get_formset_stats()
-        alarm_action_formset_stats = alarm_action_formset.get_formset_stats()
-        control_action_formset_stats = control_action_formset.get_formset_stats()
+        all_forms_valid = ( event_definition_form.is_valid()
+                            and event_clause_formset.is_valid()
+                            and alarm_action_formset.is_valid()
+                            and control_action_formset.is_valid() )
 
-
-
-
-
-        
-        #print( f'\n\nEventClause   : {event_clause_formset_stats}' )
-        #print( f'AlarmAction   : {alarm_action_formset_stats}' )
-        #print( f'ControlAction : {control_action_formset_stats}\n\n' )
-        #redirect_url = reverse( 'event_definitions' )
-        #return self.redirect_response( request = request,
-        #                               redirect_url = redirect_url )
-
-
-
-
-
-
-        all_forms_valid = True
-        if not event_clause_formset_stats.has_at_least_one:
+        if not event_clause_formset.has_at_least_one:
             all_forms_valid = False
             event_definition_form.add_error(
                 None, 'Must have at least one event clause.'
             )
                 
-        if ( not alarm_action_formset_stats.has_at_least_one 
-             and not control_action_formset_stats.has_at_least_one ):
+        if ( not alarm_action_formset.has_at_least_one 
+             and not control_action_formset.has_at_least_one ):
             all_forms_valid = False
             event_definition_form.add_error(
                 None, 'Must have either alarm of control action.'
@@ -137,7 +115,10 @@ class EventDefinitionEditView( HiModalView, EventViewMixin ):
             
     
 class EventDefinitionAddView( EventDefinitionEditView ):
-
+    """
+    Same as edit except no EventDefinition instance is used in forms and
+    it uses a different modal template name.
+    """
     def get_template_name( self ) -> str:
         return 'event/edit/modals/event_definition_add.html'
 
@@ -160,4 +141,6 @@ class EventDefinitionDeleteView( HiModalView, EventViewMixin ):
     def post( self, request, *args, **kwargs ):
         event_definition = self.get_event_definition( request, *args, **kwargs )
         event_definition.delete()
-        return zzz
+        redirect_url = reverse( 'event_definitions' )
+        return self.redirect_response( request = request,
+                                       redirect_url = redirect_url )

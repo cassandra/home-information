@@ -40,8 +40,8 @@ class EventManager(Singleton):
 
     def reload(self):
         self._event_definitions = list( EventDefinition.objects.prefetch_related(
-            'clauses',
-            'clauses__entity_state',
+            'event_clauses',
+            'event_clauses__entity_state',
             'alarm_actions',
             'control_actions',
         ).filter( enabled = True ))
@@ -85,13 +85,13 @@ class EventManager(Singleton):
         return bool( recent_event_timedelta.seconds <= event_definition.dedupe_window_secs )
     
     def _create_event_if_detected( self, event_definition : EventDefinition ) -> bool:
-        if not event_definition.clauses.exists():
+        if not event_definition.event_clauses.exists():
             return False
 
         current_timestamp = datetimeproxy.now()
         sensor_response_list = list()
         
-        for event_clause in event_definition.clauses.all():
+        for event_clause in event_definition.event_clauses.all():
             matches = False
             for transition in self._recent_transitions:
                 if transition.entity_state != event_clause.entity_state:

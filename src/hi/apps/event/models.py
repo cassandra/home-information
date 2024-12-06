@@ -52,7 +52,7 @@ class EventClause( models.Model ):
 
     event_definition = models.ForeignKey(
         EventDefinition,
-        related_name = 'clauses',
+        related_name = 'event_clauses',
         verbose_name = 'Event Definition',
         on_delete = models.CASCADE,
     )
