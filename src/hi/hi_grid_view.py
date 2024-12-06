@@ -156,7 +156,7 @@ class HiGridView(View):
             side_view, side_kwargs = self.get_side_view_from_url( side_url )
             
             if not side_view:
-                if request.is_editing:
+                if request.view_parameters.is_editing:
                     if request.view_parameters.view_type.is_location_view:
                         side_view = LocationViewManageItemsView()
 
@@ -218,12 +218,12 @@ class HiGridView(View):
         
         if next_view_type == ViewType.LOCATION_VIEW:
             view_id_changed = bool( request.view_parameters.location_view_id  != next_id )
-            return bool( request.is_editing
+            return bool( request.view_parameters.is_editing
                          and ( view_type_changed or view_id_changed ))
 
         elif next_view_type == ViewType.COLLECTION:
             view_id_changed = bool( request.view_parameters.collection_id != next_id )
-            return bool( request.is_editing
+            return bool( request.view_parameters.is_editing
                          and ( view_type_changed or view_id_changed ))
 
         return False

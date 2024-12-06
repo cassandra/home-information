@@ -2,8 +2,9 @@ import logging
 
 from django.urls import reverse
 
-from hi.hi_async_view import HiModalView
 from hi.apps.common.pagination import compute_pagination_from_queryset
+
+from hi.hi_async_view import HiModalView
 
 from .models import SensorHistory
 from .view_mixin import SenseViewMixin

@@ -1,0 +1,11 @@
+{% extends "modals/action_done.html" %}
+
+{% block title_text %}
+Events
+{% endblock %}
+
+{% block body %}
+<h5>Event History</h5>
+{% include "event/panes/event_history_list.html" with event_history_list=event_history_list %}
+{% include "common/panes/pagination.html" with pagination=pagination %}
+{% endblock %}

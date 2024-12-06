@@ -31,7 +31,11 @@ class ViewParameters:
         self._location_view = None  # Lazy loaded
         self._collection = None  # Lazy loaded
         return
-        
+
+    @property
+    def is_editing(self):
+        return self.view_mode.is_editing
+    
     @property
     def location_id(self) -> int:
         location = self.location

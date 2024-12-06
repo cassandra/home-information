@@ -1,8 +1,8 @@
 <div class="d-flex justify-content-start draggable-container">
   {% for collection in collection_list %}
   <div id="{{ collection.html_id }}-button"
-       class="{% if request.is_editing %}draggable{% endif %}"
-       {% if request.is_editing %}draggable="true"{% endif %}
+       class="{% if request.view_parameters.is_editing %}draggable{% endif %}"
+       {% if request.view_parameters.is_editing %}draggable="true"{% endif %}
        >
     <a href="{% url 'collection_view' collection_id=collection.id %}"
        class="btn btn-secondary btn-control"
@@ -12,7 +12,7 @@
     </a>
   </div>
   {% endfor %}
-  {% if request.is_editing %}
+  {% if request.view_parameters.is_editing %}
   <div class="">
     <a href="{% url 'collection_edit_collection_add' %}"
        class="btn btn-success btn-control" role="button"

@@ -442,7 +442,7 @@ class LocationViewEntityToggleView( View, LocationViewMixin ):
 
         location_view_data = LocationManager().get_location_view_data(
             location_view = location_view,
-            include_status_display_data = bool( not request.is_editing ),
+            include_status_display_data = bool( not request.view_parameters.is_editing ),
         )
         context = {
             'location_view_data': location_view_data,
@@ -491,7 +491,7 @@ class LocationViewCollectionToggleView( View, LocationViewMixin ):
 
         location_view_data = LocationManager().get_location_view_data(
             location_view = location_view,
-            include_status_display_data = bool( not request.is_editing ),
+            include_status_display_data = bool( not request.view_parameters.is_editing ),
         )
         context = {
             'location_view_data': location_view_data,

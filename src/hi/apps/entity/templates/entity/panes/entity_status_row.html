@@ -1,7 +1,7 @@
 <div class="row">
   {% with entity=entity_status_data.entity %}
   <div class="col-3">
-    {% if request.is_editing %}
+    {% if request.view_parameters.is_editing %}
     <a href="{% url 'entity_details' entity_id=entity.id %}"
        data-async="true">
       {{ entity.name }}

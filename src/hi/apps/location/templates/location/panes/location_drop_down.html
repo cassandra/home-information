@@ -20,7 +20,7 @@
 	<em>No locations.</em>
       </div>
       {% endfor %}
-      {% if request.is_editing %}
+      {% if request.view_parameters.is_editing %}
       <div class="dropdown-divider"></div>
       <a role="menuitem" class="dropdown-item plain"
 	 href="{% url 'location_edit_location_add' %}"

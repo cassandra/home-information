@@ -5,8 +5,8 @@
   <div class="row">
     {% for entity_status_data in entity_status_data_list %}
     <div id="{{ entity_status_data.entity.html_id }}" 
-	 class="col-4 {% if request.is_editing %}draggable{% endif %}"
-	 {% if request.is_editing %}draggable="true"{% endif %} >
+	 class="col-4 {% if request.view_parameters.is_editing %}draggable{% endif %}"
+	 {% if request.view_parameters.is_editing %}draggable="true"{% endif %} >
       {% include "entity/panes/entity_status_card.html" with entity_status_data=entity_status_data %}
     </div>
     {% empty %}
@@ -18,8 +18,8 @@
 
   {% for entity_status_data in entity_status_data_list %}
   <div id="{{ entity_status_data.entity.html_id }}" 
-       class="{% if request.is_editing %}draggable{% endif %}"
-       {% if request.is_editing %}draggable="true"{% endif %} >
+       class="{% if request.view_parameters.is_editing %}draggable{% endif %}"
+       {% if request.view_parameters.is_editing %}draggable="true"{% endif %} >
     {% include "entity/panes/entity_status_row.html" with entity_status_data=entity_status_data %}
   </div>
   {% empty %}

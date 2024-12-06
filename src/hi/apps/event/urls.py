@@ -9,6 +9,10 @@ urlpatterns = [
              views.EventDefinitionsView.as_view(), 
              name='event_definitions'),
 
+    re_path( r'^history$', 
+             views.EventHistoryView.as_view(), 
+             name='event_history'),
+
     re_path( r'^edit/', include('hi.apps.event.edit.urls' )),
 
 ]

@@ -260,7 +260,7 @@ class CollectionEntityToggleView( View, CollectionViewMixin, EntityViewMixin ):
 
         collection_data = CollectionManager().get_collection_data(
             collection = collection,
-            is_editing = request.is_editing,
+            is_editing = request.view_parameters.is_editing,
         )
         context = collection_data.to_template_context()
         template = get_template( 'collection/panes/collection_view.html' )

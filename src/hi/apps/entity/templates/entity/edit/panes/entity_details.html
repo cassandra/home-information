@@ -1,4 +1,4 @@
-{% if request.is_editing %}
+{% if request.view_parameters.is_editing %}
 {% include "edit/panes/side_header.html" %}
 {% endif %}
 

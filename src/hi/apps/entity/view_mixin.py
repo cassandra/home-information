@@ -27,7 +27,7 @@ class EntityViewMixin:
                               entity_edit_data  : EntityEditData,
                               status_code       : int             = 200 ):
         context = entity_edit_data.to_template_context()
-        if request.is_editing:
+        if request.view_parameters.is_editing:
             template = get_template( 'entity/edit/panes/entity_edit.html' )
             content = template.render( context, request = request )
             return antinode.response(

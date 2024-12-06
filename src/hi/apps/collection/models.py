@@ -32,6 +32,7 @@ class Collection( models.Model, LocationItemModelMixin ):
     order_id = models.PositiveIntegerField(
         'Order Id',
         default = 0,
+        db_index = True,
     )
     created_datetime = models.DateTimeField(
         'Created',

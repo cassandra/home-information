@@ -187,8 +187,10 @@ class EventHistory( models.Model ):
     )
     event_datetime = models.DateTimeField(
         'Timestamp',
+        db_index = True,
     )
     
     class Meta:
         verbose_name = 'Event History'
         verbose_name_plural = 'Event History'
+        ordering = [ '-event_datetime' ]

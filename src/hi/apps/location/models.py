@@ -33,6 +33,7 @@ class Location( models.Model, ItemTypeModelMixin ):
     order_id = models.PositiveIntegerField(
         'Order Id',
         default = 0,
+        db_index = True,
     )
     created_datetime = models.DateTimeField(
         'Created',
@@ -143,6 +144,7 @@ class LocationView( models.Model, ItemTypeModelMixin ):
     order_id = models.PositiveIntegerField(
         'Order Id',
         default = 0,
+        db_index = True,
     )
     created_datetime = models.DateTimeField(
         'Created',

@@ -1,12 +1,21 @@
 <div class="bg-white p-1">
   <div class="d-flex justify-content-between">
     {% include "collection/panes/collection_buttons.html" %}
-    <div>
-      <a href="{% url 'config_settings' %}"
-	 class="btn btn-tertiary btn-control" role="button"
-	 data-async="true" >
-	ADMIN
-      </a>
+    <div class="d-flex justify-content-end">
+      <div>
+	<a href="{% url 'event_history' %}"
+	   class="btn btn-secondary btn-control" role="button"
+	   data-async="true" >
+	  EVENTS
+	</a>
+      </div>
+      <div>
+	<a href="{% url 'config_settings' %}"
+	   class="btn btn-tertiary btn-control" role="button"
+	   data-async="true" >
+	  ADMIN
+	</a>
+      </div>
     </div>
   </div>
 </div>

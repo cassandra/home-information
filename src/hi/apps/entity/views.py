@@ -154,6 +154,6 @@ class EntityDetailsView( HiSideView, EntityViewMixin ):
         entity_details_data = EntityManager().get_entity_details_data(
             entity = entity,
             location_view = current_location_view,
-            is_editing = request.is_editing,
+            is_editing = request.view_parameters.is_editing,
         )
         return entity_details_data.to_template_context()

@@ -1,0 +1,14 @@
+<div>
+  {% for event_history in event_history_list %}
+  <div class="row">
+    <div class="col-6">
+      {{ event_history.event_datetime }}
+    </div>
+    <div class="col-6">
+      {{ event_history.event_definition.name }}
+    </div>
+  </div>
+  {% empty %}
+  <div><em>No event history</em></div>
+  {% endfor %}
+</div>

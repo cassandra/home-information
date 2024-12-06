@@ -48,7 +48,7 @@ class ConfigPageView( HiGridView ):
                 next_id = None ):
             redirect_url = request.get_full_path()
             return antinode.redirect_response( redirect_url )
-
+        
         request.view_parameters.view_type = ViewType.CONFIGURATION
         request.view_parameters.view_mode = ViewMode.MONITOR
         request.view_parameters.to_session( request )
@@ -73,7 +73,7 @@ class ConfigSettingsView( ConfigPageView ):
         return 'config/panes/settings.html'
 
     def get_template_context( self, request, *args, **kwargs ):
-
+        
         subsystem_list = SystemSettings().get_subsystems()
 
         subsystem_attribute_formset_list = list()

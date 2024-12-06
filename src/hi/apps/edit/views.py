@@ -37,16 +37,19 @@ class EditStartView( View ):
         # Javascript handling is consistent with the current operating
         # state mode.
         
-        request.view_parameters.view_mode = ViewMode.EDIT
-        request.view_parameters.to_session( request )
-
-        redirect_url = request.META.get('HTTP_REFERER')
+        if request.view_parameters.view_type.allows_edit_mode:
+            redirect_url = request.META.get('HTTP_REFERER')
+        else:
+            redirect_url = None
         if not redirect_url:
             redirect_url = reverse('home')
+
+        request.view_parameters.view_mode = ViewMode.EDIT
+        request.view_parameters.to_session( request )
+            
         return redirect( redirect_url )
 
     
-@method_decorator( edit_required, name='dispatch' )
 class EditEndView( View ):
 
     def get(self, request, *args, **kwargs):

@@ -75,8 +75,10 @@ class ControllerHistory(models.Model):
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,
+        db_index = True,
     )
     
     class Meta:
         verbose_name = 'Controller History'
         verbose_name_plural = 'Controller History'
+        ordering = [ '-created_datetime' ]

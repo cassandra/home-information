@@ -76,12 +76,13 @@ class SensorHistory(models.Model):
         'Value',
         max_length = 255
     )
-    response_datetime = models.DateTimeField(
-        'Timestamp',
-    )
     details = models.TextField(
         'Details',
         blank = True, null = True,
+    )
+    response_datetime = models.DateTimeField(
+        'Timestamp',
+        db_index = True,
     )
     
     class Meta:
