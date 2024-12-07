@@ -180,6 +180,37 @@ a.underline:visited {
   border: 2px dashed #888888;
 }
 
+#hi-server-error-msg {
+    position: fixed;
+    display: none;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 1rem;
+    z-index: 200;
+    text-align: center;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #fff12e;
+    background-color: #282425;
+    border-radius: 0.8rem;
+    border: 0.1rem solid #282425;
+    box-shadow: 0 0 1rem rgba(0, 0, 0, 0.5);
+}
+
+#hi-server-error-msg > div {
+    margin-top: 1rem;
+    padding: 3rem;
+    width: 36rem;
+    height: 14rem;
+    color: #282425;
+    font-size: 4rem;
+    background-color: #fff12e;
+    border-bottom-left-radius: 0.8rem;
+    border-bottom-right-radius: 0.8rem;
+    text-align: center;
+}
+
 svg[action-state="move"] {
     cursor: move;
 }

@@ -25,7 +25,14 @@
     {% javascript 'js_before_content' %}
         
     {% block content %}{% endblock %}
-    
+
+    <div id="hi-server-error-msg">
+      WARNING
+      <div>
+	Server Is Down !
+      </div>
+    </div>
+
     {% block footer_pre_javascript %}{% endblock %}
     {% javascript 'js_after_content' %}
     {% javascript 'js_after_content_custom' %}

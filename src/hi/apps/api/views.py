@@ -31,9 +31,6 @@ class StatusView( View ):
             except (TypeError, ValueError):
                 logger.warning( f'Bad client timestamp param "{last_server_timestamp}"' )
             
-        # Make sure to set this before querying monitors so that the client
-        # does not get a time that is after some newly arriving data.
-        #
         server_start_datetime = SettingsManager().get_server_start_datetime()
         server_datetime = datetimeproxy.now()
 
