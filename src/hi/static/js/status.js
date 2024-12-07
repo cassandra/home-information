@@ -1,16 +1,16 @@
 (function() {
     window.Hi = window.Hi || {};
 
-    const HiPolling = {
+    const HiStatus = {
         init: function() {
-	    startPolling();
+	    startServerPolling();
         },
     };
     
-    window.Hi.polling = HiPolling;
+    window.Hi.status = HiStatus;
 
     window.addEventListener('load', function() {
-	HiPolling.init();
+	HiStatus.init();
     });
 
     /*
@@ -20,8 +20,9 @@
     */
 
     const ServerPollingWatchdogType = 'serverPolling';
+    const ServerPollingStartDelayMs = 1000;
     const ServerPollingIntervalMs = 5 * 1000;
-    const PollingErrorNotifyTimeMs = 15 * 1000;
+    const PollingErrorNotifyTimeMs = 60 * 1000;
     const ServerErrorMessageSelector = '#hi-server-error-msg';
     const ServerPollingUrl = '/api/status';
     const ServerStartTimestampAttr = 'startTimestamp';
@@ -29,27 +30,38 @@
     const LastServerTimestampParam = 'lastTimestamp';
     const CssClassUpdateMap = 'cssClassUpdateMap';
     
-    let gPollingTimer = null;
+    let gServerPollingTimer = null;
     let gCssClassElementCache = {};
     let gLastServerPollSuccessTime = (new Date()).getTime();
     let gIsServerErrorShowing = false;
     let gLastStartServerDate = null;
     let gLastServerDate = null;
     
-    function startPolling() {
+    function startServerPolling() {
 	Hi.watchdog.add( ServerPollingWatchdogType, 
 			 fetchServerResponse,
 			 ServerPollingIntervalMs );
-	fetchServerResponse();
+	gServerPollingTimer = setTimeout( fetchServerResponse, ServerPollingStartDelayMs );
+    }
+
+    function setServerPollingTimer() {
+	gServerPollingTimer = setTimeout( fetchServerResponse, ServerPollingIntervalMs );
+    }
+
+    function clearServerPollingTimer() {
+	if ( gServerPollingTimer ) {
+	    clearTimeout( gServerPollingTimer );
+	    gServerPollingTimer = null;
+	}
     }
 
     function fetchServerResponse() {
 	if ( Hi.DEBUG ) { console.log( "Polling server..." ); }
-	clearPollingTimer();
+	clearServerPollingTimer();
 
 	let url = ServerPollingUrl;
 	if ( gLastServerDate ) {
-	    const lastTimestampString = gLastServerDate.toISOString();
+            const lastTimestampString = encodeURIComponent( gLastServerDate.toISOString() );
 	    url += `?${LastServerTimestampParam}=${lastTimestampString}`;
 	}
 	
@@ -66,26 +78,25 @@
 		    Hi.watchdog.ok( ServerPollingWatchdogType );
 		    gLastServerPollSuccessTime = (new Date()).getTime();
 		    handleServerResponse( data, status, xhr );
-		    return false;
-
+		    
 		} catch (e) {
 		    console.error( `Exception parsing server response: ${e} (line=${e.lineNumber})` );
 		} finally {
-		    gPollingTimer = setTimeout( fetchServerResponse, ServerPollingIntervalMs );
+		    setServerPollingTimer();
 		}
-	    },
+            },
 	    error: function (xhr, ajaxOptions, thrownError) {
 		try {
 		    Hi.watchdog.ok( ServerPollingWatchdogType );
 		    console.error( `Server polling error [${xhr.status}] : ${thrownError}` );
 		    handlePollingError();
-		    return false;
+
 		} catch (e) {
 		    console.error( `Exception handling polling error: ${e} (line=${e.lineNumber})` );
 		} finally {
-		    gPollingTimer = setTimeout( fetchServerResponse, ServerPollingIntervalMs );
+		    setServerPollingTimer();
 		}
-	    } 
+	    }
 	});
     }
 
@@ -180,13 +191,6 @@
 	return elements;
     }
     
-    function clearPollingTimer() {
-	if ( gPollingTimer ) {
-	    clearTimeout( gPollingTimer );
-	    gPollingTimer = null;
-	}
-    }
-
     function handlePollingError() {
 	var nowTime = (new Date()).getTime();
 	var elapsedMs = nowTime - gLastServerPollSuccessTime;
@@ -203,7 +207,7 @@
 	}
 	$(ServerErrorMessageSelector).show();
 	gIsServerErrorShowing = true;
-	Hi.sound.startAudibleSignal( "warning" );
+	Hi.sound.startAudibleSignal( Hi.sound.WARNING_SIGNAL_NAME );
     }
 
     function clearServerError() {
@@ -212,7 +216,7 @@
 	}
 	$(ServerErrorMessageSelector).hide();
 	gIsServerErrorShowing = false;
-	Hi.sound.startAudibleSignal( "info" );
+	Hi.sound.startAudibleSignal( Hi.sound.INFO_SIGNAL_NAME );
     }
 
 })();

@@ -110,14 +110,20 @@ class ConfigSettingsView( ConfigPageView ):
             subsystem_attribute_formset_list.append( subsystem_attribute_formset )           
             continue
 
-        if all_valid:
-            with transaction.atomic():
-                for subsystem_attribute_formset in subsystem_attribute_formset_list:
-                    subsystem_attribute_formset.save()
-                    continue
+        if not all_valid:
+            context = {
+                'subsystem_attribute_formset_list': subsystem_attribute_formset_list,
+            }
+            return render( request, 'config/panes/settings_form.html', context )
 
-        context = {
-            'subsystem_attribute_formset_list': subsystem_attribute_formset_list,
-        }
-        return render( request, 'config/panes/settings_form.html', context )
+        with transaction.atomic():
+            for subsystem_attribute_formset in subsystem_attribute_formset_list:
+                subsystem_attribute_formset.save()
+                continue
+
+        # Some settings (e.g., audio files) define what gets loaded into
+        # the initial HTML, so refresh the page to ensure they get updated.
+        #
+        return antinode.refresh_response()
+       
         

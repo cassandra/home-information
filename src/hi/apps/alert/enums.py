@@ -1,19 +1,22 @@
 from hi.apps.common.enums import LabeledEnum
+from hi.apps.config.enums import AudioSignal
 
 
 class AlarmLevel(LabeledEnum):
     
-    NONE          = ( 'None'      , ''               , 0 )
-    INFO          = ( 'Info'      , ''              , 10 )
-    WARNING       = ( 'Warning'   , ''             , 100 )
-    CRITICAL      = ( 'Critical'  , ''            , 1000 )
+    NONE          = ( 'None'      , ''               , 0 , None )
+    INFO          = ( 'Info'      , ''              , 10 , AudioSignal.INFO )
+    WARNING       = ( 'Warning'   , ''             , 100 , AudioSignal.WARNING )
+    CRITICAL      = ( 'Critical'  , ''            , 1000 , AudioSignal.CRITICAL )
 
     def __init__( self,
                   label             : str,
                   description       : str,
-                  priority          : int ):
+                  priority          : int,
+                  audio_signal      : AudioSignal ):
         super().__init__( label, description )
         self.priority = priority
+        self.audio_signal = audio_signal
         return
 
     

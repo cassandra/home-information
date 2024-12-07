@@ -2,6 +2,7 @@ from datetime import datetime
 import json
 import logging
 
+from django.core.exceptions import BadRequest
 from django.http import HttpResponse
 from django.views.generic import View
 
@@ -29,7 +30,9 @@ class StatusView( View ):
             try:
                 last_server_datetime = datetime.fromisoformat( last_server_timestamp.replace("Z", "+00:00") )
             except (TypeError, ValueError):
-                logger.warning( f'Bad client timestamp param "{last_server_timestamp}"' )
+                msg = f'Missing or invalid date/time format "{last_server_timestamp}".'
+                logger.warning( msg )
+                raise BadRequest( msg )
             
         server_start_datetime = SettingsManager().get_server_start_datetime()
         server_datetime = datetimeproxy.now()
@@ -54,6 +57,3 @@ class StatusView( View ):
             content_type='application/json',
             status = 200,
         )
-
-    
-    

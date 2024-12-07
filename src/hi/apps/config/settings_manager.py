@@ -1,7 +1,7 @@
 from datetime import datetime
 import logging
 from threading import local
-from typing import List
+from typing import Dict, List
 
 from django.db import transaction
 from django.db.models.signals import post_save, post_delete
@@ -11,7 +11,7 @@ from hi.apps.attribute.enums import AttributeType
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton import Singleton
 
-from .enums import SubsystemType, SubsystemAttributeType
+from .enums import AudioFile, AudioSignal, SubsystemType, SubsystemAttributeType
 from .models import Subsystem, SubsystemAttribute
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,18 @@ class SettingsManager( Singleton ):
                 continue
             continue
         return
-
+    
+    def get_console_audio_map( self ) -> Dict[ str, str ]:
+        console_audio_map = dict()
+        for audio_signal in AudioSignal:
+            if audio_signal.subsystem_attribute_type:
+                attr_value = self.get_setting_value( audio_signal.subsystem_attribute_type )
+                if attr_value:
+                    audio_file = AudioFile.from_name( attr_value )
+                    console_audio_map[str(audio_signal)] = audio_file.url
+            continue
+        return console_audio_map
+    
     def get_server_start_datetime( self ) -> datetime:
         return self._server_start_datetime
     

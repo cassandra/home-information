@@ -26,11 +26,11 @@
         
     {% block content %}{% endblock %}
 
+    {% include "config/panes/console_settings.html" %}
+    
     <div id="hi-server-error-msg">
       WARNING
-      <div>
-	Server Is Down !
-      </div>
+      <div>Server Is Down !</div>
     </div>
 
     {% block footer_pre_javascript %}{% endblock %}

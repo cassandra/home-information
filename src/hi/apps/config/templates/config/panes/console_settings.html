@@ -1,0 +1,6 @@
+<div id="hi-console-audio" style="display: none;">
+  {% for signal_name, signal_sound_url in CONSOLE_AUDIO_MAP.items %}
+  <audio id="hi-audio-signal-{{ signal_name }}" src="{{ signal_sound_url }}"
+	 preload="auto" loop="true" hidden="hidden" ></audio>
+  {% endfor %}
+</div>

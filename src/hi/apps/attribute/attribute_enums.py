@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from hi.apps.config.enums import Theme
+from hi.apps.config.enums import AudioFile, Theme
 
 from hi.constants import TIMEZONE_NAME_LIST
 
@@ -19,10 +19,12 @@ class AttributeEnums:
 
     TIMEZONE_CHOICES_ID = 'hi.timezone'
     THEME_CHOICES_ID = 'hi.theme'
+    AUDIO_FILE_CHOICES_ID = 'hi.audio.file'
     
     ID_TO_CHOICES = {
         TIMEZONE_CHOICES_ID: [ ( x, x ) for x in TIMEZONE_NAME_LIST ],
         THEME_CHOICES_ID: Theme.choices(),
+        AUDIO_FILE_CHOICES_ID: AudioFile.choices(),
     }
     
     @classmethod
