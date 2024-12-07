@@ -272,12 +272,13 @@ PIPELINE = {
                 'js/jquery-3.7.0.min.js',
                 'js/antinode.js',
                 'js/autosize.min.js',
+                'js/main.js',
+                'js/settings.js',
             ),
             'output_filename': 'js/js_before_content.js',
         },
         'js_after_content': {
             'source_filenames': (
-                'js/cookie.js',
                 'js/popper.min.js',
                 'bootstrap/js/bootstrap.js',
             ),
@@ -285,8 +286,6 @@ PIPELINE = {
         },
         'js_after_content_custom': {
             'source_filenames': (
-                'js/main.js',
-                'js/settings.js',
                 'js/audio.js',
                 'js/svg-utils.js',
                 'js/watchdog.js',

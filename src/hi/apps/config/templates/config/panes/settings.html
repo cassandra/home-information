@@ -1,6 +1,12 @@
 {% extends "config/pages/config_base.html" %}
 
 {% block config_content %}
-<div class="h3">System Settings</div>
-{% include "config/panes/settings_form.html" %}
+<div class="row">
+  <div class="col-6">
+    {% include "config/panes/console_settings.html" %}
+  </div>
+  <div class="col-6">
+    {% include "config/panes/system_settings.html" %}
+  </div>
+</div>
 {% endblock %}

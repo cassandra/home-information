@@ -1,6 +1,27 @@
-<div id="hi-console-audio" style="display: none;">
-  {% for signal_name, signal_sound_url in CONSOLE_AUDIO_MAP.items %}
-  <audio id="hi-audio-signal-{{ signal_name }}" src="{{ signal_sound_url }}"
-	 preload="auto" loop="true" hidden="hidden" ></audio>
-  {% endfor %}
+<div class="h3">Console</div>
+<div id="hi-audio-state-toggle">
+  <button id="hi-audio-state-enabled"
+	  role="button"
+	  style="display: none;"
+	  class="btn btn-success" 
+	  onclick="Hi.settings.disableAudio() && $(this).hide() && $('#hi-audio-state-disabled').show();"  
+	  title="Sounds enabled. Click to Disable">
+    Sounds: On
+  </button>
+  <button id="hi-audio-state-disabled" 
+	  role="button"
+	  class="btn btn-warning" 
+	  onclick="Hi.settings.enableAudio() && $(this).hide() && $('#hi-audio-state-enabled').show();"  
+	  title="Sounds disabled. Click to enable">
+    Sounds: Off
+  </button>
 </div>
+<script type="text/javascript" charset="utf-8">
+ if ( Hi.settings.isAudioEnabled() ) {
+   $('#hi-audio-state-enabled').show();
+   $('#hi-audio-state-disabled').hide();   
+ } else {
+   $('#hi-audio-state-enabled').hide();
+   $('#hi-audio-state-disabled').show();
+ }
+</script>

@@ -59,6 +59,14 @@
 	if ( Hi.DEBUG ) { console.log( "Polling server..." ); }
 	clearServerPollingTimer();
 
+
+
+
+	console.log( `AUDIO ENABLED = ${Hi.settings.isAudioEnabled()}` );
+
+
+
+	
 	let url = ServerPollingUrl;
 	if ( gLastServerDate ) {
             const lastTimestampString = encodeURIComponent( gLastServerDate.toISOString() );

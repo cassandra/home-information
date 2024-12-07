@@ -4,13 +4,13 @@
 
     const HiSettings = {
 	enableAudio: function() {
-	    _enableAudio( );
+	    return _enableAudio( );
 	},
 	disableAudio: function() {
-	    _disableAudio( );
+	    return _disableAudio( );
 	},
 	isAudioEnabled: function() {
-	    _isAudioEnabled( );
+	    return _isAudioEnabled( );
 	}
     };
 
@@ -27,19 +27,21 @@
     const AudioStateDisabled = 'disabled';
     
     function setConsoleSetting( name, value ) {
-	$.cookie( name, value, { path: '/' } );
+	Hi.setCookie( name, value );
     }
     
     function getConsoleSetting( name ) {
-	return $.cookie( name );
+	return Hi.getCookie( name );
     }
     
     function _enableAudio() {
 	setConsoleSetting( AudioStateSettingName, AudioStateEnabled );
+	return true;
     }
 
     function _disableAudio() {
 	setConsoleSetting( AudioStateSettingName, AudioStateDisabled );
+	return true;
     }
     
     function _isAudioEnabled() {
