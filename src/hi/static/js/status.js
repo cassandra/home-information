@@ -29,9 +29,10 @@
     const ServerTimestampAttr = 'timestamp';
     const LastServerTimestampAttr = 'lastTimestamp';
     const CssClassUpdateMapAttr = 'cssClassUpdateMap';
-    const AlertStatusDataAttr = 'alertData';
 
+    const AlertStatusDataAttr = 'alertData';
     const AlertBannerContainerSelector = '#hi-alert-banner-container';
+    const AlertBannerContentSelector = '#hi-alert-banner-content';
     const MaxAudioSignalNameAttr = 'maxAudioSignaName';
     const NewAudioSignalNameAttr = 'newAudioSignalName';
     const AlarmMessageHtmlAttr = 'alarmMessageHtml';
@@ -157,9 +158,11 @@
 	
 	if (( AlarmMessageHtmlAttr in alertStatusData )
 	    && alertStatusData[AlarmMessageHtmlAttr] ) {
-	    $(AlertBannerContainerSelector).html( alertStatusData[AlarmMessageHtmlAttr] ).show();
+	    $(AlertBannerContentSelector).html( alertStatusData[AlarmMessageHtmlAttr] );
+	    $(AlertBannerContainerSelector).show();
 	} else {
-	    $(AlertBannerContainerSelector).empty().hide();
+	    $(AlertBannerContainerSelector).hide();
+	    $(AlertBannerContentSelector).empty();
 	}
     }
     

@@ -8,7 +8,7 @@ from .alert import Alert
 
 class AlertHelpers:
 
-    ALERT_LIST_BANNER_TEMPLATE_NAME = 'alert/panes/alert_list_banner.html'
+    ALERT_LIST_BANNER_TEMPLATE_NAME = 'alert/panes/alert_banner_content.html'
 
     @classmethod
     def alert_list_to_html_str( cls,

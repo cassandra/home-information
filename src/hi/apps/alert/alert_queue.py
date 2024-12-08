@@ -22,7 +22,7 @@ class AlertQueue:
         
 
 
-        """
+
         from hi.apps.alert.tests.synthetic_data import AlertSyntheticData
         self._alert_list = AlertSyntheticData.create_random_alert_list(
             reference_datetime = datetimeproxy.iso_naive_to_datetime_utc('2024-12-08T18:01:54'),
@@ -32,7 +32,7 @@ class AlertQueue:
             seed = 23456781,  # Alerts = 2, Alarms = 1I, 2C
         )
         print( f'\n\nSET SYNTHETIC ALERT LIST: size={len(self._alert_list)}\n' )
-        """
+
 
 
 

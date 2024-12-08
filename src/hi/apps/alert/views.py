@@ -26,7 +26,7 @@ class AlertAcknowledgeView( View ):
         )
         return antinode.response(
             insert_map = {
-                DIVID['ALERT_BANNER_CONTAINER']: alert_list_html_str
+                DIVID['ALERT_BANNER_CONTENT']: alert_list_html_str
             },
         )
 

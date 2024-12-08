@@ -24,8 +24,7 @@
     </script>
     {% javascript 'js_before_content' %}
 
-    <div id="{{ DIVID.ALERT_BANNER_CONTAINER }}" class="fixed-top"
-	 style="z-index: 5000; display: none;"></div>
+    {% include "alert/panes/alert_banner.html" %}
     
     {% block content %}{% endblock %}
 

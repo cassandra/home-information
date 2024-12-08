@@ -1,0 +1,19 @@
+<div id="{{ DIVID.ALERT_BANNER_CONTAINER }}" class="fixed-top"
+     style="z-index: 5000; display: none;">
+  <div id="{{ DIVID.ALERT_BANNER_CONTENT }}"></div>
+  <button id="hi-alert-banner-toggle" class="btn btn-sm btn-secondary position-absolute"
+	  style="left: 50%; transform: translateX(-50%);"
+	  onclick="Hi_alert_toggleAlertBanner();">&#9650;&#9650;&#9650;&#9650;</button>
+</div>
+<script type="text/javascript" charset="utf-8">
+ function Hi_alert_toggleAlertBanner() {
+   if ( $('#{{ DIVID.ALERT_BANNER_CONTENT }}').is(':visible') ) {
+     $('#{{ DIVID.ALERT_BANNER_CONTENT }}').hide();
+     $('#hi-alert-banner-toggle').html( '&#9660;&#9660;Alerts&#9660;&#9660;' );
+
+   } else {
+     $('#{{ DIVID.ALERT_BANNER_CONTENT }}').show()
+     $('#hi-alert-banner-toggle').html( '&#9650;&#9650;&#9650;&#9650;' );
+   }
+ }
+</script>
