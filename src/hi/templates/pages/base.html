@@ -23,7 +23,11 @@
      const gHiViewMode = "{{ request.view_parameters.view_mode }}";
     </script>
     {% javascript 'js_before_content' %}
-        
+
+    <div id="hi-alert-message"
+	 class="fixed-top bg-danger text-white text-center py-2"
+	 style="z-index: 5000; display: none;"></div>
+    
     {% block content %}{% endblock %}
 
     {% include "config/panes/base_page_settings.html" %}

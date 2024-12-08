@@ -6,7 +6,7 @@
   <input type="checkbox" name="{{ attribute_form.value.html_name }}"
 	 id="{{ attribute_form.value.id_for_label }}"
 	 {% if attribute_form.value.value %}checked="on"{% endif %} >
-  <label for="{{ attribute_form.value.id_for_label }}">Add Alarm Events</label>
+  <label for="{{ attribute_form.value.id_for_label }}">{{ attribute_form.name.value }}</label>
 </div>
 
 {% if attribute_form.show_as_editable and attribute_form.instance.is_editable and attribute_form.instance.attribute_type.can_delete %}

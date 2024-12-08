@@ -2,6 +2,11 @@ from hi.apps.common.enums import LabeledEnum
 from hi.apps.config.enums import AudioSignal
 
 
+class AlarmSource(LabeledEnum):
+    
+    EVENT          = ( 'Event'      , '' )
+
+    
 class AlarmLevel(LabeledEnum):
     
     NONE          = ( 'None'      , ''               , 0 , None )

@@ -14,7 +14,8 @@
 
   <div class="row">
     <div class="col-1 font-weight-bold"></div>
-    <div class="col-3 font-weight-bold">Name</div>
+    <div class="col-4 font-weight-bold">Name</div>
+    <div class="col-2 font-weight-bold">Type</div>
     <div class="col-2 font-weight-bold">Actions</div>
     <div class="col-1 font-weight-bold">Enabled?</div>
     <div class="col-1 font-weight-bold"></div>
@@ -29,11 +30,14 @@
 	EDIT
       </a>
     </div>
-    <div class="col-3">
+    <div class="col-4">
       <a href="{% url 'event_definition_edit' id=event_definition.id %}"
 	 data-async="modal" >
 	{{ event_definition.name }}
       </a>
+    </div>
+    <div class="col-2">
+      {{ event_definition.event_type.label }}
     </div>
     <div class="col-2">
       {% if event_definition.control_actions.all|length > 0 %}Control{%endif %}

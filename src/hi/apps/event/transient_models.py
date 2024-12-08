@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List
 
-from hi.apps.alert.transient_models import Alarm
+from hi.apps.alert.enums import AlarmSource
+from hi.apps.alert.alarm import Alarm
 from hi.apps.entity.models import EntityState
 from hi.apps.sense.transient_models import SensorResponse
 
@@ -23,7 +24,9 @@ class EntityStateTransition:
     
 @dataclass
 class Event:
-    event_definition  : EventDefinition
+    """ This would be more preceisly described as an "Entity State Transition Event" """
+    
+    event_definition      : EventDefinition
     sensor_response_list  : List[ SensorResponse ]
     
     @property
@@ -38,10 +41,12 @@ class Event:
     
     def to_alarm( self, alarm_action : AlarmAction ) -> Alarm:
         return Alarm(
+            alarm_source = AlarmSource.EVENT,
+            alarm_type = str(self.event_definition.event_type),
+            alarm_level = alarm_action.alarm_level,
             title = self.event_definition.name,
             details = ', '.join([ x.sensor.name for x in self.sensor_response_list ]),
             security_posture = alarm_action.security_posture,
-            alarm_level = alarm_action.alarm_level,
             alarm_lifetime_secs = alarm_action.alarm_lifetime_secs,
             timestamp = self.timestamp,
         )

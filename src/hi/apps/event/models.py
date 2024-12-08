@@ -6,12 +6,19 @@ from hi.apps.entity.models import EntityState
 
 from hi.integrations.core.models import IntegrationKeyModel
 
+from .enums import EventType
+
 
 class EventDefinition( IntegrationKeyModel ):
 
     name = models.CharField(
         'Name',
         max_length = 64,
+    )
+    event_type_str = models.CharField(
+        'Event Type',
+        max_length = 32,
+        null = False, blank = False,
     )
 
     # For multi-clause event definitions, the span in which all clauses
@@ -26,7 +33,7 @@ class EventDefinition( IntegrationKeyModel ):
     # event would be generated.
     #
     dedupe_window_secs = models.PositiveIntegerField(
-        'Desupe Window Secs',
+        'Dedupe Window Secs',
     )
     
     enabled = models.BooleanField(
@@ -46,6 +53,15 @@ class EventDefinition( IntegrationKeyModel ):
     class Meta:
         verbose_name = 'Event Definition'
         verbose_name_plural = 'Event Definitions'
+
+    @property
+    def event_type(self):
+        return EventType.from_name_safe( self.event_type_str )
+
+    @event_type.setter
+    def event_type( self, event_type : EventType ):
+        self.event_type_str = str(event_type)
+        return
 
 
 class EventClause( models.Model ):

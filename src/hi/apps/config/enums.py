@@ -89,8 +89,18 @@ class SubsystemAttributeType(LabeledEnum):
         True,
         str( Theme.default() ),
     )
+    AWAY_ALERT_EMAILS_ENABLED = (
+        'Send Email When Away',
+        'Whether to send emails for critical alerts to when away.',
+        SubsystemType.ALERTS,
+        AttributeValueType.BOOLEAN,
+        '',
+        True,
+        False,
+        False,
+    )
     AWAY_ALERT_EMAILS = (
-        'Away Alert Emails',
+        'Away Alert Addresses',
         'Email addresses to send critical alerts to when away.',
         SubsystemType.ALERTS,
         AttributeValueType.TEXT,

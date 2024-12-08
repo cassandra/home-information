@@ -12,6 +12,9 @@
         startAudibleSignal: function( signalName ) {
 	    _startAudibleSignal( signalName );
         },
+	setMaxSignalName: function( signalName ) {
+	    return _setMaxSignalName( signalName );
+	}
     };
     
     window.Hi.audio = HiAudio;
@@ -68,6 +71,11 @@
     let gAudibleSignalTimer = null;
     let gActiveAudibleSignalName = null;
 
+    function _setMaxSignalName( signalName ) {
+	gCurrentMaxSignalName = signalName;
+	return true;
+    }
+    
     function setAudibleSignalTimer( ) {
 	clearAudibleSignalTimer();
 	gAudibleSignalTimer = setTimeout( endAudibleSignal, AudibleSignalDurationMs );

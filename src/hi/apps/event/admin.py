@@ -28,6 +28,7 @@ class EventDefinitionAdmin(admin.ModelAdmin):
     
     list_display = (
         'name',
+        'event_type_str',
         'event_window_secs',
         'dedupe_window_secs',
         'enabled',

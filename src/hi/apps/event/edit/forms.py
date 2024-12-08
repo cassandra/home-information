@@ -7,6 +7,7 @@ from hi.apps.control.models import Controller
 from hi.apps.common.forms import CustomBaseFormSet
 from hi.apps.entity.edit.forms import EntityStateSelectModelFormMixin
 from hi.apps.entity.models import EntityState
+from hi.apps.event.enums import EventType
 import hi.apps.event.models as models
 
 logger = logging.getLogger(__name__)
@@ -18,10 +19,19 @@ class EventDefinitionForm( forms.ModelForm ):
         model = models.EventDefinition
         fields = (
             'name',
+            'event_type_str',
             'event_window_secs',
             'dedupe_window_secs',
             'enabled',
         )
+        
+    event_type_str = forms.ChoiceField(
+        label = 'Event Type',
+        choices = EventType.choices,
+        initial = EventType.default_value(),
+        required = True,
+        widget = forms.Select( attrs = { 'class' : 'custom-select' } ),
+    )
 
         
 class EventClauseForm( forms.ModelForm, EntityStateSelectModelFormMixin ):

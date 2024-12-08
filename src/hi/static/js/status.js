@@ -27,8 +27,14 @@
     const ServerPollingUrl = '/api/status';
     const ServerStartTimestampAttr = 'startTimestamp';
     const ServerTimestampAttr = 'timestamp';
-    const LastServerTimestampParam = 'lastTimestamp';
-    const CssClassUpdateMap = 'cssClassUpdateMap';
+    const LastServerTimestampAttr = 'lastTimestamp';
+    const CssClassUpdateMapAttr = 'cssClassUpdateMap';
+    const AlertStatusDataAttr = 'alertData';
+
+    const AlertMessageSelector = '#hi-alert-message';
+    const MaxAudioSignalNameAttr = 'maxAudioSignaName';
+    const NewAudioSignalNameAttr = 'newAudioSignalName';
+    const AlarmMessageHtmlAttr = 'alarmMessageHtml';
     
     let gServerPollingTimer = null;
     let gCssClassElementCache = {};
@@ -58,19 +64,11 @@
     function fetchServerResponse() {
 	if ( Hi.DEBUG ) { console.log( "Polling server..." ); }
 	clearServerPollingTimer();
-
-
-
-
-	console.log( `AUDIO ENABLED = ${Hi.settings.isAudioEnabled()}` );
-
-
-
 	
 	let url = ServerPollingUrl;
 	if ( gLastServerDate ) {
             const lastTimestampString = encodeURIComponent( gLastServerDate.toISOString() );
-	    url += `?${LastServerTimestampParam}=${lastTimestampString}`;
+	    url += `?${LastServerTimestampAttr}=${lastTimestampString}`;
 	}
 	
 	$.ajaxSuppressLoader = true;
@@ -84,6 +82,7 @@
 	    success: function( data, status, xhr ) {
 		try {
 		    Hi.watchdog.ok( ServerPollingWatchdogType );
+		    clearServerErrorIfNeeded();
 		    gLastServerPollSuccessTime = (new Date()).getTime();
 		    handleServerResponse( data, status, xhr );
 		    
@@ -116,9 +115,11 @@
 	if ( ServerTimestampAttr in respObj ) {
 	    gLastServerDate = new Date( respObj[ServerTimestampAttr] );
 	}
-	
-	if ( CssClassUpdateMap in respObj ) {
-	    handleCssClassUpdates( respObj[CssClassUpdateMap] );
+	if ( AlertStatusDataAttr in respObj ) {
+	    handleAlertStatusData( respObj[AlertStatusDataAttr] );
+	}
+	if ( CssClassUpdateMapAttr in respObj ) {
+	    handleCssClassUpdates( respObj[CssClassUpdateMapAttr] );
 	}
     }
 
@@ -134,6 +135,31 @@
 	    } else {
 		gLastStartServerDate = startServerDate;
 	    }
+	}
+    }
+    
+    function handleAlertStatusData( alertStatusData ) {
+	if ( ! alertStatusData ) {
+	    return;
+	}
+	
+	if (( MaxAudioSignalNameAttr in alertStatusData )
+	    && ( alertStatusData[MaxAudioSignalNameAttr] )) {
+	    Hi.audio.setMaxSignalName( alertStatusData[MaxAudioSignalNameAttr] );
+	}
+	
+	if (( NewAudioSignalNameAttr in alertStatusData )
+	    && ( alertStatusData[NewAudioSignalNameAttr] )) {
+	    Hi.audio.startAudibleSignal( alertStatusData[NewAudioSignalNameAttr] );
+	}
+
+	console.log( 'Alarm Message', alertStatusData );
+	
+	if (( AlarmMessageHtmlAttr in alertStatusData )
+	    && alertStatusData[AlarmMessageHtmlAttr] ) {
+	    $(AlertMessageSelector).html( alertStatusData[AlarmMessageHtmlAttr] ).show();
+	} else {
+	    $(AlertMessageSelector).empty().hide();
 	}
     }
     
@@ -218,7 +244,7 @@
 	Hi.sound.startAudibleSignal( Hi.sound.WARNING_SIGNAL_NAME );
     }
 
-    function clearServerError() {
+    function clearServerErrorIfNeeded() {
 	if ( ! gIsServerErrorShowing ) {
 	    return;
 	}

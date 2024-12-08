@@ -11,6 +11,7 @@ from hi.apps.entity.enums import (
     TemperatureUnit,
 )    
 from hi.apps.entity.models import Entity, EntityState
+from hi.apps.event.enums import EventType
 from hi.apps.event.models import AlarmAction, EventClause, EventDefinition
 from hi.apps.sense.enums import SensorType
 from hi.apps.sense.models import Sensor
@@ -363,6 +364,7 @@ class HiModelHelper:
         
         return cls.create_simple_alarm_event_definition(
             name = name,
+            event_type = EventType.INFORMATION,
             entity_state = entity_state,
             value = EntityStateValue.DISCONNECTED,
             posture_to_level = {
@@ -385,6 +387,7 @@ class HiModelHelper:
         
         return cls.create_simple_alarm_event_definition(
             name = name,
+            event_type = EventType.SECURITY,
             entity_state = entity_state,
             value = EntityStateValue.OPEN,
             posture_to_level = {
@@ -407,6 +410,7 @@ class HiModelHelper:
         
         return cls.create_simple_alarm_event_definition(
             name = name,
+            event_type = EventType.SECURITY,
             entity_state = entity_state,
             value = EntityStateValue.ACTIVE,
             posture_to_level = {
@@ -429,6 +433,7 @@ class HiModelHelper:
         
         return cls.create_simple_alarm_event_definition(
             name = name,
+            event_type = EventType.MAINTENANCE,
             entity_state = entity_state,
             value = EntityStateValue.LOW,
             posture_to_level = {
@@ -446,6 +451,7 @@ class HiModelHelper:
     def create_simple_alarm_event_definition(
             cls,
             name                 : str,
+            event_type           : EventType,
             entity_state         : EntityState,
             value                : str,
             posture_to_level     : Dict[ SecurityPosture, AlarmLevel ],
@@ -456,6 +462,7 @@ class HiModelHelper:
 
         event_definition = EventDefinition(
             name = name,
+            event_type_str = str(event_type),
             event_window_secs = event_window_secs,
             dedupe_window_secs = dedupe_window_secs,
             enabled = True,
