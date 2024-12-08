@@ -24,8 +24,7 @@
     </script>
     {% javascript 'js_before_content' %}
 
-    <div id="hi-alert-message"
-	 class="fixed-top bg-danger text-white text-center py-2"
+    <div id="{{ DIVID.ALERT_BANNER_CONTAINER }}" class="fixed-top"
 	 style="z-index: 5000; display: none;"></div>
     
     {% block content %}{% endblock %}

@@ -371,3 +371,22 @@ def iso_naive_to_datetime_utc( iso_str : str, tzname : str = 'UTC' ):
 def change_timezone( original_datetime : datetime, new_tzname : str  ):
     new_tz = pytz.timezone( new_tzname )
     return original_datetime.astimezone( new_tz )
+
+
+def get_since_time_humanized( reference_datetime : datetime ):
+    current_datetime = now()
+    elapsed_timedelta = current_datetime - reference_datetime
+    elapsed_seconds = elapsed_timedelta.total_seconds()
+    if elapsed_seconds < 55:
+        return f'{round(elapsed_seconds)} seconds ago'
+    
+    elapsed_minutes = elapsed_seconds / 60
+    
+    if elapsed_minutes <= 90:
+        return f'{round(elapsed_minutes)} minutes ago'
+
+    elapsed_hours = elapsed_minutes / 60
+    if elapsed_hours <= 24:
+        return f'over {round(elapsed_hours)} hours ago'
+
+    return reference_datetime.strftime('%A, %B %d at %I:%M %p')

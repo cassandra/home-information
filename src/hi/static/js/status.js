@@ -31,7 +31,7 @@
     const CssClassUpdateMapAttr = 'cssClassUpdateMap';
     const AlertStatusDataAttr = 'alertData';
 
-    const AlertMessageSelector = '#hi-alert-message';
+    const AlertBannerContainerSelector = '#hi-alert-banner-container';
     const MaxAudioSignalNameAttr = 'maxAudioSignaName';
     const NewAudioSignalNameAttr = 'newAudioSignalName';
     const AlarmMessageHtmlAttr = 'alarmMessageHtml';
@@ -157,9 +157,9 @@
 	
 	if (( AlarmMessageHtmlAttr in alertStatusData )
 	    && alertStatusData[AlarmMessageHtmlAttr] ) {
-	    $(AlertMessageSelector).html( alertStatusData[AlarmMessageHtmlAttr] ).show();
+	    $(AlertBannerContainerSelector).html( alertStatusData[AlarmMessageHtmlAttr] ).show();
 	} else {
-	    $(AlertMessageSelector).empty().hide();
+	    $(AlertBannerContainerSelector).empty().hide();
 	}
     }
     

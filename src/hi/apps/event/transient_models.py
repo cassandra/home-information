@@ -42,7 +42,7 @@ class Event:
     def to_alarm( self, alarm_action : AlarmAction ) -> Alarm:
         return Alarm(
             alarm_source = AlarmSource.EVENT,
-            alarm_type = str(self.event_definition.event_type),
+            alarm_type = self.event_definition.event_type.label,
             alarm_level = alarm_action.alarm_level,
             title = self.event_definition.name,
             details = ', '.join([ x.sensor.name for x in self.sensor_response_list ]),

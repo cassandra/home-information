@@ -41,8 +41,8 @@ def modal_from_template( request, template_name, context={}, status=200 ):
     the target content.  The template should be set up to contain the necessary
     modal structure (modulo the main wrapper modal div).
     """
-    template = get_template(template_name)
-    content = template.render(context, request=request)
+    template = get_template( template_name )
+    content = template.render( context, request = request )
     return modal_from_content( request, content, status = status )
 
 

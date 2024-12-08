@@ -11,12 +11,34 @@ from .enums import AlarmLevel
 logger = logging.getLogger(__name__)
 
 
-class AlertCollection:
+class AlertQueue:
 
     MAX_ALERT_LIST_SIZE = 50
     
     def __init__(self):
         self._alert_list = list()
+
+
+        
+
+
+        """
+        from hi.apps.alert.tests.synthetic_data import AlertSyntheticData
+        self._alert_list = AlertSyntheticData.create_random_alert_list(
+            reference_datetime = datetimeproxy.iso_naive_to_datetime_utc('2024-12-08T18:01:54'),
+            alarm_lifetime_secs = 999999,
+            # seed = 23456789,  # Alerts = 1, Alarms = 1W
+            # seed = 23456780,  # Alerts = 4, Alarms = 4C, 1C, 2C, 3W
+            seed = 23456781,  # Alerts = 2, Alarms = 1I, 2C
+        )
+        print( f'\n\nSET SYNTHETIC ALERT LIST: size={len(self._alert_list)}\n' )
+        """
+
+
+
+        
+
+        
         self._active_alerts_lock = threading.Lock()
         self._last_changed_datetime = datetimeproxy.now()
         return
@@ -26,6 +48,10 @@ class AlertCollection:
     
     def __len__(self):
         return len( self._alert_list )
+
+    @property
+    def unacknowledged_alert_list(self):
+        return [ x for x in self._alert_list if not x.is_acknowledged ]
     
     def get_most_important_alert( self, since_datetime : datetime = None ):
         """
@@ -46,6 +72,8 @@ class AlertCollection:
                 
             max_alert = None
             for alert in self._alert_list:
+                if alert.is_acknowledged:
+                    continue
                 if alert.start_datetime <= since_datetime:
                     continue
                 if max_alert is None:
@@ -76,6 +104,8 @@ class AlertCollection:
             latest_alarm = None
             latest_alarm_datetime = datetimeproxy.min()
             for alert in self._alert_list:
+                if alert.is_acknowledged:
+                    continue
                 alarm = alert.get_latest_alarm()
                 if not alarm:
                     continue
@@ -114,3 +144,47 @@ class AlertCollection:
         finally:
             self._active_alerts_lock.release()
         return
+
+    def acknowledge_alert( self, alert_id : str ):
+        try:
+            self._active_alerts_lock.acquire()
+
+            for alert in self._alert_list:
+                if alert.id != alert_id:
+                    continue
+                alert.is_acknowledged = True
+                self._last_changed_datetime = datetimeproxy.now()
+                return True
+
+            raise KeyError( f'Alert not found for {alert_id}' )
+        finally:
+            self._active_alerts_lock.release()
+
+    def remove_expired_or_acknowledged_alerts(self):
+        try:
+            self._active_alerts_lock.acquire()
+
+            logger.debug( f'Alert Check: List size = {len(self._alert_list)}')
+            if len( self._alert_list ) < 1:
+                return
+        
+            now_datetime = datetimeproxy.now()
+            new_list = list()
+            for alert in self._alert_list:
+                if alert.end_datetime <= now_datetime:
+                    continue
+                if alert.is_acknowledged:
+                    continue
+                new_list.append( alert )
+
+            removed_count = len(self._alert_list) - len(new_list)
+            logger.debug( f'Removed "{removed_count}" alerts.' )
+            if removed_count > 0:
+                self._alert_list = new_list
+                self._last_changed_datetime = datetimeproxy.now()
+
+        finally:
+            self._active_alerts_lock.release()
+        return
+    
+    

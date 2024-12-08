@@ -350,3 +350,20 @@ div[status="low"] {
 .switch input:checked + .slider:before {
     transform: translateX(26px);
 }
+
+#hi-alert-banner-container {
+}
+.hi-alarm-level-info {
+    color: var(--on-success-color);
+    background-color: var(--success-color);
+}
+
+.hi-alarm-level-warning {
+    color: var(--on-warning-color);
+    background-color: var(--warning-color);
+}
+
+.hi-alarm-level-critical {
+    color: var(--on-error-color);
+    background-color: var(--error-color);
+}

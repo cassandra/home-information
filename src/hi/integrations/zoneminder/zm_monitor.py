@@ -78,7 +78,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
         }
         events = self._zm_manager.get_zm_events( options = options )
         if self.TRACE:
-            logger.debug( f"Found {len(events)} new ZM events" )
+            logger.debug( f'Found {len(events)} new ZM events' )
 
         # Sensor readings and state value transitions are points in time,
         # but ZoneMinder events are intervals.  Thus, one ZoneMinder event

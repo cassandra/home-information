@@ -3,7 +3,7 @@ import logging
 
 from hi.apps.common.singleton import Singleton
 
-from .alert_collection import AlertCollection
+from .alert_queue import AlertQueue
 from .alarm import Alarm
 from .alert_status import AlertStatusData
 
@@ -13,11 +13,15 @@ logger = logging.getLogger(__name__)
 class AlertManager(Singleton):
 
     def __init_singleton__(self):
-        self._alert_collection = AlertCollection()
+        self._alert_queue = AlertQueue()
         return
 
-    def get_alert_status_data( self, last_alert_status_datetime : datetime ) -> AlertStatusData:
+    @property
+    def unacknowledged_alert_list(self):
+        return self._alert_queue.unacknowledged_alert_list
 
+    def get_alert_status_data( self, last_alert_status_datetime : datetime ) -> AlertStatusData:
+        
         # Things to check on alert status:
         #
         #   1) Has the alert list changed in any way? If so, return new HTML
@@ -36,13 +40,13 @@ class AlertManager(Singleton):
         # in the view. Also, we return it if it has changed, which include
         # it having become empty.
         
-        new_alert = self._alert_collection.get_most_important_alert(
+        new_alert = self._alert_queue.get_most_important_alert(
             since_datetime = last_alert_status_datetime,
         )
         if new_alert:
             max_alert = new_alert.audio_signal_name if new_alert else None
         else:
-            max_alert = self._alert_collection.get_most_important_alert()
+            max_alert = self._alert_queue.get_most_important_alert()
 
         # TODO: Use this latest new alarm for providing auto-switching to
         # show something related to the latest event, e.g., camera feed.
@@ -50,12 +54,12 @@ class AlertManager(Singleton):
         # whether to show it based on the console settings and user
         # interaction context.
         #
-        latest_new_alarm = self._alert_collection.get_most_recent_alarm(
+        latest_new_alarm = self._alert_queue.get_most_recent_alarm(
             since_datetime = last_alert_status_datetime,
         )
         
         return AlertStatusData(
-            alert_list = None,
+            alert_list = self._alert_queue.unacknowledged_alert_list,
             max_audio_signal = max_alert.audio_signal if max_alert else None,
             new_audio_signal = new_alert.audio_signal if new_alert else None,
         )
@@ -63,7 +67,22 @@ class AlertManager(Singleton):
     async def add_alarm( self, alarm : Alarm ):
         logging.debug( f'Adding Alarm: {alarm}' )
         try:
-            self._alert_collection.add_alarm()
+            self._alert_queue.add_alarm()
         except ValueError as ve:
             logging.info( str(ve) )
+        return
+
+    def acknowledge_alert( self, alert_id : str ):
+        self._alert_queue.acknowledge_alert( alert_id = alert_id )
+        return
+    
+    def do_periodic_maintenance(self):
+        self._alert_queue.remove_expired_or_acknowledged_alerts()
+        self.check_email_queues()
+        return
+    
+    def check_email_queues(self):
+
+        # TODO: Implement this method after adding email sending.
+
         return

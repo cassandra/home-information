@@ -56,7 +56,7 @@ class MonitorManager( Singleton ):
 
         # In case any registrations happened before initialize is called.
         for monitor_id, monitor in self._monitor_map.items():
-            if not monitor.is_running():
+            if not monitor.is_running:
                 logger.debug(f"Starting monitor: {monitor_id}")
                 asyncio.run_coroutine_threadsafe( monitor.start(), self._event_loop )
             continue

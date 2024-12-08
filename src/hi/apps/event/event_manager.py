@@ -87,7 +87,7 @@ class EventManager(Singleton):
         if not recent_event:
             return False
         recent_event_timedelta = datetimeproxy.now() - recent_event.timestamp
-        return bool( recent_event_timedelta.seconds <= event_definition.dedupe_window_secs )
+        return bool( recent_event_timedelta.total_seconds() <= event_definition.dedupe_window_secs )
     
     def _create_event_if_detected( self, event_definition : EventDefinition ) -> bool:
         if not event_definition.event_clauses.exists():
@@ -104,7 +104,7 @@ class EventManager(Singleton):
                 if transition.latest_sensor_response.value != event_clause.value:
                     continue
                 transition_timedelta = current_timestamp - transition.timestamp
-                if transition_timedelta.seconds > event_definition.event_window_secs:
+                if transition_timedelta.total_seconds() > event_definition.event_window_secs:
                     continue
                 matches = True
                 sensor_response_list.append( transition.latest_sensor_response )

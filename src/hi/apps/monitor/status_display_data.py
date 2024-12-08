@@ -220,10 +220,10 @@ class StatusDisplayData:
 
         if self.penultimate_sensor_value == str(EntityStateValue.ACTIVE):
             movement_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
-            if movement_timedelta.seconds < 30:
+            if movement_timedelta.total_seconds() < 30:
                 return StatusStyle.MovementRecent
 
-            elif movement_timedelta.seconds < 60:
+            elif movement_timedelta.total_seconds() < 60:
                 return StatusStyle.MovementPast
 
         return StatusStyle.MovementIdle
@@ -235,10 +235,10 @@ class StatusDisplayData:
 
         if self.penultimate_sensor_value == str(EntityStateValue.ACTIVE):
             presence_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
-            if presence_timedelta.seconds < 30:
+            if presence_timedelta.total_seconds() < 30:
                 return StatusStyle.MovementRecent
 
-            elif presence_timedelta.seconds < 60:
+            elif presence_timedelta.total_seconds() < 60:
                 return StatusStyle.MovementPast
 
         return StatusStyle.MovementIdle

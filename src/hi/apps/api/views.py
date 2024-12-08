@@ -57,7 +57,7 @@ class StatusView( View ):
         data = {
             self.ServerStartTimestampAttr: server_start_datetime.isoformat(),
             self.ServerTimestampAttr: server_datetime.isoformat(),
-            self.AlertStatusDataAttr: alert_status_data.to_dict(),
+            self.AlertStatusDataAttr: alert_status_data.to_dict( request = request ),
             self.CssClassUpdateMapAttr: css_class_update_map,
         }
         return HttpResponse(

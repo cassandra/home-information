@@ -1,0 +1,28 @@
+{% load humanize %}
+<div class="hi-alert-banner">
+  {% for alert in alert_list %}
+  <div class="hi-alert hi-alarm-level-{{ alert.alarm_level }} row">
+    <div class="col-1">
+      <a href="{% url 'alert_details' alert_id=alert.id %}"
+	 class="btn btn-info" data-async="modal">DETAILS</a>
+    </div>
+    <div class="col-1">{{ alert.alarm_level.label }}</div>
+    <div class="col-6">{{ alert.alarm_type }}: {{ alert.title }}</div>
+    <div class="col-3">
+      Since {{ alert.start_datetime|naturaltime }}
+      {% if alert.alarm_count > 1 %}
+      ({{ alert.alarm_count }} Alarms)
+      {% endif %}
+    </div>
+    <div class="col-1">
+      <form action="{% url 'alert_acknowledge' alert_id=alert.id %}" method="post"
+	    data-async="true">
+	{% csrf_token %}
+	<input type="submit" class="btn btn-danger" name="action" value="Dismiss">
+      </form>
+    </div>
+  </div>
+  {% empty %}
+  <div class="alert alert-warning">No alerts.</div>
+  {% endfor %}
+</div>
