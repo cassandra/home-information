@@ -187,7 +187,7 @@ a.underline:visited {
     left: 50%;
     transform: translate(-50%, -50%);
     padding: 1rem;
-    z-index: 9999;
+    z-index: 1060;
     text-align: center;
     font-size: 2rem;
     font-weight: bold;

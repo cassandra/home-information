@@ -3,6 +3,7 @@ import logging
 
 from hi.apps.common.singleton import Singleton
 
+from .alert import Alert
 from .alert_queue import AlertQueue
 from .alarm import Alarm
 from .alert_status import AlertStatusData
@@ -19,6 +20,9 @@ class AlertManager(Singleton):
     @property
     def unacknowledged_alert_list(self):
         return self._alert_queue.unacknowledged_alert_list
+
+    def get_alert( self, alert_id : str ) -> Alert:
+        return self._alert_queue.get_alert( alert_id = alert_id )
 
     def get_alert_status_data( self, last_alert_status_datetime : datetime ) -> AlertStatusData:
         
@@ -67,7 +71,7 @@ class AlertManager(Singleton):
     async def add_alarm( self, alarm : Alarm ):
         logging.debug( f'Adding Alarm: {alarm}' )
         try:
-            self._alert_queue.add_alarm()
+            self._alert_queue.add_alarm( alarm = alarm )
         except ValueError as ve:
             logging.info( str(ve) )
         return

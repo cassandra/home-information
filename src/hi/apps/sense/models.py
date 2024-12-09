@@ -80,11 +80,15 @@ class SensorHistory(models.Model):
         'Details',
         blank = True, null = True,
     )
+    image_url = models.TextField(
+        'Image URL',
+        blank = True, null = True,
+    )
     response_datetime = models.DateTimeField(
         'Timestamp',
         db_index = True,
     )
-    
+
     class Meta:
         verbose_name = 'Sensor History'
         verbose_name_plural = 'Sensor History'
@@ -93,3 +97,9 @@ class SensorHistory(models.Model):
             models.Index( fields = [ 'sensor', '-response_datetime'] ),
         ]
         
+    @property
+    def detail_attrs(self):
+        if self.details:
+            return json.loads( self.details )
+        return dict()
+    

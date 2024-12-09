@@ -1,16 +1,24 @@
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Dict, List
 
 from .enums import AlarmLevel, AlarmSource, SecurityPosture
 
 
+@dataclass
+class AlarmSourceDetails:
+
+    detail_attrs         : Dict[ str, str ]
+    image_url            : str               = None
+
+    
 @dataclass
 class Alarm:
     alarm_source         : AlarmSource
     alarm_type           : str
     alarm_level          : AlarmLevel
     title                : str
-    details              : str
+    source_details_list  : List[ AlarmSourceDetails ]
     security_posture     : SecurityPosture
     alarm_lifetime_secs  : int
     timestamp            : datetime

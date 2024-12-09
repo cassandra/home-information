@@ -1,10 +1,9 @@
 from dataclasses import dataclass
 from datetime import datetime
 import json
-from typing import Dict, List
+from typing import Dict
 
 from hi.apps.entity.enums import EntityStateValue
-from hi.apps.entity.models import Entity
 
 from hi.integrations.core.integration_key import IntegrationKey
 
@@ -16,8 +15,9 @@ class SensorResponse:
     integration_key  : IntegrationKey
     value            : str
     timestamp        : datetime
-    sensor           : Sensor         = None
-    details          : str            = None
+    sensor           : Sensor            = None
+    detail_attrs     : Dict[ str, str ]  = None
+    image_url        : str               = None
     
     def __str__(self):
         return json.dumps( self.to_dict() )
@@ -37,7 +37,8 @@ class SensorResponse:
             'value': self.value,
             'timestamp': self.timestamp.isoformat(),
             'sensor_id': self.sensor.id if self.sensor else None,
-            'details': self.details,
+            'detail_attrs': self.detail_attrs,
+            'image_url': self.image_url,
         }
 
     def to_sensor_history(self):
@@ -45,7 +46,8 @@ class SensorResponse:
             sensor = self.sensor,
             value = self.value[0:255],
             response_datetime = self.timestamp,
-            details = self.details,
+            details = json.dumps(self.detail_attrs),
+            image_url = self.image_url,
         )
         
     @classmethod
@@ -55,15 +57,17 @@ class SensorResponse:
             value = sensor_history.value,
             timestamp = sensor_history.response_datetime,
             sensor = sensor_history.sensor,
-            details = sensor_history.details,
+            detail_attrs = sensor_history.detail_attrs,
+            image_url = sensor_history.image_url,
         )
         
     @classmethod
-    def from_string( self, sensor_reading_str : str ) -> 'SensorResponse':
-        sensor_reading_dict = json.loads( sensor_reading_str )
+    def from_string( self, sensor_response_str : str ) -> 'SensorResponse':
+        sensor_response_dict = json.loads( sensor_response_str )
         return SensorResponse(
-            integration_key = IntegrationKey.from_string( sensor_reading_dict.get('key') ),
-            value = sensor_reading_dict.get('value'),
-            timestamp = datetime.fromisoformat( sensor_reading_dict.get('timestamp') ),
-            details = sensor_reading_dict.get('details'),
+            integration_key = IntegrationKey.from_string( sensor_response_dict.get('key') ),
+            value = sensor_response_dict.get('value'),
+            timestamp = datetime.fromisoformat( sensor_response_dict.get('timestamp') ),
+            detail_attrs = sensor_response_dict.get('detail_attrs'),
+            image_url = sensor_response_dict.get('image_url'),
         )

@@ -1,0 +1,30 @@
+{% extends "modals/action_done.html" %}
+{% load humanize %}
+
+{% block title_text %}
+{{ alert.title }}
+{% endblock %}
+
+{% block body %}
+<div>
+  Alert Source: {{ alert.alarm_source.label }}
+</div>
+<div>
+  Alert Level: {{ alert.alarm_level.label }}
+</div>
+<div>
+  Alert Type: {{ alert.alarm_type }}
+</div>
+<div>
+  When: {{ alert.start_datetime|naturaltime }}
+</div>
+
+<div>
+  {% for alarm in alert.alarm_list %}
+  {% if alert.alarm_count > 1 %}
+  <h5>Alarm {{ forloop.counter }}: {{ alarm.title }}</h5>
+  {% endif %}
+  {% include "alert/panes/alarm_details.html" %}
+  {% endfor %}
+</div>
+{% endblock %}

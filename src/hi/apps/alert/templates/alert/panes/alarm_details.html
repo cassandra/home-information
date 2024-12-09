@@ -1,0 +1,14 @@
+<div>
+  <div>
+    Alarmed at: {{ alarm.timestamp }}
+    {{ alarm.source_details_list|length }}
+  </div>
+  <div>
+    {% for source_details in alarm.source_details_list %}
+    {% if alarm.source_details_list|length > 1 %}
+    <h6>Source {{ forloop.counter }} Details</h6>
+    {% endif %}
+    {% include "alert/panes/alarm_source_details.html" %}
+    {% endfor %}
+  </div>
+</div>

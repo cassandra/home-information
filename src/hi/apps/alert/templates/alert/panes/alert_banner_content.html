@@ -18,7 +18,7 @@
       <form action="{% url 'alert_acknowledge' alert_id=alert.id %}" method="post"
 	    data-async="true">
 	{% csrf_token %}
-	<input type="submit" class="btn btn-danger" name="action" value="Dismiss">
+	<input type="submit" class="btn btn-secondary" name="action" value="Dismiss">
       </form>
     </div>
   </div>

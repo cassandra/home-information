@@ -32,5 +32,21 @@ class AlertAcknowledgeView( View ):
 
 
 class AlertDetailsView( HiModalView ):
-    pass
+
+    def get_template_name( self ) -> str:
+        return 'alert/modals/alert_details.html'
+
+    def get( self, request, *args, **kwargs ):
+        alert_id = kwargs.get( 'alert_id' )
+        alert_manager = AlertManager()
+        try:
+            alert = alert_manager.get_alert( alert_id = alert_id )
+        except KeyError:
+            raise Http404( 'Unknown alert.' )
+
+        context = {
+            'alert': alert,
+        }
+        return self.modal_response( request, context )
+        
 

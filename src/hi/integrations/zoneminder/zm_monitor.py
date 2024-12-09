@@ -213,6 +213,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
         return sensor_response_map
       
     def _create_movement_active_sensor_response( self, zm_event : ZmEvent ):
+        
         return SensorResponse(
             integration_key = self._zm_manager._to_integration_key(
                 prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
@@ -220,7 +221,8 @@ class ZoneMinderMonitor( PeriodicMonitor ):
             ),
             value = str(EntityStateValue.ACTIVE),
             timestamp = zm_event.start_datetime,
-            details = SensorResponseHelper.event_to_details( zm_event = zm_event ),
+            detail_attrs = SensorResponseHelper.event_to_detail_attrs( zm_event = zm_event ),
+            image_url = self._zm_manager.get_event_video_stream_url( event_id = zm_event.event_id ),
         )
 
     def _create_movement_idle_sensor_response( self, zm_event : ZmEvent ):

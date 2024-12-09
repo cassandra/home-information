@@ -1,4 +1,5 @@
 import json
+from typing import Dict
 
 from .zm_manager import ZoneMinderManager
 from .zm_models import ZmEvent, ZmResponseDetails, ZmEventDetails
@@ -7,8 +8,8 @@ from .zm_models import ZmEvent, ZmResponseDetails, ZmEventDetails
 class SensorResponseHelper:
 
     @classmethod
-    def event_to_details( cls, zm_event : ZmEvent ) -> str:
-        event_details = {
+    def event_to_detail_attrs( cls, zm_event : ZmEvent ) -> Dict[ str, str ]:
+        return {
             'event_id': zm_event.event_id,
             'notes': zm_event.notes,
             'duration_secs': zm_event.duration_secs,
@@ -17,7 +18,6 @@ class SensorResponseHelper:
             'score': zm_event.score,
             'start_datetime': zm_event.start_datetime.isoformat(),
         }
-        return json.dumps( event_details )
  
     @classmethod
     def from_details( cls, details : str ) -> ZmResponseDetails:

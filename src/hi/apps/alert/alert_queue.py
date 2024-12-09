@@ -53,6 +53,13 @@ class AlertQueue:
     def unacknowledged_alert_list(self):
         return [ x for x in self._alert_list if not x.is_acknowledged ]
     
+    def get_alert( self, alert_id : str ) -> Alert:
+        for alert in self._alert_list:
+            if alert.id == alert_id:
+                return alert
+            continue
+        raise KeyError( f'Alert not found for {alert_id}' )
+        
     def get_most_important_alert( self, since_datetime : datetime = None ):
         """
         Returns the active alert that has the highest priority and which was

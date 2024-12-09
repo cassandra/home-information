@@ -34,10 +34,6 @@ class Alert:
         return self._id
     
     @property
-    def alarm_list(self) -> List[ Alarm ]:
-        return list( self._latest_alarms )
-
-    @property
     def start_datetime(self) -> datetime:
         return self._start_datetime
 
@@ -50,10 +46,6 @@ class Alert:
         return self._first_alarm.audio_signal
     
     @property
-    def alarm_level(self) -> AlarmLevel:
-        return self._first_alarm.alarm_level
-
-    @property
     def alarm_source(self) -> AlarmSource:
         return self._first_alarm.alarm_source
 
@@ -62,8 +54,16 @@ class Alert:
         return self._first_alarm.alarm_type
 
     @property
+    def alarm_level(self) -> AlarmLevel:
+        return self._first_alarm.alarm_level
+
+    @property
     def alarm_count(self) -> int:
         return len( self._latest_alarms )
+
+    @property
+    def alarm_list(self) -> List[ Alarm ]:
+        return list( self._latest_alarms )
 
     @property
     def title(self) -> str:

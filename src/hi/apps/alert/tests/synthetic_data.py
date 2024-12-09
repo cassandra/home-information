@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import random
 from typing import List
 
-from hi.apps.alert.alarm import Alarm
+from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
 from hi.apps.alert.alert import Alert
 from hi.apps.alert.alert_status import AlertStatusData
 from hi.apps.alert.enums import AlarmLevel, AlarmSource, SecurityPosture
@@ -69,7 +69,12 @@ class AlertSyntheticData:
                 alarm_type = alarm_type,
                 alarm_level= alarm_level,
                 title = alarm_title,
-                details = f'Details for {alarm_title}. Seed = {seed} ',
+                source_details_list = [
+                    AlarmSourceDetails(
+                        detail_attrs = { 'Notes': f'Details for {alarm_title}. Seed = {seed} ' },
+                        image_url = '/static/img/hi-icon-196x196.png',
+                    ),
+                ],
                 security_posture = security_posture,
                 alarm_lifetime_secs = alarm_lifetime_secs,
                 timestamp = alarm_timestamp,
@@ -86,7 +91,12 @@ class AlertSyntheticData:
                     alarm_type = alarm_type,
                     alarm_level= alarm_level,
                     title = alarm_title,
-                    details = f'Details for {alarm_title}. Seed = {seed} ',
+                    source_details_list = [
+                        AlarmSourceDetails(
+                            detail_attrs = { 'Notes': f'Details for {alarm_title}. Seed = {seed} ' },
+                            image_url = '/static/img/hi-icon-196x196.png',
+                        ),
+                    ],
                     security_posture = security_posture,
                     alarm_lifetime_secs = alarm_lifetime_secs,
                     timestamp = alarm_timestamp,

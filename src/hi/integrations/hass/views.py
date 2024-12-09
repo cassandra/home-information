@@ -15,7 +15,6 @@ from hi.integrations.core.views import IntegrationPageView
 from hi.hi_async_view import HiModalView
 
 from .hass_metadata import HassMetaData
-from .hass_manager import HassManager
 from .hass_sync import HassSynchronizer
 
 
