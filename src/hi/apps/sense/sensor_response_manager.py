@@ -170,6 +170,10 @@ class SensorResponseManager( Singleton ):
                 sensor_response.sensor = await sync_to_async( self._get_sensor )(
                     integration_key = sensor_response.integration_key,
                 )
+                if sensor_response.detail_attrs:
+                    sensor_response.detail_attrs['Sensor Name'] = sensor_response.sensor.name
+                else:
+                    sensor_response.detail_attrs = { 'Sensor Name': sensor_response.sensor.name }
             continue
         return
     

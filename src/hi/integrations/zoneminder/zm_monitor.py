@@ -10,7 +10,6 @@ from hi.apps.sense.sensor_history_manager import SensorHistoryManager
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
 from hi.apps.sense.transient_models import SensorResponse
 
-from .sensor_response_helper import SensorResponseHelper
 from .zm_models import ZmEvent
 from .zm_manager import ZoneMinderManager
 
@@ -221,7 +220,7 @@ class ZoneMinderMonitor( PeriodicMonitor ):
             ),
             value = str(EntityStateValue.ACTIVE),
             timestamp = zm_event.start_datetime,
-            detail_attrs = SensorResponseHelper.event_to_detail_attrs( zm_event = zm_event ),
+            detail_attrs = zm_event.to_detail_attrs(),
             image_url = self._zm_manager.get_event_video_stream_url( event_id = zm_event.event_id ),
         )
 

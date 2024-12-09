@@ -159,7 +159,7 @@ class HassSyncView( HiModalView ):
         return self.modal_response( request, context )
 
     
-class SensorResponseDetailsView( HiModalView ):
+class SyensorResponseDetailsView( HiModalView ):
 
     def get_template_name( self ) -> str:
         return 'hass/modals/sensor_response_details.html'

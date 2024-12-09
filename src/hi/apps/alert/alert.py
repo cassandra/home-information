@@ -83,7 +83,7 @@ class Alert:
         return
      
     def is_matching_alarm( self, alarm : Alarm ) -> bool:
-        return self._first_alarm.sSignature == alarm.signature
+        return self._first_alarm.signature == alarm.signature
 
     @property
     def alert_priority(self) -> int:

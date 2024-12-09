@@ -31,11 +31,3 @@ class ZoneMinderGateway( IntegrationGateway ):
     
     def disable_modal_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
         return views.ZmDisableView().get( request )
-
-    def sensor_response_details_view( self,
-                                      request      : HttpRequest,
-                                      details_str  : str ) -> HttpResponse:
-        return views.SensorResponseDetailsView().get(
-            request,
-            details_str = details_str,
-        )

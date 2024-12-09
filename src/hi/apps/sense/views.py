@@ -10,7 +10,7 @@ from .models import SensorHistory
 from .view_mixin import SenseViewMixin
 
 logger = logging.getLogger(__name__)
-
+        
 
 class SensorHistoryView( HiModalView, SenseViewMixin ):
 
@@ -36,5 +36,18 @@ class SensorHistoryView( HiModalView, SenseViewMixin ):
             'sensor': sensor,
             'sensor_history_list': sensor_history_list,
             'pagination': pagination,
+        }
+        return self.modal_response( request, context )
+
+
+class SensorHistoryDetailsView( HiModalView, SenseViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'sense/modals/sensor_history_details.html'
+    
+    def get(self, request, *args, **kwargs):
+        sensor_history = self.get_sensor_history( request, *args, **kwargs )
+        context = {
+            'sensor_history': sensor_history,
         }
         return self.modal_response( request, context )

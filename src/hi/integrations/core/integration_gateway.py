@@ -27,9 +27,3 @@ class IntegrationGateway:
     def disable_modal_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
         # Should return a modal via antinode.modal_from_template() (called async)
         raise NotImplementedError('Subclasses must override this method')
-    
-    def sensor_response_details_view( self,
-                                      request      : HttpRequest,
-                                      details_str  : str ) -> HttpResponse:
-        # Should return a modal via antinode.modal_from_template() (called async)
-        raise NotImplementedError('Subclasses must override this method')

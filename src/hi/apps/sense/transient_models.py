@@ -42,11 +42,15 @@ class SensorResponse:
         }
 
     def to_sensor_history(self):
+        if self.detail_attrs:
+            details = json.dumps(self.detail_attrs)
+        else:
+            details = None
         return SensorHistory(
             sensor = self.sensor,
             value = self.value[0:255],
             response_datetime = self.timestamp,
-            details = json.dumps(self.detail_attrs),
+            details = details,
             image_url = self.image_url,
         )
         

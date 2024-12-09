@@ -109,28 +109,3 @@ class IntegrationActionView( View ):
             error_message = str(e)
 
         raise BadRequest( error_message )
-
-    
-class SensorResponseDetailsView( View ):
-
-    def get(self, request, *args, **kwargs):
-        sensor_history = self.get_sensor_history( request, *args, **kwargs )
-        integration_gateway = IntegrationFactory().get_integration_gateway(
-            integration_id = sensor_history.sensor.integration_id,
-        )
-        return integration_gateway.sensor_response_details_view(
-            request = request,
-            details_str = sensor_history.details,
-        )
-
-    def get_sensor_history( self, request, *args, **kwargs ) -> SensorHistory:
-        """ Assumes there is a required id in kwargs """
-        try:
-            sensor_history_id = int( kwargs.get( 'sensor_history_id' ))
-        except (TypeError, ValueError):
-            raise BadRequest( 'Invalid sensor history id.' )
-        try:
-            return SensorHistory.objects.select_related('sensor').get( id = sensor_history_id )
-        except SensorHistory.DoesNotExist:
-            raise Http404( request )
-        

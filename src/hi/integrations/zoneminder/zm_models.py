@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Dict
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 
@@ -98,22 +99,14 @@ class ZmEvent:
         if not zm_response_time:
             return None
         return datetimeproxy.iso_naive_to_datetime_utc( zm_response_time, tzname )
-
-
-@dataclass
-class ZmResponseDetails:
-    """ Base class for all SensorResponse detail objects """
-    pass
-
-
-@dataclass
-class ZmEventDetails( ZmResponseDetails ):
-    event_id          : int
-    notes             : str
-    duration_secs     : int
-    total_frames      : int
-    alarmed_frames    : int
-    score             : int
-    video_stream_url  : str
-    start_datetime    : str
     
+    def to_detail_attrs( self ) -> Dict[ str, str ]:
+        return {
+            'Event Id': self.event_id,
+            'Start Time': self.start_datetime.isoformat(),
+            'Score': self.score,
+            'Duration (secs)': self.duration_secs,
+            'Alarmed Frames': self.alarmed_frame_count,
+            'Total Frames': self.total_frame_count,
+            'Notes': self.notes,
+        }

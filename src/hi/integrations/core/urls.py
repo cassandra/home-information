@@ -21,11 +21,4 @@ urlpatterns = [
     re_path( r'^zm/', include('hi.integrations.zoneminder.urls' )),
 
     re_path( r'^hass/', include('hi.integrations.hass.urls' )),
-
-
-    re_path( r'^sensor/response/details/(?P<sensor_history_id>\d+)$', 
-             views.SensorResponseDetailsView.as_view(), 
-             name='integration_sensor_response_details'),
-
-    
 ]

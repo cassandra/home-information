@@ -1,3 +1,5 @@
+import json
+
 from django.db import models
 
 from hi.apps.entity.models import EntityState
