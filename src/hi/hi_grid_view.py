@@ -15,6 +15,7 @@ from hi.apps.location.edit.views import LocationViewManageItemsView
 from hi.apps.collection.edit.views import CollectionManageItemsView
 from hi.apps.collection.models import Collection
 from hi.apps.location.models import Location
+from hi.apps.security.security_manager import SecurityManager
 
 from hi.constants import DIVID
 from hi.enums import ViewType
@@ -71,7 +72,10 @@ class HiGridView(View):
 
     def get_bottom_template_context( self, request, *args, **kwargs ):
         collection_list = list( Collection.objects.all().order_by( 'order_id' ))
-        return { 'collection_list': collection_list }
+        return {
+            'security_status_data': SecurityManager().get_security_status_data(),
+            'collection_list': collection_list,
+        }
 
     def get(self, request, *args, **kwargs):
         if is_ajax( request ):

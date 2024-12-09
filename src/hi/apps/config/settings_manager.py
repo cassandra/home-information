@@ -11,7 +11,9 @@ from hi.apps.attribute.enums import AttributeType
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton import Singleton
 
-from .enums import AudioFile, AudioSignal, SubsystemType, SubsystemAttributeType
+from .audio_file import AudioFile
+from .audio_signal import AudioSignal
+from .enums import SubsystemType, SubsystemAttributeType
 from .models import Subsystem, SubsystemAttribute
 
 logger = logging.getLogger(__name__)

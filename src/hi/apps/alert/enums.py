@@ -1,45 +1,28 @@
 from hi.apps.common.enums import LabeledEnum
-from hi.apps.config.enums import AudioSignal
 
 
-class AlarmSource(LabeledEnum):
+class AlarmSource( LabeledEnum ):
     
     EVENT          = ( 'Event'      , '' )
 
     
-class AlarmLevel(LabeledEnum):
+class AlarmLevel( LabeledEnum ):
     
-    NONE          = ( 'None'      , ''               , 0 , None )
-    INFO          = ( 'Info'      , ''              , 10 , AudioSignal.INFO )
-    WARNING       = ( 'Warning'   , ''             , 100 , AudioSignal.WARNING )
-    CRITICAL      = ( 'Critical'  , ''            , 1000 , AudioSignal.CRITICAL )
+    NONE          = ( 'None'      , ''               , 0 )
+    INFO          = ( 'Info'      , ''              , 10 )
+    WARNING       = ( 'Warning'   , ''             , 100 )
+    CRITICAL      = ( 'Critical'  , ''            , 1000 )
 
     def __init__( self,
                   label             : str,
                   description       : str,
-                  priority          : int,
-                  audio_signal      : AudioSignal ):
+                  priority          : int ):
         super().__init__( label, description )
         self.priority = priority
-        self.audio_signal = audio_signal
         return
 
-    
-class SecurityPosture(LabeledEnum):
-    """
-    This is the overall security level setting for security status monitoring
-    that dictates what type of security events are relevant.
-    """
-    
-    UNKNOWN   = ( 'Unknown'  , '' )
-    DISABLED  = ( 'Disabled' , '' )
-    HOME      = ( 'Home'     , '' )
-    NIGHT     = ( 'Night'    , '' )
-    AWAY      = ( 'Away'     , '' )
-    ERROR     = ( 'Error'    , '' )
 
-
-class AlertState(LabeledEnum):
+class AlertState( LabeledEnum ):
 
     ERROR         = ( 'Error'           , ''   , -12 )
     UNKNOWN       = ( 'Unknown'         , ''    , -3 )

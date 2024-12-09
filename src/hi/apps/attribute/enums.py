@@ -13,11 +13,12 @@ class AttributeType(LabeledEnum):
     
 class AttributeValueType(LabeledEnum):
 
-    TEXT      = ('Text'     , '' )
-    FILE      = ('File'     , '' )  # relative filename of MEDIA_ROOT
-    SECRET    = ('Secret'   , '' )
-    ENUM      = ('Enum'     , '' )
-    BOOLEAN   = ('Boolean'  , '' )
+    TEXT        = ('Text'     , '' )
+    FILE        = ('File'     , '' )  # relative filename of MEDIA_ROOT
+    SECRET      = ('Secret'   , '' )
+    ENUM        = ('Enum'     , '' )
+    BOOLEAN     = ('Boolean'  , '' )
+    INTEGER     = ('Integer'  , '' )
     
     @classmethod
     def default(cls):
@@ -38,6 +39,10 @@ class AttributeValueType(LabeledEnum):
     @property
     def is_enum(self):
         return bool( self == AttributeValueType.ENUM )
+
+    @property
+    def is_integer(self):
+        return bool( self == AttributeValueType.INTEGER )
 
     @property
     def is_boolean(self):

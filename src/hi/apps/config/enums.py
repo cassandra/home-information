@@ -1,6 +1,9 @@
+import json
+
 from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.common.enums import LabeledEnum
-from hi.apps.common.utils import get_absolute_static_path
+from hi.apps.config.audio_file import AudioFile
+from hi.apps.security.enums import SecurityState
 
 
 class ConfigPageType(LabeledEnum):
@@ -26,35 +29,6 @@ class ConfigPageType(LabeledEnum):
         return ConfigPageType.SETTINGS
 
 
-class AudioFile(LabeledEnum):
-    # Predefined sounds in statically served files.
-
-    BICYCLE_BELL       = ( 'Bicycle Bell'      , '' , 'bicycle-bell.wav' )
-    BOING_SPRING       = ( 'Boing Spring'      , '' , 'boing-spring.wav' )
-    BUZZER             = ( 'Buzzer'            , '' , 'buzzer.wav' )
-    CHIME              = ( 'Chime'             , '' , 'chime.wav' )
-    CRITICAL           = ( 'Critical'          , '' , 'critical.wav' )
-    FINAL_REVEAL_BELL  = ( 'Final Reveal Bell' , '' , 'final-reveal-bell.wav' )
-    INDUSTRIAL_ALARM   = ( 'Industrial Alarm'  , '' , 'industrial-alarm.wav' )
-    INFO               = ( 'Info'              , '' , 'info.wav' )
-    STORE_DOOR_CHIME   = ( 'Store Door Chime'  , '' , 'store-door-chime.wav' )
-    TORNADO_SIREN      = ( 'Tornado Siren'     , '' , 'tornado-siren.wav' )
-    WARNING            = ( 'Warning'           , '' , 'warning.wav' )
-    WEATHER_ALERT      = ( 'Weather Alert'     , '' , 'weather-alert.wav' )
-
-    @property
-    def url(self):
-        return get_absolute_static_path( f'audio/{self.base_filename}' )
-    
-    def __init__( self,
-                  label             : str,
-                  description       : str,
-                  base_filename     : str ):
-        super().__init__( label, description )
-        self.base_filename = base_filename
-        return
-
-    
 class SubsystemType(LabeledEnum):
 
     LOCALE     = ('Locale'     , '' )
@@ -139,6 +113,56 @@ class SubsystemAttributeType(LabeledEnum):
         False,
         AudioFile.CRITICAL,
     )
+    ALERTS_DAY_START = (
+        'Security Day Start',
+        'Determines what time of day to switch to the "Day" security posture.',
+        SubsystemType.ALERTS,
+        AttributeValueType.ENUM,
+        'hi.datetime.time-of-day',
+        True,
+        True,
+        '08:00',
+    )
+    ALERTS_NIGHT_START = (
+        'Security Night Start',
+        'Determines what time of day to switch to the "Night" security posture.',
+        SubsystemType.ALERTS,
+        AttributeValueType.ENUM,
+        'hi.datetime.time-of-day',
+        True,
+        True,
+        '23:00',
+    )
+    ALERTS_AWAY_DELAY_MINS = (
+        'Away Delay Time (mins)',
+        'Amount of time to ignore alerts when switching to "Away" security posture.',
+        SubsystemType.ALERTS,
+        AttributeValueType.INTEGER,
+        '',
+        True,
+        True,
+        '5',
+    )
+    ALERTS_SNOOZE_DELAY_MINS = (
+        'Snooze Delay Time (mins)',
+        'Amount of time to ignore alerts when "Snooze" option is chosen.',
+        SubsystemType.ALERTS,
+        AttributeValueType.INTEGER,
+        '',
+        True,
+        True,
+        '5',
+    )
+    ALERTS_STARTUP_SECURITY_STATE = (
+        'Startup Security State',
+        'Security state to enter when system starts.',
+        SubsystemType.ALERTS,
+        AttributeValueType.ENUM,
+        'hi.security.state',
+        True,
+        True,
+        SecurityState.default_value(),
+    )
     
     def __init__( self,
                   label             : str,
@@ -156,19 +180,4 @@ class SubsystemAttributeType(LabeledEnum):
         self.is_editable = is_editable
         self.is_required = is_required
         self.initial_value = initial_value
-        return
-
-    
-class AudioSignal(LabeledEnum):
-
-    INFO      = ( 'Info'     , '', SubsystemAttributeType.INFO_AUDIO_FILE )
-    WARNING   = ( 'Warning'  , '', SubsystemAttributeType.WARNING_AUDIO_FILE)
-    CRITICAL  = ( 'Critical' , '', SubsystemAttributeType.CRITICAL_AUDIO_FILE )
-    
-    def __init__( self,
-                  label                     : str,
-                  description               : str,
-                  subsystem_attribute_type  : str ):
-        super().__init__( label, description )
-        self.subsystem_attribute_type = subsystem_attribute_type
         return

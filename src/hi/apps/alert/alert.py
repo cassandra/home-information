@@ -4,7 +4,7 @@ from typing import List
 import uuid
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.config.enums import AudioSignal
+from hi.apps.config.audio_signal import AudioSignal
 
 from .alarm import Alarm
 from .enums import AlarmLevel, AlarmSource

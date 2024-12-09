@@ -5,8 +5,9 @@ from typing import List
 from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
 from hi.apps.alert.alert import Alert
 from hi.apps.alert.alert_status import AlertStatusData
-from hi.apps.alert.enums import AlarmLevel, AlarmSource, SecurityPosture
+from hi.apps.alert.enums import AlarmLevel, AlarmSource
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.security.enums import SecurityLevel
 
 
 class AlertSyntheticData:
@@ -60,7 +61,7 @@ class AlertSyntheticData:
             alarm_level = random_impl.choice([ AlarmLevel.INFO,
                                                AlarmLevel.WARNING,
                                                AlarmLevel.CRITICAL ])
-            security_posture = random_impl.choice( list( SecurityPosture ))
+            security_level = random_impl.choice( list( SecurityLevel ))
             alarm_idx = 0
             alarm_title = f'Alarm-{alert_idx}-{alarm_idx}'
             alarm_timestamp = reference_datetime - timedelta( seconds = alarm_time_offsets[alarm_idx] )
@@ -75,7 +76,7 @@ class AlertSyntheticData:
                         image_url = '/static/img/hi-icon-196x196.png',
                     ),
                 ],
-                security_posture = security_posture,
+                security_level = security_level,
                 alarm_lifetime_secs = alarm_lifetime_secs,
                 timestamp = alarm_timestamp,
             )
@@ -97,7 +98,7 @@ class AlertSyntheticData:
                             image_url = '/static/img/hi-icon-196x196.png',
                         ),
                     ],
-                    security_posture = security_posture,
+                    security_level = security_level,
                     alarm_lifetime_secs = alarm_lifetime_secs,
                     timestamp = alarm_timestamp,
                 )

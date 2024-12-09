@@ -1,16 +1,15 @@
-<div class="h3">Console</div>
 <div id="hi-audio-state-toggle">
   <button id="hi-audio-state-enabled"
 	  role="button"
 	  style="display: none;"
-	  class="btn btn-success" 
+	  class="btn btn-success btn-control" 
 	  onclick="Hi.settings.disableAudio() && $(this).hide() && $('#hi-audio-state-disabled').show();"  
 	  title="Sounds enabled. Click to Disable">
     Sounds: On
   </button>
   <button id="hi-audio-state-disabled" 
 	  role="button"
-	  class="btn btn-warning"
+	  class="btn btn-warning btn-control"
 	  onclick="Hi.settings.enableAudio() && $(this).hide() && $('#hi-audio-state-enabled').show();"  
 	  title="Sounds disabled. Click to enable">
     Sounds: Off

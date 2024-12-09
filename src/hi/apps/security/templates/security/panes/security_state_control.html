@@ -1,0 +1,26 @@
+<div id="hi-security-state-control">
+  <div class="dropdown">
+    <button class="btn btn-secondary btn-control dropdown-toggle" type="button"
+	    id="hi-location-menu" data-toggle="dropdown">
+      Security: {{ security_status_data.current_security_state.label }}
+      <span class="caret"></span>
+    </button>
+    <div class="dropdown-menu"
+	 role="menu" aria-labelledby="hi-location-menu">
+      {% for value, label in security_status_data.security_state_action_choices %}
+      {% if forloop.counter > 1 %}
+      <div class="dropdown-divider"></div>
+      {% endif %}
+      <a role="menuitem" class="dropdown-item plain"
+	 href="{% url 'security_state_action' action=value %} "
+	 data-async="#hi-security-state-control" data-mode="replace">
+	{{ label }}
+      </a>
+      {% empty %}
+      <div class="dropdown-item alert alert-secondary text-center">
+	<em>No security states.</em>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

@@ -1,7 +1,7 @@
 import json
 from typing import Dict
 
-from hi.apps.alert.enums import SecurityPosture, AlarmLevel
+from hi.apps.alert.enums import AlarmLevel
 from hi.apps.control.enums import ControllerType
 from hi.apps.control.models import Controller
 from hi.apps.entity.enums import (
@@ -13,6 +13,7 @@ from hi.apps.entity.enums import (
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.event.enums import EventType
 from hi.apps.event.models import AlarmAction, EventClause, EventDefinition
+from hi.apps.security.enums import SecurityLevel
 from hi.apps.sense.enums import SensorType
 from hi.apps.sense.models import Sensor
 
@@ -367,10 +368,10 @@ class HiModelHelper:
             event_type = EventType.INFORMATION,
             entity_state = entity_state,
             value = EntityStateValue.DISCONNECTED,
-            posture_to_level = {
-                SecurityPosture.AWAY: AlarmLevel.WARNING,
-                SecurityPosture.NIGHT: AlarmLevel.WARNING,
-                SecurityPosture.HOME: AlarmLevel.WARNING,
+            security_to_alarm_level = {
+                SecurityLevel.AWAY: AlarmLevel.WARNING,
+                SecurityLevel.NIGHT: AlarmLevel.WARNING,
+                SecurityLevel.HOME: AlarmLevel.WARNING,
             },
             event_window_secs = cls.DEFAULT_CONNECTIVITY_EVENT_WINDOW_SECS,
             dedupe_window_secs = cls.DEFAULT_CONNECTIVITY_DEDUPE_WINDOW_SECS,
@@ -390,10 +391,10 @@ class HiModelHelper:
             event_type = EventType.SECURITY,
             entity_state = entity_state,
             value = EntityStateValue.OPEN,
-            posture_to_level = {
-                SecurityPosture.AWAY: AlarmLevel.CRITICAL,
-                SecurityPosture.NIGHT: AlarmLevel.CRITICAL,
-                SecurityPosture.HOME: AlarmLevel.INFO,
+            security_to_alarm_level = {
+                SecurityLevel.AWAY: AlarmLevel.CRITICAL,
+                SecurityLevel.NIGHT: AlarmLevel.CRITICAL,
+                SecurityLevel.HOME: AlarmLevel.INFO,
             },
             event_window_secs = cls.DEFAULT_OPEN_CLOSE_EVENT_WINDOW_SECS,
             dedupe_window_secs = cls.DEFAULT_OPEN_CLOSE_DEDUPE_WINDOW_SECS,
@@ -413,10 +414,10 @@ class HiModelHelper:
             event_type = EventType.SECURITY,
             entity_state = entity_state,
             value = EntityStateValue.ACTIVE,
-            posture_to_level = {
-                SecurityPosture.AWAY: AlarmLevel.CRITICAL,
-                SecurityPosture.NIGHT: AlarmLevel.CRITICAL,
-                SecurityPosture.HOME: AlarmLevel.INFO,
+            security_to_alarm_level = {
+                SecurityLevel.AWAY: AlarmLevel.CRITICAL,
+                SecurityLevel.NIGHT: AlarmLevel.CRITICAL,
+                SecurityLevel.HOME: AlarmLevel.INFO,
             },
             event_window_secs = cls.DEFAULT_MOVEMENT_EVENT_WINDOW_SECS,
             dedupe_window_secs = cls.DEFAULT_MOVEMENT_DEDUPE_WINDOW_SECS,
@@ -436,10 +437,10 @@ class HiModelHelper:
             event_type = EventType.MAINTENANCE,
             entity_state = entity_state,
             value = EntityStateValue.LOW,
-            posture_to_level = {
-                SecurityPosture.AWAY: AlarmLevel.INFO,
-                SecurityPosture.NIGHT: AlarmLevel.INFO,
-                SecurityPosture.HOME: AlarmLevel.INFO,
+            security_to_alarm_level = {
+                SecurityLevel.AWAY: AlarmLevel.INFO,
+                SecurityLevel.NIGHT: AlarmLevel.INFO,
+                SecurityLevel.HOME: AlarmLevel.INFO,
             },
             event_window_secs = cls.DEFAULT_BATTERY_EVENT_WINDOW_SECS,
             dedupe_window_secs = cls.DEFAULT_BATTERY_DEDUPE_WINDOW_SECS,
@@ -450,15 +451,15 @@ class HiModelHelper:
     @classmethod
     def create_simple_alarm_event_definition(
             cls,
-            name                 : str,
-            event_type           : EventType,
-            entity_state         : EntityState,
-            value                : str,
-            posture_to_level     : Dict[ SecurityPosture, AlarmLevel ],
-            event_window_secs    : int,
-            dedupe_window_secs   : int,
-            alarm_lifetime_secs  : int,
-            integration_key      : IntegrationKey  = None ) -> EventDefinition:
+            name                     : str,
+            event_type               : EventType,
+            entity_state             : EntityState,
+            value                    : str,
+            security_to_alarm_level  : Dict[ SecurityLevel, AlarmLevel ],
+            event_window_secs        : int,
+            dedupe_window_secs       : int,
+            alarm_lifetime_secs      : int,
+            integration_key          : IntegrationKey  = None ) -> EventDefinition:
 
         event_definition = EventDefinition(
             name = name,
@@ -475,10 +476,10 @@ class HiModelHelper:
             entity_state = entity_state,
             value = value,
         )
-        for security_posture, alarm_level in posture_to_level.items():
+        for security_level, alarm_level in security_to_alarm_level.items():
             _ = AlarmAction.objects.create(
                 event_definition = event_definition,
-                security_posture_str = str(security_posture),
+                security_level_str = str(security_level),
                 alarm_level_str = str(alarm_level),
                 alarm_lifetime_secs = alarm_lifetime_secs,
             )

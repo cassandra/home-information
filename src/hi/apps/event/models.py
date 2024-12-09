@@ -1,8 +1,9 @@
 from django.db import models
 
-from hi.apps.alert.enums import AlarmLevel, SecurityPosture
+from hi.apps.alert.enums import AlarmLevel
 from hi.apps.control.models import Controller
 from hi.apps.entity.models import EntityState
+from hi.apps.security.enums import SecurityLevel
 
 from hi.integrations.core.models import IntegrationKeyModel
 
@@ -106,8 +107,8 @@ class AlarmAction( models.Model ):
         verbose_name = 'Event Definition',
         on_delete = models.CASCADE,
     )
-    security_posture_str = models.CharField(
-        'Security Posture',
+    security_level_str = models.CharField(
+        'Security Level',
         max_length = 32,
         null = False, blank = False,
     )
@@ -141,12 +142,12 @@ class AlarmAction( models.Model ):
         verbose_name_plural = 'Alarm Actions'
 
     @property
-    def security_posture(self):
-        return SecurityPosture.from_name_safe( self.security_posture_str )
+    def security_level(self):
+        return SecurityLevel.from_name_safe( self.security_level_str )
 
-    @security_posture.setter
-    def security_posture( self, security_posture : SecurityPosture ):
-        self.security_posture_str = str(security_posture)
+    @security_level.setter
+    def security_level( self, security_level : SecurityLevel ):
+        self.security_level_str = str(security_level)
         return
 
     @property

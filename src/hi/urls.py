@@ -38,6 +38,7 @@ urlpatterns = [
     re_path( r'^control/', include('hi.apps.control.urls' )),
     re_path( r'^event/', include('hi.apps.event.urls' )),
     re_path( r'^alert/', include('hi.apps.alert.urls' )),
+    re_path( r'^security/', include('hi.apps.security.urls' )),
 
     # Custom error pages
     re_path( r'^400.html$', views.bad_request_response, name='bad_request' ),

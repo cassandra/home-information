@@ -56,7 +56,7 @@ class Event:
             alarm_level = alarm_action.alarm_level,
             title = self.event_definition.name,
             source_details_list = source_details_list,
-            security_posture = alarm_action.security_posture,
+            security_level = alarm_action.security_level,
             alarm_lifetime_secs = alarm_action.alarm_lifetime_secs,
             timestamp = self.timestamp,
         )

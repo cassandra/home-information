@@ -2,13 +2,14 @@ import logging
 
 from django import forms
 
-from hi.apps.alert.enums import AlarmLevel, SecurityPosture
+from hi.apps.alert.enums import AlarmLevel
 from hi.apps.control.models import Controller
 from hi.apps.common.forms import CustomBaseFormSet
 from hi.apps.entity.edit.forms import EntityStateSelectModelFormMixin
 from hi.apps.entity.models import EntityState
 from hi.apps.event.enums import EventType
 import hi.apps.event.models as models
+from hi.apps.security.enums import SecurityLevel
 
 logger = logging.getLogger(__name__)
 
@@ -59,15 +60,15 @@ class AlarmActionForm( forms.ModelForm ):
     class Meta:
         model = models.AlarmAction
         fields = (
-            'security_posture_str',
+            'security_level_str',
             'alarm_level_str',
             'alarm_lifetime_secs',
         )
 
-    security_posture_str = forms.ChoiceField(
-        label = 'Security Posture',
-        choices = SecurityPosture.choices,
-        initial = SecurityPosture.default_value(),
+    security_level_str = forms.ChoiceField(
+        label = 'Security Level',
+        choices = SecurityLevel.non_off_choices,
+        initial = SecurityLevel.default_value(),
         required = True,
         widget = forms.Select( attrs = { 'class' : 'custom-select' } ),
     )

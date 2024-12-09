@@ -2,6 +2,24 @@
   <div class="d-flex justify-content-between">
     {% include "collection/panes/collection_buttons.html" %}
     <div class="d-flex justify-content-end">
+	{% include "security/panes/security_state_control.html" %}
+      <div>
+	{% include "config/panes/audio_control.html" %}
+      </div>
+      <div>
+	<a href="#"
+	   class="btn btn-secondary btn-control" role="button"
+	   data-async="true" >
+	  SLEEP
+	</a>
+      </div>
+      <div>
+	<a href="#"
+	   class="btn btn-secondary btn-control" role="button"
+	   data-async="true" >
+	  LOCK
+	</a>
+      </div>
       <div>
 	<a href="{% url 'event_history' %}"
 	   class="btn btn-secondary btn-control" role="button"

@@ -1,3 +1,10 @@
+TIME_OF_DAY_CHOICES = [
+    ( f'{hour:02}:{minute:02}',
+      f'{hour:02}:{minute:02} ({(hour % 12 or 12):02}:{minute:02} {"a.m." if hour < 12 else "p.m."})' )
+    for hour in range(24) for minute in range(0, 60, 15)
+]
+
+
 TIMEZONE_NAME_LIST = [
     'UTC',
     'America/New_York',

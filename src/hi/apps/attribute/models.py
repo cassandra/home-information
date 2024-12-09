@@ -4,7 +4,7 @@ import logging
 from django.core.files.storage import default_storage
 from django.db import models
 
-from hi.apps.attribute.attribute_enums import AttributeEnums
+from hi.apps.attribute.enum_attributes import PredefinedEnumAttributes
 from hi.apps.common.file_utils import generate_unique_filename
 
 from hi.integrations.core.integration_key import IntegrationKey
@@ -119,7 +119,7 @@ class AttributeModel(models.Model):
 
     def choices(self):
         # First check predefined ids
-        choice_list = AttributeEnums.get_choices( self.value_range_str )
+        choice_list = PredefinedEnumAttributes.get_choices( self.value_range_str )
         if choice_list:
             return choice_list
         if not self.value_range_str:
@@ -130,7 +130,8 @@ class AttributeModel(models.Model):
                 return [ ( k, v ) for k, v in value_range.items() ]
             if isinstance( value_range, list ):
                 return [ ( x, x ) for x in value_range ]
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            logger.error( f'Bad value range for attribute {self.name}: {e}' )
             pass
         return dict()
 

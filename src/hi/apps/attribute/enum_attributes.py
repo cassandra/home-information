@@ -1,11 +1,13 @@
 from typing import List, Tuple
 
-from hi.apps.config.enums import AudioFile, Theme
+from hi.apps.config.audio_file import AudioFile
+from hi.apps.config.enums import Theme
+from hi.apps.security.enums import SecurityState
 
-from hi.constants import TIMEZONE_NAME_LIST
+from hi.constants import TIME_OF_DAY_CHOICES, TIMEZONE_NAME_LIST
 
 
-class AttributeEnums:
+class PredefinedEnumAttributes:
     """
     For attributes of type AttributeValueType.ENUM.  There are some
     predefined common defaults that can be used.  Instead of putting all
@@ -20,11 +22,15 @@ class AttributeEnums:
     TIMEZONE_CHOICES_ID = 'hi.timezone'
     THEME_CHOICES_ID = 'hi.theme'
     AUDIO_FILE_CHOICES_ID = 'hi.audio.file'
+    TIME_OF_DAY_CHOICES_ID = 'hi.datetime.time-of-day'
+    SECURITY_STATE_CHOICES_ID = 'hi.security.state'
     
     ID_TO_CHOICES = {
+        TIME_OF_DAY_CHOICES_ID: TIME_OF_DAY_CHOICES,
         TIMEZONE_CHOICES_ID: [ ( x, x ) for x in TIMEZONE_NAME_LIST ],
         THEME_CHOICES_ID: Theme.choices(),
         AUDIO_FILE_CHOICES_ID: AudioFile.choices(),
+        SECURITY_STATE_CHOICES_ID: SecurityState.choices(),
     }
     
     @classmethod

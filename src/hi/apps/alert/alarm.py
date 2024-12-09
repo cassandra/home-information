@@ -2,7 +2,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List
 
-from .enums import AlarmLevel, AlarmSource, SecurityPosture
+from hi.apps.config.audio_signal import AudioSignal
+from hi.apps.security.enums import SecurityLevel
+
+from .enums import AlarmLevel, AlarmSource
 
 
 @dataclass
@@ -19,7 +22,7 @@ class Alarm:
     alarm_level          : AlarmLevel
     title                : str
     source_details_list  : List[ AlarmSourceDetails ]
-    security_posture     : SecurityPosture
+    security_level       : SecurityLevel
     alarm_lifetime_secs  : int
     timestamp            : datetime
 
@@ -30,7 +33,7 @@ class Alarm:
         # allow alarm-specific sounds. e.g., tornado siren sound when
         # there's a weather alert.
         
-        return self.alarm_level.audio_signal
+        return AudioSignal.from_alarm_level( self.alarm_level )
 
     @property
     def signature(self):

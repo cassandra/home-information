@@ -22,7 +22,7 @@ Please confirm that you want to delete this event definition.
     <div>Clause: {{ event_clause.entity_state.name }} = {{ event_clause.value }} ({{ event_clause.entity_state.entity_state_type.label }})</div>
     {% endfor %}
     {% for alarm_action in event_definition.alarm_actions.all %}
-    <div>Alarm: {{ alarm_action.security_posture.label }} = {{ alarm_action.alarm_level.label }}</div>
+    <div>Alarm: {{ alarm_action.security_level.label }} = {{ alarm_action.alarm_level.label }}</div>
     {% endfor %}
     {% for control_action in event_definition.control_actions.all %}
     <div>Control: {{ control_action.controller.name }} = {{ control_action.value }}</div>
