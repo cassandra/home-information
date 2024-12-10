@@ -30,10 +30,18 @@ class SecurityState( LabeledEnum ):
     that dictates what type of security events are relevant.
     """
     
-    DISABLED      = ( 'Disabled' , '' )
-    DAY           = ( 'Day'     , '' )
-    NIGHT         = ( 'Night'    , '' )
-    AWAY          = ( 'Away'     , '' )
+    DISABLED      = ( 'Disabled' , '' , False )
+    DAY           = ( 'Day'      , '' , True )
+    NIGHT         = ( 'Night'    , '' , True )
+    AWAY          = ( 'Away'     , '' , False )
+
+    def __init__( self,
+                  label               : str,
+                  description         : str,
+                  auto_change_allowed  : bool ):
+        super().__init__( label, description )
+        self.auto_change_allowed = auto_change_allowed  # Can automated tasks change from this state
+        return
     
     
 class SecurityStateAction( LabeledEnum ):
@@ -43,7 +51,7 @@ class SecurityStateAction( LabeledEnum ):
     """
     
     DISABLE       = ( 'Disable' , '' )
-    DAY           = ( 'Day'     , '' )
-    NIGHT         = ( 'Night'    , '' )
-    AWAY          = ( 'Away'     , '' )
+    SET_DAY       = ( 'Day'     , '' )
+    SET_NIGHT     = ( 'Night'    , '' )
+    SET_AWAY      = ( 'Away'     , '' )
     SNOOZE        = ( 'Snooze'       , '' )

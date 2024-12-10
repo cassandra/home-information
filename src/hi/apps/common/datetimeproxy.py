@@ -390,3 +390,21 @@ def get_since_time_humanized( reference_datetime : datetime ):
         return f'over {round(elapsed_hours)} hours ago'
 
     return reference_datetime.strftime('%A, %B %d at %I:%M %p')
+
+
+def is_time_of_day_in_interval( time_of_day_str  : str,
+                                tz_name          : str,
+                                start_datetime   : datetime,
+                                end_datetime     : datetime  ) -> bool:
+
+    target_datetime_unaware = datetime.datetime.strptime( time_of_day_str, "%H:%M" )
+    target_time = target_datetime_unaware.time()
+
+    timezone = pytz.timezone( tz_name )
+    start_datetime_tz = start_datetime.astimezone( timezone )
+    end_datetime_tz = end_datetime.astimezone( timezone )
+
+    today = start_datetime_tz.date()
+    target_datetime_tz = timezone.localize( datetime.datetime.combine( today, target_time ) )
+
+    return bool(( target_datetime_tz > start_datetime_tz ) and ( target_datetime_tz <= end_datetime_tz ))

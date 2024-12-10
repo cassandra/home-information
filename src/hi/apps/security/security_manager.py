@@ -50,18 +50,19 @@ class SecurityManager(Singleton):
 
     def set_security_state( self, security_state_action : SecurityStateAction ):
 
-        delay_mins_str = None
         future_security_state = None
+        delay_mins_str = None
+
         if security_state_action == SecurityStateAction.DISABLE:
             immediate_security_state = SecurityState.DISABLED
 
-        elif security_state_action == SecurityStateAction.DAY:
+        elif security_state_action == SecurityStateAction.SET_DAY:
             immediate_security_state = SecurityState.DAY
 
-        elif security_state_action == SecurityStateAction.NIGHT:
+        elif security_state_action == SecurityStateAction.SET_NIGHT:
             immediate_security_state = SecurityState.NIGHT
 
-        elif security_state_action == SecurityStateAction.AWAY:
+        elif security_state_action == SecurityStateAction.SET_AWAY:
             immediate_security_state = SecurityState.DISABLED
             future_security_state = SecurityState.AWAY
             delay_mins_str = SettingsManager().get_setting_value(
@@ -99,20 +100,30 @@ class SecurityManager(Singleton):
                                 immediate_security_state  : SecurityState,
                                 future_security_state     : SecurityState,
                                 delay_secs                : int ):
+        try:
+            self._security_status_lock.acquire()
 
-        self._update_security_state_immediate( new_security_state = immediate_security_state )
-        if delay_secs > 0:
-            self._update_security_state_delayed(
-                target_security_state = future_security_state,
-                delay_secs = delay_secs,
+            self.update_security_state_immediate(
+                new_security_state = immediate_security_state,
+                lock_acquired = True,
             )
+            if delay_secs > 0:
+                self._update_security_state_delayed(
+                    target_security_state = future_security_state,
+                    delay_secs = delay_secs,
+                    lock_acquired = True,
+                )
+        finally:
+            self._security_status_lock.release()
         return
 
     def _update_security_state_delayed( self,
                                         target_security_state  : SecurityState,
-                                        delay_secs             : int ):
+                                        delay_secs             : int,
+                                        lock_acquired          : bool          = False ):
         try:
-            self._security_status_lock.acquire()
+            if not lock_acquired:
+                self._security_status_lock.acquire()
 
             self._delayed_security_state = target_security_state
             if self._delayed_security_state_timer:
@@ -121,18 +132,59 @@ class SecurityManager(Singleton):
             self._delayed_security_state_timer.start()
             
         finally:
-            self._security_status_lock.release()
+            if not lock_acquired:
+                self._security_status_lock.release()
         return
 
     def _apply_delayed_state( self ):
-        self._update_security_state_immediate(
-            new_security_state  = self._delayed_security_state,
-        )
+        self.update_security_state_immediate( new_security_state = self._delayed_security_state )
         return
     
-    def _update_security_state_immediate(self, new_security_state  : SecurityState ):
+    def update_security_state_auto( self, new_security_state  : SecurityState ):
+        """Special updating when coming from automation since extra handling is
+        needed if state is in a delayed transition (via SET_AWAY or SNOOZE)."""
         try:
             self._security_status_lock.acquire()
+
+            if not self._security_state.auto_change_allowed:
+                logger.warning( f'Security state auto update but state={self._security_state}' )
+                return
+            
+            if not self._delayed_security_state:
+                self.update_security_state_immediate(
+                    new_security_state = new_security_state,
+                    lock_acquired = True,
+                )
+                return
+
+            # If the delayed state is from SET_AWAY, we do not want the
+            # automation to risk changing it to a lessere security state.
+            #
+            if not self._delayed_security_state.auto_change_allowed:
+                logger.info( f'Security state auto update but delayed={self._delayed_security_state}' )
+                return
+
+            # Arriving ar this point in the code means it is likely in a
+            # SNOOZE state. When it comes out of snooze, it should honor
+            # the state the automation believes it should now be in.  e.g.,
+            # If SNOOZE in NIGHT state just before the configured DAY start
+            # time of day, then after SNOOZE it should be in DAY state.
+            #
+            self._delayed_security_state = new_security_state
+            return
+        
+        finally:
+            self._security_status_lock.release()
+
+        return
+        
+    def update_security_state_immediate( self,
+                                         new_security_state  : SecurityState,
+                                         lock_acquired       : bool          = False ):
+        try:
+            if not lock_acquired:
+                self._security_status_lock.acquire()
+                
             self._cancel_security_state_transition()
             
             if new_security_state == SecurityState.DISABLED:
@@ -153,7 +205,8 @@ class SecurityManager(Singleton):
             self._security_state = new_security_state
 
         finally:
-            self._security_status_lock.release()
+            if not lock_acquired:
+                self._security_status_lock.release()
         return
 
     def _cancel_security_state_transition(self):
@@ -170,7 +223,7 @@ class SecurityManager(Singleton):
             SubsystemAttributeType.ALERTS_STARTUP_SECURITY_STATE,
         )
         default_security_state_str = SecurityState.from_name_safe( default_security_state_str )
-        self._update_security_state_immediate( new_security_state = default_security_state_str )
+        self.update_security_state_immediate( new_security_state = default_security_state_str )
         return
     
             
