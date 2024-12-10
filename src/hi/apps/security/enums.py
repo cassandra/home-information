@@ -30,17 +30,19 @@ class SecurityState( LabeledEnum ):
     that dictates what type of security events are relevant.
     """
     
-    DISABLED      = ( 'Disabled' , '' , False )
-    DAY           = ( 'Day'      , '' , True )
-    NIGHT         = ( 'Night'    , '' , True )
-    AWAY          = ( 'Away'     , '' , False )
+    DISABLED      = ( 'Disabled' , '' , False , False )
+    DAY           = ( 'Day'      , '' , True  , False )
+    NIGHT         = ( 'Night'    , '' , True  , False )
+    AWAY          = ( 'Away'     , '' , False , True )
 
     def __init__( self,
-                  label               : str,
-                  description         : str,
-                  auto_change_allowed  : bool ):
+                  label                : str,
+                  description          : str,
+                  auto_change_allowed  : bool,
+                  uses_notifications   : bool ):
         super().__init__( label, description )
         self.auto_change_allowed = auto_change_allowed  # Can automated tasks change from this state
+        self.uses_notifications = uses_notifications
         return
     
     
@@ -50,8 +52,8 @@ class SecurityStateAction( LabeledEnum ):
     that dictates what type of security events are relevant.
     """
     
-    DISABLE       = ( 'Disable' , '' )
-    SET_DAY       = ( 'Day'     , '' )
+    DISABLE       = ( 'Disable'  , '' )
+    SET_DAY       = ( 'Day'      , '' )
     SET_NIGHT     = ( 'Night'    , '' )
     SET_AWAY      = ( 'Away'     , '' )
-    SNOOZE        = ( 'Snooze'       , '' )
+    SNOOZE        = ( 'Snooze'   , '' )

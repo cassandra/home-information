@@ -2,6 +2,8 @@ from datetime import datetime
 import logging
 
 from hi.apps.common.singleton import Singleton
+from hi.apps.security.security_manager import SecurityManager
+from hi.apps.notify.notification_queue import NotificationQueue
 
 from .alert import Alert
 from .alert_queue import AlertQueue
@@ -15,6 +17,7 @@ class AlertManager(Singleton):
 
     def __init_singleton__(self):
         self._alert_queue = AlertQueue()
+        self._notification_queue = NotificationQueue()
         return
 
     @property
@@ -67,26 +70,28 @@ class AlertManager(Singleton):
             max_audio_signal = max_alert.audio_signal if max_alert else None,
             new_audio_signal = new_alert.audio_signal if new_alert else None,
         )
-    
-    async def add_alarm( self, alarm : Alarm ):
-        logging.debug( f'Adding Alarm: {alarm}' )
-        try:
-            self._alert_queue.add_alarm( alarm = alarm )
-        except ValueError as ve:
-            logging.info( str(ve) )
-        return
 
     def acknowledge_alert( self, alert_id : str ):
         self._alert_queue.acknowledge_alert( alert_id = alert_id )
         return
     
-    def do_periodic_maintenance(self):
-        self._alert_queue.remove_expired_or_acknowledged_alerts()
-        self.check_email_queues()
+    async def add_alarm( self, alarm : Alarm ):
+        logging.debug( f'Adding Alarm: {alarm}' )
+        security_state = SecurityManager().security_state
+        try:
+            alert = self._alert_queue.add_alarm( alarm = alarm )
+            if security_state.uses_notifications and alert.has_single_alarm:
+                self._notification_queue.add_item( notification = alert.to_notification_item() )
+        except ValueError as ve:
+            logging.info( str(ve) )
+        except Exception as e:
+            logger.exception( 'Problem adding alarm to alert queue.', e )
         return
     
-    def check_email_queues(self):
-
-        # TODO: Implement this method after adding email sending.
-
+    def do_periodic_maintenance(self):
+        try:
+            self._alert_queue.remove_expired_or_acknowledged_alerts()
+            self._notification_queue.check_for_notifications()
+        except Exception as e:
+            logger.exception( 'Problem doing periodic alert maintenance.', e )
         return

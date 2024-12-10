@@ -129,7 +129,7 @@ class AlertQueue:
             self._active_alerts_lock.release()
         return
     
-    def add_alarm( self, alarm : Alarm ):
+    def add_alarm( self, alarm : Alarm ) -> Alert:
         if alarm.alarm_level == AlarmLevel.NONE:
             raise ValueError( f'Alarm not alert-worthy: {alarm}'  )
         try:
@@ -140,13 +140,13 @@ class AlertQueue:
                 alert.add_alarm( alarm = alarm )
                 self._last_changed_datetime = datetimeproxy.now()
                 logger.debug( f'Added to existing alert: alarm={alarm}, alert={alert}' )
-                return
+                return alert
             
             new_alert = Alert( first_alarm = alarm )
             self._alert_list.append( new_alert )
             self._last_changed_datetime = datetimeproxy.now()
             logger.debug( f'Added new alert: {new_alert}' )
-            return
+            return new_alert
     
         finally:
             self._active_alerts_lock.release()

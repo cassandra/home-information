@@ -11,6 +11,7 @@ from hi.apps.sense.models import Sensor
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
 from hi.apps.sense.transient_models import SensorResponse
 
+from .status_display_data import StatusDisplayData
 from .transient_models import EntityStatusData, EntityStateStatusData
 
 
@@ -24,7 +25,21 @@ class StatusDisplayManager( Singleton ):
             ttl = self.STATUS_VALUE_OVERRIDES_SECS,
         )
         return
-    
+
+    def get_status_css_class_update_map( self ) -> Dict[ str, str ]:
+
+        entity_state_status_data_list = self.get_all_entity_state_status_data_list()
+        status_display_data_list = [ StatusDisplayData(x) for x in entity_state_status_data_list ]
+
+        css_class_update_map = dict()
+        for status_display_data in status_display_data_list:
+            if status_display_data.should_skip:
+                continue
+            css_class_update_map[status_display_data.css_class] = status_display_data.attribute_dict
+            continue
+
+        return css_class_update_map
+        
     def get_all_entity_state_status_data_list( self ) -> List[ EntityStateStatusData ]:
         """
         Gets the latest sensor responses for all EntityStates.  Used by client

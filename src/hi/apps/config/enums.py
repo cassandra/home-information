@@ -153,16 +153,6 @@ class SubsystemAttributeType(LabeledEnum):
         True,
         '5',
     )
-    ALERTS_STARTUP_SECURITY_STATE = (
-        'Startup Security State',
-        'Security state to enter when system starts.',
-        SubsystemType.ALERTS,
-        AttributeValueType.ENUM,
-        'hi.security.state',
-        True,
-        True,
-        SecurityState.default_value(),
-    )
     
     def __init__( self,
                   label             : str,

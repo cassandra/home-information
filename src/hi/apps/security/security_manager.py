@@ -1,12 +1,20 @@
 import logging
 from threading import Timer, Lock
+from typing import Dict
 
 from django.core.exceptions import BadRequest
+from django.http import HttpRequest
+from django.template.loader import get_template
 
+import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.common.redis_client import get_redis_client
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.enums import SubsystemAttributeType
 from hi.apps.config.settings_manager import SettingsManager
 
+from hi.constants import DIVID
+
+from .constants import SecurityConstants
 from .enums import SecurityLevel, SecurityState, SecurityStateAction
 from .transient_models import SecurityStatusData
 
@@ -16,6 +24,10 @@ logger = logging.getLogger(__name__)
 class SecurityManager(Singleton):
 
     DEFAULT_TRANSITION_DELAY_SECS = 5 * 60
+    SECURITY_STATE_LABEL_DELAYED_AWAY = 'Delayed'
+    SECURITY_STATE_LABEL_SNOOZED = 'Snoozed'
+
+    SECURITY_STATE_CACHE_KEY = 'hi.security.state'
     
     def __init_singleton__(self):
         self._security_state = SecurityState.DISABLED
@@ -25,7 +37,11 @@ class SecurityManager(Singleton):
         self._delayed_security_state = None
         
         self._security_status_lock = Lock()
-        self._initialize_security_state()
+        self._redis_client = get_redis_client()
+        try:
+            self._initialize_security_state()
+        except Exception as e:
+            logger.exception( 'Problem trying to initialize security state', e )
         return
 
     @property
@@ -39,16 +55,33 @@ class SecurityManager(Singleton):
     def get_security_status_data(self) -> SecurityStatusData:
         try:
             self._security_status_lock.acquire()
-            
+            current_security_state_label = self._security_state.label
+            if self._delayed_security_state:
+                if self._delayed_security_state == SecurityState.AWAY:
+                    current_security_state_label = self.SECURITY_STATE_LABEL_DELAYED_AWAY
+                else:
+                    current_security_state_label = self.SECURITY_STATE_LABEL_SNOOZED
+                    
             return SecurityStatusData(
                 current_security_level = self._security_level,
                 current_security_state = self._security_state,
+                current_security_state_label = current_security_state_label,
             )
         finally:
             self._security_status_lock.release()
         return
 
-    def set_security_state( self, security_state_action : SecurityStateAction ):
+    def get_status_id_replace_map( self, request : HttpRequest ) -> Dict[ str, str ]:
+
+        security_status_data = self.get_security_status_data()
+        context = { 'security_status_data': security_status_data }
+        template = get_template( SecurityConstants.SECURITY_STATE_CONTROL_TEMPLATE_NAME )
+        security_control_html_str = template.render( context, request = request )
+        return {
+            DIVID['SECURITY_STATE_CONTROL']: security_control_html_str,
+        }
+
+    def update_security_state_user( self, security_state_action : SecurityStateAction ):
 
         future_security_state = None
         delay_mins_str = None
@@ -88,7 +121,7 @@ class SecurityManager(Singleton):
                 delay_secs = self.DEFAULT_TRANSITION_DELAY_SECS
         else:
             delay_secs = 0
-
+            
         self._update_security_state(
             immediate_security_state = immediate_security_state,
             future_security_state = future_security_state,
@@ -137,6 +170,7 @@ class SecurityManager(Singleton):
         return
 
     def _apply_delayed_state( self ):
+        logger.debug( f'Applying delayed security state = {self._delayed_security_state}' )
         self.update_security_state_immediate( new_security_state = self._delayed_security_state )
         return
     
@@ -203,7 +237,8 @@ class SecurityManager(Singleton):
                 return
 
             self._security_state = new_security_state
-
+            self._redis_client.set( self.SECURITY_STATE_CACHE_KEY, str( self._security_state ))
+            
         finally:
             if not lock_acquired:
                 self._security_status_lock.release()
@@ -218,12 +253,68 @@ class SecurityManager(Singleton):
 
     def _initialize_security_state(self):
 
+        # This makes sure any DISABLED or AWAY state is preserved.
+        previous_security_state_str = self._redis_client.get( self.SECURITY_STATE_CACHE_KEY )
+        if previous_security_state_str:
+            previous_security_state = SecurityState.from_name_safe( previous_security_state_str )
+            if not previous_security_state.auto_change_allowed:
+                self.update_security_state_immediate( new_security_state = previous_security_state )
+                return
+        
+        # Else, revert to look at time of day to initialize the state.
         settings_manager = SettingsManager()
-        default_security_state_str = settings_manager.get_setting_value(
-            SubsystemAttributeType.ALERTS_STARTUP_SECURITY_STATE,
+
+        tz_name = settings_manager.get_setting_value(
+            SubsystemAttributeType.TIMEZONE,
         )
-        default_security_state_str = SecurityState.from_name_safe( default_security_state_str )
-        self.update_security_state_immediate( new_security_state = default_security_state_str )
-        return
-    
+        day_start_time_of_day_str = settings_manager.get_setting_value(
+            SubsystemAttributeType.ALERTS_DAY_START,
+        )
+        night_start_time_of_day_str = settings_manager.get_setting_value(
+            SubsystemAttributeType.ALERTS_NIGHT_START,
+        )
+
+        current_datetime = datetimeproxy.now()
+        start_of_day_datetime = current_datetime.replace( hour=0, minute=0, second=0, microsecond=0 )
+        end_of_day_datetime = current_datetime.replace( hour=23, minute=59, second=59, microsecond=999999 )
+
+        # Normally, one would expect the day start to be defined before the
+        # night start, but we do not want to assume or enforce this.  e.g.,
+        # Someone working a night shift may have an inverted sense of the
+        # lower security DAY hours.
+        #
+        if day_start_time_of_day_str < night_start_time_of_day_str:
+            if datetimeproxy.is_time_of_day_in_interval(
+                    time_of_day_str = day_start_time_of_day_str,
+                    tz_name = tz_name,
+                    start_datetime = start_of_day_datetime,
+                    end_datetime = current_datetime ):
+                initial_security_state = SecurityState.NIGHT
+            elif datetimeproxy.is_time_of_day_in_interval(
+                    time_of_day_str = night_start_time_of_day_str,
+                    tz_name = tz_name,
+                    start_datetime = current_datetime,
+                    end_datetime = end_of_day_datetime ):
+                initial_security_state = SecurityState.NIGHT
+            else:
+                initial_security_state = SecurityState.DAY
+
+        else:
+            if datetimeproxy.is_time_of_day_in_interval(
+                    time_of_day_str = night_start_time_of_day_str,
+                    tz_name = tz_name,
+                    start_datetime = start_of_day_datetime,
+                    end_datetime = current_datetime ):
+                initial_security_state = SecurityState.DAY
+            elif datetimeproxy.is_time_of_day_in_interval(
+                    time_of_day_str = day_start_time_of_day_str,
+                    tz_name = tz_name,
+                    start_datetime = current_datetime,
+                    end_datetime = end_of_day_datetime ):
+                initial_security_state = SecurityState.DAY
+            else:
+                initial_security_state = SecurityState.NIGHT
             
+        self.update_security_state_immediate( new_security_state = initial_security_state )
+        return
+        

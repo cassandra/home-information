@@ -5,6 +5,7 @@ import uuid
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.config.audio_signal import AudioSignal
+from hi.apps.notify.transient_models import NotificationItem
 
 from .alarm import Alarm
 from .enums import AlarmLevel, AlarmSource
@@ -81,9 +82,6 @@ class Alert:
     def is_acknowledged( self, value : bool ):
         self._is_acknowledged = value
         return
-     
-    def is_matching_alarm( self, alarm : Alarm ) -> bool:
-        return self._first_alarm.signature == alarm.signature
 
     @property
     def alert_priority(self) -> int:
@@ -91,7 +89,20 @@ class Alert:
         # this to better order alerts with the same alarm priority
         return self._first_alarm.alarm_level.priority
 
+    @property
+    def signature(self):
+        # N.B. All alarms in an Alert should have the same signature.
+        return self.first_alarm.signature
+
+    @property
+    def has_single_alarm(self):
+        return bool( len(self._latest_alarms) == 1 )
+    
+    def is_matching_alarm( self, alarm : Alarm ) -> bool:
+        return bool( self._first_alarm.signature == alarm.signature )
+
     def add_alarm( self, alarm : Alarm ):
+        assert alarm.signature == self.first_alarm.signature
         self._end_datetime = datetimeproxy.now() + timedelta( seconds = alarm.alarm_lifetime_secs )
         self._latest_alarms.appendleft( alarm )
         return
@@ -101,3 +112,7 @@ class Alert:
             return self._latest_alarms[0]
         return None
     
+    def to_notification_item(self):
+        return NotificationItem(
+            signature = self.signature,
+        )

@@ -1,8 +1,8 @@
-<div id="hi-security-state-control">
+<div id="{{ DIVID.SECURITY_STATE_CONTROL }}">
   <div class="dropdown">
     <button class="btn btn-secondary btn-control dropdown-toggle" type="button"
 	    id="hi-location-menu" data-toggle="dropdown">
-      Security: {{ security_status_data.current_security_state.label }}
+      Security: {{ security_status_data.current_security_state_label }}
       <span class="caret"></span>
     </button>
     <div class="dropdown-menu"
@@ -13,7 +13,7 @@
       {% endif %}
       <a role="menuitem" class="dropdown-item plain"
 	 href="{% url 'security_state_action' action=value %} "
-	 data-async="#hi-security-state-control" data-mode="replace">
+	 data-async="#{{ DIVID.SECURITY_STATE_CONTROL }}" data-mode="replace">
 	{{ label }}
       </a>
       {% empty %}

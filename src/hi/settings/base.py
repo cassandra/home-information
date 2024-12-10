@@ -144,6 +144,7 @@ INSTALLED_APPS = [
     'hi.apps.sense',
     'hi.apps.control',
     'hi.apps.event',
+    'hi.apps.notify',
     'hi.apps.alert',
     'hi.apps.security',
     'hi.apps.edit',
@@ -328,3 +329,35 @@ CACHES = {
         "KEY_PREFIX": f'main:{REDIS_KEY_PREFIX}',
     }
 }
+
+#====================
+# Transactional Emails
+
+SITE_DOMAIN = 'pomdp.com'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+EMAIL_SUBJECT_PREFIX = "%s " % get_env_variable('HI_EMAIL_SUBJECT_PREFIX')
+DEFAULT_FROM_EMAIL = get_env_variable('HI_DEFAULT_FROM_EMAIL')
+SERVER_EMAIL = get_env_variable('HI_SERVER_EMAIL')
+FROM_EMAIL_NAME = "Home Information"
+
+# Normal Settings
+EMAIL_HOST = get_env_variable('HI_EMAIL_HOST')
+EMAIL_PORT = int(get_env_variable('HI_EMAIL_PORT'))
+EMAIL_HOST_USER = get_env_variable('HI_EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = get_env_variable('HI_EMAIL_HOST_PASSWORD')
+
+if get_env_variable('HI_EMAIL_USE_TLS').lower() == 'true':
+    EMAIL_USE_TLS = True
+    EMAIL_USE_SSL = False
+elif get_env_variable('HI_EMAIL_USE_SSL').lower() == 'true':
+    EMAIL_USE_TLS = False
+    EMAIL_USE_SSL = True
+else:
+    EMAIL_USE_TLS = False
+    EMAIL_USE_SSL = False
+    
+# Override this for test sites
+BASE_URL_FOR_EMAIL_LINKS = 'https://{SITE_DOMAIN}'
+

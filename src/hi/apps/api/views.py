@@ -10,8 +10,7 @@ from hi.apps.alert.alert_manager import AlertManager
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.config.settings_manager import SettingsManager
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
-from hi.apps.monitor.status_display_data import StatusDisplayData
-
+from hi.apps.security.security_manager import SecurityManager
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +22,7 @@ class StatusView( View ):
     LastServerTimestampAttr = 'lastTimestamp'
     AlertStatusDataAttr = 'alertData'
     CssClassUpdateMapAttr = 'cssClassUpdateMap'
+    IdReplaceUpdateMapAttr = 'idReplaceUpdateMap'
 
     def get( self, request, *args, **kwargs ):
 
@@ -44,20 +44,18 @@ class StatusView( View ):
         alert_status_data = AlertManager().get_alert_status_data(
             last_alert_status_datetime = last_server_datetime,
         )
-        entity_state_status_data_list = StatusDisplayManager().get_all_entity_state_status_data_list()
-        status_display_data_list = [ StatusDisplayData(x) for x in entity_state_status_data_list ]
+
+        id_replace_map = dict()
+        id_replace_map.update( SecurityManager().get_status_id_replace_map( request = request ) )
 
         css_class_update_map = dict()
-        for status_display_data in status_display_data_list:
-            if status_display_data.should_skip:
-                continue
-            css_class_update_map[status_display_data.css_class] = status_display_data.attribute_dict
-            continue
-        
+        css_class_update_map.update( StatusDisplayManager().get_status_css_class_update_map() )
+
         data = {
             self.ServerStartTimestampAttr: server_start_datetime.isoformat(),
             self.ServerTimestampAttr: server_datetime.isoformat(),
             self.AlertStatusDataAttr: alert_status_data.to_dict( request = request ),
+            self.IdReplaceUpdateMapAttr: id_replace_map,
             self.CssClassUpdateMapAttr: css_class_update_map,
         }
         return HttpResponse(

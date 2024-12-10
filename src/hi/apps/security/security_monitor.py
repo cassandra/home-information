@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class SecurityMonitor( PeriodicMonitor ):
 
-    SECURITY_POLLING_INTERVAL_SECS = 10
+    SECURITY_POLLING_INTERVAL_SECS = 5 * 60
 
     def __init__( self ):
         super().__init__(

@@ -9,9 +9,14 @@ class SecurityStatusData:
 
     current_security_state         : SecurityState
     current_security_level         : SecurityLevel
-    security_state_action_choices  : List[ Tuple[ str, str ]]  = None
+    current_security_state_label   : str            = None
 
     def __post_init__(self):
-        self.security_state_action_choices = SecurityStateAction.choices()
+        if not self.current_security_state_label:
+            self.current_security_state_label = self.current_security_state.label
         return
+
+    @property
+    def security_state_action_choices(self) -> List[ Tuple[ str, str ]]:
+        return SecurityStateAction.choices()
     

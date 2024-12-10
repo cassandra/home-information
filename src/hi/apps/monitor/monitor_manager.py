@@ -24,7 +24,7 @@ class MonitorManager( Singleton ):
         self._monitor_map[monitor.id] = monitor
 
         if not self._event_loop:
-            logger.error("No running event loop. Deferring monitor start")
+            logger.warning("No running event loop. Deferring monitor start")
             return
         
         if self._event_loop.is_running():

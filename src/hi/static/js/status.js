@@ -28,6 +28,7 @@
     const ServerStartTimestampAttr = 'startTimestamp';
     const ServerTimestampAttr = 'timestamp';
     const LastServerTimestampAttr = 'lastTimestamp';
+    const IdReplaceUpdateMapAttr = 'idReplaceUpdateMap';
     const CssClassUpdateMapAttr = 'cssClassUpdateMap';
 
     const AlertStatusDataAttr = 'alertData';
@@ -119,6 +120,9 @@
 	if ( AlertStatusDataAttr in respObj ) {
 	    handleAlertStatusData( respObj[AlertStatusDataAttr] );
 	}
+	if ( IdReplaceUpdateMapAttr in respObj ) {
+	    handleIdReplacements( respObj[IdReplaceUpdateMapAttr] );
+	}
 	if ( CssClassUpdateMapAttr in respObj ) {
 	    handleCssClassUpdates( respObj[CssClassUpdateMapAttr] );
 	}
@@ -163,6 +167,13 @@
 	} else {
 	    $(AlertBannerContainerSelector).hide();
 	    $(AlertBannerContentSelector).empty();
+	}
+    }
+    
+    function handleIdReplacements( replaceMap ) {
+	for ( let html_id in replaceMap ) {
+	    let replacementContent = replaceMap[html_id];
+	    $(`#${html_id}`).replaceWith( replacementContent );
 	}
     }
     

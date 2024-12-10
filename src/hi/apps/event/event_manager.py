@@ -13,6 +13,7 @@ from hi.apps.alert.alert_manager import AlertManager
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton import Singleton
 from hi.apps.control.controller_manager import ControllerManager
+from hi.apps.security.security_manager import SecurityManager
 
 from .models import AlarmAction, ControlAction, EventClause, EventDefinition, EventHistory
 from .transient_models import Event, EntityStateTransition
@@ -134,9 +135,13 @@ class EventManager(Singleton):
 
     async def _do_new_event_action( self, event_list : List[ Event ] ):
 
+        current_security_level = SecurityManager().security_level
+
         for event in event_list:
 
             for alarm_action in event.event_definition.alarm_actions.all():
+                if alarm_action.security_level != current_security_level:
+                    continue
                 alarm = event.to_alarm( alarm_action = alarm_action )
                 await self._alert_manager.add_alarm( alarm )
                 continue
