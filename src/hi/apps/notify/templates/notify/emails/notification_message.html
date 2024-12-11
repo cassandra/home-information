@@ -2,6 +2,10 @@
 {% block title %}Home Information Notification{% endblock %}
 {% block content %}
 <p>
-  TBD : {{ notification }}
+  <ul>
+    {% for item in notification.item_list %}
+    <li>{{ item.title }}</li>
+  {% endfor %}
+  </ul>
 </p>
 {% endblock %}

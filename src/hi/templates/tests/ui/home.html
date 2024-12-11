@@ -1,0 +1,17 @@
+{% extends "pages/base.html" %}
+{% block head_title %}HI: Visual Testing!{% endblock %}
+
+{% block content %}
+<div class="container-fluid m-4">
+
+  <h2 class="text-info">UI Tests Home</h2>
+
+  <ul>
+    {% for app_label, url in app_url_list %}
+    <li><a href='{{ url }}'>{{ app_label.capitalize }} UI Tests</a></li>
+    {% empty %}
+    <div class="alert alert-warning" >No modules have defined any UI tests.</div>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

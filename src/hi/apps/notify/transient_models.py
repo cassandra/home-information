@@ -50,4 +50,5 @@ class NotificationItem:
 
 @dataclass
 class Notification:
+    title       : str
     item_list   : List[ NotificationItem ]

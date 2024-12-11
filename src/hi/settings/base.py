@@ -286,9 +286,8 @@ PIPELINE = {
             ),
             'output_filename': 'js/js_after_content.js',
         },
-        'js_after_content_custom': {
+        'js_hi_grid_content': {
             'source_filenames': (
-                'js/audio.js',
                 'js/svg-utils.js',
                 'js/watchdog.js',
                 'js/status.js',
@@ -298,8 +297,8 @@ PIPELINE = {
                 'js/svg-path.js',
                 'js/svg-location.js',  # Should come last: edit event handlers should be registered first.
             ),
-            'output_filename': 'js/js_after_content_custom.js',
-        }
+            'output_filename': 'js/js_hi_grid_content.js',
+        },
     }
 }
 

@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 class HiGridView(View):
     """
-    - The Hi app 'grid' is an HTML layout that is defined in pages/home.html.
+    - The Hi app 'grid' is an HTML layout that is defined in pages/hi_grid.html.
     - Most views participate in keeping that same four-pane layout.
     - There is a top and bottom control button areas with middle section of 'main' and 'side' content.
     - In normal (non-editing) view mode, the side, top and bottom panes  stays mostly indepedenent main area.
@@ -42,7 +42,7 @@ class HiGridView(View):
       - Subclass this and provide get_main_template_name() and get_template_context()
     """
     
-    HI_GRID_TEMPLATE_NAME = 'pages/home.html'    
+    HI_GRID_TEMPLATE_NAME = 'pages/hi_grid.html'    
     TOP_TEMPLATE_NAME = 'panes/top_buttons.html'    
     BOTTOM_TEMPLATE_NAME = 'panes/bottom_buttons.html'    
     SIDE_DEFAULT_TEMPLATE_NAME = 'panes/side.html'    

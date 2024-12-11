@@ -49,6 +49,7 @@ class NotificationQueue:
                 if len(notification_item_list) < 1:
                     continue
                 notification = Notification(
+                    title = notification_item_list[0].title,
                     item_list = notification_item_list,
                 )
                 notifications_map[signature] = notification

@@ -1,4 +1,5 @@
 {% extends "pages/base.html" %}
+{% load pipeline %}
 
 {% block content %}
 
@@ -24,4 +25,9 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+
+{% block footer_post_javascript %}
+{% javascript 'js_hi_grid_content' %}
 {% endblock %}

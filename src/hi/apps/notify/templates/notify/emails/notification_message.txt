@@ -3,4 +3,6 @@
 
 {{ notification.title }}
 
+{% for item in notification.item_list %}  - {{ item.title }}
+{% endfor %}
 {% endblock %}
