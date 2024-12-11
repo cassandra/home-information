@@ -17,28 +17,6 @@ class AlertQueue:
     
     def __init__(self):
         self._alert_list = list()
-
-
-        
-
-
-
-        from hi.apps.alert.tests.synthetic_data import AlertSyntheticData
-        self._alert_list = AlertSyntheticData.create_random_alert_list(
-            reference_datetime = datetimeproxy.iso_naive_to_datetime_utc('2024-12-08T18:01:54'),
-            alarm_lifetime_secs = 999999,
-            # seed = 23456789,  # Alerts = 1, Alarms = 1W
-            # seed = 23456780,  # Alerts = 4, Alarms = 4C, 1C, 2C, 3W
-            seed = 23456781,  # Alerts = 2, Alarms = 1I, 2C
-        )
-        print( f'\n\nSET SYNTHETIC ALERT LIST: size={len(self._alert_list)}\n' )
-
-
-
-
-        
-
-        
         self._active_alerts_lock = threading.Lock()
         self._last_changed_datetime = datetimeproxy.now()
         return
