@@ -115,4 +115,5 @@ class Alert:
     def to_notification_item(self):
         return NotificationItem(
             signature = self.signature,
+            title = self.title,
         )

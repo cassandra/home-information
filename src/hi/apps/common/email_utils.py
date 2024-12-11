@@ -7,21 +7,19 @@ from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 
-import waa.apps.common.metrics as metrics
-
 logger = logging.getLogger(__name__)
 
 
 ALLOW_NON_BLOCKING_EMAILS = bool( not settings.DEBUG )
 
 
-def parse_emails_from_text( text ):
+def parse_emails_from_text( text : str ) -> List[ str ]:
     result_list = list()
     if not text:
         return result_list
     
     for line in text.split( '\n' ):
-        for element in re.split( r'[\,\;]+', line ):
+        for element in re.split( r'[\,\;\s]+', line ):
             if element.strip():
                 result_list.append( element.strip() )
             continue
@@ -104,6 +102,5 @@ class EmailThread( threading.Thread ):
         try:
             self.message.send()
         except Exception as e:
-            logger.exception( 'Problem in email thread.' )
-            metrics.exception( e )
+            logger.exception( 'Problem in email thread.', e )
         return

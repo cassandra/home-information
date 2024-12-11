@@ -1,0 +1,6 @@
+{% extends "notify/emails/base_email_message.txt" %}
+{% block content %}Home Information Notification
+
+{{ notification.title }}
+
+{% endblock %}

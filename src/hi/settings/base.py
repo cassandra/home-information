@@ -358,6 +358,10 @@ else:
     EMAIL_USE_TLS = False
     EMAIL_USE_SSL = False
     
-# Override this for test sites
+# Needed when sending emails in background tasks since HttpRequest not
+# available. Override this for development/testing/staging.
+#
 BASE_URL_FOR_EMAIL_LINKS = 'https://{SITE_DOMAIN}'
 
+# When tests functionalityt requires knowing if in unit test context.
+UNIT_TESTING = False

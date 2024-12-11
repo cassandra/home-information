@@ -1,5 +1,6 @@
 import logging
 import threading
+from typing import List
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.queues import ExponentialBackoffRateLimitedQueue
@@ -17,6 +18,7 @@ class NotificationQueue:
         return
     
     def add_item( self, notification_item : NotificationItem ):
+        logger.debug( f'Adding notification to queue: {notification_item}' )
         try:
             self._queues_lock.acquire()
 
@@ -28,7 +30,6 @@ class NotificationQueue:
                 )
             queue = self._queues_map[notification_item.signature]
             queue.add_to_queue( notification_item )
-            logger.debug( f'Added notification event to queue: {notification_item}' )
 
         except Exception as e:
             logger.exception( 'Problem adding notification to notification queue.', e )
@@ -36,13 +37,14 @@ class NotificationQueue:
             self._queues_lock.release()
         return
     
-    def check_for_notifications( self ):
+    def check_for_notifications( self ) -> List[ Notification ]:
         notifications_map = dict()
         try:
             self._queues_lock.acquire()
 
             now = datetimeproxy.now()
             for signature, queue in self._queues_map.items():
+                logger.debug( f'Notify queue "{signature}" contains {len(queue)} items.' )
                 notification_item_list = queue.get_queue_emissions( cur_datetime = now )
                 if len(notification_item_list) < 1:
                     continue
@@ -54,19 +56,9 @@ class NotificationQueue:
                 continue
 
         except Exception as e:
-            logger.exception( 'Problem with sending notifications.', e )
+            logger.exception( 'Problem checking notification queues.', e )
         finally:
             self._queues_lock.release()
 
-        # We do not want to send notifications while we have the data lock
-        try:
-            for signature, notification in notifications_map.items():
-                self.send_notifications( notification )
-                continue
-        except Exception as e:
-            logger.exception( "Problem Sending notifications", e )
-        return
-
-    def send_notifications( self, notification : Notification ):
-        pass
-    
+        return list( notifications_map.items() )
+            

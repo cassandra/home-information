@@ -3,7 +3,7 @@ import logging
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.security.security_manager import SecurityManager
-from hi.apps.notify.notification_queue import NotificationQueue
+from hi.apps.notify.notification_manager import NotificationManager
 
 from .alert import Alert
 from .alert_queue import AlertQueue
@@ -17,7 +17,7 @@ class AlertManager(Singleton):
 
     def __init_singleton__(self):
         self._alert_queue = AlertQueue()
-        self._notification_queue = NotificationQueue()
+        self._notification_manager = NotificationManager()
         return
 
     @property
@@ -81,7 +81,9 @@ class AlertManager(Singleton):
         try:
             alert = self._alert_queue.add_alarm( alarm = alarm )
             if security_state.uses_notifications and alert.has_single_alarm:
-                self._notification_queue.add_item( notification = alert.to_notification_item() )
+                self._notification_manager.add_notification_item(
+                    notification_item = alert.to_notification_item(),
+                )
         except ValueError as ve:
             logging.info( str(ve) )
         except Exception as e:
@@ -91,7 +93,6 @@ class AlertManager(Singleton):
     def do_periodic_maintenance(self):
         try:
             self._alert_queue.remove_expired_or_acknowledged_alerts()
-            self._notification_queue.check_for_notifications()
         except Exception as e:
             logger.exception( 'Problem doing periodic alert maintenance.', e )
         return

@@ -41,7 +41,7 @@ class SecurityMonitor( PeriodicMonitor ):
                 return
 
             day_start_time_of_day = settings_manager.get_setting_value(
-                SubsystemAttributeType.ALERTS_DAY_START,
+                SubsystemAttributeType.SECURITY_DAY_START,
             )
             if datetimeproxy.is_time_of_day_in_interval(
                     time_of_day_str = day_start_time_of_day,
@@ -55,7 +55,7 @@ class SecurityMonitor( PeriodicMonitor ):
                 return
 
             night_start_time_of_day = settings_manager.get_setting_value(
-                SubsystemAttributeType.ALERTS_NIGHT_START,
+                SubsystemAttributeType.SECURITY_NIGHT_START,
             )
             if datetimeproxy.is_time_of_day_in_interval(
                     time_of_day_str = night_start_time_of_day,

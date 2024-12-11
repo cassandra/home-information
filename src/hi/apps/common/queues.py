@@ -23,7 +23,7 @@ class RateLimitedQueue:
     """
     def __init__( self,
                   label               : str,
-                  emit_interval_secs  : int   = 60,
+                  emit_interval_secs  : int   = 30,
                   max_queue_size      : int   = 30,
                   unique_items_only   : bool  = True ):
         self._label = label

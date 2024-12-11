@@ -99,14 +99,14 @@ class SecurityManager(Singleton):
             immediate_security_state = SecurityState.DISABLED
             future_security_state = SecurityState.AWAY
             delay_mins_str = SettingsManager().get_setting_value(
-                SubsystemAttributeType.ALERTS_AWAY_DELAY_MINS,
+                SubsystemAttributeType.SECURITY_AWAY_DELAY_MINS,
             )
 
         elif security_state_action == SecurityStateAction.SNOOZE:
             immediate_security_state = SecurityState.DISABLED
             future_security_state = self._security_state
             delay_mins_str = SettingsManager().get_setting_value(
-                SubsystemAttributeType.ALERTS_SNOOZE_DELAY_MINS,
+                SubsystemAttributeType.SECURITY_SNOOZE_DELAY_MINS,
             )
             
         else:
@@ -163,6 +163,13 @@ class SecurityManager(Singleton):
                 self._delayed_security_state_timer.cancel()
             self._delayed_security_state_timer = Timer( delay_secs, self._apply_delayed_state )
             self._delayed_security_state_timer.start()
+
+            # N.B. We want to set the cached security state to the desired
+            # future state.  Otherwise, if system restarts during the
+            # SNOOZE or SET_AWAY transition period, it will come back up in
+            # the (transitional) DISABLED state, which is undesirable.
+            #
+            self._redis_client.set( self.SECURITY_STATE_CACHE_KEY, str(self._delayed_security_state ))
             
         finally:
             if not lock_acquired:
@@ -268,10 +275,10 @@ class SecurityManager(Singleton):
             SubsystemAttributeType.TIMEZONE,
         )
         day_start_time_of_day_str = settings_manager.get_setting_value(
-            SubsystemAttributeType.ALERTS_DAY_START,
+            SubsystemAttributeType.SECURITY_DAY_START,
         )
         night_start_time_of_day_str = settings_manager.get_setting_value(
-            SubsystemAttributeType.ALERTS_NIGHT_START,
+            SubsystemAttributeType.SECURITY_NIGHT_START,
         )
 
         current_datetime = datetimeproxy.now()

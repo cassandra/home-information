@@ -5,9 +5,9 @@ from hi.apps.config.enums import SubsystemAttributeType
 
 class AudioSignal(LabeledEnum):
 
-    INFO      = ( 'Info'     , '', SubsystemAttributeType.INFO_AUDIO_FILE )
-    WARNING   = ( 'Warning'  , '', SubsystemAttributeType.WARNING_AUDIO_FILE)
-    CRITICAL  = ( 'Critical' , '', SubsystemAttributeType.CRITICAL_AUDIO_FILE )
+    INFO      = ( 'Info'     , '', SubsystemAttributeType.CONSOLE_INFO_AUDIO_FILE )
+    WARNING   = ( 'Warning'  , '', SubsystemAttributeType.CONSOLE_WARNING_AUDIO_FILE)
+    CRITICAL  = ( 'Critical' , '', SubsystemAttributeType.CONSOLE_CRITICAL_AUDIO_FILE )
     
     def __init__( self,
                   label                     : str,

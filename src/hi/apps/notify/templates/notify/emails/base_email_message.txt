@@ -1,0 +1,5 @@
+{% block content %}
+{% endblock %}
+
+
+Unsubscribe: {{ UNSUBSCRIBE_URL }}
