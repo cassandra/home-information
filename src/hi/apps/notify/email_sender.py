@@ -49,7 +49,7 @@ class EmailSender:
             effective_to_email_address = self._data.override_to_email_address
         else:
             effective_to_email_address = self._data.to_email_address
-        
+            
         send_html_email(
             request = self._data.request,
             subject_template_name = self._data.subject_template_name,

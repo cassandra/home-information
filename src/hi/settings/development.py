@@ -114,6 +114,10 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
         },
+        "django.core.mail": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+        },
         'hi': {
             'handlers': ['console' ],
             'level': 'DEBUG',
@@ -121,4 +125,8 @@ LOGGING = {
     },
 }
 
-BASE_URL_FOR_EMAIL_LINKS = 'https://{SITE_DOMAIN}'
+BASE_URL_FOR_EMAIL_LINKS = 'http:/127.0.0.1:8000/'
+
+# Uncomment to suppress email sending and write to console.
+#
+# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

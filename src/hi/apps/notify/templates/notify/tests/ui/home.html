@@ -15,11 +15,11 @@
 	<div class="panel-body">
 	  <ul>
 	    <li>
-	      <a href="{% url 'notify_tests_ui_view_email' name='notification' %}" data-async="modal">View Notification Email
+	      <a href="{% url 'notify_tests_ui_view_email' email_type='notification' %}" data-async="modal">View Notification Email
 	      </a>
 	    </li>
 	    <li>
-	      <a href="{% url 'notify_tests_ui_send_email' name='notification' %}" data-async="modal">Send Notification Email
+	      <a href="{% url 'notify_tests_ui_send_email' email_type='notification' %}" data-async="modal">Send Notification Email
 	      </a>
 	    </li>
 	  </ul>

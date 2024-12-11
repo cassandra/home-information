@@ -35,19 +35,18 @@ class NotificationManager(Singleton):
             logger.exception( "Problem sending notifications", e )
         return
 
-    async def send_notifications( self, notification : Notification ):
+    async def send_notifications( self, notification : Notification ) -> bool:
         notifications_enabled_str = self._settings_manager.get_setting_value(
             SubsystemAttributeType.NOTIFICATIONS_ENABLED,
         )
         notifications_enabled = str_to_bool( notifications_enabled_str )
         if not notifications_enabled:
             logger.debug( f'Notifications not enabled. Ignoring: {notification}.' )
-            return
+            return False
 
-        await self.send_email_notification_if_needed( notification = notification )
-        return
+        return await self.send_email_notification_if_needed_async( notification = notification )
     
-    async def send_email_notification_if_needed( self, notification : Notification ):
+    async def send_email_notification_if_needed_async( self, notification : Notification ) -> bool:
         
         email_addresses_str = self._settings_manager.get_setting_value(
             SubsystemAttributeType.NOTIFICATIONS_EMAIL_ADDRESSES,
@@ -55,10 +54,10 @@ class NotificationManager(Singleton):
         email_address_list = parse_emails_from_text( text = email_addresses_str )
         if not email_address_list:
             logger.debug( f'No valid notification emails defined. Ignoring: {notification}.' )
-            return
+            return False
 
         logger.debug( f'Sending notification email to "{email_address_list}": {notification}.' )
-        
+
         email_data = EmailData(
             request = None,
             to_email_address = email_address_list,            
@@ -69,6 +68,4 @@ class NotificationManager(Singleton):
         )
         email_sender = EmailSender( data = email_data )
         await email_sender.send_async()
-        return
-
-    
+        return True

@@ -332,7 +332,7 @@ CACHES = {
 #====================
 # Transactional Emails
 
-SITE_DOMAIN = 'pomdp.com'
+SITE_DOMAIN = 'cassandra.org'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
@@ -346,6 +346,7 @@ EMAIL_HOST = get_env_variable('HI_EMAIL_HOST')
 EMAIL_PORT = int(get_env_variable('HI_EMAIL_PORT'))
 EMAIL_HOST_USER = get_env_variable('HI_EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = get_env_variable('HI_EMAIL_HOST_PASSWORD')
+EMAIL_TIMEOUT = 10  # In seconds
 
 if get_env_variable('HI_EMAIL_USE_TLS').lower() == 'true':
     EMAIL_USE_TLS = True

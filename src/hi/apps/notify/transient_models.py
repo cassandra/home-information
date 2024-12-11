@@ -2,6 +2,19 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Union
 
 from django.http.request import HttpRequest
+    
+    
+@dataclass
+class NotificationItem:
+    signature     : str
+    title         : str
+    source_obj    : object  = None
+    
+
+@dataclass
+class Notification:
+    title         : str
+    item_list     : List[ NotificationItem ]
 
 
 @dataclass
@@ -40,15 +53,3 @@ class EmailData:
                   
     # For testing (can use the unsubscribe link to test for the original intended "to" email)
     override_to_email_address   : str             = None
-    
-    
-@dataclass
-class NotificationItem:
-    signature   : str
-    title       : str
-    
-
-@dataclass
-class Notification:
-    title       : str
-    item_list   : List[ NotificationItem ]

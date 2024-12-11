@@ -61,5 +61,5 @@ class NotificationQueue:
         finally:
             self._queues_lock.release()
 
-        return list( notifications_map.items() )
+        return list( notifications_map.values() )
             

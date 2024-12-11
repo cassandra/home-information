@@ -68,8 +68,11 @@ class Alert:
 
     @property
     def title(self) -> str:
-        return self._first_alarm.title
-
+        title_text = f'{self.alarm_level.label}: {self._first_alarm.title}'
+        if self.alarm_count > 1:
+            title_text += f' ({self.alarm_count})'
+        return title_text
+    
     @property
     def first_alarm(self) -> Alarm:
         return self._first_alarm
@@ -116,4 +119,5 @@ class Alert:
         return NotificationItem(
             signature = self.signature,
             title = self.title,
+            source_obj = self,
         )

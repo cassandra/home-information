@@ -46,7 +46,6 @@ def send_html_email( request,
                      files = None,
                      non_blocking = False,
                      from_email_name = None ):
-    
     if not from_email_address:
         from_email_address = settings.DEFAULT_FROM_EMAIL
     if not from_email_name:
@@ -83,7 +82,7 @@ def send_html_email( request,
         for file in files:
             message.attach_file(file)
 
-    if non_blocking and not settings.UNIT_TESTING:  # Unit tests will fail if async emails
+    if False and      non_blocking and not settings.UNIT_TESTING:  # Unit tests will fail if async emails
         EmailThread( message = message ).start()
     else:
         message.send()
