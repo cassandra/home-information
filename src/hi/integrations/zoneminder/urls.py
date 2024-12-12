@@ -6,10 +6,6 @@ from . import views
 
 urlpatterns = [
 
-    re_path( r'^manage$', 
-             views.ZmManageView.as_view(), 
-             name='zm_manage' ),
-
     re_path( r'^settings$', 
              views.ZmSettingsView.as_view(), 
              name='zm_settings' ),

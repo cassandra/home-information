@@ -1,12 +1,12 @@
 <div>
   <div class="col-2">
-    <form action="{% url 'zm_sync' %}"
-	method="POST" role="form" data-async="">
+    <form action="{% url 'hass_sync' %}"
+	method="POST" role="form" data-async="true">
       {% csrf_token %}
       <button type="submit" class="btn btn-primary" role="button"
 	      name="action" value="sync" >SYNC</button>
     </form>
   </div>
-
-  {% include "zoneminder/panes/zm_settings.html" %}
+  
+  {% include "hass/panes/hass_settings.html" %}
 </div>

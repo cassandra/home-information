@@ -3,28 +3,29 @@
 {% block config_content %}
 <div class="row">
   <nav class="nav flex-column">
-    {% for integration_data in request.integration_data_list %}
-    <a class="nav-link {% if request.current_integration_metadata == integration_data.integration_metadata %}active{% endif %}"
-       href="{% url integration_data.integration_metadata.manage_url_name %}"
+    {% for integration_data in core.integration_data_list %}
+    <a class="nav-link {% if core.integration_data.integration_id == integration_data.integration_id %}active{% endif %}"
+       href="{% url 'integrations_manage' integration_id=integration_data.integration_id %}"
        data-async="true">
-      {{ integration_data.integration_metadata.label }}
+      {{ integration_data.label }}
     </a>
     {% endfor %}
   </nav>
   <div class="flex-colum flex-grow-1">
     <div class="tab-content">
       <div class="d-flex justify-content-between">
-	<div class="h3">{{ request.current_integration_metadata.label }}</div>
+	<div class="h3">{{ core.integration_data.label }}</div>
 	<div>
 	  <a class="btn btn-info" role="button"
-	     href="{% url 'integrations_manage' %}"
+	     href="{% url 'integrations_select' %}"
 	     data-async="modal">
-	    MANAGE INTEGRATIONS
+	    SELECT INTEGRATIONS
 	  </a>
 	</div>
       </div>
       
       {% block integration_content %}
+      {% include core.manage_view_pane_template_name %}
       {% endblock %}
     </div>
   </div>

@@ -7,19 +7,23 @@ from . import views
 urlpatterns = [
 
     re_path( r'^$', 
-             views.IntegrationsHomeView.as_view(), 
+             views.IntegrationHomeView.as_view(), 
              name='integrations_home' ),
 
+    re_path( r'^select$', 
+             views.IntegrationSelectView.as_view(), 
+             name='integrations_select' ),
+
     re_path( r'^enable/(?P<integration_id>[\w\-]+)$', 
-             views.IntegrationsEnableView.as_view(), 
+             views.IntegrationEnableView.as_view(), 
              name='integrations_enable' ),
 
     re_path( r'^disable/(?P<integration_id>[\w\-]+)$', 
-             views.IntegrationsDisableView.as_view(), 
+             views.IntegrationDisableView.as_view(), 
              name='integrations_disable' ),
 
-    re_path( r'^manage$', 
-             views.IntegrationsManageView.as_view(), 
+    re_path( r'^manage/(?P<integration_id>[\w\-]*)$', 
+             views.IntegrationManageView.as_view(), 
              name='integrations_manage' ),
 
     re_path( r'^zm/', include('hi.integrations.zoneminder.urls' )),
