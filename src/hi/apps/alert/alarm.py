@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List
 
-from hi.apps.config.audio_signal import AudioSignal
+from hi.apps.console.audio_signal import AudioSignal
 from hi.apps.security.enums import SecurityLevel
 
 from .enums import AlarmLevel, AlarmSource

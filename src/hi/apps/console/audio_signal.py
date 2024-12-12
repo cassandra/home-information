@@ -1,20 +1,20 @@
 from hi.apps.alert.enums import AlarmLevel
 from hi.apps.common.enums import LabeledEnum
-from hi.apps.config.enums import SubsystemAttributeType
+from hi.apps.console.settings import ConsoleSetting
 
 
 class AudioSignal(LabeledEnum):
 
-    INFO      = ( 'Info'     , '', SubsystemAttributeType.CONSOLE_INFO_AUDIO_FILE )
-    WARNING   = ( 'Warning'  , '', SubsystemAttributeType.CONSOLE_WARNING_AUDIO_FILE)
-    CRITICAL  = ( 'Critical' , '', SubsystemAttributeType.CONSOLE_CRITICAL_AUDIO_FILE )
+    INFO      = ( 'Info'     , '', ConsoleSetting.CONSOLE_INFO_AUDIO_FILE )
+    WARNING   = ( 'Warning'  , '', ConsoleSetting.CONSOLE_WARNING_AUDIO_FILE)
+    CRITICAL  = ( 'Critical' , '', ConsoleSetting.CONSOLE_CRITICAL_AUDIO_FILE )
     
     def __init__( self,
-                  label                     : str,
-                  description               : str,
-                  subsystem_attribute_type  : str ):
+                  label             : str,
+                  description       : str,
+                  console_setting   : ConsoleSetting ):
         super().__init__( label, description )
-        self.subsystem_attribute_type = subsystem_attribute_type
+        self.console_setting = console_setting
         return
 
     @classmethod

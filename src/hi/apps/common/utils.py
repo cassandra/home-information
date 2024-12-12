@@ -103,6 +103,11 @@ def get_humanized_number( value ):
     return f'{value:,}th'
 
 
+def get_humanized_name( name: str ) -> str:
+    words = re.split(r'[\_\.\-\,]+', name)
+    return ' '.join( word.capitalize() for word in words )
+
+
 def is_profanity_text( text ):
     if not text:
         return False

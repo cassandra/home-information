@@ -9,13 +9,14 @@ from django.template.loader import get_template
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.redis_client import get_redis_client
 from hi.apps.common.singleton import Singleton
-from hi.apps.config.enums import SubsystemAttributeType
 from hi.apps.config.settings_manager import SettingsManager
+from hi.apps.console.settings import ConsoleSetting
 
 from hi.constants import DIVID
 
 from .constants import SecurityConstants
 from .enums import SecurityLevel, SecurityState, SecurityStateAction
+from .settings import SecuritySetting
 from .transient_models import SecurityStatusData
 
 logger = logging.getLogger(__name__)
@@ -99,14 +100,14 @@ class SecurityManager(Singleton):
             immediate_security_state = SecurityState.DISABLED
             future_security_state = SecurityState.AWAY
             delay_mins_str = SettingsManager().get_setting_value(
-                SubsystemAttributeType.SECURITY_AWAY_DELAY_MINS,
+                SecuritySetting.SECURITY_AWAY_DELAY_MINS,
             )
 
         elif security_state_action == SecurityStateAction.SNOOZE:
             immediate_security_state = SecurityState.DISABLED
             future_security_state = self._security_state
             delay_mins_str = SettingsManager().get_setting_value(
-                SubsystemAttributeType.SECURITY_SNOOZE_DELAY_MINS,
+                SecuritySetting.SECURITY_SNOOZE_DELAY_MINS,
             )
             
         else:
@@ -259,7 +260,7 @@ class SecurityManager(Singleton):
         return
 
     def _initialize_security_state(self):
-
+        
         # This makes sure any DISABLED or AWAY state is preserved.
         previous_security_state_str = self._redis_client.get( self.SECURITY_STATE_CACHE_KEY )
         if previous_security_state_str:
@@ -272,15 +273,15 @@ class SecurityManager(Singleton):
         settings_manager = SettingsManager()
 
         tz_name = settings_manager.get_setting_value(
-            SubsystemAttributeType.TIMEZONE,
+            ConsoleSetting.TIMEZONE,
         )
         day_start_time_of_day_str = settings_manager.get_setting_value(
-            SubsystemAttributeType.SECURITY_DAY_START,
+            SecuritySetting.SECURITY_DAY_START,
         )
         night_start_time_of_day_str = settings_manager.get_setting_value(
-            SubsystemAttributeType.SECURITY_NIGHT_START,
+            SecuritySetting.SECURITY_NIGHT_START,
         )
-
+        
         current_datetime = datetimeproxy.now()
         start_of_day_datetime = current_datetime.replace( hour=0, minute=0, second=0, microsecond=0 )
         end_of_day_datetime = current_datetime.replace( hour=23, minute=59, second=59, microsecond=999999 )

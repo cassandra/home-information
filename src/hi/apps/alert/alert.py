@@ -4,7 +4,7 @@ from typing import List
 import uuid
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.config.audio_signal import AudioSignal
+from hi.apps.console.audio_signal import AudioSignal
 from hi.apps.notify.transient_models import NotificationItem
 
 from .alarm import Alarm

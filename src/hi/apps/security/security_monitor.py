@@ -1,12 +1,13 @@
 import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.config.enums import SubsystemAttributeType
 from hi.apps.config.settings_manager import SettingsManager
+from hi.apps.console.settings import ConsoleSetting
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .enums import SecurityState
 from .security_manager import SecurityManager
+from .settings import SecuritySetting
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class SecurityMonitor( PeriodicMonitor ):
         settings_manager = SettingsManager()
         current_datetime = datetimeproxy.now()
         tz_name = settings_manager.get_setting_value(
-            SubsystemAttributeType.TIMEZONE,
+            ConsoleSetting.TIMEZONE,
         )
         try:
             # Some states do not allow automated changes
@@ -41,7 +42,7 @@ class SecurityMonitor( PeriodicMonitor ):
                 return
 
             day_start_time_of_day = settings_manager.get_setting_value(
-                SubsystemAttributeType.SECURITY_DAY_START,
+                SecuritySetting.SECURITY_DAY_START,
             )
             if datetimeproxy.is_time_of_day_in_interval(
                     time_of_day_str = day_start_time_of_day,
@@ -55,7 +56,7 @@ class SecurityMonitor( PeriodicMonitor ):
                 return
 
             night_start_time_of_day = settings_manager.get_setting_value(
-                SubsystemAttributeType.SECURITY_NIGHT_START,
+                SecuritySetting.SECURITY_NIGHT_START,
             )
             if datetimeproxy.is_time_of_day_in_interval(
                     time_of_day_str = night_start_time_of_day,

@@ -3,7 +3,7 @@ from typing import ClassVar, List
 
 from django.http import HttpRequest
 
-from hi.apps.config.audio_signal import AudioSignal
+from hi.apps.console.audio_signal import AudioSignal
 
 from .alert import Alert
 from .alert_helpers import AlertHelpers

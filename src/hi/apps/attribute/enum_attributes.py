@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
-from hi.apps.config.audio_file import AudioFile
-from hi.apps.config.enums import Theme
+from hi.apps.console.audio_file import AudioFile
+from hi.apps.console.enums import Theme
 from hi.apps.security.enums import SecurityState
 
 from hi.constants import TIME_OF_DAY_CHOICES, TIMEZONE_NAME_LIST

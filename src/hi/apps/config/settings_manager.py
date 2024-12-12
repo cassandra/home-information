@@ -1,20 +1,21 @@
 from datetime import datetime
 import logging
 from threading import local
-from typing import Dict, List
+from typing import List
 
+from django.apps import apps
 from django.db import transaction
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 from hi.apps.attribute.enums import AttributeType
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.common.module_utils import import_module_safe
 from hi.apps.common.singleton import Singleton
 
-from .audio_file import AudioFile
-from .audio_signal import AudioSignal
-from .enums import SubsystemType, SubsystemAttributeType
+from .app_settings import AppSettings
 from .models import Subsystem, SubsystemAttribute
+from .setting_enums import SettingDefinition, SettingEnum
 
 logger = logging.getLogger(__name__)
 
@@ -25,104 +26,136 @@ class SettingsManager( Singleton ):
         self._server_start_datetime = datetimeproxy.now()
         self._subsystem_list = list()
         self._attribute_value_map = dict()
+        self._change_listeners = list()
+
+        app_settings_list = self._discover_app_settings()
+        self._subsystem_list = self._load_or_create_settings( app_settings_list = app_settings_list )
         self.reload()
         return
 
     def reload(self):
-        self._subsystem_list = self._load_subsystem_list()
-
         self._attribute_value_map = dict()
         for subsystem in self._subsystem_list:
             for subsystem_attribute in subsystem.attributes.all():
-                attr_type = subsystem_attribute.subsystem_attribute_type
+                attr_type = subsystem_attribute.setting_key
                 self._attribute_value_map[attr_type] = subsystem_attribute.value
                 continue
             continue
+
+        self._notify_change_listeners()
+        return
+
+    def register_change_listener( self, callback ):
+        logger.debug( f'Adding setting change listener from {callback.__module__}' )
+        self._change_listeners.append( callback )
         return
     
-    def get_console_audio_map( self ) -> Dict[ str, str ]:
-        console_audio_map = dict()
-        for audio_signal in AudioSignal:
-            if audio_signal.subsystem_attribute_type:
-                attr_value = self.get_setting_value( audio_signal.subsystem_attribute_type )
-                if attr_value:
-                    audio_file = AudioFile.from_name( attr_value )
-                    console_audio_map[str(audio_signal)] = audio_file.url
+    def _notify_change_listeners(self):
+        for callback in self._change_listeners:
+            try:
+                callback()
+            except Exception as e:
+                logger.exception( 'Problem calling setting change callback.', e )
             continue
-        return console_audio_map
-    
+        return
+
     def get_server_start_datetime( self ) -> datetime:
         return self._server_start_datetime
     
     def get_subsystems(self) -> List[ Subsystem ]:
         return self._subsystem_list
 
-    def get_setting_value( self, subsystem_attribute_type : SubsystemAttributeType ):
-        return self._attribute_value_map.get( subsystem_attribute_type )
-    
-    def _load_subsystem_list(self):
+    def get_setting_value( self, setting_enum : SettingEnum ):
+        return self._attribute_value_map.get( setting_enum.key )
+
+    def _discover_app_settings(self) -> List[ AppSettings ]:
+
+        app_settings_list = list()
+        for app_config in apps.get_app_configs():
+            if not app_config.name.startswith( 'hi' ):
+                continue
+            module_name = f'{app_config.name}.settings'
+            try:
+                app_module = import_module_safe( module_name = module_name )
+                if not app_module:
+                    continue
+
+                app_settings = AppSettings(
+                    app_name = app_config.name,
+                    app_module = app_module,
+                )
+                # Needs to have at least one Setting and one SettingDefinition
+                if len(app_settings) > 0:
+                    app_settings_list.append( app_settings )
+                
+            except Exception as e:
+                logger.exception( f'Problem loading settings for {module_name}.', e )
+            continue
+
+        return app_settings_list
+
+    def _load_or_create_settings( self, app_settings_list: List[ AppSettings ] ):
+        defined_app_settings_map = { x.app_name: x for x in app_settings_list }
         existing_subsystem_map = {
-            x.subsystem_type: x
+            x.subsystem_key: x
             for x in Subsystem.objects.prefetch_related('attributes').all()
         }
 
         subsystem_list = list()
         with transaction.atomic():
-            for subsystem_type in SubsystemType:
-                if subsystem_type in existing_subsystem_map:
-                    subsystem = self._ensure_all_attributes(
-                        subsystem = existing_subsystem_map[subsystem_type],
+            for app_name, app_settings in defined_app_settings_map.items():
+                if app_name in existing_subsystem_map:
+                    subsystem = self._create_attributes_if_needed(
+                        subsystem = existing_subsystem_map[app_name],
+                        app_settings = app_settings,
                     )
                 else:
-                    subsystem = self._create_subsystem( subsystem_type )
+                    subsystem = self._create_app_subsystem( app_settings = app_settings )
                 subsystem_list.append( subsystem )
                 continue
         
         return subsystem_list
     
-    def _create_subsystem( self, subsystem_type : SubsystemType ):
-        subsystem = Subsystem.objects.create(
-            name = subsystem_type.label,
-            subsystem_type_str = str(subsystem_type),
-        )
-        for subsystem_attribute_type in SubsystemAttributeType:
-            if subsystem_type != subsystem_attribute_type.subsystem_type:
-                continue
-            self._create_attribute(
-                subsystem = subsystem,
-                subsystem_attribute_type = subsystem_attribute_type,
-            )
-            continue
-        return subsystem
-    
-    def _ensure_all_attributes( self, subsystem : Subsystem ):
-
-        existing_attr_types = { x.subsystem_attribute_type for x in subsystem.attributes.all() }
+    def _create_app_subsystem( self, app_settings : AppSettings ):
         
-        for subsystem_attribute_type in SubsystemAttributeType:
-            if subsystem.subsystem_type != subsystem_attribute_type.subsystem_type:
-                continue
-            if subsystem_attribute_type not in existing_attr_types:
-                self._create_attribute(
+        subsystem = Subsystem.objects.create(
+            name = app_settings.label,
+            subsystem_key = app_settings.app_name,
+        )
+        self._create_attributes_if_needed(
+            subsystem = subsystem,
+            app_settings = app_settings,
+        )
+        return subsystem
+
+    def _create_attributes_if_needed( self, subsystem : Subsystem, app_settings : AppSettings ):
+        all_defined_setting_definitions_map = app_settings.all_setting_definitions()
+        existing_setting_keys = { x.setting_key for x in subsystem.attributes.all() }
+        
+        for setting_key, setting_definition in all_defined_setting_definitions_map.items():
+            if setting_key not in existing_setting_keys:
+                self._create_setting_attribute(
                     subsystem = subsystem,
-                    subsystem_attribute_type = subsystem_attribute_type,
+                    setting_key = setting_key,
+                    setting_definition = setting_definition,
                 )
             continue
         return subsystem
 
-    def _create_attribute( self,
-                           subsystem                 : Subsystem,
-                           subsystem_attribute_type  : SubsystemAttributeType ) -> SubsystemAttribute:
+    def _create_setting_attribute( self,
+                                   subsystem           : Subsystem,
+                                   setting_key         : str,
+                                   setting_definition  : SettingDefinition ) -> SubsystemAttribute:
         return SubsystemAttribute.objects.create(
             subsystem = subsystem,
-            subsystem_attribute_type_str = str(subsystem_attribute_type),
-            name = subsystem_attribute_type.label,
-            value = subsystem_attribute_type.initial_value,
-            value_type_str = str(subsystem_attribute_type.value_type),
-            value_range_str = subsystem_attribute_type.value_range_str,
+            setting_key = setting_key,
+            name = setting_definition.label,
+            value = setting_definition.initial_value,
+            value_type_str = str(setting_definition.value_type),
+            value_range_str = setting_definition.value_range_str,
             attribute_type_str = AttributeType.PREDEFINED,
-            is_editable = subsystem_attribute_type.is_editable,
-            is_required = subsystem_attribute_type.is_required,
+            is_editable = setting_definition.is_editable,
+            is_required = setting_definition.is_required,
         )
 
     
@@ -143,7 +176,7 @@ def do_settings_manager_reload():
 def settings_manager_model_changed( sender, instance, **kwargs ):
     """
     Queue the SettingsManager.reload() call to execute after the transaction
-    is committed.  This prsettingss reloading multiple times if multiple
+    is committed.  This prevents reloading multiple times if multiple
     models saved as part of a transaction (which is the normal case for
     SettingsDefinition and its related models.)
     """

@@ -2,8 +2,6 @@ from django.db import models
 
 from hi.apps.attribute.models import AttributeModel
 
-from .enums import SubsystemAttributeType, SubsystemType
-
 
 class Subsystem( models.Model ):
 
@@ -13,8 +11,8 @@ class Subsystem( models.Model ):
         null = False, blank = False,
         unique = True,
     )
-    subsystem_type_str = models.CharField(
-        'Subsystem Type',
+    subsystem_key = models.CharField(
+        'Subsystem Key',
         max_length = 32,
         null = False, blank = False,
     )  
@@ -29,16 +27,7 @@ class Subsystem( models.Model ):
         verbose_name_plural = 'Subsystems'
 
     def __str__(self):
-        return self.subsystem_type_str
-    
-    @property
-    def subsystem_type(self) -> SubsystemType:
-        return SubsystemType.from_name_safe( self.subsystem_type_str )
-
-    @subsystem_type.setter
-    def subsystem_type( self, subsystem_type : SubsystemType ):
-        self.subsystem_type_str = str(subsystem_type)
-        return
+        return self.subsystem_key
 
     
 class SubsystemAttribute( AttributeModel ):
@@ -49,9 +38,9 @@ class SubsystemAttribute( AttributeModel ):
         verbose_name = 'Subsystem',
         on_delete = models.CASCADE,
     )
-    subsystem_attribute_type_str = models.CharField(
-        'Subsystem Attribute Type',
-        max_length = 32,
+    setting_key = models.CharField(
+        'Setting Key',
+        max_length = 255,
         null = False, blank = False,
     )  
 
@@ -61,12 +50,3 @@ class SubsystemAttribute( AttributeModel ):
 
     def get_upload_to(self):
         return 'settings/'
-        
-    @property
-    def subsystem_attribute_type(self):
-        return SubsystemAttributeType.from_name_safe( self.subsystem_attribute_type_str )
-
-    @subsystem_attribute_type.setter
-    def subsystem_attribute_type( self, subsystem_attribute_type : SubsystemAttributeType ):
-        self.subsystem_attribute_type_str = str(subsystem_attribute_type)
-        return

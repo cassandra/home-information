@@ -15,7 +15,7 @@ class SubsystemAdmin(admin.ModelAdmin):
     
     list_display = (
         'name',
-        'subsystem_type_str',
+        'subsystem_key',
         'created_datetime',
     )
 
