@@ -4,7 +4,7 @@ import logging
 from django.core.files.storage import default_storage
 from django.db import models
 
-from hi.apps.attribute.enum_attributes import PredefinedEnumAttributes
+from hi.apps.attribute.value_ranges import PredefinedValueRanges
 from hi.apps.common.file_utils import generate_unique_filename
 
 from hi.integrations.core.integration_key import IntegrationKey
@@ -119,7 +119,7 @@ class AttributeModel(models.Model):
 
     def choices(self):
         # First check predefined ids
-        choice_list = PredefinedEnumAttributes.get_choices( self.value_range_str )
+        choice_list = PredefinedValueRanges.get_choices( self.value_range_str )
         if choice_list:
             return choice_list
         if not self.value_range_str:

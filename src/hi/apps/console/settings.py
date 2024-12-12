@@ -1,5 +1,6 @@
 from hi.apps.config.setting_enums import SettingEnum, SettingDefinition
 from hi.apps.attribute.enums import AttributeValueType
+from hi.apps.attribute.value_ranges import PredefinedValueRanges
 
 from .audio_file import AudioFile
 from .enums import Theme
@@ -13,7 +14,7 @@ class ConsoleSetting( SettingEnum ):
         label = 'Timezone',
         description = 'Timezone to use for display',
         value_type = AttributeValueType.ENUM,
-        value_range_str = 'hi.timezone',
+        value_range_str = PredefinedValueRanges.TIMEZONE_CHOICES_ID,
         is_editable = True,
         is_required = True,
         initial_value = 'America/Chicago',
@@ -22,7 +23,7 @@ class ConsoleSetting( SettingEnum ):
         label = 'Theme',
         description = 'Overall look and feel of interfaces',
         value_type = AttributeValueType.ENUM,
-        value_range_str = 'hi.theme',
+        value_range_str = PredefinedValueRanges.THEME_CHOICES_ID,
         is_editable = True,
         is_required = True,
         initial_value = str( Theme.default() ),
@@ -31,7 +32,7 @@ class ConsoleSetting( SettingEnum ):
         label = 'Info Alert Sound',
         description = 'The sound to play when an INFO level alert arrives.',
         value_type = AttributeValueType.ENUM,
-        value_range_str = 'hi.audio.file',
+        value_range_str = PredefinedValueRanges.AUDIO_FILE_CHOICES_ID,
         is_editable = True,
         is_required = False,
         initial_value = AudioFile.INFO,
@@ -40,7 +41,7 @@ class ConsoleSetting( SettingEnum ):
         label = 'Warning Alert Sound',
         description = 'The sound to play when an WARNING level alert arrives.',
         value_type = AttributeValueType.ENUM,
-        value_range_str = 'hi.audio.file',
+        value_range_str = PredefinedValueRanges.AUDIO_FILE_CHOICES_ID,
         is_editable = True,
         is_required = False,
         initial_value = AudioFile.WARNING,
@@ -49,7 +50,7 @@ class ConsoleSetting( SettingEnum ):
         label = 'Critical Alert Sound',
         description = 'The sound to play when an CRITICAL level alert arrives.',
         value_type = AttributeValueType.ENUM,
-        value_range_str = 'hi.audio.file',
+        value_range_str = PredefinedValueRanges.AUDIO_FILE_CHOICES_ID,
         is_editable = True,
         is_required = False,
         initial_value = AudioFile.CRITICAL,

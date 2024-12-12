@@ -1,5 +1,6 @@
 from hi.apps.config.setting_enums import SettingEnum, SettingDefinition
 from hi.apps.attribute.enums import AttributeValueType
+from hi.apps.attribute.value_ranges import PredefinedValueRanges
 
 Label = 'Security'
 
@@ -10,7 +11,7 @@ class SecuritySetting( SettingEnum ):
         label = 'Security Day Start',
         description = 'Determines what time of day to switch to the "Day" security posture.',
         value_type = AttributeValueType.ENUM,
-        value_range_str = 'hi.datetime.time-of-day',
+        value_range_str = PredefinedValueRanges.TIME_OF_DAY_CHOICES_ID,
         is_editable = True,
         is_required = True,
         initial_value = '08:00',
@@ -20,7 +21,7 @@ class SecuritySetting( SettingEnum ):
         label = 'Security Night Start',
         description = 'Determines what time of day to switch to the "Night" security posture.',
         value_type = AttributeValueType.ENUM,
-        value_range_str = 'hi.datetime.time-of-day',
+        value_range_str = PredefinedValueRanges.TIME_OF_DAY_CHOICES_ID,
         is_editable = True,
         is_required = True,
         initial_value = '23:00',
