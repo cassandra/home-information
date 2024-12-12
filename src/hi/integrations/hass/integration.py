@@ -7,27 +7,27 @@ from hi.integrations.core.integration_gateway import IntegrationGateway
 from hi.integrations.core.transient_models import IntegrationMetaData
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
-from .zm_controller import ZoneMinderController
-from .zm_metadata import ZmMetaData
-from .monitors import ZoneMinderMonitor
+from .hass_controller import HassController
+from .hass_metadata import HassMetaData
+from .monitors import HassMonitor
 from . import views
 
 logger = logging.getLogger(__name__)
 
 
-class ZoneMinderGateway( IntegrationGateway ):
+class HassGateway( IntegrationGateway ):
 
     def get_meta_data(self) -> IntegrationMetaData:
-        return ZmMetaData
+        return HassMetaData
 
-    def get_sensor_monitor(self) -> PeriodicMonitor:
-        return ZoneMinderMonitor()
+    def get_monitor(self) -> PeriodicMonitor:
+        return HassMonitor()
     
     def get_controller(self) -> IntegrationController:
-        return ZoneMinderController()
+        return HassController()
     
     def enable_modal_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
-        return views.ZmEnableView().get( request )
+        return views.HassEnableView().get( request )
     
     def disable_modal_view( self, request : HttpRequest, *args, **kwargs ) -> HttpResponse:
-        return views.ZmDisableView().get( request )
+        return views.HassDisableView().get( request )

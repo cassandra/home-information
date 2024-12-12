@@ -12,8 +12,8 @@ from hi.apps.sense.models import SensorHistory
 from hi.exceptions import ForceRedirectException
 from hi.hi_async_view import HiModalView
 
-from .integration_factory import IntegrationFactory
-from .transient_models import IntegrationData
+from .integration_manager import IntegrationManager
+from .integration_data import IntegrationData
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +27,8 @@ class IntegrationPageView( ConfigPageView ):
 
     We do this with these:
 
-      - IntegrationMetaData - Integrations register this with the
-        IntegrationFactory to define their exisatence and common
+      - IntegrationMetaData - Integrations discovered with the
+        IntegrationManager defines their existence and common
         properties.
 
       - IntegrationPageView (this view) - Each integration should subclass
@@ -44,7 +44,7 @@ class IntegrationPageView( ConfigPageView ):
     """
 
     def dispatch( self, request, *args, **kwargs ):
-        request.integration_data_list = IntegrationFactory().get_integration_data_list( enabled_only = True )
+        request.integration_data_list = IntegrationManager().get_integration_data_list( enabled_only = True )
         request.current_integration_metadata = self.integration_metadata
         return super().dispatch( request, *args, **kwargs )
     
@@ -66,7 +66,7 @@ class IntegrationsHomeView( ConfigPageView ):
 
     def get_template_context( self, request, *args, **kwargs ):
 
-        integration_data = IntegrationFactory().get_default_integration_data()
+        integration_data = IntegrationManager().get_default_integration_data()
         if not integration_data:
             return dict()
 
@@ -81,7 +81,7 @@ class IntegrationsManageView( HiModalView ):
 
     def get( self, request, *args, **kwargs ):
         context = {
-            'integration_data_list': IntegrationFactory().get_integration_data_list(),
+            'integration_data_list': IntegrationManager().get_integration_data_list(),
         }
         return self.modal_response( request, context )
 
@@ -95,7 +95,7 @@ class IntegrationActionView( View ):
             integration_id = kwargs.get('integration_id')
             action = kwargs.get('action')
 
-            integration_gateway = IntegrationFactory().get_integration_gateway(
+            integration_gateway = IntegrationManager().get_integration_gateway(
                 integration_id = integration_id,
             )
         

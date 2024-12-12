@@ -13,12 +13,12 @@ from hi.integrations.core.views import IntegrationPageView
 
 from hi.hi_async_view import HiModalView
 
-from .hass_manager import HassManager
+from .hass_mixins import HassMixin
 from .hass_metadata import HassMetaData
 from .hass_sync import HassSynchronizer
 
 
-class HassEnableView( HiModalView, IntegrationHelperMixin ):
+class HassEnableView( HiModalView, IntegrationHelperMixin, HassMixin ):
 
     def get_template_name( self ) -> str:
         return 'hass/modals/hass_enable.html'
@@ -133,7 +133,7 @@ class HassSettingsView( View, IntegrationHelperMixin ):
             with transaction.atomic():
                 integration_attribute_formset.save()
 
-            HassManager().notify_settings_changed()
+            self.hass_manager().notify_settings_changed()
 
         context = {
             'integration_attribute_formset': integration_attribute_formset,

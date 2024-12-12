@@ -12,17 +12,17 @@ from hi.integrations.core.integration_key import IntegrationKey
 from .hass_converter import HassConverter
 from .hass_models import HassDevice
 from .hass_manager import HassManager
+from .hass_mixins import HassMixin
 from .hass_metadata import HassMetaData
 
 logger = logging.getLogger(__name__)
 
 
-class HassSynchronizer:
+class HassSynchronizer( HassMixin ):
 
     SYNCHRONIZATION_LOCK_NAME = 'hass_integration_sync'
 
     def __init__(self):
-        self._hass_manager = HassManager()
         return
         
     def sync( self ) -> ProcessingResult:
@@ -40,15 +40,16 @@ class HassSynchronizer:
             logger.debug( 'HAss integration sync ended.' )
     
     def _sync_helper( self ) -> ProcessingResult:
+        hass_manager = self.hass_manager()
         result = ProcessingResult( title = 'HAss Sync Result' )
 
-        hass_client = self._hass_manager.hass_client
+        hass_client = hass_manager.hass_client
         if not hass_client:
             logger.debug( 'HAss client not created. HAss integration disabled?' )
             result.error_list.append( 'Sync problem. HAss integration disabled?' )
             return result
 
-        hass_entity_id_to_state = self._hass_manager.fetch_hass_states_from_api()
+        hass_entity_id_to_state = hass_manager.fetch_hass_states_from_api()
         result.message_list.append( f'Found {len(hass_entity_id_to_state)} current HAss states.' )
 
         integration_key_to_entity = self._get_existing_hass_entities( result = result )
@@ -108,7 +109,7 @@ class HassSynchronizer:
                         result       : ProcessingResult ):
         entity = HassConverter.create_models_for_hass_device(
             hass_device = hass_device,
-            add_alarm_events = self._hass_manager.should_add_alarm_events,
+            add_alarm_events = self.hass_manager().should_add_alarm_events,
         )
         result.message_list.append( f'Created HAss entity: {entity}' )
         return

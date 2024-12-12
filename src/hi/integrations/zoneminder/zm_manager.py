@@ -1,3 +1,4 @@
+from asgiref.sync import sync_to_async
 import logging
 from pyzm.api import ZMApi
 from pyzm.helpers.Event import Event as ZmEvent
@@ -56,7 +57,21 @@ class ZoneMinderManager( Singleton ):
         self._zm_monitor_timestamp = datetimeproxy.min()
 
         self._change_listeners = list()
+        self._was_initialized = False
+        return
+    
+    def ensure_initialized(self):
+        if self._was_initialized:
+            return
         self.reload()
+        self._was_initialized = True
+        return
+
+    async def ensure_initialized_async(self):
+        if self._was_initialized:
+            return
+        await sync_to_async( self.reload )()
+        self._was_initialized = True
         return
 
     def register_change_listener( self, callback ):

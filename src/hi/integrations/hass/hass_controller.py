@@ -5,15 +5,14 @@ from hi.integrations.core.integration_key import IntegrationKey
 from hi.integrations.core.transient_models import IntegrationControlResult
 
 from .hass_converter import HassConverter
-from .hass_manager import HassManager
+from .hass_mixins import HassMixin
 
 logger = logging.getLogger(__name__)
 
 
-class HassController( IntegrationController ):
+class HassController( IntegrationController, HassMixin ):
 
     def __init__(self):
-        self._hass_manager = HassManager()
         return
     
     def do_control( self,
@@ -26,7 +25,7 @@ class HassController( IntegrationController ):
                 hi_value = control_value,
             )
                 
-            response = self._hass_manager.hass_client.set_state(
+            response = self.hass_manager().hass_client.set_state(
                 entity_id = entity_id,
                 state = hass_state_value,
             )

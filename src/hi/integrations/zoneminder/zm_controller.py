@@ -5,25 +5,25 @@ from hi.integrations.core.integration_controller import IntegrationController
 from hi.integrations.core.integration_key import IntegrationKey
 from hi.integrations.core.transient_models import IntegrationControlResult
 
-from .zm_manager import ZoneMinderManager
+from .zm_mixins import ZoneMinderMixin
 
 logger = logging.getLogger(__name__)
 
 
-class ZoneMinderController( IntegrationController ):
+class ZoneMinderController( IntegrationController, ZoneMinderMixin ):
 
     def __init__(self):
-        self._zm_manager = ZoneMinderManager()
         return
     
     def do_control( self,
                     integration_key  : IntegrationKey,
                     control_value    : str             ) -> IntegrationControlResult:
+        zm_manager = self.zm_manager()
         try:
-            if integration_key.integration_name == self._zm_manager.ZM_RUN_STATE_SENSOR_INTEGRATION_NAME:
+            if integration_key.integration_name == zm_manager.ZM_RUN_STATE_SENSOR_INTEGRATION_NAME:
                 return self.set_run_state( run_state_value = control_value )
 
-            if integration_key.integration_name.startswith( self._zm_manager.MONITOR_FUNCTION_SENSOR_PREFIX ):
+            if integration_key.integration_name.startswith( zm_manager.MONITOR_FUNCTION_SENSOR_PREFIX ):
                 m = re.match( r'.+\D(\d+)', integration_key.integration_name )
                 if m:
                     return self.set_monitor_function(
@@ -41,10 +41,10 @@ class ZoneMinderController( IntegrationController ):
                 error_list = [ str(e) ],
             )
         finally:
-            self._zm_manager.clear_caches()
+            zm_manager.clear_caches()
 
     def set_run_state( self, run_state_value : str ):
-        response = self._zm_manager._zm_client.set_state( run_state_value )
+        response = self.zm_manager()._zm_client.set_state( run_state_value )
         logger.debug( f'ZM Set run state to "{run_state_value}" = {response}' )
         return IntegrationControlResult(
             new_value = run_state_value,
@@ -54,7 +54,7 @@ class ZoneMinderController( IntegrationController ):
     def set_monitor_function( self,
                               monitor_id      : str,
                               function_value  : str ):
-        zm_monitor_list = self._zm_manager.get_zm_monitors()
+        zm_monitor_list = self.zm_manager().get_zm_monitors()
         for zm_monitor in zm_monitor_list:
             if str(zm_monitor.id()) == str(monitor_id):
                 response = zm_monitor.set_parameter({

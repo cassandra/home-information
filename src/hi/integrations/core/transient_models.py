@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import List
 
 from .enums import IntegrationAttributeType
-from .models import Integration
 
 
 @dataclass
@@ -15,13 +14,6 @@ class IntegrationMetaData:
     allow_entity_deletion  : bool
 
     
-@dataclass
-class IntegrationData:
-
-    integration_metadata  : IntegrationMetaData
-    integration           : Integration
-
-
 @dataclass
 class IntegrationControlResult:
 

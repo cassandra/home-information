@@ -10,7 +10,7 @@ from hi.integrations.core.views import IntegrationPageView
 
 from hi.hi_async_view import HiModalView
 
-from .zm_manager import ZoneMinderManager
+from .zm_mixins import ZoneMinderMixin
 from .zm_metadata import ZmMetaData
 from .zm_sync import ZoneMinderSynchronizer
 
@@ -110,7 +110,7 @@ class ZmManageView( IntegrationPageView, IntegrationHelperMixin ):
         }
 
 
-class ZmSettingsView( View, IntegrationHelperMixin ):
+class ZmSettingsView( View, IntegrationHelperMixin, ZoneMinderMixin ):
 
     def post( self, request, *args, **kwargs ):
 
@@ -130,7 +130,7 @@ class ZmSettingsView( View, IntegrationHelperMixin ):
             with transaction.atomic():
                 integration_attribute_formset.save()
 
-            ZoneMinderManager().notify_settings_changed()
+            self.zm_manager().notify_settings_changed()
                 
         context = {
             'integration_attribute_formset': integration_attribute_formset,

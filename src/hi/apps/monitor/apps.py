@@ -4,7 +4,6 @@ import signal
 import threading
 
 from django.apps import AppConfig
-from hi.apps.monitor.monitor_manager import MonitorManager
 
 
 class MonitorConfig(AppConfig):
@@ -12,6 +11,7 @@ class MonitorConfig(AppConfig):
     name = "hi.apps.monitor"
 
     def ready(self):
+        from hi.apps.monitor.monitor_manager import AppMonitorManager
         if os.getenv( "RUN_MAIN", None ) != "true":
             # Avoid double initialization when using the reloader in development
             return
@@ -19,7 +19,7 @@ class MonitorConfig(AppConfig):
         if settings.DEBUG:
             # This app.py initialization runs in synchronous mode, so we
             # need to defer the background monitor tasks creation by
-            # creating a sepaarte thread.
+            # creating a separate thread.
             #
             # This is for development only as the gunicorn.conf.py file
             # handles this initialization when execution with gunicorn.
@@ -28,7 +28,7 @@ class MonitorConfig(AppConfig):
             thread.start()
 
             def handle_signal(signal_number, frame):
-                MonitorManager().shutdown()
+                AppMonitorManager().shutdown()
                 import sys
                 sys.exit(0)
 
@@ -38,9 +38,10 @@ class MonitorConfig(AppConfig):
         return            
 
     def _start_monitors(self):
+        from hi.apps.monitor.monitor_manager import AppMonitorManager
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop( loop )
-        monitor_manager = MonitorManager()
+        monitor_manager = AppMonitorManager()
         try:
             loop.create_task( monitor_manager.initialize() )
             loop.run_forever()

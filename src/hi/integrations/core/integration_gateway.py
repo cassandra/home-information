@@ -14,7 +14,7 @@ class IntegrationGateway:
     def get_meta_data(self) -> IntegrationMetaData:
         raise NotImplementedError('Subclasses must override this method')
         
-    def get_sensor_monitor(self) -> PeriodicMonitor:
+    def get_monitor(self) -> PeriodicMonitor:
         raise NotImplementedError('Subclasses must override this method')
     
     def get_controller(self) -> IntegrationController:

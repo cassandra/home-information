@@ -20,8 +20,6 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
             id = 'hass-monitor',
             interval_secs = self.HASS_POLLING_INTERVAL_SECS,
         )
-        
-        self.hass_manager().register_change_listener( self.refresh )
         self._initialized = False
         return
 

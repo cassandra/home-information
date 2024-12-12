@@ -3,7 +3,7 @@ import logging
 
 from hi.apps.common.singleton import Singleton
 
-from hi.integrations.core.integration_factory import IntegrationFactory
+from hi.integrations.core.integration_manager import IntegrationManager
 from hi.integrations.core.transient_models import IntegrationControlResult
 
 from .models import Controller
@@ -21,7 +21,7 @@ class ControllerManager( Singleton ):
                     control_value  : str ) -> IntegrationControlResult:
         logger.debug( f'Controller action: {controller} = {control_value}' )
 
-        integration_gateway = IntegrationFactory().get_integration_gateway(
+        integration_gateway = IntegrationManager().get_integration_gateway(
             integration_id = controller.integration_id,
         )
         integration_controller = integration_gateway.get_controller()

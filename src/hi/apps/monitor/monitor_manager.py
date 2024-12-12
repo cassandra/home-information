@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import List, Type
 
 from django.apps import apps
 
@@ -11,43 +12,11 @@ from .periodic_monitor import PeriodicMonitor
 logger = logging.getLogger(__name__)
 
 
-class MonitorManager( Singleton ):
+class AppMonitorManager( Singleton ):
 
     def __init_singleton__( self ):
         self._monitor_map = {}  # Known monitors
         self._event_loop = None  # Added dynamically and indicates if thread/event loop initialized
-        return
-
-    def register( self, monitor : PeriodicMonitor ) -> None:
-        if monitor.id in self._monitor_map:
-            logger.debug(f"Monitor: {monitor.id} already registered")
-            return
-
-        logger.debug(f"Registering monitor: {monitor.id}")
-        self._monitor_map[monitor.id] = monitor
-
-        if not self._event_loop:
-            logger.warning("No running event loop. Deferring monitor start")
-            return
-        
-        if self._event_loop.is_running():
-            logger.debug(f"Scheduling monitor start: {monitor.id}")
-            asyncio.run_coroutine_threadsafe( monitor.start(), self._event_loop )
-        else:
-            logger.error("Event loop is not running")
-
-        return
-    
-    def deregister( self, monitor_id : str ) -> None:
-        monitor = self._monitor_map.get( monitor_id )
-        if not monitor:
-            logger.debug(f"Monitor: {monitor.id} not registered")
-            return
-
-        logger.debug(f"Deregistering monitor: {monitor.id}")
-        if monitor.is_running():
-            monitor.stop()
-        del self._monitor_map[monitor.id]
         return
     
     async def initialize(self) -> None:
@@ -84,17 +53,16 @@ class MonitorManager( Singleton ):
         
         return
 
-    def _discover_periodic_monitors(self):
+    def _discover_periodic_monitors(self) -> List[ Type[ PeriodicMonitor ]]:
 
         periodic_monitor_class_list = list()
         for app_config in apps.get_app_configs():
-            if not app_config.name.startswith( 'hi' ):
+            if not app_config.name.startswith( 'hi.apps' ):
                 continue
             module_name = f'{app_config.name}.monitors'
             try:
                 app_module = import_module_safe( module_name = module_name )
                 if not app_module:
-                    logger.debug( f'No monitor module for {app_config.name}' )
                     continue
 
                 logger.debug( f'Found monitor module for {app_config.name}' )
@@ -109,7 +77,7 @@ class MonitorManager( Singleton ):
                     continue                
                 
             except Exception as e:
-                logger.exception( f'Problem loading settings for {module_name}.', e )
+                logger.exception( f'Problem loading monitor for {module_name}.', e )
             continue
 
         return periodic_monitor_class_list

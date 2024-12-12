@@ -1,3 +1,4 @@
+from asgiref.sync import sync_to_async
 import logging
 from threading import Timer, Lock
 from typing import Dict
@@ -39,17 +40,33 @@ class SecurityManager(Singleton):
         
         self._security_status_lock = Lock()
         self._redis_client = get_redis_client()
+        self._was_initialized = False
         return
 
+    def ensure_initialized(self):
+        if self._was_initialized:
+            return
+        try:
+            self._initialize_security_state()
+        except Exception as e:
+            logger.exception( 'Problem trying to initialize security state', e )
+            self._security_state = SecurityState.DISABLED
+        self._was_initialized = True
+        return
+    
+    async def ensure_initialized_async(self):
+        if self._was_initialized:
+            return
+        try:
+            await sync_to_async( self._initialize_security_state )()
+        except Exception as e:
+            logger.exception( 'Problem trying to initialize security state', e )
+            self._security_state = SecurityState.DISABLED
+        self._was_initialized = True
+        return
+    
     @property
     def security_state(self) -> SecurityState:
-        if not self._security_state:
-            try:
-                self._initialize_security_state()
-            except Exception as e:
-                logger.exception( 'Problem trying to initialize security state', e )
-                self._security_state = SecurityState.DISABLED
-                
         return self._security_state
 
     @property

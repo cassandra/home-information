@@ -1,3 +1,4 @@
+from asgiref.sync import sync_to_async
 import logging
 from typing import Dict
 
@@ -24,9 +25,23 @@ class HassManager( Singleton ):
         self._hass_client = None
         
         self._change_listeners = list()
-        self.reload()
+        self._was_initialized = False
         return
 
+    def ensure_initialized(self):
+        if self._was_initialized:
+            return
+        self.reload()
+        self._was_initialized = True
+        return
+    
+    async def ensure_initialized_async(self):
+        if self._was_initialized:
+            return
+        await sync_to_async( self.reload )()
+        self._was_initialized = True
+        return
+    
     def register_change_listener( self, callback ):
         logger.debug( f'Adding HAss setting change listener from {callback.__module__}' )
         self._change_listeners.append( callback )

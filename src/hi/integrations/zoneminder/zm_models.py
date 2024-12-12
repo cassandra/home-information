@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Dict
 
 import hi.apps.common.datetimeproxy as datetimeproxy

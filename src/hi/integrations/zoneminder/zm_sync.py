@@ -15,18 +15,17 @@ from hi.apps.model_helper import HiModelHelper
 from hi.integrations.core.integration_key import IntegrationKey
 
 from .enums import ZmMonitorFunction
-from .zm_manager import ZoneMinderManager
+from .zm_mixins import ZoneMinderMixin
 from .zm_metadata import ZmMetaData
 
 logger = logging.getLogger(__name__)
 
 
-class ZoneMinderSynchronizer:
+class ZoneMinderSynchronizer( ZoneMinderMixin ):
 
     SYNCHRONIZATION_LOCK_NAME = 'zm_integration_sync'
 
     def __init__(self):
-        self._zm_manager = ZoneMinderManager()
         return
     
     def sync( self ) -> ProcessingResult:
@@ -45,7 +44,7 @@ class ZoneMinderSynchronizer:
     def _sync_helper( self ) -> ProcessingResult:
         result = ProcessingResult( title = 'ZM Sync Result' )
 
-        if not self._zm_manager.zm_client:
+        if not self.zm_manager().zm_client:
             logger.debug( 'ZoneMinder client not created. ZM integration disabled?' )
             result.error_list.append( 'Sync problem. ZM integration disabled?' )
             return result
@@ -56,12 +55,13 @@ class ZoneMinderSynchronizer:
         return result
 
     def _sync_states( self, result : ProcessingResult ) -> ProcessingResult:
-
-        zm_run_state_list = self._zm_manager.get_zm_states( force_load = True )
+        zm_manager = self.zm_manager()
+        
+        zm_run_state_list = zm_manager.get_zm_states( force_load = True )
         new_state_values_dict = { x.name(): x.name() for x in zm_run_state_list }
         
         zm_entity = Entity.objects.filter_by_integration_key(
-            integration_key = self._zm_manager._zm_integration_key(),
+            integration_key = zm_manager._zm_integration_key(),
         ).first()
         
         if not zm_entity:
@@ -71,7 +71,7 @@ class ZoneMinderSynchronizer:
             )
         
         zm_run_state_sensor = Sensor.objects.filter_by_integration_key(
-            integration_key = self._zm_manager._zm_run_state_integration_key()
+            integration_key = zm_manager._zm_run_state_integration_key()
         ).select_related('entity_state').first()
 
         if not zm_run_state_sensor:
@@ -118,12 +118,13 @@ class ZoneMinderSynchronizer:
         return
 
     def _fetch_zm_monitors( self, result : ProcessingResult ) -> Dict[ IntegrationKey, ZmMonitor ]:
+        zm_manager = self.zm_manager()
         
         logger.debug( 'Getting current ZM monitors.' )
         integration_key_to_monitor = dict()
-        for zm_monitor in self._zm_manager.get_zm_monitors( force_load = True ):
-            integration_key = self._zm_manager._to_integration_key(
-                prefix = self._zm_manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX,
+        for zm_monitor in zm_manager.get_zm_monitors( force_load = True ):
+            integration_key = zm_manager._to_integration_key(
+                prefix = zm_manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX,
                 zm_monitor_id = zm_monitor.id(),
             )
             integration_key_to_monitor[integration_key] = zm_monitor
@@ -146,7 +147,7 @@ class ZoneMinderSynchronizer:
                     integration_name = str( mock_monitor_id ),
                 )
             if integration_key.integration_name.startswith(
-                    self._zm_manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX ):
+                    self.zm_manager().ZM_MONITOR_INTEGRATION_NAME_PREFIX ):
                 integration_key_to_entity[integration_key] = entity
             continue
         
@@ -155,18 +156,20 @@ class ZoneMinderSynchronizer:
     def _create_zm_entity( self,
                            run_state_name_label_dict  : Dict[ str, str ],
                            result                     : ProcessingResult ):
+        zm_manager = self.zm_manager()
+
         with transaction.atomic():
             zm_entity = Entity(
-                name = self._zm_manager.ZM_ENTITY_NAME,
+                name = zm_manager.ZM_ENTITY_NAME,
                 entity_type_str = str(EntityType.SERVICE),
                 can_user_delete = ZmMetaData.allow_entity_deletion,
             )
-            zm_entity.integration_key = self._zm_manager._zm_integration_key()
+            zm_entity.integration_key = zm_manager._zm_integration_key()
             zm_entity.save()
 
             HiModelHelper.create_discrete_controller(
                 entity = zm_entity,
-                integration_key = self._zm_manager._zm_run_state_integration_key(),
+                integration_key = zm_manager._zm_run_state_integration_key(),
                 name = f'{zm_entity.name} Run State',
                 name_label_dict = run_state_name_label_dict,
             )
@@ -177,10 +180,11 @@ class ZoneMinderSynchronizer:
     def _create_monitor_entity( self,
                                 zm_monitor  : ZmMonitor,
                                 result      : ProcessingResult ):
+        zm_manager = self.zm_manager()
 
         with transaction.atomic():
-            entity_integration_key = self._zm_manager._to_integration_key(
-                prefix = self._zm_manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX,
+            entity_integration_key = zm_manager._to_integration_key(
+                prefix = zm_manager.ZM_MONITOR_INTEGRATION_NAME_PREFIX,
                 zm_monitor_id = zm_monitor.id(),
             )
             entity = Entity(
@@ -193,34 +197,34 @@ class ZoneMinderSynchronizer:
 
             HiModelHelper.create_video_stream_sensor(
                 entity = entity,
-                integration_key = self._zm_manager._to_integration_key(
-                    prefix = self._zm_manager.VIDEO_STREAM_SENSOR_PREFIX,
+                integration_key = zm_manager._to_integration_key(
+                    prefix = zm_manager.VIDEO_STREAM_SENSOR_PREFIX,
                     zm_monitor_id = zm_monitor.id(),
                 ),
             )
             movement_sensor = HiModelHelper.create_movement_sensor(
                 entity = entity,
-                integration_key = self._zm_manager._to_integration_key(
-                    prefix = self._zm_manager.MOVEMENT_SENSOR_PREFIX,
+                integration_key = zm_manager._to_integration_key(
+                    prefix = zm_manager.MOVEMENT_SENSOR_PREFIX,
                     zm_monitor_id = zm_monitor.id(),
                 ),
             )
             HiModelHelper.create_discrete_controller(
                 entity = entity,
-                integration_key = self._zm_manager._to_integration_key(
-                    prefix = self._zm_manager.MONITOR_FUNCTION_SENSOR_PREFIX,
+                integration_key = zm_manager._to_integration_key(
+                    prefix = zm_manager.MONITOR_FUNCTION_SENSOR_PREFIX,
                     zm_monitor_id = zm_monitor.id(),
                 ),
                 name = f'{entity.name} Function',
                 name_label_dict = { str(x): x.label for x in ZmMonitorFunction },
             )
             
-            if self._zm_manager.should_add_alarm_events:
+            if zm_manager.should_add_alarm_events:
                 HiModelHelper.create_movement_event_definition(
                     name = f'{movement_sensor.name} Alarm',
                     entity_state = movement_sensor.entity_state,
-                    integration_key = self._zm_manager._to_integration_key(
-                        prefix = self._zm_manager.MOVEMENT_EVENT_PREFIX,
+                    integration_key = zm_manager._to_integration_key(
+                        prefix = zm_manager.MOVEMENT_EVENT_PREFIX,
                         zm_monitor_id = zm_monitor.id(),
                     ),
                 )
