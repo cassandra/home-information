@@ -2,16 +2,16 @@ import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
-from hi.apps.sense.sensor_response_manager import SensorResponseManager
+from hi.apps.sense.sense_mixins import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
 
 from .hass_converter import HassConverter
-from .hass_manager import HassManager
+from .hass_mixins import HassMixin
 
 logger = logging.getLogger(__name__)
 
 
-class HassMonitor( PeriodicMonitor ):
+class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
 
     HASS_POLLING_INTERVAL_SECS = 10
 
@@ -20,17 +20,27 @@ class HassMonitor( PeriodicMonitor ):
             id = 'hass-monitor',
             interval_secs = self.HASS_POLLING_INTERVAL_SECS,
         )
-        self._hass_manager = HassManager()
-        self._sensor_response_manager = SensorResponseManager()
-        self._logger = logging.getLogger(__name__)
+        
+        self.hass_manager().register_change_listener( self.refresh )
+        self._initialized = False
         return
 
+    async def _initialize_async(self):
+        hass_manager = await self.hass_manager_async()
+        self._initialized = True
+        hass_manager.register_change_listener( self.refresh )
+        return
+    
     def refresh( self ):
         """ Should be called when integration settings are changed. """
         return
     
     async def do_work(self):
-        id_to_hass_state_map = self._hass_manager.fetch_hass_states_from_api( verbose = False )
+        if not self._initialized:
+            await self._initialize_async()
+        hass_manager = await self.hass_manager_async()
+        
+        id_to_hass_state_map = hass_manager.fetch_hass_states_from_api( verbose = False )
 
         if self.TRACE:
             logger.debug( f'Fetched {len(id_to_hass_state_map)} HAss States' )
@@ -51,7 +61,8 @@ class HassMonitor( PeriodicMonitor ):
             sensor_response_latest_map[integration_key] = sensor_response
             continue
 
-        await self._sensor_response_manager.update_with_latest_sensor_responses(
+        sensor_response_manager = await self.sensor_response_manager_async()
+        await sensor_response_manager.update_with_latest_sensor_responses(
             sensor_response_map = sensor_response_latest_map,
         )
         return

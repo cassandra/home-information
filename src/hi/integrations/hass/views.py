@@ -9,11 +9,11 @@ from django.views.generic import View
 
 from hi.integrations.core.forms import IntegrationAttributeFormSet
 from hi.integrations.core.helpers import IntegrationHelperMixin
-from hi.integrations.core.integration_factory import IntegrationFactory
 from hi.integrations.core.views import IntegrationPageView
 
 from hi.hi_async_view import HiModalView
 
+from .hass_manager import HassManager
 from .hass_metadata import HassMetaData
 from .hass_sync import HassSynchronizer
 
@@ -133,11 +133,7 @@ class HassSettingsView( View, IntegrationHelperMixin ):
             with transaction.atomic():
                 integration_attribute_formset.save()
 
-            hass_monitor = IntegrationFactory().get_integration_monitor(
-                integration_id = HassMetaData.integration_id,
-            )
-            if hass_monitor:
-                hass_monitor.refresh()
+            HassManager().notify_settings_changed()
 
         context = {
             'integration_attribute_formset': integration_attribute_formset,

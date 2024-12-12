@@ -9,7 +9,7 @@ from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .hass_controller import HassController
 from .hass_metadata import HassMetaData
-from .hass_monitor import HassMonitor
+from .monitors import HassMonitor
 from . import views
 
 logger = logging.getLogger(__name__)

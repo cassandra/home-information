@@ -3,11 +3,12 @@ import logging
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .notification_manager import NotificationManager
+from .notify_mixins import NotificationMixin
 
 logger = logging.getLogger(__name__)
 
 
-class NotificationMonitor( PeriodicMonitor ):
+class NotificationMonitor( PeriodicMonitor, NotificationMixin ):
 
     NOTIFICATION_POLLING_INTERVAL_SECS = 10
 
@@ -21,5 +22,6 @@ class NotificationMonitor( PeriodicMonitor ):
 
     async def do_work(self):
         logger.debug( 'Checking for notification maintenance work.' )
-        await self._notification_manager.do_periodic_maintenance()
+        notification_manager = await self.notification_manager_async()
+        await notification_manager.do_periodic_maintenance()
         return

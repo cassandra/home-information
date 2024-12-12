@@ -31,7 +31,7 @@ class SecurityManager(Singleton):
     SECURITY_STATE_CACHE_KEY = 'hi.security.state'
     
     def __init_singleton__(self):
-        self._security_state = SecurityState.DISABLED
+        self._security_state = None
         self._security_level = SecurityLevel.OFF
 
         self._delayed_security_state_timer = None
@@ -39,14 +39,17 @@ class SecurityManager(Singleton):
         
         self._security_status_lock = Lock()
         self._redis_client = get_redis_client()
-        try:
-            self._initialize_security_state()
-        except Exception as e:
-            logger.exception( 'Problem trying to initialize security state', e )
         return
 
     @property
     def security_state(self) -> SecurityState:
+        if not self._security_state:
+            try:
+                self._initialize_security_state()
+            except Exception as e:
+                logger.exception( 'Problem trying to initialize security state', e )
+                self._security_state = SecurityState.DISABLED
+                
         return self._security_state
 
     @property

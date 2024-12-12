@@ -90,7 +90,7 @@ class AlertManager(Singleton):
             logger.exception( 'Problem adding alarm to alert queue.', e )
         return
     
-    def do_periodic_maintenance(self):
+    async def do_periodic_maintenance(self):
         try:
             self._alert_queue.remove_expired_or_acknowledged_alerts()
         except Exception as e:

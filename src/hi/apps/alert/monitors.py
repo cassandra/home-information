@@ -2,12 +2,12 @@ import logging
 
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
-from .alert_manager import AlertManager
+from .alert_mixins import AlertMixin
 
 logger = logging.getLogger(__name__)
 
 
-class AlertMonitor( PeriodicMonitor ):
+class AlertMonitor( PeriodicMonitor, AlertMixin ):
 
     ALERT_POLLING_INTERVAL_SECS = 10
 
@@ -16,10 +16,10 @@ class AlertMonitor( PeriodicMonitor ):
             id = 'alert-monitor',
             interval_secs = self.ALERT_POLLING_INTERVAL_SECS,
         )
-        self._alert_manager = AlertManager()
         return
 
     async def do_work(self):
         logger.debug( 'Checking for alert maintenance work.' )
-        self._alert_manager.do_periodic_maintenance()
+        alert_manager = await self.alert_manager_async()
+        await alert_manager.do_periodic_maintenance()
         return

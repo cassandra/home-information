@@ -4,12 +4,7 @@ from pyzm.helpers.Event import Event as ZmEvent
 from pyzm.helpers.Monitor import Monitor as ZmMonitor
 from pyzm.helpers.State import State as ZmState
 from pyzm.helpers.globals import logger as pyzm_logger
-from threading import local
 from typing import Dict, List
-
-from django.db.models.signals import post_save, post_delete
-from django.db import transaction
-from django.dispatch import receiver
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton import Singleton
@@ -59,10 +54,26 @@ class ZoneMinderManager( Singleton ):
         
         self._zm_monitor_list = list()
         self._zm_monitor_timestamp = datetimeproxy.min()
-        
+
+        self._change_listeners = list()
         self.reload()
         return
 
+    def register_change_listener( self, callback ):
+        logger.debug( f'Adding ZM setting change listener from {callback.__module__}' )
+        self._change_listeners.append( callback )
+        return
+    
+    def notify_settings_changed(self):
+        self.reload()
+        for callback in self._change_listeners:
+            try:
+                callback()
+            except Exception as e:
+                logger.exception( 'Problem calling setting change callback.', e )
+            continue
+        return
+    
     @property
     def zm_client(self):
         # Docs: https://pyzm.readthedocs.io/en/latest/
@@ -234,45 +245,3 @@ class ZoneMinderManager( Singleton ):
 
     def get_event_video_stream_url( self, event_id : int ):
         return f'{self.zm_client.portal_url}/cgi-bin/nph-zms?mode=jpeg&scale=100&rate=5&maxfps=5&replay=single&source=event&event={event_id}'
-
-    
-_thread_local = local()
-
-
-def do_zm_manager_reload():
-    logger.debug( 'Reloading ZoneMinderManager from model changes.')
-    ZoneMinderManager().reload()
-    _thread_local.reload_registered = False
-    return
-
-
-@receiver( post_save, sender = Integration )
-@receiver( post_save, sender = IntegrationAttribute )
-@receiver( post_delete, sender = Integration )
-@receiver( post_delete, sender = IntegrationAttribute )
-def zm_manager_model_changed( sender, instance, **kwargs ):
-    """
-    Queue the EventManager.reload() call to execute after the transaction
-    is committed.  This prevents reloading multiple times if multiple
-    models saved as part of a transaction (which is the normal case for
-    EventDefinition and its related models.)
-    """
-
-    if ( isinstance( instance, Integration )
-         and ( instance.integration_id != ZmMetaData.integration_id )):
-        return
-    if ( isinstance( instance, IntegrationAttribute )
-         and ( instance.integration.integration_id != ZmMetaData.integration_id )):
-        return
-    
-    if not hasattr(_thread_local, "reload_registered"):
-        _thread_local.reload_registered = False
-
-    logger.debug( 'ZoneMinderManager model change detected.')
-        
-    if not _thread_local.reload_registered:
-        logger.debug( 'Queuing ZoneMinderManager reload on model change.')
-        _thread_local.reload_registered = True
-        transaction.on_commit( do_zm_manager_reload )
-    
-    return

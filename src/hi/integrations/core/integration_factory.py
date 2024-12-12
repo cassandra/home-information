@@ -16,7 +16,6 @@ class IntegrationFactory( Singleton ):
 
     def __init_singleton__( self ):
         self._integration_gateway_map : Dict[ str, IntegrationGateway ] = dict()
-        self._integration_monitor_map : Dict[ str, PeriodicMonitor ] = dict()
         return
 
     def get_default_integration_data( self ):
@@ -57,10 +56,7 @@ class IntegrationFactory( Singleton ):
         if integration_id in self._integration_gateway_map:
             return self._integration_gateway_map[integration_id]
         raise KeyError( f'Unknown integration id "{integration_id}".' )
-        
-    def get_integration_monitor( self, integration_id : str ) -> PeriodicMonitor:
-        return self._integration_monitor_map.get( integration_id )
-        
+
     def register( self, integration_gateway  : IntegrationGateway ):
         integration_metadata = integration_gateway.get_meta_data()
         integration_id = integration_metadata.integration_id
@@ -69,13 +65,5 @@ class IntegrationFactory( Singleton ):
             return
         logger.debug( f'Registering integration: {integration_metadata.label}' )
         self._integration_gateway_map[integration_id] = integration_gateway
-        try:
-            integration = Integration.objects.get( integration_id = integration_id )
-            if integration.is_enabled:
-                periodic_monitor = integration_gateway.get_sensor_monitor()
-                self._integration_monitor_map[integration_id] = periodic_monitor
-                MonitorManager().register( periodic_monitor )
-        except Integration.DoesNotExist:
-            pass
         return
-
+    

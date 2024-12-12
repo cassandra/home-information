@@ -46,7 +46,7 @@ class SettingsManager( Singleton ):
         return
 
     def register_change_listener( self, callback ):
-        logger.debug( f'Adding setting change listener from {callback.__module__}' )
+        logger.debug( f'Adding SYSTEM setting change listener from {callback.__module__}' )
         self._change_listeners.append( callback )
         return
     

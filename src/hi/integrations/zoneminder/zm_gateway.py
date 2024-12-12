@@ -9,7 +9,7 @@ from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .zm_controller import ZoneMinderController
 from .zm_metadata import ZmMetaData
-from .zm_monitor import ZoneMinderMonitor
+from .monitors import ZoneMinderMonitor
 from . import views
 
 logger = logging.getLogger(__name__)

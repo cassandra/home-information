@@ -1,44 +1,45 @@
 import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.config.settings_manager import SettingsManager
 from hi.apps.console.settings import ConsoleSetting
+from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .enums import SecurityState
-from .security_manager import SecurityManager
+from .security_mixins import SecurityMixin
 from .settings import SecuritySetting
 
 logger = logging.getLogger(__name__)
 
 
-class SecurityMonitor( PeriodicMonitor ):
+class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
 
-    SECURITY_POLLING_INTERVAL_SECS = 5 * 60
+    SECURITY_POLLING_INTERVAL_SECS = 60
 
     def __init__( self ):
         super().__init__(
             id = 'security-monitor',
             interval_secs = self.SECURITY_POLLING_INTERVAL_SECS,
         )
-        self._security_manager = SecurityManager()
         self._last_security_state_check_datetime = datetimeproxy.now()
         return
 
     async def do_work(self):
-        self._check_security_state()
+        await self._check_security_state()
         return
 
-    def _check_security_state( self ):
+    async def _check_security_state( self ):
         logger.debug( 'Checking security state.' )
-        settings_manager = SettingsManager()
+        settings_manager = await self.settings_manager_async()
+        security_manager = await self.security_manager_async()
+        
         current_datetime = datetimeproxy.now()
         tz_name = settings_manager.get_setting_value(
             ConsoleSetting.TIMEZONE,
         )
         try:
             # Some states do not allow automated changes
-            if not self._security_manager.security_state.auto_change_allowed:
+            if not security_manager.security_state.auto_change_allowed:
                 return
 
             day_start_time_of_day = settings_manager.get_setting_value(
@@ -50,7 +51,7 @@ class SecurityMonitor( PeriodicMonitor ):
                     start_datetime = self._last_security_state_check_datetime,
                     end_datetime = current_datetime ):
                 logger.debug( 'Security state check: Setting as DAY.' )
-                self._security_manager.update_security_state_auto(
+                security_manager.update_security_state_auto(
                     new_security_state = SecurityState.DAY,
                 )
                 return
@@ -64,7 +65,7 @@ class SecurityMonitor( PeriodicMonitor ):
                     start_datetime = self._last_security_state_check_datetime,
                     end_datetime = current_datetime ):
                 logger.debug( 'Security state check: Setting as NIGHT.' )
-                self._security_manager.update_security_state_auto(
+                security_manager.update_security_state_auto(
                     new_security_state = SecurityState.NIGHT,
                 )
                 return

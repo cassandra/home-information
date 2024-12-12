@@ -1,7 +1,10 @@
 import asyncio
 import logging
 
+from django.apps import apps
+
 from hi.apps.common.singleton import Singleton
+from hi.apps.common.module_utils import import_module_safe
 
 from .periodic_monitor import PeriodicMonitor
 
@@ -52,14 +55,17 @@ class MonitorManager( Singleton ):
             self.shutdown()
         
         self._event_loop = asyncio.get_event_loop()
-        logger.info("Starting all registered monitors...")
-
-        # In case any registrations happened before initialize is called.
-        for monitor_id, monitor in self._monitor_map.items():
+        
+        logger.info("Discovering app monitors...")
+        periodic_monitor_class_list = self._discover_periodic_monitors()        
+        for monitor_class in periodic_monitor_class_list:
+            monitor = monitor_class()
+            self._monitor_map[monitor.id] = monitor
             if not monitor.is_running:
-                logger.debug(f"Starting monitor: {monitor_id}")
+                logger.debug(f"Starting monitor: {monitor.id}")
                 asyncio.run_coroutine_threadsafe( monitor.start(), self._event_loop )
             continue
+
         return
 
     def shutdown(self) -> None:
@@ -77,3 +83,34 @@ class MonitorManager( Singleton ):
             self._event_loop.stop()
         
         return
+
+    def _discover_periodic_monitors(self):
+
+        periodic_monitor_class_list = list()
+        for app_config in apps.get_app_configs():
+            if not app_config.name.startswith( 'hi' ):
+                continue
+            module_name = f'{app_config.name}.monitors'
+            try:
+                app_module = import_module_safe( module_name = module_name )
+                if not app_module:
+                    logger.debug( f'No monitor module for {app_config.name}' )
+                    continue
+
+                logger.debug( f'Found monitor module for {app_config.name}' )
+                
+                for attr_name in dir(app_module):
+                    attr = getattr( app_module, attr_name )
+                    if ( isinstance( attr, type )
+                         and issubclass( attr, PeriodicMonitor )
+                         and attr is not PeriodicMonitor ):
+                        logger.debug(f'Found periodic monitor: {attr_name}')
+                        periodic_monitor_class_list.append( attr )
+                    continue                
+                
+            except Exception as e:
+                logger.exception( f'Problem loading settings for {module_name}.', e )
+            continue
+
+        return periodic_monitor_class_list
+       

@@ -17,7 +17,6 @@ class NotificationManager(Singleton):
 
     def __init_singleton__(self):
         self._notification_queue = NotificationQueue()
-        self._settings_manager = SettingsManager()
         return
 
     def add_notification_item( self, notification_item : NotificationItem ):
@@ -36,7 +35,7 @@ class NotificationManager(Singleton):
         return
 
     async def send_notifications( self, notification : Notification ) -> bool:
-        notifications_enabled_str = self._settings_manager.get_setting_value(
+        notifications_enabled_str = SettingsManager().get_setting_value(
             NotifySetting.NOTIFICATIONS_ENABLED,
         )
         notifications_enabled = str_to_bool( notifications_enabled_str )
@@ -48,7 +47,7 @@ class NotificationManager(Singleton):
     
     async def send_email_notification_if_needed_async( self, notification : Notification ) -> bool:
         
-        email_addresses_str = self._settings_manager.get_setting_value(
+        email_addresses_str = SettingsManager().get_setting_value(
             NotifySetting.NOTIFICATIONS_EMAIL_ADDRESSES,
         )
         email_address_list = parse_emails_from_text( text = email_addresses_str )
