@@ -1,16 +1,23 @@
 from asgiref.sync import sync_to_async
 import asyncio
+import json
 import logging
 from typing import Dict, List
 
 from django.apps import apps
+from django.db import transaction
 
+from hi.apps.attribute.enums import AttributeType
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.module_utils import import_module_safe
 
-from .integration_gateway import IntegrationGateway
-from .models import Integration
+from .enums import IntegrationAttributeType
+from .forms import IntegrationAttributeFormSet
 from .integration_data import IntegrationData
+from .integration_gateway import IntegrationGateway
+from .integration_key import IntegrationKey
+from .models import Integration, IntegrationAttribute
+from .transient_models import IntegrationMetaData
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +59,7 @@ class IntegrationManager( Singleton ):
 
     async def initialize(self) -> None:
         await self._load_integration_data()
-        await self._start_monitors()
+        await self._start_all_integration_monitors()
         return
         
     async def _load_integration_data(self) -> None:
@@ -81,7 +88,7 @@ class IntegrationManager( Singleton ):
             continue
         return
 
-    async def _start_monitors(self) -> None:
+    async def _start_all_integration_monitors(self) -> None:
         if self._event_loop:
             self.shutdown()
         
@@ -89,25 +96,65 @@ class IntegrationManager( Singleton ):
         
         for integration_data in self._integration_data_map.values():
             if not integration_data.is_enabled:
+                logger.debug( f'Skipping monitor start for {integration_data}. Integration is disabled.' )
                 continue
-            monitor = integration_data.integration_gateway.get_monitor()
-            if not monitor:
-                continue
-            self._monitor_map[monitor.id] = monitor
-            if not monitor.is_running:
-                logger.debug(f"Starting monitor: {monitor.id}")
-                asyncio.run_coroutine_threadsafe( monitor.start(), self._event_loop )
+            self._start_integration_monitor( integration_data = integration_data )
             continue
         return
 
+    def _start_integration_monitor( self, integration_data : IntegrationData ):
+        integration_id = integration_data.integration_id
+        logger.debug( f'Starting integration monitor for {integration_id}' )
+
+        assert self._event_loop is not None
+        
+        if not integration_data.is_enabled:
+            logger.warning( f'Tried to start monitor for disabled integration: {integration_id}' )
+            return
+
+        monitor = integration_data.integration_gateway.get_monitor()
+        if not monitor:
+            logger.debug( f'No monitor defined {integration_id}' )
+            return
+        
+        if integration_id in self._monitor_map:
+            existing_monitor = self._monitor_map[integration_id]
+            if existing_monitor.is_running:
+                logger.warning( f'Found existing running monitor for integration: {integration_id}' )
+                return
+                
+        self._monitor_map[integration_id] = monitor
+        if not monitor.is_running:
+            logger.debug(f"Starting monitor: {integration_id}")
+            asyncio.run_coroutine_threadsafe( monitor.start(), self._event_loop )
+        return
+
+    def _stop_integration_monitor( self, integration_data : IntegrationData ):
+        integration_id = integration_data.integration_id
+        logger.debug( f'Stopping integration monitor for {integration_id}' )
+
+        if integration_id not in self._monitor_map:
+            logger.debug( f'No monitor running for {integration_id}' )
+            return
+
+        existing_monitor = self._monitor_map[integration_id]
+        if existing_monitor.is_running:
+            existing_monitor.stop()
+        else:
+            logger.debug( f'Existing monitor is not running for {integration_id}' )
+
+        del self._monitor_map[integration_id]
+        return
+        
     def shutdown(self) -> None:
         if not self._event_loop:
             logger.info("Cannot stop all monitors. No event loop.")
             return
         
-        logger.info("Stopping all registered monitors...")
+        logger.info("Stopping all integration monitors...")
 
-        for monitor in self._monitor_map.values():
+        for integration_id, monitor in self._monitor_map.items():
+            logger.debug( f'Stopping integration monitor for {integration_id}' )
             monitor.stop()
             continue
 
@@ -152,4 +199,75 @@ class IntegrationManager( Singleton ):
     def _load_existing_integrations(self):
         integration_queryset = Integration.objects.all()
         return { x.integration_id: x for x in integration_queryset }
+    
+    def _ensure_all_attributes_exist( self,
+                                      integration_metadata  : IntegrationMetaData,
+                                      integration           : Integration ):
+        """
+        After an integration is created, we need to be able to detect if any
+        new attributes might have been defined.  This allows new code
+        features to be added for existing installations.
+        """
+
+        new_attribute_types = set()
+        existing_attribute_integration_keys = set([ x.integration_key
+                                                    for x in integration.attributes.all() ])
+        
+        AttributeType = integration_metadata.attribute_type
+        for attribute_type in AttributeType:
+            integration_key = IntegrationKey(
+                integration_id = integration.integration_id,
+                integration_name = str(attribute_type),
+            )
+            if integration_key not in existing_attribute_integration_keys:
+                new_attribute_types.add( attribute_type )
+            continue
+        
+        if new_attribute_types:
+            with transaction.atomic():
+                for attribute_type in new_attribute_types:
+                    self._create_integration_attribute(
+                        integration = integration,
+                        attribute_type = attribute_type,
+                    )
+                    continue
+        return
+        
+    def _create_integration_attribute( self,
+                                       integration     : Integration,
+                                       attribute_type  : IntegrationAttributeType ):
+        integration_key = IntegrationKey(
+            integration_id = integration.integration_id,
+            integration_name = str(attribute_type),
+        )
+        IntegrationAttribute.objects.create(
+            integration = integration,
+            name = attribute_type.label,
+            value = attribute_type.initial_value,
+            value_type_str = str(attribute_type.value_type),
+            value_range_str = json.dumps( attribute_type.value_range_dict ),
+            integration_key_str = str(integration_key),
+            attribute_type_str = AttributeType.PREDEFINED,
+            is_editable = attribute_type.is_editable,
+            is_required = attribute_type.is_required,
+        )
+        return
+                
+    def enable_integration( self,
+                            integration_data               : IntegrationData,
+                            integration_attribute_formset  : IntegrationAttributeFormSet ):
+        with transaction.atomic():
+            integration_data.integration.is_enabled = True
+            integration_data.integration.save()
+            integration_attribute_formset.save()
+        self._start_integration_monitor( integration_data = integration_data )
+        return
+                
+    def disable_integration( self, integration_data : IntegrationData ):
+
+        with transaction.atomic():
+            integration_data.integration.is_enabled = False
+            integration_data.integration.save()
+        self._stop_integration_monitor( integration_data = integration_data )
+        return
     

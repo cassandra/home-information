@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.views.generic import View
 
 from hi.integrations.core.forms import IntegrationAttributeFormSet
-from hi.integrations.core.helpers import IntegrationHelperMixin
+from hi.integrations.core.integration_manager import IntegrationManager
 
 from hi.hi_async_view import HiModalView
 
@@ -13,21 +13,20 @@ from .zm_metadata import ZmMetaData
 from .zm_sync import ZoneMinderSynchronizer
 
 
-class ZmSettingsView( View, IntegrationHelperMixin, ZoneMinderMixin ):
+class ZmSettingsView( View, ZoneMinderMixin ):
 
     def post( self, request, *args, **kwargs ):
-
-        integration = self.get_or_create_integration(
-            integration_metadata = ZmMetaData,
+        integration_data = IntegrationManager().get_integration_data(
+            integration_id = ZmMetaData.integration_id,
         )
-        if not integration.is_enabled:
-            raise BadRequest( 'ZoneMinder not is enabled' )
+        if not integration_data.is_enabled:
+            raise BadRequest( 'ZoneMinder is not enabled' )
 
         integration_attribute_formset = IntegrationAttributeFormSet(
             request.POST,
             request.FILES,
-            instance = integration,
-            prefix = f'integration-{integration.id}',
+            instance = integration_data.integration,
+            prefix = f'integration-{integration_data.integration_id}',
         )
         if integration_attribute_formset.is_valid():
             with transaction.atomic():

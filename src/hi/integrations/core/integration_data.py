@@ -11,6 +11,12 @@ class IntegrationData:
     integration_gateway   : IntegrationGateway
     integration           : Integration
 
+    def __repr__(self):
+        return self.__str__()
+    
+    def __str__(self):
+        return self.integration_id
+    
     @property
     def integration_id(self) -> str:
         return self.integration_metadata.integration_id

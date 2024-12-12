@@ -24,7 +24,7 @@ class MonitorConfig(AppConfig):
             # This is for development only as the gunicorn.conf.py file
             # handles this initialization when execution with gunicorn.
             #
-            thread = threading.Thread( target = self._start_monitors, daemon = True )
+            thread = threading.Thread( target = self._start_all_app_monitors, daemon = True )
             thread.start()
 
             def handle_signal(signal_number, frame):
@@ -37,7 +37,7 @@ class MonitorConfig(AppConfig):
             
         return            
 
-    def _start_monitors(self):
+    def _start_all_app_monitors(self):
         from hi.apps.monitor.monitor_manager import AppMonitorManager
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop( loop )

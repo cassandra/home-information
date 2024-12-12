@@ -11,7 +11,6 @@ from hi.exceptions import ForceRedirectException
 from hi.hi_async_view import HiModalView
 
 from .forms import IntegrationAttributeFormSet
-from .helpers import IntegrationHelperMixin
 from .integration_manager import IntegrationManager
 
 logger = logging.getLogger(__name__)
@@ -48,20 +47,21 @@ class IntegrationSelectView( HiModalView ):
         return self.modal_response( request, context )
 
 
-class IntegrationEnableView( HiModalView, IntegrationHelperMixin ):
+class IntegrationEnableView( HiModalView ):
 
     def get_template_name( self ) -> str:
         return 'core/modals/integration_enable.html'
 
     def get(self, request, *args, **kwargs):
+        integration_manager = IntegrationManager()
         integration_id = kwargs.get('integration_id')
-        integration_data = IntegrationManager().get_integration_data(
+        integration_data = integration_manager.get_integration_data(
             integration_id = integration_id,
         )
         if integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} is already enabled' )
 
-        self._ensure_all_attributes_exist(
+        integration_manager._ensure_all_attributes_exist(
             integration_metadata = integration_data.integration_metadata,
             integration = integration_data.integration,
         )
@@ -80,8 +80,9 @@ class IntegrationEnableView( HiModalView, IntegrationHelperMixin ):
         return self.modal_response( request, context )
 
     def post(self, request, *args, **kwargs):
+        integration_manager = IntegrationManager()
         integration_id = kwargs.get('integration_id')
-        integration_data = IntegrationManager().get_integration_data(
+        integration_data = integration_manager.get_integration_data(
             integration_id = integration_id,
         )
         if integration_data.integration.is_enabled:
@@ -100,16 +101,15 @@ class IntegrationEnableView( HiModalView, IntegrationHelperMixin ):
             }
             return self.modal_response( request, context, status_code = 400 )
 
-        with transaction.atomic():
-            integration_data.integration.is_enabled = True
-            integration_data.integration.save()
-            integration_attribute_formset.save()
-
+        integration_manager.enable_integration(
+            integration_data = integration_data,
+            integration_attribute_formset = integration_attribute_formset,
+        )
         redirect_url = reverse( 'integrations_home' )
         return self.redirect_response( request, redirect_url )
 
     
-class IntegrationDisableView( HiModalView, IntegrationHelperMixin ):
+class IntegrationDisableView( HiModalView ):
 
     def get_template_name( self ) -> str:
         return 'core/modals/integration_disable.html'
@@ -128,17 +128,17 @@ class IntegrationDisableView( HiModalView, IntegrationHelperMixin ):
         return self.modal_response( request, context )
     
     def post(self, request, *args, **kwargs):
+        integration_manager = IntegrationManager()
         integration_id = kwargs.get('integration_id')
-        integration_data = IntegrationManager().get_integration_data(
+        integration_data = integration_manager.get_integration_data(
             integration_id = integration_id,
         )
         if not integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} is already disabled' )
 
-        with transaction.atomic():
-            integration_data.integration.is_enabled = False
-            integration_data.integration.save()
-
+        integration_manager.disable_integration(
+            integration_data = integration_data,
+        )
         redirect_url = reverse( 'integrations_home' )
         return self.redirect_response( request, redirect_url )
         
