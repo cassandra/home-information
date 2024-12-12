@@ -10,14 +10,14 @@ from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.hi_async_view import HiModalView
 
 from .controller_history_manager import ControllerHistoryManager
-from .controller_manager import ControllerManager
+from .control_mixins import ControllerMixin
 from .models import Controller, ControllerHistory
 from .view_mixin import ControlViewMixin
 
 logger = logging.getLogger(__name__)
 
 
-class ControllerView( View, ControlViewMixin ):
+class ControllerView( View, ControlViewMixin, ControllerMixin ):
 
     MISSING_VALUE_MAP = {
         EntityStateType.MOVEMENT: EntityStateValue.IDLE,
@@ -38,7 +38,7 @@ class ControllerView( View, ControlViewMixin ):
         if control_value is None:
             control_value = self._get_value_for_missing_input( controller = controller )
 
-        control_result = ControllerManager().do_control(
+        control_result = self.controller_manager().do_control(
             controller = controller,
             control_value = control_value,
         )

@@ -3,7 +3,7 @@ import logging
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.security.security_manager import SecurityManager
-from hi.apps.notify.notification_manager import NotificationManager
+from hi.apps.notify.notify_mixins import NotificationMixin
 
 from .alert import Alert
 from .alert_queue import AlertQueue
@@ -13,11 +13,18 @@ from .alert_status import AlertStatusData
 logger = logging.getLogger(__name__)
 
 
-class AlertManager(Singleton):
+class AlertManager( Singleton, NotificationMixin ):
 
     def __init_singleton__(self):
         self._alert_queue = AlertQueue()
-        self._notification_manager = NotificationManager()
+        self._was_initialized = False
+        return
+
+    def ensure_initialized(self):
+        if self._was_initialized:
+            return
+        # Any future heavyweight initializations go here (e.g., any DB operations).
+        self._was_initialized = True
         return
 
     @property
@@ -76,12 +83,13 @@ class AlertManager(Singleton):
         return
     
     async def add_alarm( self, alarm : Alarm ):
+        notification_manager = await self._notification_manager_async()
         logging.debug( f'Adding Alarm: {alarm}' )
         security_state = SecurityManager().security_state
         try:
             alert = self._alert_queue.add_alarm( alarm = alarm )
             if security_state.uses_notifications and alert.has_single_alarm:
-                self._notification_manager.add_notification_item(
+                notification_manager.add_notification_item(
                     notification_item = alert.to_notification_item(),
                 )
         except ValueError as ve:

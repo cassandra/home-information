@@ -15,8 +15,8 @@ from hi.apps.model_helper import HiModelHelper
 from hi.integrations.core.integration_key import IntegrationKey
 
 from .enums import ZmMonitorFunction
-from .zm_mixins import ZoneMinderMixin
 from .zm_metadata import ZmMetaData
+from .zm_mixins import ZoneMinderMixin
 
 logger = logging.getLogger(__name__)
 

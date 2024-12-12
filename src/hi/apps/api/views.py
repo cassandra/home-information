@@ -6,7 +6,7 @@ from django.core.exceptions import BadRequest
 from django.http import HttpResponse
 from django.views.generic import View
 
-from hi.apps.alert.alert_manager import AlertManager
+from hi.apps.alert.alert_mixins import AlertMixin
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.config.settings_manager import SettingsManager
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
@@ -15,7 +15,7 @@ from hi.apps.security.security_manager import SecurityManager
 logger = logging.getLogger(__name__)
 
 
-class StatusView( View ):
+class StatusView( View, AlertMixin ):
 
     ServerStartTimestampAttr = 'startTimestamp'
     ServerTimestampAttr = 'timestamp'
@@ -41,7 +41,7 @@ class StatusView( View ):
         server_start_datetime = SettingsManager().get_server_start_datetime()
         server_datetime = datetimeproxy.now()
 
-        alert_status_data = AlertManager().get_alert_status_data(
+        alert_status_data = self.alert_manager().get_alert_status_data(
             last_alert_status_datetime = last_server_datetime,
         )
 

@@ -12,9 +12,6 @@ logger = logging.getLogger(__name__)
 
 class ZoneMinderController( IntegrationController, ZoneMinderMixin ):
 
-    def __init__(self):
-        return
-    
     def do_control( self,
                     integration_key  : IntegrationKey,
                     control_value    : str             ) -> IntegrationControlResult:

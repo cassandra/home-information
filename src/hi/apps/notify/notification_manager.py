@@ -17,8 +17,16 @@ class NotificationManager(Singleton):
 
     def __init_singleton__(self):
         self._notification_queue = NotificationQueue()
+        self._was_initialized = False
         return
 
+    def ensure_initialized(self):
+        if self._was_initialized:
+            return
+        # Any future heavyweight initializations go here (e.g., any DB operations).
+        self._was_initialized = True
+        return
+    
     def add_notification_item( self, notification_item : NotificationItem ):
         self._notification_queue.add_item( notification_item = notification_item )
         return

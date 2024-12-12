@@ -13,6 +13,6 @@ class SecurityMixin:
         
     async def security_manager_async(self):
         if not hasattr( self, '_security_manager' ):
-            self._security_manager = await sync_to_async( SecurityManager )()
-            await self._security_manager.ensure_initialized_async()
+            self._security_manager = SecurityManager()
+            await sync_to_async( self._security_manager.ensure_initialized )()
         return self._security_manager

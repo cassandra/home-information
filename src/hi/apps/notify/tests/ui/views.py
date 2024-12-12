@@ -7,7 +7,7 @@ from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.views.generic import View
 
-from hi.apps.notify.notification_manager import NotificationManager
+from hi.apps.notify.notify_mixins import NotificationMixin
 from hi.apps.notify.tests.synthetic_data import NotifySyntheticData
 
 
@@ -66,13 +66,13 @@ class TestUiViewEmailView( View ):
         return render( request, 'notify/tests/ui/email_preview.html', context )
 
 
-class TestUiSendEmailView( View ):
+class TestUiSendEmailView( View, NotificationMixin ):
 
     def get( self, request, *args, **kwargs ):
         email_type = kwargs.get('email_type')
         if email_type == 'notification':
             notification = NotifySyntheticData().create_random_notification()
-            send_email_coroutine = NotificationManager().send_email_notification_if_needed_async(
+            send_email_coroutine = self.notification_manager().send_email_notification_if_needed_async(
                 notification = notification,
             )
             result = asyncio.run( send_email_coroutine )

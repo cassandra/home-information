@@ -13,11 +13,15 @@ class IntegrationData:
 
     @property
     def integration_id(self) -> str:
-        return self.integration_meta_data.integration_id
+        return self.integration_metadata.integration_id
 
     @property
     def integration_metadata(self) -> IntegrationMetaData:
-        return self.integration_gateway.get_meta_data()
+        return self.integration_gateway.get_metadata()
+
+    @property
+    def label(self) -> IntegrationMetaData:
+        return self.integration_metadata.label
 
     @property
     def is_enabled(self):

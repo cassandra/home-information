@@ -2,7 +2,6 @@ import logging
 
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
-from .notification_manager import NotificationManager
 from .notify_mixins import NotificationMixin
 
 logger = logging.getLogger(__name__)
@@ -17,7 +16,6 @@ class NotificationMonitor( PeriodicMonitor, NotificationMixin ):
             id = 'notification-monitor',
             interval_secs = self.NOTIFICATION_POLLING_INTERVAL_SECS,
         )
-        self._notification_manager = NotificationManager()
         return
 
     async def do_work(self):

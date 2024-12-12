@@ -11,7 +11,6 @@ from hi.integrations.core.integration_key import IntegrationKey
 
 from .hass_converter import HassConverter
 from .hass_models import HassDevice
-from .hass_manager import HassManager
 from .hass_mixins import HassMixin
 from .hass_metadata import HassMetaData
 

@@ -40,6 +40,11 @@ class IntegrationManager( Singleton ):
         enabled_integration_data_list.sort( key = lambda data : data.integration_metadata.label )
         return enabled_integration_data_list[0]
 
+    def get_integration_data( self, integration_id : str ) -> IntegrationData :
+        if integration_id in self._integration_data_map:
+            return self._integration_data_map[integration_id]
+        raise KeyError( f'Unknown integration id "{integration_id}".' )
+
     def get_integration_gateway( self, integration_id : str ) -> IntegrationGateway:
         if integration_id in self._integration_data_map:
             return self._integration_data_map[integration_id].integration_gateway
@@ -59,7 +64,7 @@ class IntegrationManager( Singleton ):
         existing_integration_map = await sync_to_async( self._load_existing_integrations )()
         
         for integration_id, integration_gateway in defined_integration_gateway_map.items():
-            integration_metadata = integration_gateway.get_meta_data()
+            integration_metadata = integration_gateway.get_metadata()
             integration_id = integration_metadata.integration_id
             if integration_id in existing_integration_map:
                 integration = existing_integration_map[integration_id]
@@ -83,6 +88,8 @@ class IntegrationManager( Singleton ):
         self._event_loop = asyncio.get_event_loop()
         
         for integration_data in self._integration_data_map.values():
+            if not integration_data.is_enabled:
+                continue
             monitor = integration_data.integration_gateway.get_monitor()
             if not monitor:
                 continue
@@ -131,7 +138,7 @@ class IntegrationManager( Singleton ):
                          and attr is not IntegrationGateway ):
                         logger.debug(f'Found integration gateway: {attr_name}')
                         integration_gateway = attr()
-                        integration_metadata = integration_gateway.get_meta_data()
+                        integration_metadata = integration_gateway.get_metadata()
                         integration_id = integration_metadata.integration_id
                         integration_id_to_gateway[integration_id] = integration_gateway
                     continue                

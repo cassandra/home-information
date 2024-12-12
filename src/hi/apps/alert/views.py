@@ -7,14 +7,14 @@ from hi.constants import DIVID
 from hi.hi_async_view import HiModalView
 
 from .alert_helpers import AlertHelpers
-from .alert_manager import AlertManager
+from .alert_mixins import AlertMixin
 
 
-class AlertAcknowledgeView( View ):
+class AlertAcknowledgeView( View, AlertMixin ):
 
     def post( self, request, *args, **kwargs ):
         alert_id = kwargs.get( 'alert_id' )
-        alert_manager = AlertManager()
+        alert_manager = self.alert_manager()
         try:
             alert_manager.acknowledge_alert( alert_id = alert_id )
         except KeyError:
@@ -31,14 +31,14 @@ class AlertAcknowledgeView( View ):
         )
 
 
-class AlertDetailsView( HiModalView ):
+class AlertDetailsView( HiModalView, AlertMixin ):
 
     def get_template_name( self ) -> str:
         return 'alert/modals/alert_details.html'
 
     def get( self, request, *args, **kwargs ):
         alert_id = kwargs.get( 'alert_id' )
-        alert_manager = AlertManager()
+        alert_manager = self.alert_manager()
         try:
             alert = alert_manager.get_alert( alert_id = alert_id )
         except KeyError:

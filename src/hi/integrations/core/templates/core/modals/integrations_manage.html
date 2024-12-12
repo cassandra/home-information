@@ -20,11 +20,11 @@ Manage Integrations
 
   <div class="col-3">
     {% if integration_data.integration.is_enabled %}
-    <a href="{% url 'integrations_action' integration_id=integration_data.integration.integration_id action='disable' %}"
+    <a href="{% url 'integrations_disable' integration_id=integration_data.integration.integration_id %}"
        role="button" class="btn btn-danger btn-control" data-async="modal">DISABLE</a>
     
     {% else %}
-    <a href="{% url 'integrations_action' integration_id=integration_data.integration.integration_id action='enable' %}"
+    <a href="{% url 'integrations_enable' integration_id=integration_data.integration.integration_id %}"
        class="btn btn-success btn-control" role="button" data-async="modal">ENABLE</a>
     {% endif %}
   </div>

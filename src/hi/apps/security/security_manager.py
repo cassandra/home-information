@@ -54,17 +54,6 @@ class SecurityManager(Singleton):
         self._was_initialized = True
         return
     
-    async def ensure_initialized_async(self):
-        if self._was_initialized:
-            return
-        try:
-            await sync_to_async( self._initialize_security_state )()
-        except Exception as e:
-            logger.exception( 'Problem trying to initialize security state', e )
-            self._security_state = SecurityState.DISABLED
-        self._was_initialized = True
-        return
-    
     @property
     def security_state(self) -> SecurityState:
         return self._security_state

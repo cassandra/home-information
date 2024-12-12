@@ -6,7 +6,7 @@ from django.views.generic import View
 from hi.apps.control.controller_history_manager import ControllerHistoryManager
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
-from hi.apps.sense.sensor_history_manager import SensorHistoryManager
+from hi.apps.sense.sensor_history_manager import SensorHistoryMixin
 
 from hi.hi_async_view import HiModalView, HiSideView
 
@@ -110,7 +110,7 @@ class EntityStatusView( HiModalView, EntityViewMixin ):
         return self.modal_response( request, context )
 
     
-class EntityStateHistoryView( HiModalView, EntityViewMixin ):
+class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin ):
 
     ENTITY_STATE_HISTORY_ITEM_MAX = 5
     
@@ -119,7 +119,7 @@ class EntityStateHistoryView( HiModalView, EntityViewMixin ):
 
     def get( self, request, *args, **kwargs ):
         entity = self.get_entity( request, *args, **kwargs )
-        sensor_history_list_map = SensorHistoryManager().get_latest_entity_sensor_history(
+        sensor_history_list_map = self.sensor_history_manager().get_latest_entity_sensor_history(
             entity = entity,
             max_items = self.ENTITY_STATE_HISTORY_ITEM_MAX,
         )

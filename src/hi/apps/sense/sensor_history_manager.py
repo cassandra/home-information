@@ -11,11 +11,34 @@ from .transient_models import SensorResponse
 logger = logging.getLogger(__name__)
 
 
+class SensorHistoryMixin:
+  
+    def sensor_history_manager(self):
+        if not hasattr( self, '_sensor_history_manager' ):
+            self._sensor_history_manager = SensorHistoryManager()
+            self._sensor_history_manager.ensure_initialized()
+        return self._sensor_history_manager
+        
+    async def sensor_history_manager_async(self):
+        if not hasattr( self, '_sensor_history_manager' ):
+            self._sensor_history_manager = SensorHistoryManager()
+            await sync_to_async( self._sensor_history_manager.ensure_initialized )()
+        return self._sensor_history_manager
+
+    
 class SensorHistoryManager( Singleton ):
     
     def __init_singleton__( self ):
+        self._was_initialized = False
         return
-    
+
+    def ensure_initialized(self):
+        if self._was_initialized:
+            return
+        # Any future heavyweight initializations go here (e.g., any DB operations).
+        self._was_initialized = True
+        return
+
     async def add_to_sensor_history( self, sensor_response_list : List[ SensorResponse ] ):
         if not sensor_response_list:
             return

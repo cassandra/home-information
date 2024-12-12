@@ -5,19 +5,34 @@ from typing import Dict, List
 
 from hi.apps.common.redis_client import get_redis_client
 from hi.apps.common.singleton import Singleton
-from hi.apps.event.event_manager import EventManager
+from hi.apps.event.event_mixins import EventMixin
 from hi.apps.event.transient_models import EntityStateTransition
 
 from hi.integrations.core.integration_key import IntegrationKey
 
 from .models import Sensor
-from .sensor_history_manager import SensorHistoryManager
+from .sensor_history_manager import SensorHistoryMixin
 from .transient_models import SensorResponse
 
 logger = logging.getLogger(__name__)
 
 
-class SensorResponseManager( Singleton ):
+class SensorResponseMixin:
+    
+    def sensor_response_manager(self):
+        if not hasattr( self, '_sensor_response_manager' ):
+            self._sensor_response_manager = SensorResponseManager()
+            self._sensor_response_manager.ensure_initialized()
+        return self._sensor_response_manager
+        
+    async def sensor_response_manager_async(self):
+        if not hasattr( self, '_sensor_response_manager' ):
+            self._sensor_response_manager = SensorResponseManager()
+            await sync_to_async( self._sensor_response_manager.ensure_initialized )()
+        return self._sensor_response_manager
+
+
+class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
     """
     Integrations are responsible for monitoring sensor values and
     normalizing them into SensorResponse objects.  This module take it from
@@ -44,11 +59,17 @@ class SensorResponseManager( Singleton ):
 
     def __init_singleton__( self ):
         self._redis_client = get_redis_client()
-        self._sensor_history_manager = SensorHistoryManager()
-        self._event_manager = EventManager()
         self._sensor_cache = TTLCache( maxsize = 1000, ttl = 300 )
+        self._was_initialized = False
         return
 
+    def ensure_initialized(self):
+        if self._was_initialized:
+            return
+        # Any future heavyweight initializations go here (e.g., any DB operations).
+        self._was_initialized = True
+        return
+    
     async def update_with_latest_sensor_responses(
             self,
             sensor_response_map : Dict[ IntegrationKey, SensorResponse ] ):
@@ -91,7 +112,8 @@ class SensorResponseManager( Singleton ):
         
         logger.debug( f'Sensors changed: {len(changed_sensor_response_list)} of {len(sensor_response_map)}' )
         await self._add_latest_sensor_responses( changed_sensor_response_list )
-        await self._event_manager.add_entity_state_transitions( entity_state_transition_list )
+        event_manager = await self.event_manager_async()
+        await event_manager.add_entity_state_transitions( entity_state_transition_list )
         return
 
     def get_all_latest_sensor_responses( self ) -> Dict[ Sensor, List[ SensorResponse ] ]:
@@ -156,7 +178,8 @@ class SensorResponseManager( Singleton ):
         pipeline.execute()
 
         await self._add_sensors( sensor_response_list = sensor_response_list )
-        await self._sensor_history_manager.add_to_sensor_history(
+        sensor_history_manager = await self.sensor_history_manager_async()
+        await sensor_history_manager.add_to_sensor_history(
             sensor_response_list = sensor_response_list,
         )        
         return

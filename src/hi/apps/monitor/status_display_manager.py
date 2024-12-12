@@ -8,14 +8,14 @@ from hi.apps.entity.models import Entity, EntityState
 from hi.apps.location.enums import LocationViewType
 from hi.apps.location.models import LocationView
 from hi.apps.sense.models import Sensor
-from hi.apps.sense.sensor_response_manager import SensorResponseManager
+from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
 
 from .status_display_data import StatusDisplayData
 from .transient_models import EntityStatusData, EntityStateStatusData
 
 
-class StatusDisplayManager( Singleton ):
+class StatusDisplayManager( Singleton, SensorResponseMixin ):
 
     STATUS_VALUE_OVERRIDES_SECS = 11
 
@@ -368,7 +368,7 @@ class StatusDisplayManager( Singleton ):
     def get_latest_sensor_response( self, entity_state : EntityState ) -> SensorResponse:
         sensor_list = list( entity_state.sensors.all() )
         
-        sensor_to_sensor_response_list =  self._get_latest_sensor_responses_helper(
+        sensor_to_sensor_response_list = self._get_latest_sensor_responses_helper(
             sensor_list = sensor_list,
         )
         entity_state_sensor_response_list = list()
@@ -387,11 +387,12 @@ class StatusDisplayManager( Singleton ):
     def _get_latest_sensor_responses_helper(
             self,
             sensor_list : List[ Sensor ] = None ) -> Dict[ Sensor, List[ SensorResponse ] ] :
-
+        sensor_response_manager = self.sensor_response_manager()
+        
         if sensor_list is None:
-            sensor_to_sensor_response_list = SensorResponseManager().get_all_latest_sensor_responses()
+            sensor_to_sensor_response_list = sensor_response_manager.get_all_latest_sensor_responses()
         else:
-            sensor_to_sensor_response_list = SensorResponseManager().get_latest_sensor_responses(
+            sensor_to_sensor_response_list = sensor_response_manager.get_latest_sensor_responses(
                 sensor_list = sensor_list,
             )
 

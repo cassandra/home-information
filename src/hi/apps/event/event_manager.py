@@ -9,10 +9,10 @@ from django.db.models.signals import post_save, post_delete
 from django.db import transaction
 from django.dispatch import receiver
 
-from hi.apps.alert.alert_manager import AlertManager
+from hi.apps.alert.alert_mixins import AlertMixin
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton import Singleton
-from hi.apps.control.controller_manager import ControllerManager
+from hi.apps.control.control_mixins import ControllerMixin
 from hi.apps.security.security_manager import SecurityManager
 
 from .models import AlarmAction, ControlAction, EventClause, EventDefinition, EventHistory
@@ -21,7 +21,7 @@ from .transient_models import Event, EntityStateTransition
 logger = logging.getLogger(__name__)
 
 
-class EventManager(Singleton):
+class EventManager( Singleton, AlertMixin, ControllerMixin ):
 
     RECENT_EVENT_CACHE_SIZE = 1000
     RECENT_EVENT_CACHE_TTL_SECS = 3600
@@ -38,9 +38,14 @@ class EventManager(Singleton):
         self._recent_transitions = deque()
         self._recent_events = TTLCache( maxsize = self.RECENT_EVENT_CACHE_SIZE,
                                         ttl = self.RECENT_EVENT_CACHE_TTL_SECS )
-        self._alert_manager = AlertManager()
-        self._controller_manager = ControllerManager()
+        self._was_initialized = False
+        return
+    
+    def ensure_initialized(self):
+        if self._was_initialized:
+            return
         self.reload()
+        self._was_initialized = True
         return
 
     def reload(self):
@@ -134,7 +139,9 @@ class EventManager(Singleton):
         return
 
     async def _do_new_event_action( self, event_list : List[ Event ] ):
-
+        alert_manager = await self.alert_manager_async()
+        controller_manager = await self.controller_manager_async()
+        
         current_security_level = SecurityManager().security_level
 
         for event in event_list:
@@ -143,11 +150,11 @@ class EventManager(Singleton):
                 if alarm_action.security_level != current_security_level:
                     continue
                 alarm = event.to_alarm( alarm_action = alarm_action )
-                await self._alert_manager.add_alarm( alarm )
+                await alert_manager.add_alarm( alarm )
                 continue
             
             for control_action in event.event_definition.control_actions.all():
-                await self._controller_manager.do_control_async(
+                await controller_manager.do_control_async(
                     controller = control_action.controller,
                     control_value = control_action.value,
                 )

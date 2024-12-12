@@ -67,13 +67,6 @@ class ZoneMinderManager( Singleton ):
         self._was_initialized = True
         return
 
-    async def ensure_initialized_async(self):
-        if self._was_initialized:
-            return
-        await sync_to_async( self.reload )()
-        self._was_initialized = True
-        return
-
     def register_change_listener( self, callback ):
         logger.debug( f'Adding ZM setting change listener from {callback.__module__}' )
         self._change_listeners.append( callback )

@@ -5,14 +5,14 @@ from .hass_manager import HassManager
 
 class HassMixin:
     
-    def hass_manager(self):
+    def hass_manager(self) -> HassManager:
         if not hasattr( self, '_hass_manager' ):
             self._hass_manager = HassManager()
             self._hass_manager.ensure_initialized()
         return self._hass_manager
         
-    async def hass_manager_async(self):
+    async def hass_manager_async(self) -> HassManager:
         if not hasattr( self, '_hass_manager' ):
-            self._hass_manager = await sync_to_async( HassManager )()
-            await self._hass_manager.ensure_initialized_async()
+            self._hass_manager = HassManager()
+            await sync_to_async( self._hass_manager.ensure_initialized )()
         return self._hass_manager

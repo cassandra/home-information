@@ -14,8 +14,16 @@ logger = logging.getLogger(__name__)
 class ControllerManager( Singleton ):
     
     def __init_singleton__( self ):
+        self._was_initialized = False
         return
     
+    def ensure_initialized(self):
+        if self._was_initialized:
+            return
+        # Any future heavyweight initializations go here (e.g., any DB operations).
+        self._was_initialized = True
+        return
+
     def do_control( self,
                     controller     : Controller,
                     control_value  : str ) -> IntegrationControlResult:

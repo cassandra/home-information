@@ -13,76 +13,10 @@ from hi.integrations.core.views import IntegrationPageView
 
 from hi.hi_async_view import HiModalView
 
-from .hass_mixins import HassMixin
 from .hass_metadata import HassMetaData
 from .hass_sync import HassSynchronizer
 
 
-class HassEnableView( HiModalView, IntegrationHelperMixin, HassMixin ):
-
-    def get_template_name( self ) -> str:
-        return 'hass/modals/hass_enable.html'
-
-    def get(self, request, *args, **kwargs):
-        
-        integration = self.get_or_create_integration(
-            integration_metadata = HassMetaData,
-        )
-        if integration.is_enabled:
-            raise BadRequest( 'HAss is already enabled' )
-
-        integration_attribute_formset = IntegrationAttributeFormSet(
-            instance = integration,
-            prefix = f'integration-{integration.id}',
-            form_kwargs = {
-                'show_as_editable': True,
-            },
-        )
-        context = {
-            'integration_attribute_formset': integration_attribute_formset,
-        }
-        return self.modal_response( request, context )
-
-    def post(self, request, *args, **kwargs):
-
-        integration = self.get_or_create_integration(
-            integration_metadata = HassMetaData,
-        )
-        if integration.is_enabled:
-            raise BadRequest( 'HAss is already enabled' )
-
-        integration_attribute_formset = IntegrationAttributeFormSet(
-            request.POST,
-            request.FILES,
-            instance = integration,
-            prefix = f'integration-{integration.id}',
-        )
-        if not integration_attribute_formset.is_valid():
-            context = {
-                'integration_attribute_formset': integration_attribute_formset,
-            }
-            return self.modal_response( request, context )
-
-        with transaction.atomic():
-            integration.is_enabled = True
-            integration.save()
-            integration_attribute_formset.save()
-
-        redirect_url = reverse( 'hass_manage' )
-        return self.redirect_response( request, redirect_url )
-
-    
-class HassDisableView( HiModalView, IntegrationHelperMixin ):
-
-    def get_template_name( self ) -> str:
-        return 'hass/modals/hass_disable.html'
-
-    def get(self, request, *args, **kwargs):
-        context = {
-        }
-        return self.modal_response( request, context )
-    
-    
 class HassManageView( IntegrationPageView, IntegrationHelperMixin ):
 
     @property
