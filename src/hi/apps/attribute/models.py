@@ -7,7 +7,7 @@ from django.db import models
 from hi.apps.attribute.value_ranges import PredefinedValueRanges
 from hi.apps.common.file_utils import generate_unique_filename
 
-from hi.integrations.core.integration_key import IntegrationKey
+from hi.integrations.integration_key import IntegrationKey
 
 from .enums import (
     AttributeValueType,

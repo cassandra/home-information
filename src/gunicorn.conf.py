@@ -12,7 +12,7 @@ import signal
     
 def post_worker_init( worker ):
     from hi.apps.monitor.monitor_manager import AppMonitorManager
-    from hi.integrations.core.integration_manager import IntegrationManager
+    from hi.integrations.integration_manager import IntegrationManager
     _ = asyncio.get_event_loop()  # Ensure event loop exists, or creates it
     worker.log.info("Starting app monitor manager ...")
     asyncio.run( AppMonitorManager().initialize() )
@@ -33,7 +33,7 @@ def post_worker_init( worker ):
 
 def on_exit(server):
     from hi.apps.monitor.monitor_manager import AppMonitorManager
-    from hi.integrations.core.integration_manager import IntegrationManager
+    from hi.integrations.integration_manager import IntegrationManager
     server.log.info("Stopping all monitors on Gunicorn exit...")
     AppMonitorManager().shutdown()
     IntegrationManager().shutdown()

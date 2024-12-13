@@ -1,8 +1,13 @@
 <div>
+  {% if location_list %}
   <div class="dropdown">
     <button class="btn btn-secondary btn-control dropdown-toggle" type="button"
 	    id="hi-location-menu" data-toggle="dropdown">
+      {% if request.view_parameters.location %}
       {{ request.view_parameters.location.name }}
+      {% else %}
+      -- CHOOSE --
+      {% endif %}
       <span class="caret"></span>
     </button>
     <div class="dropdown-menu"
@@ -30,4 +35,10 @@
       {% endif %}
     </div>
   </div>
+  {% else %}
+  <a href="{% url 'start' %}"
+     class="btn btn-success btn-control" role="button" >
+    START
+  </a>
+  {% endif %}
 </div>

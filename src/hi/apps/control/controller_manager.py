@@ -3,8 +3,8 @@ import logging
 
 from hi.apps.common.singleton import Singleton
 
-from hi.integrations.core.integration_manager import IntegrationManager
-from hi.integrations.core.transient_models import IntegrationControlResult
+from hi.integrations.integration_manager import IntegrationManager
+from hi.integrations.transient_models import IntegrationControlResult
 
 from .models import Controller
 

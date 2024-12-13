@@ -8,7 +8,7 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.event.event_mixins import EventMixin
 from hi.apps.event.transient_models import EntityStateTransition
 
-from hi.integrations.core.integration_key import IntegrationKey
+from hi.integrations.integration_key import IntegrationKey
 
 from .models import Sensor
 from .sensor_history_manager import SensorHistoryMixin

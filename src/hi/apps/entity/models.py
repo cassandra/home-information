@@ -11,7 +11,7 @@ from hi.apps.location.models import (
     LocationView,
 )
 from hi.apps.attribute.models import AttributeModel
-from hi.integrations.core.models import IntegrationKeyModel
+from hi.integrations.models import IntegrationKeyModel
 from hi.enums import ItemType
 
 from .enums import (

@@ -17,7 +17,7 @@ from hi.apps.security.enums import SecurityLevel
 from hi.apps.sense.enums import SensorType
 from hi.apps.sense.models import Sensor
 
-from hi.integrations.core.integration_key import IntegrationKey
+from hi.integrations.integration_key import IntegrationKey
 
 
 class HiModelHelper:
@@ -31,15 +31,19 @@ class HiModelHelper:
     }
 
     DEFAULT_CONNECTIVITY_EVENT_WINDOW_SECS = 180
+    DEFAULT_CONNECTIVITY_DEDUPE_WINDOW_SECS = 300
     DEFAULT_CONNECTIVITY_ALARM_LIFETIME_SECS = 0
-
+    
     DEFAULT_OPEN_CLOSE_EVENT_WINDOW_SECS = 180
+    DEFAULT_OPEN_CLOSE_DEDUPE_WINDOW_SECS = 300
     DEFAULT_OPEN_CLOSE_ALARM_LIFETIME_SECS = 600
 
     DEFAULT_MOVEMENT_EVENT_WINDOW_SECS = 180
+    DEFAULT_MOVEMENT_DEDUPE_WINDOW_SECS = 300
     DEFAULT_MOVEMENT_ALARM_LIFETIME_SECS = 600
 
     DEFAULT_BATTERY_EVENT_WINDOW_SECS = 180
+    DEFAULT_BATTERY_DEDUPE_WINDOW_SECS = 300
     DEFAULT_BATTERY_ALARM_LIFETIME_SECS = 0
     
     @classmethod
@@ -369,9 +373,8 @@ class HiModelHelper:
             entity_state = entity_state,
             value = EntityStateValue.DISCONNECTED,
             security_to_alarm_level = {
-                SecurityLevel.AWAY: AlarmLevel.WARNING,
-                SecurityLevel.NIGHT: AlarmLevel.WARNING,
-                SecurityLevel.HOME: AlarmLevel.WARNING,
+                SecurityLevel.HIGH: AlarmLevel.WARNING,
+                SecurityLevel.LOW: AlarmLevel.WARNING,
             },
             event_window_secs = cls.DEFAULT_CONNECTIVITY_EVENT_WINDOW_SECS,
             dedupe_window_secs = cls.DEFAULT_CONNECTIVITY_DEDUPE_WINDOW_SECS,
@@ -392,9 +395,8 @@ class HiModelHelper:
             entity_state = entity_state,
             value = EntityStateValue.OPEN,
             security_to_alarm_level = {
-                SecurityLevel.AWAY: AlarmLevel.CRITICAL,
-                SecurityLevel.NIGHT: AlarmLevel.CRITICAL,
-                SecurityLevel.HOME: AlarmLevel.INFO,
+                SecurityLevel.HIGH: AlarmLevel.CRITICAL,
+                SecurityLevel.LOW: AlarmLevel.INFO,
             },
             event_window_secs = cls.DEFAULT_OPEN_CLOSE_EVENT_WINDOW_SECS,
             dedupe_window_secs = cls.DEFAULT_OPEN_CLOSE_DEDUPE_WINDOW_SECS,
@@ -415,9 +417,8 @@ class HiModelHelper:
             entity_state = entity_state,
             value = EntityStateValue.ACTIVE,
             security_to_alarm_level = {
-                SecurityLevel.AWAY: AlarmLevel.CRITICAL,
-                SecurityLevel.NIGHT: AlarmLevel.CRITICAL,
-                SecurityLevel.HOME: AlarmLevel.INFO,
+                SecurityLevel.HIGH: AlarmLevel.CRITICAL,
+                SecurityLevel.LOW: AlarmLevel.INFO,
             },
             event_window_secs = cls.DEFAULT_MOVEMENT_EVENT_WINDOW_SECS,
             dedupe_window_secs = cls.DEFAULT_MOVEMENT_DEDUPE_WINDOW_SECS,
@@ -438,9 +439,8 @@ class HiModelHelper:
             entity_state = entity_state,
             value = EntityStateValue.LOW,
             security_to_alarm_level = {
-                SecurityLevel.AWAY: AlarmLevel.INFO,
-                SecurityLevel.NIGHT: AlarmLevel.INFO,
-                SecurityLevel.HOME: AlarmLevel.INFO,
+                SecurityLevel.HIGH: AlarmLevel.INFO,
+                SecurityLevel.LOW: AlarmLevel.INFO,
             },
             event_window_secs = cls.DEFAULT_BATTERY_EVENT_WINDOW_SECS,
             dedupe_window_secs = cls.DEFAULT_BATTERY_DEDUPE_WINDOW_SECS,

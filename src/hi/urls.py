@@ -30,7 +30,7 @@ urlpatterns = [
     re_path( r'^api/', include('hi.apps.api.urls' )),
     re_path( r'^config/', include('hi.apps.config.urls' )),
     re_path( r'^edit/', include('hi.apps.edit.urls' )),
-    re_path( r'^integration/', include('hi.integrations.core.urls' )),
+    re_path( r'^integration/', include('hi.integrations.urls' )),
     re_path( r'^location/', include('hi.apps.location.urls' )),
     re_path( r'^entity/', include('hi.apps.entity.urls' )),
     re_path( r'^collection/', include('hi.apps.collection.urls' )),

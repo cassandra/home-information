@@ -5,7 +5,7 @@ from hi.apps.control.models import Controller
 from hi.apps.entity.models import EntityState
 from hi.apps.security.enums import SecurityLevel
 
-from hi.integrations.core.models import IntegrationKeyModel
+from hi.integrations.models import IntegrationKeyModel
 
 from .enums import EventType
 

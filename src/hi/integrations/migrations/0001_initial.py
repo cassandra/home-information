@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name="Subsystem",
+            name="Integration",
             fields=[
                 (
                     "id",
@@ -24,25 +24,31 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
-                    "name",
-                    models.CharField(max_length=128, unique=True, verbose_name="Name"),
+                    "integration_id",
+                    models.CharField(
+                        max_length=64, unique=True, verbose_name="Integration Id"
+                    ),
                 ),
                 (
-                    "subsystem_key",
-                    models.CharField(max_length=32, verbose_name="Subsystem Key"),
+                    "is_enabled",
+                    models.BooleanField(default=False, verbose_name="Enabled?"),
                 ),
                 (
                     "created_datetime",
                     models.DateTimeField(auto_now_add=True, verbose_name="Created"),
                 ),
+                (
+                    "updated_datetime",
+                    models.DateTimeField(auto_now=True, verbose_name="Updated"),
+                ),
             ],
             options={
-                "verbose_name": "Subsystem",
-                "verbose_name_plural": "Subsystems",
+                "verbose_name": "Integration",
+                "verbose_name_plural": "Integrations",
             },
         ),
         migrations.CreateModel(
-            name="SubsystemAttribute",
+            name="IntegrationAttribute",
             fields=[
                 (
                     "id",
@@ -106,22 +112,18 @@ class Migration(migrations.Migration):
                     models.DateTimeField(auto_now=True, verbose_name="Updated"),
                 ),
                 (
-                    "setting_key",
-                    models.CharField(max_length=255, verbose_name="Setting Key"),
-                ),
-                (
-                    "subsystem",
+                    "integration",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
                         related_name="attributes",
-                        to="config.subsystem",
-                        verbose_name="Subsystem",
+                        to="integrations.integration",
+                        verbose_name="Integration",
                     ),
                 ),
             ],
             options={
-                "verbose_name": "Subsystem Attribute",
-                "verbose_name_plural": "Subsystem Attributes",
+                "verbose_name": "Attribute",
+                "verbose_name_plural": "Attributes",
             },
         ),
     ]
