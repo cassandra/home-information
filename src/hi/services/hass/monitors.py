@@ -31,7 +31,7 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         return
     
     def refresh( self ):
-        """ Should be called when integration settings are changed. """
+        """ Should be called when integration settings are changed (via listener callback). """
         return
     
     async def do_work(self):

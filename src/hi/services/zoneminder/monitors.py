@@ -52,7 +52,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         return
     
     def refresh( self ):
-        """ Should be called when integration settings are changed. """
+        """ Should be called when integration settings are changed (via listener callback). """
         new_tzname = self.zm_manager().get_zm_tzname()
         if new_tzname == self._zm_tzname:
             return

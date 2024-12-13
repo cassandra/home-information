@@ -59,7 +59,9 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
 
     def __init_singleton__( self ):
         self._redis_client = get_redis_client()
-        self._sensor_cache = TTLCache( maxsize = 1000, ttl = 300 )
+        self._sensor_cache = TTLCache( maxsize = 1000, ttl = 300 )  # Is thread-safe
+        self._latest_sensor_data_dirty = True
+        self._sensor_response_list_map = dict()
         self._was_initialized = False
         return
 
@@ -117,6 +119,18 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
         return
 
     def get_all_latest_sensor_responses( self ) -> Dict[ Sensor, List[ SensorResponse ] ]:
+        """
+        Since we want to support having many consoles/clients, with responsive
+        short polling intervals, we use an optimization for this frequently
+        requests status data by keeping a "dirty" flag and returning the
+        same data until new data comes in.
+        """
+        if self._latest_sensor_data_dirty:
+            self._sensor_response_list_map = self._create_all_latest_sensor_responses()
+        self._latest_sensor_data_dirty = False
+        return self._sensor_response_list_map
+        
+    def _create_all_latest_sensor_responses( self ) -> Dict[ Sensor, List[ SensorResponse ] ]:
 
         list_cache_keys = self._redis_client.smembers( self.SENSOR_RESPONSE_LIST_SET_KEY )
 
@@ -134,7 +148,6 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
             if sensor_response_list:
                 sensor = self._get_sensor( integration_key = sensor_response_list[0].integration_key )
                 if sensor:
-                    
                     sensor_response_list_map[sensor] = sensor_response_list
             continue
 
@@ -166,6 +179,8 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
     async def _add_latest_sensor_responses( self, sensor_response_list : List[ SensorResponse ] ):
         if not sensor_response_list:
             return
+
+        self._latest_sensor_data_dirty = True
 
         pipeline = self._redis_client.pipeline()
         for sensor_response in sensor_response_list:

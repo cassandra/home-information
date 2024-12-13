@@ -2,6 +2,7 @@ from asgiref.sync import sync_to_async
 from cachetools import TTLCache
 from collections import deque
 import logging
+from threading import Lock
 from typing import List
 
 from hi.apps.alert.alert_mixins import AlertMixin
@@ -33,6 +34,8 @@ class EventManager( Singleton, AlertMixin, ControllerMixin ):
         self._recent_transitions = deque()
         self._recent_events = TTLCache( maxsize = self.RECENT_EVENT_CACHE_SIZE,
                                         ttl = self.RECENT_EVENT_CACHE_TTL_SECS )
+        self._event_definitions = False
+        self._event_definitions_lock = Lock()
         self._was_initialized = False
         return
     
@@ -46,12 +49,16 @@ class EventManager( Singleton, AlertMixin, ControllerMixin ):
     def reload(self):
         """ Called when integration models are changed (via signals below). """
         logger.debug( 'Reloading event definitions' )
-        self._event_definitions = list( EventDefinition.objects.prefetch_related(
-            'event_clauses',
-            'event_clauses__entity_state',
-            'alarm_actions',
-            'control_actions',
-        ).filter( enabled = True ))
+        self._event_definitions_lock.acquire()
+        try:
+            self._event_definitions = list( EventDefinition.objects.prefetch_related(
+                'event_clauses',
+                'event_clauses__entity_state',
+                'alarm_actions',
+                'control_actions',
+            ).filter( enabled = True ))
+        finally:
+            self._event_definitions_lock.release()
         return
     
     async def add_entity_state_transitions( self,
@@ -71,18 +78,22 @@ class EventManager( Singleton, AlertMixin, ControllerMixin ):
         return
                                       
     def _get_new_events( self ):
-        new_event_list = list()
-        for event_definition in self._event_definitions:
-            if self._has_recent_event( event_definition ):
+        self._event_definitions_lock.acquire()
+        try:
+            new_event_list = list()
+            for event_definition in self._event_definitions:
+                if self._has_recent_event( event_definition ):
+                    continue
+                event = self._create_event_if_detected( event_definition )
+                if not event:
+                    continue
+                self._recent_events[event_definition.id] = event
+                new_event_list.append( event )
                 continue
-            event = self._create_event_if_detected( event_definition )
-            if not event:
-                continue
-            self._recent_events[event_definition.id] = event
-            new_event_list.append( event )
-            continue
 
-        return new_event_list
+            return new_event_list
+        finally:
+            self._event_definitions_lock.release()
 
     def _has_recent_event( self, event_definition : EventDefinition ) -> bool:
         recent_event = self._recent_events.get( event_definition.id )
