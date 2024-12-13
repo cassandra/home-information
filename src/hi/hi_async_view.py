@@ -2,10 +2,13 @@ import logging
 from typing import Dict
 import urllib.parse
 
+from django.shortcuts import render
 from django.template.loader import get_template
+from django.utils.safestring import mark_safe
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
+from hi.apps.common.utils import is_ajax
 
 from hi.constants import DIVID
 
@@ -101,16 +104,26 @@ class HiSideView( HiAsyncView ):
         
 class HiModalView( View ):
 
+    DEFAULT_PAGE_TEMPLATE_NAME = 'pages/main_default.html'
+    
     def get_template_name( self ) -> str:
         raise NotImplementedError('Subclasses must override this method.')
 
-    def modal_response( self, request, context ):
-        template_name = self.get_template_name()
-        return antinode.modal_from_template(
+    def modal_response( self, request, context, status = 200 ):
+        modal_response = antinode.modal_from_template(
             request = request,
-            template_name = template_name,
+            template_name = self.get_template_name(),
             context = context,
         )
+        if is_ajax( request ):
+            return modal_response
+
+        context['initial_modal_template_name'] = self.get_template_name()
+        template_name = self.DEFAULT_PAGE_TEMPLATE_NAME
+        return render( request,
+                       template_name,
+                       context,
+                       status = status )
 
     def redirect_response( self, request, redirect_url ):
         return antinode.redirect_response( redirect_url )

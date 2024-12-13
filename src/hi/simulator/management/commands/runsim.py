@@ -5,7 +5,7 @@ from django.core.management.commands.runserver import Command as RunserverComman
 
 class Command(RunserverCommand):
 
-    help = "Runs the simulator server (separate port)."
+    help = "Runs the simulator server (separate port, custom settings)."
 
     def add_arguments(self, parser):
         super().add_arguments( parser )

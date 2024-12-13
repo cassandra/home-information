@@ -22,7 +22,7 @@ class ConsoleUnlockView( ConsoleLockView ):
     def get( self, request, *args, **kwargs ):
         context = {
         }
-        return self.modal_response( request, context )
+        return  self.modal_response( request, context )
     
     def post(self, request, *args, **kwargs):
 
