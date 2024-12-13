@@ -3,6 +3,7 @@
     window.Hi = window.Hi || {};
 
     const HiSettings = {
+
 	enableAudio: function() {
 	    return _enableAudio( );
 	},
@@ -25,7 +26,7 @@
     const AudioStateSettingName = 'audioState';
     const AudioStateEnabled = 'enabled';
     const AudioStateDisabled = 'disabled';
-    
+
     function setConsoleSetting( name, value ) {
 	Hi.setCookie( name, value );
     }
@@ -43,7 +44,7 @@
 	setConsoleSetting( AudioStateSettingName, AudioStateDisabled );
 	return true;
     }
-    
+
     function _isAudioEnabled() {
 	var audioState = getConsoleSetting( AudioStateSettingName );
 	if ( audioState && ( audioState == AudioStateDisabled ))

@@ -168,6 +168,7 @@ MIDDLEWARE = [
 
     'hi.middleware.ExceptionMiddleware',
     'hi.middleware.ViewMiddleware',
+    'hi.apps.console.middleware.ConsoleLockMiddleware',
 ]
 
 ROOT_URLCONF = 'hi.urls'

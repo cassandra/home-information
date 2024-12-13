@@ -1,0 +1,10 @@
+<div id="hi-console-lock-button">
+  <form action="{% url 'console_lock' %}" method="post" class="form" data-async="true">
+    {% csrf_token %}
+    <button type="submit" id="hi-console-lock-button" role="button"
+	    class="btn btn-secondary btn-control"
+	    title="Console Unlocked. Click to Lock">
+      LOCK
+    </button>
+  </form>
+</div>

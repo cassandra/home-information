@@ -1,11 +1,15 @@
 import logging
 from typing import Dict
 
+from django.http import HttpRequest
+from django.template.loader import get_template
+
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_manager import SettingsManager
 
 from .audio_file import AudioFile
 from .audio_signal import AudioSignal
+from .constants import ConsoleConstants
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +20,9 @@ class ConsoleManager(Singleton):
         self._console_audio_map = self._build_console_audio_map()
         SettingsManager().register_change_listener( self._reload_console_audio_map )
         return
+
+    def is_console_locked( self, request : HttpRequest ) -> bool:
+        return request.session.get( ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR, False )
 
     def get_console_audio_map( self ) -> Dict[ str, str ]:
         return self._console_audio_map

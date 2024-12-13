@@ -4,7 +4,7 @@
     <div class="d-flex justify-content-end">
 	{% include "security/panes/security_state_control.html" %}
       <div>
-	{% include "config/panes/audio_control.html" %}
+	{% include "console/panes/audio_control.html" %}
       </div>
       <div>
 	<a href="#"
@@ -14,11 +14,7 @@
 	</a>
       </div>
       <div>
-	<a href="#"
-	   class="btn btn-secondary btn-control" role="button"
-	   data-async="true" >
-	  LOCK
-	</a>
+	{% include "console/panes/console_lock_button.html" %}
       </div>
       <div>
 	<a href="{% url 'event_history' %}"
