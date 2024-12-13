@@ -2,13 +2,14 @@ from django.db import transaction
 from django.urls import reverse
 
 from hi.apps.event.view_mixin import EventViewMixin
+from hi.apps.event.event_mixins import EventMixin
 
 from hi.hi_async_view import HiModalView
 
 from . import forms
 
 
-class EventDefinitionEditView( HiModalView, EventViewMixin ):
+class EventDefinitionEditView( HiModalView, EventViewMixin, EventMixin ):
 
     def get_template_name( self ) -> str:
         return 'event/edit/modals/event_definition_edit.html'
@@ -97,10 +98,10 @@ class EventDefinitionEditView( HiModalView, EventViewMixin ):
 
         if not all_forms_valid:
             return error_response()
-            
+
         with transaction.atomic():
             event_definition = event_definition_form.save()
-
+            
             # Need to force the instance so forms can save with foreign key
             event_clause_formset.instance = event_definition
             alarm_action_formset.instance = event_definition
@@ -109,6 +110,8 @@ class EventDefinitionEditView( HiModalView, EventViewMixin ):
             event_clause_formset.save()
             alarm_action_formset.save()
             control_action_formset.save()
+
+        self.event_manager().reload()
 
         redirect_url = reverse( 'event_definitions' )
         return self.redirect_response( request = request,
@@ -127,7 +130,7 @@ class EventDefinitionAddView( EventDefinitionEditView ):
         return None
 
     
-class EventDefinitionDeleteView( HiModalView, EventViewMixin ):
+class EventDefinitionDeleteView( HiModalView, EventViewMixin, EventMixin ):
 
     def get_template_name( self ) -> str:
         return 'event/edit/modals/event_definition_delete.html'
@@ -142,6 +145,9 @@ class EventDefinitionDeleteView( HiModalView, EventViewMixin ):
     def post( self, request, *args, **kwargs ):
         event_definition = self.get_event_definition( request, *args, **kwargs )
         event_definition.delete()
+
+        self.event_manager().reload()
+        
         redirect_url = reverse( 'event_definitions' )
         return self.redirect_response( request = request,
                                        redirect_url = redirect_url )
