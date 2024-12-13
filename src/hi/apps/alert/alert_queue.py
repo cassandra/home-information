@@ -46,9 +46,8 @@ class AlertQueue:
         returned. Returns None if there are no active alerts in the
         specified time frame.
         """
+        self._active_alerts_lock.acquire()
         try:
-            self._active_alerts_lock.acquire()
-            
             if len(self._alert_list) < 1:
                 return None
             
@@ -77,9 +76,8 @@ class AlertQueue:
         was to find a URL to switch to when automatically changing displays
         based on alarms.
         """
+        self._active_alerts_lock.acquire()
         try:
-            self._active_alerts_lock.acquire()
-            
             if len(self._alert_list) < 1:
                 return None
             
@@ -110,8 +108,8 @@ class AlertQueue:
     def add_alarm( self, alarm : Alarm ) -> Alert:
         if alarm.alarm_level == AlarmLevel.NONE:
             raise ValueError( f'Alarm not alert-worthy: {alarm}'  )
+        self._active_alerts_lock.acquire()
         try:
-            self._active_alerts_lock.acquire()
             for alert in self._alert_list:
                 if not alert.is_matching_alarm( alarm = alarm ):
                     continue
@@ -131,9 +129,8 @@ class AlertQueue:
         return
 
     def acknowledge_alert( self, alert_id : str ):
+        self._active_alerts_lock.acquire()
         try:
-            self._active_alerts_lock.acquire()
-
             for alert in self._alert_list:
                 if alert.id != alert_id:
                     continue
@@ -146,9 +143,8 @@ class AlertQueue:
             self._active_alerts_lock.release()
 
     def remove_expired_or_acknowledged_alerts(self):
+        self._active_alerts_lock.acquire()
         try:
-            self._active_alerts_lock.acquire()
-
             logger.debug( f'Alert Check: List size = {len(self._alert_list)}')
             if len( self._alert_list ) < 1:
                 return

@@ -2,6 +2,7 @@ from asgiref.sync import sync_to_async
 import asyncio
 import json
 import logging
+from threading import Lock
 from typing import Dict, List
 
 from django.apps import apps
@@ -27,6 +28,7 @@ class IntegrationManager( Singleton ):
     def __init_singleton__( self ):
         self._integration_data_map : Dict[ str, IntegrationData ] = dict()
         self._monitor_map = {}  # Known monitors
+        self._data_lock = Lock()
         self._event_loop = None  # Added dynamically and indicates if thread/event loop initialized
         return
 
@@ -58,8 +60,12 @@ class IntegrationManager( Singleton ):
         raise KeyError( f'Unknown integration id "{integration_id}".' )
 
     async def initialize(self) -> None:
-        await self._load_integration_data()
-        await self._start_all_integration_monitors()
+        self._security_status_lock.acquire()
+        try:
+            await self._load_integration_data()
+            await self._start_all_integration_monitors()
+        finally:
+            self._data_lock.release()
         return
         
     async def _load_integration_data(self) -> None:
@@ -208,29 +214,32 @@ class IntegrationManager( Singleton ):
         new attributes might have been defined.  This allows new code
         features to be added for existing installations.
         """
+        self._security_status_lock.acquire()
+        try:
+            new_attribute_types = set()
+            existing_attribute_integration_keys = set([ x.integration_key
+                                                        for x in integration.attributes.all() ])
 
-        new_attribute_types = set()
-        existing_attribute_integration_keys = set([ x.integration_key
-                                                    for x in integration.attributes.all() ])
-        
-        AttributeType = integration_metadata.attribute_type
-        for attribute_type in AttributeType:
-            integration_key = IntegrationKey(
-                integration_id = integration.integration_id,
-                integration_name = str(attribute_type),
-            )
-            if integration_key not in existing_attribute_integration_keys:
-                new_attribute_types.add( attribute_type )
-            continue
-        
-        if new_attribute_types:
-            with transaction.atomic():
-                for attribute_type in new_attribute_types:
-                    self._create_integration_attribute(
-                        integration = integration,
-                        attribute_type = attribute_type,
-                    )
-                    continue
+            AttributeType = integration_metadata.attribute_type
+            for attribute_type in AttributeType:
+                integration_key = IntegrationKey(
+                    integration_id = integration.integration_id,
+                    integration_name = str(attribute_type),
+                )
+                if integration_key not in existing_attribute_integration_keys:
+                    new_attribute_types.add( attribute_type )
+                continue
+
+            if new_attribute_types:
+                with transaction.atomic():
+                    for attribute_type in new_attribute_types:
+                        self._create_integration_attribute(
+                            integration = integration,
+                            attribute_type = attribute_type,
+                        )
+                        continue
+        finally:
+            self._data_lock.release()
         return
         
     def _create_integration_attribute( self,
@@ -256,18 +265,25 @@ class IntegrationManager( Singleton ):
     def enable_integration( self,
                             integration_data               : IntegrationData,
                             integration_attribute_formset  : IntegrationAttributeFormSet ):
-        with transaction.atomic():
-            integration_data.integration.is_enabled = True
-            integration_data.integration.save()
-            integration_attribute_formset.save()
-        self._start_integration_monitor( integration_data = integration_data )
+        self._security_status_lock.acquire()
+        try:
+            with transaction.atomic():
+                integration_data.integration.is_enabled = True
+                integration_data.integration.save()
+                integration_attribute_formset.save()
+            self._start_integration_monitor( integration_data = integration_data )
+        finally:
+            self._data_lock.release()
         return
                 
     def disable_integration( self, integration_data : IntegrationData ):
-
-        with transaction.atomic():
-            integration_data.integration.is_enabled = False
-            integration_data.integration.save()
-        self._stop_integration_monitor( integration_data = integration_data )
+        self._security_status_lock.acquire()
+        try:
+            with transaction.atomic():
+                integration_data.integration.is_enabled = False
+                integration_data.integration.save()
+            self._stop_integration_monitor( integration_data = integration_data )
+        finally:
+            self._data_lock.release()
         return
     

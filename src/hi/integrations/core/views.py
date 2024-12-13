@@ -1,7 +1,6 @@
 import logging
 
 from django.core.exceptions import BadRequest
-from django.db import transaction
 from django.urls import reverse
 
 from hi.apps.config.enums import ConfigPageType

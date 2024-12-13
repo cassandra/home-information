@@ -19,9 +19,8 @@ class NotificationQueue:
     
     def add_item( self, notification_item : NotificationItem ):
         logger.debug( f'Adding notification to queue: {notification_item}' )
+        self._queues_lock.acquire()
         try:
-            self._queues_lock.acquire()
-
             if notification_item.signature not in self._queues_map:
                 now_datetime = datetimeproxy.now()
                 self._queues_map[notification_item.signature] = ExponentialBackoffRateLimitedQueue(
@@ -39,9 +38,8 @@ class NotificationQueue:
     
     def check_for_notifications( self ) -> List[ Notification ]:
         notifications_map = dict()
+        self._queues_lock.acquire()
         try:
-            self._queues_lock.acquire()
-
             now = datetimeproxy.now()
             for signature, queue in self._queues_map.items():
                 logger.debug( f'Notify queue "{signature}" contains {len(queue)} items.' )

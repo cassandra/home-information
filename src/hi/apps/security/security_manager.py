@@ -1,4 +1,3 @@
-from asgiref.sync import sync_to_async
 import logging
 from threading import Timer, Lock
 from typing import Dict
@@ -63,8 +62,8 @@ class SecurityManager(Singleton):
         return self._security_level
     
     def get_security_status_data(self) -> SecurityStatusData:
+        self._security_status_lock.acquire()
         try:
-            self._security_status_lock.acquire()
             current_security_state_label = self._security_state.label
             if self._delayed_security_state:
                 if self._delayed_security_state == SecurityState.AWAY:
@@ -143,9 +142,8 @@ class SecurityManager(Singleton):
                                 immediate_security_state  : SecurityState,
                                 future_security_state     : SecurityState,
                                 delay_secs                : int ):
+        self._security_status_lock.acquire()
         try:
-            self._security_status_lock.acquire()
-
             self.update_security_state_immediate(
                 new_security_state = immediate_security_state,
                 lock_acquired = True,
@@ -164,10 +162,9 @@ class SecurityManager(Singleton):
                                         target_security_state  : SecurityState,
                                         delay_secs             : int,
                                         lock_acquired          : bool          = False ):
+        if not lock_acquired:
+            self._security_status_lock.acquire()
         try:
-            if not lock_acquired:
-                self._security_status_lock.acquire()
-
             self._delayed_security_state = target_security_state
             if self._delayed_security_state_timer:
                 self._delayed_security_state_timer.cancel()
@@ -194,9 +191,8 @@ class SecurityManager(Singleton):
     def update_security_state_auto( self, new_security_state  : SecurityState ):
         """Special updating when coming from automation since extra handling is
         needed if state is in a delayed transition (via SET_AWAY or SNOOZE)."""
+        self._security_status_lock.acquire()
         try:
-            self._security_status_lock.acquire()
-
             if not self._security_state.auto_change_allowed:
                 logger.warning( f'Security state auto update but state={self._security_state}' )
                 return
@@ -232,10 +228,9 @@ class SecurityManager(Singleton):
     def update_security_state_immediate( self,
                                          new_security_state  : SecurityState,
                                          lock_acquired       : bool          = False ):
+        if not lock_acquired:
+            self._security_status_lock.acquire()
         try:
-            if not lock_acquired:
-                self._security_status_lock.acquire()
-                
             self._cancel_security_state_transition()
             
             if new_security_state == SecurityState.DISABLED:
