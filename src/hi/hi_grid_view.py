@@ -39,7 +39,7 @@ class HiGridView(View):
     - This URL parameter for the side content also allows page refresh keeping the context of the display.
     - For this to work, the view that produces the dioe content (async) should subclass HiSideView.
     - For normal case for a View that only wants to populate the main content pane asynchronously:
-      - Subclass this and provide get_main_template_name() and get_template_context()
+      - Subclass this and provide get_main_template_name() and get_main_template_context()
     """
     
     HI_GRID_TEMPLATE_NAME = 'pages/hi_grid.html'    
@@ -50,32 +50,62 @@ class HiGridView(View):
     def get_main_template_name( self ) -> str:
         raise NotImplementedError('Subclasses must override this method.')
     
-    def get_template_context( self, request, *args, **kwargs ) -> Dict[ str, str ]:
+    def get_main_template_context( self, request, *args, **kwargs ) -> Dict[ str, str ]:
         """ Can raise exceptions like BadRequest, Http404, ForceRedirectException, etc. """
         raise NotImplementedError('Subclasses must override this method.')
 
-    def get_top_template_name( self ) -> str:
-        return self.TOP_TEMPLATE_NAME
+    def get_main_template_name_and_context( self ) -> str:
+        """ Can raise exceptions like BadRequest, Http404, ForceRedirectException, etc. """
+        raise NotImplementedError('Subclasses must override this method.')
     
-    def get_bottom_template_name( self ) -> str:
-        return self.BOTTOM_TEMPLATE_NAME
-
-    def get_top_template_context( self, request, *args, **kwargs ):
+    def get_top_template_name_and_context( self, request, *args, **kwargs ):
+        """ Subclasses can override this i sneeded. """
         if not request.view_parameters.location:
             return dict()
         location_list = list( Location.objects.all() )
         location_view_list = list( request.view_parameters.location.views.order_by( 'order_id' ))
-        return {
+        context = {
             'location_view_list': location_view_list,
             'location_list': location_list,
         }
+        return ( self.TOP_TEMPLATE_NAME, context )
 
-    def get_bottom_template_context( self, request, *args, **kwargs ):
+    def get_bottom_template_name_and_context( self, request, *args, **kwargs ):
+        """ Subclasses can override this i sneeded. """
         collection_list = list( Collection.objects.all().order_by( 'order_id' ))
-        return {
+        context = {
             'security_status_data': SecurityManager().get_security_status_data(),
             'collection_list': collection_list,
         }
+        return ( self.BOTTOM_TEMPLATE_NAME, context )
+
+    def get_side_template_name_and_context( self, request, *args, **kwargs ):
+        """ Subclasses can override this i sneeded. """
+        try:
+            side_url = self.get_side_url_from_request_url( request )
+            side_view, side_kwargs = self.get_side_view_from_url( side_url )
+            
+            if not side_view:
+                if request.view_parameters.is_editing:
+                    if request.view_parameters.view_type.is_location_view:
+                        side_view = LocationViewManageItemsView()
+
+                    elif request.view_parameters.view_type.is_collection:
+                        side_view = CollectionManageItemsView()
+
+            if not side_view:
+                return ( self.SIDE_DEFAULT_TEMPLATE_NAME, dict() )
+
+            if not isinstance( side_view, HiSideView ):
+                raise ValueError( f'Side URL has view not side class: {side_view.__class__.__name__}' )
+
+            template_name = side_view.get_template_name()
+            template_context = side_view.get_template_context( request, **side_kwargs )
+            return ( template_name, template_context )
+        
+        except Exception as e:
+            logger.exception( e )
+            return ( self.SIDE_DEFAULT_TEMPLATE_NAME, dict() )
 
     def get(self, request, *args, **kwargs):
         if is_ajax( request ):
@@ -84,22 +114,29 @@ class HiGridView(View):
 
     def get_synchronous_response( self, request, *args, **kwargs ):
         try:
-            context = self.get_template_context( request, *args, **kwargs )
+            context = self.get_main_template_context( request, *args, **kwargs )
         except ForceRedirectException as fde:
             return redirect( fde.url )
         
         ( side_template_name,
           side_template_context ) = self.get_side_template_name_and_context( request, *args, **kwargs )
 
+        ( top_template_name,
+          top_template_context ) = self.get_top_template_name_and_context( request, *args, **kwargs )
+
+        ( bottom_template_name,
+          bottom_template_context ) = self.get_bottom_template_name_and_context( request, *args, **kwargs )
+
         context.update( side_template_context )
+        context.update( top_template_context )
+        context.update( bottom_template_context )
+        
         context.update({
-            'top_template_name': self.get_top_template_name(),
-            'bottom_template_name': self.get_bottom_template_name(),
             'main_template_name': self.get_main_template_name(),
             'side_template_name': side_template_name,
+            'top_template_name': top_template_name,
+            'bottom_template_name': bottom_template_name,
         })
-        context.update( self.get_top_template_context( request, *args, **kwargs ))
-        context.update( self.get_bottom_template_context( request, *args, **kwargs ))
 
         return render( request, self.HI_GRID_TEMPLATE_NAME, context )
         
@@ -123,7 +160,7 @@ class HiGridView(View):
     def get_content( self, request, *args, **kwargs ) -> str:
         template_name = self.get_main_template_name()
         template = get_template( template_name )
-        context = self.get_template_context( request, *args, **kwargs )
+        context = self.get_main_template_context( request, *args, **kwargs )
         return template.render( context, request = request )
 
     def get_push_url( self, request ):
@@ -154,33 +191,6 @@ class HiGridView(View):
 
         return push_url
         
-    def get_side_template_name_and_context( self, request, *args, **kwargs ):
-        try:
-            side_url = self.get_side_url_from_request_url( request )
-            side_view, side_kwargs = self.get_side_view_from_url( side_url )
-            
-            if not side_view:
-                if request.view_parameters.is_editing:
-                    if request.view_parameters.view_type.is_location_view:
-                        side_view = LocationViewManageItemsView()
-
-                    elif request.view_parameters.view_type.is_collection:
-                        side_view = CollectionManageItemsView()
-
-            if not side_view:
-                return ( self.SIDE_DEFAULT_TEMPLATE_NAME, dict() )
-
-            if not isinstance( side_view, HiSideView ):
-                raise ValueError( f'Side URL has view not side class: {side_view.__class__.__name__}' )
-
-            template_name = side_view.get_template_name()
-            template_context = side_view.get_template_context( request, **side_kwargs )
-            return ( template_name, template_context )
-        
-        except Exception as e:
-            logger.exception( e )
-            return ( self.SIDE_DEFAULT_TEMPLATE_NAME, dict() )
-
     def get_side_url_from_request_url( self, request ):
         
         full_url = request.get_full_path()

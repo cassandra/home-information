@@ -25,13 +25,13 @@ logger = logging.getLogger(__name__)
 class SecurityManager(Singleton):
 
     DEFAULT_TRANSITION_DELAY_SECS = 5 * 60
-    SECURITY_STATE_LABEL_DELAYED_AWAY = 'Delayed'
+    SECURITY_STATE_LABEL_DELAYED_AWAY = 'Away (Delayed)'
     SECURITY_STATE_LABEL_SNOOZED = 'Snoozed'
 
     SECURITY_STATE_CACHE_KEY = 'hi.security.state'
     
     def __init_singleton__(self):
-        self._security_state = None
+        self._security_state = SecurityState.default()
         self._security_level = SecurityLevel.OFF
 
         self._delayed_security_state_timer = None
@@ -64,17 +64,29 @@ class SecurityManager(Singleton):
     def get_security_status_data(self) -> SecurityStatusData:
         self._security_status_lock.acquire()
         try:
-            current_security_state_label = self._security_state.label
+            current_action_label = self._security_state.label
+            if self._security_state == SecurityState.DAY:
+                current_action_value = str(SecurityStateAction.SET_DAY)
+            elif self._security_state == SecurityState.NIGHT:
+                current_action_value = str(SecurityStateAction.SET_NIGHT)
+            elif self._security_state == SecurityState.AWAY:
+                current_action_value = str(SecurityStateAction.SET_AWAY)
+            else:
+                current_action_value = str(SecurityStateAction.DISABLE)
+
             if self._delayed_security_state:
                 if self._delayed_security_state == SecurityState.AWAY:
-                    current_security_state_label = self.SECURITY_STATE_LABEL_DELAYED_AWAY
+                    current_action_label = self.SECURITY_STATE_LABEL_DELAYED_AWAY
+                    current_action_value = str(SecurityStateAction.SET_AWAY)
                 else:
-                    current_security_state_label = self.SECURITY_STATE_LABEL_SNOOZED
+                    current_action_label = self.SECURITY_STATE_LABEL_SNOOZED
+                    current_action_value = str(SecurityStateAction.SNOOZE)
                     
             return SecurityStatusData(
                 current_security_level = self._security_level,
                 current_security_state = self._security_state,
-                current_security_state_label = current_security_state_label,
+                current_action_value = current_action_value,
+                current_action_label = current_action_label,
             )
         finally:
             self._security_status_lock.release()

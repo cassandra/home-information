@@ -64,6 +64,14 @@
     }
 
     function fetchServerResponse() {
+	if ( Hi.isEditMode ) {
+	    if ( Hi.DEBUG ) { console.log( "Skipping polling server. Edit mode active." ); }
+	    Hi.watchdog.ok( ServerPollingWatchdogType );
+	    clearServerPollingTimer();
+	    setServerPollingTimer();
+	    return;
+	}
+
 	if ( Hi.DEBUG ) { console.log( "Polling server..." ); }
 	clearServerPollingTimer();
 	

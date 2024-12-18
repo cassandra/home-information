@@ -275,6 +275,7 @@ PIPELINE = {
         'js_before_content': {
             'source_filenames': (
                 'js/jquery-3.7.0.min.js',
+                'js/cookie.js',
                 'js/antinode.js',
                 'js/autosize.min.js',
                 'js/main.js',
@@ -368,3 +369,9 @@ BASE_URL_FOR_EMAIL_LINKS = 'https://{SITE_DOMAIN}'
 
 # When tests functionalityt requires knowing if in unit test context.
 UNIT_TESTING = False
+
+# In development and debugging, the debug noise and interference from the
+# background periodic monitoring tasks can be a problem. This gives a way
+# to turn them off with one setting.
+#
+SUPPRESS_MONITORS = False

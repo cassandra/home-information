@@ -48,7 +48,7 @@ class CollectionViewView( HiGridView, CollectionViewMixin ):
     def get_main_template_name( self ) -> str:
         return 'collection/panes/collection_view.html'
 
-    def get_template_context( self, request, *args, **kwargs ):
+    def get_main_template_context( self, request, *args, **kwargs ):
         collection = self.get_collection( request, *args, **kwargs )
 
         if self.should_force_sync_request(

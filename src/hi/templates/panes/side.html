@@ -1,1 +1,23 @@
-SIDE DEFAULT
+<div id="hi-side-info">
+  <div class="text-center mt-4 pt-4">
+    <div>INFO</div>
+    <div class="pt-2 mb-4 pb-4">Coming Soon.</div>
+  </div>
+</div>
+<div>
+</div>
+<div class="row">
+  <div class="col-6">
+    {% include "entity/panes/camera_controls.html" %}
+  </div>
+  <div class="col-6">
+    {% include "security/panes/security_state_control.html" %}
+  </div>
+</div>
+<div>
+  <a href="{% url 'event_history' %}"
+     class="btn btn-secondary btn-control" role="button"
+     data-async="true" >
+    HISTORY
+  </a>
+</div>

@@ -23,7 +23,7 @@ class IntegrationHomeView( ConfigPageView ):
     def get_main_template_name( self ) -> str:
         return 'integrations/pages/no_integrations.html'
 
-    def get_template_context( self, request, *args, **kwargs ):
+    def get_main_template_context( self, request, *args, **kwargs ):
 
         integration_data = IntegrationManager().get_default_integration_data()
         if not integration_data:
@@ -150,7 +150,7 @@ class IntegrationManageView( ConfigPageView ):
     def get_main_template_name( self ) -> str:
         return 'integrations/pages/integration_manage.html'
 
-    def get_template_context( self, request, *args, **kwargs ):
+    def get_main_template_context( self, request, *args, **kwargs ):
         integration_manager = IntegrationManager()
         
         integration_id = kwargs.get('integration_id')

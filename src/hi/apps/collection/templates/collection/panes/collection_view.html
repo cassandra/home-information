@@ -5,7 +5,7 @@
   <div class="row">
     {% for entity_status_data in entity_status_data_list %}
     <div id="{{ entity_status_data.entity.html_id }}" 
-	 class="col-4 {% if request.view_parameters.is_editing %}draggable{% endif %}"
+	 class="{% if entity_status_data_list|length == 1 %}col-12{% elif entity_status_data_list|length <= 4 %}col-6{% else %}col-4{% endif %} {% if request.view_parameters.is_editing %}draggable{% endif %}"
 	 {% if request.view_parameters.is_editing %}draggable="true"{% endif %} >
       {% include "entity/panes/entity_status_card.html" with entity_status_data=entity_status_data %}
     </div>

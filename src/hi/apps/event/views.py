@@ -18,7 +18,7 @@ class EventDefinitionsView( ConfigPageView ):
     def get_main_template_name( self ) -> str:
         return 'event/panes/event_definitions.html'
 
-    def get_template_context( self, request, *args, **kwargs ):
+    def get_main_template_context( self, request, *args, **kwargs ):
         event_definition_list = list(
             EventDefinition.objects.prefetch_related(
                 'event_clauses',

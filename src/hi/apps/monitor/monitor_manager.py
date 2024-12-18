@@ -3,6 +3,7 @@ import logging
 from typing import List, Type
 
 from django.apps import apps
+from django.conf import settings
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.module_utils import import_module_safe
@@ -31,6 +32,11 @@ class AppMonitorManager( Singleton ):
             monitor = monitor_class()
             self._monitor_map[monitor.id] = monitor
             if not monitor.is_running:
+
+                if settings.DEBUG and settings.SUPPRESS_MONITORS:
+                    logger.debug(f"Skipping monitor: {monitor.id}. See SUPPRESS_MONITORS = True")
+                    return
+                
                 logger.debug(f"Starting monitor: {monitor.id}")
                 asyncio.run_coroutine_threadsafe( monitor.start(), self._event_loop )
             continue

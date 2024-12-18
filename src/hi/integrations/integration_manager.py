@@ -6,6 +6,7 @@ from threading import Lock
 from typing import Dict, List
 
 from django.apps import apps
+from django.conf import settings
 from django.db import transaction
 
 from hi.apps.attribute.enums import AttributeType
@@ -131,6 +132,11 @@ class IntegrationManager( Singleton ):
                 
         self._monitor_map[integration_id] = monitor
         if not monitor.is_running:
+
+            if settings.DEBUG and settings.SUPPRESS_MONITORS:
+                logger.debug(f"Skipping monitor: {integration_id}. See SUPPRESS_MONITORS = True")
+                return
+            
             logger.debug(f"Starting monitor: {integration_id}")
             asyncio.run_coroutine_threadsafe( monitor.start(), self._event_loop )
         return

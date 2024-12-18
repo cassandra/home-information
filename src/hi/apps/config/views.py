@@ -72,7 +72,7 @@ class ConfigSettingsView( ConfigPageView ):
     def get_main_template_name( self ) -> str:
         return 'config/panes/settings.html'
 
-    def get_template_context( self, request, *args, **kwargs ):
+    def get_main_template_context( self, request, *args, **kwargs ):
         
         subsystem_list = SettingsManager().get_subsystems()
 
