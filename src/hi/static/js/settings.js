@@ -12,9 +12,15 @@
 	},
 	isAudioEnabled: function() {
 	    return _isAudioEnabled( );
+	},
+	enableSleepMode: function() {
+	    return _enableSleepMode( );
+	},
+	disableSleepMode: function() {
+	    return _disableSleepMode( );
 	}
     };
-
+    
     window.Hi.settings = HiSettings;
 
     /*
@@ -23,6 +29,7 @@
       - Adjustable settings relevant for the console.
     */
 
+    const SleepOverlaySelector = '#hi-sleep-overlay';
     const AudioStateSettingName = 'audioState';
     const AudioStateEnabled = 'enabled';
     const AudioStateDisabled = 'disabled';
@@ -50,6 +57,15 @@
 	if ( audioState && ( audioState == AudioStateDisabled ))
 	    return false;
 	return true;
+    }
+
+    function _enableSleepMode() {
+	let sleepOverlay = $(SleepOverlaySelector);
+	$(sleepOverlay).show();
+	$(sleepOverlay).off( 'click').on('click', Hi.settings.disableSleepMode );
+    }
+    function _disableSleepMode() {
+	$(SleepOverlaySelector).hide();
     }
     
 })();

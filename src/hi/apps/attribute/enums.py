@@ -19,6 +19,7 @@ class AttributeValueType(LabeledEnum):
     ENUM        = ('Enum'     , '' )
     BOOLEAN     = ('Boolean'  , '' )
     INTEGER     = ('Integer'  , '' )
+    FLOAT       = ('Float'    , '' )
     
     @classmethod
     def default(cls):

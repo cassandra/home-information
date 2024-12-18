@@ -83,7 +83,7 @@ class AlertManager( Singleton, NotificationMixin ):
         return
     
     async def add_alarm( self, alarm : Alarm ):
-        notification_manager = await self._notification_manager_async()
+        notification_manager = await self.notification_manager_async()
         logging.debug( f'Adding Alarm: {alarm}' )
         security_state = SecurityManager().security_state
         try:

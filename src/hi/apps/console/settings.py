@@ -28,6 +28,15 @@ class ConsoleSetting( SettingEnum ):
         is_required = False,
         initial_value = '',
     )
+    SLEEP_OVERLAY_OPACITY = SettingDefinition(
+        label = 'Sleep Overlap Opacity',
+        description = 'Opacity to use for sleep mode: 0.0 for none to 1.0 for fully opaque.',
+        value_type = AttributeValueType.FLOAT,
+        value_range_str = '[ 0.0, 1.0 ]',
+        is_editable = True,
+        is_required = True,
+        initial_value = '0.95',
+    )
     THEME = SettingDefinition(
         label = 'Theme',
         description = 'Overall look and feel of interfaces',

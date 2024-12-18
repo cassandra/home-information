@@ -2,7 +2,6 @@ import logging
 from typing import Dict
 
 from django.http import HttpRequest
-from django.template.loader import get_template
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_manager import SettingsManager
@@ -10,6 +9,7 @@ from hi.apps.config.settings_manager import SettingsManager
 from .audio_file import AudioFile
 from .audio_signal import AudioSignal
 from .constants import ConsoleConstants
+from .settings import ConsoleSetting
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +26,9 @@ class ConsoleManager(Singleton):
 
     def get_console_audio_map( self ) -> Dict[ str, str ]:
         return self._console_audio_map
+
+    def get_sleep_overlay_opacity( self ) -> str:
+        return SettingsManager().get_setting_value( ConsoleSetting.SLEEP_OVERLAY_OPACITY )
     
     def _reload_console_audio_map( self ) -> Dict[ str, str ]:
         logger.debug( 'Reloading console audio map' )
