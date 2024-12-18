@@ -69,29 +69,14 @@ class SettingsManager( Singleton ):
         return self._attribute_value_map.get( setting_enum.key )
 
     def set_setting_value( self, setting_enum : SettingEnum, value : str ):
-
-        module_name = setting_enum.__class__.__module__
-        subsystem_key = '.'.join( module_name.split('.')[:-1] )
-
-        print( f'\n\nMODULE = direct={setting_enum.__module__}, indirect={module_name}, name={app_name}\n' )
-
-
-
-
-
-        raise NotImplementedError()
-
-
-
         try:
             db_attribute = SubsystemAttribute.objects.get(
-                subsystem = subsystem,
-                setting_key = setting_key,
-                name = setting_definition.label,
+                setting_key = setting_enum.key,
             )
             db_attribute.value = value
             db_attribute.save()
-            self._attribute_value_map[setting_enum.key] = value
+            self._attribute_value_map[setting_enum.key] = value  # Just to avoid complete reload of settings
+
         except SubsystemAttribute.DoesNotExist:
             raise KeyError( f'No setting "{setting_enum.name}"  found.' )
         return

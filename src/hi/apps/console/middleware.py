@@ -6,7 +6,10 @@ from .views import ConsoleUnlockView
 
 class ConsoleLockMiddleware:
 
-    EXCLUDED_PATHS = [ reverse('console_unlock'), reverse('api_status' ) ]
+    EXCLUDED_PATHS = [
+        reverse('console_unlock'),
+        reverse('api_status' ),
+    ]
 
     def __init__(self, get_response):
         self.get_response = get_response

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import logging
 from types import ModuleType
-from typing import Dict, List
+from typing import Dict, List, Type
 
 from hi.apps.common.utils import get_humanized_name
 from hi.apps.config.setting_enums import SettingEnum, SettingDefinition
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AppSettingDefinitions:
-    setting_enum            : SettingEnum
+    setting_enum_class            : Type[ SettingEnum ]
     setting_definition_map  : Dict[ str, SettingDefinition ]  # Key is setting key
 
     def __len__(self):
@@ -66,23 +66,23 @@ class AppSettings:
                  and attr is not SettingEnum ):
                 logger.debug(f'Found Setting subclass for {attr_name}')
                 app_setting_definitions = self._get_app_setting_definitions(
-                    setting_enum = attr,
+                    setting_enum_class = attr,
                 )
                 if len(app_setting_definitions) > 0:
                     app_setting_definitions_list.append( app_setting_definitions )
             continue                
         return app_setting_definitions_list
 
-    def _get_app_setting_definitions( self, setting_enum : SettingEnum ) -> AppSettingDefinitions:
+    def _get_app_setting_definitions( self, setting_enum_class : type[SettingEnum] ) -> AppSettingDefinitions:
 
         setting_definition_map = dict()
-        for setting_name, setting_member in setting_enum.__members__.items():
-            logger.debug( f'Adding setting: {setting_member.key}' )
-            setting_definition_map[setting_member.key] = setting_member.definition
+        for setting_name, setting_enum_member in setting_enum_class.__members__.items():
+            logger.debug( f'Adding setting: {setting_enum_member.key}' )
+            setting_definition_map[setting_enum_member.key] = setting_enum_member.definition
             continue
 
         return AppSettingDefinitions(
-            setting_enum = setting_enum,
+            setting_enum_class = setting_enum_class,
             setting_definition_map = setting_definition_map,
         )
 
