@@ -4,7 +4,6 @@ import urllib.parse
 
 from django.shortcuts import render
 from django.template.loader import get_template
-from django.utils.safestring import mark_safe
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
@@ -109,7 +108,7 @@ class HiModalView( View ):
     def get_template_name( self ) -> str:
         raise NotImplementedError('Subclasses must override this method.')
 
-    def modal_response( self, request, context, status = 200 ):
+    def modal_response( self, request, context = None, status = 200 ):
         modal_response = antinode.modal_from_template(
             request = request,
             template_name = self.get_template_name(),

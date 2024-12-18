@@ -19,6 +19,15 @@ class ConsoleSetting( SettingEnum ):
         is_required = True,
         initial_value = 'America/Chicago',
     )
+    CONSOLE_LOCK_PASSWORD = SettingDefinition(
+        label = 'Lock Password',
+        description = 'Password to use to unlock console',
+        value_type = AttributeValueType.SECRET,
+        value_range_str = '',
+        is_editable = True,
+        is_required = False,
+        initial_value = '',
+    )
     THEME = SettingDefinition(
         label = 'Theme',
         description = 'Overall look and feel of interfaces',
