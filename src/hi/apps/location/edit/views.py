@@ -121,6 +121,96 @@ class LocationSvgReplaceView( HiModalView, LocationViewMixin ):
         redirect_url = reverse('home')
         return antinode.redirect_response( redirect_url )
 
+
+class LocationEditView( View, LocationViewMixin ):
+
+    def get( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+        location_edit_data = LocationEditData(
+            location = location,
+        )
+        return self.location_edit_response(
+            request = request,
+            location_edit_data = location_edit_data,
+            status_code = 200,
+        )
+    
+    def post( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+
+        location_edit_form = forms.LocationEditForm(
+            request.POST,
+            instance = location,
+        )
+        location_attribute_formset = forms.LocationAttributeFormSet(
+            request.POST,
+            request.FILES,
+            instance = location,
+            prefix = f'location-{location.id}',
+            form_kwargs = {
+                'show_as_editable': True,
+            },
+        )
+        
+        if ( location_edit_form.is_valid()
+             and location_attribute_formset.is_valid() ):
+            with transaction.atomic():
+                location_edit_form.save()
+                location_attribute_formset.save()
+
+            # Location name/order can impact many parts of UI. Full refresh is safest in this case.
+            if location_edit_form.has_changed():
+                return antinode.refresh_response()
+                
+            # Recreate to preserve "max" to show new form
+            location_attribute_formset = forms.LocationAttributeFormSet(
+                instance = location,
+                prefix = f'location-{location.id}',
+            )
+            status_code = 200
+        else:
+            status_code = 400
+
+        location_edit_data = LocationEditData(
+            location = location,
+            location_edit_form = location_edit_form,
+            location_attribute_formset = location_attribute_formset,
+        )
+        return self.location_edit_response(
+            request = request,
+            location_edit_data = location_edit_data,
+            status_code = status_code,
+        )
+            
+    
+class LocationAttributeUploadView( View, LocationViewMixin ):
+
+    def post( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+        location_attribute = LocationAttribute( location = location )
+        location_attribute_upload_form = forms.LocationAttributeUploadForm(
+            request.POST,
+            request.FILES,
+            instance = location_attribute,
+        )
+
+        if location_attribute_upload_form.is_valid():
+            with transaction.atomic():
+                location_attribute_upload_form.save()   
+            status_code = 200
+        else:
+            status_code = 400
+
+        location_edit_data = LocationEditData(
+            location = location,
+            location_attribute_upload_form = location_attribute_upload_form,
+        )
+        return self.location_edit_response(
+            request = request,
+            location_edit_data = location_edit_data,
+            status_code = status_code,
+        )
+
     
 @method_decorator( edit_required, name='dispatch' )
 class LocationDeleteView( HiModalView, LocationViewMixin ):
@@ -238,86 +328,6 @@ class LocationViewDeleteView( HiModalView, LocationViewMixin ):
         
         redirect_url = reverse('home')
         return self.redirect_response( request, redirect_url )
-
-
-@method_decorator( edit_required, name='dispatch' )
-class LocationEditView( View, LocationViewMixin ):
-
-    def post( self, request, *args, **kwargs ):
-        location = self.get_location( request, *args, **kwargs )
-
-        location_edit_form = forms.LocationEditForm(
-            request.POST,
-            instance = location,
-        )
-        location_attribute_formset = forms.LocationAttributeFormSet(
-            request.POST,
-            request.FILES,
-            instance = location,
-            prefix = f'location-{location.id}',
-            form_kwargs = {
-                'show_as_editable': True,
-            },
-        )
-        
-        if ( location_edit_form.is_valid()
-             and location_attribute_formset.is_valid() ):
-            with transaction.atomic():
-                location_edit_form.save()
-                location_attribute_formset.save()
-
-            # Location name/order can impact many parts of UI. Full refresh is safest in this case.
-            if location_edit_form.has_changed():
-                return antinode.refresh_response()
-                
-            # Recreate to preserve "max" to show new form
-            location_attribute_formset = forms.LocationAttributeFormSet(
-                instance = location,
-                prefix = f'location-{location.id}',
-            )
-            status_code = 200
-        else:
-            status_code = 400
-
-        location_edit_data = LocationEditData(
-            location = location,
-            location_edit_form = location_edit_form,
-            location_attribute_formset = location_attribute_formset,
-        )
-        return self.location_edit_response(
-            request = request,
-            location_edit_data = location_edit_data,
-            status_code = status_code,
-        )
-            
-    
-class LocationAttributeUploadView( View, LocationViewMixin ):
-
-    def post( self, request, *args, **kwargs ):
-        location = self.get_location( request, *args, **kwargs )
-        location_attribute = LocationAttribute( location = location )
-        location_attribute_upload_form = forms.LocationAttributeUploadForm(
-            request.POST,
-            request.FILES,
-            instance = location_attribute,
-        )
-
-        if location_attribute_upload_form.is_valid():
-            with transaction.atomic():
-                location_attribute_upload_form.save()   
-            status_code = 200
-        else:
-            status_code = 400
-
-        location_edit_data = LocationEditData(
-            location = location,
-            location_attribute_upload_form = location_attribute_upload_form,
-        )
-        return self.location_edit_response(
-            request = request,
-            location_edit_data = location_edit_data,
-            status_code = status_code,
-        )
 
     
 @method_decorator( edit_required, name='dispatch' )

@@ -1,3 +1,12 @@
+{% if request.view_parameters.location %}
+<div>
+  <a href="{% url 'location_edit_location_edit' location_id=request.view_parameters.location.id %}"
+     class="btn btn-info btn-control" role="button"
+     data-async="true" >
+    {{ request.view_parameters.location.name }} Info
+  </a>
+</div>
+{% endif %}
 <div id="hi-side-info">
   <div class="text-center mt-4 pt-4">
     <div>INFO</div>

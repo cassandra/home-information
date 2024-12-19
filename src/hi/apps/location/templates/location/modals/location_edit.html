@@ -1,0 +1,11 @@
+{% extends "modals/action_done.html" %}
+
+{% block title_text %}
+{{ location.name }}
+{% endblock %}
+
+{% block body %}
+<div>
+  {% include "location/edit/panes/location_edit.html" %}
+</div>
+{% endblock %}

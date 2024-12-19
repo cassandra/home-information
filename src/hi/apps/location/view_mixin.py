@@ -49,15 +49,21 @@ class LocationViewMixin:
             status_code                     : int                                = 200 ):
 
         context = location_edit_data.to_template_context()
-        template = get_template( 'location/edit/panes/location_edit.html' )
-        content = template.render( context, request = request )
-        return antinode.response(
-            insert_map = {
-                DIVID['LOCATION_EDIT_PANE']: content,
-            },
-            status = status_code,
+        if request.view_parameters.is_editing:
+            template = get_template( 'location/edit/panes/location_edit.html' )
+            content = template.render( context, request = request )
+            return antinode.response(
+                insert_map = {
+                    DIVID['LOCATION_EDIT_PANE']: content,
+                },
+                status = status_code,
+            )
+        return antinode.modal_from_template(
+            request = request,
+            template_name = 'location/modals/location_edit.html',
+            context = context,
         )
-    
+        
     def location_view_edit_response(
             self,
             request                  : HttpRequest,
