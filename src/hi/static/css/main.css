@@ -211,9 +211,6 @@ a.underline:visited {
     text-align: center;
 }
 
-path[open-path] {
-    pointer-events: stroke;
-}
 svg[action-state="move"] {
     cursor: move;
 }
