@@ -5,4 +5,15 @@
 	    name="{{ attribute_form.value.html_name }}">{{ attribute_form.value.value|default_if_none:'' }}</textarea>
 </div>
 <div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
-<script type="text/javascript">autosize($('#{{ attribute_form.value.id_for_label }}'));</script>
+<script type="text/javascript">
+(function() {
+   let textareaSelector = '#{{ attribute_form.value.id_for_label }}';
+   autosize($(textareaSelector));
+
+   // In case this is in a modal, need to wait for autosize to work.
+   $('.modal').on('shown.bs.modal', function () {
+     autosize.update($(textareaSelector));
+   });
+ })();
+
+</script>

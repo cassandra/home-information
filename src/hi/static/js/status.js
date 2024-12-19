@@ -189,9 +189,6 @@
 	    if ( $(elem).attr(  'hi-id-replace-hash' ) != contentHash ) {
 		$(elem).replaceWith( replacementContent );
 		$(`#${html_id}`).attr( 'hi-id-replace-hash', contentHash );
-		console.log( `UPDATED (CHANGED): ${html_id}, hash=${contentHash}` );
-	    } else {
-		console.log( `SKIPPED (UNCHANGED): ${html_id}` );
 	    }
 	}
     }

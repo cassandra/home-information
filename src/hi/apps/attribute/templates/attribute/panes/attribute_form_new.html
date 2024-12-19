@@ -12,7 +12,7 @@
   <label for="{{ attribute_form.value.id_for_label }}">{{ attribute_form.value.label }}</label>
   <textarea rows="2" cols="40"
 	    id="{{ attribute_form.value.id_for_label }}"
-	      name="{{ attribute_form.value.html_name }}"
+	    name="{{ attribute_form.value.html_name }}"
   >{{ attribute_form.value.value|default_if_none:'' }}</textarea>
   <div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
 
