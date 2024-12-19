@@ -146,6 +146,10 @@ class SvgPathItem:
     fill_color    : str
     fill_opacity  : float
 
+    @property
+    def is_closed(self):
+        return bool( self.svg_path and ( self.svg_path[-1].lower() == 'z' ))
+
     
 class SvgDecimalField( models.DecimalField ):
     """

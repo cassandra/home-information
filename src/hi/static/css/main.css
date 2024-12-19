@@ -211,6 +211,9 @@ a.underline:visited {
     text-align: center;
 }
 
+path[open-path] {
+    pointer-events: stroke;
+}
 svg[action-state="move"] {
     cursor: move;
 }
@@ -224,7 +227,10 @@ svg[action-state="scale"] {
 svg .highlighted {
     filter: drop-shadow(0 0 10px red);
 }
-
+g[hover] {
+    outline: 2px solid blue;
+    filter: drop-shadow(0 0 5px blue);
+}
 g[status="active"] {
     outline: 2px solid red;
     filter: drop-shadow(0 0 5px red);

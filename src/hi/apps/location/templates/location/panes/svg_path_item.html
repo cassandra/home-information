@@ -5,5 +5,8 @@
 	stroke="{{ svg_path_item.stroke_color }}" 
 	stroke-width="{{ svg_path_item.stroke_width }}" 
 	vector-effect="non-scaling-stroke" 
+	{% if not svg_path_item.is_closed %}open-path="true"{% endif %}
+        onmouseover="this.style.strokeWidth='10';"
+        onmouseout="this.style.strokeWidth='{{ svg_path_item.stroke_width }}';"
 	d="{{ svg_path_item.svg_path }}"></path>
 </g>
