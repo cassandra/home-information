@@ -278,7 +278,7 @@
 		    iconActionRotateAbort();
 		    gSvgIconActionState = SvgActionStateType.MOVE;
 		    $(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '');
-		    
+		    clearSelectedIconSvgGroup();
 		} else {
 		    return;
 		}

@@ -5,9 +5,8 @@
        {% if request.view_parameters.is_editing %}draggable="true"{% endif %}
        >
     <a href="{% url 'location_view' location_view_id=location_view.id %}"
-       class="btn btn-primary btn-control"
-       role="button"
-       data-async="true" >
+       class="btn {% if location_view == request.view_parameters.location_view %}btn-primary{% else %}btn-info{% endif %} btn-control"
+       role="button" >
       {{ location_view.name }}
     </a>
   </div>

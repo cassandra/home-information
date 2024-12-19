@@ -51,10 +51,11 @@ class CollectionAddView( HiModalView ):
 
         with transaction.atomic():
             collection = collection_form.save()
-            self._add_to_location_view(
-                request = request,
-                collection = collection,
-            )
+            if request.view_parameters.view_type == ViewType.LOCATION_VIEW:
+                self._add_to_location_view(
+                    request = request,
+                    collection = collection,
+                )
 
         if request.view_parameters.view_type == ViewType.COLLECTION:
             request.view_parameters.update_collection( collection = collection )
