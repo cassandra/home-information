@@ -30,7 +30,7 @@ urlpatterns = [
 
 
 def discover_urls():
-    """ Add urls (if any) from all integrations (exlcusing "core" module) """
+    """ Add urls (if any) from all integrations """
     
     discovered_url_modules = dict()
     for app_config in apps.get_app_configs():

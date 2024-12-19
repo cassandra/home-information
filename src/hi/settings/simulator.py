@@ -12,6 +12,8 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'hi.apps.common',
     'hi.simulator',
+    'hi.simulator.services.hass',
+    'hi.simulator.services.zoneminder',
 ]
 
 MIDDLEWARE = [

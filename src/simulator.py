@@ -3,6 +3,10 @@ import os
 import sys
 from subprocess import run
 
+# This script wqraps the Django manage,py script but first sets the Django
+# settings to the Simulator settings for running the (separate) simulator
+# Django application.
+
 
 def main():
     settings_module = 'hi.settings.simulator'
