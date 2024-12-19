@@ -14,6 +14,7 @@ from hi.apps.common.utils import is_ajax
 from hi.apps.location.edit.views import LocationViewManageItemsView
 from hi.apps.collection.edit.views import CollectionManageItemsView
 from hi.apps.collection.models import Collection
+from hi.apps.console.console_manager import ConsoleManager
 from hi.apps.location.models import Location
 from hi.apps.security.security_manager import SecurityManager
 
@@ -45,7 +46,7 @@ class HiGridView(View):
     HI_GRID_TEMPLATE_NAME = 'pages/hi_grid.html'    
     TOP_TEMPLATE_NAME = 'panes/top_buttons.html'    
     BOTTOM_TEMPLATE_NAME = 'panes/bottom_buttons.html'    
-    SIDE_DEFAULT_TEMPLATE_NAME = 'panes/side.html'    
+    SIDE_FALLBACK_TEMPLATE_NAME = 'panes/side_fallback.html'
         
     def get_main_template_name( self ) -> str:
         raise NotImplementedError('Subclasses must override this method.')
@@ -94,7 +95,7 @@ class HiGridView(View):
                         side_view = CollectionManageItemsView()
 
             if not side_view:
-                return ( self.SIDE_DEFAULT_TEMPLATE_NAME, dict() )
+                return ConsoleManager().get_side_template_name_and_context( request, *args, **kwargs )
 
             if not isinstance( side_view, HiSideView ):
                 raise ValueError( f'Side URL has view not side class: {side_view.__class__.__name__}' )
@@ -105,7 +106,7 @@ class HiGridView(View):
         
         except Exception as e:
             logger.exception( e )
-            return ( self.SIDE_DEFAULT_TEMPLATE_NAME, dict() )
+            return ( self.SIDE_FALLBACK_TEMPLATE_NAME, dict() )
 
     def get(self, request, *args, **kwargs):
         if is_ajax( request ):

@@ -14,7 +14,6 @@ from hi.apps.model_helper import HiModelHelper
 
 from hi.integrations.integration_key import IntegrationKey
 
-from .enums import ZmMonitorFunction
 from .zm_metadata import ZmMetaData
 from .zm_mixins import ZoneMinderMixin
 
@@ -25,6 +24,15 @@ class ZoneMinderSynchronizer( ZoneMinderMixin ):
 
     SYNCHRONIZATION_LOCK_NAME = 'zm_integration_sync'
 
+    MONITOR_FUNCTION_NAME_LABEL_DICT = {
+        'None': 'None',
+        'Monitor': 'Monitor',
+        'Modect': 'Modect',
+        'Record': 'Record',
+        'Mocord': 'Mocord',
+        'Nodect': 'Nodect',
+    }
+    
     def __init__(self):
         return
     
@@ -216,7 +224,7 @@ class ZoneMinderSynchronizer( ZoneMinderMixin ):
                     zm_monitor_id = zm_monitor.id(),
                 ),
                 name = f'{entity.name} Function',
-                name_label_dict = { str(x): x.label for x in ZmMonitorFunction },
+                name_label_dict = self.MONITOR_FUNCTION_NAME_LABEL_DICT,
             )
             
             if zm_manager.should_add_alarm_events:

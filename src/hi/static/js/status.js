@@ -205,6 +205,14 @@
 			//    - descendent DIV tag with status attr - assume attr and text needs updating
 			//
 			if ( attrName == 'status' ) {
+
+
+
+
+			    console.log( `SETTING: ${this} = ${attrValue}` );
+
+
+			    
 			    $(this).find('select').val( attrValue );
 			    
 			    $(this).find('input[type="checkbox"]').each( function(index, element) {

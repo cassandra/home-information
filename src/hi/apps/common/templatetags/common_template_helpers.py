@@ -1,4 +1,5 @@
 import os
+import random
 import urllib
 
 from django import template
@@ -106,3 +107,17 @@ def include_with_fallback( context, template_name : str, fallback_name : str ):
     
     context_dict = context.flatten()
     return template_obj.render( context_dict )
+
+
+@register.filter
+def add_random_query_param( value ):
+    """ Appends a random query parameter to the URL."""
+
+    parsed_url = urllib.parse.urlparse( value )
+    query_params = urllib.parse.parse_qs( parsed_url.query )
+    query_params['_'] = random.randint( 100000, 999999 )
+    new_query = urllib.parse.urlencode( query_params, doseq = True )
+    updated_url = urllib.parse.urlunparse(
+        parsed_url._replace( query = new_query )
+    )
+    return updated_url

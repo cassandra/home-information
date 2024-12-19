@@ -111,6 +111,9 @@ class StatusStyle:
 
     
 class StatusDisplayData:
+
+    RECENT_MOVEMENT_THRESHOLD_SECS = 90
+    PAST_MOVEMENT_THRESHOLD_SECS = 180
     
     def __init__( self, entity_state_status_data : EntityStateStatusData ):
         self._entity_state = entity_state_status_data.entity_state
@@ -220,10 +223,10 @@ class StatusDisplayData:
 
         if self.penultimate_sensor_value == str(EntityStateValue.ACTIVE):
             movement_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
-            if movement_timedelta.total_seconds() < 30:
+            if movement_timedelta.total_seconds() < self.RECENT_MOVEMENT_THRESHOLD_SECS:
                 return StatusStyle.MovementRecent
 
-            elif movement_timedelta.total_seconds() < 60:
+            elif movement_timedelta.total_seconds() < self.PAST_MOVEMENT_THRESHOLD_SECS:
                 return StatusStyle.MovementPast
 
         return StatusStyle.MovementIdle
@@ -235,10 +238,10 @@ class StatusDisplayData:
 
         if self.penultimate_sensor_value == str(EntityStateValue.ACTIVE):
             presence_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
-            if presence_timedelta.total_seconds() < 30:
+            if presence_timedelta.total_seconds() < self.RECENT_MOVEMENT_THRESHOLD_SECS:
                 return StatusStyle.MovementRecent
 
-            elif presence_timedelta.total_seconds() < 60:
+            elif presence_timedelta.total_seconds() < self.PAST_MOVEMENT_THRESHOLD_SECS:
                 return StatusStyle.MovementPast
 
         return StatusStyle.MovementIdle
@@ -274,4 +277,4 @@ class StatusDisplayData:
         if self.latest_sensor_value == str(EntityStateValue.LOW):
             return StatusStyle.Low
         return None
-        
+    

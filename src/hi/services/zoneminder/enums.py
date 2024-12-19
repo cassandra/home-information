@@ -58,13 +58,3 @@ class ZmAttributeType( IntegrationAttributeType ):
         False,
         True,
     )
-    
-
-class ZmMonitorFunction(LabeledEnum):
-
-    NONE      = ( 'None', '' )
-    MONITOR   = ( 'Monitor', '' )
-    MODECT    = ( 'Modect', '' )
-    RECORD    = ( 'Record', '' )
-    MOCORD    = ( 'Mocord', '' )
-    NODECT    = ( 'Nodect', '' )

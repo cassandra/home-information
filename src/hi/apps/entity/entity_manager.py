@@ -1,7 +1,11 @@
 from decimal import Decimal
+import logging
+from threading import local
 from typing import List, Set
 
 from django.db import transaction
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.entity.edit.forms import EntityPositionForm
@@ -10,12 +14,14 @@ from hi.apps.location.svg_item_factory import SvgItemFactory
 
 from .delegation_manager import DelegationManager
 from .enums import (
-    EntityType,
+    EntityStateType,
 )
 from .models import (
     Entity,
+    EntityAttribute,
     EntityPath,
     EntityPosition,
+    EntityState,
     EntityStateDelegation,
     EntityView,
 )
@@ -26,10 +32,32 @@ from .transient_models import (
     EntityViewItem,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class EntityManager(Singleton):
 
     def __init_singleton__(self):
+        self._change_listeners = list()
+        self.reload()
+        return
+
+    def reload(self):
+        self._notify_change_listeners()
+        return
+        
+    def register_change_listener( self, callback ):
+        logger.debug( f'Adding EntityManager change listener from {callback.__module__}' )
+        self._change_listeners.append( callback )
+        return
+    
+    def _notify_change_listeners(self):
+        for callback in self._change_listeners:
+            try:
+                callback()
+            except Exception as e:
+                logger.exception( 'Problem calling EntityManager change callback.', e )
+            continue
         return
 
     def get_entity_details_data( self,
@@ -62,20 +90,6 @@ class EntityManager(Singleton):
         principal_state_list = [ x.entity_state for x in entity_state_delegation_list ]
         return list({ x.entity for x in principal_state_list })  # de-dupe
         
-    def create_entity( self,
-                       entity_type       : EntityType,
-                       name              : str,
-                       can_user_delete   : bool        = True,
-                       integration_id    : str         = None,
-                       integration_name  : str         = None  ) -> Entity:
-        return Entity.objects.create(
-            name = name,
-            entity_type_str = str(entity_type),
-            can_user_delete = can_user_delete,
-            integration_id = integration_id,
-            integration_name = integration_name,
-        )
-    
     def set_entity_path( self,
                          entity_id     : int,
                          location      : Location,
@@ -320,3 +334,54 @@ class EntityManager(Singleton):
                 continue
         return
     
+    def get_view_stream_entities(self) -> List[ Entity ]:
+        """ Return all entities that have a video stream state """
+
+        entity_state_queryset = EntityState.objects.select_related( 'entity' ).filter(
+            entity_state_type_str = str(EntityStateType.VIDEO_STREAM),
+        )
+        return [ x.entity for x in entity_state_queryset ]
+
+    
+_thread_local = local()
+
+
+def do_entity_manager_reload():
+    logger.debug( 'Reloading EntityManager from model changes.')
+    EntityManager().reload()
+    _thread_local.reload_registered = False
+    return
+
+
+@receiver( post_save, sender = Entity )
+@receiver( post_save, sender = EntityState )
+@receiver( post_save, sender = EntityAttribute )
+@receiver( post_save, sender = EntityStateDelegation )
+@receiver( post_save, sender = EntityPosition )
+@receiver( post_save, sender = EntityPath )
+@receiver( post_save, sender = EntityView )
+@receiver( post_delete, sender = Entity )
+@receiver( post_delete, sender = EntityState )
+@receiver( post_delete, sender = EntityAttribute )
+@receiver( post_delete, sender = EntityStateDelegation )
+@receiver( post_delete, sender = EntityPosition )
+@receiver( post_delete, sender = EntityPath )
+@receiver( post_delete, sender = EntityView )
+def entity_manager_model_changed( sender, instance, **kwargs ):
+    """
+    Queue the EntityManager.reload() call to execute after the transaction
+    is committed.  This prevents reloading multiple times if multiple
+    models saved as part of a transaction.
+    """
+    if not hasattr(_thread_local, "reload_registered"):
+        _thread_local.reload_registered = False
+
+    logger.debug( 'EntityManager model change detected.')
+        
+    if not _thread_local.reload_registered:
+        logger.debug( 'Queuing EntityManager reload on model change.')
+        _thread_local.reload_registered = True
+        transaction.on_commit( do_entity_manager_reload )
+    
+    return
+        

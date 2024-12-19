@@ -133,6 +133,7 @@ class EntityState( models.Model ):
         'State Type',
         max_length = 32,
         null = False, blank = False,
+        db_index = True,
     )
     name = models.CharField(
         'Name',
