@@ -1,4 +1,5 @@
 from datetime import datetime
+import hashlib
 import json
 import logging
 
@@ -23,6 +24,7 @@ class StatusView( View, AlertMixin ):
     AlertStatusDataAttr = 'alertData'
     CssClassUpdateMapAttr = 'cssClassUpdateMap'
     IdReplaceUpdateMapAttr = 'idReplaceUpdateMap'
+    IdReplaceHashMapAttr = 'idReplaceHashMap'
 
     def get( self, request, *args, **kwargs ):
 
@@ -51,12 +53,23 @@ class StatusView( View, AlertMixin ):
         css_class_update_map = dict()
         css_class_update_map.update( StatusDisplayManager().get_status_css_class_update_map() )
 
+        # Hash provided for client to prevent unneeded DOM updates since
+        # they can interfer with user interactions.
+        #
+        id_replace_hash_map = dict()
+        for id, html_text in id_replace_map.items():
+            encoded_string = html_text.encode('utf-8')
+            md5_hash = hashlib.md5(encoded_string)
+            id_replace_hash_map[id] = md5_hash.hexdigest()
+            continue
+        
         data = {
             self.ServerStartTimestampAttr: server_start_datetime.isoformat(),
             self.ServerTimestampAttr: server_datetime.isoformat(),
             self.AlertStatusDataAttr: alert_status_data.to_dict( request = request ),
-            self.IdReplaceUpdateMapAttr: id_replace_map,
             self.CssClassUpdateMapAttr: css_class_update_map,
+            self.IdReplaceUpdateMapAttr: id_replace_map,
+            self.IdReplaceHashMapAttr: id_replace_hash_map,
         }
         return HttpResponse(
             json.dumps(data),

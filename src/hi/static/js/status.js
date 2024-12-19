@@ -28,8 +28,9 @@
     const ServerStartTimestampAttr = 'startTimestamp';
     const ServerTimestampAttr = 'timestamp';
     const LastServerTimestampAttr = 'lastTimestamp';
-    const IdReplaceUpdateMapAttr = 'idReplaceUpdateMap';
     const CssClassUpdateMapAttr = 'cssClassUpdateMap';
+    const IdReplaceUpdateMapAttr = 'idReplaceUpdateMap';
+    const IdReplaceHashMapAttr = 'idReplaceHashMap';
 
     const AlertStatusDataAttr = 'alertData';
     const AlertBannerContainerSelector = '#hi-alert-banner-container';
@@ -129,7 +130,8 @@
 	    handleAlertStatusData( respObj[AlertStatusDataAttr] );
 	}
 	if ( IdReplaceUpdateMapAttr in respObj ) {
-	    handleIdReplacements( respObj[IdReplaceUpdateMapAttr] );
+	    handleIdReplacements( respObj[IdReplaceUpdateMapAttr],
+				  respObj[IdReplaceHashMapAttr] );
 	}
 	if ( CssClassUpdateMapAttr in respObj ) {
 	    handleCssClassUpdates( respObj[CssClassUpdateMapAttr] );
@@ -178,10 +180,19 @@
 	}
     }
     
-    function handleIdReplacements( replaceMap ) {
+    function handleIdReplacements( replaceMap, hashMap ) {
 	for ( let html_id in replaceMap ) {
 	    let replacementContent = replaceMap[html_id];
-	    $(`#${html_id}`).replaceWith( replacementContent );
+	    let contentHash = hashMap[html_id];
+
+	    const elem = $(`#${html_id}`);
+	    if ( $(elem).attr(  'hi-id-replace-hash' ) != contentHash ) {
+		$(elem).replaceWith( replacementContent );
+		$(`#${html_id}`).attr( 'hi-id-replace-hash', contentHash );
+		console.log( `UPDATED (CHANGED): ${html_id}, hash=${contentHash}` );
+	    } else {
+		console.log( `SKIPPED (UNCHANGED): ${html_id}` );
+	    }
 	}
     }
     
@@ -205,14 +216,6 @@
 			//    - descendent DIV tag with status attr - assume attr and text needs updating
 			//
 			if ( attrName == 'status' ) {
-
-
-
-
-			    console.log( `SETTING: ${this} = ${attrValue}` );
-
-
-			    
 			    $(this).find('select').val( attrValue );
 			    
 			    $(this).find('input[type="checkbox"]').each( function(index, element) {
