@@ -1,0 +1,32 @@
+{% load static %}
+{% load pipeline %}
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>{% block head_title %}Service Simulators{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" type="image/png" href="{% static 'favicon.png' %}"/>
+    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-16x16.png' %}" sizes="16x16">  
+    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-32x32.png' %}" sizes="32x32">  
+    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-96x96.png' %}" sizes="96x96">  
+    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-128x128.png' %}" sizes="128x128">  
+    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-196x196.png' %}" sizes="196x196">  
+    <link href="{% static 'bootstrap/css/bootstrap.css' %}" rel="stylesheet" type="text/css" media="all" />
+    <link href="{% static 'css/main.css" rel="stylesheet' %}" type="text/css" media="all" />
+  </head>
+  <body>
+    <script type="text/javascript" src="{% static 'js/jquery-3.7.0.min.js' %}" charset="utf-8"></script>
+    <script type="text/javascript" src="{% static 'js/cookie.js' %}" charset="utf-8"></script>
+    <script type="text/javascript" src="{% static 'js/antinode.js' %}" charset="utf-8"></script>
+    <script type="text/javascript" src="{% static 'js/autosize.min.js' %}" charset="utf-8"></script>
+    <script type="text/javascript" src="{% static 'js/main.js' %}" charset="utf-8"></script>
+
+    {% block content %}{% endblock %}
+
+    <script type="text/javascript" src="{% static 'js/popper.min.js' %}" charset="utf-8"></script>
+    <script type="text/javascript" src="{% static 'bootstrap/js/bootstrap.js' %}" charset="utf-8"></script>
+    
+  </body>
+</html>

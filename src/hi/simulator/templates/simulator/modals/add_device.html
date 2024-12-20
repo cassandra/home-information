@@ -1,0 +1,28 @@
+{% extends "modals/action_with_cancel.html" %}
+
+{% block preamble %}
+<form action="{% url 'simulator_add_device' %}" method="post"
+      class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+Add {{ simulator.label }} Device
+{% endblock %}
+
+{% block body %}
+<div>
+ZZZZ
+</div>
+{% endblock %}
+
+{% block action_right %}
+<button id="hi-simulator-add-device-submit" type="submit" class="btn btn-lg btn-success"
+	name="action" value="add">
+  ADD
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

@@ -6,8 +6,8 @@ from hi.apps.common.module_utils import import_module_safe
 from . import views
 
 urlpatterns = [
-    re_path( r'^$', views.simulate, name = 'home' ),
-    re_path( r'^setup$', views.setup, name = 'setup' ),
+    re_path( r'^$', views.HomeView.as_view(), name = 'simulator_home' ),
+    re_path( r'^add-device$', views.AddDeviceView.as_view(), name = 'simulator_add_device' ),
 ]
 
 

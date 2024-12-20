@@ -1,0 +1,48 @@
+{% extends "simulator/pages/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="h3">Service Simulators</div>
+
+  <ul id="hi-simulator-tabs" class="nav nav-tabs" role="tablist">
+    {% for simulator in simulator_list %}
+    <li class="nav-item">
+      <a id="hi-simulator-tab-{{ simulator.id }}" role="tab"
+	 class="nav-link {% if simulator.id == current_simulator.id %}active{% endif %}"
+	 data-toggle="tab" 
+         href="#hi-simulator-content-{{ simulator.id }}" 
+         role="tab" 
+         aria-controls="hi-simulator-content-{{ simulator.id }}" 
+         aria-selected="{% if simulator.id == current_simulator.id %}true{% else %}false{% endif %}">
+        {{ simulator.label }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+  
+  <div id="hi-simulator-tab-content" class="tab-content">
+    {% for simulator in simulator_list %}
+    <div id="hi-simulator-content-{{ simulator.id }}" 
+         class="tab-pane fade {% if simulator.id == current_simulator.id %}show active{% endif %}" 
+         role="tabpanel" 
+         aria-labelledby="hi-simulator-tab-{{ simulator.id }}">
+
+      <div>
+	<a id="hi-sim-device-add-button"
+	   href="{% url 'simulator_add_device' %}" data-async="modal"
+	   class="btn btn-info">
+	  ADD {{ simulator.label }} DEVICE
+	</a>
+      </div>
+      
+      {% for sim_device in simulator.devices %}
+      {% include "panes/sim_device.html" with simulator=simulator sim_device=sim_device %}
+      {% empty %}
+      <div class="alert alert-info" >No {{ simulator.label }} devices defined.</div>
+      {% endfor %}
+      
+    </div>
+    {% endfor %}
+  </div>
+  
+</div>
+{% endblock %}
