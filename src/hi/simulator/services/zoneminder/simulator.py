@@ -1,10 +1,12 @@
-from typing import List
+from typing import List, Type
 
-from hi.simulator.models import SimDevice
-from hi.simulator.service_simulator import ServiceSimulator
+from hi.simulator.transient_models import SimEntity
+from hi.simulator.simulator import Simulator
+
+from .transient_models import ZmMonitorEntity
 
 
-class ZoneMinderSimulator( ServiceSimulator ):
+class ZoneMinderSimulator( Simulator ):
     
     @property
     def id(self):
@@ -13,11 +15,19 @@ class ZoneMinderSimulator( ServiceSimulator ):
     @property
     def label(self) -> str:
         return 'ZoneMinder'
-        
-    @property
-    def sim_devices(self) -> List[ SimDevice ]:
-        raise NotImplementedError('Subclasses must override this method.')
 
-    def set_state( self, device_id : int, value : str ):
+    def get_sim_entity_class_list(self) -> List[ Type[ SimEntity ]]:
+        return [
+            ZmMonitorEntity,
+        ]
+
+    def initialize( self, sim_entity_list : List[ SimEntity ] ):
+        return
+    
+    @property
+    def sim_entities(self) -> List[ SimEntity ]:
+        return []
+
+    def set_sim_state( self, device_id : int, value : str ):
         raise NotImplementedError('Subclasses must override this method.')
         

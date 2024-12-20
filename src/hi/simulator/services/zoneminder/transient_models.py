@@ -3,29 +3,44 @@ from datetime import datetime
 from typing import List
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.entity.enums import EntityType, EntityStateType, EntityStateValue
+
+from hi.simulator.transient_models import SimEntity, SimState
 
 
 @dataclass
-class ZmMonitor:
+class ZmServerEntity( SimEntity ):
+    pass
 
-    id           : int
-    name         : str
-    status       : str  = 'Connected'
-    type         : str  = 'Remote'
-    function     : str  = 'Modect'
-    protocol     : str  = 'rtsp'
-    method       : str  = 'rtpRtsp'
-    host         : str  = '192.168.100.204'
-    port         : str  = '554'
-    path         : str  = 'live3.sdp'
-    width        : str  = '1280'
-    height       : str  = '800'
-    orientation  : str  = 'ROTATE_0'
+
+@dataclass
+class ZmServerState( SimState ):
+
+    entity_state_type  : EntityStateType  = EntityStateType.DISCRETE
+    state_value        : str              = 'Modect'
+
+    
+@dataclass
+class ZmMonitorEntity( SimEntity ):
+
+    monitor_id   : int         = None
+    entity_type  : EntityType  = EntityType.CAMERA
+    status       : str         = 'Connected'
+    type         : str         = 'Remote'
+    function     : str         = 'Modect'
+    protocol     : str         = 'rtsp'
+    method       : str         = 'rtpRtsp'
+    host         : str         = '192.168.100.204'
+    port         : str         = '554'
+    path         : str         = 'live3.sdp'
+    width        : str         = '1280'
+    height       : str         = '800'
+    orientation  : str         = 'ROTATE_0'
     
     def to_api_dict(self):
         return {
             'Monitor': {
-                'Id': str(self.id),
+                'Id': str(self.monitor_id),
                 'Name': self.name,
                 'Notes': '',
                 'ServerId': '0',
@@ -123,7 +138,7 @@ class ZmMonitor:
                 'Refresh': None,
             },
             'Monitor_Status': {
-                'MonitorId': str(self.id),
+                'MonitorId': str(self.monitor_id),
                 'Status': self.status,
                 'CaptureFPS': '5.00',
                 'AnalysisFPS': '5.00',
@@ -131,6 +146,21 @@ class ZmMonitor:
             }
         }
 
+    
+@dataclass
+class ZmMonitorFunctionState( SimState ):
+
+    function           : str              = None
+    entity_state_type  : EntityStateType  = EntityStateType.DISCRETE
+    state_value        : str              = '1'
+
+    
+@dataclass
+class ZmMonitorMotionState( SimState ):
+
+    entity_state_type  : EntityStateType  = EntityStateType.MOVEMENT
+    state_value        : str              = EntityStateValue.IDLE
+    
     
 @dataclass
 class ZmStateDefinition:
@@ -145,7 +175,7 @@ class ZmStateDefinition:
 @dataclass
 class ZmState:
 
-    id               : int
+    zm_state_id      : int
     name             : str
     definition_list  : List[ ZmStateDefinition ]
     is_active        : bool
@@ -157,7 +187,7 @@ class ZmState:
             is_active_str = '0'
         return {
             'State': {
-                'Id': str(self.id),
+                'Id': str(self.zm_state_id),
                 'Name': self.name,
                 'Definition': ','.join([ x.to_api_str() for x in self.definition_list ]),
                 'IsActive': is_active_str,
@@ -168,7 +198,7 @@ class ZmState:
 @dataclass
 class ZmEvent:
 
-    zm_monitor      : ZmMonitor
+    zm_monitor      : ZmMonitorEntity
     event_id        : int
     start_datetime  : datetime
     end_datetime    : datetime
@@ -191,7 +221,7 @@ class ZmEvent:
         return {
             'Event': {
                 'Id': str(self.event_id),
-                'MonitorId': str(self.zm_monitor.id),
+                'MonitorId': str(self.zm_monitor.monitor_id),
                 'StorageId': '0',
                 'SecondaryStorageId': '0',
                 'Name': 'Event- 11091',
@@ -221,7 +251,7 @@ class ZmEvent:
                 'Scheme': 'Medium',
                 'Locked': False,
                 'MaxScoreFrameId': '577976',
-                'FileSystemPath': f'/var/cache/zoneminder/events/{self.zm_monitor.id}/{date_str}/{self.event_id}',
+                'FileSystemPath': f'/var/cache/zoneminder/events/{self.zm_monitor.monitor_id}/{date_str}/{self.event_id}',
             }
         }
 

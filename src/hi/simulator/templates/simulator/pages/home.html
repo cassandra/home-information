@@ -27,17 +27,17 @@
          aria-labelledby="hi-simulator-tab-{{ simulator.id }}">
 
       <div>
-	<a id="hi-sim-device-add-button"
-	   href="{% url 'simulator_add_device' %}" data-async="modal"
+	<a id="hi-sim-entity-add-button"
+	   href="{% url 'simulator_add_entity' simulator_id=simulator.id %}" data-async="modal"
 	   class="btn btn-info">
-	  ADD {{ simulator.label }} DEVICE
+	  ADD {{ simulator.label }} ENTITY
 	</a>
       </div>
       
-      {% for sim_device in simulator.devices %}
-      {% include "panes/sim_device.html" with simulator=simulator sim_device=sim_device %}
+      {% for sim_entity in simulator.sim_entities %}
+      {% include "panes/sim_entity.html" with simulator=simulator sim_entity=sim_entity %}
       {% empty %}
-      <div class="alert alert-info" >No {{ simulator.label }} devices defined.</div>
+      <div class="alert alert-info" >No {{ simulator.label }} simulator entities defined.</div>
       {% endfor %}
       
     </div>

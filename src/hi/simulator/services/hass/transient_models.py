@@ -7,9 +7,11 @@ from typing import Dict, List
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 
+from hi.simulator.transient_models import SimEntity, SimState
+
 
 @dataclass
-class HassEntity:
+class HassState( SimState ):
 
     entity_id      : str
     last_changed   : datetime
@@ -44,27 +46,27 @@ class HassEntity:
     
 
 @dataclass
-class HassDevice:
+class HassEntity( SimEntity ):
 
     friendly_name   : str
 
-    def to_api_list(self) -> List[ HassEntity ]:
+    def to_api_list(self) -> List[ HassState ]:
         raise NotImplementedError('Subclasses must override this.')
 
     
 @dataclass
-class HassInsteonDevice( HassDevice ):
+class HassInsteonEntity( HassEntity ):
 
     insteon_address  : str
 
     
 @dataclass
-class HassInsteonLightSwitch( HassInsteonDevice ):
+class HassInsteonLightSwitch( HassInsteonEntity ):
 
     def entity_list(self):
         dummy_datetime_iso = datetimeproxy.now().isoformat()
         
-        hass_entity = HassEntity(
+        hass_state = HassState(
             entity_id = 'light.switchlinc_relay_%s' % self.insteon_address.replace( '.', '_' ),
             attributes = {
                 'color_mode': 'onoff',
@@ -78,7 +80,7 @@ class HassInsteonLightSwitch( HassInsteonDevice ):
             last_reported = dummy_datetime_iso,
             last_updated = dummy_datetime_iso,
         )
-        return [ hass_entity ]
+        return [ hass_state ]
     
     def to_api_list(self):
         return [ x.to_api_dict() for x in self.entity_list() ]

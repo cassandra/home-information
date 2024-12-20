@@ -7,7 +7,12 @@ from django.views.generic import View
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 
-from .transient_models import ZmEvent, ZmMonitor, ZmPagination, ZmState
+from hi.simulator.services.zoneminder.transient_models import (
+    ZmEvent,
+    ZmMonitor,
+    ZmPagination,
+    ZmState,
+)
 
 
 @method_decorator(csrf_exempt, name='dispatch')

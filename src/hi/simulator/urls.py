@@ -6,8 +6,15 @@ from hi.apps.common.module_utils import import_module_safe
 from . import views
 
 urlpatterns = [
-    re_path( r'^$', views.HomeView.as_view(), name = 'simulator_home' ),
-    re_path( r'^add-device$', views.AddDeviceView.as_view(), name = 'simulator_add_device' ),
+    re_path( r'^$',
+             views.HomeView.as_view(),
+             name = 'simulator_home',
+             ),
+
+    re_path( r'^add-entity/(?P<simulator_id>[\w_]+)$',
+             views.AddEntityView.as_view(),
+             name = 'simulator_add_entity',
+             ),
 ]
 
 
