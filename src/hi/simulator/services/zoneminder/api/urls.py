@@ -4,10 +4,18 @@ from . import views
 
 urlpatterns = [
     
+    re_path( r'^host/login\.json$',
+             views.HostLoginView.as_view(),
+             name = 'zm_api_host_login' ),
+    
+    re_path( r'^host/getVersion\.json$',
+             views.HostVersionView.as_view(),
+             name = 'zm_api_host_version' ),
+
     re_path( r'^monitors\.json$',
              views.MonitorsView.as_view(),
              name = 'zm_api_monitors' ),
-
+    
     re_path( r'^monitors/(?P<monitor_id>\d+)\.json$',
              views.MonitorsView.as_view(),
              name = 'zm_api_monitors_set' ),
