@@ -15,6 +15,10 @@ urlpatterns = [
              views.ProfileCreateView.as_view(),
              name = 'simulator_profile_create' ),
     
+    re_path( r'^profile/edit/(?P<profile_id>\d+)$',
+             views.ProfileEditView.as_view(),
+             name = 'simulator_profile_edit' ),
+    
     re_path( r'^profile/delete/(?P<profile_id>\d+)$',
              views.ProfileDeleteView.as_view(),
              name = 'simulator_profile_delete' ),

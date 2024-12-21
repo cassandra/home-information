@@ -49,14 +49,40 @@ class ProfileCreateView( View ):
         sim_profile_form = forms.SimProfileForm( request.POST )
         if not sim_profile_form.is_valid():
             context = {
-                'sim_profile_form': forms.SimProfileForm()
+                'sim_profile_form': sim_profile_form,
             }
             return render( request, self.MODAL_TEMPLATE_NAME, context )
 
         sim_profile = sim_profile_form.save()
-        sim_profile = SimulatorManager().switch_sim_profile(
+        sim_profile = SimulatorManager().set_sim_profile(
             sim_profile = sim_profile,
         )
+        return antinode.refresh_response()
+        
+    
+class ProfileEditView( View, SimulatorViewMixin ):
+
+    MODAL_TEMPLATE_NAME = 'simulator/modals/sim_profile_edit.html'
+    
+    def get(self, request, *args, **kwargs):
+        sim_profile = self.get_sim_profile( request, *args, **kwargs)
+        sim_profile_form = forms.SimProfileForm( instance = sim_profile )
+        context = {
+            'sim_profile_form': sim_profile_form,
+        }
+        return render( request, self.MODAL_TEMPLATE_NAME, context )
+
+    def post(self, request, *args, **kwargs):
+        sim_profile = self.get_sim_profile( request, *args, **kwargs)
+        sim_profile_form = forms.SimProfileForm( request.POST, instance = sim_profile )
+        if not sim_profile_form.is_valid():
+            context = {
+                'sim_profile_form': sim_profile_form
+            }
+            return render( request, self.MODAL_TEMPLATE_NAME, context )
+
+        sim_profile = sim_profile_form.save()
+        SimulatorManager().set_sim_profile( sim_profile = sim_profile )
         return antinode.refresh_response()
         
     
@@ -64,7 +90,7 @@ class ProfileSwitchView( View, SimulatorViewMixin ):
 
     def get(self, request, *args, **kwargs):
         sim_profile = self.get_sim_profile( request, *args, **kwargs)
-        SimulatorManager().switch_sim_profile(
+        SimulatorManager().set_sim_profile(
             sim_profile = sim_profile,
         )
         url = reverse( 'simulator_home' )
@@ -89,7 +115,7 @@ class ProfileDeleteView( View, SimulatorViewMixin ):
         needs_switch = bool( sim_profile == SimulatorManager().current_sim_profile )
         sim_profile.delete()
         if needs_switch:
-            sim_profile = SimulatorManager().switch_sim_profile( sim_profile = None )
+            sim_profile = SimulatorManager().set_sim_profile( sim_profile = None )
         return antinode.refresh_response()
 
     

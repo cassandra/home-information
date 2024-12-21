@@ -33,7 +33,7 @@ class SimulatorManager( Singleton ):
     def current_sim_profile(self) -> SimProfile:
         return self._current_sim_profile
 
-    def switch_sim_profile( self, sim_profile : SimProfile ):
+    def set_sim_profile( self, sim_profile : SimProfile ):
         if not sim_profile:
             self._initialize_sim_profile()
         else:
@@ -41,7 +41,8 @@ class SimulatorManager( Singleton ):
             sim_profile.save()
             self._current_sim_profile = sim_profile
 
-        self._initialize_simulators()
+        if sim_profile != self._current_sim_profile:
+            self._initialize_simulators()
         return
         
     def get_simulator( self, simulator_id : str ) -> Simulator:
