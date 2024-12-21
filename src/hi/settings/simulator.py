@@ -10,6 +10,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'pipeline',
     'django.contrib.humanize',
+    
     'hi.apps.common',
     'hi.simulator',
     'hi.simulator.services.hass',
@@ -25,6 +26,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    'hi.simulator.middleware.SimViewMiddleware',
 ]
 
 ROOT_URLCONF = 'hi.simulator.urls'

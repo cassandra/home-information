@@ -1,0 +1,27 @@
+{% extends "modals/action_with_cancel.html" %}
+
+{% block preamble %}
+<form action="{% url 'simulator_profile_create' %}" method="post"
+      class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+Create Simulator Profile
+{% endblock %}
+
+{% block body %}
+{% include "simulator/panes/sim_profile_form.html" %}
+{% endblock %}
+
+{% block action_right %}
+<button id="hi-simulator-profile-create-submit" type="submit" class="btn btn-lg btn-success"
+	name="action" value="create">
+  CREATE
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}
+

@@ -1,24 +1,96 @@
 from dataclasses import fields, MISSING
 
 from django.core.exceptions import BadRequest
-from django.http import Http404
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render
+from django.urls import reverse
 from django.views.generic import View
 
+import hi.apps.common.antinode as antinode
+
+from . import forms
+from .models import DbSimEntity
 from .simulator_manager import SimulatorManager
+from .view_mixins import SimulatorViewMixin
 
 
-class HomeView( View ):
+class HomeView( View, SimulatorViewMixin ):
 
     def get(self, request, *args, **kwargs):
         simulator_manager = SimulatorManager()
+        sim_profile_list = simulator_manager.get_sim_profile_list()
+        current_sim_profile = simulator_manager.current_sim_profile
         simulator_list = simulator_manager.get_simulator_list()
-        current_simulator = simulator_list[0]
+        current_simulator = self.get_current_simulator(
+            request = request,
+            simulator_list = simulator_list,
+        )
         context = {
-            'current_simulator': current_simulator,
+            'sim_profile_list': sim_profile_list,
+            'current_sim_profile': current_sim_profile,
             'simulator_list': simulator_list,
+            'current_simulator': current_simulator,
         }
         return render( request, 'simulator/pages/home.html', context )
+
+    
+class ProfileCreateView( View ):
+
+    MODAL_TEMPLATE_NAME = 'simulator/modals/sim_profile_create.html'
+    
+    def get(self, request, *args, **kwargs):
+        context = {
+            'sim_profile_form': forms.SimProfileForm()
+        }
+        return render( request, self.MODAL_TEMPLATE_NAME, context )
+
+    def post(self, request, *args, **kwargs):
+
+        sim_profile_form = forms.SimProfileForm( request.POST )
+        if not sim_profile_form.is_valid():
+            context = {
+                'sim_profile_form': forms.SimProfileForm()
+            }
+            return render( request, self.MODAL_TEMPLATE_NAME, context )
+
+        sim_profile = sim_profile_form.save()
+        sim_profile = SimulatorManager().switch_sim_profile(
+            sim_profile = sim_profile,
+        )
+        return antinode.refresh_response()
+        
+    
+class ProfileSwitchView( View, SimulatorViewMixin ):
+
+    def get(self, request, *args, **kwargs):
+        sim_profile = self.get_sim_profile( request, *args, **kwargs)
+        SimulatorManager().switch_sim_profile(
+            sim_profile = sim_profile,
+        )
+        url = reverse( 'simulator_home' )
+        return HttpResponseRedirect( url )
+
+    
+class ProfileDeleteView( View, SimulatorViewMixin ):
+
+    MODAL_TEMPLATE_NAME = 'simulator/modals/sim_profile_delete.html'
+    
+    def get(self, request, *args, **kwargs):
+        sim_profile = self.get_sim_profile( request, *args, **kwargs)
+        sim_entity_count = DbSimEntity.objects.filter( sim_profile = sim_profile ).count()
+        context = {
+            'sim_profile': sim_profile,
+            'sim_entity_count': sim_entity_count,
+        }
+        return render( request, self.MODAL_TEMPLATE_NAME, context )
+
+    def post(self, request, *args, **kwargs):
+        sim_profile = self.get_sim_profile( request, *args, **kwargs)
+        needs_switch = bool( sim_profile == SimulatorManager().current_sim_profile )
+        sim_profile.delete()
+        if needs_switch:
+            sim_profile = SimulatorManager().switch_sim_profile( sim_profile = None )
+        return antinode.refresh_response()
 
     
 class AddEntityView( View ):
@@ -53,7 +125,7 @@ class AddEntityView( View ):
 
     def post(self, request, *args, **kwargs):
         simulator_id = kwargs.get('simulator_id')
-        entity_id = kwargs.get('entity_id')
+
         simulator = SimulatorManager().get_simulator( simulator_id = simulator_id )
         simulator.add_entity( entity_id = entity_id )
         

@@ -6,15 +6,26 @@ from hi.apps.common.module_utils import import_module_safe
 from . import views
 
 urlpatterns = [
+
     re_path( r'^$',
              views.HomeView.as_view(),
-             name = 'simulator_home',
-             ),
-
+             name = 'simulator_home' ),
+    
+    re_path( r'^profile/create$',
+             views.ProfileCreateView.as_view(),
+             name = 'simulator_profile_create' ),
+    
+    re_path( r'^profile/delete/(?P<profile_id>\d+)$',
+             views.ProfileDeleteView.as_view(),
+             name = 'simulator_profile_delete' ),
+    
+    re_path( r'^profile/switch/(?P<profile_id>\d+)$',
+             views.ProfileSwitchView.as_view(),
+             name = 'simulator_profile_switch' ),
+    
     re_path( r'^add-entity/(?P<simulator_id>[\w_]+)$',
              views.AddEntityView.as_view(),
-             name = 'simulator_add_entity',
-             ),
+             name = 'simulator_add_entity' ),
 ]
 
 

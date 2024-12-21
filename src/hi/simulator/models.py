@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.timezone import now
 
 from hi.apps.entity.enums import EntityType
 
@@ -11,6 +12,10 @@ class SimProfile(models.Model):
         null = False, blank = False,
         unique = True,
     )
+    last_switched_to_datetime = models.DateTimeField(
+        'Last Switched To',
+        default = now,
+    )
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,
@@ -20,6 +25,7 @@ class SimProfile(models.Model):
     class Meta:
         verbose_name = 'Simulator Profile'
         verbose_name_plural = 'Simulator Profiles'
+        ordering = [ '-last_switched_to_datetime' ]
 
         
 class DbSimEntity(models.Model):

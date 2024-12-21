@@ -1,0 +1,42 @@
+<div>
+  <div class="dropdown">
+    <button class="btn btn-secondary btn-control dropdown-toggle" type="button"
+	    id="hi-sim_profile-menu" data-toggle="dropdown">
+      {% if current_sim_profile %}
+      Profile: {{ current_sim_profile.name }}
+      {% else %}
+      -- CHOOSE --
+      {% endif %}
+      <span class="caret"></span>
+    </button>
+    <div class="dropdown-menu dropdown-menu-right"
+	 role="menu" aria-labelledby="hi-sim_profile-menu">
+      {% for sim_profile in sim_profile_list %}
+      {% if sim_profile != current_sim_profile %}
+      
+      <a role="menuitem" class="dropdown-item plain"
+	 href="{% url 'simulator_profile_switch' profile_id=sim_profile.id %} ">
+	{{ sim_profile.name }}
+      </a>
+      <div class="dropdown-divider"></div>
+
+      {% endif %}
+      {% empty %}
+      <div class="dropdown-item alert alert-secondary text-center">
+	<em>No simulator profiles.</em>
+      </div>
+      {% endfor %}
+      <a role="menuitem" class="dropdown-item plain"
+	 href="{% url 'simulator_profile_create' %}"
+	 data-async="modal">
+	NEW PROFILE
+      </a>
+      <div class="dropdown-divider"></div>
+      <a role="menuitem" class="dropdown-item plain text-danger"
+	 href="{% url 'simulator_profile_delete' profile_id=current_sim_profile.id %}"
+	 data-async="modal">
+	DELETE: {{ current_sim_profile.name }}
+      </a>
+    </div>
+  </div>
+</div>
