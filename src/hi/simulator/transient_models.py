@@ -63,11 +63,9 @@ class SimEntity:
         entity-specific fields. The SimulatorManager will fill out the
         remaining DB fields (those others do not concern simulators).
         """
-        extra_fields = asdict( self )
-        del extra_fields['db_id']
-        del extra_fields['name']
-        del extra_fields['entity_type']
-        del extra_fields['sim_state_list']
+        base_field_names = { f.name for f in fields(SimEntity) }
+        extra_fields = { k: v for k, v in asdict(self).items() if k not in base_field_names }
+        
         return DbSimEntity(
             name = self.name,
             entity_type_str = str(self.entity_type),

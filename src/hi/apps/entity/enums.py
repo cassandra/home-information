@@ -39,7 +39,7 @@ class EntityType(LabeledEnum):
     LIGHT_SENSOR         = ( 'Light Sensor', '' )
     MOTION_SENSOR        = ( 'Motion Sensor', '' )
     NETWORK_SWITCH       = ( 'Network Switch', '' )
-    OPEN_CLOSE_DETECTOR  = ( 'Open/Close Sensor', '' )
+    OPEN_CLOSE_SENSOR    = ( 'Open/Close Sensor', '' )
     OTHER                = ( 'Other', '' )  # Will use generic visual element
     PRESENCE_SENSOR      = ( 'Presence Sensor', '' )
     SEWER_LINE           = ( 'Sewer Wire', '' )

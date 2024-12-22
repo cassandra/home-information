@@ -3,7 +3,7 @@ from typing import List, Type
 from hi.simulator.transient_models import SimEntity
 from hi.simulator.simulator import Simulator
 
-from .transient_models import HassInsteonLightSwitch
+from .transient_models import HASS_SIM_ENTITY_LIST
 
 
 class HassSimulator( Simulator ):
@@ -17,9 +17,7 @@ class HassSimulator( Simulator ):
         return 'Home Assistant'
 
     def get_sim_entity_class_list(self) -> List[ Type[ SimEntity ]]:
-        return [
-            HassInsteonLightSwitch,
-        ]
+        return HASS_SIM_ENTITY_LIST
 
     def initialize( self, sim_entity_list : List[ SimEntity ] ):
         return

@@ -651,7 +651,7 @@ class HassConverter:
             return EntityType.TIME_SOURCE
         if ( HassApi.BINARY_SENSOR_ID_PREFIX in prefix_set
              and device_class_set.intersection( HassApi.OPEN_CLOSE_DEVICE_CLASS_SET )):
-            return EntityType.OPEN_CLOSE_DETECTOR
+            return EntityType.OPEN_CLOSE_SENSOR
         if HassApi.MOTION_DEVICE_CLASS in device_class_set:
             return EntityType.MOTION_SENSOR
         if ( HassApi.LIGHT_ID_PREFIX in prefix_set

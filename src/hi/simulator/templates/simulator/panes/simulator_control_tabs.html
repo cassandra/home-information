@@ -1,0 +1,41 @@
+<div>
+  <ul id="hi-simulator-tabs" class="nav nav-tabs" role="tablist">
+    {% for simulator in simulator_list %}
+    <li class="nav-item">
+      <a id="hi-simulator-tab-{{ simulator.id }}" role="tab"
+	 class="nav-link {% if simulator.id == current_simulator.id %}active{% endif %}"
+	 data-toggle="tab" 
+	 href="#hi-simulator-content-{{ simulator.id }}" 
+	 role="tab" 
+	 aria-controls="hi-simulator-content-{{ simulator.id }}" 
+	 aria-selected="{% if simulator.id == current_simulator.id %}true{% else %}false{% endif %}">
+	{{ simulator.label }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <div id="hi-simulator-tab-content" class="tab-content">
+    {% for simulator in simulator_list %}
+    <div id="hi-simulator-content-{{ simulator.id }}" 
+	 class="tab-pane fade {% if simulator.id == current_simulator.id %}show active{% endif %}" 
+	 role="tabpanel" 
+	 aria-labelledby="hi-simulator-tab-{{ simulator.id }}">
+
+      <div>
+	<a id="hi-sim-entity-add-button"
+	   href="{% url 'simulator_add_entity' simulator_id=simulator.id %}" data-async="modal"
+	   class="btn btn-info">
+	  ADD {{ simulator.label }} ENTITY
+	</a>
+      </div>
+      
+      {% for sim_entity in simulator.sim_entities %}
+      {% include "panes/sim_entity.html" with simulator=simulator sim_entity=sim_entity %}
+      {% empty %}
+      <div class="alert alert-info" >No {{ simulator.label }} simulator entities defined.</div>
+      {% endfor %}
+      
+    </div>
+    {% endfor %}
+  </div>
+</div>

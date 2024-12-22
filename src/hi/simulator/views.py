@@ -11,6 +11,7 @@ import hi.apps.common.antinode as antinode
 from . import forms
 from .models import DbSimEntity
 from .simulator_manager import SimulatorManager
+from .transient_models import SimEntity
 from .view_mixins import SimulatorViewMixin
 
 
@@ -131,14 +132,15 @@ class AddEntityView( View ):
 
         sim_entity_class_list = simulator.get_sim_entity_class_list()
 
+        base_field_names = { f.name for f in fields(SimEntity) }
         entity_fields_list = list()
         for sim_entity_class in sim_entity_class_list:
             entity_fields = [
                 { 'name': f.name,
                   'type': f.type,
                   'default': None if f.default is MISSING else f.default
-                 }
-                for f in fields(sim_entity_class)
+                  }
+                for f in fields(sim_entity_class) if f.name not in base_field_names
             ]
             entity_fields_list.append( entity_fields )
             continue
