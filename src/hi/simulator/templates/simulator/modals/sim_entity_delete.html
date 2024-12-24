@@ -1,0 +1,31 @@
+{% extends "modals/action_with_cancel.html" %}
+
+{% block preamble %}
+<form action="{% url 'simulator_entity_delete' sim_entity_id=db_sim_entity.id %}" method="post"
+      class="form" data-async="modal">
+  {% csrf_token %}
+{% endblock %}
+
+{% block title_text %}
+Delete Entity?
+{% endblock %}
+
+{% block body %}
+<p>
+  Delete the simulator entity "{{ sim_entity.name }}"?
+</p>
+<p class="text-danger">
+  This actionn cannot be undone.
+</p>
+{% endblock %}
+
+{% block action_right %}
+<button id="hi-simulator-entity-delete-submit" type="submit" class="btn btn-lg btn-danger"
+	name="action" value="delete">
+  DELETE
+</button>
+{% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

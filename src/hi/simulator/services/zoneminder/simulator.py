@@ -21,4 +21,7 @@ class ZoneMinderSimulator( Simulator ):
 
     def set_sim_state( self, device_id : int, value : str ):
         raise NotImplementedError('Subclasses must override this method.')
-        
+
+    def validate_new_sim_entity( self, sim_entity : SimEntity ):
+        return
+    

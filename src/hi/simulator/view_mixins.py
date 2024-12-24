@@ -3,7 +3,7 @@ from typing import List, Type
 from django.core.exceptions import BadRequest
 from django.http import Http404, HttpRequest
 
-from .models import SimProfile
+from .models import DbSimEntity, SimProfile
 from .simulator import Simulator
 from .simulator_manager import SimulatorManager
 from .transient_models import SimEntity
@@ -37,7 +37,7 @@ class SimulatorViewMixin:
         except SimProfile.DoesNotExist:
             raise Http404( 'Simulator profile does not exist.' )
         
-    def get_simulator( self, request, *args, **kwargs) -> Simulator:
+    def get_simulator( self, request, *args, **kwargs ) -> Simulator:
         simulator_id = kwargs.get('simulator_id')
         if not simulator_id:
             raise BadRequest( 'Missing simulator id.' )
@@ -50,8 +50,14 @@ class SimulatorViewMixin:
         )
         return simulator
 
-    def get_entity_class( self, simulator : Simulator, request, *args, **kwargs) -> Type[ SimEntity ]:
+    def get_entity_class( self, simulator : Simulator, request, *args, **kwargs ) -> Type[ SimEntity ]:
         class_name = kwargs.get('class_name')
+        return self.get_entity_class_by_name(
+            simulator = simulator,
+            class_name = class_name,
+        )
+    
+    def get_entity_class_by_name( self, simulator : Simulator, class_name : str ) -> Type[ SimEntity ]:
         sim_entity_class = None
         for sim_entity_class_wrapper in simulator.sim_entity_class_wrapper_list:
             if class_name == sim_entity_class_wrapper.name:
@@ -62,3 +68,9 @@ class SimulatorViewMixin:
             raise Http404( 'Unknown entity class name.' )
         return sim_entity_class
     
+    def get_db_sim_entity( self, request, *args, **kwargs ) -> SimProfile:
+        db_sim_entity_id = kwargs.get('sim_entity_id')
+        try:
+            return DbSimEntity.objects.get( id = db_sim_entity_id )
+        except DbSimEntity.DoesNotExist:
+            raise Http404( 'Simulator entity does not exist.' )

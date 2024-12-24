@@ -22,6 +22,18 @@ class Simulator( Singleton ):
     def get_sim_entity_class_list(self) -> List[ Type[ SimEntity ]]:
         raise NotImplementedError('Subclasses must override this method.')        
     
+    def validate_new_sim_entity( self, sim_entity : SimEntity ):
+        """
+        Called before adding a new SimEntity to allow simulator to validate
+        before addition. Should raise SimEntityValidationError if there is an
+        issue.
+        """
+        raise NotImplementedError('Subclasses must override this method.')        
+        
+    @property
+    def sim_entities(self) -> List[ SimEntity ]:
+        return self._sim_entity_list
+
     def initialize( self, sim_entity_list : List[ SimEntity ] ):
         """
         The SimulatorManager stores, hydrates and defines the set of existing
@@ -30,11 +42,8 @@ class Simulator( Singleton ):
         (requiring a new list of SimEntity instances).
         """
         self._sim_entity_list = sim_entity_list
+        return
     
-    @property
-    def sim_entities(self) -> List[ SimEntity ]:
-        return self._sim_entity_list
-
     def set_sim_state( self, device_id : int, value : str ):
         raise NotImplementedError('Subclasses must override this method.')
         
@@ -42,7 +51,15 @@ class Simulator( Singleton ):
     def sim_entity_class_wrapper_list(self) -> List[ SimEntityClassWrapper ]:
         return [ SimEntityClassWrapper( sim_entity_class = x )
                  for x in self.get_sim_entity_class_list() ]
-    
+
     def add_sim_entity( self, sim_entity : SimEntity ):
+        self.validate_new_sim_entity( sim_entity = sim_entity )
         self._sim_entity_list.append( sim_entity )    
+        return
     
+    def remove_sim_entity( self, sim_entity : SimEntity ):
+        try:
+            self._sim_entity_list.remove(sim_entity)
+        except ValueError:
+            pass
+        return

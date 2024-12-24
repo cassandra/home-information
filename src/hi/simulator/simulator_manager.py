@@ -1,7 +1,7 @@
 from asgiref.sync import sync_to_async
 import logging
 from threading import Lock
-from typing import Dict, Type
+from typing import Dict
 
 from django.apps import apps
 
@@ -60,6 +60,12 @@ class SimulatorManager( Singleton ):
     def add_sim_entity( self,
                         simulator   : Simulator,
                         sim_entity  : SimEntity ):
+        # We add to the simulator first to allow it to check for any
+        # simulator-specific errors before saving to the database.  That
+        # means we also remove it should something go wrong with saving it.
+        #
+        simulator.add_sim_entity( sim_entity = sim_entity )
+        
         self._data_lock.acquire()
         try:
             simulator_data = self._simulator_data_map.get( simulator.id )
@@ -77,8 +83,10 @@ class SimulatorManager( Singleton ):
             )
 
             simulator_data.sim_entity_instance_map[sim_entity] = db_sim_entity
-            simulator.add_sim_entity( sim_entity = sim_entity )
 
+        except Exception as e:
+            simulator.remove_sim_entity( sim_entity = sim_entity )
+            raise
         finally:
             self._data_lock.release()
                         
@@ -86,10 +94,10 @@ class SimulatorManager( Singleton ):
         self._data_lock.acquire()
         try:
             await sync_to_async( self._initialize_sim_profile )()
-            await sync_to_async( self._discover_defined_simulators )()
-            await sync_to_async( self._discovery_sim_entity_classes )()
+            self._discover_defined_simulators()
+            self._fetch_sim_entity_classes()
             await sync_to_async( self._load_sim_entity_instances )()
-            await sync_to_async( self._initialize_simulators )()
+            self._initialize_simulators()
 
         finally:
             self._data_lock.release()
@@ -139,11 +147,13 @@ class SimulatorManager( Singleton ):
 
         return
     
-    def _discovery_sim_entity_classes(self):
+    def _fetch_sim_entity_classes(self):
         """
         Query simulators to get the defined subclasses of SimEntity and
         populates the SimulatorData for each simulator.
         """
+        logger.debug("Fetching simulator entity classes ...")
+
         for simulator_id, simulator_data in self._simulator_data_map.items():
             simulator = simulator_data.simulator
             sim_entity_class_list = simulator.get_sim_entity_class_list()
@@ -157,6 +167,7 @@ class SimulatorManager( Singleton ):
         return
 
     def _load_sim_entity_instances(self):
+        logger.debug("Loading saved simulator entities ...")
         
         db_sim_entity_queryset = DbSimEntity.objects.filter(
             sim_profile = self.current_sim_profile,

@@ -90,17 +90,13 @@ class SimEntity:
             continue
         return cls( **kwargs )
 
-    def to_form_field_list( self ) -> List[ FormField ]:
-        form_field_list = list()
+    def to_initial_form_values( self ) -> Dict[ str, Any ]:
+        initial_values = dict()
         for field in fields(self):
-            form_field = FormField(
-                name = field.name,
-                type = field.type,
-                default = None if field.default is MISSING else field.default,
-            )
-            form_field_list.append( form_field )
+            value = getattr( self, field.name )
+            initial_values[field.name] = value
             continue
-        return form_field_list
+        return initial_values
 
     @classmethod
     def from_form_data( cls, form_data : Dict[ str, Any ] ) -> 'SimEntity':

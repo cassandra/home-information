@@ -1,26 +1,25 @@
 {% extends "modals/action_with_cancel.html" %}
 
 {% block preamble %}
-<form action="{% url 'simulator_add_entity' simulator_id=simulator.id class_name=sim_entity_class_wrapper.name %}" method="post"
+<form action="{% url 'simulator_entity_edit' sim_entity_id=db_sim_entity.id %}" method="post"
       class="form" data-async="modal">
   {% csrf_token %}
 {% endblock %}
 
 {% block title_text %}
-Add {{ simulator.label }} Entity
+Edit Entity
 {% endblock %}
 
 {% block body %}
 <div>
-  <div class="h3">{{ sim_entity_class_wrapper.label }}</div>
   {% include "simulator/panes/sim_entity_form.html" with sim_entity_form=sim_entity_form %}
 </div>
 {% endblock %}
 
 {% block action_right %}
-<button id="hi-simulator-add-entity-submit" type="submit" class="btn btn-lg btn-success"
-	name="action" value="add">
-  ADD
+<button id="hi-simulator-entity-edit-submit" type="submit" class="btn btn-lg btn-success"
+	name="action" value="edit">
+  UPDATE
 </button>
 {% endblock %}
 

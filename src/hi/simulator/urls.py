@@ -29,9 +29,17 @@ urlpatterns = [
              views.ProfileSwitchView.as_view(),
              name = 'simulator_profile_switch' ),
     
-    re_path( r'^add-entity/(?P<simulator_id>[\w_\-\.\:]+)/(?P<class_name>[\w\.\_]+)$',
-             views.AddEntityView.as_view(),
-             name = 'simulator_add_entity' ),
+    re_path( r'^entity/add/(?P<simulator_id>[\w_\-\.\:]+)/(?P<class_name>[\w\.\_]+)$',
+             views.SimEntityAddView.as_view(),
+             name = 'simulator_entity_add' ),
+    
+    re_path( r'^entity/edit/(?P<sim_entity_id>\d+)$',
+             views.SimEntityEditView.as_view(),
+             name = 'simulator_entity_edit' ),
+    
+    re_path( r'^entity/delete/(?P<sim_entity_id>\d+)$',
+             views.SimEntityDeleteView.as_view(),
+             name = 'simulator_entity_delete' ),
 ]
 
 

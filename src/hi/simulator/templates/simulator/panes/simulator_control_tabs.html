@@ -35,7 +35,7 @@
 	    <div class="dropdown-divider"></div>
 	    {% endif %}
 	    <a role="menuitem" class="dropdown-item plain"
-	       href="{% url 'simulator_add_entity' simulator_id=simulator.id class_name=sim_entity_class_wrapper.name %} "
+	       href="{% url 'simulator_entity_add' simulator_id=simulator.id class_name=sim_entity_class_wrapper.name %} "
 	       data-async="modal">
 	      {{ sim_entity_class_wrapper.label }}
 	    </a>
