@@ -10,7 +10,7 @@ from .exceptions import SimEntityValidationError
 from . import forms
 from .models import DbSimEntity
 from .simulator_manager import SimulatorManager
-from .transient_models import SimEntity, SimEntityClassWrapper
+from .transient_models import SimEntity, SimEntityClassData
 from .view_mixins import SimulatorViewMixin
 
 
@@ -125,30 +125,26 @@ class SimEntityAddView( View, SimulatorViewMixin ):
     
     def get( self, request, *args, **kwargs ):
         simulator = self.get_simulator( request, *args, **kwargs)
-        sim_entity_class = self.get_entity_class( simulator, request, *args, **kwargs )
-        sim_entity_class_wrapper = SimEntityClassWrapper( sim_entity_class = sim_entity_class )
-        
-        sim_entity_form = forms.SimEntityForm( sim_entity_class = sim_entity_class )
+        sim_entity_class_data = self.get_entity_class_data( simulator, request, *args, **kwargs )
+        sim_entity_form = forms.SimEntityForm( sim_entity_class = sim_entity_class_data.sim_entity_class )
         context = {
             'simulator': simulator,
-            'sim_entity_class_wrapper': sim_entity_class_wrapper,
+            'sim_entity_class_data': sim_entity_class_data,
             'sim_entity_form': sim_entity_form,
         }
         return render( request, self.MODAL_TEMPLATE_NAME, context )
 
     def post( self, request, *args, **kwargs ):
         simulator = self.get_simulator( request, *args, **kwargs)
-        sim_entity_class = self.get_entity_class( simulator, request, *args, **kwargs )
-        sim_entity_class_wrapper = SimEntityClassWrapper( sim_entity_class = sim_entity_class )
-        
+        sim_entity_class_data = self.get_entity_class_data( simulator, request, *args, **kwargs )
         sim_entity_form = forms.SimEntityForm(
-            sim_entity_class, 
+            sim_entity_class_data.sim_entity_class, 
             request.POST,
         )
         if not sim_entity_form.is_valid():
             context = {
                 'simulator': simulator,
-                'sim_entity_class_wrapper': sim_entity_class_wrapper,
+                'sim_entity_class_data': sim_entity_class_data,
                 'sim_entity_form': sim_entity_form,
             }
             return render( request, self.MODAL_TEMPLATE_NAME, context )
@@ -174,13 +170,13 @@ class SimEntityEditView( View, SimulatorViewMixin ):
         simulator = SimulatorManager().get_simulator( simulator_id = db_sim_entity.simulator_id )
         if not simulator:
             raise Http404( 'Unknown simulator id "{simulator_id}".' )
-        sim_entity_class = self.get_entity_class_by_name(
+        sim_entity_class_data = self.get_entity_class_data_by_id(
             simulator = simulator,
-            class_name = db_sim_entity.entity_class_name,
+            class_id = db_sim_entity.entity_class_id,
         )
         sim_entity = SimEntity.from_json_dict( db_sim_entity.editable_fields )
         sim_entity_form = forms.SimEntityForm(
-            sim_entity_class = sim_entity_class,
+            sim_entity_class = sim_entity_class_data.sim_entity_class,
             initial = sim_entity.to_initial_form_values(),
         )
         context = {
@@ -196,13 +192,13 @@ class SimEntityEditView( View, SimulatorViewMixin ):
         simulator = SimulatorManager().get_simulator( simulator_id = db_sim_entity.simulator_id )
         if not simulator:
             raise Http404( 'Unknown simulator id "{simulator_id}".' )
-        sim_entity_class = self.get_entity_class_by_name(
+        sim_entity_class_data = self.get_entity_class_data_by_id(
             simulator = simulator,
-            class_name = db_sim_entity.entity_class_name,
+            class_id = db_sim_entity.entity_class_id,
         )
         previous_sim_entity = SimEntity.from_json_dict( db_sim_entity.editable_fields )
         sim_entity_form = forms.SimEntityForm(
-            sim_entity_class, 
+            sim_entity_class_data.sim_entity_class, 
             request.POST,
         )
         if not sim_entity_form.is_valid():

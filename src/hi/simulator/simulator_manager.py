@@ -1,7 +1,7 @@
 from asgiref.sync import sync_to_async
 import logging
 from threading import Lock
-from typing import Dict
+from typing import Dict, List
 
 from django.apps import apps
 
@@ -12,7 +12,7 @@ from hi.apps.common.singleton import Singleton
 from .models import DbSimEntity, SimProfile
 from .simulator import Simulator
 from .simulator_data import SimulatorData
-from .transient_models import SimEntity, SimEntityClassWrapper
+from .transient_models import SimEntity, SimEntityClassData
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class SimulatorManager( Singleton ):
         self._data_lock = Lock()
         return
 
-    def get_sim_profile_list(self):
+    def get_sim_profile_list(self) -> List[ SimProfile ]:
         return list( SimProfile.objects.all().order_by('name') )
 
     @property
@@ -35,6 +35,8 @@ class SimulatorManager( Singleton ):
         return self._current_sim_profile
 
     def set_sim_profile( self, sim_profile : SimProfile ):
+        should_reinitialize_simulators = bool( not sim_profile
+                                               or ( sim_profile != self._current_sim_profile ))
         if not sim_profile:
             self._initialize_sim_profile()
         else:
@@ -42,17 +44,17 @@ class SimulatorManager( Singleton ):
             sim_profile.save()
             self._current_sim_profile = sim_profile
 
-        if sim_profile != self._current_sim_profile:
+        if should_reinitialize_simulators:
             self._initialize_simulators()
         return
         
     def get_simulator( self, simulator_id : str ) -> Simulator:
         simulator_data = self._simulator_data_map.get( simulator_id )
-        if not simulator_id:
+        if not simulator_data:
             raise KeyError( f'Simulator id "{simulator_id}" not found.' )
         return simulator_data.simulator
     
-    def get_simulator_list(self):
+    def get_simulator_list(self) -> List[ Simulator ]:
         simulator_list = [ x.simulator for x in self._simulator_data_map.values() ]
         simulator_list.sort( key = lambda item : item.label )
         return simulator_list
@@ -60,9 +62,12 @@ class SimulatorManager( Singleton ):
     def add_sim_entity( self,
                         simulator   : Simulator,
                         sim_entity  : SimEntity ):
-        # We add to the simulator first to allow it to check for any
-        # simulator-specific errors before saving to the database.  That
-        # means we also remove it should something go wrong with saving it.
+        
+        # Before saving to the database, we add to the simulator instance
+        # so that it can check for any simulator-specific errors and raise
+        # a SimEntityValidationError if needed.  That means we also must
+        # remove it from the simulatior instance should something go wrong
+        # after that while saving it to the database.
         #
         simulator.add_sim_entity( sim_entity = sim_entity )
         
@@ -72,13 +77,13 @@ class SimulatorManager( Singleton ):
             if not simulator_data:
                 raise KeyError( f'No data found for simulator id = {simulator.id}' )
                 
-            sim_entity_class_wrapper = SimEntityClassWrapper( sim_entity_class = sim_entity.__class__ )
+            sim_entity_class_data = SimEntityClassData( sim_entity_class = sim_entity.__class__ )
 
             db_sim_entity = DbSimEntity.objects.create(
                 sim_profile = self.current_sim_profile,
                 simulator_id = simulator.id,
-                entity_class_name = sim_entity_class_wrapper.name,
-                entity_type = sim_entity_class_wrapper.entity_type,
+                entity_class_id = sim_entity_class_data.class_id,
+                entity_type = sim_entity_class_data.entity_type,
                 editable_fields = sim_entity.to_json_dict()
             )
 
@@ -86,7 +91,7 @@ class SimulatorManager( Singleton ):
 
         except Exception as e:
             simulator.remove_sim_entity( sim_entity = sim_entity )
-            raise
+            raise e
         finally:
             self._data_lock.release()
                         
@@ -156,12 +161,11 @@ class SimulatorManager( Singleton ):
 
         for simulator_id, simulator_data in self._simulator_data_map.items():
             simulator = simulator_data.simulator
-            sim_entity_class_list = simulator.get_sim_entity_class_list()
-            logger.debug( f'Adding {len(sim_entity_class_list)} entity class to simulator {simulator_id}.' )
-            for sim_entity_class in sim_entity_class_list:
-                sim_entity_class_wrapper = SimEntityClassWrapper( sim_entity_class = sim_entity_class )
-                class_name = sim_entity_class_wrapper.name
-                simulator_data.sim_entity_class_map[class_name] = sim_entity_class
+            sim_entity_class_data_list = simulator.sim_entity_class_data_list
+            logger.debug( f'Adding {len(sim_entity_class_data_list)} entities to simulator {simulator_id}.' )
+            for sim_entity_class_data in osim_entity_class_data_list:
+                class_id = sim_entity_class_data.class_id
+                simulator_data.sim_entity_class_map[class_id] = sim_entity_class_data.sim_entity_class
                 continue
             continue
         return
@@ -180,10 +184,10 @@ class SimulatorManager( Singleton ):
                 continue
 
             sim_entity_class_map = simulator_data.sim_entity_class_map
-            class_name = db_sim_entity.entity_class_name
-            sim_entity_class = sim_entity_class_map.get( class_name )
+            class_id = db_sim_entity.entity_class_id
+            sim_entity_class = sim_entity_class_map.get( class_id )
             if not sim_entity_class:
-                logger.warning( f'Entity class "{class_name}" not found for simulator "{simulator_id}"' )
+                logger.warning( f'Entity class "{class_id}" not found for simulator "{simulator_id}"' )
                 continue
             
             sim_entity = sim_entity_class.from_json_dict( db_sim_entity.editable_fields )

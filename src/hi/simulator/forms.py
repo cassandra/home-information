@@ -22,7 +22,7 @@ class SimEntityForm( forms.Form ):
     Dynamically build a Django form from a subclass of SimEntity.
     """
 
-    DATACLASS_TO_FORM_FIELD = {
+    DATA_TYPE_TO_FORM_FIELD = {
         str: forms.CharField,
         int: forms.IntegerField,
         float: forms.FloatField,
@@ -33,11 +33,9 @@ class SimEntityForm( forms.Form ):
     def __init__(self, sim_entity_class: Type[ SimEntity ], *args, initial = None, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self._sim_entity_class = sim_entity_class
-        
         for field in fields( sim_entity_class ):
             field_type = field.type
-            form_field_class = self.DATACLASS_TO_FORM_FIELD.get( field_type, None )
+            form_field_class = self.DATA_TYPE_TO_FORM_FIELD.get( field_type, None )
             if not form_field_class:
                 raise ValueError( f'Unsupported field type: {field_type}' )
             
@@ -51,7 +49,3 @@ class SimEntityForm( forms.Form ):
             )
             continue
         return
-
-    @property
-    def sim_entity_name(self):
-        return self._sim_entity_class.__name__

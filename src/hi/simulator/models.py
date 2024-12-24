@@ -41,8 +41,8 @@ class DbSimEntity(models.Model):
         max_length = 64,
         null = False, blank = False,
     )
-    entity_class_name = models.CharField(
-        'Entity Class Name',
+    entity_class_id = models.CharField(
+        'Entity Class Id',
         max_length = 255,
         null = False, blank = False,
     )

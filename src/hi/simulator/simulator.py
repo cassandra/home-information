@@ -2,7 +2,7 @@ from typing import List, Type
 
 from hi.apps.common.singleton import Singleton
 
-from .transient_models import SimEntity, SimEntityClassWrapper
+from .transient_models import SimEntity, SimEntityClassData
 
 
 class Simulator( Singleton ):
@@ -48,9 +48,8 @@ class Simulator( Singleton ):
         raise NotImplementedError('Subclasses must override this method.')
         
     @property
-    def sim_entity_class_wrapper_list(self) -> List[ SimEntityClassWrapper ]:
-        return [ SimEntityClassWrapper( sim_entity_class = x )
-                 for x in self.get_sim_entity_class_list() ]
+    def sim_entity_class_data_list(self) -> List[ SimEntityClassData ]:
+        return [ SimEntityClassData( sim_entity_class = x ) for x in self.get_sim_entity_class_list() ]
 
     def add_sim_entity( self, sim_entity : SimEntity ):
         self.validate_new_sim_entity( sim_entity = sim_entity )

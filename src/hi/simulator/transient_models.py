@@ -30,13 +30,6 @@ class SimState:
         return cls( **data )
 
     
-@dataclass
-class FormField:
-    name     : str
-    type     : Type
-    default  : Any   = None
-
-    
 @dataclass( frozen = True )
 class SimEntity:
     """
@@ -59,6 +52,19 @@ class SimEntity:
     def class_label(cls):
         raise NotImplementedError('Subclasses must override this method.')
     
+    @classmethod
+    def get_entity_type(cls) -> EntityType:
+        raise NotImplementedError('Subclasses must override this method.')
+        
+    def get_sim_state_list(self) -> List[ SimState ]:
+        """
+        These are defined by the Simulator and used by the SimulatorManager to
+        know what states exists and can be simulated.  The Simulator keeps track of
+        the current value of these states as provided by the SimulatorManager by 
+        way of the UI or a predefined simulation script.  These are not persisted.
+        """
+        raise NotImplementedError('Subclasses must override this method.')
+
     def to_json_dict(self) -> Dict[ str, Any ]:
         """
         Subclasses only need to override this if the field types are not
@@ -93,8 +99,7 @@ class SimEntity:
     def to_initial_form_values( self ) -> Dict[ str, Any ]:
         initial_values = dict()
         for field in fields(self):
-            value = getattr( self, field.name )
-            initial_values[field.name] = value
+            initial_values[field.name] = getattr( self, field.name )
             continue
         return initial_values
 
@@ -104,23 +109,10 @@ class SimEntity:
         for field in fields( cls ):
             value = form_data.get( field.name, field.default )
             if value is MISSING:
-                raise ValueError(f'Missing required field: {field.name}')
+                value = None
             kwargs[field.name] = value
             continue
         return cls( **kwargs )
-
-    @classmethod
-    def get_entity_type(cls) -> EntityType:
-        raise NotImplementedError('Subclasses must override this method.')
-        
-    def get_sim_state_list(self) -> List[ SimState ]:
-        """
-        These are defined by the Simulator and used by the SimulatorManager to
-        know what states exists and can be simulated.  The Simulator keeps track of
-        the current value of these states as provided by the SimulatorManager by 
-        way of the UI or a predefined simulation script.  These are not persisted.
-        """
-        raise NotImplementedError('Subclasses must override this method.')
 
 
 @dataclass
@@ -131,16 +123,16 @@ class SimEntityData:
 
 
 @dataclass
-class SimEntityClassWrapper:
+class SimEntityClassData:
 
     sim_entity_class   : Type[ SimEntity ]
 
     @property
-    def name(self) -> str:
+    def class_id(self) -> str:
         return f'{self.sim_entity_class.__module__}.{self.sim_entity_class.__qualname__}'
 
     @property
-    def label(self) -> str:
+    def class_label(self) -> str:
         return self.sim_entity_class.class_label()
 
     @property

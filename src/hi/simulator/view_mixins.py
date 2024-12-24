@@ -50,23 +50,19 @@ class SimulatorViewMixin:
         )
         return simulator
 
-    def get_entity_class( self, simulator : Simulator, request, *args, **kwargs ) -> Type[ SimEntity ]:
-        class_name = kwargs.get('class_name')
-        return self.get_entity_class_by_name(
+    def get_entity_class_data( self, simulator : Simulator, request, *args, **kwargs ) -> Type[ SimEntity ]:
+        class_id = kwargs.get('class_id')
+        return self.get_entity_class_data_by_id(
             simulator = simulator,
-            class_name = class_name,
+            class_id = class_id,
         )
     
-    def get_entity_class_by_name( self, simulator : Simulator, class_name : str ) -> Type[ SimEntity ]:
-        sim_entity_class = None
-        for sim_entity_class_wrapper in simulator.sim_entity_class_wrapper_list:
-            if class_name == sim_entity_class_wrapper.name:
-                sim_entity_class = sim_entity_class_wrapper.sim_entity_class
-                break
+    def get_entity_class_data_by_id( self, simulator : Simulator, class_id : str ) -> Type[ SimEntity ]:
+        for sim_entity_class_data in simulator.sim_entity_class_data_list:
+            if class_id == sim_entity_class_data.class_id:
+                return sim_entity_class_data
             continue
-        if not sim_entity_class:
-            raise Http404( 'Unknown entity class name.' )
-        return sim_entity_class
+        raise Http404( 'Unknown entity class id.' )
     
     def get_db_sim_entity( self, request, *args, **kwargs ) -> SimProfile:
         db_sim_entity_id = kwargs.get('sim_entity_id')
