@@ -2,12 +2,13 @@ from typing import List, Type
 
 from hi.apps.common.singleton import Singleton
 
-from .transient_models import SimEntity
+from .transient_models import SimEntity, SimEntityClassWrapper
 
 
 class Simulator( Singleton ):
 
     def __init_singleton__( self ):
+        self._sim_entity_list = list()
         return
     
     @property
@@ -28,12 +29,20 @@ class Simulator( Singleton ):
         occur at start up and if/when the simulation profile changes
         (requiring a new list of SimEntity instances).
         """
-        raise NotImplementedError('Subclasses must override this method.')
+        self._sim_entity_list = sim_entity_list
     
     @property
     def sim_entities(self) -> List[ SimEntity ]:
-        raise NotImplementedError('Subclasses must override this method.')
+        return self._sim_entity_list
 
     def set_sim_state( self, device_id : int, value : str ):
         raise NotImplementedError('Subclasses must override this method.')
         
+    @property
+    def sim_entity_class_wrapper_list(self) -> List[ SimEntityClassWrapper ]:
+        return [ SimEntityClassWrapper( sim_entity_class = x )
+                 for x in self.get_sim_entity_class_list() ]
+    
+    def add_sim_entity( self, sim_entity : SimEntity ):
+        self._sim_entity_list.append( sim_entity )    
+    

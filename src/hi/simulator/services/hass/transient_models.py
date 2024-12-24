@@ -6,7 +6,7 @@ import time
 from typing import Dict, List
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.entity.enums import EntityType, EntityStateType, EntityStateValue
+from hi.apps.entity.enums import EntityStateType, EntityStateValue, EntityType
 
 from hi.simulator.transient_models import SimEntity, SimState
 
@@ -46,23 +46,32 @@ class HassState( SimState ):
         }
     
 
-@dataclass
+@dataclass( frozen = True )
 class HassEntity( SimEntity ):
 
     def to_api_list(self) -> List[ HassState ]:
         raise NotImplementedError('Subclasses must override this.')
 
     
-@dataclass
+@dataclass( frozen = True )
 class HassInsteonEntity( HassEntity ):
 
     insteon_address  : str  = None
 
     
-@dataclass
+@dataclass( frozen = True )
 class HassInsteonLightSwitch( HassInsteonEntity ):
 
-    entity_type  : EntityType  = EntityType.LIGHT
+    @classmethod
+    def class_label(cls):
+        return 'Insteon Light Switch'
+    
+    @classmethod
+    def get_entity_type(cls) -> EntityType:
+        return EntityType.LIGHT
+        
+    def get_sim_state_list(self) -> List[ SimState ]:
+        pass
     
     def entity_list(self):
         dummy_datetime_iso = datetimeproxy.now().isoformat()
@@ -100,11 +109,20 @@ class HassInsteonLightSwitch( HassInsteonEntity ):
         return [ x.to_api_dict() for x in self.entity_list() ]
 
     
-@dataclass
+@dataclass( frozen = True )
 class HassInsteonMotionDetector( HassInsteonEntity ):
 
-    entity_type  : EntityType  = EntityType.MOTION_SENSOR
-
+    @classmethod
+    def class_label(cls):
+        return 'Insteon Motion Sensor'
+    
+    @classmethod
+    def get_entity_type(cls) -> EntityType:
+        return EntityType.MOTION_SENSOR
+        
+    def get_sim_state_list(self) -> List[ SimState ]:
+        pass
+    
     def entity_list(self):
         dummy_datetime_iso = datetimeproxy.now().isoformat()
         
@@ -152,11 +170,20 @@ class HassInsteonMotionDetector( HassInsteonEntity ):
         return [ x.to_api_dict() for x in self.entity_list() ]
 
     
-@dataclass
+@dataclass( frozen = True )
 class HassInsteonOpenCloseSensor( HassInsteonEntity ):
 
-    entity_type  : EntityType  = EntityType.OPEN_CLOSE_SENSOR
-
+    @classmethod
+    def class_label(cls):
+        return 'Insteon Open/Close Sensor'
+    
+    @classmethod
+    def get_entity_type(cls) -> EntityType:
+        return EntityType.OPEN_CLOSE_SENSOR
+        
+    def get_sim_state_list(self) -> List[ SimState ]:
+        pass
+    
     def entity_list(self):
         dummy_datetime_iso = datetimeproxy.now().isoformat()
         

@@ -3,7 +3,7 @@ from typing import List, Type
 from hi.simulator.transient_models import SimEntity
 from hi.simulator.simulator import Simulator
 
-from .transient_models import ZmMonitorEntity
+from .transient_models import ZONEMINDER_SIM_ENTITY_LIST
 
 
 class ZoneMinderSimulator( Simulator ):
@@ -17,16 +17,7 @@ class ZoneMinderSimulator( Simulator ):
         return 'ZoneMinder'
 
     def get_sim_entity_class_list(self) -> List[ Type[ SimEntity ]]:
-        return [
-            ZmMonitorEntity,
-        ]
-
-    def initialize( self, sim_entity_list : List[ SimEntity ] ):
-        return
-    
-    @property
-    def sim_entities(self) -> List[ SimEntity ]:
-        return []
+        return ZONEMINDER_SIM_ENTITY_LIST
 
     def set_sim_state( self, device_id : int, value : str ):
         raise NotImplementedError('Subclasses must override this method.')

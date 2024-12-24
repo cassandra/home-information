@@ -19,13 +19,6 @@ class HassSimulator( Simulator ):
     def get_sim_entity_class_list(self) -> List[ Type[ SimEntity ]]:
         return HASS_SIM_ENTITY_LIST
 
-    def initialize( self, sim_entity_list : List[ SimEntity ] ):
-        return
-    
-    @property
-    def sim_entities(self) -> List[ SimEntity ]:
-        return []
-
     def set_sim_state( self, device_id : int, value : str ):
         raise NotImplementedError('Subclasses must override this method.')
         

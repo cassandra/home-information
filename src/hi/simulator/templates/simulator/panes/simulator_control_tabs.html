@@ -22,15 +22,30 @@
 	 aria-labelledby="hi-simulator-tab-{{ simulator.id }}">
 
       <div>
-	<a id="hi-sim-entity-add-button"
-	   href="{% url 'simulator_add_entity' simulator_id=simulator.id %}" data-async="modal"
-	   class="btn btn-info">
-	  ADD {{ simulator.label }} ENTITY
-	</a>
+	<div class="dropdown">
+	  <button class="btn btn-secondary btn-control dropdown-toggle" type="button"
+		  id="hi-sim-entity-{{ simulator.id }}-menu" data-toggle="dropdown">
+	    ADD {{ simulator.label }} ENTITY
+	    <span class="caret"></span>
+	  </button>
+	  <div class="dropdown-menu dropdown-menu-right"
+	       role="menu" aria-labelledby="hi-sim-entity-{{ simulator.id }}-menu">
+	  {% for sim_entity_class_wrapper in simulator.sim_entity_class_wrapper_list %}
+	    {% if forloop.counter > 1 %}
+	    <div class="dropdown-divider"></div>
+	    {% endif %}
+	    <a role="menuitem" class="dropdown-item plain"
+	       href="{% url 'simulator_add_entity' simulator_id=simulator.id class_name=sim_entity_class_wrapper.name %} "
+	       data-async="modal">
+	      {{ sim_entity_class_wrapper.label }}
+	    </a>
+	    {% endfor %}
+	  </div>
+	</div>
       </div>
       
       {% for sim_entity in simulator.sim_entities %}
-      {% include "panes/sim_entity.html" with simulator=simulator sim_entity=sim_entity %}
+      {% include "simulator/panes/sim_entity.html" with simulator=simulator sim_entity=sim_entity %}
       {% empty %}
       <div class="alert alert-info" >No {{ simulator.label }} simulator entities defined.</div>
       {% endfor %}

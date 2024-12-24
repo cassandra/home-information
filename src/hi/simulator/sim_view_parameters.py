@@ -23,11 +23,7 @@ class SimViewParameters:
             return SimViewParameters()
         if not hasattr( request, 'session' ):
             return SimViewParameters()
-        try:
-            simulator_id = int( request.session.get( 'simulator_id' ))
-        except ( TypeError, ValueError ):
-            simulator_id = None
-
+        simulator_id = request.session.get( 'simulator_id' )
         return SimViewParameters(
             simulator_id = simulator_id,
         )

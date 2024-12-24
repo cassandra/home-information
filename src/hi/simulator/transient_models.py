@@ -1,7 +1,8 @@
-from dataclasses import dataclass, fields, asdict
-from typing import List
+from dataclasses import dataclass, fields, asdict, MISSING
+from datetime import datetime
+from typing import Any, Dict, List, Type
 
-from hi.apps.entity.enums import EntityType, EntityStateType
+from hi.apps.entity.enums import EntityStateType, EntityType
 
 from .models import DbSimEntity
 
@@ -9,7 +10,6 @@ from .models import DbSimEntity
 @dataclass
 class SimState:
 
-    db_id              : str
     name               : str
     entity_state_type  : EntityStateType
     state_value        : str
@@ -28,56 +28,125 @@ class SimState:
     @classmethod
     def from_dict( cls, data ):
         return cls( **data )
-    
 
+    
 @dataclass
+class FormField:
+    name     : str
+    type     : Type
+    default  : Any   = None
+
+    
+@dataclass( frozen = True )
 class SimEntity:
     """
-    Base class that simulators will extend to add any defaults or new fields
-    that need to defined for a specific simulator entity.  Simulators
-    should define one or more subclasses and make those known to te
+    Base class that simulators extend to add any extra editable fields
+    needed to define for a specific simulator entity.  Simulators should
+    define one or more subclasses of this and make those known to te
     SimulatorManager through the get_sim_entity_class_list() method of the
     Simulator class.
 
-    The companion database DbSimEntity is used to persist the defined
-    entities with conversions (below) between the two models.  This class
-    is view of the database model that concerns the simulators themselves
-    and not the extra concerns of the SimulatorManager (e.g.., SimProfile).
+    This class is the view of the model that concerns the Simulator
+    instances themselves and not the extra concerns of the
+    SimulatorManager.  The companion database model DbSimEntity is the
+    SimulatorManager's view and is used to persist the defined entities
+    with conversions (below) between the two models.
     """
-    db_id           : int
-    name            : str
-    sim_state_list  : List[ SimState ]  # Simulators populate this as these are added (not persisted)
-    entity_type     : EntityType
 
-    def validate(self):
-        for field in fields(self):
-            value = getattr(self, field.name)
-            if not isinstance(value, field.type):
-                raise TypeError( f'Field {field.name} must be type {field.type}, got {type(value).__name__}' )
-            continue
-        return
-
-    def to_db_model( self ) -> DbSimEntity:
-        """
-        Creates a partially filled out DbSimEntity model from the
-        entity-specific fields. The SimulatorManager will fill out the
-        remaining DB fields (those others do not concern simulators).
-        """
-        base_field_names = { f.name for f in fields(SimEntity) }
-        extra_fields = { k: v for k, v in asdict(self).items() if k not in base_field_names }
-        
-        return DbSimEntity(
-            name = self.name,
-            entity_type_str = str(self.entity_type),
-            extra_fields = extra_fields,
-        )
+    name             : str
 
     @classmethod
-    def from_db_model( cls, db_sim_entity : DbSimEntity ):
-        data = {
-            'db_id': db_sim_entity.id,
-            'name': db_sim_entity.name,
-            'entity_type': db_sim_entity.entity_type,
-        }
-        data.update( db_sim_entity.extra_fields )
-        return cls( **data )
+    def class_label(cls):
+        raise NotImplementedError('Subclasses must override this method.')
+    
+    def to_json_dict(self) -> Dict[ str, Any ]:
+        """
+        Subclasses only need to override this if the field types are not
+        directly JSON serializable or lack special cases defined in this
+        method (e.g., datetime).
+        """
+        json_dict = dict()
+        for field in fields(self):
+            value = getattr( self, field.name )
+            if isinstance( value, datetime ):
+                value = value.isoformat()
+            json_dict[field.name] = value
+            continue
+        return json_dict
+
+    @classmethod
+    def from_json_dict( cls, json_content : Dict[ str, Any ] ) -> 'SimEntity':
+        """
+        Subclasses only need to override this if the field types are not
+        directly JSON deserializable or lack special cases defined in this
+        method (e.g., datetime).
+        """
+        kwargs = dict()
+        for field in fields( cls ):
+            value = json_content.get( field.name, field.default )
+            if ( field.type == datetime ) and isinstance( value, str ):
+                value = datetime.fromisoformat( value )
+            kwargs[field.name] = value
+            continue
+        return cls( **kwargs )
+
+    def to_form_field_list( self ) -> List[ FormField ]:
+        form_field_list = list()
+        for field in fields(self):
+            form_field = FormField(
+                name = field.name,
+                type = field.type,
+                default = None if field.default is MISSING else field.default,
+            )
+            form_field_list.append( form_field )
+            continue
+        return form_field_list
+
+    @classmethod
+    def from_form_data( cls, form_data : Dict[ str, Any ] ) -> 'SimEntity':
+        kwargs = dict()
+        for field in fields( cls ):
+            value = form_data.get( field.name, field.default )
+            if value is MISSING:
+                raise ValueError(f'Missing required field: {field.name}')
+            kwargs[field.name] = value
+            continue
+        return cls( **kwargs )
+
+    @classmethod
+    def get_entity_type(cls) -> EntityType:
+        raise NotImplementedError('Subclasses must override this method.')
+        
+    def get_sim_state_list(self) -> List[ SimState ]:
+        """
+        These are defined by the Simulator and used by the SimulatorManager to
+        know what states exists and can be simulated.  The Simulator keeps track of
+        the current value of these states as provided by the SimulatorManager by 
+        way of the UI or a predefined simulation script.  These are not persisted.
+        """
+        raise NotImplementedError('Subclasses must override this method.')
+
+
+@dataclass
+class SimEntityData:
+
+    sim_entity       : SimEntity
+    db_sim_entity    : DbSimEntity   = None 
+
+
+@dataclass
+class SimEntityClassWrapper:
+
+    sim_entity_class   : Type[ SimEntity ]
+
+    @property
+    def name(self) -> str:
+        return f'{self.sim_entity_class.__module__}.{self.sim_entity_class.__qualname__}'
+
+    @property
+    def label(self) -> str:
+        return self.sim_entity_class.class_label()
+
+    @property
+    def entity_type(self) -> EntityType:
+        return self.sim_entity_class.get_entity_type()

@@ -1,11 +1,13 @@
 from django.apps import apps
-from django.urls import include, re_path
+from django.contrib import admin
+from django.urls import include, path, re_path
 
 from hi.apps.common.module_utils import import_module_safe
 
 from . import views
 
 urlpatterns = [
+    path( 'admin/', admin.site.urls ),
 
     re_path( r'^$',
              views.HomeView.as_view(),
@@ -27,7 +29,7 @@ urlpatterns = [
              views.ProfileSwitchView.as_view(),
              name = 'simulator_profile_switch' ),
     
-    re_path( r'^add-entity/(?P<simulator_id>[\w_]+)$',
+    re_path( r'^add-entity/(?P<simulator_id>[\w_\-\.\:]+)/(?P<class_name>[\w\.\_]+)$',
              views.AddEntityView.as_view(),
              name = 'simulator_add_entity' ),
 ]

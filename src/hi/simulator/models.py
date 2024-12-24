@@ -46,18 +46,13 @@ class DbSimEntity(models.Model):
         max_length = 255,
         null = False, blank = False,
     )
-    name = models.CharField(
-        'Name',
-        max_length = 255,
-        null = False, blank = False,
-    )
     entity_type_str = models.CharField(
         'Entity Type',
         max_length = 32,
         null = False, blank = False,
     )    
-    extra_fields = models.JSONField(
-        'Extra Fields',
+    editable_fields = models.JSONField(
+        'Editable Fields',
         default = dict,
         null = False, blank = False,
     )

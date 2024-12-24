@@ -8,23 +8,28 @@ from hi.apps.entity.enums import EntityType, EntityStateType, EntityStateValue
 from hi.simulator.transient_models import SimEntity, SimState
 
 
-@dataclass
+@dataclass( frozen = True )
 class ZmServerEntity( SimEntity ):
-    pass
 
+    name    : str  = 'ZoneMinder Server'
 
-@dataclass
-class ZmServerState( SimState ):
-
-    entity_state_type  : EntityStateType  = EntityStateType.DISCRETE
-    state_value        : str              = 'Modect'
-
+    @classmethod
+    def class_label(cls):
+        return 'ZoneMinder Server'
     
-@dataclass
+    @classmethod
+    def get_entity_type(cls) -> EntityType:
+        return EntityType.SERVICE
+        
+    def get_sim_state_list(self) -> List[ SimState ]:
+        pass
+    
+
+@dataclass( frozen = True )
 class ZmMonitorEntity( SimEntity ):
 
+    name         : str
     monitor_id   : int         = None
-    entity_type  : EntityType  = EntityType.CAMERA
     status       : str         = 'Connected'
     type         : str         = 'Remote'
     function     : str         = 'Modect'
@@ -36,6 +41,17 @@ class ZmMonitorEntity( SimEntity ):
     width        : str         = '1280'
     height       : str         = '800'
     orientation  : str         = 'ROTATE_0'
+    
+    @classmethod
+    def class_label(cls):
+        return 'Camera (monitor)'
+    
+    @classmethod
+    def get_entity_type(cls) -> EntityType:
+        return EntityType.CAMERA
+        
+    def get_sim_state_list(self) -> List[ SimState ]:
+        pass
     
     def to_api_dict(self):
         return {
@@ -283,3 +299,9 @@ class ZmPagination:
             'paramType': 'querystring',
             'queryScope': None,
         }
+
+
+ZONEMINDER_SIM_ENTITY_LIST = [
+    ZmMonitorEntity,
+    ZmServerEntity,
+]

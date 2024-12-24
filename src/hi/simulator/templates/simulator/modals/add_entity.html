@@ -1,7 +1,7 @@
 {% extends "modals/action_with_cancel.html" %}
 
 {% block preamble %}
-<form action="{% url 'simulator_add_entity' simulator_id=simulator.id %}" method="post"
+<form action="{% url 'simulator_add_entity' simulator_id=simulator.id class_name=sim_entity_class_wrapper.name %}" method="post"
       class="form" data-async="modal">
   {% csrf_token %}
 {% endblock %}
@@ -12,37 +12,8 @@ Add {{ simulator.label }} Entity
 
 {% block body %}
 <div>
-  {% for entity_fields in entity_fields_list %}
-  <div>
-    {{ sim_entity_class }}
-  </div>
-
-
-
-
-
-    {% for field in entity_fields %}
-        <label for="{{ field.name }}">{{ field.name }}</label>
-        <input
-            type="text"
-            name="{{ field.name }}"
-            value="{{ field.default|default:'' }}"
-        >
-    {% endfor %}
-
-
-
-
-
-
-
-
-
-
-
-
-  
-  {% endfor %}
+  <div class="h3">{{ sim_entity_class_wrapper.label }}</div>
+  {% include "simulator/panes/sim_entity_form.html" with sim_entity_form=sim_entity_form %}
 </div>
 {% endblock %}
 
