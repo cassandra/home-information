@@ -5,13 +5,13 @@ from typing import List
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.entity.enums import EntityType, EntityStateType, EntityStateValue
 
-from hi.simulator.transient_models import SimEntity, SimState
+from hi.simulator.transient_models import SimEntity, SimState, SimEntityDefinition
 
 
 @dataclass
-class ZmServerState( SimState ):
+class ZmServerRunState( SimState ):
 
-    name               : str              = 'ZoneMinder State'
+    name               : str              = 'ZoneMinder Run State'
     entity_state_type  : EntityStateType  = EntityStateType.DISCRETE
     state_value        : str              = 'Home'
 
@@ -19,19 +19,15 @@ class ZmServerState( SimState ):
 @dataclass( frozen = True )
 class ZmServerEntity( SimEntity ):
 
-    name    : str  = 'ZoneMinder Server'
+    name          : str         = 'ZoneMinder Server'
 
-    @classmethod
-    def class_label(cls):
-        return 'ZoneMinder Server'
-    
-    @classmethod
-    def get_entity_type(cls) -> EntityType:
+    @property
+    def entity_type(self):
         return EntityType.SERVICE
-        
+
     @property
     def sim_state_list(self) -> List[ SimState ]:
-        return [ ZmServerState() ]
+        return [ ZmServerRunState() ]
     
 
 @dataclass
@@ -67,14 +63,10 @@ class ZmMonitorEntity( SimEntity ):
     height       : str         = '800'
     orientation  : str         = 'ROTATE_0'
     
-    @classmethod
-    def class_label(cls):
-        return 'Camera (monitor)'
+    @property
+    def entity_type(self):
+        return EntityType.MOTION_SENSOR
     
-    @classmethod
-    def get_entity_type(cls) -> EntityType:
-        return EntityType.CAMERA
-        
     @property
     def sim_state_list(self) -> List[ SimState ]:
         return [
@@ -315,7 +307,13 @@ class ZmPagination:
         }
 
 
-ZONEMINDER_SIM_ENTITY_LIST = [
-    ZmMonitorEntity,
-    ZmServerEntity,
+ZONEMINDER_SIM_ENTITY_DEFINITION_LIST = [
+    SimEntityDefinition(
+        sim_entity_class = ZmMonitorEntity,
+        class_label = 'Camera (monitor)',
+    ),
+    SimEntityDefinition(
+        sim_entity_class = ZmServerEntity,
+        class_label = 'ZoneMinder Service',
+    ),
 ]

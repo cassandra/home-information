@@ -2,7 +2,7 @@ from typing import List, Type
 
 from hi.apps.common.singleton import Singleton
 
-from .transient_models import SimEntity, SimEntityClassData
+from .transient_models import SimEntity, SimEntityDefinition
 
 
 class Simulator( Singleton ):
@@ -21,7 +21,7 @@ class Simulator( Singleton ):
         """ A human-friendly label for this simulatior. """
         raise NotImplementedError('Subclasses must override this method.')
 
-    def get_sim_entity_class_list(self) -> List[ Type[ SimEntity ]]:
+    def sim_entity_definition_list(self) -> List[ SimEntityDefinition ]:
         """
         A return a list of SimEntity subclasses that define the different types
         of entities that can be define for the simulator.
@@ -53,10 +53,6 @@ class Simulator( Singleton ):
     def set_sim_state( self, device_id : int, value : str ):
         raise NotImplementedError('Subclasses must override this method.')
         
-    @property
-    def sim_entity_class_data_list(self) -> List[ SimEntityClassData ]:
-        return [ SimEntityClassData( sim_entity_class = x ) for x in self.get_sim_entity_class_list() ]
-
     def add_sim_entity( self, sim_entity : SimEntity ):
         self.validate_new_sim_entity( sim_entity = sim_entity )
         self._sim_entity_list.append( sim_entity )    

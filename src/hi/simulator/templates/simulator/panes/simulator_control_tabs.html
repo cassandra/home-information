@@ -33,14 +33,14 @@
 	  </button>
 	  <div class="dropdown-menu dropdown-menu-right"
 	       role="menu" aria-labelledby="hi-sim-entity-{{ simulator.id }}-menu">
-	  {% for sim_entity_class_data in simulator.sim_entity_class_data_list %}
+	  {% for sim_entity_definition in simulator.sim_entity_definition_list %}
 	    {% if forloop.counter > 1 %}
 	    <div class="dropdown-divider"></div>
 	    {% endif %}
 	    <a role="menuitem" class="dropdown-item plain"
-	       href="{% url 'simulator_entity_add' simulator_id=simulator.id class_id=sim_entity_class_data.class_id %} "
+	       href="{% url 'simulator_entity_add' simulator_id=simulator.id class_id=sim_entity_definition.class_id %} "
 	       data-async="modal">
-	      {{ sim_entity_class_data.class_label }}
+	      {{ sim_entity_definition.class_label }}
 	    </a>
 	    {% endfor %}
 	  </div>

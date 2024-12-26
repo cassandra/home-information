@@ -6,7 +6,7 @@ from django.http import Http404, HttpRequest
 from .models import DbSimEntity, SimProfile
 from .simulator import Simulator
 from .simulator_manager import SimulatorManager
-from .transient_models import SimEntity
+from .transient_models import SimEntity, SimEntityDefinition
 
 
 class SimulatorViewMixin:
@@ -55,17 +55,19 @@ class SimulatorViewMixin:
             raise Http404( 'Unknown simulator id "{simulator_id}".' )
         return simulator
 
-    def get_entity_class_data( self, simulator : Simulator, request, *args, **kwargs ) -> Type[ SimEntity ]:
+    def get_entity_definition( self,
+                               simulator : Simulator,
+                               request, *args, **kwargs ) -> SimEntityDefinition:
         class_id = kwargs.get('class_id')
-        return self.get_entity_class_data_by_id(
+        return self.get_entity_definition_by_id(
             simulator = simulator,
             class_id = class_id,
         )
     
-    def get_entity_class_data_by_id( self, simulator : Simulator, class_id : str ) -> Type[ SimEntity ]:
-        for sim_entity_class_data in simulator.sim_entity_class_data_list:
-            if class_id == sim_entity_class_data.class_id:
-                return sim_entity_class_data
+    def get_entity_definition_by_id( self, simulator : Simulator, class_id : str ) -> SimEntityDefinition:
+        for sim_entity_definition in simulator.sim_entity_definition_list:
+            if class_id == sim_entity_definition.class_id:
+                return sim_entity_definition
             continue
         raise Http404( 'Unknown entity class id.' )
     

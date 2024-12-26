@@ -12,7 +12,8 @@ class SimState:
 
     name               : str
     entity_state_type  : EntityStateType
-    state_value        : str
+    value_range        : str               = None
+    state_value        : str               = None
 
     def validate(self):
         for field in fields(self):
@@ -35,8 +36,8 @@ class SimEntity:
     """
     Base class that simulators extend to add any extra editable fields
     needed to define for a specific simulator entity.  Simulators should
-    define one or more subclasses of this and make those known to te
-    SimulatorManager through the get_sim_entity_class_list() method of the
+    define one or more subclasses of this and make those known to the
+    SimulatorManager through the sim_entity_definition_list() method of the
     Simulator class.
 
     This class is the view of the model that concerns the Simulator
@@ -48,14 +49,10 @@ class SimEntity:
 
     name             : str
 
-    @classmethod
-    def class_label(cls):
+    @property
+    def entity_type(self):
         raise NotImplementedError('Subclasses must override this method.')
-    
-    @classmethod
-    def get_entity_type(cls) -> EntityType:
-        raise NotImplementedError('Subclasses must override this method.')
-
+        
     @property
     def sim_state_list(self) -> List[ SimState ]:
         """
@@ -124,18 +121,16 @@ class SimEntityData:
 
 
 @dataclass
-class SimEntityClassData:
-
+class SimEntityDefinition:
+    """
+    A wrapper class for defining a SimEntity subclass provided
+    by a simulator instance. Simulator instances provide a list of
+    these to the SimulationManager.
+    """
+    
     sim_entity_class   : Type[ SimEntity ]
-
+    class_label        : str
+    
     @property
     def class_id(self) -> str:
         return f'{self.sim_entity_class.__module__}.{self.sim_entity_class.__qualname__}'
-
-    @property
-    def class_label(self) -> str:
-        return self.sim_entity_class.class_label()
-
-    @property
-    def entity_type(self) -> EntityType:
-        return self.sim_entity_class.get_entity_type()

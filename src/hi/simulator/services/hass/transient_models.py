@@ -8,7 +8,7 @@ from typing import Dict, List
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.entity.enums import EntityStateType, EntityStateValue, EntityType
 
-from hi.simulator.transient_models import SimEntity, SimState
+from hi.simulator.transient_models import SimEntity, SimState, SimEntityDefinition
 
 
 @dataclass
@@ -62,14 +62,10 @@ class HassInsteonEntity( HassEntity ):
 @dataclass( frozen = True )
 class HassInsteonLightSwitch( HassInsteonEntity ):
 
-    @classmethod
-    def class_label(cls):
-        return 'Insteon Light Switch'
-    
-    @classmethod
-    def get_entity_type(cls) -> EntityType:
+    @property
+    def entity_type(self):
         return EntityType.LIGHT
-
+    
     @property
     def sim_state_list(self) -> List[ SimState ]:
         pass
@@ -113,14 +109,10 @@ class HassInsteonLightSwitch( HassInsteonEntity ):
 @dataclass( frozen = True )
 class HassInsteonMotionDetector( HassInsteonEntity ):
 
-    @classmethod
-    def class_label(cls):
-        return 'Insteon Motion Sensor'
-    
-    @classmethod
-    def get_entity_type(cls) -> EntityType:
+    @property
+    def entity_type(self):
         return EntityType.MOTION_SENSOR
-        
+    
     def sim_state_list(self) -> List[ SimState ]:
         pass
     
@@ -174,14 +166,10 @@ class HassInsteonMotionDetector( HassInsteonEntity ):
 @dataclass( frozen = True )
 class HassInsteonOpenCloseSensor( HassInsteonEntity ):
 
-    @classmethod
-    def class_label(cls):
-        return 'Insteon Open/Close Sensor'
-    
-    @classmethod
-    def get_entity_type(cls) -> EntityType:
+    @property
+    def entity_type(self):
         return EntityType.OPEN_CLOSE_SENSOR
-        
+
     def sim_state_list(self) -> List[ SimState ]:
         pass
     
@@ -207,8 +195,17 @@ class HassInsteonOpenCloseSensor( HassInsteonEntity ):
         return [ x.to_api_dict() for x in self.hass_state_list() ]
 
     
-HASS_SIM_ENTITY_LIST = [
-    HassInsteonLightSwitch,
-    HassInsteonMotionDetector,
-    HassInsteonOpenCloseSensor,
+HASS_SIM_ENTITY_DEFINITION_LIST = [
+    SimEntityDefinition(
+        sim_entity_class = HassInsteonLightSwitch,
+        class_label = 'Insteon Light Switch',
+    ),
+    SimEntityDefinition(
+        sim_entity_class = HassInsteonMotionDetector,
+        class_label = 'Insteon Motion Detector',
+    ),
+    SimEntityDefinition(
+        sim_entity_class = HassInsteonOpenCloseSensor,
+        class_label = 'Insteon Open/Close Sensor',
+    ),
 ]

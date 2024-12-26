@@ -123,27 +123,27 @@ class SimEntityAddView( View, SimulatorViewMixin ):
     
     def get( self, request, *args, **kwargs ):
         simulator = self.get_simulator( request, *args, **kwargs)
-        sim_entity_class_data = self.get_entity_class_data( simulator, request, *args, **kwargs )
-        sim_entity_form = forms.SimEntityForm( sim_entity_class = sim_entity_class_data.sim_entity_class )
+        sim_entity_definition = self.get_entity_definition( simulator, request, *args, **kwargs )
+        sim_entity_form = forms.SimEntityForm( sim_entity_class = sim_entity_definition.sim_entity_class )
         context = {
             'simulator': simulator,
-            'sim_entity_class_data': sim_entity_class_data,
+            'sim_entity_definition': sim_entity_definition,
             'sim_entity_form': sim_entity_form,
         }
         return render( request, self.MODAL_TEMPLATE_NAME, context )
 
     def post( self, request, *args, **kwargs ):
         simulator = self.get_simulator( request, *args, **kwargs)
-        sim_entity_class_data = self.get_entity_class_data( simulator, request, *args, **kwargs )
+        sim_entity_definition = self.get_entity_definition( simulator, request, *args, **kwargs )
         sim_entity_form = forms.SimEntityForm(
-            sim_entity_class_data.sim_entity_class, 
+            sim_entity_definition.sim_entity_class, 
             request.POST,
         )
 
         def error_response():
             context = {
                 'simulator': simulator,
-                'sim_entity_class_data': sim_entity_class_data,
+                'sim_entity_definition': sim_entity_definition,
                 'sim_entity_form': sim_entity_form,
             }
             return render( request, self.MODAL_TEMPLATE_NAME, context )
@@ -152,7 +152,7 @@ class SimEntityAddView( View, SimulatorViewMixin ):
             return error_response()
 
         cleaned_data = sim_entity_form.clean()
-        SimEntitySubclass = sim_entity_class_data.sim_entity_class
+        SimEntitySubclass = sim_entity_definition.sim_entity_class
         sim_entity = SimEntitySubclass.from_form_data( form_data = cleaned_data )
         try:
             SimulatorManager().add_sim_entity(
@@ -173,14 +173,14 @@ class SimEntityEditView( View, SimulatorViewMixin ):
     def get( self, request, *args, **kwargs ):
         db_sim_entity = self.get_db_sim_entity( request, *args, **kwargs )
         simulator = self.get_simulator_by_id( simulator_id = db_sim_entity.simulator_id )
-        sim_entity_class_data = self.get_entity_class_data_by_id(
+        sim_entity_definition = self.get_entity_definition_by_id(
             simulator = simulator,
             class_id = db_sim_entity.entity_class_id,
         )
-        SimEntitySubclass = sim_entity_class_data.sim_entity_class
+        SimEntitySubclass = sim_entity_definition.sim_entity_class
         sim_entity = SimEntitySubclass.from_json_dict( db_sim_entity.editable_fields )
         sim_entity_form = forms.SimEntityForm(
-            sim_entity_class = sim_entity_class_data.sim_entity_class,
+            sim_entity_class = sim_entity_definition.sim_entity_class,
             initial = sim_entity.to_initial_form_values(),
         )
         context = {
@@ -194,12 +194,12 @@ class SimEntityEditView( View, SimulatorViewMixin ):
     def post( self, request, *args, **kwargs ):
         db_sim_entity = self.get_db_sim_entity( request, *args, **kwargs )
         simulator = self.get_simulator_by_id( simulator_id = db_sim_entity.simulator_id )
-        sim_entity_class_data = self.get_entity_class_data_by_id(
+        sim_entity_definition = self.get_entity_definition_by_id(
             simulator = simulator,
             class_id = db_sim_entity.entity_class_id,
         )
         sim_entity_form = forms.SimEntityForm(
-            sim_entity_class_data.sim_entity_class, 
+            sim_entity_definition.sim_entity_class, 
             request.POST,
         )
 
@@ -215,7 +215,7 @@ class SimEntityEditView( View, SimulatorViewMixin ):
             return error_response()
         
         cleaned_data = sim_entity_form.clean()
-        SimEntitySubclass = sim_entity_class_data.sim_entity_class
+        SimEntitySubclass = sim_entity_definition.sim_entity_class
         sim_entity = SimEntitySubclass.from_form_data( form_data = cleaned_data )
         try:
             SimulatorManager().update_sim_entity(
@@ -237,11 +237,11 @@ class SimEntityDeleteView( View, SimulatorViewMixin ):
     def get( self, request, *args, **kwargs ):
         db_sim_entity = self.get_db_sim_entity( request, *args, **kwargs )
         simulator = self.get_simulator_by_id( simulator_id = db_sim_entity.simulator_id )
-        sim_entity_class_data = self.get_entity_class_data_by_id(
+        sim_entity_definition = self.get_entity_definition_by_id(
             simulator = simulator,
             class_id = db_sim_entity.entity_class_id,
         )
-        SimEntitySubclass = sim_entity_class_data.sim_entity_class
+        SimEntitySubclass = sim_entity_definition.sim_entity_class
         sim_entity = SimEntitySubclass.from_json_dict( db_sim_entity.editable_fields )
         context = {
             'db_sim_entity': db_sim_entity,

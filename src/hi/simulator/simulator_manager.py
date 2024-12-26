@@ -12,7 +12,7 @@ from hi.apps.common.singleton import Singleton
 from .models import DbSimEntity, SimProfile
 from .simulator import Simulator
 from .simulator_data import SimulatorData
-from .transient_models import SimEntity, SimEntityClassData
+from .transient_models import SimEntity, SimEntityDefinition
 
 logger = logging.getLogger(__name__)
 
@@ -77,13 +77,13 @@ class SimulatorManager( Singleton ):
             if not simulator_data:
                 raise KeyError( f'No data found for simulator id = {simulator.id}' )
                 
-            sim_entity_class_data = SimEntityClassData( sim_entity_class = sim_entity.__class__ )
+            sim_entity_definition = SimEntityDefinition( sim_entity_class = sim_entity.__class__ )
 
             db_sim_entity = DbSimEntity.objects.create(
                 sim_profile = self.current_sim_profile,
                 simulator_id = simulator.id,
-                entity_class_id = sim_entity_class_data.class_id,
-                entity_type = sim_entity_class_data.entity_type,
+                entity_class_id = sim_entity_definition.class_id,
+                entity_type = sim_entity.entity_type,
                 editable_fields = sim_entity.to_json_dict()
             )
 
@@ -178,11 +178,11 @@ class SimulatorManager( Singleton ):
 
         for simulator_id, simulator_data in self._simulator_data_map.items():
             simulator = simulator_data.simulator
-            sim_entity_class_data_list = simulator.sim_entity_class_data_list
-            logger.debug( f'Adding {len(sim_entity_class_data_list)} entities to simulator {simulator_id}.' )
-            for sim_entity_class_data in sim_entity_class_data_list:
-                class_id = sim_entity_class_data.class_id
-                simulator_data.sim_entity_class_map[class_id] = sim_entity_class_data.sim_entity_class
+            sim_entity_definition_list = simulator.sim_entity_definition_list
+            logger.debug( f'Adding {len(sim_entity_definition_list)} entities to simulator {simulator_id}.' )
+            for sim_entity_definition in sim_entity_definition_list:
+                class_id = sim_entity_definition.class_id
+                simulator_data.sim_entity_definition_map[class_id] = sim_entity_definition
                 continue
             continue
         return
@@ -199,14 +199,15 @@ class SimulatorManager( Singleton ):
             if not simulator_data:
                 logger.warning( f'Instance found for non-existent simulator id = {simulator_id}' )
                 continue
-
-            sim_entity_class_map = simulator_data.sim_entity_class_map
+            
+            sim_entity_definition_map = simulator_data.sim_entity_definition_map
             class_id = db_sim_entity.entity_class_id
-            SimEntitySubclass = sim_entity_class_map.get( class_id )
-            if not SimEntitySubclass:
+            sim_entity_definition = sim_entity_definition_map.get( class_id )
+            if not sim_entity_definition:
                 logger.warning( f'Entity class "{class_id}" not found for simulator "{simulator_id}"' )
                 continue
             
+            SimEntitySubclass = sim_entity_definition.sim_entity_class
             sim_entity = SimEntitySubclass.from_json_dict( db_sim_entity.editable_fields )
             simulator_data.sim_entity_instance_map[sim_entity] = db_sim_entity
             continue
