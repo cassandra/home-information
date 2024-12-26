@@ -69,11 +69,12 @@ class HassInsteonLightSwitch( HassInsteonEntity ):
     @classmethod
     def get_entity_type(cls) -> EntityType:
         return EntityType.LIGHT
-        
-    def get_sim_state_list(self) -> List[ SimState ]:
+
+    @property
+    def sim_state_list(self) -> List[ SimState ]:
         pass
     
-    def entity_list(self):
+    def hass_state_list(self):
         dummy_datetime_iso = datetimeproxy.now().isoformat()
         
         hass_light_state = HassState(
@@ -106,7 +107,7 @@ class HassInsteonLightSwitch( HassInsteonEntity ):
                  hass_color_state ]
     
     def to_api_list(self):
-        return [ x.to_api_dict() for x in self.entity_list() ]
+        return [ x.to_api_dict() for x in self.hass_state_list() ]
 
     
 @dataclass( frozen = True )
@@ -120,10 +121,10 @@ class HassInsteonMotionDetector( HassInsteonEntity ):
     def get_entity_type(cls) -> EntityType:
         return EntityType.MOTION_SENSOR
         
-    def get_sim_state_list(self) -> List[ SimState ]:
+    def sim_state_list(self) -> List[ SimState ]:
         pass
     
-    def entity_list(self):
+    def hass_state_list(self):
         dummy_datetime_iso = datetimeproxy.now().isoformat()
         
         hass_motion_state = HassState(
@@ -167,7 +168,7 @@ class HassInsteonMotionDetector( HassInsteonEntity ):
                  hass_battery_state ]
     
     def to_api_list(self):
-        return [ x.to_api_dict() for x in self.entity_list() ]
+        return [ x.to_api_dict() for x in self.hass_state_list() ]
 
     
 @dataclass( frozen = True )
@@ -181,10 +182,10 @@ class HassInsteonOpenCloseSensor( HassInsteonEntity ):
     def get_entity_type(cls) -> EntityType:
         return EntityType.OPEN_CLOSE_SENSOR
         
-    def get_sim_state_list(self) -> List[ SimState ]:
+    def sim_state_list(self) -> List[ SimState ]:
         pass
     
-    def entity_list(self):
+    def hass_state_list(self):
         dummy_datetime_iso = datetimeproxy.now().isoformat()
         
         hass_state = HassState(
@@ -203,7 +204,7 @@ class HassInsteonOpenCloseSensor( HassInsteonEntity ):
         return [ hass_state ]
     
     def to_api_list(self):
-        return [ x.to_api_dict() for x in self.entity_list() ]
+        return [ x.to_api_dict() for x in self.hass_state_list() ]
 
     
 HASS_SIM_ENTITY_LIST = [

@@ -3,7 +3,7 @@ import logging
 from threading import Lock
 from typing import Dict, List
 
-from django.apps import apps
+from django.apps import apps as django_apps
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.module_utils import import_module_safe
@@ -35,8 +35,8 @@ class SimulatorManager( Singleton ):
         return self._current_sim_profile
 
     def set_sim_profile( self, sim_profile : SimProfile ):
-        should_reinitialize_simulators = bool( not sim_profile
-                                               or ( sim_profile != self._current_sim_profile ))
+        should_reload_instances = bool( not sim_profile
+                                        or ( sim_profile != self._current_sim_profile ))
         if not sim_profile:
             self._initialize_sim_profile()
         else:
@@ -44,8 +44,8 @@ class SimulatorManager( Singleton ):
             sim_profile.save()
             self._current_sim_profile = sim_profile
 
-        if should_reinitialize_simulators:
-            self._initialize_simulators()
+        if should_reload_instances:
+            self._reload_sim_entity_instances()            
         return
         
     def get_simulator( self, simulator_id : str ) -> Simulator:
@@ -54,10 +54,10 @@ class SimulatorManager( Singleton ):
             raise KeyError( f'Simulator id "{simulator_id}" not found.' )
         return simulator_data.simulator
     
-    def get_simulator_list(self) -> List[ Simulator ]:
-        simulator_list = [ x.simulator for x in self._simulator_data_map.values() ]
-        simulator_list.sort( key = lambda item : item.label )
-        return simulator_list
+    def get_simulator_data_list(self) -> List[ SimulatorData ]:
+        simulator_data_list = [ x for x in self._simulator_data_map.values() ]
+        simulator_data_list.sort( key = lambda item : item.simulator.label )
+        return simulator_data_list
 
     def add_sim_entity( self,
                         simulator   : Simulator,
@@ -95,6 +95,23 @@ class SimulatorManager( Singleton ):
         finally:
             self._data_lock.release()
                         
+    def update_sim_entity( self,
+                           simulator      : Simulator,
+                           db_sim_entity  : DbSimEntity,
+                           sim_entity     : SimEntity ):
+        simulator.update_sim_entity( sim_entity = sim_entity )
+
+        self._data_lock.acquire()
+        try:
+            simulator_data = self._simulator_data_map.get( simulator.id )
+            if not simulator_data:
+                raise KeyError( f'No data found for simulator id = {simulator.id}' )
+            db_sim_entity.editable_fields = sim_entity.to_json_dict()
+            db_sim_entity.save()
+
+        finally:
+            self._data_lock.release()
+        
     async def initialize(self) -> None:
         self._data_lock.acquire()
         try:
@@ -110,7 +127,7 @@ class SimulatorManager( Singleton ):
 
     def _initialize_sim_profile(self):
         logger.debug("Initialize SimProfile ...")
-        self._current_sim_profile = SimProfile.objects.all().first()  # Default ordering by usage time
+        self._current_sim_profile = SimProfile.objects.all().first()  # Default ordering is by recency use
         if not self._current_sim_profile:
             self._current_sim_profile = SimProfile.objects.create(
                 name = self.DEFAULT_PROFILE_NAME,
@@ -122,7 +139,7 @@ class SimulatorManager( Singleton ):
         logger.debug("Discovering defined simulators ...")
 
         self._simulator_data_map = dict()
-        for app_config in apps.get_app_configs():
+        for app_config in django_apps.get_app_configs():
             if not app_config.name.startswith( 'hi.simulator.services' ):
                 continue
             module_name = f'{app_config.name}.simulator'
@@ -163,7 +180,7 @@ class SimulatorManager( Singleton ):
             simulator = simulator_data.simulator
             sim_entity_class_data_list = simulator.sim_entity_class_data_list
             logger.debug( f'Adding {len(sim_entity_class_data_list)} entities to simulator {simulator_id}.' )
-            for sim_entity_class_data in osim_entity_class_data_list:
+            for sim_entity_class_data in sim_entity_class_data_list:
                 class_id = sim_entity_class_data.class_id
                 simulator_data.sim_entity_class_map[class_id] = sim_entity_class_data.sim_entity_class
                 continue
@@ -185,12 +202,12 @@ class SimulatorManager( Singleton ):
 
             sim_entity_class_map = simulator_data.sim_entity_class_map
             class_id = db_sim_entity.entity_class_id
-            sim_entity_class = sim_entity_class_map.get( class_id )
-            if not sim_entity_class:
+            SimEntitySubclass = sim_entity_class_map.get( class_id )
+            if not SimEntitySubclass:
                 logger.warning( f'Entity class "{class_id}" not found for simulator "{simulator_id}"' )
                 continue
             
-            sim_entity = sim_entity_class.from_json_dict( db_sim_entity.editable_fields )
+            sim_entity = SimEntitySubclass.from_json_dict( db_sim_entity.editable_fields )
             simulator_data.sim_entity_instance_map[sim_entity] = db_sim_entity
             continue
         return
@@ -201,6 +218,18 @@ class SimulatorManager( Singleton ):
             sim_entity_list = list( simulator_data.sim_entity_instance_map.keys() )
             logger.debug( f'Initializing simulator {simulator_id} with {len(sim_entity_list)} entities.' )
             simulator_data.simulator.initialize( sim_entity_list = sim_entity_list )
+            continue
+        return
+
+    def _reload_sim_entity_instances(self):
+        self._clear_sim_entity_instances()
+        self._load_sim_entity_instances()
+        self._initialize_simulators()
+        return
+    
+    def _clear_sim_entity_instances(self):
+        for simulator_id, simulator_data in self._simulator_data_map.items():
+            simulator_data.sim_entity_instance_map = dict()
             continue
         return
     

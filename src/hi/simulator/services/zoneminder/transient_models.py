@@ -8,6 +8,14 @@ from hi.apps.entity.enums import EntityType, EntityStateType, EntityStateValue
 from hi.simulator.transient_models import SimEntity, SimState
 
 
+@dataclass
+class ZmServerState( SimState ):
+
+    name               : str              = 'ZoneMinder State'
+    entity_state_type  : EntityStateType  = EntityStateType.DISCRETE
+    state_value        : str              = 'Home'
+
+    
 @dataclass( frozen = True )
 class ZmServerEntity( SimEntity ):
 
@@ -21,10 +29,27 @@ class ZmServerEntity( SimEntity ):
     def get_entity_type(cls) -> EntityType:
         return EntityType.SERVICE
         
-    def get_sim_state_list(self) -> List[ SimState ]:
-        pass
+    @property
+    def sim_state_list(self) -> List[ SimState ]:
+        return [ ZmServerState() ]
     
 
+@dataclass
+class ZmMonitorFunctionState( SimState ):
+
+    name               : str              = 'Monitor Function'
+    entity_state_type  : EntityStateType  = EntityStateType.DISCRETE
+    state_value        : str              = 'Modect'
+
+    
+@dataclass
+class ZmMonitorMotionState( SimState ):
+
+    name               : str              = 'Camera Motion'
+    entity_state_type  : EntityStateType  = EntityStateType.MOVEMENT
+    state_value        : str              = EntityStateValue.IDLE
+    
+    
 @dataclass( frozen = True )
 class ZmMonitorEntity( SimEntity ):
 
@@ -50,8 +75,12 @@ class ZmMonitorEntity( SimEntity ):
     def get_entity_type(cls) -> EntityType:
         return EntityType.CAMERA
         
-    def get_sim_state_list(self) -> List[ SimState ]:
-        pass
+    @property
+    def sim_state_list(self) -> List[ SimState ]:
+        return [
+            ZmMonitorFunctionState(),
+            ZmMonitorMotionState(),
+        ]
     
     def to_api_dict(self):
         return {
@@ -162,21 +191,6 @@ class ZmMonitorEntity( SimEntity ):
             }
         }
 
-    
-@dataclass
-class ZmMonitorFunctionState( SimState ):
-
-    function           : str              = None
-    entity_state_type  : EntityStateType  = EntityStateType.DISCRETE
-    state_value        : str              = '1'
-
-    
-@dataclass
-class ZmMonitorMotionState( SimState ):
-
-    entity_state_type  : EntityStateType  = EntityStateType.MOVEMENT
-    state_value        : str              = EntityStateValue.IDLE
-    
     
 @dataclass
 class ZmStateDefinition:

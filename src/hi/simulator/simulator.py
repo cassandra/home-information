@@ -13,20 +13,26 @@ class Simulator( Singleton ):
     
     @property
     def id(self) -> str:
+        """ A unique identifier for referencing this simulator implementation. """
         raise NotImplementedError('Subclasses must override this method.')
         
     @property
     def label(self) -> str:
+        """ A human-friendly label for this simulatior. """
         raise NotImplementedError('Subclasses must override this method.')
 
     def get_sim_entity_class_list(self) -> List[ Type[ SimEntity ]]:
+        """
+        A return a list of SimEntity subclasses that define the different types
+        of entities that can be define for the simulator.
+        """
         raise NotImplementedError('Subclasses must override this method.')        
     
     def validate_new_sim_entity( self, sim_entity : SimEntity ):
         """
-        Called before adding a new SimEntity to allow simulator to validate
-        before addition. Should raise SimEntityValidationError if there is an
-        issue.
+        Called before adding or updating a SimEntity to allow simulator to do
+        custom validation checks before add/edit/save. Should raise
+        SimEntityValidationError if there is any validation issue.
         """
         raise NotImplementedError('Subclasses must override this method.')        
         
@@ -55,6 +61,9 @@ class Simulator( Singleton ):
         self.validate_new_sim_entity( sim_entity = sim_entity )
         self._sim_entity_list.append( sim_entity )    
         return
+    
+    def update_sim_entity( self, sim_entity : SimEntity ):
+        raise NotImplementedError('Need to work out who owns managing the data: SimulatorManager or Simulator.')
     
     def remove_sim_entity( self, sim_entity : SimEntity ):
         try:

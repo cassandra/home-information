@@ -55,8 +55,9 @@ class SimEntity:
     @classmethod
     def get_entity_type(cls) -> EntityType:
         raise NotImplementedError('Subclasses must override this method.')
-        
-    def get_sim_state_list(self) -> List[ SimState ]:
+
+    @property
+    def sim_state_list(self) -> List[ SimState ]:
         """
         These are defined by the Simulator and used by the SimulatorManager to
         know what states exists and can be simulated.  The Simulator keeps track of

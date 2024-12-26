@@ -1,5 +1,4 @@
-from django.core.exceptions import BadRequest
-from django.http import Http404, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
 from django.views.generic import View
@@ -10,7 +9,6 @@ from .exceptions import SimEntityValidationError
 from . import forms
 from .models import DbSimEntity
 from .simulator_manager import SimulatorManager
-from .transient_models import SimEntity, SimEntityClassData
 from .view_mixins import SimulatorViewMixin
 
 
@@ -20,15 +18,15 @@ class HomeView( View, SimulatorViewMixin ):
         simulator_manager = SimulatorManager()
         sim_profile_list = simulator_manager.get_sim_profile_list()
         current_sim_profile = simulator_manager.current_sim_profile
-        simulator_list = simulator_manager.get_simulator_list()
+        simulator_data_list = simulator_manager.get_simulator_data_list()
         current_simulator = self.get_current_simulator(
             request = request,
-            simulator_list = simulator_list,
+            simulator_list = [ x.simulator for x in simulator_data_list ],
         )
         context = {
             'sim_profile_list': sim_profile_list,
             'current_sim_profile': current_sim_profile,
-            'simulator_list': simulator_list,
+            'simulator_data_list': simulator_data_list,
             'current_simulator': current_simulator,
         }
         return render( request, 'simulator/pages/home.html', context )
@@ -141,24 +139,31 @@ class SimEntityAddView( View, SimulatorViewMixin ):
             sim_entity_class_data.sim_entity_class, 
             request.POST,
         )
-        if not sim_entity_form.is_valid():
+
+        def error_response():
             context = {
                 'simulator': simulator,
                 'sim_entity_class_data': sim_entity_class_data,
                 'sim_entity_form': sim_entity_form,
             }
             return render( request, self.MODAL_TEMPLATE_NAME, context )
+        
+        if not sim_entity_form.is_valid():
+            return error_response()
 
         cleaned_data = sim_entity_form.clean()
-        sim_entity = SimEntity.from_form_data( form_data = cleaned_data )
+        SimEntitySubclass = sim_entity_class_data.sim_entity_class
+        sim_entity = SimEntitySubclass.from_form_data( form_data = cleaned_data )
         try:
             SimulatorManager().add_sim_entity(
                 simulator = simulator,
                 sim_entity = sim_entity,
             )
+            return antinode.refresh_response()
+
         except SimEntityValidationError as ve:
-            raise BadRequest( str(ve) )
-        return antinode.refresh_response()
+            sim_entity_form.add_error( None, str(ve) )
+            return error_response()
 
     
 class SimEntityEditView( View, SimulatorViewMixin ):
@@ -167,14 +172,13 @@ class SimEntityEditView( View, SimulatorViewMixin ):
 
     def get( self, request, *args, **kwargs ):
         db_sim_entity = self.get_db_sim_entity( request, *args, **kwargs )
-        simulator = SimulatorManager().get_simulator( simulator_id = db_sim_entity.simulator_id )
-        if not simulator:
-            raise Http404( 'Unknown simulator id "{simulator_id}".' )
+        simulator = self.get_simulator_by_id( simulator_id = db_sim_entity.simulator_id )
         sim_entity_class_data = self.get_entity_class_data_by_id(
             simulator = simulator,
             class_id = db_sim_entity.entity_class_id,
         )
-        sim_entity = SimEntity.from_json_dict( db_sim_entity.editable_fields )
+        SimEntitySubclass = sim_entity_class_data.sim_entity_class
+        sim_entity = SimEntitySubclass.from_json_dict( db_sim_entity.editable_fields )
         sim_entity_form = forms.SimEntityForm(
             sim_entity_class = sim_entity_class_data.sim_entity_class,
             initial = sim_entity.to_initial_form_values(),
@@ -189,37 +193,41 @@ class SimEntityEditView( View, SimulatorViewMixin ):
 
     def post( self, request, *args, **kwargs ):
         db_sim_entity = self.get_db_sim_entity( request, *args, **kwargs )
-        simulator = SimulatorManager().get_simulator( simulator_id = db_sim_entity.simulator_id )
-        if not simulator:
-            raise Http404( 'Unknown simulator id "{simulator_id}".' )
+        simulator = self.get_simulator_by_id( simulator_id = db_sim_entity.simulator_id )
         sim_entity_class_data = self.get_entity_class_data_by_id(
             simulator = simulator,
             class_id = db_sim_entity.entity_class_id,
         )
-        previous_sim_entity = SimEntity.from_json_dict( db_sim_entity.editable_fields )
         sim_entity_form = forms.SimEntityForm(
             sim_entity_class_data.sim_entity_class, 
             request.POST,
         )
-        if not sim_entity_form.is_valid():
+
+        def error_response():
             context = {
                 'simulator': simulator,
                 'db_sim_entity': db_sim_entity,
-                'sim_entity': previous_sim_entity,
                 'sim_entity_form': sim_entity_form,
             }
             return render( request, self.MODAL_TEMPLATE_NAME, context )
-
+            
+        if not sim_entity_form.is_valid():
+            return error_response()
+        
         cleaned_data = sim_entity_form.clean()
-        sim_entity = SimEntity.from_form_data( form_data = cleaned_data )
+        SimEntitySubclass = sim_entity_class_data.sim_entity_class
+        sim_entity = SimEntitySubclass.from_form_data( form_data = cleaned_data )
         try:
             SimulatorManager().update_sim_entity(
+                simulator = simulator,
                 db_sim_entity = db_sim_entity,
                 sim_entity = sim_entity,
             )
+            return antinode.refresh_response()
+        
         except SimEntityValidationError as ve:
-            raise BadRequest( str(ve) )
-        return antinode.refresh_response()
+            sim_entity_form.add_error( None, str(ve) )
+            return error_response()
     
     
 class SimEntityDeleteView( View, SimulatorViewMixin ):
@@ -228,8 +236,16 @@ class SimEntityDeleteView( View, SimulatorViewMixin ):
     
     def get( self, request, *args, **kwargs ):
         db_sim_entity = self.get_db_sim_entity( request, *args, **kwargs )
+        simulator = self.get_simulator_by_id( simulator_id = db_sim_entity.simulator_id )
+        sim_entity_class_data = self.get_entity_class_data_by_id(
+            simulator = simulator,
+            class_id = db_sim_entity.entity_class_id,
+        )
+        SimEntitySubclass = sim_entity_class_data.sim_entity_class
+        sim_entity = SimEntitySubclass.from_json_dict( db_sim_entity.editable_fields )
         context = {
             'db_sim_entity': db_sim_entity,
+            'sim_entity': sim_entity,
         }
         return render( request, self.MODAL_TEMPLATE_NAME, context )
     

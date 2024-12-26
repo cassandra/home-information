@@ -1,8 +1,9 @@
 <div>
   <ul id="hi-simulator-tabs" class="nav nav-tabs" role="tablist">
-    {% for simulator in simulator_list %}
+    {% for simulator_data in simulator_data_list %}
+    {% with simulator_data.simulator as simulator %}
     <li class="nav-item">
-      <a id="hi-simulator-tab-{{ simulator.id }}" role="tab"
+      <a id="hi-simulator-tab-{{ simulator_data.simulator.id }}" role="tab"
 	 class="nav-link {% if simulator.id == current_simulator.id %}active{% endif %}"
 	 data-toggle="tab" 
 	 href="#hi-simulator-content-{{ simulator.id }}" 
@@ -11,11 +12,13 @@
 	 aria-selected="{% if simulator.id == current_simulator.id %}true{% else %}false{% endif %}">
 	{{ simulator.label }}</a>
     </li>
+    {% endwith %}
     {% endfor %}
   </ul>
 
   <div id="hi-simulator-tab-content" class="tab-content">
-    {% for simulator in simulator_list %}
+    {% for simulator_data in simulator_data_list %}
+    {% with simulator_data.simulator as simulator %}
     <div id="hi-simulator-content-{{ simulator.id }}" 
 	 class="tab-pane fade {% if simulator.id == current_simulator.id %}show active{% endif %}" 
 	 role="tabpanel" 
@@ -44,13 +47,14 @@
 	</div>
       </div>
       
-      {% for sim_entity in simulator.sim_entities %}
-      {% include "simulator/panes/sim_entity.html" with simulator=simulator sim_entity=sim_entity %}
+      {% for sim_entity, db_sim_entity in simulator_data.sim_entity_instance_map.items %}
+      {% include "simulator/panes/sim_entity.html" with simulator=simulator sim_entity=sim_entity db_sim_entity=db_sim_entity %}
       {% empty %}
       <div class="alert alert-info" >No {{ simulator.label }} simulator entities defined.</div>
       {% endfor %}
       
     </div>
+    {% endwith %}
     {% endfor %}
   </div>
 </div>

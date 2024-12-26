@@ -1,3 +1,26 @@
-<div class="">
-  Entity: {{ sim_entity.name }}
+<div class="row">
+  <div class="col-3">
+    {{ sim_entity.name }}
+  </div>
+  <div class="col-7">
+    {% for sim_state in sim_entity.sim_state_list %}
+    <div class="row">
+      <div class="col-4">
+	{{ sim_state.name }}
+      </div>
+      <div class="col-8">
+	CONTROL : {{ sim_state.entity_state_type }}
+	VALUE : {{ sim_state.state_value }}
+      </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-warning">No simulation states defined.</div>
+    {% endfor %}
+  </div>
+  <div class="col-2">
+    <a href="{% url 'simulator_entity_edit' sim_entity_id=db_sim_entity.id %}"
+       class="btn btn-info" data-async="modal">EDIT</a>
+    <a href="{% url 'simulator_entity_delete' sim_entity_id=db_sim_entity.id %}"
+       class="btn btn-danger" data-async="modal">X</a>
+  </div>  
 </div>

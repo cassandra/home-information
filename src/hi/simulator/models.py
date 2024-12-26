@@ -27,7 +27,10 @@ class SimProfile(models.Model):
         verbose_name_plural = 'Simulator Profiles'
         ordering = [ '-last_switched_to_datetime' ]
 
-        
+    def __str__(self):
+        return f'{self.name} [{self.id}]'
+
+    
 class DbSimEntity(models.Model):
 
     sim_profile = models.ForeignKey(
