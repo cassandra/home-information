@@ -47,8 +47,8 @@
 	</div>
       </div>
       
-      {% for sim_entity, db_sim_entity in simulator_data.sim_entity_instance_map.items %}
-      {% include "simulator/panes/sim_entity.html" with simulator=simulator sim_entity=sim_entity db_sim_entity=db_sim_entity %}
+      {% for sim_entity in simulator.sim_entities %}
+      {% include "simulator/panes/sim_entity.html" with simulator=simulator sim_entity=sim_entity %}
       {% empty %}
       <div class="alert alert-info" >No {{ simulator.label }} simulator entities defined.</div>
       {% endfor %}

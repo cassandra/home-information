@@ -1,6 +1,6 @@
-from typing import List, Type
+from typing import List
 
-from hi.simulator.transient_models import SimEntity, SimEntityDefinition
+from hi.simulator.base_models import SimEntityDefinition
 from hi.simulator.simulator import Simulator
 
 from .transient_models import ZONEMINDER_SIM_ENTITY_DEFINITION_LIST
@@ -22,7 +22,4 @@ class ZoneMinderSimulator( Simulator ):
 
     def set_sim_state( self, device_id : int, value : str ):
         raise NotImplementedError('Subclasses must override this method.')
-
-    def validate_new_sim_entity( self, sim_entity : SimEntity ):
-        return
     

@@ -9,10 +9,12 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.module_utils import import_module_safe
 from hi.apps.common.singleton import Singleton
 
+from .base_models import SimEntityDefinition, SimEntityFields
+from .exceptions import SimEntityValidationError
 from .models import DbSimEntity, SimProfile
+from .sim_entity import SimEntity
 from .simulator import Simulator
 from .simulator_data import SimulatorData
-from .transient_models import SimEntity, SimEntityDefinition
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +25,12 @@ class SimulatorManager( Singleton ):
     
     def __init_singleton__( self ):
         self._current_sim_profile = None
-        self._simulator_data_map : Dict[ str, SimulatorData ] = dict()
+        self._simulator_data_map : Dict[ str, SimulatorData ] = dict()  # Key = simulator.id
         self._data_lock = Lock()
         return
 
-    def get_sim_profile_list(self) -> List[ SimProfile ]:
+    @property
+    def sim_profile_list(self) -> List[ SimProfile ]:
         return list( SimProfile.objects.all().order_by('name') )
 
     @property
@@ -45,7 +48,7 @@ class SimulatorManager( Singleton ):
             self._current_sim_profile = sim_profile
 
         if should_reload_instances:
-            self._reload_sim_entity_instances()            
+            self._load_sim_entity_instances()            
         return
         
     def get_simulator( self, simulator_id : str ) -> Simulator:
@@ -60,66 +63,74 @@ class SimulatorManager( Singleton ):
         return simulator_data_list
 
     def add_sim_entity( self,
-                        simulator   : Simulator,
-                        sim_entity  : SimEntity ):
-        
-        # Before saving to the database, we add to the simulator instance
-        # so that it can check for any simulator-specific errors and raise
-        # a SimEntityValidationError if needed.  That means we also must
-        # remove it from the simulatior instance should something go wrong
-        # after that while saving it to the database.
-        #
-        simulator.add_sim_entity( sim_entity = sim_entity )
+                        simulator              : Simulator,
+                        sim_entity_definition  : SimEntityDefinition,
+                        sim_entity_fields      : SimEntityFields ):
         
         self._data_lock.acquire()
         try:
             simulator_data = self._simulator_data_map.get( simulator.id )
             if not simulator_data:
                 raise KeyError( f'No data found for simulator id = {simulator.id}' )
-                
-            sim_entity_definition = SimEntityDefinition( sim_entity_class = sim_entity.__class__ )
-
-            db_sim_entity = DbSimEntity.objects.create(
+            
+            db_sim_entity = DbSimEntity(
                 sim_profile = self.current_sim_profile,
                 simulator_id = simulator.id,
-                entity_class_id = sim_entity_definition.class_id,
-                entity_type = sim_entity.entity_type,
-                editable_fields = sim_entity.to_json_dict()
+                entity_fields_class_id = sim_entity_definition.class_id,
+                entity_type = sim_entity_definition.entity_type,
+                sim_entity_fields_json = sim_entity_fields.to_json_dict(),
             )
 
-            simulator_data.sim_entity_instance_map[sim_entity] = db_sim_entity
-
-        except Exception as e:
-            simulator.remove_sim_entity( sim_entity = sim_entity )
-            raise e
+            sim_entity = SimEntity(
+                db_sim_entity = db_sim_entity,
+                sim_entity_definition = sim_entity_definition,
+            )
+            simulator.validate_sim_entity( sim_entity = sim_entity )
+            db_sim_entity.save()
+            simulator.add_sim_entity( sim_entity = sim_entity )
+            
         finally:
             self._data_lock.release()
                         
-    def update_sim_entity( self,
-                           simulator      : Simulator,
-                           db_sim_entity  : DbSimEntity,
-                           sim_entity     : SimEntity ):
-        simulator.update_sim_entity( sim_entity = sim_entity )
+    def update_sim_entity_fields( self,
+                                  simulator          : Simulator,
+                                  sim_entity_definition  : SimEntityDefinition,
+                                  db_sim_entity      : DbSimEntity,
+                                  sim_entity_fields  : SimEntityFields ):
 
         self._data_lock.acquire()
         try:
             simulator_data = self._simulator_data_map.get( simulator.id )
             if not simulator_data:
                 raise KeyError( f'No data found for simulator id = {simulator.id}' )
-            db_sim_entity.editable_fields = sim_entity.to_json_dict()
+
+            db_sim_entity.sim_entity_fields_json = sim_entity_fields.to_json_dict()
+
+            sim_entity = SimEntity(
+                db_sim_entity = db_sim_entity,
+                sim_entity_definition = sim_entity_definition,
+            )
+            simulator.validate_sim_entity( sim_entity = sim_entity )
             db_sim_entity.save()
+            simulator.add_sim_entity( sim_entity = sim_entity )
 
         finally:
             self._data_lock.release()
         
+    def delete_sim_entity( self,
+                           simulator      : Simulator,
+                           db_sim_entity  : DbSimEntity ):
+        simulator.remove_sim_entity_by_id( sim_entity_id = db_sim_entity.id )
+        db_sim_entity.delete()
+        return
+    
     async def initialize(self) -> None:
         self._data_lock.acquire()
         try:
             await sync_to_async( self._initialize_sim_profile )()
             self._discover_defined_simulators()
-            self._fetch_sim_entity_classes()
+            self._fetch_sim_entity_definitions()
             await sync_to_async( self._load_sim_entity_instances )()
-            self._initialize_simulators()
 
         finally:
             self._data_lock.release()
@@ -169,17 +180,17 @@ class SimulatorManager( Singleton ):
 
         return
     
-    def _fetch_sim_entity_classes(self):
+    def _fetch_sim_entity_definitions(self):
         """
         Query simulators to get the defined subclasses of SimEntity and
         populates the SimulatorData for each simulator.
         """
-        logger.debug("Fetching simulator entity classes ...")
+        logger.debug("Fetching simulator entity definitions ...")
 
         for simulator_id, simulator_data in self._simulator_data_map.items():
             simulator = simulator_data.simulator
             sim_entity_definition_list = simulator.sim_entity_definition_list
-            logger.debug( f'Adding {len(sim_entity_definition_list)} entities to simulator {simulator_id}.' )
+            logger.debug( f'Adding {len(sim_entity_definition_list)} entity definitions to {simulator_id}.' )
             for sim_entity_definition in sim_entity_definition_list:
                 class_id = sim_entity_definition.class_id
                 simulator_data.sim_entity_definition_map[class_id] = sim_entity_definition
@@ -188,8 +199,13 @@ class SimulatorManager( Singleton ):
         return
 
     def _load_sim_entity_instances(self):
-        logger.debug("Loading saved simulator entities ...")
+
+        logger.debug("Initializing simulators ...")
+        for simulator_id, simulator_data in self._simulator_data_map.items():
+            simulator_data.simulator.initialize()
+            continue
         
+        logger.debug("Loading saved simulator entities ...")
         db_sim_entity_queryset = DbSimEntity.objects.filter(
             sim_profile = self.current_sim_profile,
         )
@@ -201,36 +217,20 @@ class SimulatorManager( Singleton ):
                 continue
             
             sim_entity_definition_map = simulator_data.sim_entity_definition_map
-            class_id = db_sim_entity.entity_class_id
+            class_id = db_sim_entity.entity_fields_class_id
             sim_entity_definition = sim_entity_definition_map.get( class_id )
             if not sim_entity_definition:
                 logger.warning( f'Entity class "{class_id}" not found for simulator "{simulator_id}"' )
                 continue
-            
-            SimEntitySubclass = sim_entity_definition.sim_entity_class
-            sim_entity = SimEntitySubclass.from_json_dict( db_sim_entity.editable_fields )
-            simulator_data.sim_entity_instance_map[sim_entity] = db_sim_entity
-            continue
-        return
-    
-    def _initialize_simulators(self):
-        
-        for simulator_id, simulator_data in self._simulator_data_map.items():
-            sim_entity_list = list( simulator_data.sim_entity_instance_map.keys() )
-            logger.debug( f'Initializing simulator {simulator_id} with {len(sim_entity_list)} entities.' )
-            simulator_data.simulator.initialize( sim_entity_list = sim_entity_list )
-            continue
-        return
 
-    def _reload_sim_entity_instances(self):
-        self._clear_sim_entity_instances()
-        self._load_sim_entity_instances()
-        self._initialize_simulators()
-        return
-    
-    def _clear_sim_entity_instances(self):
-        for simulator_id, simulator_data in self._simulator_data_map.items():
-            simulator_data.sim_entity_instance_map = dict()
+            sim_entity = SimEntity(
+                db_sim_entity = db_sim_entity,
+                sim_entity_definition = sim_entity_definition,
+            )
+            try:
+                simulator_data.simulator.add_sim_entity( sim_entity = sim_entity )
+            except SimEntityValidationError as ve:
+                logger.exception( 'Could not add DB simulator entity.', ve )
             continue
+        
         return
-    

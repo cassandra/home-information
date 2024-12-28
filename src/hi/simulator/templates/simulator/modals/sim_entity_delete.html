@@ -1,7 +1,7 @@
 {% extends "modals/action_with_cancel.html" %}
 
 {% block preamble %}
-<form action="{% url 'simulator_entity_delete' sim_entity_id=db_sim_entity.id %}" method="post"
+<form action="{% url 'simulator_entity_delete' sim_entity_id=sim_entity.id %}" method="post"
       class="form" data-async="modal">
   {% csrf_token %}
 {% endblock %}

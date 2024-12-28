@@ -44,8 +44,8 @@ class DbSimEntity(models.Model):
         max_length = 64,
         null = False, blank = False,
     )
-    entity_class_id = models.CharField(
-        'Entity Class Id',
+    entity_fields_class_id = models.CharField(
+        'Entity Fields Class Id',
         max_length = 255,
         null = False, blank = False,
     )
@@ -54,8 +54,8 @@ class DbSimEntity(models.Model):
         max_length = 32,
         null = False, blank = False,
     )    
-    editable_fields = models.JSONField(
-        'Editable Fields',
+    sim_entity_fields_json = models.JSONField(
+        'Sim Entity Fields',
         default = dict,
         null = False, blank = False,
     )

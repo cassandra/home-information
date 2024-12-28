@@ -1,14 +1,15 @@
-from typing import List, Type
+from typing import Dict, List
 
 from hi.apps.common.singleton import Singleton
 
-from .transient_models import SimEntity, SimEntityDefinition
+from .base_models import SimEntityDefinition
+from .sim_entity import SimEntity
 
 
 class Simulator( Singleton ):
 
     def __init_singleton__( self ):
-        self._sim_entity_list = list()
+        self._sim_entity_map : Dict[ id, SimEntity ] = dict()
         return
     
     @property
@@ -27,43 +28,39 @@ class Simulator( Singleton ):
         of entities that can be define for the simulator.
         """
         raise NotImplementedError('Subclasses must override this method.')        
-    
-    def validate_new_sim_entity( self, sim_entity : SimEntity ):
-        """
-        Called before adding or updating a SimEntity to allow simulator to do
-        custom validation checks before add/edit/save. Should raise
-        SimEntityValidationError if there is any validation issue.
-        """
-        raise NotImplementedError('Subclasses must override this method.')        
-        
+
     @property
     def sim_entities(self) -> List[ SimEntity ]:
-        return self._sim_entity_list
+        sim_entity_list = [ x for x in self._sim_entity_map.values() ]
+        sim_entity_list.sort( key = lambda item : item.name )
+        return sim_entity_list
 
-    def initialize( self, sim_entity_list : List[ SimEntity ] ):
+    def initialize( self ):
         """
         The SimulatorManager stores, hydrates and defines the set of existing
         SimEntity instances a simulator will use.  This initialization will
         occur at start up and if/when the simulation profile changes
         (requiring a new list of SimEntity instances).
         """
-        self._sim_entity_list = sim_entity_list
+        self._sim_entity_map = dict()
         return
     
-    def set_sim_state( self, device_id : int, value : str ):
-        raise NotImplementedError('Subclasses must override this method.')
+    def validate_sim_entity( self, sim_entity : SimEntity ):
+        """
+        Subclasses should override this if there are additional validation
+        checks needed before adding or updating a SimEntity. This is called
+        before persisting the data so can raise SimEntityValidationError if
+        there are any validation issue.
+        """
+        return
         
     def add_sim_entity( self, sim_entity : SimEntity ):
-        self.validate_new_sim_entity( sim_entity = sim_entity )
-        self._sim_entity_list.append( sim_entity )    
+        previous_sim_entity = self._sim_entity_map.get( sim_entity.id )
+        if previous_sim_entity:
+            sim_entity.copy_state_values( previous_sim_entity )
+        self._sim_entity_map[sim_entity.id] = sim_entity
         return
-    
-    def update_sim_entity( self, sim_entity : SimEntity ):
-        raise NotImplementedError('Need to work out who owns managing the data: SimulatorManager or Simulator.')
-    
-    def remove_sim_entity( self, sim_entity : SimEntity ):
-        try:
-            self._sim_entity_list.remove(sim_entity)
-        except ValueError:
-            pass
+
+    def remove_sim_entity_by_id( self, sim_entity_id : int ):
+        del self._sim_entity_map[sim_entity_id]
         return

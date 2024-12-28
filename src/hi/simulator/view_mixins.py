@@ -1,4 +1,4 @@
-from typing import List, Type
+from typing import List
 
 from django.core.exceptions import BadRequest
 from django.http import Http404, HttpRequest
@@ -6,7 +6,7 @@ from django.http import Http404, HttpRequest
 from .models import DbSimEntity, SimProfile
 from .simulator import Simulator
 from .simulator_manager import SimulatorManager
-from .transient_models import SimEntity, SimEntityDefinition
+from .base_models import SimEntityDefinition
 
 
 class SimulatorViewMixin:

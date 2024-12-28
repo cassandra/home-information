@@ -1,7 +1,7 @@
-from typing import List, Type
+from typing import List
 
 from hi.simulator.simulator import Simulator
-from hi.simulator.transient_models import SimEntity, SimEntityDefinition
+from hi.simulator.base_models import SimEntityDefinition
 
 from .transient_models import HASS_SIM_ENTITY_DEFINITION_LIST
 
@@ -22,9 +22,5 @@ class HassSimulator( Simulator ):
 
     def set_sim_state( self, device_id : int, value : str ):
         raise NotImplementedError('Subclasses must override this method.')
-
-    def validate_new_sim_entity( self, sim_entity : SimEntity ):
-        # TODO: Ensure no duplicate Insteon addresses
-        return
 
     

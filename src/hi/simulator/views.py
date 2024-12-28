@@ -9,6 +9,7 @@ from .exceptions import SimEntityValidationError
 from . import forms
 from .models import DbSimEntity
 from .simulator_manager import SimulatorManager
+from .sim_entity import SimEntity
 from .view_mixins import SimulatorViewMixin
 
 
@@ -16,7 +17,7 @@ class HomeView( View, SimulatorViewMixin ):
 
     def get(self, request, *args, **kwargs):
         simulator_manager = SimulatorManager()
-        sim_profile_list = simulator_manager.get_sim_profile_list()
+        sim_profile_list = simulator_manager.sim_profile_list
         current_sim_profile = simulator_manager.current_sim_profile
         simulator_data_list = simulator_manager.get_simulator_data_list()
         current_simulator = self.get_current_simulator(
@@ -124,19 +125,19 @@ class SimEntityAddView( View, SimulatorViewMixin ):
     def get( self, request, *args, **kwargs ):
         simulator = self.get_simulator( request, *args, **kwargs)
         sim_entity_definition = self.get_entity_definition( simulator, request, *args, **kwargs )
-        sim_entity_form = forms.SimEntityForm( sim_entity_class = sim_entity_definition.sim_entity_class )
+        sim_entity_fields_form = forms.SimEntityFieldsForm( sim_entity_definition.sim_entity_fields_class )
         context = {
             'simulator': simulator,
             'sim_entity_definition': sim_entity_definition,
-            'sim_entity_form': sim_entity_form,
+            'sim_entity_fields_form': sim_entity_fields_form,
         }
         return render( request, self.MODAL_TEMPLATE_NAME, context )
 
     def post( self, request, *args, **kwargs ):
         simulator = self.get_simulator( request, *args, **kwargs)
         sim_entity_definition = self.get_entity_definition( simulator, request, *args, **kwargs )
-        sim_entity_form = forms.SimEntityForm(
-            sim_entity_definition.sim_entity_class, 
+        sim_entity_fields_form = forms.SimEntityFieldsForm(
+            sim_entity_definition.sim_entity_fields_class,
             request.POST,
         )
 
@@ -144,25 +145,26 @@ class SimEntityAddView( View, SimulatorViewMixin ):
             context = {
                 'simulator': simulator,
                 'sim_entity_definition': sim_entity_definition,
-                'sim_entity_form': sim_entity_form,
+                'sim_entity_fields_form': sim_entity_fields_form,
             }
             return render( request, self.MODAL_TEMPLATE_NAME, context )
         
-        if not sim_entity_form.is_valid():
+        if not sim_entity_fields_form.is_valid():
             return error_response()
 
-        cleaned_data = sim_entity_form.clean()
-        SimEntitySubclass = sim_entity_definition.sim_entity_class
-        sim_entity = SimEntitySubclass.from_form_data( form_data = cleaned_data )
+        cleaned_data = sim_entity_fields_form.clean()
+        SimEntityFieldsSubclass = sim_entity_definition.sim_entity_fields_class
+        sim_entity_fields = SimEntityFieldsSubclass.from_form_data( form_data = cleaned_data )
         try:
             SimulatorManager().add_sim_entity(
                 simulator = simulator,
-                sim_entity = sim_entity,
+                sim_entity_definition = sim_entity_definition,
+                sim_entity_fields = sim_entity_fields,
             )
             return antinode.refresh_response()
 
         except SimEntityValidationError as ve:
-            sim_entity_form.add_error( None, str(ve) )
+            sim_entity_fields_form.add_error( None, str(ve) )
             return error_response()
 
     
@@ -175,19 +177,20 @@ class SimEntityEditView( View, SimulatorViewMixin ):
         simulator = self.get_simulator_by_id( simulator_id = db_sim_entity.simulator_id )
         sim_entity_definition = self.get_entity_definition_by_id(
             simulator = simulator,
-            class_id = db_sim_entity.entity_class_id,
+            class_id = db_sim_entity.entity_fields_class_id,
         )
-        SimEntitySubclass = sim_entity_definition.sim_entity_class
-        sim_entity = SimEntitySubclass.from_json_dict( db_sim_entity.editable_fields )
-        sim_entity_form = forms.SimEntityForm(
-            sim_entity_class = sim_entity_definition.sim_entity_class,
-            initial = sim_entity.to_initial_form_values(),
+        sim_entity = SimEntity(
+            db_sim_entity = db_sim_entity,
+            sim_entity_definition = sim_entity_definition,
+        )
+        sim_entity_fields_form = forms.SimEntityFieldsForm(
+            sim_entity_fields_class = sim_entity_definition.sim_entity_fields_class,
+            initial = sim_entity.sim_entity_fields.to_initial_form_values(),
         )
         context = {
             'simulator': simulator,
             'db_sim_entity': db_sim_entity,
-            'sim_entity': sim_entity,
-            'sim_entity_form': sim_entity_form,
+            'sim_entity_fields_form': sim_entity_fields_form,
         }
         return render( request, self.MODAL_TEMPLATE_NAME, context )
 
@@ -196,10 +199,10 @@ class SimEntityEditView( View, SimulatorViewMixin ):
         simulator = self.get_simulator_by_id( simulator_id = db_sim_entity.simulator_id )
         sim_entity_definition = self.get_entity_definition_by_id(
             simulator = simulator,
-            class_id = db_sim_entity.entity_class_id,
+            class_id = db_sim_entity.entity_fields_class_id,
         )
-        sim_entity_form = forms.SimEntityForm(
-            sim_entity_definition.sim_entity_class, 
+        sim_entity_fields_form = forms.SimEntityFieldsForm(
+            sim_entity_definition.sim_entity_fields_class, 
             request.POST,
         )
 
@@ -207,26 +210,28 @@ class SimEntityEditView( View, SimulatorViewMixin ):
             context = {
                 'simulator': simulator,
                 'db_sim_entity': db_sim_entity,
-                'sim_entity_form': sim_entity_form,
+                'sim_entity_fields_form': sim_entity_fields_form,
             }
             return render( request, self.MODAL_TEMPLATE_NAME, context )
             
-        if not sim_entity_form.is_valid():
+        if not sim_entity_fields_form.is_valid():
             return error_response()
         
-        cleaned_data = sim_entity_form.clean()
-        SimEntitySubclass = sim_entity_definition.sim_entity_class
-        sim_entity = SimEntitySubclass.from_form_data( form_data = cleaned_data )
+        cleaned_data = sim_entity_fields_form.clean()
+        SimEntityFieldsSubclass = sim_entity_definition.sim_entity_fields_class
+        sim_entity_fields = SimEntityFieldsSubclass.from_form_data( form_data = cleaned_data )
+
         try:
-            SimulatorManager().update_sim_entity(
+            SimulatorManager().update_sim_entity_fields(
                 simulator = simulator,
+                sim_entity_definition= sim_entity_definition,
                 db_sim_entity = db_sim_entity,
-                sim_entity = sim_entity,
+                sim_entity_fields = sim_entity_fields,
             )
             return antinode.refresh_response()
         
         except SimEntityValidationError as ve:
-            sim_entity_form.add_error( None, str(ve) )
+            sim_entity_fields_form.add_error( None, str(ve) )
             return error_response()
     
     
@@ -239,19 +244,23 @@ class SimEntityDeleteView( View, SimulatorViewMixin ):
         simulator = self.get_simulator_by_id( simulator_id = db_sim_entity.simulator_id )
         sim_entity_definition = self.get_entity_definition_by_id(
             simulator = simulator,
-            class_id = db_sim_entity.entity_class_id,
+            class_id = db_sim_entity.entity_fields_class_id,
         )
-        SimEntitySubclass = sim_entity_definition.sim_entity_class
-        sim_entity = SimEntitySubclass.from_json_dict( db_sim_entity.editable_fields )
+        sim_entity = SimEntity(
+            db_sim_entity = db_sim_entity,
+            sim_entity_definition = sim_entity_definition,
+        )
         context = {
-            'db_sim_entity': db_sim_entity,
             'sim_entity': sim_entity,
+            'sim_entity_field': sim_entity.sim_entity_fields,
         }
         return render( request, self.MODAL_TEMPLATE_NAME, context )
     
     def post( self, request, *args, **kwargs ):
         db_sim_entity = self.get_db_sim_entity( request, *args, **kwargs )
+        simulator = self.get_simulator_by_id( simulator_id = db_sim_entity.simulator_id )
         SimulatorManager().delete_sim_entity(
+            simulator = simulator,
             db_sim_entity = db_sim_entity,
         )
         return antinode.refresh_response()

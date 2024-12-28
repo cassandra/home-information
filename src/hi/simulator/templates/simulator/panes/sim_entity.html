@@ -10,7 +10,7 @@
       </div>
       <div class="col-8">
 	CONTROL : {{ sim_state.entity_state_type }}
-	VALUE : {{ sim_state.state_value }}
+	VALUE : {{ sim_state.value }}
       </div>
     </div>
     {% empty %}
@@ -18,9 +18,9 @@
     {% endfor %}
   </div>
   <div class="col-2">
-    <a href="{% url 'simulator_entity_edit' sim_entity_id=db_sim_entity.id %}"
+    <a href="{% url 'simulator_entity_edit' sim_entity_id=sim_entity.id %}"
        class="btn btn-info" data-async="modal">EDIT</a>
-    <a href="{% url 'simulator_entity_delete' sim_entity_id=db_sim_entity.id %}"
+    <a href="{% url 'simulator_entity_delete' sim_entity_id=sim_entity.id %}"
        class="btn btn-danger" data-async="modal">X</a>
   </div>  
 </div>

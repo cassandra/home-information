@@ -1,16 +1,16 @@
-{% for hidden in sim_entity_form.hidden_fields %}
+{% for hidden in sim_entity_fields_form.hidden_fields %}
 {{ hidden }}
 {% endfor %}
 
-{% if sim_entity_form.non_field_errors %}
+{% if sim_entity_fields_form.non_field_errors %}
 <div class="non-field-errors">
-  {% for err in sim_entity_form.non_field_errors %}
+  {% for err in sim_entity_fields_form.non_field_errors %}
   <p class="form-error text-danger">ERROR: {{ err }}</p>
   {% endfor %}
 </div>
 {% endif %}
 
-{% for field in sim_entity_form %}
+{% for field in sim_entity_fields_form %}
 <div class="form-group">
   <label for="{{ field.id_for_label }}">{{ field.label }}</label>
   {{ field }}

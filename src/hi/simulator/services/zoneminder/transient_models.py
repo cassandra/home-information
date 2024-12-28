@@ -3,53 +3,31 @@ from datetime import datetime
 from typing import List
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.entity.enums import EntityType, EntityStateType, EntityStateValue
+from hi.apps.entity.enums import EntityType, EntityStateType
 
-from hi.simulator.transient_models import SimEntity, SimState, SimEntityDefinition
+from hi.simulator.base_models import SimEntityFields, SimState, SimEntityDefinition
+
+
+@dataclass( frozen = True )
+class ZmServerSimEntityFields( SimEntityFields ):
+    pass
 
 
 @dataclass
 class ZmServerRunState( SimState ):
 
-    name               : str              = 'ZoneMinder Run State'
+    sim_entity_fields  : ZmServerSimEntityFields
     entity_state_type  : EntityStateType  = EntityStateType.DISCRETE
-    state_value        : str              = 'Home'
+    value              : str              = 'Home'
+
+    @property
+    def name(self):
+        return 'ZoneMinder Run State'
 
     
 @dataclass( frozen = True )
-class ZmServerEntity( SimEntity ):
+class ZmMonitorSimEntityFields( SimEntityFields ):
 
-    name          : str         = 'ZoneMinder Server'
-
-    @property
-    def entity_type(self):
-        return EntityType.SERVICE
-
-    @property
-    def sim_state_list(self) -> List[ SimState ]:
-        return [ ZmServerRunState() ]
-    
-
-@dataclass
-class ZmMonitorFunctionState( SimState ):
-
-    name               : str              = 'Monitor Function'
-    entity_state_type  : EntityStateType  = EntityStateType.DISCRETE
-    state_value        : str              = 'Modect'
-
-    
-@dataclass
-class ZmMonitorMotionState( SimState ):
-
-    name               : str              = 'Camera Motion'
-    entity_state_type  : EntityStateType  = EntityStateType.MOVEMENT
-    state_value        : str              = EntityStateValue.IDLE
-    
-    
-@dataclass( frozen = True )
-class ZmMonitorEntity( SimEntity ):
-
-    name         : str
     monitor_id   : int         = None
     status       : str         = 'Connected'
     type         : str         = 'Remote'
@@ -62,18 +40,7 @@ class ZmMonitorEntity( SimEntity ):
     width        : str         = '1280'
     height       : str         = '800'
     orientation  : str         = 'ROTATE_0'
-    
-    @property
-    def entity_type(self):
-        return EntityType.MOTION_SENSOR
-    
-    @property
-    def sim_state_list(self) -> List[ SimState ]:
-        return [
-            ZmMonitorFunctionState(),
-            ZmMonitorMotionState(),
-        ]
-    
+
     def to_api_dict(self):
         return {
             'Monitor': {
@@ -182,6 +149,29 @@ class ZmMonitorEntity( SimEntity ):
                 'CaptureBandwidth': '159047',
             }
         }
+    
+    
+@dataclass
+class ZmMonitorFunctionState( SimState ):
+
+    sim_entity_fields  : ZmMonitorSimEntityFields
+    entity_state_type  : EntityStateType  = EntityStateType.DISCRETE
+    value              : str              = 'Modect'
+
+    @property
+    def name(self):
+        return 'Monitor Function'
+
+    
+@dataclass
+class ZmMonitorMotionState( SimState ):
+
+    sim_entity_fields  : ZmMonitorSimEntityFields
+    entity_state_type  : EntityStateType  = EntityStateType.MOVEMENT
+
+    @property
+    def name(self):
+        return 'Camera Motion'
 
     
 @dataclass
@@ -220,7 +210,7 @@ class ZmState:
 @dataclass
 class ZmEvent:
 
-    zm_monitor      : ZmMonitorEntity
+    zm_monitor      : ZmMonitorSimEntityFields
     event_id        : int
     start_datetime  : datetime
     end_datetime    : datetime
@@ -309,11 +299,20 @@ class ZmPagination:
 
 ZONEMINDER_SIM_ENTITY_DEFINITION_LIST = [
     SimEntityDefinition(
-        sim_entity_class = ZmMonitorEntity,
         class_label = 'Camera (monitor)',
+        entity_type = EntityType.MOTION_SENSOR,
+        sim_entity_fields_class = ZmMonitorSimEntityFields,
+        sim_state_class_list = [
+            ZmMonitorFunctionState,
+            ZmMonitorMotionState,
+        ],
     ),
     SimEntityDefinition(
-        sim_entity_class = ZmServerEntity,
         class_label = 'ZoneMinder Service',
+        entity_type = EntityType.SERVICE,
+        sim_entity_fields_class = ZmServerSimEntityFields,
+        sim_state_class_list = [
+            ZmServerRunState,
+        ]
     ),
 ]
