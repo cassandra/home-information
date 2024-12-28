@@ -19,7 +19,7 @@ class SimProfileForm( forms.ModelForm ):
 
 class SimEntityFieldsForm( forms.Form ):
     """
-    Dynamically build a Django form from a subclass of SimEntity.
+    Dynamically build a Django form from a subclass of SimEntityFields.
     """
 
     DATA_TYPE_TO_FORM_FIELD = {

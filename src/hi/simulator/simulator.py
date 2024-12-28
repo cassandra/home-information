@@ -7,9 +7,17 @@ from .sim_entity import SimEntity
 
 
 class Simulator( Singleton ):
-
+    """
+    The class that each simulator should subclass and include in a
+    simulator.py file in its app directory.  This is how the
+    SimulatorManager discovers the types of simulator entities and states
+    provided by the simulator.  This is also used by the simulators to get
+    the current satte of which entities, states and state values currently
+    are defined.
+    """
+    
     def __init_singleton__( self ):
-        self._sim_entity_map : Dict[ id, SimEntity ] = dict()
+        self._initialize()
         return
     
     @property
@@ -42,7 +50,7 @@ class Simulator( Singleton ):
         occur at start up and if/when the simulation profile changes
         (requiring a new list of SimEntity instances).
         """
-        self._sim_entity_map = dict()
+        self._sim_entity_map : Dict[ id, SimEntity ] = dict()
         return
     
     def validate_sim_entity( self, sim_entity : SimEntity ):

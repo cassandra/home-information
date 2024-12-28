@@ -78,6 +78,8 @@ class SimState:
     more SimState subclasses. SimState classes are provided via the
     SimEntityDefinition and will be initialized with the containing
     entities fields and values by the SimulatorManager.
+
+    SimState definitions and instances are not persisted in the database.
     """
     sim_entity_fields  : SimEntityFields  # Will be provided by SimulatorManager when creating instances.
     entity_state_type  : EntityStateType  # Subclasses should provide a default value for this.

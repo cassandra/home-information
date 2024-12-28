@@ -9,9 +9,9 @@ from .base_models import SimEntityDefinition, SimEntityFields, SimState
 class SimEntity:
     """
     These are the run-time instances created and managed by the
-    SimulatorManager.  They are the user-defined simulator entities chosen
-    from the provided SimEntityDefinition instances to define the run-time
-    configuration of the simulator.
+    SimulatorManager and Simulator classes.  These are the simulator
+    entities chosen by the user from the provided SimEntityDefinition
+    instances to define the run-time configuration of the simulator.
     """
     db_sim_entity          : DbSimEntity
     sim_entity_definition  : SimEntityDefinition
