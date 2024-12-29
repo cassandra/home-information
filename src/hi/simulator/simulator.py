@@ -53,7 +53,7 @@ class Simulator( Singleton ):
         self._sim_entity_map : Dict[ id, SimEntity ] = dict()
         return
     
-    def validate_sim_entity_fields( self, sim_entity_fields : SimEntityFields ):
+    def validate_new_sim_entity_fields( self, new_sim_entity_fields : SimEntityFields ):
         """
         Subclasses should override this if there are additional validation
         checks needed before adding a SimEntity. This is called
@@ -62,7 +62,7 @@ class Simulator( Singleton ):
         """
         return
         
-    def validate_sim_entity( self, sim_entity : SimEntity ):
+    def validate_updated_sim_entity( self, updated_sim_entity : SimEntity ):
         """
         Subclasses should override this if there are additional validation
         checks needed before updating a SimEntity. This is called

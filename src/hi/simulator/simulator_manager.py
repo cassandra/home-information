@@ -81,7 +81,7 @@ class SimulatorManager( Singleton ):
                 sim_entity_fields_json = sim_entity_fields.to_json_dict(),
             )
 
-            simulator.validate_sim_entity_fields( sim_entity_fields = sim_entity_fields )
+            simulator.validate_new_sim_entity_fields( new_sim_entity_fields = sim_entity_fields )
             db_sim_entity.save()
             sim_entity = SimEntity(
                 db_sim_entity = db_sim_entity,
@@ -110,7 +110,7 @@ class SimulatorManager( Singleton ):
                 db_sim_entity = db_sim_entity,
                 sim_entity_definition = sim_entity_definition,
             )
-            simulator.validate_sim_entity( sim_entity = sim_entity )
+            simulator.validate_updated_sim_entity( updated_sim_entity = sim_entity )
             db_sim_entity.save()
             simulator.add_sim_entity( sim_entity = sim_entity )
 

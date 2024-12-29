@@ -10,7 +10,7 @@ from hi.simulator.enums import SimEntityType, SimStateType
 
 @dataclass( frozen = True )
 class ZmServerSimEntityFields( SimEntityFields ):
-    pass
+    name  : str  = 'ZM Server'
 
 
 @dataclass
