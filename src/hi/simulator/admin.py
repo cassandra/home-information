@@ -12,7 +12,7 @@ class DbSimEntityAdmin(admin.ModelAdmin):
         'sim_profile',
         'simulator_id',
         'entity_fields_class_id',
-        'entity_type_str',
+        'sim_entity_type_str',
         'sim_entity_fields_json',
         'updated_datetime',
         'created_datetime',

@@ -3,12 +3,12 @@
     {% for simulator_data in simulator_data_list %}
     {% with simulator_data.simulator as simulator %}
     <li class="nav-item">
-      <a id="hi-simulator-tab-{{ simulator_data.simulator.id }}" role="tab"
+      <a id="hi-simulator-tab-{{ simulator.id }}" role="tab"
 	 class="nav-link {% if simulator.id == current_simulator.id %}active{% endif %}"
 	 data-toggle="tab" 
-	 href="#hi-simulator-content-{{ simulator.id }}" 
+	 href="#simulator-{{ simulator.id }}" 
 	 role="tab" 
-	 aria-controls="hi-simulator-content-{{ simulator.id }}" 
+	 aria-controls="simulator-{{ simulator.id }}" 
 	 aria-selected="{% if simulator.id == current_simulator.id %}true{% else %}false{% endif %}">
 	{{ simulator.label }}</a>
     </li>
@@ -16,10 +16,10 @@
     {% endfor %}
   </ul>
 
-  <div id="hi-simulator-tab-content" class="tab-content">
+  <div id="hi-simulator-content" class="tab-content">
     {% for simulator_data in simulator_data_list %}
     {% with simulator_data.simulator as simulator %}
-    <div id="hi-simulator-content-{{ simulator.id }}" 
+    <div id="simulator-{{ simulator.id }}" 
 	 class="tab-pane fade {% if simulator.id == current_simulator.id %}show active{% endif %}" 
 	 role="tabpanel" 
 	 aria-labelledby="hi-simulator-tab-{{ simulator.id }}">
@@ -58,3 +58,21 @@
     {% endfor %}
   </div>
 </div>
+
+<script>
+  $(document).ready(function () {
+   $('a[data-toggle="tab"]').on('shown.bs.tab', function (event) {
+     const tabId = $(event.target).attr('href');
+     history.replaceState(null, null, tabId);
+     console.log('Tab activated:', tabId);
+   });
+
+   const hash = window.location.hash;
+   if ( hash ) {
+     const targetTab = document.querySelector(`.nav-link[href="${hash}"]`);
+     if ( targetTab ) {
+       new bootstrap.Tab( targetTab ).show();
+     }
+   }
+ });
+</script>

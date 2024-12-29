@@ -2,7 +2,7 @@ from typing import Dict, List
 
 from hi.apps.common.singleton import Singleton
 
-from .base_models import SimEntityDefinition
+from .base_models import SimEntityDefinition, SimEntityFields, SimState
 from .sim_entity import SimEntity
 
 
@@ -17,7 +17,7 @@ class Simulator( Singleton ):
     """
     
     def __init_singleton__( self ):
-        self._initialize()
+        self.initialize()
         return
     
     @property
@@ -53,10 +53,19 @@ class Simulator( Singleton ):
         self._sim_entity_map : Dict[ id, SimEntity ] = dict()
         return
     
+    def validate_sim_entity_fields( self, sim_entity_fields : SimEntityFields ):
+        """
+        Subclasses should override this if there are additional validation
+        checks needed before adding a SimEntity. This is called
+        before persisting the data so can raise SimEntityValidationError if
+        there are any validation issue.
+        """
+        return
+        
     def validate_sim_entity( self, sim_entity : SimEntity ):
         """
         Subclasses should override this if there are additional validation
-        checks needed before adding or updating a SimEntity. This is called
+        checks needed before updating a SimEntity. This is called
         before persisting the data so can raise SimEntityValidationError if
         there are any validation issue.
         """
@@ -72,3 +81,17 @@ class Simulator( Singleton ):
     def remove_sim_entity_by_id( self, sim_entity_id : int ):
         del self._sim_entity_map[sim_entity_id]
         return
+
+    def set_sim_state( self,
+                       sim_entity_id  : int,
+                       sim_state_idx  : int,
+                       value_str      : str ) -> SimState:
+        sim_entity = self._sim_entity_map[sim_entity_id]
+        return sim_entity.set_sim_state(
+            sim_state_idx = sim_state_idx,
+            value_str = value_str,
+        )
+
+
+        
+    

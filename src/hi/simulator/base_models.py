@@ -1,8 +1,8 @@
 from dataclasses import dataclass, fields, MISSING
 from datetime import datetime
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List, Tuple, Type
 
-from hi.apps.entity.enums import EntityStateType, EntityType
+from .enums import SimEntityType, SimStateType
 
 
 @dataclass( frozen = True )
@@ -18,7 +18,9 @@ class SimEntityFields:
     
     @classmethod
     def class_id(cls) -> str:
-        return f'{cls.__module__}.{cls.__qualname__}'
+        dotted_path = f'{cls.__module__}.{cls.__qualname__}'
+        parts = dotted_path.split('.')
+        return '.'.join( reversed( parts ))
     
     def to_json_dict(self) -> Dict[ str, Any ]:
         """
@@ -81,14 +83,42 @@ class SimState:
 
     SimState definitions and instances are not persisted in the database.
     """
-    sim_entity_fields  : SimEntityFields  # Will be provided by SimulatorManager when creating instances.
-    entity_state_type  : EntityStateType  # Subclasses should provide a default value for this.
-    value_range        : str                = None  # Subclasses can override to provide value range hints
-    value              : Any                = None  # Subclasses can override to provide a default value
+
+    # These fields are provided by SimulatorManager when creating instances.
+    simulator_id       : str
+    sim_entity_id      : int
+    sim_state_idx      : int
+    sim_entity_fields  : SimEntityFields
+
+    # Subclasses must provide a default value for these.    
+    sim_state_type     : SimStateType
+
+    # Subclasses may provide a default value for this.    
+    value              : Any              = None
 
     @property
     def name(self):
         return self.sim_entity_fields.name
+
+    def set_value_from_string( self, value_str : str ):
+        """ Subclasses should override this is the value is not a string and needs conversion. """
+        self.value = value_str
+        return
+    
+    @property
+    def min_value(self) -> Any:
+        """ Subclasses can override this to define the minimum valid value """
+        return None
+    
+    @property
+    def max_value(self) -> Any:
+        """ Subclasses can override this to define the maximum valid value """
+        return None
+    
+    @property
+    def choices(self) -> List[ Tuple[ str, str ]]:
+        """ Subclasses using SimStateType.DISCRETE should override this to provide the valid values. """
+        return list()
     
 
 @dataclass
@@ -101,7 +131,7 @@ class SimEntityDefinition:
     """
     
     class_label              : str
-    entity_type              : EntityType
+    sim_entity_type          : SimEntityType
     sim_entity_fields_class  : Type[ SimEntityFields ]
     sim_state_class_list     : List[ Type[ SimState ]]
     

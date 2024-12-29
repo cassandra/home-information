@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.timezone import now
 
-from hi.apps.entity.enums import EntityType
+from .enums import SimEntityType
 
 
 class SimProfile(models.Model):
@@ -49,13 +49,13 @@ class DbSimEntity(models.Model):
         max_length = 255,
         null = False, blank = False,
     )
-    entity_type_str = models.CharField(
+    sim_entity_type_str = models.CharField(
         'Entity Type',
         max_length = 32,
         null = False, blank = False,
     )    
     sim_entity_fields_json = models.JSONField(
-        'Sim Entity Fields',
+        'Entity Fields',
         default = dict,
         null = False, blank = False,
     )
@@ -74,10 +74,10 @@ class DbSimEntity(models.Model):
         verbose_name_plural = 'Simulator Entities'
 
     @property
-    def entity_type(self) -> EntityType:
-        return EntityType.from_name_safe( self.entity_type_str )
+    def sim_entity_type(self) -> SimEntityType:
+        return SimEntityType.from_name_safe( self.sim_entity_type_str )
 
-    @entity_type.setter
-    def entity_type( self, entity_type : EntityType ):
-        self.entity_type_str = str(entity_type)
+    @sim_entity_type.setter
+    def sim_entity_type( self, sim_entity_type : SimEntityType ):
+        self.sim_entity_type_str = str(sim_entity_type)
         return

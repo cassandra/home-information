@@ -40,6 +40,10 @@ urlpatterns = [
     re_path( r'^entity/delete/(?P<sim_entity_id>\d+)$',
              views.SimEntityDeleteView.as_view(),
              name = 'simulator_entity_delete' ),
+    
+    re_path( r'^entity/state/set/(?P<simulator_id>[\w_\-\.\:]+)/(?P<sim_entity_id>\d+)/(?P<sim_state_idx>\d+)$',
+             views.SimStateSetView.as_view(),
+             name = 'simulator_entity_state_set' ),
 ]
 
 

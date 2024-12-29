@@ -4,15 +4,7 @@
   </div>
   <div class="col-7">
     {% for sim_state in sim_entity.sim_state_list %}
-    <div class="row">
-      <div class="col-4">
-	{{ sim_state.name }}
-      </div>
-      <div class="col-8">
-	CONTROL : {{ sim_state.entity_state_type }}
-	VALUE : {{ sim_state.value }}
-      </div>
-    </div>
+    {% include "simulator/panes/sim_state.html" with sim_state=sim_state %}
     {% empty %}
     <div class="alert alert-warning">No simulation states defined.</div>
     {% endfor %}

@@ -1,7 +1,7 @@
 from django.http import JsonResponse
 from django.views.generic import View
 
-from hi.simulator.services.hass.transient_models import HassInsteonLightSwitch
+from hi.simulator.services.hass.sim_models import HassInsteonLightSwitch
 
 
 class StatesView( View ):

@@ -14,19 +14,18 @@
     <link rel="icon" type="image/png" href="{% static 'img/hi-icon-128x128.png' %}" sizes="128x128">  
     <link rel="icon" type="image/png" href="{% static 'img/hi-icon-196x196.png' %}" sizes="196x196">  
     <link href="{% static 'bootstrap/css/bootstrap.css' %}" rel="stylesheet" type="text/css" media="all" />
-    <link href="{% static 'css/main.css" rel="stylesheet' %}" type="text/css" media="all" />
+    <link href="{% static 'css/simulator.css' %}" rel="stylesheet" type="text/css" media="all" />
   </head>
   <body>
     <script type="text/javascript" src="{% static 'js/jquery-3.7.0.min.js' %}" charset="utf-8"></script>
     <script type="text/javascript" src="{% static 'js/cookie.js' %}" charset="utf-8"></script>
-    <script type="text/javascript" src="{% static 'js/antinode.js' %}" charset="utf-8"></script>
-    <script type="text/javascript" src="{% static 'js/autosize.min.js' %}" charset="utf-8"></script>
-    <script type="text/javascript" src="{% static 'js/main.js' %}" charset="utf-8"></script>
-
-    {% block content %}{% endblock %}
-
     <script type="text/javascript" src="{% static 'js/popper.min.js' %}" charset="utf-8"></script>
     <script type="text/javascript" src="{% static 'bootstrap/js/bootstrap.js' %}" charset="utf-8"></script>
+    <script type="text/javascript" src="{% static 'js/antinode.js' %}" charset="utf-8"></script>
+    <script type="text/javascript" src="{% static 'js/autosize.min.js' %}" charset="utf-8"></script>
+    <script type="text/javascript" src="{% static 'js/simulator.js' %}" charset="utf-8"></script>
+
+    {% block content %}{% endblock %}
     
   </body>
 </html>

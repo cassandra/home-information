@@ -7,7 +7,7 @@ from django.views.generic import View
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 
-from hi.simulator.services.zoneminder.transient_models import (
+from hi.simulator.services.zoneminder.sim_models import (
     ZmEvent,
     ZmMonitor,
     ZmPagination,

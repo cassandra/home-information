@@ -1,0 +1,9 @@
+<select name="value"
+	onchange-async="true" 
+	value="{{ sim_state.value }}" autocomplete="off">  
+  {% for value, label in sim_state.choices %}
+  <option value="{{ value }}" {% if sim_state.value == value %}selected="true"{% endif %}>
+    {{ label }} / {{sim_state.value }} /  {{  value }}
+  </option>
+  {% endfor %}
+</select>

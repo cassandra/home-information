@@ -264,3 +264,24 @@ class SimEntityDeleteView( View, SimulatorViewMixin ):
             db_sim_entity = db_sim_entity,
         )
         return antinode.refresh_response()
+
+
+class SimStateSetView( View, SimulatorViewMixin ):
+
+    TEMPLATE_NAME = 'simulator/panes/sim_state.html'
+
+    def post( self, request, *args, **kwargs ):
+        simulator = self.get_simulator( request, *args, **kwargs)
+        sim_entity_id = int( kwargs.get( 'sim_entity_id' ))
+        sim_state_idx = int( kwargs.get( 'sim_state_idx' ))
+        value_str = request.POST.get('value')
+        sim_state = simulator.set_sim_state(
+            sim_entity_id = sim_entity_id,
+            sim_state_idx = sim_state_idx,
+            value_str = value_str,
+        )
+        context = {
+            'sim_state': sim_state,
+        }
+        return render( request, self.TEMPLATE_NAME, context )
+        

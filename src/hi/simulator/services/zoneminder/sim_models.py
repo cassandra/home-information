@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List
+from typing import List, Tuple
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.entity.enums import EntityType, EntityStateType
 
 from hi.simulator.base_models import SimEntityFields, SimState, SimEntityDefinition
+from hi.simulator.enums import SimEntityType, SimStateType
 
 
 @dataclass( frozen = True )
@@ -17,12 +17,20 @@ class ZmServerSimEntityFields( SimEntityFields ):
 class ZmServerRunState( SimState ):
 
     sim_entity_fields  : ZmServerSimEntityFields
-    entity_state_type  : EntityStateType  = EntityStateType.DISCRETE
-    value              : str              = 'Home'
+    sim_state_type     : SimStateType             = SimStateType.DISCRETE
+    value              : str                      = 'Day'
 
     @property
     def name(self):
         return 'ZoneMinder Run State'
+
+    @property
+    def choices(self) -> List[ Tuple[ str, str ]]:
+        return [
+            ( 'default'    , 'default' ),
+            ( 'Day' , 'Day' ),
+            ( 'Night'  , 'Night' ),
+        ]
 
     
 @dataclass( frozen = True )
@@ -155,8 +163,19 @@ class ZmMonitorSimEntityFields( SimEntityFields ):
 class ZmMonitorFunctionState( SimState ):
 
     sim_entity_fields  : ZmMonitorSimEntityFields
-    entity_state_type  : EntityStateType  = EntityStateType.DISCRETE
-    value              : str              = 'Modect'
+    sim_state_type     : SimStateType              = SimStateType.DISCRETE
+    value              : str                       = 'Modect'
+
+    @property
+    def choices(self) -> List[ Tuple[ str, str ]]:
+        return [
+            ( 'None'    , 'None' ),
+            ( 'Monitor' , 'Monitor' ),
+            ( 'Modect'  , 'Modect' ),
+            ( 'Record'  , 'Record' ),
+            ( 'Mocord'  , 'Mocord' ),
+            ( 'Nodect'  , 'Nodect' ),
+        ]
 
     @property
     def name(self):
@@ -167,7 +186,7 @@ class ZmMonitorFunctionState( SimState ):
 class ZmMonitorMotionState( SimState ):
 
     sim_entity_fields  : ZmMonitorSimEntityFields
-    entity_state_type  : EntityStateType  = EntityStateType.MOVEMENT
+    sim_state_type     : SimStateType              = SimStateType.MOVEMENT
 
     @property
     def name(self):
@@ -205,6 +224,7 @@ class ZmState:
                 'IsActive': is_active_str,
             },
         }
+
     
     
 @dataclass
@@ -300,7 +320,7 @@ class ZmPagination:
 ZONEMINDER_SIM_ENTITY_DEFINITION_LIST = [
     SimEntityDefinition(
         class_label = 'Camera (monitor)',
-        entity_type = EntityType.MOTION_SENSOR,
+        sim_entity_type = SimEntityType.MOTION_SENSOR,
         sim_entity_fields_class = ZmMonitorSimEntityFields,
         sim_state_class_list = [
             ZmMonitorFunctionState,
@@ -309,7 +329,7 @@ ZONEMINDER_SIM_ENTITY_DEFINITION_LIST = [
     ),
     SimEntityDefinition(
         class_label = 'ZoneMinder Service',
-        entity_type = EntityType.SERVICE,
+        sim_entity_type = SimEntityType.SERVICE,
         sim_entity_fields_class = ZmServerSimEntityFields,
         sim_state_class_list = [
             ZmServerRunState,

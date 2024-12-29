@@ -2,12 +2,12 @@ import base64
 from dataclasses import dataclass
 import os
 import time
-from typing import Dict
+from typing import Dict, List, Tuple
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.entity.enums import EntityStateType, EntityType
 
 from hi.simulator.base_models import SimEntityFields, SimState, SimEntityDefinition
+from hi.simulator.enums import SimEntityType, SimStateType
 
 
 @dataclass
@@ -73,7 +73,7 @@ class HassInsteonSimEntityFields( SimEntityFields ):
 
 
 @dataclass
-class HassInsteonState( SimState ):
+class HassInsteonState( HassState ):
     """ Base class for all HAss Insteon device states """
     
     sim_entity_fields  : HassInsteonSimEntityFields
@@ -92,7 +92,11 @@ class HassInsteonLightSwitchFields( HassInsteonSimEntityFields ):
 class HassInsteonLightSwitchLightState( HassInsteonState ):
 
     sim_entity_fields  : HassInsteonLightSwitchFields
-    entity_state_type  : EntityStateType  = EntityStateType.ON_OFF
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Switch'
     
     @property
     def entity_id(self):
@@ -117,8 +121,12 @@ class HassInsteonLightSwitchLightState( HassInsteonState ):
 class HassInsteonLightSwitchColorState( HassInsteonState ):
 
     sim_entity_fields  : HassInsteonLightSwitchFields
-    entity_state_type  : EntityStateType  = EntityStateType.ON_OFF
-    
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Color'
+        
     @property
     def entity_id(self):
         return 'light.switchlinc_relay_%s' % self.insteon_address.replace( '.', '_' )
@@ -149,8 +157,12 @@ class HassInsteonMotionDetectorFields( HassInsteonSimEntityFields ):
 class HassInsteonMotionDetectorMotionState( HassInsteonState ):
 
     sim_entity_fields  : HassInsteonMotionDetectorFields
-    entity_state_type  : EntityStateType  = EntityStateType.MOVEMENT
+    sim_state_type     : SimStateType                     = SimStateType.MOVEMENT
     
+    @property
+    def name(self):
+        return f'{self.entity_name} Motion'
+        
     @property
     def entity_id(self):
         return 'binary_sensor.motion_sensor_%s_motion' % self.insteon_address.replace( '.', '_' )
@@ -159,7 +171,7 @@ class HassInsteonMotionDetectorMotionState( HassInsteonState ):
     def attributes(self) -> Dict[ str, str ]:
         return {
             "device_class": "motion",
-            'friendly_name': f'{self.entity_name} Motion',
+            'friendly_name': self.name,
             "insteon_address": self.insteon_address,
             "insteon_group": 1,
         }
@@ -174,8 +186,12 @@ class HassInsteonMotionDetectorMotionState( HassInsteonState ):
 class HassInsteonMotionDetectorLightState( HassInsteonState ):
 
     sim_entity_fields  : HassInsteonMotionDetectorFields
-    entity_state_type  : EntityStateType  = EntityStateType.ON_OFF
+    sim_state_type     : SimStateType                     = SimStateType.ON_OFF
     
+    @property
+    def name(self):
+        return f'{self.entity_name} Light'
+        
     @property
     def entity_id(self):
         return 'binary_sensor.motion_sensor_%s_light' % self.insteon_address.replace( '.', '_' )
@@ -184,7 +200,7 @@ class HassInsteonMotionDetectorLightState( HassInsteonState ):
     def attributes(self) -> Dict[ str, str ]:
         return {
             "device_class": "light",
-            'friendly_name': f'{self.entity_name} Light',
+            'friendly_name': self.name,
             "insteon_address": self.insteon_address,
             "insteon_group": 1,
         }
@@ -199,7 +215,19 @@ class HassInsteonMotionDetectorLightState( HassInsteonState ):
 class HassInsteonMotionDetectorBatteryState( HassInsteonState ):
 
     sim_entity_fields  : HassInsteonMotionDetectorFields
-    entity_state_type  : EntityStateType  = EntityStateType.DISCRETE
+    sim_state_type     : SimStateType                     = SimStateType.DISCRETE
+    value              : str                              = 'High'
+    
+    @property
+    def name(self):
+        return f'{self.entity_name} Battery'
+
+    @property
+    def choices(self) -> List[ Tuple[ str, str ]]:
+        return [
+            ( 'Low'    , 'Low' ),
+            ( 'High' , 'High' ),
+        ]
     
     @property
     def entity_id(self):
@@ -209,7 +237,7 @@ class HassInsteonMotionDetectorBatteryState( HassInsteonState ):
     def attributes(self) -> Dict[ str, str ]:
         return {
             "device_class": "battery",
-            'friendly_name': f'{self.entity_name} Battery',
+            'friendly_name': self.name,
             "insteon_address": self.insteon_address,
             "insteon_group": 1,
         }
@@ -229,7 +257,7 @@ class HassInsteonOpenCloseSensorFields( HassInsteonSimEntityFields ):
 class HassInsteonOpenCloseSensorState( HassInsteonState ):
 
     sim_entity_fields  : HassInsteonOpenCloseSensorFields
-    entity_state_type  : EntityStateType  = EntityStateType.OPEN_CLOSE
+    sim_state_type     : SimStateType                      = SimStateType.OPEN_CLOSE
     
     @property
     def entity_id(self):
@@ -254,7 +282,7 @@ class HassInsteonOpenCloseSensorState( HassInsteonState ):
 HASS_SIM_ENTITY_DEFINITION_LIST = [
     SimEntityDefinition(
         class_label = 'Insteon Light Switch',
-        entity_type = EntityType.LIGHT,
+        sim_entity_type = SimEntityType.LIGHT,
         sim_entity_fields_class = HassInsteonLightSwitchFields,
         sim_state_class_list = [
             HassInsteonLightSwitchLightState,
@@ -263,7 +291,7 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
     ),
     SimEntityDefinition(
         class_label = 'Insteon Motion Detector',
-        entity_type = EntityType.MOTION_SENSOR,
+        sim_entity_type = SimEntityType.MOTION_SENSOR,
         sim_entity_fields_class = HassInsteonMotionDetectorFields,
         sim_state_class_list = [
             HassInsteonMotionDetectorMotionState,
@@ -273,7 +301,7 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
     ),
     SimEntityDefinition(
         class_label = 'Insteon Open/Close Sensor',
-        entity_type = EntityType.OPEN_CLOSE_SENSOR,
+        sim_entity_type = SimEntityType.OPEN_CLOSE_SENSOR,
         sim_entity_fields_class = HassInsteonOpenCloseSensorFields,
         sim_state_class_list = [
             HassInsteonOpenCloseSensorState,
