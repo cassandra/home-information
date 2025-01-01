@@ -93,6 +93,7 @@ class HassInsteonLightSwitchLightState( HassInsteonState ):
 
     sim_entity_fields  : HassInsteonLightSwitchFields
     sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'light'
 
     @property
     def name(self):
@@ -122,6 +123,7 @@ class HassInsteonLightSwitchColorState( HassInsteonState ):
 
     sim_entity_fields  : HassInsteonLightSwitchFields
     sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'color'
 
     @property
     def name(self):
@@ -158,6 +160,7 @@ class HassInsteonMotionDetectorMotionState( HassInsteonState ):
 
     sim_entity_fields  : HassInsteonMotionDetectorFields
     sim_state_type     : SimStateType                     = SimStateType.MOVEMENT
+    sim_state_id       : str                              = 'motion'
     
     @property
     def name(self):
@@ -187,6 +190,7 @@ class HassInsteonMotionDetectorLightState( HassInsteonState ):
 
     sim_entity_fields  : HassInsteonMotionDetectorFields
     sim_state_type     : SimStateType                     = SimStateType.ON_OFF
+    sim_state_id       : str                              = 'light'
     
     @property
     def name(self):
@@ -216,6 +220,7 @@ class HassInsteonMotionDetectorBatteryState( HassInsteonState ):
 
     sim_entity_fields  : HassInsteonMotionDetectorFields
     sim_state_type     : SimStateType                     = SimStateType.DISCRETE
+    sim_state_id       : str                              = 'battery'
     value              : str                              = 'High'
     
     @property
@@ -258,6 +263,7 @@ class HassInsteonOpenCloseSensorState( HassInsteonState ):
 
     sim_entity_fields  : HassInsteonOpenCloseSensorFields
     sim_state_type     : SimStateType                      = SimStateType.OPEN_CLOSE
+    sim_state_id       : str                               = 'sensor'
     
     @property
     def entity_id(self):

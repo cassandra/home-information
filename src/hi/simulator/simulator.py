@@ -84,11 +84,11 @@ class Simulator( Singleton ):
 
     def set_sim_state( self,
                        sim_entity_id  : int,
-                       sim_state_idx  : int,
+                       sim_state_id   : str,
                        value_str      : str ) -> SimState:
         sim_entity = self._sim_entity_map[sim_entity_id]
         return sim_entity.set_sim_state(
-            sim_state_idx = sim_state_idx,
+            sim_state_id = sim_state_id,
             value_str = value_str,
         )
 

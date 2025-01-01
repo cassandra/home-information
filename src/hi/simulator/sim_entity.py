@@ -22,15 +22,14 @@ class SimEntity:
         self._sim_entity_fields = SimEntityFieldsSubclass.from_json_dict(
             self.db_sim_entity.sim_entity_fields_json,
         )
-        self._sim_state_list = list()
-        for sim_state_idx, SimStateSubclass in enumerate( self.sim_entity_definition.sim_state_class_list ):
+        self._sim_state_map = dict()
+        for SimStateSubclass in self.sim_entity_definition.sim_state_class_list:
             sim_state = SimStateSubclass(
                 simulator_id = self.db_sim_entity.simulator_id,
                 sim_entity_id = self.db_sim_entity.id,
-                sim_state_idx = sim_state_idx,
                 sim_entity_fields = self._sim_entity_fields,
             )
-            self._sim_state_list.append( sim_state )
+            self._sim_state_map[sim_state.sim_state_id] = sim_state
             continue
         return
         
@@ -49,19 +48,21 @@ class SimEntity:
 
     @property
     def sim_state_list(self) -> List[ SimState ]:
-        return self._sim_state_list
+        sim_state_list = list( self._sim_state_map.values() )
+        sim_state_list.sort( key = lambda item : item.name )
+        return sim_state_list
     
     def set_sim_state( self,
-                       sim_state_idx   : int,
+                       sim_state_id   : str,
                        value_str      : str ) -> SimState:
-        sim_state = self._sim_state_list[sim_state_idx]
+        sim_state = self._sim_state_map.get( sim_state_id )
         sim_state.set_value_from_string( value_str = value_str )
         return sim_state
     
     def copy_state_values( self, other_sim_entity : 'SimEntity' ):
-        for self_sim_state, other_sim_state in zip( self.sim_state_list,
-                                                    other_sim_entity.sim_state_list ):
-            assert self_sim_state.sim_state_idx == other_sim_state.sim_state_idx
-            self_sim_state.value = other_sim_state.value
+        for sim_state_id, self_sim_state in self._sim_state_map.items():
+            other_sim_state = other_sim_entity._sim_state_map.get( sim_state_id )
+            if other_sim_state:
+                self_sim_state.value = other_sim_state.value
             continue
         return

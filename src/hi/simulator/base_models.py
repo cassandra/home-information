@@ -87,11 +87,11 @@ class SimState:
     # These fields are provided by SimulatorManager when creating instances.
     simulator_id       : str
     sim_entity_id      : int
-    sim_state_idx      : int
     sim_entity_fields  : SimEntityFields
 
     # Subclasses must provide a default value for these.    
     sim_state_type     : SimStateType
+    sim_state_id       : str  # Only needs to be unique among all SimEntity's SimState instances
 
     # Subclasses may provide a default value for this.    
     value              : Any              = None

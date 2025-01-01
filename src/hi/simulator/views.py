@@ -273,11 +273,11 @@ class SimStateSetView( View, SimulatorViewMixin ):
     def post( self, request, *args, **kwargs ):
         simulator = self.get_simulator( request, *args, **kwargs)
         sim_entity_id = int( kwargs.get( 'sim_entity_id' ))
-        sim_state_idx = int( kwargs.get( 'sim_state_idx' ))
+        sim_state_id = kwargs.get( 'sim_state_id' )
         value_str = request.POST.get('value')
         sim_state = simulator.set_sim_state(
             sim_entity_id = sim_entity_id,
-            sim_state_idx = sim_state_idx,
+            sim_state_id = sim_state_id,
             value_str = value_str,
         )
         context = {

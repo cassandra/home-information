@@ -18,6 +18,7 @@ class ZmServerRunState( SimState ):
 
     sim_entity_fields  : ZmServerSimEntityFields
     sim_state_type     : SimStateType             = SimStateType.DISCRETE
+    sim_state_id       : str                      = 'runstate'
     value              : str                      = 'Day'
 
     @property
@@ -164,6 +165,7 @@ class ZmMonitorFunctionState( SimState ):
 
     sim_entity_fields  : ZmMonitorSimEntityFields
     sim_state_type     : SimStateType              = SimStateType.DISCRETE
+    sim_state_id       : str                       = 'function'
     value              : str                       = 'Modect'
 
     @property
@@ -187,6 +189,7 @@ class ZmMonitorMotionState( SimState ):
 
     sim_entity_fields  : ZmMonitorSimEntityFields
     sim_state_type     : SimStateType              = SimStateType.MOVEMENT
+    sim_state_id       : str                       = 'motion'
 
     @property
     def name(self):
