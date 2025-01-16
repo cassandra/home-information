@@ -6,6 +6,9 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 
 from hi.simulator.base_models import SimEntityFields, SimState, SimEntityDefinition
 from hi.simulator.enums import SimEntityType, SimStateType
+from hi.simulator.sim_entity import SimEntity
+
+from .enums import ZmMonitorFunction, ZmRunStateType
 
 
 @dataclass( frozen = True )
@@ -19,7 +22,7 @@ class ZmServerRunState( SimState ):
     sim_entity_fields  : ZmServerSimEntityFields
     sim_state_type     : SimStateType             = SimStateType.DISCRETE
     sim_state_id       : str                      = 'runstate'
-    value              : str                      = 'Day'
+    value              : str                      = ZmRunStateType.default_value()
 
     @property
     def name(self):
@@ -27,12 +30,56 @@ class ZmServerRunState( SimState ):
 
     @property
     def choices(self) -> List[ Tuple[ str, str ]]:
-        return [
-            ( 'default'    , 'default' ),
-            ( 'Day' , 'Day' ),
-            ( 'Night'  , 'Night' ),
-        ]
+        return ZmRunStateType.choices()
 
+    
+@dataclass( frozen = True )
+class ZmServerSimEntity:
+    """ Wrapper to encapsulate ZmServer-specific accessors """
+    
+    sim_entity    : SimEntity
+
+    @property
+    def run_state_value(self) -> str:
+        for sim_state in self.sim_entity.sim_state_list:
+            if isinstance( sim_state, ZmServerRunState ):
+                return sim_state.value
+            continue
+        raise ValueError( 'No run state found for ZM server entity.' )
+
+
+@dataclass
+class ZmSimRunStateDefinition:
+
+    monitor_id        : int
+    monitor_function  : str
+
+    def to_api_str(self):
+        return f'{self.monitor_id}:{self.monitor_function}:1'
+
+        
+@dataclass
+class ZmSimRunState:
+
+    zm_run_state_id  : int
+    name             : str
+    definition_list  : List[ ZmSimRunStateDefinition ]
+    is_active        : bool
+
+    def to_api_dict(self):
+        if self.is_active:
+            is_active_str = '1'
+        else:
+            is_active_str = '0'
+        return {
+            'State': {
+                'Id': str(self.zm_run_state_id),
+                'Name': self.name,
+                'Definition': ','.join([ x.to_api_str() for x in self.definition_list ]),
+                'IsActive': is_active_str,
+            },
+        }
+    
     
 @dataclass( frozen = True )
 class ZmMonitorSimEntityFields( SimEntityFields ):
@@ -40,7 +87,7 @@ class ZmMonitorSimEntityFields( SimEntityFields ):
     monitor_id   : int         = None
     status       : str         = 'Connected'
     type         : str         = 'Remote'
-    function     : str         = 'Modect'
+    function     : str         = ZmMonitorFunction.default_value()
     protocol     : str         = 'rtsp'
     method       : str         = 'rtpRtsp'
     host         : str         = '192.168.100.204'
@@ -50,16 +97,35 @@ class ZmMonitorSimEntityFields( SimEntityFields ):
     height       : str         = '800'
     orientation  : str         = 'ROTATE_0'
 
+    
+@dataclass( frozen = True )
+class ZmMonitorSimEntity:
+    """ Wrapper to encapsulate ZmMonitor-specific accessors """
+
+    sim_entity    : SimEntity
+
+    @property
+    def monitor_id(self):
+        return self.sim_entity.sim_entity_fields.monitor_id
+    
     def to_api_dict(self):
+        fields = self.sim_entity.sim_entity_fields
+
+        monitor_function = ZmMonitorFunction.default_value()
+        for sim_state in self.sim_entity.sim_state_list:
+            if isinstance( sim_state, ZmMonitorFunctionState ):
+                monitor_function = sim_state.value
+            continue
+        
         return {
             'Monitor': {
-                'Id': str(self.monitor_id),
-                'Name': self.name,
+                'Id': str(fields.monitor_id),
+                'Name': fields.name,
                 'Notes': '',
                 'ServerId': '0',
                 'StorageId': '0',
-                'Type': self.type,
-                'Function': self.function,
+                'Type': fields.type,
+                'Function': monitor_function,
                 'Enabled': '1',
                 'LinkedMonitors': None,
                 'Triggers': '',
@@ -68,20 +134,20 @@ class ZmMonitorSimEntityFields( SimEntityFields ):
                 'Format': '0',
                 'V4LMultiBuffer': None,
                 'V4LCapturesPerFrame': '1',
-                'Protocol': self.protocol,
-                'Method': self.method,
-                'Host': self.host,
-                'Port': self.port,
+                'Protocol': fields.protocol,
+                'Method': fields.method,
+                'Host': fields.host,
+                'Port': fields.port,
                 'SubPath': '',
-                'Path': self.path,
+                'Path': fields.path,
                 'Options': None,
                 'User': None,
                 'Pass': None,
-                'Width': self.width,
-                'Height': self.height,
+                'Width': fields.width,
+                'Height': fields.height,
                 'Colours': '3',
                 'Palette': '0',
-                'Orientation': self.orientation,
+                'Orientation': fields.orientation,
                 'Deinterlacing': '0',
                 'DecoderHWAccelName': None,
                 'DecoderHWAccelDevice': None,
@@ -151,8 +217,8 @@ class ZmMonitorSimEntityFields( SimEntityFields ):
                 'Refresh': None,
             },
             'Monitor_Status': {
-                'MonitorId': str(self.monitor_id),
-                'Status': self.status,
+                'MonitorId': str(fields.monitor_id),
+                'Status': fields.status,
                 'CaptureFPS': '5.00',
                 'AnalysisFPS': '5.00',
                 'CaptureBandwidth': '159047',
@@ -166,18 +232,11 @@ class ZmMonitorFunctionState( SimState ):
     sim_entity_fields  : ZmMonitorSimEntityFields
     sim_state_type     : SimStateType              = SimStateType.DISCRETE
     sim_state_id       : str                       = 'function'
-    value              : str                       = 'Modect'
+    value              : str                       = ZmMonitorFunction.default_value()
 
     @property
     def choices(self) -> List[ Tuple[ str, str ]]:
-        return [
-            ( 'None'    , 'None' ),
-            ( 'Monitor' , 'Monitor' ),
-            ( 'Modect'  , 'Modect' ),
-            ( 'Record'  , 'Record' ),
-            ( 'Mocord'  , 'Mocord' ),
-            ( 'Nodect'  , 'Nodect' ),
-        ]
+        return ZmMonitorFunction.choices()
 
     @property
     def name(self):
@@ -195,40 +254,6 @@ class ZmMonitorMotionState( SimState ):
     def name(self):
         return 'Camera Motion'
 
-    
-@dataclass
-class ZmStateDefinition:
-
-    monitor_id        : int
-    monitor_function  : str
-
-    def to_api_str(self):
-        return f'{self.monitor_id}:{self.monitor_function}:1'
-
-    
-@dataclass
-class ZmState:
-
-    zm_state_id      : int
-    name             : str
-    definition_list  : List[ ZmStateDefinition ]
-    is_active        : bool
-
-    def to_api_dict(self):
-        if self.is_active:
-            is_active_str = '1'
-        else:
-            is_active_str = '0'
-        return {
-            'State': {
-                'Id': str(self.zm_state_id),
-                'Name': self.name,
-                'Definition': ','.join([ x.to_api_str() for x in self.definition_list ]),
-                'IsActive': is_active_str,
-            },
-        }
-
-    
     
 @dataclass
 class ZmEvent:

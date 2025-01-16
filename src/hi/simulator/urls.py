@@ -1,3 +1,5 @@
+import logging
+
 from django.apps import apps
 from django.contrib import admin
 from django.urls import include, path, re_path
@@ -5,6 +7,9 @@ from django.urls import include, path, re_path
 from hi.apps.common.module_utils import import_module_safe
 
 from . import views
+
+logger = logging.getLogger(__name__)
+
 
 urlpatterns = [
     path( 'admin/', admin.site.urls ),
@@ -49,7 +54,7 @@ urlpatterns = [
 
 def discover_urls():
     """ Add urls (if any) from all simulated integration services """
-    
+
     discovered_url_modules = dict()
     for app_config in apps.get_app_configs():
         if not app_config.name.startswith( 'hi.simulator.services' ):
@@ -63,7 +68,8 @@ def discover_urls():
 
             discovered_url_modules[short_name] = urls_module
 
-        except Exception:
+        except Exception as e:
+            logger.exception( f'Problem importing URL module: {module_name}', e )
             pass
         continue
 

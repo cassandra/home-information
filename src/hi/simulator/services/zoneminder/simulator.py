@@ -5,10 +5,15 @@ from hi.simulator.exceptions import SimEntityValidationError
 from hi.simulator.simulator import Simulator
 from hi.simulator.sim_entity import SimEntity
 
+from .enums import ZmMonitorFunction, ZmRunStateType
 from .sim_models import (
     ZONEMINDER_SIM_ENTITY_DEFINITION_LIST,
     ZmMonitorSimEntityFields,
     ZmServerSimEntityFields,
+    ZmMonitorSimEntity,
+    ZmServerSimEntity,
+    ZmSimRunState,
+    ZmSimRunStateDefinition,
 )
 
 
@@ -22,6 +27,49 @@ class ZoneMinderSimulator( Simulator ):
     def label(self) -> str:
         return 'ZoneMinder'
 
+    def get_zm_monitor_sim_entity_list( self ) -> List[ ZmMonitorSimEntity ]:
+        return [ ZmMonitorSimEntity( sim_entity = x ) for x in self.sim_entities
+                 if x.sim_entity_definition.sim_entity_fields_class == ZmMonitorSimEntityFields ]
+
+    def get_zm_server_sim_entity( self ) -> ZmServerSimEntity:
+        for sim_entity in self.sim_entities:
+            if sim_entity.sim_entity_definition.sim_entity_fields_class == ZmServerSimEntityFields:
+                return ZmServerSimEntity( sim_entity = sim_entity )
+            continue
+        raise ValueError( 'No ZM server entity has been created.' )
+
+    def get_zm_sim_run_state_list(self) -> List[ ZmSimRunState ]:
+
+        # TODO: ZM allows run state states and its monitor functions to be
+        # user-defined.  Changing the run state affects the monitor
+        # function state(s), so it is non-trivial to add this to the
+        # simulator. Deferring this work until there more need for this and
+        # just using fixed list of run states and default monitor functions
+        # for now.
+
+        zm_server_sim_entity = self.get_zm_server_sim_entity()
+        current_zm_run_state_value = zm_server_sim_entity.run_state_value
+        zm_monitor_sim_entity_list = self.get_zm_monitor_sim_entity_list()
+
+        zm_sim_run_state_list = list()
+        for zm_run_state_idx, zm_run_state_type in enumerate( ZmRunStateType ):
+            is_active = bool( current_zm_run_state_value == zm_run_state_type.name )
+            definition_list = [
+                ZmSimRunStateDefinition(
+                    monitor_id = x.monitor_id,
+                    monitor_function = ZmMonitorFunction.default_value(),
+                ) for x in zm_monitor_sim_entity_list ]
+            zm_sim_run_state = ZmSimRunState(
+                zm_run_state_id = zm_run_state_idx,
+                name = zm_run_state_type.name,
+                definition_list = definition_list,
+                is_active = is_active,
+            )
+            zm_sim_run_state_list.append( zm_sim_run_state )
+            continue
+        
+        return zm_sim_run_state_list
+        
     @property
     def sim_entity_definition_list(self) -> List[ SimEntityDefinition ]:
         return ZONEMINDER_SIM_ENTITY_DEFINITION_LIST

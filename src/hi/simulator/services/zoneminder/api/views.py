@@ -1,4 +1,5 @@
 from datetime import timedelta
+import logging
 
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
@@ -7,12 +8,9 @@ from django.views.generic import View
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 
-from hi.simulator.services.zoneminder.sim_models import (
-    ZmEvent,
-    ZmMonitor,
-    ZmPagination,
-    ZmState,
-)
+from hi.simulator.services.zoneminder.simulator import ZoneMinderSimulator
+
+logger = logging.getLogger(__name__)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -41,14 +39,18 @@ class HostVersionView( View ):
 class MonitorsView( View ):
 
     def get(self, request, *args, **kwargs):
-        zm_monitor = ZmMonitor(
-            id = 1,
-            name = 'SideCamera',
-        )
-        return JsonResponse({
-            'monitors': [ zm_monitor.to_api_dict() ],
-        })
-
+        try:
+            zm_simulator = ZoneMinderSimulator()
+            zm_monitor_sim_entity_list = zm_simulator.get_zm_monitor_sim_entity_list()
+            return JsonResponse({
+                'monitors': [ x.to_api_dict() for x in zm_monitor_sim_entity_list ],
+            })
+        except Exception as e:
+            logger.exception( 'Problem processing ZM monitors API request', e )
+            return JsonResponse({
+                'monitors': [ ],
+            })
+ 
     def post(self, request, *args, **kwargs):
         pass
 
@@ -56,20 +58,57 @@ class MonitorsView( View ):
 class StatesView( View ):
 
     def get(self, request, *args, **kwargs):
-        zm_state = ZmState(
-            id = 1,
-            name = 'default',
-            definition_list = [],
-            is_active = True,
-        )
-        return JsonResponse({
-            'states': [ zm_state.to_api_dict() ],
-        })
-
+        try:
+            zm_simulator = ZoneMinderSimulator()
+            zm_sim_run_state_list = zm_simulator.get_zm_sim_run_state_list()
+            return JsonResponse({
+                'states': [ x.to_api_dict() for x in zm_sim_run_state_list ],
+            })
+        except Exception as e:
+            logger.exception( 'Problem processing ZM states API request', e )
+            return JsonResponse({
+                'states': [ ],
+            })
+        
 
 class EventsIndexView( View ):
 
     def get(self, request, *args, **kwargs):
+        return JsonResponse({
+            'events': [ ],
+            'pagination': {
+                'page': 1,
+                'current': 1,
+                'count': 1,
+                'prevPage': False,
+                'nextPage': False,
+                'pageCount': 1,
+                'order': {
+                    'Event.StartTime': 'desc'
+                },
+                'limit': 100,
+                'options': {
+                    'order': {
+                        'Event.StartTime': 'desc'
+                    },
+                    'sort': 'StartTime',
+                    'direction': 'desc'
+                },
+                'paramType': 'querystring',
+                'queryScope': None,
+            },
+            
+        })
+    
+
+
+
+
+
+
+
+
+        
         zm_monitor = ZmMonitor(
             id = 1,
             name = 'SideCamera',
