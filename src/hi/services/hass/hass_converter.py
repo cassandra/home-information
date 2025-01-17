@@ -396,16 +396,28 @@ class HassConverter:
         # in our data model and we do not need the duplicates that are just
         # a HAss-specific need.
 
+        prefixes_seen = set()
+        ignore_light_state_prefixes = set()
+        
+        for hass_state in hass_state_list:
+            
+            if (( hass_state.entity_id_prefix == HassApi.SWITCH_ID_PREFIX )
+                and ( HassApi.LIGHT_ID_PREFIX in prefixes_seen )):
+                ignore_light_state_prefixes.add( hass_state.entity_id_prefix )
+
+            elif (( hass_state.entity_id_prefix == HassApi.LIGHT_ID_PREFIX )
+                  and ( HassApi.SWITCH_ID_PREFIX in prefixes_seen )):
+                ignore_light_state_prefixes.add( hass_state.entity_id_prefix )
+
+            prefixes_seen.add( hass_state.entity_id_prefix )
+            continue
+        
         prefix_to_entity_state = dict()
         for hass_state in hass_state_list:
             state_integration_key = cls.hass_state_to_integration_key( hass_state = hass_state )
 
-            if (( hass_state.entity_id_prefix == HassApi.SWITCH_ID_PREFIX )
-                and ( HassApi.LIGHT_ID_PREFIX in prefix_to_entity_state )):
-                continue
-
-            elif (( hass_state.entity_id_prefix == HassApi.LIGHT_ID_PREFIX )
-                  and ( HassApi.SWITCH_ID_PREFIX in prefix_to_entity_state )):
+            if (( hass_state.entity_id_prefix == HassApi.LIGHT_ID_PREFIX )
+                and ( hass_state.entity_id_prefix in ignore_light_state_prefixes )):
                 continue
 
             entity_state = cls._create_hass_state_sensor_or_controller(

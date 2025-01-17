@@ -48,7 +48,6 @@ class HassClient:
         }
         if attributes:
             data["attributes"] = attributes
-            
         response = post( url, json = data, headers = self._headers )
         if response.status_code != 200:
             raise ValueError( f"Failed to set state: {response.status_code} {response.text}" )

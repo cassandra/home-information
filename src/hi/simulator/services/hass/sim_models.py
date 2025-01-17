@@ -84,6 +84,10 @@ class HassInsteonState( HassState ):
         return self.sim_entity_fields.insteon_address
     
     @property
+    def insteon_address_id_suffix(self):
+        return self.insteon_address.replace( '.', '_' ).lower()
+    
+    @property
     def state(self):
         is_on = str_to_bool( self.value )
         if is_on:
@@ -109,7 +113,7 @@ class HassInsteonLightSwitchState( HassInsteonState ):
     
     @property
     def entity_id(self):
-        return 'switch.switchlinc_relay_%s' % self.insteon_address.replace( '.', '_' )
+        return 'switch.switchlinc_relay_%s' % self.insteon_address_id_suffix
     
     @property
     def attributes(self) -> Dict[ str, str ]:
@@ -139,7 +143,7 @@ class HassInsteonDimmerLightLightState( HassInsteonState ):
         
     @property
     def entity_id(self):
-        return 'light.switchlinc_dimmer_%s' % self.insteon_address.replace( '.', '_' )
+        return 'light.switchlinc_dimmer_%s' % self.insteon_address_id_suffix
     
     @property
     def attributes(self) -> Dict[ str, str ]:
@@ -164,7 +168,7 @@ class HassInsteonDualBandLightSwitchState( HassInsteonLightSwitchState ):
 
     @property
     def entity_id(self):
-        return 'switch.switchlinc_relay_dual_band_%s' % self.insteon_address.replace( '.', '_' )
+        return 'switch.switchlinc_relay_dual_band_%s' % self.insteon_address_id_suffix
 
 
 @dataclass( frozen = True )
@@ -185,7 +189,7 @@ class HassInsteonMotionDetectorMotionState( HassInsteonState ):
         
     @property
     def entity_id(self):
-        return 'binary_sensor.motion_sensor_%s_motion' % self.insteon_address.replace( '.', '_' )
+        return 'binary_sensor.motion_sensor_%s_motion' % self.insteon_address_id_suffix
     
     @property
     def attributes(self) -> Dict[ str, str ]:
@@ -210,7 +214,7 @@ class HassInsteonMotionDetectorLightState( HassInsteonState ):
         
     @property
     def entity_id(self):
-        return 'binary_sensor.motion_sensor_%s_light' % self.insteon_address.replace( '.', '_' )
+        return 'binary_sensor.motion_sensor_%s_light' % self.insteon_address_id_suffix
     
     @property
     def attributes(self) -> Dict[ str, str ]:
@@ -243,7 +247,7 @@ class HassInsteonMotionDetectorBatteryState( HassInsteonState ):
     
     @property
     def entity_id(self):
-        return 'binary_sensor.motion_sensor_%s_battery' % self.insteon_address.replace( '.', '_' )
+        return 'binary_sensor.motion_sensor_%s_battery' % self.insteon_address_id_suffix
     
     @property
     def attributes(self) -> Dict[ str, str ]:
@@ -269,7 +273,7 @@ class HassInsteonOpenCloseSensorState( HassInsteonState ):
     
     @property
     def entity_id(self):
-        return 'binary_sensor.open_close_sensor_%s' % self.insteon_address.replace( '.', '_' )
+        return 'binary_sensor.open_close_sensor_%s' % self.insteon_address_id_suffix
     
     @property
     def attributes(self) -> Dict[ str, str ]:
@@ -300,7 +304,7 @@ class HassInsteonOutletState( HassInsteonState ):
     
     @property
     def entity_id(self):
-        return 'switch.outletlinc_relay_%s' % self.insteon_address.replace( '.', '_' )
+        return 'switch.outletlinc_relay_%s' % self.insteon_address_id_suffix
     
     @property
     def attributes(self) -> Dict[ str, str ]:
