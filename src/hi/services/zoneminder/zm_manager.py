@@ -83,6 +83,8 @@ class ZoneMinderManager( Singleton ):
     @property
     def zm_client(self):
         # Docs: https://pyzm.readthedocs.io/en/latest/
+        if not self._zm_client:
+            self.reload()
         return self._zm_client
     
     def reload( self ):
