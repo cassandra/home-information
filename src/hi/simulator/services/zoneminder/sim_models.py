@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import List, Tuple
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.common.utils import str_to_bool
 
 from hi.simulator.base_models import SimEntityFields, SimState, SimEntityDefinition
 from hi.simulator.enums import SimEntityType, SimStateType
@@ -274,6 +275,10 @@ class ZmMonitorMotionState( SimState ):
     @property
     def name(self):
         return 'Camera Motion'
+
+    def set_value_from_string( self, value_str : str ):
+        self.value = str_to_bool( value_str )
+        return
 
     
 @dataclass

@@ -1,9 +1,10 @@
 {% load common_template_helpers %}
-<div id="hi-controller-{{ controller_data.controller.id }}"
+{% generate_uuid as unique_id %}
+<div id="hi-controller-{{ controller_data.controller.id }}-{{ unique_id }}"
      class="{{ controller_data.css_class }}" >
   <form action="{% url 'control_controller' controller_id=controller_data.controller.id %}"
 	method="post"
-	class="form" data-async="#hi-controller-{{ controller_data.controller.id }}" data-mode="replace">
+	class="form" data-async="#hi-controller-{{ controller_data.controller.id }}-{{ unique_id }}" data-mode="replace">
     {% csrf_token %}
 
     {% include_with_fallback controller_data.controller.entity_state.entity_state_type.controller_template_name "control/panes/controller_default.html" %}

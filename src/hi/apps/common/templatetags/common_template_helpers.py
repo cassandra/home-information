@@ -1,6 +1,7 @@
 import os
 import random
 import urllib
+import uuid
 
 from django import template
 from django.conf import settings
@@ -14,6 +15,13 @@ register = template.Library()
 @register.filter
 def get_item(dictionary, key):
     return dictionary.get(key)
+
+
+@register.simple_tag
+def generate_uuid():
+    uuid_value = str(uuid.uuid4())
+    print(f"\n\nGenerated UUID: {uuid_value}\n")
+    return uuid_value
 
 
 @register.simple_tag

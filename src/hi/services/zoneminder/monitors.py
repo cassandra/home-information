@@ -22,6 +22,9 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
     # TODO: Move this into the integrations attributes for users to set
     ZONEMINDER_SERVER_TIMEZONE = 'America/Chicago'
     ZONEMINDER_POLLING_INTERVAL_SECS = 10
+
+    TRACE = True
+    CACHING_DISABLED = True
     
     def __init__( self ):
         super().__init__(
@@ -181,7 +184,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         current_poll_datetime = datetimeproxy.now()
         sensor_response_map = dict()
 
-        for zm_monitor in self.zm_manager().get_zm_monitors():
+        for zm_monitor in self.zm_manager().get_zm_monitors( force_load = self.CACHING_DISABLED ):
 
             video_stream_sensor_response = self._create_video_stream_sensor_response(
                 zm_monitor = zm_monitor,
@@ -203,7 +206,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         sensor_response_map = dict()
 
         active_run_state_name = None
-        for zm_state in self.zm_manager().get_zm_states():
+        for zm_state in self.zm_manager().get_zm_states( force_load = self.CACHING_DISABLED ):
             if zm_state.active():
                 active_run_state_name = zm_state.name()
                 break

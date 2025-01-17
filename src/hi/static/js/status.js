@@ -40,7 +40,6 @@
     const AlarmMessageHtmlAttr = 'alarmMessageHtml';
     
     let gServerPollingTimer = null;
-    let gCssClassElementCache = {};
     let gLastServerPollSuccessTime = (new Date()).getTime();
     let gIsServerErrorShowing = false;
     let gLastStartServerDate = null;
@@ -196,7 +195,7 @@
     function handleCssClassUpdates( updateMap ) {
 
 	for ( let cssClass in updateMap ) {
-	    let elements = getElementByCssClass( cssClass );
+	    let elements = getElementsByCssClass( cssClass );
 	    let attrMap = updateMap[cssClass];
 	    for ( let attrName in attrMap ) {		    
 		let attrValue = attrMap[attrName];
@@ -234,24 +233,9 @@
 	}
     }
 
-    function getElementByCssClass( cssClass ) {
-
-	if ( cssClass in gCssClassElementCache ) {
-	    const cachedElements = gCssClassElementCache[cssClass];
-            const connectedElements = $(cachedElements).filter( function () {
-		return this.isConnected;
-            });
-            if ( cachedElements.length == connectedElements.length) {
-		return connectedElements;
-	    }
-	}
+    function getElementsByCssClass( cssClass ) {
 
 	let elements = $(`.${cssClass}`);
-	if ( elements.length > 0 ) {
-	    gCssClassElementCache[cssClass] = elements;
-	} else {
-	    delete gCssClassElementCache[cssClass];
-	}
 	return elements;
     }
     

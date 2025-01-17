@@ -2,8 +2,6 @@ from dataclasses import dataclass, fields, MISSING
 from datetime import datetime
 from typing import Any, Dict, List, Tuple, Type
 
-import hi.apps.common.datetimeproxy as datetimeproxy
-
 from .enums import SimEntityType, SimStateType
 
 
@@ -97,8 +95,6 @@ class SimState:
 
     # Subclasses may provide a default value for this.    
     value              : Any              = None
-
-    value_datetime     : datetime         = None
     
     @property
     def name(self):
@@ -109,7 +105,6 @@ class SimState:
         if self.value == value_str:
             return
         self.value = value_str
-        self.value_datetime = datetimeproxy.now()
         return
     
     @property
@@ -131,7 +126,6 @@ class SimState:
         if not other_sim_state:
             return
         self.value = other_sim_state.value
-        self.value_datetime = other_sim_state.value_datetime
         return
     
 
