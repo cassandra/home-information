@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Tuple
+from typing import ClassVar, List, Tuple
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.utils import str_to_bool
@@ -107,8 +107,8 @@ class ZmSimMonitor:
     sim_entity    : SimEntity
 
     @property
-    def monitor_id(self):
-        return self.sim_entity.sim_entity_fields.monitor_id
+    def monitor_id(self) -> int:
+        return int( self.sim_entity.sim_entity_fields.monitor_id )
 
     @property
     def width(self):
@@ -251,9 +251,11 @@ class ZmSimMonitor:
 @dataclass
 class ZmMonitorFunctionState( SimState ):
 
+    FUNCTION_SIM_STATE_ID  : ClassVar[ str ]  = 'function'
+    
     sim_entity_fields  : ZmMonitorSimEntityFields
     sim_state_type     : SimStateType              = SimStateType.DISCRETE
-    sim_state_id       : str                       = 'function'
+    sim_state_id       : str                       = FUNCTION_SIM_STATE_ID
     value              : str                       = ZmMonitorFunction.default_value()
 
     @property

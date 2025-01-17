@@ -9,6 +9,7 @@ from .enums import ZmMonitorFunction, ZmRunStateType
 from .sim_models import (
     ZONEMINDER_SIM_ENTITY_DEFINITION_LIST,
     ZmSimMonitor,
+    ZmMonitorFunctionState,
     ZmMonitorSimEntityFields,
     ZmMonitorMotionState,
     ZmSimServer,
@@ -71,7 +72,21 @@ class ZoneMinderSimulator( Simulator ):
             continue
         
         return zm_sim_run_state_list
-        
+
+    def set_monitor_function( self,
+                              monitor_id           : int,
+                              zm_monitor_function  : ZmMonitorFunction ) -> SimState:
+        for sim_entity in self.sim_entities:
+            if sim_entity.sim_entity_definition.sim_entity_fields_class == ZmMonitorSimEntityFields:
+                zm_sim_monitor = ZmSimMonitor( sim_entity = sim_entity )
+                if zm_sim_monitor.monitor_id == monitor_id:
+                    return sim_entity.set_sim_state(
+                        sim_state_id = ZmMonitorFunctionState.FUNCTION_SIM_STATE_ID,
+                        value_str = zm_monitor_function.value,
+                    )
+            continue
+        raise KeyError( f'ZM monitor with id "{monitor_id}" does not exist.' )
+    
     @property
     def sim_entity_definition_list(self) -> List[ SimEntityDefinition ]:
         return ZONEMINDER_SIM_ENTITY_DEFINITION_LIST

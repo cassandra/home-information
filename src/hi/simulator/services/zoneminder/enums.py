@@ -26,6 +26,15 @@ class ZmMonitorFunction( Enum ):
             continue
         return choice_list
 
+    @classmethod
+    def from_value( cls, target_value : str ):
+        if target_value:
+            for enum in cls:
+                if enum.value.lower() == target_value.strip().lower():
+                    return enum
+                continue
+        raise ValueError( f'Unknown value "{target_value}" for {cls.__name__}' )
+    
     
 class ZmRunStateType( Enum ):
     # TODO: Make these editable. ZM allows these to be user-defined.

@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 import logging
 import pytz
 from urllib.parse import unquote
@@ -11,6 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 
 from hi.simulator.services.zoneminder.constants import ZmSimConstants
+from hi.simulator.services.zoneminder.enums import ZmMonitorFunction
 from hi.simulator.services.zoneminder.simulator import ZoneMinderSimulator
 from hi.simulator.services.zoneminder.sim_models import ZmPagination
 from hi.simulator.services.zoneminder.zm_event_manager import ZmSimEventManager
@@ -41,6 +43,7 @@ class HostVersionView( View ):
         return JsonResponse(response_data)
 
     
+@method_decorator(csrf_exempt, name='dispatch')
 class MonitorsView( View ):
 
     def get(self, request, *args, **kwargs):
@@ -57,7 +60,35 @@ class MonitorsView( View ):
             })
  
     def post(self, request, *args, **kwargs):
-        pass
+        try:
+            monitor_id = int( kwargs.get('monitor_id'))
+            monitor_function_str = request.POST.get('Monitor[Function]')
+            if not monitor_function_str:
+                raise BadRequest( 'Request missing monitor function data.' )
+            logger.debug( f'ZM set monitor function: {monitor_id} = {request.POST}' )
+
+            zm_monitor_function = ZmMonitorFunction.from_value( monitor_function_str )
+            zm_simulator = ZoneMinderSimulator()
+            _ = zm_simulator.set_monitor_function( 
+                monitor_id = monitor_id,
+                zm_monitor_function = zm_monitor_function,
+            )
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "monitor_function": monitor_function_str,
+                },
+                safe = False,
+            )
+        
+        except json.JSONDecodeError as jde:
+            raise BadRequest( f'Request body is not JSON: {jde}' )
+
+        except ValueError as ve:
+            raise BadRequest( f'Unknown ZoneMinder monitor function: {ve}' )
+
+        except KeyError as ke:
+            raise BadRequest( f'Unknown ZoneMinder monitor: {ke}' )
 
 
 class StatesView( View ):

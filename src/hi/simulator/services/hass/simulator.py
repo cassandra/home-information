@@ -1,6 +1,6 @@
 from typing import List, Set
 
-from hi.simulator.base_models import SimEntityDefinition, SimEntityFields
+from hi.simulator.base_models import SimEntityDefinition, SimEntityFields, SimState
 from hi.simulator.exceptions import SimEntityValidationError
 from hi.simulator.simulator import Simulator
 from hi.simulator.sim_entity import SimEntity
@@ -25,6 +25,20 @@ class HassSimulator( Simulator ):
             continue
         return sim_state_list
 
+    def set_sim_state_by_hass_entity_id( self,
+                                         hass_entity_id  : str,
+                                         value_str       : str ) -> SimState:
+        for sim_entity in self._sim_entity_map.values():
+            for sim_state in sim_entity.sim_state_list:
+                if sim_state.entity_id == hass_entity_id:
+                    return sim_entity.set_sim_state(
+                        sim_state_id = sim_state.sim_state_id,
+                        value_str = value_str,
+                    )
+                continue
+            continue
+        raise KeyError( f'HAss entity {hass_entity_id} does not exist.' )
+        
     @property
     def sim_entity_definition_list(self) -> List[ SimEntityDefinition ]:
         return HASS_SIM_ENTITY_DEFINITION_LIST

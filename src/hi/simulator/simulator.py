@@ -132,19 +132,3 @@ class Simulator( Singleton ):
             sim_state_id = sim_state_id,
             value_str = value_str,
         )
-
-    def set_sim_state_by_hass_entity_id( self,
-                                         hass_entity_id  : str,
-                                         value_str       : str ) -> SimState:
-        for sim_entity in self._sim_entity_map.values():
-            for sim_state in sim_entity.sim_state_list:
-                if sim_state.entity_id == hass_entity_id:
-                    return sim_entity.set_sim_state(
-                        sim_state_id = sim_state.sim_state_id,
-                        value_str = value_str,
-                    )
-                continue
-            continue
-        raise KeyError( f'HAss entity {hass_entity_id} does not exist.' )
-        
-    
