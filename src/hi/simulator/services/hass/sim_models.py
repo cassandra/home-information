@@ -119,12 +119,17 @@ class HassInsteonLightSwitchState( HassInsteonState ):
             "insteon_address": self.insteon_address,
             "insteon_group": 1,
         }
+
     
+@dataclass( frozen = True )
+class HassInsteonDimmerLightSwitchFields( HassInsteonSimEntityFields ):
+    pass
+
     
 @dataclass
-class HassInsteonLightLightState( HassInsteonState ):
+class HassInsteonDimmerLightLightState( HassInsteonState ):
 
-    sim_entity_fields  : HassInsteonLightSwitchFields
+    sim_entity_fields  : HassInsteonDimmerLightSwitchFields
     sim_state_type     : SimStateType                  = SimStateType.ON_OFF
     sim_state_id       : str                           = 'light'
 
@@ -134,34 +139,32 @@ class HassInsteonLightLightState( HassInsteonState ):
         
     @property
     def entity_id(self):
-        return 'light.switchlinc_relay_%s' % self.insteon_address.replace( '.', '_' )
+        return 'light.switchlinc_dimmer_%s' % self.insteon_address.replace( '.', '_' )
     
     @property
     def attributes(self) -> Dict[ str, str ]:
         return {
-            'color_mode': 'onoff',
             'friendly_name': self.entity_name,
-            'supported_color_modes': [
-                'onoff',
-            ],
-            'supported_features': 0,
+            "icon": "mdi:lightbulb",
+            "insteon_address": self.insteon_address,
+            "insteon_group": 1,
         }
+
+    
+@dataclass( frozen = True )
+class HassInsteonDualBandLightSwitchFields( HassInsteonLightSwitchFields ):
+    pass
 
     
 @dataclass
 class HassInsteonDualBandLightSwitchState( HassInsteonLightSwitchState ):
+    """Dual-band variant (can use powerline or RF) """
+
+    sim_entity_fields  : HassInsteonDualBandLightSwitchFields
 
     @property
     def entity_id(self):
         return 'switch.switchlinc_relay_dual_band_%s' % self.insteon_address.replace( '.', '_' )
-
-    
-@dataclass
-class HassInsteonDualBandLightLightState( HassInsteonLightLightState ):
-
-    @property
-    def entity_id(self):
-        return 'light.switchlinc_relay_dual_band_%s' % self.insteon_address.replace( '.', '_' )
 
 
 @dataclass( frozen = True )
@@ -279,23 +282,65 @@ class HassInsteonOpenCloseSensorState( HassInsteonState ):
         }
 
     
+@dataclass( frozen = True )
+class HassInsteonOutletFields( HassInsteonSimEntityFields ):
+    pass
+
+    
+@dataclass
+class HassInsteonOutletState( HassInsteonState ):
+
+    sim_entity_fields  : HassInsteonOutletFields
+    sim_state_type     : SimStateType                  = SimStateType.ON_OFF
+    sim_state_id       : str                           = 'outlet'
+
+    @property
+    def name(self):
+        return f'{self.entity_name} Outlet'
+    
+    @property
+    def entity_id(self):
+        return 'switch.outletlinc_relay_%s' % self.insteon_address.replace( '.', '_' )
+    
+    @property
+    def attributes(self) -> Dict[ str, str ]:
+        return {
+            'device_class': 'outlet',
+            'friendly_name': self.entity_name,
+            "insteon_address": self.insteon_address,
+            "insteon_group": 1,
+        }
+
+    
 HASS_SIM_ENTITY_DEFINITION_LIST = [
     SimEntityDefinition(
-        class_label = 'Insteon Light Switch',
+        class_label = 'Insteon Switch',
         sim_entity_type = SimEntityType.LIGHT,
         sim_entity_fields_class = HassInsteonLightSwitchFields,
         sim_state_class_list = [
+            # HAss create duplicate states "switch" and "light" since a
+            # switch may be use for a light or something else. We only need
+            # one of these since there is only one underlying state.
             HassInsteonLightSwitchState,
-            HassInsteonLightLightState,
         ],
     ),
     SimEntityDefinition(
-        class_label = 'Insteon Light Switch (dual band)',
+        class_label = 'Insteon Light Switch (dimmer)',
         sim_entity_type = SimEntityType.LIGHT,
-        sim_entity_fields_class = HassInsteonLightSwitchFields,
+        sim_entity_fields_class = HassInsteonDimmerLightSwitchFields,
         sim_state_class_list = [
+            HassInsteonDimmerLightLightState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Insteon Switch (dual band)',
+        sim_entity_type = SimEntityType.LIGHT,
+        sim_entity_fields_class = HassInsteonDualBandLightSwitchFields,
+        sim_state_class_list = [
+            # HAss create duplicate states "switch" and "light" since a
+            # switch may be use for a light or something else. We only need
+            # one of these since there is only one underlying state.
             HassInsteonDualBandLightSwitchState,
-            HassInsteonDualBandLightLightState,
         ],
     ),
     SimEntityDefinition(
@@ -309,11 +354,19 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
         ],
     ),
     SimEntityDefinition(
-        class_label = 'Insteon Open/Close Sensor',
+        class_label = 'Insteon Open/Close Detector',
         sim_entity_type = SimEntityType.OPEN_CLOSE_SENSOR,
         sim_entity_fields_class = HassInsteonOpenCloseSensorFields,
         sim_state_class_list = [
             HassInsteonOpenCloseSensorState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Insteon Outlet',
+        sim_entity_type = SimEntityType.ELECTRICAL_OUTLET,
+        sim_entity_fields_class = HassInsteonOutletFields,
+        sim_state_class_list = [
+            HassInsteonOutletState,
         ],
     ),
 ]

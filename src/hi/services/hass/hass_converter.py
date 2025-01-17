@@ -381,21 +381,20 @@ class HassConverter:
         
         # Observations:
         #
-        #   - Some light switches have both a 'switch' and 'light' HAss state.
-        #   - Some light switches only have 'switch' HAss state.
-        #   - Some light switches only have 'light' HAss state.
+        #   - Some insteon light switches have both a 'switch' and 'light'
+        #     HAss state.  These are just one actualy device state but HAss
+        #     create duplicates to allow the switch to be treated as a
+        #     "light" or something else if it is controlling something
+        #     else. Thus, this is a HAss-internal artifact and not an
+        #     instrinsic state of the device.
         #
-        # In Home Assistant, a "switch" is a simple on/off device, while a
-        # "light" can have more advanced feature like dimming.  An insteon
-        # device reports it capabilities and some insteon devices are dual
-        # mode and can support either.  Thus, if a device is both a light
-        # and switch, either can be used, thought they are operating on the
-        # same underlying state.
+        #   - Some light switches only have 'light' HAss state. e.g., Dimmers
         #
         # To deal with this, we have a special case so that we only create
-        # one underlying EntityState for the two different HAss
+        # one underlying EntityState and Sensor for the two different HAss
         # perspectives.  A HassState is really the equivalent of a Sensor
-        # in our data model.
+        # in our data model and we do not need the duplicates that are just
+        # a HAss-specific need.
 
         prefix_to_entity_state = dict()
         for hass_state in hass_state_list:
@@ -403,31 +402,19 @@ class HassConverter:
 
             if (( hass_state.entity_id_prefix == HassApi.SWITCH_ID_PREFIX )
                 and ( HassApi.LIGHT_ID_PREFIX in prefix_to_entity_state )):
-                existing_entity_state = prefix_to_entity_state[HassApi.LIGHT_ID_PREFIX]
+                continue
 
             elif (( hass_state.entity_id_prefix == HassApi.LIGHT_ID_PREFIX )
                   and ( HassApi.SWITCH_ID_PREFIX in prefix_to_entity_state )):
-                existing_entity_state = prefix_to_entity_state[HassApi.SWITCH_ID_PREFIX]
+                continue
 
-            else:
-                existing_entity_state = None
-
-            if existing_entity_state:
-                HiModelHelper.add_on_off_controller(
-                    entity = entity,
-                    entity_state = existing_entity_state,
-                    integration_key = state_integration_key,
-                    name = hass_state.friendly_name,
-                )
-            else:
-                entity_state = cls._create_hass_state_sensor_or_controller(
-                    hass_device = hass_device,
-                    hass_state = hass_state,
-                    entity = entity,
-                    integration_key = state_integration_key,
-                    add_alarm_events = add_alarm_events,
-                )
-
+            entity_state = cls._create_hass_state_sensor_or_controller(
+                hass_device = hass_device,
+                hass_state = hass_state,
+                entity = entity,
+                integration_key = state_integration_key,
+                add_alarm_events = add_alarm_events,
+            )
             prefix_to_entity_state[hass_state.entity_id_prefix] = entity_state
             continue
         return

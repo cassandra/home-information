@@ -39,9 +39,7 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
             await self._initialize()
             
         id_to_hass_state_map = self.hass_manager().fetch_hass_states_from_api( verbose = False )
-
-        if self.TRACE:
-            logger.debug( f'Fetched {len(id_to_hass_state_map)} HAss States' )
+        logger.debug( f'Fetched {len(id_to_hass_state_map)} HAss States' )
         
         current_datetime = datetimeproxy.now()
         sensor_response_latest_map = dict()

@@ -28,8 +28,6 @@ class ZoneMinderManager( Singleton ):
       ZM Api code: https://github.com/ZoneMinder/zoneminder/tree/master/web/api/app/Controller
       PyZM code: https://github.com/pliablepixels/pyzm/tree/357fdbd1937dab8027882598b61258ef43dc366a
     """
-    TRACE = False
-    
     ZM_ENTITY_NAME = 'ZoneMinder'
     ZM_SYSTEM_INTEGRATION_NAME = 'system'
     ZM_MONITOR_INTEGRATION_NAME_PREFIX = 'monitor'
@@ -186,8 +184,7 @@ class ZoneMinderManager( Singleton ):
              or ( state_list_age.seconds > self.STATE_REFRESH_INTERVAL_SECS )):
             self._zm_state_list = self.zm_client.states().list()
             self._zm_state_timestamp = datetimeproxy.now()
-            if self.TRACE:
-                logger.debug( f'Fetched ZM states: {[ x.get() for x in self._zm_state_list ]}' )
+            logger.debug( f'Fetched ZM states: {[ x.get() for x in self._zm_state_list ]}' )
         return self._zm_state_list
     
     def get_zm_monitors( self, force_load : bool = False ) -> List[ ZmMonitor ]:
@@ -200,8 +197,7 @@ class ZoneMinderManager( Singleton ):
             }
             self._zm_monitor_list = self.zm_client.monitors( options ).list()
             self._zm_monitor_timestamp = datetimeproxy.now()
-            if self.TRACE:
-                logger.debug( f'\n\nFetched ZM monitors: {[ x.get() for x in self._zm_monitor_list ]}\n\n' )
+            logger.debug( f'\n\nFetched ZM monitors: {[ x.get() for x in self._zm_monitor_list ]}\n\n' )
             
         return self._zm_monitor_list
         

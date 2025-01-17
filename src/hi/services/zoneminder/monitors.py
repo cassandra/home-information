@@ -23,7 +23,6 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
     ZONEMINDER_SERVER_TIMEZONE = 'America/Chicago'
     ZONEMINDER_POLLING_INTERVAL_SECS = 10
 
-    TRACE = False
     CACHING_DISABLED = True
     
     def __init__( self ):
@@ -86,8 +85,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             'tz': self._zm_tzname,
         }
         events = self.zm_manager().get_zm_events( options = options )
-        if self.TRACE:
-            logger.debug( f'Found {len(events)} new ZM events' )
+        logger.debug( f'Found {len(events)} new ZM events' )
 
         # Sensor readings and state value transitions are points in time,
         # but ZoneMinder events are intervals.  Thus, one ZoneMinder event
@@ -108,8 +106,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         closed_zm_event_list = list()
         zm_monitor_ids_seen = set()
         for zm_api_event in events:
-            if self.TRACE:
-                logger.debug( f'ZM Api Event: {zm_api_event.get()}' )
+            logger.debug( f'ZM Api Event: {zm_api_event.get()}' )
             zm_event = ZmEvent( zm_api_event = zm_api_event,
                                 zm_tzname = self._zm_tzname )
 

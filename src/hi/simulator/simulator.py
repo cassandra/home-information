@@ -8,12 +8,48 @@ from .sim_entity import SimEntity
 
 class Simulator( Singleton ):
     """
-    The class that each simulator should subclass and include in a
-    simulator.py file in its app directory.  This is how the
-    SimulatorManager discovers the types of simulator entities and states
-    provided by the simulator.  This is also used by the simulators to get
-    the current satte of which entities, states and state values currently
-    are defined.
+    Defining a Simulator
+
+    - Each simulator should subclass this in a file named "simulator.py" in
+      its app directory.
+
+    - The simulator's app directory should be located in the "simulator/services"
+      subdirectory.
+
+    - The SimulatorManager will auto-discovery all simulators with a
+      simulator.py file in that services directopry.
+
+    - The simulator should also define a urls.py and views.py file with the
+      needed API endpoints.
+
+    - The urls.py will also be auto-discovered by logic in the
+      simulator/urls.py file
+
+    Responsibilities
+
+    - A simulator must provide a list of SimEntityDefinition instances via
+      overriding the sim_entity_definition_list() method.  This tells the
+      simulator the available types of simulator entities that are
+      available to be defined, what extra custrom fields it needs and the
+      list of SimState types the entity contains.
+
+    - SimState instances is what the simulator UI shows as manually
+      adjustable.  The API views of the simulator should convert those
+      entities and current state values into the proper API responses.
+
+    - The SimulatorManager is responsible for creating SimEntity instances
+      and for updating the values of then SimState instances.
+
+    - SimEntity definitions are persisted in the database with DbSimEntity,
+      but ther SimState definitions and values are not persisted. e.g., A
+      simulator server restart will lose any current SimState values.
+
+    - The SimulatorManager also supports defining and switching between
+      different simulation profiles, each with its own set of SimEntity
+      definitions.  The individual simulator subclasses do not need to be
+      aware of this as the SimulatorManager creates a new simulator
+      subclass instance for each profile.
+
     """
     
     def __init_singleton__( self ):

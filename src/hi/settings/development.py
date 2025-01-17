@@ -122,6 +122,34 @@ LOGGING = {
             'handlers': ['console' ],
             'level': 'DEBUG',
         },
+        'hi.apps.alert': {
+            'handlers': ['console' ],
+            'level': 'INFO',
+        },
+        'hi.apps.sense': {
+            'handlers': ['console' ],
+            'level': 'INFO',
+        },
+        'hi.apps.control': {
+            'handlers': ['console' ],
+            'level': 'INFO',
+        },
+        'hi.apps.notify': {
+            'handlers': ['console' ],
+            'level': 'INFO',
+        },
+        'hi.apps.monitor': {
+            'handlers': ['console' ],
+            'level': 'INFO',
+        },
+        'hi.services.hass': {
+            'handlers': ['console' ],
+            'level': 'INFO',
+        },
+        'hi.services.zoneminder': {
+            'handlers': ['console' ],
+            'level': 'INFO',
+        },
     },
 }
 
