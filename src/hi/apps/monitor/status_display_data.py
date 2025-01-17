@@ -58,9 +58,23 @@ class StatusStyle:
     )
     Open = SvgStatusStyle(
         status_value = 'open',
-        stroke_color = 'green',
+        stroke_color = 'red',
         stroke_width = DEFAULT_STROKE_WIDTH,
-        fill_color = 'green',
+        fill_color = 'red',
+        fill_opacity = 0.5,
+    )
+    OpenRecent = SvgStatusStyle(
+        status_value = 'recent',
+        stroke_color = 'orange',
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        fill_color = 'orange',
+        fill_opacity = 0.5,
+    )
+    OpenPast = SvgStatusStyle(
+        status_value = 'past',
+        stroke_color = 'yellow',
+        stroke_width = DEFAULT_STROKE_WIDTH,
+        fill_color = 'yellow',
         fill_opacity = 0.5,
     )
     Closed = SvgStatusStyle(
@@ -114,6 +128,9 @@ class StatusDisplayData:
 
     RECENT_MOVEMENT_THRESHOLD_SECS = 90
     PAST_MOVEMENT_THRESHOLD_SECS = 180
+    
+    RECENT_OPEN_THRESHOLD_SECS = 90
+    PAST_OPEN_THRESHOLD_SECS = 180
     
     def __init__( self, entity_state_status_data : EntityStateStatusData ):
         self._entity_state = entity_state_status_data.entity_state
@@ -258,9 +275,16 @@ class StatusDisplayData:
 
         if self.latest_sensor_value == str(EntityStateValue.OPEN):
             return StatusStyle.Open
-        if self.latest_sensor_value == str(EntityStateValue.CLOSED):
-            return StatusStyle.Closed
-        return None
+
+        if self.penultimate_sensor_value == str(EntityStateValue.OPEN):
+            open_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
+            if open_timedelta.total_seconds() < self.RECENT_OPEN_THRESHOLD_SECS:
+                return StatusStyle.OpenRecent
+
+            elif open_timedelta.total_seconds() < self.PAST_OPEN_THRESHOLD_SECS:
+                return StatusStyle.OpenPast
+
+        return StatusStyle.Closed
         
     def _get_connectivity_status_style( self ):
 

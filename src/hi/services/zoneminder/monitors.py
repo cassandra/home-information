@@ -23,7 +23,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
     ZONEMINDER_SERVER_TIMEZONE = 'America/Chicago'
     ZONEMINDER_POLLING_INTERVAL_SECS = 10
 
-    TRACE = True
+    TRACE = False
     CACHING_DISABLED = True
     
     def __init__( self ):

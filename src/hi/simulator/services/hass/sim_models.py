@@ -5,6 +5,7 @@ import time
 from typing import Dict, List, Tuple
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.common.utils import str_to_bool
 
 from hi.simulator.base_models import SimEntityFields, SimState, SimEntityDefinition
 from hi.simulator.enums import SimEntityType, SimStateType
@@ -81,7 +82,14 @@ class HassInsteonState( HassState ):
     @property
     def insteon_address(self):
         return self.sim_entity_fields.insteon_address
-
+    
+    @property
+    def state(self):
+        is_on = str_to_bool( self.value )
+        if is_on:
+            return "on"
+        return "off"
+    
     
 @dataclass( frozen = True )
 class HassInsteonLightSwitchFields( HassInsteonSimEntityFields ):
@@ -89,11 +97,11 @@ class HassInsteonLightSwitchFields( HassInsteonSimEntityFields ):
 
     
 @dataclass
-class HassInsteonLightSwitchLightState( HassInsteonState ):
+class HassInsteonLightSwitchState( HassInsteonState ):
 
     sim_entity_fields  : HassInsteonLightSwitchFields
     sim_state_type     : SimStateType                  = SimStateType.ON_OFF
-    sim_state_id       : str                           = 'light'
+    sim_state_id       : str                           = 'switch'
 
     @property
     def name(self):
@@ -101,7 +109,7 @@ class HassInsteonLightSwitchLightState( HassInsteonState ):
     
     @property
     def entity_id(self):
-        return 'light.switchlinc_relay_%s' % self.insteon_address.replace( '.', '_' )
+        return 'switch.switchlinc_relay_%s' % self.insteon_address.replace( '.', '_' )
     
     @property
     def attributes(self) -> Dict[ str, str ]:
@@ -112,22 +120,17 @@ class HassInsteonLightSwitchLightState( HassInsteonState ):
             "insteon_group": 1,
         }
     
-    @property
-    def state(self):
-        # TODO: Do translation to HAss state values
-        return 'unknown'
-
     
 @dataclass
-class HassInsteonLightSwitchColorState( HassInsteonState ):
+class HassInsteonLightLightState( HassInsteonState ):
 
     sim_entity_fields  : HassInsteonLightSwitchFields
     sim_state_type     : SimStateType                  = SimStateType.ON_OFF
-    sim_state_id       : str                           = 'color'
+    sim_state_id       : str                           = 'light'
 
     @property
     def name(self):
-        return f'{self.entity_name} Color'
+        return f'{self.entity_name} Light'
         
     @property
     def entity_id(self):
@@ -143,11 +146,22 @@ class HassInsteonLightSwitchColorState( HassInsteonState ):
             ],
             'supported_features': 0,
         }
+
     
+@dataclass
+class HassInsteonDualBandLightSwitchState( HassInsteonLightSwitchState ):
+
     @property
-    def state(self):
-        # TODO: Do translation to HAss state values
-        return 'unknown'
+    def entity_id(self):
+        return 'switch.switchlinc_relay_dual_band_%s' % self.insteon_address.replace( '.', '_' )
+
+    
+@dataclass
+class HassInsteonDualBandLightLightState( HassInsteonLightLightState ):
+
+    @property
+    def entity_id(self):
+        return 'light.switchlinc_relay_dual_band_%s' % self.insteon_address.replace( '.', '_' )
 
 
 @dataclass( frozen = True )
@@ -178,11 +192,6 @@ class HassInsteonMotionDetectorMotionState( HassInsteonState ):
             "insteon_address": self.insteon_address,
             "insteon_group": 1,
         }
-    
-    @property
-    def state(self):
-        # TODO: Do translation to HAss state values
-        return 'unknown'
 
     
 @dataclass
@@ -208,11 +217,6 @@ class HassInsteonMotionDetectorLightState( HassInsteonState ):
             "insteon_address": self.insteon_address,
             "insteon_group": 1,
         }
-    
-    @property
-    def state(self):
-        # TODO: Do translation to HAss state values
-        return 'unknown'
 
     
 @dataclass
@@ -246,11 +250,6 @@ class HassInsteonMotionDetectorBatteryState( HassInsteonState ):
             "insteon_address": self.insteon_address,
             "insteon_group": 1,
         }
-    
-    @property
-    def state(self):
-        # TODO: Do translation to HAss state values
-        return 'unknown'
 
 
 @dataclass( frozen = True )
@@ -278,11 +277,6 @@ class HassInsteonOpenCloseSensorState( HassInsteonState ):
             "insteon_address": self.insteon_address,
             "insteon_group": 1,
         }
-    
-    @property
-    def state(self):
-        # TODO: Do translation to HAss state values
-        return 'unknown'
 
     
 HASS_SIM_ENTITY_DEFINITION_LIST = [
@@ -291,8 +285,17 @@ HASS_SIM_ENTITY_DEFINITION_LIST = [
         sim_entity_type = SimEntityType.LIGHT,
         sim_entity_fields_class = HassInsteonLightSwitchFields,
         sim_state_class_list = [
-            HassInsteonLightSwitchLightState,
-            HassInsteonLightSwitchColorState,
+            HassInsteonLightSwitchState,
+            HassInsteonLightLightState,
+        ],
+    ),
+    SimEntityDefinition(
+        class_label = 'Insteon Light Switch (dual band)',
+        sim_entity_type = SimEntityType.LIGHT,
+        sim_entity_fields_class = HassInsteonLightSwitchFields,
+        sim_state_class_list = [
+            HassInsteonDualBandLightSwitchState,
+            HassInsteonDualBandLightLightState,
         ],
     ),
     SimEntityDefinition(

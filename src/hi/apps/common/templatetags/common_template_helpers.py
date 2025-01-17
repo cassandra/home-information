@@ -19,9 +19,7 @@ def get_item(dictionary, key):
 
 @register.simple_tag
 def generate_uuid():
-    uuid_value = str(uuid.uuid4())
-    print(f"\n\nGenerated UUID: {uuid_value}\n")
-    return uuid_value
+    return str(uuid.uuid4())
 
 
 @register.simple_tag

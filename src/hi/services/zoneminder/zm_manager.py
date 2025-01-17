@@ -28,7 +28,7 @@ class ZoneMinderManager( Singleton ):
       ZM Api code: https://github.com/ZoneMinder/zoneminder/tree/master/web/api/app/Controller
       PyZM code: https://github.com/pliablepixels/pyzm/tree/357fdbd1937dab8027882598b61258ef43dc366a
     """
-    TRACE = True
+    TRACE = False
     
     ZM_ENTITY_NAME = 'ZoneMinder'
     ZM_SYSTEM_INTEGRATION_NAME = 'system'

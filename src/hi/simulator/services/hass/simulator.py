@@ -5,7 +5,7 @@ from hi.simulator.exceptions import SimEntityValidationError
 from hi.simulator.simulator import Simulator
 from hi.simulator.sim_entity import SimEntity
 
-from .sim_models import HASS_SIM_ENTITY_DEFINITION_LIST, HassInsteonSimEntityFields
+from .sim_models import HASS_SIM_ENTITY_DEFINITION_LIST, HassInsteonSimEntityFields, HassState
 
 
 class HassSimulator( Simulator ):
@@ -17,6 +17,13 @@ class HassSimulator( Simulator ):
     @property
     def label(self):
         return 'Home Assistant'
+
+    def get_hass_sim_state_list( self ) -> List[ HassState ]:
+        sim_state_list = list()
+        for sim_entity in self.sim_entities:
+            sim_state_list.extend( sim_entity.sim_state_list )
+            continue
+        return sim_state_list
 
     @property
     def sim_entity_definition_list(self) -> List[ SimEntityDefinition ]:
