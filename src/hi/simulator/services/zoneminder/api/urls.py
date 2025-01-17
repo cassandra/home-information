@@ -19,12 +19,16 @@ urlpatterns = [
     re_path( r'^monitors/(?P<monitor_id>\d+)\.json$',
              views.MonitorsView.as_view(),
              name = 'zm_api_monitors_set' ),
-
+    
     re_path( r'^states\.json$',
              views.StatesView.as_view(),
              name = 'zm_api_states' ),
     
-    re_path( r'^events/index/(?P<filter>.+).json$',
+    re_path( r'^states/change/(?P<run_state>.+)\.json$',
+             views.StatesChangeView.as_view(),
+             name = 'zm_api_states_change' ),
+
+    re_path( r'^events/index/(?P<filter>.+)\.json$',
              views.EventsIndexView.as_view(),
              name = 'zm_api_events_index' ),
 ]

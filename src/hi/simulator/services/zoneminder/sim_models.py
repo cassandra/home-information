@@ -21,9 +21,11 @@ class ZmServerSimEntityFields( SimEntityFields ):
 @dataclass
 class ZmServerRunState( SimState ):
 
+    RUNSTATE_SIM_STATE_ID  : ClassVar[ str ]  = 'runstate'
+    
     sim_entity_fields  : ZmServerSimEntityFields
     sim_state_type     : SimStateType             = SimStateType.DISCRETE
-    sim_state_id       : str                      = 'runstate'
+    sim_state_id       : str                      = RUNSTATE_SIM_STATE_ID
     value              : str                      = ZmRunStateType.default_value()
 
     @property

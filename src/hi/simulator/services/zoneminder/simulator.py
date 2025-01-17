@@ -13,6 +13,7 @@ from .sim_models import (
     ZmMonitorSimEntityFields,
     ZmMonitorMotionState,
     ZmSimServer,
+    ZmServerRunState,
     ZmServerSimEntityFields,
     ZmSimRunState,
     ZmSimRunStateDefinition,
@@ -72,7 +73,7 @@ class ZoneMinderSimulator( Simulator ):
             continue
         
         return zm_sim_run_state_list
-
+        
     def set_monitor_function( self,
                               monitor_id           : int,
                               zm_monitor_function  : ZmMonitorFunction ) -> SimState:
@@ -86,6 +87,17 @@ class ZoneMinderSimulator( Simulator ):
                     )
             continue
         raise KeyError( f'ZM monitor with id "{monitor_id}" does not exist.' )
+
+    def set_run_state( self, zm_run_state_type : ZmRunStateType ):
+
+        for sim_entity in self.sim_entities:
+            if sim_entity.sim_entity_definition.sim_entity_fields_class == ZmServerSimEntityFields:
+                return sim_entity.set_sim_state(
+                    sim_state_id = ZmServerRunState.RUNSTATE_SIM_STATE_ID,
+                    value_str = zm_run_state_type.value,
+                )
+            continue
+        raise KeyError( f'ZM server entity does not exist.' )
     
     @property
     def sim_entity_definition_list(self) -> List[ SimEntityDefinition ]:

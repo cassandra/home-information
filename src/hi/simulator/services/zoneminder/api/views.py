@@ -12,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 
 from hi.simulator.services.zoneminder.constants import ZmSimConstants
-from hi.simulator.services.zoneminder.enums import ZmMonitorFunction
+from hi.simulator.services.zoneminder.enums import ZmMonitorFunction, ZmRunStateType
 from hi.simulator.services.zoneminder.simulator import ZoneMinderSimulator
 from hi.simulator.services.zoneminder.sim_models import ZmPagination
 from hi.simulator.services.zoneminder.zm_event_manager import ZmSimEventManager
@@ -107,6 +107,34 @@ class StatesView( View ):
             })
         
 
+class StatesChangeView( View ):
+
+    def get(self, request, *args, **kwargs):
+        try:
+            run_state_str = kwargs.get('run_state')
+            logger.debug( f'ZM set run state: {run_state_str}' )
+            zm_run_state_type = ZmRunStateType.from_value( run_state_str )
+            zm_simulator = ZoneMinderSimulator()
+            zm_simulator.set_run_state( zm_run_state_type = zm_run_state_type )
+            return JsonResponse(
+                {
+                    "status": "success",
+                    "message": "Run state changed successfully",
+                    "new_state": run_state_str,
+                },
+                safe = False,
+            )
+        
+        except json.JSONDecodeError as jde:
+            raise BadRequest( f'Request body is not JSON: {jde}' )
+
+        except ValueError as ve:
+            raise BadRequest( f'Unknown ZoneMinder monitor function: {ve}' )
+
+        except KeyError as ke:
+            raise BadRequest( f'Unknown ZoneMinder monitor: {ke}' )
+
+        
 class EventsIndexView( View ):
 
     def get(self, request, *args, **kwargs):
@@ -184,7 +212,5 @@ class EventsIndexView( View ):
                     }
                 except ValueError as ve:
                     logger.exception( f'Problem parsing filter date: {value}', ve )
-                    continue
-                
-
+            continue
         return filters
