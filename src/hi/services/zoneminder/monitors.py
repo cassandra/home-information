@@ -32,12 +32,6 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         self._start_processed_event_ids = TTLCache( maxsize = 1000, ttl = 100000 )
         self._zm_tzname = None
 
-        # pyzm parses the "from" time as a naive time and applies the
-        # timezone separately. It will parse an ISO time with a timezone,
-        # but ignores it ignores its encoded timezone.  Thus, it is
-        # important that we have this in the same TZ as the ZoneMinder
-        # server and also pass in the TZ when filtering events.
-        #
         self._poll_from_datetime = None
         self._was_initialized = False
         return
@@ -46,23 +40,14 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         zm_manager = await self.zm_manager_async()
         _ = await self.sensor_response_manager_async()  # Allows async use of self.sensor_response_manager()
         self._zm_tzname = await sync_to_async( zm_manager.get_zm_tzname )()
-        self._poll_from_datetime = datetimeproxy.now( self._zm_tzname )
+        self._poll_from_datetime = datetimeproxy.now()
         zm_manager.register_change_listener( self.refresh )
         self._was_initialized = True
         return
     
     def refresh( self ):
         """ Should be called when integration settings are changed (via listener callback). """
-        new_tzname = self.zm_manager().get_zm_tzname()
-        if new_tzname == self._zm_tzname:
-            return
-
-        logger.info( f'Refreshing ZoneMinder monitor timezone: {self._zm_tzname} -> {new_tzname}' )
-        self._poll_from_datetime = datetimeproxy.change_timezone(
-            original_datetime = self._poll_from_datetime,
-            new_tzname = new_tzname,
-        )
-        self._zm_tzname = new_tzname
+        self._zm_tzname = self.zm_manager().get_zm_tzname()
         return
 
     async def do_work(self):
@@ -81,8 +66,20 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
     
     async def _process_events(self):
         current_poll_datetime = datetimeproxy.now()
+
+        # The pyzm ZM client library parses the "from" time as a naive time
+        # and applies the timezone separately. pyzm will parse an ISO time
+        # with a timezone, but pyzm ignores ignores the ISO time's encoded
+        # timezone.  Thus, it is important that we have thisn "poll from"
+        # in the same TZ as the ZoneMinder server and that we also pass
+        # the TZ when filtering events.
+        #
+        tz_adjusted_poll_from_datetime = datetimeproxy.change_timezone(
+            original_datetime = self._poll_from_datetime,
+            new_tzname = self._zm_tzname,
+        )
         options = {
-            'from': self._poll_from_datetime.isoformat(),  # This "from" only looks at event start time
+            'from': tz_adjusted_poll_from_datetime.isoformat(),  # "from" only looks at event start time
             'tz': self._zm_tzname,
         }
         events = self.zm_manager().get_zm_events( options = options )
@@ -168,7 +165,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             #
             closed_zm_event_list.sort( key = lambda zm_event : zm_event.end_datetime )
             self._poll_from_datetime = closed_zm_event_list[-1].end_datetime
-            
+
         else:
             # N.B. When there are no events, we do not advance the polling
             # base time. We do not know whether an event might have started

@@ -2,6 +2,8 @@ from dataclasses import dataclass, fields, MISSING
 from datetime import datetime
 from typing import Any, Dict, List, Tuple, Type
 
+import hi.apps.common.datetimeproxy as datetimeproxy
+
 from .enums import SimEntityType, SimStateType
 
 
@@ -96,13 +98,18 @@ class SimState:
     # Subclasses may provide a default value for this.    
     value              : Any              = None
 
+    value_datetime     : datetime         = None
+    
     @property
     def name(self):
         return self.sim_entity_fields.name
 
     def set_value_from_string( self, value_str : str ):
         """ Subclasses should override this is the value is not a string and needs conversion. """
+        if self.value == value_str:
+            return
         self.value = value_str
+        self.value_datetime = datetimeproxy.now()
         return
     
     @property
@@ -119,6 +126,13 @@ class SimState:
     def choices(self) -> List[ Tuple[ str, str ]]:
         """ Subclasses using SimStateType.DISCRETE should override this to provide the valid values. """
         return list()
+
+    def copy_value( self, other_sim_state : 'SimState' ):
+        if not other_sim_state:
+            return
+        self.value = other_sim_state.value
+        self.value_datetime = other_sim_state.value_datetime
+        return
     
 
 @dataclass

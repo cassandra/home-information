@@ -1,6 +1,6 @@
 from typing import List, Set
 
-from hi.simulator.base_models import SimEntityDefinition, SimEntityFields
+from hi.simulator.base_models import SimEntityDefinition, SimEntityFields, SimState
 from hi.simulator.exceptions import SimEntityValidationError
 from hi.simulator.simulator import Simulator
 from hi.simulator.sim_entity import SimEntity
@@ -8,17 +8,19 @@ from hi.simulator.sim_entity import SimEntity
 from .enums import ZmMonitorFunction, ZmRunStateType
 from .sim_models import (
     ZONEMINDER_SIM_ENTITY_DEFINITION_LIST,
+    ZmSimMonitor,
     ZmMonitorSimEntityFields,
+    ZmMonitorMotionState,
+    ZmSimServer,
     ZmServerSimEntityFields,
-    ZmMonitorSimEntity,
-    ZmServerSimEntity,
     ZmSimRunState,
     ZmSimRunStateDefinition,
 )
+from .zm_event_manager import ZmSimEventManager
 
 
 class ZoneMinderSimulator( Simulator ):
-    
+
     @property
     def id(self):
         return 'zm'
@@ -27,14 +29,14 @@ class ZoneMinderSimulator( Simulator ):
     def label(self) -> str:
         return 'ZoneMinder'
 
-    def get_zm_monitor_sim_entity_list( self ) -> List[ ZmMonitorSimEntity ]:
-        return [ ZmMonitorSimEntity( sim_entity = x ) for x in self.sim_entities
+    def get_zm_monitor_sim_entity_list( self ) -> List[ ZmSimMonitor ]:
+        return [ ZmSimMonitor( sim_entity = x ) for x in self.sim_entities
                  if x.sim_entity_definition.sim_entity_fields_class == ZmMonitorSimEntityFields ]
 
-    def get_zm_server_sim_entity( self ) -> ZmServerSimEntity:
+    def get_zm_server_sim_entity( self ) -> ZmSimServer:
         for sim_entity in self.sim_entities:
             if sim_entity.sim_entity_definition.sim_entity_fields_class == ZmServerSimEntityFields:
-                return ZmServerSimEntity( sim_entity = sim_entity )
+                return ZmSimServer( sim_entity = sim_entity )
             continue
         raise ValueError( 'No ZM server entity has been created.' )
 
@@ -142,3 +144,22 @@ class ZoneMinderSimulator( Simulator ):
             continue
         return
     
+    def set_sim_state( self,
+                       sim_entity_id  : int,
+                       sim_state_id   : str,
+                       value_str      : str ) -> SimState:
+        """ Need to override this so we can track ZM events based on simulated motion changes. """
+        
+        sim_state = super().set_sim_state(
+            sim_entity_id = sim_entity_id,
+            sim_state_id = sim_state_id,
+            value_str = value_str,
+        )
+        if isinstance( sim_state, ZmMonitorMotionState ):
+            sim_entity = self.get_sim_entity_by_id( sim_entity_id = sim_entity_id )
+            ZmSimEventManager().add_motion_value(
+                zm_sim_monitor = ZmSimMonitor( sim_entity = sim_entity ),
+                motion_value = sim_state.value,
+            )
+        return sim_state
+        

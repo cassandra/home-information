@@ -24,7 +24,7 @@ urlpatterns = [
              views.StatesView.as_view(),
              name = 'zm_api_states' ),
     
-    re_path( r'^events/index/(?P<filter>.+)$',
+    re_path( r'^events/index/(?P<filter>.+).json$',
              views.EventsIndexView.as_view(),
              name = 'zm_api_events_index' ),
 ]

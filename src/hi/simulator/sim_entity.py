@@ -63,6 +63,6 @@ class SimEntity:
         for sim_state_id, self_sim_state in self._sim_state_map.items():
             other_sim_state = other_sim_entity._sim_state_map.get( sim_state_id )
             if other_sim_state:
-                self_sim_state.value = other_sim_state.value
+                self_sim_state.copy_value( other_sim_state )
             continue
         return

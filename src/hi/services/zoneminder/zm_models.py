@@ -10,10 +10,11 @@ from .zm_manager import ZoneMinderManager
 class ZmEvent:
 
     def __init__( self, zm_api_event : ZmApiEvent, zm_tzname : str ):
+        zm_event_dict = zm_api_event.get()
         self._event_id = zm_api_event.id()
         self._monitor_id = zm_api_event.monitor_id()
-        self._start_datetime = self._to_datetime( zm_api_event.get()['StartTime'],zm_tzname  )
-        self._end_datetime = self._to_datetime( zm_api_event.get()['EndTime'], zm_tzname )
+        self._start_datetime = self._to_datetime( zm_event_dict['StartTime'], zm_tzname  )
+        self._end_datetime = self._to_datetime( zm_event_dict['EndTime'], zm_tzname )
         self._cause = zm_api_event.cause()
         self._duration_secs = zm_api_event.duration()
         try:
@@ -26,7 +27,7 @@ class ZmEvent:
             self._alarmed_frame_count = 0
         self._score = zm_api_event.score()
         self._notes = zm_api_event.notes()
-        self._max_score_frame_id = zm_api_event.get()['MaxScoreFrameId']
+        self._max_score_frame_id = zm_event_dict['MaxScoreFrameId']
         return
 
     @property

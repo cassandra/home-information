@@ -8,6 +8,7 @@ from hi.simulator.base_models import SimEntityFields, SimState, SimEntityDefinit
 from hi.simulator.enums import SimEntityType, SimStateType
 from hi.simulator.sim_entity import SimEntity
 
+from .constants import ZmSimConstants
 from .enums import ZmMonitorFunction, ZmRunStateType
 
 
@@ -34,7 +35,7 @@ class ZmServerRunState( SimState ):
 
     
 @dataclass( frozen = True )
-class ZmServerSimEntity:
+class ZmSimServer:
     """ Wrapper to encapsulate ZmServer-specific accessors """
     
     sim_entity    : SimEntity
@@ -99,7 +100,7 @@ class ZmMonitorSimEntityFields( SimEntityFields ):
 
     
 @dataclass( frozen = True )
-class ZmMonitorSimEntity:
+class ZmSimMonitor:
     """ Wrapper to encapsulate ZmMonitor-specific accessors """
 
     sim_entity    : SimEntity
@@ -107,6 +108,26 @@ class ZmMonitorSimEntity:
     @property
     def monitor_id(self):
         return self.sim_entity.sim_entity_fields.monitor_id
+
+    @property
+    def width(self):
+        return self.sim_entity.sim_entity_fields.width
+
+    @property
+    def height(self):
+        return self.sim_entity.sim_entity_fields.height
+
+    @property
+    def orientation(self):
+        return self.sim_entity.sim_entity_fields.orientation
+
+    @property
+    def motion_sim_state(self) -> SimState:
+        for sim_state in self.sim_entity.sim_state_list:
+            if isinstance( sim_state, ZmMonitorMotionState ):
+                return sim_state
+            continue
+        raise ValueError( f'No motion sim state for ZM monitor {self.sim_entity}' )
     
     def to_api_dict(self):
         fields = self.sim_entity.sim_entity_fields
@@ -256,40 +277,74 @@ class ZmMonitorMotionState( SimState ):
 
     
 @dataclass
-class ZmEvent:
+class ZmSimEvent:
 
-    zm_monitor      : ZmMonitorSimEntityFields
+    zm_sim_monitor  : ZmSimMonitor
     event_id        : int
     start_datetime  : datetime
     end_datetime    : datetime
     name            : str
-    cause           : str
-    length_secs     : float
-    total_frames    : int
-    alarm_frames    : int
-    total_score     : int
-    average_score   : int
-    max_score       : int
-    
-    def to_api_dict(self):
-        start_datetime_str = self.start_datetime.strftime('%Y-%m-%d %H:%M:%S')
+    cause           : str        = 'Simulator',
+    length_secs     : float      = 0.0
+    total_frames    : int        = 0
+    alarm_frames    : int        = 0
+    total_score     : int        = 0
+    average_score   : int        = 0
+    max_score       : int        = 0
+
+    @property
+    def is_active(self):
+        return bool( self.end_datetime is None )
+
+    def update_score_properties( self ):
         if self.end_datetime:
-            end_datetime_str = self.end_datetime.strftime('%Y-%m-%d %H:%M:%S')
+            now_datetime = self.end_datetime
+        else:
+            now_datetime = datetimeproxy.now()
+
+        duration_timedelta = now_datetime - self.start_datetime
+
+        self.length_secs = float( duration_timedelta.seconds )
+
+        # TODO: Setting these somewhat randomly and with specicic event
+        # characteristics.  Only will need to change this if we need
+        # finer-grained control over the simulation.
+
+        frame_per_second = 5
+        self.total_frames = int( duration_timedelta.seconds * frame_per_second )
+        self.alarm_frames = int( self.total_frames / 2 )
+        self.total_score = int( self.alarm_frames * 10 )
+        self.average_score = int( self.alarm_frames * 5 )
+        self.max_score = int( self.alarm_frames * 20 )
+        return
+        
+    def to_api_dict(self):
+        tz_adjusted_start_datetime = datetimeproxy.change_timezone(
+            original_datetime = self.start_datetime,
+            new_tzname = ZmSimConstants.TIMEZONE_NAME,
+        )
+        start_datetime_str = tz_adjusted_start_datetime.strftime('%Y-%m-%d %H:%M:%S')
+        if self.end_datetime:
+            tz_adjusted_end_datetime = datetimeproxy.change_timezone(
+                original_datetime = self.end_datetime,
+                new_tzname = ZmSimConstants.TIMEZONE_NAME,
+            )
+            end_datetime_str = tz_adjusted_end_datetime.strftime('%Y-%m-%d %H:%M:%S')
         else:
             end_datetime_str = None
         date_str = datetimeproxy.to_date_str( self.start_datetime )
         return {
             'Event': {
                 'Id': str(self.event_id),
-                'MonitorId': str(self.zm_monitor.monitor_id),
+                'MonitorId': str(self.zm_sim_monitor.monitor_id),
                 'StorageId': '0',
                 'SecondaryStorageId': '0',
                 'Name': 'Event- 11091',
                 'Cause': 'Forced Web',
                 'StartTime': start_datetime_str,
                 'EndTime': end_datetime_str,
-                'Width': self.zm_monitor.width,
-                'Height': self.zm_monitor.height,
+                'Width': self.zm_sim_monitor.width,
+                'Height': self.zm_sim_monitor.height,
                 'Length': f'{self.length_secs:.2}',
                 'Frames': str(self.total_frames),
                 'AlarmFrames': str(self.alarm_frames),
@@ -306,12 +361,12 @@ class ZmEvent:
                 'Executed': '0',
                 'Notes': f'{self.cause}: ',
                 'StateId': '2',
-                'Orientation': self.zm_monitor.orientation,
+                'Orientation': self.zm_sim_monitor.orientation,
                 'DiskSpace': '27303821',
                 'Scheme': 'Medium',
                 'Locked': False,
                 'MaxScoreFrameId': '577976',
-                'FileSystemPath': f'/var/cache/zoneminder/events/{self.zm_monitor.monitor_id}/{date_str}/{self.event_id}',
+                'FileSystemPath': f'/var/cache/zoneminder/events/{self.zm_sim_monitor.monitor_id}/{date_str}/{self.event_id}',
             }
         }
 

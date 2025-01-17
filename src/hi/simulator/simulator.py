@@ -43,6 +43,11 @@ class Simulator( Singleton ):
         sim_entity_list.sort( key = lambda item : item.name )
         return sim_entity_list
 
+    def get_sim_entity_by_id( self, sim_entity_id : int ) -> SimEntity:
+        if sim_entity_id not in self._sim_entity_map:
+            raise KeyError( f'No simulator ewntity found with id = {sim_entity_id}' )
+        return self._sim_entity_map.get( sim_entity_id )
+        
     def initialize( self ):
         """
         The SimulatorManager stores, hydrates and defines the set of existing
@@ -86,7 +91,7 @@ class Simulator( Singleton ):
                        sim_entity_id  : int,
                        sim_state_id   : str,
                        value_str      : str ) -> SimState:
-        sim_entity = self._sim_entity_map[sim_entity_id]
+        sim_entity = self.get_sim_entity_by_id( sim_entity_id = sim_entity_id )
         return sim_entity.set_sim_state(
             sim_state_id = sim_state_id,
             value_str = value_str,
