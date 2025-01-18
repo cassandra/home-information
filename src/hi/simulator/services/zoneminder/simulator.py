@@ -97,7 +97,7 @@ class ZoneMinderSimulator( Simulator ):
                     value_str = zm_run_state_type.value,
                 )
             continue
-        raise KeyError( f'ZM server entity does not exist.' )
+        raise KeyError( 'ZM server entity does not exist.' )
     
     @property
     def sim_entity_definition_list(self) -> List[ SimEntityDefinition ]:

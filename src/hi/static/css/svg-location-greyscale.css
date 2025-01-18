@@ -1,0 +1,183 @@
+svg.hi-location-view path.ground {
+    fill: url(#ground-pattern);
+    stroke: black;
+    stroke-width: 0;
+}
+svg.hi-location-view path.grass {
+    fill: url(#grass-pattern);
+    stroke: black;
+    stroke-width: 0;
+}
+svg.hi-location-view path.rock-beds {
+    fill: url(#rock-pattern);
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.stone-walls {
+    fill: url(#stone-pattern);
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.landscape-transitions {
+    fill: none;
+    stroke: #606060;
+    stroke-width: 4;
+}
+svg.hi-location-view path.brick {
+    fill: url(#brick-pattern);
+    stroke: #606060;
+    stroke-width: 4;
+}
+svg.hi-location-view path.mulch {
+    fill: url(#mulch-pattern);
+    stroke: #606060;
+    stroke-width: 4;
+}
+svg.hi-location-view path.gravel {
+    fill: url(#gravel-pattern);
+    stroke: #606060;
+    stroke-width: 4;
+}
+svg.hi-location-view path.asphalt {
+    fill: url(#asphalt-pattern);
+    stroke: #606060;
+    stroke-width: 4;
+}
+svg.hi-location-view path.tiles {
+    fill: url(#tiles-pattern);
+    stroke: #606060;
+    stroke-width: 1;
+}
+svg.hi-location-view path.wood-decks {
+    fill: url(#wood-pattern);
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.pavement {
+    fill: url(#pavement-pattern);
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.pavers {
+    fill: url(#pavers-pattern);
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.pool-coping {
+    fill: #a0a0a0;
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.property-lines {
+    fill: none;
+    stroke: black;
+    stroke-width: 5;
+    stroke-dasharray: 50,10,50,10,10,10;
+}
+svg.hi-location-view path.fencing {
+    fill: none;
+    stroke: #404040;
+    stroke-width: 8;
+}
+svg.hi-location-view path.water {
+    fill: url(#water-pattern);
+    stroke: none;
+    stroke-width: 1;
+}
+svg.hi-location-view path.sheds {
+    fill: #b0b0b0;
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.foliage {
+    fill: url(#foliage-pattern);
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.utilities {
+    fill: none;
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.interior-floors {
+    fill: #f8f8f8;
+    stroke: none;
+    stroke-width: 1;
+}
+svg.hi-location-view path.floor-transitions {
+    fill: none;
+    stroke: #404040;
+    stroke-width: 1;
+    stroke-dasharray: 10, 10;
+}
+svg.hi-location-view path.stairs {
+    fill: none;
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.ceiling-transitions {
+    fill: none;
+    stroke: #404040;
+    stroke-width: 1;
+    stroke-dasharray: 5, 5;
+}
+svg.hi-location-view path.interior-walls {
+    fill: black;
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.windows {
+    fill: #e0e0e0;
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.exterior-walls {
+    fill: black;
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.door-arcs {
+    fill: none;
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.doors {
+    fill: none;
+    stroke: black;
+    stroke-width: 3;
+}
+svg.hi-location-view path.countertops {
+    fill: #e0e0e0;
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.fireplaces {
+    fill: #fff0f0;
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.furniture {
+    fill: #e0e0e0;
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.toilets {
+    fill: #e0e0e0;
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.shelves {
+    fill: #fffff0;
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.bathtubs {
+    fill: #f8f8f8;
+    stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.sinks {
+    fill: #f8f8f8;
+    stroke: black;
+    stroke-width: 1;
+}

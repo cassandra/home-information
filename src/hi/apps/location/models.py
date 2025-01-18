@@ -8,7 +8,7 @@ from hi.apps.attribute.models import AttributeModel
 from hi.enums import ItemType
 from hi.models import ItemTypeModelMixin
 
-from .enums import LocationViewType
+from .enums import LocationViewType, SvgStyleName
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +141,11 @@ class LocationView( models.Model, ItemTypeModelMixin ):
     svg_rotate = SvgDecimalField(
         'Rotate',
     )
+    svg_style_name_str = models.CharField(
+        'Style Name',
+        max_length = 32,
+        null = False, blank = False,
+    )
     order_id = models.PositiveIntegerField(
         'Order Id',
         default = 0,
@@ -187,6 +192,15 @@ class LocationView( models.Model, ItemTypeModelMixin ):
     @svg_view_box.setter
     def svg_view_box( self, svg_view_box : SvgViewBox ):
         self.svg_view_box_str = str(svg_view_box)
+        return
+    
+    @property
+    def svg_style_name(self):
+        return SvgStyleName.from_name_safe( self.svg_style_name_str )
+
+    @svg_style_name.setter
+    def svg_style_name( self, svg_style_name : SvgStyleName ):
+        self.svg_style_name_str = str(svg_style_name)
         return
 
 

@@ -178,9 +178,8 @@
 	    return;
 	}
 
-	if ( $(event.target).hasClass( Hi.LOCATION_VIEW_SVG_CLASS ) ) {
-	    if ( Hi.DEBUG ) { console.log( `Click [${MODULE_NAME}]`, event ); }
-	    gSelectedLocationViewSvg = event.target;
+	if ( $(event.target).closest( Hi.LOCATION_VIEW_BASE_SELECTOR ).length > 0 ) {
+	    gSelectedLocationViewSvg = $(event.target).closest( Hi.LOCATION_VIEW_SVG_SELECTOR );
 	    clearTransformData();
 	    event.preventDefault(); 
 	    event.stopImmediatePropagation();

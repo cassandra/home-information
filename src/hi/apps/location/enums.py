@@ -82,8 +82,8 @@ class LocationViewType(LabeledEnum):
 
 class SvgItemType(LabeledEnum):
 
-    ICON  = ( 'Icon', '' )
-    OPEN_PATH  = ( 'Open Path ', '' )
+    ICON         = ( 'Icon', '' )
+    OPEN_PATH    = ( 'Open Path ', '' )
     CLOSED_PATH  = ( 'Closed Path ', '' )
 
     @property
@@ -97,3 +97,17 @@ class SvgItemType(LabeledEnum):
     @property
     def is_path_closed(self):
         return bool( self == SvgItemType.CLOSED_PATH )
+
+    
+class SvgStyleName(LabeledEnum):
+
+    GREYSCALE  = ( 'Grey Scale ', '' )
+    COLOR      = ( 'Color', '' )
+
+    @property
+    def svg_defs_template_name(self):
+        return f'location/panes/svg_fill_patterns_{self}.html'
+
+    @property
+    def css_static_file_name(self):
+        return f'css/svg-location-{self}.css'
