@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from decimal import Decimal, ROUND_HALF_UP
-
+from typing import List
+                
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -138,18 +139,23 @@ class SvgPathItem:
     path item is a sequence of drawing commands defined in 'svg_path'.
     """
 
-    html_id       : str
-    css_class     : str
-    svg_path      : str
-    stroke_color  : str
-    stroke_width  : float
-    fill_color    : str
-    fill_opacity  : float
+    html_id           : str
+    css_class         : str
+    svg_path          : str
+    stroke_color      : str
+    stroke_width      : float
+    stroke_dasharray  : List[ int ]
+    fill_color        : str
+    fill_opacity      : float
 
     @property
     def is_closed(self):
         return bool( self.svg_path and ( self.svg_path[-1].lower() == 'z' ))
 
+    @property
+    def stroke_dasharray_value(self):
+        return ",".join([ str(x) for x in self.stroke_dasharray ])
+    
     
 class SvgDecimalField( models.DecimalField ):
     """
@@ -186,18 +192,21 @@ class SvgDecimalField( models.DecimalField ):
 @dataclass
 class SvgStatusStyle:
     
-    status_value  : str
-    stroke_color  : str
-    stroke_width  : float
-    fill_color    : str
-    fill_opacity  : float
+    status_value      : str
+    stroke_color      : str
+    stroke_width      : float
+    stroke_dasharray  : List[ int ]
+    fill_color        : str
+    fill_opacity      : float
 
     def to_dict(self):
-        return {
+        result = {
             'status': self.status_value,
             'stroke': self.stroke_color,
             'stroke-width': self.stroke_width,
             'fill': self.fill_color,
             'fill-opacity': self.fill_opacity,
         }
-
+        if self.stroke_dasharray:
+            result['stroke-dasharray'] = ','.join([ str(x) for x in self.stroke_dasharray ])
+        return result

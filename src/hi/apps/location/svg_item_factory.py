@@ -55,6 +55,7 @@ class SvgItemFactory( Singleton ):
             svg_path = path.svg_path,
             stroke_color = svg_status_style.stroke_color,
             stroke_width = svg_status_style.stroke_width,
+            stroke_dasharray = svg_status_style.stroke_dasharray,
             fill_color = svg_status_style.fill_color,
             fill_opacity = svg_status_style.fill_opacity,
         )

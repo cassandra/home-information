@@ -27,6 +27,25 @@
 
   --top-buttons-height: 2.5rem;
   --bottom-buttons-height: 2.5rem;
+
+  --status-highlighted-color: red;
+  --status-hover-color: blue;
+  
+  /* These should match those in hi.apps.monitor.StatusStyle */
+  --status-active-color: red;
+  --status-recent-color: orange;
+  --status-past-color: yellow;
+  --status-ok-color: green;
+  --status-bad-color: red;
+  --status-idle-color: #888888;
+
+  --on-status-active-color: white;
+  --on-status-recent-color: black;
+  --on-status-past-color: black;
+  --on-status-ok-color: white;
+  --on-status-bad-color: white;
+  --on-status-idle-color: black;
+  
 }
 
 html, body {
@@ -222,96 +241,100 @@ svg[action-state="scale"] {
 }
 
 svg .highlighted {
-    filter: drop-shadow(0 0 10px red);
+    filter: drop-shadow(0 0 10px var(--status-highlighted-color));
 }
 g[hover] {
-    outline: 2px solid blue;
-    filter: drop-shadow(0 0 5px blue);
+    outline: 2px solid var(--status-hover-color);
+    filter: drop-shadow(0 0 5px var(--status-hover-color));
 }
 g[status="active"] {
-    outline: 2px solid red;
-    filter: drop-shadow(0 0 5px red);
+    outline: 2px solid var(--status-active-color);
+    filter: drop-shadow(0 0 5px var(--status-active-color));
 }
 g[status="recent"] {
-    outline: 2px solid orange;
-    filter: drop-shadow(0 0 5px orange);
+    outline: 2px solid var(--status-recent-color);
+    filter: drop-shadow(0 0 5px var(--status-recent-color));
 }
 g[status="past"] {
-    outline: 2px solid yellow;
-    filter: drop-shadow(0 0 5px yellow);
+    outline: 2px solid var(--status-past-color);
+    filter: drop-shadow(0 0 5px var(--status-past-color));
 }
 g[status="on"] {
-    outline: 5px solid green;
-    filter: drop-shadow(0 0 5px green);
+    outline: 5px solid var(--status-ok-color);
+    filter: drop-shadow(0 0 5px var(--status-ok-color));
+}
+g[status="off"] {
+    outline: 5px solid var(--status-idle-color);
+    filter: drop-shadow(0 0 5px var(--status-idle-color));
 }
 g[status="open"] {
-    outline: 5px solid red;
-    filter: drop-shadow(0 0 5px red);
+    outline: 5px solid var(--status-active-color);
+    filter: drop-shadow(0 0 5px var(--status-active-color));
 }
 g[status="connected"] {
-    outline: 5px solid green;
-    filter: drop-shadow(0 0 5px green);
+    outline: 5px solid var(--status-ok-color);
+    filter: drop-shadow(0 0 5px var(--status-ok-color));
 }
 g[status="disconnected"] {
-    outline: 5px solid red;
-    filter: drop-shadow(0 0 5px red);
+    outline: 5px solid var(--status-active-color);
+    filter: drop-shadow(0 0 5px var(--status-active-color));
 }
 g[status="high"] {
-    outline: 5px solid green;
-    filter: drop-shadow(0 0 5px green);
+    outline: 5px solid var(--status-ok-color);
+    filter: drop-shadow(0 0 5px var(--status-ok-color));
 }
 g[status="low"] {
-    outline: 5px solid red;
-    filter: drop-shadow(0 0 5px red);
+    outline: 5px solid var(--status-active-color);
+    filter: drop-shadow(0 0 5px var(--status-active-color));
 }
 
 div[status="active"] {
-    color: white;
-    background-color: red;
+    color: var(--on-status-active-color);
+    background-color: var(--status-active-color);
 }
 div[status="idle"] {
-    color: var(--on-success-color);
-    background-color: var(--success-color);
+    color: var(--on-status-ok-color);
+    background-color: var(--status-ok-color);
 }
 div[status="recent"] {
-    color: black;
-    background-color: orange;
+    color: var(--on-status-recent-color);
+    background-color: var(--status-recent-color);
 }
 div[status="past"] {
-    color: black;
-    background-color: yellow;
+    color: var(--on-status-past-color);
+    background-color: var(--status-past-color);
 }
 div[status="on"] {
-    color: var(--on-success-color);
-    background-color: var(--success-color);
+    color: var(--on-status-ok-color);
+    background-color: var(--status-ok-color);
 }
 div[status="off"] {
-    color: var(--on-error-color);
-    background-color: var(--error-color);
+    color: var(--on-status-idle-color);
+    background-color: var(--status-idle-color);
 }
 div[status="open"] {
-    color: var(--on-error-color);
-    background-color: var(--error-color);
+    color: var(--on-status-bad-color);
+    background-color: var(--status-bad-color);
 }
 div[status="closed"] {
-    color: var(--on-success-color);
-    background-color: var(--success-color);
+    color: var(--on-status-idle-color);
+    background-color: var(--status-idle-color);
 }
 div[status="connected"] {
-    color: var(--on-success-color);
-    background-color: var(--success-color);
+    color: var(--on-status-ok-color);
+    background-color: var(--status-ok-color);
 }
 div[status="disconnected"] {
-    color: var(--on-error-color);
-    background-color: var(--error-color);
+    color: var(--on-status-bad-color);
+    background-color: var(--status-bad-color);
 }
 div[status="high"] {
-    color: var(--on-success-color);
-    background-color: var(--success-color);
+    color: var(--on-status-ok-color);
+    background-color: var(--status-ok-color);
 }
 div[status="low"] {
-    color: var(--on-error-color);
-    background-color: var(--error-color);
+    color: var(--on-status-bad-color);
+    background-color: var(--status-bad-color);
 }
 
 .switch {

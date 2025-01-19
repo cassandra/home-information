@@ -9,116 +9,140 @@ from .transient_models import EntityStateStatusData
 class StatusStyle:
 
     DEFAULT_STATUS_VALUE = ''
-    DEFAULT_STROKE_COLOR = '#40f040'
-    DEFAULT_STROKE_WIDTH = 5.0
+    DEFAULT_STROKE_COLOR = '#a0a0a0'
+    DEFAULT_STROKE_WIDTH = 1.0
+    DEFAULT_STROKE_DASHARRAY = [ 3, 6 ]
     DEFAULT_FILL_COLOR = 'white'
     DEFAULT_FILL_OPACITY = 0.0
+
+    # These should match those in main.css
+    STATUS_ACTIVE_COLOR = 'red'
+    STATUS_RECENT_COLOR = 'orange'
+    STATUS_PAST_COLOR = 'yellow'
+    STATUS_OK_COLOR = 'green'
+    STATUS_BAD_COLOR = 'red'
+    STATUS_IDLE_COLOR = '#888888'
     
     MovementActive = SvgStatusStyle(
         status_value = 'active',
-        stroke_color = 'red',
+        stroke_color = STATUS_ACTIVE_COLOR,
         stroke_width = DEFAULT_STROKE_WIDTH,
-        fill_color = 'red',
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_ACTIVE_COLOR,
         fill_opacity = 0.5,
     )
     MovementRecent = SvgStatusStyle(
         status_value = 'recent',
-        stroke_color = 'orange',
+        stroke_color = STATUS_RECENT_COLOR,
         stroke_width = DEFAULT_STROKE_WIDTH,
-        fill_color = 'orange',
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_RECENT_COLOR,
         fill_opacity = 0.5,
     )
     MovementPast = SvgStatusStyle(
         status_value = 'past',
-        stroke_color = 'yellow',
+        stroke_color = STATUS_PAST_COLOR,
         stroke_width = DEFAULT_STROKE_WIDTH,
-        fill_color = 'yellow',
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_PAST_COLOR,
         fill_opacity = 0.5,
     )
     MovementIdle = SvgStatusStyle(
         status_value = 'idle',
-        stroke_color = '#888888',
+        stroke_color = STATUS_OK_COLOR,
         stroke_width = DEFAULT_STROKE_WIDTH,
-        fill_color = 'white',
-        fill_opacity = 0.0,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_OK_COLOR,
+        fill_opacity = 0.15,
     )
     On = SvgStatusStyle(
         status_value = 'on',
         stroke_color = 'green',
         stroke_width = DEFAULT_STROKE_WIDTH,
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
         fill_color = 'green',
         fill_opacity = 0.5,
     )
     Off = SvgStatusStyle(
         status_value = 'off',
-        stroke_color = '#888888',
+        stroke_color = STATUS_IDLE_COLOR,
         stroke_width = DEFAULT_STROKE_WIDTH,
-        fill_color = '#888888',
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_IDLE_COLOR,
         fill_opacity = 0.5,
     )
     Open = SvgStatusStyle(
         status_value = 'open',
-        stroke_color = 'red',
+        stroke_color = STATUS_ACTIVE_COLOR,
         stroke_width = DEFAULT_STROKE_WIDTH,
-        fill_color = 'red',
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_ACTIVE_COLOR,
         fill_opacity = 0.5,
     )
     OpenRecent = SvgStatusStyle(
         status_value = 'recent',
-        stroke_color = 'orange',
+        stroke_color = STATUS_RECENT_COLOR,
         stroke_width = DEFAULT_STROKE_WIDTH,
-        fill_color = 'orange',
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_RECENT_COLOR,
         fill_opacity = 0.5,
     )
     OpenPast = SvgStatusStyle(
         status_value = 'past',
-        stroke_color = 'yellow',
+        stroke_color = STATUS_PAST_COLOR,
         stroke_width = DEFAULT_STROKE_WIDTH,
-        fill_color = 'yellow',
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_PAST_COLOR,
         fill_opacity = 0.5,
     )
     Closed = SvgStatusStyle(
         status_value = 'closed',
-        stroke_color = '#888888',
+        stroke_color = STATUS_IDLE_COLOR,
         stroke_width = DEFAULT_STROKE_WIDTH,
-        fill_color = '#888888',
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_IDLE_COLOR,
         fill_opacity = 0.5,
     )
     Connected = SvgStatusStyle(
         status_value = 'connected',
-        stroke_color = 'green',
+        stroke_color = STATUS_OK_COLOR,
         stroke_width = DEFAULT_STROKE_WIDTH,
-        fill_color = 'green',
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_OK_COLOR,
         fill_opacity = 0.5,
     )
     Disconnected = SvgStatusStyle(
         status_value = 'disconnected',
-        stroke_color = 'red',
+        stroke_color = STATUS_BAD_COLOR,
         stroke_width = DEFAULT_STROKE_WIDTH,
-        fill_color = 'red',
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_BAD_COLOR,
         fill_opacity = 0.5,
     )
     High = SvgStatusStyle(
         status_value = 'high',
-        stroke_color = 'green',
+        stroke_color = STATUS_OK_COLOR,
         stroke_width = DEFAULT_STROKE_WIDTH,
-        fill_color = 'green',
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_OK_COLOR,
         fill_opacity = 0.5,
     )
     Low = SvgStatusStyle(
         status_value = 'low',
-        stroke_color = 'red',
+        stroke_color = STATUS_BAD_COLOR,
         stroke_width = DEFAULT_STROKE_WIDTH,
-        fill_color = 'red',
+        stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
+        fill_color = STATUS_BAD_COLOR,
         fill_opacity = 0.5,
     )
 
     @classmethod
-    def default(cls):
+    def default( cls, status_value : str = DEFAULT_STATUS_VALUE ):
         return SvgStatusStyle(
-            status_value = cls.DEFAULT_STATUS_VALUE,
+            status_value = status_value,
             stroke_color = cls.DEFAULT_STROKE_COLOR,
             stroke_width = cls.DEFAULT_STROKE_WIDTH,
+            stroke_dasharray = cls.DEFAULT_STROKE_DASHARRAY,
             fill_color = cls.DEFAULT_FILL_COLOR,
             fill_opacity = cls.DEFAULT_FILL_OPACITY,
         )
@@ -224,14 +248,8 @@ class StatusDisplayData:
         status_value = self.latest_sensor_value
         if not status_value:
             status_value = StatusStyle.DEFAULT_STATUS_VALUE
-            
-        return SvgStatusStyle(
-            status_value = status_value,
-            stroke_color = StatusStyle.DEFAULT_STROKE_COLOR,
-            stroke_width = StatusStyle.DEFAULT_STROKE_WIDTH,
-            fill_color = StatusStyle.DEFAULT_FILL_COLOR,
-            fill_opacity = StatusStyle.DEFAULT_FILL_OPACITY,
-        )
+
+        return StatusStyle.default( status_value = status_value )
     
     def _get_movement_status_style( self ):
 
