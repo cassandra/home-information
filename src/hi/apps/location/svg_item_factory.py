@@ -46,6 +46,20 @@ class SvgItemFactory( Singleton ):
                               path              : LocationItemPathModel,
                               css_class         : str,
                               svg_status_style  : SvgStatusStyle              = None  ) -> SvgPathItem:
+        if isinstance( item, Entity ):
+            entity_type = item.entity_type
+            if entity_type == EntityType.WATER_LINE:
+                svg_status_style = StatusStyle.WaterLine
+            elif entity_type == EntityType.ELECTRIC_WIRE:
+                svg_status_style = StatusStyle.ElectricWire
+            elif entity_type == EntityType.TELECOM_WIRE:
+                svg_status_style = StatusStyle.TelecomWire
+            elif entity_type == EntityType.SEWER_LINE:
+                svg_status_style = StatusStyle.SewerLine
+            elif entity_type in [ EntityType.CONTROL_WIRE,
+                                  EntityType.SPRINKLER_WIRE ]:
+                svg_status_style = StatusStyle.ControlWire
+
         if not svg_status_style:
             svg_status_style = StatusStyle.default()
             
@@ -69,7 +83,6 @@ class SvgItemFactory( Singleton ):
                                 EntityType.SEWER_LINE,
                                 EntityType.SPRINKLER_WIRE,
                                 EntityType.TELECOM_WIRE,
-                                EntityType.WASTE_PIPE,
                                 EntityType.WATER_LINE, ]:
                 return SvgItemType.OPEN_PATH
 

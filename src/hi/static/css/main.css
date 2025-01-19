@@ -247,6 +247,24 @@ g[hover] {
     outline: 2px solid var(--status-hover-color);
     filter: drop-shadow(0 0 5px var(--status-hover-color));
 }
+path.hi-path-closed[hover] {
+}
+path.hover-target {
+    stroke: none;
+    stroke-width: 10;
+    fill: none;
+    pointer-events: all;
+}
+path.hi-path-closed[hover] {
+    stroke: var(--status-hover-color);
+    stroke-width: 5;
+}
+path.hover-target[hover] + path.hi-path-open {
+    stroke: var(--status-hover-color);
+    stroke-width: 5;
+    filter: drop-shadow(0 0 5px var(--status-hover-color));
+}
+
 g[status="active"] {
     outline: 2px solid var(--status-active-color);
     filter: drop-shadow(0 0 5px var(--status-active-color));

@@ -1,13 +1,7 @@
 <g id="{{ svg_path_item.html_id }}" class="selectable" data-type="svg-path">
-  <path class="{{ svg_path_item.css_class }}"
-	fill="{{ svg_path_item.fill_color }}"
-	fill-opacity="{{ svg_path_item.fill_opacity }}" 
-	stroke="{{ svg_path_item.stroke_color }}" 
-	stroke-width="{{ svg_path_item.stroke_width }}" 
-	stroke-dasharray="{{ svg_path_item.stroke_dasharray_value }}"
-	vector-effect="non-scaling-stroke" 
-	{% if not svg_path_item.is_closed %}style="pointer-events: stroke;"{% endif %}
-        onmouseover="this.style.strokeWidth='3';"
-        onmouseout="this.style.strokeWidth='{{ svg_path_item.stroke_width }}';"
-	d="{{ svg_path_item.svg_path }}"></path>
+  {% if svg_path_item.is_closed %}
+  {% include "location/panes/svg_path_item_closed.html" %}
+  {% else %}
+  {% include "location/panes/svg_path_item_open.html" %}
+  {% endif %}
 </g>

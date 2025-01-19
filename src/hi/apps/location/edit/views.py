@@ -455,6 +455,7 @@ class LocationViewEntityToggleView( View, LocationViewMixin ):
             include_status_display_data = bool( not request.view_parameters.is_editing ),
         )
         context = {
+            'location_view': location_view,
             'location_view_data': location_view_data,
         }
         template = get_template( self.LOCATION_VIEW_TEMPLATE_NAME )

@@ -10,8 +10,8 @@ class StatusStyle:
 
     DEFAULT_STATUS_VALUE = ''
     DEFAULT_STROKE_COLOR = '#a0a0a0'
-    DEFAULT_STROKE_WIDTH = 1.0
-    DEFAULT_STROKE_DASHARRAY = [ 3, 6 ]
+    DEFAULT_STROKE_WIDTH = 4.0
+    DEFAULT_STROKE_DASHARRAY = []
     DEFAULT_FILL_COLOR = 'white'
     DEFAULT_FILL_OPACITY = 0.0
 
@@ -134,6 +134,46 @@ class StatusStyle:
         stroke_dasharray = DEFAULT_STROKE_DASHARRAY,
         fill_color = STATUS_BAD_COLOR,
         fill_opacity = 0.5,
+    )
+    WaterLine = SvgStatusStyle(
+        status_value = '',
+        stroke_color = '#0000FF',
+        stroke_width = 3,
+        stroke_dasharray = [ 4, 2 ],
+        fill_color = None,
+        fill_opacity = 0.0,
+    )
+    ElectricWire = SvgStatusStyle(
+        status_value = '',
+        stroke_color = '#FF0000',
+        stroke_width = 3,
+        stroke_dasharray = [ 2, 2 ],
+        fill_color = None,
+        fill_opacity = 0.0,
+    )
+    SewerLine = SvgStatusStyle(
+        status_value = '',
+        stroke_color = '#008000',
+        stroke_width = 3,
+        stroke_dasharray = [ 8, 4, 2, 4 ],
+        fill_color = None,
+        fill_opacity = 0.0,
+    )
+    TelecomWire = SvgStatusStyle(
+        status_value = '',
+        stroke_color = '#FFA500',
+        stroke_width = 3,
+        stroke_dasharray = [ 6, 2 ],
+        fill_color = None,
+        fill_opacity = 0.0,
+    )
+    ControlWire = SvgStatusStyle(
+        status_value = '',
+        stroke_color = '#800080',
+        stroke_width = 3,
+        stroke_dasharray = [ 3, 6 ],
+        fill_color = None,
+        fill_opacity = 0.0,
     )
 
     @classmethod

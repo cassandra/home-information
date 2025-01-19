@@ -82,7 +82,7 @@ class LocationViewData:
                 svg_status_style = status_display_data.svg_status_style
             else:
                 svg_status_style = None
-
+                
             svg_path_item = self._svg_item_factory.create_svg_path_item(
                 item = entity_path.entity,
                 path = entity_path,

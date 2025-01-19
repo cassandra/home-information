@@ -42,7 +42,7 @@ class EntityType(LabeledEnum):
     OPEN_CLOSE_SENSOR    = ( 'Open/Close Sensor', '' )
     OTHER                = ( 'Other', '' )  # Will use generic visual element
     PRESENCE_SENSOR      = ( 'Presence Sensor', '' )
-    SEWER_LINE           = ( 'Sewer Wire', '' )
+    SEWER_LINE           = ( 'Sewer Line', '' )
     SHOWER               = ( 'Shower', '' ) 
     SINK                 = ( 'Sink', '' ) 
     SERVICE              = ( 'Service'         , '' )
@@ -60,7 +60,6 @@ class EntityType(LabeledEnum):
     TOOL                 = ( 'Tool', '' )
     VIDEO_PLAYER         = ( 'Video Player', '' )
     WALL_SWITCH          = ( 'Wall Switch', '' )
-    WASTE_PIPE           = ( 'Waste Pipe', '' )
     WATER_HEATER         = ( 'Water Heater', '' )
     WATER_LINE           = ( 'Water Line', '' )
     WATER_METER          = ( 'Water Meter', '' )

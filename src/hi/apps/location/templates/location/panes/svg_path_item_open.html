@@ -1,0 +1,14 @@
+<path class="hover-target" style="pointer-events: stroke;"
+      onmouseover="this.setAttribute('hover','true');"
+      onmouseout="this.removeAttribute('hover');"
+      d="{{ svg_path_item.svg_path }}"></path>
+<path class="{{ svg_path_item.css_class }} hi-path-open"
+      fill="{{ svg_path_item.fill_color }}"
+      fill-opacity="{{ svg_path_item.fill_opacity }}" 
+      stroke="{{ svg_path_item.stroke_color }}" 
+      stroke-width="{{ svg_path_item.stroke_width }}" 
+      {% if svg_path_item.stroke_dasharray_value %}stroke-dasharray="{{ svg_path_item.stroke_dasharray_value }}"{% endif %}
+      vector-effect="non-scaling-stroke" 
+      style="pointer-events: none;"
+      d="{{ svg_path_item.svg_path }}"></path>
+</g>
