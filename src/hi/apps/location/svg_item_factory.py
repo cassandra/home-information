@@ -3,7 +3,8 @@ from hi.apps.common.svg_models import SvgIconItem, SvgPathItem, SvgStatusStyle, 
 from hi.apps.collection.models import Collection
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
-from hi.apps.monitor.status_display_data import StatusStyle
+
+from hi.hi_styles import EntityStyle, ItemStyle, StatusStyle
 
 from .enums import SvgItemType
 from .models import (
@@ -28,7 +29,12 @@ class SvgItemFactory( Singleton ):
                               svg_status_style  : SvgStatusStyle              = None ) -> SvgIconItem:
         if not svg_status_style:
             svg_status_style = StatusStyle.default()
-            
+
+        if isinstance( item, Entity ):
+            template_name = EntityStyle.get_svg_icon_template_name( entity_type = item.entity_type )
+        else:
+            template_name = ItemStyle.get_default_svg_icon_template_name()
+             
         return SvgIconItem(
             html_id = item.html_id,
             css_class = css_class,
@@ -37,7 +43,7 @@ class SvgItemFactory( Singleton ):
             position_y = float( position.svg_y ),
             rotate = float( position.svg_rotate ),
             scale = float( position.svg_scale ),
-            template_name = 'entity/svg/type.other.svg',
+            template_name = template_name,
             bounding_box = SvgViewBox( x = 0, y = 0, width = 32, height = 32 ),
         )
 
@@ -46,23 +52,12 @@ class SvgItemFactory( Singleton ):
                               path              : LocationItemPathModel,
                               css_class         : str,
                               svg_status_style  : SvgStatusStyle              = None  ) -> SvgPathItem:
-        if isinstance( item, Entity ):
-            entity_type = item.entity_type
-            if entity_type == EntityType.WATER_LINE:
-                svg_status_style = StatusStyle.WaterLine
-            elif entity_type == EntityType.ELECTRIC_WIRE:
-                svg_status_style = StatusStyle.ElectricWire
-            elif entity_type == EntityType.TELECOM_WIRE:
-                svg_status_style = StatusStyle.TelecomWire
-            elif entity_type == EntityType.SEWER_LINE:
-                svg_status_style = StatusStyle.SewerLine
-            elif entity_type in [ EntityType.CONTROL_WIRE,
-                                  EntityType.SPRINKLER_WIRE ]:
-                svg_status_style = StatusStyle.ControlWire
-
         if not svg_status_style:
-            svg_status_style = StatusStyle.default()
-            
+            if isinstance( item, Entity ):
+                svg_status_style = EntityStyle.PathEntityTypeToSvgStatusStyle.get( item.entity_type )
+            if not svg_status_style:
+                svg_status_style = EntityStyle.default()
+
         return SvgPathItem(
             html_id = item.html_id,
             css_class = css_class,
@@ -78,15 +73,10 @@ class SvgItemFactory( Singleton ):
         if isinstance( obj, Entity ):
             entity_type = obj.entity_type
 
-            if entity_type in [ EntityType.CONTROL_WIRE,
-                                EntityType.ELECTRIC_WIRE,
-                                EntityType.SEWER_LINE,
-                                EntityType.SPRINKLER_WIRE,
-                                EntityType.TELECOM_WIRE,
-                                EntityType.WATER_LINE, ]:
+            if entity_type in EntityStyle.EntityTypeOpenPaths:
                 return SvgItemType.OPEN_PATH
 
-            if entity_type in [ EntityType.AREA ]:
+            if entity_type in EntityStyle.EntityTypeClosedPaths:
                 return SvgItemType.CLOSED_PATH
                 
             return SvgItemType.ICON

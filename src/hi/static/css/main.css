@@ -30,6 +30,11 @@
 
   --status-highlighted-color: red;
   --status-hover-color: blue;
+
+  --status-off-color: #aaaaaa;
+  --status-on-color: yellow;
+  --on-status-off-color: black;
+  --on-status-on-color: black;
   
   /* These should match those in hi.apps.monitor.StatusStyle */
   --status-active-color: red;
@@ -37,7 +42,7 @@
   --status-past-color: yellow;
   --status-ok-color: green;
   --status-bad-color: red;
-  --status-idle-color: #888888;
+  --status-idle-color: #aaaaaa;
 
   --on-status-active-color: white;
   --on-status-recent-color: black;
@@ -243,9 +248,9 @@ svg[action-state="scale"] {
 svg .highlighted {
     filter: drop-shadow(0 0 10px var(--status-highlighted-color));
 }
-g[hover] {
-    outline: 2px solid var(--status-hover-color);
-    filter: drop-shadow(0 0 5px var(--status-hover-color));
+
+g.hi-icon {
+    pointer-events: all;
 }
 path.hi-path-closed[hover] {
 }
@@ -257,7 +262,7 @@ path.hover-target {
 }
 path.hi-path-closed[hover] {
     stroke: var(--status-hover-color);
-    stroke-width: 5;
+    stroke-width: 4;
 }
 path.hover-target[hover] + path.hi-path-open {
     stroke: var(--status-hover-color);
@@ -277,14 +282,31 @@ g[status="past"] {
     outline: 2px solid var(--status-past-color);
     filter: drop-shadow(0 0 5px var(--status-past-color));
 }
+
+g[status="off"] path.hi-state-bg  {
+    fill: var(--status-off-color);
+}
+div[status="off"] {
+    color: var(--on-status-off-color);
+    background-color: var(--status-off-color);
+}
 g[status="on"] {
-    outline: 5px solid var(--status-ok-color);
-    filter: drop-shadow(0 0 5px var(--status-ok-color));
+    filter: drop-shadow(0 0 5px var(--status-on-color));
 }
-g[status="off"] {
-    outline: 5px solid var(--status-idle-color);
-    filter: drop-shadow(0 0 5px var(--status-idle-color));
+g[status="on"] path.hi-state-bg {
+    fill: var(--status-on-color);
 }
+div[status="on"] {
+    color: var(--on-status-on-color);
+    background-color: var(--status-on-color);
+}
+
+
+
+
+
+
+
 g[status="open"] {
     outline: 5px solid var(--status-active-color);
     filter: drop-shadow(0 0 5px var(--status-active-color));
@@ -322,14 +344,6 @@ div[status="past"] {
     color: var(--on-status-past-color);
     background-color: var(--status-past-color);
 }
-div[status="on"] {
-    color: var(--on-status-ok-color);
-    background-color: var(--status-ok-color);
-}
-div[status="off"] {
-    color: var(--on-status-idle-color);
-    background-color: var(--status-idle-color);
-}
 div[status="open"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);
@@ -353,6 +367,10 @@ div[status="high"] {
 div[status="low"] {
     color: var(--on-status-bad-color);
     background-color: var(--status-bad-color);
+}
+
+g[hover] {
+    filter: drop-shadow(0 0 10px var(--status-hover-color)) !important;
 }
 
 .switch {

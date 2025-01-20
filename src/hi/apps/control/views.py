@@ -70,7 +70,7 @@ class ControllerView( View, ControlViewMixin, ControllerMixin ):
                 controller = controller,
                 value = control_value,
             )
-            
+
         return self.controller_data_response(
             request = request,
             controller = controller,

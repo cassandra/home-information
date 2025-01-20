@@ -26,10 +26,16 @@ class HassController( IntegrationController, HassMixin ):
                 entity_id = entity_id,
                 state = hass_state_value,
             )
+
+            if response.status_code == 200:
+                error_list = list()
+            else:
+                error_list = [ f'Bad HAss response. Status code = {response.status_code}' ]
+            
             logger.debug( f'HAss set state: {entity_id}={hass_state_value}, response={response}' )
             return IntegrationControlResult(
                 new_value = control_value,
-                error_list = [],
+                error_list = error_list,
             )
 
         except Exception as e:

@@ -9,18 +9,18 @@ class EntityType(LabeledEnum):
     - SVG filename is by convention:  
     """
 
-    AIR_CONDITIONER      = ( 'Air Conditioner', '' )  # Controls area
     APPLIANCE            = ( 'Appliance', '' )
     AREA                 = ( 'Area', '' )
-    AUDIO_AMPLIFIER      = ( 'Audio Amplifier', '' )  # Controls Speaker
-    AUDIO_PLAYER         = ( 'Audio Player', '' )
+    AUDIO_RECEIVER       = ( 'Audio Receiver', '' )  # Controls Speaker
     AUTOMOBILE           = ( 'Automobile', '' )
     BAROMETER            = ( 'Barometer', '' )
     CAMERA               = ( 'Camera', '' )
+    CLOTHES_DRYER        = ( 'Clothes Dryer', '' )
+    CLOTHES_WASHER       = ( 'Clothes Washer', '' )
     COMPUTER             = ( 'Computer', '' )
     CONSUMABLE           = ( 'Consumable', '' )
     CONTROL_WIRE         = ( 'Control Wire', '' )
-    DISPLAY              = ( 'Display', '' )
+    COOKTOP              = ( 'Cooktop', '' )
     DOOR                 = ( 'Door', '' )
     DOOR_LOCK            = ( 'Door Lock', '' )  # Controls doors
     ELECTRICAL_OUTLET    = ( 'Electrical Outlet', '' )
@@ -29,9 +29,11 @@ class EntityType(LabeledEnum):
     ELECTRIC_WIRE        = ( 'Electric Wire', '' )
     FURNITURE            = ( 'Furniture', '' )
     HEALTHCHECK          = ( 'Healthcheck', '' )
-    HEATER               = ( 'Heater', '' )  # Controls area
+    HVAC_AC_UNIT         = ( 'HVAC A/C Unit', '' )  # Controls area
     HVAC_AIR_HANDLER     = ( 'HVAC Air Handler', '' )  # Controls area
     HVAC_CONDENSER       = ( 'HVAC Condenser', '' )  # Controls area
+    HVAC_HEAT_PUMP       = ( 'HVAC Heat Pump', '' )  # Controls area
+    HVAC_FURNACE         = ( 'HVAC Furnace', '' )  # Controls area
     HVAC_MIN_SPLIT       = ( 'HVAC Mini-split', '' )  # Controls area
     HUMIDIFIER           = ( 'Humidifier', '' )  # Controls area
     HYGROMETER           = ( 'Hygrometer', '' )
@@ -41,6 +43,9 @@ class EntityType(LabeledEnum):
     NETWORK_SWITCH       = ( 'Network Switch', '' )
     OPEN_CLOSE_SENSOR    = ( 'Open/Close Sensor', '' )
     OTHER                = ( 'Other', '' )  # Will use generic visual element
+    OVEN                 = ( 'Oven', '' )
+    POOL_EQUIPMENT       = ( 'Pool Equipment', '' )
+    REFRIGERATOR         = ( 'Refrigerator', '' )
     PRESENCE_SENSOR      = ( 'Presence Sensor', '' )
     SEWER_LINE           = ( 'Sewer Line', '' )
     SHOWER               = ( 'Shower', '' ) 
@@ -53,12 +58,15 @@ class EntityType(LabeledEnum):
     SPRINKLER_WIRE       = ( 'Sprinkler Wire', '' )
     TELECOM_BOX          = ( 'Telecom Box', '' )
     TELECOM_WIRE         = ( 'Telecom Wire', '' )
+    TELEVISION           = ( 'Television', '' )
     THERMOMETER          = ( 'Thermometer', '' )
     THERMOSTAT           = ( 'Thermostat', '' )
     TIME_SOURCE          = ( 'Time Source', '' )
     TOILET               = ( 'Toilet', '' ) 
     TOOL                 = ( 'Tool', '' )
     VIDEO_PLAYER         = ( 'Video Player', '' )
+    VALVE                = ( 'Valve', '' )
+    WALL                 = ( 'Wall', '' )
     WALL_SWITCH          = ( 'Wall Switch', '' )
     WATER_HEATER         = ( 'Water Heater', '' )
     WATER_LINE           = ( 'Water Line', '' )
