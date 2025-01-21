@@ -1,10 +1,9 @@
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.svg_models import SvgIconItem, SvgPathItem, SvgStatusStyle, SvgViewBox
 from hi.apps.collection.models import Collection
-from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
 
-from hi.hi_styles import EntityStyle, ItemStyle, StatusStyle
+from hi.hi_styles import CollectionStyle, EntityStyle, ItemStyle
 
 from .enums import SvgItemType
 from .models import (
@@ -60,6 +59,8 @@ class SvgItemFactory( Singleton ):
         if not svg_status_style:
             if isinstance( item, Entity ):
                 svg_status_style = EntityStyle.get_svg_path_status_style( item.entity_type )
+            elif isinstance( item, Collection ):
+                svg_status_style = CollectionStyle.get_svg_path_status_style( item.collection_type )
             if not svg_status_style:
                 svg_status_style = ItemStyle.get_default_svg_path_status_style()
 

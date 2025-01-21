@@ -1,5 +1,6 @@
 from hi.apps.common.svg_models import SvgStatusStyle, SvgViewBox
 
+from hi.apps.collection.enums import CollectionType
 from hi.apps.entity.enums import EntityType
 
 
@@ -15,7 +16,7 @@ class ItemStyle:
     
     @classmethod
     def get_default_svg_icon_status_style( cls ):
-            return SvgStatusStyle(
+        return SvgStatusStyle(
             status_value = '',
             stroke_color = '#a0a0a0',
             stroke_width = 4.0,
@@ -26,24 +27,98 @@ class ItemStyle:
 
     @classmethod
     def get_default_svg_path_status_style( cls ):
-            return SvgStatusStyle(
+        return SvgStatusStyle(
             status_value = '',
-            stroke_color = '#a0a0a0',
+            stroke_color = '#404050',
             stroke_width = 4.0,
             stroke_dasharray = [],
-            fill_color = 'none',
-            fill_opacity = 0.0,
+            fill_color = '#ffffd0',
+            fill_opacity = 1.0,
         )
-
+    
         
+class CollectionStyle:
+
+    DEFAULT_STATUS_VALUE = 3
+    DEFAULT_STROKE_COLOR = '#202030'
+    DEFAULT_STROKE_WIDTH = 2
+    DEFAULT_DASHARRAY = [ 6, 3 ]
+    DEFAULT_OPACITY = 1.0
+    
+    PathCollectionTypeToSvgStatusStyle = {
+        CollectionType.APPLIANCES: SvgStatusStyle(
+            status_value = DEFAULT_STATUS_VALUE,
+            stroke_color = DEFAULT_STROKE_COLOR,
+            stroke_width = DEFAULT_STROKE_WIDTH,
+            stroke_dasharray = DEFAULT_DASHARRAY,
+            fill_color = '#ffffff',
+            fill_opacity = DEFAULT_OPACITY,
+        ),
+        CollectionType.CAMERAS: SvgStatusStyle(
+            status_value = DEFAULT_STATUS_VALUE,
+            stroke_color = DEFAULT_STROKE_COLOR,
+            stroke_width = DEFAULT_STROKE_WIDTH,
+            stroke_dasharray = DEFAULT_DASHARRAY,
+            fill_color = '#ffffc0',
+            fill_opacity = DEFAULT_OPACITY,
+        ),
+        CollectionType.DEVICES: SvgStatusStyle(
+            status_value = DEFAULT_STATUS_VALUE,
+            stroke_color = DEFAULT_STROKE_COLOR,
+            stroke_width = DEFAULT_STROKE_WIDTH,
+            stroke_dasharray = DEFAULT_DASHARRAY,
+            fill_color = '#c0c0c0',
+            fill_opacity = DEFAULT_OPACITY,
+        ),
+        CollectionType.ELECTRONICS: SvgStatusStyle(
+            status_value = DEFAULT_STATUS_VALUE,
+            stroke_color = DEFAULT_STROKE_COLOR,
+            stroke_width = DEFAULT_STROKE_WIDTH,
+            stroke_dasharray = DEFAULT_DASHARRAY,
+            fill_color = '#ffffd0',
+            fill_opacity = DEFAULT_OPACITY,
+        ),
+        CollectionType.GARDENING: SvgStatusStyle(
+            status_value = DEFAULT_STATUS_VALUE,
+            stroke_color = DEFAULT_STROKE_COLOR,
+            stroke_width = DEFAULT_STROKE_WIDTH,
+            stroke_dasharray = DEFAULT_DASHARRAY,
+            fill_color = '#c0ffc0',
+            fill_opacity = DEFAULT_OPACITY,
+        ),
+        CollectionType.LANDSCAPING: SvgStatusStyle(
+            status_value = DEFAULT_STATUS_VALUE,
+            stroke_color = DEFAULT_STROKE_COLOR,
+            stroke_width = DEFAULT_STROKE_WIDTH,
+            stroke_dasharray = DEFAULT_DASHARRAY,
+            fill_color = '#c0c0ff',
+            fill_opacity = DEFAULT_OPACITY,
+        ),
+        CollectionType.TOOLS: SvgStatusStyle(
+            status_value = '',
+            stroke_color = DEFAULT_STROKE_COLOR,
+            stroke_width = DEFAULT_STROKE_WIDTH,
+            stroke_dasharray = DEFAULT_DASHARRAY,
+            fill_color = '#c0c0ff',
+            fill_opacity = DEFAULT_OPACITY,
+        ),
+    }
+
+    @classmethod
+    def get_svg_path_status_style( cls, collection_type : CollectionType ):
+        if collection_type in cls.PathCollectionTypeToSvgStatusStyle:
+            return cls.PathCollectionTypeToSvgStatusStyle.get( collection_type )
+        return ItemStyle.get_default_svg_path_status_style()
+
+    
 class EntityStyle:
 
     Appliance = SvgStatusStyle(
         status_value = '',
-        stroke_color = '#0606a0',
+        stroke_color = '#040406',
         stroke_width = 2,
         stroke_dasharray = [],
-        fill_color = '#808080',
+        fill_color = '#a9a9a9',
         fill_opacity = 1,
     )
     Area = SvgStatusStyle(
@@ -84,6 +159,14 @@ class EntityStyle:
         stroke_width = 2,
         stroke_dasharray = [],
         fill_color = '#808080',
+        fill_opacity = 1,
+    )
+    Greenhouse = SvgStatusStyle(
+        status_value = '',
+        stroke_color = '#06a006',
+        stroke_width = 2,
+        stroke_dasharray = [],
+        fill_color = '#a0f0a0',
         fill_opacity = 1,
     )
     SewerLine = SvgStatusStyle(
@@ -138,6 +221,7 @@ class EntityStyle:
         EntityType.CLOTHES_WASHER,
         EntityType.COMPUTER,
         EntityType.CONSUMABLE,
+        EntityType.CONTROLLER,
         EntityType.COOKTOP,
         EntityType.DOOR_LOCK,
         EntityType.ELECTRICAL_OUTLET,
@@ -145,28 +229,29 @@ class EntityStyle:
         EntityType.ELECTRIC_PANEL,
         EntityType.FIREPLACE,
         EntityType.HEALTHCHECK,
+        EntityType.HUMIDIFIER,
         EntityType.HVAC_AIR_HANDLER,
         EntityType.HVAC_CONDENSER,
         EntityType.HVAC_FURNACE,
         EntityType.HVAC_MINI_SPLIT,
-        EntityType.HUMIDIFIER,
         EntityType.HYGROMETER,
         EntityType.LIGHT,
         EntityType.LIGHT_SENSOR,
         EntityType.MODEM,
         EntityType.MOTION_SENSOR,
+        EntityType.MOTOR,
         EntityType.NETWORK_SWITCH,
         EntityType.OPEN_CLOSE_SENSOR,
         EntityType.OVEN,
         EntityType.PLANT,
-        EntityType.POOL_EQUIPMENT,
+        EntityType.POOL_FILTER,
         EntityType.PRESENCE_SENSOR,
+        EntityType.PUMP,
         EntityType.REFRIGERATOR,
+        EntityType.SERVICE,
         EntityType.SHOWER,
         EntityType.SINK,
-        EntityType.SERVICE,
         EntityType.SPEAKER,
-        EntityType.SPRINKLER_CONTROLLER,
         EntityType.SPRINKLER_HEAD,
         EntityType.SPRINKLER_VALVE,
         EntityType.TELECOM_BOX,
@@ -187,17 +272,19 @@ class EntityStyle:
         # Default viewbox used if not in this map
         EntityType.AUTOMOBILE: SvgViewBox( x = 0, y = 0, width = 200, height = 300 ),
         EntityType.BAROMETER: SvgViewBox( x = 0, y = 0, width = 44, height = 64 ),
+        EntityType.CONTROLLER: SvgViewBox( x = 0, y = 0, width = 47, height = 64 ),
         EntityType.ELECTRICAL_OUTLET: SvgViewBox( x = 0, y = 0, width = 45, height = 64 ),
-        EntityType.HVAC_AIR_HANDLER: SvgViewBox( x = 0, y = 0, width = 64, height = 44 ),
         EntityType.HUMIDIFIER: SvgViewBox( x = 0, y = 0, width = 44, height = 64 ),
+        EntityType.HVAC_AIR_HANDLER: SvgViewBox( x = 0, y = 0, width = 64, height = 44 ),
         EntityType.MODEM: SvgViewBox( x = 0, y = 0, width = 37, height = 64 ),
         EntityType.MOTION_SENSOR: SvgViewBox( x = 0, y = 0, width = 42, height = 64 ),
+        EntityType.MOTOR: SvgViewBox( x = 0, y = 0, width = 64, height = 46 ),
         EntityType.NETWORK_SWITCH: SvgViewBox( x = 0, y = 0, width = 64, height = 32 ),
         EntityType.OPEN_CLOSE_SENSOR: SvgViewBox( x = 0, y = 0, width = 64, height = 50 ),
+        EntityType.PUMP: SvgViewBox( x = 0, y = 0, width = 64, height = 45 ),
         EntityType.REFRIGERATOR: SvgViewBox( x = 0, y = 0, width = 48, height = 64 ),
         EntityType.SINK: SvgViewBox( x = 0, y = 0, width = 64, height = 50 ),
         EntityType.SPRINKLER_HEAD: SvgViewBox( x = 0, y = 0, width = 64, height = 44 ),
-        EntityType.SPRINKLER_CONTROLLER: SvgViewBox( x = 0, y = 0, width = 42, height = 64 ),
         EntityType.TELEVISION: SvgViewBox( x = 0, y = 0, width = 64, height = 48 ),
         EntityType.THERMOMETER: SvgViewBox( x = 0, y = 0, width = 27, height = 64 ),
         EntityType.THERMOSTAT: SvgViewBox( x = 0, y = 0, width = 64, height = 44 ),
@@ -230,6 +317,7 @@ class EntityStyle:
         EntityType.DOOR: Door,
         EntityType.ELECTRIC_WIRE: ElectricWire,
         EntityType.FURNITURE: Furniture,
+        EntityType.GREENHOUSE: Greenhouse,
         EntityType.SEWER_LINE: SewerLine,
         EntityType.SPRINKLER_WIRE: ControlWire,
         EntityType.TELECOM_WIRE: TelecomWire,

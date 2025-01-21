@@ -1,5 +1,5 @@
 <rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
-  <path class="hi-entity-pool-equipment-tank"
+  <path class="hi-entity-pool-filter-tank"
         fill="#c0c0c0" stroke="black" stroke-width="0"
         d="M 17.72,15.69
            C 17.72,15.69 20.31,15.69 20.31,15.69
@@ -114,7 +114,7 @@
              7.43,50.30 5.91,48.40 5.88,46.28
              5.88,46.28 5.88,41.73 5.88,41.73
              5.88,41.34 5.79,40.27 5.99,39.98 Z" />
-  <path class="hi-entity-pool-equipment-pipes"
+  <path class="hi-entity-pool-filter-pipes"
         fill="#fefeff" stroke="black" stroke-width="0"
         d="M 23.39,5.54
            C 23.39,5.54 26.82,5.54 26.82,5.54
@@ -198,7 +198,7 @@
              3.62,61.04 3.71,60.36 3.72,60.15
              3.72,60.15 3.72,58.47 3.72,58.47
              3.77,58.23 3.75,58.03 3.89,57.85 Z" />
-  <path class="hi-entity-pool-equipment-gauge"
+  <path class="hi-entity-pool-filter-gauge"
         fill="#fefeff" stroke="black" stroke-width="0"
         d="M 39.14,2.62
            C 41.28,2.35 43.28,3.24 44.22,5.25
@@ -231,7 +231,7 @@
              37.28,11.15 36.88,10.89 36.88,10.65
              36.88,10.43 37.23,10.21 37.39,10.10
              38.03,9.69 38.62,9.53 39.35,9.41 Z" />
-  <path class="hi-entity-pool-equipment-pump"
+  <path class="hi-entity-pool-filter-pump"
         fill="#e0e0c0" stroke="black" stroke-width="0"
         d="M 45.98,28.01
            C 46.27,27.89 46.67,27.94 46.98,27.94
@@ -265,7 +265,7 @@
            C 56.34,38.78 56.84,39.99 57.63,39.80
              58.29,39.64 58.31,38.86 57.96,38.54
              57.75,38.36 57.53,38.37 57.28,38.40 Z" />
-  <path class="hi-entity-pool-equipment-lines"
+  <path class="hi-entity-pool-filter-lines"
         fill="#020204" stroke="black" stroke-width="0"
         d="M 18.07,14.14
            C 18.07,14.14 18.07,9.80 18.07,9.80
