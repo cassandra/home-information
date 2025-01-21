@@ -1,5 +1,6 @@
 <rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
-<path fill="#080808"
+<path class="hi-entity-av-receiver-lines"
+      fill="#a0a0a0"
     d="M 19.68,47.62
            C 19.59,49.39 18.51,50.39 16.75,50.40
              16.75,50.40 7.39,50.40 7.39,50.40
@@ -30,7 +31,8 @@
              43.99,47.59 43.71,47.62 43.52,47.62
          43.52,47.62 19.68,47.62 19.68,47.62 Z" />
 
-<path stroke="#f0f0f0"
+<path class="hi-entity-av-receiver-highlights"
+      stroke="#f0f0f0"
       d="M 60.12,16.82
            C 60.12,16.82 3.80,16.82 3.80,16.82
              3.80,16.82 3.80,35.11 3.80,35.11

@@ -28,13 +28,15 @@ class SvgItemFactory( Singleton ):
                               css_class         : str,
                               svg_status_style  : SvgStatusStyle              = None ) -> SvgIconItem:
         if not svg_status_style:
-            svg_status_style = StatusStyle.default()
+            svg_status_style = ItemStyle.get_default_svg_icon_status_style()
 
         if isinstance( item, Entity ):
             template_name = EntityStyle.get_svg_icon_template_name( entity_type = item.entity_type )
+            viewbox = EntityStyle.get_svg_icon_viewbox( entity_type = item.entity_type )
         else:
             template_name = ItemStyle.get_default_svg_icon_template_name()
-             
+            viewbox = ItemStyle.ItemStyle.get_default_svg_icon_viewbox()
+
         return SvgIconItem(
             html_id = item.html_id,
             css_class = css_class,
@@ -44,7 +46,10 @@ class SvgItemFactory( Singleton ):
             rotate = float( position.svg_rotate ),
             scale = float( position.svg_scale ),
             template_name = template_name,
-            bounding_box = SvgViewBox( x = 0, y = 0, width = 32, height = 32 ),
+            bounding_box = SvgViewBox( x = 0,
+                                       y = 0,
+                                       width = viewbox.width,
+                                       height = viewbox.height ),
         )
 
     def create_svg_path_item( self,
@@ -54,9 +59,9 @@ class SvgItemFactory( Singleton ):
                               svg_status_style  : SvgStatusStyle              = None  ) -> SvgPathItem:
         if not svg_status_style:
             if isinstance( item, Entity ):
-                svg_status_style = EntityStyle.PathEntityTypeToSvgStatusStyle.get( item.entity_type )
+                svg_status_style = EntityStyle.get_svg_path_status_style( item.entity_type )
             if not svg_status_style:
-                svg_status_style = EntityStyle.default()
+                svg_status_style = ItemStyle.get_default_svg_path_status_style()
 
         return SvgPathItem(
             html_id = item.html_id,
