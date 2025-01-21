@@ -21,6 +21,22 @@ class SvgItemFactory( Singleton ):
     def __init_singleton__(self):
         return
 
+    def get_display_only_svg_icon_item( self, entity : Entity ) -> SvgIconItem:
+        template_name = EntityStyle.get_svg_icon_template_name( entity_type = entity.entity_type )
+        svg_view_box = EntityStyle.get_svg_icon_viewbox( entity_type = entity.entity_type )
+        
+        return SvgIconItem(
+            html_id = None,
+            css_class = None,
+            status_value = None,
+            position_x = None,
+            position_y = None,
+            rotate = None,
+            scale = None ,
+            template_name = template_name,
+            bounding_box = svg_view_box,
+        )
+    
     def create_svg_icon_item( self,
                               item              : LocationItemModelMixin,
                               position          : LocationItemPositionModel,

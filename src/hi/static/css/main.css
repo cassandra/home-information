@@ -302,24 +302,19 @@ div[status="on"] {
 }
 
 g[status="open"] {
-    outline: 5px solid var(--status-active-color);
-    filter: drop-shadow(0 0 5px var(--status-active-color));
+    filter: drop-shadow(0 0 5px var(--status-bad-color));
 }
 g[status="connected"] {
-    outline: 5px solid var(--status-ok-color);
     filter: drop-shadow(0 0 5px var(--status-ok-color));
 }
 g[status="disconnected"] {
-    outline: 5px solid var(--status-active-color);
-    filter: drop-shadow(0 0 5px var(--status-active-color));
+    filter: drop-shadow(0 0 5px var(--status-bad-color));
 }
 g[status="high"] {
-    outline: 5px solid var(--status-ok-color);
     filter: drop-shadow(0 0 5px var(--status-ok-color));
 }
 g[status="low"] {
-    outline: 5px solid var(--status-active-color);
-    filter: drop-shadow(0 0 5px var(--status-active-color));
+    filter: drop-shadow(0 0 5px var(--status-bad-color));
 }
 
 div[status="active"] {
@@ -365,6 +360,11 @@ div[status="low"] {
 
 g[hover] {
     filter: drop-shadow(0 0 10px var(--status-hover-color)) !important;
+}
+
+.display-only-svg-icon {
+    width: 2rem;
+    height: auto;
 }
 
 .switch {

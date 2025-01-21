@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List
 
 from hi.apps.control.transient_models import ControllerData
+from hi.apps.common.svg_models import SvgIconItem
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.transient_models import SensorResponse
 
@@ -23,6 +24,7 @@ class EntityStateStatusData:
 class EntityStatusData:
     entity                         : Entity
     entity_state_status_data_list  : List[ EntityStateStatusData ]
+    display_only_svg_icon_item     : SvgIconItem                   = None
 
     def to_template_context(self):
         context = {

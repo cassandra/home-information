@@ -1,17 +1,24 @@
 <div class="row">
   {% with entity=entity_status_data.entity %}
   <div class="col-3">
-    {% if request.view_parameters.is_editing %}
-    <a href="{% url 'entity_details' entity_id=entity.id %}"
-       data-async="true">
-      {{ entity.name }}
-    </a>
-    {% else %}
-    <a href="{% url 'entity_status' entity_id=entity.id %}"
-       data-async="true">
-      {{ entity.name }}
-    </a>
-    {% endif %}
+    <div class="d-flex justify-content-start">
+      <div class="display-only-svg-icon pr-2">
+	{% include "entity/panes/entity_display_only_svg_icon.html" with svg_icon_item=entity_status_data.display_only_svg_icon_item %}
+      </div>
+      <div>
+	{% if request.view_parameters.is_editing %}
+	<a href="{% url 'entity_details' entity_id=entity.id %}"
+	   data-async="true">
+	  {{ entity.name }}
+	</a>
+	{% else %}
+	<a href="{% url 'entity_status' entity_id=entity.id %}"
+	   data-async="true">
+	  {{ entity.name }}
+	</a>
+	{% endif %}
+      </div>
+    </div>
   </div>
   {% endwith %}
 
