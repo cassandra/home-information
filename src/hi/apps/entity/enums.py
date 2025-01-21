@@ -16,6 +16,7 @@ class EntityType(LabeledEnum):
     AV_RECEIVER          = ( 'A/V Receiver', '' )  # Controls Speakers/TV
     BAROMETER            = ( 'Barometer', '' )
     CAMERA               = ( 'Camera', '' )
+    CEILING_FAN          = ( 'Ceiling Fan', '' )
     CLOTHES_DRYER        = ( 'Clothes Dryer', '' )
     CLOTHES_WASHER       = ( 'Clothes Washer', '' )
     COMPUTER             = ( 'Computer', '' )
@@ -30,6 +31,7 @@ class EntityType(LabeledEnum):
     ELECTRICITY_METER    = ( 'Electricity Meter', '' )
     ELECTRIC_PANEL       = ( 'Electric Panel', '' )
     ELECTRIC_WIRE        = ( 'Electric Wire', '' )
+    EXHAUST_FAN          = ( 'Exhaust Fan', '' )
     FIREPLACE            = ( 'Fireplace', '' )
     FURNITURE            = ( 'Furniture', '' )
     GREENHOUSE           = ( 'Greenhouse', '' )
@@ -49,6 +51,7 @@ class EntityType(LabeledEnum):
     OPEN_CLOSE_SENSOR    = ( 'Open/Close Sensor', '' )
     OTHER                = ( 'Other', '' )  # Will use generic visual element
     OVEN                 = ( 'Oven', '' )
+    PIPE                 = ( 'Pipe', '' )
     PLANT                = ( 'Plant', '' )
     POOL_FILTER          = ( 'Pool Filter', '' )
     PRESENCE_SENSOR      = ( 'Presence Sensor', '' )

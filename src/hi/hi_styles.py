@@ -169,6 +169,14 @@ class EntityStyle:
         fill_color = '#a0f0a0',
         fill_opacity = 1,
     )
+    Pipe = SvgStatusStyle(
+        status_value = '',
+        stroke_color = '#808080',
+        stroke_width = 3,
+        stroke_dasharray = [ 6, 2, 6, 2, 3, 2 ],
+        fill_color = None,
+        fill_opacity = 0.0,
+    )
     SewerLine = SvgStatusStyle(
         status_value = '',
         stroke_color = '#008000',
@@ -217,6 +225,7 @@ class EntityStyle:
         EntityType.AV_RECEIVER,
         EntityType.BAROMETER,
         EntityType.CAMERA,
+        EntityType.CEILING_FAN,
         EntityType.CLOTHES_DRYER,
         EntityType.CLOTHES_WASHER,
         EntityType.COMPUTER,
@@ -228,6 +237,7 @@ class EntityStyle:
         EntityType.ELECTRICAL_OUTLET,
         EntityType.ELECTRICITY_METER,
         EntityType.ELECTRIC_PANEL,
+        EntityType.EXHAUST_FAN,
         EntityType.FIREPLACE,
         EntityType.HEALTHCHECK,
         EntityType.HUMIDIFIER,
@@ -310,6 +320,7 @@ class EntityStyle:
     EntityTypeOpenPaths = {
         EntityType.CONTROL_WIRE,
         EntityType.ELECTRIC_WIRE,
+        EntityType.PIPE,
         EntityType.SEWER_LINE,
         EntityType.SPRINKLER_WIRE,
         EntityType.TELECOM_WIRE,
@@ -323,6 +334,7 @@ class EntityStyle:
         EntityType.ELECTRIC_WIRE: ElectricWire,
         EntityType.FURNITURE: Furniture,
         EntityType.GREENHOUSE: Greenhouse,
+        EntityType.PIPE: Pipe,
         EntityType.SEWER_LINE: SewerLine,
         EntityType.SPRINKLER_WIRE: ControlWire,
         EntityType.TELECOM_WIRE: TelecomWire,

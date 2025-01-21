@@ -58,6 +58,11 @@ svg.hi-location-view path.pavement {
     stroke: black;
     stroke-width: 1;
 }
+svg.hi-location-view path.dead-space {
+    fill: url(#dead-space-pattern);
+    stroke: black;
+    stroke-width: 1;
+}
 svg.hi-location-view path.pavers {
     fill: url(#pavers-pattern);
     stroke: black;
@@ -124,6 +129,11 @@ svg.hi-location-view path.ceiling-transitions {
 svg.hi-location-view path.interior-walls {
     fill: black;
     stroke: black;
+    stroke-width: 1;
+}
+svg.hi-location-view path.secondary-walls {
+    fill: #a0a0a0;
+    stroke: #a0a0a0;
     stroke-width: 1;
 }
 svg.hi-location-view path.windows {
