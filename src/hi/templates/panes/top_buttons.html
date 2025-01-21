@@ -1,6 +1,10 @@
+{% load static %}
 <div class="bg-white p-1">
   <div class="d-flex justify-content-between">
     {% include "location/panes/location_view_buttons.html" %}
+    <div>
+      <img src="{% static 'img/hi-logo-149x64.png' %}" alt="Home Information Logo">
+    </div>
     <div class="d-flex justify-content-end">
       {% include "location/panes/location_dropdown.html" %}
       <div>

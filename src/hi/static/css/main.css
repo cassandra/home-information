@@ -152,13 +152,18 @@ a.underline:visited {
     background-color: var(--muted-color) !important;
 }
 
-.hi-top-content {
-    height: var(--top-buttons-height);
+#hi-top-content {
+    height: calc( var(--top-buttons-height) - 1 );
     border-bottom: 1px solid var(--line-color);
 }
-.hi-bottom-content {
+#hi-bottom-content {
     height: var(--bottom-buttons-height);
     border-top: 1px solid var(--line-color);
+}
+#hi-top-content img,
+#hi-bottom-content img {
+    max-height: 2.25rem;
+    width: auto;
 }
 .hi-screen {
     max-height: 100vh;
