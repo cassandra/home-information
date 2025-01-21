@@ -101,8 +101,8 @@ class SvgItemType(LabeledEnum):
     
 class SvgStyleName(LabeledEnum):
 
-    GREYSCALE  = ( 'Grey Scale ', '' )
     COLOR      = ( 'Color', '' )
+    GREYSCALE  = ( 'Grey Scale ', '' )
 
     @property
     def svg_defs_template_name(self):

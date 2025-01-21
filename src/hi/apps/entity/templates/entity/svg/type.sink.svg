@@ -1,6 +1,6 @@
 <rect class="hi-entity-bg" x="0" y="0" width="64" height="50" fill="none"/>
   <path class="hi-entity-sink-top"
-        fill="#c0c0c0" stroke="black" stroke-width="0"
+        fill="#E6F0FA" stroke="black" stroke-width="0"
         d="M 5.95,3.14
            C 5.95,3.14 10.83,3.14 10.83,3.14
              10.83,3.14 19.99,3.14 19.99,3.14
@@ -67,7 +67,7 @@
              38.90,5.46 29.62,5.46 29.62,5.46
              29.62,5.46 24.62,5.46 24.62,5.46 Z" />
   <path class="hi-entity-sink-basin"
-        fill="#b0b0b0" stroke="black" stroke-width="0"
+        fill="#B6C0BA" stroke="black" stroke-width="0"
         d="M 12.49,17.01
            C 12.49,17.01 16.89,16.94 16.89,16.94
              16.89,16.94 25.46,16.94 25.46,16.94
