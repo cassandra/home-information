@@ -293,6 +293,7 @@ class EntityStyle:
         # Default viewbox used if not in this map
         EntityType.AUTOMOBILE: SvgViewBox( x = 0, y = 0, width = 200, height = 300 ),
         EntityType.BAROMETER: SvgViewBox( x = 0, y = 0, width = 44, height = 64 ),
+        EntityType.CAMERA: SvgViewBox( x = 0, y = 0, width = 64, height = 43 ),
         EntityType.CONTROLLER: SvgViewBox( x = 0, y = 0, width = 47, height = 64 ),
         EntityType.DISK: SvgViewBox( x = 0, y = 0, width = 51, height = 64 ),
         EntityType.ELECTRICAL_OUTLET: SvgViewBox( x = 0, y = 0, width = 45, height = 64 ),
