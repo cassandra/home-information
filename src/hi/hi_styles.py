@@ -1,4 +1,4 @@
-from hi.apps.common.svg_models import SvgStatusStyle, SvgViewBox
+from hi.apps.common.svg_models import SvgRadius, SvgStatusStyle, SvgViewBox
 
 from hi.apps.collection.enums import CollectionType
 from hi.apps.entity.enums import EntityType
@@ -103,12 +103,20 @@ class CollectionStyle:
             fill_opacity = DEFAULT_OPACITY,
         ),
     }
+    CollectionTypePathInitialRadius = {
+    }
 
     @classmethod
-    def get_svg_path_status_style( cls, collection_type : CollectionType ):
+    def get_svg_path_status_style( cls, collection_type : CollectionType ) -> SvgStatusStyle:
         if collection_type in cls.PathCollectionTypeToSvgStatusStyle:
             return cls.PathCollectionTypeToSvgStatusStyle.get( collection_type )
         return ItemStyle.get_default_svg_path_status_style()
+
+    @classmethod
+    def get_svg_path_initial_radius( cls, collection_type : CollectionType ) -> SvgRadius:
+        if collection_type in cls.CollectionTypePathInitialRadius:
+            return cls.CollectionTypePathInitialRadius.get( collection_type )
+        return SvgRadius( x = None, y = None )
 
     
 class EntityStyle:
@@ -118,7 +126,7 @@ class EntityStyle:
         stroke_color = '#040406',
         stroke_width = 2,
         stroke_dasharray = [],
-        fill_color = '#a9a9a9',
+        fill_color = '#e6f0fa',
         fill_opacity = 1,
     )
     Area = SvgStatusStyle(
@@ -139,7 +147,7 @@ class EntityStyle:
     )
     Door = SvgStatusStyle(
         status_value = '',
-        stroke_color = '#4f3022',
+        stroke_color = '#c0c0c0',
         stroke_width = 2,
         stroke_dasharray = [],
         fill_color = '#5f3929',
@@ -155,10 +163,10 @@ class EntityStyle:
     )
     Furniture = SvgStatusStyle(
         status_value = '',
-        stroke_color = '#0606a0',
+        stroke_color = '#8B4513',
         stroke_width = 2,
         stroke_dasharray = [],
-        fill_color = '#808080',
+        fill_color = '#D2B48C',
         fill_opacity = 1,
     )
     Greenhouse = SvgStatusStyle(
@@ -195,7 +203,7 @@ class EntityStyle:
     )
     Wall = SvgStatusStyle(
         status_value = '',
-        stroke_color = '#0606a0',
+        stroke_color = '#c0c0c0',
         stroke_width = 2,
         stroke_dasharray = [],
         fill_color = '#808080',
@@ -211,10 +219,10 @@ class EntityStyle:
     )
     Window = SvgStatusStyle(
         status_value = '',
-        stroke_color = '#0606a0',
+        stroke_color = '#808080',
         stroke_width = 2,
         stroke_dasharray = [],
-        fill_color = '#808080',
+        fill_color = '#78e3df',
         fill_opacity = 1,
     )
 
@@ -342,25 +350,38 @@ class EntityStyle:
         EntityType.WATER_LINE: WaterLine,
         EntityType.WINDOW: Window,
     }
+    EntityTypePathInitialRadius = {
+        EntityType.APPLIANCE: SvgRadius( x = 32, y = 32 ),
+        EntityType.DOOR: SvgRadius( x = None, y = 16 ),
+        EntityType.FURNITURE: SvgRadius( x = 64, y = 32 ),
+        EntityType.WALL: SvgRadius( x = 16, y = None ),
+        EntityType.WINDOW: SvgRadius( x = None, y = 16.0 ),
+    }
 
     @classmethod
-    def get_svg_icon_viewbox( cls, entity_type : EntityType ):
+    def get_svg_icon_viewbox( cls, entity_type : EntityType ) -> SvgViewBox:
         if entity_type in cls.EntityTypeToIconViewbox:
             return cls.EntityTypeToIconViewbox.get( entity_type )
         return ItemStyle.get_default_svg_icon_viewbox()
             
     @classmethod
-    def get_svg_icon_template_name( cls, entity_type : EntityType ):
+    def get_svg_icon_template_name( cls, entity_type : EntityType ) -> str:
         if entity_type in cls.EntityTypesWithIcons:
             return f'entity/svg/type.{entity_type}.svg'
         return ItemStyle.get_default_svg_icon_template_name()
     
     @classmethod
-    def get_svg_path_status_style( cls, entity_type : EntityType ):
+    def get_svg_path_status_style( cls, entity_type : EntityType ) -> SvgStatusStyle:
         if entity_type in cls.PathEntityTypeToSvgStatusStyle:
             return cls.PathEntityTypeToSvgStatusStyle.get( entity_type )
         return ItemStyle.get_default_svg_path_status_style()
-    
+
+    @classmethod
+    def get_svg_path_initial_radius( cls, entity_type : EntityType ) -> SvgRadius:
+        if entity_type in cls.EntityTypePathInitialRadius:
+            return cls.EntityTypePathInitialRadius.get( entity_type )
+        return SvgRadius( x = None, y = None )
+
     
 class StatusStyle:
 

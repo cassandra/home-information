@@ -110,9 +110,35 @@ class SvgItemFactory( Singleton ):
         else:
             return SvgItemType.ICON
         
+    def get_default_entity_svg_path_str( self,
+                                         entity         : Entity,
+                                         location_view  : LocationView,
+                                         is_path_closed : bool           ) -> str:
+        radius = EntityStyle.get_svg_path_initial_radius( entity_type = entity.entity_type )
+        return self.get_default_svg_path_str(
+            location_view = location_view,
+            is_path_closed = is_path_closed,
+            radius_x = radius.x,
+            radius_y = radius.y,
+        )
+    
+    def get_default_collection_svg_path_str( self,
+                                             collection      : Collection,
+                                             location_view   : LocationView,
+                                             is_path_closed  : bool           ) -> str:
+        radius = CollectionStyle.get_svg_path_initial_radius( collection_type = collection.collection_type )
+        return self.get_default_svg_path_str(
+            location_view = location_view,
+            is_path_closed = is_path_closed,
+            radius_x = radius.x,
+            radius_y = radius.y,
+        )
+
     def get_default_svg_path_str( self,
                                   location_view   : LocationView,
-                                  is_path_closed  : bool           ) -> str:
+                                  is_path_closed  : bool,
+                                  radius_x        : float = None,
+                                  radius_y        : float = None  ) -> str:
 
         # Note that this server-side creation of a new path is just one
         # place new paths can be created. During client-side path editing,
@@ -121,10 +147,13 @@ class SvgItemFactory( Singleton ):
         # there to be some consistency.
         
         # Default display a line or rectangle in middle of current view with radius X% of viewbox
+        if radius_x is None:
+            radius_x = location_view.svg_view_box.width * ( self.NEW_PATH_RADIUS_PERCENT / 50.0 )
+        if radius_y is None:
+            radius_y = location_view.svg_view_box.height * ( self.NEW_PATH_RADIUS_PERCENT / 50.0 )
+
         center_x = location_view.svg_view_box.x + ( location_view.svg_view_box.width / 2.0 )
         center_y = location_view.svg_view_box.y + ( location_view.svg_view_box.height / 2.0 )
-        radius_x = location_view.svg_view_box.width * ( self.NEW_PATH_RADIUS_PERCENT / 100.0 )
-        radius_y = location_view.svg_view_box.height * ( self.NEW_PATH_RADIUS_PERCENT / 100.0 )
 
         if is_path_closed:
             top_left_x = center_x - radius_x

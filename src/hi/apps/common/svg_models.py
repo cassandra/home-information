@@ -7,6 +7,12 @@ from django.db import models
 
 
 @dataclass
+class SvgRadius:
+    x       : float
+    y       : float
+
+
+@dataclass
 class SvgViewBox:
     x       : float
     y       : float

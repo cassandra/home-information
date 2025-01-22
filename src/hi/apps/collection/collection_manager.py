@@ -232,7 +232,8 @@ class CollectionManager(Singleton):
         except CollectionPath.DoesNotExist:
             pass
 
-        svg_path = SvgItemFactory().get_default_svg_path_str(
+        svg_path = SvgItemFactory().get_default_collection_svg_path_str(
+            collection = collection,
             location_view = location_view,
             is_path_closed = is_path_closed,
         )
