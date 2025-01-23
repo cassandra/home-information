@@ -54,7 +54,7 @@ class EditEndView( View ):
 
     def get(self, request, *args, **kwargs):
 
-        # This most do a full synchronous page load to ensure that the
+        # This must do a full synchronous page load to ensure that the
         # Javascript handling is consistent with the current operating
         # state mode.
 

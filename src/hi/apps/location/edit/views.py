@@ -27,7 +27,7 @@ from hi.enums import ItemType, ViewType
 from hi.hi_async_view import HiModalView, HiSideView
 
 from . import forms
-
+from .view_mixin import LocationEditViewMixin
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +122,7 @@ class LocationSvgReplaceView( HiModalView, LocationViewMixin ):
         return antinode.redirect_response( redirect_url )
 
 
-class LocationEditView( View, LocationViewMixin ):
+class LocationEditView( View, LocationViewMixin, LocationEditViewMixin ):
 
     def get( self, request, *args, **kwargs ):
         location = self.get_location( request, *args, **kwargs )
@@ -183,7 +183,7 @@ class LocationEditView( View, LocationViewMixin ):
         )
             
     
-class LocationAttributeUploadView( View, LocationViewMixin ):
+class LocationAttributeUploadView( View, LocationViewMixin, LocationEditViewMixin ):
 
     def post( self, request, *args, **kwargs ):
         location = self.get_location( request, *args, **kwargs )
@@ -262,10 +262,11 @@ class LocationViewAddView( HiModalView ):
     def get( self, request, *args, **kwargs ):
         try:
             # Ensure we have a location to add the view to.
-            _ = LocationManager().get_default_location( request = request )
+            location = LocationManager().get_default_location( request = request )
         except Location.DoesNotExist:
             raise BadRequest( 'No locations defined.' )
         context = {
+            'location': location,
             'location_view_add_form': forms.LocationViewAddForm(),
         }
         return self.modal_response( request, context )
@@ -331,7 +332,7 @@ class LocationViewDeleteView( HiModalView, LocationViewMixin ):
 
     
 @method_decorator( edit_required, name='dispatch' )
-class LocationViewEditView( View, LocationViewMixin ):
+class LocationViewEditView( View, LocationViewMixin, LocationEditViewMixin ):
 
     def post( self, request, *args, **kwargs ):
         location_view = self.get_location_view( request, *args, **kwargs )
@@ -353,7 +354,7 @@ class LocationViewEditView( View, LocationViewMixin ):
         return antinode.refresh_response()
 
     
-class LocationViewGeometryView( View, LocationViewMixin ):
+class LocationViewGeometryView( View, LocationViewMixin, LocationEditViewMixin ):
 
     def post(self, request, *args, **kwargs):
         location_view = self.get_location_view( request, *args, **kwargs )

@@ -26,7 +26,16 @@
     {% endif %}
     
     {% else %}
-    {% include "attribute/panes/attribute_form_new.html" %}
+    <div class="text-center">
+      <button class="btn btn-info" type="button"
+	      data-toggle="collapse" data-target="#collapseExample"
+	      aria-expanded="false" aria-controls="collapseExample">
+	ADD NEW ATTRIBUTE
+      </button>    
+    </div>
+    <div class="collapse" id="collapseExample">
+      {% include "attribute/panes/attribute_form_new.html" %}
+    </div>
     {% endif %}
 
     {{ attribute_form.name.error }}

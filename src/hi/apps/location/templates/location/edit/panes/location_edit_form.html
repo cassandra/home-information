@@ -10,19 +10,18 @@
 </div>
 {% endif %}
 
-<div>
-  {{ location_edit_form.name.label }}
+<div class="form-group">
+  <label for="{{ location_edit_form.name.id_for_label }}">{{ location_edit_form.name.label }}</label>
   {{ location_edit_form.name }}
-  {{ location_edit_form.name.errors }}
+  <small class="form-error text-danger">{{ location_edit_form.name.errors }}</small>
 </div>
 
-<div>
-  {{ location_edit_form.order_id.label }}
+<div class="form-group">
+  <label for="{{ location_edit_form.order_id.id_for_label }}">{{ location_edit_form.order_id.label }}</label>
   {{ location_edit_form.order_id }}
-  {{ location_edit_form.order_id.errors }}
+  <small class="form-error text-danger">{{ location_edit_form.order_id.errors }}</small>
 </div>
 
 <div>
   {% include "attribute/panes/attribute_form.html" with attribute_formset=location_attribute_formset %}
 </div>
- 

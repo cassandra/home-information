@@ -24,6 +24,10 @@ class AttributeForm( forms.ModelForm ):
             'name',
             'value',
         )
+        widgets = {
+            'name': forms.TextInput( attrs={'class': 'form-control'} ),
+            'value': forms.TextInput( attrs={'class': 'form-control'} ),
+        }
 
     secret = forms.BooleanField(
         required = False,

@@ -18,7 +18,7 @@
 	{% include main_template_name %}
       </div>
     </div>
-    <div class="col-3 fixed-column">
+    <div class="col-3 fixed-column {% if request.view_parameters.is_editing %}hi-edit-bg{% endif %}">
       <div id="{{ DIVID.SIDE }}">
 	{% include side_template_name %}
       </div>

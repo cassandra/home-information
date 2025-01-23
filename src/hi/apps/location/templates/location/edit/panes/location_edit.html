@@ -1,41 +1,39 @@
-{% if request.view_parameters.is_editing %}
-<h5>Location</h5>
-{% endif %}
-
 <form action="{% url 'location_edit_location_edit' location_id=location.id %}"
       method="post" enctype="multipart/form-data"
       class="form" data-async="true">
   {% csrf_token %}
-
-<div>
-{% include "location/edit/panes/location_edit_form.html" %}
-</div>
-
-<button id="hi-add-location-button" type="submit" class="btn btn-info"
-	name="action" value="update">
-  UPDATE
-</button>
-</form>
-
-<form action="{% url 'location_attribute_upload' location_id=location.id %}"
-      method="post"
-      class="form" data-async="true">
-  {% csrf_token %}
   <div>
-    {% include "attribute/panes/attribute_upload_form.html" with attribute_upload_form=location_attribute_upload_form  %}
+    {% include "location/edit/panes/location_edit_form.html" %}
+  </div>
+  <div class="text-center" >
+    <button id="hi-add-location-button" type="submit" class="btn btn-info"
+	name="action" value="update">
+      UPDATE
+    </button>
   </div>
 </form>
 
+<div class="text-center my-3" >
+  <form action="{% url 'location_attribute_upload' location_id=location.id %}"
+	method="post"
+	class="form" data-async="true">
+    {% csrf_token %}
+    <div>
+      {% include "attribute/panes/attribute_upload_form.html" with attribute_upload_form=location_attribute_upload_form  %}
+    </div>
+  </form>
+</div>
+
 {% if request.view_parameters.is_editing %}
-<div>
+<div class="text-center my-3" >
   <a href="{% url 'location_edit_svg_replace' location_id=location.id %}"
      id="hi-svg-replace-link" class="btn btn-info btn-control" role="button"
      data-async="true">
-    REPLACE IMAGE
+    REPLACE BACKGROUND SVG IMAGE
   </a>
 </div>
 
-<div>
+<div class="my-3">
   <a href="{% url 'location_edit_location_delete' location_id=location.id %}"
      id="hi-delete-location-link" class="btn btn-danger btn-control" role="button"
      data-async="true">

@@ -88,7 +88,7 @@ class LocationSwitchView( View, LocationViewMixin ):
         return HttpResponseRedirect( redirect_url )
 
 
-class LocationViewDetailsView( HiSideView, LocationViewMixin ):
+class LocationDetailsView( HiSideView, LocationViewMixin ):
 
     def get_template_name( self ) -> str:
         return 'location/panes/location_details.html'
@@ -97,17 +97,27 @@ class LocationViewDetailsView( HiSideView, LocationViewMixin ):
         return True
     
     def get_template_context( self, request, *args, **kwargs ):
-        location_view = self.get_location_view( request, *args, **kwargs )
-
+        location = self.get_location( request, *args, **kwargs )
         location_edit_data = LocationEditData(
-            location = location_view.location,
+            location = location,
         )
+        return location_edit_data.to_template_context()
+
+
+class LocationViewDetailsView( HiSideView, LocationViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'location/panes/location_view_details.html'
+
+    def should_push_url( self ):
+        return True
+    
+    def get_template_context( self, request, *args, **kwargs ):
+        location_view = self.get_location_view( request, *args, **kwargs )
         location_view_edit_data = LocationViewEditData(
             location_view = location_view,
         )
-        context = location_edit_data.to_template_context()
-        context.update( location_view_edit_data.to_template_context() )
-        return context
+        return location_view_edit_data.to_template_context()
 
 
 class LocationItemInfoView( View ):

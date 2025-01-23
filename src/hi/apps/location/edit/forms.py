@@ -64,8 +64,12 @@ class LocationEditForm( forms.ModelForm ):
             'name',
             'order_id',
         )
- 
+        widgets = {
+            'name': forms.TextInput( attrs={'class': 'form-control'} ),
+            'order_id': forms.TextInput( attrs={'class': 'form-control'} ),
+        }
 
+        
 class LocationAttributeForm( AttributeForm ):
     class Meta( AttributeForm.Meta ):
         model = LocationAttribute

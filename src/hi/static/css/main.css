@@ -24,7 +24,8 @@
   --muted-color: #7e7e81;
   --on-muted-color: #ffffff;
   --line-color: #cccccc;
-
+  --edit-bg-color: #f9f9ff;
+  
   --top-buttons-height: 2.5rem;
   --bottom-buttons-height: 2.5rem;
 
@@ -153,9 +154,6 @@ a.underline:visited {
     background-color: var(--muted-color) !important;
 }
 
-
-
-
 .hi-interstitial-page {
     background: linear-gradient(to bottom, #f9f9f9, #ffffff);
     display: flex;
@@ -178,10 +176,6 @@ a.underline:visited {
     max-width: 400px;
     z-index: 1;
 }
-
-
-
-
 
 #hi-top-content {
     height: calc( var(--top-buttons-height) - 1 );
@@ -240,6 +234,10 @@ a.underline:visited {
   border: 2px dashed #888888;
 }
 
+.form-group label {
+    color: var(--muted-color) !important;
+}
+
 #hi-server-error-msg {
     position: fixed;
     display: none;
@@ -269,6 +267,9 @@ a.underline:visited {
     border-bottom-left-radius: 0.8rem;
     border-bottom-right-radius: 0.8rem;
     text-align: center;
+}
+.hi-edit-bg {
+    background: var(--edit-bg-color);
 }
 
 svg[action-state="move"] {
