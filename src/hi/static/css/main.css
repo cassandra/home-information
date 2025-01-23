@@ -58,6 +58,7 @@ html, body {
     margin: 0;
     padding: 0;
     height: 100%;
+    color: #222233;
     background-color: var(--white-bg-color);
 }
 
@@ -151,6 +152,36 @@ a.underline:visited {
     color: var(--on-muted-color) !important;
     background-color: var(--muted-color) !important;
 }
+
+
+
+
+.hi-interstitial-page {
+    background: linear-gradient(to bottom, #f9f9f9, #ffffff);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
+    position: relative;
+}
+.hi-start-heading {
+    position: absolute;
+    top: 2rem;
+}
+.hi-interstitial-page-content {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    max-width: 400px;
+    z-index: 1;
+}
+
+
+
+
 
 #hi-top-content {
     height: calc( var(--top-buttons-height) - 1 );

@@ -1,24 +1,27 @@
 {% extends "pages/base.html" %}
+{% load static %}
 
 {% block content %}
-<div class="container-fluid">
-  <h1>Home Information Center</h1>
-  <h2>Welcome!</h2>
-
-  <p>
-    To get started, we need to set up your location.
-  </p>
-  <p>
-    Give your location a new and optionally upload an SVG image of your property and/or house.
-  </p>
+<div class="container-fluid hi-interstitial-page">
+  <div class="hi-start-heading col-4">
+    <img class="img-fluid" src="{% static 'img/hi-logo-467x200.png' %}" alt="Home Information Logo" />
+  </div>
   
-  <div>
-    <a role="button" class="btn btn-success"
-       href="{% url 'location_edit_location_add' %}"
-       data-async="modal">
-      ADD MY LOCATION
-    </a>
+  <div class="hi-interstitial-page-content">
+    <div class="display-4">Welcome!</div>
+    <p class="lead mt-2 mb-4">
+      To get started, add your home's name to create a new location.
+    </p>
+    <div class="">
+      <a role="button" class="btn btn-primary"
+	 href="{% url 'location_edit_location_add' %}"
+	 data-async="modal">
+	ADD MY LOCATION
+      </a>
+    </div>
+    <p class="text-muted mt-4">
+      Optionally, you can upload an SVG image of your home or property layout.
+    </p>
   </div>
 </div>
-
 {% endblock %}
