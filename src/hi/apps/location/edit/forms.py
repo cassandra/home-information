@@ -66,7 +66,7 @@ class LocationEditForm( forms.ModelForm ):
         )
         widgets = {
             'name': forms.TextInput( attrs={'class': 'form-control'} ),
-            'order_id': forms.TextInput( attrs={'class': 'form-control'} ),
+            'order_id': forms.NumberInput( attrs={'class': 'form-control'} ),
         }
 
         
@@ -105,14 +105,12 @@ class LocationViewEditForm( forms.ModelForm ):
         model = LocationView
         fields = (
             'name',
-            'order_id',
-            'svg_view_box_str',
-            'svg_rotate',
             'location_view_type_str',
             'svg_style_name_str',
         )
-        
-    svg_rotate = SvgDecimalFormField()
+        widgets = {
+            'name': forms.TextInput( attrs={'class': 'form-control'} ),
+        }
 
     location_view_type_str = forms.ChoiceField(
         label = 'View Type',
@@ -122,7 +120,7 @@ class LocationViewEditForm( forms.ModelForm ):
         widget = forms.Select( attrs = { 'class' : 'custom-select' } ),
     )
     svg_style_name_str = forms.ChoiceField(
-        label = 'SVG Style Name',
+        label = 'Style',
         choices = SvgStyleName.choices,
         initial = SvgStyleName.default_value(),
         required = True,

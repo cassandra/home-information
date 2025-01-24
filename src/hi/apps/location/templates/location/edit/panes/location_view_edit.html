@@ -6,14 +6,15 @@
   <div>
     {% include "location/edit/panes/location_view_edit_form.html" %}
   </div>
-
-  <button id="hi-add-location-view-button" type="submit" class="btn btn-info"
-	  name="action" value="update">
-    UPDATE
-  </button>
+  <div class="text-center" >
+    <button id="hi-add-location-view-button" type="submit" class="btn btn-info"
+	    name="action" value="update">
+      UPDATE
+    </button>
+  </div>
 </form>
 
-<div>
+<div class="my-3">
   <a href="{% url 'location_edit_location_view_delete' location_view_id=location_view.id %}"
      id="hi-delete-location-view-link" class="btn btn-danger btn-control" role="button"
      data-async="true">

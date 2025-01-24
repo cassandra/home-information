@@ -237,7 +237,16 @@ a.underline:visited {
 .form-group label {
     color: var(--muted-color) !important;
 }
-
+.hi-custom-select .input-group-text {
+    height: calc(1.5em + 0.75rem + 2px);
+    line-height: 1.5;
+}
+.plus-icon {
+    font-size: 1.5rem;
+    color: var(--on-status-ok-color);
+    background-color: var(--status-ok-color);
+    padding: 0 0.25rem 0 0.25rem;
+}
 #hi-server-error-msg {
     position: fixed;
     display: none;

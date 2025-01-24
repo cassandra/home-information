@@ -3,7 +3,7 @@
 {% endif %}
 
 <div class="d-flex justify-content-between">
-  <div class="h5"><small>Entity</small>: {{ entity.name }}</div>
+  <div class="h5"><small>Item</small>: {{ entity.name }}</div>
   <div class="">
     <a href="{% url 'edit_item_details_close' %}"
        class="btn btn-tertiary" role="button" data-async="true">
@@ -72,7 +72,7 @@
 <div class="">
   <a href="{% url 'entity_edit_entity_delete' entity_id=entity.id %}"
      class="btn btn-danger btn-control" role="button" data-async="true">
-    DELETE ENTITY
+    DELETE ITEM
   </a>
 </div>
 {% else %}

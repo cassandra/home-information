@@ -10,38 +10,31 @@
 </div>
 {% endif %}
 
-<div>
-  {{ location_view_edit_form.name.label }}
+<div class="form-group">
+  <label for="{{ location_view_edit_form.name.id_for_label }}">{{ location_view_edit_form.name.label }}</label>
   {{ location_view_edit_form.name }}
-  {{ location_view_edit_form.name.errors }}
+  <small class="form-error text-danger">{{ location_view_edit_form.name.errors }}</small>
 </div>
 
-<div>
-  {{ location_view_edit_form.order_id.label }}
-  {{ location_view_edit_form.order_id }}
-  {{ location_view_edit_form.order_id.errors }}
-</div>
-<div>
-  {{ location_view_edit_form.svg_view_box_str.label }}
-  {{ location_view_edit_form.svg_view_box_str }}
-  {{ location_view_edit_form.svg_view_box_str.errors }}
-</div>
-<div>
-  {{ location_view_edit_form.svg_rotate.label }}
-  {{ location_view_edit_form.svg_rotate }}
-  {{ location_view_edit_form.svg_rotate.errors }}
-</div>
-<div>
+<div class=" hi-custom-select">
   <div class="input-group mb-2 mr-sm-2">
     <div class="input-group-prepend">
-      <div class="input-group-text">{{ location_view_edit_form.location_view_type_str.label_tag }}</div>
+      <label for="{{ location_view_edit_form.location_view_type_str.id_for_label }}"
+	     class="input-group-text">{{ location_view_edit_form.location_view_type_str.label_tag }}</label>
     </div>
     {{ location_view_edit_form.location_view_type_str }}
   </div>
   {{ location_view_edit_form.location_view_type_str.errors }}
 </div>
-<div>
-  {{ location_view_edit_form.svg_style_name_str.label }}
-  {{ location_view_edit_form.svg_style_name_str }}
+
+<div class="hi-custom-select">
+  <div class="input-group mb-2 mr-sm-2">
+    <div class="input-group-prepend">
+      <div for="{{ location_view_edit_form.svg_style_name_str.id_for_label }}"
+	     class="input-group-text">{{ location_view_edit_form.svg_style_name_str.label_tag }}</div>
+    </div>
+    {{ location_view_edit_form.svg_style_name_str }}
+  </div>
   {{ location_view_edit_form.svg_style_name_str.errors }}
 </div>
+

@@ -1,27 +1,36 @@
-<div class="h5">Add</div>
-
-<div class="input-group" >
-  <label for="{{ attribute_form.name.id_for_label }}">{{ attribute_form.name.label }}</label>
-  <input type="text"
-         id="{{ attribute_form.name.id_for_label }}"
-         name="{{ attribute_form.name.html_name }}"
-         value="{{ attribute_form.name.value|default_if_none:'' }}">
-  <div class="form-error text-danger" >{{ attribute_form.name.errors }}</div>
+<div>
+  <a class="" data-toggle="collapse" href="#collapseExample"
+     role="button" aria-expanded="false" aria-controls="collapseExample">
+    <span class="plus-icon">&#43;</span> Add New Attribute
+  </a>
 </div>
-<div class="input-group">
-  <label for="{{ attribute_form.value.id_for_label }}">{{ attribute_form.value.label }}</label>
-  <textarea rows="2" cols="40"
-	    id="{{ attribute_form.value.id_for_label }}"
-	    name="{{ attribute_form.value.html_name }}"
-  >{{ attribute_form.value.value|default_if_none:'' }}</textarea>
-  <div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
+<div class="collapse" id="collapseExample">
 
-</div>
+  <div class="form-group" >
+    <label for="{{ attribute_form.name.id_for_label }}">New {{ attribute_form.name.label }}</label>
+    <input type="text"
+           id="{{ attribute_form.name.id_for_label }}"
+	   class="form-control"
+           name="{{ attribute_form.name.html_name }}"
+           value="{{ attribute_form.name.value|default_if_none:'' }}">
+    <div class="form-error text-danger" >{{ attribute_form.name.errors }}</div>
+  </div>
+  <div class="form-group">
+    <label for="{{ attribute_form.value.id_for_label }}">New {{ attribute_form.value.label }}</label>
+    <textarea rows="2" cols="40"
+	      id="{{ attribute_form.value.id_for_label }}"
+	      class="form-control"
+	      name="{{ attribute_form.value.html_name }}"
+    >{{ attribute_form.value.value|default_if_none:'' }}</textarea>
+    <div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
 
-<span>
-  <input type="checkbox" name="{{ attribute_form.secret.html_name }}"
-	 id="{{ attribute_form.secret.id_for_label }}"
-	 {% if attribute_form.secret.value %}checked="on"{% endif %} >
-  <label for="{{ attribute_form.secret.id_for_label }}">Mark as secret</label>
-</span>
+  </div>
+
+  <span>
+    <input type="checkbox" name="{{ attribute_form.secret.html_name }}"
+	   id="{{ attribute_form.secret.id_for_label }}"
+	   {% if attribute_form.secret.value %}checked="on"{% endif %} >
+    <label for="{{ attribute_form.secret.id_for_label }}">Mark as secret</label>
+  </span>
   {{ attribute_form.secret.errors }}
+</div>

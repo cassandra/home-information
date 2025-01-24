@@ -4,7 +4,8 @@
   {% include "edit/panes/side_header.html" %}
   {% endif %}
 
-  <div class="h4 mt-2">Display Items</div>
+  <hr />
+  <div class="h4">Display Items</div>
 
   <div class="">
     <a href="{% url 'entity_edit_entity_add' %}"
@@ -22,7 +23,7 @@
     {% endfor %}
   </div>
   {% empty %}
-  <div><em>No items defined.</em></div>
+  <div class="mt-3"><em>No items defined.</em></div>
   {% endfor %}
 
   {% if collection_view_group.item_list %}

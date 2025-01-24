@@ -10,7 +10,7 @@
 </div>
 {% endif %}
 
-<div>
+<div class="hi-custom-select">
   <div class="input-group mb-2 mr-sm-2">
     <div class="input-group-prepend">
       <div class="input-group-text">{{ entity_form.entity_type_str.label_tag }}</div>
@@ -19,16 +19,19 @@
   </div>
   {{ entity_form.entity_type_str.errors }}
 </div>
-  
-<div>
-  {{ entity_form.name.label }}
-  {{ entity_form.name }}
-  {{ entity_form.name.errors }}
+
+<div class="input-group">
+  <div class="input-group-prepend">
+    <label for="{{ entity_form.name.id_for_label }}"
+	   class="input-group-text">{{ entity_form.name.label }}</label>
+    {{ entity_form.name }}
+    <small class="form-error text-danger">{{ entity_form.name.errors }}</small>
+  </div>
 </div>
 
-<div class="h5">Attributes</div>
-
+{% if entity_form.entity.pk %}
+<div class="h4">Attributes</div>
 <div>
   {% include "attribute/panes/attribute_form.html" with attribute_formset=entity_attribute_formset %}
 </div>
-
+{% endif %}

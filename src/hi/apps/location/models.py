@@ -142,7 +142,7 @@ class LocationView( models.Model, ItemTypeModelMixin ):
         'Rotate',
     )
     svg_style_name_str = models.CharField(
-        'Style Name',
+        'Style',
         max_length = 32,
         null = False, blank = False,
     )
