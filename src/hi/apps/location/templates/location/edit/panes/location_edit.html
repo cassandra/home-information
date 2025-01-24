@@ -5,8 +5,12 @@
   <div>
     {% include "location/edit/panes/location_edit_form.html" %}
   </div>
+  <div>
+    {% include "attribute/panes/attribute_form.html" with attribute_formset=location_attribute_formset %}
+  </div>
+  
   <div class="text-center" >
-    <button id="hi-add-location-button" type="submit" class="btn btn-info"
+    <button id="hi-add-location-button" type="submit" class="btn btn-primary"
 	name="action" value="update">
       UPDATE
     </button>
@@ -27,7 +31,7 @@
 {% if request.view_parameters.is_editing %}
 <div class="text-center my-3" >
   <a href="{% url 'location_edit_svg_replace' location_id=location.id %}"
-     id="hi-svg-replace-link" class="btn btn-info btn-control" role="button"
+     id="hi-svg-replace-link" class="btn btn-primary btn-control" role="button"
      data-async="true">
     REPLACE BACKGROUND SVG IMAGE
   </a>

@@ -1,15 +1,17 @@
 <div id="{{ DIVID.SECURITY_STATE_CONTROL }}">
-  <div>SECURITY STATE</div>
+  <div class="h6 text-center">Security State</div>
   {% for action_value, action_label in security_status_data.security_state_action_choices %}
-  <a class="btn {% if action_value == security_status_data.current_action_value %}btn-primary{% else %}btn-info{% endif %} btn-control"
-     href="{% url 'security_state_action' action=action_value %} "
-     data-async="#{{ DIVID.SECURITY_STATE_CONTROL }}" data-mode="replace">
-    {% if action_value == security_status_data.current_action_value %}
-    {{  security_status_data.current_action_label }}
-    {% else %}
-    {{ action_label }}
-    {% endif %}
-  </a>
+  <div class="my-1">
+    <a class="btn {% if action_value == security_status_data.current_action_value %}btn-secondary{% else %}btn-primary{% endif %} btn-control"
+       href="{% url 'security_state_action' action=action_value %} "
+       data-async="#{{ DIVID.SECURITY_STATE_CONTROL }}" data-mode="replace">
+      {% if action_value == security_status_data.current_action_value %}
+      {{  security_status_data.current_action_label }}
+      {% else %}
+      {{ action_label }}
+      {% endif %}
+    </a>
+  </div>
   {% empty %}
   <div class="dropdown-item alert alert-secondary text-center">
     <em>No security states.</em>

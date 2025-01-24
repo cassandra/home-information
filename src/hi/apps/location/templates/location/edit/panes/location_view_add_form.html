@@ -10,8 +10,11 @@
 </div>
 {% endif %}
 
-<div>
-  {{ location_view_add_form.name.label }}
+<div class="input-group mb-2 mr-sm-2">
+  <div class="input-group-prepend">
+    <label for="{{ location_view_add_form.name.id_for_label }}"
+	   class="input-group-text">{{ location_view_add_form.name.label }}</label>
+  </div>
   {{ location_view_add_form.name }}
-  {{ location_view_add_form.name.errors }}
+  <small class="form-error text-danger"> {{ location_view_add_form.name.errors }}</small>
 </div>

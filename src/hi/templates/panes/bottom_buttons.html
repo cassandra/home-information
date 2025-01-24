@@ -1,17 +1,17 @@
-<div class="bg-white p-1">
+<div class="p-1">
   <div class="d-flex justify-content-between">
     {% include "collection/panes/collection_buttons.html" %}
     <div class="d-flex justify-content-end">
-      <div>
+      <div class="mx-1">
 	{% include "console/panes/audio_control.html" %}
       </div>
-      <div>
+      <div class="mx-1">
 	{% include "console/panes/sleep_mode_control.html" %}
       </div>
-      <div>
+      <div class="mx-1">
 	{% include "console/panes/console_lock_button.html" %}
       </div>
-      <div>
+      <div class="mx-1">
 	<a href="{% url 'config_settings' %}"
 	   class="btn btn-tertiary btn-control" role="button"
 	   data-async="true" >

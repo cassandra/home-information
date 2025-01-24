@@ -3,8 +3,7 @@
     All Rights Reserved.  
 */
 :root {
-  --white-fg-color: #fdfdfd;
-  --white-bg-color: #fdfdfd;
+  --white-color: #fdfdfd;
   --black: #020204;
   --primary-color: #177072;
   --on-primary-color: #ffffff;
@@ -24,7 +23,10 @@
   --muted-color: #7e7e81;
   --on-muted-color: #ffffff;
   --line-color: #cccccc;
-  --edit-bg-color: #f9f9ff;
+  --edit-bg-color: #ffd0c3;
+  --edit-side-bg-color: #dffeff;
+  --edit-top-bg-color: #f0f0f0;
+  --edit-bottom-bg-color: #f0f0f0;
   
   --top-buttons-height: 2.5rem;
   --bottom-buttons-height: 2.5rem;
@@ -60,7 +62,7 @@ html, body {
     padding: 0;
     height: 100%;
     color: #222233;
-    background-color: var(--white-bg-color);
+    background-color: var(--white-color);
 }
 
 a { color: var(--primary-color); }
@@ -89,18 +91,18 @@ a.underline:visited {
     color: var(--on-primary-color) !important;
 }
 .text-white {
-    color: var(--white-fg-color) !important;
+    color: var(--white-color) !important;
 }
 .text-black {
     color: var(--black);
 }
 
-.bg-primary, .btn-primary {
+.bg-primary, .bg-info, .btn-primary, .btn-info {
     color: var(--on-primary-color) !important;
     background-color: var(--primary-color) !important;
     border-color: var(--primary-highlight-color) !important;
 }
-.bg-primary a {
+.bg-primary a, .bg-info a, .btn-primary a, .btn-info a {
     color: color: var(--on-primary-color);
 }
 .bg-primary a:hover,
@@ -123,10 +125,7 @@ a.underline:visited {
 }
 .bg-secondary a:hover,
 .bg-secondary a:focus,
-.bg-secondary a:active,
-.bg-info a:hover,
-.bg-info a:focus,
-.bg-info a:active {
+.bg-secondary a:active {
     opacity: 0.65;
     color: color: var(--on-secondary-color);
 }
@@ -141,12 +140,27 @@ a.underline:visited {
 }
 .bg-tertiary a:hover,
 .bg-tertiary a:focus,
-.bg-tertiary a:active,
-.bg-info a:hover,
-.bg-info a:focus,
-.bg-info a:active {
+.bg-tertiary a:active {
     opacity: 0.65;
     color: color: var(--on-tertiary-color);
+}
+
+.bg-danger, .btn-error, .btn-danger {
+    color: var(--on-error-color) !important;
+    background-color: var(--error-color) !important;
+    border-color: var(--error-highlight-color) !important;
+}
+.bg-danger a, .btn-error a, .btn-danger a {
+    color: color: var(--on-error-color);
+}
+.bg-error a:hover,
+.bg-error a:focus,
+.bg-error a:active,
+.bg-danger a:hover,
+.bg-danger a:focus,
+.bg-danger a:active {
+    opacity: 0.65;
+    color: color: var(--on-error-color);
 }
 
 .bg-muted, .btn-muted {
@@ -187,9 +201,36 @@ a.underline:visited {
 }
 #hi-top-content img,
 #hi-bottom-content img {
-    max-height: 2.25rem;
+    max-height: 2rem;
     width: auto;
 }
+#hi-side-content {
+    height: calc(100vh - var(--top-buttons-height) - var(--bottom-buttons-height));
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+#hi-top-content,
+#hi-bottom-content,
+.hi-screen {
+    background: var(--white-color);
+}
+
+#hi-top-content[hi-edit="True"] {
+    background: var(--edit-top-bg-color);
+}
+#hi-bottom-content[hi-edit="True"] {
+    background: var(--edit-bottom-bg-color);
+}
+.hi-screen[hi-edit="True"] {
+    background: var(--edit-bg-color);
+}
+.hi-screen[hi-edit="True"] .hi-side {
+    background: var(--edit-side-bg-color);
+}
+
+
 .hi-screen {
     max-height: 100vh;
 }
@@ -243,8 +284,8 @@ a.underline:visited {
 }
 .plus-icon {
     font-size: 1.5rem;
-    color: var(--on-status-ok-color);
-    background-color: var(--status-ok-color);
+    color: var(--on-primary-color);
+    background-color: var(--primary-color);
     padding: 0 0.25rem 0 0.25rem;
 }
 #hi-server-error-msg {
@@ -276,9 +317,6 @@ a.underline:visited {
     border-bottom-left-radius: 0.8rem;
     border-bottom-right-radius: 0.8rem;
     text-align: center;
-}
-.hi-edit-bg {
-    background: var(--edit-bg-color);
 }
 
 svg[action-state="move"] {

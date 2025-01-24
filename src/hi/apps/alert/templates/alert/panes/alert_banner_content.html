@@ -4,7 +4,7 @@
   <div class="hi-alert hi-alarm-level-{{ alert.alarm_level }} row">
     <div class="col-1">
       <a href="{% url 'alert_details' alert_id=alert.id %}"
-	 class="btn btn-info" data-async="modal">DETAILS</a>
+	 class="btn btn-primary" data-async="modal">DETAILS</a>
     </div>
     <div class="col-1">{{ alert.alarm_level.label }}</div>
     <div class="col-6">{{ alert.title }}</div>

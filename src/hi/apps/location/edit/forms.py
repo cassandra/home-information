@@ -63,10 +63,12 @@ class LocationEditForm( forms.ModelForm ):
         fields = (
             'name',
             'order_id',
+            'svg_view_box_str',
         )
         widgets = {
             'name': forms.TextInput( attrs={'class': 'form-control'} ),
             'order_id': forms.NumberInput( attrs={'class': 'form-control'} ),
+            'svg_view_box_str': forms.TextInput( attrs={'class': 'form-control', 'readonly': True } ),
         }
 
         
@@ -96,7 +98,10 @@ class LocationViewAddForm(forms.Form):
     # N.B. When adding a LocationView, we use limited field options to keep
     # it simpler.
     
-    name = forms.CharField()
+    name = forms.CharField(
+        label = 'View Name',
+        required = True,
+    )
 
     
 class LocationViewEditForm( forms.ModelForm ):
@@ -107,13 +112,19 @@ class LocationViewEditForm( forms.ModelForm ):
             'name',
             'location_view_type_str',
             'svg_style_name_str',
+            'svg_view_box_str',
+            'svg_rotate',
+            'order_id',
         )
         widgets = {
             'name': forms.TextInput( attrs={'class': 'form-control'} ),
+            'svg_view_box_str': forms.TextInput( attrs={'class': 'form-control'} ),
+            'svg_rotate': forms.NumberInput( attrs={'class': 'form-control'} ),
+            'order_id': forms.NumberInput( attrs={'class': 'form-control'} ),
         }
 
     location_view_type_str = forms.ChoiceField(
-        label = 'View Type',
+        label = 'Type',
         choices = LocationViewType.choices,
         initial = LocationViewType.default_value(),
         required = True,
@@ -154,7 +165,15 @@ class LocationItemPositionForm( forms.ModelForm ):
             'svg_rotate',
         )
 
-    svg_x = SvgDecimalFormField()
-    svg_y = SvgDecimalFormField()
-    svg_scale = SvgDecimalFormField()
-    svg_rotate = SvgDecimalFormField()
+    svg_x = SvgDecimalFormField(
+        label = 'X',
+    )
+    svg_y = SvgDecimalFormField(
+        label = 'Y',
+    )
+    svg_scale = SvgDecimalFormField(
+        label = 'Scale',
+    )
+    svg_rotate = SvgDecimalFormField(
+        label = 'Rotate',
+    )

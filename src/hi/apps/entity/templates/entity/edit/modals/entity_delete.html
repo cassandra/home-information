@@ -1,20 +1,20 @@
 {% extends "modals/action_with_cancel.html" %}
 
 {% block title_text %}
-Delete Location Item?
+Delete Item?
 {% endblock %}
 
 {% block body %}
 
-<div>
+<p>
   Please confirm that you want to delete this item:
   <ul>
-    {{ entity.name }}
+    <span class="h4 text-primary">{{ entity.name }}</span>
   </ul>
-</div>
-<div>
+</p>
+<p>
   This action cannot be undone.
-</div>
+</p>
 {% endblock %}
 
 {% block action_right %}

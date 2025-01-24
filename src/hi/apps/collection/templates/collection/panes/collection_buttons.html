@@ -1,19 +1,20 @@
 <div class="d-flex justify-content-start draggable-container">
   {% for collection in collection_list %}
   <div id="{{ collection.html_id }}-button"
-       class="{% if request.view_parameters.is_editing %}draggable{% endif %}"
+       class="{% if request.view_parameters.is_editing %}draggable{% endif %} mx-1"
        {% if request.view_parameters.is_editing %}draggable="true"{% endif %}
        >
     <a href="{% url 'collection_view' collection_id=collection.id %}"
-       class="btn btn-secondary btn-control"
-       role="button"
-       data-async="true" >
+       class="btn {% if collection == request.view_parameters.active_collection %}btn-secondary{% else %}btn-primary{% endif %} btn-control"
+       role="button" >
       {{ collection.name }}
     </a>
   </div>
+  {% empty %}
+  <div><em>No collections defined.</em></div>
   {% endfor %}
   {% if request.view_parameters.is_editing %}
-  <div class="">
+  <div class="ml-3">
     <a href="{% url 'collection_edit_collection_add' %}"
        class="btn btn-success btn-control" role="button"
        data-async="modal" >

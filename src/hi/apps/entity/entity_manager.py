@@ -14,6 +14,7 @@ from hi.apps.location.svg_item_factory import SvgItemFactory
 
 from .delegation_manager import DelegationManager
 from .enums import (
+    EntityPairingType,
     EntityStateType,
 )
 from .models import (
@@ -28,6 +29,7 @@ from .models import (
 from .transient_models import (
     EntityDetailsData,
     EntityEditData,
+    EntityPairing,
     EntityViewGroup,
     EntityViewItem,
 )
@@ -74,15 +76,41 @@ class EntityManager(Singleton):
             if entity_position:
                 entity_position_form = EntityPositionForm( instance = entity_position )
 
+        entity_pairing_list = self.get_entity_pairing_list( entity = entity )
         principal_entity_list = self.get_principal_entity_list( entity = entity )
         
         entity_edit_data = EntityEditData( entity = entity )
         return EntityDetailsData(
             entity_edit_data = entity_edit_data,
             entity_position_form = entity_position_form,
+            entity_pairing_list = entity_pairing_list,
             principal_entity_list = principal_entity_list,
         )
 
+    def get_entity_pairing_list( self, entity : Entity ) -> List[ EntityPairing ]:
+        delegation_manager = DelegationManager()
+        entity_pairing_list = list()
+
+        for principal_entity in delegation_manager.get_principal_entities( entity = entity ):
+            entity_pairing = EntityPairing(
+                entity = entity,
+                paired_entity = principal_entity,
+                pairing_type = EntityPairingType.PRINCIPAL,
+            )
+            entity_pairing_list.append( entity_pairing )
+            continue
+
+        for delegate_entity in delegation_manager.get_delegate_entities( entity = entity ):
+            entity_pairing = EntityPairing(
+                entity = entity,
+                paired_entity = delegate_entity,
+                pairing_type = EntityPairingType.DELEGATE,
+            )
+            entity_pairing_list.append( entity_pairing )
+            continue
+
+        return entity_pairing_list
+    
     def get_principal_entity_list( self, entity : Entity ) -> List[ Entity ]:
         entity_state_delegation_list = list(
             entity.entity_state_delegations.select_related('entity_state', 'entity_state__entity').all()

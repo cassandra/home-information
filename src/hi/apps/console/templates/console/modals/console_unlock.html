@@ -10,8 +10,7 @@
   {% endblock %}
 
   {% block body %}
-  <label for="hi-console-password">Enter Password:</label>
-  <input type="password" id="hi-console-password" name="password" required>
+  {% include "console/panes/lock_password_form.html" %}
   {% endblock %}
   
   {% block action_center %}

@@ -35,7 +35,11 @@ class DelegationManager(Singleton):
         
     def get_principal_entities( self, entity : models.Entity ) -> List[ models.Entity ]:
         principal_entity_list = list()
-        for entity_state_delegation in entity.entity_state_delegations.all():
+        delegation_queryset = entity.entity_state_delegations.select_related(
+            'entity_state',
+            'entity_state__entity'
+        ).all()
+        for entity_state_delegation in delegation_queryset:
             principal_entity_list.append( entity_state_delegation.entity_state.entity )
             continue
         return principal_entity_list

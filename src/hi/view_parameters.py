@@ -76,7 +76,13 @@ class ViewParameters:
             self._location_view = location_view
             self._location = location_view.location
         return
-        
+            
+    @property
+    def active_location_view(self) -> Collection:
+        if self.view_type != ViewType.LOCATION_VIEW:
+            return None
+        return self.location_view
+    
     @property
     def collection(self) -> Collection:
         if self._collection:
@@ -98,6 +104,12 @@ class ViewParameters:
             self.collection_id = collection.id
             self._collection = collection
         return
+        
+    @property
+    def active_collection(self) -> Collection:
+        if self.view_type != ViewType.COLLECTION:
+            return None
+        return self.collection
         
     def to_session( self, request : HttpRequest ):
         if not hasattr( request, 'session' ):

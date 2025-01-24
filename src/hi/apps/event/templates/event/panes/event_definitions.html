@@ -5,7 +5,7 @@
   <div class="h3">Event Definitions</div>
   
   <div>
-    <a role="button" class="btn btn-info btn-control"
+    <a role="button" class="btn btn-primary btn-control"
        href="{% url 'event_definition_add' %}"
        data-async="modal" >
       ADD NEW
@@ -24,7 +24,7 @@
   {% for event_definition in event_definition_list %}
   <div class="row">
     <div class="col-1">
-      <a role="button" class="btn btn-info"
+      <a role="button" class="btn btn-primary"
 	 href="{% url 'event_definition_edit' id=event_definition.id %}"
 	 data-async="modal" >
 	EDIT

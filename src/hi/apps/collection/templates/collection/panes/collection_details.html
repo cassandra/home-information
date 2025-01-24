@@ -1,10 +1,6 @@
-{% if request.view_parameters.is_editing %}
-{% include "edit/panes/side_header.html" %}
-{% endif %}
-
-<div class="d-flex justify-content-between">
-  <div class="h5"><small>Collection:</small>{{ collection.name }}</div>
-  <div class="">
+<div class="d-flex justify-content-between my-2">
+  <div class="align-self-center h4">Collection</div>
+  <div class="align-self-center ">
     <a href="{% url 'edit_item_details_close' %}"
        class="btn btn-tertiary" role="button" data-async="true">
       X
@@ -22,12 +18,7 @@
 </div>
 {% endif %}
 
-<h5>Views</h5>
-<div id="hi-edit-collection-views">
-  {% include "collection/edit/panes/collection_views.html" %}
-</div>
-
-<div class="">
+<div class="my-3">
   <a href="{% url 'collection_edit_collection_delete' collection_id=collection.id %}"
      class="btn btn-danger btn-control" role="button" data-async="true">
     DELETE COLLECTION

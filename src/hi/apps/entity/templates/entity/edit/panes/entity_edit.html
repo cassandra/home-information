@@ -2,23 +2,30 @@
       method="post"
       class="form" data-async="true">
   {% csrf_token %}
-  
   <div>
     {% include "entity/edit/panes/entity_form.html" %}
   </div>
-
-  <button id="hi-add-entity-edit-button" type="submit" class="btn btn-info"
-	  name="action" value="update">
-    UPDATE
-  </button>
-</form>
-
-<form action="{% url 'entity_attribute_upload' entity_id=entity.id %}"
-      method="post"
-      class="form" data-async="true">
-  {% csrf_token %}
+  <div class="h5 my-2">Attributes</div>
   <div>
-    {% include "attribute/panes/attribute_upload_form.html" with attribute_upload_form=entity_attribute_upload_form  %}
+    {% include "attribute/panes/attribute_form.html" with attribute_formset=entity_attribute_formset %}
+  </div>
+
+  <div class="text-center" >
+    <button id="hi-add-entity-edit-button" type="submit" class="btn btn-primary"
+	    name="action" value="update">
+      UPDATE
+    </button>
   </div>
 </form>
+
+<div class="text-center my-3" >
+  <form action="{% url 'entity_attribute_upload' entity_id=entity.id %}"
+	method="post"
+	class="form" data-async="true">
+    {% csrf_token %}
+    <div>
+      {% include "attribute/panes/attribute_upload_form.html" with attribute_upload_form=entity_attribute_upload_form  %}
+    </div>
+  </form>
+</div>
 

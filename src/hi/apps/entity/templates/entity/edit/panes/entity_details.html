@@ -1,9 +1,5 @@
-{% if request.view_parameters.is_editing %}
-{% include "edit/panes/side_header.html" %}
-{% endif %}
-
-<div class="d-flex justify-content-between">
-  <div class="h5"><small>Item</small>: {{ entity.name }}</div>
+<div class="d-flex justify-content-between mt-2">
+  <div class="h4">Item</div>
   <div class="">
     <a href="{% url 'edit_item_details_close' %}"
        class="btn btn-tertiary" role="button" data-async="true">
@@ -16,58 +12,6 @@
   {% include "entity/edit/panes/entity_edit.html" %}
 </div>
 
-<h5>Principals</h5>
-<div id="hi-edit-entity-principals">
-  <ul>
-    {% for principal_entity in principal_entity_list %}
-    <li>{{ principal_entity.name }}</li>
-    {% empty %}
-    <em>No principals</em>
-    {% endfor %}
-  </ul>
-  
-  <div class="">
-    <a href="{% url 'entity_edit_principal_manage' entity_id=entity.id %}"
-       class="btn btn-success btn-control" role="button" data-async="true">
-      MANAGE PRINCIPALS
-    </a>
-  </div>
-  
-</div>
-
-{% if entity_position_form %}
-<h5>Geometry</h5>
-<div id="{{ DIVID.ENTITY_POSITION_EDIT_PANE }}">
-  {% include "entity/edit/panes/entity_position_edit.html" %}
-</div>
-{% endif %}
-
-<h5>Delegates</h5>
-<div id="hi-edit-entity-delegates">
-  <div>TBD - DELEGATES</div>
-</div>
-
-<h5>States/Sensors/Controllers</h5>
-{% for entity_state in entity.states.all %}
-<div class="h6">{{ entity_state.name }}</div>
-<ul>
-  {% for sensor in entity_state.sensors.all %}
-  <li>{{ sensor.name }} [sensor]</li>
-  {% endfor %}
-  {% for controller in entity_state.controllers.all %}
-  <li>{{ controller.name }} [controller]</li>
-  {% endfor %}
-</ul>
-
-{% empty %}
-<em>No states</em>
-{% endfor %}
-
-<h5>Views</h5>
-<div id="hi-edit-entity-views">
-  {% include "entity/panes/entity_views.html" %}
-</div>
-
 {% if entity.can_user_delete %}
 <div class="">
   <a href="{% url 'entity_edit_entity_delete' entity_id=entity.id %}"
@@ -76,7 +20,35 @@
   </a>
 </div>
 {% else %}
-<h5>Integration</h5>
+<hr />
+<div class="h5">Integration</div>
 <div>{{ entity.integration_id }} [{{ entity.integration_name }}]</div>
-
 {% endif %}
+
+{% if entity_position_form %}
+<hr />
+<div class="h5">Geometry</div>
+<div id="{{ DIVID.ENTITY_POSITION_EDIT_PANE }}">
+  {% include "entity/edit/panes/entity_position_edit.html" %}
+</div>
+{% endif %}
+
+<hr />
+<div class="h5">Paired Items</div>
+<div id="hi-edit-entity-principals">
+  <ul>
+    {% for entity_pairing in entity_pairing_list %}
+    <li>{{ entity_pairing.paired_entity.name }} <small>[{{entity_pairing.pairing_type}}]</small></li>
+    {% empty %}
+    <em>No current pairings.</em>
+    {% endfor %}
+  </ul>
+  
+  <div class="">
+    <a href="{% url 'entity_edit_principal_manage' entity_id=entity.id %}"
+       class="btn btn-primary btn-control" role="button" data-async="true">
+      MANAGE PAIRINGS
+    </a>
+  </div>
+  
+</div>

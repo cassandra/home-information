@@ -17,7 +17,7 @@ class CollectionForm( forms.ModelForm ):
         )
         
     collection_type_str = forms.ChoiceField(
-        label = 'Collection Type',
+        label = 'Category',
         choices = CollectionType.choices,
         initial = CollectionType.default_value(),
         required = True,
@@ -25,7 +25,7 @@ class CollectionForm( forms.ModelForm ):
     )
         
     collection_view_type_str = forms.ChoiceField(
-        label = 'View Type',
+        label = 'Display',
         choices = CollectionViewType.choices,
         initial = CollectionViewType.default_value(),
         required = True,

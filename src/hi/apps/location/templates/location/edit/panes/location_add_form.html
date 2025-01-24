@@ -10,13 +10,19 @@
 </div>
 {% endif %}
 
-<p>
-  {{ location_add_form.name.label }}
+<div class="input-group mb-2 mr-sm-2">
+  <div class="input-group-prepend">
+    <label for="{{ location_add_form.name.id_for_label }}"
+	   class="input-group-text">{{ location_add_form.name.label }}</label>
+  </div>
   {{ location_add_form.name }}
-  {{ location_add_form.name.errors }}
-</p>
+  <small class="form-error text-danger">{{ location_add_form.name.errors }}</small>
+</div>
 
-<p>
-  Optionally add an image (SVG format) showing your property and/or house layout.  Skip this and we'll uses a predefined image for you. You'll be able to update this image later.
+<p class="my-3">
+  You may optionally add an image (SVG format) showing your property and/or house layout.
 </p>
-{% include "common/panes/svg_file_form.html" with svg_file_form=location_add_form label='Select an SVG file:' %}
+{% include "common/panes/svg_file_form.html" with svg_file_form=location_add_form %}
+<p class="my-2 text-muted">
+  If you skip adding an image now, we'll uses a predefined image for you. You can update the location's image at any time.
+</p>

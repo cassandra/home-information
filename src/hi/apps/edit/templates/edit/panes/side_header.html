@@ -7,14 +7,8 @@
       {% include "location/edit/panes/location_view_edit_header.html" %}
     </div>
   {% elif request.view_parameters.view_type.is_collection %}
-  <div class="d-flex justify-content-between">
-    <div class="h3"><small>Collection:</small> {{ request.view_parameters.collection.name }}</div>
-    <div>
-      <a href="{% url 'collection_details' collection_id=request.view_parameters.collection_id %}"
-	 class="btn btn-tertiary" role="button" data-async="true">
-	Collection Details
-      </a>
+    <div class="mt-2">
+      {% include "collection/edit/panes/collection_edit_header.html" %}
     </div>
-  </div>
   {% endif %}
 </div>

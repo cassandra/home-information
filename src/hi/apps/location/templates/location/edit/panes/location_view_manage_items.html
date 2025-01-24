@@ -1,5 +1,4 @@
 <div>
-
   {% if request.view_parameters.is_editing %}
   {% include "edit/panes/side_header.html" %}
   {% endif %}
@@ -7,7 +6,7 @@
   <hr />
   <div class="h4">Display Items</div>
 
-  <div class="">
+  <div class="my-2">
     <a href="{% url 'entity_edit_entity_add' %}"
        class="btn btn-success btn-control" role="button"
        data-async="modal" >

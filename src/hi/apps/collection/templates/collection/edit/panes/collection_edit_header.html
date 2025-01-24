@@ -1,0 +1,9 @@
+<div class="d-flex justify-content-between">
+  <div class="h5"><small>Collection:</small> {{ request.view_parameters.collection.name }}</div>
+  <div>
+    <a href="{% url 'collection_details' collection_id=request.view_parameters.collection_id %}"
+       class="btn btn-sm btn-tertiary" role="button" data-async="true">
+      EDIT
+    </a>
+  </div>
+</div>

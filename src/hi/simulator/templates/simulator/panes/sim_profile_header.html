@@ -9,7 +9,7 @@
     <small>Profile: </small> {{ current_sim_profile.name }}
   </div>
   <div class="">
-    <a role="button" class="btn btn-info"
+    <a role="button" class="btn btn-primary"
        href="{% url 'simulator_profile_edit' profile_id=current_sim_profile.id %}"
        data-async="modal">
       RENAME: {{ current_sim_profile.name }}

@@ -3,22 +3,22 @@
 
 {% block content %}
 
-<div id="{{ DIVID.TOP }}" class="fixed-top">
+<div id="{{ DIVID.TOP }}" class="fixed-top" hi-edit="{{ request.view_parameters.is_editing }}">
   {% include top_template_name %}
 </div>
 
-<div id="{{ DIVID.BOTTOM }}" class="fixed-bottom">
+<div id="{{ DIVID.BOTTOM }}" class="fixed-bottom" hi-edit="{{ request.view_parameters.is_editing }}">
   {% include bottom_template_name %}
 </div>
 
-<div class="container-fluid hi-screen">
+<div class="container-fluid hi-screen" hi-edit="{{ request.view_parameters.is_editing }}">
   <div class="row">
     <div class="col-9 scrollable-column ">
       <div id="{{ DIVID.MAIN }}">
 	{% include main_template_name %}
       </div>
     </div>
-    <div class="col-3 fixed-column {% if request.view_parameters.is_editing %}hi-edit-bg{% endif %}">
+    <div class="col-3 fixed-column hi-side">
       <div id="{{ DIVID.SIDE }}">
 	{% include side_template_name %}
       </div>

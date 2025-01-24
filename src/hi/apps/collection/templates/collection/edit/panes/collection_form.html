@@ -10,6 +10,15 @@
 </div>
 {% endif %}
 
+<div class="input-group mb-2 mr-sm-2 w-100">
+  <div class="input-group-prepend">
+    <label for="{{ collection_form.name.id_for_label }}"
+	   class="input-group-text">{{ collection_form.name.label }}</label>
+  </div>
+  {{ collection_form.name }}
+  <small class="form-error text-danger">{{ collection_form.name.errors }}</small>
+</div>
+
 <div class="hi-custom-select">
   <div class="input-group mb-2 mr-sm-2 ">
     <div class="input-group-prepend">
@@ -19,7 +28,7 @@
   </div>
   {{ collection_form.collection_type_str.errors }}
 </div>
-  
+
 <div class="hi-custom-select">
   <div class="input-group mb-2 mr-sm-2">
     <div class="input-group-prepend">
@@ -30,15 +39,11 @@
   {{ collection_form.collection_view_type_str.errors }}
 </div>
 
-<div>
-  {{ collection_form.name.label }}
-  {{ collection_form.name }}
-  {{ collection_form.name.errors }}
-</div>
-
-<div>
-  {{ collection_form.order_id.label }}
+<div class="input-group mb-2 mr-sm-2 w-100">
+  <div class="input-group-prepend">
+    <label for="{{ collection_form.order_id.id_for_label }}"
+	   class="input-group-text">{{ collection_form.order_id.label }}</label>
+  </div>
   {{ collection_form.order_id }}
-  {{ collection_form.order_id.errors }}
+  <small class="form-error text-danger">{{ collection_form.order_id.errors }}</small>
 </div>
-

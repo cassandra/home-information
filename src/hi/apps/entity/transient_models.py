@@ -5,7 +5,7 @@ from hi.apps.control.models import Controller, ControllerHistory
 from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.sense.models import Sensor, SensorHistory
 
-from .enums import EntityType
+from .enums import EntityType, EntityPairingType
 from .forms import (
     EntityAttributeFormSet,
     EntityForm,
@@ -28,6 +28,14 @@ class EntityViewGroup:
     entity_type    : EntityType
     item_list      : List[EntityViewItem]  = field( default_factory = list )
 
+    
+@dataclass
+class EntityPairing:
+
+    entity         : Entity
+    paired_entity  : Entity
+    pairing_type   : EntityPairingType
+    
 
 @dataclass
 class EntityEditData:
@@ -74,12 +82,14 @@ class EntityDetailsData:
     """
 
     entity_edit_data      : EntityEditData
-    entity_position_form  : EntityPositionForm  = None
-    principal_entity_list : List[ Entity ]      = None
+    entity_position_form  : EntityPositionForm     = None
+    entity_pairing_list   : List[ EntityPairing ]  = None
+    principal_entity_list : List[ Entity ]         = None
 
     def to_template_context(self):
         context = {
             'entity_position_form': self.entity_position_form,
+            'entity_pairing_list': self.entity_pairing_list,
             'principal_entity_list': self.principal_entity_list,
         }
         context.update( self.entity_edit_data.to_template_context() )

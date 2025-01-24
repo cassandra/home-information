@@ -10,8 +10,11 @@
 </div>
 {% endif %}
 
-<div class="form-group">
-  <label for="{{ location_view_edit_form.name.id_for_label }}">{{ location_view_edit_form.name.label }}</label>
+<div class="input-group mb-2 mr-sm-2">
+  <div class="input-group-prepend">
+    <label for="{{ location_view_edit_form.name.id_for_label }}"
+	     class="input-group-text">{{ location_view_edit_form.name.label }}</label>
+  </div>
   {{ location_view_edit_form.name }}
   <small class="form-error text-danger">{{ location_view_edit_form.name.errors }}</small>
 </div>
@@ -38,3 +41,29 @@
   {{ location_view_edit_form.svg_style_name_str.errors }}
 </div>
 
+<div class="input-group mb-2 mr-sm-2">
+  <div class="input-group-prepend">
+    <label for="{{ location_view_edit_form.order_id.id_for_label }}"
+	     class="input-group-text">{{ location_view_edit_form.order_id.label }}</label>
+  </div>
+  {{ location_view_edit_form.order_id }}
+  <small class="form-error text-danger">{{ location_view_edit_form.order_id.errors }}</small>
+</div>
+
+<div class="input-group mb-2 mr-sm-2">
+  <div class="input-group-prepend">
+    <label for="{{ location_view_edit_form.svg_view_box_str.id_for_label }}"
+	     class="input-group-text">{{ location_view_edit_form.svg_view_box_str.label }}</label>
+  </div>
+  {{ location_view_edit_form.svg_view_box_str }}
+  <small class="form-error text-danger">{{ location_view_edit_form.svg_view_box_str.errors }}</small>
+</div>
+
+<div class="input-group mb-2 mr-sm-2">
+  <div class="input-group-prepend">
+    <label for="{{ location_view_edit_form.svg_rotate.id_for_label }}"
+	     class="input-group-text">{{ location_view_edit_form.svg_rotate.label }}</label>
+  </div>
+  {{ location_view_edit_form.svg_rotate }}
+  <small class="form-error text-danger">{{ location_view_edit_form.svg_rotate.errors }}</small>
+</div>

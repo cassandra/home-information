@@ -1,6 +1,5 @@
 import logging
 import os
-import time
 import xml.etree.ElementTree as ET
 
 from django import forms
@@ -31,9 +30,16 @@ class SvgFileForm(forms.Form):
     detects and can remove dangerous tags and attributes.
     """
     svg_file = forms.FileField(
-        label = 'SVG file',
+        label = 'Select an SVG file',
         required = False,
+        widget=forms.ClearableFileInput(
+            attrs={
+                'class': 'custom-file-input',
+                'id': 'svg-file-input',
+            }
+        )
     )
+    
     remove_dangerous_svg_items = forms.BooleanField(
         label = 'Remove dangerous SVG items?',
         widget = forms.CheckboxInput(

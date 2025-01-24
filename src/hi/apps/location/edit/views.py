@@ -72,6 +72,12 @@ class LocationAddView( HiModalView ):
         return antinode.redirect_response( redirect_url )
 
     
+class LocationAddFirstView( LocationAddView ):
+
+    def get_template_name( self ) -> str:
+        return 'location/edit/modals/location_add_first.html'
+
+    
 @method_decorator( edit_required, name='dispatch' )
 class LocationSvgReplaceView( HiModalView, LocationViewMixin ):
 

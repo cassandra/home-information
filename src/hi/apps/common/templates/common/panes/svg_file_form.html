@@ -1,8 +1,12 @@
-<p>
-  <label for="id_svg_file">{{ label }}</label>
-  <input type="file" name="svg_file" id="id_svg_file">
-  {{ svg_file_form.svg_file.errors }}
-</p>
+<div class="form-group">
+  <div class="input-group-prepend">
+  <div class="custom-file">
+    <label class="custom-file-label" for="{{ svg_file_form.svg_file.id_for_label }}">{{ svg_file_form.svg_file.label }}</label>
+    {{ svg_file_form.svg_file }}
+  </div>
+  <small class="form-error text-danger">{{ svg_file_form.svg_file.errors }}</small>
+</div>
+
 {% if svg_file_form.show_remove_dangerous_svg_items %}
 <p>
   <div class="form-check">

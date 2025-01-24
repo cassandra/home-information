@@ -6,32 +6,49 @@
 <div class="non-field-errors">
   {% for err in location_item_position_form.non_field_errors %}
   <p class="form-error">{{ err }}</p>
-    {% endfor %}
+  {% endfor %}
 </div>
 {% endif %}
 
-<div class="pt-4">
-  {{ location_item_position_form.svg_x.label }}
+<div class="input-group mb-2 mr-sm-2 w-100">
+  <div class="input-group-prepend">
+    <label for="{{ location_item_position_form.svg_x.id_for_label }}"
+	   class="input-group-text">{{ location_item_position_form.svg_x.label }}</label>
+  </div>
   {{ location_item_position_form.svg_x }}
-  {{ location_item_position_form.svg_x.errors }}
+  <small class="form-error text-danger">{{ location_item_position_form.svg_x.errors }}</small>
 </div>
 
-<div class="pt-4">
-  {{ location_item_position_form.svg_y.label }}
+<div class="input-group mb-2 mr-sm-2">
+  <div class="input-group-prepend">
+    <label for="{{ location_item_position_form.svg_y.id_for_label }}"
+	   class="input-group-text">{{ location_item_position_form.svg_y.label }}</label>
+  </div>
   {{ location_item_position_form.svg_y }}
-  {{ location_item_position_form.svg_y.errors }}
+  <small class="form-error text-danger"> {{ location_item_position_form.svg_y.errors }}</small>
 </div>
 
-<div class="pt-4">
-  {{ location_item_position_form.svg_scale.label }}
+<div class="input-group mb-2 mr-sm-2">
+  <div class="input-group-prepend">
+    <label for="{{ location_item_position_form.svg_scale.id_for_label }}"
+	   class="input-group-text">{{ location_item_position_form.svg_scale.label }}</label>
+  </div>
   {{ location_item_position_form.svg_scale }}
-  {{ location_item_position_form.svg_scale.errors }}
+  <small class="form-error text-danger"> {{ location_item_position_form.svg_scale.errors }}</small>
 </div>
 
-<div class="pt-4">
-  {{ location_item_position_form.svg_rotate.label }}
+<div class="input-group mb-2 mr-sm-2">
+  <div class="input-group-prepend">
+    <label for="{{ location_item_position_form.svg_rotate.id_for_label }}"
+	   class="input-group-text">{{ location_item_position_form.svg_rotate.label }}</label>
+  </div>
   {{ location_item_position_form.svg_rotate }}
-  {{ location_item_position_form.svg_rotate.errors }}
+  <small class="form-error text-danger"> {{ location_item_position_form.svg_rotate.errors }}</small>
 </div>
 
-<button type="submit" role="button" >SUBMIT</button>
+<div class="text-center" >
+  <button id="hi-add-entity-edit-button" type="submit" class="btn btn-primary"
+	  name="action" value="update">
+    UPDATE
+  </button>
+</div>

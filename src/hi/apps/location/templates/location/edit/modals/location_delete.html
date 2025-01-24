@@ -5,15 +5,15 @@ Delete Location?
 {% endblock %}
 
 {% block body %}
-<div>
+<p>
   Please confirm that you want to delete the location:
   <ul>
-    {{ location.name }}
+    <span class="h4 text-primary">{{ location.name }}</span>
   </ul>
-</div>
-<div>
+</p>
+<p>
   This will also delete all views for this location. This action cannot be undone.
-</div>
+</p>
 {% endblock %}
 
 {% block action_right %}

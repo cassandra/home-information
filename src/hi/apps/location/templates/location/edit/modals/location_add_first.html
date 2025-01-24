@@ -1,25 +1,25 @@
 {% extends "modals/action_with_cancel.html" %}
 
 {% block preamble %}
-<form action="{% url 'entity_edit_entity_add' %}" method="post"
+<form action="{% url 'location_edit_location_add' %}" method="post" enctype="multipart/form-data"
       class="form" data-async="modal">
   {% csrf_token %}
 {% endblock %}
 
 {% block title_text %}
-New Location Item
+Create Your Location
 {% endblock %}
 
 {% block body %}
 <div>
-  {% include "entity/edit/panes/entity_form.html" %}
+{% include "location/edit/panes/location_add_form.html" %}
 </div>
 {% endblock %}
 
 {% block action_right %}
-<button id="hi-add-entity-button" type="submit" class="btn btn-lg btn-success"
+<button id="hi-add-location-button" type="submit" class="btn btn-lg btn-success"
 	name="action" value="add">
-  ADD
+  CREATE
 </button>
 {% endblock %}
 

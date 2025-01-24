@@ -15,7 +15,7 @@ class EntityForm( forms.ModelForm ):
         )
         
     entity_type_str = forms.ChoiceField(
-        label = 'Item Type',
+        label = 'Type',
         choices = EntityType.choices,
         initial = EntityType.default_value(),
         required = True,

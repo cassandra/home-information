@@ -1,15 +1,13 @@
-{% if video_stream_entity_list %}
 <div>
-  <div>CAMERAS</div>
+  <div class="h6 text-center">Cameras</div>
   <div class="row">
     {% for video_stream_entity in video_stream_entity_list %}
-    <div class="col-6">
+    <div class="col-6 my-1">
       <a href="{% url 'console_sensor_video_stream' sensor_id=video_stream_entity.sensor.id %}"
-	 class="btn btn-info btn-control">
+	 class="btn btn-primary btn-control">
 	{{ video_stream_entity.name }}
       </a>
     </div>
     {% endfor %}
   </div>
 </div>
-{% endif %}

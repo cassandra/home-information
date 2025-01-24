@@ -1,8 +1,16 @@
 {% extends "pages/base.html" %}
-{% load pipeline %}
+{% load static %}
 
 {% block content %}
-<h1>Home Information</h1>
-
-
+<div class="container-fluid hi-interstitial-page">
+  
+  <div class="hi-interstitial-page-content">
+    <div class="">
+      <img class="img-fluid" src="{% static 'img/hi-logo-467x200.png' %}" alt="Home Information Logo" />
+    </div>
+    <div class="">
+      <em>Your home, your data, organized.</em>
+    </div>
+  </div>
+</div>
 {% endblock %}

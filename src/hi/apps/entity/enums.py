@@ -191,3 +191,10 @@ class HumidityUnit(LabeledEnum):
     PERCENT                = ( 'Percent', '' )
     GRAMS_PER_CUBIN_METER  = ( 'Grams per cubic meter (g/m³)', '' )
     GRAMS_PER_KILOGRAM     = ( 'Grams per kilogram (g/kg)', '' )
+
+
+class EntityPairingType(LabeledEnum):
+
+    PRINCIPAL  = ( 'Principal', '' )
+    DELEGATE   = ( 'Delegate', '' )
+    
