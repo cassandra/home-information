@@ -1,18 +1,20 @@
 {% extends "config/pages/config_base.html" %}
 
 {% block config_content %}
-<div class="row">
+<div id="hi-integration-settings" class="row">
   <nav class="nav flex-column">
     {% for integration_data in core.integration_data_list %}
     <a class="nav-link {% if core.integration_data.integration_id == integration_data.integration_id %}active{% endif %}"
        href="{% url 'integrations_manage' integration_id=integration_data.integration_id %}"
        data-async="true">
-      {{ integration_data.label }}
+      <div class="bg-primary p-2 text-center">
+	{{ integration_data.label }}
+      </div>
     </a>
     {% endfor %}
   </nav>
   <div class="flex-colum flex-grow-1">
-    <div class="tab-content">
+    <div class="tab-content m-3">
       <div class="d-flex justify-content-between">
 	<div class="h3">{{ core.integration_data.label }}</div>
 	<div>

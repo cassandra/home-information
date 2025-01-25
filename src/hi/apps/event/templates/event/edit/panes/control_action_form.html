@@ -1,27 +1,59 @@
-{% for hidden in control_action_form.hidden_fields %}
-{{ hidden }}
-{% endfor %}
-
-{% if control_action_form.non_field_errors %}
-<div class="non-field-errors">
-  {% for err in control_action_form.non_field_errors %}
-  <p class="form-error text-danger">ERROR: {{ err }}</p>
-  {% endfor %}
+{% if not control_action_form.instance.pk %}
+<div class="my-3">
+  <a class="" data-toggle="collapse" href="#hi-control-action-new"
+     role="button" aria-expanded="false" aria-controls="hi-control-action-new">
+    <span class="plus-icon">&#43;</span> Add Control Action
+  </a>
 </div>
+<div class="collapse my-2" id="hi-control-action-new">
+{% else %}
+<div class="my-3">
 {% endif %}
 
-<div>
-  {{ control_action_form.controller.label }}
-  {{ control_action_form.controller }}
-  {{ control_action_form.controller.errors }}
+  <div class="d-flex justify-content-between" >
+    <div class="h6"><em>Control Action {{ forloop.counter }}</em></div>
+    {% if control_action_form.instance.pk %}
+    <div class="">
+      {{ control_action_form.DELETE }}<span class="pl-2">Delete</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="pl-2">
+    {% for hidden in control_action_form.hidden_fields %}
+    {{ hidden }}
+    {% endfor %}
+
+    {% if control_action_form.non_field_errors %}
+    <div class="non-field-errors">
+      {% for err in control_action_form.non_field_errors %}
+      <p class="form-error text-danger">ERROR: {{ err }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="input-group mb-2 mr-sm-2">
+      <div class="input-group-prepend" >
+	<label for="{{ control_action_form.controller.id_for_label }}"
+	       class="input-group-text" >{{ control_action_form.controller.label }}</label>
+	{{ control_action_form.controller }}
+	<small class="form-error text-danger" >{{ control_action_form.controller.errors }}</small>
+      </div>
+    </div>
+
+    <div class="input-group mb-2 mr-sm-2">
+      <div class="input-group-prepend" >
+	<label for="{{ control_action_form.value.id_for_label }}"
+	       class="input-group-text" >{{ control_action_form.value.label }}</label>
+	{{ control_action_form.value }}
+	<small class="form-error text-danger" >{{ control_action_form.value.errors }}</small>
+      </div>
+    </div>
+
+    {% if control_action_form.instance.pk %}
+    <div>
+      {{ control_action_form.DELETE }} Delete
+    </div>
+    {% endif %}
+  </div>
 </div>
-<div>
-  {{ control_action_form.value.label }}
-  {{ control_action_form.value }}
-  {{ control_action_form.value.errors }}
-</div>
-{% if control_action_form.instance.pk %}
-<div>
-  {{ control_action_form.DELETE }} Delete
-</div>
-{% endif %}

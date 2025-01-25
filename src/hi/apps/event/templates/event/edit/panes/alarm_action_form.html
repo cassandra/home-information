@@ -1,32 +1,68 @@
-{% for hidden in alarm_action_form.hidden_fields %}
-{{ hidden }}
-{% endfor %}
-
-{% if alarm_action_form.non_field_errors %}
-<div class="non-field-errors">
-  {% for err in alarm_action_form.non_field_errors %}
-  <p class="form-error text-danger">ERROR: {{ err }}</p>
-  {% endfor %}
+{% if not alarm_action_form.instance.pk %}
+<div class="my-3">
+  <a class="" data-toggle="collapse" href="#hi-alarm-action-new"
+     role="button" aria-expanded="false" aria-controls="hi-alarm-action-new">
+    <span class="plus-icon">&#43;</span> Add Alarm Action
+  </a>
 </div>
+<div class="collapse my-2" id="hi-alarm-action-new">
+{% else %}
+<div class="my-3">
 {% endif %}
 
-<div>
-  {{ alarm_action_form.security_level_str.label }}
-  {{ alarm_action_form.security_level_str }}
-  {{ alarm_action_form.security_level_str.errors }}
+  <div class="d-flex justify-content-between" >
+    <div class="h6"><em>Alarm Action {{ forloop.counter }}</em></div>
+    {% if alarm_action_form.instance.pk %}
+    <div class="">
+      {{ alarm_action_form.DELETE }}<span class="pl-2">Delete</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="pl-2">
+    {% for hidden in alarm_action_form.hidden_fields %}
+    {{ hidden }}
+    {% endfor %}
+
+    {% if alarm_action_form.non_field_errors %}
+    <div class="non-field-errors">
+      {% for err in alarm_action_form.non_field_errors %}
+      <p class="form-error text-danger">ERROR: {{ err }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="input-group mb-2 mr-sm-2">
+      <div class="input-group-prepend" >
+	<label for="{{ alarm_action_form.security.id_for_label }}"
+	       class="input-group-text" >{{ alarm_action_form.security_level_str.label }}</label>
+	{{ alarm_action_form.security_level_str }}
+	<small class="form-error text-danger" >{{ alarm_action_form.security_level_str.errors }}</small>
+      </div>
+    </div>
+
+    <div class="input-group mb-2 mr-sm-2">
+      <div class="input-group-prepend" >
+	<label for="{{ alarm_action_form.alarm.id_for_label }}"
+	       class="input-group-text" >{{ alarm_action_form.alarm_level_str.label }}</label>
+	{{ alarm_action_form.alarm_level_str }}
+	<small class="form-error text-danger" >{{ alarm_action_form.alarm_level_str.errors }}</small>
+      </div>
+    </div>
+
+    <div class="input-group mb-2 mr-sm-2">
+      <div class="input-group-prepend" >
+	<label for="{{ alarm_action_form.alarm.id_for_label }}"
+	       class="input-group-text" >{{ alarm_action_form.alarm_lifetime_secs.label }}</label>
+	{{ alarm_action_form.alarm_lifetime_secs }}
+	<small class="form-error text-danger" >{{ alarm_action_form.alarm_lifetime_secs.errors }}</small>
+      </div>
+    </div>
+
+    {% if alarm_action_form.instance.pk %}
+    <div>
+      {{ alarm_action_form.DELETE }} Delete
+    </div>
+    {% endif %}
+  </div>
 </div>
-<div>
-  {{ alarm_action_form.alarm_level_str.label }}
-  {{ alarm_action_form.alarm_level_str }}
-  {{ alarm_action_form.alarm_level_str.errors }}
-</div>
-<div>
-  {{ alarm_action_form.alarm_lifetime_secs.label }}
-  {{ alarm_action_form.alarm_lifetime_secs }}
-  {{ alarm_action_form.alarm_lifetime_secs.errors }}
-</div>
-{% if alarm_action_form.instance.pk %}
-<div>
-  {{ alarm_action_form.DELETE }} Delete
-</div>
-{% endif %}

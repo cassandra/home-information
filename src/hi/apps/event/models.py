@@ -76,7 +76,7 @@ class EventClause( models.Model ):
     entity_state = models.ForeignKey(
         EntityState,
         related_name = '+',
-        verbose_name = 'Entity State',
+        verbose_name = 'Item State',
         on_delete = models.CASCADE,
     )
     value = models.CharField(

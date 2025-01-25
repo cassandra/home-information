@@ -44,6 +44,7 @@ class EntityType(LabeledEnum):
     HYGROMETER           = ( 'Hygrometer', '' )
     LIGHT                = ( 'Light', '' )
     LIGHT_SENSOR         = ( 'Light Sensor', '' )
+    MICROWAVE_OVEN       = ( 'Microwave Oven', '' )
     MODEM                = ( 'Modem', '' )
     MOTION_SENSOR        = ( 'Motion Sensor', '' )
     MOTOR                = ( 'Motor', '' )

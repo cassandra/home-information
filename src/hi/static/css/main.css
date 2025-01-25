@@ -23,10 +23,9 @@
   --muted-color: #7e7e81;
   --on-muted-color: #ffffff;
   --line-color: #cccccc;
-  --edit-bg-color: #ffd0c3;
-  --edit-side-bg-color: #dffeff;
-  --edit-top-bg-color: #f0f0f0;
-  --edit-bottom-bg-color: #f0f0f0;
+  --edit-primary-bg-color: #dffeff;
+  --edit-secondary-bg-color: #ffd0c3;
+  --edit-tertiary-bg-color: #f0f0f0;
   --edit-hr-color: #a0a0a0;
   
   --top-buttons-height: 2.5rem;
@@ -222,16 +221,16 @@ a.underline:visited {
 }
 
 #hi-top-content[hi-edit="True"] {
-    background: var(--edit-top-bg-color);
+    background: var(--edit-tertiary-bg-color);
 }
 #hi-bottom-content[hi-edit="True"] {
-    background: var(--edit-bottom-bg-color);
+    background: var(--edit-tertiary-bg-color);
 }
 .hi-screen[hi-edit="True"] {
-    background: var(--edit-bg-color);
+    background: var(--edit-secondary-bg-color);
 }
 .hi-screen[hi-edit="True"] .hi-side {
-    background: var(--edit-side-bg-color);
+    background: var(--edit-primary-bg-color);
 }
 
 .hi-screen {
@@ -261,7 +260,6 @@ a.underline:visited {
 }
 
 .hi-location-view {
-    display: flex;
     justify-content: center;
     align-items: center;
     height: calc(100vh - var(--top-buttons-height) - var(--bottom-buttons-height) ); 
@@ -274,6 +272,16 @@ a.underline:visited {
     cursor: pointer;
 }    
 
+#hi-integration-settings nav {
+    border-right: 1px solid #888888;
+    height: calc( 100vh - var(--top-buttons-height) - var(--bottom-buttons-height) - 6rem);
+    overflow-y: auto;
+}
+#hi-integration-settings nav hr {
+    flex: 0 0 auto; /* Prevent shrinking or growing */
+    width: 100%;
+    border-top: 1px solid #202020;
+}
 .drag-over {
   border: 2px dashed #888888;
 }

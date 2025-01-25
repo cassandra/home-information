@@ -1,10 +1,22 @@
 <div class="my-2">
-  <a class="" data-toggle="collapse" href="#collapseExample"
-     role="button" aria-expanded="false" aria-controls="collapseExample">
+  <a class="" data-toggle="collapse" href="#hi-attribute-new"
+     role="button" aria-expanded="false" aria-controls="hi-attribute-new">
     <span class="plus-icon">&#43;</span> Add New Attribute
   </a>
 </div>
-<div class="collapse my-2" id="collapseExample">
+<div class="collapse my-2" id="hi-attribute-new">
+
+  {% for hidden in attribute_form.hidden_fields %}
+  {{ hidden }}
+  {% endfor %}
+  
+  {% if attribute_form.non_field_errors %}
+  <div class="non-field-errors">
+    {% for err in attribute_form.non_field_errors %}
+    <p class="form-error text-danger">ERROR: {{ err }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
 
   <div class="form-group" >
     <label for="{{ attribute_form.name.id_for_label }}"><em>New {{ attribute_form.name.label }}</em></label>

@@ -10,36 +10,47 @@
 </div>
 {% endif %}
 
-<div>
-  {{ event_definition_form.name.label }}
+<div class="input-group mb-2 mr-sm-2">
+  <div class="input-group-prepend" >
+    <label for="{{ event_definition_form.name.id_for_label }}"
+	   class="input-group-text" >{{ event_definition_form.name.label }}</label>
   {{ event_definition_form.name }}
-  {{ event_definition_form.name.errors }}
+    <small class="form-error text-danger" >{{ event_definition_form.name.errors }}</small>
+  </div>
 </div>
 
-<div>
-  {{ event_definition_form.event_type_str.label }}
+<div class="input-group mb-2 mr-sm-2">
+  <div class="input-group-prepend" >
+    <label for="{{ event_definition_form.event.id_for_label }}"
+	   class="input-group-text" >{{ event_definition_form.event_type_str.label }}</label>
   {{ event_definition_form.event_type_str }}
-  {{ event_definition_form.event_type_str.errors }}
+    <small class="form-error text-danger" >{{ event_definition_form.event_type_str.errors }}</small>
+  </div>
 </div>
 
-<div>
-  {{ event_definition_form.event_window_secs.label }}
+<div class="input-group mb-2 mr-sm-2">
+  <div class="input-group-prepend" >
+    <label for="{{ event_definition_form.event.id_for_label }}"
+	   class="input-group-text" >{{ event_definition_form.event_window_secs.label }}</label>
   {{ event_definition_form.event_window_secs }}
-  {{ event_definition_form.event_window_secs.errors }}
+    <small class="form-error text-danger" >{{ event_definition_form.event_window_secs.errors }}</small>
+  </div>
 </div>
 
-<div>
-  {{ event_definition_form.dedupe_window_secs.label }}
+<div class="input-group mb-2 mr-sm-2">
+  <div class="input-group-prepend" >
+    <label for="{{ event_definition_form.dedupe.id_for_label }}"
+	   class="input-group-text" >{{ event_definition_form.dedupe_window_secs.label }}</label>
   {{ event_definition_form.dedupe_window_secs }}
-  {{ event_definition_form.dedupe_window_secs.errors }}
+    <small class="form-error text-danger" >{{ event_definition_form.dedupe_window_secs.errors }}</small>
+  </div>
 </div>
 
-<div>
-  {{ event_definition_form.enabled.label }}
-  {{ event_definition_form.enabled }}
-  {{ event_definition_form.enabled.errors }}
+<div class="mb-2 mr-sm-2">
+  {{ event_definition_form.enabled }}<span class="pl-2">Enabled</span>
 </div>
 
+<hr />
 <div>
   <div class="h5">Clauses</div>
   {{ event_clause_formset.management_form }}
@@ -47,6 +58,8 @@
   {% include "event/edit/panes/event_clause_form.html" %}
   {% endfor %}
 </div>
+
+<hr />
 <div>
   <div class="h5">Alarm Actions</div>
   {{ alarm_action_formset.management_form }}
@@ -54,6 +67,8 @@
   {% include "event/edit/panes/alarm_action_form.html" %}
   {% endfor %}
 </div>
+
+<hr />
 <div>
   <div class="h5">Control Actions</div>
   {{ control_action_formset.management_form }}

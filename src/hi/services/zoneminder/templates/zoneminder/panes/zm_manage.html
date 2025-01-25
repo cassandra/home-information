@@ -1,12 +1,13 @@
-<div>
-  <div class="col-2">
+<div class="d-flex justify-content-between">
+  <div>
+    {% include "zoneminder/panes/zm_settings.html" %}
+  </div>
+  <div class="my-4 py-4 mr-4 pr-4">
     <form action="{% url 'zm_sync' %}"
 	method="POST" role="form" data-async="">
       {% csrf_token %}
-      <button type="submit" class="btn btn-primary" role="button"
-	      name="action" value="sync" >SYNC</button>
+      <button type="submit" class="btn btn-lg btn-secondary" role="button"
+	      name="action" value="sync" >IMPORT ITEMS</button>
     </form>
   </div>
-
-  {% include "zoneminder/panes/zm_settings.html" %}
 </div>
