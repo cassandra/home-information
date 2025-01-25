@@ -10,7 +10,6 @@ class EventViewMixin:
     ALARM_ACTION_FORMSET_PREFIX = 'alarm-action'
     CONTROL_ACTION_FORMSET_PREFIX = 'control-action'
     
-
     def get_event_definition( self, request, *args, **kwargs ) -> EventDefinition:
         """ Assumes there is a required "id" in kwargs """
         try:

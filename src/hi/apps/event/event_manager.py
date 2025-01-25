@@ -3,15 +3,23 @@ from cachetools import TTLCache
 from collections import deque
 import logging
 from threading import Lock
-from typing import List
+from typing import Dict, List
+
+from django.db import transaction
 
 from hi.apps.alert.alert_mixins import AlertMixin
+from hi.apps.alert.enums import AlarmLevel
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton import Singleton
 from hi.apps.control.control_mixins import ControllerMixin
+from hi.apps.entity.models import EntityState
+from hi.apps.security.enums import SecurityLevel
 from hi.apps.security.security_manager import SecurityManager
 
-from .models import EventDefinition, EventHistory
+from hi.integrations.integration_key import IntegrationKey
+
+from .enums import EventType
+from .models import AlarmAction, EventClause, EventDefinition, EventHistory
 from .transient_models import Event, EntityStateTransition
 
 logger = logging.getLogger(__name__)
@@ -35,6 +43,7 @@ class EventManager( Singleton, AlertMixin, ControllerMixin ):
         self._recent_events = TTLCache( maxsize = self.RECENT_EVENT_CACHE_SIZE,
                                         ttl = self.RECENT_EVENT_CACHE_TTL_SECS )
         self._event_definitions = False
+        self._event_definition_reload_needed = True
         self._event_definitions_lock = Lock()
         self._was_initialized = False
         return
@@ -57,8 +66,13 @@ class EventManager( Singleton, AlertMixin, ControllerMixin ):
                 'alarm_actions',
                 'control_actions',
             ).filter( enabled = True ))
+            self._event_definition_reload_needed = False
         finally:
             self._event_definitions_lock.release()
+        return
+
+    def set_event_definition_reload_needed(self):
+        self._event_definition_reload_needed = True
         return
     
     async def add_entity_state_transitions( self,
@@ -78,6 +92,8 @@ class EventManager( Singleton, AlertMixin, ControllerMixin ):
         return
                                       
     def _get_new_events( self ):
+        if self._event_definition_reload_needed:
+            self.reload()
         self._event_definitions_lock.acquire()
         try:
             new_event_list = list()
@@ -177,4 +193,44 @@ class EventManager( Singleton, AlertMixin, ControllerMixin ):
     async def _bulk_create_event_history_async( self, event_history_list : List[ EventHistory ] ):
         await sync_to_async( EventHistory.objects.bulk_create)( event_history_list )
         return
+    
+    def create_simple_alarm_event_definition(
+            self,
+            name                     : str,
+            event_type               : EventType,
+            entity_state             : EntityState,
+            value                    : str,
+            security_to_alarm_level  : Dict[ SecurityLevel, AlarmLevel ],
+            event_window_secs        : int,
+            dedupe_window_secs       : int,
+            alarm_lifetime_secs      : int,
+            integration_key          : IntegrationKey  = None ) -> EventDefinition:
+
+        with transaction.atomic():
+            event_definition = EventDefinition(
+                name = name,
+                event_type_str = str(event_type),
+                event_window_secs = event_window_secs,
+                dedupe_window_secs = dedupe_window_secs,
+                enabled = True,
+            )
+            event_definition.integration_key = integration_key
+            event_definition.save()
+
+            _ = EventClause.objects.create(
+                event_definition = event_definition,
+                entity_state = entity_state,
+                value = value,
+            )
+            for security_level, alarm_level in security_to_alarm_level.items():
+                _ = AlarmAction.objects.create(
+                    event_definition = event_definition,
+                    security_level_str = str(security_level),
+                    alarm_level_str = str(alarm_level),
+                    alarm_lifetime_secs = alarm_lifetime_secs,
+                )
+                continue
+
+            self._event_definition_reload_needed = True
+            return event_definition
 

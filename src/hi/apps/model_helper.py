@@ -12,7 +12,8 @@ from hi.apps.entity.enums import (
 )    
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.event.enums import EventType
-from hi.apps.event.models import AlarmAction, EventClause, EventDefinition
+from hi.apps.event.event_manager import EventManager
+from hi.apps.event.models import EventDefinition
 from hi.apps.security.enums import SecurityLevel
 from hi.apps.sense.enums import SensorType
 from hi.apps.sense.models import Sensor
@@ -367,7 +368,7 @@ class HiModelHelper:
             entity_state         : EntityState,
             integration_key      : IntegrationKey  = None ) -> EventDefinition:
         
-        return cls.create_simple_alarm_event_definition(
+        return EventManager().create_simple_alarm_event_definition(
             name = name,
             event_type = EventType.INFORMATION,
             entity_state = entity_state,
@@ -389,7 +390,7 @@ class HiModelHelper:
             entity_state         : EntityState,
             integration_key      : IntegrationKey  = None ) -> EventDefinition:
         
-        return cls.create_simple_alarm_event_definition(
+        return EventManager().create_simple_alarm_event_definition(
             name = name,
             event_type = EventType.SECURITY,
             entity_state = entity_state,
@@ -411,7 +412,7 @@ class HiModelHelper:
             entity_state         : EntityState,
             integration_key      : IntegrationKey  = None ) -> EventDefinition:
         
-        return cls.create_simple_alarm_event_definition(
+        return EventManager().create_simple_alarm_event_definition(
             name = name,
             event_type = EventType.SECURITY,
             entity_state = entity_state,
@@ -433,7 +434,7 @@ class HiModelHelper:
             entity_state         : EntityState,
             integration_key      : IntegrationKey  = None ) -> EventDefinition:
         
-        return cls.create_simple_alarm_event_definition(
+        return EventManager().create_simple_alarm_event_definition(
             name = name,
             event_type = EventType.MAINTENANCE,
             entity_state = entity_state,
@@ -447,41 +448,3 @@ class HiModelHelper:
             alarm_lifetime_secs = cls.DEFAULT_BATTERY_ALARM_LIFETIME_SECS,
             integration_key = integration_key,
         )
-    
-    @classmethod
-    def create_simple_alarm_event_definition(
-            cls,
-            name                     : str,
-            event_type               : EventType,
-            entity_state             : EntityState,
-            value                    : str,
-            security_to_alarm_level  : Dict[ SecurityLevel, AlarmLevel ],
-            event_window_secs        : int,
-            dedupe_window_secs       : int,
-            alarm_lifetime_secs      : int,
-            integration_key          : IntegrationKey  = None ) -> EventDefinition:
-
-        event_definition = EventDefinition(
-            name = name,
-            event_type_str = str(event_type),
-            event_window_secs = event_window_secs,
-            dedupe_window_secs = dedupe_window_secs,
-            enabled = True,
-        )
-        event_definition.integration_key = integration_key
-        event_definition.save()
-        
-        _ = EventClause.objects.create(
-            event_definition = event_definition,
-            entity_state = entity_state,
-            value = value,
-        )
-        for security_level, alarm_level in security_to_alarm_level.items():
-            _ = AlarmAction.objects.create(
-                event_definition = event_definition,
-                security_level_str = str(security_level),
-                alarm_level_str = str(alarm_level),
-                alarm_lifetime_secs = alarm_lifetime_secs,
-            )
-            continue
-        return event_definition

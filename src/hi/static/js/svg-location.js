@@ -527,6 +527,23 @@
 	if ( ! Hi.isEditMode || ! gSelectedLocationViewSvg ) {
 	    return;
 	}
+
+	/* We decided that automatically saving the location view geometry
+	   after move/scale/rotate was more inconvenient than helpful.
+	   While editing, it is often useful to manipulate the location
+	   view geometry while editing and arranging the entities.  If
+	   these entity refinements happen after the the desired geometry
+	   has been set, then the act of editing those entities and
+	   manipulating the location view will result in undoing the
+	   original geometry work. Further, the user only finds this out
+	   after they exit editing mode and see that it has changed.  Thus,
+	   we changed to require an explicit geometry save (via side panel
+	   form).  We now short circuit this function but leave the
+	   original code below in case we are wrong about this or if
+	   there are specific circumstances in which auto-saving is desired.
+	*/
+	return;
+	
 	if ( Hi.DEBUG ) { console.log( `Saving SVG geometry [${MODULE_NAME}]` ); }
 
 	let locationViewId = $(gSelectedLocationViewSvg).attr('location-view-id');

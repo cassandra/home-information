@@ -27,6 +27,7 @@
   --edit-side-bg-color: #dffeff;
   --edit-top-bg-color: #f0f0f0;
   --edit-bottom-bg-color: #f0f0f0;
+  --edit-hr-color: #a0a0a0;
   
   --top-buttons-height: 2.5rem;
   --bottom-buttons-height: 2.5rem;
@@ -210,7 +211,10 @@ a.underline:visited {
     flex-direction: column;
     overflow-y: auto;
 }
-
+#hi-side-content hr {
+    flex: 0 0 auto; /* Prevent shrinking or growing */
+    width: 100%;
+}
 #hi-top-content,
 #hi-bottom-content,
 .hi-screen {

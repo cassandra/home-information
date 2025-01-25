@@ -1,14 +1,26 @@
 <div>
-  {% for event_history in event_history_list %}
-  <div class="row">
-    <div class="col-6">
-      {{ event_history.event_datetime }}
-    </div>
-    <div class="col-6">
-      {{ event_history.event_definition.name }}
-    </div>
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+	<tr>
+	  <th>Timestamp</th>
+	  <th>Event Name</th>
+	</tr>
+      </thead>
+      <tbody>
+	{% for event_history in event_history_list %}
+	<tr>
+	  <td>
+	    {{ event_history.event_datetime }}
+	  </td>
+	  <td>
+	    {{ event_history.event_definition.name }}
+	  </td>
+	</tr>
+	{% empty %}
+	<tr><td colspan="6"><div><em>No event history</em></div></td></tr>
+	{% endfor %}
+      </tbody>
+    </table>
   </div>
-  {% empty %}
-  <div><em>No event history</em></div>
-  {% endfor %}
 </div>

@@ -20,9 +20,7 @@
   </a>
 </div>
 {% else %}
-<hr />
-<div class="h5">Integration</div>
-<div>{{ entity.integration_id }} [{{ entity.integration_name }}]</div>
+<div class="h6 text-center">Integration Source: {{ entity.integration_id }}</div>
 {% endif %}
 
 {% if entity_position_form %}
