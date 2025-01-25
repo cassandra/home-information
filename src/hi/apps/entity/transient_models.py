@@ -5,7 +5,7 @@ from hi.apps.control.models import Controller, ControllerHistory
 from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.sense.models import Sensor, SensorHistory
 
-from .enums import EntityType, EntityPairingType
+from .enums import EntityGroupType, EntityPairingType
 from .forms import (
     EntityAttributeFormSet,
     EntityForm,
@@ -25,8 +25,8 @@ class EntityViewItem:
 class EntityViewGroup:
     """All entities of a given type and flagged as in the view or not."""
     
-    entity_type    : EntityType
-    item_list      : List[EntityViewItem]  = field( default_factory = list )
+    entity_group_type  : EntityGroupType
+    item_list          : List[EntityViewItem]  = field( default_factory = list )
 
     
 @dataclass

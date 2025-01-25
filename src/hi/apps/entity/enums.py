@@ -1,3 +1,5 @@
+from typing import Set
+
 from hi.apps.common.enums import LabeledEnum
 
 
@@ -12,6 +14,7 @@ class EntityType(LabeledEnum):
     ACCESS_POINT         = ( 'Access Point', '' )
     APPLIANCE            = ( 'Appliance', '' )
     AREA                 = ( 'Area', '' )
+    ATTIC_STAIRS         = ( 'Attic Stairs', '' )
     AUTOMOBILE           = ( 'Automobile', '' )
     AV_RECEIVER          = ( 'A/V Receiver', '' )  # Controls Speakers/TV
     BAROMETER            = ( 'Barometer', '' )
@@ -49,6 +52,7 @@ class EntityType(LabeledEnum):
     MOTION_SENSOR        = ( 'Motion Sensor', '' )
     MOTOR                = ( 'Motor', '' )
     NETWORK_SWITCH       = ( 'Network Switch', '' )
+    ON_OFF_SWITCH        = ( 'On/Off Switch', '' )
     OPEN_CLOSE_SENSOR    = ( 'Open/Close Sensor', '' )
     OTHER                = ( 'Other', '' )  # Will use generic visual element
     OVEN                 = ( 'Oven', '' )
@@ -63,8 +67,11 @@ class EntityType(LabeledEnum):
     SERVICE              = ( 'Service'         , '' )
     SEWER_LINE           = ( 'Sewer Line', '' )
     SHOWER               = ( 'Shower', '' ) 
+    SHED                 = ( 'Shed', '' ) 
     SINK                 = ( 'Sink', '' ) 
+    SKYLIGHT             = ( 'Skylight', '' ) 
     SPEAKER              = ( 'Speaker', '' )
+    SPEAKER_WIRE         = ( 'Speaker Wire', '' )
     SPRINKLER_HEAD       = ( 'Sprinkler Head', '' )
     SPRINKLER_VALVE      = ( 'Sprinkler Valve', '' )  # Controls sprinkler heads
     SPRINKLER_WIRE       = ( 'Sprinkler Wire', '' )
@@ -198,4 +205,141 @@ class EntityPairingType(LabeledEnum):
 
     PRINCIPAL  = ( 'Principal', '' )
     DELEGATE   = ( 'Delegate', '' )
+    
+
+class EntityGroupType(LabeledEnum):
+
+    APPLIANCES = ( 'Appliances', '', {
+        EntityType.APPLIANCE,
+        EntityType.CLOTHES_DRYER,
+        EntityType.CLOTHES_WASHER,
+        EntityType.COOKTOP,
+        EntityType.MICROWAVE_OVEN,
+        EntityType.OVEN,
+        EntityType.REFRIGERATOR,
+        EntityType.WATER_HEATER,
+    })
+    AREAS = ( 'Areas', '', {
+        EntityType.AREA,
+    })
+    AUDIO_VISUAL = ( 'Audio/Visual', '', {
+        EntityType.AV_RECEIVER,
+        EntityType.SPEAKER,
+        EntityType.SPEAKER_WIRE,
+        EntityType.TELEVISION,
+    })
+    AUTO = ( 'Auto', '', {
+        EntityType.AUTOMOBILE,
+    })
+    CLIMATE = ( 'Climate', '', {
+        EntityType.BAROMETER,
+        EntityType.CONTROL_WIRE,
+        EntityType.EXHAUST_FAN,
+        EntityType.HUMIDIFIER,
+        EntityType.HVAC_AIR_HANDLER,
+        EntityType.HVAC_CONDENSER,
+        EntityType.HVAC_FURNACE,
+        EntityType.HVAC_MINI_SPLIT,
+        EntityType.HYGROMETER,
+        EntityType.THERMOMETER,
+        EntityType.THERMOSTAT,
+    })
+    COMPUTER_NETWORK = ( 'Computer/Network', '', {
+        EntityType.ACCESS_POINT,
+        EntityType.COMPUTER,
+        EntityType.DISK,
+        EntityType.HEALTHCHECK,
+        EntityType.MODEM,
+        EntityType.NETWORK_SWITCH,
+        EntityType.PRINTER,
+        EntityType.SERVER,
+        EntityType.SERVICE,
+    })
+    CONSUMABLES = ( 'Consumable', '', {
+        EntityType.CONSUMABLE,
+    })
+    FIXTURES = ( 'Fixtures', '', {
+        EntityType.ATTIC_STAIRS,
+        EntityType.CEILING_FAN,
+        EntityType.FURNITURE,
+        EntityType.SHOWER,
+        EntityType.SINK,
+        EntityType.TOILET,
+    })
+    LIGHTS_SWITCHES = ( 'Lights, Switches, Outlets', '', {
+        EntityType.ELECTRICAL_OUTLET,
+        EntityType.LIGHT,
+        EntityType.ON_OFF_SWITCH,
+        EntityType.WALL_SWITCH,
+    })
+    OTHER = ( 'Other', '', {
+        EntityType.OTHER,
+    })
+    OUTDOORS = ( 'Outdoors', '', {
+        EntityType.CONTROLLER,
+        EntityType.GREENHOUSE,
+        EntityType.MOTOR,
+        EntityType.PIPE,
+        EntityType.PLANT,
+        EntityType.POOL_FILTER,
+        EntityType.PUMP,
+        EntityType.SHED,
+        EntityType.SPRINKLER_HEAD,
+        EntityType.SPRINKLER_VALVE,
+        EntityType.SPRINKLER_WIRE,
+        EntityType.TREE,
+    })
+    SECURITY = ( 'Security', '', {
+        EntityType.CAMERA,
+        EntityType.DOOR_LOCK,
+        EntityType.LIGHT_SENSOR,
+        EntityType.MOTION_SENSOR,
+        EntityType.OPEN_CLOSE_SENSOR,
+        EntityType.PRESENCE_SENSOR,
+    })
+    STRUCTURAL = ( 'Structural', '', {
+        EntityType.DOOR,
+        EntityType.FIREPLACE,
+        EntityType.SKYLIGHT,
+        EntityType.WINDOW,
+        EntityType.WALL,
+    })
+    TIME_WEATHER = ( 'Time/Weather', '', {
+        EntityType.TIME_SOURCE,
+        EntityType.WEATHER_STATION,
+    })
+    TOOLS = ( 'Tools', '', {
+        EntityType.TOOL,
+    })
+    UTILITIES = ( 'Utilities', '', {
+        EntityType.ELECTRICITY_METER,
+        EntityType.ELECTRIC_PANEL,
+        EntityType.ELECTRIC_WIRE,
+        EntityType.SEWER_LINE,
+        EntityType.TELECOM_BOX,
+        EntityType.TELECOM_WIRE,
+        EntityType.WATER_LINE,
+        EntityType.WATER_METER,
+        EntityType.WATER_SHUTOFF_VALVE,
+    })
+    
+    def __init__( self,
+                  label             : str,
+                  description       : str,
+                  entity_type_set  : Set[ EntityType ] ):
+        super().__init__( label, description )
+        self.entity_type_set = entity_type_set
+        return
+
+    @classmethod
+    def default(cls):
+        return cls.OTHER
+ 
+    @classmethod
+    def from_entity_type( cls, entity_type : EntityType ):
+        for entity_group_type in cls:
+            if entity_type in entity_group_type.entity_type_set:
+                return entity_group_type
+            continue
+        return cls.default()
     

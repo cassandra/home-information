@@ -641,7 +641,7 @@ class HassConverter:
     def hass_device_to_entity_type( cls, hass_device : HassDevice ) -> EntityType:
         prefix_set = hass_device.entity_id_prefix_set
         device_class_set = hass_device.device_class_set
-        
+
         if HassApi.CAMERA_ID_PREFIX in prefix_set:
             return EntityType.CAMERA
         if HassApi.WEATHER_ID_PREFIX in prefix_set:
@@ -662,7 +662,7 @@ class HassConverter:
             return EntityType.THERMOSTAT
         if HassApi.CONNECTIVITY_DEVICE_CLASS in device_class_set:
             return EntityType.HEALTHCHECK
-
+  
         return EntityType.OTHER
             
     @classmethod

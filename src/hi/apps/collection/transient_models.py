@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import List
 
 from hi.apps.collection.edit.forms import CollectionForm, CollectionPositionForm
-from hi.apps.entity.enums import EntityType
+from hi.apps.entity.enums import EntityGroupType, EntityType
 from hi.apps.entity.models import Entity
 from hi.apps.monitor.transient_models import EntityStatusData
 
@@ -45,9 +45,9 @@ class EntityCollectionItem:
 @dataclass
 class EntityCollectionGroup:
 
-    collection   : Collection
-    entity_type  : EntityType
-    item_list    : List[EntityCollectionItem]  = field( default_factory = list )
+    collection         : Collection
+    entity_group_type  : EntityGroupType
+    item_list          : List[EntityCollectionItem]  = field( default_factory = list )
     
 
 @dataclass

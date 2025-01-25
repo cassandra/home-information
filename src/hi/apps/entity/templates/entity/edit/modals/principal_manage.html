@@ -17,7 +17,7 @@ Principal Add
 
 {% for entity_view_group in entity_view_group_list %}
 <div class="">
-  <div class="h5">{{ entity_view_group.entity_type.label }}</div>
+  <div class="h5">{{ entity_view_group.entity_group_type.label }}</div>
   {% for entity_view_item in entity_view_group.item_list %}
   <div>
     <input type="checkbox"

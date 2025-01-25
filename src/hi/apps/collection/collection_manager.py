@@ -6,6 +6,7 @@ from django.http import HttpRequest
 
 from hi.apps.collection.edit.forms import CollectionPositionForm
 from hi.apps.common.singleton import Singleton
+from hi.apps.entity.enums import EntityGroupType
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
@@ -282,18 +283,20 @@ class CollectionManager(Singleton):
                 entity = entity,
                 exists_in_collection = exists_in_collection,
             )
-            
-            if entity.entity_type not in entity_collection_group_dict:
+
+            entity_group_type = EntityGroupType.from_entity_type( entity.entity_type )
+ 
+            if entity_group_type not in entity_collection_group_dict:
                 entity_collection_group = EntityCollectionGroup(
                     collection = collection,
-                    entity_type = entity.entity_type,
+                    entity_group_type = entity_group_type,
                 )
-                entity_collection_group_dict[entity.entity_type] = entity_collection_group
-            entity_collection_group_dict[entity.entity_type].item_list.append( entity_collection_item )
+                entity_collection_group_dict[entity_group_type] = entity_collection_group
+            entity_collection_group_dict[entity_group_type].item_list.append( entity_collection_item )
             continue
 
         entity_collection_group_list = list( entity_collection_group_dict.values() )
-        entity_collection_group_list.sort( key = lambda item : item.entity_type.label )
+        entity_collection_group_list.sort( key = lambda item : item.entity_group_type.label )
         return entity_collection_group_list
 
     def toggle_entity_in_collection( self, entity : Entity, collection : Collection ) -> bool:

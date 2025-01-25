@@ -14,6 +14,7 @@ from hi.apps.location.svg_item_factory import SvgItemFactory
 
 from .delegation_manager import DelegationManager
 from .enums import (
+    EntityGroupType,
     EntityPairingType,
     EntityStateType,
 )
@@ -316,21 +317,21 @@ class EntityManager(Singleton):
                 entity = entity,
                 exists_in_view = bool( entity in existing_entity_set ),
             )
-            
-            if entity.entity_type not in entity_view_group_dict:
+            entity_group_type = EntityGroupType.from_entity_type( entity.entity_type )
+            if entity_group_type not in entity_view_group_dict:
                 entity_view_group = EntityViewGroup(
-                    entity_type = entity.entity_type,
+                    entity_group_type = entity_group_type,
                 )
-                entity_view_group_dict[entity.entity_type] = entity_view_group
-            entity_view_group_dict[entity.entity_type].item_list.append( entity_view_item )
+                entity_view_group_dict[entity_group_type] = entity_view_group
+            entity_view_group_dict[entity_group_type].item_list.append( entity_view_item )
             continue
 
-        for entity_type, entity_view_group in entity_view_group_dict.items():
+        for entity_group_type, entity_view_group in entity_view_group_dict.items():
             entity_view_group.item_list.sort( key = lambda item : item.entity.name )
             continue
         
         entity_view_group_list = list( entity_view_group_dict.values() )
-        entity_view_group_list.sort( key = lambda item : item.entity_type.label )
+        entity_view_group_list.sort( key = lambda item : item.entity_group_type.label )
         return entity_view_group_list
 
     def adjust_principal_entities( self, entity : Entity, desired_principal_entity_ids : Set[ int ] ):
