@@ -3,11 +3,11 @@
     All Rights Reserved.  
 */
 :root {
-  --white-color: #fdfdfd;
+  --white: #fdfdfd;
   --black: #020204;
   --primary-color: #177072;
   --on-primary-color: #ffffff;
-  --primary-highlight-color: #26BFD1;
+  --primary-highlight-color: #115354;
   --secondary-color: #F45F36;
   --on-secondary-color: #ffffff;
   --secondary-highlight-color: #F8AD98;
@@ -62,7 +62,7 @@ html, body {
     padding: 0;
     height: 100%;
     color: #222233;
-    background-color: var(--white-color);
+    background-color: var(--white);
 }
 
 a { color: var(--primary-color); }
@@ -91,7 +91,7 @@ a.underline:visited {
     color: var(--on-primary-color) !important;
 }
 .text-white {
-    color: var(--white-color) !important;
+    color: var(--white) !important;
 }
 .text-black {
     color: var(--black);
@@ -214,7 +214,7 @@ a.underline:visited {
 #hi-top-content,
 #hi-bottom-content,
 .hi-screen {
-    background: var(--white-color);
+    background: var(--white);
 }
 
 #hi-top-content[hi-edit="True"] {
@@ -229,7 +229,6 @@ a.underline:visited {
 .hi-screen[hi-edit="True"] .hi-side {
     background: var(--edit-side-bg-color);
 }
-
 
 .hi-screen {
     max-height: 100vh;
@@ -276,7 +275,19 @@ a.underline:visited {
 }
 
 .form-group label {
-    color: var(--muted-color) !important;
+    color: #060606 !important;
+}
+.input-group-text {
+    color: var(--black);
+    background-color: #f0f0f0;
+}
+select,
+textarea,
+input[type="text"],
+input[type="password"],
+.dropdown-menu {
+    color: var(--black) !important;
+    background-color: #f8f8f8 !important;
 }
 .hi-custom-select .input-group-text {
     height: calc(1.5em + 0.75rem + 2px);

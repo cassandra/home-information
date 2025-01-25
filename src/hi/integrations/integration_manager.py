@@ -222,7 +222,7 @@ class IntegrationManager( Singleton ):
         """
         self._data_lock.acquire()
         try:
-            new_attribute_types = set()
+            new_attribute_types = list()
             existing_attribute_integration_keys = set([ x.integration_key
                                                         for x in integration.attributes.all() ])
 
@@ -233,7 +233,7 @@ class IntegrationManager( Singleton ):
                     integration_name = str(attribute_type),
                 )
                 if integration_key not in existing_attribute_integration_keys:
-                    new_attribute_types.add( attribute_type )
+                    new_attribute_types.append( attribute_type )
                 continue
 
             if new_attribute_types:

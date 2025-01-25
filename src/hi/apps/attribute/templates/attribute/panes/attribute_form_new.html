@@ -1,13 +1,13 @@
-<div>
+<div class="my-2">
   <a class="" data-toggle="collapse" href="#collapseExample"
      role="button" aria-expanded="false" aria-controls="collapseExample">
     <span class="plus-icon">&#43;</span> Add New Attribute
   </a>
 </div>
-<div class="collapse" id="collapseExample">
+<div class="collapse my-2" id="collapseExample">
 
   <div class="form-group" >
-    <label for="{{ attribute_form.name.id_for_label }}">New {{ attribute_form.name.label }}</label>
+    <label for="{{ attribute_form.name.id_for_label }}"><em>New {{ attribute_form.name.label }}</em></label>
     <input type="text"
            id="{{ attribute_form.name.id_for_label }}"
 	   class="form-control"
@@ -16,7 +16,7 @@
     <div class="form-error text-danger" >{{ attribute_form.name.errors }}</div>
   </div>
   <div class="form-group">
-    <label for="{{ attribute_form.value.id_for_label }}">New {{ attribute_form.value.label }}</label>
+    <label for="{{ attribute_form.value.id_for_label }}"><em>New {{ attribute_form.value.label }}</em></label>
     <textarea rows="2" cols="40"
 	      id="{{ attribute_form.value.id_for_label }}"
 	      class="form-control"

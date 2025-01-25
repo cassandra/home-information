@@ -11,7 +11,7 @@
 	 {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %}
          name="{{ attribute_form.value.html_name }}"
          value="{{ attribute_form.value.value|default_if_none:'' }}">
-  <span>
+  <span class="pl-2">
     <input type="checkbox" name="{{ attribute_form.value.html_name }}-show"
 	   id="{{ attribute_form.value.id_for_label }}-show"
 	   onclick="Hi.togglePasswordField( this );">

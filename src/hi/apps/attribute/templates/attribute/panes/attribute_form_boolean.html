@@ -2,11 +2,11 @@
 <input type="hidden" id="{{ attribute_form.name.id_for_label }}"
        name="{{ attribute_form.name.html_name }}"
        value="{{ attribute_form.instance.name }}" />
-<div class="input-group" >
+<div class="input-group align-items-center" >
   <input type="checkbox" name="{{ attribute_form.value.html_name }}"
 	 id="{{ attribute_form.value.id_for_label }}"
 	 {% if attribute_form.value.value %}checked="on"{% endif %} >
-  <label for="{{ attribute_form.value.id_for_label }}">{{ attribute_form.name.value }}</label>
+  <label for="{{ attribute_form.value.id_for_label }}" class="pl-2 mb-0">{{ attribute_form.name.value }}</label>
 </div>
 
 {% if attribute_form.show_as_editable and attribute_form.instance.is_editable and attribute_form.instance.attribute_type.can_delete %}

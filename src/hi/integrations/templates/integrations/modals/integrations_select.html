@@ -1,13 +1,13 @@
 {% extends "modals/action_done.html" %}
 
 {% block title_text %}
-Manage Integrations
+Select Integrations
 {% endblock %}
 
 {% block body %}
 
 {% for integration_data in integration_data_list %}
-<div class="d-flex justify-content-between">
+<div class="d-flex justify-content-between {% if not forloop.first %}border-top{% endif %} py-2 my-1">
   <div class="col-6">
     {{ integration_data.integration_metadata.label }}
   </div>

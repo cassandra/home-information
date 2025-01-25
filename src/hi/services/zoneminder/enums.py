@@ -1,5 +1,4 @@
 from hi.apps.attribute.enums import AttributeValueType
-from hi.apps.common.enums import LabeledEnum
 
 from hi.integrations.enums import IntegrationAttributeType
 

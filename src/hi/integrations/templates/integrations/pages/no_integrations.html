@@ -1,10 +1,10 @@
 {% extends "config/pages/config_base.html" %}
 {% block config_content %}
-<div class="alert alert-warning">
+<div class="alert alert-warning m-4">
   There are no integrations currently registered.
 </div>
-<div>
-  <a class="btn btn-primary" role="button"
+<div class="m-4">
+  <a class="btn btn-primary btn-lg" role="button"
      href="{% url 'integrations_select' %}"
      data-async="modal">
     ADD INTEGRATIONS
