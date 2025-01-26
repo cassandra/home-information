@@ -1,11 +1,13 @@
+{% load common_template_helpers %}
+{% generate_uuid as unique_id %}
 {% if not event_clause_form.instance.pk %}
 <div class="my-3">
-  <a class="" data-toggle="collapse" href="#hi-event-clause-new"
-     role="button" aria-expanded="false" aria-controls="hi-event-clause-new">
+  <a class="" data-toggle="collapse" href="#hi-event-clause-new-{{ unique_id }}"
+     role="button" aria-expanded="false" aria-controls="hi-event-clause-new-{{ unique_id }}">
     <span class="plus-icon">&#43;</span> Add New Clause
   </a>
 </div>
-<div class="collapse my-2" id="hi-event-clause-new">
+<div class="collapse my-2" id="hi-event-clause-new-{{ unique_id }}">
 {% else %}
 <div class="my-3">
 {% endif %}
@@ -32,7 +34,7 @@
     </div>
     {% endif %}
 
-    <div class="input-group mb-2 mr-sm-2">
+    <div class="input-group mb-2 mr-sm-2 w-100">
       <div class="input-group-prepend" >
 	<label for="{{ event_clause_form.entity.id_for_label }}"
 	       class="input-group-text" >{{ event_clause_form.entity_state.label }}</label>
@@ -41,7 +43,7 @@
       </div>
     </div>
 
-    <div class="input-group mb-2 mr-sm-2">
+    <div class="input-group mb-2 mr-sm-2 w-100">
       <div class="input-group-prepend" >
 	<label for="{{ event_clause_form.value.id_for_label }}"
 	       class="input-group-text" >{{ event_clause_form.value.label }}</label>

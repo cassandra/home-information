@@ -52,6 +52,8 @@ class EventClauseForm( forms.ModelForm, EntityStateSelectModelFormMixin ):
             value_field_name = 'value',
             entity_state = entity_state,
         )
+        self.fields['entity_state'].widget.attrs.update({ 'class': 'custom-select' })
+        self.fields['value'].widget.attrs.update({ 'class': 'custom-select' })
         return
     
         
@@ -102,6 +104,7 @@ class ControlActionForm( forms.ModelForm, EntityStateSelectModelFormMixin ):
             value_field_name = 'value',
             entity_state = entity_state,
         )
+        self.fields['controller'].widget.attrs.update({ 'class': 'custom-select' })
         return
 
         

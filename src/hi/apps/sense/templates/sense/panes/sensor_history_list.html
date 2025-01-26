@@ -1,17 +1,23 @@
+{% load tz %}
+{% timezone USER_TIMEZONE %}
 <ul>
   {% for sensor_history in sensor_history_list %}
   <li>
-    Response[{{ sensor_history.id }}]: {{ sensor_history.value }} [{{ sensor_history.response_datetime }}]
     {% if sensor_history.details %}
     <a href="{% url 'sense_sensor_history_details' sensor_history_id=sensor_history.id %}"
-       data-async="true">Details</a>
+       data-async="true">
+      {{ sensor_history.response_datetime|localtime }} : {{ sensor_history.value }}
+    </a>
+    {% else %}
+    {{ sensor_history.response_datetime|localtime }} : {{ sensor_history.value }}
     {% endif %}
   </li>
   {% empty %}
-  <div><em>No sensor history</em></div>
+  <div><em>No history.</em></div>
   {% endfor %}
   {% if show_all_link and sensor_history_list %}
   <a href="{% url 'sense_sensor_history' sensor_id=sensor.id %}"
-     data-async="true">All History</a>
+     data-async="true">&gt;&gt; See All</a>
   {% endif %}
 </ul>
+{% endtimezone %}

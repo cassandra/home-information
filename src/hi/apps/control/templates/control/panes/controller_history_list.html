@@ -1,13 +1,16 @@
+{% load tz %}
+{% timezone USER_TIMEZONE %}
 <ul>
   {% for controller_history in controller_history_list %}
   <li>
-    Response[{{ controller_history.id }}]: {{ controller_history.value }} [{{ controller_history.created_datetime }}]
+    {{ controller_history.created_datetime|localtime }} : {{ controller_history.value }}
   </li>
   {% empty %}
-  <div><em>No controller history</em></div>
+  <div><em>No history.</em></div>
   {% endfor %}
   {% if show_all_link and controller_history_list %}
   <a href="{% url 'control_controller_history' controller_id=controller.id %}"
-     data-async="true">All History</a>
+     data-async="true">&gt;&gt; See All</a>
   {% endif %}
 </ul>
+{% endtimezone %}

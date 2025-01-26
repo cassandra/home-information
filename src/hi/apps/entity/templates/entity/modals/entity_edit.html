@@ -1,4 +1,4 @@
-{% extends "modals/action_done.html" %}
+{% extends "modals/base.html" %}
 
 {% block title_text %}
 {{ entity.name }}: Edit
@@ -10,4 +10,32 @@
   {% include "entity/edit/panes/entity_edit.html" %}
 </div>
 
+{% endblock %}
+
+{% block footer %}
+
+{% if entity.states.exists %}
+<div class="align-self-center">
+  <a class="btn btn-primary"
+     href="{% url 'entity_status' entity_id=entity.id %}"
+     data-async="modal">
+    STATUS
+  </a>
+</div>
+{% endif %}
+
+{% if entity.states.exists %}
+<div class="align-self-center">
+  <a class="btn btn-primary"
+     href="{% url 'entity_state_history' entity_id=entity.id %}"
+     data-async="modal">
+    HISTORY
+  </a>
+</div>
+{% endif %}
+
+<div class="align-self-center">
+  <a id="hi-modal-done" role="button" {% if autofocus %}autofocus="autofocus"{% endif %}
+     class="btn btn-lg btn-secondary" href="#" data-dismiss="modal">DONE</a>
+</div>
 {% endblock %}

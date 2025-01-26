@@ -1,3 +1,5 @@
+{% load tz %}
+{% timezone USER_TIMEZONE %}
 <div>
   <div class="table-responsive">
     <table class="table table-striped">
@@ -11,7 +13,7 @@
 	{% for event_history in event_history_list %}
 	<tr>
 	  <td>
-	    {{ event_history.event_datetime }}
+	    {{ event_history.event_datetime|localtime }}
 	  </td>
 	  <td>
 	    {{ event_history.event_definition.name }}
@@ -24,3 +26,4 @@
     </table>
   </div>
 </div>
+{% endtimezone %}

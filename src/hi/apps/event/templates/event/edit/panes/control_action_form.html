@@ -1,11 +1,13 @@
+{% load common_template_helpers %}
+{% generate_uuid as unique_id %}
 {% if not control_action_form.instance.pk %}
 <div class="my-3">
-  <a class="" data-toggle="collapse" href="#hi-control-action-new"
-     role="button" aria-expanded="false" aria-controls="hi-control-action-new">
+  <a class="" data-toggle="collapse" href="#hi-control-action-new-{{ unique_id }}"
+     role="button" aria-expanded="false" aria-controls="hi-control-action-new-{{ unique_id }}">
     <span class="plus-icon">&#43;</span> Add Control Action
   </a>
 </div>
-<div class="collapse my-2" id="hi-control-action-new">
+<div class="collapse my-2" id="hi-control-action-new-{{ unique_id }}">
 {% else %}
 <div class="my-3">
 {% endif %}
@@ -32,7 +34,7 @@
     </div>
     {% endif %}
 
-    <div class="input-group mb-2 mr-sm-2">
+    <div class="input-group mb-2 mr-sm-2 w-100">
       <div class="input-group-prepend" >
 	<label for="{{ control_action_form.controller.id_for_label }}"
 	       class="input-group-text" >{{ control_action_form.controller.label }}</label>
@@ -41,7 +43,7 @@
       </div>
     </div>
 
-    <div class="input-group mb-2 mr-sm-2">
+    <div class="input-group mb-2 mr-sm-2 w-100">
       <div class="input-group-prepend" >
 	<label for="{{ control_action_form.value.id_for_label }}"
 	       class="input-group-text" >{{ control_action_form.value.label }}</label>

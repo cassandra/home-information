@@ -208,10 +208,6 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
                 sensor_response.sensor = await sync_to_async( self._get_sensor )(
                     integration_key = sensor_response.integration_key,
                 )
-                if sensor_response.sensor and sensor_response.detail_attrs:
-                    sensor_response.detail_attrs['Sensor Name'] = sensor_response.sensor.name
-                elif sensor_response.sensor:
-                    sensor_response.detail_attrs = { 'Sensor Name': sensor_response.sensor.name }
             continue
         return
     

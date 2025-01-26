@@ -1,32 +1,57 @@
-{% extends "modals/action_done.html" %}
+{% extends "modals/action_3.html" %}
 {% load common_template_helpers %}
 
 {% block title_text %}
-{{ entity.name }}
+{{ entity.name }}: History
 {% endblock %}
 
 {% block body %}
 
-<h5>Sensor History</h5>
-<ul>
+{% if sensor_history_list_map %}
+<div>
   {% for sensor, sensor_history_list in sensor_history_list_map.items %}
-  <li>Sensor: {{ sensor.name }}
+  {% if not sensor.entity_state.entity_state_type.suppress_history %}
+  <div>
+    <div class="h5">{{ sensor.name }} <small class="text-muted">[sensor]</small></div>
     {% include "sense/panes/sensor_history_list.html" with sensor_history_list=sensor_history_list show_all_link=True %}
-  </li>
-  {% empty %}
-  <div><em>No sensors</em></div>
+  </div>
+  {% endif %}
   {% endfor %}
-</ul>
+</div>
+{% endif %}
 
-<h5>Controller History</h5>
-<ul>
+{% if controller_history_list_map %}
+<div>
   {% for controller, controller_history_list in controller_history_list_map.items %}
-  <li>Controller: {{ controller.name }}
+  {% if not controller.entity_state.entity_state_type.suppress_history %}
+  <div>
+    <div class="h5">{{ controller.name }} <small class="text-muted">[controller]</small></div>
     {% include "control/panes/controller_history_list.html" with controller_history_list=controller_history_list show_all_link=True %}
-  </li>
-  {% empty %}
-  <div><em>No controllers</em></div>
+  </div>
+  {% endif %}
   {% endfor %}
-</ul>
+</div>
+{% endif %}
 
+{% endblock %}
+
+{% block action_left %}
+<a class="btn btn-primary"
+   href="{% url 'entity_edit' entity_id=entity.id %}"
+   data-async="modal">
+  EDIT
+</a>
+{% endblock %}
+
+{% block action_center %}
+<a class="btn btn-primary"
+   href="{% url 'entity_status' entity_id=entity.id %}"
+   data-async="modal">
+  STATUS
+</a>
+{% endblock %}
+
+{% block action_right %}
+<a id="hi-modal-done" role="button" {% if autofocus %}autofocus="autofocus"{% endif %}
+   class="btn btn-lg btn-secondary" href="#" data-dismiss="modal">DONE</a>
 {% endblock %}

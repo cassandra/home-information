@@ -1,10 +1,12 @@
+{% load common_template_helpers %}
+{% generate_uuid as unique_id %}
 <div class="my-2">
-  <a class="" data-toggle="collapse" href="#hi-attribute-new"
-     role="button" aria-expanded="false" aria-controls="hi-attribute-new">
+  <a class="" data-toggle="collapse" href="#hi-attribute-new-{{ unique_id }}"
+     role="button" aria-expanded="false" aria-controls="hi-attribute-new-{{ unique_id }}">
     <span class="plus-icon">&#43;</span> Add New Attribute
   </a>
 </div>
-<div class="collapse my-2" id="hi-attribute-new">
+<div class="collapse my-2" id="hi-attribute-new-{{ unique_id }}">
 
   {% for hidden in attribute_form.hidden_fields %}
   {{ hidden }}

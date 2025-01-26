@@ -152,6 +152,10 @@ class EntityStateType(LabeledEnum):
     @property
     def suppress_display_name(self):
         return bool( self in { EntityStateType.VIDEO_STREAM })
+
+    @property
+    def suppress_history(self):
+        return bool( self in { EntityStateType.VIDEO_STREAM })
     
 
 class EntityStateValue(LabeledEnum):

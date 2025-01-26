@@ -6,18 +6,23 @@ Sensor Response Details
 
 {% block body %}
 <div>
+  <div class="h4">{{ sensor_history.sensor.name }}</div>
   {% if sensor_history.image_url %}
   <div>
     <img class="img-fluid" src="{{ sensor_history.image_url }}" alt="{{ alarm.title }}">
   </div>
   {% endif %}
-  <div>
-    {% for label, value in sensor_history.detail_attrs.items %}
-    <div class="row">
-      <div class="col-3 text-right">{{ label }}</div>
-      <div class="col-9-">{{ value }}</div>
-    </div>
-    {% endfor %}
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <tbody>
+	{% for label, value in sensor_history.detail_attrs.items %}
+	<tr>
+	  <th class="text-right">{{ label }}</th>
+	  <td>{{ value }}</td>
+	</tr>
+	{% endfor %}
+      </tbody>
+    </table>
   </div>  
 </div>
 {% endblock %}
