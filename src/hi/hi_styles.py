@@ -193,6 +193,14 @@ class EntityStyle:
         fill_color = None,
         fill_opacity = 0.0,
     )
+    SpeakerWire = SvgStatusStyle(
+        status_value = '',
+        stroke_color = '#04a004',
+        stroke_width = 2,
+        stroke_dasharray = [ 8, 2, 2, 2, 2, 2 ],
+        fill_color = None,
+        fill_opacity = 0.0,
+    )
     TelecomWire = SvgStatusStyle(
         status_value = '',
         stroke_color = '#FFA500',
@@ -229,6 +237,7 @@ class EntityStyle:
     EntityTypesWithIcons = {
         # Default icon used if not in this map
         EntityType.ACCESS_POINT,
+        EntityType.ATTIC_STAIRS,
         EntityType.AUTOMOBILE,
         EntityType.AV_RECEIVER,
         EntityType.BAROMETER,
@@ -261,6 +270,7 @@ class EntityStyle:
         EntityType.MOTION_SENSOR,
         EntityType.MOTOR,
         EntityType.NETWORK_SWITCH,
+        EntityType.ON_OFF_SWITCH,
         EntityType.OPEN_CLOSE_SENSOR,
         EntityType.OVEN,
         EntityType.PLANT,
@@ -271,8 +281,10 @@ class EntityStyle:
         EntityType.REFRIGERATOR,
         EntityType.SERVER,
         EntityType.SERVICE,
+        EntityType.SHED,
         EntityType.SHOWER,
         EntityType.SINK,
+        EntityType.SKYLIGHT,
         EntityType.SPEAKER,
         EntityType.SPRINKLER_HEAD,
         EntityType.SPRINKLER_VALVE,
@@ -292,6 +304,7 @@ class EntityStyle:
     }
     EntityTypeToIconViewbox = {
         # Default viewbox used if not in this map
+        EntityType.ATTIC_STAIRS: SvgViewBox( x = 0, y = 0, width = 47, height = 64 ),
         EntityType.AUTOMOBILE: SvgViewBox( x = 0, y = 0, width = 200, height = 300 ),
         EntityType.BAROMETER: SvgViewBox( x = 0, y = 0, width = 44, height = 64 ),
         EntityType.CAMERA: SvgViewBox( x = 0, y = 0, width = 64, height = 43 ),
@@ -305,12 +318,14 @@ class EntityStyle:
         EntityType.MOTION_SENSOR: SvgViewBox( x = 0, y = 0, width = 42, height = 64 ),
         EntityType.MOTOR: SvgViewBox( x = 0, y = 0, width = 64, height = 46 ),
         EntityType.NETWORK_SWITCH: SvgViewBox( x = 0, y = 0, width = 64, height = 32 ),
+        EntityType.ON_OFF_SWITCH: SvgViewBox( x = 0, y = 0, width = 44, height = 64 ),
         EntityType.OPEN_CLOSE_SENSOR: SvgViewBox( x = 0, y = 0, width = 64, height = 50 ),
         EntityType.PUMP: SvgViewBox( x = 0, y = 0, width = 64, height = 45 ),
         EntityType.REFRIGERATOR: SvgViewBox( x = 0, y = 0, width = 48, height = 64 ),
         EntityType.SERVER: SvgViewBox( x = 0, y = 0, width = 45, height = 64 ),
         EntityType.SINK: SvgViewBox( x = 0, y = 0, width = 64, height = 50 ),
         EntityType.SPRINKLER_HEAD: SvgViewBox( x = 0, y = 0, width = 64, height = 44 ),
+        EntityType.SKYLIGHT: SvgViewBox( x = 0, y = 0, width = 57, height = 64 ),
         EntityType.TELEVISION: SvgViewBox( x = 0, y = 0, width = 64, height = 48 ),
         EntityType.THERMOMETER: SvgViewBox( x = 0, y = 0, width = 27, height = 64 ),
         EntityType.THERMOSTAT: SvgViewBox( x = 0, y = 0, width = 64, height = 44 ),
@@ -333,6 +348,7 @@ class EntityStyle:
         EntityType.ELECTRIC_WIRE,
         EntityType.PIPE,
         EntityType.SEWER_LINE,
+        EntityType.SPEAKER_WIRE,
         EntityType.SPRINKLER_WIRE,
         EntityType.TELECOM_WIRE,
         EntityType.WATER_LINE,
@@ -347,6 +363,7 @@ class EntityStyle:
         EntityType.GREENHOUSE: Greenhouse,
         EntityType.PIPE: Pipe,
         EntityType.SEWER_LINE: SewerLine,
+        EntityType.SPEAKER_WIRE: SpeakerWire,
         EntityType.SPRINKLER_WIRE: ControlWire,
         EntityType.TELECOM_WIRE: TelecomWire,
         EntityType.WALL: Wall,
