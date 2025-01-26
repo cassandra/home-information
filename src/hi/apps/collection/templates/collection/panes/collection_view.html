@@ -1,21 +1,21 @@
 <div id="hi-collection-view-main" class="hi-collection-view draggable-container">
-  <h5><sub>COLLECTION:</sub> {{ collection.name }}</h5>
-
+  <div class="h4"><small>Collection:</small> {{ collection.name }}</div>
+  
   {% if collection.collection_view_type.is_grid %}
   <div class="row">
     {% for entity_status_data in entity_status_data_list %}
     <div id="{{ entity_status_data.entity.html_id }}" 
-	 class="{% if entity_status_data_list|length == 1 %}col-12{% elif entity_status_data_list|length <= 4 %}col-6{% else %}col-4{% endif %} {% if request.view_parameters.is_editing %}draggable{% endif %}"
+	 class="{% if entity_status_data_list|length == 1 %}col-12{% elif entity_status_data_list|length <= 4 %}col-6{% else %}col-4{% endif %} {% if request.view_parameters.is_editing %}draggable{% endif %} mb-2"
 	 {% if request.view_parameters.is_editing %}draggable="true"{% endif %} >
       {% include "entity/panes/entity_status_card.html" with entity_status_data=entity_status_data %}
     </div>
     {% empty %}
     <div><em>No entities in collection.</em></div>
-  {% endfor %}
+    {% endfor %}
   </div>
-
+  
   {% else %}
-
+  
   {% for entity_status_data in entity_status_data_list %}
   <div id="{{ entity_status_data.entity.html_id }}" 
        class="{% if request.view_parameters.is_editing %}draggable{% endif %}"
@@ -29,4 +29,3 @@
   {% endif %}
   
 </div>
- 

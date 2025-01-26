@@ -1,8 +1,0 @@
-{% for entity_state_status_data in entity_state_status_data_list %}
-<div class="col-3">State: {{ entity_state_status_data.entity_state.name }}
-  {% include "entity/panes/entity_state_status_data.html" with entity_state_status_data=entity_state_status_data %}
-</div>
-
-{% empty %}
-<div class="col-4"><em>No state info.</em></div>
-{% endfor %}

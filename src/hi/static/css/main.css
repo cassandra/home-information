@@ -424,6 +424,14 @@ g[status="low"] {
     filter: drop-shadow(0 0 5px var(--status-bad-color));
 }
 
+div[status] {
+    color: var(--black);
+    background-color: var(--white);
+    border-color: var(--black);
+    border-style: solid;
+    border-width: 2px;
+    border-radius: 8px;
+}
 div[status="active"] {
     color: var(--on-status-active-color);
     background-color: var(--status-active-color);
@@ -448,6 +456,7 @@ div[status="closed"] {
     color: var(--on-status-idle-color);
     background-color: var(--status-idle-color);
 }
+div[status="RAID_OK"],
 div[status="connected"] {
     color: var(--on-status-ok-color);
     background-color: var(--status-ok-color);

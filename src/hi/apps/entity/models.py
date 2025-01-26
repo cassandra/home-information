@@ -207,7 +207,7 @@ class EntityState( models.Model ):
 
         choices_map = EntityStateValue.entity_state_value_choices()
         return choices_map.get( self.entity_state_type, [] )
-
+    
 
 class EntityStateDelegation(models.Model):
     """An EntityState associated with a Sensor or Controller is often serving

@@ -1,28 +1,30 @@
-{% extends "modals/action_done.html" %}
+{% extends "modals/action_3.html" %}
 
 {% block title_text %}
-{{ entity.name }}
+{{ entity.name }}: Status
 {% endblock %}
 
 {% block body %}
-
 {% include "entity/panes/entity_state_status_card.html" with entity_state_status_data_list=entity_state_status_data_list %}
+{% endblock %}
 
-<div class="d-flex justify-content-between">
-  <div>
-    <a class="btn btn-primary"
-       href="{% url 'entity_edit' entity_id=entity.id %}"
-       data-async="modal">
-      EDIT
-    </a>
-  </div>
-  <div>
-    <a class="btn btn-primary"
-       href="{% url 'entity_state_history' entity_id=entity.id %}"
-       data-async="modal">
-      HISTORY
-    </a>
-  </div>
-</div>
+{% block action_left %}
+<a class="btn btn-primary"
+   href="{% url 'entity_edit' entity_id=entity.id %}"
+   data-async="modal">
+  EDIT
+</a>
+{% endblock %}
 
+{% block action_center %}
+<a class="btn btn-primary"
+   href="{% url 'entity_state_history' entity_id=entity.id %}"
+   data-async="modal">
+  HISTORY
+</a>
+{% endblock %}
+
+{% block action_right %}
+<a id="hi-modal-done" role="button" {% if autofocus %}autofocus="autofocus"{% endif %}
+   class="btn btn-lg btn-secondary" href="#" data-dismiss="modal">DONE</a>
 {% endblock %}
