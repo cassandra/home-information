@@ -136,9 +136,14 @@ class AttributeModel(models.Model):
         return dict()
 
     def save(self, *args, **kwargs):
+        
         if self.file_value and self.file_value.name:
             self.file_value.field.upload_to = self.get_upload_to()
-            self.file_value.name = generate_unique_filename( self.file_value.name )
+            if not self.value:
+                self.value = self.file_value.name
+            if not self.pk or not self.__class__.objects.filter( pk = self.pk ).exists():
+                self.file_value.name = generate_unique_filename( self.file_value.name )
+                
         super().save(*args, **kwargs)
         return
     

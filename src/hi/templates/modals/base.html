@@ -1,5 +1,5 @@
 {% load static %}
-<div class="modal-dialog hi-modal">
+<div class="modal-dialog hi-modal {% block modal_dialog_class %}{% endblock %}">
   <div class="modal-content">
     <div class="modal-title">
       <div class="row {% block header_class %}bg-secondary{% endblock %} m-0 py-2">

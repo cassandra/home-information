@@ -252,6 +252,10 @@ a.underline:visited {
     border-left: 1px solid var(--line-color);
 }
 
+.hi-modal-dialog-600 {
+    max-width: 600px;
+}
+
 .btn-control {
     width: 100%;
     white-space: nowrap;
@@ -259,6 +263,9 @@ a.underline:visited {
     font-weight: bold;
 }
 
+input[type="number"] {
+    max-width: 8rem;
+}
 .hi-location-view {
     justify-content: center;
     align-items: center;
