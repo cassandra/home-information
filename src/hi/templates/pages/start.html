@@ -1,32 +1,20 @@
-{% extends "pages/base.html" %}
-{% load static %}
+{% extends "pages/interstitial_page.html" %}
 
-{% block content %}
-<div class="container-fluid hi-interstitial-page">
-  <div class="hi-start-heading col-4">
-    <div class="">
-      <img class="img-fluid" src="{% static 'img/hi-logo-467x200.png' %}" alt="Home Information Logo" />
-    </div>
-    <div class="">
-      <em>Your home, your data, organized.</em>
-    </div>
+{% block interstitial_content %}
+<div>
+  <div class="display-4">Welcome!</div>
+  <p class="lead mt-2 mb-4">
+    To get started, add your home's name to create a new location.
+  </p>
+  <div class="">
+    <a role="button" class="btn btn-primary"
+       href="{% url 'location_edit_location_add_first' %}"
+       data-async="modal">
+      ADD MY LOCATION
+    </a>
   </div>
-  
-  <div class="hi-interstitial-page-content">
-    <div class="display-4">Welcome!</div>
-    <p class="lead mt-2 mb-4">
-      To get started, add your home's name to create a new location.
-    </p>
-    <div class="">
-      <a role="button" class="btn btn-primary"
-	 href="{% url 'location_edit_location_add_first' %}"
-	 data-async="modal">
-	ADD MY LOCATION
-      </a>
-    </div>
-    <p class="text-muted mt-4">
-      Optionally, you can upload an SVG image of your home or property layout.
-    </p>
-  </div>
+  <p class="text-muted mt-4">
+    Optionally, you can upload an SVG image of your home or property layout.
+  </p>
 </div>
 {% endblock %}

@@ -780,6 +780,11 @@ function hideLoadingIniterstitial() {
     $('#antinode-loader').hide();
 };
 
+function synchronousSubmitHandler() {
+    $('#antinode-loader').show();
+    $( this ).find( 'button[type="submit"]' ).prop('disabled', true);
+}
+    
 //====================
 // Adding handlers that look at special HTML tag attributes to determine
 // which ones want to be done ansynchonously (aka, AJAX)
@@ -797,6 +802,7 @@ jQuery(function($) {
     $('body').on('click', 'a[data-async]', asyncClickHandler );
     $('body').on('click', 'div[data-async]', asyncClickHandler );
     $('body').on('click', 'form[data-async] button', lastButtonClickHandler );
+    $('body').on('submit', 'form[data-synchronous]', synchronousSubmitHandler );
 
     // This is to support auto-submitting from SELECT elements asnychronously.
     //

@@ -1,0 +1,14 @@
+{% extends "user/emails/emailer_message.html" %}
+{% load common_template_helpers %}
+{% block title %}Greetings!{% endblock %}
+{% block content %}
+<p>
+  Your access code is:
+  <ul>
+    <span style="font-size:1.5rem; font-weight: bold">{{ magic_code }}</span>
+  </ul>
+</p>
+<p>
+  Note that this code will expire after {{ magic_code_lifetime_minutes }} minutes. The code is not case sensitive.
+</p>
+{% endblock %}

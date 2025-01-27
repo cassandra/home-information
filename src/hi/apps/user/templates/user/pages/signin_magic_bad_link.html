@@ -1,0 +1,16 @@
+{% extends "pages/interstitial_page.html" %}
+
+{% block interstitial_content %}
+<p>
+  The sign-in link has either expired or has already been used.
+</p>
+<p>
+  Sign-in again to generate a new link.
+</p>
+<div>
+  <a id="player-signin-link" href="{% url 'user_signin' %}"
+     class="btn btn-lg btn-primary">
+    <b>SIGN IN</b>
+  </a>
+</div>
+{% endblock %}

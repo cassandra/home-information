@@ -1,0 +1,27 @@
+{% extends "pages/interstitial_page.html" %}
+
+{% block interstitial_content %}
+<div>
+  <form class="sigin form" method="post" 
+	action="{% url 'user_signin' %}"
+	data-synchronous="true">
+    {% csrf_token %}
+    <div class="h3 text-center">Sign In</div>
+    <div class="d-flex mt-3">
+      <input class="" style="width: 20rem;"
+	     type="email"
+	     name="email"
+	     value=""
+	     autofocus="autofocus"
+	     placeholder="e-mail address" required="" id="hi-signin-email"/>
+    </div>
+    <div>
+      <button id="hi-signin-button"
+	      role="button" type="submit"
+	      class="btn btn-lg btn-primary my-4">
+	<b>Sign In</b>
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

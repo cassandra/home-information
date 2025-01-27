@@ -1,7 +1,7 @@
-{% extends "pages/base.html" %}
+{% extends "pages/interstitial_page.html" %}
 
-{% block content %}
-<h1>{% block title %}Error{% endblock %}</h1>
+{% block interstitial_content %}
+<h1 class="text-danger">{% block title %}Error{% endblock %}</h1>
 
 <div>
   {{ error_message }}

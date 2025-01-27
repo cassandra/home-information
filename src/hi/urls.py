@@ -27,6 +27,7 @@ urlpatterns = [
     re_path( r'^index.html$', views.HomeView.as_view(), name='home_index' ),
     re_path( r'^start$', views.StartView.as_view(), name='start' ),
 
+    re_path( r'^user/', include('hi.apps.user.urls' )),
     re_path( r'^api/', include('hi.apps.api.urls' )),
     re_path( r'^config/', include('hi.apps.config.urls' )),
     re_path( r'^edit/', include('hi.apps.edit.urls' )),

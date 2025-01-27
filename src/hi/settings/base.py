@@ -31,6 +31,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = get_env_variable('DJANGO_SECRET_KEY')
 
+DJANGO_SUPERUSER_EMAIL = get_env_variable( 'DJANGO_SUPERUSER_EMAIL', None )
+DJANGO_SUPERUSER_PASSWORD = get_env_variable( 'DJANGO_SUPERUSER_PASSWORD', None )
+
+AUTH_USER_MODEL = "custom.CustomUser"
+SUPPRESS_AUTHENTICATION = bool( get_env_variable( 'HI_SUPPRESS_AUTHENTICATION', 'false' ) == 'true' )
+
 ALLOWED_HOSTS = [
     '127.0.0.1',
     '192.168.100.2',
@@ -135,7 +141,9 @@ INSTALLED_APPS = [
     'pipeline',
     'django.contrib.humanize',
     'constance',
+    'custom',
     'hi.apps.common',
+    'hi.apps.user',
     'hi.apps.config',
     'hi.apps.console',
     'hi.apps.attribute',
@@ -169,6 +177,7 @@ MIDDLEWARE = [
     'hi.middleware.ExceptionMiddleware',
     'hi.middleware.ViewMiddleware',
     'hi.apps.console.middleware.ConsoleLockMiddleware',
+    'hi.apps.user.middleware.AuthenticationMiddleware',
 ]
 
 ROOT_URLCONF = 'hi.urls'

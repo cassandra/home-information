@@ -1,0 +1,45 @@
+{% load static %}
+<html>
+  <head>
+  </head>
+  <body>
+    <div style="border: 4px solid #F45F36; padding: 0; margin: 0">
+      <div style="border: 4px solid white; padding: 0; margin: 0;">
+	<div style="border: 4px solid #177072; padding: 0;">
+	  {% block body %}
+	  <table style="width: 100%;" cellpadding="0" cellspacing="0">
+	    <tr style="background-color: white">
+	      <td style="width: 128px; padding-left: 2px; padding-bottom: 4px;">
+		{% block logo %}
+		{% if BASE_URL %}
+		<a href="{{ BASE_URL }}" alt="Home Information"><img src="{{ BASE_URL }}{% static 'img/hi-logo-149x64.png' %}" alt="Plates Logo"/></a>
+		{% endif %}
+		{% endblock %}
+	      </td>
+	      <td>
+		<p style="font-size: 18px; font-weight: 800; color: #177072; padding: 12px;" >
+		  {% block title %}
+		  {% endblock %}
+		</p>
+	      </td>
+	    </tr>
+	  </table>
+
+	  {% endblock %}
+
+	  <div style="margin: 8px;">
+	    {% block content %}
+	    {% endblock %}
+	  </div>
+	  
+	  {% if UNSUBSCRIBE_URL %}
+	  <hr />
+	  <p style="margin: 8px;">
+	    <a style="color: #888888; font-size: 0.8rem;" href="{{ UNSUBSCRIBE_URL }}">Unsubscribe.</a>
+	  </p>
+	  {% endif %}
+	</div>
+      </div>
+    </div>
+  </body>
+</html>
