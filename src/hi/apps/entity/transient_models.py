@@ -31,7 +31,15 @@ class EntityViewGroup:
     
 @dataclass
 class EntityPairing:
-
+    """
+    An "Entity Pair: abstracts the concepts of principal and delegate
+    entities to a simpler, non-directional view for end users.  We only
+    allow an entity to participate as a principal or a delegate, not
+    both. Further, We only allow a primcipal entity to delegate if it has
+    EntityStates and we do not allow delegates to have their own
+    state. Thus, by just pairing two entities, we can deduce which
+    direction the delagation relatiojnship goes.
+    """
     entity         : Entity
     paired_entity  : Entity
     pairing_type   : EntityPairingType
@@ -84,13 +92,11 @@ class EntityDetailsData:
     entity_edit_data      : EntityEditData
     entity_position_form  : EntityPositionForm     = None
     entity_pairing_list   : List[ EntityPairing ]  = None
-    principal_entity_list : List[ Entity ]         = None
 
     def to_template_context(self):
         context = {
             'entity_position_form': self.entity_position_form,
             'entity_pairing_list': self.entity_pairing_list,
-            'principal_entity_list': self.principal_entity_list,
         }
         context.update( self.entity_edit_data.to_template_context() )
         return context

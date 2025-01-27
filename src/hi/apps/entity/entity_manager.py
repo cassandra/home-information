@@ -1,7 +1,7 @@
 from decimal import Decimal
 import logging
 from threading import local
-from typing import List, Set
+from typing import List, Sequence
 
 from django.db import transaction
 from django.db.models.signals import post_save, post_delete
@@ -12,10 +12,9 @@ from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 
-from .delegation_manager import DelegationManager
+from .entity_pairing_manager import EntityPairingManager
 from .enums import (
     EntityGroupType,
-    EntityPairingType,
     EntityStateType,
 )
 from .models import (
@@ -30,7 +29,6 @@ from .models import (
 from .transient_models import (
     EntityDetailsData,
     EntityEditData,
-    EntityPairing,
     EntityViewGroup,
     EntityViewItem,
 )
@@ -77,48 +75,15 @@ class EntityManager(Singleton):
             if entity_position:
                 entity_position_form = EntityPositionForm( instance = entity_position )
 
-        entity_pairing_list = self.get_entity_pairing_list( entity = entity )
-        principal_entity_list = self.get_principal_entity_list( entity = entity )
+        entity_pairing_list = EntityPairingManager().get_entity_pairing_list( entity = entity )
         
         entity_edit_data = EntityEditData( entity = entity )
         return EntityDetailsData(
             entity_edit_data = entity_edit_data,
             entity_position_form = entity_position_form,
             entity_pairing_list = entity_pairing_list,
-            principal_entity_list = principal_entity_list,
         )
 
-    def get_entity_pairing_list( self, entity : Entity ) -> List[ EntityPairing ]:
-        delegation_manager = DelegationManager()
-        entity_pairing_list = list()
-
-        for principal_entity in delegation_manager.get_principal_entities( entity = entity ):
-            entity_pairing = EntityPairing(
-                entity = entity,
-                paired_entity = principal_entity,
-                pairing_type = EntityPairingType.PRINCIPAL,
-            )
-            entity_pairing_list.append( entity_pairing )
-            continue
-
-        for delegate_entity in delegation_manager.get_delegate_entities( entity = entity ):
-            entity_pairing = EntityPairing(
-                entity = entity,
-                paired_entity = delegate_entity,
-                pairing_type = EntityPairingType.DELEGATE,
-            )
-            entity_pairing_list.append( entity_pairing )
-            continue
-
-        return entity_pairing_list
-    
-    def get_principal_entity_list( self, entity : Entity ) -> List[ Entity ]:
-        entity_state_delegation_list = list(
-            entity.entity_state_delegations.select_related('entity_state', 'entity_state__entity').all()
-        )
-        principal_state_list = [ x.entity_state for x in entity_state_delegation_list ]
-        return list({ x.entity for x in principal_state_list })  # de-dupe
-        
     def set_entity_path( self,
                          entity_id     : int,
                          location      : Location,
@@ -161,7 +126,6 @@ class EntityManager(Singleton):
                     entity = entity,
                     location_view = location_view,
                 )
-
             try:
                 entity_view = EntityView.objects.get(
                     entity = entity,
@@ -172,7 +136,6 @@ class EntityManager(Singleton):
                     entity = entity,
                     location_view = location_view,
                 )
-            
         return entity_view
 
     def remove_entity_view( self, entity : Entity, location_view : LocationView ):
@@ -183,7 +146,6 @@ class EntityManager(Singleton):
                 location_view = location_view,
             )
             entity_view.delete()
-            
         return
     
     def add_entity_to_view( self, entity : Entity, location_view : LocationView ):
@@ -191,11 +153,11 @@ class EntityManager(Singleton):
         with transaction.atomic():
             # Only create delegate entities the first time an entity is added to a view.
             if not entity.entity_views.all().exists():
-                delegate_entity_list = DelegationManager().get_delegate_entities_with_defaults(
+                delegate_entity_list = EntityPairingManager().get_delegate_entities_with_defaults(
                     entity = entity,
                 )
             else:
-                delegate_entity_list = DelegationManager().get_delegate_entities(
+                delegate_entity_list = EntityPairingManager().get_delegate_entities(
                     entity = entity,
                 )
 
@@ -203,14 +165,12 @@ class EntityManager(Singleton):
                 entity = entity,
                 location_view = location_view,
             )
-                            
             for delegate_entity in delegate_entity_list:
                 _ = self.create_entity_view(
                     entity = delegate_entity,
                     location_view = location_view,
                 )
                 continue
-            
         return 
         
     def toggle_entity_in_view( self, entity : Entity, location_view : LocationView ) -> bool:
@@ -229,12 +189,10 @@ class EntityManager(Singleton):
                 entity = entity,
                 location_view = location_view,
             )
-
-            DelegationManager().remove_delegate_entities_from_view_if_needed(
+            EntityPairingManager().remove_delegate_entities_from_view_if_needed(
                 entity = entity,
                 location_view = location_view,
             )
-            
         return
     
     def add_entity_position_if_needed( self,
@@ -291,28 +249,19 @@ class EntityManager(Singleton):
     def create_location_entity_view_group_list( self, location_view : LocationView ) -> List[EntityViewGroup]:
         existing_entities = [ x.entity
                               for x in location_view.entity_views.select_related('entity').all() ]
+        all_entities = Entity.objects.all()
         return self.create_entity_view_group_list(
             existing_entities = existing_entities,
-            exclude_delegates = False,
-        )
-    
-    def create_principal_entity_view_group_list( self, entity : Entity ) -> List[EntityViewGroup]:
-        existing_entities = self.get_principal_entity_list( entity = entity )
-        return self.create_entity_view_group_list(
-            existing_entities = existing_entities,
-            exclude_delegates = True,  # Do not allow delegates to delegate
+            all_entities = all_entities,
         )
 
     def create_entity_view_group_list( self,
-                                       existing_entities : List[ Entity ],
-                                       exclude_delegates : bool ) -> List[EntityViewGroup]:
+                                       existing_entities  : List[ Entity ],
+                                       all_entities       : Sequence[ Entity ] ) -> List[EntityViewGroup]:
         existing_entity_set = set( existing_entities )
-        entity_queryset = Entity.objects.all()
         
         entity_view_group_dict = dict()
-        for entity in entity_queryset:
-            if exclude_delegates and entity.entity_state_delegations.exists():
-                continue
+        for entity in all_entities:
             entity_view_item = EntityViewItem(
                 entity = entity,
                 exists_in_view = bool( entity in existing_entity_set ),
@@ -333,36 +282,6 @@ class EntityManager(Singleton):
         entity_view_group_list = list( entity_view_group_dict.values() )
         entity_view_group_list.sort( key = lambda item : item.entity_group_type.label )
         return entity_view_group_list
-
-    def adjust_principal_entities( self, entity : Entity, desired_principal_entity_ids : Set[ int ] ):
-
-        principal_entity_list = self.get_principal_entity_list( entity = entity )
-        previous_principal_entity_map = { x.id: x for x in principal_entity_list }
-        previous_principal_entity_ids = set( previous_principal_entity_map.keys() )
-
-        to_add_entity_ids = desired_principal_entity_ids - previous_principal_entity_ids
-        to_delete_entity_ids = previous_principal_entity_ids - desired_principal_entity_ids
-
-        to_add_principal_entities = list( Entity.objects.filter( id__in = list(to_add_entity_ids) ) )
-
-        with transaction.atomic():
-            for add_principal_entity in to_add_principal_entities:
-                for entity_state in add_principal_entity.states.all():
-                    EntityStateDelegation.objects.create(
-                        entity_state = entity_state,
-                        delegate_entity = entity,
-                    )
-                    continue
-                continue
-
-            delegation_queryset = entity.entity_state_delegations.select_related(
-                'entity_state',
-                'entity_state__entity' ).all()
-            for delegation in delegation_queryset:
-                if delegation.entity_state.entity.id in to_delete_entity_ids:
-                    delegation.delete()
-                continue
-        return
     
     def get_view_stream_entities(self) -> List[ Entity ]:
         """ Return all entities that have a video stream state """

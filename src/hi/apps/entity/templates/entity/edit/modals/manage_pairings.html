@@ -1,0 +1,57 @@
+{% extends "modals/action_with_cancel.html" %}
+
+{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+
+{% block preamble %}
+<form action="{% url 'entity_edit_manage_pairings' entity_id=entity.id %}" method="post"
+      class="form" data-async="true">
+  {% csrf_token %}
+{% endblock %}
+
+  {% block title_text %}
+  Manage Item Pairings
+  {% endblock %}
+  
+  {% block body %}
+  <div>
+    {% if entity.states.exists %}
+    Select "delegate" items to pair whose status will determined by
+    {% else %}
+    Select "principal" items to pair whose status will be reflected by:
+    {% endif %}
+    <div class="mt-1 ml-4">
+      <span class="h6">{{ entity.name }}</span>
+    </div>
+  </div>
+
+  {% for entity_view_group in entity_view_group_list %}
+  <div class="mt-2">
+    <div class="h5">{{ entity_view_group.entity_group_type.label }}</div>
+    <div class="row">
+    {% for entity_view_item in entity_view_group.item_list %}
+      <div class="col-6">
+	<input type="checkbox"
+	       id="principal-entity-checkbox-{{ entity_view_item.entity.id }}"
+	       name="{{ principal_entity_id_name_prefix }}{{ entity_view_item.entity.id }}" 
+               {% if entity_view_item.exists_in_view %}checked{% endif %} >
+	<label for="principal-entity-checkbox-{{ entity_view_item.entity.id }}">{{ entity_view_item.entity.name }}</label>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% empty %}
+  <div><em>No candidate items found.</em></div>
+  {% endfor %}
+  
+  {% endblock %}
+  
+  {% block action_right %}
+  <button id="hi-principal-manage-button" type="submit" class="btn btn-lg btn-success"
+	name="action" value="submit">
+    SUBMIT
+  </button>
+  {% endblock %}
+
+{% block postamble %}
+</form>
+{% endblock %}

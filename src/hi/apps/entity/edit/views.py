@@ -12,6 +12,7 @@ from django.views.generic import View
 from hi.apps.collection.collection_manager import CollectionManager
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.entity_manager import EntityManager
+from hi.apps.entity.entity_pairing_manager import EntityPairingManager
 from hi.apps.entity.forms import EntityForm
 from hi.apps.entity.models import Entity, EntityPosition
 from hi.apps.entity.view_mixin import EntityViewMixin
@@ -169,43 +170,50 @@ class EntityPositionEditView( View, EntityViewMixin ):
 
 
 @method_decorator( edit_required, name='dispatch' )
-class PrincipalManageView( HiModalView, EntityViewMixin ):
+class ManagePairingsView( HiModalView, EntityViewMixin ):
 
-    PRINCIPAL_ENTITY_ID_NAME_PREFIX = 'principal-entity-id-'
+    ENTITY_PAIR_ID_NAME_PREFIX = 'entity-pair-id-'
 
     def get_template_name( self ) -> str:
-        return 'entity/edit/modals/principal_manage.html'
+        return 'entity/edit/modals/manage_pairings.html'
 
     def get( self, request, *args, **kwargs ):
         entity = self.get_entity( request, *args, **kwargs )
 
-        entity_manager = EntityManager()
-        entity_view_group_list = entity_manager.create_principal_entity_view_group_list(
-            entity= entity,
+        entity_pairing_manager = EntityPairingManager()
+        entity_pairings = entity_pairing_manager.get_entity_pairing_list( entity = entity )
+        candidate_entities = entity_pairing_manager.get_candidate_entities( entity = entity )
+
+        existing_entities = [ x.paired_entity for x in entity_pairings ]
+        entity_view_group_list = EntityManager().create_entity_view_group_list(
+            existing_entities = existing_entities,
+            all_entities = candidate_entities,
         )
         context = {
             'entity': entity,
             'entity_view_group_list': entity_view_group_list,
-            'principal_entity_id_name_prefix': self.PRINCIPAL_ENTITY_ID_NAME_PREFIX,
+            'principal_entity_id_name_prefix': self.ENTITY_PAIR_ID_NAME_PREFIX,
         }
         return self.modal_response( request, context )
     
     def post( self, request, *args, **kwargs ):
         entity = self.get_entity( request, *args, **kwargs )
 
-        desired_principal_entity_ids = set()
+        desired_paired_entity_ids = set()
         for name, value in request.POST.items():
             m = re.match( r'(\D+)(\d+)', name )
             if not m:
                 continue
             prefix = m.group(1)
-            if prefix == self.PRINCIPAL_ENTITY_ID_NAME_PREFIX:
-                desired_principal_entity_ids.add( int( m.group(2) ))
+            if prefix == self.ENTITY_PAIR_ID_NAME_PREFIX:
+                desired_paired_entity_ids.add( int( m.group(2) ))
             continue
 
-        EntityManager().adjust_principal_entities(
-            entity = entity,
-            desired_principal_entity_ids = desired_principal_entity_ids,
-        )
-        
-        return antinode.refresh_response()
+        try:
+            EntityPairingManager().adjust_entity_pairings(
+                entity = entity,
+                desired_paired_entity_ids = desired_paired_entity_ids,
+            )
+            return antinode.refresh_response()
+        except EntityPairingManager.EntityPairingError as epe:
+            raise BadRequest( str(epe) )

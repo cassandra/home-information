@@ -1,13 +1,20 @@
-from typing import List
+from typing import List, Set
+
+from django.db import transaction
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.location.models import LocationView
 
 from . import enums
 from . import models
+from .transient_models import EntityPairing
 
 
-class DelegationManager(Singleton):
+class EntityPairingError(Exception):
+    pass
+
+
+class EntityPairingManager(Singleton):
 
     CREATE_BY_DEFAULT_MAP = {
         # Defines which EntityStateType should have a delegate entity by
@@ -24,24 +31,66 @@ class DelegationManager(Singleton):
     def __init_singleton__(self):
         return
 
+    def get_entity_pairing_list( self, entity : models.Entity ) -> List[ EntityPairing ]:
+        entity_pairing_list = list()
+
+        for principal_entity in self.get_principal_entities( entity = entity ):
+            entity_pairing = EntityPairing(
+                entity = entity,
+                paired_entity = principal_entity,
+                pairing_type = enums.EntityPairingType.PRINCIPAL,
+            )
+            entity_pairing_list.append( entity_pairing )
+            continue
+
+        for delegate_entity in self.get_delegate_entities( entity = entity ):
+            entity_pairing = EntityPairing(
+                entity = entity,
+                paired_entity = delegate_entity,
+                pairing_type = enums.EntityPairingType.DELEGATE,
+            )
+            entity_pairing_list.append( entity_pairing )
+            continue
+
+        return entity_pairing_list
+    
+    def get_candidate_entities( self, entity : models.Entity ) -> List[ EntityPairing ]:
+        """ We only allow pairing entities with states to those without states.  """
+        entity_has_states = bool( entity.states.exists() )
+
+        candidate_entity_list = list()
+        for candidate_entity in models.Entity.objects.all():
+            candidate_entity_has_states = bool( candidate_entity.states.exists() )
+
+            if (( entity_has_states and not candidate_entity_has_states )
+                or ( not entity_has_states and candidate_entity_has_states )):
+                candidate_entity_list.append( candidate_entity )
+                
+            continue
+        return candidate_entity_list
+    
     def get_delegate_entities( self, entity : models.Entity ) -> List[ models.Entity ]:
-        delegate_entity_list = list()
+        delegate_entity_set = set()
         for entity_state in entity.states.all():
             for entity_state_delegation in entity_state.entity_state_delegations.all():
-                delegate_entity_list.append( entity_state_delegation.delegate_entity )
+                delegate_entity_set.add( entity_state_delegation.delegate_entity )
                 continue
             continue
+        delegate_entity_list = list( delegate_entity_set )
+        delegate_entity_list.sort( key = lambda entity : entity.name )
         return delegate_entity_list
         
     def get_principal_entities( self, entity : models.Entity ) -> List[ models.Entity ]:
-        principal_entity_list = list()
+        principal_entity_set = set()
         delegation_queryset = entity.entity_state_delegations.select_related(
             'entity_state',
             'entity_state__entity'
         ).all()
         for entity_state_delegation in delegation_queryset:
-            principal_entity_list.append( entity_state_delegation.entity_state.entity )
+            principal_entity_set.add( entity_state_delegation.entity_state.entity )
             continue
+        principal_entity_list = list( principal_entity_set )
+        principal_entity_list.sort( key = lambda entity : entity.name )
         return principal_entity_list
         
     def get_delegate_entities_with_defaults( self, entity : models.Entity ) -> List[ models.Entity ]:
@@ -137,4 +186,60 @@ class DelegationManager(Singleton):
                     pass
             continue
 
+        return
+
+    def adjust_entity_pairings( self, entity : models.Entity, desired_paired_entity_ids : Set[ int ] ):
+
+        previous_entity_pairings = self.get_entity_pairing_list( entity = entity )
+        previous_paired_entity_ids = { x.paired_entity.id for x in previous_entity_pairings }
+
+        to_add_entity_ids = desired_paired_entity_ids - previous_paired_entity_ids
+        to_delete_entity_ids = previous_paired_entity_ids - desired_paired_entity_ids
+        
+        entity_has_states = bool( entity.states.exists() )
+        to_add_paired_entities = list( models.Entity.objects.filter( id__in = list(to_add_entity_ids) ) )
+
+        for candidate_entity in to_add_paired_entities:
+            candidate_entity_has_states = bool( candidate_entity.states.exists() )
+
+            if entity_has_states and candidate_entity_has_states:
+                raise EntityPairingError(
+                    f'Cannot pair entities both with states: {entity} and {candidate_entity}' )
+            if not entity_has_states and not candidate_entity_has_states:
+                raise EntityPairingError(
+                    f'Cannot pair entities both without states: {entity} and {candidate_entity}' )
+            continue
+
+        with transaction.atomic():
+            for to_add_entity in to_add_paired_entities:
+                if entity_has_states:
+                    principle_entity = entity
+                    delegate_entity = to_add_entity
+                else:
+                    principle_entity = to_add_entity
+                    delegate_entity = entity
+                    
+                for entity_state in principle_entity.states.all():
+                    models.EntityStateDelegation.objects.create(
+                        entity_state = entity_state,
+                        delegate_entity = delegate_entity,
+                    )
+                    continue
+                continue
+
+            for to_delete_entity in to_delete_entity_ids:
+                if entity_has_states:
+                    principle_entity = entity
+                    delegate_entity = to_add_entity
+                else:
+                    principle_entity = to_add_entity
+                    delegate_entity = entity
+
+                delegation_queryset = delegate_entity.entity_state_delegations.select_related(
+                    'entity_state',
+                    'entity_state__entity' ).all()
+                for delegation in delegation_queryset:
+                    if delegation.entity_state.entity == principle_entity:
+                        delegation.delete()
+                    continue
         return

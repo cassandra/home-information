@@ -529,16 +529,17 @@
 	    return;
 	}
 
-	/* We decided that automatically saving the location view geometry
-	   after all move/scale/rotate operations was more inconvenient
-	   than helpful.  While editing, it is often useful to manipulate
-	   the location view geometry while editing and arranging the
-	   entities.  If these entity refinements happen after the the
-	   desired geometry has been set, then the act of editing those
-	   entities and manipulating the location view will result in
-	   undoing the original geometry work. Further, the user only finds
-	   this out after they exit editing mode and see that it has
-	   changed.  Thus, we changed to require an explicit the location
+	/* We only save the current location view geometry on a change if
+	   the Location View editing pane is showing. automatically saving
+	   the geometry after all move/scale/rotate operations is more
+	   inconvenient than helpful.  While editing, it is often useful to
+	   manipulate the location view geometry while editing and
+	   arranging the entities.  If these entity refinements happen
+	   after the the desired geometry has been set, then the act of
+	   editing those entities and manipulating the location view will
+	   result in undoing the original geometry work. Further, the user
+	   only finds this out after they exit editing mode and see that it
+	   has changed.  Thus, we changed to require an explicit the location
 	   editing view pane to be visible.
 	*/
 
