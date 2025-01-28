@@ -45,7 +45,7 @@ class HiEnvironmentGenerator:
     
     def setup_secrets_directory(self):
         if not os.path.exists( self.SECRETS_DIRECTORY ):
-            print( f'Creating directory: {self.SECRETS_DIRECTORY}' )
+            self.print_notice( f'Creating directory: {self.SECRETS_DIRECTORY}' )
             os.makedirs( self.SECRETS_DIRECTORY, exist_ok = True )
             os.chmod( self.SECRETS_DIRECTORY, stat.S_IRWXU )  # Read/write/execute for user only
         return
@@ -53,14 +53,14 @@ class HiEnvironmentGenerator:
     def check_existing_env_file(self):
 
         if os.path.exists( self._destination_filename ):
-            print( f'WARNING: {self._destination_filename} already exists.' )
+            self.print_warning( f'WARNING: {self._destination_filename} already exists.' )
             overwrite = input( 'Do you want to overwrite it? (y/n): ').strip().lower()
             if overwrite not in ['yes', 'y']:
-                print( 'Env file generation cancelled.' )
+                self.print_warning( 'Env file generation cancelled.' )
                 exit(1)
 
             backup_filename = f'{self._destination_filename}.BAK'
-            print(f'Creating backup: {backup_filename}')
+            self.print_notice(f'Creating backup: {backup_filename}')
             shutil.copy2(self._destination_filename, backup_filename)
         return
     
@@ -91,14 +91,15 @@ class HiEnvironmentGenerator:
         
         self.write_file()
 
-        print( '\nYour Django admin credentials:' )
-        print( f'  Email: {django_admin_email}' )
-        print( f'  Password: {django_admin_password}\n' )
+        self.print_important( f'Review your settings file: {self._destination_filename}' )
+        self.print_important( 'Your Django admin credentials:'
+                              f'\n    Email: {django_admin_email}'
+                              f'\n    Password: {django_admin_password}' )
         return
     
     def get_email_settings(self):
 
-        print( 'We need email settings to set up the Django configuration file.' )
+        self.print_notice( 'We need email settings to set up the Django configuration file.' )
         
         email_address = input('Enter your email address: ').strip()
         password = input('Enter your email password: ').strip()
@@ -111,10 +112,10 @@ class HiEnvironmentGenerator:
             if use_predefined.strip().lower() == 'y':
                 settings = self.COMMON_EMAIL_PROVIDER_SETTINGS[domain]
         else:
-            print( f'Unknown email provider: {domain}.' )
+            self.print_warning( f'Unknown email provider: {domain}.' )
                 
         if not settings:
-            print( 'Please provide SMTP settings.' )
+            self.print_notice( 'Please provide SMTP settings.' )
             settings = {
                 'host': input('Enter SMTP host: ').strip(),
                 'port': input('Enter SMTP port: ').strip(),
@@ -150,13 +151,32 @@ class HiEnvironmentGenerator:
             for name, value in self._settings_map.items():
                 fh.write( f'export {name}="{value}"\n' )
                 continue
-        print( f'File created: {self._destination_filename}' )
+        self.print_success( f'File created: {self._destination_filename}' )
         return
     
     def generate_secret_key( self, length : int = 50 ):
         chars = string.ascii_letters + string.digits + string.punctuation
         return ''.join(secrets.choice(chars) for _ in range(length))
 
+    @staticmethod
+    def print_notice(message):
+        print(f"[NOTICE] {message}")
+
+    @staticmethod
+    def print_warning(message):
+        print(f"\033[93m[WARNING]\033[0m {message}")  # Yellow text
+
+    @staticmethod
+    def print_success(message):
+        print(f"\033[92m[SUCCESS]\033[0m {message}")  # Green text
+
+    @staticmethod
+    def print_important(message):
+        border = "=" * (len(message) + 6)
+        print(f"\n\033[94m{border}\033[0m")  # Blue border
+        print(f"\033[94m|| {message} ||\033[0m")  # Blue text
+        print(f"\033[94m{border}\033[0m\n")  # Blue border
+        
     COMMON_EMAIL_PROVIDER_SETTINGS = {
         'gmail.com': {
             'host': 'smtp.gmail.com',
