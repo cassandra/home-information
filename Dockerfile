@@ -21,6 +21,9 @@ RUN pip install --no-cache-dir --root-user-action=ignore -r requirements.txt
 COPY packaging/supervisor-interface.conf /etc/supervisor/conf.d/waa-interface.conf
 COPY packaging/nginx-interface.conf /etc/nginx/sites-available/default
 
+COPY packaging/docker_entrypoint.sh /src/entrypoint.sh
+RUN chmod +x /src/entrypoint.sh
+
 COPY src /src
 
 EXPOSE 8000

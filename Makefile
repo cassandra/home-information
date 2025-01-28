@@ -17,6 +17,6 @@ docker-run:	.private/env/local.sh Dockerfile
 docker-stop:	
 	docker stop hi
 
-local-env:	.private/env/local.sh
-	./packaging/env-generate.py
+env-build:	.private/env/local.sh
+	./env-generate.py
 
