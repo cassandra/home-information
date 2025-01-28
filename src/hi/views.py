@@ -58,6 +58,18 @@ def bad_request_response( request, message : str = None, force_json : bool = Fal
                            context = context )
 
 
+def improperly_configured_response( request, message : str = None, force_json : bool = False ):
+    if not message:
+        message = 'Improperly configured.'
+    context = { 'message': message }
+    return error_response( request = request,
+                           sync_template_name = "pages/improperly_configured.html",
+                           async_template_name = "modals/improperly_configured.html",
+                           status_code = 501,
+                           force_json = force_json,
+                           context = context )
+
+
 def not_authorized_response( request, message : str = None, force_json : bool = False ):
     if not message:
         message = 'Not authorized.'

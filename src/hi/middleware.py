@@ -3,6 +3,7 @@ import logging
 from django.conf import settings
 from django.core.exceptions import (
     BadRequest,
+    ImproperlyConfigured,
     PermissionDenied,
     SuspiciousOperation,
 )
@@ -58,6 +59,8 @@ class ExceptionMiddleware(object):
         
         if isinstance( exception, BadRequest ):
             return views.bad_request_response(request, message=str(exception))
+        if isinstance( exception, ImproperlyConfigured ):
+            return views.improperly_configured_response(request, message=str(exception))
         if isinstance( exception, SuspiciousOperation ):
             return views.bad_request_response(request, message=str(exception))
         if isinstance( exception, PermissionDenied ):

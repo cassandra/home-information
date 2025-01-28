@@ -6,8 +6,8 @@ from hi.apps.common.utils import str_to_bool
 from hi.apps.config.settings_manager import SettingsManager
 from hi.apps.notify.notification_queue import NotificationQueue
 
-from .email_sender import EmailSender
-from .transient_models import EmailData, Notification, NotificationItem
+from .email_sender import EmailData, EmailSender
+from .transient_models import Notification, NotificationItem
 from .settings import NotifySetting
 
 logger = logging.getLogger(__name__)

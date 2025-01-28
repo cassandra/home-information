@@ -375,7 +375,7 @@ else:
 #
 BASE_URL_FOR_EMAIL_LINKS = 'https://{SITE_DOMAIN}'
 
-# When tests functionalityt requires knowing if in unit test context.
+# When tests functionality requires knowing if in unit test context.
 UNIT_TESTING = False
 
 # In development and debugging, the debug noise and interference from the

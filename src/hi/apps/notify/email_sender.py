@@ -1,21 +1,61 @@
 from asgiref.sync import sync_to_async
+from dataclasses import dataclass, field
 import logging
-from typing import Dict
+from typing import Dict, List, Union
 
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+from django.http import HttpRequest
 from django.urls import reverse
 
 from hi.apps.common.email_utils import send_html_email
 from hi.apps.common.utils import hash_with_seed
 
 from .models import UnsubscribedEmail
-from .transient_models import EmailData
 
 logger = logging.getLogger(__name__)
 
 
 class UnsubscribedEmailError(Exception):
     pass
+
+
+@dataclass
+class EmailData:
+    """
+    Input data format for sending emails with EmailSender. Caller defines
+    the three required templates for formatting the email. The email sender
+    will create a template context that includes the following variables
+    that should be used in the email:
+
+        BASE_URL  - Use this to forms any needed site links.
+        HOME_URL - Url to the site's main landing page page.
+        UNSUBSCRIBE_URL - Include as best practice if you send email more broadly.
+
+    The templates are best defined by extending some pre-defined base
+    templates to make all emails have a consistent formatting. e.g.,
+    Unsubscribe URL appearing in footer.
+    """
+
+    # Set the request to None for background tasks, but also make sure
+    # settings.BASE_URL_FOR_EMAIL_LINKS is set.
+    #
+    request                     : HttpRequest
+    
+    subject_template_name       : str
+    message_text_template_name  : str
+    message_html_template_name  : str
+    to_email_address            : Union[ str, List[ str ]]
+
+    # Defaults to system-wide settings.DEFAULT_FROM_EMAIL
+    from_email_address          : str             = None
+    
+    template_context            : Dict[str, str]  = field( default_factory = dict )
+    files                       : List            = None  # For attachments
+    non_blocking                : bool            = True
+                  
+    # For testing (can use the unsubscribe link to test for the original intended "to" email)
+    override_to_email_address   : str             = None
 
 
 class EmailSender:
@@ -39,6 +79,7 @@ class EmailSender:
         return
         
     def _send_helper(self):
+        self._ensure_email_configured()
         
         context = self._data.template_context
         self._add_base_url( context = context )
@@ -101,3 +142,15 @@ class EmailSender:
             raise UnsubscribedEmailError( f'Email address is unsubscribed for {email_address}' )
         return
     
+    def _ensure_email_configured( self ):
+        for setting_name in [ 'EMAIL_BACKEND',
+                              'EMAIL_HOST',
+                              'EMAIL_PORT',
+                              'EMAIL_HOST_USER',
+                              'DEFAULT_FROM_EMAIL',
+                              'SERVER_EMAIL' ]:
+            email_setting = getattr( settings, setting_name )
+            if not email_setting:
+                raise ImproperlyConfigured( f'Email is not configured. Missing "{setting_name}".' )
+            continue
+        return

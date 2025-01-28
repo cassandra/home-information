@@ -5,7 +5,7 @@ from django.http import HttpRequest
 from django.urls import reverse
 
 from hi.apps.common.singleton import Singleton
-from hi.apps.common.email_sender import EmailSender, EmailSenderData
+from hi.apps.notify.email_sender import EmailData, EmailSender
 
 from .transient_models import UserAuthenticationData
 
@@ -14,6 +14,10 @@ logger = logging.getLogger(__name__)
 
 class SigninManager( Singleton ):
 
+    SIGNIN_SUBJECT_TEMPLATE_NAME = 'user/emails/signin_magic_link_subject.txt'
+    SIGNIN_MESSAGE_TEXT_TEMPLATE_NAME = 'user/emails/signin_magic_link_message.txt'
+    SIGNIN_MESSAGE_HTML_TEMPLATE_NAME = 'user/emails/signin_magic_link_message.html'
+    
     def __init_singleton__(self):
         return
     
@@ -21,22 +25,6 @@ class SigninManager( Singleton ):
                                       request        : HttpRequest,
                                       user_auth_data : UserAuthenticationData ):
 
-        _ = self.send_verify_email_helper(
-            request = request,
-            user_auth_data = user_auth_data,
-            subject_template_name = 'user/emails/signin_magic_link_subject.txt',
-            message_text_template_name = 'user/emails/signin_magic_link_message.txt',
-            message_html_template_name ='user/emails/signin_magic_link_message.html',
-        )
-        return
-
-    def send_verify_email_helper( self,
-                                  request                     : HttpRequest,
-                                  user_auth_data              : UserAuthenticationData,
-                                  subject_template_name       : str,
-                                  message_text_template_name  : str,
-                                  message_html_template_name  : str,
-                                  ):
         to_email_address = user_auth_data.email_address
         page_url = request.build_absolute_uri(
             reverse( 'user_signin_magic_link',
@@ -48,11 +36,11 @@ class SigninManager( Singleton ):
             'page_url': page_url,
             'magic_code': user_auth_data.magic_code,
         }
-        email_sender_data = EmailSenderData(
+        email_sender_data = EmailData(
             request = request,
-            subject_template_name = subject_template_name,
-            message_text_template_name = message_text_template_name,
-            message_html_template_name = message_html_template_name,
+            subject_template_name = self.SIGNIN_SUBJECT_TEMPLATE_NAME,
+            message_text_template_name = self.SIGNIN_MESSAGE_TEXT_TEMPLATE_NAME,
+            message_html_template_name = self.SIGNIN_MESSAGE_HTML_TEMPLATE_NAME,
             to_email_address = to_email_address,
             template_context = email_template_context,
             non_blocking = True,
