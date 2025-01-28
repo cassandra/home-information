@@ -79,7 +79,7 @@ class EmailSender:
         return
         
     def _send_helper(self):
-        self._ensure_email_configured()
+        self._assert_email_configured()
         
         context = self._data.template_context
         self._add_base_url( context = context )
@@ -142,7 +142,23 @@ class EmailSender:
             raise UnsubscribedEmailError( f'Email address is unsubscribed for {email_address}' )
         return
     
-    def _ensure_email_configured( self ):
+    def _assert_email_configured( self ):
+        missing_names = self.get_missing_email_setting_names()
+        if missing_names:
+            raise ImproperlyConfigured( 'Email is not configured. Missing: %s.'
+                                        % ', '.join( missing_names ))
+        return
+    
+    @classmethod
+    def is_email_configured( cls ) -> bool:
+        missing_names = cls.get_missing_email_setting_names()
+        if missing_names:
+            return False
+        return True
+    
+    @classmethod
+    def get_missing_email_setting_names( cls ) -> List[ str ]:
+        missing_names = list()
         for setting_name in [ 'EMAIL_BACKEND',
                               'EMAIL_HOST',
                               'EMAIL_PORT',
@@ -151,6 +167,6 @@ class EmailSender:
                               'SERVER_EMAIL' ]:
             email_setting = getattr( settings, setting_name )
             if not email_setting:
-                raise ImproperlyConfigured( f'Email is not configured. Missing "{setting_name}".' )
+                missing_names.append( setting_name )
             continue
-        return
+        return missing_names

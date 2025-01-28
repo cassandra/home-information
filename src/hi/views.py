@@ -177,7 +177,6 @@ class StartView( View ):
         # First actions need edit ability.
         request.view_parameters.view_mode = ViewMode.EDIT
         request.view_parameters.to_session( request )
-    
-        context = {
+        context = {   
         }
         return render( request, 'pages/start.html', context )

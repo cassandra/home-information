@@ -2,6 +2,17 @@
 
 {% block interstitial_content %}
 <div>
+  {% if email_not_configured %}
+  <div class="alert alert-danger">
+    <div class="h4" >Email Not Configured</div>
+    <p>
+      The email settings are is not properly configured.  The Sign In feature requires emails to work.
+    </p>
+    <p class="font-weight-bold">
+      You will not be able to sign in unless you disable the Sign In feature or properly configure the email settings.
+    </p>
+  </div>
+  {% endif %}
   <form class="sigin form" method="post" 
 	action="{% url 'user_signin' %}"
 	data-synchronous="true">

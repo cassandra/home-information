@@ -47,6 +47,7 @@ class HiGridView(View):
     TOP_TEMPLATE_NAME = 'panes/top_buttons.html'    
     BOTTOM_TEMPLATE_NAME = 'panes/bottom_buttons.html'    
     SIDE_FALLBACK_TEMPLATE_NAME = 'panes/side_fallback.html'
+    TOP_FALLBACK_TEMPLATE_NAME = 'panes/top_fallback.html'
         
     def get_main_template_name( self ) -> str:
         raise NotImplementedError('Subclasses must override this method.')
@@ -60,9 +61,10 @@ class HiGridView(View):
         raise NotImplementedError('Subclasses must override this method.')
     
     def get_top_template_name_and_context( self, request, *args, **kwargs ):
-        """ Subclasses can override this i sneeded. """
+        """ Subclasses can override this if sneeded. """
         if not request.view_parameters.location:
-            return dict()
+            return ( self.TOP_FALLBACK_TEMPLATE_NAME, dict() )
+        
         location_list = list( Location.objects.all() )
         location_view_list = list( request.view_parameters.location.views.order_by( 'order_id' ))
         context = {

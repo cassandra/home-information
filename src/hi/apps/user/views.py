@@ -10,6 +10,8 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.views.generic import View
 
+from hi.apps.notify.email_sender import EmailSender
+
 from . import forms
 from .magic_code_generator import MagicCodeStatus, MagicCodeGenerator
 from .signin_manager import SigninManager
@@ -21,7 +23,10 @@ logger = logging.getLogger(__name__)
 class UserSigninView( View ):
 
     def get(self, request, *args, **kwargs):
-        return render( request, 'user/pages/signin.html' )
+        context = {
+            'email_not_configured': not EmailSender.is_email_configured(),
+        }
+        return render( request, 'user/pages/signin.html', context )
 
     def post(self, request, *args, **kwargs):
         if request.user.is_authenticated:
