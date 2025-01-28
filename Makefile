@@ -11,8 +11,12 @@ docker-build:	Dockerfile
 		--label "build-date=$(NOW_DATE)" \
 		--tag hi:$(HI_VERSION) .
 
-docker-run:	Dockerfile flutter-webapp-build
+docker-run:	.private/env/local.sh Dockerfile
 	./run_container.sh
 
 docker-stop:	
 	docker stop hi
+
+local-env:	.private/env/local.sh
+	./packaging/env-generate.py
+

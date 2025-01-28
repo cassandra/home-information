@@ -25,7 +25,9 @@ COPY src /src
 
 EXPOSE 8000
 
-VOLUME /data
-RUN mkdir -p /data
+VOLUME /data/database
+RUN mkdir -p /data/database
+VOLUME /data/media
+RUN mkdir -p /data/media
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf" ]
