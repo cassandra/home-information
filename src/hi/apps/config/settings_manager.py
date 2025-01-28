@@ -1,6 +1,6 @@
 from datetime import datetime
 import logging
-from threading import local
+from threading import local, Lock
 from typing import List
 
 from django.apps import apps
@@ -27,6 +27,7 @@ class SettingsManager( Singleton ):
         self._subsystem_list = list()
         self._attribute_value_map = dict()
         self._change_listeners = list()
+        self._attributes_lock = Lock()
 
         app_settings_list = self._discover_app_settings()
         self._subsystem_list = self._load_or_create_settings( app_settings_list = app_settings_list )
@@ -34,14 +35,19 @@ class SettingsManager( Singleton ):
         return
 
     def reload(self):
-        self._attribute_value_map = dict()
-        for subsystem in self._subsystem_list:
-            for subsystem_attribute in subsystem.attributes.all():
-                attr_type = subsystem_attribute.setting_key
-                self._attribute_value_map[attr_type] = subsystem_attribute.value
+        self._attributes_lock.acquire()
+        try:
+            self._attribute_value_map = dict()
+            for subsystem in self._subsystem_list:
+                subsystem.refresh_from_db()
+                for subsystem_attribute in subsystem.attributes.all():
+                    attr_type = subsystem_attribute.setting_key
+                    self._attribute_value_map[attr_type] = subsystem_attribute.value
+                    continue
                 continue
-            continue
-
+        finally:
+            self._attributes_lock.release()
+            
         self._notify_change_listeners()
         return
 
@@ -69,6 +75,7 @@ class SettingsManager( Singleton ):
         return self._attribute_value_map.get( setting_enum.key )
 
     def set_setting_value( self, setting_enum : SettingEnum, value : str ):
+        self._attributes_lock.acquire()
         try:
             db_attribute = SubsystemAttribute.objects.get(
                 setting_key = setting_enum.key,
@@ -79,6 +86,8 @@ class SettingsManager( Singleton ):
 
         except SubsystemAttribute.DoesNotExist:
             raise KeyError( f'No setting "{setting_enum.name}"  found.' )
+        finally:
+            self._attributes_lock.release()
         return
 
     def _discover_app_settings(self) -> List[ AppSettings ]:

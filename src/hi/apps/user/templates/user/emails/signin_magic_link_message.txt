@@ -1,10 +1,9 @@
-{% extends "user/emails/emailer_message.txt" %}
+{% extends "notify/emails/base_email_message.txt" %}
 {% load common_template_helpers %}
-{% block content %}Greetings!
+{% block content %}Home Information Sign In
 
 Your access code is:
 
     {{ magic_code }}
 
-Note that this code will expire after {{ magic_code_lifetime_minutes }} minutes. The code is not case sensitive.
-{% endblock %}
+Note that this code will expire after {{ magic_code_lifetime_minutes }} minutes. The code is not case sensitive.{% endblock %}

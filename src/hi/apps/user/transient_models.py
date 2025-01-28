@@ -12,13 +12,19 @@ logger = logging.getLogger(__name__)
 
 class UserAuthenticationData:
 
-    def __init__( self, request : HttpRequest, override_user : UserType = None ):
+    def __init__( self,
+                  request        : HttpRequest,
+                  override_user  : UserType = None,
+                  override_email : str = None ):
         if override_user:
             self._user = override_user
         else:
             self._user = request.user
 
-        self._email_address = self._user.email
+        if override_email:
+            self._email_address = override_email
+        else:
+            self._email_address = self._user.email
         
         # We re-purpose the clever way tokens are used for password resets in Django
         token_generator = PasswordResetTokenGenerator()

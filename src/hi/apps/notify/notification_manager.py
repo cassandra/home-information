@@ -60,7 +60,7 @@ class NotificationManager(Singleton):
         )
         email_address_list = parse_emails_from_text( text = email_addresses_str )
         if not email_address_list:
-            logger.debug( f'No valid notification emails defined. Ignoring: {notification}.' )
+            logger.info( f'No valid notification emails defined. Ignoring: {notification}.' )
             return False
 
         logger.debug( f'Sending notification email to "{email_address_list}": {notification}.' )

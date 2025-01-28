@@ -3,12 +3,12 @@
   <head>
     <style>
       body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-     .email-container { border: 4px solid #040408; padding: 0; margin: 0; }
+     .email-container { border: 4px solid #f45f36; padding: 0; margin: 0; }
      .email-inner { border: 4px solid white; padding: 0; margin: 0; }
      .email-header { border: 4px solid #177072; padding: 0; }
-     .email-header tr { background-color: #177072; }
-     .email-logo { width: 128px; padding-left: 2px; padding-bottom: 4px; }
-     .email-title { font-size: 18px; font-weight: 800; color: white; padding: 12px; }
+     .email-header tr { background-color: #fefeff; }
+     .email-logo { width: 149px; padding-left: 8px; padding-right: 8px; }
+     .email-title { font-size: 18px; font-weight: 800; color: #177072; padding-left: 8px; padding-right: 8px; }
      .email-content { margin: 8px; }
      .email-unsubscribe { margin: 8px; color: #888888; font-size: 0.8rem; text-decoration: none; }
      img.logo { height: 48px; width: auto; }
@@ -25,7 +25,7 @@
                 {% block logo %}
                 {% if BASE_URL %}
                 <a href="{{ BASE_URL }}" alt="Home Information Home">
-                  <img class="logo" src="{{ BASE_URL }}{% static 'img/hi-icon-196x196.png' %}"
+                  <img class="logo" src="{{ BASE_URL }}{% static 'img/hi-logo-149x64.png' %}"
 		       alt="Home Information Logo"/>
                 </a>
                 {% endif %}

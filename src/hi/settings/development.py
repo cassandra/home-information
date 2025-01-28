@@ -4,6 +4,8 @@ from .base import *
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+INSTALLED_APPS += [ 'hi.tests' ]
+
 ALLOWED_HOSTS = [
     '127.0.0.1',
     '192.168.100.6',
