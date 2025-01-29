@@ -4,7 +4,8 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends supervisor nginx redis-server \
     && mkdir -p /var/log/supervisor \
     && mkdir -p /etc/supervisor/conf.d \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --upgrade pip
 
 WORKDIR /src
 
@@ -12,7 +13,13 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONPATH /src
 
-RUN pip install --upgrade pip
+EXPOSE 8000
+
+VOLUME /data/database /data/media
+RUN mkdir -p /data/database && mkdir -p /data/media
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/health/ || exit 1
 
 # Assumes base.txt is all that is needed (ignores dev-specific dependencies)
 COPY src/hi/requirements/base.txt /src/requirements.txt
@@ -26,11 +33,6 @@ RUN chmod +x /src/entrypoint.sh
 
 COPY src /src
 
-EXPOSE 8000
-
-VOLUME /data/database
-RUN mkdir -p /data/database
-VOLUME /data/media
-RUN mkdir -p /data/media
+ENTRYPOINT ["/src/entrypoint.sh"]
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf" ]

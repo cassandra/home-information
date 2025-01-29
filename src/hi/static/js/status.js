@@ -141,8 +141,13 @@
 	if ( ServerStartTimestampAttr in respObj ) {
 	    let startServerDate = new Date( respObj[ServerStartTimestampAttr] );
 	    if ( gLastStartServerDate ) {
-		if ( startServerDate.getTime() != gLastStartServerDate.getTime() ) {
-		    if ( Hi.DEBUG ) { console.log( "Server restart detected. Reloading page." ); }
+		const timeDifference = Math.abs(startServerDate - gLastStartServerDate.getTime());
+		const tolerance = 60 * 1000; // milliseconds
+		if (timeDifference > tolerance) {
+		    if ( Hi.DEBUG ) {
+			console.log( 'Server restart detected.'
+				     + `Reloading page. ${gLastStartServerDate} -> ${startServerDate}` );
+		    }
 		    gLastStartServerDate = startServerDate;
 		    location.reload(true);
 		}

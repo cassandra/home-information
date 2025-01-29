@@ -1,13 +1,13 @@
 #!/bin/bash
 
-ENV_VAR_FILE=".private/env/local.sh"
-DATABASE_DATA_DIR="/var/hi/database"
-MEDIA_DATA_DIR="/var/hi/media"
+HI_VERSION=$(cat HI_VERSION | tr -d '[:space:]')
+ENV_VAR_FILE=".private/env/local.dev"
+DATA_DIR="${HOME}/.hi"
 EXTERNAL_PORT=9411
 BACKGROUND_FLAGS=""
 
 usage() {
-    echo "Usage: $0 [-env ENV_VAR_FILE] [-db DATABASE_DATA_DIR] [-media MEDIA_DATA_DIR] [-port EXTERNAL_PORT] [-bg]"
+    echo "Usage: $0 [-env ENV_VAR_FILE] [-db DATA_DIR] [-port EXTERNAL_PORT] [-bg]"
     exit 1
 }
 
@@ -17,12 +17,8 @@ while [[ $# -gt 0 ]]; do
             ENV_VAR_FILE="$2"
             shift 2
             ;;
-        -db)
-            DATABASE_DATA_DIR="$2"
-            shift 2
-            ;; 
-        -media)
-            MEDIA_DATA_DIR="$2"
+        -dir)
+            DATA_DIR="$2"
             shift 2
             ;; 
 	-port)
@@ -39,6 +35,9 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+DATABASE_DATA_DIR="${DATA_DIR}/database"
+MEDIA_DATA_DIR="${DATA_DIR}/media"
+
 if [[ ! -f "$ENV_VAR_FILE" ]]; then
     echo "Error: Environment file '$ENV_VAR_FILE' does not exist."
     exit 1
@@ -52,7 +51,6 @@ if [[ -d "$DATABASE_DATA_DIR" ]]; then
 else
     echo "Creating directory '$DATABASE_DATA_DIR'..."
     mkdir -p "$DATABASE_DATA_DIR"
-    sudo chown -R "$USER:$USER" "$DATABASE_DATA_DIR"
     chmod -R 775 "$DATABASE_DATA_DIR"
 fi
 
@@ -64,14 +62,15 @@ if [[ -d "$MEDIA_DATA_DIR" ]]; then
 else
     echo "Creating directory '$MEDIA_DATA_DIR'..."
     mkdir -p "$MEDIA_DATA_DIR"
-    sudo chown -R "$USER:$USER" "$MEDIA_DATA_DIR"
     chmod -R 775 "$MEDIA_DATA_DIR"
 fi
 
-if ! docker image inspect hi > /dev/null 2>&1; then
-    echo "Error: Docker image 'hi' does not exist. Please build it first."
+if ! docker image inspect "hi:${HI_VERSION}" > /dev/null 2>&1; then
+    echo "Error: Docker image 'hi' does not exist. Please build it first: 'make docker-build'"
     exit 1
 fi
+
+docker rm hi 2>/dev/null || true
 
 docker run $BACKGROUND_FLAGS \
        --name hi \

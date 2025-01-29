@@ -9,14 +9,16 @@ docker-build:	Dockerfile
 		--label "name=hi" \
 		--label "version=$(HI_VERSION)" \
 		--label "build-date=$(NOW_DATE)" \
-		--tag hi:$(HI_VERSION) .
+		--tag hi:$(HI_VERSION) \
+		--tag hi:latest .
 
-docker-run:	.private/env/local.sh Dockerfile
-	./run_container.sh
+docker-run:	.private/env/local.dev Dockerfile
+	./deploy/run_container.sh
 
 docker-stop:	
 	docker stop hi
 
-env-build:	.private/env/local.sh
-	./env-generate.py
+env-build:	.private/env/local.dev
+	./deploy/env-generate.py
 
+.private/env/local.dev:

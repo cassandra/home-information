@@ -1,12 +1,20 @@
 import json
 from typing import Dict
 
-from django.http import HttpRequest, HttpResponse, HttpResponseRedirect, HttpResponseNotFound
+from django.db import connection
+from django.http import (
+    HttpRequest,
+    HttpResponse,
+    HttpResponseRedirect,
+    HttpResponseNotFound,
+    JsonResponse,
+)
 from django.shortcuts import render
 from django.urls import reverse
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
+from hi.apps.common.healthcheck import do_healthcheck
 from hi.apps.common.utils import is_ajax
 from hi.apps.location.models import Location
 
@@ -149,6 +157,14 @@ def edit_required_response( request, message : str = None, force_json : bool = F
 def home_javascript_files( request, filename ):
     return render(request, filename, {}, content_type = "text/javascript")
 
+    
+class HealthView( View ):
+    
+    def get(self, request, *args, **kwargs):
+        status_dict = do_healthcheck()
+        response_status = 200 if status_dict['is_healthy'] else 500
+        return JsonResponse( {'status': status_dict }, status=response_status)
+
 
 class HomeView( View ):
 
@@ -163,8 +179,8 @@ class HomeView( View ):
         else:
             redirect_url = reverse( 'location_view_default' )
         return HttpResponseRedirect( redirect_url )
-
-    
+        
+        
 class StartView( View ):
 
     def get(self, request, *args, **kwargs):

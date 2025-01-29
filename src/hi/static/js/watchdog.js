@@ -2,7 +2,7 @@
 
     window.Hi = window.Hi || {};
 
-    const MODULE_NAME = 'svg-location';    
+    const MODULE_NAME = 'watchdog';    
 
     const HiWatchdog = {
 	add: function( type, initFunction, normalRefreshMs ) {

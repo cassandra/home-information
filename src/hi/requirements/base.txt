@@ -15,8 +15,10 @@ django-picklefield==3.2
 django-pipeline-csscompressor==0.1
 django-pipeline==3.1.0
 frozenlist==1.4.1
+gunicorn==23.0.0
 idna==3.7
 imutils==0.5.4
+jsmin==3.0.1
 multidict==6.0.5
 mysql-connector-python==9.0.0
 numpy==2.1.0

@@ -92,8 +92,8 @@
 // that variable exists, this module will add the header "X-AN-Version"
 // with the value of that variable. The server can use this to detect if
 // that matches the currently running server version and take action if
-// needed.  A typical action is to render a dialog to the use to force a
-// synchronous refresh to ensure the latest version of the CSS and JS
+// needed.  A typical action is to render a dialog to force a
+// synchronous refresh and ensure the latest version of the CSS and JS
 // assets are loaded.
 
 (function() {

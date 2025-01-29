@@ -97,7 +97,7 @@ class HiEnvironmentGenerator:
             self._settings_map['HI_REDIS_KEY_PREFIX'] = self._env_name
             self._settings_map['HI_EMAIL_SUBJECT_PREFIX'] = f'[{self._env_name}] '
             
-        self._destination_filename = os.path.join( self.SECRETS_DIRECTORY, f'{self._env_name}.sh' )
+        self._destination_filename = os.path.join( self.SECRETS_DIRECTORY, f'{self._env_name}.dev' )
         return
     
     def generate_env_file( self ):
@@ -107,18 +107,18 @@ class HiEnvironmentGenerator:
 
         email_settings = self._get_email_settings()
 
-        django_admin_email = email_settings.email_address
-        django_admin_password = self._generate_memorable_password()
-        
-        from_email = email_settings.email_address
-        server_email = email_settings.email_address
-
         # Emails are required for signin since it uses emailed codes, not passwords.
         if email_settings.is_valid:
             require_signin = self.input_boolean( 'Configure to require user sign in?', default = False )
             if require_signin:
                 self._settings_map['HI_SUPPRESS_AUTHENTICATION'] = 'false'
         
+        django_admin_email = email_settings.email_address
+        django_admin_password = self._generate_memorable_password()
+        
+        from_email = email_settings.email_address
+        server_email = email_settings.email_address
+
         self._settings_map['DJANGO_SECRET_KEY'] = self._generate_secret_key()
         self._settings_map['DJANGO_SUPERUSER_EMAIL'] = django_admin_email
         self._settings_map['DJANGO_SUPERUSER_PASSWORD'] = django_admin_password
@@ -256,7 +256,7 @@ class HiEnvironmentGenerator:
     def _write_file( self ):
         with open( self._destination_filename, 'w' ) as fh:
             for name, value in self._settings_map.items():
-                fh.write( f'export {name}="{value}"\n' )
+                fh.write( f'{name}={value}\n' )
                 continue
         self.print_success( f'File created: {self._destination_filename}' )
 
