@@ -14,7 +14,7 @@ from hi.apps.common.utils import is_ajax
 from hi.apps.location.edit.views import LocationViewManageItemsView
 from hi.apps.collection.edit.views import CollectionManageItemsView
 from hi.apps.collection.models import Collection
-from hi.apps.console.console_manager import ConsoleManager
+from hi.apps.console.console_mixin import ConsoleMixin
 from hi.apps.location.models import Location
 from hi.apps.security.security_manager import SecurityManager
 
@@ -26,7 +26,7 @@ from hi.hi_async_view import HiSideView
 logger = logging.getLogger(__name__)
     
 
-class HiGridView(View):
+class HiGridView( View, ConsoleMixin ):
     """
     - The Hi app 'grid' is an HTML layout that is defined in pages/hi_grid.html.
     - Most views participate in keeping that same four-pane layout.
@@ -97,7 +97,8 @@ class HiGridView(View):
                         side_view = CollectionManageItemsView()
 
             if not side_view:
-                return ConsoleManager().get_side_template_name_and_context( request, *args, **kwargs )
+                console_manager = self.console_manager()
+                return console_manager.get_side_template_name_and_context( request, *args, **kwargs )
 
             if not isinstance( side_view, HiSideView ):
                 raise ValueError( f'Side URL has view not side class: {side_view.__class__.__name__}' )

@@ -1,11 +1,13 @@
 import asyncio
 import logging
+import threading
 from typing import List, Type
 
 from django.apps import apps
 from django.conf import settings
 
-from hi.apps.common.singleton import Singleton
+import hi.apps.common.debug_utils as debug_utils
+from hi.apps.common.singleton import Singleton, SingletonGemini
 from hi.apps.common.module_utils import import_module_safe
 
 from .periodic_monitor import PeriodicMonitor
@@ -13,54 +15,113 @@ from .periodic_monitor import PeriodicMonitor
 logger = logging.getLogger(__name__)
 
 
-class AppMonitorManager( Singleton ):
+class AppMonitorManager( SingletonGemini ):
 
     def __init_singleton__( self ):
-        self._monitor_map = {}  # Known monitors
-        self._event_loop = None  # Added dynamically and indicates if thread/event loop initialized
+        print( 'START-USER-INIT' )
+
+        
+
+        
+        self._monitor_map = dict()
+        self._initialized = False
+        self._data_lock = threading.Lock()
+
+
+        import os
+        pid = os.getpid()
+        tid = threading.get_ident()
+        logger.info( f'AppMonitorManager.__init__: self={self}, PID={pid}, TID={tid}' )
+
+
+        print( 'END-USER-INIT' )
+
+        
         return
     
     async def initialize(self) -> None:
-        if self._event_loop:
-            self.shutdown()
+        with self._data_lock:
+
+
+
+            
+            import os
+            pid = os.getpid()
+            tid = threading.get_ident()
+            logger.info( f'AppMonitorManager.initialize: self={self}, PID={pid}, TID={tid}, init={self._initialized}' )
+
+
+
         
-        self._event_loop = asyncio.get_event_loop()
+
         
-        logger.info("Discovering app monitors...")
+        
+            if self._initialized:
+                logger.info('MonitorManager already initialize. Skipping.')
+                return
+            self._initialized = True
+
+
+
+            # INDENT HERE
+
+
+
+            
+        logger.info('Discovering and starting app monitors...')
         periodic_monitor_class_list = self._discover_periodic_monitors()        
         for monitor_class in periodic_monitor_class_list:
             monitor = monitor_class()
+
+
+
+            print( f'MONITOR TRY {monitor.id}' )
+
+
+
             self._monitor_map[monitor.id] = monitor
             if not monitor.is_running:
 
-                if settings.DEBUG and settings.SUPPRESS_MONITORS:
-                    logger.debug(f"Skipping monitor: {monitor.id}. See SUPPRESS_MONITORS = True")
-                    return
-                
-                logger.debug(f"Starting monitor: {monitor.id}")
-                asyncio.run_coroutine_threadsafe( monitor.start(), self._event_loop )
-            continue
 
+                print( f'MONITOR NOT RUNNING {monitor.id}' )
+
+
+                if settings.DEBUG and settings.SUPPRESS_MONITORS:
+                    logger.debug(f'Skipping app monitor: {monitor.id}. See SUPPRESS_MONITORS = True')
+                    continue
+
+                logger.debug( f'Starting app monitor: {monitor.id}' )
+
+
+                
+                print( f'PRE-MONITOR-START: %s' % debug_utils.get_event_loop_context() )
+
+                
+                
+                asyncio.create_task( monitor.start() )
+
+
+                
+                print( f'POST-CREATE-TASK {monitor.id}' )
+                print( f'POST-CREATE {monitor.id}: %s' % debug_utils.get_event_loop_context() )
+
+
+
+            else:
+                print( f'MONITOR ALREADY RUNNING {monitor.id}' )
+
+            continue
         return
 
-    def shutdown(self) -> None:
-        if not self._event_loop:
-            logger.info("Cannot stop all monitors. No event loop.")
-            return
-        
-        logger.info("Stopping all registered monitors...")
-
+    async def shutdown(self) -> None:
+        logger.info('Stopping all registered app monitors...')
         for monitor in self._monitor_map.values():
+            logger.debug( f'Stopping app monitor: {monitor.id}' )
             monitor.stop()
             continue
-
-        if self._event_loop.is_running():
-            self._event_loop.stop()
-        
         return
 
     def _discover_periodic_monitors(self) -> List[ Type[ PeriodicMonitor ]]:
-
         periodic_monitor_class_list = list()
         for app_config in apps.get_app_configs():
             if not app_config.name.startswith( 'hi.apps' ):

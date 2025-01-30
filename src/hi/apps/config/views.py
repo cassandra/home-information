@@ -8,7 +8,7 @@ from hi.hi_grid_view import HiGridView
 
 from .enums import ConfigPageType
 from .forms import SubsystemAttributeFormSet
-from .settings_manager import SettingsManager
+from .settings_mixins import SettingsMixin
 
 
 class ConfigPageView( HiGridView ):
@@ -63,7 +63,7 @@ class ConfigPageView( HiGridView ):
         raise NotImplementedError('Subclasses must override this method.')
 
     
-class ConfigSettingsView( ConfigPageView ):
+class ConfigSettingsView( ConfigPageView, SettingsMixin ):
 
     @property
     def config_page_type(self) -> ConfigPageType:
@@ -74,7 +74,7 @@ class ConfigSettingsView( ConfigPageView ):
 
     def get_main_template_context( self, request, *args, **kwargs ):
         
-        subsystem_list = SettingsManager().get_subsystems()
+        subsystem_list = self.settings_manager().get_subsystems()
 
         subsystem_attribute_formset_list = list()
         for subsystem in subsystem_list:
@@ -94,7 +94,7 @@ class ConfigSettingsView( ConfigPageView ):
 
     def post( self, request, *args, **kwargs ):
 
-        subsystem_list = SettingsManager().get_subsystems()
+        subsystem_list = self.settings_manager().get_subsystems()
 
         all_valid = True
         subsystem_attribute_formset_list = list()

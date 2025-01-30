@@ -1,6 +1,8 @@
 import asyncio
 import logging
 
+import hi.apps.common.debug_utils as debug_utils
+
 
 class PeriodicMonitor:
     """
@@ -26,15 +28,52 @@ class PeriodicMonitor:
         return self._is_running
     
     async def start(self) -> None:
+
+        print( 'PERIODIC START' )
+    
+
+
+        
         self._is_running = True
         await self.initialize()
         self._logger.info(f"{self.__class__.__name__} started.")
         try:
             while self._is_running:
+
+                
+                print( 'PRE_ALERT_QUERY' )
+    
+
                 await self.run_query()
+
+                
+                print( f'POST_ALERT_QUERY: %s' % debug_utils.get_event_loop_context() )
+
+
+
+                
+                try:
+                    await asyncio.sleep(self._query_interval_secs)
+                except asyncio.CancelledError:
+                    logger.warning("Task was cancelled! Cleaning up...")
+                    # Perform any necessary cleanup (e.g., closing connections)
+                    return  # Or raise the exception if you want it to propagate
+                except Exception as e: # Catch other exceptions
+                    logger.exception(f"An unexpected error occurred: {e}")
+                    # Handle the error appropriately (e.g., log, retry, etc.)
+
+                print( 'POST_ALERT_SELEEP' )
+
+
+
+                    
                 await asyncio.sleep( self._query_interval_secs )
-        except asyncio.CancelledError:
-            self._logger.info(f"{self.__class__.__name__} stopped.")
+
+                print( 'POST_ALERT_SELEEP' )
+    
+        except asyncio.CancelledError as ce:
+            self._logger.exception( 'Monitor cancelled' )
+            self._logger.info(f"{self.__class__.__name__} stopped. ({ce})")
         finally:
             await self.cleanup()
         return

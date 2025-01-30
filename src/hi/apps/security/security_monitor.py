@@ -1,7 +1,7 @@
 import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.config.settings_manager import SettingsManager
+from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.console.settings import ConsoleSetting
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
@@ -31,7 +31,7 @@ class SecurityMonitor( PeriodicMonitor ):
 
     async def _check_security_state( self ):
         logger.debug( 'Checking security state.' )
-        settings_manager = SettingsManager()
+        settings_manager = await self.settings_manager_async()
         current_datetime = datetimeproxy.now()
         tz_name = settings_manager.get_setting_value(
             ConsoleSetting.TIMEZONE,

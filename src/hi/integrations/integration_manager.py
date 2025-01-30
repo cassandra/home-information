@@ -2,7 +2,7 @@ from asgiref.sync import sync_to_async
 import asyncio
 import json
 import logging
-from threading import Lock
+import threading
 from typing import Dict, List
 
 from django.apps import apps
@@ -10,7 +10,7 @@ from django.conf import settings
 from django.db import transaction
 
 from hi.apps.attribute.enums import AttributeType
-from hi.apps.common.singleton import Singleton
+from hi.apps.common.singleton import Singleton, SingletonGemini
 from hi.apps.common.module_utils import import_module_safe
 
 from .enums import IntegrationAttributeType
@@ -24,13 +24,13 @@ from .transient_models import IntegrationMetaData
 logger = logging.getLogger(__name__)
 
 
-class IntegrationManager( Singleton ):
+class IntegrationManager( SingletonGemini ):
 
     def __init_singleton__( self ):
         self._integration_data_map : Dict[ str, IntegrationData ] = dict()
-        self._monitor_map = {}  # Known monitors
-        self._data_lock = Lock()
-        self._event_loop = None  # Added dynamically and indicates if thread/event loop initialized
+        self._monitor_map = dict()
+        self._initialized = False
+        self._data_lock = threading.Lock()
         return
 
     def get_integration_data_list( self, enabled_only = False ) -> List[ IntegrationData ]:
@@ -61,12 +61,22 @@ class IntegrationManager( Singleton ):
         raise KeyError( f'Unknown integration id "{integration_id}".' )
 
     async def initialize(self) -> None:
-        self._data_lock.acquire()
-        try:
+        with self._data_lock:
+            if self._initialized:
+                logger.info("IntegrationManager already initialize. Skipping.")
+                return
+            self._initialized = True
+            logger.info("Discovering and starting integration monitors...")
             await self._load_integration_data()
             await self._start_all_integration_monitors()
-        finally:
-            self._data_lock.release()
+        return
+        
+    async def shutdown(self) -> None:
+        logger.info("Stopping all integration monitors...")
+        for integration_id, monitor in self._monitor_map.items():
+            logger.debug( f'Stopping integration monitor: {integration_id}' )
+            monitor.stop()
+            continue
         return
         
     async def _load_integration_data(self) -> None:
@@ -96,83 +106,61 @@ class IntegrationManager( Singleton ):
         return
 
     async def _start_all_integration_monitors(self) -> None:
-        if self._event_loop:
-            self.shutdown()
-        
-        self._event_loop = asyncio.get_event_loop()
-        
+        logger.debug("Starting integration monitors...")
+
         for integration_data in self._integration_data_map.values():
             if not integration_data.is_enabled:
-                logger.debug( f'Skipping monitor start for {integration_data}. Integration is disabled.' )
+                logger.debug( f'Skipping disabled integration monitor: {integration_data}' )
                 continue
-            self._start_integration_monitor( integration_data = integration_data )
+            await self._start_integration_monitor( integration_data = integration_data )
             continue
         return
 
-    def _start_integration_monitor( self, integration_data : IntegrationData ):
+    async def _start_integration_monitor( self, integration_data : IntegrationData ):
         integration_id = integration_data.integration_id
-        logger.debug( f'Starting integration monitor for {integration_id}' )
+        logger.debug( f'Starting integration monitor: {integration_id}' )
 
-        assert self._event_loop is not None
-        
         if not integration_data.is_enabled:
-            logger.warning( f'Tried to start monitor for disabled integration: {integration_id}' )
+            logger.warning( f'Tried to start disabled integration monitor: {integration_id}' )
             return
 
         monitor = integration_data.integration_gateway.get_monitor()
         if not monitor:
-            logger.debug( f'No monitor defined {integration_id}' )
+            logger.debug( f'No integration monitor defined: {integration_id}' )
             return
         
         if integration_id in self._monitor_map:
             existing_monitor = self._monitor_map[integration_id]
             if existing_monitor.is_running:
-                logger.warning( f'Found existing running monitor for integration: {integration_id}' )
+                logger.warning( f'Found running integration monitor: {integration_id}' )
                 return
                 
         self._monitor_map[integration_id] = monitor
         if not monitor.is_running:
 
             if settings.DEBUG and settings.SUPPRESS_MONITORS:
-                logger.debug(f"Skipping monitor: {integration_id}. See SUPPRESS_MONITORS = True")
+                logger.debug(f"Skipping integration monitor: {integration_id}. See SUPPRESS_MONITORS = True")
                 return
             
-            logger.debug(f"Starting monitor: {integration_id}")
-            asyncio.run_coroutine_threadsafe( monitor.start(), self._event_loop )
+            logger.debug(f"Starting integration monitor: {integration_id}")
+            asyncio.create_task( monitor.start() )
         return
 
     def _stop_integration_monitor( self, integration_data : IntegrationData ):
         integration_id = integration_data.integration_id
-        logger.debug( f'Stopping integration monitor for {integration_id}' )
+        logger.debug( f'Stopping integration monitor: {integration_id}' )
 
         if integration_id not in self._monitor_map:
-            logger.debug( f'No monitor running for {integration_id}' )
+            logger.debug( f'No integration monitor running: {integration_id}' )
             return
 
         existing_monitor = self._monitor_map[integration_id]
         if existing_monitor.is_running:
             existing_monitor.stop()
         else:
-            logger.debug( f'Existing monitor is not running for {integration_id}' )
+            logger.debug( f'Existing integration monitor is not running: {integration_id}' )
 
         del self._monitor_map[integration_id]
-        return
-        
-    def shutdown(self) -> None:
-        if not self._event_loop:
-            logger.info("Cannot stop all monitors. No event loop.")
-            return
-        
-        logger.info("Stopping all integration monitors...")
-
-        for integration_id, monitor in self._monitor_map.items():
-            logger.debug( f'Stopping integration monitor for {integration_id}' )
-            monitor.stop()
-            continue
-
-        if self._event_loop.is_running():
-            self._event_loop.stop()
-        
         return
 
     def _discover_defined_integrations(self) -> Dict[ str, IntegrationGateway ]:
@@ -277,7 +265,7 @@ class IntegrationManager( Singleton ):
                 integration_data.integration.is_enabled = True
                 integration_data.integration.save()
                 integration_attribute_formset.save()
-            self._start_integration_monitor( integration_data = integration_data )
+            async_to_sync( self._start_integration_monitor )( integration_data = integration_data )
         finally:
             self._data_lock.release()
         return

@@ -9,7 +9,7 @@ from django.template.loader import get_template
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.redis_client import get_redis_client
 from hi.apps.common.singleton import Singleton
-from hi.apps.config.settings_manager import SettingsManager
+from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.console.settings import ConsoleSetting
 
 from hi.constants import DIVID
@@ -22,7 +22,7 @@ from .transient_models import SecurityStatusData
 logger = logging.getLogger(__name__)
 
 
-class SecurityManager(Singleton):
+class SecurityManager( Singleton, SettingsMixin ):
 
     DEFAULT_TRANSITION_DELAY_SECS = 5 * 60
     SECURITY_STATE_LABEL_DELAYED_AWAY = 'Away (Delayed)'
@@ -119,14 +119,14 @@ class SecurityManager(Singleton):
         elif security_state_action == SecurityStateAction.SET_AWAY:
             immediate_security_state = SecurityState.DISABLED
             future_security_state = SecurityState.AWAY
-            delay_mins_str = SettingsManager().get_setting_value(
+            delay_mins_str = self.settings_manager().get_setting_value(
                 SecuritySetting.SECURITY_AWAY_DELAY_MINS,
             )
 
         elif security_state_action == SecurityStateAction.SNOOZE:
             immediate_security_state = SecurityState.DISABLED
             future_security_state = self._security_state
-            delay_mins_str = SettingsManager().get_setting_value(
+            delay_mins_str = self.settings_manager().get_setting_value(
                 SecuritySetting.SECURITY_SNOOZE_DELAY_MINS,
             )
             
@@ -286,7 +286,7 @@ class SecurityManager(Singleton):
                 return
         
         # Else, revert to look at time of day to initialize the state.
-        settings_manager = SettingsManager()
+        settings_manager = self.settings_manager()
 
         tz_name = settings_manager.get_setting_value(
             ConsoleSetting.TIMEZONE,

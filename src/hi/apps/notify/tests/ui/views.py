@@ -5,7 +5,7 @@ from django.core.exceptions import BadRequest
 from django.shortcuts import render
 from django.views.generic import View
 
-from hi.apps.config.settings_manager import SettingsManager
+from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.notify.email_sender import EmailSender
 from hi.apps.notify.notify_mixins import NotificationMixin
 from hi.apps.notify.tests.synthetic_data import NotifySyntheticData
@@ -37,14 +37,14 @@ class TestUiViewEmailView( EmailTestViewView ):
         return dict()
 
     
-class TestUiSendEmailView( View, NotificationMixin ):
+class TestUiSendEmailView( View, SettingsMixin, NotificationMixin ):
 
     def get( self, request, *args, **kwargs ):
 
         if not EmailSender.is_email_configured():
             raise NotImplementedError('Email is not configured for this server.')
         
-        email_addresses_str = SettingsManager().get_setting_value(
+        email_addresses_str = self.settings_manager().get_setting_value(
             NotifySetting.NOTIFICATIONS_EMAIL_ADDRESSES,
         )
         if not email_addresses_str:

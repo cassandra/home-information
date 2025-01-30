@@ -27,13 +27,19 @@ class SettingsManager( Singleton ):
         self._subsystem_list = list()
         self._attribute_value_map = dict()
         self._change_listeners = list()
+        self._was_initialized = False
         self._attributes_lock = Lock()
+        return
 
+    def ensure_initialized(self):
+        if self._was_initialized:
+            return
         app_settings_list = self._discover_app_settings()
         self._subsystem_list = self._load_or_create_settings( app_settings_list = app_settings_list )
         self.reload()
+        self._was_initialized = True
         return
-
+    
     def reload(self):
         self._attributes_lock.acquire()
         try:
@@ -186,7 +192,9 @@ _thread_local = local()
 
 def do_settings_manager_reload():
     logger.debug( 'Reloading SettingsManager from model changes.')
-    SettingsManager().reload()
+    settings_manager = SettingsManager()
+    settings_manager = settings_manager.ensure_initialized()
+    settings_manager.reload()
     _thread_local.reload_registered = False
     return
 

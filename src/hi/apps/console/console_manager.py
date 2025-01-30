@@ -4,7 +4,7 @@ from typing import Dict, List
 from django.http import HttpRequest
 
 from hi.apps.common.singleton import Singleton
-from hi.apps.config.settings_manager import SettingsManager
+from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
@@ -18,14 +18,23 @@ from .transient_models import VideoStreamEntity
 logger = logging.getLogger(__name__)
 
 
-class ConsoleManager( Singleton, SensorResponseMixin ):
+class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin ):
 
     def __init_singleton__(self):
+        self._was_initialized = False
+        return
+
+    def ensure_initialized(self):
+        if self._was_initialized:
+            return
+        
         self._console_audio_map = self._build_console_audio_map()
         self._video_stream_entity_list = self._build_video_stream_entity_list()
 
-        SettingsManager().register_change_listener( self._reload_console_audio_map )
+        self.settings_manager().register_change_listener( self._reload_console_audio_map )
         EntityManager().register_change_listener( self._reload_video_stream_entity_list )
+
+        self._was_initialized = True
         return
 
     def is_console_locked( self, request : HttpRequest ) -> bool:
@@ -41,7 +50,7 @@ class ConsoleManager( Singleton, SensorResponseMixin ):
         return ( 'console/panes/hi_grid_side.html', context )
     
     def get_sleep_overlay_opacity( self ) -> str:
-        return SettingsManager().get_setting_value( ConsoleSetting.SLEEP_OVERLAY_OPACITY )
+        return self.settings_manager().get_setting_value( ConsoleSetting.SLEEP_OVERLAY_OPACITY )
 
     def _reload_console_audio_map( self ):
         logger.debug( 'Reloading console audio map' )
@@ -80,7 +89,8 @@ class ConsoleManager( Singleton, SensorResponseMixin ):
         
     def _build_console_audio_map( self ) -> Dict[ str, str ]:
         logger.debug( 'Building console audio map' )
-        settings_manager = SettingsManager()
+        settings_manager = self.settings_manager()
+
         console_audio_map = dict()
         for audio_signal in AudioSignal:
             if audio_signal.console_setting:

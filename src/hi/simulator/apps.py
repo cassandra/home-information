@@ -1,7 +1,6 @@
 import asyncio
 import os
 import signal
-import threading
 
 from django.apps import AppConfig
 
@@ -11,41 +10,44 @@ class SimulatorConfig(AppConfig):
     name = "hi.simulator"
 
     def ready(self):
-        from hi.simulator.simulator_manager import SimulatorManager
-        if os.getenv( "RUN_MAIN", None ) != "true":
+        if os.getenv( "RUN_MAIN", None ) is not None:
             # Avoid double initialization when using the reloader in development
             return
 
+
+
+        return
+
+
+        
+        # Note: This can be called multiple times by Django for the same
+        # process and thread. Ensure idempotency if needed.
+
         # This app.py initialization runs in synchronous mode, so we
-        # need to defer the background simulator manager tasks
-        # creation by creating a separate thread.
+        # need to delay the background monitor tasks creation until the
+        # asyncio event loop exists.
         #
         # This is for development only as simulator only runs in DEBUG
         #
-        thread = threading.Thread( target = self._start_simulators, daemon = True )
-        thread.start()
-
-        def handle_signal(signal_number, frame):
-            SimulatorManager().shutdown()
-            import sys
-            sys.exit(0)
-
-        signal.signal(signal.SIGINT, handle_signal)
-        signal.signal(signal.SIGTERM, handle_signal)              
-            
+        asyncio.run( self._delayed_start() )
         return            
 
-    def _start_simulators(self):
+    async def _delayed_start(self):
+        """ Runs after Django's startup to avoid event loop issues """
         from hi.simulator.simulator_manager import SimulatorManager
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop( loop )
-        simulator_manager = SimulatorManager()
-        try:
-            loop.create_task( simulator_manager.initialize() )
-            loop.run_forever()
-        except Exception as e:
-            print(f"Error in event loop: {e}")
 
-        finally:
+        await asyncio.sleep( 0 )  # Ensure we're in an event loop
+        simulator_manager = SimulatorManager()
+        asyncio.create_task( simulator_manager.initialize() )
+
+        def handle_signal( signal_number, frame ):
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete( simulator_manager.shutdown() )
             loop.close()
+            import sys
+            sys.exit( 0 )
+
+        signal.signal( signal.SIGINT, handle_signal )
+        signal.signal( signal.SIGTERM, handle_signal )
         return

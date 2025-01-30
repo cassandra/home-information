@@ -3,7 +3,7 @@ import logging
 from hi.apps.common.email_utils import parse_emails_from_text
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.utils import str_to_bool
-from hi.apps.config.settings_manager import SettingsManager
+from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.notify.notification_queue import NotificationQueue
 
 from .email_sender import EmailData, EmailSender
@@ -13,7 +13,7 @@ from .settings import NotifySetting
 logger = logging.getLogger(__name__)
 
 
-class NotificationManager(Singleton):
+class NotificationManager( Singleton, SettingsMixin ):
 
     def __init_singleton__(self):
         self._notification_queue = NotificationQueue()
@@ -43,7 +43,7 @@ class NotificationManager(Singleton):
         return
 
     async def send_notifications( self, notification : Notification ) -> bool:
-        notifications_enabled_str = SettingsManager().get_setting_value(
+        notifications_enabled_str = await self.settings_manager_async().get_setting_value(
             NotifySetting.NOTIFICATIONS_ENABLED,
         )
         notifications_enabled = str_to_bool( notifications_enabled_str )
@@ -55,7 +55,7 @@ class NotificationManager(Singleton):
     
     async def send_email_notification_if_needed_async( self, notification : Notification ) -> bool:
         
-        email_addresses_str = SettingsManager().get_setting_value(
+        email_addresses_str = await self.settings_manager_async().get_setting_value(
             NotifySetting.NOTIFICATIONS_EMAIL_ADDRESSES,
         )
         email_address_list = parse_emails_from_text( text = email_addresses_str )

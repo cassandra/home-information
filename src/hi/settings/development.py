@@ -120,37 +120,49 @@ LOGGING = {
             "handlers": ["console"],
             "level": "DEBUG",
         },
-        'hi': {
-            'handlers': ['console' ],
-            'level': 'DEBUG',
-        },
         'hi.apps.alert': {
             'handlers': ['console' ],
-            'level': 'INFO',
-        },
-        'hi.apps.sense': {
-            'handlers': ['console' ],
-            'level': 'INFO',
+            'level': 'DEBUG',
+            'propagate': False,
         },
         'hi.apps.control': {
             'handlers': ['console' ],
-            'level': 'INFO',
+            'level': 'DEBUG',
+            'propagate': False,
         },
         'hi.apps.notify': {
             'handlers': ['console' ],
-            'level': 'INFO',
+            'level': 'DEBUG',
+            'propagate': False,
         },
         'hi.apps.monitor': {
             'handlers': ['console' ],
-            'level': 'INFO',
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'hi.apps.sense': {
+            'handlers': ['console' ],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'hi.integrations': {
+            'handlers': ['console' ],
+            'level': 'DEBUG',
+            'propagate': False,
         },
         'hi.services.hass': {
             'handlers': ['console' ],
-            'level': 'INFO',
+            'level': 'DEBUG',
+            'propagate': False,
         },
         'hi.services.zoneminder': {
             'handlers': ['console' ],
-            'level': 'INFO',
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'hi': {
+            'handlers': ['console' ],
+            'level': 'DEBUG',
         },
     },
 }

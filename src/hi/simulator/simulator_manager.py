@@ -1,6 +1,6 @@
 from asgiref.sync import sync_to_async
 import logging
-from threading import Lock
+import threading
 from typing import Dict, List
 
 from django.apps import apps as django_apps
@@ -26,7 +26,8 @@ class SimulatorManager( Singleton ):
     def __init_singleton__( self ):
         self._current_sim_profile = None
         self._simulator_data_map : Dict[ str, SimulatorData ] = dict()  # Key = simulator.id
-        self._data_lock = Lock()
+        self._initialized = False
+        self._data_lock = threading.Lock()
         return
 
     @property
@@ -127,6 +128,11 @@ class SimulatorManager( Singleton ):
     async def initialize(self) -> None:
         self._data_lock.acquire()
         try:
+            if self._initialized:
+                logger.info("SimulationManager already initialize. Skipping.")
+                return
+            self._initialized = True
+            logger.info("Initializing SimulationManager ...")
             await sync_to_async( self._initialize_sim_profile )()
             self._discover_defined_simulators()
             self._fetch_sim_entity_definitions()
@@ -136,6 +142,11 @@ class SimulatorManager( Singleton ):
             self._data_lock.release()
         return
 
+    async def shutdown(self) -> None:
+        # Nothing yet
+        logger.info("Stopping SimulationManager...")
+        return
+    
     def _initialize_sim_profile(self):
         logger.debug("Initialize SimProfile ...")
         self._current_sim_profile = SimProfile.objects.all().first()  # Default ordering is by recency use
