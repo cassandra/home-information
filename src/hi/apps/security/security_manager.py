@@ -62,8 +62,7 @@ class SecurityManager( Singleton, SettingsMixin ):
         return self._security_level
     
     def get_security_status_data(self) -> SecurityStatusData:
-        self._security_status_lock.acquire()
-        try:
+        with self._security_status_lock:
             current_action_label = self._security_state.label
             if self._security_state == SecurityState.DAY:
                 current_action_value = str(SecurityStateAction.SET_DAY)
@@ -88,8 +87,6 @@ class SecurityManager( Singleton, SettingsMixin ):
                 current_action_value = current_action_value,
                 current_action_label = current_action_label,
             )
-        finally:
-            self._security_status_lock.release()
         return
 
     def get_status_id_replace_map( self, request : HttpRequest ) -> Dict[ str, str ]:
@@ -154,8 +151,7 @@ class SecurityManager( Singleton, SettingsMixin ):
                                 immediate_security_state  : SecurityState,
                                 future_security_state     : SecurityState,
                                 delay_secs                : int ):
-        self._security_status_lock.acquire()
-        try:
+        with self._security_status_lock:
             self.update_security_state_immediate(
                 new_security_state = immediate_security_state,
                 lock_acquired = True,
@@ -166,8 +162,6 @@ class SecurityManager( Singleton, SettingsMixin ):
                     delay_secs = delay_secs,
                     lock_acquired = True,
                 )
-        finally:
-            self._security_status_lock.release()
         return
 
     def _update_security_state_delayed( self,
@@ -203,8 +197,7 @@ class SecurityManager( Singleton, SettingsMixin ):
     def update_security_state_auto( self, new_security_state  : SecurityState ):
         """Special updating when coming from automation since extra handling is
         needed if state is in a delayed transition (via SET_AWAY or SNOOZE)."""
-        self._security_status_lock.acquire()
-        try:
+        with self._security_status_lock:
             if not self._security_state.auto_change_allowed:
                 logger.warning( f'Security state auto update but state={self._security_state}' )
                 return
@@ -232,9 +225,6 @@ class SecurityManager( Singleton, SettingsMixin ):
             self._delayed_security_state = new_security_state
             return
         
-        finally:
-            self._security_status_lock.release()
-
         return
         
     def update_security_state_immediate( self,

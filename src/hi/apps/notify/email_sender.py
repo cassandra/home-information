@@ -133,7 +133,8 @@ class EmailSender:
         return
     
     async def _assert_not_unsubscribed_async( self ):
-        await sync_to_async( self._assert_not_unsubscribed )()
+        await sync_to_async( self._assert_not_unsubscribed,
+                             thread_sensitive = True )()
         return
     
     def _assert_not_unsubscribed( self ):

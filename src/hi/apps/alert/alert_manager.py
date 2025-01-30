@@ -2,7 +2,7 @@ from datetime import datetime
 import logging
 import threading
 
-from hi.apps.common.singleton import Singleton, SingletonGemini
+from hi.apps.common.singleton import Singleton
 from hi.apps.security.security_manager import SecurityManager
 from hi.apps.notify.notify_mixins import NotificationMixin
 
@@ -14,7 +14,7 @@ from .alert_status import AlertStatusData
 logger = logging.getLogger(__name__)
 
 
-class AlertManager( SingletonGemini, NotificationMixin ):
+class AlertManager( Singleton, NotificationMixin ):
 
     def __init_singleton__(self):
         self._alert_queue = AlertQueue()
@@ -86,6 +86,8 @@ class AlertManager( SingletonGemini, NotificationMixin ):
     
     async def add_alarm( self, alarm : Alarm ):
         notification_manager = await self.notification_manager_async()
+        if not notification_manager:
+            return
         logging.debug( f'Adding Alarm: {alarm}' )
         security_state = SecurityManager().security_state
         try:

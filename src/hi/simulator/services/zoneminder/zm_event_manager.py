@@ -18,16 +18,13 @@ class ZmSimEventManager( Singleton ):
     def add_motion_value( self,
                           zm_sim_monitor : ZmSimMonitor,
                           motion_value   : bool ):
-        self._data_lock.acquire()
-        try:
+        with self._data_lock:
             monitor_id = zm_sim_monitor.monitor_id
             if monitor_id not in self._zm_sim_events_map:
                 self._zm_sim_events_map[monitor_id] = ZmSimEventHistory(
                     zm_sim_monitor = zm_sim_monitor,
                 )
             self._zm_sim_events_map[monitor_id].add_motion_value( motion_value = motion_value )
-        finally:
-            self._data_lock.release()
         return
 
     def get_events_by_start_datetime( self, start_datetime : datetime ) -> List[ ZmSimEvent ]:

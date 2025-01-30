@@ -21,5 +21,7 @@ class NotificationMonitor( PeriodicMonitor, NotificationMixin ):
     async def do_work(self):
         logger.debug( 'Checking for notification maintenance work.' )
         notification_manager = await self.notification_manager_async()
+        if not notification_manager:
+            return
         await notification_manager.do_periodic_maintenance()
         return

@@ -5,7 +5,6 @@ NUM_THREADS=3
 BINDARG=unix:/var/run/gunicorn.sock
 
 exec gunicorn hi.wsgi:application \
-  -c /src/conf/gunicorn.conf.py \
   --name gunicorn \
   --workers $NUM_WORKERS \
   --threads $NUM_THREADS \
@@ -19,7 +18,6 @@ exec gunicorn hi.wsgi:application \
 #BINDARG=unix:/var/run/gunicorn.sock
 #
 #exec gunicorn hi.asgi:application \
-#  -c /src/conf/gunicorn.conf.py \
 #  --name gunicorn \
 #  --workers $NUM_WORKERS \
 #  --worker-class uvicorn.workers.UvicornWorker \

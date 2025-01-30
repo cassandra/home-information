@@ -41,8 +41,7 @@ class SettingsManager( Singleton ):
         return
     
     def reload(self):
-        self._attributes_lock.acquire()
-        try:
+        with self._attributes_lock:
             self._attribute_value_map = dict()
             for subsystem in self._subsystem_list:
                 subsystem.refresh_from_db()
@@ -51,8 +50,6 @@ class SettingsManager( Singleton ):
                     self._attribute_value_map[attr_type] = subsystem_attribute.value
                     continue
                 continue
-        finally:
-            self._attributes_lock.release()
             
         self._notify_change_listeners()
         return

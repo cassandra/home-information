@@ -1,4 +1,3 @@
-from asgiref.sync import sync_to_async
 import logging
 from pyzm.api import ZMApi
 from pyzm.helpers.Event import Event as ZmEvent

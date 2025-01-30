@@ -58,8 +58,7 @@ class EventManager( Singleton, AlertMixin, ControllerMixin ):
     def reload(self):
         """ Called when integration models are changed (via signals below). """
         logger.debug( 'Reloading event definitions' )
-        self._event_definitions_lock.acquire()
-        try:
+        with self._event_definitions_lock:
             self._event_definitions = list( EventDefinition.objects.prefetch_related(
                 'event_clauses',
                 'event_clauses__entity_state',
@@ -67,8 +66,6 @@ class EventManager( Singleton, AlertMixin, ControllerMixin ):
                 'control_actions',
             ).filter( enabled = True ))
             self._event_definition_reload_needed = False
-        finally:
-            self._event_definitions_lock.release()
         return
 
     def set_event_definition_reload_needed(self):
@@ -94,8 +91,7 @@ class EventManager( Singleton, AlertMixin, ControllerMixin ):
     def _get_new_events( self ):
         if self._event_definition_reload_needed:
             self.reload()
-        self._event_definitions_lock.acquire()
-        try:
+        with self._event_definitions_lock:
             new_event_list = list()
             for event_definition in self._event_definitions:
                 if self._has_recent_event( event_definition ):
@@ -107,9 +103,7 @@ class EventManager( Singleton, AlertMixin, ControllerMixin ):
                 new_event_list.append( event )
                 continue
 
-            return new_event_list
-        finally:
-            self._event_definitions_lock.release()
+        return new_event_list
 
     def _has_recent_event( self, event_definition : EventDefinition ) -> bool:
         recent_event = self._recent_events.get( event_definition.id )
@@ -163,6 +157,8 @@ class EventManager( Singleton, AlertMixin, ControllerMixin ):
 
     async def _do_new_event_action( self, event_list : List[ Event ] ):
         alert_manager = await self.alert_manager_async()
+        if not alert_manager:
+            return
         controller_manager = await self.controller_manager_async()
         
         current_security_level = SecurityManager().security_level
@@ -191,7 +187,8 @@ class EventManager( Singleton, AlertMixin, ControllerMixin ):
         return
     
     async def _bulk_create_event_history_async( self, event_history_list : List[ EventHistory ] ):
-        await sync_to_async( EventHistory.objects.bulk_create)( event_history_list )
+        await sync_to_async( EventHistory.objects.bulk_create,
+                             thread_sensitive = True)( event_history_list )
         return
     
     def create_simple_alarm_event_definition(

@@ -68,8 +68,7 @@ class SimulatorManager( Singleton ):
                         sim_entity_definition  : SimEntityDefinition,
                         sim_entity_fields      : SimEntityFields ):
         
-        self._data_lock.acquire()
-        try:
+        with self._data_lock:
             simulator_data = self._simulator_data_map.get( simulator.id )
             if not simulator_data:
                 raise KeyError( f'No data found for simulator id = {simulator.id}' )
@@ -89,18 +88,14 @@ class SimulatorManager( Singleton ):
                 sim_entity_definition = sim_entity_definition,
             )
             simulator.add_sim_entity( sim_entity = sim_entity )
-            
-        finally:
-            self._data_lock.release()
-                        
+                                    
     def update_sim_entity_fields( self,
                                   simulator          : Simulator,
                                   sim_entity_definition  : SimEntityDefinition,
                                   db_sim_entity      : DbSimEntity,
                                   sim_entity_fields  : SimEntityFields ):
 
-        self._data_lock.acquire()
-        try:
+        with self._data_lock:
             simulator_data = self._simulator_data_map.get( simulator.id )
             if not simulator_data:
                 raise KeyError( f'No data found for simulator id = {simulator.id}' )
@@ -115,8 +110,7 @@ class SimulatorManager( Singleton ):
             db_sim_entity.save()
             simulator.add_sim_entity( sim_entity = sim_entity )
 
-        finally:
-            self._data_lock.release()
+        return
         
     def delete_sim_entity( self,
                            simulator      : Simulator,
@@ -126,20 +120,19 @@ class SimulatorManager( Singleton ):
         return
         
     async def initialize(self) -> None:
-        self._data_lock.acquire()
-        try:
+        with self._data_lock:
             if self._initialized:
                 logger.info("SimulationManager already initialize. Skipping.")
                 return
             self._initialized = True
             logger.info("Initializing SimulationManager ...")
-            await sync_to_async( self._initialize_sim_profile )()
+            await sync_to_async( self._initialize_sim_profile,
+                                 thread_sensitive = True )()
             self._discover_defined_simulators()
             self._fetch_sim_entity_definitions()
-            await sync_to_async( self._load_sim_entity_instances )()
+            await sync_to_async( self._load_sim_entity_instances,
+                                 thread_sensitive = True )()
 
-        finally:
-            self._data_lock.release()
         return
 
     async def shutdown(self) -> None:

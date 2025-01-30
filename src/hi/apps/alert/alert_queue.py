@@ -46,8 +46,7 @@ class AlertQueue:
         returned. Returns None if there are no active alerts in the
         specified time frame.
         """
-        self._active_alerts_lock.acquire()
-        try:
+        with self._active_alerts_lock:
             if len(self._alert_list) < 1:
                 return None
             
@@ -65,8 +64,6 @@ class AlertQueue:
                 elif alert.alert_priority > max_alert.alert_priority:
                     max_alert = alert
                 continue
-        finally:
-            self._active_alerts_lock.release()
         return
 
     def get_most_recent_alarm( self, since_datetime : datetime = None ):
@@ -76,8 +73,7 @@ class AlertQueue:
         was to find a URL to switch to when automatically changing displays
         based on alarms.
         """
-        self._active_alerts_lock.acquire()
-        try:
+        with self._active_alerts_lock:
             if len(self._alert_list) < 1:
                 return None
             
@@ -100,16 +96,12 @@ class AlertQueue:
                 continue
             
             return latest_alarm
-
-        finally:
-            self._active_alerts_lock.release()
         return
     
     def add_alarm( self, alarm : Alarm ) -> Alert:
         if alarm.alarm_level == AlarmLevel.NONE:
             raise ValueError( f'Alarm not alert-worthy: {alarm}'  )
-        self._active_alerts_lock.acquire()
-        try:
+        with self._active_alerts_lock:
             for alert in self._alert_list:
                 if not alert.is_matching_alarm( alarm = alarm ):
                     continue
@@ -124,13 +116,10 @@ class AlertQueue:
             logger.debug( f'Added new alert: {new_alert}' )
             return new_alert
     
-        finally:
-            self._active_alerts_lock.release()
         return
 
     def acknowledge_alert( self, alert_id : str ):
-        self._active_alerts_lock.acquire()
-        try:
+        with self._active_alerts_lock:
             for alert in self._alert_list:
                 if alert.id != alert_id:
                     continue
@@ -139,12 +128,9 @@ class AlertQueue:
                 return True
 
             raise KeyError( f'Alert not found for {alert_id}' )
-        finally:
-            self._active_alerts_lock.release()
 
     def remove_expired_or_acknowledged_alerts(self):
-        self._active_alerts_lock.acquire()
-        try:
+        with self._active_alerts_lock:
             logger.debug( f'Alert Check: List size = {len(self._alert_list)}')
             if len( self._alert_list ) < 1:
                 return
@@ -164,8 +150,6 @@ class AlertQueue:
                 self._alert_list = new_list
                 self._last_changed_datetime = datetimeproxy.now()
 
-        finally:
-            self._active_alerts_lock.release()
         return
     
     

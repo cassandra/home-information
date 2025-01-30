@@ -1,4 +1,5 @@
 from asgiref.sync import sync_to_async
+import asyncio
 from cachetools import TTLCache
 import logging
 from typing import Dict, List
@@ -28,7 +29,17 @@ class SensorResponseMixin:
     async def sensor_response_manager_async(self):
         if not hasattr( self, '_sensor_response_manager' ):
             self._sensor_response_manager = SensorResponseManager()
-            await sync_to_async( self._sensor_response_manager.ensure_initialized )()
+            try:
+                await asyncio.shield( sync_to_async( self._sensor_response_manager.ensure_initialized )())
+ 
+            except asyncio.CancelledError:
+                logger.warning( 'SensorResponse init sync_to_async() was cancelled! Handling gracefully.')
+                return None
+
+            except Exception as e:
+                logger.warning( f'SensorResponse init sync_to_async() exception! Handling gracefully. ({e})' )
+                return None
+               
         return self._sensor_response_manager
 
 
@@ -115,6 +126,8 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
         logger.debug( f'Sensors changed: {len(changed_sensor_response_list)} of {len(sensor_response_map)}' )
         await self._add_latest_sensor_responses( changed_sensor_response_list )
         event_manager = await self.event_manager_async()
+        if not event_manager:
+            return
         await event_manager.add_entity_state_transitions( entity_state_transition_list )
         return
 
@@ -205,7 +218,8 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
     async def _add_sensors( self, sensor_response_list : List[ SensorResponse ] ):
         for sensor_response in sensor_response_list:
             if sensor_response.sensor is None:
-                sensor_response.sensor = await sync_to_async( self._get_sensor )(
+                sensor_response.sensor = await sync_to_async( self._get_sensor,
+                                                              thread_sensitive = True )(
                     integration_key = sensor_response.integration_key,
                 )
             continue
@@ -226,7 +240,8 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
         )
 
     async def _get_sensor_async( self, integration_key : IntegrationKey ):
-        return await sync_to_async( self._get_sensor )(
+        return await sync_to_async( self._get_sensor,
+                                    thread_sensitive = True )(
             integration_key = integration_key,
         )
     

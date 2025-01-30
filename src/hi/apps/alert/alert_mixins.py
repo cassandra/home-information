@@ -1,6 +1,10 @@
 from asgiref.sync import sync_to_async
+import asyncio
+import logging
 
 from .alert_manager import AlertManager
+
+logger = logging.getLogger(__name__)
 
 
 class AlertMixin:
@@ -14,32 +18,15 @@ class AlertMixin:
     async def alert_manager_async(self):
         if not hasattr( self, '_alert_manager' ):
             self._alert_manager = AlertManager()
-
-
-
-            import asyncio
-            import hi.apps.common.debug_utils as debug_utils
-            print( f'ALERT_MGR-ASYNC: %s' % debug_utils.get_event_loop_context() )
-
-
-
-            
             try:
-
-                
-                #await asyncio.shield(sync_to_async(self._alert_manager.ensure_initialized)())
-                self._alert_manager.ensure_initialized()
-
-
+                await asyncio.shield( sync_to_async(self._alert_manager.ensure_initialized )())
                 
             except asyncio.CancelledError:
-                print("⚠️ sync_to_async() was cancelled! Handling gracefully.")
+                logger.warning( 'AlertMixin sync_to_async() was cancelled! Handling gracefully.' )
                 return None
 
-            except Exception:
-                print("⚠️ sync_to_async() raised an Exception.")
+            except Exception as e:
+                logger.warning( f'AlertMixin sync_to_async() exception! Handling gracefully: {e}' )
                 return None
-
-            
             
         return self._alert_manager

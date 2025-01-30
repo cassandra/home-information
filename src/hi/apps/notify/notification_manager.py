@@ -43,7 +43,10 @@ class NotificationManager( Singleton, SettingsMixin ):
         return
 
     async def send_notifications( self, notification : Notification ) -> bool:
-        notifications_enabled_str = await self.settings_manager_async().get_setting_value(
+        settings_manager = await self.settings_manager_async()
+        if not settings_manager:
+            return False
+        notifications_enabled_str = settings_manager.get_setting_value(
             NotifySetting.NOTIFICATIONS_ENABLED,
         )
         notifications_enabled = str_to_bool( notifications_enabled_str )
@@ -54,8 +57,10 @@ class NotificationManager( Singleton, SettingsMixin ):
         return await self.send_email_notification_if_needed_async( notification = notification )
     
     async def send_email_notification_if_needed_async( self, notification : Notification ) -> bool:
-        
-        email_addresses_str = await self.settings_manager_async().get_setting_value(
+        settings_manager = await self.settings_manager_async()
+        if not settings_manager:
+            return False
+        email_addresses_str = settings_manager.get_setting_value(
             NotifySetting.NOTIFICATIONS_EMAIL_ADDRESSES,
         )
         email_address_list = parse_emails_from_text( text = email_addresses_str )

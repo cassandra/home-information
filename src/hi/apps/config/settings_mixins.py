@@ -19,7 +19,8 @@ class SettingsMixin:
         if not hasattr( self, '_settings_manager' ):
             self._settings_manager = SettingsManager()
             try:
-                await asyncio.shield( sync_to_async( self._settings_manager.ensure_initialized )())
+                await asyncio.shield( sync_to_async( self._settings_manager.ensure_initialized,
+                                                     thread_sensitive = True )())
 
             except asyncio.CancelledError:
                 logger.warning( 'Settings init sync_to_async() was cancelled! Handling gracefully.')

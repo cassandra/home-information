@@ -1,4 +1,4 @@
-from asgiref.sync import sync_to_async
+from asgiref.sync import async_to_sync, sync_to_async
 import asyncio
 import json
 import logging
@@ -10,7 +10,7 @@ from django.conf import settings
 from django.db import transaction
 
 from hi.apps.attribute.enums import AttributeType
-from hi.apps.common.singleton import Singleton, SingletonGemini
+from hi.apps.common.singleton import Singleton
 from hi.apps.common.module_utils import import_module_safe
 
 from .enums import IntegrationAttributeType
@@ -24,7 +24,7 @@ from .transient_models import IntegrationMetaData
 logger = logging.getLogger(__name__)
 
 
-class IntegrationManager( SingletonGemini ):
+class IntegrationManager( Singleton ):
 
     def __init_singleton__( self ):
         self._integration_data_map : Dict[ str, IntegrationData ] = dict()
@@ -85,7 +85,8 @@ class IntegrationManager( SingletonGemini ):
         defined_integration_gateway_map = self._discover_defined_integrations()
 
         logger.debug("Loading existing integrations ...")
-        existing_integration_map = await sync_to_async( self._load_existing_integrations )()
+        existing_integration_map = await sync_to_async( self._load_existing_integrations,
+                                                        thread_sensitive = True )()
         
         for integration_id, integration_gateway in defined_integration_gateway_map.items():
             integration_metadata = integration_gateway.get_metadata()
@@ -93,7 +94,8 @@ class IntegrationManager( SingletonGemini ):
             if integration_id in existing_integration_map:
                 integration = existing_integration_map[integration_id]
             else:
-                integration = await sync_to_async( Integration.objects.create )(
+                integration = await sync_to_async( Integration.objects.create,
+                                                   thread_sensitive = True )(
                     integration_id = integration_id,
                     is_enabled = False,
                 )
@@ -208,8 +210,7 @@ class IntegrationManager( SingletonGemini ):
         new attributes might have been defined.  This allows new code
         features to be added for existing installations.
         """
-        self._data_lock.acquire()
-        try:
+        with self._data_lock:
             new_attribute_types = list()
             existing_attribute_integration_keys = set([ x.integration_key
                                                         for x in integration.attributes.all() ])
@@ -232,8 +233,6 @@ class IntegrationManager( SingletonGemini ):
                             attribute_type = attribute_type,
                         )
                         continue
-        finally:
-            self._data_lock.release()
         return
         
     def _create_integration_attribute( self,
@@ -259,25 +258,19 @@ class IntegrationManager( SingletonGemini ):
     def enable_integration( self,
                             integration_data               : IntegrationData,
                             integration_attribute_formset  : IntegrationAttributeFormSet ):
-        self._data_lock.acquire()
-        try:
+        with self._data_lock:
             with transaction.atomic():
                 integration_data.integration.is_enabled = True
                 integration_data.integration.save()
                 integration_attribute_formset.save()
             async_to_sync( self._start_integration_monitor )( integration_data = integration_data )
-        finally:
-            self._data_lock.release()
         return
                 
     def disable_integration( self, integration_data : IntegrationData ):
-        self._data_lock.acquire()
-        try:
+        with self._data_lock:
             with transaction.atomic():
                 integration_data.integration.is_enabled = False
                 integration_data.integration.save()
             self._stop_integration_monitor( integration_data = integration_data )
-        finally:
-            self._data_lock.release()
         return
     

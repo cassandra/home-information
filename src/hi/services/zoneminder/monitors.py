@@ -38,10 +38,13 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         self._was_initialized = False
         return
 
-    async def _initialized(self):
+    async def _initialize(self):
         zm_manager = await self.zm_manager_async()
+        if not zm_manager:
+            return
         _ = await self.sensor_response_manager_async()  # Allows async use of self.sensor_response_manager()
-        self._zm_tzname = await sync_to_async( zm_manager.get_zm_tzname )()
+        self._zm_tzname = await sync_to_async( zm_manager.get_zm_tzname,
+                                               thread_sensitive = True )()
         self._poll_from_datetime = datetimeproxy.now()
         zm_manager.register_change_listener( self.refresh )
         self._was_initialized = True
@@ -54,7 +57,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
 
     async def do_work(self):
         if not self._was_initialized:
-            await self._initialized()
+            await self._initialize()
         
         sensor_response_map = dict()
         sensor_response_map.update( await self._process_events( ) )
@@ -84,7 +87,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             'from': tz_adjusted_poll_from_datetime.isoformat(),  # "from" only looks at event start time
             'tz': self._zm_tzname,
         }
-        zm_events = await sync_to_async( self.zm_manager().get_zm_events)( options = options )
+        zm_events = await sync_to_async( self.zm_manager().get_zm_events )( options = options )
         logger.debug( f'Found {len(zm_events)} new ZM events' )
 
         # Sensor readings and state value transitions are points in time,

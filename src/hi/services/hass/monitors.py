@@ -25,6 +25,8 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
 
     async def _initialize(self):
         hass_manager = await self.hass_manager_async()
+        if not hass_manager:
+            return
         _ = await self.sensor_response_manager_async()  # Allows async use of self.sensor_response_manager()
         hass_manager.register_change_listener( self.refresh )
         self._was_initialized = True

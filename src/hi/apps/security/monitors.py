@@ -31,7 +31,11 @@ class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
     async def _check_security_state( self ):
         logger.debug( 'Checking security state.' )
         settings_manager = await self.settings_manager_async()
+        if not settings_manager:
+            return
         security_manager = await self.security_manager_async()
+        if not security_manager:
+            return
         
         current_datetime = datetimeproxy.now()
         tz_name = settings_manager.get_setting_value(

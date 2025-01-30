@@ -19,7 +19,8 @@ class ConsoleMixin:
         if not hasattr( self, '_console_manager' ):
             self._console_manager = ConsoleManager()
             try:
-                await asyncio.shield( sync_to_async( self._console_manager.ensure_initialized )())
+                await asyncio.shield( sync_to_async( self._console_manager.ensure_initialized,
+                                                     thread_sensitive = True )())
 
             except asyncio.CancelledError:
                 logger.warning( 'Console init sync_to_async() was cancelled! Handling gracefully.')
