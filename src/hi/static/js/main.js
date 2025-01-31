@@ -9,6 +9,8 @@
 	LOCATION_VIEW_SVG_SELECTOR: '.hi-location-view-svg',
 	LOCATION_VIEW_BASE_SELECTOR: '.hi-location-view-base',
 	BASE_SVG_SELECTOR: '#hi-location-view-main > svg',
+	SVG_ICON_CLASS: 'hi-svg-icon',
+	SVG_PATH_CLASS: 'hi-svg-path',
 	HIGHLIGHTED_CLASS: 'highlighted',
 	ATTRIBUTE_CONTAINER_SELECTOR: '.hi-attribute',
 	FORM_FIELD_CONTAINER_SELECTOR: '.input-group',

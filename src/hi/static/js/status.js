@@ -21,7 +21,7 @@
 
     const ServerPollingWatchdogType = 'serverPolling';
     const ServerPollingStartDelayMs = 1000;
-    const ServerPollingIntervalMs = 5 * 1000;
+    const ServerPollingIntervalMs = 3 * 1000;
     const PollingErrorNotifyTimeMs = 60 * 1000;
     const ServerErrorMessageSelector = '#hi-server-error-msg';
     const ServerPollingUrl = '/api/status';

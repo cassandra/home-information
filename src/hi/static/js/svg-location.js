@@ -2,14 +2,34 @@
 
     window.Hi = window.Hi || {};
     window.Hi.edit = window.Hi.edit || {};
+    window.Hi.svgUtils = window.Hi.svgUtils || {};
 
     const MODULE_NAME = 'svg-location';    
+    let gCurrentSelectionModule = null;
 
     const HiSvgLocation = {
         init: function() {
             Hi.edit.eventBus.subscribe( Hi.edit.SELECTION_MADE_EVENT_NAME,
 					this.clearSelection.bind(this) );
         },
+	handleMouseDown: function( event ) {
+	    return _handleMouseDown( event );	    
+	},
+	handleMouseMove: function( event ) {
+	    return _handleMouseMove( event );	    
+	},
+	handleMouseUp: function( event ) {
+	    return _handleMouseUp( event );	    
+	},
+	handleMouseWheel: function( event ) {
+	    return _handleMouseWheel( event );	    
+	},
+	handleClick: function( event ) {
+	    return _handleClick( event );	    
+	},
+	handleKeyDown: function( event ) {
+	    return _handleKeyDown( event );	    
+	},
         clearSelection: function( data ) {
 	    gCurrentSelectionModule = data.moduleName;
 	    if ( data.moduleName != MODULE_NAME ) {
@@ -46,41 +66,18 @@
     };
     let gSvgTransformType = SvgTransformType.MOVE;
 
-    let gCurrentSelectionModule = null;
     let gSelectedLocationViewSvg = null;
     let gSvgTransformData = null;
     let gLastMousePosition = { x: 0, y: 0 };
     let gIgnoreCLick = false;  // Set by mouseup handling when no click handling should be done
 
-    $(document).ready(function() {
-
-	$(document).on('mousedown', Hi.LOCATION_VIEW_AREA_SELECTOR, function(event) {
-	    handleMouseDown( event );
-	});
-	$(document).on('mousemove', function(event) {
-	    handleMouseMove( event );
-	});
-	$(document).on('mouseup', Hi.LOCATION_VIEW_AREA_SELECTOR, function(event) {
-	    handleMouseUp( event );
-	});
-	$(document).on('wheel', function(event) {
-	    handleMouseWheel( event );
-	});
-	$(document).on('click', function(event) {
-	    handleClick( event );
-	});
-	$(document).on('keydown', function(event) {
-	    handleKeyDown( event );
-	});
-    });
-
-    function handleMouseDown( event ) {
+    function _handleMouseDown( event ) {
 	if ( gSelectedLocationViewSvg ) {
 	    if ( Hi.DEBUG ) { console.log( `Mouse down event [${MODULE_NAME}]`, event ); }
 	    createTransformData( event, gSelectedLocationViewSvg );
 	    event.preventDefault();
 	    event.stopImmediatePropagation();
-	    return;
+	    return true;
 	} else if ( $(event.target).hasClass( Hi.LOCATION_VIEW_SVG_CLASS ) ) {
 	    if ( gCurrentSelectionModule != 'svg-path' ) {
 		if ( Hi.DEBUG ) { console.log( `Mouse down event [${MODULE_NAME}]`, event ); }
@@ -88,14 +85,46 @@
 		gSelectedLocationViewSvg = event.target;
 		event.preventDefault(); 
 		event.stopImmediatePropagation();
-		return;
+		return true;
 	    }
 	}
 	
 	if ( Hi.DEBUG ) { console.log( `Mouse down skipped [${MODULE_NAME}]` ); }
+	return false;
     }
     
-    function handleMouseUp( event ) {
+    function _handleMouseMove( event ) {
+	const currentMousePosition = {
+	    x: event.clientX,
+	    y: event.clientY
+	};
+	if ( gSvgTransformData ) {
+	    
+	    const distanceX = Math.abs( currentMousePosition.x - gSvgTransformData.clickStart.x );
+	    const distanceY = Math.abs( currentMousePosition.y - gSvgTransformData.clickStart.y );
+	    
+	    if ( gSvgTransformData.isDragging
+		 || ( distanceX > CURSOR_MOVEMENT_THRESHOLD_PIXELS )
+		 || ( distanceY > CURSOR_MOVEMENT_THRESHOLD_PIXELS )) {
+		gSvgTransformData.isDragging = true;
+		if ( gSvgTransformType == SvgTransformType.SCALE ) {
+		    updateScale( event );
+		} else if( gSvgTransformType == SvgTransformType.ROTATE ) {
+		    updateRotation( event );
+		} else {
+		    updateDrag(event);
+		}
+		gSvgTransformData.lastMousePosition = currentMousePosition;
+		event.preventDefault(); 
+	    	event.stopImmediatePropagation();
+		return true;
+	    }
+	}
+	gLastMousePosition = currentMousePosition;
+	return false;
+    }
+    
+    function _handleMouseUp( event ) {
 
 	let eventWasHandled = false;
 	if ( gSvgTransformData ) {
@@ -124,38 +153,10 @@
 	} else {
 	    if ( Hi.DEBUG ) { console.log( `Mouse up skipped [${MODULE_NAME}]` ); }
 	}
+	return eventWasHandled;
     }
     
-    function handleMouseMove( event ) {
-	const currentMousePosition = {
-	    x: event.clientX,
-	    y: event.clientY
-	};
-	if ( gSvgTransformData ) {
-	    
-	    const distanceX = Math.abs( currentMousePosition.x - gSvgTransformData.clickStart.x );
-	    const distanceY = Math.abs( currentMousePosition.y - gSvgTransformData.clickStart.y );
-	    
-	    if ( gSvgTransformData.isDragging
-		 || ( distanceX > CURSOR_MOVEMENT_THRESHOLD_PIXELS )
-		 || ( distanceY > CURSOR_MOVEMENT_THRESHOLD_PIXELS )) {
-		gSvgTransformData.isDragging = true;
-		if ( gSvgTransformType == SvgTransformType.SCALE ) {
-		    updateScale( event );
-		} else if( gSvgTransformType == SvgTransformType.ROTATE ) {
-		    updateRotation( event );
-		} else {
-		    updateDrag(event);
-		}
-		gSvgTransformData.lastMousePosition = currentMousePosition;
-		event.preventDefault(); 
-	    	event.stopImmediatePropagation();
-	    }
-	}
-	gLastMousePosition = currentMousePosition;
-    }
-    
-    function handleMouseWheel( event ) {
+    function _handleMouseWheel( event ) {
 	if ( gSelectedLocationViewSvg && isEventInLocationArea( event )) {
 	    event.preventDefault(); 
 	    event.stopImmediatePropagation();
@@ -167,16 +168,20 @@
 	    } else {
 		zoomOut();
 	    }
+	    event.preventDefault();   		
+	    event.stopImmediatePropagation();
+	    return true;
 	}
+	return false;
     }
     
-    function handleClick( event ) {
+    function _handleClick( event ) {
 	if ( gIgnoreCLick ) {
 	    if ( Hi.DEBUG ) { console.log( `Ignoring click [${MODULE_NAME}]`, event ); }
 	    gIgnoreCLick = false;
 	    event.preventDefault();
 	    event.stopImmediatePropagation();
-	    return;
+	    return true;
 	}
 
 	if ( $(event.target).closest( Hi.LOCATION_VIEW_BASE_SELECTOR ).length > 0 ) {
@@ -184,25 +189,18 @@
 	    clearTransformData();
 	    event.preventDefault(); 
 	    event.stopImmediatePropagation();
-	    return;
+	    return true;
 	}
 	if ( Hi.DEBUG ) { console.log( `Click skipped [${MODULE_NAME}]` ); }
+	return false;
     }
-
-    function isEventInLocationArea( event ) {
-
+    
+    function _handleKeyDown( event ) {
 	if ( $(event.target).is('input, textarea') ) {
             return false;
 	}
 	if ($(event.target).closest('.modal').length > 0) {
             return false;
-	}
-	return $(event.target).closest(Hi.LOCATION_VIEW_AREA_SELECTOR).length > 0;
-    }
-    
-    function handleKeyDown( event ) {
-	if ( $(event.target).is('input, textarea') ) {
-            return;
 	}
 	if ( gSelectedLocationViewSvg ) {
 
@@ -240,12 +238,24 @@
 		    abortScale();
 		    abortRotation();
 		}
- 		event.preventDefault();
-		event.stopImmediatePropagation();
-		return;
 	    }
+ 	    event.preventDefault();
+	    event.stopImmediatePropagation();
+	    return true;
 	}
 	if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
+	return false;
+    }
+
+    function isEventInLocationArea( event ) {
+
+	if ( $(event.target).is('input, textarea') ) {
+            return false;
+	}
+	if ($(event.target).closest('.modal').length > 0) {
+            return false;
+	}
+	return $(event.target).closest(Hi.LOCATION_VIEW_AREA_SELECTOR).length > 0;
     }
 
     function createTransformData( event, locationViewSvg ) {	

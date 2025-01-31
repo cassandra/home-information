@@ -307,7 +307,8 @@ PIPELINE = {
                 'js/edit-dragdrop.js',
                 'js/svg-icon.js',
                 'js/svg-path.js',
-                'js/svg-location.js',  # Should come last: edit event handlers should be registered first.
+                'js/svg-location.js',
+                'js/svg-event-listeners.js',
             ),
             'output_filename': 'js/js_hi_grid_content.js',
         },

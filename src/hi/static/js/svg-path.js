@@ -2,14 +2,22 @@
     
     window.Hi = window.Hi || {};
     window.Hi.edit = window.Hi.edit || {};
+    window.Hi.svgUtils = window.Hi.svgUtils || {};
 
     const MODULE_NAME = 'svg-path';    
+    let gCurrentSelectionModule = null;
 
     const HiEditSvgPath = {
         init: function() {
             Hi.edit.eventBus.subscribe( Hi.edit.SELECTION_MADE_EVENT_NAME,
 					this.clearSelection.bind( this ) );
         },
+	handleClick: function( event ) {
+	    return _handleClick( event );	    
+	},
+	handleKeyDown: function( event ) {
+	    return _handleKeyDown( event );	    
+	},
         clearSelection: function( data ) {
 	    gCurrentSelectionModule = data.moduleName;
 	    if ( data.moduleName != MODULE_NAME ) {
@@ -88,29 +96,17 @@
 	CLOSED: 'closed'
     };
 
-    let gCurrentSelectionModule = null;
     let gSelectedPathSvgGroup = null;
     let gSvgPathEditData = null;
     let gIgnoreCLick = false;  // Set by mouseup handling when no click handling should be done
-            
-    $(document).ready(function() {
 
-	$(document).on('click', function(event) {
-	    handleClick( event );
-	});
-	$(document).on('keydown', function(event) {
-	    if ( ! Hi.isEditMode ) { return; }
-	    handleKeyDown( event );
-	});
-    });
-
-    function handleClick( event ) {
+    function _handleClick( event ) {
 	if ( gSelectedPathSvgGroup && gIgnoreCLick ) {
 	    if ( Hi.DEBUG ) { console.log( `Ignoring click [${MODULE_NAME}]`, event ); }
 	    gIgnoreCLick = false;
 	    event.preventDefault(); 
 	    event.stopImmediatePropagation();
-	    return;
+	    return true;
 	}
 	gIgnoreCLick = false;
 
@@ -125,7 +121,7 @@
 		handleSvgPathClick( event, enclosingSvgGroup );
 		event.preventDefault(); 
 		event.stopImmediatePropagation();
-		return;
+		return true;
 	    }
 	}
 
@@ -135,19 +131,24 @@
 		handleProxyPathClick( event );
 		event.preventDefault(); 
 		event.stopImmediatePropagation();
-		return;
+		return true;
 	    }
 	}
 	if ( Hi.DEBUG ) { console.log( `Click skipped [${MODULE_NAME}]` ); }
+	return false;
     }
 
-    function handleKeyDown( event ) {
+    function _handleKeyDown( event ) {
+	if ( ! Hi.isEditMode ) { return false; }
 	if ( $(event.target).is('input[type="text"], textarea') ) {
-            return;
+            return false;
+	}
+	if ($(event.target).closest('.modal').length > 0) {
+            return false;
 	}
 	if ( ! gSvgPathEditData ) {
 	    if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
-	    return;
+	    return false;
 	}
 	if ( Hi.DEBUG ) { console.log( `Key Down [${MODULE_NAME}]`, event ); }
 	
@@ -162,7 +163,7 @@
 	} else {
 	    if ( ! gSvgPathEditData.selectedProxyElement ) {
 		if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
-		return;
+		return false;
 	    }
 
 	    if ( PATH_ACTION_DELETE_KEY_CODES.includes( event.keyCode )) {
@@ -174,7 +175,7 @@
 
 		} else {
 		    if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
-		    return;
+		    return false;
 		}
 		
 	    } else if ( PATH_ACTION_INSERT_KEY_CODES.includes( event.keyCode ) ) {
@@ -195,16 +196,17 @@
 		    }
 		} else {
 		    if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
-		    return;
+		    return false;
 		}
 	    } else {
 		if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
-		return;
+		return false;
 	    }
 	}
 	
 	event.preventDefault();
 	event.stopImmediatePropagation();
+	return true;
     }
 
     function handleSvgPathClick( event, enclosingSvgGroup ) {
