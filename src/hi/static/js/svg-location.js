@@ -250,9 +250,9 @@
 
     function createTransformData( event, locationViewSvg ) {	
 	
-	let svgViewBox = Hi.getSvgViewBox( locationViewSvg );
+	let svgViewBox = Hi.svgUtils.getSvgViewBox( locationViewSvg );
         let transform = $(locationViewSvg).attr('transform') || '';
-        let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
+        let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
 
 	gSvgTransformData = {
 	    isDragging: false,
@@ -292,14 +292,14 @@
 	    return;
 	}
 	
-	let pixelsPerSvgUnit = Hi.getPixelsPerSvgUnit( gSelectedLocationViewSvg );
+	let pixelsPerSvgUnit = Hi.svgUtils.getPixelsPerSvgUnit( gSelectedLocationViewSvg );
         let deltaSvgUnits = {
 	    x: ( event.clientX - gSvgTransformData.clickStart.x ) / pixelsPerSvgUnit.scaleX,
 	    y: ( event.clientY - gSvgTransformData.clickStart.y ) / pixelsPerSvgUnit.scaleX
 	};
 
 	let transform = $(gSelectedLocationViewSvg).attr('transform');
-        let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
+        let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
 	deltaSvgUnits = rotateVector( deltaSvgUnits, -1.0 * rotate.angle );
 	
 	let newX = gSvgTransformData.initialSvgViewBox.x - deltaSvgUnits.x;
@@ -325,14 +325,14 @@
 
     function zoomIn( event ) {
 	let scaleFactor = 1.0 / ( 1.0 + ( ZOOM_SCALE_FACTOR_PERCENT / 100.0 ));
-	let initialSvgViewBox = Hi.getSvgViewBox( gSelectedLocationViewSvg );
+	let initialSvgViewBox = Hi.svgUtils.getSvgViewBox( gSelectedLocationViewSvg );
 	scaleSvgViewBox( initialSvgViewBox, scaleFactor );
 	saveSvgGeometryIfNeeded();
     }
     
     function zoomOut( event ) {
 	let scaleFactor = 1.0 + ( ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
-	let initialSvgViewBox = Hi.getSvgViewBox( gSelectedLocationViewSvg );
+	let initialSvgViewBox = Hi.svgUtils.getSvgViewBox( gSelectedLocationViewSvg );
 	scaleSvgViewBox( initialSvgViewBox, scaleFactor );
 	saveSvgGeometryIfNeeded();
     }
@@ -408,7 +408,7 @@
 					      event.clientX, event.clientY );
 
         let transform = $(gSelectedLocationViewSvg).attr('transform');
-        let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
+        let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
 	rotate.angle += deltaAngle;
 	rotate.angle = Hi.normalizeAngle( rotate.angle );
 
@@ -434,7 +434,7 @@
 
 	// Need to account for possible SVG rotation
         let transform = $(gSelectedLocationViewSvg).attr('transform');
-        let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
+        let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
 
 	// Adjust the dimensions to fill as much as the screen as possible
 	let containerRect = $(Hi.LOCATION_VIEW_AREA_SELECTOR)[0].getBoundingClientRect();
@@ -448,7 +448,7 @@
 	}
 
 	// Ensure the new viewBox is clamped within the extents of the SVG
-	let extentsSvgViewBox = Hi.getExtentsSvgViewBox( gSelectedLocationViewSvg );
+	let extentsSvgViewBox = Hi.svgUtils.getExtentsSvgViewBox( gSelectedLocationViewSvg );
 
 	extentsSvgViewBox = calculateRotatedRectangle( extentsSvgViewBox, rotate.angle );
 	
@@ -476,7 +476,7 @@
             newY = extentsSvgViewBox.y + extentsSvgViewBox.height - newHeight;
 	}
 
-	Hi.setSvgViewBox( gSelectedLocationViewSvg, newX, newY, newWidth, newHeight );
+	Hi.svgUtils.setSvgViewBox( gSelectedLocationViewSvg, newX, newY, newWidth, newHeight );
     }
 
     function calculateRotatedRectangle( initialRect, rotationAngle ) {
@@ -550,7 +550,7 @@
 	let locationViewId = $(gSelectedLocationViewSvg).attr('location-view-id');
 	let svgViewBoxStr = $(gSelectedLocationViewSvg).attr('viewBox');
         let transform = $(gSelectedLocationViewSvg).attr('transform');
-        let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
+        let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
 
 	let data = {
 	    svg_view_box_str: svgViewBoxStr,

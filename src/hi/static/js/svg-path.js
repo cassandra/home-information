@@ -381,8 +381,8 @@
 	    
 	console.log( 'Extending proxy path' );
 	const baseSvgElement = $(Hi.BASE_SVG_SELECTOR);
-	const svgViewBox = Hi.getSvgViewBox( baseSvgElement );
-	let svgPoint = Hi.toSvgPoint( baseSvgElement, event.clientX, event.clientY );
+	const svgViewBox = Hi.svgUtils.getSvgViewBox( baseSvgElement );
+	let svgPoint = Hi.svgUtils.toSvgPoint( baseSvgElement, event.clientX, event.clientY );
 
 	// Do not allow creating points outside viewbox (else cannot manipulate them).
 	if (( svgPoint.x < svgViewBox.x )
@@ -621,7 +621,7 @@
 	$(proxyPathContainer).append( newProxyPathGroup );
 
 	const baseSvgElement = $(Hi.BASE_SVG_SELECTOR);
-	const svgViewBox = Hi.getSvgViewBox( baseSvgElement );
+	const svgViewBox = Hi.svgUtils.getSvgViewBox( baseSvgElement );
 	let svgCenter = {
 	    x: svgViewBox.x + ( svgViewBox.width / 2 ),
 	    y: svgViewBox.y + ( svgViewBox.height / 2 )
@@ -740,7 +740,7 @@
     
     function createProxyPathProxyPoint( cx, cy ) {
 	const baseSvgElement = $(Hi.BASE_SVG_SELECTOR);
-	const pixelsPerSvgUnit = Hi.getPixelsPerSvgUnit( baseSvgElement );
+	const pixelsPerSvgUnit = Hi.svgUtils.getPixelsPerSvgUnit( baseSvgElement );
 	const svgRadius = PATH_EDIT_PROXY_POINT_RADIUS_PIXELS / pixelsPerSvgUnit.scaleX;
 	
 	const proxyPoint = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -784,7 +784,7 @@
 	    };
 
 	    const baseSvgElement = $(Hi.BASE_SVG_SELECTOR);	    
-            const eventSvgPoint = Hi.toSvgPoint( baseSvgElement, event.clientX, event.clientY );
+            const eventSvgPoint = Hi.svgUtils.toSvgPoint( baseSvgElement, event.clientX, event.clientY );
 
 	    
             const offsetX = eventSvgPoint.x - parseFloat($(proxyPoint).attr('cx'));
@@ -809,7 +809,9 @@
 		    event.preventDefault();
 		    event.stopImmediatePropagation();
 
-		    const eventSvgPoint = Hi.toSvgPoint( baseSvgElement, event.clientX, event.clientY );
+		    const eventSvgPoint = Hi.svgUtils.toSvgPoint( baseSvgElement,
+								  event.clientX,
+								  event.clientY );
 		    
 		    gSvgPathEditData.dragProxyPoint = event.target;
 		    const newCx = eventSvgPoint.x - offsetX;

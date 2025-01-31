@@ -87,7 +87,6 @@
     });
 
     function handleMouseDown( event ) {
-
 	// Need to track start time to differentiate drag/scale/rotate actions from regular clicks.
 	gClickStart = {
 	    x: event.clientX,
@@ -325,8 +324,8 @@
 	Hi.displayElementInfo( 'Base SVG', baseSvgElement );
 
         let transform = dragElement.attr('transform') || '';
-        let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
-        let cursorSvgPoint = Hi.toSvgPoint( baseSvgElement, event.clientX, event.clientY );
+        let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
+        let cursorSvgPoint = Hi.svgUtils.toSvgPoint( baseSvgElement, event.clientX, event.clientY );
 
 	const cursorSvgOffset = {
 	    x : (cursorSvgPoint.x / scale.x) - translate.x,
@@ -337,7 +336,7 @@
 	    element: dragElement,
 	    baseSvgElement: baseSvgElement,
 	    cursorSvgOffset: cursorSvgOffset,
-	    elementSvgCenterPoint: Hi.getSvgCenterPoint( dragElement, baseSvgElement ),
+	    elementSvgCenterPoint: Hi.svgUtils.getSvgCenterPoint( dragElement, baseSvgElement ),
 	    originalSvgScale: scale,
 	    originalSvgRotate: rotate,
 	    isDragging: false
@@ -359,7 +358,9 @@
         Hi.displayEventInfo( 'Update Drag', event );
         Hi.displayElementInfo( 'Drag Element', gSvgIconDragData.element );
 
-        let cursorSvgPoint = Hi.toSvgPoint( gSvgIconDragData.baseSvgElement, event.clientX, event.clientY );
+        let cursorSvgPoint = Hi.svgUtils.toSvgPoint( gSvgIconDragData.baseSvgElement,
+						     event.clientX,
+						     event.clientY );
 
 	let scale = gSvgIconDragData.originalSvgScale;
 	let rotate = gSvgIconDragData.originalSvgRotate;
@@ -373,8 +374,9 @@
 
         gSvgIconDragData.element.attr('transform', newTransform);	    
 
-	gSvgIconDragData.elementSvgCenterPoint = Hi.getSvgCenterPoint( gSvgIconDragData.element,
-								       gSvgIconDragData.baseSvgElement );
+	gSvgIconDragData.elementSvgCenterPoint = Hi.svgUtils.getSvgCenterPoint(
+	    gSvgIconDragData.element,
+	    gSvgIconDragData.baseSvgElement );
 	
 	if ( Hi.DEBUG ) {
 	    console.log( `Drag Update:
@@ -400,6 +402,8 @@
 	    svg_scale: gSvgIconDragData.originalSvgScale.x,
 	    svg_rotate: gSvgIconDragData.originalSvgRotate.angle
 	};
+
+	if ( Hi.DEBUG ) { console.log( 'Applying Drag:', data ); }
 	AN.post( `${API_EDIT_LOCATION_ITEM_POSITION_URL}/${svgItemId}`, data );
 
 	gSvgIconDragData = null;
@@ -408,10 +412,10 @@
     function saveIconSvgPosition( element ) {
 
         let transform = element.attr('transform');
-        let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
+        let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
 
 	const baseSvgElement = $(Hi.BASE_SVG_SELECTOR);
-	const center = Hi.getSvgCenterPoint( element, baseSvgElement );
+	const center = Hi.svgUtils.getSvgCenterPoint( element, baseSvgElement );
 
 	let svgItemId = element.attr('id');
 	let data = {
@@ -426,7 +430,7 @@
     function createIconEditActionData( actionState ) {
 	if ( gSelectedIconSvgGroup ) {
             let transform = gSelectedIconSvgGroup.attr('transform');
-            let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
+            let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
 
 	    gSvgIconEditData = {
 		element: gSelectedIconSvgGroup,
@@ -498,7 +502,7 @@
 
     function adjustIconScale( svgIconElement, scaleFactor ) {
         let transform = svgIconElement.attr('transform');
-        let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
+        let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
 
 	const newScale = {
 	    x: scale.x * scaleFactor,
@@ -531,7 +535,7 @@
 					      currentMousePosition.x, currentMousePosition.y );
 
         let transform = gSvgIconEditData.element.attr('transform');
-        let { scale, translate, rotate } = Hi.getSvgTransformValues( transform );
+        let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
 	rotate.angle += deltaAngle;
 	rotate.angle = Hi.normalizeAngle( rotate.angle );
 	setSvgTransformAttr( gSvgIconEditData.element, scale, translate, rotate );
