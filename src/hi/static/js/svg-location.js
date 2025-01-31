@@ -187,6 +187,10 @@
 	if ( $(event.target).closest( Hi.LOCATION_VIEW_BASE_SELECTOR ).length > 0 ) {
 	    gSelectedLocationViewSvg = $(event.target).closest( Hi.LOCATION_VIEW_SVG_SELECTOR );
 	    clearTransformData();
+	    let data = {
+		moduleName: MODULE_NAME,
+	    };
+	    Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
 	    event.preventDefault(); 
 	    event.stopImmediatePropagation();
 	    return true;

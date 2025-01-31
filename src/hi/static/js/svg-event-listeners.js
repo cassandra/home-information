@@ -64,9 +64,11 @@
 	$(document).on('click', Hi.LOCATION_VIEW_AREA_SELECTOR, function(event) {
 	    let handled = Hi.edit.icon.handleClick( event );
 	    if ( ! handled ) {
-		Hi.edit.path.handleClick( event );
+		handled = Hi.edit.path.handleClick( event );
 	    }
-	    Hi.location.handleClick( event );
+	    if ( ! handled ) {
+		Hi.location.handleClick( event );
+	    }
 	});
 	$(document).on('keydown', function(event) {
 	    if ( $(event.target).is('input, textarea') ) {
