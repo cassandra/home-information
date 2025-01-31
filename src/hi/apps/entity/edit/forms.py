@@ -3,7 +3,6 @@ from typing import Type
 
 from django import forms
 
-from hi.apps.entity.enums import EntityStateValue
 from hi.apps.entity.models import EntityPosition, EntityState
 from hi.apps.location.edit.forms import LocationItemPositionForm
 

@@ -216,3 +216,16 @@ class SvgStatusStyle:
         if self.stroke_dasharray:
             result['stroke-dasharray'] = ','.join([ str(x) for x in self.stroke_dasharray ])
         return result
+
+
+@dataclass
+class SvgItemPositionBounds:
+    min_x      : float
+    min_y      : float
+    max_x      : float
+    max_y      : float
+    min_scale  : float
+    max_scale  : float
+
+    
+    

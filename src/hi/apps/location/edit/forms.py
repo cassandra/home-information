@@ -6,6 +6,7 @@ from django.conf import settings
 
 from hi.apps.attribute.forms import AttributeForm, AttributeUploadForm
 from hi.apps.common.svg_forms import SvgDecimalFormField, SvgFileForm
+from hi.apps.common.svg_models import SvgItemPositionBounds
 
 from hi.apps.location.enums import LocationViewType, SvgStyleName
 from hi.apps.location.models import (
@@ -149,7 +150,7 @@ class LocationViewGeometryForm( forms.ModelForm ):
 
     svg_rotate = SvgDecimalFormField()
 
-   
+    
 class LocationItemPositionForm( forms.ModelForm ):
     # Abstract class.  Subclasses need to add model. e.g.,
     #
@@ -164,16 +165,34 @@ class LocationItemPositionForm( forms.ModelForm ):
             'svg_scale',
             'svg_rotate',
         )
-
-    svg_x = SvgDecimalFormField(
-        label = 'X',
-    )
-    svg_y = SvgDecimalFormField(
-        label = 'Y',
-    )
-    svg_scale = SvgDecimalFormField(
-        label = 'Scale',
-    )
-    svg_rotate = SvgDecimalFormField(
-        label = 'Rotate',
-    )
+    
+    def __init__( self, svg_position_bounds : SvgItemPositionBounds, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        self.fields['svg_x'] = SvgDecimalFormField(
+            label = 'X',
+            min_value = svg_position_bounds.min_x,
+            max_value = svg_position_bounds.max_x,
+        )
+        self.fields['svg_y'] = SvgDecimalFormField(
+            label = 'Y',
+            min_value = svg_position_bounds.min_y,
+            max_value = svg_position_bounds.max_y,
+        )
+        self.fields['svg_scale'] = SvgDecimalFormField(
+            label = 'Scale',
+            min_value = svg_position_bounds.min_scale,
+            max_value = svg_position_bounds.max_scale,
+        )
+        self.fields['svg_rotate'] = SvgDecimalFormField(
+            label = 'Rotate',
+        )
+        return
+    
+    def clean_svg_rotate( self ):
+        svg_rotate = self.cleaned_data['svg_rotate']
+        if svg_rotate is not None:
+            svg_rotate = svg_rotate % 360
+            if svg_rotate < 0:
+                svg_rotate += 360
+        return svg_rotate

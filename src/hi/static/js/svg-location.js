@@ -56,7 +56,7 @@
     const PIXEL_MOVE_DISTANCE_SCALE_FACTOR = 250.0;
     const KEYPRESS_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
     const MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
-    const ZOOM_API_CALL_DEBOUNCE_MS = 500;
+    const ZOOM_API_CALL_DEBOUNCE_MS = 400;
 
     const LOCATION_VIEW_EDIT_PANE_SELECTOR = '#hi-location-view-edit';
     const API_EDIT_LOCATION_VIEW_GEOMETRY_URL = '/location/edit/location-view/geometry';
@@ -113,7 +113,7 @@
 		 || ( distanceY > CURSOR_MOVEMENT_THRESHOLD_PIXELS )) {
 		gSvgTransformData.isDragging = true;
 		if ( gSvgTransformType == SvgTransformType.SCALE ) {
-		    updateScale( event );
+		    updateScaleFromMouseMove( event );
 		} else if( gSvgTransformType == SvgTransformType.ROTATE ) {
 		    updateRotation( event );
 		} else {
@@ -372,7 +372,7 @@
 	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, gSvgTransformType );
     }
 
-    function updateScale( event ) {
+    function updateScaleFromMouseMove( event ) {
 	if ( Hi.DEBUG ) { console.log( `updateScale [${MODULE_NAME}]` ); }
 
 	if ( gSvgTransformData == null ) {

@@ -167,6 +167,7 @@ class CollectionPositionEditView( View, CollectionViewMixin ):
             raise Http404( request )
 
         collection_position_form = forms.CollectionPositionForm(
+            location.svg_position_bounds,
             request.POST,
             instance = collection_position,
         )

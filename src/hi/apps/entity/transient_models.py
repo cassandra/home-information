@@ -116,3 +116,4 @@ class EntityStateHistoryData:
             'controller_history_list_map': self.controller_history_list_map,
         }
         return context
+

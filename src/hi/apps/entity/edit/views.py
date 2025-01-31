@@ -133,8 +133,9 @@ class EntityPositionEditView( View, EntityViewMixin ):
             )
         except EntityPosition.DoesNotExist:
             raise Http404( request )
-        
+
         entity_position_form = forms.EntityPositionForm(
+            location.svg_position_bounds,
             request.POST,
             instance = entity_position,
         )

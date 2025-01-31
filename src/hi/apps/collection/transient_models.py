@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import List
 
 from hi.apps.collection.edit.forms import CollectionForm, CollectionPositionForm
-from hi.apps.entity.enums import EntityGroupType, EntityType
+from hi.apps.entity.enums import EntityGroupType
 from hi.apps.entity.models import Entity
 from hi.apps.monitor.transient_models import EntityStatusData
 

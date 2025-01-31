@@ -63,7 +63,8 @@
     const MOUSE_MOVE_ZOOM_SCALE_FACTOR = 175.0; // Number of pixels moved to double or halve size
     const MOUSE_WHEEL_ROTATE_DEGREES = 10.0;
     const KEYPRESS_ROTATE_DEGREES = 10.0;
-
+    const POSITION_API_CALL_DEBOUNCE_MS = 400;
+    
     const API_EDIT_LOCATION_ITEM_POSITION_URL = '/location/edit/location-item/position';
         
     const SvgActionStateType = {
@@ -81,6 +82,9 @@
     let gLastMousePosition = { x: 0, y: 0 };
     let gIgnoreCLick = false;  // Set by mouseup handling when no click handling should be done
 
+    let positionApiCallDebounceTimer = null;
+    let lastPositionApiCallTime = 0;
+    
     function _handleMouseDown( event ) {
 	if ( ! Hi.isEditMode ) { return false; }
 
@@ -437,24 +441,6 @@
 	gSvgIconDragData = null;
     }
  
-    function saveIconSvgPosition( element ) {
-
-        let transform = element.attr('transform');
-        let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
-
-	const baseSvgElement = $(Hi.BASE_SVG_SELECTOR);
-	const center = Hi.svgUtils.getSvgCenterPoint( element, baseSvgElement );
-
-	let svgItemId = element.attr('id');
-	let data = {
-	    svg_x: center.x,
-	    svg_y: center.y,
-	    svg_scale: scale.x,
-	    svg_rotate: rotate.angle,
-	};
-	AN.post( `${API_EDIT_LOCATION_ITEM_POSITION_URL}/${svgItemId}`, data );
-    }
-
     function createIconActionEditData( actionState ) {
 	if ( gSelectedIconSvgGroup ) {
             let transform = gSelectedIconSvgGroup.attr('transform');
@@ -474,12 +460,8 @@
 	}
     }
 
-    function revertIconAction( element ) {
+    function abortIconAction( element ) {
 	if ( gSvgIconActionEditData ) {
-	    setSvgTransformAttr( gSvgIconActionEditData.element,
-				 gSvgIconActionEditData.scaleStart,
-				 gSvgIconActionEditData.translateStart,
-				 gSvgIconActionEditData.rotateStart );
 	    gSvgIconActionEditData = null;
 	}
     }
@@ -497,7 +479,7 @@
 	if ( gSvgIconActionState != SvgActionStateType.SCALE ) {
 	    return;
 	}
-	revertIconAction();
+	abortIconAction();
     }
 
     function iconActionScaleFromMouseWheel( event ) {
@@ -508,13 +490,14 @@
 	}
 	console.log( `Scale multiplier = ${scaleMultiplier} [${gSvgIconActionEditData.isScaling}]` );
 	adjustIconScale( gSvgIconActionEditData.element, scaleMultiplier );
+	saveIconSvgPositionDebouncer( gSelectedIconSvgGroup );
     }
     
     function iconActionScaleUpFromKeypress() {
 	if ( gSelectedIconSvgGroup ) {
 	    let scaleMultiplier = 1.0 + ( KEYPRESS_ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
 	    adjustIconScale( gSelectedIconSvgGroup, scaleMultiplier );
-	    saveIconSvgPosition( gSelectedIconSvgGroup );
+	    saveIconSvgPositionDebouncer( gSelectedIconSvgGroup );
 	}
     }
     
@@ -522,7 +505,7 @@
 	if ( gSelectedIconSvgGroup ) {
 	    let scaleMultiplier = 1.0 - ( KEYPRESS_ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
 	    adjustIconScale( gSelectedIconSvgGroup, scaleMultiplier );
-	    saveIconSvgPosition( gSelectedIconSvgGroup );
+	    saveIconSvgPositionDebouncer( gSelectedIconSvgGroup );
 	}
     }
     
@@ -606,16 +589,19 @@ Original (str):  ${transformStr}
 	    deltaAngle = -1.0 * MOUSE_WHEEL_ROTATE_DEGREES;
 	}
 	adjustIconRotate( gSvgIconActionEditData.element, deltaAngle );
+	saveIconSvgPositionDebouncer( gSelectedIconSvgGroup );
     }
     
     function iconActionRotateRightFromKeypress() {
 	let deltaAngle = KEYPRESS_ROTATE_DEGREES;
 	adjustIconRotate( gSelectedIconSvgGroup, deltaAngle );
+	saveIconSvgPositionDebouncer( gSelectedIconSvgGroup );
     }
 
     function iconActionRotateLeftFromKeypress() {
 	let deltaAngle = -1.0 * KEYPRESS_ROTATE_DEGREES;
 	adjustIconRotate( gSelectedIconSvgGroup, deltaAngle );
+	saveIconSvgPositionDebouncer( gSelectedIconSvgGroup );
     }
 
     function adjustIconRotate( svgIconElement, deltaAngle ) {
@@ -646,12 +632,42 @@ Original (str):  ${transformStr}
 	if ( gSvgIconActionState != SvgActionStateType.ROTATE ) {
 	    return;
 	}	
-	revertIconAction();
+	abortIconAction();
     }
 
     function setSvgTransformAttr( element, scale, translate, rotate ) {
         let newTransform = `scale(${scale.x} ${scale.y}) translate(${translate.x}, ${translate.y}) rotate(${rotate.angle}, ${rotate.cx}, ${rotate.cy})`;
         element.attr('transform', newTransform);	    
     }
-        
+
+    function saveIconSvgPositionDebouncer( element ) {
+        const currentTime = Date.now();
+        const timeSinceLastApiCall = currentTime - lastPositionApiCallTime;
+
+        clearTimeout( positionApiCallDebounceTimer );
+        positionApiCallDebounceTimer = setTimeout(() => {
+	    saveIconSvgPosition( element );
+            lastPositionApiCallTime = Date.now();
+        }, POSITION_API_CALL_DEBOUNCE_MS );
+    }
+    
+    function saveIconSvgPosition( element ) {
+
+        let transform = element.attr('transform');
+        let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
+
+	const baseSvgElement = $(Hi.BASE_SVG_SELECTOR);
+	const center = Hi.svgUtils.getSvgCenterPoint( element, baseSvgElement );
+
+	let svgItemId = element.attr('id');
+	let data = {
+	    svg_x: center.x,
+	    svg_y: center.y,
+	    svg_scale: scale.x,
+	    svg_rotate: rotate.angle,
+	};
+	AN.post( `${API_EDIT_LOCATION_ITEM_POSITION_URL}/${svgItemId}`, data );
+    }
+
+    
 })();

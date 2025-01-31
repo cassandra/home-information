@@ -20,8 +20,25 @@ class SvgDecimalFormField( forms.FloatField ):
     a Decimal field in to form is fraught with issues if submitting
     higher precision than Decimal field allows.
     """
-    pass
-
+    def __init__( self,
+                  *args,
+                  min_value  : float  = None,
+                  max_value  : float  = None,
+                  **kwargs ):
+        super().__init__(*args, **kwargs)
+        self.min_value = min_value
+        self.max_value = max_value
+        return
+    
+    def clean( self, value ):
+        value = super().clean( value )
+        if value is not None:
+            if ( self.min_value is not None ) and ( value < self.min_value ):
+                value = self.min_value
+            if ( self.max_value is not None ) and ( value > self.max_value ):
+                value = self.max_value
+        return value
+       
 
 class SvgFileForm(forms.Form):
     """

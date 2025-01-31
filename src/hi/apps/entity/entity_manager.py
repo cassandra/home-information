@@ -73,7 +73,10 @@ class EntityManager(Singleton):
                 location = location_view.location,
             ).first()
             if entity_position:
-                entity_position_form = EntityPositionForm( instance = entity_position )
+                entity_position_form = EntityPositionForm(
+                    location_view.location.svg_position_bounds,
+                    instance = entity_position,
+                )
 
         entity_pairing_list = EntityPairingManager().get_entity_pairing_list( entity = entity )
         

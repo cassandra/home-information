@@ -257,7 +257,10 @@ class CollectionManager(Singleton):
                 location = location_view.location,
             ).first()
             if collection_position:
-                collection_position_form = CollectionPositionForm( instance = collection_position )
+                collection_position_form = CollectionPositionForm(
+                    location_view.location.svg_position_bounds,
+                    instance = collection_position,
+                )
         
         collection_edit_data = CollectionEditData( collection = collection )
         return CollectionDetailsData(

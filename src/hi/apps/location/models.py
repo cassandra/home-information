@@ -3,7 +3,7 @@ import logging
 from django.core.files.storage import default_storage
 from django.db import models
 
-from hi.apps.common.svg_models import SvgDecimalField, SvgViewBox
+from hi.apps.common.svg_models import SvgDecimalField, SvgItemPositionBounds, SvgViewBox
 from hi.apps.attribute.models import AttributeModel
 from hi.enums import ItemType
 from hi.models import ItemTypeModelMixin
@@ -69,6 +69,18 @@ class Location( models.Model, ItemTypeModelMixin ):
         self.svg_view_box_str = str(svg_view_box)
         return
 
+    @property
+    def svg_position_bounds( self ):
+        svg_view_box = self.svg_view_box
+        return SvgItemPositionBounds(
+            min_x = svg_view_box.x,
+            min_y = svg_view_box.y,
+            max_x = svg_view_box.x + svg_view_box.width,
+            max_y = svg_view_box.y + svg_view_box.height,
+            min_scale = 0.1,
+            max_scale = 25.0,
+        )
+    
     def delete( self, *args, **kwargs ):
         """ Deleting SVG file from MEDIA_ROOT on best effort basis.  Ignore if fails. """
         
