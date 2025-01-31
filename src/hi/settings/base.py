@@ -268,7 +268,7 @@ PIPELINE = {
     'DISABLE_WRAPPER': True,  # Important since some scripts assume global scope
 
     'CSS_COMPRESSOR': 'django_pipeline_csscompressor.CssCompressor',
-    'JS_COMPRESSOR': 'pipeline.compressors.jsmin.JSMinCompressor',
+    'JS_COMPRESSOR': None,
     
     'STYLESHEETS': {
         'css_head': {

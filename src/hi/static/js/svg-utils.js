@@ -16,17 +16,14 @@
 	const $baseSvg = $('#' + htmlId + ' svg' );
 
 	const bbox = $baseSvg[0].getBoundingClientRect();
+	const viewBox = Hi.getSvgViewBox( $baseSvg );	
 
-	const viewBox = $baseSvg.attr('viewBox').split(' ').map(Number);
-	const viewBoxWidth = viewBox[2];
-	const viewBoxHeight = viewBox[3];
-	
-	const scaleX = bbox.width / viewBoxWidth;
-	const scaleY = bbox.height / viewBoxHeight;
+	const scaleX = bbox.width / viewBox.width;
+	const scaleY = bbox.height / viewBox.height;
 	
 	return {
 	    htmlBoundingBox : bbox,
-	    svgViewBox : { x: viewBox[0], y: viewBox[1], width: viewBox[2], height: viewBox[3] },
+	    svgViewBox : viewBox,
 	    scaleX : scaleX,
 	    scaleY : scaleY
 	};

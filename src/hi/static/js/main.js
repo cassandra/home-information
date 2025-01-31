@@ -5,8 +5,8 @@
 	DEBUG: true,
 	isEditMode: ( gHiViewMode == 'edit' ),  // Set by server to keep front-end in sync with back-end
 	LOCATION_VIEW_AREA_SELECTOR: '#hi-location-view-main',
-	LOCATION_VIEW_SVG_CLASS: 'hi-location-view',
-	LOCATION_VIEW_SVG_SELECTOR: '.hi-location-view',
+	LOCATION_VIEW_SVG_CLASS: 'hi-location-view-svg',
+	LOCATION_VIEW_SVG_SELECTOR: '.hi-location-view-svg',
 	LOCATION_VIEW_BASE_SELECTOR: '.hi-location-view-base',
 	BASE_SVG_SELECTOR: '#hi-location-view-main > svg',
 	HIGHLIGHTED_CLASS: 'highlighted',
@@ -51,6 +51,9 @@
 	},
 	getSvgViewBox: function( svgElement ) {
 	    return _getSvgViewBox( svgElement );
+	},
+	setSvgViewBox: function( svgElement, newX, newY, newWidth, newHeight ) {
+	    return _setSvgViewBox( svgElement, newX, newY, newWidth, newHeight );
 	},
 	getExtentsSvgViewBox: function( svgElement ) {
 	    return _getExtentsSvgViewBox( svgElement );
@@ -209,24 +212,63 @@
 	let y = null;
 	let width = null;
 	let height = null;
-	
+
 	if (svgElement.length < 1 ) {
-	    return { x, y, width, height };
+	    return { x: x, y: y, width: width, height: height };
 	}
-        let viewBoxValue = $(svgElement).attr( attrName );
-        if ( ! viewBoxValue) {
-	    return { x, y, width, height };
+        let viewBoxValueJquery = $(svgElement).attr( attrName );
+	let viewBoxValue = $(svgElement)[0].getAttribute( attrName );
+
+	if ( viewBoxValue != viewBoxValueJquery ) {
+	    console.warning( `Inconsistent SVG viewBox: jQuery=${viewBoxValueJquery}, DOM=${viewBoxValue}` );
+	}
+	
+	if ( viewBoxValue === null || viewBoxValue === undefined ) {
+            console.error( "No viewBox value found.", svgElement );
+	    return { x: x, y: y, width: width, height: height };
 	}
 	
 	let viewBoxArray = viewBoxValue.split(' ').map(Number);
+
+	if (viewBoxArray.length !== 4 || viewBoxArray.some(isNaN)) {
+            console.error( `Invalid viewBox attribute: ${viewBoxValue}`, svgElement );
+	    return { x: x, y: y, width: width, height: height };
+	}
+	
 	x = viewBoxArray[0];
 	y = viewBoxArray[1];
 	width = viewBoxArray[2];
 	height = viewBoxArray[3];
 	
-	return { x, y, width, height };
+	return { x: x, y: y, width: width, height: height };
     }
 
+    function _setSvgViewBox( svgElement, newX, newY, newWidth, newHeight ) {
+	if ( $(svgElement).length < 1 ) {
+            console.error("SVG element is null or undefined.");
+            return;
+	}
+	if ( typeof newX !== 'number' || isNaN(newX)) {
+            console.error("newX is not a valid number:", newX);
+            return;
+	}
+	if ( typeof newY !== 'number' || isNaN(newY)) {
+            console.error("newY is not a valid number:", newY);
+            return;
+	}
+	if ( typeof newWidth !== 'number' || isNaN(newWidth) || newWidth <= 0) {
+            console.error("newWidth is not a valid positive number:", newWidth);
+            return;
+	}
+	if ( typeof newHeight !== 'number' || isNaN(newHeight) || newHeight <= 0) {
+            console.error("newHeight is not a valid positive number:", newHeight);
+            return;
+	}
+
+	const svgViewBoxStr = `${newX} ${newY} ${newWidth} ${newHeight}`;
+	$(svgElement).attr('viewBox', svgViewBoxStr );	    	
+    }
+    
     function _getExtentsSvgViewBox( svgElement ) {
 	// Hi-specific attribute used for pan, zoom and edit operations.
 	return _getSvgViewBox( svgElement, 'extents' );
@@ -348,9 +390,9 @@
 	
 	let svgStr = 'Not an SVG';
 	if ( elementTag == 'svg' ) {
-	    let { x, y, width, height } = _getSvgViewBox( element );
+	    let viewBox = _getSvgViewBox( element );
 	    if ( x != null ) {
-		svgStr = `Viewbox: ( ${x}, ${y}, ${width}, ${height} )`;
+		svgStr = `Viewbox: ( ${viewBox.x}, ${viewBox.y}, ${viewBox.width}, ${viewBox.height} )`;
 	    } else {
 		svgStr = 'No viewbox attribute';
 	    }

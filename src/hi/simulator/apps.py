@@ -30,6 +30,6 @@ class SimulatorConfig(AppConfig):
             or ( "gunicorn" in sys.argv[0] )):
             return
 
-        time.sleep(1)
+        time.sleep(1)  # Hack - Despite this method's name, Django is not actually "ready".
         start_background_event_loop( task_function = SimulatorManager().initialize ) 
         return

@@ -271,7 +271,7 @@ input[type="number"] {
     align-items: center;
     height: calc(100vh - var(--top-buttons-height) - var(--bottom-buttons-height) ); 
 }
-.hi-location-view svg {
+.hi-location-view-svg {
     max-height: calc(100vh - var(--top-buttons-height) - var(--bottom-buttons-height) ); 
     width: auto;
     height: auto;

@@ -476,10 +476,9 @@
             newY = extentsSvgViewBox.y + extentsSvgViewBox.height - newHeight;
 	}
 
-	let svgViewBoxStr = `${newX} ${newY} ${newWidth} ${newHeight}`;
-        $(gSelectedLocationViewSvg).attr('viewBox', svgViewBoxStr );	    	
+	Hi.setSvgViewBox( gSelectedLocationViewSvg, newX, newY, newWidth, newHeight );
     }
-    
+
     function calculateRotatedRectangle( initialRect, rotationAngle ) {
 
 	let corners = [
