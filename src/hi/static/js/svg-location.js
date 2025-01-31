@@ -352,9 +352,9 @@
 	const e = event.originalEvent;
 
         // Immediately update the visual
- 	let scaleFactor = 1.0 + ( MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
+ 	let scaleFactor = 1.0 - ( MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
         if ( e.deltaY > 0 ) {
-  	    scaleFactor = 1.0 - ( MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
+  	    scaleFactor = 1.0 + ( MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
         }
 	zoom( scaleFactor );
 	saveSvgGeometryDebouncer();
