@@ -101,6 +101,3 @@ class IntegrationKeyModel( models.Model ):
         self.integration_id = integration_key.integration_id
         self.integration_name = integration_key.integration_name
         return 
-    
-    
-    

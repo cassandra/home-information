@@ -1,28 +1,31 @@
+import os
+import sys
 from django.apps import AppConfig
-from django.core.checks import Error, register
-
-from hi.apps.common.asyncio_utils import start_background_event_loop
 
 
-class CoreConfig(AppConfig):
+class IntegrationsConfig(AppConfig):
 
     default_auto_field = "django.db.models.BigAutoField"
     name = "hi.integrations"
 
+    def ready(self):
+        from hi.background_tasks import HiBackgroundTaskHelper
+        
+        # Notes:
+        #  - This method does not run in a production-like environment using gunicorn.
+        #  - When it is called, it is often called multiple times during Django initialization.
+        #  - Django seem to be suing different processes on each invocation.
+        
+        if os.environ.get('RUN_MAIN') != 'true':  # Prevents duplicate execution in `runserver`
+            return
+        
+        # The responsibility for replicating the logic below falls to
+        # gunicorn when it is being used (via its post_fork() config file).
+        #
+        if (( "gunicorn" in os.environ.get("SERVER_SOFTWARE", ""))
+            or ( "gunicorn" in sys.argv[0] )):
+            return
 
-@register()
-def check_start_background_tasks( app_configs, **kwargs ):
-    """Start background tasks after all system checks have passed."""
-    from hi.integrations.integration_manager import IntegrationManager
-    try:
-        start_background_event_loop( task_function = IntegrationManager().initialize ) 
-    except Exception as e:
-        return [
-            Error(
-                "Failed to start integration background threrad or tasks.",
-                hint = f"Error: {e}",
-                obj = 'start_background_thread',
-                id = 'hi.apps.integraton',
-            )
-        ]
-    return []
+        HiBackgroundTaskHelper.start_background_tasks_delayed()
+        return
+    

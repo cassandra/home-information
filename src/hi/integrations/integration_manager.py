@@ -26,6 +26,9 @@ logger = logging.getLogger(__name__)
 
 class IntegrationManager( Singleton ):
 
+    def __new__(cls):
+        return super().__new__(cls)
+    
     def __init_singleton__( self ):
         self._integration_data_map : Dict[ str, IntegrationData ] = dict()
         self._monitor_map = dict()
@@ -273,4 +276,3 @@ class IntegrationManager( Singleton ):
                 integration_data.integration.save()
             self._stop_integration_monitor( integration_data = integration_data )
         return
-    

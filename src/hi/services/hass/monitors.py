@@ -1,3 +1,4 @@
+from asgiref.sync import async_to_sync
 import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
 
-    HASS_POLLING_INTERVAL_SECS = 10
+    HASS_POLLING_INTERVAL_SECS = 2
 
     def __init__( self ):
         super().__init__(
@@ -39,8 +40,12 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
     async def do_work(self):
         if not self._was_initialized:
             await self._initialize()
-            
-        id_to_hass_state_map = self.hass_manager().fetch_hass_states_from_api( verbose = False )
+
+        hass_manager = await self.hass_manager_async()
+        if not hass_manager:
+            return
+        
+        id_to_hass_state_map = hass_manager.fetch_hass_states_from_api( verbose = False )
         logger.debug( f'Fetched {len(id_to_hass_state_map)} HAss States' )
         
         current_datetime = datetimeproxy.now()

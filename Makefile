@@ -13,6 +13,9 @@ docker-build:	Dockerfile
 		--tag hi:latest .
 
 docker-run:	.private/env/local.dev Dockerfile
+	./deploy/run_container.sh -bg
+
+docker-run-fg:	.private/env/local.dev Dockerfile
 	./deploy/run_container.sh
 
 docker-stop:	

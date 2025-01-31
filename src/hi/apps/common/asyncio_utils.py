@@ -8,9 +8,8 @@ def start_background_event_loop( task_function ):
     
     :param task_function: Async function to be executed inside the thread.
     """
-    
     def run_background_task_in_thread():
-        
+
         async def run_background_task():
             await task_function()
             return
@@ -21,7 +20,7 @@ def start_background_event_loop( task_function ):
         background_loop.call_soon_threadsafe( asyncio.create_task, run_background_task() )
         background_loop.run_forever()
         return
-    
+
     background_thread = Thread( target = run_background_task_in_thread )
     background_thread.daemon = True
     background_thread.start()

@@ -1,7 +1,7 @@
 FROM python:3.11
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends supervisor nginx redis-server \
+    && apt-get install -y --no-install-recommends supervisor nginx redis-server redis-tools \
     && mkdir -p /var/log/supervisor \
     && mkdir -p /etc/supervisor/conf.d \
     && rm -rf /var/lib/apt/lists/* \
@@ -25,8 +25,8 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 COPY src/hi/requirements/base.txt /src/requirements.txt
 RUN pip install --no-cache-dir --root-user-action=ignore -r requirements.txt
 
-COPY packaging/supervisor-interface.conf /etc/supervisor/conf.d/waa-interface.conf
-COPY packaging/nginx-interface.conf /etc/nginx/sites-available/default
+COPY packaging/docker_supervisord.conf /etc/supervisor/conf.d/hi.conf
+COPY packaging/docker_nginx.conf /etc/nginx/sites-available/default
 
 COPY packaging/docker_entrypoint.sh /src/entrypoint.sh
 RUN chmod +x /src/entrypoint.sh

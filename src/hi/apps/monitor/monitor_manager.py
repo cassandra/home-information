@@ -81,4 +81,3 @@ class AppMonitorManager( Singleton ):
             continue
 
         return periodic_monitor_class_list
-       

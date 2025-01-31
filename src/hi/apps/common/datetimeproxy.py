@@ -408,3 +408,7 @@ def is_time_of_day_in_interval( time_of_day_str  : str,
     target_datetime_tz = timezone.localize( datetime.datetime.combine( today, target_time ) )
 
     return bool(( target_datetime_tz > start_datetime_tz ) and ( target_datetime_tz <= end_datetime_tz ))
+
+
+def is_valid_timezone_name( tz_name : str ) -> bool:
+    return tz_name in pytz.all_timezones_set

@@ -11,14 +11,8 @@ class Singleton:
             with cls._lock:
                 if cls._instance is None: 
                     cls._instance = super().__new__(cls)
-                    cls._instance.__init_singleton_internal__()
+                    cls._instance.__init_singleton__()
         return cls._instance
-
-    def __init_singleton_internal__(self):
-        if not self._initialized:
-            self._initialized = True
-            self.__init_singleton__()
-        return
 
     def __init_singleton__(self):
         """ Subclasses can override this if needed. """

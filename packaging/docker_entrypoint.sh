@@ -1,8 +1,7 @@
 #!/bin/bash
 
+echo "Initial Django admin initialization."
 cd /src
-
-echo "Starting initialization..."
 
 echo "Collecting static files..."
 python manage.py collectstatic --noinput

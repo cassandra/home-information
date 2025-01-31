@@ -237,8 +237,13 @@ class ZoneMinderManager( Singleton ):
                 integration_key_str = str(integration_key),
             ).first()
             if integration_attribute:
-                return integration_attribute.value
-            logger.error( 'ZoneMinder integration is not implemented.' )
+                tz_name = integration_attribute.value
+                if datetimeproxy.is_valid_timezone_name( tz_name = tz_name ):
+                    return tz_name
+                else:
+                    logger.warning( f'ZoneMinder timezone setting is invalid: {tz_name}' )
+                    
+            logger.error( 'ZoneMinder timezone name is not available.' )
                 
         except IntegrationAttribute.DoesNotExist:
             logger.error( 'ZoneMinder timezone not found.' )

@@ -1,27 +1,30 @@
+import os
+import sys
 from django.apps import AppConfig
-from django.core.checks import Error, register
-
-from hi.apps.common.asyncio_utils import start_background_event_loop
 
 
 class MonitorConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "hi.apps.monitor"
 
+    def ready(self):
+        from hi.background_tasks import HiBackgroundTaskHelper
+        
+        # Notes:
+        #  - This method does not run in a production-like environment using gunicorn.
+        #  - When it is called, it is often called multiple times during Django initialization.
+        #  - Django seem to be suing different processes on each invocation.
 
-@register()
-def check_start_background_tasks( app_configs, **kwargs ):
-    """Start background tasks after all system checks have passed."""
-    from hi.apps.monitor.monitor_manager import AppMonitorManager
-    try:
-        start_background_event_loop( task_function = AppMonitorManager().initialize ) 
-    except Exception as e:
-        return [
-            Error(
-                "Failed to start background tasks.",
-                hint=f"Error: {e}",
-                obj='background_tasks',
-                id='hi.apps.monitor',
-            )
-        ]
-    return []
+        if os.environ.get('RUN_MAIN') != 'true':  # Prevents duplicate execution in `runserver`
+            return
+
+        # The responsibility for replicating the logic below falls to
+        # gunicorn when it is being used (via its post_fork() config file).
+        #
+        if (( "gunicorn" in os.environ.get("SERVER_SOFTWARE", ""))
+            or ( "gunicorn" in sys.argv[0] )):
+            return
+
+        HiBackgroundTaskHelper.start_background_tasks_delayed()
+        return
+    

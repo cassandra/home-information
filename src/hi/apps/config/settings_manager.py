@@ -190,7 +190,7 @@ _thread_local = local()
 def do_settings_manager_reload():
     logger.debug( 'Reloading SettingsManager from model changes.')
     settings_manager = SettingsManager()
-    settings_manager = settings_manager.ensure_initialized()
+    settings_manager.ensure_initialized()
     settings_manager.reload()
     _thread_local.reload_registered = False
     return

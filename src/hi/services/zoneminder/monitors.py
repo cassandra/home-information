@@ -21,7 +21,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
 
     # TODO: Move this into the integrations attributes for users to set
     ZONEMINDER_SERVER_TIMEZONE = 'America/Chicago'
-    ZONEMINDER_POLLING_INTERVAL_SECS = 10
+    ZONEMINDER_POLLING_INTERVAL_SECS = 4
 
     CACHING_DISABLED = True
     
