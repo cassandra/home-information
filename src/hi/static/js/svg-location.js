@@ -53,12 +53,14 @@
     const SVG_TRANSFORM_ACTION_ZOOM_OUT_KEY = '-';
 
     const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3; // Differentiate between move events and sloppy clicks
-    const PIXEL_MOVE_DISTANCE_SCALE_FACTOR = 500.0;
-    const ZOOM_SCALE_FACTOR_PERCENT = 10.0;
+    const PIXEL_MOVE_DISTANCE_SCALE_FACTOR = 250.0;
+    const KEYPRESS_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
+    const MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
+    const ZOOM_API_CALL_DEBOUNCE_MS = 500;
 
     const LOCATION_VIEW_EDIT_PANE_SELECTOR = '#hi-location-view-edit';
     const API_EDIT_LOCATION_VIEW_GEOMETRY_URL = '/location/edit/location-view/geometry';
-    
+
     const SvgTransformType = {
 	MOVE: 'move',
 	SCALE: 'scale',
@@ -71,6 +73,9 @@
     let gLastMousePosition = { x: 0, y: 0 };
     let gIgnoreCLick = false;  // Set by mouseup handling when no click handling should be done
 
+    let zoomApiCallDebounceTimer = null;
+    let lastZoomApiCallTime = 0;
+    
     function _handleMouseDown( event ) {
 	if ( gSelectedLocationViewSvg ) {
 	    if ( Hi.DEBUG ) { console.log( `Mouse down event [${MODULE_NAME}]`, event ); }
@@ -158,17 +163,10 @@
     
     function _handleMouseWheel( event ) {
 	if ( gSelectedLocationViewSvg && isEventInLocationArea( event )) {
-	    event.preventDefault(); 
-	    event.stopImmediatePropagation();
 	    abortScale();
 	    abortRotation();
-	    const e = event.originalEvent;
-	    if ( e.deltaY < 0 ) {
-		zoomIn();
-	    } else {
-		zoomOut();
-	    }
-	    event.preventDefault();   		
+	    zoomFromMouseWheel( event );
+	    event.preventDefault(); 
 	    event.stopImmediatePropagation();
 	    return true;
 	}
@@ -231,12 +229,12 @@
 		} else if ( event.key == SVG_TRANSFORM_ACTION_ZOOM_IN_KEY ) {
 		    abortScale();
 		    abortRotation();
-		    zoomIn( event );
+		    zoomInFromKeypress( event );
 		    
 		} else if ( event.key == SVG_TRANSFORM_ACTION_ZOOM_OUT_KEY ) {
 		    abortScale();
 		    abortRotation();
-		    zoomOut( event );
+		    zoomOutFromKeypress( event );
 		    
 		} else if ( event.key == 'Escape' ) {
 		    abortScale();
@@ -337,18 +335,34 @@
     }
 
 
-    function zoomIn( event ) {
-	let scaleFactor = 1.0 / ( 1.0 + ( ZOOM_SCALE_FACTOR_PERCENT / 100.0 ));
-	let initialSvgViewBox = Hi.svgUtils.getSvgViewBox( gSelectedLocationViewSvg );
-	scaleSvgViewBox( initialSvgViewBox, scaleFactor );
-	saveSvgGeometryIfNeeded();
+    function zoomInFromKeypress( event ) {
+	let scaleFactor = 1.0 / ( 1.0 + ( KEYPRESS_ZOOM_SCALE_FACTOR_PERCENT / 100.0 ));
+	zoom( scaleFactor );
+	saveSvgGeometryDebouncer();
     }
     
-    function zoomOut( event ) {
-	let scaleFactor = 1.0 + ( ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
+    function zoomOutFromKeypress( event ) {
+	let scaleFactor = 1.0 + ( KEYPRESS_ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
+	zoom( scaleFactor );
+	saveSvgGeometryDebouncer();
+    }
+
+    function zoomFromMouseWheel( event ) {
+
+	const e = event.originalEvent;
+
+        // Immediately update the visual
+ 	let scaleFactor = 1.0 + ( MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
+        if ( e.deltaY > 0 ) {
+  	    scaleFactor = 1.0 - ( MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
+        }
+	zoom( scaleFactor );
+	saveSvgGeometryDebouncer();
+    }
+
+    function zoom( scaleFactor ) {
 	let initialSvgViewBox = Hi.svgUtils.getSvgViewBox( gSelectedLocationViewSvg );
 	scaleSvgViewBox( initialSvgViewBox, scaleFactor );
-	saveSvgGeometryIfNeeded();
     }
     
     function startScale( event ) {
@@ -537,26 +551,22 @@
 	return { x: newX, y: newY };
     }
 
-    function saveSvgGeometryIfNeeded( ) {
-	if ( ! Hi.isEditMode || ! gSelectedLocationViewSvg ) {
+    function saveSvgGeometryDebouncer() {
+	if ( ! shouldSaveGeometry() ) {
 	    return;
 	}
+        const currentTime = Date.now();
+        const timeSinceLastApiCall = currentTime - lastZoomApiCallTime;
 
-	/* We only save the current location view geometry on a change if
-	   the Location View editing pane is showing. automatically saving
-	   the geometry after all move/scale/rotate operations is more
-	   inconvenient than helpful.  While editing, it is often useful to
-	   manipulate the location view geometry while editing and
-	   arranging the entities.  If these entity refinements happen
-	   after the the desired geometry has been set, then the act of
-	   editing those entities and manipulating the location view will
-	   result in undoing the original geometry work. Further, the user
-	   only finds this out after they exit editing mode and see that it
-	   has changed.  Thus, we changed to require an explicit the location
-	   editing view pane to be visible.
-	*/
-
-	if ( $(LOCATION_VIEW_EDIT_PANE_SELECTOR).length < 1 ) {
+        clearTimeout( zoomApiCallDebounceTimer );
+        zoomApiCallDebounceTimer = setTimeout(() => {
+	    saveSvgGeometryIfNeeded();
+            lastZoomApiCallTime = Date.now();
+        }, ZOOM_API_CALL_DEBOUNCE_MS );
+    }
+    
+    function saveSvgGeometryIfNeeded( ) {
+	if ( ! shouldSaveGeometry() ) {
 	    return;
 	}
 	if ( Hi.DEBUG ) { console.log( `Saving SVG geometry [${MODULE_NAME}]` ); }
@@ -572,6 +582,25 @@
 	};
 	
 	AN.post( `${API_EDIT_LOCATION_VIEW_GEOMETRY_URL}/${locationViewId}`, data );
+    }
+
+    function shouldSaveGeometry() {
+	/* We only save the current location view geometry on a change if
+	   the Location View editing pane is showing. automatically saving
+	   the geometry after all move/scale/rotate operations is more
+	   inconvenient than helpful.  While editing, it is often useful to
+	   manipulate the location view geometry while editing and
+	   arranging the entities.  If these entity refinements happen
+	   after the the desired geometry has been set, then the act of
+	   editing those entities and manipulating the location view will
+	   result in undoing the original geometry work. Further, the user
+	   only finds this out after they exit editing mode and see that it
+	   has changed.  Thus, we changed to require an explicit the location
+	   editing view pane to be visible.
+	*/
+	return ( Hi.isEditMode
+		 && gSelectedLocationViewSvg
+		 && ( $(LOCATION_VIEW_EDIT_PANE_SELECTOR).length > 0 ));
     }
     
 })();
