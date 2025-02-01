@@ -1,7 +1,7 @@
 {% extends "modals/action_with_cancel.html" %}
 
 {% block preamble %}
-<form action="{% url 'collection_edit_collection_add' %}" method="post"
+<form action="{% url 'collection_add' %}" method="post"
       class="form" data-async="modal">
   {% csrf_token %}
 {% endblock %}
@@ -12,7 +12,14 @@ New Collection
 
 {% block body %}
 <div>
-{% include "collection/edit/panes/collection_form.html" %}
+{% include "collection/edit/panes/collection_form.html" with collection_form=collection_add_form %}
+<p>
+  <div class="form-check">
+    {{ collection_add_form.include_in_location_view }}
+    {{ collection_add_form.include_in_location_view.label }}
+  </div>
+</p>
+
 </div>
 {% endblock %}
 

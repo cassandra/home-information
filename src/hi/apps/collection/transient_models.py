@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List
 
-from hi.apps.collection.edit.forms import CollectionForm, CollectionPositionForm
+from hi.apps.collection.edit.forms import CollectionEditForm, CollectionPositionForm
 from hi.apps.entity.enums import EntityGroupType
 from hi.apps.entity.models import Entity
 from hi.apps.monitor.transient_models import EntityStatusData
@@ -54,13 +54,13 @@ class EntityCollectionGroup:
 class CollectionEditData:
     """ All the data needed to render the Collection edit pane (subset of all collection details). """
 
-    collection                : Collection
-    collection_form           : CollectionForm  = None
+    collection            : Collection
+    collection_edit_form  : CollectionEditForm  = None
 
     def __post_init__(self):
 
-        if not self.collection_form:
-            self.collection_form = CollectionForm(
+        if not self.collection_edit_form:
+            self.collection_edit_form = CollectionEditForm(
                 instance = self.collection,
             )
         return
@@ -68,7 +68,7 @@ class CollectionEditData:
     def to_template_context(self):
         return {
             'collection': self.collection,
-            'collection_form': self.collection_form,
+            'collection_edit_form': self.collection_edit_form,
         }
     
 

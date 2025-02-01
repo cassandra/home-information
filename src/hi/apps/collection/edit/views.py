@@ -36,22 +36,31 @@ class CollectionAddView( HiModalView ):
         return 'collection/edit/modals/collection_add.html'
 
     def get( self, request, *args, **kwargs ):
+
+        include_in_location_view = False
+        if request.view_parameters.view_type == ViewType.LOCATION_VIEW:
+            include_in_location_view = True
+        
         context = {
-            'collection_form': forms.CollectionForm(),
+            'collection_add_form': forms.CollectionAddForm(
+                include_in_location_view = include_in_location_view,
+            ),
         }
         return self.modal_response( request, context )
     
     def post( self, request, *args, **kwargs ):
-        collection_form = forms.CollectionForm( request.POST )
-        if not collection_form.is_valid():
+        
+        collection_add_form = forms.CollectionAddForm( request.POST )
+        if not collection_add_form.is_valid():
             context = {
-                'collection_form': collection_form,
+                'collection_add_form': collection_add_form,
             }
             return self.modal_response( request, context )
 
+        cleaneds_data = collection_add_form.clean()
         with transaction.atomic():
-            collection = collection_form.save()
-            if request.view_parameters.view_type == ViewType.LOCATION_VIEW:
+            collection = collection_add_form.save()
+            if cleaneds_data['include_in_location_view']:
                 self._add_to_location_view(
                     request = request,
                     collection = collection,
@@ -114,16 +123,16 @@ class CollectionEditView( View, CollectionViewMixin ):
     def post( self, request, *args, **kwargs ):
         collection = self.get_collection( request, *args, **kwargs )
 
-        collection_form = forms.CollectionForm( request.POST, instance = collection )
-        if collection_form.is_valid():
-            collection_form.save()
+        collection_edit_form = forms.CollectionEditForm( request.POST, instance = collection )
+        if collection_edit_form.is_valid():
+            collection_edit_form.save()
             # Change can impact other parts of UI. e.g., Collection name shows on bottom of screen
             return antinode.refresh_response()
 
         # On error, show form errors        
         collection_edit_data = CollectionEditData(
             collection = collection,
-            collection_form = collection_form,
+            collection_edit_form = collection_edit_form,
         )
         return self.collection_edit_response(
             request = request,

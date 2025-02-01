@@ -7,7 +7,7 @@ urlpatterns = [
 
     re_path( r'^collection/add$', 
              views.CollectionAddView.as_view(), 
-             name='collection_edit_collection_add' ),
+             name='collection_add' ),
 
     re_path( r'^collection/edit/(?P<collection_id>\d+)$', 
              views.CollectionEditView.as_view(), 

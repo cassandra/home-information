@@ -5,7 +5,7 @@ from hi.apps.collection.models import Collection, CollectionPosition
 from hi.apps.location.edit.forms import LocationItemPositionForm
 
 
-class CollectionForm( forms.ModelForm ):
+class CollectionBaseForm( forms.ModelForm ):
 
     class Meta:
         model = Collection
@@ -32,7 +32,26 @@ class CollectionForm( forms.ModelForm ):
         widget = forms.Select( attrs = { 'class' : 'custom-select' } ),
     )
 
-        
+
+class CollectionEditForm( CollectionBaseForm ):
+    pass
+
+    
+class CollectionAddForm( CollectionBaseForm ):
+
+    include_in_location_view = forms.BooleanField(
+        label = 'Include in Current Location View?',
+        required = False,
+        initial = False,
+    )
+
+    def __init__(self, *args, **kwargs):
+        include_in_location_view = kwargs.pop( 'include_in_location_view', False )
+        super().__init__(*args, **kwargs)
+        self.fields['include_in_location_view'].initial = include_in_location_view
+        return
+
+    
 class CollectionPositionForm( LocationItemPositionForm ):
     class Meta( LocationItemPositionForm.Meta ):
         model = CollectionPosition
