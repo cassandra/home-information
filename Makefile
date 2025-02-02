@@ -22,7 +22,7 @@ docker-stop:
 	docker stop hi
 
 env-build:	.private/env/local.dev
-	./deploy/env-generate.py -env-name local
+	./deploy/env-generate.py --env-name local
 
 env-build-dev:	.private/env/development.dev
 	./deploy/env-generate.py --env-name development
