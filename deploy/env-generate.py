@@ -70,7 +70,8 @@ class EmailSettings:
 class HiEnvironmentGenerator:
 
     SECRETS_DIRECTORY = '.private/env'
-
+    DEFAULT_ADMIN_EMAIL = 'admin@example.com'
+    
     def __init__( self,
                   env_name  : str = 'local',
                   verbose   : bool = False ):
@@ -167,7 +168,7 @@ class HiEnvironmentGenerator:
             self.print_notice( 'You may have to configure your email provider to allow this.' )
         else:
             return EmailSettings(
-                email_address = '',
+                email_address = self.DEFAULT_ADMIN_EMAIL,
                 password = '',
                 smtp_settings = SmtpSettings(
                     host = '',
