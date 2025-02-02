@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
 
-    SECURITY_POLLING_INTERVAL_SECS = 60
+    SECURITY_POLLING_INTERVAL_SECS = 5
 
     def __init__( self ):
         super().__init__(
@@ -29,7 +29,7 @@ class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
         return
 
     async def _check_security_state( self ):
-        logger.debug( 'Checking security state.' )
+        logger.debug( 'Security monitor: Checking security state.' )
         settings_manager = await self.settings_manager_async()
         if not settings_manager:
             return
@@ -44,6 +44,7 @@ class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
         try:
             # Some states do not allow automated changes
             if not security_manager.security_state.auto_change_allowed:
+                logger.debug( f'Security state "{security_manager.security_state}". Auto-change not allowed.' )
                 return
 
             day_start_time_of_day = settings_manager.get_setting_value(
@@ -73,7 +74,8 @@ class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
                     new_security_state = SecurityState.NIGHT,
                 )
                 return
-            
+
+            logger.debug( 'Security monitor: No change needed.' )
         finally:
             self._last_security_state_check_datetime = current_datetime
         return

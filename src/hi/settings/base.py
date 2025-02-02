@@ -383,6 +383,14 @@ BASE_URL_FOR_EMAIL_LINKS = 'https://{SITE_DOMAIN}'
 # When tests functionality requires knowing if in unit test context.
 UNIT_TESTING = False
 
+# In development and debugging, because the background javascript is
+# polling frequently, this clutters up the console with log messages which
+# makes it hard to sort through the other things logging.  This allows
+# suppressing those via a logging filter.  This only applies if the logging
+# configuration is using that special filter (in hi.log_filters".
+#
+SUPPRESS_SELECT_REQUEST_ENPOINTS_LOGGING = True
+
 # In development and debugging, the debug noise and interference from the
 # background periodic monitoring tasks can be a problem. This gives a way
 # to turn them off with one setting.

@@ -195,8 +195,11 @@ class SecurityManager( Singleton, SettingsMixin ):
         return
     
     def update_security_state_auto( self, new_security_state  : SecurityState ):
-        """Special updating when coming from automation since extra handling is
-        needed if state is in a delayed transition (via SET_AWAY or SNOOZE)."""
+        """
+        Special updating when coming from automation since extra handling is
+        needed if state is in a delayed transition (via SET_AWAY or
+        SNOOZE).
+        """
         with self._security_status_lock:
             if not self._security_state.auto_change_allowed:
                 logger.warning( f'Security state auto update but state={self._security_state}' )

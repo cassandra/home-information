@@ -91,6 +91,16 @@ STATIC_ROOT = '/tmp/hi/static'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+
+    # Since the API status gets polled frequently, this gums up the
+    # terminal and make developing and debugging everything else more
+    # unpleasant.
+    #
+    'filters': {
+        'suppress_select_request_endpoints': {
+            '()': 'hi.log_filters.SuppressSelectRequestEndpointsFilter',
+        },
+    },
     'formatters': {
         'simple': {
             'format': '{levelname} {message}',
@@ -100,6 +110,7 @@ LOGGING = {
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'filters': [ 'suppress_select_request_endpoints' ],
             'formatter': 'simple',
         },
     },
@@ -116,53 +127,58 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
         },
-        "django.core.mail": {
-            "handlers": ["console"],
-            "level": "DEBUG",
+        'django.core.mail': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
         },
         'hi.apps.alert': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
         'hi.apps.control': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
         'hi.apps.notify': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
         'hi.apps.monitor': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
         'hi.apps.sense': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'hi.apps.security': {
+            'handlers': ['console' ],
+            'level': 'INFO',
             'propagate': False,
         },
         'hi.integrations': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
         'hi.services.hass': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
         'hi.services.zoneminder': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
         'hi': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
     },
 }
@@ -171,6 +187,7 @@ BASE_URL_FOR_EMAIL_LINKS = 'http:/127.0.0.1:8000/'
 
 # Uncomment to suppress email sending and write to console.
 #
-# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+SUPPRESS_SELECT_REQUEST_ENPOINTS_LOGGING = True
 SUPPRESS_MONITORS = False
