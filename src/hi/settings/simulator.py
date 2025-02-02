@@ -11,6 +11,7 @@ INSTALLED_APPS = [
     'pipeline',
     'django.contrib.humanize',
     
+    'custom',
     'hi.apps.common',
     'hi.simulator',
     'hi.simulator.services.hass',

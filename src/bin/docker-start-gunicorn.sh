@@ -5,7 +5,7 @@
 # API polling and processes having inconsistent states.
 
 NUM_WORKERS=1
-NUM_THREADS=3
+NUM_THREADS=9
 BINDARG=unix:/var/run/gunicorn.sock
 
 check_redis() {
@@ -30,6 +30,8 @@ check_redis() {
     echo "Redis is ready."
 }
 
+check_redis
+
 exec gunicorn hi.wsgi:application \
   -c /src/bin/docker-gunicorn.conf.py \
   --name gunicorn \
@@ -37,17 +39,3 @@ exec gunicorn hi.wsgi:application \
   --threads $NUM_THREADS \
   --bind=$BINDARG \
   --log-file=-
-
-
-# Assuming an I/O bound app and if have machine CPU all to itself
-#NUM_WORKERS=$(( $(nproc) + 1 ))
-#
-#BINDARG=unix:/var/run/gunicorn.sock
-#
-#exec gunicorn hi.asgi:application \
-#  -c /src/bin/docker-gunicorn.conf.py \
-#  --name gunicorn \
-#  --workers $NUM_WORKERS \
-#  --worker-class uvicorn.workers.UvicornWorker \
-#  --bind=$BINDARG \
-#  --log-file=-
