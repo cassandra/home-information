@@ -93,7 +93,7 @@ class HiEnvironmentGenerator:
             'HI_MEDIA_PATH': '/data/media',  # location in Docker container
         }
 
-        if self._env_name not in [ 'local', 'production' ]:
+        if self._env_name not in [ 'development', 'local', 'production' ]:
             self._settings_map['HI_REDIS_KEY_PREFIX'] = self._env_name
             self._settings_map['HI_EMAIL_SUBJECT_PREFIX'] = f'[{self._env_name}] '
             
