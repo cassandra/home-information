@@ -17,22 +17,23 @@ class SuppressSelectRequestEndpointsFilter(logging.Filter):
             return True
         try:
             if not hasattr(record, "args") or ( len(record.args) < 1 ):
-                return
+                return True
         
             request_line = record.args[0]
 
             if not isinstance( request_line, str ):
                 # Sometimes it apears to be a PosixPath, but for requests it is a string.
-                return
+                return True
             
             match = re.match( r'^[A-Z]+ (/[^ ?]*)', request_line )
             if not match:
-                return
+                return True
 
             request_path = match.group(1)
             match = resolve( request_path )
             if match.url_name in self.URL_NAMES_TO_FILTER:
                 return False
+            
         except Exception:
             pass
         

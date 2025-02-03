@@ -18,7 +18,7 @@ LOGGING = {
     #
     'filters': {
         'suppress_select_request_endpoints': {
-            '()': 'hi.log_filters.SuppressSelectRequestEndpointsFilter',
+            '()': 'hi.tests.utils.log_filters.SuppressSelectRequestEndpointsFilter',
         },
     },
     'formatters': {

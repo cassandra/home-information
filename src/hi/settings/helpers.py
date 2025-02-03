@@ -167,7 +167,7 @@ class EnvironmentSettings:
             host_url_tuple_list = cls.parse_url_list_str( extra_host_urls_str )
             
             # Assume first extra host is the SITE_DOMAIN, but this does not
-            # matter until Django "sites" feature need to be used (if
+            # matter until the Django "sites" feature needs to be used (if
             # ever).
             #
             if host_url_tuple_list:

@@ -193,8 +193,10 @@ class HiEnvironmentGenerator:
                 exit(1)
 
             backup_filename = f'{self._destination_filename}.BAK'
-            self.print_notice(f'Creating backup: {backup_filename}')
-            shutil.copy2(self._destination_filename, backup_filename)
+            if os.path.exists( backup_filename ):
+                os.rename( backup_filename, f'{backup_filename}.BAK' )
+            self.print_notice( f'Creating backup: {backup_filename}' )
+            shutil.copy2( self._destination_filename, backup_filename )
         return
 
     def _get_data_directories( self ):
