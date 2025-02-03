@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Django's command-line utility for administrative tasks."""
 import os
+import re
 import sys
 
 
@@ -15,7 +16,65 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
-    execute_from_command_line(sys.argv)
+
+    set_default_port_if_needed()  # HI Customization
+    execute_from_command_line( sys.argv )
+
+    
+def set_default_port_if_needed():
+    if ( len(sys.argv) < 2 ) or ( sys.argv[1] != "runserver" ):
+        return
+
+    default_port_override = os.environ.get( 'DJANGO_DEV_PORT', 8000 )
+    if not default_port_override:
+        return
+
+    if has_hostname_only_arg():
+        last_arg = sys.argv[-1]
+        new_last_arg = f'{last_arg}:{default_port_override}'
+        sys.argv[-1] = new_last_arg
+        print( f'\nCHANGE: {new_last_arg}' )
+        return
+    
+    if not is_runserver_port_specified():
+        sys.argv.append( default_port_override )
+        print( f'\nADD: {default_port_override}' )
+        return
+
+    return
+
+
+def has_hostname_only_arg():
+    if len(sys.argv) < 2 or sys.argv[1] != "runserver":
+        return False
+    if len(sys.argv) == 2:
+        return False
+
+    last_arg = sys.argv[-1]
+    if last_arg.startswith( '--' ):
+        return False
+    if re.fullmatch( r'\d+', last_arg ):
+        return False
+    if re.fullmatch( r'\d+\.\d+\.\d+\.\d+', last_arg ):
+        return True
+    if re.fullmatch( r'[a-zA-Z0-9_][a-zA-Z0-9\-_\.]+', last_arg ):
+        return True
+    return False
+    
+
+def is_runserver_port_specified() -> bool:
+    """Checks if a port is provided in the runserver command arguments."""
+    if len(sys.argv) < 2 or sys.argv[1] != "runserver":
+        return False
+
+    for arg in sys.argv[2:]:
+        if arg.startswith("--"):
+            continue
+        if re.fullmatch( r'\d{4,5}', arg ) or re.fullmatch( r'[\d\.]+:\d{4,5}', arg ):
+            return True
+        continue
+    
+    return False
 
 
 if __name__ == '__main__':

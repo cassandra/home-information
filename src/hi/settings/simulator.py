@@ -36,7 +36,7 @@ ROOT_URLCONF = 'hi.simulator.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [ os.path.join(BASE_DIR, "templates") ],
+        'DIRS': [ os.path.join( BASE_DIR, "templates") ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -53,6 +53,6 @@ TEMPLATES = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join( HI_DB_PATH, 'simulator.sqlite3' ),
+        'NAME': os.path.join( env_settings.DATABASES_NAME_PATH, 'simulator.sqlite3' ),
     }
 }

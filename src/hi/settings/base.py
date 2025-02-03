@@ -13,72 +13,43 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 
-from django.core.exceptions import ImproperlyConfigured
+from .helpers import EnvironmentSettings
 
-
-def get_env_variable( var_name, default=None ):
-    try:
-        return os.environ[var_name]
-    except KeyError:
-        if default:
-            return default
-        error_msg = "Set the %s environment variable" % var_name
-        raise ImproperlyConfigured(error_msg)
-
+env_settings = EnvironmentSettings.get()
     
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = get_env_variable('DJANGO_SECRET_KEY')
+SECRET_KEY = env_settings.SECRET_KEY
 
-DJANGO_SUPERUSER_EMAIL = get_env_variable( 'DJANGO_SUPERUSER_EMAIL', None )
-DJANGO_SUPERUSER_PASSWORD = get_env_variable( 'DJANGO_SUPERUSER_PASSWORD', None )
+DJANGO_SUPERUSER_EMAIL = env_settings.DJANGO_SUPERUSER_EMAIL
+DJANGO_SUPERUSER_PASSWORD = env_settings.DJANGO_SUPERUSER_PASSWORD
 
-AUTH_USER_MODEL = "custom.CustomUser"
-SUPPRESS_AUTHENTICATION = bool( get_env_variable( 'HI_SUPPRESS_AUTHENTICATION', 'false' ) == 'true' )
-
-ALLOWED_HOSTS = [
+ALLOWED_HOSTS = (
     '127.0.0.1',
-    '192.168.100.2',
-    '192.168.100.4',
-    '192.168.100.6',
     'localhost',
-]
+)
 
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOWED_ORIGINS = (
     'http://127.0.0.1:8000',
     'http://localhost:8000',
-    'http://192.168.100.2:8111',
-    'http://192.168.100.4:8111',
-    'http://192.168.100.6:8111',
-]
+)
 CSP_DEFAULT_SRC = (
     "'self'",
     'data:',
     'http://127.0.0.1:8000',
     'http://localhost:8000',
-    'http://192.168.100.2:8111',
-    'http://192.168.100.4:8111',
-    'http://192.168.100.6:8111',
 )
 CSP_CONNECT_SRC = (
     "'self'",
     'http://127.0.0.1:8000',
     'http://localhost:8000',
-    'http://192.168.100.6:8111',
-    "ws://127.0.0.1:8000",
-    "ws://localhost:8000",
-    'ws://192.168.100.6:8111',
-    'ws://192.168.100.80:8000',
-    )
-CSP_FRAME_SRC = [
+)
+CSP_FRAME_SRC = (
     "'self'",
     'http://127.0.0.1:8000',
     'http://localhost:8000',
-    'http://192.168.100.2:8111',
-    'http://192.168.100.4:8111',
-    'http://192.168.100.6:8111',
-]
+)
 
 CSP_SCRIPT_SRC = (
     "'self'",
@@ -86,9 +57,6 @@ CSP_SCRIPT_SRC = (
     "'unsafe-eval'",
     'http://127.0.0.1:8000',
     'http://localhost:8000',
-    'http://192.168.100.2:8111',
-    'http://192.168.100.4:8111',
-    'http://192.168.100.6:8111',
 )
 CSP_STYLE_SRC = (
     "'self'",
@@ -96,31 +64,28 @@ CSP_STYLE_SRC = (
     "'unsafe-eval'",
 )
 
-CSP_MEDIA_SRC = [
+CSP_MEDIA_SRC = (
     "'self'",
     "'unsafe-inline'",
     "'unsafe-eval'",
     'data:',
     'http://127.0.0.1:8000',
     'http://localhost:8000',
-    'http://192.168.100.2:8111',
-    'http://192.168.100.4:8111',
-    'http://192.168.100.6:8111',
-]
+)
 
-CSP_IMG_SRC = [
+CSP_IMG_SRC = (
     "'self'",
     'data:',
-]
+)
 
-CSP_CHILD_SRC = [
+CSP_CHILD_SRC = (
     "'self'",
-]
+)
 
-CSP_FONT_SRC = [
+CSP_FONT_SRC = (
     "'self'",
     'data:',
-]
+)
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
@@ -206,12 +171,10 @@ WSGI_APPLICATION = 'hi.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-HI_DB_PATH = get_env_variable('HI_DB_PATH')
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join( HI_DB_PATH, 'hi.sqlite3' ),
+        'NAME': os.path.join( env_settings.DATABASES_NAME_PATH, 'hi.sqlite3' ),
     }
 }
 
@@ -261,7 +224,7 @@ STATICFILES_DIRS = (
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-MEDIA_ROOT = get_env_variable('HI_MEDIA_PATH')
+MEDIA_ROOT = env_settings.MEDIA_ROOT
 MEDIA_URL = '/media/'
 
 PIPELINE = {
@@ -327,9 +290,9 @@ CONSTANCE_CONFIG = {
     'DOWN_FOR_MAINTENANCE': ( False, 'Should we force the down for maintenance page to show?' ),
 }
 
-REDIS_HOST = get_env_variable('HI_REDIS_HOST')
-REDIS_PORT = int(get_env_variable('HI_REDIS_PORT'))
-REDIS_KEY_PREFIX = get_env_variable('HI_REDIS_KEY_PREFIX')
+REDIS_HOST = env_settings.REDIS_HOST
+REDIS_PORT = env_settings.REDIS_PORT
+REDIS_KEY_PREFIX = env_settings.REDIS_KEY_PREFIX
 
 CACHES = {
     'default': {
@@ -342,43 +305,45 @@ CACHES = {
     }
 }
 
-#====================
+
+AUTH_USER_MODEL = "custom.CustomUser"
+SUPPRESS_AUTHENTICATION = env_settings.SUPPRESS_AUTHENTICATION
+
+# ====================
 # Transactional Emails
 
 SITE_DOMAIN = 'cassandra.org'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
-EMAIL_SUBJECT_PREFIX = "%s " % get_env_variable('HI_EMAIL_SUBJECT_PREFIX')
-DEFAULT_FROM_EMAIL = get_env_variable('HI_DEFAULT_FROM_EMAIL')
-SERVER_EMAIL = get_env_variable('HI_SERVER_EMAIL')
+EMAIL_SUBJECT_PREFIX = "%s " % env_settings.EMAIL_SUBJECT_PREFIX
+DEFAULT_FROM_EMAIL = env_settings.DEFAULT_FROM_EMAIL
+SERVER_EMAIL = env_settings.SERVER_EMAIL
 FROM_EMAIL_NAME = "Home Information"
 
 # Normal Settings
-EMAIL_HOST = get_env_variable('HI_EMAIL_HOST')
+EMAIL_HOST = env_settings.EMAIL_HOST
 try:
-    EMAIL_PORT = int(get_env_variable('HI_EMAIL_PORT'))
+    EMAIL_PORT = env_settings.EMAIL_PORT
 except (TypeError, ValueError):
     EMAIL_PORT = 587
     
-EMAIL_HOST_USER = get_env_variable('HI_EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = get_env_variable('HI_EMAIL_HOST_PASSWORD')
+EMAIL_HOST_USER = env_settings.EMAIL_HOST_USER
+EMAIL_HOST_PASSWORD = env_settings.EMAIL_HOST_PASSWORD
 EMAIL_TIMEOUT = 10  # In seconds
 
-if get_env_variable('HI_EMAIL_USE_TLS').lower() == 'true':
-    EMAIL_USE_TLS = True
-    EMAIL_USE_SSL = False
-elif get_env_variable('HI_EMAIL_USE_SSL').lower() == 'true':
-    EMAIL_USE_TLS = False
-    EMAIL_USE_SSL = True
-else:
-    EMAIL_USE_TLS = False
-    EMAIL_USE_SSL = False
+EMAIL_USE_TLS = env_settings.EMAIL_USE_TLS
+EMAIL_USE_SSL = env_settings.EMAIL_USE_SSL
     
 # Needed when sending emails in background tasks since HttpRequest not
 # available. Override this for development/testing/staging.
 #
 BASE_URL_FOR_EMAIL_LINKS = 'https://{SITE_DOMAIN}'
+
+
+# ====================
+# Development-related Settings
+# (override in development.py, not here)
 
 # When tests functionality requires knowing if in unit test context.
 UNIT_TESTING = False

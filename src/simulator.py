@@ -27,7 +27,7 @@ def main():
     command_args = sys.argv[2:]
     if command == "runserver":
         if not any( arg.isdigit() for arg in command_args ):
-            command_args.append( "8001" )
+            command_args.append( "7411" )
 
     full_command = [ 'python', manage_py_path, command ] + command_args + [ f'--settings={settings_module}' ]
     result = run( full_command )

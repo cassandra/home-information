@@ -8,9 +8,11 @@ INSTALLED_APPS += [ 'hi.tests' ]
 
 ALLOWED_HOSTS = [
     '127.0.0.1',
-    '192.168.100.6',
-    '192.168.100.112',
     'localhost',
+    '192.168.100.6',
+    'groovy',
+    '192.168.100.112',
+    'strudel',
 ]
 
 # Content Security Policy Settings for CSPMiddleware
@@ -18,31 +20,30 @@ ALLOWED_HOSTS = [
 CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:8000',
     'http://localhost:8000',
-    'http://192.168.100.6:8008',
+    'http://192.168.100.6:8000',
+    'http://groovy:8000',
 ]
 CSP_DEFAULT_SRC = (
     "'self'",
     'data:',
     'http://127.0.0.1:8000',
     'http://localhost:8000',
-    'http://192.168.100.6:8008',
+    'http://192.168.100.6:8000',
+    'http://groovy:8000',
 )
 CSP_CONNECT_SRC = (
     "'self'",
     'http://127.0.0.1:8000',
     'http://localhost:8000',
-    'http://192.168.100.6:8008',
-    "ws://127.0.0.1:8000",
-    "ws://localhost:8000",
-    'ws://192.168.100.6:8008',
-    'ws://192.168.100.80:8000',
+    'http://192.168.100.6:8000',
+    'http://groovy:8000',
 )
 CSP_FRAME_SRC = [
     "'self'",
     'http://127.0.0.1:8000',
     'http://localhost:8000',
-    'http://192.168.100.6:8008',
-    'https://player.vimeo.com',
+    'http://192.168.100.6:8000',
+    'http://groovy:8000',
 ]
 
 CSP_SCRIPT_SRC = (
@@ -51,13 +52,18 @@ CSP_SCRIPT_SRC = (
     "'unsafe-eval'",
     'http://127.0.0.1:8000',
     'http://localhost:8000',
-    'http://192.168.100.6:8008',
+    'http://192.168.100.6:8000',
+    'http://groovy:8000',
+
+
     'https://bordeaux:8443',
 )
 CSP_STYLE_SRC = (
     "'self'",
     "'unsafe-inline'",
     "'unsafe-eval'",
+
+    'https://bordeaux:8443',
 )
 
 CSP_MEDIA_SRC = [
@@ -65,10 +71,8 @@ CSP_MEDIA_SRC = [
     "'unsafe-inline'",
     "'unsafe-eval'",
     'data:',
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-    'http://192.168.100.6:8008',
-    'https://bordeaux:8443',
+    'http://192.168.100.6:8000',
+    'http://groovy:8000',
 ]
 
 CSP_IMG_SRC = [
