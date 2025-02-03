@@ -290,6 +290,10 @@ class SecurityManager( Singleton, SettingsMixin ):
         night_start_time_of_day_str = settings_manager.get_setting_value(
             SecuritySetting.SECURITY_NIGHT_START,
         )
+
+        # TODO: DO some more sanity checking of these setting values. Here and when saving.
+        if not day_start_time_of_day_str or not night_start_time_of_day_str:
+            return
         
         current_datetime = datetimeproxy.now()
         start_of_day_datetime = current_datetime.replace( hour=0, minute=0, second=0, microsecond=0 )
