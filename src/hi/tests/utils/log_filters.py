@@ -33,7 +33,7 @@ class SuppressSelectRequestEndpointsFilter(logging.Filter):
             match = resolve( request_path )
             if match.url_name in self.URL_NAMES_TO_FILTER:
                 return False
-            
+
         except Exception:
             pass
         

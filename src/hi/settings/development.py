@@ -39,6 +39,11 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
         },
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
         'django.db': {
             'handlers': ['console'],
             'level': 'INFO',
