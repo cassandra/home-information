@@ -165,7 +165,7 @@ class EnvironmentSettings:
         extra_host_urls_str = cls.get_env_variable( 'HI_EXTRA_HOST_URLS' )
         if extra_host_urls_str:
             host_url_tuple_list = cls.parse_url_list_str( extra_host_urls_str )
-
+            
             # Assume first extra host is the SITE_DOMAIN, but this does not
             # matter until Django "sites" feature need to be used (if
             # ever).
@@ -174,7 +174,10 @@ class EnvironmentSettings:
                 env_settings.SITE_DOMAIN = host_url_tuple_list[0][0]
                 
             for host, url in host_url_tuple_list:
-                
+
+
+                print( f'\nADD = {host}' )
+
                 allowed_host_list.append( host )
                 cors_allowed_origins_list.append( url )
                 continue

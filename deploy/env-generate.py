@@ -286,18 +286,18 @@ class HiEnvironmentGenerator:
 
     def _write_file( self ):
 
-        line_prefix = ''
-        if self._destination_filename.endswith( self.SH_FILE_SUFFIX ):
-            line_prefix = 'export '
-
+        is_sh_file = self._destination_filename.endswith( self.SH_FILE_SUFFIX )
         with open( self._destination_filename, 'w' ) as fh:
             for name, value in self._settings_map.items():
                 value = str(value)  # ensure string
-                escaped_value = value.replace("\"", "\\\"")
-                if any( c in escaped_value for c in " \t\n\"'" ):
-                    fh.write( f'{line_prefix}{name}="{escaped_value}"\n' )
+                if is_sh_file:
+                    escaped_value = value.replace("\\", "\\\\")  # Escape backslashes FIRST
+                    escaped_value = escaped_value.replace("\"", "\\\"")
+                    escaped_value = escaped_value.replace("$", "\\$")
+                    escaped_value = escaped_value.replace("`", "\\`")
+                    fh.write( f'export {name}="{escaped_value}"\n' )
                 else:
-                    fh.write( f'{line_prefix}{name}={escaped_value}\n' )
+                    fh.write( f'{name}={value}\n' )
                 continue
         self.print_success( f'File created: {self._destination_filename}' )
 
