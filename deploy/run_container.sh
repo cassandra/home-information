@@ -1,7 +1,7 @@
 #!/bin/bash
 
 HI_VERSION=$(cat HI_VERSION | tr -d '[:space:]')
-ENV_VAR_FILE=".private/env/local.dev"
+ENV_VAR_FILE=".private/env/local.env"
 DATA_DIR="${HOME}/.hi"
 EXTERNAL_PORT=9411
 BACKGROUND_FLAGS=""

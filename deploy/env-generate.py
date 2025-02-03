@@ -76,6 +76,9 @@ class HiEnvironmentGenerator:
     DJANGO_SERVER_PORT_MAP = {
         'development': '8411',
     }
+
+    SH_FILE_SUFFIX = 'sh'
+    ENV_FILE_SUFFIX = 'env'
     
     def __init__( self,
                   env_name  : str = 'local',
@@ -83,7 +86,7 @@ class HiEnvironmentGenerator:
 
         if env_name not in [ 'development', 'local', 'staging', 'production' ]:
             self.print_warning( f'Non-standard environment name "{env_name}".'
-                                f'Ensure that the file "hi/settings/{env_name}.py" exists.' )
+                                f' Ensure that the file "hi/settings/{env_name}.py" exists.' )
         
         self._env_name = env_name
         self._verbose = verbose
@@ -108,8 +111,13 @@ class HiEnvironmentGenerator:
         if self._env_name not in [ 'local', 'production' ]:
             self._settings_map['HI_REDIS_KEY_PREFIX'] = self._env_name
             self._settings_map['HI_EMAIL_SUBJECT_PREFIX'] = f'[{self._env_name}] '
-            
-        self._destination_filename = os.path.join( self.SECRETS_DIRECTORY, f'{self._env_name}.dev' )
+
+        if self._env_name in [ 'development', 'test' ]:
+            self._destination_filename = os.path.join( self.SECRETS_DIRECTORY,
+                                                       f'{self._env_name}.{self.SH_FILE_SUFFIX}' )
+        else:
+            self._destination_filename = os.path.join( self.SECRETS_DIRECTORY,
+                                                       f'{self._env_name}.{self.ENV_FILE_SUFFIX}' )
         return
     
     def generate_env_file( self ):
@@ -277,9 +285,19 @@ class HiEnvironmentGenerator:
         return password
 
     def _write_file( self ):
+
+        line_prefix = ''
+        if self._destination_filename.endswith( self.SH_FILE_SUFFIX ):
+            line_prefix = 'export '
+
         with open( self._destination_filename, 'w' ) as fh:
             for name, value in self._settings_map.items():
-                fh.write( f'{name}={value}\n' )
+                value = str(value)  # ensure string
+                escaped_value = value.replace("\"", "\\\"")
+                if any( c in escaped_value for c in " \t\n\"'" ):
+                    fh.write( f'{line_prefix}{name}="{escaped_value}"\n' )
+                else:
+                    fh.write( f'{line_prefix}{name}={escaped_value}\n' )
                 continue
         self.print_success( f'File created: {self._destination_filename}' )
 
