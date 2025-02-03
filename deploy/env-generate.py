@@ -84,7 +84,7 @@ class HiEnvironmentGenerator:
         if env_name not in [ 'development', 'local', 'staging', 'production' ]:
             self.print_warning( f'Non-standard environment name "{env_name}".'
                                 f'Ensure that the file "hi/settings/{env_name}.py" exists.' )
-            
+        
         self._env_name = env_name
         self._verbose = verbose
         
@@ -113,6 +113,10 @@ class HiEnvironmentGenerator:
         return
     
     def generate_env_file( self ):
+
+        if self._env_name == 'production':
+            print( '\n* ERROR * This script should not be used to generate production settings!\n' )
+            return
 
         self.print_important(
             'This script will help you generate your initial environment variables.'

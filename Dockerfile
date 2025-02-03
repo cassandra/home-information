@@ -25,10 +25,10 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 COPY src/hi/requirements/base.txt /src/requirements.txt
 RUN pip install --no-cache-dir --root-user-action=ignore -r requirements.txt
 
-COPY packaging/docker_supervisord.conf /etc/supervisor/conf.d/hi.conf
-COPY packaging/docker_nginx.conf /etc/nginx/sites-available/default
+COPY package/docker_supervisord.conf /etc/supervisor/conf.d/hi.conf
+COPY package/docker_nginx.conf /etc/nginx/sites-available/default
 
-COPY packaging/docker_entrypoint.sh /src/entrypoint.sh
+COPY package/docker_entrypoint.sh /src/entrypoint.sh
 RUN chmod +x /src/entrypoint.sh
 
 COPY src /src
