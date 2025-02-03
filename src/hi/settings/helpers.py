@@ -174,10 +174,6 @@ class EnvironmentSettings:
                 env_settings.SITE_DOMAIN = host_url_tuple_list[0][0]
                 
             for host, url in host_url_tuple_list:
-
-
-                print( f'\nADD = {host}' )
-
                 allowed_host_list.append( host )
                 cors_allowed_origins_list.append( url )
                 continue

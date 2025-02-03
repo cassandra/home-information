@@ -71,6 +71,8 @@ class HiEnvironmentGenerator:
 
     SECRETS_DIRECTORY = '.private/env'
     DEFAULT_ADMIN_EMAIL = 'admin@example.com'
+    DOCKER_DATA_DIRECTORY = '/data'
+    NON_DOCKER_DATA_DIRECTORY_DEFAULT = 'data'
 
     DJANGO_SERVER_PORT_DEFAULT = '8000'
     DJANGO_SERVER_PORT_MAP = {
@@ -98,8 +100,6 @@ class HiEnvironmentGenerator:
             'HI_REDIS_PORT': '6379',
             'HI_REDIS_KEY_PREFIX': '',
             'HI_EMAIL_SUBJECT_PREFIX': '',
-            'HI_DB_PATH': '/data/database',  # Location in Docker container
-            'HI_MEDIA_PATH': '/data/media',  # location in Docker container
             'HI_EXTRA_HOST_URLS': '',  # To be filled in manually if/when running beyond localhost
             'HI_EXTRA_CSP_URLS': '',  # To be filled in manually if/when running beyond localhost
         }
@@ -108,16 +108,14 @@ class HiEnvironmentGenerator:
             self.DJANGO_SERVER_PORT_DEFAULT,
         )
 
-        if self._env_name not in [ 'local', 'production' ]:
+        self._destination_filename = os.path.join( self.SECRETS_DIRECTORY,
+                                                   f'{self._env_name}.{self.ENV_FILE_SUFFIX}' )
+        
+        if self._env_name not in [ 'local' ]:
             self._settings_map['HI_REDIS_KEY_PREFIX'] = self._env_name
             self._settings_map['HI_EMAIL_SUBJECT_PREFIX'] = f'[{self._env_name}] '
-
-        if self._env_name in [ 'development', 'test' ]:
             self._destination_filename = os.path.join( self.SECRETS_DIRECTORY,
                                                        f'{self._env_name}.{self.SH_FILE_SUFFIX}' )
-        else:
-            self._destination_filename = os.path.join( self.SECRETS_DIRECTORY,
-                                                       f'{self._env_name}.{self.ENV_FILE_SUFFIX}' )
         return
     
     def generate_env_file( self ):
@@ -127,7 +125,8 @@ class HiEnvironmentGenerator:
             return
 
         self.print_important(
-            'This script will help you generate your initial environment variables.'
+            'About:\n'
+            '\nThis script will help you generate your initial environment variables.'
             '\nYou usually only need to run this once.'
             '\nNone of the choices you make here are final.'
             '\nYou can modify any of the settings directly in the generated file.'
@@ -135,6 +134,10 @@ class HiEnvironmentGenerator:
         
         self._setup_secrets_directory()
         self._check_existing_env_file()
+
+        db_dir, media_dir = self._get_data_directories()
+        self._settings_map['HI_DB_PATH'] = db_dir
+        self._settings_map['HI_MEDIA_PATH'] = media_dir
 
         email_settings = self._get_email_settings()
 
@@ -175,6 +178,9 @@ class HiEnvironmentGenerator:
             self.print_notice( f'Creating directory: {self.SECRETS_DIRECTORY}' )
             os.makedirs( self.SECRETS_DIRECTORY, exist_ok = True )
             os.chmod( self.SECRETS_DIRECTORY, stat.S_IRWXU )  # Read/write/execute for user only
+        elif not os.path.isdir( self.SECRETS_DIRECTORY ):
+            self.print_warning( 'Secrets area "{self.SECRETS_DIRECTORY}" needs to be a directory.' )
+            exit(1)
         return
     
     def _check_existing_env_file( self ):
@@ -190,7 +196,50 @@ class HiEnvironmentGenerator:
             self.print_notice(f'Creating backup: {backup_filename}')
             shutil.copy2(self._destination_filename, backup_filename)
         return
-    
+
+    def _get_data_directories( self ):
+        if self._env_name in [ 'local' ]:
+            return ( f'{self.DOCKER_DATA_DIRECTORY}/database',
+                     f'{self.DOCKER_DATA_DIRECTORY}/media' )
+
+        self.print_important( 'Data Directory:\n'
+                              '\nDefine a data directory for your database and uploaded "media" files.'
+                              '\nThis script assumes these two will live in the same directory.'
+                              '\nYou can alter this manually in the generated file if needed.' )
+
+        while True:
+            input_path = self.input_string( 'Enter your data directory',
+                                            default = self.NON_DOCKER_DATA_DIRECTORY_DEFAULT )
+            expanded_path = os.path.expanduser( input_path )
+            if os.path.isabs( expanded_path ):
+                data_dir = expanded_path
+            else:
+                data_dir = os.path.abspath( expanded_path )  
+                
+            database_dir = f'{data_dir}/database'
+            media_dir = f'{data_dir}/media'
+            if not os.path.exists( data_dir ):
+                self.print_warning( f'The directory "{data_dir}" does not exist.' )
+                should_create = self.input_boolean( 'Do you want to create it?', default = False )
+                if not should_create:
+                    continue
+                os.makedirs( database_dir, exist_ok = True )
+                os.makedirs( media_dir, exist_ok = True )
+                return ( database_dir, media_dir )
+            
+            elif not os.path.isdir( data_dir ):
+                self.print_warning( f'The path "{data_dir}" exists, but it is not a directory.' )
+                continue
+            
+            else:
+                if not os.path.exists( database_dir ):
+                    os.makedirs( database_dir, exist_ok = True )
+                if not os.path.exists( media_dir ):
+                    os.makedirs( media_dir, exist_ok = True )
+                return ( database_dir, media_dir )
+            continue
+        return
+        
     def _get_email_settings( self ) -> EmailSettings:
 
         use_email = self.input_boolean( 'Configure email to allow alert notifications?', default = False )
