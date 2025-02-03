@@ -25,53 +25,45 @@ SECRET_KEY = env_settings.SECRET_KEY
 DJANGO_SUPERUSER_EMAIL = env_settings.DJANGO_SUPERUSER_EMAIL
 DJANGO_SUPERUSER_PASSWORD = env_settings.DJANGO_SUPERUSER_PASSWORD
 
-ALLOWED_HOSTS = (
-    '127.0.0.1',
-    'localhost',
-)
+SITE_ID = env_settings.SITE_ID
+SITE_DOMAIN = env_settings.SITE_DOMAIN
+SITE_NAME = env_settings.SITE_NAME
 
-CORS_ALLOWED_ORIGINS = (
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-)
+ALLOWED_HOSTS = env_settings.ALLOWED_HOSTS
+
+CORS_ALLOWED_ORIGINS = env_settings.CORS_ALLOWED_ORIGINS
+
 CSP_DEFAULT_SRC = (
     "'self'",
     'data:',
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-)
+) + env_settings.EXTRA_CSP_URLS
+
 CSP_CONNECT_SRC = (
     "'self'",
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-)
+) + env_settings.EXTRA_CSP_URLS
+
 CSP_FRAME_SRC = (
     "'self'",
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-)
+) + env_settings.EXTRA_CSP_URLS
 
 CSP_SCRIPT_SRC = (
     "'self'",
     "'unsafe-inline'",
     "'unsafe-eval'",
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-)
+) + env_settings.EXTRA_CSP_URLS
+
 CSP_STYLE_SRC = (
     "'self'",
     "'unsafe-inline'",
     "'unsafe-eval'",
-)
+) + env_settings.EXTRA_CSP_URLS
 
 CSP_MEDIA_SRC = (
     "'self'",
     "'unsafe-inline'",
     "'unsafe-eval'",
     'data:',
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-)
+) + env_settings.EXTRA_CSP_URLS
 
 CSP_IMG_SRC = (
     "'self'",
@@ -312,8 +304,6 @@ SUPPRESS_AUTHENTICATION = env_settings.SUPPRESS_AUTHENTICATION
 # ====================
 # Transactional Emails
 
-SITE_DOMAIN = 'cassandra.org'
-
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 EMAIL_SUBJECT_PREFIX = "%s " % env_settings.EMAIL_SUBJECT_PREFIX
@@ -338,7 +328,7 @@ EMAIL_USE_SSL = env_settings.EMAIL_USE_SSL
 # Needed when sending emails in background tasks since HttpRequest not
 # available. Override this for development/testing/staging.
 #
-BASE_URL_FOR_EMAIL_LINKS = 'https://{SITE_DOMAIN}'
+BASE_URL_FOR_EMAIL_LINKS = 'http://{SITE_DOMAIN}'
 
 
 # ====================

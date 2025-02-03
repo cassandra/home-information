@@ -71,6 +71,11 @@ class HiEnvironmentGenerator:
 
     SECRETS_DIRECTORY = '.private/env'
     DEFAULT_ADMIN_EMAIL = 'admin@example.com'
+
+    DJANGO_SERVER_PORT_DEFAULT = '8000'
+    DJANGO_SERVER_PORT_MAP = {
+        'development': '8411',
+    }
     
     def __init__( self,
                   env_name  : str = 'local',
@@ -92,9 +97,15 @@ class HiEnvironmentGenerator:
             'HI_EMAIL_SUBJECT_PREFIX': '',
             'HI_DB_PATH': '/data/database',  # Location in Docker container
             'HI_MEDIA_PATH': '/data/media',  # location in Docker container
+            'HI_EXTRA_HOST_URLS': '',  # To be filled in manually if/when running beyond localhost
+            'HI_EXTRA_CSP_URLS': '',  # To be filled in manually if/when running beyond localhost
         }
+        self._settings_map['DJANGO_SERVER_PORT'] = self.DJANGO_SERVER_PORT_MAP.get(
+            self._env_name,
+            self.DJANGO_SERVER_PORT_DEFAULT,
+        )
 
-        if self._env_name not in [ 'development', 'local', 'production' ]:
+        if self._env_name not in [ 'local', 'production' ]:
             self._settings_map['HI_REDIS_KEY_PREFIX'] = self._env_name
             self._settings_map['HI_EMAIL_SUBJECT_PREFIX'] = f'[{self._env_name}] '
             
@@ -103,6 +114,13 @@ class HiEnvironmentGenerator:
     
     def generate_env_file( self ):
 
+        self.print_important(
+            'This script will help you generate your initial environment variables.'
+            '\nYou usually only need to run this once.'
+            '\nNone of the choices you make here are final.'
+            '\nYou can modify any of the settings directly in the generated file.'
+        )
+        
         self._setup_secrets_directory()
         self._check_existing_env_file()
 
@@ -163,9 +181,9 @@ class HiEnvironmentGenerator:
     
     def _get_email_settings( self ) -> EmailSettings:
 
-        use_email = self.input_boolean( 'Configure to allow email alerts?', default = False )
+        use_email = self.input_boolean( 'Configure email to allow alert notifications?', default = False )
         if use_email:
-            self.print_notice( 'You may have to configure your email provider to allow this.' )
+            self.print_notice( 'You may have to tweak your email provider\'s settings to allow this.' )
         else:
             return EmailSettings(
                 email_address = self.DEFAULT_ADMIN_EMAIL,
@@ -324,9 +342,9 @@ class HiEnvironmentGenerator:
 
     @staticmethod
     def print_important( message : str ):
-        border = '=' * (len(message) + 6)
+        border = '=' * ( min( len(message), 74 ) + 6)
         print( f'\n\033[94m{border}\033[0m' )  # Blue border
-        print( f'\033[94m {message} \033[0m' )  # Blue text
+        print( f'\033[94m{message}\033[0m' )  # Blue text
         print( f'\033[94m{border}\033[0m\n' )  # Blue border
         
     COMMON_EMAIL_PROVIDER_SETTINGS = {

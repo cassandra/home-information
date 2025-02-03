@@ -25,26 +25,24 @@ def set_default_port_if_needed():
     if ( len(sys.argv) < 2 ) or ( sys.argv[1] != "runserver" ):
         return
 
-    default_port_override = os.environ.get( 'DJANGO_DEV_PORT', 8000 )
+    default_port_override = os.environ.get( 'DJANGO_DEV_PORT' )
     if not default_port_override:
         return
 
-    if has_hostname_only_arg():
+    if runserver_has_hostname_only_arg():
         last_arg = sys.argv[-1]
         new_last_arg = f'{last_arg}:{default_port_override}'
         sys.argv[-1] = new_last_arg
-        print( f'\nCHANGE: {new_last_arg}' )
         return
     
-    if not is_runserver_port_specified():
+    if not runserver_has_port_specified():
         sys.argv.append( default_port_override )
-        print( f'\nADD: {default_port_override}' )
         return
 
     return
 
 
-def has_hostname_only_arg():
+def runserver_has_hostname_only_arg():
     if len(sys.argv) < 2 or sys.argv[1] != "runserver":
         return False
     if len(sys.argv) == 2:
@@ -62,7 +60,7 @@ def has_hostname_only_arg():
     return False
     
 
-def is_runserver_port_specified() -> bool:
+def runserver_has_port_specified() -> bool:
     """Checks if a port is provided in the runserver command arguments."""
     if len(sys.argv) < 2 or sys.argv[1] != "runserver":
         return False

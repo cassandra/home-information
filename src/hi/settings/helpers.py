@@ -13,10 +13,15 @@ class EnvironmentSettings:
     Encapsulates the processing for the environment variables that are needed.
     """
     DJANGO_SETTINGS_MODULE     : str           = ''
+    DJANGO_SERVER_PORT         : int           = 8000
     SECRET_KEY                 : str           = ''
     DJANGO_SUPERUSER_EMAIL     : str           = None
     DJANGO_SUPERUSER_PASSWORD  : str           = None
-    EXTRA_ALLOWED_HOSTS        : Tuple[ str ]  = field( default_factory = tuple )
+    SITE_ID                    : str           = 1
+    SITE_DOMAIN                : str           = 'localhost'
+    SITE_NAME                  : str           = 'Home Information'
+    ALLOWED_HOSTS              : Tuple[ str ]  = field( default_factory = tuple )
+    CORS_ALLOWED_ORIGINS       : Tuple[ str ]  = field( default_factory = tuple )
     EXTRA_CSP_URLS             : Tuple[ str ]  = field( default_factory = tuple )
     DATABASES_NAME_PATH        : str           = ''
     MEDIA_ROOT                 : str           = ''
@@ -37,7 +42,7 @@ class EnvironmentSettings:
     @classmethod
     def get( cls ) -> 'EnvironmentSettings':
         env_settings = EnvironmentSettings()
-
+        
         ###########
         # Core Django Settings
 
@@ -50,6 +55,12 @@ class EnvironmentSettings:
             'DJANGO_SETTINGS_MODULE',
             env_settings.DJANGO_SETTINGS_MODULE,
         )
+        try:
+            env_settings.DJANGO_SERVER_PORT = int(
+                cls.get_env_variable( 'DJANGO_SERVER_PORT', required = False )
+            )
+        except ( TypeError, ValueError ):
+            pass
         env_settings.SECRET_KEY = cls.get_env_variable(
             'DJANGO_SECRET_KEY',
             env_settings.SECRET_KEY,
@@ -61,34 +72,6 @@ class EnvironmentSettings:
         env_settings.DJANGO_SUPERUSER_PASSWORD = cls.get_env_variable(
             'DJANGO_SUPERUSER_PASSWORD',
             env_settings.DJANGO_SUPERUSER_PASSWORD )
-
-        ###########
-        # Extras to satisfy security requirements:
-        #   - Django strict host checking
-        #   - web browser CORS issues
-
-        extra_host_list = list()
-        extra_csp_url_list = list()
-
-        extra_host_urls_str = cls.get_env_variable( 'HI_EXTRA_HOST_URLS' )
-        if extra_host_urls_str:
-            host_url_tuple_list = cls.parse_url_list_str( extra_host_urls_str )
-            for host, url in host_url_tuple_list:
-                extra_host_list.append( host )
-                extra_csp_url_list.append( url )
-                continue
-        
-        extra_csp_urls_str = cls.get_env_variable( 'HI_EXTRA_CSP_URLS' )
-        if extra_csp_urls_str:
-            host_url_tuple_list = cls.parse_url_list_str( extra_csp_urls_str )
-            for host, url in host_url_tuple_list:
-                extra_csp_url_list.append( url )
-                continue
-
-        if extra_host_list:
-            env_settings.EXTRA_ALLOWED_HOSTS += tuple( extra_host_list )
-        if extra_csp_url_list:
-            env_settings.EXTRA_CSP_URLS += tuple( extra_csp_url_list )
 
         ###########
         # Database and Media paths
@@ -166,6 +149,52 @@ class EnvironmentSettings:
             ))
 
         ###########
+        # Extras to satisfy security requirements:
+        #   - Django strict host checking
+        #   - web browser CORS/CSP issues
+
+        allowed_host_list = [
+            '127.0.0.1',
+            'localhost',
+        ]
+        cors_allowed_origins_list = [
+            f'http://127.0.0.1:{env_settings.DJANGO_SERVER_PORT}',
+            f'http://localhost:{env_settings.DJANGO_SERVER_PORT}',
+        ]
+
+        extra_host_urls_str = cls.get_env_variable( 'HI_EXTRA_HOST_URLS' )
+        if extra_host_urls_str:
+            host_url_tuple_list = cls.parse_url_list_str( extra_host_urls_str )
+
+            # Assume first extra host is the SITE_DOMAIN, but this does not
+            # matter until Django "sites" feature need to be used (if
+            # ever).
+            #
+            if host_url_tuple_list:
+                env_settings.SITE_DOMAIN = host_url_tuple_list[0][0]
+                
+            for host, url in host_url_tuple_list:
+                
+                allowed_host_list.append( host )
+                cors_allowed_origins_list.append( url )
+                continue
+        
+        extra_csp_urls_str = cls.get_env_variable( 'HI_EXTRA_CSP_URLS' )
+        if extra_csp_urls_str:
+            host_url_tuple_list = cls.parse_url_list_str( extra_csp_urls_str )
+            for host, url in host_url_tuple_list:
+                cors_allowed_origins_list.append( url )
+                continue
+
+        if allowed_host_list:
+            env_settings.ALLOWED_HOSTS += tuple( allowed_host_list )
+
+        # For now, forego any fine-grained control of the allowed urls for CORS and CSP
+        if cors_allowed_origins_list:
+            env_settings.CORS_ALLOWED_ORIGINS += tuple( cors_allowed_origins_list )
+            env_settings.EXTRA_CSP_URLS += tuple( cors_allowed_origins_list )
+
+        ###########
         # Application-specific
 
         env_settings.SUPPRESS_AUTHENTICATION = cls.to_bool( cls.get_env_variable(
@@ -176,7 +205,7 @@ class EnvironmentSettings:
         return env_settings
     
     @classmethod
-    def get_env_variable( cls, var_name, default = None ) -> str:
+    def get_env_variable( cls, var_name, default = None, required = True ) -> str:
         try:
             return os.environ[var_name]
         except KeyError:
