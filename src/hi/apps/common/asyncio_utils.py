@@ -2,7 +2,7 @@ import asyncio
 from threading import Thread
 
 
-def start_background_event_loop( task_function ):
+def start_background_event_loop( task_function, pass_event_loop = False ):
     """
     Generic function to start a background thread running an async task.
     
@@ -10,12 +10,15 @@ def start_background_event_loop( task_function ):
     """
     def run_background_task_in_thread():
 
-        async def run_background_task():
-            await task_function()
-            return
-        
         background_loop = asyncio.new_event_loop()
         asyncio.set_event_loop( background_loop )
+                
+        async def run_background_task():
+            if pass_event_loop:
+                await task_function( background_loop )
+            else:
+                await task_function()
+            return
         
         background_loop.call_soon_threadsafe( asyncio.create_task, run_background_task() )
         background_loop.run_forever()

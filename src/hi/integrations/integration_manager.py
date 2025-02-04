@@ -34,6 +34,7 @@ class IntegrationManager( Singleton ):
         self._monitor_map = dict()
         self._initialized = False
         self._data_lock = threading.Lock()
+        self._monitor_event_loop = None
         return
 
     def get_integration_data_list( self, enabled_only = False ) -> List[ IntegrationData ]:
@@ -58,17 +59,30 @@ class IntegrationManager( Singleton ):
             return self._integration_data_map[integration_id]
         raise KeyError( f'Unknown integration id "{integration_id}".' )
 
+    def refresh_integrations_from_db( self ) :
+        for integration_data in self._integration_data_map.values():
+            integration_data.integration.refresh_from_db()
+            continue
+        return
+
     def get_integration_gateway( self, integration_id : str ) -> IntegrationGateway:
         if integration_id in self._integration_data_map:
             return self._integration_data_map[integration_id].integration_gateway
         raise KeyError( f'Unknown integration id "{integration_id}".' )
 
-    async def initialize(self) -> None:
+    async def initialize( self, event_loop : "AbstractEventLoop" ) -> None:
+        """
+        This should be initialized from the background thread where the
+        integration monitor task will run.
+        """
         with self._data_lock:
             if self._initialized:
                 logger.info("IntegrationManager already initialize. Skipping.")
                 return
             self._initialized = True
+
+            self._monitor_event_loop = event_loop
+           
             logger.info("Discovering and starting integration monitors...")
             await self._load_integration_data()
             await self._start_all_integration_monitors()
@@ -121,6 +135,27 @@ class IntegrationManager( Singleton ):
             continue
         return
 
+    def _launch_integration_monitor_task( self, integration_data : IntegrationData ):
+        integration_id = integration_data.integration_id
+
+        async def run_in_loop():
+            try:
+                await self._start_integration_monitor( integration_data = integration_data )
+            except Exception as e:
+                logger.exception( f'Error in integration monitor task "{integration_id}": {e}')
+            return
+
+        if self._monitor_event_loop is None:
+            logger.error( f'Error in integration monitor task "{integration_id}": No event loop.')
+            return
+
+        try:
+            _ = asyncio.get_running_loop()
+            asyncio.create_task( run_in_loop() )
+        except RuntimeError:
+            asyncio.run_coroutine_threadsafe( run_in_loop(), self._monitor_event_loop )
+        return
+        
     async def _start_integration_monitor( self, integration_data : IntegrationData ):
         integration_id = integration_data.integration_id
         logger.debug( f'Starting integration monitor: {integration_id}' )
@@ -266,7 +301,8 @@ class IntegrationManager( Singleton ):
                 integration_data.integration.is_enabled = True
                 integration_data.integration.save()
                 integration_attribute_formset.save()
-            async_to_sync( self._start_integration_monitor )( integration_data = integration_data )
+            self.refresh_integrations_from_db()
+            self._launch_integration_monitor_task( integration_data = integration_data )
         return
                 
     def disable_integration( self, integration_data : IntegrationData ):

@@ -41,6 +41,11 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         if not self._was_initialized:
             await self._initialize()
 
+        if not self._was_initialized:
+            # Timing issues when first enabling could fail initialization.
+            logger.warning( 'HAss monitor failed to initialize. Skipping work cycle.' )
+            return
+        
         hass_manager = await self.hass_manager_async()
         if not hass_manager:
             return

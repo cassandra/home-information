@@ -20,30 +20,33 @@ class AppMonitorManager( Singleton ):
         self._monitor_map = dict()
         self._initialized = False
         self._data_lock = threading.Lock()
+        self._monitor_event_loop = None
         return
     
-    async def initialize(self) -> None:
+    async def initialize( self, event_loop : "AbstractEventLoop" ) -> None:
         with self._data_lock:
             if self._initialized:
                 logger.info('MonitorManager already initialize. Skipping.')
                 return
             self._initialized = True
+
+            self._monitor_event_loop = event_loop
             
-        logger.info('Discovering and starting app monitors...')
-        periodic_monitor_class_list = self._discover_periodic_monitors()        
-        for monitor_class in periodic_monitor_class_list:
-            monitor = monitor_class()
+            logger.info('Discovering and starting app monitors...')
+            periodic_monitor_class_list = self._discover_periodic_monitors()        
+            for monitor_class in periodic_monitor_class_list:
+                monitor = monitor_class()
 
-            self._monitor_map[monitor.id] = monitor
-            if not monitor.is_running:
-                if settings.DEBUG and settings.SUPPRESS_MONITORS:
-                    logger.debug(f'Skipping app monitor: {monitor.id}. See SUPPRESS_MONITORS = True')
-                    continue
+                self._monitor_map[monitor.id] = monitor
+                if not monitor.is_running:
+                    if settings.DEBUG and settings.SUPPRESS_MONITORS:
+                        logger.debug(f'Skipping app monitor: {monitor.id}. See SUPPRESS_MONITORS = True')
+                        continue
 
-                logger.debug( f'Starting app monitor: {monitor.id}' )
-                asyncio.create_task( monitor.start() )
+                    logger.debug( f'Starting app monitor: {monitor.id}' )
+                    asyncio.create_task( monitor.start() )
 
-            continue
+                continue
         return
 
     async def shutdown(self) -> None:

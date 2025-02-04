@@ -1,4 +1,5 @@
 import logging
+from threading import Lock
 from typing import Dict
 
 from hi.apps.common.singleton import Singleton
@@ -19,12 +20,12 @@ logger = logging.getLogger(__name__)
 class HassManager( Singleton ):
 
     def __init_singleton__( self ):
-        self._is_loading = False
         self._hass_attr_type_to_attribute = dict()
         self._hass_client = None
         
         self._change_listeners = list()
         self._was_initialized = False
+        self._data_lock = Lock()
         return
 
     def ensure_initialized(self):
@@ -55,18 +56,13 @@ class HassManager( Singleton ):
     
     def reload( self ):
         """ Called when integration models are changed (via signals below). """
-        if self._is_loading:
-            logger.warning( 'HAss is already loading.' )
-            return
-        try:
-            self._is_loading = True
+        logger.debug( 'HAss manager loading started.' )
+        with self._data_lock:
             self._hass_attr_type_to_attribute = self._load_attributes()
             self._hass_client = self.create_hass_client( self._hass_attr_type_to_attribute )
             self.clear_caches()
-
-        finally:
-            self._is_loading = False
-            logger.debug( 'HAss loading completed.' )
+            
+        logger.debug( 'HAss manager loading completed.' )
         return
 
     def clear_caches(self):

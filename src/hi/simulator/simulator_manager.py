@@ -119,13 +119,13 @@ class SimulatorManager( Singleton ):
         db_sim_entity.delete()
         return
         
-    async def initialize(self) -> None:
+    async def initialize( self ) -> None:
         with self._data_lock:
             if self._initialized:
-                logger.info("SimulationManager already initialize. Skipping.")
+                logger.info('SimulationManager already initialize. Skipping.')
                 return
             self._initialized = True
-            logger.info("Initializing SimulationManager ...")
+            logger.info('Initializing SimulationManager ...')
             await sync_to_async( self._initialize_sim_profile,
                                  thread_sensitive = True )()
             self._discover_defined_simulators()
@@ -137,11 +137,11 @@ class SimulatorManager( Singleton ):
 
     async def shutdown(self) -> None:
         # Nothing yet
-        logger.info("Stopping SimulationManager...")
+        logger.info('Stopping SimulationManager...')
         return
     
     def _initialize_sim_profile(self):
-        logger.debug("Initialize SimProfile ...")
+        logger.debug('Initialize SimProfile ...')
         self._current_sim_profile = SimProfile.objects.all().first()  # Default ordering is by recency use
         if not self._current_sim_profile:
             self._current_sim_profile = SimProfile.objects.create(
@@ -151,7 +151,7 @@ class SimulatorManager( Singleton ):
         return
 
     def _discover_defined_simulators(self):
-        logger.debug("Discovering defined simulators ...")
+        logger.debug('Discovering defined simulators ...')
 
         self._simulator_data_map = dict()
         for app_config in django_apps.get_app_configs():
@@ -189,7 +189,7 @@ class SimulatorManager( Singleton ):
         Query simulators to get the defined subclasses of SimEntity and
         populates the SimulatorData for each simulator.
         """
-        logger.debug("Fetching simulator entity definitions ...")
+        logger.debug('Fetching simulator entity definitions ...')
 
         for simulator_id, simulator_data in self._simulator_data_map.items():
             simulator = simulator_data.simulator
@@ -204,12 +204,12 @@ class SimulatorManager( Singleton ):
 
     def _load_sim_entity_instances(self):
 
-        logger.debug("Initializing simulators ...")
+        logger.debug('Initializing simulators ...')
         for simulator_id, simulator_data in self._simulator_data_map.items():
             simulator_data.simulator.initialize()
             continue
         
-        logger.debug("Loading saved simulator entities ...")
+        logger.debug('Loading saved simulator entities ...')
         db_sim_entity_queryset = DbSimEntity.objects.filter(
             sim_profile = self.current_sim_profile,
         )

@@ -58,7 +58,12 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
     async def do_work(self):
         if not self._was_initialized:
             await self._initialize()
-        
+
+        if not self._was_initialized:
+            # Timing issues when first enabling could fail initialization.
+            logger.warning( 'ZoneMinder monitor failed to initialize. Skipping work cycle.' )
+            return
+            
         sensor_response_map = dict()
         sensor_response_map.update( await self._process_events( ) )
         sensor_response_map.update( await self._process_monitors() )
@@ -82,7 +87,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         tz_adjusted_poll_from_datetime = datetimeproxy.change_timezone(
             original_datetime = self._poll_from_datetime,
             new_tzname = self._zm_tzname,
-        )
+        )            
         options = {
             'from': tz_adjusted_poll_from_datetime.isoformat(),  # "from" only looks at event start time
             'tz': self._zm_tzname,

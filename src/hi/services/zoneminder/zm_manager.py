@@ -4,6 +4,7 @@ from pyzm.helpers.Event import Event as ZmEvent
 from pyzm.helpers.Monitor import Monitor as ZmMonitor
 from pyzm.helpers.State import State as ZmState
 from pyzm.helpers.globals import logger as pyzm_logger
+from threading import Lock
 from typing import Dict, List
 
 import hi.apps.common.datetimeproxy as datetimeproxy
@@ -43,7 +44,6 @@ class ZoneMinderManager( Singleton ):
     MONITOR_REFRESH_INTERVAL_SECS = 300
    
     def __init_singleton__( self ):
-        self._is_loading = False
         self._zm_attr_type_to_attribute = dict()
         self._zm_client = None
 
@@ -55,6 +55,7 @@ class ZoneMinderManager( Singleton ):
 
         self._change_listeners = list()
         self._was_initialized = False
+        self._data_lock = Lock()
         return
     
     def ensure_initialized(self):
@@ -88,18 +89,13 @@ class ZoneMinderManager( Singleton ):
     
     def reload( self ):
         """ Called when integration models are changed (via signals below). """
-        if self._is_loading:
-            logger.warning( 'ZoneMinder manager is already loading.' )
-            return
-        try:
-            self._is_loading = True
+        logger.debug( 'ZoneMinder manager loading started.' )
+        with self._data_lock:
             self._zm_attr_type_to_attribute = self._load_attributes()
             self._zm_client = self.create_zm_client( self._zm_attr_type_to_attribute )
             self.clear_caches()
-            
-        finally:
-            self._is_loading = False
-            logger.debug( 'ZoneMinder manager loading completed.' )
+
+        logger.debug( 'ZoneMinder manager loading completed.' )
         return
 
     def clear_caches(self):

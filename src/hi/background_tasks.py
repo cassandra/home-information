@@ -46,10 +46,16 @@ class HiBackgroundTaskHelper:
             return
         
         logger.info( 'Starting AppMonitorManager ...' )
-        start_background_event_loop( task_function = AppMonitorManager().initialize ) 
+        start_background_event_loop(
+            task_function = AppMonitorManager().initialize,
+            pass_event_loop = True,
+        ) 
         
         logger.info( 'Starting IntegrationManager ...' )
-        start_background_event_loop( task_function = IntegrationManager().initialize ) 
+        start_background_event_loop(
+            task_function = IntegrationManager().initialize,
+            pass_event_loop = True,
+        ) 
 
         cls._background_requests_started = True
         return

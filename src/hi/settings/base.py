@@ -68,16 +68,16 @@ CSP_MEDIA_SRC = (
 CSP_IMG_SRC = (
     "'self'",
     'data:',
-)
+) + env_settings.EXTRA_CSP_URLS
 
 CSP_CHILD_SRC = (
     "'self'",
-)
+) + env_settings.EXTRA_CSP_URLS
 
 CSP_FONT_SRC = (
     "'self'",
     'data:',
-)
+) + env_settings.EXTRA_CSP_URLS
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'

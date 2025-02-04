@@ -369,9 +369,12 @@ def iso_naive_to_datetime_utc( iso_str : str, tzname : str = 'UTC' ):
 
 
 def change_timezone( original_datetime : datetime, new_tzname : str  ):
-    new_tz = pytz.timezone( new_tzname )
-    return original_datetime.astimezone( new_tz )
-
+    try:
+        new_tz = pytz.timezone( new_tzname )
+        return original_datetime.astimezone( new_tz )
+    except pytz.exceptions.UnknownTimeZoneError:
+        return original_datetime.astimezone( DEFAULT_TIME_ZONE_NAME )
+    
 
 def get_since_time_humanized( reference_datetime : datetime ):
     current_datetime = now()
