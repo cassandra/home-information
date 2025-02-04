@@ -8,7 +8,7 @@
       <input type="checkbox" id="entity-toggle-location-checkbox-{{ entity.id }}" name="checkbox_state" 
              {% if exists_in_view %}checked{% endif %} 
 	     onchange-async="true" >
-       <label for="entity-toggle-location-checkbox-{{ entity.id }}">{{ entity.name }}</label>
+      <label for="entity-toggle-location-checkbox-{{ entity.id }}">{{ entity.name }} <small>[{{ entity.integration_id }}]</small></label>
     </form>
   </div>
 </div>

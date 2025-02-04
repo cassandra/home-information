@@ -9,4 +9,8 @@ urlpatterns = [
              views.ConfigSettingsView.as_view(), 
              name='config_settings' ),
 
+    re_path( r'^internal$', 
+             views.ConfigInternalView.as_view(), 
+             name='config_interns' ),
+
 ]

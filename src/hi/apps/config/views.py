@@ -1,6 +1,10 @@
 from django.db import transaction
 from django.shortcuts import render
 
+from django.conf import settings
+from django.http import JsonResponse
+from django.views.generic import View
+
 import hi.apps.common.antinode as antinode
 
 from hi.enums import ViewMode, ViewType
@@ -127,3 +131,26 @@ class ConfigSettingsView( ConfigPageView, SettingsMixin ):
         return antinode.refresh_response()
        
         
+class ConfigInternalView( View ):
+
+    @classmethod
+    def get_config_data(self):
+        return {
+            'allowed_hosts': settings.ALLOWED_HOSTS,
+            'redis_host': settings.REDIS_HOST,
+            'redis_port': settings.REDIS_PORT,
+            'cors_allowed_origins': settings.CORS_ALLOWED_ORIGINS,
+            'csp_default_src': settings.CSP_DEFAULT_SRC,
+            'csp_connect_src': settings.CSP_CONNECT_SRC,
+            'csp_frame_src': settings.CSP_FRAME_SRC,
+            'csp_script_src': settings.CSP_SCRIPT_SRC,
+            'csp_style_src': settings.CSP_STYLE_SRC,
+            'csp_media_src': settings.CSP_MEDIA_SRC,
+            'csp_img_src': settings.CSP_IMG_SRC,
+            'csp_child_src': settings.CSP_CHILD_SRC,
+            'csp_font_src': settings.CSP_FONT_SRC,
+        }
+        
+    def get(self, request, *args, **kwargs):
+        data = self.get_config_data()
+        return JsonResponse( data, safe = False )
