@@ -51,6 +51,9 @@
 	normalizeAngle: function(angle) {
 	    return _normalizeAngle(angle);
 	},
+	getTouchDistance: function( event ) {
+	    return _getTouchDistance( event );
+	},
 	displayEventInfo: function ( label, event ) {
 	    return _displayEventInfo( label, event );
 	},
@@ -167,19 +170,19 @@
 	const endVectorX = endX - centerX;
 	const endVectorY = endY - centerY;
 
-	const startAngle = Math.atan2(startVectorY, startVectorX);
-	const endAngle = Math.atan2(endVectorY, endVectorX);
+	const startAngle = Math.atan2( startVectorY, startVectorX );
+	const endAngle = Math.atan2( endVectorY, endVectorX );
 
 	let angleDifference = endAngle - startAngle;
 
 	// Normalize the angle to be between -π and π
-	if (angleDifference > Math.PI) {
+	if ( angleDifference > Math.PI ) {
             angleDifference -= 2 * Math.PI;
-	} else if (angleDifference < -Math.PI) {
+	} else if ( angleDifference < -Math.PI ) {
             angleDifference += 2 * Math.PI;
 	}
 
-	const angleDifferenceDegrees = angleDifference * (180 / Math.PI);
+	const angleDifferenceDegrees = angleDifference * ( 180 / Math.PI );
 
 	return angleDifferenceDegrees;
     }
@@ -201,6 +204,14 @@
     Pos: ( ${event.clientX}, ${event.clientY} )` );
     }
 
+    function _getTouchDistance( event ) {
+	if ( event.touches.length < 2 ) return 0;
+	let [ touch1, touch2 ] = event.touches;
+	let dx = touch1.clientX - touch2.clientX;
+	let dy = touch1.clientY - touch2.clientY;
+	return Math.sqrt( dx * dx + dy * dy );
+    }
+    
     function _displayElementInfo( label, element ) {
 	if ( ! Hi.DEBUG ) { return; }
 	if ( ! element ) {

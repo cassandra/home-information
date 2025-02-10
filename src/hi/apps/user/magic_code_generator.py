@@ -61,7 +61,7 @@ class MagicCodeGenerator:
         magic_code = re.sub( r'[\-\s]', '', magic_code )
         
         expected_magic_code = request.session.get( self.MAGIC_CODE )
-        if magic_code != expected_magic_code:
+        if magic_code.lower() != expected_magic_code.lower():
             return MagicCodeStatus.INVALID
         
         magic_code_origin_timestamp = request.session.get( self.MAGIC_CODE_TIMESTAMP )

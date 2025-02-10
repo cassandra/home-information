@@ -57,7 +57,8 @@
     const KEYPRESS_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
     const MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
     const ZOOM_API_CALL_DEBOUNCE_MS = 400;
-
+    const ROTATE_EASING_FACTOR = 0.5;
+    
     const LOCATION_VIEW_EDIT_PANE_SELECTOR = '#hi-location-view-edit';
     const API_EDIT_LOCATION_VIEW_GEOMETRY_URL = '/location/edit/location-view/geometry';
 
@@ -115,7 +116,7 @@
 		if ( gSvgTransformType == SvgTransformType.SCALE ) {
 		    updateScaleFromMouseMove( event );
 		} else if( gSvgTransformType == SvgTransformType.ROTATE ) {
-		    updateRotation( event );
+		    updateRotationFromMouseMove( event );
 		} else {
 		    updateDrag(event);
 		}
@@ -426,23 +427,23 @@
 	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, gSvgTransformType );
     }
     
-    function updateRotation( event ) {
-	if ( Hi.DEBUG ) { console.log( `updateRotation [${MODULE_NAME}]` ); }
+    function updateRotationFromMouseMove( event ) {
+	if ( Hi.DEBUG ) { console.log( `updateRotationFromMouseMove [${MODULE_NAME}]` ); }
 
 	let screenCenter = Hi.getScreenCenterPoint( gSelectedLocationViewSvg );
 
 	let deltaAngle = Hi.getRotationAngle( screenCenter.x, screenCenter.y,
-					      gLastMousePosition.x, gLastMousePosition.y,
+
+					      gSvgTransformData.clickStart.x, gSvgTransformData.clickStart.y,
+					      
 					      event.clientX, event.clientY );
 
         let transform = $(gSelectedLocationViewSvg).attr('transform');
         let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
-	rotate.angle += deltaAngle;
+	rotate.angle = gSvgTransformData.initialSvgRotate.angle + ( deltaAngle * ROTATE_EASING_FACTOR );
 	rotate.angle = Hi.normalizeAngle( rotate.angle );
-
 	let newTransform = `rotate(${rotate.angle}, ${rotate.cx}, ${rotate.cy})`;
         $(gSelectedLocationViewSvg).attr( 'transform', newTransform );
-
     }
     
     function applyRotation( event ) {

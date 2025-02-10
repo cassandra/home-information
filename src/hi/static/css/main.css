@@ -269,7 +269,9 @@ input[type="number"] {
 .hi-location-view {
     justify-content: center;
     align-items: center;
-    height: calc(100vh - var(--top-buttons-height) - var(--bottom-buttons-height) ); 
+    height: calc(100vh - var(--top-buttons-height) - var(--bottom-buttons-height) );
+    touch-action: none;
+
 }
 .hi-location-view-svg {
     max-height: calc(100vh - var(--top-buttons-height) - var(--bottom-buttons-height) ); 

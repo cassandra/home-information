@@ -100,36 +100,12 @@ class IntegrationEnableView( HiModalView ):
                 'integration_attribute_formset': integration_attribute_formset,
             }
             return self.modal_response( request, context, status_code = 400 )
-
-
-
-
-
-        import asyncio
-        import tracemalloc
-        tracemalloc.start() 
-
-
-        
-        
-
-
         
         integration_manager.enable_integration(
             integration_data = integration_data,
             integration_attribute_formset = integration_attribute_formset,
         )
 
-
-
-        snapshot = tracemalloc.take_snapshot()
-        top_stats = snapshot.statistics('lineno')  # Or 'filename'
-        for stat in top_stats[:10]:  # Show top 10 allocations
-            print(stat)
-        tracemalloc.stop()
-
-
-        
         redirect_url = reverse( 'integrations_home' )
         return self.redirect_response( request, redirect_url )
 
