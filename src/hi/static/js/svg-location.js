@@ -85,7 +85,7 @@
     let gSelectedLocationViewSvg = null;
     let gSvgTransformData = null;
     let gLastPointerPosition = { x: 0, y: 0 };
-    let gIgnoreCLick = false;  // Set by mouseup handling when no click handling should be done
+    let gIgnoreCLick = false;  // Set by pointer event handling when no click handling should be done
 
     let zoomApiCallDebounceTimer = null;
     let lastZoomApiCallTime = 0;
@@ -106,7 +106,7 @@
 	    }
 	}
 	
-	if ( Hi.DEBUG ) { console.log( `Mouse down skipped [${MODULE_NAME}]` ); }
+	if ( Hi.DEBUG ) { console.log( `Pointer down skipped: [${MODULE_NAME}]` ); }
 	return false;
     }
     
@@ -124,9 +124,9 @@
 	    
 	    gSvgTransformData.isDragging = true;
 	    if ( gSvgTransformType == SvgTransformType.SCALE ) {
-		updateScaleFromMouseMove( event );
+		updateScaleFromPointerMove( event );
 	    } else if( gSvgTransformType == SvgTransformType.ROTATE ) {
-		updateRotationFromMouseMove( event );
+		updateRotationFromPointerMove( event );
 	    } else {
 		updateDrag(event);
 	    }
@@ -159,11 +159,11 @@
 	clearTransformData();
 	
 	if ( eventWasHandled ) {
-	    if ( Hi.DEBUG ) { console.log( `Pointer up event [${MODULE_NAME}]`, event ); }
+	    if ( Hi.DEBUG ) { console.log( `Pointer end: [${MODULE_NAME}]`, event ); }
 	    gIgnoreCLick = true;
 
 	} else {
-	    if ( Hi.DEBUG ) { console.log( `Pointer up skipped [${MODULE_NAME}]` ); }
+	    if ( Hi.DEBUG ) { console.log( `Pointer env skipped: [${MODULE_NAME}]` ); }
 	}
 	return eventWasHandled;
     }
@@ -427,7 +427,7 @@
 	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, gSvgTransformType );
     }
 
-    function updateScaleFromMouseMove( event ) {
+    function updateScaleFromPointerMove( event ) {
 	if ( Hi.DEBUG ) { console.log( `updateScale [${MODULE_NAME}]` ); }
 
 	if ( gSvgTransformData == null ) {
@@ -481,8 +481,8 @@
 	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, gSvgTransformType );
     }
     
-    function updateRotationFromMouseMove( event ) {
-	if ( Hi.DEBUG ) { console.log( `updateRotationFromMouseMove [${MODULE_NAME}]` ); }
+    function updateRotationFromPointerMove( event ) {
+	if ( Hi.DEBUG ) { console.log( `updateRotationFromPointerMove [${MODULE_NAME}]` ); }
 
 	let screenCenter = Hi.getScreenCenterPoint( gSelectedLocationViewSvg );
 

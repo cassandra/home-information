@@ -121,8 +121,7 @@
 		handled = true;
 	    }
 	}
-
-	if ( gSelectedPathSvgGroup ) {
+	if ( ! handled && gSelectedPathSvgGroup ) {
 	    const enclosingSvg = $(event.target).closest('svg');
 	    if ( $(enclosingSvg).hasClass( Hi.LOCATION_VIEW_SVG_CLASS ) ) { 
 		handleProxyPathClick( event );

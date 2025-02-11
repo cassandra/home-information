@@ -71,9 +71,9 @@
 
     const POINTER_EVENTS_SCALE_FACTOR = 250.0;
     const POINTER_EVENTS_ROTATE_FACTOR = 0.1;
+    const POINTER_MOVE_ZOOM_SCALE_FACTOR = 175.0; // Number of pixels moved to double or halve size
     const KEYPRESS_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
     const MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
-    const MOUSE_MOVE_ZOOM_SCALE_FACTOR = 175.0; // Number of pixels moved to double or halve size
     const MOUSE_WHEEL_ROTATE_DEGREES = 10.0;
     const KEYPRESS_ROTATE_DEGREES = 10.0;
     const POSITION_API_CALL_DEBOUNCE_MS = 400;
@@ -92,7 +92,7 @@
     let gSvgIconActionEditData = null;  // For scale and rotate actions
 
     let gLastPointerPosition = { x: 0, y: 0 };
-    let gIgnoreCLick = false;  // Set by mouseup handling when no click handling should be done
+    let gIgnoreCLick = false;  // Set by pointer event handling when no click handling should be done
 
     let positionApiCallDebounceTimer = null;
     let lastPositionApiCallTime = 0;
@@ -199,8 +199,6 @@
 	    gSvgIconDragData = null;
 	    return true;
 	}
-	
-	if ( Hi.DEBUG ) { console.log( `Pointer end skipped [${MODULE_NAME}]` ); }
 	return false;
     }
     
@@ -529,9 +527,9 @@
 
 	let scaleMultiplier = 1.0;
 	if ( endDistance > startDistance ) {
-	    scaleMultiplier = 2 ** ( moveDistance / MOUSE_MOVE_ZOOM_SCALE_FACTOR );
+	    scaleMultiplier = 2 ** ( moveDistance / POINTER_MOVE_ZOOM_SCALE_FACTOR );
 	} else {
-	    scaleMultiplier = 2 ** ( -1.0 * moveDistance / MOUSE_MOVE_ZOOM_SCALE_FACTOR );
+	    scaleMultiplier = 2 ** ( -1.0 * moveDistance / POINTER_MOVE_ZOOM_SCALE_FACTOR );
 	}
 	
 	if ( Hi.DEBUG ) {
