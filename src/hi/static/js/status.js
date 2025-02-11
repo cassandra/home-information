@@ -19,6 +19,8 @@
       - Periodic polling of server to get status and alerts.
     */
 
+    const TRACE = false;
+    
     const ServerPollingWatchdogType = 'serverPolling';
     const ServerPollingStartDelayMs = 1000;
     const ServerPollingIntervalMs = 3 * 1000;
@@ -65,14 +67,14 @@
 
     function fetchServerResponse() {
 	if ( Hi.isEditMode ) {
-	    if ( Hi.DEBUG ) { console.log( "Skipping polling server. Edit mode active." ); }
+	    if ( Hi.DEBUG && TRACE ) { console.log( "Skipping polling server. Edit mode active." ); }
 	    Hi.watchdog.ok( ServerPollingWatchdogType );
 	    clearServerPollingTimer();
 	    setServerPollingTimer();
 	    return;
 	}
 
-	if ( Hi.DEBUG ) { console.log( "Polling server..." ); }
+	if ( Hi.DEBUG && TRACE ) { console.log( "Polling server..." ); }
 	clearServerPollingTimer();
 	
 	let url = ServerPollingUrl;
@@ -118,7 +120,7 @@
     }
 
     function handleServerResponse( respObj, textStatus, jqXHR ) {
-	if ( Hi.DEBUG ) { console.log( "Server response: "+JSON.stringify( respObj)); }
+	if ( Hi.DEBUG && TRACE ) { console.log( "Server response: "+JSON.stringify( respObj)); }
 
 	doServerStartTimeCheck( respObj );
 	
@@ -172,8 +174,6 @@
 	    Hi.audio.startAudibleSignal( alertStatusData[NewAudioSignalNameAttr] );
 	}
 
-	console.log( 'Alarm Message', alertStatusData );
-	
 	if (( AlarmMessageHtmlAttr in alertStatusData )
 	    && alertStatusData[AlarmMessageHtmlAttr] ) {
 	    $(AlertBannerContentSelector).html( alertStatusData[AlarmMessageHtmlAttr] );

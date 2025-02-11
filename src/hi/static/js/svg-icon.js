@@ -12,14 +12,17 @@
             Hi.edit.eventBus.subscribe( Hi.edit.SELECTION_MADE_EVENT_NAME,
 					this.clearSelection.bind(this) );
         },
-	handleMouseDown: function( event ) {
-	    return _handleMouseDown( event );	    
+	handlePointerDown: function( pointerEventData ) {
+	    return _handlePointerDown( pointerEventData );	    
 	},
-	handleMouseMove: function( event ) {
-	    return _handleMouseMove( event );	    
+	handlePointerMove: function( pointerEventData ) {
+	    return _handlePointerMove( pointerEventData );	    
 	},
-	handleMouseUp: function( event ) {
-	    return _handleMouseUp( event );	    
+	handlePointerUp: function( pointerEventData ) {
+	    return _handlePointerUp( pointerEventData );	    
+	},
+	scaleAndRotateFromPointerEvents: function( pointerEventData ) {
+	    return _scaleAndRotateFromPointerEvents( pointerEventData );	    
 	},
 	handleMouseWheel: function( event ) {
 	    return _handleMouseWheel( event );	    
@@ -85,25 +88,24 @@
     let positionApiCallDebounceTimer = null;
     let lastPositionApiCallTime = 0;
     
-    function _handleMouseDown( event ) {
+    function _handlePointerDown( pointerEventData ) {
 	if ( ! Hi.isEditMode ) { return false; }
 
+	const event = pointerEventData.start.event;
+	
 	// Need to track start time to differentiate drag/scale/rotate actions from regular clicks.
 	gClickStart = {
 	    x: event.clientX,
 	    y: event.clientY,
-	    time: Date.now()
 	};
 	
 	if ( gSvgIconActionEditData ) {
-	    if ( Hi.DEBUG ) { console.log( `Mouse down event [${MODULE_NAME}]`, event ); }
+	    if ( Hi.DEBUG ) { console.log( `Pointer down event [${MODULE_NAME}]`, event ); }
 	    if ( gSvgIconActionState == SvgActionStateType.SCALE ) {
 		gSvgIconActionEditData.isScaling = true;
 	    } else if ( gSvgIconActionState == SvgActionStateType.ROTATE ) {
 		gSvgIconActionEditData.isRotating = true;
 	    }
-	    event.preventDefault();
-	    event.stopImmediatePropagation();
 	    return true;
 	} else {
 	    const enclosingSvgGroup = $(event.target).closest('g');
@@ -116,21 +118,21 @@
 			gSelectedIconSvgGroup = enclosingSvgGroup;
 		    }
 		
-		    if ( Hi.DEBUG ) { console.log( `Mouse down event [${MODULE_NAME}]`, event ); }
+		    if ( Hi.DEBUG ) { console.log( `Pointer down event [${MODULE_NAME}]`, event ); }
 		    createIconDragData( event, enclosingSvgGroup );
-		    event.preventDefault();
-		    event.stopImmediatePropagation();
 		    return true;
 		}
 	    }
 	}
-	if ( Hi.DEBUG ) { console.log( `Mouse down skipped [${MODULE_NAME}]` ); }
+	if ( Hi.DEBUG ) { console.log( `Pointer down skipped [${MODULE_NAME}]` ); }
 	return false;
     }
     
-    function _handleMouseMove( event ) {
+    function _handlePointerMove( pointerEventData ) {
 	if ( ! Hi.isEditMode ) { return false; }
 
+	const event = pointerEventData.last.event;
+	
 	const currentMousePosition = {
 	    x: event.clientX,
 	    y: event.clientY
@@ -164,18 +166,16 @@
 
 	gLastMousePosition = currentMousePosition;
 	
-	if ( handled ) {
-	    event.preventDefault(); 
-	    event.stopImmediatePropagation();
-	}
 	return handled;
     }
     
-    function _handleMouseUp( event ) {
+    function _handlePointerUp( pointerEventData ) {
 	if ( ! Hi.isEditMode ) { return false; }
 
+	const event = pointerEventData.last.event;
+
 	if ( gSvgIconActionEditData ) {
-	    if ( Hi.DEBUG ) { console.log( `Mouse up event [${MODULE_NAME}]`, event ); }
+	    if ( Hi.DEBUG ) { console.log( `Pointer up event [${MODULE_NAME}]`, event ); }
 	    if ( gSvgIconActionState == SvgActionStateType.SCALE ) {
 		gSvgIconActionEditData.isScaling = false;
 		iconActionScaleApply();
@@ -187,25 +187,21 @@
 	    $(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '');
 	    gSvgIconActionEditData = null;
 	    gIgnoreCLick = true;
-	    event.preventDefault(); 
-	    event.stopImmediatePropagation();
 	    return true;
 	}
 	
 	if ( gSvgIconDragData ) {
-	    if ( Hi.DEBUG ) { console.log( `Mouse up event [${MODULE_NAME}]`, event ); }
+	    if ( Hi.DEBUG ) { console.log( `Pointer up event [${MODULE_NAME}]`, event ); }
 	    if ( gSvgIconDragData.isDragging ) {
 		applyDrag( event );
 		$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '');
 	    }
 	    $(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
 	    gSvgIconDragData = null;
-	    event.preventDefault(); 
-	    event.stopImmediatePropagation();
 	    return true;
 	}
 	
-	if ( Hi.DEBUG ) { console.log( `Mouse up skipped [${MODULE_NAME}]` ); }
+	if ( Hi.DEBUG ) { console.log( `Pointer up skipped [${MODULE_NAME}]` ); }
 	return false;
     }
 
@@ -634,6 +630,21 @@ Original (str):  ${transformStr}
 	}	
 	abortIconAction();
     }
+
+    function _scaleAndRotateFromPointerEvents( pointerEventData ) {
+	if ( gSvgIconActionEditData ) {
+
+
+
+
+
+
+
+
+	}
+	return false;
+    }
+    
 
     function setSvgTransformAttr( element, scale, translate, rotate ) {
         let newTransform = `scale(${scale.x} ${scale.y}) translate(${translate.x}, ${translate.y}) rotate(${rotate.angle}, ${rotate.cx}, ${rotate.cy})`;

@@ -102,7 +102,7 @@
 
     function _handleClick( event ) {
 	if ( gSelectedPathSvgGroup && gIgnoreCLick ) {
-	    if ( Hi.DEBUG ) { console.log( `Ignoring click [${MODULE_NAME}]`, event ); }
+	    if ( Hi.DEBUG ) { console.log( `Ignoring click: [${MODULE_NAME}]`, event ); }
 	    gIgnoreCLick = false;
 	    event.preventDefault(); 
 	    event.stopImmediatePropagation();
@@ -111,17 +111,14 @@
 	gIgnoreCLick = false;
 
 	const enclosingSvgGroup = $(event.target).closest('g');
+	let handled = false;
 	if ( enclosingSvgGroup.length > 0 ) {
-            console.log( `Click [${MODULE_NAME}]`, event );
-            Hi.displayElementInfo( 'SVG Target Element', enclosingSvgGroup );
 	    let svgDataType = $(enclosingSvgGroup).attr( Hi.DATA_TYPE_ATTR );
-	    const isSvgIcon = ( svgDataType == Hi.DATA_TYPE_PATH_VALUE );
+	    const isSvgPath = ( svgDataType == Hi.DATA_TYPE_PATH_VALUE );
 	    const svgItemId = enclosingSvgGroup.attr('id');
-	    if ( isSvgIcon && svgItemId ) {
+	    if ( isSvgPath && svgItemId ) {
 		handleSvgPathClick( event, enclosingSvgGroup );
-		event.preventDefault(); 
-		event.stopImmediatePropagation();
-		return true;
+		handled = true;
 	    }
 	}
 
@@ -129,13 +126,18 @@
 	    const enclosingSvg = $(event.target).closest('svg');
 	    if ( $(enclosingSvg).hasClass( Hi.LOCATION_VIEW_SVG_CLASS ) ) { 
 		handleProxyPathClick( event );
-		event.preventDefault(); 
-		event.stopImmediatePropagation();
-		return true;
+		handled = true;
 	    }
 	}
-	if ( Hi.DEBUG ) { console.log( `Click skipped [${MODULE_NAME}]` ); }
-	return false;
+
+	if ( handled ) {
+	    if ( Hi.DEBUG ) { console.log( `Click handled: [${MODULE_NAME}]`, event ); }
+	    event.preventDefault(); 
+	    event.stopImmediatePropagation();
+	} else {
+	    if ( Hi.DEBUG ) { console.log( `Click skipped: [${MODULE_NAME}]` ); }
+	}
+	return handled;
     }
 
     function _handleKeyDown( event ) {

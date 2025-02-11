@@ -51,9 +51,6 @@
 	normalizeAngle: function(angle) {
 	    return _normalizeAngle(angle);
 	},
-	getTouchDistance: function( event ) {
-	    return _getTouchDistance( event );
-	},
 	displayEventInfo: function ( label, event ) {
 	    return _displayEventInfo( label, event );
 	},
@@ -204,14 +201,6 @@
     Pos: ( ${event.clientX}, ${event.clientY} )` );
     }
 
-    function _getTouchDistance( event ) {
-	if ( event.touches.length < 2 ) return 0;
-	let [ touch1, touch2 ] = event.touches;
-	let dx = touch1.clientX - touch2.clientX;
-	let dy = touch1.clientY - touch2.clientY;
-	return Math.sqrt( dx * dx + dy * dy );
-    }
-    
     function _displayElementInfo( label, element ) {
 	if ( ! Hi.DEBUG ) { return; }
 	if ( ! element ) {
