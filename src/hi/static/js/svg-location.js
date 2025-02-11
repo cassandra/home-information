@@ -12,17 +12,23 @@
             Hi.edit.eventBus.subscribe( Hi.edit.SELECTION_MADE_EVENT_NAME,
 					this.clearSelection.bind(this) );
         },
-	handlePointerDown: function( pointerEventData ) {
-	    return _handlePointerDown( pointerEventData );	    
+	handleSinglePointerEventStart: function( singlePointerEvent ) {
+	    return _handleSinglePointerEventStart( singlePointerEvent );	    
 	},
-	handlePointerMove: function( pointerEventData ) {
-	    return _handlePointerMove( pointerEventData );	    
+	handleSinglePointerEventMove: function( singlePointerEvent ) {
+	    return _handleSinglePointerEventMove( singlePointerEvent );	    
 	},
-	handlePointerUp: function( pointerEventData ) {
-	    return _handlePointerUp( pointerEventData );	    
+	handleSinglePointerEventEnd: function( singlePointerEvent ) {
+	    return _handleSinglePointerEventEnd( singlePointerEvent );	    
 	},
-	scaleAndRotateFromPointerEvents: function( pointerEventData ) {
-	    return _scaleAndRotateFromPointerEvents( pointerEventData );	    
+	handleDoublePointerEventStart: function( doublePointerEvent ) {
+	    return _handleDoublePointerEventStart( doublePointerEvent );	    
+	},
+	handleDoublePointerEventMove: function( doublePointerEvent ) {
+	    return _handleDoublePointerEventMove( doublePointerEvent );	    
+	},
+	handleDoublePointerEventEnd: function( doublePointerEvent ) {
+	    return _handleDoublePointerEventEnd( doublePointerEvent );	    
 	},
 	handleMouseWheel: function( event ) {
 	    return _handleMouseWheel( event );	    
@@ -82,8 +88,8 @@
     let zoomApiCallDebounceTimer = null;
     let lastZoomApiCallTime = 0;
     
-    function _handlePointerDown( pointerEventData ) {
-	const event = pointerEventData.start.event;
+    function _handleSinglePointerEventStart( singlePointerEvent ) {
+	const event = singlePointerEvent.start.event;
 
 	if ( gSelectedLocationViewSvg ) {
 	    if ( Hi.DEBUG ) { console.log( `Pointer down event [${MODULE_NAME}]`, event ); }
@@ -102,8 +108,8 @@
 	return false;
     }
     
-    function _handlePointerMove( pointerEventData ) {
-	const event = pointerEventData.last.event;
+    function _handleSinglePointerEventMove( singlePointerEvent ) {
+	const event = singlePointerEvent.last.event;
 
 	const currentMousePosition = {
 	    x: event.clientX,
@@ -126,8 +132,6 @@
 		    updateDrag(event);
 		}
 		gSvgTransformData.lastMousePosition = currentMousePosition;
-		event.preventDefault(); 
-	    	event.stopImmediatePropagation();
 		return true;
 	    }
 	}
@@ -135,22 +139,22 @@
 	return false;
     }
     
-    function _handlePointerUp( pointerEventData ) {
+    function _handleSinglePointerEventEnd( singlePointerEvent ) {
 
-	const event = pointerEventData.last.event;
+	const event = singlePointerEvent.last.event;
 
 	let eventWasHandled = false;
 	if ( gSvgTransformData ) {
 	    if ( gSvgTransformType == SvgTransformType.SCALE ) {
-		applyScale( event );
+		endScale();
 		eventWasHandled = true;
 
 	    } else if( gSvgTransformType == SvgTransformType.ROTATE ) {
-		applyRotation( event );
+		endRotation();
 		eventWasHandled = true;
 
 	    } else if (( gSvgTransformType == SvgTransformType.MOVE ) && gSvgTransformData.isDragging ) {
-		applyDrag( event );
+		endDrag( event );
 		eventWasHandled = true;
 	    }
 	}
@@ -165,6 +169,39 @@
 	    if ( Hi.DEBUG ) { console.log( `Pointer up skipped [${MODULE_NAME}]` ); }
 	}
 	return eventWasHandled;
+    }
+
+    function _handleDoublePointerEventStart( doublePointerEvent ) {
+	const event = doublePointerEvent.start.event;
+	const closest = $(event.target).closest( Hi.LOCATION_VIEW_SVG_SELECTOR );
+	if ( closest.length > 0 ) {
+	    gSelectedLocationViewSvg = closest[0];
+	    createTransformData( event, gSelectedLocationViewSvg );
+	    return true;
+	}
+	return false;
+    }
+
+    function _handleDoublePointerEventMove( doublePointerEvent ) {
+	if ( ! gSvgTransformData ) {
+	    return false;
+	}
+	let scaleFactor = ( 1.0 - ( doublePointerEvent.deltaDistancePrevious
+				    / POINTER_EVENTS_SCALE_FACTOR ));
+	let deltaAngle = doublePointerEvent.deltaAngleStart * POINTER_EVENTS_ROTATE_FACTOR;
+	zoom( scaleFactor );
+	rotate( deltaAngle );
+	return true;
+    }
+
+    function _handleDoublePointerEventEnd( doublePointerEvent ) {
+	if ( ! gSvgTransformData ) {
+	    return false;
+	}
+	saveSvgGeometryDebouncer();
+	abortScale();
+	abortRotation();
+	return true;
     }
     
     function _handleMouseWheel( event ) {
@@ -189,15 +226,18 @@
 	}
 
 	if ( $(event.target).closest( Hi.LOCATION_VIEW_BASE_SELECTOR ).length > 0 ) {
-	    gSelectedLocationViewSvg = $(event.target).closest( Hi.LOCATION_VIEW_SVG_SELECTOR );
-	    clearTransformData();
-	    let data = {
-		moduleName: MODULE_NAME,
-	    };
-	    Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
-	    event.preventDefault(); 
-	    event.stopImmediatePropagation();
-	    return true;
+	    const closest = $(event.target).closest( Hi.LOCATION_VIEW_SVG_SELECTOR );
+	    if ( closest.length > 0 ) {
+		gSelectedLocationViewSvg = closest[0];
+		clearTransformData();
+		let data = {
+		    moduleName: MODULE_NAME,
+		};
+		Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
+		event.preventDefault(); 
+		event.stopImmediatePropagation();
+		return true;
+	    }
 	}
 	if ( Hi.DEBUG ) { console.log( `Click skipped [${MODULE_NAME}]` ); }
 	return false;
@@ -339,8 +379,8 @@
 	return;
     }
 
-    function applyDrag( event ) {
-	if ( Hi.DEBUG ) { console.log( `applyDrag [${MODULE_NAME}]` ); }
+    function endDrag( event ) {
+	if ( Hi.DEBUG ) { console.log( `endDrag [${MODULE_NAME}]` ); }
 	if ( gSvgTransformData && gSvgTransformData.isDragging ) {
 	    saveSvgGeometryIfNeeded();
 	}
@@ -412,14 +452,14 @@
 	scaleSvgViewBox( gSvgTransformData.initialSvgViewBox, scaleFactor );
     }
 
-    function applyScale( event ) {
-	if ( Hi.DEBUG ) { console.log( `applyScale [${MODULE_NAME}]` ); }
+    function endScale() {
+	if ( Hi.DEBUG ) { console.log( `endScale [${MODULE_NAME}]` ); }
 	gSvgTransformType = SvgTransformType.MOVE;	
 	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );	
 	saveSvgGeometryIfNeeded();
     }
 
-    function abortScale( event ) {
+    function abortScale() {
 	if ( Hi.DEBUG ) { console.log( `abortScale [${MODULE_NAME}]` ); }
 	clearTransformData();
 	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
@@ -458,40 +498,18 @@
 	let newTransform = `rotate(${rotate.angle}, ${rotate.cx}, ${rotate.cy})`;
         $(gSelectedLocationViewSvg).attr( 'transform', newTransform );
     }
-    
-    function applyRotation( event ) {
-	if ( Hi.DEBUG ) { console.log( `applyRotation [${MODULE_NAME}]` ); }
+   
+    function endRotation( ) {
+	if ( Hi.DEBUG ) { console.log( `endRotation [${MODULE_NAME}]` ); }
 	gSvgTransformType = SvgTransformType.MOVE;	
 	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
 	saveSvgGeometryIfNeeded();	
     }
     
-    function abortRotation( event ) {
+    function abortRotation( ) {
 	if ( Hi.DEBUG ) { console.log( `abortRotation [${MODULE_NAME}]` ); }
 	clearTransformData();
 	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
-    }
-
-    function _scaleAndRotateFromPointerEvents( pointerEventData ) {
-	const event = pointerEventData.last.event;
-	if ( event.type == 'pointerdown' ) {
-	    gSelectedLocationViewSvg = $(event.target).closest( Hi.LOCATION_VIEW_SVG_SELECTOR );
-	    createTransformData( event, gSelectedLocationViewSvg );
-	} else if ( ! gSvgTransformData ) {
-	    return false;
-	} else if ( event.type == 'pointermove' ) {
-	    let scaleFactor = ( 1.0 - ( pointerEventData.deltaDistancePrevious
-					/ POINTER_EVENTS_SCALE_FACTOR ));
-	    let deltaAngle = pointerEventData.deltaAngleStart * POINTER_EVENTS_ROTATE_FACTOR;
-	    zoom( scaleFactor );
-	    rotate( deltaAngle );
-	    saveSvgGeometryDebouncer();
-
-	} else {
-	    abortScale();
-	    abortRotation();
-	}
-	return true;
     }
     
     function adjustSvgViewBox( initialSvgViewBox, newWidth, newHeight, newX = null, newY = null ) {

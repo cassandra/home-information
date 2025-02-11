@@ -12,17 +12,23 @@
             Hi.edit.eventBus.subscribe( Hi.edit.SELECTION_MADE_EVENT_NAME,
 					this.clearSelection.bind(this) );
         },
-	handlePointerDown: function( pointerEventData ) {
-	    return _handlePointerDown( pointerEventData );	    
+	handleSinglePointerEventStart: function( singlePointerEvent ) {
+	    return _handleSinglePointerEventStart( singlePointerEvent );	    
 	},
-	handlePointerMove: function( pointerEventData ) {
-	    return _handlePointerMove( pointerEventData );	    
+	handleSinglePointerEventMove: function( singlePointerEvent ) {
+	    return _handleSinglePointerEventMove( singlePointerEvent );	    
 	},
-	handlePointerUp: function( pointerEventData ) {
-	    return _handlePointerUp( pointerEventData );	    
+	handleSinglePointerEventEnd: function( singlePointerEvent ) {
+	    return _handleSinglePointerEventEnd( singlePointerEvent );	    
 	},
-	scaleAndRotateFromPointerEvents: function( pointerEventData ) {
-	    return _scaleAndRotateFromPointerEvents( pointerEventData );	    
+	handleDoublePointerEventStart: function( doublePointerEvent ) {
+	    return _handleDoublePointerEventStart( doublePointerEvent );	    
+	},
+	handleDoublePointerEventMove: function( doublePointerEvent ) {
+	    return _handleDoublePointerEventMove( doublePointerEvent );	    
+	},
+	handleDoublePointerEventEnd: function( doublePointerEvent ) {
+	    return _handleDoublePointerEventEnd( doublePointerEvent );	    
 	},
 	handleMouseWheel: function( event ) {
 	    return _handleMouseWheel( event );	    
@@ -61,6 +67,8 @@
     const ICON_ACTION_ZOOM_OUT_KEY = '-';
 
     const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3; // Differentiate between move events and sloppy clicks
+    const POINTER_EVENTS_SCALE_FACTOR = 250.0;
+    const POINTER_EVENTS_ROTATE_FACTOR = 0.1;
     const KEYPRESS_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
     const MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
     const MOUSE_MOVE_ZOOM_SCALE_FACTOR = 175.0; // Number of pixels moved to double or halve size
@@ -88,19 +96,17 @@
     let positionApiCallDebounceTimer = null;
     let lastPositionApiCallTime = 0;
     
-    function _handlePointerDown( pointerEventData ) {
+    function _handleSinglePointerEventStart( singlePointerEvent ) {
 	if ( ! Hi.isEditMode ) { return false; }
 
-	const event = pointerEventData.start.event;
-	
 	// Need to track start time to differentiate drag/scale/rotate actions from regular clicks.
 	gClickStart = {
-	    x: event.clientX,
-	    y: event.clientY,
+	    x: singlePointerEvent.start.x,
+	    y: singlePointerEvent.start.y,
 	};
 	
 	if ( gSvgIconActionEditData ) {
-	    if ( Hi.DEBUG ) { console.log( `Pointer down event [${MODULE_NAME}]`, event ); }
+	    if ( Hi.DEBUG ) { console.log( `Pointer down [${MODULE_NAME}]`, singlePointerEvent ); }
 	    if ( gSvgIconActionState == SvgActionStateType.SCALE ) {
 		gSvgIconActionEditData.isScaling = true;
 	    } else if ( gSvgIconActionState == SvgActionStateType.ROTATE ) {
@@ -108,18 +114,18 @@
 	    }
 	    return true;
 	} else {
-	    const enclosingSvgGroup = $(event.target).closest('g');
+	    const enclosingSvgGroup = $(singlePointerEvent.start.event.target).closest('g');
 	    if ( enclosingSvgGroup.length > 0 ) {
 		const svgDataType = $(enclosingSvgGroup).attr( Hi.DATA_TYPE_ATTR );
 		if ( svgDataType == Hi.DATA_TYPE_ICON_VALUE ) {
 
 		    if ( $(enclosingSvgGroup).attr('id') != $(gSelectedIconSvgGroup).attr('id')) {
 			clearSelectedIconSvgGroup();
-			gSelectedIconSvgGroup = enclosingSvgGroup;
+			gSelectedIconSvgGroup = enclosingSvgGroup[0];
 		    }
 		
-		    if ( Hi.DEBUG ) { console.log( `Pointer down event [${MODULE_NAME}]`, event ); }
-		    createIconDragData( event, enclosingSvgGroup );
+		    if ( Hi.DEBUG ) { console.log( `Pointer down [${MODULE_NAME}]`, singlePointerEvent ); }
+		    startDrag( singlePointerEvent, enclosingSvgGroup );
 		    return true;
 		}
 	    }
@@ -128,24 +134,22 @@
 	return false;
     }
     
-    function _handlePointerMove( pointerEventData ) {
+    function _handleSinglePointerEventMove( singlePointerEvent ) {
 	if ( ! Hi.isEditMode ) { return false; }
-
-	const event = pointerEventData.last.event;
 	
 	const currentMousePosition = {
-	    x: event.clientX,
-	    y: event.clientY
+	    x: singlePointerEvent.last.x,
+	    y: singlePointerEvent.last.y
 	};
 
 	let handled = false;
 	
 	 if ( gSvgIconActionEditData ) {
 	    if ( gSvgIconActionEditData.isScaling ) {
-		iconActionScaleFromMouseMove( currentMousePosition );
+		updateScaleFromMouseMove( currentMousePosition );
 		handled = true;
 	    } else if ( gSvgIconActionEditData.isRotating ) {
-		iconActionRotateUpdateFromMouseMove( currentMousePosition );
+		updateRotateFromMouseMove( currentMousePosition );
 		handled = true;
 	    }
 	}
@@ -159,7 +163,7 @@
 		 || ( distanceY > CURSOR_MOVEMENT_THRESHOLD_PIXELS )) {
 		gSvgIconDragData.isDragging = true;
 		$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, SvgActionStateType.MOVE);
-		updateDrag(event);
+		updateDrag( singlePointerEvent );
 		handled = true;
 	    }
 	}
@@ -169,19 +173,27 @@
 	return handled;
     }
     
-    function _handlePointerUp( pointerEventData ) {
+    function _handleSinglePointerEventEnd( singlePointerEvent ) {
 	if ( ! Hi.isEditMode ) { return false; }
 
-	const event = pointerEventData.last.event;
+	let handled = endSinglePointerEvent();
+	if ( handled ) {
+	    if ( Hi.DEBUG ) { console.log( `Pointer end [${MODULE_NAME}]`, singlePointerEvent ); }
+	} else {
+	    if ( Hi.DEBUG ) { console.log( `Pointer end skipped [${MODULE_NAME}]` ); }
+	}
+	return handled;
+    }
+
+    function endSinglePointerEvent() {
 
 	if ( gSvgIconActionEditData ) {
-	    if ( Hi.DEBUG ) { console.log( `Pointer up event [${MODULE_NAME}]`, event ); }
 	    if ( gSvgIconActionState == SvgActionStateType.SCALE ) {
 		gSvgIconActionEditData.isScaling = false;
-		iconActionScaleApply();
+		endScale();
 	    } else if ( gSvgIconActionState == SvgActionStateType.ROTATE ) {
 		gSvgIconActionEditData.isRotating = false;
-		iconActionRotateApply();
+		endRotate();
 	    }
 	    gSvgIconActionState = SvgActionStateType.MOVE;
 	    $(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '');
@@ -191,9 +203,8 @@
 	}
 	
 	if ( gSvgIconDragData ) {
-	    if ( Hi.DEBUG ) { console.log( `Pointer up event [${MODULE_NAME}]`, event ); }
 	    if ( gSvgIconDragData.isDragging ) {
-		applyDrag( event );
+		endDrag();
 		$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '');
 	    }
 	    $(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
@@ -201,10 +212,49 @@
 	    return true;
 	}
 	
-	if ( Hi.DEBUG ) { console.log( `Pointer up skipped [${MODULE_NAME}]` ); }
+	if ( Hi.DEBUG ) { console.log( `Pointer end skipped [${MODULE_NAME}]` ); }
 	return false;
     }
+    
+    function _handleDoublePointerEventStart( doublePointerEvent ) {
+	if ( ! Hi.isEditMode ) { return false; }
+	if ( ! gSelectedIconSvgGroup ) { return false; }
+	endSinglePointerEvent();
+	return true;
+    }
+    
 
+    function _handleDoublePointerEventMove( doublePointerEvent ) {
+	if ( ! Hi.isEditMode ) { return false; }
+	if ( ! gSelectedIconSvgGroup ) { return false; }
+	
+	let scaleMultiplier = ( 1.0 + ( doublePointerEvent.deltaDistancePrevious
+					/ POINTER_EVENTS_SCALE_FACTOR ));
+	let deltaAngle = doublePointerEvent.deltaAngleStart * POINTER_EVENTS_ROTATE_FACTOR;
+
+	updateScale( gSelectedIconSvgGroup, scaleMultiplier );
+	updateRotate( gSelectedIconSvgGroup, deltaAngle );
+	return true;
+    }
+    
+
+    function _handleDoublePointerEventEnd( doublePointerEvent ) {
+	let handled = endDoublePointerEvent();
+	if ( handled ) {
+	    if ( Hi.DEBUG ) { console.log( `Touch-2 end: [${MODULE_NAME}]`, event ); }
+	} else {
+	    if ( Hi.DEBUG ) { console.log( `Touch-2 end skipped: [${MODULE_NAME}]`, event ); }
+	}
+	return handled;
+    }
+    
+    function endDoublePointerEvent() {
+	if ( ! Hi.isEditMode ) { return false; }
+	if ( ! gSelectedIconSvgGroup ) { return false; }
+	saveIconSvgPositionDebouncer( gSelectedIconSvgGroup );
+	return true;
+    }
+    
     function _handleMouseWheel( event ) {
 	if ( ! Hi.isEditMode ) { return false; }
 
@@ -214,12 +264,12 @@
 
 	if ( gSvgIconActionEditData ) {
 	    if ( gSvgIconActionState == SvgActionStateType.SCALE ) {
-		iconActionScaleFromMouseWheel( event );
+		updateScaleFromMouseWheel( event );
 		event.preventDefault(); 
 		event.stopImmediatePropagation();
 		return true;
 	    } else if ( gSvgIconActionState == SvgActionStateType.ROTATE ) {
-		iconActionRotateFromMouseWheel( event );
+		updateRotateFromMouseWheel( event );
 		event.preventDefault(); 
 		event.stopImmediatePropagation();
 		return true;
@@ -279,30 +329,30 @@
 		if ( Hi.DEBUG ) { console.log( `Key Down [${MODULE_NAME}]`, event ); }
 
 		if ( event.key == ICON_ACTION_SCALE_KEY ) {
-		    iconActionRotateAbort();
-		    iconActionScaleStart();
+		    rotateAbort();
+		    startScale();
 		    
 		} else if ( event.key == ICON_ACTION_ROTATE_KEY ) {
-		    iconActionScaleAbort();
-		    iconActionRotateStart();
+		    scaleAbort();
+		    startRotate();
 		    
 		} else if ( event.key == ICON_ACTION_ZOOM_IN_KEY ) {
 		    if ( gSvgIconActionState == SvgActionStateType.SCALE ) {
-			iconActionScaleUpFromKeypress();
+			scaleUpFromKeypress();
 		    } else if ( gSvgIconActionState == SvgActionStateType.ROTATE ) {
-			iconActionRotateRightFromKeypress();
+			rotateRightFromKeypress();
 		    }
 		    
 		} else if ( event.key == ICON_ACTION_ZOOM_OUT_KEY ) {
 		    if ( gSvgIconActionState == SvgActionStateType.SCALE ) {
-			iconActionScaleDownFromKeypress();
+			scaleDownFromKeypress();
 		    } else if ( gSvgIconActionState == SvgActionStateType.ROTATE ) {
-			iconActionRotateLeftFromKeypress();
+			rotateLeftFromKeypress();
 		    }
 		    
 		} else if ( event.key == 'Escape' ) {
-		    iconActionScaleAbort();
-		    iconActionRotateAbort();
+		    scaleAbort();
+		    rotateAbort();
 		    gSvgIconActionState = SvgActionStateType.MOVE;
 		    $(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '');
 		    clearSelectedIconSvgGroup();
@@ -321,7 +371,7 @@
 
 	if ( Hi.isEditMode ) {
 	    clearSelectedIconSvgGroup();
-	    gSelectedIconSvgGroup = enclosingSvgGroup;
+	    gSelectedIconSvgGroup = $(enclosingSvgGroup)[0];
             $(enclosingSvgGroup).addClass( Hi.HIGHLIGHTED_CLASS );
 	    gSvgIconActionState = SvgActionStateType.MOVE;
 	    let data = {
@@ -343,7 +393,7 @@
 	}
     }
 
-    function createIconDragData( event, enclosingSvgGroup ) {	
+    function startDrag( singlePointerEvent, enclosingSvgGroup ) {	
 
 	const dragElement = enclosingSvgGroup;
         Hi.displayElementInfo( 'Drag Element', dragElement );
@@ -351,9 +401,11 @@
 	const baseSvgElement = $(Hi.BASE_SVG_SELECTOR);
 	Hi.displayElementInfo( 'Base SVG', baseSvgElement );
 
-        let transform = dragElement.attr('transform') || '';
+        let transform = $(dragElement).attr('transform') || '';
         let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
-        let cursorSvgPoint = Hi.svgUtils.toSvgPoint( baseSvgElement, event.clientX, event.clientY );
+        let cursorSvgPoint = Hi.svgUtils.toSvgPoint( baseSvgElement,
+						     singlePointerEvent.last.x,
+						     singlePointerEvent.last.y );
 
 	const cursorSvgOffset = {
 	    x : (cursorSvgPoint.x / scale.x) - translate.x,
@@ -364,7 +416,6 @@
 	    element: dragElement,
 	    baseSvgElement: baseSvgElement,
 	    cursorSvgOffset: cursorSvgOffset,
-	    elementSvgCenterPoint: Hi.svgUtils.getSvgCenterPoint( dragElement, baseSvgElement ),
 	    originalSvgScale: scale,
 	    originalSvgRotate: rotate,
 	    isDragging: false
@@ -373,73 +424,45 @@
 	if ( Hi.DEBUG ) {
 	    console.log( `Drag Start:
     SVG Cursor Point: ( ${cursorSvgPoint.x}, ${cursorSvgPoint.y} ), 
-    SVG Cursor Offset: ( ${gSvgIconDragData.cursorSvgOffset.x}, ${gSvgIconDragData.cursorSvgOffset.y} ),
-    SVG Center Point: ( ${gSvgIconDragData.elementSvgCenterPoint.x}, ${gSvgIconDragData.elementSvgCenterPoint.y} )`); 
+    SVG Cursor Offset: ( ${gSvgIconDragData.cursorSvgOffset.x}, ${gSvgIconDragData.cursorSvgOffset.y} )`); 
 	}
 	
     }
     
-    function updateDrag( event ) {
+    function updateDrag( singlePointerEvent ) {
         if ( gSvgIconDragData == null ) {
 	    return;
 	}
-        Hi.displayEventInfo( 'Update Drag', event );
+        Hi.displayEventInfo( 'Update Drag', singlePointerEvent );
         Hi.displayElementInfo( 'Drag Element', gSvgIconDragData.element );
 
         let cursorSvgPoint = Hi.svgUtils.toSvgPoint( gSvgIconDragData.baseSvgElement,
-						     event.clientX,
-						     event.clientY );
+						     singlePointerEvent.last.x,
+						     singlePointerEvent.last.y );
 
 	let scale = gSvgIconDragData.originalSvgScale;
 	let rotate = gSvgIconDragData.originalSvgRotate;
-	
-        let newX = (cursorSvgPoint.x / scale.x) - gSvgIconDragData.cursorSvgOffset.x;
-        let newY = (cursorSvgPoint.y / scale.y) - gSvgIconDragData.cursorSvgOffset.y;
+	let translate = {
+	    x: (cursorSvgPoint.x / scale.x) - gSvgIconDragData.cursorSvgOffset.x,
+	    y: (cursorSvgPoint.y / scale.y) - gSvgIconDragData.cursorSvgOffset.y
+	};
 
-        let transform = gSvgIconDragData.element.attr('transform') || '';
-
-        let newTransform = `scale(${scale.x} ${scale.y}) translate(${newX}, ${newY}) rotate(${rotate.angle}, ${rotate.cx}, ${rotate.cy})`;
-
-        gSvgIconDragData.element.attr('transform', newTransform);	    
-
-	gSvgIconDragData.elementSvgCenterPoint = Hi.svgUtils.getSvgCenterPoint(
-	    gSvgIconDragData.element,
-	    gSvgIconDragData.baseSvgElement );
-	
-	if ( Hi.DEBUG ) {
-	    console.log( `Drag Update:
-    SVG Cursor Point: ( ${cursorSvgPoint.x}, ${cursorSvgPoint.y} ),
-    TRANSFORM Result: ${newTransform},
-    SVG Center Point: ( ${gSvgIconDragData.elementSvgCenterPoint.x}, ${gSvgIconDragData.elementSvgCenterPoint.y} )`); 
-	}
+	setSvgTransformAttr( gSvgIconDragData.element, scale, translate, rotate );
     }
     
-    function applyDrag( event ) {
+    function endDrag() {
         if ( gSvgIconDragData == null ) {
 	    return;
 	}
 	
-        Hi.displayEventInfo( 'End Drag', event );
-        Hi.displayElementInfo( 'Drag Element', gSvgIconDragData.element );
-	updateDrag( event );
-
-	let svgItemId = gSvgIconDragData.element.attr('id');
-	let data = {
-	    svg_x: gSvgIconDragData.elementSvgCenterPoint.x,
-	    svg_y: gSvgIconDragData.elementSvgCenterPoint.y,
-	    svg_scale: gSvgIconDragData.originalSvgScale.x,
-	    svg_rotate: gSvgIconDragData.originalSvgRotate.angle
-	};
-
-	if ( Hi.DEBUG ) { console.log( 'Applying Drag:', data ); }
-	AN.post( `${API_EDIT_LOCATION_ITEM_POSITION_URL}/${svgItemId}`, data );
-
+        Hi.displayElementInfo( 'End Drag Element', gSvgIconDragData.element );
+	saveIconSvgPositionDebouncer( gSvgIconDragData.element );
 	gSvgIconDragData = null;
     }
  
-    function createIconActionEditData( actionState ) {
+    function startIconAction( actionState ) {
 	if ( gSelectedIconSvgGroup ) {
-            let transform = gSelectedIconSvgGroup.attr('transform');
+            let transform = $(gSelectedIconSvgGroup).attr('transform');
             let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
 
 	    gSvgIconActionEditData = {
@@ -456,56 +479,44 @@
 	}
     }
 
-    function abortIconAction( element ) {
+    function endIconAction( element ) {
 	if ( gSvgIconActionEditData ) {
 	    gSvgIconActionEditData = null;
 	}
     }
 
-    function iconActionScaleStart() {
-	createIconActionEditData( SvgActionStateType.SCALE );	
+    function startScale() {
+	startIconAction( SvgActionStateType.SCALE );	
     }
 
-    function iconActionScaleApply() {
-	if ( Hi.DEBUG ) { console.log( 'Scale Apply' ); }
-	saveIconSvgPosition( gSvgIconActionEditData.element );
-    }
-
-    function iconActionScaleAbort() {
-	if ( gSvgIconActionState != SvgActionStateType.SCALE ) {
-	    return;
-	}
-	abortIconAction();
-    }
-
-    function iconActionScaleFromMouseWheel( event ) {
+    function updateScaleFromMouseWheel( event ) {
 	const e = event.originalEvent;
 	let scaleMultiplier = 1.0 + ( MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
 	if ( e.deltaY > 0 ) {
 	    scaleMultiplier = 1.0 - ( MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
 	}
 	console.log( `Scale multiplier = ${scaleMultiplier} [${gSvgIconActionEditData.isScaling}]` );
-	adjustIconScale( gSvgIconActionEditData.element, scaleMultiplier );
+	updateScale( gSvgIconActionEditData.element, scaleMultiplier );
 	saveIconSvgPositionDebouncer( gSelectedIconSvgGroup );
     }
     
-    function iconActionScaleUpFromKeypress() {
+    function scaleUpFromKeypress() {
 	if ( gSelectedIconSvgGroup ) {
 	    let scaleMultiplier = 1.0 + ( KEYPRESS_ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
-	    adjustIconScale( gSelectedIconSvgGroup, scaleMultiplier );
+	    updateScale( gSelectedIconSvgGroup, scaleMultiplier );
 	    saveIconSvgPositionDebouncer( gSelectedIconSvgGroup );
 	}
     }
     
-    function iconActionScaleDownFromKeypress() {
+    function scaleDownFromKeypress() {
 	if ( gSelectedIconSvgGroup ) {
 	    let scaleMultiplier = 1.0 - ( KEYPRESS_ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
-	    adjustIconScale( gSelectedIconSvgGroup, scaleMultiplier );
+	    updateScale( gSelectedIconSvgGroup, scaleMultiplier );
 	    saveIconSvgPositionDebouncer( gSelectedIconSvgGroup );
 	}
     }
     
-    function iconActionScaleFromMouseMove( currentMousePosition ) {
+    function updateScaleFromMouseMove( currentMousePosition ) {
 	if ( Hi.DEBUG ) { console.log( `updateScale [${MODULE_NAME}]` ); }
 
 	let center = Hi.getScreenCenterPoint( gSvgIconActionEditData.element );
@@ -527,12 +538,12 @@
 	if ( Hi.DEBUG ) {
 	    console.log( `Scale: moveDistance=${moveDistance}, multiplier=${scaleMultiplier}` );
 	}
-	adjustIconScale( gSvgIconActionEditData.element, scaleMultiplier );
+	updateScale( gSvgIconActionEditData.element, scaleMultiplier );
 	return;
     }
 
-    function adjustIconScale( svgIconElement, scaleMultiplier ) {
-        let transformStr = svgIconElement.attr('transform');
+    function updateScale( svgIconElement, scaleMultiplier ) {
+        let transformStr = $(svgIconElement).attr('transform');
 	const oldTransform = Hi.svgUtils.getSvgTransformValues( transformStr );
 	const newScale = {
 	    x: oldTransform.scale.x * scaleMultiplier,
@@ -554,11 +565,23 @@ Original (str):  ${transformStr}
 	setSvgTransformAttr( svgIconElement, newScale, newTranslate, oldTransform.rotate );
     }
     
-    function iconActionRotateStart() {
-	createIconActionEditData( SvgActionStateType.ROTATE );	
+    function endScale() {
+	if ( Hi.DEBUG ) { console.log( 'Scale End' ); }
+	saveIconSvgPosition( gSvgIconActionEditData.element );
     }
 
-    function iconActionRotateUpdateFromMouseMove( currentMousePosition ) {
+    function scaleAbort() {
+	if ( gSvgIconActionState != SvgActionStateType.SCALE ) {
+	    return;
+	}
+	endIconAction();
+    }
+
+    function startRotate() {
+	startIconAction( SvgActionStateType.ROTATE );	
+    }
+
+    function updateRotateFromMouseMove( currentMousePosition ) {
 	if ( Hi.DEBUG ) { console.log( `updateRotation [${MODULE_NAME}]` ); }
 
 	let center = Hi.getScreenCenterPoint( gSvgIconActionEditData.element );
@@ -567,7 +590,7 @@ Original (str):  ${transformStr}
 					      gLastMousePosition.x, gLastMousePosition.y,
 					      currentMousePosition.x, currentMousePosition.y );
 	
-        let transformStr = gSvgIconActionEditData.element.attr('transform');
+        let transformStr = $(gSvgIconActionEditData.element).attr('transform');
  	const oldTransform = Hi.svgUtils.getSvgTransformValues( transformStr );
 
 	const newRotate = { ...oldTransform.rotate }; // Create a copy of old values
@@ -578,30 +601,30 @@ Original (str):  ${transformStr}
 			     oldTransform.scale, oldTransform.translate, newRotate );
     }
 
-    function iconActionRotateFromMouseWheel( event ) {
+    function updateRotateFromMouseWheel( event ) {
 	const e = event.originalEvent;
 	let deltaAngle = MOUSE_WHEEL_ROTATE_DEGREES;
 	if ( e.deltaY > 0 ) {
 	    deltaAngle = -1.0 * MOUSE_WHEEL_ROTATE_DEGREES;
 	}
-	adjustIconRotate( gSvgIconActionEditData.element, deltaAngle );
+	updateRotate( gSvgIconActionEditData.element, deltaAngle );
 	saveIconSvgPositionDebouncer( gSelectedIconSvgGroup );
     }
     
-    function iconActionRotateRightFromKeypress() {
+    function rotateRightFromKeypress() {
 	let deltaAngle = KEYPRESS_ROTATE_DEGREES;
-	adjustIconRotate( gSelectedIconSvgGroup, deltaAngle );
+	updateRotate( gSelectedIconSvgGroup, deltaAngle );
 	saveIconSvgPositionDebouncer( gSelectedIconSvgGroup );
     }
 
-    function iconActionRotateLeftFromKeypress() {
+    function rotateLeftFromKeypress() {
 	let deltaAngle = -1.0 * KEYPRESS_ROTATE_DEGREES;
-	adjustIconRotate( gSelectedIconSvgGroup, deltaAngle );
+	updateRotate( gSelectedIconSvgGroup, deltaAngle );
 	saveIconSvgPositionDebouncer( gSelectedIconSvgGroup );
     }
 
-    function adjustIconRotate( svgIconElement, deltaAngle ) {
-        let transformStr = svgIconElement.attr('transform');
+    function updateRotate( svgIconElement, deltaAngle ) {
+        let transformStr = $(svgIconElement).attr('transform');
  	const oldTransform = Hi.svgUtils.getSvgTransformValues( transformStr );
 
 	const newRotate = { ...oldTransform.rotate }; // Create a copy of old values
@@ -620,35 +643,20 @@ Original (str):  ${transformStr}
 			     oldTransform.scale, oldTransform.translate, newRotate );
     }
     
-    function iconActionRotateApply() {
+    function endRotate() {
 	saveIconSvgPosition( gSvgIconActionEditData.element );
     }
     
-    function iconActionRotateAbort() {
+    function rotateAbort() {
 	if ( gSvgIconActionState != SvgActionStateType.ROTATE ) {
 	    return;
 	}	
-	abortIconAction();
+	endIconAction();
     }
-
-    function _scaleAndRotateFromPointerEvents( pointerEventData ) {
-	if ( gSvgIconActionEditData ) {
-
-
-
-
-
-
-
-
-	}
-	return false;
-    }
-    
 
     function setSvgTransformAttr( element, scale, translate, rotate ) {
         let newTransform = `scale(${scale.x} ${scale.y}) translate(${translate.x}, ${translate.y}) rotate(${rotate.angle}, ${rotate.cx}, ${rotate.cy})`;
-        element.attr('transform', newTransform);	    
+        $(element).attr('transform', newTransform);	    
     }
 
     function saveIconSvgPositionDebouncer( element ) {
@@ -664,13 +672,13 @@ Original (str):  ${transformStr}
     
     function saveIconSvgPosition( element ) {
 
-        let transform = element.attr('transform');
+        let transform = $(element).attr('transform');
         let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
 
 	const baseSvgElement = $(Hi.BASE_SVG_SELECTOR);
 	const center = Hi.svgUtils.getSvgCenterPoint( element, baseSvgElement );
 
-	let svgItemId = element.attr('id');
+	let svgItemId = $(element).attr('id');
 	let data = {
 	    svg_x: center.x,
 	    svg_y: center.y,
