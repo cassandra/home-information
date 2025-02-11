@@ -30,6 +30,9 @@
 	handleDoublePointerEventEnd: function( doublePointerEvent ) {
 	    return _handleDoublePointerEventEnd( doublePointerEvent );	    
 	},
+	handleLastPointerLocation: function( x, y ) {
+	    _handleLastPointerLocation( x, y );
+	},
 	handleMouseWheel: function( event ) {
 	    return _handleMouseWheel( event );	    
 	},
@@ -61,7 +64,6 @@
     const SVG_TRANSFORM_ACTION_ZOOM_IN_KEY = '+';
     const SVG_TRANSFORM_ACTION_ZOOM_OUT_KEY = '-';
 
-    const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3; // Differentiate between move events and sloppy clicks
     const PIXEL_MOVE_DISTANCE_SCALE_FACTOR = 250.0;
     const KEYPRESS_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
     const MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
@@ -82,7 +84,7 @@
 
     let gSelectedLocationViewSvg = null;
     let gSvgTransformData = null;
-    let gLastMousePosition = { x: 0, y: 0 };
+    let gLastPointerPosition = { x: 0, y: 0 };
     let gIgnoreCLick = false;  // Set by mouseup handling when no click handling should be done
 
     let zoomApiCallDebounceTimer = null;
@@ -111,31 +113,26 @@
     function _handleSinglePointerEventMove( singlePointerEvent ) {
 	const event = singlePointerEvent.last.event;
 
-	const currentMousePosition = {
+	const currentPointPosition = {
 	    x: event.clientX,
 	    y: event.clientY
 	};
 	if ( gSvgTransformData ) {
 	    
-	    const distanceX = Math.abs( currentMousePosition.x - gSvgTransformData.eventStart.x );
-	    const distanceY = Math.abs( currentMousePosition.y - gSvgTransformData.eventStart.y );
+	    const distanceX = Math.abs( currentPointPosition.x - gSvgTransformData.eventStart.x );
+	    const distanceY = Math.abs( currentPointPosition.y - gSvgTransformData.eventStart.y );
 	    
-	    if ( gSvgTransformData.isDragging
-		 || ( distanceX > CURSOR_MOVEMENT_THRESHOLD_PIXELS )
-		 || ( distanceY > CURSOR_MOVEMENT_THRESHOLD_PIXELS )) {
-		gSvgTransformData.isDragging = true;
-		if ( gSvgTransformType == SvgTransformType.SCALE ) {
-		    updateScaleFromMouseMove( event );
-		} else if( gSvgTransformType == SvgTransformType.ROTATE ) {
-		    updateRotationFromMouseMove( event );
-		} else {
-		    updateDrag(event);
-		}
-		gSvgTransformData.lastMousePosition = currentMousePosition;
-		return true;
+	    gSvgTransformData.isDragging = true;
+	    if ( gSvgTransformType == SvgTransformType.SCALE ) {
+		updateScaleFromMouseMove( event );
+	    } else if( gSvgTransformType == SvgTransformType.ROTATE ) {
+		updateRotationFromMouseMove( event );
+	    } else {
+		updateDrag(event);
 	    }
+	    gSvgTransformData.lastPointPosition = currentPointPosition;
+	    return true;
 	}
-	gLastMousePosition = currentMousePosition;
 	return false;
     }
     
@@ -203,6 +200,11 @@
 	abortRotation();
 	return true;
     }
+
+    function _handleLastPointerLocation( x, y ) {
+	gLastPointerPosition.x = x;
+	gLastPointerPosition.y = y;
+    }
     
     function _handleMouseWheel( event ) {
 	if ( gSelectedLocationViewSvg && isEventInLocationArea( event )) {
@@ -257,10 +259,10 @@
             const targetWidth = targetArea.outerWidth();
             const targetHeight = targetArea.outerHeight();
 
-            if (( gLastMousePosition.x >= targetOffset.left )
-		&& ( gLastMousePosition.x <= ( targetOffset.left + targetWidth ))
-		&& ( gLastMousePosition.y >= targetOffset.top )
-		&& ( gLastMousePosition.y <= ( targetOffset.top + targetHeight ))) {
+            if (( gLastPointerPosition.x >= targetOffset.left )
+		&& ( gLastPointerPosition.x <= ( targetOffset.left + targetWidth ))
+		&& ( gLastPointerPosition.y >= targetOffset.top )
+		&& ( gLastPointerPosition.y <= ( targetOffset.top + targetHeight ))) {
 		
 		if ( Hi.DEBUG ) { console.log( `Key Down [${MODULE_NAME}]`, event ); }
 		
@@ -326,7 +328,7 @@
 		angle: startAngle,
 		time: Date.now()
 	    },
-	    lastMousePosition: {
+	    lastPointPosition: {
 		x: startX,
 		y: startY,
 	    },

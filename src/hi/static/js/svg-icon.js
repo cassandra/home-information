@@ -30,6 +30,9 @@
 	handleDoublePointerEventEnd: function( doublePointerEvent ) {
 	    return _handleDoublePointerEventEnd( doublePointerEvent );	    
 	},
+	handleLastPointerLocation: function( x, y ) {
+	    _handleLastPointerLocation( x, y );
+	},
 	handleMouseWheel: function( event ) {
 	    return _handleMouseWheel( event );	    
 	},
@@ -66,7 +69,6 @@
     const ICON_ACTION_ZOOM_IN_KEY = '+';
     const ICON_ACTION_ZOOM_OUT_KEY = '-';
 
-    const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3; // Differentiate between move events and sloppy clicks
     const POINTER_EVENTS_SCALE_FACTOR = 250.0;
     const POINTER_EVENTS_ROTATE_FACTOR = 0.1;
     const KEYPRESS_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
@@ -89,8 +91,7 @@
     let gSvgIconDragData = null;
     let gSvgIconActionEditData = null;  // For scale and rotate actions
 
-    let gClickStart = null;
-    let gLastMousePosition = { x: 0, y: 0 };
+    let gLastPointerPosition = { x: 0, y: 0 };
     let gIgnoreCLick = false;  // Set by mouseup handling when no click handling should be done
 
     let positionApiCallDebounceTimer = null;
@@ -99,12 +100,6 @@
     function _handleSinglePointerEventStart( singlePointerEvent ) {
 	if ( ! Hi.isEditMode ) { return false; }
 
-	// Need to track start time to differentiate drag/scale/rotate actions from regular clicks.
-	gClickStart = {
-	    x: singlePointerEvent.start.x,
-	    y: singlePointerEvent.start.y,
-	};
-	
 	if ( gSvgIconActionEditData ) {
 	    if ( Hi.DEBUG ) { console.log( `Pointer down [${MODULE_NAME}]`, singlePointerEvent ); }
 	    if ( gSvgIconActionState == SvgActionStateType.SCALE ) {
@@ -137,7 +132,7 @@
     function _handleSinglePointerEventMove( singlePointerEvent ) {
 	if ( ! Hi.isEditMode ) { return false; }
 	
-	const currentMousePosition = {
+	const currentPointPosition = {
 	    x: singlePointerEvent.last.x,
 	    y: singlePointerEvent.last.y
 	};
@@ -146,30 +141,22 @@
 	
 	 if ( gSvgIconActionEditData ) {
 	    if ( gSvgIconActionEditData.isScaling ) {
-		updateScaleFromMouseMove( currentMousePosition );
+		updateScaleFromPointerMove( singlePointerEvent );
 		handled = true;
 	    } else if ( gSvgIconActionEditData.isRotating ) {
-		updateRotateFromMouseMove( currentMousePosition );
+		updateRotateFromPointerMove( singlePointerEvent );
 		handled = true;
 	    }
 	}
 
 	if ( gSvgIconDragData ) {
-	    const distanceX = Math.abs( currentMousePosition.x - gClickStart.x );
-	    const distanceY = Math.abs( currentMousePosition.y - gClickStart.y );
-	    
-	    if ( gSvgIconDragData.isDragging
-		 || ( distanceX > CURSOR_MOVEMENT_THRESHOLD_PIXELS )
-		 || ( distanceY > CURSOR_MOVEMENT_THRESHOLD_PIXELS )) {
-		gSvgIconDragData.isDragging = true;
-		$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, SvgActionStateType.MOVE);
-		updateDrag( singlePointerEvent );
-		handled = true;
-	    }
+	    const distanceX = Math.abs( currentPointPosition.x - singlePointerEvent.start.x );
+	    const distanceY = Math.abs( currentPointPosition.y - singlePointerEvent.start.y );
+	    gSvgIconDragData.isDragging = true;
+	    $(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, SvgActionStateType.MOVE);
+	    updateDrag( singlePointerEvent );
+	    handled = true;
 	}
-
-	gLastMousePosition = currentMousePosition;
-	
 	return handled;
     }
     
@@ -205,6 +192,7 @@
 	if ( gSvgIconDragData ) {
 	    if ( gSvgIconDragData.isDragging ) {
 		endDrag();
+		gIgnoreCLick = true;
 		$(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '');
 	    }
 	    $(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
@@ -253,6 +241,11 @@
 	if ( ! gSelectedIconSvgGroup ) { return false; }
 	saveIconSvgPositionDebouncer( gSelectedIconSvgGroup );
 	return true;
+    }
+
+    function _handleLastPointerLocation( x, y ) {
+	gLastPointerPosition.x = x;
+	gLastPointerPosition.y = y;
     }
     
     function _handleMouseWheel( event ) {
@@ -309,6 +302,12 @@
     function _handleKeyDown( event ) {
 	if ( ! Hi.isEditMode ) { return false; }
 
+
+
+	console.log( `KEYDOWN Location: ( ${event.clientX}, ${event.clienty} )` );
+	
+
+	
 	if ( $(event.target).is('input, textarea') ) {
             return false;
 	}
@@ -321,10 +320,10 @@
             const targetWidth = targetArea.outerWidth();
             const targetHeight = targetArea.outerHeight();
 	
-            if (( gLastMousePosition.x >= targetOffset.left )
-		&& ( gLastMousePosition.x <= ( targetOffset.left + targetWidth ))
-		&& ( gLastMousePosition.y >= targetOffset.top )
-		&& ( gLastMousePosition.y <= ( targetOffset.top + targetHeight ))) {
+            if (( gLastPointerPosition.x >= targetOffset.left )
+		&& ( gLastPointerPosition.x <= ( targetOffset.left + targetWidth ))
+		&& ( gLastPointerPosition.y >= targetOffset.top )
+		&& ( gLastPointerPosition.y <= ( targetOffset.top + targetHeight ))) {
 
 		if ( Hi.DEBUG ) { console.log( `Key Down [${MODULE_NAME}]`, event ); }
 
@@ -357,10 +356,10 @@
 		    $(Hi.BASE_SVG_SELECTOR).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '');
 		    clearSelectedIconSvgGroup();
 		}
+		event.preventDefault();   		
+		event.stopImmediatePropagation();
+		return true;
 	    }
-	    event.preventDefault();   		
-	    event.stopImmediatePropagation();
-	    return true;
 	}
 	if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
 	return false;
@@ -516,14 +515,14 @@
 	}
     }
     
-    function updateScaleFromMouseMove( currentMousePosition ) {
+    function updateScaleFromPointerMove( singlePointerEvent ) {
 	if ( Hi.DEBUG ) { console.log( `updateScale [${MODULE_NAME}]` ); }
 
 	let center = Hi.getScreenCenterPoint( gSvgIconActionEditData.element );
-	const startX = gLastMousePosition.x;
-	const startY = gLastMousePosition.y;
-	const endX = currentMousePosition.x;
-	const endY = currentMousePosition.y;
+	const startX = singlePointerEvent.previous.x;
+	const startY = singlePointerEvent.previous.y;
+	const endX = singlePointerEvent.last.x;
+	const endY = singlePointerEvent.last.y;
 	const startDistance = Math.sqrt( Math.pow(startX - center.x, 2) + Math.pow(startY - center.y, 2) );
 	const endDistance = Math.sqrt( Math.pow(endX - center.x, 2) + Math.pow(endY - center.y, 2) );
 	const moveDistance = Math.abs( endDistance - startDistance );
@@ -581,14 +580,14 @@ Original (str):  ${transformStr}
 	startIconAction( SvgActionStateType.ROTATE );	
     }
 
-    function updateRotateFromMouseMove( currentMousePosition ) {
+    function updateRotateFromPointerMove( singlePointerEvent ) {
 	if ( Hi.DEBUG ) { console.log( `updateRotation [${MODULE_NAME}]` ); }
 
 	let center = Hi.getScreenCenterPoint( gSvgIconActionEditData.element );
 
 	let deltaAngle = Hi.getRotationAngle( center.x, center.y,
-					      gLastMousePosition.x, gLastMousePosition.y,
-					      currentMousePosition.x, currentMousePosition.y );
+					      singlePointerEvent.previous.x, singlePointerEvent.previous.y,
+					      singlePointerEvent.last.x, singlePointerEvent.last.y );
 	
         let transformStr = $(gSvgIconActionEditData.element).attr('transform');
  	const oldTransform = Hi.svgUtils.getSvgTransformValues( transformStr );

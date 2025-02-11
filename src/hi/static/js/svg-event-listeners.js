@@ -101,6 +101,7 @@
     }
 
     function handlePointerDownEvent( event ) {
+	dispatchLastPointerPosition( event.clientX, event.clientY );
 
 	const initialActivePointersSize = activePointers.size;
 	activePointers.set( event.pointerId, { x: event.clientX, y: event.clientY } );
@@ -127,7 +128,8 @@
     }
 
     function handlePointerMoveEvent( event ) {
-
+	dispatchLastPointerPosition( event.clientX, event.clientY );
+	
 	let lastPointer = activePointers.get( event.pointerId );
 	if ( ! lastPointer ) {
 	    return;
@@ -168,6 +170,7 @@
     }
 
     function handlePointerUpEvent( event ) {
+	dispatchLastPointerPosition( event.clientX, event.clientY );
 
 	const initialActivePointersSize = activePointers.size;
 	let lastPointer = activePointers.get( event.pointerId );
@@ -206,6 +209,11 @@
 	handlePointerUpEvent();
     }
 
+    function dispatchLastPointerPosition( x, y ) {
+	Hi.edit.icon.handleLastPointerLocation( x, y );
+	Hi.location.handleLastPointerLocation( x, y );
+    }
+    
     function dispatchSinglePointerEventStart( currentEvent, singlePointerEvent ) {
 	let handled = Hi.edit.icon.handleSinglePointerEventStart( singlePointerEvent );
         if ( ! handled) {
