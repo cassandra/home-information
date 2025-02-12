@@ -21,7 +21,9 @@ __pycache__/
 /venv/
 /data/
 /design/
-/docs/
 /src/*json
 /src/*csv
 /src/*txt
+
+/*.html
+/docs/*.html
