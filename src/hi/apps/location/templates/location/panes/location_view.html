@@ -9,7 +9,8 @@
        viewBox="{{ location_view.svg_view_box }}"
        extents="{{ location_view.location.svg_view_box }}" 
        width="100%" height="100%" preserveAspectRatio="xMidYMid meet"
-       transform="rotate({{ location_view.svg_rotate }} 0 0)">
+       style="transform-origin: 50% 50%; transform: rotate( {{ location_view.svg_rotate }}deg );"
+       transform="rotate({{ location_view.svg_rotate }})">
     <defs>
       {% include location_view.svg_style_name.svg_defs_template_name %}
     </defs>

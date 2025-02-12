@@ -83,7 +83,7 @@
     ];
 
     const CURSOR_MOVEMENT_THRESHOLD_PIXELS = 3; // Differentiate between move events and sloppy clicks
-    const PATH_EDIT_PROXY_POINT_RADIUS_PIXELS = 12;
+    const PATH_EDIT_PROXY_POINT_RADIUS_PIXELS = 8;
     const PATH_EDIT_PROXY_LINE_WIDTH_PIXELS = 5;
     const PATH_EDIT_NEW_PATH_RADIUS_PERCENT = 5; // Preferrable if this matches server new path sizing.
     const PATH_EDIT_PROXY_LINE_COLOR = 'red';
@@ -104,8 +104,6 @@
 	if ( gSelectedPathSvgGroup && gIgnoreCLick ) {
 	    if ( Hi.DEBUG ) { console.log( `Ignoring click: [${MODULE_NAME}]`, event ); }
 	    gIgnoreCLick = false;
-	    event.preventDefault(); 
-	    event.stopImmediatePropagation();
 	    return true;
 	}
 	gIgnoreCLick = false;
@@ -131,8 +129,6 @@
 
 	if ( handled ) {
 	    if ( Hi.DEBUG ) { console.log( `Click handled: [${MODULE_NAME}]`, event ); }
-	    event.preventDefault(); 
-	    event.stopImmediatePropagation();
 	} else {
 	    if ( Hi.DEBUG ) { console.log( `Click skipped: [${MODULE_NAME}]` ); }
 	}
@@ -155,11 +151,13 @@
 	
 	if ( PATH_ACTION_ADD_KEY_CODES.includes( event.keyCode ) ) {
 	    addProxyPath();
+	    return true;
 	    
 	} else if ( PATH_ACTION_END_KEY_CODES.includes( event.keyCode ) ) {
 	    clearSelectedPathSvgGroup();
 	    let data = { moduleName: null };
 	    Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
+	    return true;
 
 	} else {
 	    if ( ! gSvgPathEditData.selectedProxyElement ) {
@@ -170,44 +168,37 @@
 	    if ( PATH_ACTION_DELETE_KEY_CODES.includes( event.keyCode )) {
 		if ( $(gSvgPathEditData.selectedProxyElement).hasClass( PROXY_POINT_CLASS ) ) {
 		    deleteProxyPoint( gSvgPathEditData.selectedProxyElement );
+		    return true;
 		    
 		} else if ( $(gSvgPathEditData.selectedProxyElement).hasClass( PROXY_LINE_CLASS ) ) {
 		    deleteProxyLine( gSvgPathEditData.selectedProxyElement );
-
-		} else {
-		    if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
-		    return false;
+		    return true;
 		}
 		
 	    } else if ( PATH_ACTION_INSERT_KEY_CODES.includes( event.keyCode ) ) {
 		if ( $(gSvgPathEditData.selectedProxyElement).hasClass( PROXY_LINE_CLASS ) ) {
 		    divideProxyLine( gSvgPathEditData.selectedProxyElement );
+		    return true;
 		    
 		} else if ( $(gSvgPathEditData.selectedProxyElement).hasClass( PROXY_POINT_CLASS ) ) {
 		    let svgProxyLine = getPrecedingProxyLine( gSvgPathEditData.selectedProxyElement );
 		    if ( svgProxyLine.length > 0 ) {
 			divideProxyLine( svgProxyLine );
+			return true;
 			
 		    } else {
 			// Fallback for case of last proxy point selected.
 			let svgProxyLine = getFollowingProxyLine( gSvgPathEditData.selectedProxyElement );
 			if( svgProxyLine.length > 0 ) {
 			    divideProxyLine( svgProxyLine );
+			    return true;
 			}
 		    }
-		} else {
-		    if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
-		    return false;
 		}
-	    } else {
-		if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
-		return false;
 	    }
 	}
-	
-	event.preventDefault();
-	event.stopImmediatePropagation();
-	return true;
+	if ( Hi.DEBUG ) { console.log( `Key down skipped [${MODULE_NAME}]` ); }
+	return false;
     }
 
     function handleSvgPathClick( event, enclosingSvgGroup ) {
@@ -797,7 +788,10 @@
 	    
             // Function to handle mouse movement
             function onMouseMove( event ) {
-
+		if ( ! gSvgPathEditData ) {
+ 		    return;
+		}
+		
 		let currentMousePosition = {
 		    x: event.clientX,
 		    y: event.clientY
@@ -835,11 +829,14 @@
 
             // Function to handle mouse up (end of drag)
             function onMouseUp( event ) {
+		if ( ! gSvgPathEditData ) {
+		    return;
+		}
+
 		event.preventDefault();
 		event.stopImmediatePropagation();
 		saveSvgPath();
 		gSvgPathEditData.dragProxyPoint = null;
-
 		if ( isDragging ) {
 		    gIgnoreCLick = true;
 		}

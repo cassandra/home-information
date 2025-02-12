@@ -61,16 +61,17 @@
 
     const SVG_TRANSFORM_ACTION_SCALE_KEY = 's';
     const SVG_TRANSFORM_ACTION_ROTATE_KEY = 'r';
-    const SVG_TRANSFORM_ACTION_ZOOM_IN_KEY = '+';
-    const SVG_TRANSFORM_ACTION_ZOOM_OUT_KEY = '-';
+    const SVG_TRANSFORM_ACTION_INCREASE_KEY = '+';
+    const SVG_TRANSFORM_ACTION_DECREASE_KEY = '-';
 
-    const PIXEL_MOVE_DISTANCE_SCALE_FACTOR = 250.0;
     const KEYPRESS_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
+    const KEYPRESS_ROTATE_DEGREES = 10.0;
     const MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
-    const POINTER_EVENTS_SCALE_FACTOR = 250.0;
-    const POINTER_EVENTS_ROTATE_FACTOR = 1.0;
+    const SINGLE_POINTER_EVENTS_SCALE_FACTOR = 250.0;
+    const DOUBLE_POINTER_EVENTS_SCALE_FACTOR = 250.0;
+    const SINGLE_POINTER_EVENTS_ROTATE_FACTOR = 0.5;
+    const DOUBLE_POINTER_EVENTS_ROTATE_FACTOR = 0.5;
     const ZOOM_API_CALL_DEBOUNCE_MS = 400;
-    const ROTATE_EASING_FACTOR = 0.5;
     
     const LOCATION_VIEW_EDIT_PANE_SELECTOR = '#hi-location-view-edit';
     const API_EDIT_LOCATION_VIEW_GEOMETRY_URL = '/location/edit/location-view/geometry';
@@ -97,11 +98,13 @@
 	    if ( Hi.DEBUG ) { console.log( `Pointer down event [${MODULE_NAME}]`, event ); }
 	    createTransformData( event, gSelectedLocationViewSvg );
 	    return true;
-	} else if ( $(event.target).hasClass( Hi.LOCATION_VIEW_SVG_CLASS ) ) {
-	    if ( gCurrentSelectionModule != 'svg-path' ) {
+	    
+	} else if ( gCurrentSelectionModule != 'svg-path' ) {
+	    const closest = $(event.target).closest( Hi.LOCATION_VIEW_SVG_SELECTOR );
+	    if ( closest.length > 0 ) {
 		if ( Hi.DEBUG ) { console.log( `Pointer down event [${MODULE_NAME}]`, event ); }
-		createTransformData( event, event.target );
-		gSelectedLocationViewSvg = event.target;
+		gSelectedLocationViewSvg = closest[0];
+		createTransformData( event, gSelectedLocationViewSvg );
 		return true;
 	    }
 	}
@@ -112,25 +115,22 @@
     
     function _handleSinglePointerEventMove( singlePointerEvent ) {
 	const event = singlePointerEvent.last.event;
-
+	
 	const currentPointPosition = {
 	    x: event.clientX,
 	    y: event.clientY
 	};
 	if ( gSvgTransformData ) {
 	    
-	    const distanceX = Math.abs( currentPointPosition.x - gSvgTransformData.eventStart.x );
-	    const distanceY = Math.abs( currentPointPosition.y - gSvgTransformData.eventStart.y );
-	    
 	    gSvgTransformData.isDragging = true;
 	    if ( gSvgTransformType == SvgTransformType.SCALE ) {
 		updateScaleFromPointerMove( event );
 	    } else if( gSvgTransformType == SvgTransformType.ROTATE ) {
-		updateRotationFromPointerMove( event );
+		updateRotationFromPointerMove( singlePointerEvent );
 	    } else {
-		updateDrag(event);
+		updateDragFromPointerMove( singlePointerEvent );
 	    }
-	    gSvgTransformData.lastPointPosition = currentPointPosition;
+	    gSvgTransformData.last = currentPointPosition;
 	    return true;
 	}
 	return false;
@@ -155,11 +155,10 @@
 		eventWasHandled = true;
 	    }
 	}
-
-	clearTransformData();
 	
 	if ( eventWasHandled ) {
 	    if ( Hi.DEBUG ) { console.log( `Pointer end: [${MODULE_NAME}]`, event ); }
+	    clearTransformData();
 	    gIgnoreCLick = true;
 
 	} else {
@@ -184,8 +183,8 @@
 	    return false;
 	}
 	let scaleFactor = ( 1.0 - ( doublePointerEvent.deltaDistancePrevious
-				    / POINTER_EVENTS_SCALE_FACTOR ));
-	let deltaAngle = doublePointerEvent.deltaAngleStart * POINTER_EVENTS_ROTATE_FACTOR;
+				    / DOUBLE_POINTER_EVENTS_SCALE_FACTOR ));
+	let deltaAngle = doublePointerEvent.deltaAnglePrevious * DOUBLE_POINTER_EVENTS_ROTATE_FACTOR;
 	zoom( scaleFactor );
 	rotate( deltaAngle );
 	return true;
@@ -222,22 +221,19 @@
 	if ( gIgnoreCLick ) {
 	    if ( Hi.DEBUG ) { console.log( `Ignoring click [${MODULE_NAME}]`, event ); }
 	    gIgnoreCLick = false;
-	    event.preventDefault();
-	    event.stopImmediatePropagation();
 	    return true;
 	}
 
 	if ( $(event.target).closest( Hi.LOCATION_VIEW_BASE_SELECTOR ).length > 0 ) {
 	    const closest = $(event.target).closest( Hi.LOCATION_VIEW_SVG_SELECTOR );
 	    if ( closest.length > 0 ) {
+		if ( Hi.DEBUG ) { console.log( `Click handled: [${MODULE_NAME}]`, event ); }
 		gSelectedLocationViewSvg = closest[0];
 		clearTransformData();
 		let data = {
 		    moduleName: MODULE_NAME,
 		};
 		Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
-		event.preventDefault(); 
-		event.stopImmediatePropagation();
 		return true;
 	    }
 	}
@@ -274,15 +270,20 @@
 		    abortScale();
 		    startRotation();
 		    
-		} else if ( event.key == SVG_TRANSFORM_ACTION_ZOOM_IN_KEY ) {
-		    abortScale();
-		    abortRotation();
-		    zoomInFromKeypress( event );
+		} else if ( event.key == SVG_TRANSFORM_ACTION_INCREASE_KEY ) {
+
+		    if ( gSvgTransformType === SvgTransformType.ROTATE ) {
+			rotateRightFromKeypress( event );
+		    } else {
+			zoomInFromKeypress( event );
+		    }
 		    
-		} else if ( event.key == SVG_TRANSFORM_ACTION_ZOOM_OUT_KEY ) {
-		    abortScale();
-		    abortRotation();
-		    zoomOutFromKeypress( event );
+		} else if ( event.key == SVG_TRANSFORM_ACTION_DECREASE_KEY ) {
+		    if ( gSvgTransformType === SvgTransformType.ROTATE ) {
+			rotateLeftFromKeypress( event );
+		    } else {
+			zoomOutFromKeypress( event );
+		    }
 		    
 		} else if ( event.key == 'Escape' ) {
 		    abortScale();
@@ -316,24 +317,20 @@
 
 	let startX = event.clientX;
 	let startY = event.clientY;
-	let startDistance = 0;
-	let startAngle = 0; 	
 	
 	gSvgTransformData = {
 	    isDragging: false,
-	    eventStart: {
+	    start: {
 		x: startX,
 		y: startY,
-		distance: startDistance,
-		angle: startAngle,
-		time: Date.now()
+		scale: scale,
+		rotate: rotate,
+		viewBox: svgViewBox
 	    },
-	    lastPointPosition: {
+	    last: {
 		x: startX,
 		y: startY,
-	    },
-	    initialSvgRotate: rotate,
-	    initialSvgViewBox: svgViewBox
+	    }
 	};
     }
 
@@ -353,28 +350,28 @@
     function startDrag( event ) {
     }
     
-    function updateDrag( event ) {
-	if ( Hi.DEBUG ) { console.log( `updateDrag [${MODULE_NAME}]` ); }
+    function updateDragFromPointerMove( singlePointerEvent ) {
+	if ( Hi.DEBUG ) { console.log( `updateDragFromPointerMove [${MODULE_NAME}]` ); }
 	if ( ! gSelectedLocationViewSvg || ( gSvgTransformData == null )) {
 	    return;
 	}
 	
 	let pixelsPerSvgUnit = Hi.svgUtils.getPixelsPerSvgUnit( gSelectedLocationViewSvg );
         let deltaSvgUnits = {
-	    x: ( event.clientX - gSvgTransformData.eventStart.x ) / pixelsPerSvgUnit.scaleX,
-	    y: ( event.clientY - gSvgTransformData.eventStart.y ) / pixelsPerSvgUnit.scaleX
+	    x: ( singlePointerEvent.last.x - singlePointerEvent.start.x ) / pixelsPerSvgUnit.scaleX,
+	    y: ( singlePointerEvent.last.y - singlePointerEvent.start.y ) / pixelsPerSvgUnit.scaleX
 	};
 
 	let transform = $(gSelectedLocationViewSvg).attr('transform');
         let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
 	deltaSvgUnits = rotateVector( deltaSvgUnits, -1.0 * rotate.angle );
 	
-	let newX = gSvgTransformData.initialSvgViewBox.x - deltaSvgUnits.x;
-	let newY = gSvgTransformData.initialSvgViewBox.y - deltaSvgUnits.y;
+	let newX = gSvgTransformData.start.viewBox.x - deltaSvgUnits.x;
+	let newY = gSvgTransformData.start.viewBox.y - deltaSvgUnits.y;
 
-	adjustSvgViewBox( gSvgTransformData.initialSvgViewBox,
-			  gSvgTransformData.initialSvgViewBox.width,
-			  gSvgTransformData.initialSvgViewBox.height,
+	adjustSvgViewBox( gSvgTransformData.start.viewBox,
+			  gSvgTransformData.start.viewBox.width,
+			  gSvgTransformData.start.viewBox.height,
 			  newX,
 			  newY );
 
@@ -384,7 +381,7 @@
     function endDrag( event ) {
 	if ( Hi.DEBUG ) { console.log( `endDrag [${MODULE_NAME}]` ); }
 	if ( gSvgTransformData && gSvgTransformData.isDragging ) {
-	    saveSvgGeometryIfNeeded();
+	    saveSvgGeometryDebouncer();
 	}
 	gSvgTransformData.isDragging = false;
     }
@@ -422,7 +419,6 @@
     
     function startScale( event ) {
 	if ( Hi.DEBUG ) { console.log( `startScale [${MODULE_NAME}]` ); }
-
 	gSvgTransformType = SvgTransformType.SCALE;
 	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, gSvgTransformType );
     }
@@ -436,8 +432,8 @@
 
 	let screenCenter = Hi.getScreenCenterPoint( gSelectedLocationViewSvg );
 	const startVector = {
-	    x: gSvgTransformData.eventStart.x- screenCenter.x,
-	    y: gSvgTransformData.eventStart.y - screenCenter.y
+	    x: gSvgTransformData.start.x- screenCenter.x,
+	    y: gSvgTransformData.start.y - screenCenter.y
 	};
 	const endVector = {
 	    x: event.clientX - screenCenter.x,
@@ -449,16 +445,16 @@
 					   + ( endVector.y * endVector.y ));
 	const vectorLengthDelta = endVectorLength - startVectorLength;
 
-	let scaleFactor = ( 1.0 - ( vectorLengthDelta / PIXEL_MOVE_DISTANCE_SCALE_FACTOR ));
+	let scaleFactor = ( 1.0 - ( vectorLengthDelta / SINGLE_POINTER_EVENTS_SCALE_FACTOR ));
 
-	scaleSvgViewBox( gSvgTransformData.initialSvgViewBox, scaleFactor );
+	scaleSvgViewBox( gSvgTransformData.start.viewBox, scaleFactor );
     }
 
     function endScale() {
 	if ( Hi.DEBUG ) { console.log( `endScale [${MODULE_NAME}]` ); }
 	gSvgTransformType = SvgTransformType.MOVE;	
 	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );	
-	saveSvgGeometryIfNeeded();
+	saveSvgGeometryDebouncer();
     }
 
     function abortScale() {
@@ -481,31 +477,50 @@
 	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, gSvgTransformType );
     }
     
-    function updateRotationFromPointerMove( event ) {
+    function updateRotationFromPointerMove( singlePointerEvent ) {
 	if ( Hi.DEBUG ) { console.log( `updateRotationFromPointerMove [${MODULE_NAME}]` ); }
 
 	let screenCenter = Hi.getScreenCenterPoint( gSelectedLocationViewSvg );
 
 	let deltaAngle = Hi.getRotationAngle( screenCenter.x, screenCenter.y,
-					      gSvgTransformData.eventStart.x, gSvgTransformData.eventStart.y,
-					      event.clientX, event.clientY );
+					      singlePointerEvent.previous.x, singlePointerEvent.previous.y,
+					      singlePointerEvent.last.x, singlePointerEvent.last.y );
+
+	deltaAngle *= SINGLE_POINTER_EVENTS_ROTATE_FACTOR;
 	rotate( deltaAngle );
     }
 
+    function rotateRightFromKeypress( event ) {
+	let deltaAngle = KEYPRESS_ROTATE_DEGREES;
+ 	rotate( deltaAngle );
+	saveSvgGeometryDebouncer();
+    }
+    
+    function rotateLeftFromKeypress( event ) {
+	let deltaAngle = -1.0 * KEYPRESS_ROTATE_DEGREES;
+	rotate( deltaAngle );
+	saveSvgGeometryDebouncer();
+    }
+    
     function rotate( deltaAngle ) {
+	
         let transform = $(gSelectedLocationViewSvg).attr('transform');
         let { scale, translate, rotate } = Hi.svgUtils.getSvgTransformValues( transform );
-	rotate.angle = gSvgTransformData.initialSvgRotate.angle + ( deltaAngle * ROTATE_EASING_FACTOR );
+	rotate.angle = rotate.angle + deltaAngle;
 	rotate.angle = Hi.normalizeAngle( rotate.angle );
 	let newTransform = `rotate(${rotate.angle}, ${rotate.cx}, ${rotate.cy})`;
         $(gSelectedLocationViewSvg).attr( 'transform', newTransform );
+
+	// Some browser-device combinations have rendering bugs with the
+	// transform property, but not the CSS versions.
+        gSelectedLocationViewSvg.style.transform = `rotate( ${rotate.angle}deg )`;
     }
    
     function endRotation( ) {
 	if ( Hi.DEBUG ) { console.log( `endRotation [${MODULE_NAME}]` ); }
 	gSvgTransformType = SvgTransformType.MOVE;	
 	$(gSelectedLocationViewSvg).attr( Hi.SVG_ACTION_STATE_ATTR_NAME, '' );
-	saveSvgGeometryIfNeeded();	
+	saveSvgGeometryDebouncer();	
     }
     
     function abortRotation( ) {

@@ -273,8 +273,6 @@
 	if ( gIgnoreCLick ) {
 	    if ( Hi.DEBUG ) { console.log( `Ignoring click [${MODULE_NAME}]`, event ); }
 	    gIgnoreCLick = false;
-	    event.preventDefault();
-	    event.stopImmediatePropagation();
 	    return true;
 	}
 	gIgnoreCLick = false;
@@ -288,8 +286,6 @@
 		console.log( `Click [${MODULE_NAME}]`, event );
 		if ( Hi.DEBUG ) { console.log( 'SVG Target Element', enclosingSvgGroup ); }
 		handleSvgIconClick( event, enclosingSvgGroup );
-		event.preventDefault(); 
-		event.stopImmediatePropagation();
 		return true;
 	    }
 	}
@@ -299,12 +295,6 @@
 
     function _handleKeyDown( event ) {
 	if ( ! Hi.isEditMode ) { return false; }
-
-
-
-	console.log( `KEYDOWN Location: ( ${event.clientX}, ${event.clienty} )` );
-	
-
 	
 	if ( $(event.target).is('input, textarea') ) {
             return false;

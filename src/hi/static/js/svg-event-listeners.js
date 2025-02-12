@@ -100,8 +100,18 @@
 	}
     }
 
+    function shouldIgnoreEvent( event ) {
+	if (event.pointerType === "touch" || event.pointerType === "pen") {
+	    return false;
+	}
+	else if (event.pointerType === "mouse") {
+            return event.buttons != 1;  // Left button only
+	}
+	return false;
+    }
+    
     function handlePointerDownEvent( event ) {
-	dispatchLastPointerPosition( event.clientX, event.clientY );
+	if ( shouldIgnoreEvent( event )) { return; }
 
 	const initialActivePointersSize = activePointers.size;
 	activePointers.set( event.pointerId, { x: event.clientX, y: event.clientY } );
@@ -125,10 +135,11 @@
 	}
 
 	event.target.setPointerCapture( event.pointerId );
+	dispatchLastPointerPosition( event.clientX, event.clientY );
     }
 
     function handlePointerMoveEvent( event ) {
-	dispatchLastPointerPosition( event.clientX, event.clientY );
+	if ( shouldIgnoreEvent( event )) { return; }
 	
 	let lastPointer = activePointers.get( event.pointerId );
 	if ( ! lastPointer ) {
@@ -167,10 +178,10 @@
 	} else {
 	    // Only one and two pointer events supported.
 	}
+	dispatchLastPointerPosition( event.clientX, event.clientY );
     }
 
     function handlePointerUpEvent( event ) {
-	dispatchLastPointerPosition( event.clientX, event.clientY );
 
 	const initialActivePointersSize = activePointers.size;
 	let lastPointer = activePointers.get( event.pointerId );
@@ -202,6 +213,7 @@
 	}
 	
 	event.target.releasePointerCapture( event.pointerId );
+	dispatchLastPointerPosition( event.clientX, event.clientY );
     }
 
     function handlePointerCancelEvent( event ) {
@@ -302,9 +314,15 @@
 	    if ( ! handled ) {
 		handled = Hi.location.handleMouseWheel( event );
 	    }
+	    if ( handled ) {
+		event.preventDefault();
+		event.stopImmediatePropagation();
+   	    }
 	});
 
 	$(document).on('click', Hi.LOCATION_VIEW_AREA_SELECTOR, function( event ) {
+	    if ( shouldIgnoreEvent( event )) { return; }
+	    
 	    let handled = Hi.edit.icon.handleClick( event );
 	    if ( ! handled ) {
 		handled = Hi.edit.path.handleClick( event );
@@ -312,6 +330,10 @@
 	    if ( ! handled ) {
 		handled = Hi.location.handleClick( event );
 	    }
+	    if ( handled ) {
+		event.preventDefault();
+		event.stopImmediatePropagation();
+   	    }
 	});
 
 	$(document).on('keydown', function( event ) {
@@ -328,6 +350,10 @@
 	    if ( ! handled ) {
 		handled = Hi.location.handleKeyDown( event );
 	    }
+	    if ( handled ) {
+		event.preventDefault();
+		event.stopImmediatePropagation();
+   	    }
 	});
     });
  

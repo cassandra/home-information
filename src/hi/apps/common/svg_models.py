@@ -43,6 +43,14 @@ class SvgViewBox:
     def max_y(self):
         return self._max_y
     
+    @property
+    def center_x(self):
+        return self.x + ( self.width / 2.0 )
+    
+    @property
+    def center_y(self):
+        return self.y + ( self.height / 2.0 )
+    
     @staticmethod
     def from_attribute_value( value : str ):
         components = value.split(' ')
