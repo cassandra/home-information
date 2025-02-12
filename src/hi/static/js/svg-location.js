@@ -67,6 +67,7 @@
     const KEYPRESS_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
     const KEYPRESS_ROTATE_DEGREES = 10.0;
     const MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT = 10.0;
+    const MOUSE_WHEEL_ROTATE_ANGLE = 3.0;
     const SINGLE_POINTER_EVENTS_SCALE_FACTOR = 250.0;
     const DOUBLE_POINTER_EVENTS_SCALE_FACTOR = 250.0;
     const SINGLE_POINTER_EVENTS_ROTATE_FACTOR = 0.5;
@@ -207,9 +208,14 @@
     
     function _handleMouseWheel( event ) {
 	if ( gSelectedLocationViewSvg && isEventInLocationArea( event )) {
-	    abortScale();
-	    abortRotation();
-	    zoomFromMouseWheel( event );
+	    if ( gSvgTransformType == SvgTransformType.ROTATE ) {
+		rotateFromMouseWheel( event );
+
+	    } else {
+		abortScale();
+		abortRotation();
+		zoomFromMouseWheel( event );
+	    }
 	    event.preventDefault(); 
 	    event.stopImmediatePropagation();
 	    return true;
@@ -498,6 +504,19 @@
     
     function rotateLeftFromKeypress( event ) {
 	let deltaAngle = -1.0 * KEYPRESS_ROTATE_DEGREES;
+	rotate( deltaAngle );
+	saveSvgGeometryDebouncer();
+    }
+
+    function rotateFromMouseWheel( event ) {
+
+	const e = event.originalEvent;
+
+        // Immediately update the visual
+ 	let deltaAngle = MOUSE_WHEEL_ROTATE_ANGLE;
+        if ( e.deltaY > 0 ) {
+  	    deltaAngle *= -1.0;
+        }
 	rotate( deltaAngle );
 	saveSvgGeometryDebouncer();
     }

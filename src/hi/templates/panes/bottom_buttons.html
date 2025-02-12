@@ -2,6 +2,15 @@
   <div class="d-flex justify-content-between">
     {% include "collection/panes/collection_buttons.html" %}
     <div class="d-flex justify-content-end">
+      {% if request.view_parameters.is_editing %}
+      <div class="mx-1">
+	<a href="{% url 'edit_help' %}"
+	   class="btn btn-tertiary btn-control" role="button"
+	   data-async="true" >
+	  EDITING HELP
+	</a>
+      </div>
+      {% else %}
       <div class="mx-1">
 	{% include "console/panes/audio_control.html" %}
       </div>
@@ -18,6 +27,7 @@
 	  SETTINGS
 	</a>
       </div>
+      {% endif %}
     </div>
   </div>
 </div>

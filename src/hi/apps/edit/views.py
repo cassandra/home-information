@@ -23,7 +23,7 @@ from hi.apps.location.edit.views import (
 
 from hi.decorators import edit_required
 from hi.enums import ItemType, ViewMode
-from hi.hi_async_view import HiSideView
+from hi.hi_async_view import HiModalView, HiSideView
 
 
 logger = logging.getLogger(__name__)
@@ -180,5 +180,14 @@ class EntityStateValueChoicesView( View ):
 
         return HttpResponse( json.dumps( entity_state.choices() ),
                              content_type='application/json' )
-        
 
+
+class EditHelpView( HiModalView ):
+
+    def get_template_name( self ) -> str:
+        return 'edit/modals/help.html'
+
+    def get( self, request, *args, **kwargs ):
+        context = {
+        }
+        return self.modal_response( request, context )

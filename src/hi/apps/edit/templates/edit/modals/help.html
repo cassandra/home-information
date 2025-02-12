@@ -1,0 +1,59 @@
+{% extends "modals/action_ok.html" %}
+
+{% block title_text %}
+Editing Help
+{% endblock %}
+
+{% block body %}
+
+<div class="h3">Moving</div>
+<p>
+  <ul>
+    <li>Left mouse click and drag</li>
+    <li>One finger drag</li>
+  </ul>
+</p>
+
+<div class="h3">Scaling</div>
+<p>
+  <ul>
+    <li>Mouse wheel</li>
+    <li>"+" key (zoom in)</li>
+    <li>"-" key (zoom out)</li>
+    <li>"s" key and drag</li>
+    <li>Two finger pinch/spread</li>
+    <li>"ESC" key to end</li>
+  </ul>
+</p>
+
+<div class="h3">Rotating</div>
+<p>
+  <ul>
+    <li>"r" key and drag</li>
+    <li>"r" key and mouse wheel</li>
+    <li>"r" then "+" key (rotate right)</li>
+    <li>"r" then "-" key (rotate left)</li>
+    <li>Two finger rotate</li>
+    <li>"ESC" key to end</li>
+  </ul>
+</p>
+
+<div class="h3">Path Editing</div>
+<p>
+  <ul>
+    <li>Click to select (area, node or edge)</li>
+    <li>"i" or "INSERT" key to insert path node </li>
+    <li>"x", "DEL" or "BACKSPACE" key to delete path node</li>
+    <li>"a" or "+" key - add new path node or path segment</li>
+    <li>"ESC" key to end path editing</li>
+  </ul>
+</p>
+
+<div class="h3">Notes</div>
+<p>
+  <ul>
+    <li>Background edits of view only saved when the "View" editing pane is showing.</li>
+  </ul>
+</p>
+
+{% endblock %}

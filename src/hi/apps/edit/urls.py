@@ -13,6 +13,10 @@ urlpatterns = [
              views.EditEndView.as_view(), 
              name='edit_end' ),
 
+    re_path( r'^help$', 
+             views.EditHelpView.as_view(), 
+             name='edit_help' ),
+
     re_path( r'^item/reorder$', 
              views.ReorderItemsView.as_view(), 
              name='edit_reorder_items' ),
