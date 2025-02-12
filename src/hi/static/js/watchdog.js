@@ -21,6 +21,8 @@
       - Provides backup to ensure periodic background queries keep running.
     */
 
+    const TRACE = false;
+    
     var WatchdogTimers = {};
     var watchdogInactive = {};
     var watchdogFunctions = {};
@@ -38,7 +40,7 @@
             return;
 	}
 	
-	if ( Hi.DEBUG ) { console.debug( `Watchdog check: ${type}` ); }
+	if ( Hi.DEBUG && TRACE ) { console.debug( `Watchdog check: ${type}` ); }
 	if ( watchdogInactive[type] ) {
             if ( Hi.DEBUG ) { console.debug( `Watchdog detected "${type}" stopped. Restarting.` ); }
             watchdogFunctions[type]();

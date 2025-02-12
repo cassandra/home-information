@@ -5,7 +5,7 @@
 An application to visually organizes data about your home and the things in it. Add and place items on the screen and then attach manuals, notes, links, maintenance and repair histories or any other information for easy reference. Optionally integrate with security and home automation systems for a single view of all your house-related information.
 
 
-<img src="docs/img/screenshot-kitchen.png" alt="Kitchen Example" width="300"> <img src="docs/img/screenshot-security.png" alt="Security Example" width="300">
+<img src="docs/img/screenshot-kitchen.png" alt="Kitchen Example" width="250"> <img src="docs/img/screenshot-security.png" alt="Security Example" width="250"> <img src="docs/img/screenshot-cameras.png" alt="Camera Example" width="250">
 
 ## Project Status
 
