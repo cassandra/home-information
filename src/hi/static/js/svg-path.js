@@ -514,6 +514,7 @@
 	    minPoints = 3;
 	}
 	if ( $(proxyPointsGroup).children().length <= minPoints ) {
+	    removeProxyPathIfAllowed( proxyPathGroup );
 	    return;
 	}
 	
@@ -714,6 +715,17 @@
 	saveSvgPath();	
     }
 
+    function removeProxyPathIfAllowed( targetProxyPathGroup ) {
+	let proxyPathContainer = $('#' + PROXY_PATH_CONTAINER_ID );
+	let proxyPathGroups = $(proxyPathContainer).find( PROXY_PATH_GROUP_SELECTOR );
+	if ( proxyPathGroups.length < 2 ) {
+	    return;
+	}
+	$(targetProxyPathGroup).remove();
+	setSelectedProxyElement( null );	    
+	saveSvgPath();
+    }
+    
     function createProxyPathGroup( proxyPathType ) {
 	let proxyPathGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 	proxyPathGroup.setAttribute('id', Hi.generateUniqueId() );
