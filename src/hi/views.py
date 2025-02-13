@@ -184,7 +184,7 @@ class HomeView( View ):
 class StartView( View ):
 
     def get(self, request, *args, **kwargs):
-
+    
         # This view only for first time users (when no Locations exist)
         if Location.objects.all().exists():
             redirect_url = reverse( 'home' )
