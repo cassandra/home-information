@@ -4,5 +4,4 @@ _WORK IN PROGRESS_
 
 # Architecture
 
-_TBD_
-
+<img src="img/Architecture.png" alt="Home Information Architecture" width="100%"> 

@@ -8,6 +8,7 @@ _High-level features only. Smaller task and refinements will just be part of the
 
 _In no particular order yet._
 
+- **Test Automation** - Adding units tests, integration test and simulator-driven tests. We've forgone adding tests to get something workable quickly so we could demonstrate the concept and get others interested.
 - **Weather Integrations** - Add weather integrations and show in default side panel.  Automatically adding weather alerts.
 - **Auto-view Change** - When camera-related state changes fire, automatically show that camera's videop feed for a period of time before automatically reverting back to previous view.
 - **Entity Cloning** - Allow an entity to be defined once, but have multiple visual reprpesentations on the screen.  Only one entity and attributes that is shared.
@@ -16,7 +17,7 @@ _In no particular order yet._
 - **Virtual Whiteboard** - Allowing leaving messages through app like virtual "post-it note on the fridge".
 - **Generic Camera Integration** - Add an integration that makes it easy to add any IP-based camera on the local network.
 - **Path Editing in Aggregate** - Allow entire path to be moved, scaled, rotated at once instead of needing to relocate all the endpoints.
-- **Better Test Automation** - Adding units tests, integration test and simulator-driven tests.
+- **More Integrations** - Priority set by the needs of early adopters and contributors.
 
 ## Longer Term
 

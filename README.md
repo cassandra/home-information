@@ -80,7 +80,7 @@ See the [Development Page](docs/Development.md) for more details.
 - [Getting Started](docs/GettingStarted.md)
 - [Development](docs/Development.md)
 - [Integrations](docs/Integrations.md)
-- [Contributing](docs/Contributing.md)
+- [Contributing](CONTRIBUTING.md)
 - [Security](docs/Security.md)
 - [Road Map](docs/RoadMap.md)
 - [ChangeLog](CHANGELOG.md)

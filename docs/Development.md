@@ -92,7 +92,7 @@ The code is the best documentation for lower-level details, but there are some h
 
 ## Contributing
 
-See the [Contributing Page](Contributing.md) for guidelines and processes.
+See the [Contributing Page](../CONTRIBUTING.md) for guidelines and processes.
 
 ## Prerequisite Installs <a id="prerequisite-installs"></a>
 
