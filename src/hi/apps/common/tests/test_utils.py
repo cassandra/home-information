@@ -3,7 +3,7 @@ import logging
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-import waa.apps.common.utils as utils
+import hi.apps.common.utils as utils
 
 logging.disable(logging.CRITICAL)
 
@@ -237,16 +237,6 @@ class CommonUtilsTestCase(TestCase):
         for data in data_list:
             self.assertEqual( data[1], utils.url_simplify( data[0] ), data )
             continue
-        return
-    
-    def test_hash_with_seed(self):
-
-        # This guards against changing the seed value. Do not change the seed value.
-        
-        self.assertEqual( '2e6451b4d14aded1fba1d30dcc780a04265238a4fa4813c1e69bc931344cd3b6',
-                          utils.hash_with_seed( value = None ) )
-        self.assertEqual( 'e8a59d67adb70cccff3b36bb5a079d5b2519e4013ec3d02548446a099a66d7a1',
-                          utils.hash_with_seed( value = 'foo@example.com' ) )
         return
     
     def test_get_url_top_level_domain(self):

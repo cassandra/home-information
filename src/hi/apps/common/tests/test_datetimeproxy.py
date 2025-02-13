@@ -5,7 +5,7 @@ import unittest
 
 from django.utils import timezone
 
-import waa.apps.common.datetimeproxy as datetimeproxy
+import hi.apps.common.datetimeproxy as datetimeproxy
 
 logging.disable(logging.CRITICAL)
 

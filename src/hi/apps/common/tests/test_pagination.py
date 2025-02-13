@@ -2,7 +2,7 @@ import logging
 
 from django.test import TestCase
 
-from waa.apps.common.pagination import compute_pagination
+from hi.apps.common.pagination import compute_pagination
 
 logging.disable(logging.CRITICAL)
 

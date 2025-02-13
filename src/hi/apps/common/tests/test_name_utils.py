@@ -2,7 +2,7 @@ import logging
 
 from django.test import TestCase
 
-import waa.apps.common.name_utils as name_utils
+import hi.apps.common.name_utils as name_utils
 
 logging.disable(logging.CRITICAL)
 

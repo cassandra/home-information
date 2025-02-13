@@ -2,7 +2,7 @@ import logging
 
 from django.test import TestCase
 
-from waa.apps.common.url_utils import simplify_url_path
+from hi.apps.common.url_utils import simplify_url_path
 
 logging.disable(logging.CRITICAL)
 

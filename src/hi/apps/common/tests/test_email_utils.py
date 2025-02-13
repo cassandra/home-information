@@ -2,7 +2,7 @@ import logging
 
 from django.test import TestCase
 
-import waa.apps.common.email_utils as email_utils
+import hi.apps.common.email_utils as email_utils
 
 logging.disable(logging.CRITICAL)
 

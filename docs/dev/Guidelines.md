@@ -43,6 +43,7 @@
 - `monitors.py`: If app module needs a periodic background process.
 - `templates/${APPNAME}`: The apps templates. Also see the [Templates Page](Templates.md).
 - `apps.py`: Django-required module definition.
+- `tests/test_${NAME}`: Unit tests for the module (by Django conventions).
 - `admin.py`: For adding to Django admin console (by Django conventions).
 
 If a module provides views or functionality that is only applicable to edit mode, then an `edit` subdirectory is used with the same structure, e.g., 
