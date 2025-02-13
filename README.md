@@ -39,13 +39,14 @@ make docker-run
 
 Then visit: [http://localhost:9411](http://localhost:9411) and the [Getting Started Page](docs/GettingStarted.md).
 
-# Contributing / Development
+# Development
 
 ## Requirements
 
 - Python 3.11 (or higher) - installed
 
-The tech stack is:
+## Tech Stack
+
 - Django 4.2
 - Javascript using jQuery 3.7
 - Bootstrap 4 (CSS)
