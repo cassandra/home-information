@@ -1,7 +1,5 @@
 <img src="../../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
-_WORK IN PROGRESS_
-
 # Django Templates
 
 ## Template naming conventions
@@ -11,6 +9,8 @@ _WORK IN PROGRESS_
 - `panes` - For all other HTML page fragments
 - `email` - For email templates
 - `svg` - for SVG files.
+
+For app modules that also define some separate "edit" views, they will be in the same structure, one level down in an `edit` subdirectory.
 
 ## The "Hi Grid" Template Structure
 

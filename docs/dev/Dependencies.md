@@ -23,6 +23,23 @@ Get python 3.11 package and install from: [https://www.python.org/downloads/](ht
  sudo apt install python3.11-venv
 ```
 
+
+### Docker
+
+#### MacOS
+
+See: [https://docs.docker.com/desktop/setup/install/mac-install/](https://docs.docker.com/desktop/setup/install/mac-install/)
+
+#### Ubuntu (GNU/Linux)
+
+``` shell
+sudo apt-get update
+sudo apt-get remove docker docker-engine docker.io
+sudo apt install docker.io
+sudo apt install docker-compose
+sudo systemctl start docker
+```
+
 ### Redis
 
 #### MacOS

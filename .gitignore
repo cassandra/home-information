@@ -26,4 +26,4 @@ __pycache__/
 /src/*txt
 
 /*.html
-/docs/*.html
+/docs/**/*.html

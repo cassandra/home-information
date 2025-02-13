@@ -8,7 +8,7 @@ We welcome contributions! Follow these guidelines to get started.
 
 The Home Information app's goal is to create a people-focused way to organize the various information needed to manage their homes.  Home automation is great, but these systems tend to be device-focused instead of information-focused. They often add more complexity to your life rather than simplifying it.  By creating a "single pane of glass" for all the information related to your home, we can begin fulfilling the promise of automation and technology and make managing your home, and your life, simpler.
 
-We've only just begun this journey. We've put some basic functonality in place to demonstrate its potential, but there are plenty of opportunities for improvements. Our [Road Map Page](RoadMap.md) shows just some of the future features we are thinking about.
+We've only just begun this journey. We've put some basic functonality in place to demonstrate its potential, but there are plenty of opportunities for improvements. Our [Road Map Page](docs/RoadMap.md) shows just some of the future features we are thinking about.
 
 ## How to Contribute
 

@@ -6,7 +6,8 @@
 
 - Python 3 - installed
 - Docker - installed and running
-- Git - installed
+
+See the [Dependencies Page](dev/Dependencies.md) if you want help installing those.
 
 ## Pre-install Considerations
 
@@ -113,7 +114,7 @@ Note: You could sign in without creating users by using the existing admin user.
 #### Integrations
 
 If you use any of the built-in integrations, so additional changes may be needed. See the 
-[Integrations Page](docs/Integrations.md) for more details.
+[Integrations Page](Integrations.md) for more details.
 
 ## Troubleshooting
 
@@ -135,41 +136,4 @@ Your email provider may require configuration to allow the program to send email
 Requiring sign in depends on emails. If you have problems getting email working, then disable sign in by setting the env file:
 ``` shell
 HI_SUPPRESS_AUTHENTICATION="true"
-```
-
-## Prerequisite Installs
-
-_Provided for convenience. May be outdated._
-
-### Python
-
-#### MacOS
-
-Get python 3.11 package and install from: [https://www.python.org/downloads/](https://www.python.org/downloads/)
-
-#### Ubuntu (GNU/Linux)
-
-``` shell
- sudo apt update && sudo apt upgrade
- sudo add-apt-repository ppa:deadsnakes/ppa
- sudo apt-get update
- apt list | grep python3.11
- sudo apt-get install python3.11
- sudo apt install python3.11-venv
-```
-
-### Docker
-
-#### MacOS
-
-See: [https://docs.docker.com/desktop/setup/install/mac-install/](https://docs.docker.com/desktop/setup/install/mac-install/)
-
-#### Ubuntu (GNU/Linux)
-
-``` shell
-sudo apt-get update
-sudo apt-get remove docker docker-engine docker.io
-sudo apt install docker.io
-sudo apt install docker-compose
-sudo systemctl start docker
 ```

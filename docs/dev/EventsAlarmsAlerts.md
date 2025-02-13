@@ -1,7 +1,5 @@
 <img src="../../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
-_WORK IN PROGRESS_
-
 # Events, Alarms and Alerts
 
 `SensorResponses` can create events for a user-defined set of rules.

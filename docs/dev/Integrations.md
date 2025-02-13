@@ -1,7 +1,5 @@
 <img src="../../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
-_WORK IN PROGRESS_
-
 # Integrations
 
 - Each integration is a Django app in the `hi/services` directory.
