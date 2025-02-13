@@ -14,15 +14,15 @@ _TBD_
 
 ## Visual Testing Page
 
-Visit: [http:/tests/ui](http:/tests/ui).
+Visit: [http://127.0.0.1:8411/tests/ui](http://127.0.0.1:8411/tests/ui).
 
-These tests/ui views are only available in the development environment when DEBUG=True. (They are conditionally loaded in the root urls.py.)
+These tests/ui views are only available in the development environment when `DEBUG=True`. (They are conditionally loaded in the root `urls.py`.)
 
 ### Adding to the Visual Testing Page
 
 The `hi.tests.ui` module uses auto-discovery by looking in the app directories.
 
-In the app direcxtory you want to have a visual testing page:
+In the app directory you want to have a visual testing page:
 
 ``` shell
 mkdir -p tests/ui

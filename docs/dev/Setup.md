@@ -95,7 +95,7 @@ cd src
 
 Then, visit: [http://127.0.0.1:8411](http://127.0.0.1:8411) to access the app.
 
-If you want to familiarize yourself with how to use the app before diving inot the code, see the [Getting Started Page](GettingStarted.md).
+If you want to familiarize yourself with how to use the app before diving inot the code, see the [Getting Started Page](../GettingStarted.md).
 
 A look through these docs might also be a good starting point:
 - [Data Model](DataModel.md)
