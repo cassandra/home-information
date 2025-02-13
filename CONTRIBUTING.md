@@ -1,4 +1,4 @@
-<img src="../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
+<img src="src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
 # Contributing
 
@@ -6,101 +6,58 @@ We welcome contributions! Follow these guidelines to get started.
 
 ## Project and Goals
 
-_TBD_
+The Home Information app's goal is to create a people-focused way to organize the various information needed to manage their homes.  Home automation is great, but these systems tend to be device-focused instead of information-focused. They often add more complexity to your life rather than simplifying it.  By creating a "single pane of glass" for all the information related to your home, we can begin fulfilling the promise of automation and technology and make managing your home, and your life, simpler.
 
-[Road Map](RoadMap.md)
+We've only just begun this journey. We've put some basic functonality in place to demonstrate its potential, but there are plenty of opportunities for improvements. Our [Road Map Page](RoadMap.md) shows just some of the future features we are thinking about.
 
 ## How to Contribute
 
-users v. coder v. graphic designers
+We are open to contributions from anyone.  There are a few different ways to contribute:
+- **User** - Only requires installing and using the app.
+- **Graphic or UX Design** - For those with ideas on better visuals and/or better user experiences.
+- **Software Development** - For those wanting to get involved with writing code.
+
+See the sections below for more details for each way to contribute.
 
 ### User Contributions
 
-### Graphic Design Contributions
+If you are simply interested in using the Home Information app, we would love for you to contribute your experiences and ideas for improving things.  Details for getting up and running are on the [Installation Page](docs/Installation.md).
 
-### Code Contributions
+Any and all feedback and ideas are welcome, such as:
+- Features you would like to see.
+- Improvements to existing features you would like.
+- Integrations you could use.
+- Good and bad usability issues.
+- And bugs or glitches.
 
-See the [Development Page](docs/Development.md) for how to set up your development environment.
+### Graphic and UX Design Contributions
 
-1. Open an issue describing your proposed change.
-2. Fork the repository.
-3. Create a feature branch.
-4. Make your changes.
-5. Submit a pull request to the `develop` branch.
+As with most software projects like this, the UI and UX design tends to be done by software developers with only a passing sense of what "good" looks like and/or are too busy trying to make everything actually work to have time to devote to refining the UI/UX.  If you tend toward thinking and caring about the visual style and user experience, it would greatly complement the team.
 
-Code should be tested before approval.
-Squash and merge is preferred for a cleaner commit history.
+We are not currently set up with a workflow for contributing in this manner, but all we need are some people with the interest and we'll develop something.  Just let us know if this sounds like something you are interested in.
 
- 
-#### Branching Strategy
+### Software Development Contributions
 
-- Main Branch (`master`): Stable, production-ready code.
-- Development Branch (`develop`): Active development happens here.
-- Feature Branches (feature/some-feature): Contributors should branch off `develop`.
+The following pages are for those wanting to contribute to the code base:
 
-Example:
-``` shell
-git checkout -b feature/new-feature develop
-git commit -m "Add new feature"
-git push origin feature/new-feature
-```
+- [Development Page](docs/Development.md)
+- [Development Setup Page](docs/dev/Setup.md)
+- [Development Workflow Page](docs/dev/Workflow.md)
+- [Developer Documentation](docs/dev/README.md)
 
+## Code of Conduct
 
-#### Making Changes
+Regardless of how you contribute, you must adhere to the golden rule and:
 
-: Guidelines on:
+- be respectful;
+- be inclusive and welcoming;
+- be responsive;
+- provide feedback;
+- keep your ego in check; or
+- in other words, be a decent human being.
 
-Code style (and how to check it)
-Commit message format (use a clear and consistent format)
-Testing (how to run tests and write new ones)
-Documentation (how to update documentation)
+Life is too short to be wasting time with a**holes.
 
+## Licensing
 
-#### Coding Style
-
-We mostly adhere to PEP8 but we strongly disagree with its broadly accepted coding guidelines around spaces.  Spaces are great visual delimiters and greatly enhance readability. The deviations we make are shown in this Flake8 config file for what is ignored.
-
-``` shell
-[flake8]
-max-line-length = 110
-
-# Things I disable:
-#
-# E129 - visually indented line with same indent as next logical line
-# D203 -
-# E201 - whitespace after brackets
-# E202 - whitespace before brackets
-# E203 -
-# E221 - multiple spaces before operator
-# E231 - 
-# E251 - unexpeced whitespace around keyword parameters
-# W293 - blank line contains whitespace
-# W291 - white space at end of line
-# W391 - blank line at end of file
-# W503 - line break before binary operator
-
-ignore = E129,D203,E201,E202,E203,E221,E231,E251,W293,W291,W391,W503
-```
-
-
-
-#### Submitting a Pull Request: Explain the PR process:
-
-- Open a PR against the `develop` branch.
-- Write a clear and descriptive PR title and description.
-- Include screenshots or GIFs if relevant.
-- Address any feedback on the PR.
-
-#### Code of Conduct
-
-- be respectful
-- be inclusive and welcoming
-- be responsive
-- provide feedback
-- keep your ego in check
-- keep PRs focused: one feature/fix per PR.
-
-
-#### Licensing
-
-See the [License Page](LICENSE.md).
+Be aware of the project's licensing terms. See [License Page](LICENSE.md).

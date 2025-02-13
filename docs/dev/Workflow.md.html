@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+    <title>Workflow.md.html</title>
+    <style>
+     /* This CSS is originated from a following sites.
+	https://github.com/magnetikonline/ghmarkdownrender */
+     body {
+       background: #fff;
+       color: #333;
+       font: 16px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif,'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol';
+       width: 50em;
+       border: 1px solid #ddd;
+       outline: 1300px solid #fff;
+       margin: 20px auto;
+       padding: 40px;
+     }
+     #frame {
+       border: 1px solid #ddd;
+       border-radius: 3px;
+       margin: 0 auto;
+       width: 978px;
+     }
+     #markdown {
+       padding: 45px;
+     }
+     #markdown > *:first-child {
+       margin-top: 0;
+     }
+     #markdown > *:last-child {
+       margin-bottom: 0;
+     }
+     h1,h2,h3,h4,h5,h6 {
+       font-weight: 600;
+       line-height: 1.25;
+       margin: 24px 0 16px;
+       padding: 0;
+     }
+     h1,h2 {
+       padding-bottom: 0.3em;
+     }
+     h1 {
+       border-bottom: 1px solid #eee;
+       font-size: 2em;
+     }
+     h2 {
+       border-bottom: 1px solid #eee;
+       font-size: 1.5em;
+     }
+     h3 {
+       font-size: 1.25em;
+     }
+     h4 {
+       font-size: 1em;
+     }
+     h5 {
+       font-size: 0.875em;
+     }
+     h6 {
+       color: #777;
+       font-size: 0.85em;
+     }
+     a {
+       color: #4183c4;
+       text-decoration: none;
+     }
+     a:hover {
+       text-decoration: underline;
+     }
+     blockquote,dl,ol,p,pre,table,ul {
+       margin: 0 0 16px;
+       padding: 0;
+     }
+     blockquote {
+       border-left: 0.25em solid #ddd;
+       color: #777;
+       padding: 0 1em;
+     }
+     blockquote > *:first-child {
+       margin-top: 0;
+     }
+     blockquote > *:last-child {
+       margin-bottom: 0
+     }
+     hr {
+       background: #e7e7e7;
+       border: 0;
+       height: 0.25em;
+       margin: 24px 0;
+       overflow: hidden;
+       padding: 0;
+     }
+     hr:before,
+     hr:after {
+       content: '';
+       display: table;
+     }
+     hr:after {
+       clear: both;
+     }
+     img {
+       background: #fff;
+       border: 0;
+       box-sizing: content-box;
+       max-width: 100%;
+     }
+     kbd {
+       background: #fcfcfc;
+       border-bottom-color: #bbb;
+       border-radius: 3px;
+       border: 1px solid #ccc;
+       box-shadow: inset 0 -1px 0 #bbb;
+       color: #555;
+       display: inline-block;
+       font: 11px/10px Consolas,'Liberation Mono',Menlo,Courier,monospace;
+       padding: 3px 5px;
+       vertical-align: middle;
+     }
+     ol,ul {
+       padding-left: 2em;
+     }
+     ol ol,
+     ol ul,
+     ul ol,
+     ul ul {
+       margin-bottom: 0;
+       margin-top: 0;
+     }
+     ol ol,
+     ul ol {
+       list-style-type: lower-roman;
+     }
+     li + li {
+       margin-top: 0.25em;
+     }
+     li > p {
+       margin-top: 16px;
+     }
+     table {
+       border-collapse: collapse;
+       border-spacing: 0;
+     }
+     table tr {
+       background: #fff;
+       border-top: 1px solid #ccc;
+     }
+     table tr:nth-child(2n) {
+       background: #f8f8f8;
+     }
+     table th,
+     table td {
+       border: 1px solid #ddd;
+       padding: 6px 13px;
+     }
+     table th {
+       font-weight: bold;
+     }
+     code,pre,tt {
+       font-family: Consolas,'Liberation Mono',Menlo,Courier,monospace;
+       font-size: 12px;
+     }
+     code,tt {
+       background: rgba(0,0,0,0.04);
+       border-radius: 3px;
+       font-size: 85%;
+       margin: 0;
+       padding: 0.2em 0;
+     }
+     code {
+       white-space: nowrap;
+     }
+     code:before,
+     code:after,
+     tt:before,
+     tt:after {
+       content: '\\00a0';
+       letter-spacing: -0.2em;
+     }
+     pre {
+       background: #f7f7f7;
+       border-radius: 3px;
+       font-size: 85%;
+       line-height: 1.45;
+       overflow: auto;
+       padding: 16px;
+     }
+     pre code,
+     pre tt {
+       background: transparent;
+       border: 0;
+       margin: 0;
+       padding: 0;
+     }
+     pre > code {
+       background: transparent;
+       font-size: 100%;
+       white-space: pre;
+     }
+     pre > code:before,
+     pre > code:after {
+       content: normal;
+     }
+     h1 code,h1 tt,
+     h2 code,h2 tt,
+     h3 code,h3 tt,
+     h4 code,h4 tt,
+     h5 code,h5 tt,
+     h6 code,h6 tt {
+       font-size: inherit;
+     }
+     .highlight { margin-bottom: 16px; }
+     .pl-c { color: #969896; }
+     .pl-c1,.pl-s .pl-v { color: #0086b3; }
+     .pl-e,.pl-en { color: #795da3; }
+     .pl-ent { color: #63a35c; }
+     .pl-id { color: #b52a1d; }
+     .pl-ii { background-color: #b52a1d;color: #f8f8f8; }
+     .pl-k { color: #a71d5d; }
+     .pl-mb { color: #333;font-weight: bold; }
+     .pl-md { background-color: #ffecec;color: #bd2c00; }
+     .pl-mdr { color: #795da3;font-weight: bold; }
+     .pl-mh,.pl-mh .pl-en,.pl-ms { color: #1d3e81;font-weight: bold; }
+     .pl-mi { color: #333;font-style: italic; }
+     .pl-mi1 { background-color: #eaffea;color: #55a532; }
+     .pl-ml { color: #693a17; }
+     .pl-mo { color: #1d3e81; }
+     .pl-mq { color: #008080; }
+     .pl-s,.pl-pds,.pl-s .pl-pse .pl-s1,.pl-sr,.pl-sr .pl-cce,.pl-sr .pl-sre,.pl-sr .pl-sra { color: #183691; }
+     .pl-smi,.pl-s .pl-s1 { color: #333; }
+     .pl-sr .pl-cce { color: #63a35c;font-weight: bold; }
+     .pl-v { color: #ed6a43; }
+     #footer {
+       color: #777;
+       font-size: 11px;
+       margin: 10px auto;
+       text-align: right;
+       white-space: nowrap;
+       width: 978px;
+     }
+    </style>
+  </head>
+  <body>
+    <p><a target="_blank" rel="noopener noreferrer" href="../../src/hi/static/img/hi-logo-w-tagline-197x96.png"><img src="../../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128" style="max-width: 100%;"></a></p>
+<div class="markdown-heading"><h1 class="heading-element">Development Workflow</h1><a id="user-content-development-workflow" class="anchor" aria-label="Permalink: Development Workflow" href="#development-workflow"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>See the <a href="../../CONTRIBUTING.md">Contributing Page</a> for general information about contributing.</li>
+<li>See the <a href="Setup.md">Development Page</a> for how to set up your development environment.</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">Branching Strategy</h2><a id="user-content-branching-strategy" class="anchor" aria-label="Permalink: Branching Strategy" href="#branching-strategy"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>
+<strong>Main Branch</strong> (<code>master</code>): Stable, production-ready code. Only updated by the prohect maintainers.</li>
+<li>
+<strong>Development Branch</strong> (<code>staging</code>): Active development happens here. Pull requests target this branch, with maintainers controlling merges.</li>
+<li>
+<strong>Feature Branches</strong>: Contributors will fork the repo and branch off <code>staging</code> branch for their work.  Anyone can fork the repository, create a feature branch and submit PRs against the <code>staging</code> branch.</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">Making Changes - Overview</h2><a id="user-content-making-changes---overview" class="anchor" aria-label="Permalink: Making Changes - Overview" href="#making-changes---overview"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>Always work off the latest <code>staging</code> branch to avoid merge conflicts.</li>
+<li>Create an issue and a branch (issues highly encouraged for most PRs).</li>
+<li>Do your thing and add to and/or change the code: use clear commit messages.</li>
+<li>Create a PR: should be focused on a single feature or fix.</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">Ensure Your Code is in Sync</h2><a id="user-content-ensure-your-code-is-in-sync" class="anchor" aria-label="Permalink: Ensure Your Code is in Sync" href="#ensure-your-code-is-in-sync"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>Switch to your local copy of staging branch:</p>
+<div class="highlight highlight-source-shell"><pre>git checkout staging</pre></div>
+<p>Fetch the latest changes from upstream:</p>
+<div class="highlight highlight-source-shell"><pre>git fetch upstream</pre></div>
+<p>Merge upstream changes into your fork's dev branch:</p>
+<div class="highlight highlight-source-shell"><pre>git merge upstream/staging</pre></div>
+<p>Push the updated dev branch to your fork:</p>
+<div class="highlight highlight-source-shell"><pre>git push origin staging</pre></div>
+<div class="markdown-heading"><h2 class="heading-element">Create an Issue and Branch</h2><a id="user-content-create-an-issue-and-branch" class="anchor" aria-label="Permalink: Create an Issue and Branch" href="#create-an-issue-and-branch"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>All PRs are encouraged to be associated with an issue and the branch should use the issue number in its name. For minor fixes, or test-only changes, skipping an issue is OK, but anything more substantial should have an issue for discussions and reference.</p>
+<p>Issues (and hence branches) come in a few flavors with associated conventions.  In generalm a branch will have both the issue number and a user-chosen, short mnemonic to be slightly more descriptive. Here are the conventions:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Issue?</th>
+<th>Branch</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>feature</td>
+<td>YES</td>
+<td>feature/$(ISSUE_NUM}-${MNEMONIC}</td>
+<td>New Development</td>
+</tr>
+<tr>
+<td>bugfix</td>
+<td>YES</td>
+<td>bugfix/$(ISSUE_NUM}-${MNEMONIC}</td>
+<td>Bug Fixes</td>
+</tr>
+<tr>
+<td>docs</td>
+<td>YES</td>
+<td>docs/$(ISSUE_NUM}-${MNEMONIC}</td>
+<td>Documentation</td>
+</tr>
+<tr>
+<td>ops</td>
+<td>YES</td>
+<td>ops/$(ISSUE_NUM}-${MNEMONIC}</td>
+<td>Non-app, deployment, etc.</td>
+</tr>
+<tr>
+<td>tests</td>
+<td>NO</td>
+<td>tests/${MNEMONIC}</td>
+<td>For test-only changes</td>
+</tr>
+<tr>
+<td>refactor</td>
+<td>YES</td>
+<td>refactor/$(ISSUE_NUM}-${MNEMONIC}</td>
+<td>Only if no new behaviors</td>
+</tr>
+<tr>
+<td>tweak</td>
+<td>NO</td>
+<td>tweak/${MNEMONIC}</td>
+<td>For small, obvious PRs</td>
+</tr>
+</tbody>
+</table>
+<p>If you are contributing something new, without an existing issue, please create an issue first using the appropriate template: feature, bugfix, etc.. It is generally always better to think about what you are about to do before doing it. Creating an issue is a forcing function for thinking through and communicating your plans.</p>
+<p>Once your code is up-to-date, an issue number exists and a mnemonic chosen, you can create your local branch off the current staging branch:</p>
+<div class="highlight highlight-source-shell"><pre>git checkout -b feature/<span class="pl-s"><span class="pl-pds">$(</span>ISSUE_NUM}-<span class="pl-smi">${MNEMONIC}</span> upstream/staging</span></pre></div>
+<div class="markdown-heading"><h2 class="heading-element">Do Your Thing</h2><a id="user-content-do-your-thing" class="anchor" aria-label="Permalink: Do Your Thing" href="#do-your-thing"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>Make your changes to the code.</li>
+<li>Test your changes locally (and add unit tests).</li>
+<li>Stage changes: <code>git add .</code>
+</li>
+<li>Commit changes: <code>git commit -m "Add feature: [brief description]"</code>
+</li>
+<li>Push branch to your fork: <code>git push origin feature/$(ISSUE_NUM}-${MNEMONIC}</code>
+</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">Submit a Pull Request (PR)</h2><a id="user-content-submit-a-pull-request-pr" class="anchor" aria-label="Permalink: Submit a Pull Request (PR)" href="#submit-a-pull-request-pr"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>Go to your fork on GitHub: <a href="https://github.com/$%7BYOURUSERNAME%7D/home-information">https://github.com/${YOURUSERNAME}/home-information</a>
+</li>
+<li>Click the "Compare &amp; pull request" button that appears after your push.</li>
+<li>Ensure the base repository is set to <code>cassandra/home-information -&gt; staging</code>
+</li>
+<li>Ensure the compare branch is set to: <code>${YOURUSERNAME}/home-information -&gt; feature/${YOUR_FEATURE_NAME}</code>
+</li>
+<li>Fill out the PR template (describe what your change does).</li>
+<li>Submit the PR and wait for review!</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">PR Reviews</h2><a id="user-content-pr-reviews" class="anchor" aria-label="Permalink: PR Reviews" href="#pr-reviews"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<p>During PR review, a decision will be made on whether to squash or rebase:</p>
+<ul>
+<li>
+<strong>Squash and Merge (default)</strong>: For most PRs</li>
+<li>
+<strong>Rebase and Merge</strong>: for well-structured PRs that need commit history</li>
+</ul>
+<div class="markdown-heading"><h2 class="heading-element">Post-PR Cleanup</h2><a id="user-content-post-pr-cleanup" class="anchor" aria-label="Permalink: Post-PR Cleanup" href="#post-pr-cleanup"><span aria-hidden="true" class="octicon octicon-link"></span></a></div>
+<ul>
+<li>After merging, you should consider deleting the branch to keep your forked repository clean.</li>
+<li>Get your local and forked <code>staging</code> branch up to date with the upstream changes (see above).</li>
+</ul>
+
+  </body>
+</html>

@@ -57,7 +57,12 @@ Then visit: [http://localhost:9411](http://localhost:9411) and the [Getting Star
 
 Setting up for local development, in brief, looks like this:
 ``` shell
-git clone git@github.com:cassandra/home-information.git
+# Fork the repo: https://github.com/cassandra/home-information
+
+# Clone your fork
+git clone https://github.com/${YOURUSERNAME}/home-information.git
+
+# Initialize the environment and database
 cd home-information
 make env-build-dev
 python3.11 -m venv venv
@@ -70,7 +75,8 @@ cd src
 ./manage.py hi_creategroups
 ./manage.py runserver
 ```
-See the [Development Page](docs/Development.md) for more details.
+
+See the [Contributing](CONTRIBUTING.md) and [Development](docs/Development.md) pages for more details.
 
 ---
 

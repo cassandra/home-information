@@ -1,12 +1,24 @@
 <img src="../../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
-# Visual Testing Page
+# Testing
+
+## Unit Tests
+
+``` shell
+./manage.py test
+```
+
+## Integation Tests
+
+_TBD_
+
+## Visual Testing Page
 
 Visit: [http:/tests/ui](http:/tests/ui).
 
 These tests/ui views are only available in the development environment when DEBUG=True. (They are conditionally loaded in the root urls.py.)
 
-## Adding to the Visual Testing Page
+### Adding to the Visual Testing Page
 
 The `hi.tests.ui` module uses auto-discovery by looking in the app directories.
 
@@ -24,7 +36,7 @@ Then:
 
 The templates for these tests, by contention, would be put in the app's templates directory as `templates/${APPNAME}/tests/ui`.
 
-## Email testing
+### Email Testing
 
 There are some helper base classes to test viewing email formatting and sending emails.
 ``` shell
