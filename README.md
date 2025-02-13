@@ -82,5 +82,6 @@ See the [Development Page](docs/Development.md) for more details.
 - [Integrations](docs/Integrations.md)
 - [Contributing](docs/Contributing.md)
 - [Security](docs/Security.md)
+- [Road Map](docs/RoadMap.md)
 - [ChangeLog](CHANGELOG.md)
 - [License](LICENSE.md)
