@@ -41,7 +41,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 Any **commercial use** of this software **requires a separate license** from:
 
 POMDP, Inc.
-Contact: info@pomdp.com
 
 Commercial use includes, but is not limited to:
 - Using the software in a proprietary product

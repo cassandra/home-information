@@ -14,7 +14,9 @@ _WORK IN PROGRESS_
 
 ## The "Hi Grid" Template Structure
 
-# Important DIV Ids
+_TBD_
+
+### Important DIV Ids
 
 This are gathered in `src/hi/constants.py:DIV_IDS`:
 

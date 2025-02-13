@@ -2,14 +2,13 @@
 
 # Home Information
 
-An application to visually organizes data about your home and the things in it. Add and place items on the screen and then attach manuals, notes, links, maintenance and repair histories or any other information for easy reference. Optionally integrate with security and home automation systems for a single view of all your house-related information.
-
+An application to visually organizes data about your home and the things in it. Add and position items on the screen and then attach notes, manuals, links, maintenance and repair histories or any other information for easy reference. Optionally integrates with security and home automation systems for a single view of all your house-related information.
 
 <img src="docs/img/screenshot-kitchen.png" alt="Kitchen Example" width="250"> <img src="docs/img/screenshot-security.png" alt="Security Example" width="250"> <img src="docs/img/screenshot-cameras.png" alt="Camera Example" width="250">
 
 ## Project Status
 
-We are looking for early adopters and contributors. The software is functional, but early in its development with many additional feature planned.
+We are looking for early adopters and contributors. The software is functional, but early in its development with many additional features planned.
 
 # Installation / Running
 
@@ -17,28 +16,34 @@ We are looking for early adopters and contributors. The software is functional, 
 
 - Python 3 - installed
 - Docker - installed and running
-- Git - installed
 
-## Installation Quick Start
+## Installation (Quick Start)
 ``` shell
 git clone git@github.com:cassandra/home-information.git
 cd home-information
 make env-build
 make docker-build
-make docker-run
 ```
-Then visit: [http://localhost:9411](http://localhost:9411) to start.
-
 See the [Installation Page](docs/Installation.md) for more details and troubleshooting.
 
-To begin using the app, see the [Getting Started Page](docs/GettingStarted.md).
+## Running
+
+Run in the foreground with:
+``` shell
+make docker-run-fg
+```
+or in the background with:
+``` shell
+make docker-run
+```
+
+Then visit: [http://localhost:9411](http://localhost:9411) and the [Getting Started Page](docs/GettingStarted.md).
 
 # Contributing / Development
 
 ## Requirements
 
 - Python 3.11 (or higher) - installed
-- Git - installed
 
 The tech stack is:
 - Django 4.2
@@ -49,7 +54,7 @@ The tech stack is:
 
 ## Development Setup Overview
 
-Setting up for local development looks like this:
+Setting up for local development, in brief, looks like this:
 ``` shell
 git clone git@github.com:cassandra/home-information.git
 cd home-information

@@ -108,7 +108,7 @@ LOGGING = {
     },
 }
 
-BASE_URL_FOR_EMAIL_LINKS = 'http:/127.0.0.1:8000/'
+BASE_URL_FOR_EMAIL_LINKS = 'http:/127.0.0.1:8411/'
 
 # Uncomment to suppress email sending and write to console.
 #
