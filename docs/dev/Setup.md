@@ -57,7 +57,6 @@ $PROJ_DIR/.private/env/development.sh
 ```
 This `.private` directory and its files should not be checked into the code repository. There is an existing `.gitignore` entry to prevent this.  The adminstrative credentials generated can also be seen in that file.
 
-
 Next, create the Python virtual environment.
 ``` shell
 cd $PROJ_DIR
@@ -84,6 +83,11 @@ cd src
 ./manage.py migrate
 ./manage.py hi_createsuperuser
 ./manage.py hi_creategroups
+```
+
+It is a good idea to run the unit tests to validate that you can and that the installation seem fine.
+``` shell
+./manage.py test
 ```
 
 ### Running
