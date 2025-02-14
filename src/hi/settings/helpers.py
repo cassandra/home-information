@@ -57,7 +57,10 @@ class EnvironmentSettings:
         )
         try:
             env_settings.DJANGO_SERVER_PORT = int(
-                cls.get_env_variable( 'DJANGO_SERVER_PORT', required = False )
+                cls.get_env_variable(
+                    'DJANGO_SERVER_PORT',
+                    env_settings.DJANGO_SERVER_PORT,
+                )
             )
         except ( TypeError, ValueError ):
             pass
@@ -204,7 +207,7 @@ class EnvironmentSettings:
         return env_settings
     
     @classmethod
-    def get_env_variable( cls, var_name, default = None, required = True ) -> str:
+    def get_env_variable( cls, var_name, default = None ) -> str:
         try:
             return os.environ[var_name]
         except KeyError:
