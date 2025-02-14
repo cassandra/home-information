@@ -9,12 +9,12 @@ class Subsystem( models.Model ):
         'Name',
         max_length = 128,
         null = False, blank = False,
-        unique = True,
     )
     subsystem_key = models.CharField(
         'Subsystem Key',
         max_length = 32,
         null = False, blank = False,
+        unique = True,
     )  
     created_datetime = models.DateTimeField(
         'Created',
