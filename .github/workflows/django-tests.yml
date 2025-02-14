@@ -9,6 +9,27 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    services:
+      redis:
+        image: redis:7  # Use the latest Redis version
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    env:
+      DJANGO_SETTINGS_MODULE: "hi.settings.ci"
+      DJANGO_SECRET_KEY: "django-insecure-@egpl51khoap^%x8*jc4xj0(hv)foor-%5897+@h665k3txo))7"
+      DJANGO_SUPERUSER_EMAIL: "foo@example.com"
+      DJANGO_SUPERUSER_PASSWORD: "foobar"
+      HI_REDIS_HOST: "localhost"
+      HI_REDIS_PORT: "6379"
+      HI_DB_PATH: "/tmp"
+      HI_MEDIA_PATH: "/tmp"
+
     steps:
       - uses: actions/checkout@v3
 
@@ -25,7 +46,7 @@ jobs:
       - name: Run Unit Tests
         working-directory: ./src
         run: |
-          python manage.py test --keepdb
+          python manage.py test
 
       - name: Check Code Style
         working-directory: ./src
