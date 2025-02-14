@@ -88,6 +88,5 @@ See the [Contributing](CONTRIBUTING.md) and [Development](docs/Development.md) p
 - [Integrations](docs/Integrations.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security](SECURITY.md)
-- [Road Map](docs/RoadMap.md)
 - [ChangeLog](CHANGELOG.md)
 - [License](LICENSE.md)
