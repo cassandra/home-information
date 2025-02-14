@@ -11,7 +11,7 @@ See the [Dependencies Page](dev/Dependencies.md) if you want help installing tho
 
 ## Pre-install Considerations
 
-By default, the installation does not require sign in and does not have email configure for alerts.  This is to make it as simple as possible to get started.  However, before installing, you might want to consider whether you want to enable these.  You can change these after the initial install by adjusting the environment variable file.
+By default, the installation process will not configure the app for user sign ins and does not have email configured for alerts.  This is to make it as simple as possible to get started.  However, before installing, you might want to consider whether you want to enable these.  You can change these after the initial install by adjusting the environment variable file that gets generated.
 
 ### Emails
 
@@ -31,16 +31,26 @@ PROJ_DIR="proj"
 mkdir -p $PROJ_DIR
 cd $PROJ_DIR
 ```
-Download the code:
+
+#### Downloading
+
+Download the code from: https://github.com/cassandra/home-information/releases/latest.
+
+Un'zip (or un'tar) the release code in your chosen project root location. e.g., 
+
 ``` shell
-git clone git@github.com:cassandra/home-information.git
-cd home-information
+cd $PROJ_DIR
+unzip ~/Downloads/home-information-*.zip 
+
+# Or if using tar'ball:
+tar zxvf ~/Downloads/home-information-*.tar.gz
 ```
 
 #### Building
 
 Generate the environment variable file and review with the command below. The file will contain sensitive secrets and are stored in a `.private` directory. Also note that administrative credentials created during this next step and save them somewhere safe.
 ``` shell
+cd $PROJ_DIR/home-information*
 make env-build
 ```
 This generates an environment variable file used when running:

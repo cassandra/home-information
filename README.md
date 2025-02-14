@@ -19,7 +19,42 @@ We are looking for early adopters and contributors. The software is functional, 
 - Python 3 - installed
 - Docker - installed and running
 
-## Installation (Quick Start)
+## Install and Run (Quick Start)
+
+_For those that just want to run, use and/or explore the application._
+
+Download the latest release from: https://github.com/cassandra/home-information/releases/latest.
+
+Un'zip or un'tar that in your chosen location.
+
+
+
+``` shell
+git clone git@github.com:cassandra/home-information.git
+cd home-information*
+make env-build
+make docker-build
+make docker-run-fg
+```
+See the [Installation Page](docs/Installation.md) for more details and troubleshooting.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ``` shell
 git clone git@github.com:cassandra/home-information.git
 cd home-information
@@ -42,6 +77,8 @@ make docker-run
 Then visit: [http://localhost:9411](http://localhost:9411) and the [Getting Started Page](docs/GettingStarted.md).
 
 # Development
+
+_For those that are interested in contributing or just peeking under the hood._
 
 ## Requirements
 
