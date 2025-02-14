@@ -22,6 +22,14 @@ jobs:
 
     env:
       DJANGO_SETTINGS_MODULE: "hi.settings.ci"
+      SECRET_KEY: "django-insecure-@egpl51khoap^%x8*jc4xj0(hv)foor-%5897+@h665k3txo))7"
+      DJANGO_SUPERUSER_EMAIL = "foo@example.com"
+      DJANGO_SUPERUSER_PASSWORD = "foobar"
+      ALLOWED_HOSTS: "localhost"
+      HI_REDIS_HOST: "localhost"
+      HI_REDIS_PORT: "6379"
+      HI_DB_PATH: "/tmp"
+      HI_MEDIA_PATH: "/tmp"
 
     steps:
       - uses: actions/checkout@v3
