@@ -169,7 +169,7 @@ class EnvironmentSettings:
             f'http://localhost:{env_settings.DJANGO_SERVER_PORT}',
         ]
 
-        extra_host_urls_str = cls.get_env_variable( 'HI_EXTRA_HOST_URLS' )
+        extra_host_urls_str = cls.get_env_variable( 'HI_EXTRA_HOST_URLS', '' )
         if extra_host_urls_str:
             host_url_tuple_list = cls.parse_url_list_str( extra_host_urls_str )
             
@@ -185,7 +185,7 @@ class EnvironmentSettings:
                 cors_allowed_origins_list.append( url )
                 continue
         
-        extra_csp_urls_str = cls.get_env_variable( 'HI_EXTRA_CSP_URLS' )
+        extra_csp_urls_str = cls.get_env_variable( 'HI_EXTRA_CSP_URLS', '' )
         if extra_csp_urls_str:
             host_url_tuple_list = cls.parse_url_list_str( extra_csp_urls_str )
             for host, url in host_url_tuple_list:
