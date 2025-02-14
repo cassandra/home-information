@@ -120,6 +120,7 @@ class SettingsManager( Singleton ):
         return app_settings_list
 
     def _load_or_create_settings( self, app_settings_list: List[ AppSettings ] ):
+
         defined_app_settings_map = { x.app_name: x for x in app_settings_list }
         existing_subsystem_map = {
             x.subsystem_key: x
@@ -142,6 +143,14 @@ class SettingsManager( Singleton ):
         return subsystem_list
     
     def _create_app_subsystem( self, app_settings : AppSettings ):
+
+        try:
+            subsystem = Subsystem.objects.get( subsystem_key = app_settings.app_name )
+            logger.warning( f'Skipping creating subsystem "{app_settings.label}". It already exists.' )
+            return subsystem
+        
+        except Subsystem.DoesNotExist:
+            pass
         
         subsystem = Subsystem.objects.create(
             name = app_settings.label,

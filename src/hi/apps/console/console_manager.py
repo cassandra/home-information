@@ -28,11 +28,11 @@ class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin ):
         if self._was_initialized:
             return
         
-        self._console_audio_map = self._build_console_audio_map()
-        self._video_stream_entity_list = self._build_video_stream_entity_list()
-
         self.settings_manager().register_change_listener( self._reload_console_audio_map )
         EntityManager().register_change_listener( self._reload_video_stream_entity_list )
+
+        self._console_audio_map = self._build_console_audio_map()
+        self._video_stream_entity_list = self._build_video_stream_entity_list()
 
         self._was_initialized = True
         return
