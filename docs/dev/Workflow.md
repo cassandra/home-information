@@ -41,6 +41,16 @@ Push the updated dev branch to your fork:
 git push origin staging
 ```
 
+### Ensure New Dependencies in Sync
+
+You should also ensure you are in sync with with any packages or database schema changes before beginning work.
+``` shell
+cd $PROJ_DIR
+cd src
+pip install -r hi/requirements/development.txt
+./manage.py migrate
+```
+
 ## Create an Issue and Branch
 
 All PRs are encouraged to be associated with an issue and the branch should use the issue number in its name. For minor fixes, or test-only changes, skipping an issue is OK, but anything more substantial should have an issue for discussions and reference.
