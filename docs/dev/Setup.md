@@ -6,7 +6,7 @@
 
 - Sign into your GitHub account (required).
 - Go to the main repository on GitHub: https://github.com/cassandra/home-information
-- Click the "Fork" button in the upper-right corner.
+- Click the "Fork" button in the upper-right corner. (You will be forking from the `staging` branch.)
 - This creates a copy of the repository in the your GitHub account (keep same name if you can for simplicity).
 - The forked repo will be located at https://github.com/${YOURUSERNAME}/home-information.git (if you kept the same repo name).
 
@@ -37,15 +37,7 @@ git config --global user.email "${YOUR_EMAIL}"
 git remote add upstream https://github.com/cassandra/home-information.git
 ```
 
-Your "origin" should already be pointing to your forked repository, but to be sure you can use one of these:
-``` shell
-git remote add origin git@github.com:${YOURUSERNAME}/home-information.git
-
-# If no ssh keys added to GitHub
-git remote set-url origin https://github.com/${YOURUSERNAME}/home-information.git
-```
-
-Verify everything is set up properly:
+Your "origin" should already be pointing to your forked repository, but check this and the "upstream" settings:
 ``` shell
 git remote -v
 
@@ -56,13 +48,13 @@ upstream  https://github.com/cassandra/home-information.git (fetch)
 upstream  https://github.com/cassandra/home-information.git (push)
 ```
 
-## Staging Branch Setup
 
-You will have forked the `master` branch, but all your branches and pull request contributions will be targeting the `staging` branch.  To get your fork and local repositories in sync with the `staging` branch:
+If your origin is not set properly, re-verify after setting with:
 ``` shell
-git fetch upstream
-git checkout -b staging upstream/staging
-git push origin staging
+git remote add origin git@github.com:${YOURUSERNAME}/home-information.git
+
+# If no SSH keys were added to GitHub, you'll need this instead:
+git remote set-url origin https://github.com/${YOURUSERNAME}/home-information.git
 ```
 
 ## Environment Setup
