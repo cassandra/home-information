@@ -35,6 +35,8 @@ LOGGING = {
 }
 
 BASE_URL_FOR_EMAIL_LINKS = 'http:/127.0.0.1:8411/'
+
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
 SUPPRESS_SELECT_REQUEST_ENPOINTS_LOGGING = True
 SUPPRESS_MONITORS = True
