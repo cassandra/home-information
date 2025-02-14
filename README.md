@@ -6,6 +6,8 @@ An application to visually organizes data about your home and the things in it. 
 
 <img src="docs/img/screenshot-kitchen.png" alt="Kitchen Example" width="250"> <img src="docs/img/screenshot-security.png" alt="Security Example" width="250"> <img src="docs/img/screenshot-cameras.png" alt="Camera Example" width="250">
 
+You can also see the [Getting Started Page](docs/GettingStarted.md) to get a feel for how it looks and works.
+
 ## Project Status
 
 We are looking for early adopters and contributors. The software is functional, but early in its development with many additional features planned.
