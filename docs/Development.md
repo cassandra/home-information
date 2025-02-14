@@ -4,8 +4,9 @@
 
 ## Requirements and Dependencies
 
-- Python 3.11 (or higher) - installed
-- Redis - installed and running
+- Python 3.11 (or higher) - installed.
+- Redis - installed and running.
+- A GitHub account.
 
 See the [Dependencies Page](dev/Dependencies.md) if you want help installing those.
 

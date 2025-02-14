@@ -25,7 +25,7 @@ def set_default_port_if_needed():
     if ( len(sys.argv) < 2 ) or ( sys.argv[1] != "runserver" ):
         return
 
-    default_port_override = os.environ.get( 'DJANGO_DEV_PORT' )
+    default_port_override = os.environ.get( 'DJANGO_SERVER_PORT' )
     if not default_port_override:
         return
 

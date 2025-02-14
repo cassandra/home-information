@@ -407,18 +407,37 @@ class HiEnvironmentGenerator:
 
     @staticmethod
     def print_warning( message : str ):
-        print( f'\n\033[93m[WARNING]\033[0m {message}\n' )  # Yellow text
+        print( f'\n\033[96m[WARNING]\033[0m {message}\n' )  # Yellow text
 
     @staticmethod
     def print_success( message : str ):
-        print( f'\033[92m[SUCCESS]\033[0m {message}' )  # Green text
+        print( f'\033[32m[SUCCESS]\033[0m {message}' )  # Green text
 
     @staticmethod
-    def print_important( message : str ):
+    def print_important(message: str):
+        lines = message.split('\n')
+        max_width = min( 80, max( len(line) for line in lines ) + 6 )
+
+        def pad_line( line ):
+            return line.center( max_width )
+
+        padded_lines = [ pad_line(line) for line in lines ]
+        border = " " * max_width
+
+        # Inverted fg/bg text
+        print( f'\n\033[7m{border}\033[0m' )
+        for padded_line in padded_lines:
+            print( f'\033[7m{padded_line}\033[0m' )
+            continue
+        print( f'\033[7m{border}\033[0m\n' )
+        return
+
+    @staticmethod
+    def zzzprint_important( message : str ):
         border = '=' * ( min( len(message), 74 ) + 6)
-        print( f'\n\033[94m{border}\033[0m' )  # Blue border
-        print( f'\033[94m{message}\033[0m' )  # Blue text
-        print( f'\033[94m{border}\033[0m\n' )  # Blue border
+        print( f'\n\033[7m{border}\033[0m' )  # Blue border
+        print( f'\033[7m{message}\033[0m' )  # Blue text
+        print( f'\033[7m{border}\033[0m\n' )  # Blue border
         
     COMMON_EMAIL_PROVIDER_SETTINGS = {
         'gmail.com': SmtpSettings(

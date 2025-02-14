@@ -1,9 +1,10 @@
 <img src="../../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
-# Development Setup
+# Development Setup (one-time setup)
 
 ## Fork the Repository
 
+- Sign into your GitHub account (required).
 - Go to the main repository on GitHub: https://github.com/cassandra/home-information
 - Click the "Fork" button in the upper-right corner.
 - This creates a copy of the repository in the your GitHub account (keep same name if you can for simplicity).
@@ -26,15 +27,25 @@ git clone https://github.com/${YOURUSERNAME}/home-information.git
 git clone git@github.com:${YOURUSERNAME}/home-information.git
 ```
 
-Add the original repo as "upstream": 
+Now change into that directory and configure the repo including adding the source as the "upstream" target: 
 ``` shell
-git remote add upstream https://github.com/cassandra/home-information.git
+cd home-information
 
-# Or the SSH URL:
-git remote add upstream git@github.com:${YOURUSERNAME}/home-information.git
+git config --global user.name "${YOUR_NAME}"
+git config --global user.email "${YOUR_EMAIL}"
+
+git remote add upstream https://github.com/cassandra/home-information.git
 ```
 
-Verfy everything is set up properly:
+Your "origin" should already be pointing to your forked repository, but to be sure you can use one of these:
+``` shell
+git remote add origin git@github.com:${YOURUSERNAME}/home-information.git
+
+# If no ssh keys added to GitHub
+git remote set-url origin https://github.com/${YOURUSERNAME}/home-information.git
+```
+
+Verify everything is set up properly:
 ``` shell
 git remote -v
 
@@ -43,6 +54,15 @@ origin    https://github.com/${YOURUSERNAME}/home-information.git (fetch)
 origin    https://github.com/${YOURUSERNAME}/home-information.git (push)
 upstream  https://github.com/cassandra/home-information.git (fetch)
 upstream  https://github.com/cassandra/home-information.git (push)
+```
+
+## Staging Branch Setup
+
+You will have forked the `master` branch, but all your branches and pull request contributions will be targeting the `staging` branch.  To get your fork and local repositories in sync with the `staging` branch:
+``` shell
+git fetch upstream
+git checkout -b staging upstream/staging
+git push origin staging
 ```
 
 ## Environment Setup
