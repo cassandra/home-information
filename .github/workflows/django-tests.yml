@@ -30,6 +30,4 @@ jobs:
       - name: Check Code Style
         working-directory: ./src
         run: |
-          flake8 . --config=.flake8-ci --ignore=E501
-
-	
+          flake8 . --config=.flake8-ci
