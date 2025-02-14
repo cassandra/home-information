@@ -39,7 +39,7 @@ jobs:
       - name: Run Unit Tests
         working-directory: ./src
         run: |
-          python manage.py test --keepdb
+          python manage.py test
 
       - name: Check Code Style
         working-directory: ./src
