@@ -10,7 +10,7 @@ from django.core.exceptions import ImproperlyConfigured
 @dataclass
 class EnvironmentSettings:
     """
-    Encapsulates the processing for the environment variables that are needed.
+    Encapsulates the parsing of the environment variables that are needed.
     """
     DJANGO_SETTINGS_MODULE     : str           = ''
     DJANGO_SERVER_PORT         : int           = 8000
