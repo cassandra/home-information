@@ -4,4 +4,4 @@
 
 _High-level view of the applications change history.  See releases and commits for more fine-grained history._
 
-- v0.0.1 : February 12, 2025 : Initial public version with basic functionality working.
+- v0.0.1 : February 14, 2025 : Initial public version with basic functionality working.
