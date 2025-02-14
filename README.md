@@ -23,43 +23,13 @@ We are looking for early adopters and contributors. The software is functional, 
 
 _For those that just want to run, use and/or explore the application._
 
-Download the latest release from: https://github.com/cassandra/home-information/releases/latest.
-
-Un'zip or un'tar that in your chosen location.
-
-
-
+Download the latest release from: https://github.com/cassandra/home-information/releases/latest and Un'zip or un'tar it.
 ``` shell
-git clone git@github.com:cassandra/home-information.git
+unzip ~/Downloads/home-information-*.zip 
 cd home-information*
 make env-build
 make docker-build
 make docker-run-fg
-```
-See the [Installation Page](docs/Installation.md) for more details and troubleshooting.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-``` shell
-git clone git@github.com:cassandra/home-information.git
-cd home-information
-make env-build
-make docker-build
 ```
 See the [Installation Page](docs/Installation.md) for more details and troubleshooting.
 
