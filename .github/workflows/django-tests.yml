@@ -9,6 +9,20 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    services:
+      redis:
+        image: redis:7  # Use the latest Redis version
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    env:
+      DJANGO_SETTINGS_MODULE: "hi.settings.ci"
+
     steps:
       - uses: actions/checkout@v3
 
