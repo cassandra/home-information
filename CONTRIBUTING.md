@@ -14,8 +14,8 @@ We've only just begun this journey. We've put some basic functonality in place t
 
 We are open to contributions from anyone.  There are a few different ways to contribute:
 - **User** - Only requires installing and using the app.
-- **Graphic or UX Design** - For those with ideas on better visuals and/or better user experiences.
 - **Software Development** - For those wanting to get involved with writing code.
+- **Graphic or UX Design** - For those with ideas on better visuals and/or better user experiences.
 
 See the sections below for more details for each way to contribute.
 
@@ -30,12 +30,6 @@ Any and all feedback and ideas are welcome, such as:
 - Good and bad usability issues.
 - And bugs or glitches.
 
-### Graphic and UX Design Contributions
-
-As with most software projects like this, the UI and UX design tends to be done by software developers with only a passing sense of what "good" looks like and/or are too busy trying to make everything actually work to have time to devote to refining the UI/UX.  If you tend toward thinking and caring about the visual style and user experience, it would greatly complement the team.
-
-We are not currently set up with a workflow for contributing in this manner, but all we need are some people with the interest and we'll develop something.  Just let us know if this sounds like something you are interested in.
-
 ### Software Development Contributions
 
 The following pages are for those wanting to contribute to the code base:
@@ -44,6 +38,12 @@ The following pages are for those wanting to contribute to the code base:
 - [Development Setup Page](docs/dev/Setup.md)
 - [Development Workflow Page](docs/dev/Workflow.md)
 - [Developer Documentation](docs/dev/README.md)
+
+### Graphic and UX Design Contributions
+
+As with most software projects like this, the UI and UX design tends to be done by software developers with only a passing sense of what "good" looks like and/or are too busy trying to make everything actually work to have time to devote to refining the UI/UX.  If you tend toward thinking and caring about the visual style and user experience, it would greatly complement the team.
+
+We are not currently set up with a workflow for contributing in this manner, but all we need are some people with the interest and we'll develop something.  Just let us know if this sounds like something you are interested in.
 
 ## Code of Conduct
 
