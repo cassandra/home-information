@@ -12,9 +12,14 @@ class EnvironmentSettings:
     """
     Encapsulates the parsing of the environment variables that are needed.
     """
-    DJANGO_SETTINGS_MODULE     : str           = ''
+
+    # If the default value is "None" then the variable is required and its
+    # absence will raise an ImproperlyConfigured error.  Optional
+    # arguments should have a non-None value (empty string, zero, etc.)
+    #
+    DJANGO_SETTINGS_MODULE     : str           = None
     DJANGO_SERVER_PORT         : int           = 8000
-    SECRET_KEY                 : str           = ''
+    SECRET_KEY                 : str           = None
     DJANGO_SUPERUSER_EMAIL     : str           = None
     DJANGO_SUPERUSER_PASSWORD  : str           = None
     SITE_ID                    : str           = 1
@@ -23,9 +28,9 @@ class EnvironmentSettings:
     ALLOWED_HOSTS              : Tuple[ str ]  = field( default_factory = tuple )
     CORS_ALLOWED_ORIGINS       : Tuple[ str ]  = field( default_factory = tuple )
     EXTRA_CSP_URLS             : Tuple[ str ]  = field( default_factory = tuple )
-    DATABASES_NAME_PATH        : str           = ''
-    MEDIA_ROOT                 : str           = ''
-    REDIS_HOST                 : str           = ''
+    DATABASES_NAME_PATH        : str           = None
+    MEDIA_ROOT                 : str           = None
+    REDIS_HOST                 : str           = 'localhost'
     REDIS_PORT                 : int           = 6379
     REDIS_KEY_PREFIX           : str           = ''
     SUPPRESS_AUTHENTICATION    : bool          = True
@@ -102,7 +107,6 @@ class EnvironmentSettings:
         env_settings.REDIS_KEY_PREFIX = cls.get_env_variable(
             'HI_REDIS_KEY_PREFIX',
             env_settings.REDIS_KEY_PREFIX,
-            
         )
 
         ###########
@@ -211,7 +215,7 @@ class EnvironmentSettings:
         try:
             return os.environ[var_name]
         except KeyError:
-            if default:
+            if default is not None:
                 return default
             error_msg = "Set the %s environment variable" % var_name
             raise ImproperlyConfigured(error_msg)
