@@ -1,8 +1,8 @@
 ---
 name: "Bug Report"
-about: Report a bug or unexpected behavior.
+about: "Report a bug or unexpected behavior."
 title: "[Bug] Short description of the issue"
-labels: bug
+labels: ["bug"]
 assignees: ''
 
 ---
