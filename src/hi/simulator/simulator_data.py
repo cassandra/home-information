@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict
 
 from .base_models import SimEntityDefinition
 from .simulator import Simulator

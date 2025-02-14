@@ -31,8 +31,8 @@ class TestDateTimeProxy(unittest.TestCase):
         datetimeproxy.set( future_dt )
         proxy_dt = datetimeproxy.now()
         delta = proxy_dt - native_dt
-        self.assertTrue( delta.total_seconds() >= (5*60*60-1) )
-        self.assertTrue( delta.total_seconds() <= (5*60*60+1) )
+        self.assertTrue( delta.total_seconds() >= (5 * 60 * 60 - 1) )
+        self.assertTrue( delta.total_seconds() <= (5 * 60 * 60 + 1) )
         
         ##########
         # Setting specific time in the past
@@ -43,8 +43,8 @@ class TestDateTimeProxy(unittest.TestCase):
         datetimeproxy.set( future_dt )
         proxy_dt = datetimeproxy.now()
         delta = proxy_dt - native_dt
-        self.assertTrue( -1*delta.total_seconds() >= (5*60*60-1) )
-        self.assertTrue( -1*delta.total_seconds() <= (5*60*60+1) )
+        self.assertTrue( -1 * delta.total_seconds() >= (5 * 60 * 60 - 1) )
+        self.assertTrue( -1 * delta.total_seconds() <= (5 * 60 * 60 + 1) )
 
         ##########
         # Incrementing time forward
@@ -54,8 +54,8 @@ class TestDateTimeProxy(unittest.TestCase):
         datetimeproxy.increment( hours=8 )
         proxy_dt = datetimeproxy.now()
         delta = proxy_dt - native_dt
-        self.assertTrue( delta.total_seconds() >= (8*60*60-1) )
-        self.assertTrue( delta.total_seconds() <= (8*60*60+1) )
+        self.assertTrue( delta.total_seconds() >= (8 * 60 * 60 - 1) )
+        self.assertTrue( delta.total_seconds() <= (8 * 60 * 60 + 1) )
         
         ##########
         # Incrementing time backward
@@ -65,8 +65,8 @@ class TestDateTimeProxy(unittest.TestCase):
         datetimeproxy.increment( hours=-8 )
         proxy_dt = datetimeproxy.now()
         delta = proxy_dt - native_dt
-        self.assertTrue( -1*delta.total_seconds() >= (8*60*60-1) )
-        self.assertTrue( -1*delta.total_seconds() <= (8*60*60+1) )
+        self.assertTrue( -1 * delta.total_seconds() >= (8 * 60 * 60 - 1) )
+        self.assertTrue( -1 * delta.total_seconds() <= (8 * 60 * 60 + 1) )
         
         return
 
@@ -97,25 +97,25 @@ class TestDateTimeProxy(unittest.TestCase):
         ##########
         # Ensuring timezones working for common cases
         
-        proxy_dt = datetimeproxy.reset()
+        _ = datetimeproxy.reset()
         localnow = datetimeproxy.now('America/New_York')
         delta_secs = localnow.utcoffset().total_seconds()
-        min_secs =  -1 * 4 * 60 * 60 + 2 # EDT
+        min_secs = -1 * 4 * 60 * 60 + 2  # EDT
         max_secs = -1 * 5 * 60 * 60 - 2  # EST
         self.assertTrue( (( delta_secs < min_secs )
                           and ( delta_secs > max_secs )))
         
         localnow = datetimeproxy.now('America/Chicago')
         delta_secs = localnow.utcoffset().total_seconds()
-        min_secs =  -1 * 5 * 60 * 60 + 2 # CDT
+        min_secs = -1 * 5 * 60 * 60 + 2  # CDT
         max_secs = -1 * 6 * 60 * 60 - 2  # CST
         self.assertTrue( (( delta_secs < min_secs )
                           and ( delta_secs > max_secs )))
 
         ##########
         # Ensure time of day shows up relative to timezone
-        naive_dt = datetime.datetime( year=2016, month=3, day=29,
-                                   hour=17, minute=12, second=12 )
+        naive_dt = datetime.datetime( year = 2016, month = 3, day = 29,
+                                      hour = 17, minute = 12, second = 12 )
         tzinfo = pytz.timezone('UTC')
         force_dt = tzinfo.localize(naive_dt)
         datetimeproxy.set( force_dt )
@@ -130,8 +130,8 @@ class TestDateTimeProxy(unittest.TestCase):
         
     def test_rfc2822_conversions(self):
         
-        naive_dt = datetime.datetime( year=2016, month=3, day=29,
-                                   hour=17, minute=12, second=12 )
+        naive_dt = datetime.datetime( year = 2016, month = 3, day = 29,
+                                      hour = 17, minute = 12, second = 12 )
         tzinfo = pytz.timezone('UTC')
         the_dt = tzinfo.localize(naive_dt)
 
@@ -141,7 +141,6 @@ class TestDateTimeProxy(unittest.TestCase):
         result_dt = datetimeproxy.rfc2822_to_datetime( rfc2822_string )
         self.assertEqual( the_dt, result_dt )
         return
-
         
     def test_week_of_month(self):
 

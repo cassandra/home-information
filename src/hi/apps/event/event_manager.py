@@ -141,7 +141,6 @@ class EventManager( Singleton, AlertMixin, ControllerMixin ):
             event_definition = event_definition,
             sensor_response_list = sensor_response_list,
         )
-        return event
     
     def _purge_old_transitions( self ):
         current_timestamp = datetimeproxy.now()

@@ -2,7 +2,6 @@ from dataclasses import dataclass
 
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor
-from hi.apps.sense.transient_models import SensorResponse
 
 
 @dataclass

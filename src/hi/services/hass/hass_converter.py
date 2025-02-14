@@ -4,7 +4,6 @@ from typing import Dict, List
 
 from django.db import transaction
 
-from hi.apps.alert.enums import AlarmLevel
 from hi.apps.attribute.enums import (
     AttributeType,
     AttributeValueType,

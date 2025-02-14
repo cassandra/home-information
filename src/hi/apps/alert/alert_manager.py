@@ -70,7 +70,7 @@ class AlertManager( Singleton, NotificationMixin ):
         # whether to show it based on the console settings and user
         # interaction context.
         #
-        latest_new_alarm = self._alert_queue.get_most_recent_alarm(
+        _ = self._alert_queue.get_most_recent_alarm(
             since_datetime = last_alert_status_datetime,
         )
         

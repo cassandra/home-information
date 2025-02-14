@@ -7,5 +7,5 @@ class IntegrationManageViewPane:
     def get_template_name( self ) -> str:
         raise NotImplementedError('Subclasses must override this method')
 
-    def get_template_context( self, integration_data : 'IntegrationData' ) -> Dict[ str, object ]:
+    def get_template_context( self, integration_data ) -> Dict[ str, object ]:
         raise NotImplementedError('Subclasses must override this method')

@@ -1,4 +1,3 @@
-import importlib
 import logging
 
 from django.apps import apps

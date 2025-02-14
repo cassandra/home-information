@@ -23,7 +23,7 @@ class AppMonitorManager( Singleton ):
         self._monitor_event_loop = None
         return
     
-    async def initialize( self, event_loop : "AbstractEventLoop" ) -> None:
+    async def initialize( self, event_loop ) -> None:
         with self._data_lock:
             if self._initialized:
                 logger.info('MonitorManager already initialize. Skipping.')

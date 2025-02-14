@@ -1,4 +1,3 @@
-from asgiref.sync import async_to_sync
 import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy

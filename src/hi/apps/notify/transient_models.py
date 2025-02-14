@@ -1,7 +1,5 @@
-from dataclasses import dataclass, field
-from typing import Dict, List, Union
-
-from django.http.request import HttpRequest
+from dataclasses import dataclass
+from typing import List
     
     
 @dataclass

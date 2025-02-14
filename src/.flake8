@@ -17,3 +17,5 @@ max-line-length = 110
 # W503 - line break before binary operator
 
 ignore = E129,D203,E201,E202,E203,E221,E231,E251,W293,W291,W391,W503
+
+exclude = hi/settings/*

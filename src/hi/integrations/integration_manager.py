@@ -70,7 +70,7 @@ class IntegrationManager( Singleton ):
             return self._integration_data_map[integration_id].integration_gateway
         raise KeyError( f'Unknown integration id "{integration_id}".' )
 
-    async def initialize( self, event_loop : "AbstractEventLoop" ) -> None:
+    async def initialize( self, event_loop ) -> None:
         """
         This should be initialized from the background thread where the
         integration monitor task will run.

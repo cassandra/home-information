@@ -1,7 +1,6 @@
 import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.console.settings import ConsoleSetting
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 

@@ -82,7 +82,7 @@ def send_html_email( request,
         for file in files:
             message.attach_file(file)
 
-    if False and      non_blocking and not settings.UNIT_TESTING:  # Unit tests will fail if async emails
+    if non_blocking and not settings.UNIT_TESTING:  # Unit tests will fail if async emails
         EmailThread( message = message ).start()
     else:
         message.send()

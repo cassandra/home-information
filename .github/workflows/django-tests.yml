@@ -1,0 +1,35 @@
+name: Django Tests
+
+on:
+  pull_request:
+    branches: [master, staging]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ./src/hi/requirements/development.txt
+
+      - name: Run Unit Tests
+        working-directory: ./src
+        run: |
+          python manage.py test --keepdb
+
+      - name: Check Code Style
+        working-directory: ./src
+        run: |
+          flake8 . --config=.flake8-ci --ignore=E501
+
+	

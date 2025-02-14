@@ -1,7 +1,6 @@
 import json
 from typing import Dict
 
-from django.db import connection
 from django.http import (
     HttpRequest,
     HttpResponse,
