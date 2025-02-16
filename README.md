@@ -96,6 +96,7 @@ See the [Contributing](CONTRIBUTING.md) and [Development](docs/Development.md) p
 - [Development](docs/Development.md)
 - [Integrations](docs/Integrations.md)
 - [Contributing](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Security](SECURITY.md)
 - [ChangeLog](CHANGELOG.md)
 - [License](LICENSE.md)

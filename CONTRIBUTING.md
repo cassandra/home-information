@@ -41,23 +41,14 @@ The following pages are for those wanting to contribute to the code base:
 
 ### Graphic and UX Design Contributions
 
-As with most software projects like this, the UI and UX design tends to be done by software developers with only a passing sense of what "good" looks like and/or are too busy trying to make everything actually work to have time to devote to refining the UI/UX.  If you tend toward thinking and caring about the visual style and user experience, it would greatly complement the team.
+As with many software projects like this, the UI and UX design tends to be done by software developers with only a passing sense of what "good" looks like and/or are too busy trying to make everything actually work to have time to devote to refining the UI/UX.  If you tend toward thinking and caring about the visual style and user experience, it would greatly complement the team.
 
 We are not currently set up with a workflow for contributing in this manner, but all we need are some people with the interest and we'll develop something.  Just let us know if this sounds like something you are interested in.
 
 ## Code of Conduct
 
-Regardless of how you contribute, you must adhere to the golden rule and:
-
-- be respectful;
-- be inclusive and welcoming;
-- be responsive;
-- provide feedback;
-- keep your ego in check; or
-- in other words, be a decent human being.
-
-Life is too short to be wasting time with a**holes.
+Be aware of the project's Code of Conduct. See the [Code of Conduct Page](CODE_OF_CONDUCT.md).
 
 ## Licensing
 
-Be aware of the project's licensing terms. See [License Page](LICENSE.md).
+Be aware of the project's licensing terms. See the [License Page](LICENSE.md).
