@@ -3,19 +3,15 @@ import logging
 from threading import local, Lock
 from typing import List
 
-from django.apps import apps
 from django.db import transaction
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
-from hi.apps.attribute.enums import AttributeType
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.common.module_utils import import_module_safe
 from hi.apps.common.singleton import Singleton
 
-from .app_settings import AppSettings
 from .models import Subsystem, SubsystemAttribute
-from .setting_enums import SettingDefinition, SettingEnum
+from .setting_enums import SettingEnum
 
 logger = logging.getLogger(__name__)
 
@@ -28,14 +24,17 @@ class SettingsManager( Singleton ):
         self._attribute_value_map = dict()
         self._change_listeners = list()
         self._was_initialized = False
+        self._subsystems_lock = Lock()
         self._attributes_lock = Lock()
         return
 
     def ensure_initialized(self):
-        if self._was_initialized:
-            return
-        app_settings_list = self._discover_app_settings()
-        self._subsystem_list = self._load_or_create_settings( app_settings_list = app_settings_list )
+        
+        with self._subsystems_lock:
+            if self._was_initialized:
+                return
+            self._subsystem_list = self._load_settings()
+            
         self.reload()
         self._was_initialized = True
         return
@@ -93,104 +92,8 @@ class SettingsManager( Singleton ):
             self._attributes_lock.release()
         return
 
-    def _discover_app_settings(self) -> List[ AppSettings ]:
-
-        app_settings_list = list()
-        for app_config in apps.get_app_configs():
-            if not app_config.name.startswith( 'hi' ):
-                continue
-            module_name = f'{app_config.name}.settings'
-            try:
-                app_module = import_module_safe( module_name = module_name )
-                if not app_module:
-                    continue
-
-                app_settings = AppSettings(
-                    app_name = app_config.name,
-                    app_module = app_module,
-                )
-                # Needs to have at least one Setting and one SettingDefinition
-                if len(app_settings) > 0:
-                    app_settings_list.append( app_settings )
-                
-            except Exception as e:
-                logger.exception( f'Problem loading settings for {module_name}.', e )
-            continue
-
-        return app_settings_list
-
-    def _load_or_create_settings( self, app_settings_list: List[ AppSettings ] ):
-
-        defined_app_settings_map = { x.app_name: x for x in app_settings_list }
-        existing_subsystem_map = {
-            x.subsystem_key: x
-            for x in Subsystem.objects.prefetch_related('attributes').all()
-        }
-
-        subsystem_list = list()
-        with transaction.atomic():
-            for app_name, app_settings in defined_app_settings_map.items():
-                if app_name in existing_subsystem_map:
-                    subsystem = self._create_attributes_if_needed(
-                        subsystem = existing_subsystem_map[app_name],
-                        app_settings = app_settings,
-                    )
-                else:
-                    subsystem = self._create_app_subsystem( app_settings = app_settings )
-                subsystem_list.append( subsystem )
-                continue
-        
-        return subsystem_list
-    
-    def _create_app_subsystem( self, app_settings : AppSettings ):
-
-        try:
-            subsystem = Subsystem.objects.get( subsystem_key = app_settings.app_name )
-            logger.warning( f'Skipping creating subsystem "{app_settings.label}". It already exists.' )
-            return subsystem
-        
-        except Subsystem.DoesNotExist:
-            pass
-        
-        subsystem = Subsystem.objects.create(
-            name = app_settings.label,
-            subsystem_key = app_settings.app_name,
-        )
-        self._create_attributes_if_needed(
-            subsystem = subsystem,
-            app_settings = app_settings,
-        )
-        return subsystem
-
-    def _create_attributes_if_needed( self, subsystem : Subsystem, app_settings : AppSettings ):
-        all_defined_setting_definitions_map = app_settings.all_setting_definitions()
-        existing_setting_keys = { x.setting_key for x in subsystem.attributes.all() }
-        
-        for setting_key, setting_definition in all_defined_setting_definitions_map.items():
-            if setting_key not in existing_setting_keys:
-                self._create_setting_attribute(
-                    subsystem = subsystem,
-                    setting_key = setting_key,
-                    setting_definition = setting_definition,
-                )
-            continue
-        return subsystem
-
-    def _create_setting_attribute( self,
-                                   subsystem           : Subsystem,
-                                   setting_key         : str,
-                                   setting_definition  : SettingDefinition ) -> SubsystemAttribute:
-        return SubsystemAttribute.objects.create(
-            subsystem = subsystem,
-            setting_key = setting_key,
-            name = setting_definition.label,
-            value = setting_definition.initial_value,
-            value_type_str = str(setting_definition.value_type),
-            value_range_str = setting_definition.value_range_str,
-            attribute_type_str = AttributeType.PREDEFINED,
-            is_editable = setting_definition.is_editable,
-            is_required = setting_definition.is_required,
-        )
+    def _load_settings( self ):
+        return list( Subsystem.objects.prefetch_related('attributes').all() )
 
     
 _thread_local = local()
