@@ -32,6 +32,7 @@ COPY package/docker_entrypoint.sh /src/entrypoint.sh
 RUN chmod +x /src/entrypoint.sh
 
 COPY src /src
+RUN chmod +x /src/bin/docker-start-gunicorn.sh
 
 ENTRYPOINT ["/src/entrypoint.sh"]
 
