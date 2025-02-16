@@ -9,23 +9,18 @@ assignees: ''
 ## Refactor Request
 
 ### What part of the code needs refactoring?
-<!-- Specify the module, function, or file that needs refactoring. -->
 
 ### Why should this be refactored?
-<!-- Clearly explain the reason for refactoring. For example:
 - Code is difficult to understand or maintain.
 - Code violates best practices.
 - There is significant duplication or inefficiency.
 -->
 
 ### Expected Outcome
-<!-- Describe the expected benefits of the refactor (e.g., better readability, performance improvements). -->
 
 ### Related Code or Files
-<!-- Provide links to the relevant code or mention specific files. -->
 
 ### Additional Context
-<!-- Add any other relevant information, examples, or links to discussions. -->
 
 ---
 

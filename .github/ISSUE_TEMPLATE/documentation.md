@@ -9,16 +9,12 @@ assignees: ''
 ## Documentation Issue
 
 ### What needs to be updated?
-<!-- Describe the documentation that is missing, incorrect, or unclear. -->
 
 ### Link to Affected Page(s)
-<!-- Provide a link to the specific documentation page if applicable. -->
 
 ### Suggested Improvement
-<!-- How should this documentation be improved? -->
 
 ### Additional Context
-<!-- Add any other context or screenshots related to this issue. -->
 
 ---
 

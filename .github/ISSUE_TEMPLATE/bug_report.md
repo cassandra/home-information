@@ -8,7 +8,6 @@ assignees: ''
 ---
 
 ## Bug Description
-<!-- A clear and concise description of what the bug is. -->
 
 ## Steps to Reproduce
 1. Go to '...'
@@ -16,10 +15,8 @@ assignees: ''
 3. See error '...'
 
 ## Expected Behavior
-<!-- Describe what you expected to happen instead. -->
 
 ## Screenshots (if applicable)
-<!-- Add screenshots to help visualize the problem. -->
 
 ## Environment
 - **OS:** [e.g., Windows 11, macOS 14, Ubuntu 22.04]
@@ -27,7 +24,6 @@ assignees: ''
 - **Other relevant details:**
 
 ## Additional Context
-<!-- Add any other context, logs, or error messages that might help diagnose the issue. -->
 
 ---
 
