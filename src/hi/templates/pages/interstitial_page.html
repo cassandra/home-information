@@ -2,16 +2,13 @@
 {% load static %}
 
 {% block content %}
-<div class="container-fluid hi-interstitial-page">
-  <div class="hi-start-heading col-4">
+<div class="container-fluid interstitial-page">
+  <div class="interstitial-header mx-auto">
     <div class="">
-      <img class="img-fluid" src="{% static 'img/hi-logo-467x200.png' %}" alt="Home Information Logo" />
-    </div>
-    <div class="lead">
-      <em>Your home, your data, organized.</em>
+      <img class="img-fluid" src="{% static 'img/hi-logo-w-tagline-450x219.png' %}" alt="Home Information Logo" />
     </div>
   </div>
-  <div class="hi-interstitial-page-content">
+  <div class="interstitial-body mx-auto">
     {% block interstitial_content %}
     {% endblock %}
   </div>

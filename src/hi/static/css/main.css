@@ -168,27 +168,65 @@ a.underline:visited {
     background-color: var(--muted-color) !important;
 }
 
-.hi-interstitial-page {
-    background: linear-gradient(to bottom, #f9f9f9, #ffffff);
+.interstitial-page {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     justify-content: center;
-    align-items: center;
-    height: 100vh;
+    gap: 1rem;
+    max-width: 1200px;
+    margin: auto;
+}
+
+.interstitial-header {
+    padding: 2rem;
     text-align: center;
-    position: relative;
 }
-.hi-start-heading {
-    position: absolute;
-    top: 2rem;
+.interstitial-body {
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid #ccc;
+    background-color: #f4f4f4;
 }
-.hi-interstitial-page-content {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    max-width: 400px;
-    z-index: 1;
+
+
+/* Phone Portrait */
+@media (max-width: 600px) {
+    .interstitial-page {
+        flex-direction: column;
+    }
+    .interstitial-header {
+        width: 75%;
+    }
+    .interstitial-body {
+        width: 100%;
+    }
+}
+
+/* Phone Landscape (Side-by-Side) */
+@media (min-aspect-ratio: 16/9) {
+    .interstitial-page {
+        flex-direction: row;
+	margin-top: 1rem;
+    }
+    .interstitial-header {
+        width: 30%;
+    }
+    .interstitial-body {
+        width: 60%;
+    }
+}
+
+/* Desktop */
+@media (min-width: 901px) and (max-aspect-ratio: 16/9) {
+    .interstitial-page {
+        flex-direction: column;
+    }
+    .interstitial-header {
+        width: 40%;
+    }
+    .interstitial-body {
+        width: 60%;
+    }
 }
 
 #hi-top-content {
