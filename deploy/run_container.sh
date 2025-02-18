@@ -1,8 +1,9 @@
 #!/bin/bash
 
 HI_VERSION=$(cat HI_VERSION | tr -d '[:space:]')
-ENV_VAR_FILE=".private/env/local.env"
-DATA_DIR="${HOME}/.hi"
+HI_HOME="${HOME}/.hi"
+ENV_VAR_FILE="${HI_HOME}/env/local.env"
+DATA_DIR="${HI_HOME}"
 EXTERNAL_PORT=9411
 BACKGROUND_FLAGS=""
 

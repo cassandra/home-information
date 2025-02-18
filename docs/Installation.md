@@ -48,16 +48,15 @@ tar zxvf ~/Downloads/home-information-*.tar.gz
 
 #### Building
 
-Generate the environment variable file and review with the command below. The file will contain sensitive secrets and are stored in a `.private` directory. Also note that administrative credentials created during this next step and save them somewhere safe.
+Generate the environment variable file and review with the command below. The file will contain sensitive secrets and are stored in a `${HOME}/.hi/env` directory. Also note the administrative credentials created during this next step and can be found in that secrets file.
 ``` shell
 cd $PROJ_DIR/home-information*
 make env-build
 ```
 This generates an environment variable file used when running:
 ```
-$PROJ/.private/env/local.env
+$HOME/.hi/env/local.env
 ```
-This directory and its files should not be checked into the code repository. There is an existing `.gitignore` entry to prevent this.
 
 Build the Docker image. (This will take a while the first time.)
 ``` shell
@@ -97,7 +96,7 @@ With the server running, you are now ready to set up for your home's use.  See t
 
 ### Beyond localhost
 
-When you are ready to deploy this for access to other devices, some extra steps are needed.  Web browser and Django security models enforce strict checking of hostnames, so you may need to change some of your environment configurations in the file `$PROJ/.private/env/local.env`.
+When you are ready to deploy this for access to other devices, some extra steps are needed.  Web browser and Django security models enforce strict checking of hostnames, so you may need to change some of your environment configurations in the file `$HOME/.hi/env/local.env`.
 
 #### Allowed Hosts
 
