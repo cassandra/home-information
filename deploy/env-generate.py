@@ -66,22 +66,55 @@ class EmailSettings:
         email_regex = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
         return bool( re.match( email_regex, email ))
 
+
+@dataclass
+class EnvironmentConfig:
+    label                 : str
+    runs_in_docker        : bool  = False
+    data_directory        : str   = 'data'
+    secrets_directory     : str   = '.private/env'
+    secrets_suffix        : str   = 'sh'
+    django_server_port    : str   = '8000'
+    redis_key_prefix      : str   = ''
+    redis_subject_prefix  : str   = ''
+    
+    @classmethod
+    def get( cls, env_name : str ):
+        hi_home = os.path.join( os.environ['HOME'], '.hi' )
+        if env_name == 'local':
+            return EnvironmentConfig(
+                label = env_name,
+                runs_in_docker = True,
+                data_directory = '/data',  # Location relative to internal Docker container
+                secrets_directory = os.path.join( hi_home, 'env' ),
+                secrets_suffix = 'env',
+                django_server_port  = '8000',
+                redis_key_prefix = '',
+                redis_subject_prefix = '',
+            )
+        if env_name == 'development':
+            return EnvironmentConfig(
+                label = env_name,
+                runs_in_docker = False,
+                data_directory = 'data',
+                secrets_directory = '.private/env',
+                secrets_suffix = 'sh',
+                django_server_port  = '8411',
+                redis_key_prefix = 'dev',
+                redis_subject_prefix = '[DEV] ',
+            )
+        return EnvironmentConfig(
+            label = env_name,
+        )
+
     
 class HiEnvironmentGenerator:
 
-    SECRETS_DIRECTORY = '.private/env'
     DEFAULT_ADMIN_EMAIL = 'admin@example.com'
-    DOCKER_DATA_DIRECTORY = '/data'
-    NON_DOCKER_DATA_DIRECTORY_DEFAULT = 'data'
-
-    DJANGO_SERVER_PORT_DEFAULT = '8000'
-    DJANGO_SERVER_PORT_MAP = {
-        'development': '8411',
-    }
-
+    DATABASE_SUBDIR = 'database'
+    MEDIA_SUBDIR = 'media'
     SH_FILE_SUFFIX = 'sh'
-    ENV_FILE_SUFFIX = 'env'
-    
+
     def __init__( self,
                   env_name  : str = 'local',
                   verbose   : bool = False ):
@@ -91,31 +124,24 @@ class HiEnvironmentGenerator:
                                 f' Ensure that the file "hi/settings/{env_name}.py" exists.' )
         
         self._env_name = env_name
+        self._env_config = EnvironmentConfig.get( self._env_name )
         self._verbose = verbose
         
         self._settings_map = {
             'DJANGO_SETTINGS_MODULE': f'hi.settings.{self._env_name}',
+            'DJANGO_SERVER_PORT': self._env_config.django_server_port,
             'HI_SUPPRESS_AUTHENTICATION':'true',
             'HI_REDIS_HOST': '127.0.0.1',
             'HI_REDIS_PORT': '6379',
-            'HI_REDIS_KEY_PREFIX': '',
-            'HI_EMAIL_SUBJECT_PREFIX': '',
+            'HI_REDIS_KEY_PREFIX': self._env_config.redis_key_prefix,
+            'HI_EMAIL_SUBJECT_PREFIX': self._env_config.redis_subject_prefix,
             'HI_EXTRA_HOST_URLS': '',  # To be filled in manually if/when running beyond localhost
             'HI_EXTRA_CSP_URLS': '',  # To be filled in manually if/when running beyond localhost
         }
-        self._settings_map['DJANGO_SERVER_PORT'] = self.DJANGO_SERVER_PORT_MAP.get(
-            self._env_name,
-            self.DJANGO_SERVER_PORT_DEFAULT,
+        self._destination_filename = os.path.join(
+            self._env_config.secrets_directory,
+            f'{self._env_name}.{self._env_config.secrets_suffix}',
         )
-
-        self._destination_filename = os.path.join( self.SECRETS_DIRECTORY,
-                                                   f'{self._env_name}.{self.ENV_FILE_SUFFIX}' )
-        
-        if self._env_name not in [ 'local' ]:
-            self._settings_map['HI_REDIS_KEY_PREFIX'] = self._env_name
-            self._settings_map['HI_EMAIL_SUBJECT_PREFIX'] = f'[{self._env_name}] '
-            self._destination_filename = os.path.join( self.SECRETS_DIRECTORY,
-                                                       f'{self._env_name}.{self.SH_FILE_SUFFIX}' )
         return
     
     def generate_env_file( self ):
@@ -174,12 +200,12 @@ class HiEnvironmentGenerator:
         return
     
     def _setup_secrets_directory( self ):
-        if not os.path.exists( self.SECRETS_DIRECTORY ):
-            self.print_notice( f'Creating directory: {self.SECRETS_DIRECTORY}' )
-            os.makedirs( self.SECRETS_DIRECTORY, exist_ok = True )
-            os.chmod( self.SECRETS_DIRECTORY, stat.S_IRWXU )  # Read/write/execute for user only
-        elif not os.path.isdir( self.SECRETS_DIRECTORY ):
-            self.print_warning( 'Secrets area "{self.SECRETS_DIRECTORY}" needs to be a directory.' )
+        if not os.path.exists( self._env_config.secrets_directory ):
+            self.print_notice( f'Creating directory: {self._env_config.secrets_directory}' )
+            os.makedirs( self._env_config.secrets_directory, exist_ok = True )
+            os.chmod( self._env_config.secrets_directory, stat.S_IRWXU )  # Read/write/execute for user only
+        elif not os.path.isdir( self._env_config.secrets_directory ):
+            self.print_warning( 'Secrets home "{self._env_config.secrets_directory}" not a directory.' )
             exit(1)
         return
     
@@ -200,10 +226,12 @@ class HiEnvironmentGenerator:
         return
 
     def _get_data_directories( self ):
-        if self._env_name in [ 'local' ]:
-            return ( f'{self.DOCKER_DATA_DIRECTORY}/database',
-                     f'{self.DOCKER_DATA_DIRECTORY}/media' )
-
+        
+        if self._env_config.runs_in_docker:
+            database_dir = os.path.join( self._env_config.data_directory, self.DATABASE_SUBDIR )
+            media_dir = os.path.join( self._env_config.data_directory, self.MEDIA_SUBDIR )
+            return ( database_dir, media_dir )
+        
         self.print_important( 'Data Directory:\n'
                               '\nDefine a data directory for your database and uploaded "media" files.'
                               '\nThis script assumes these two will live in the same directory.'
@@ -211,15 +239,15 @@ class HiEnvironmentGenerator:
 
         while True:
             input_path = self.input_string( 'Enter your data directory',
-                                            default = self.NON_DOCKER_DATA_DIRECTORY_DEFAULT )
+                                            default = self._env_config.data_directory )
             expanded_path = os.path.expanduser( input_path )
             if os.path.isabs( expanded_path ):
                 data_dir = expanded_path
             else:
                 data_dir = os.path.abspath( expanded_path )  
                 
-            database_dir = f'{data_dir}/database'
-            media_dir = f'{data_dir}/media'
+            database_dir = os.path.join( data_dir, self.DATABASE_SUBDIR )
+            media_dir = os.path.join( data_dir, self.MEDIA_SUBDIR )
             if not os.path.exists( data_dir ):
                 self.print_warning( f'The directory "{data_dir}" does not exist.' )
                 should_create = self.input_boolean( 'Do you want to create it?', default = False )
