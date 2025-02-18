@@ -26,7 +26,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -bg)
-            BACKGROUND_FLAGS="-d"
+            BACKGROUND_FLAGS="-d --restart unless-stopped"
             shift 1
             ;;
         *)

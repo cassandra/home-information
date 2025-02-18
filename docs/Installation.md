@@ -107,6 +107,28 @@ export HI_EXTRA_HOST_URLS="${SCHEME}://${HOST}:${PORT}"
 ```
 If you want to use more than one url, put them all in there with a space between them. e.g., Adding one for the mnemonic host name and one for accessing through its IP address.
 
+#### Surviving Reboots
+
+If you deploy the service for continued use, you probably want to make sure it will restart if the server reboots. The `make docker-run` command is set up to tell Docker to restart on reboot, but that assumes Docker itself is set up to restart on reboots.
+
+##### MacOs
+
+Check that Docker will restart:
+```
+Docker Desktop > Go to Settings > General > Check "Start Docker Desktop when you log in".
+```
+
+##### Ubuntu (GNU/Linux)
+
+Check that Docker will restart: (want 'enabled')
+```
+systemctl is-enabled docker
+```
+If not, set to enabled with:
+```
+sudo systemctl enable docker
+```
+
 #### User Sign In
 
 If you have enabled requiring individual user logins, then you will need to create users manually. There is no general signup process through the app (currently), so all users need to be added using the administrator credentials using Django administrative pages.

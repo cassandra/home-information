@@ -1,14 +1,15 @@
 ## Pull Request: [Short Title]
-<!-- Describe the purpose of this PR in one or two sentences. -->
+
+
 
 ### Issue Link
-<!-- Reference any related issues using #123 -->
+
 Closes #ISSUE_NUMBER
 
 ---
 
 ## Category
-<!-- Choose the type of change. -->
+
 - [ ] **Feature** (New functionality)
 - [ ] **Bugfix** (Fixes an issue)
 - [ ] **Docs** (Documentation updates)
@@ -20,15 +21,15 @@ Closes #ISSUE_NUMBER
 ---
 
 ## Changes Summary
-<!-- Provide a summary of changes made in this PR. -->
-- [ ] Change 1
-- [ ] Change 2
-- [ ] Change 3
+
+- Change 1
+- Change 2
+- Change 3
 
 ---
 
 ## How to Test
-<!-- Provide steps to verify this PR -->
+
 1. Step 1
 2. Step 2
 3. Step 3
@@ -36,6 +37,7 @@ Closes #ISSUE_NUMBER
 ---
 
 ## Checklist
+
 - [ ] Code follows the project's style guidelines.
 - [ ] Unit tests added or updated if necessary.
 - [ ] All tests pass (`./manage.py test`).
@@ -45,17 +47,17 @@ Closes #ISSUE_NUMBER
 ---
 
 ## Related PRs
-<!-- If this PR is related to another PR, link it here. -->
+
 
 ---
 
 ## Screenshots (if applicable)
-<!-- Add screenshots to show UI changes. -->
+
 
 ---
 
 ## Additional Notes
-<!-- Any other context or concerns related to this PR. -->
+
 
 ---
 
@@ -66,5 +68,5 @@ Closes #ISSUE_NUMBER
 ---
 
 ### **Reviewer(s)**
-<!-- Tag specific people to review -->
+
 @cassandra
