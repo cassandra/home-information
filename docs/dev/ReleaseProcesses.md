@@ -10,6 +10,9 @@
 - Get your `master` branch fully in sync with remote/upstream.
 - Merge from `staging` into `master`
 - Push `master` to remote/upstream.
-- Create GitHub release using that same tag.
-- Add tag with next version number in the form `vX.X.X`.
-- Add release notes: look at PR and commit histories.
+- Create GitHub release.
+- Add/create tag with next version number in the form `vX.X.X`.
+- Set Target = `master`
+- Use "Generate relewase notes" button anmd edit as needed.
+- Use "Set as the latest release" (usually)
+- "Publish Release" button.
