@@ -161,6 +161,14 @@ class EntityStyle:
         fill_color = None,
         fill_opacity = 0.0,
     )
+    Fence = SvgStatusStyle(
+        status_value = '',
+        stroke_color = '#8B4513',
+        stroke_width = 6,
+        stroke_dasharray = [ 10, 2 ],
+        fill_color = None,
+        fill_opacity = 0.0,
+    )
     Furniture = SvgStatusStyle(
         status_value = '',
         stroke_color = '#8B4513',
@@ -237,6 +245,7 @@ class EntityStyle:
     EntityTypesWithIcons = {
         # Default icon used if not in this map
         EntityType.ACCESS_POINT,
+        EntityType.ANTENNA,
         EntityType.ATTIC_STAIRS,
         EntityType.AUTOMOBILE,
         EntityType.AV_RECEIVER,
@@ -249,6 +258,7 @@ class EntityStyle:
         EntityType.CONSUMABLE,
         EntityType.CONTROLLER,
         EntityType.COOKTOP,
+        EntityType.DISHWASHER,
         EntityType.DISK,
         EntityType.DOOR_LOCK,
         EntityType.ELECTRICAL_OUTLET,
@@ -279,6 +289,7 @@ class EntityStyle:
         EntityType.PRINTER,
         EntityType.PUMP,
         EntityType.REFRIGERATOR,
+        EntityType.SATELLITE_DISH,
         EntityType.SERVER,
         EntityType.SERVICE,
         EntityType.SHED,
@@ -346,6 +357,7 @@ class EntityStyle:
     EntityTypeOpenPaths = {
         EntityType.CONTROL_WIRE,
         EntityType.ELECTRIC_WIRE,
+        EntityType.FENCE,
         EntityType.PIPE,
         EntityType.SEWER_LINE,
         EntityType.SPEAKER_WIRE,
@@ -359,6 +371,7 @@ class EntityStyle:
         EntityType.CONTROL_WIRE: ControlWire,
         EntityType.DOOR: Door,
         EntityType.ELECTRIC_WIRE: ElectricWire,
+        EntityType.FENCE: Fence,
         EntityType.FURNITURE: Furniture,
         EntityType.GREENHOUSE: Greenhouse,
         EntityType.PIPE: Pipe,

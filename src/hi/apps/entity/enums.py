@@ -12,6 +12,7 @@ class EntityType(LabeledEnum):
     """
 
     ACCESS_POINT         = ( 'Access Point', '' )
+    ANTENNA              = ( 'Antenna', '' )
     APPLIANCE            = ( 'Appliance', '' )
     AREA                 = ( 'Area', '' )
     ATTIC_STAIRS         = ( 'Attic Stairs', '' )
@@ -27,6 +28,7 @@ class EntityType(LabeledEnum):
     CONTROLLER           = ( 'Controller', '' )
     CONTROL_WIRE         = ( 'Control Wire', '' )
     COOKTOP              = ( 'Cooktop', '' )
+    DISHWASHER           = ( 'Dishwasher', '' )
     DISK                 = ( 'Disk', '' )
     DOOR                 = ( 'Door', '' )    
     DOOR_LOCK            = ( 'Door Lock', '' )  # Controls doors
@@ -35,6 +37,7 @@ class EntityType(LabeledEnum):
     ELECTRIC_PANEL       = ( 'Electric Panel', '' )
     ELECTRIC_WIRE        = ( 'Electric Wire', '' )
     EXHAUST_FAN          = ( 'Exhaust Fan', '' )
+    FENCE                = ( 'Fence', '' )
     FIREPLACE            = ( 'Fireplace', '' )
     FURNITURE            = ( 'Furniture', '' )
     GREENHOUSE           = ( 'Greenhouse', '' )
@@ -63,8 +66,9 @@ class EntityType(LabeledEnum):
     PRINTER              = ( 'Printer', '' )
     PUMP                 = ( 'Pump', '' )
     REFRIGERATOR         = ( 'Refrigerator', '' )
-    SERVER               = ( 'Server'         , '' )
-    SERVICE              = ( 'Service'         , '' )
+    SATELLITE_DISH       = ( 'Satellite Dish'  , '' )
+    SERVER               = ( 'Server'  , '' )
+    SERVICE              = ( 'Service'   , '' )
     SEWER_LINE           = ( 'Sewer Line', '' )
     SHOWER               = ( 'Shower', '' ) 
     SHED                 = ( 'Shed', '' ) 
@@ -222,6 +226,7 @@ class EntityGroupType(LabeledEnum):
         EntityType.CLOTHES_DRYER,
         EntityType.CLOTHES_WASHER,
         EntityType.COOKTOP,
+        EntityType.DISHWASHER,
         EntityType.MICROWAVE_OVEN,
         EntityType.OVEN,
         EntityType.REFRIGERATOR,
@@ -284,6 +289,7 @@ class EntityGroupType(LabeledEnum):
         EntityType.OTHER,
     })
     OUTDOORS = ( 'Outdoors', '', {
+        EntityType.FENCE,
         EntityType.CONTROLLER,
         EntityType.GREENHOUSE,
         EntityType.MOTOR,
@@ -320,9 +326,11 @@ class EntityGroupType(LabeledEnum):
         EntityType.TOOL,
     })
     UTILITIES = ( 'Utilities', '', {
+        EntityType.ANTENNA,
         EntityType.ELECTRICITY_METER,
         EntityType.ELECTRIC_PANEL,
         EntityType.ELECTRIC_WIRE,
+        EntityType.SATELLITE_DISH,
         EntityType.SEWER_LINE,
         EntityType.TELECOM_BOX,
         EntityType.TELECOM_WIRE,
