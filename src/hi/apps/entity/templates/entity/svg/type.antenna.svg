@@ -1,0 +1,18 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+<path class="hi-entity-antenna-base"
+      fill="888888" stroke="black" stroke-width="4"
+      d="M 32.11,53.81
+         C 32.11,53.81 32.21,36.75 32.21,36.75" />
+<path class="hi-entity-antenna-pole"
+      fill="666666" stroke="black" stroke-width="3"
+      d="M 32.11,37.07
+         C 32.11,37.07 32.00,19.63 32.00,19.63" />
+<path class="hi-entity-antenna-vanes"
+      fill="#aaaaaa" stroke="black" stroke-width="2"
+      d="M 1.33,27.63
+         C 1.33,27.63 16.75,12.11 16.75,12.11M 14.77,25.71
+         C 14.77,25.71 26.29,13.97 26.29,13.97M 26.24,25.55
+         C 26.24,25.55 37.97,13.87 37.97,13.87M 37.71,25.55
+         C 37.71,25.55 49.28,14.19 49.28,14.19M 47.31,27.47
+         C 47.31,27.47 62.67,12.11 62.67,12.11M 9.01,19.73
+         C 9.01,19.73 54.99,19.79 54.99,19.79" />
