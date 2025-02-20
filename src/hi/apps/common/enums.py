@@ -133,4 +133,3 @@ class Platform(LabeledEnum):
     @property
     def is_android(self):
         return bool( self == Platform.ANDROID )
-    
