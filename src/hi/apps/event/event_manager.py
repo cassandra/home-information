@@ -14,7 +14,7 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.control.control_mixins import ControllerMixin
 from hi.apps.entity.models import EntityState
 from hi.apps.security.enums import SecurityLevel
-from hi.apps.security.security_manager import SecurityManager
+from hi.apps.security.security_mixins import SecurityMixin
 
 from hi.integrations.integration_key import IntegrationKey
 
@@ -25,7 +25,7 @@ from .transient_models import Event, EntityStateTransition
 logger = logging.getLogger(__name__)
 
 
-class EventManager( Singleton, AlertMixin, ControllerMixin ):
+class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
 
     RECENT_EVENT_CACHE_SIZE = 1000
     RECENT_EVENT_CACHE_TTL_SECS = 3600
@@ -162,7 +162,7 @@ class EventManager( Singleton, AlertMixin, ControllerMixin ):
             return
         controller_manager = await self.controller_manager_async()
         
-        current_security_level = SecurityManager().security_level
+        current_security_level = self.security_manager().security_level
 
         for event in event_list:
 

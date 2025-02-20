@@ -4,10 +4,10 @@ from django.views.generic import View
 
 from .constants import SecurityConstants
 from .enums import SecurityStateAction
-from .security_manager import SecurityManager
+from .security_mixins import SecurityMixin
 
 
-class SecurityStateActionView( View ):
+class SecurityStateActionView( View, SecurityMixin ):
     
     def get( self, request, *args, **kwargs ):
         action_str = kwargs.get( 'action' )
@@ -16,7 +16,7 @@ class SecurityStateActionView( View ):
         except ValueError:
             raise BadRequest( 'Bad action value.' )
 
-        security_manager = SecurityManager()
+        security_manager = self.security_manager()
         security_manager.update_security_state_user( security_state_action = security_state_action )
 
         context = {

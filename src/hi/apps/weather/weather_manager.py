@@ -11,12 +11,6 @@ logger = logging.getLogger(__name__)
 
 class WeatherManager( Singleton, SettingsMixin ):
 
-    DEFAULT_TRANSITION_DELAY_SECS = 5 * 60
-    SECURITY_STATE_LABEL_DELAYED_AWAY = 'Away (Delayed)'
-    SECURITY_STATE_LABEL_SNOOZED = 'Snoozed'
-
-    SECURITY_STATE_CACHE_KEY = 'hi.security.state'
-    
     def __init_singleton__(self):
         
         self._data_lock = Lock()
