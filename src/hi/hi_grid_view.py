@@ -16,7 +16,6 @@ from hi.apps.collection.edit.views import CollectionManageItemsView
 from hi.apps.collection.models import Collection
 from hi.apps.console.console_mixin import ConsoleMixin
 from hi.apps.location.models import Location
-from hi.apps.security.security_manager import SecurityManager
 
 from hi.constants import DIVID
 from hi.enums import ViewType
@@ -77,7 +76,6 @@ class HiGridView( View, ConsoleMixin ):
         """ Subclasses can override this i sneeded. """
         collection_list = list( Collection.objects.all().order_by( 'order_id' ))
         context = {
-            'security_status_data': SecurityManager().get_security_status_data(),
             'collection_list': collection_list,
         }
         return ( self.BOTTOM_TEMPLATE_NAME, context )

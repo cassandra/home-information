@@ -116,6 +116,7 @@ INSTALLED_APPS = [
     'hi.apps.edit',
     'hi.apps.api',
     'hi.apps.monitor',
+    'hi.apps.weather',
     'hi.integrations',
     'hi.services.zoneminder',
     'hi.services.hass',

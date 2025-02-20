@@ -7,7 +7,9 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.entity_manager import EntityManager
+from hi.apps.security.security_mixins import SecurityMixin
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
+from hi.apps.weather.view_mixin import WeatherMixin
 
 from .audio_file import AudioFile
 from .audio_signal import AudioSignal
@@ -18,7 +20,7 @@ from .transient_models import VideoStreamEntity
 logger = logging.getLogger(__name__)
 
 
-class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin ):
+class ConsoleManager( Singleton, SecurityMixin, SettingsMixin, SensorResponseMixin, WeatherMixin ):
 
     def __init_singleton__(self):
         self._was_initialized = False
@@ -45,6 +47,8 @@ class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin ):
 
     def get_side_template_name_and_context( self, request, *args, **kwargs ):
         context = {
+            'weather_overview_data': self.weather_manager().get_weather_overview_data(),
+            'security_status_data': self.security_manager().get_security_status_data(),
             'video_stream_entity_list': self._video_stream_entity_list
         }
         return ( 'console/panes/hi_grid_side.html', context )
