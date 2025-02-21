@@ -1,1 +1,23 @@
-WEATHER = {{ weather_overview_data.temperature }}
+{% load units %}
+
+
+{% with weather_overview_data.conditions_current as current %}
+
+<div class="h3">
+  {% if current.temperature %}
+  {{ current.temperature.quantity|format_magnitude:1 }}
+  {% else %}
+  --
+  {% endif %}
+  <small>{{ current.temperature.quantity|format_units }}</small>
+</div>
+
+<div>
+  WEATHER = {{ current.temperature.quantity|format_quantity }}
+</div>
+
+<div>
+ELEV = {{ current.temperature.elevation|format_quantity }}
+</div>
+
+{% endwith %}

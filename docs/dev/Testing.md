@@ -34,7 +34,49 @@ Then:
 - Create `tests/ui/views.py`
 - Create `tests/ui/urls.py` (This gets auto-discovered. Esnure some default home page rule.)
 
-The templates for these tests, by contention, would be put in the app's templates directory as `templates/${APPNAME}/tests/ui`.
+The templates for these tests, by convention, would be put in the app templates directory as `templates/${APPNAME}/tests/ui`. At a minimum, you will probably want a home page `templates/${APPNAME}/tests/ui/home.html` like this:
+
+``` html
+{% extends "pages/base.html" %}
+{% block head_title %}HI: PAGE TITLE{% endblock %}
+
+{% block content %}
+<div class="container-fluid m-4">
+
+  <h2 class="text-info">SOME TESTS</h2>
+
+  <!-- Put links to views here -->
+
+</div>
+{% endblock %}
+```
+
+And in `tests/ui/views.py`:
+
+``` python
+class Test${APPNAMNE}HomeView( View ):
+
+    def get(self, request, *args, **kwargs):
+        context = {
+        }
+        return render(request, "${APPNAME}/tests/ui/home.html", context )
+```
+
+And in `tests/ui/urls.py`:
+
+``` python
+from django.urls import re_path
+
+from . import views
+
+
+urlpatterns = [
+
+    re_path( r'^$',
+             views.TestUi${APPNAME}HomeView.as_view(), 
+             name='${APPNAME}_tests_ui'),
+]
+```
 
 ### Email Testing
 

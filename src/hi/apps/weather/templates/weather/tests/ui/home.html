@@ -1,0 +1,14 @@
+{% extends "pages/base.html" %}
+{% block head_title %}HI: Weather Visual Testing!{% endblock %}
+
+{% block content %}
+<div class="container-fluid m-4">
+
+  <h2 class="text-info">Weather: UI Tests</h2>
+
+  <h4>Sidebar</h4>
+  <div class="col-3 border">
+    {% include "weather/panes/weather_overview.html" %}
+  </div>
+</div>
+{% endblock %}

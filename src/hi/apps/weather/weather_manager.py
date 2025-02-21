@@ -12,7 +12,9 @@ logger = logging.getLogger(__name__)
 class WeatherManager( Singleton, SettingsMixin ):
 
     def __init_singleton__(self):
-        
+
+        self._conditions_current = None
+        self._astronomical_today = None
         self._data_lock = Lock()
         self._was_initialized = False
         return
@@ -32,6 +34,7 @@ class WeatherManager( Singleton, SettingsMixin ):
     
     def get_weather_overview_data(self) -> WeatherOverviewData:
         return WeatherOverviewData(
-            temperature = 18,
+            conditions_current = self._conditions_current,
+            astronomical_today = self._astronomical_today,
         )
     

@@ -3,7 +3,7 @@ from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.attribute.value_ranges import PredefinedValueRanges
 
 from .audio_file import AudioFile
-from .enums import Theme
+from .enums import Theme, DisplayUnits
 
 Label = 'Console'
 
@@ -29,13 +29,22 @@ class ConsoleSetting( SettingEnum ):
         initial_value = '',
     )
     SLEEP_OVERLAY_OPACITY = SettingDefinition(
-        label = 'Sleep Overlap Opacity',
+        label = 'Sleep Overlay Opacity',
         description = 'Opacity to use for sleep mode: 0.0 for none to 1.0 for fully opaque.',
         value_type = AttributeValueType.FLOAT,
         value_range_str = '[ 0.0, 1.0 ]',
         is_editable = True,
         is_required = True,
         initial_value = '0.95',
+    )
+    DISPLAY_UNITS = SettingDefinition(
+        label = 'Display Units',
+        description = 'Units used when displaying',
+        value_type = AttributeValueType.ENUM,
+        value_range_str = PredefinedValueRanges.UNITS_CHOICES_ID,
+        is_editable = True,
+        is_required = True,
+        initial_value = str( DisplayUnits.default() ),
     )
     THEME = SettingDefinition(
         label = 'Theme',

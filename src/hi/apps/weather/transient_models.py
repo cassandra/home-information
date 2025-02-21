@@ -35,6 +35,7 @@ class TimeWeatherDataPoint( WeatherDataPoint ):
 @dataclass
 class WeatherConditionsData:
     temperature                : FloatWeatherDataPoint
+    """
     temperature_min_last_24h   : FloatWeatherDataPoint
     temperature_max_last_24h   : FloatWeatherDataPoint
     relative_humidity          : FloatWeatherDataPoint
@@ -53,7 +54,7 @@ class WeatherConditionsData:
     heat_index                 : FloatWeatherDataPoint
     wind_chill                 : FloatWeatherDataPoint
     visibility                 : FloatWeatherDataPoint
-
+    """
     
 @dataclass
 class WeatherForecastData:
@@ -102,6 +103,8 @@ class WeatherHistoryData:
     
 @dataclass
 class DailyAstronomicalData:
+    pass
+    """
     day                          : date
     sunrise                      : TimeWeatherDataPoint
     sunset                       : TimeWeatherDataPoint
@@ -115,7 +118,7 @@ class DailyAstronomicalData:
     nautical_twilight_end        : TimeWeatherDataPoint
     astronomical_twilight_begin  : TimeWeatherDataPoint
     astronomical_twilight_end    : TimeWeatherDataPoint
-
+    """
 
 @dataclass
 class WeatherOverviewData:

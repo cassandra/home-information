@@ -15,6 +15,10 @@ For help in debugging, there is a URL to inspect the Django internal `settings.p
 http://localhost/config/internal
 ```
 
+## Adding to an Existing setting.py
+
+After adding a new value to and app's `SettingEnum`, you wil-l need to run `./manage.py migrate` in order to populate the database with the new setting and its default value. (New settings are written to the DB using a post-migrate signal.)
+
 ## Adding a New Tab Section to the Config UI
 
 - Add entry to `ConfigPageType`
