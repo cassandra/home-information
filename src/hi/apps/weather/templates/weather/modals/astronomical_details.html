@@ -1,0 +1,10 @@
+{% extends "modals/action_ok.html" %}
+
+{% block title_text %}
+Today's Astronomical
+{% endblock %}
+
+{% block body %}
+{% include "weather/panes/astronomical.html" with astronomical=daily_astronomical_data %}
+{% include "weather/panes/astronomical_extended.html" with astronomical=daily_astronomical_data %}
+{% endblock %}

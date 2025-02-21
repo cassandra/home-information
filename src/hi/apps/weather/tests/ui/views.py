@@ -1,40 +1,32 @@
 from django.shortcuts import render
 from django.views.generic import View
 
-import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.weather.transient_models import (
-    DailyAstronomicalData,
-    WeatherConditionsData,
-    WeatherDataPoint,
-    WeatherOverviewData,
-)
-from hi.units import UnitQuantity
+from hi.apps.weather.tests.synthetic_data import WeatherSyntheticData
 
 
 class TestUiWeatherHomeView( View ):
 
     def get(self, request, *args, **kwargs):
-
-        now = datetimeproxy.now()
-        
-        conditions_current = WeatherConditionsData(
-            temperature  = WeatherDataPoint(
-                source = 'test',
-                source_datetime = now,
-                elevation = UnitQuantity( 2, 'meters' ),
-                quantity = UnitQuantity( 18, 'degF' ),
-            ),
-            
-        )
-        astronomical_today = DailyAstronomicalData(
-        )
-        weather_overview_data = WeatherOverviewData(
-            conditions_current = conditions_current,
-            astronomical_today = astronomical_today,
-        )
         context = {
-            'weather_overview_data': weather_overview_data,
+            'weather_overview_data': WeatherSyntheticData.WeatherOverviewData_001,
         }
         return render(request, "weather/tests/ui/home.html", context )
 
-    
+
+class TestUiConditionsDetailsView( View ):
+
+    def get(self, request, *args, **kwargs):
+        context = {
+            'weather_conditions_data': WeatherSyntheticData.WeatherConditionsData_001,
+        }
+        return render(request, "weather/modals/conditions_details.html", context )
+
+
+class TestUiAstronomicalDetailsView( View ):
+
+    def get(self, request, *args, **kwargs):
+        context = {
+            'daily_astronomical_data': WeatherSyntheticData.DailyAstronomicalData_001,
+        }
+        return render(request, "weather/modals/astronomical_details.html", context )
+

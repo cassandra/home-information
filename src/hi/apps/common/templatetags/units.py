@@ -54,6 +54,17 @@ def format_units( quantity : UnitQuantity, fmt = "~H"  ):
         return ""
 
     
+@register.filter
+def format_compass( quantity : UnitQuantity ):
+    """Converts degrees into a compass direction (N, NE, E, etc.)."""
+
+    degrees = quantity.to("deg").magnitude % 360  # Normalize 0-360°
+    directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+                  "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
+    index = round( degrees / 22.5 ) % 16
+    return directions[index]
+
+
 def to_display_quantity( quantity : UnitQuantity ):
     global g_settings_manager
     if not isinstance( quantity, UnitQuantity ):

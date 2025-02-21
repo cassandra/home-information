@@ -6,9 +6,24 @@
 
   <h2 class="text-info">Weather: UI Tests</h2>
 
-  <h4>Sidebar</h4>
-  <div class="col-3 border">
-    {% include "weather/panes/weather_overview.html" %}
+  <div class="row" >
+    <div class="col-6">
+      <h4>Sidebar</h4>
+      <div class="col-6 border">
+	{% include "weather/panes/weather_overview.html" %}
+      </div>
+    </div>
+    <div class="col-6">
+      <h3>Modals</h3>
+      <ul>
+	<li><a href="{% url 'weather_tests_ui_conditions_details' %}"
+	       data-async="modal">Weather Conditions Details
+	</a></li>
+	<li><a href="{% url 'weather_tests_ui_astronomical_details' %}"
+	       data-async="modal">Daily Astronomical Details
+	</a></li>
+      </ul>
+    </div>
   </div>
 </div>
 {% endblock %}

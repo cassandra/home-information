@@ -1,0 +1,10 @@
+{% extends "modals/action_ok.html" %}
+
+{% block title_text %}
+Current Conditions
+{% endblock %}
+
+{% block body %}
+{% include "weather/panes/conditions.html" with conditions=weather_conditions_data %}
+{% include "weather/panes/conditions_extended.html" with conditions=weather_conditions_data %}
+{% endblock %}

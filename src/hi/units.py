@@ -4,6 +4,8 @@ from hi.apps.console.enums import DisplayUnits
 ureg = UnitRegistry()
 UnitQuantity = ureg.Quantity
 
+ureg.define('percent = 1 / 100 = % = pct')
+
 IMPERIAL_TO_METRIC_UNITS = {
     ureg.ft: ureg.m,
     ureg.mph: ureg("km/h"),

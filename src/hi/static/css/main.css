@@ -84,6 +84,19 @@ a.underline:visited {
     border-bottom: 2px solid var(--primary-color);
 }
 
+a.clickable-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+}
+a.clickable-card:hover,
+a.clickable-card:focus,
+a.clickable-card:active {
+    text-decoration: none;
+    opacity: 0.75;
+}
+
 .text-primary {
     color: var(--primary-color) !important;
 }

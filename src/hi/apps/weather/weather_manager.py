@@ -4,7 +4,11 @@ from threading import Lock
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin
 
-from .transient_models import WeatherOverviewData
+from .transient_models import (
+    DailyAstronomicalData,
+    WeatherConditionsData,
+    WeatherOverviewData,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +17,8 @@ class WeatherManager( Singleton, SettingsMixin ):
 
     def __init_singleton__(self):
 
-        self._conditions_current = None
-        self._astronomical_today = None
+        self._current_conditions_data = None
+        self._todays_astronomical_data = None
         self._data_lock = Lock()
         self._was_initialized = False
         return
@@ -32,9 +36,15 @@ class WeatherManager( Singleton, SettingsMixin ):
     def _initialize( self ):
         return
     
+    def get_current_conditions_data(self) -> WeatherConditionsData:
+        return self._current_conditions_data
+    
+    def get_todays_astronomical_data(self) -> DailyAstronomicalData:
+        return self._todays_astronomical_data
+    
     def get_weather_overview_data(self) -> WeatherOverviewData:
         return WeatherOverviewData(
-            conditions_current = self._conditions_current,
-            astronomical_today = self._astronomical_today,
+            current_conditions_data = self._current_conditions_data,
+            todays_astronomical_data = self._todays_astronomical_data,
         )
     

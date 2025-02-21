@@ -1,23 +1,16 @@
-{% load units %}
-
-
-{% with weather_overview_data.conditions_current as current %}
-
-<div class="h3">
-  {% if current.temperature %}
-  {{ current.temperature.quantity|format_magnitude:1 }}
-  {% else %}
-  --
-  {% endif %}
-  <small>{{ current.temperature.quantity|format_units }}</small>
-</div>
-
 <div>
-  WEATHER = {{ current.temperature.quantity|format_quantity }}
+  ALERTS
 </div>
-
-<div>
-ELEV = {{ current.temperature.elevation|format_quantity }}
+<a class="clickable-card" href="{% url 'weather_current_conditions_details' %}" data-async="modal">
+  {% include "weather/panes/conditions.html" with conditions=weather_overview_data.current_conditions_data %}
+</a>
+<div class="border-top">
+  <a class="clickable-card" href="{% url 'weather_todays_astronomical_details' %}" data-async="modal">
+    {% include "weather/panes/astronomical.html" with astronomical=weather_overview_data.todays_astronomical_data %}
+  </a>
 </div>
-
-{% endwith %}
+<div class="d-flex justify-content-around my-2">
+  <div><a role="button" href="#" class="btn btn-sm btn-primary" data-async="modal">FORECAST</a></div>
+  <div><a role="button" href="#" class="btn btn-sm btn-primary" data-async="modal">RADAR</a></div>
+  <div><a role="button" href="#" class="btn btn-sm btn-primary" data-async="modal">HISTORY</a></div>
+</div>

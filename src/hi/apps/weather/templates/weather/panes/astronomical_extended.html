@@ -1,0 +1,75 @@
+{% load units %}
+
+{% with astronomical.moon_phase as moon_phase %}
+<div class="d-flex justify-content-between">
+  <div>
+    Moonrise:
+    {% if astronomical.moonrise %}
+    {{ astronomical.moonrise.value }}
+    {% else %}
+    --
+    {% endif %}
+  </div>
+  <div>
+    Moonset:
+    {% if astronomical.moonset %}
+    {{ astronomical.moonset.value }}
+    {% else %}
+    --
+    {% endif %}
+  </div>
+  <div>
+    Moon:
+    {% if astronomical.moon_illumnination %}
+    {% if astronomical.moon_is_waxing %}Waxing{% else %}Waning{% endif %}
+    {% else %}
+    --
+    {% endif %}
+  </div>
+</div>
+
+<div class="d-flex justify-content-around">
+  <div>
+    Moon Illumination:
+    {% if astronomical.moon_illumnination %}
+    {{ astronomical.moon_illumnination.quantity|format_magnitude:1 }}
+    <small>{{ astronomical.moon_illumnination.quantity|format_units }}</small>
+    {% else %}
+    --
+    {% endif %}
+  </div>
+  <div>
+    Moon Phase:
+    {% if astronomical.moon_illumnination %}
+    {{ moon_phase.label  }}
+    {% else %}
+    --
+    {% endif %}
+  </div>
+</div>
+{% endwith %}
+
+<div class="table-responsive">
+  <table class="table">
+    <thead>
+      <th>Twilight</th>
+      <th>Civil</th>
+      <th>Nautical</th>
+      <th>Astronomical</th>
+    </thead>
+    <tbody>
+      <tr>
+	<td>Start</td>
+	<td>{{ astronomical.civil_twilight_begin.value }}</td>
+	<td>{{ astronomical.nautical_twilight_begin.value }}</td>
+	<td>{{ astronomical.astronomical_twilight_begin.value }}</td>
+      </tr>
+      <tr>
+	<td>End</td>
+	<td>{{ astronomical.civil_twilight_end.value }}</td>
+	<td>{{ astronomical.nautical_twilight_end.value }}</td>
+	<td>{{ astronomical.astronomical_twilight_end.value }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

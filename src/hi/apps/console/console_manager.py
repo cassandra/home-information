@@ -9,7 +9,7 @@ from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.security.security_mixins import SecurityMixin
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
-from hi.apps.weather.view_mixin import WeatherMixin
+from hi.apps.weather.weather_mixins import WeatherMixin
 
 from .audio_file import AudioFile
 from .audio_signal import AudioSignal
