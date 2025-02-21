@@ -7,6 +7,8 @@ from .enums import Theme, DisplayUnits
 
 Label = 'Console'
 
+DEFAULT_GEO_LOCATION = '30.268043, -97.742804'  # Austin, TX
+
 
 class ConsoleSetting( SettingEnum ):
 
@@ -18,6 +20,33 @@ class ConsoleSetting( SettingEnum ):
         is_editable = True,
         is_required = True,
         initial_value = 'America/Chicago',
+    )
+    DISPLAY_UNITS = SettingDefinition(
+        label = 'Display Units',
+        description = 'Units used when displaying',
+        value_type = AttributeValueType.ENUM,
+        value_range_str = PredefinedValueRanges.UNITS_CHOICES_ID,
+        is_editable = True,
+        is_required = True,
+        initial_value = str( DisplayUnits.default() ),
+    )
+    GEO_LOCATION = SettingDefinition(
+        label = 'Latitude, Longitude',
+        description = 'Latitude and longitude. e.g., for weather data',
+        value_type = AttributeValueType.TEXT,
+        value_range_str = '',
+        is_editable = True,
+        is_required = True,
+        initial_value = DEFAULT_GEO_LOCATION,
+    )
+    THEME = SettingDefinition(
+        label = 'Theme',
+        description = 'Overall look and feel of interfaces',
+        value_type = AttributeValueType.ENUM,
+        value_range_str = PredefinedValueRanges.THEME_CHOICES_ID,
+        is_editable = True,
+        is_required = True,
+        initial_value = str( Theme.default() ),
     )
     CONSOLE_LOCK_PASSWORD = SettingDefinition(
         label = 'Lock Password',
@@ -36,24 +65,6 @@ class ConsoleSetting( SettingEnum ):
         is_editable = True,
         is_required = True,
         initial_value = '0.95',
-    )
-    DISPLAY_UNITS = SettingDefinition(
-        label = 'Display Units',
-        description = 'Units used when displaying',
-        value_type = AttributeValueType.ENUM,
-        value_range_str = PredefinedValueRanges.UNITS_CHOICES_ID,
-        is_editable = True,
-        is_required = True,
-        initial_value = str( DisplayUnits.default() ),
-    )
-    THEME = SettingDefinition(
-        label = 'Theme',
-        description = 'Overall look and feel of interfaces',
-        value_type = AttributeValueType.ENUM,
-        value_range_str = PredefinedValueRanges.THEME_CHOICES_ID,
-        is_editable = True,
-        is_required = True,
-        initial_value = str( Theme.default() ),
     )
     CONSOLE_INFO_AUDIO_FILE = SettingDefinition(
         label = 'Info Alert Sound',
