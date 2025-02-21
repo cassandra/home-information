@@ -1,7 +1,7 @@
 from hi.apps.common.enums import LabeledEnum
 
 
-class WeatherSource( LabeledEnum ):
+class DataSource( LabeledEnum ):
 
     NWS                  = ( 'National Weather Service', '' )
     OPEN_METEO           = ( 'Open Meteo', '' )
@@ -12,9 +12,9 @@ class SkyCondition( LabeledEnum ):
     CLEAR          = ( 'Clear'         , ''       , 'Sunny',
                        'img/weather/sky-clear.svg'  , 'img/weather/sky-sunny.svg' )
     MOSTLY_CLEAR   = ( 'Mostly Clear'  , '' , 'Mostly Sunny',
-                       'img/weather/sky-party-cloudy.svg'  , 'img/weather/sky-partly-sunny.svg' )
+                       'img/weather/sky-partly-cloudy.svg'  , 'img/weather/sky-partly-sunny.svg' )
     PARTLY_CLOUDY  = ( 'Partly Cloudy' , '' , 'Partly Sunny',
-                       'img/weather/sky-party-cloudy.svg'  , 'img/weather/sky-partly-sunny.svg' )
+                       'img/weather/sky-partly-cloudy.svg'  , 'img/weather/sky-partly-sunny.svg' )
     MOSTLY_CLOUDY  = ( 'Mostly Cloudy' , '' , 'Mostly Cloudy',
                        'img/weather/sky-mostly-cloudy.svg'  , 'img/weather/sky-mostly-cloudy.svg' )
     CLOUDY         = ( 'Cloudy'        , '' , 'Cloudy',
@@ -53,7 +53,7 @@ class MoonPhase( LabeledEnum ):
     WAXING_GIBBOUS   = ( 'Waxing Gibbous'  , '' , 'img/weather/moon-waxing-gibbous.svg' )
     FULL_MOON        = ( 'Full Moon'       , '' , 'img/weather/moon-full.svg' )
     WANING_GIBBOUS   = ( 'Waning Gibbous'  , '' , 'img/weather/moon-waning-gibbous.svg' )
-    LAST_QUARTER     = ( 'Last Quarter'    , '' , 'img/weather/moon-last_quarter.svg' )
+    LAST_QUARTER     = ( 'Last Quarter'    , '' , 'img/weather/moon-last-quarter.svg' )
     WANING_CRESCENT  = ( 'Waning Crescent' , '' , 'img/weather/moon-waning-crescent.svg' )
 
     @classmethod

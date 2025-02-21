@@ -1,0 +1,66 @@
+{% extends "modals/action_ok.html" %}
+
+{% block modal_dialog_class %}hi-modal-dialog-800{% endblock %}
+
+{% block title_text %}
+Weather Forecast
+{% endblock %}
+
+{% block body %}
+<ul id="hi-forecast-tab" class="nav nav-tabs" role="tablist">
+  <li class="nav-item">
+    <a id="hi-forecast-tab-daily" role="tab"
+       class="nav-link active"
+       data-toggle="tab" 
+       href="#forecast-daily-content" 
+       aria-controls="forecast-daily-content" 
+       aria-selected="true">Daily</a>
+  </li>
+  <li class="nav-item">
+    <a id="hi-forecast-tab-hourly" role="tab"
+       class="nav-link"
+       data-toggle="tab" 
+       href="#forecast-hourly-content" 
+       aria-controls="forecast-hourly-content" 
+       aria-selected="true">Hourly</a>
+  </li>
+</ul>
+
+<div class="tab-content" id="hi-forecast-tab-content">
+  <div id="forecast-daily-content" role="tabpanel" 
+       class="tab-pane fade show active" 
+       aria-labelledby="hi-forecast-tab-daily">
+    <div class="container">
+      <div class="scroll-container">
+        <div class="row flex-nowrap">
+	  {% for daily_forecast_data in daily_forecast_data_list %}
+	  <div class="weather-forecast-daily-col col-1 border p-3">
+	    {% include "weather/panes/daily_forecast_card.html" with daily_forecast_data=daily_forecast_data %}
+	  </div>
+	  {% empty %}
+	  <div class="alert alert-info">No forecast daily data available.</div>
+	  {% endfor %}
+	</div>
+      </div>
+    </div>
+  </div>
+  <div id="forecast-hourly-content" role="tabpanel" 
+	 class="tab-pane fade" 
+       aria-labelledby="hi-forecast-tab-hourly">
+    <div class="table-responsive">
+      <table class="table table-striped">
+	<thead>
+	  {% include "weather/panes/hourly_forecast_row_header.html" %}
+	</thead>
+	<tbody>
+	  {% for hourly_forecast_data in hourly_forecast_data_list %}
+	  {% include "weather/panes/hourly_forecast_row.html" with hourly_forecast_data=hourly_forecast_data %}
+	  {% empty %}
+	  <tr><td colspan="99"><div class="alert alert-info">No forecast hourly data available.</div></td></tr>
+	  {% endfor %}
+	</tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

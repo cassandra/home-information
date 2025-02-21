@@ -26,3 +26,39 @@ class TodaysAstronomicalDetailsView( HiModalView, WeatherMixin ):
         }
         return self.modal_response( request, context )
 
+    
+class ForecastView( HiModalView, WeatherMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'weather/modals/forecast.html'
+    
+    def get(self, request, *args, **kwargs):
+        context = {
+            'hourly_forecast_data_list': self.weather_manager().get_hourly_forecast_data_list,
+            'daily_forecast_data_list': self.weather_manager().get_daily_forecast_data_list,
+        }
+        return self.modal_response( request, context )
+
+    
+class RadarView( HiModalView, WeatherMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'weather/modals/radar.html'
+    
+    def get(self, request, *args, **kwargs):
+        context = {
+        }
+        return self.modal_response( request, context )
+
+    
+class HistoryView( HiModalView, WeatherMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'weather/modals/history.html'
+    
+    def get(self, request, *args, **kwargs):
+        context = {
+            'daily_history_data_list': self.weather_manager().get_daily_history_data_list,
+        }
+        return self.modal_response( request, context )
+

@@ -36,6 +36,8 @@ def format_quantity( quantity : UnitQuantity, fmt = "~H" ):
     
 @register.filter
 def format_magnitude( quantity : UnitQuantity, decimal_places : int = 1  ):
+    if not isinstance( quantity, UnitQuantity ):
+        return str(quantity)
 
     display_quantity = to_display_quantity( quantity )
     try:
@@ -46,6 +48,8 @@ def format_magnitude( quantity : UnitQuantity, decimal_places : int = 1  ):
     
 @register.filter
 def format_units( quantity : UnitQuantity, fmt = "~H"  ):
+    if not isinstance( quantity, UnitQuantity ):
+        return str(quantity)
 
     display_quantity = to_display_quantity( quantity )
     try:
@@ -57,6 +61,8 @@ def format_units( quantity : UnitQuantity, fmt = "~H"  ):
 @register.filter
 def format_compass( quantity : UnitQuantity ):
     """Converts degrees into a compass direction (N, NE, E, etc.)."""
+    if not isinstance( quantity, UnitQuantity ):
+        return str(quantity)
 
     degrees = quantity.to("deg").magnitude % 360  # Normalize 0-360°
     directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",

@@ -1,5 +1,6 @@
 import logging
 from threading import Lock
+from typing import List
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin
@@ -7,6 +8,8 @@ from hi.apps.config.settings_mixins import SettingsMixin
 from .transient_models import (
     DailyAstronomicalData,
     WeatherConditionsData,
+    WeatherForecastData,
+    WeatherHistoryData,
     WeatherOverviewData,
 )
 
@@ -47,4 +50,13 @@ class WeatherManager( Singleton, SettingsMixin ):
             current_conditions_data = self._current_conditions_data,
             todays_astronomical_data = self._todays_astronomical_data,
         )
+    
+    def get_hourly_forecast_data_list(self) -> List[ WeatherForecastData ]:
+        return []
+    
+    def get_daily_forecast_data_list(self) -> List[ WeatherForecastData ]:
+        return []
+    
+    def get_daily_history_data_list(self) -> List[ WeatherHistoryData ]:
+        return []
     

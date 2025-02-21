@@ -21,7 +21,7 @@
   <div>
     Moon:
     {% if astronomical.moon_illumnination %}
-    {% if astronomical.moon_is_waxing %}Waxing{% else %}Waning{% endif %}
+    {% if astronomical.moon_is_waxing.value %}Waxing{% else %}Waning{% endif %}
     {% else %}
     --
     {% endif %}
@@ -60,15 +60,15 @@
     <tbody>
       <tr>
 	<td>Start</td>
-	<td>{{ astronomical.civil_twilight_begin.value }}</td>
-	<td>{{ astronomical.nautical_twilight_begin.value }}</td>
-	<td>{{ astronomical.astronomical_twilight_begin.value }}</td>
+	<td>{% if astronomical.civil_twilight_begin %}{{ astronomical.civil_twilight_begin.value }}{% else %}--{% endif %}</td>
+	<td>{% if astronomical.nautical_twilight_begin %}{{ astronomical.nautical_twilight_begin.value }}{% else %}--{% endif %}</td>
+	<td>{% if astronomical.astronomical_twilight_begin %}{{ astronomical.astronomical_twilight_begin.value }}{% else %}--{% endif %}</td>
       </tr>
       <tr>
 	<td>End</td>
-	<td>{{ astronomical.civil_twilight_end.value }}</td>
-	<td>{{ astronomical.nautical_twilight_end.value }}</td>
-	<td>{{ astronomical.astronomical_twilight_end.value }}</td>
+	<td>{% if astronomical.civil_twilight_end %}{{ astronomical.civil_twilight_end.value }}{% else %}--{% endif %}</td>
+	<td>{% if astronomical.nautical_twilight_end %}{{ astronomical.nautical_twilight_end.value }}{% else %}--{% endif %}</td>
+	<td>{% if astronomical.astronomical_twilight_end %}{{ astronomical.astronomical_twilight_end.value }}{% else %}--{% endif %}</td>
       </tr>
     </tbody>
   </table>

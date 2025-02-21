@@ -5,7 +5,7 @@
     <div class="">
       <div class="h6">Precipitation</div>
       {% if not conditions.has_precipitation %}
-      N/A
+      --
       {% endif %}
       {% if conditions.precipitation_last_hour %}
       <div>
@@ -44,7 +44,7 @@
       {{ conditions.wind_chill.quantity|format_magnitude:1 }}
       <small>{{ conditions.wind_chill.quantity|format_units }}</small>
       {% else %}
-      N/A
+      --
       {% endif %}
     </div>
     <div>
@@ -53,7 +53,7 @@
       {{ conditions.heat_index.quantity|format_magnitude:1 }}
       <small>{{ conditions.heat_index.quantity|format_units }}</small>
       {% else %}
-      N/A
+      --
       {% endif %}
     </div>
     <div>
@@ -62,7 +62,7 @@
       {{ conditions.barometric_pressure.quantity|format_magnitude:1 }}
       <small>{{ conditions.barometric_pressure.quantity|format_units }}</small>
       {% else %}
-      N/A
+      --
       {% endif %}
     </div>
     <div>
@@ -71,7 +71,7 @@
       {{ conditions.visibility.quantity|format_magnitude:1 }}
       <small>{{ conditions.visibility.quantity|format_units }}</small>
       {% else %}
-      N/A
+      --
       {% endif %}
     </div>
     <div>
@@ -80,7 +80,7 @@
       {{ conditions.dew_point.quantity|format_magnitude:1 }}
       <small>{{ conditions.dew_point.quantity|format_units }}</small>
       {% else %}
-      N/A
+      --
       {% endif %}
     </div>
   </div>

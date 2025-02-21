@@ -9,49 +9,72 @@ from .enums import (
     AlertSeverity,
     AlertStatus,
     AlertUrgency,
+    DataSource,
     MoonPhase,
     SkyCondition,
-    WeatherSource,
 )
 
 
 @dataclass
-class WeatherDataPoint:
+class NumericDataPoint:
 
-    source           : WeatherSource
+    source           : DataSource
     source_datetime  : datetime
     elevation        : UnitQuantity
     quantity         : UnitQuantity
 
     
 @dataclass
+class BooleanDataPoint:
+    source           : DataSource
+    source_datetime  : datetime
+    elevation        : UnitQuantity
+    value            : time
+
+    
+@dataclass
 class TimeDataPoint:
-    source           : WeatherSource
+    source           : DataSource
     source_datetime  : datetime
     value            : time
 
- 
+
 @dataclass
-class WeatherConditionsData:
-    temperature                : WeatherDataPoint
-    temperature_min_last_24h   : WeatherDataPoint
-    temperature_max_last_24h   : WeatherDataPoint
-    cloud_cover                : WeatherDataPoint
-    windspeed_low              : WeatherDataPoint
-    windpeed_average           : WeatherDataPoint
-    windspeed_max              : WeatherDataPoint  # a.k.a., "wind gust"
-    wind_direction             : WeatherDataPoint  # 0 to 360
-    relative_humidity          : WeatherDataPoint
-    precipitation_last_hour    : WeatherDataPoint
-    precipitation_last_3h      : WeatherDataPoint
-    precipitation_last_6h      : WeatherDataPoint
-    precipitation_last_24h     : WeatherDataPoint
-    barometric_pressure        : WeatherDataPoint
-    visibility                 : WeatherDataPoint
-    dew_point                  : WeatherDataPoint
-    heat_index                 : WeatherDataPoint
-    wind_chill                 : WeatherDataPoint
-    sea_level_pressure         : WeatherDataPoint
+class CommonWeatherData:
+
+    cloud_cover                : NumericDataPoint
+    windspeed_min              : NumericDataPoint
+    windspeed_ave              : NumericDataPoint
+    windspeed_max              : NumericDataPoint  # a.k.a., "wind gust"
+    wind_direction             : NumericDataPoint  # 0 to 360
+    relative_humidity          : NumericDataPoint
+    visibility                 : NumericDataPoint
+    dew_point                  : NumericDataPoint
+    heat_index                 : NumericDataPoint
+    wind_chill                 : NumericDataPoint
+    barometric_pressure        : NumericDataPoint
+    sea_level_pressure         : NumericDataPoint
+
+    @property
+    def windspeed(self):
+        if self.windspeed_ave:
+            return self.windspeed_ave
+        if self.windspeed_max:
+            return self.windspeed_max
+        if self.windspeed_min:
+            return self.windspeed_min
+        return None
+
+    
+@dataclass
+class WeatherConditionsData( CommonWeatherData ):
+    temperature                : NumericDataPoint
+    temperature_min_last_24h   : NumericDataPoint
+    temperature_max_last_24h   : NumericDataPoint
+    precipitation_last_hour    : NumericDataPoint
+    precipitation_last_3h      : NumericDataPoint
+    precipitation_last_6h      : NumericDataPoint
+    precipitation_last_24h     : NumericDataPoint
 
     @property
     def sky_condition( self ) -> SkyCondition:
@@ -62,16 +85,6 @@ class WeatherConditionsData:
         )
     
     @property
-    def windspeed(self):
-        if self.windpeed_average:
-            return self.windpeed_average
-        if self.windpeed_max:
-            return self.windpeed_max
-        if self.windpeed_min:
-            return self.windpeed_min
-        return None
-
-    @property
     def has_precipitation(self):
         return bool( self.precipitation_last_hour
                      or self.precipitation_last_3h
@@ -80,62 +93,53 @@ class WeatherConditionsData:
 
     
 @dataclass
-class WeatherForecastData:
+class PeriodWeatherData( CommonWeatherData ):
     period_start               : datetime
     period_end                 : datetime
-    temperature_min            : WeatherDataPoint
-    temperature_ave            : WeatherDataPoint
-    temperature_max            : WeatherDataPoint
-    relative_humidity          : WeatherDataPoint
-    wind_speed_low             : WeatherDataPoint
-    wind_speed_average         : WeatherDataPoint
-    wind_speed_max             : WeatherDataPoint  # a.k.a., "wind gust"
-    wind_direction             : WeatherDataPoint  # 0 to 360
-    cloud_cover                : WeatherDataPoint
-    precipitation_quantity     : WeatherDataPoint
-    precipitation_probability  : WeatherDataPoint
-    dew_point                  : WeatherDataPoint
-    barometric_pressure        : WeatherDataPoint
-    visibility                 : WeatherDataPoint
-    dew_point                  : WeatherDataPoint
-    heat_index                 : WeatherDataPoint
-    wind_chill                 : WeatherDataPoint
-    sea_level_pressure         : WeatherDataPoint
+    temperature_min            : NumericDataPoint
+    temperature_ave            : NumericDataPoint
+    temperature_max            : NumericDataPoint
+    precipitation              : NumericDataPoint
+
+    @property
+    def sky_condition( self ) -> SkyCondition:
+        if not self.cloud_cover:
+            return None
+        return SkyCondition.from_cloud_cover(
+            cloud_cover_percent = self.cloud_cover.quantity.magnitude,
+        )
+
+    @property
+    def temperature(self):
+        if self.temperature_ave:
+            return self.temperature_ave
+        if self.temperature_max:
+            return self.temperature_max
+        if self.temperature_min:
+            return self.temperature_min
+        return None
+    
+
+@dataclass
+class WeatherForecastData( PeriodWeatherData ):
+    precipitation_probability  : NumericDataPoint
 
     
 @dataclass
-class WeatherHistoryData:
-    period_start               : datetime
-    period_end                 : datetime
-    temperature_min            : WeatherDataPoint
-    temperature_ave            : WeatherDataPoint
-    temperature_max            : WeatherDataPoint
-    relative_humidity          : WeatherDataPoint
-    wind_speed_low             : WeatherDataPoint
-    wind_speed_average         : WeatherDataPoint
-    wind_speed_max             : WeatherDataPoint  # a.k.a., "wind gust"
-    wind_direction             : WeatherDataPoint  # 0 to 360
-    cloud_cover                : WeatherDataPoint
-    precipitation_quantity     : WeatherDataPoint
-    dew_point                  : WeatherDataPoint
-    barometric_pressure        : WeatherDataPoint
-    sea_level_pressure         : WeatherDataPoint
-    heat_index                 : WeatherDataPoint
-    wind_chill                 : WeatherDataPoint
-    visibility                 : WeatherDataPoint
+class WeatherHistoryData( PeriodWeatherData ):
+    pass
 
     
 @dataclass
 class DailyAstronomicalData:
-    pass
     day                          : date
     sunrise                      : TimeDataPoint
     sunset                       : TimeDataPoint
     solar_noon                   : TimeDataPoint
     moonrise                     : TimeDataPoint
     moonset                      : TimeDataPoint
-    moon_illumnination           : WeatherDataPoint  # Percent
-    moon_is_waxing               : bool
+    moon_illumnination           : NumericDataPoint  # Percent
+    moon_is_waxing               : BooleanDataPoint
     civil_twilight_begin         : TimeDataPoint
     civil_twilight_end           : TimeDataPoint
     nautical_twilight_begin      : TimeDataPoint
@@ -149,18 +153,18 @@ class DailyAstronomicalData:
             return None
         return MoonPhase.from_illumination(
             illumination_percent = self.moon_illumnination.quantity.magnitude,
-            is_waxing = self.moon_is_waxing,
+            is_waxing = self.moon_is_waxing.value,
         )
 
     @property
     def days_until_full_moon(self) -> int:
-        if not self.moon_is_waxing:
+        if not self.moon_is_waxing.value:
             return round( 14.77 + self.days_until_new_moon() )
         return round( 14.77 * (( 100.0 - self.moon_illumnination.quantity.magnitude ) / 100.0 ))
     
     @property
     def days_until_new_moon(self):
-        if self.moon_is_waxing:
+        if self.moon_is_waxing.value:
             return round( 14.77 + self.days_until_full_moon() )
         return round( 14.77 * ( self.moon_illumnination.quantity.magnitude / 100.0 ))
 

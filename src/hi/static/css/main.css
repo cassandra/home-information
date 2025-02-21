@@ -306,6 +306,9 @@ a.clickable-card:active {
 .hi-modal-dialog-600 {
     max-width: 600px;
 }
+.hi-modal-dialog-800 {
+    max-width: 800px;
+}
 
 .btn-control {
     width: 100%;
@@ -610,4 +613,17 @@ g[hover] {
     background-color: black;
     z-index: 9999;
     transition: opacity 0.3s ease;
+}
+
+.scroll-container {
+    overflow-x: auto;
+    white-space: nowrap;
+    adding-bottom: 10px;
+}
+
+.row.flex-nowrap {
+    flex-wrap: nowrap;
+}
+.weather-forecast-daily-col {
+    min-width: 100px;
 }

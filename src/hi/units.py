@@ -5,6 +5,11 @@ ureg = UnitRegistry()
 UnitQuantity = ureg.Quantity
 
 ureg.define('percent = 1 / 100 = % = pct')
+ureg.define('true = 1 = yes = on')
+ureg.define('false = 0 = no = off')
+ureg.define('probability = 1 = chance = prob')
+ureg.define('certain = 1 probability')
+ureg.define('impossible = 0 probability')
 
 IMPERIAL_TO_METRIC_UNITS = {
     ureg.ft: ureg.m,

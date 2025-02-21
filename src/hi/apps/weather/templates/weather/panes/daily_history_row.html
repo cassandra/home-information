@@ -1,0 +1,71 @@
+{% load static %}
+{% load units %}
+<tr>
+  <td>
+    {{ daily_history_data.period_start }}
+  </td>
+  <td>
+    {% if daily_history_data.cloud_cover %}
+    {% with daily_history_data.sky_condition as sky_condition %}
+    <img height="32" src="{% static sky_condition.icon_filename %}"
+	 alt="{{ sky_condition.label }}" />
+    {{ sky_condition.label }}
+    {% endwith %}
+    {% else %}
+    --
+    {% endif %}
+  </td>
+  <td>
+    {% if daily_history_data.temperature %}
+    {{ daily_history_data.temperature.quantity|format_magnitude:1 }}
+    <small>{{ daily_history_data.temperature.quantity|format_units }}</small>
+    {% else %}
+    -- °
+    {% endif %}    
+  </td>
+  <td>
+    {% if daily_history_data.precipitation %}
+    <div>
+      {{ daily_history_data.precipitation.quantity|format_magnitude:1 }}
+      <small>{{ daily_history_data.precipitation.quantity|format_units }}</small>
+    </div>
+    {% endif %}
+  </td>
+  <td>
+    {% if daily_history_data.cloud_cover %}
+    {{ daily_history_data.cloud_cover.quantity|format_magnitude:1 }}
+    <small>{{ daily_history_data.cloud_cover.quantity|format_units }}</small>
+    {% else %}
+    --
+    {% endif %}    
+  </td>
+  <td>
+    {% if daily_history_data.windspeed %}
+    {{ daily_history_data.windspeed.quantity|format_magnitude:1 }}
+    <small>{{ daily_history_data.windspeed.quantity|format_units }}</small>
+    {% else %}
+    -- 
+    {% endif %}
+    {% if daily_history_data.wind_direction %}
+    {{ daily_history_data.wind_direction.quantity|format_compass }}
+    {% endif %}
+  </td>
+  <td>
+    {% if daily_history_data.relative_humidity %}
+    {{ daily_history_data.relative_humidity.quantity|format_magnitude:1 }}
+    <small>{{ daily_history_data.relative_humidity.quantity|format_units }}</small>
+    {% else %}
+    -- %
+    {% endif %}
+    
+  </td>
+  <td>
+    {% if daily_history_data.barometric_pressure %}
+    {{ daily_history_data.barometric_pressure.quantity|format_magnitude:1 }}
+    <small>{{ daily_history_data.barometric_pressure.quantity|format_units }}</small>
+    {% else %}
+    --
+    {% endif %}    
+  </td>
+  <td></td>
+</tr>

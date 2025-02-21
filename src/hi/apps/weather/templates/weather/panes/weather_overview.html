@@ -10,7 +10,10 @@
   </a>
 </div>
 <div class="d-flex justify-content-around my-2">
-  <div><a role="button" href="#" class="btn btn-sm btn-primary" data-async="modal">FORECAST</a></div>
-  <div><a role="button" href="#" class="btn btn-sm btn-primary" data-async="modal">RADAR</a></div>
-  <div><a role="button" href="#" class="btn btn-sm btn-primary" data-async="modal">HISTORY</a></div>
+  <div><a role="button" href="{% url 'weather_forecast' %}"
+	  class="btn btn-sm btn-primary" data-async="modal">FORECAST</a></div>
+  <div><a role="button" href="{% url 'weather_radar' %}"
+	  class="btn btn-sm btn-primary" data-async="modal">RADAR</a></div>
+  <div><a role="button" href="{% url 'weather_history' %}"
+	  class="btn btn-sm btn-primary" data-async="modal">HISTORY</a></div>
 </div>
