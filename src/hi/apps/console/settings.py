@@ -7,7 +7,10 @@ from .enums import Theme, DisplayUnits
 
 Label = 'Console'
 
-DEFAULT_GEO_LOCATION = '30.268043, -97.742804'  # Austin, TX
+# Austin, TX
+DEFAULT_LATITUDE = 30.268043
+DEFAULT_LONGITUDE = -97.742804
+DEFAULT_GEO_LOCATION = f'{DEFAULT_LATITUDE:.6}, {DEFAULT_LONGITUDE:.6}'
 
 
 class ConsoleSetting( SettingEnum ):

@@ -1,7 +1,7 @@
 import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.console.settings import ConsoleSetting
+from hi.apps.console.console_helper import ConsoleSettingsHelper
 from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
@@ -38,9 +38,7 @@ class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
             return
         
         current_datetime = datetimeproxy.now()
-        tz_name = settings_manager.get_setting_value(
-            ConsoleSetting.TIMEZONE,
-        )
+        tz_name = ConsoleSettingsHelper().get_tz_name()
         try:
             # Some states do not allow automated changes
             if not security_manager.security_state.auto_change_allowed:

@@ -86,6 +86,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        'hi.apps.weather': {
+            'handlers': ['console' ],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
         'hi.integrations': {
             'handlers': ['console' ],
             'level': 'INFO',

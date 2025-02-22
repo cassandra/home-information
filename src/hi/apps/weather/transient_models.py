@@ -9,12 +9,17 @@ from .enums import (
     AlertSeverity,
     AlertStatus,
     AlertUrgency,
-    DataSource,
     MoonPhase,
     SkyCondition,
 )
 
 
+@dataclass
+class DataSource:
+    id     : str
+    label  : str
+
+    
 @dataclass
 class NumericDataPoint:
 
@@ -42,18 +47,18 @@ class TimeDataPoint:
 @dataclass
 class CommonWeatherData:
 
-    cloud_cover                : NumericDataPoint
-    windspeed_min              : NumericDataPoint
-    windspeed_ave              : NumericDataPoint
-    windspeed_max              : NumericDataPoint  # a.k.a., "wind gust"
-    wind_direction             : NumericDataPoint  # 0 to 360
-    relative_humidity          : NumericDataPoint
-    visibility                 : NumericDataPoint
-    dew_point                  : NumericDataPoint
-    heat_index                 : NumericDataPoint
-    wind_chill                 : NumericDataPoint
-    barometric_pressure        : NumericDataPoint
-    sea_level_pressure         : NumericDataPoint
+    cloud_cover                : NumericDataPoint  = None
+    windspeed_min              : NumericDataPoint  = None
+    windspeed_ave              : NumericDataPoint  = None
+    windspeed_max              : NumericDataPoint  = None  # a.k.a., "wind gust"
+    wind_direction             : NumericDataPoint  = None  # 0 to 360
+    relative_humidity          : NumericDataPoint  = None
+    visibility                 : NumericDataPoint  = None
+    dew_point                  : NumericDataPoint  = None
+    heat_index                 : NumericDataPoint  = None
+    wind_chill                 : NumericDataPoint  = None
+    barometric_pressure        : NumericDataPoint  = None
+    sea_level_pressure         : NumericDataPoint  = None
 
     @property
     def windspeed(self):
@@ -68,13 +73,13 @@ class CommonWeatherData:
     
 @dataclass
 class WeatherConditionsData( CommonWeatherData ):
-    temperature                : NumericDataPoint
-    temperature_min_last_24h   : NumericDataPoint
-    temperature_max_last_24h   : NumericDataPoint
-    precipitation_last_hour    : NumericDataPoint
-    precipitation_last_3h      : NumericDataPoint
-    precipitation_last_6h      : NumericDataPoint
-    precipitation_last_24h     : NumericDataPoint
+    temperature                : NumericDataPoint  = None
+    temperature_min_last_24h   : NumericDataPoint  = None
+    temperature_max_last_24h   : NumericDataPoint  = None
+    precipitation_last_hour    : NumericDataPoint  = None
+    precipitation_last_3h      : NumericDataPoint  = None
+    precipitation_last_6h      : NumericDataPoint  = None
+    precipitation_last_24h     : NumericDataPoint  = None
 
     @property
     def sky_condition( self ) -> SkyCondition:
@@ -94,12 +99,12 @@ class WeatherConditionsData( CommonWeatherData ):
     
 @dataclass
 class PeriodWeatherData( CommonWeatherData ):
-    period_start               : datetime
-    period_end                 : datetime
-    temperature_min            : NumericDataPoint
-    temperature_ave            : NumericDataPoint
-    temperature_max            : NumericDataPoint
-    precipitation              : NumericDataPoint
+    period_start               : datetime          = None
+    period_end                 : datetime          = None
+    temperature_min            : NumericDataPoint  = None
+    temperature_ave            : NumericDataPoint  = None
+    temperature_max            : NumericDataPoint  = None
+    precipitation              : NumericDataPoint  = None
 
     @property
     def sky_condition( self ) -> SkyCondition:
@@ -122,7 +127,7 @@ class PeriodWeatherData( CommonWeatherData ):
 
 @dataclass
 class WeatherForecastData( PeriodWeatherData ):
-    precipitation_probability  : NumericDataPoint
+    precipitation_probability  : NumericDataPoint  = None
 
     
 @dataclass

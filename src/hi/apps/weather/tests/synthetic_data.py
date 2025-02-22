@@ -74,19 +74,7 @@ class WeatherSyntheticData:
                 quantity = UnitQuantity( 4.0 * random.random(), 'inches' ),
             ),
 
-            # Common - filled below
-            cloud_cover = None,
-            windspeed_min = None,
-            windspeed_ave = None,
-            windspeed_max = None,
-            wind_direction = None,
-            relative_humidity = None,
-            visibility = None,
-            dew_point = None,
-            heat_index = None,
-            wind_chill = None,
-            barometric_pressure = None,
-            sea_level_pressure = None,
+            # Common Weather Data filled below
         )
         cls.set_random_common_weather_data( data_obj = weather_conditions_data )
         return weather_conditions_data
@@ -205,24 +193,7 @@ class WeatherSyntheticData:
             period_start = period_start,
             period_end = period_end,
 
-            # Common Periodic - filled below
-            temperature_min = None,
-            temperature_ave = None,
-            temperature_max = None,
-            precipitation = None,
-            precipitation_probability = None,
-            cloud_cover = None,
-            windspeed_min = None,
-            windspeed_ave = None,
-            windspeed_max = None,
-            wind_direction = None,
-            relative_humidity = None,
-            visibility = None,
-            dew_point = None,
-            heat_index = None,
-            wind_chill = None,
-            barometric_pressure = None,
-            sea_level_pressure = None,
+            # Common Periodic Data filled below
         )
         cls.set_random_periodic_data( data_obj = forecast_data )
         return forecast_data
@@ -251,23 +222,7 @@ class WeatherSyntheticData:
             period_start = period_start,
             period_end = period_end,
 
-            # Common Periodic - filled below
-            temperature_min = None,
-            temperature_ave = None,
-            temperature_max = None,
-            precipitation = None,
-            cloud_cover = None,
-            windspeed_min = None,
-            windspeed_ave = None,
-            windspeed_max = None,
-            wind_direction = None,
-            relative_humidity = None,
-            visibility = None,
-            dew_point = None,
-            heat_index = None,
-            wind_chill = None,
-            barometric_pressure = None,
-            sea_level_pressure = None,
+            # Common Periodic Data filled below
         )
         cls.set_random_periodic_data( data_obj = history_data )
         return history_data

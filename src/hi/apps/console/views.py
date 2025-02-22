@@ -2,7 +2,6 @@ from django.core.exceptions import BadRequest
 from django.http import Http404
 from django.views.generic import View
 
-from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.sense.models import Sensor
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 
@@ -11,7 +10,7 @@ from hi.hi_async_view import HiModalView
 from hi.hi_grid_view import HiGridView
 
 from .constants import ConsoleConstants
-from .settings import ConsoleSetting
+from .console_helper import ConsoleSettingsHelper
 
 
 class SensorVideoStreamView( HiGridView, SensorResponseMixin ):
@@ -40,17 +39,17 @@ class SensorVideoStreamView( HiGridView, SensorResponseMixin ):
         }
 
         
-class ConsoleLockView( View, SettingsMixin ):
+class ConsoleLockView( View ):
 
     def post( self, request, *args, **kwargs ):
-        lock_password = self.settings_manager().get_setting_value( ConsoleSetting.CONSOLE_LOCK_PASSWORD )
+        lock_password = ConsoleSettingsHelper().get_console_lock_password()
         if not lock_password:
             return SetLockPasswordView().get( request, *args, **kwargs )
         request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = True
         return ConsoleUnlockView().get( request, *args, **kwargs )
 
     
-class SetLockPasswordView( HiModalView, SettingsMixin ):
+class SetLockPasswordView( HiModalView ):
 
     def get_template_name( self ) -> str:
         return 'console/modals/set_lock_password.html'
@@ -62,12 +61,12 @@ class SetLockPasswordView( HiModalView, SettingsMixin ):
         input_password = request.POST.get('password')
         if not input_password:
             raise BadRequest( 'No password provided.' )
-        self.settings_manager().set_setting_value( ConsoleSetting.CONSOLE_LOCK_PASSWORD, input_password )
+        ConsoleSettingsHelper().set_console_lock_password( password = input_password )
         request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = True
         return ConsoleUnlockView().get( request, *args, **kwargs )
 
     
-class ConsoleUnlockView( HiModalView, SettingsMixin ):
+class ConsoleUnlockView( HiModalView ):
 
     def get_template_name( self ) -> str:
         return 'console/modals/console_unlock.html'
@@ -86,7 +85,7 @@ class ConsoleUnlockView( HiModalView, SettingsMixin ):
         if not input_password:
             raise BadRequest( 'No password provided.' )
 
-        lock_password = self.settings_manager().get_setting_value( ConsoleSetting.CONSOLE_LOCK_PASSWORD )
+        lock_password = ConsoleSettingsHelper().get_console_lock_password()
 
         if lock_password and ( input_password != lock_password ):
             raise BadRequest( 'Invalid password.' )
@@ -98,5 +97,3 @@ class ConsoleUnlockView( HiModalView, SettingsMixin ):
 
         request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = False
         return self.refresh_response( request= request )
-
-    

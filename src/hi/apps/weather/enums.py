@@ -1,11 +1,5 @@
 from hi.apps.common.enums import LabeledEnum
 
-
-class DataSource( LabeledEnum ):
-
-    NWS                  = ( 'National Weather Service', '' )
-    OPEN_METEO           = ( 'Open Meteo', '' )
-
     
 class SkyCondition( LabeledEnum ):
 
@@ -99,7 +93,7 @@ class WeatherCodeEnum( LabeledEnum ):
         self.nws_code = nws_code
         return
 
-
+    
 class AlertCategory( WeatherCodeEnum ):
     METEOROLOGICAL  = ( 'Meteorological' , 'e.g., hurricanes, tornadoes, blizzards'  , 'Met' )
     GEOPHYSICAL     = ( 'Geophysical'    , 'e.g., earthquakes, tsunamis'             , 'Geo' )
@@ -143,3 +137,53 @@ class AlertStatus( WeatherCodeEnum ):
     DRAFT     = ( 'Draft'     , 'An alert being prepared but not yet issued.'              , 'Draft' )
 
 
+class CloudCoverage( LabeledEnum ):
+
+    CLEAR       = ( 'Clear'     , 'Clear skies.'
+                    , SkyCondition.CLEAR         , 'CLR'   , 0     , 5 )
+    FEW         = ( 'Few'       , 'Few clouds (1–2 oktas).'
+                    , SkyCondition.MOSTLY_CLEAR  , 'FEW'   , 5    , 25 )
+    SCATTERED   = ( 'Scattered' , 'Scattered clouds (3–4 oktas).'
+                    , SkyCondition.PARTLY_CLOUDY , 'SCT'  , 25    , 50 )
+    BROKEN      = ( 'Broken'    , 'Broken clouds (5–7 oktas).'
+                    , SkyCondition.MOSTLY_CLOUDY , 'BKN'  , 50    , 87.5 )
+    OVERCAST    = ( 'Overcast'  , 'Overcast (8 oktas).'
+                    , SkyCondition.CLOUDY        , 'OVC'  , 87.5 , 100 )
+
+    def __init__( self,
+                  label                  : str,
+                  description            : str,
+                  sky_condition          : SkyCondition,
+                  wmo_code               : str,
+                  coverage_percent_low   : float,
+                  coverage_percent_high  : float ):
+        super().__init__( label, description )
+        self.sky_condition = sky_condition
+        self.wmo_code = wmo_code
+        self._coverage_percent_low = coverage_percent_low
+        self._coverage_percent_high = coverage_percent_high
+        return
+
+    _ORDER = ["CLR", "FEW", "SCT", "BKN", "OVC"]
+
+    def __lt__( self, other ):
+        if isinstance( other, CloudCoverage ):
+            return self._ORDER.index( self.wmo_code ) < self._ORDER.index( other.wmo_code )
+        return False
+
+    def __eq__( self, other ):
+        if isinstance( other, CloudCoverage ):
+            return self.wmo_code == other.wmo_code
+        return False
+
+    def __hash__(self):
+        return hash(self.wmo_code)
+    
+    @classmethod
+    def from_wmo_code( cls, wmo_code : str ):
+        for cloud_coverage in cls:
+            if cloud_coverage.wmo_code == wmo_code:
+                return cloud_coverage
+            continue
+        raise ValueError( f'Unknown WMO cloud coverage code: "{wmo_code}"' )
+    

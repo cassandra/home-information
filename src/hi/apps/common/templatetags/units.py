@@ -1,14 +1,10 @@
 from django import template
 
-from hi.apps.config.settings_mixins import SettingsMixin
-from hi.apps.console.enums import DisplayUnits
-from hi.apps.console.settings import ConsoleSetting
+from hi.apps.console.console_helper import ConsoleSettingsHelper
 
 from hi.units import UnitQuantity, get_display_quantity
 
 register = template.Library()
-
-g_settings_manager = None  # Must be done lazily, else Django init conflicts with DB access.
 
 
 @register.filter
@@ -72,13 +68,9 @@ def format_compass( quantity : UnitQuantity ):
 
 
 def to_display_quantity( quantity : UnitQuantity ):
-    global g_settings_manager
     if not isinstance( quantity, UnitQuantity ):
         return quantity
-    if not g_settings_manager:
-        g_settings_manager = SettingsMixin().settings_manager()
-    display_units_str = g_settings_manager.get_setting_value( ConsoleSetting.DISPLAY_UNITS )
-    display_units = DisplayUnits.from_name( display_units_str )
+    display_units = ConsoleSettingsHelper().get_display_units()
     return get_display_quantity(
         quantity = quantity,
         display_units = display_units,

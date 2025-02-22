@@ -10,7 +10,7 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.redis_client import get_redis_client
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin
-from hi.apps.console.settings import ConsoleSetting
+from hi.apps.console.console_helper import ConsoleSettingsHelper
 
 from hi.constants import DIVID
 
@@ -281,9 +281,7 @@ class SecurityManager( Singleton, SettingsMixin ):
         # Else, revert to look at time of day to initialize the state.
         settings_manager = self.settings_manager()
 
-        tz_name = settings_manager.get_setting_value(
-            ConsoleSetting.TIMEZONE,
-        )
+        tz_name = ConsoleSettingsHelper().get_tz_name()
         day_start_time_of_day_str = settings_manager.get_setting_value(
             SecuritySetting.SECURITY_DAY_START,
         )
