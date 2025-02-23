@@ -2,7 +2,8 @@ from hi.apps.common.enums import LabeledEnum
 
     
 class SkyCondition( LabeledEnum ):
-
+    """ Two visual representations: one for daytime and one for nighttime """
+    
     CLEAR          = ( 'Clear'         , ''       , 'Sunny',
                        'img/weather/sky-clear.svg'  , 'img/weather/sky-sunny.svg' )
     MOSTLY_CLEAR   = ( 'Mostly Clear'  , '' , 'Mostly Sunny',
@@ -82,108 +83,214 @@ class MoonPhase( LabeledEnum ):
         return
             
             
-class WeatherCodeEnum( LabeledEnum ):
-    """ Base class for various weather code enums. """
-
-    def __init__( self,
-                  label        : str,
-                  description  : str,
-                  nws_code     : str ):
-        super().__init__( label, description )
-        self.nws_code = nws_code
-        return
-
-    
-class AlertCategory( WeatherCodeEnum ):
-    METEOROLOGICAL  = ( 'Meteorological' , 'e.g., hurricanes, tornadoes, blizzards'  , 'Met' )
-    GEOPHYSICAL     = ( 'Geophysical'    , 'e.g., earthquakes, tsunamis'             , 'Geo' )
-    PUBLIC_SAFETY   = ( 'Public Safety'  , 'e.g., child abduction alerts'            , 'Safety' )
-    SECURITY        = ( 'Security'       , 'e.g., terrorist threats'                 , 'Security' )
-    RESCUE          = ( 'Rescue'         , 'e.g., search and rescue'                 , 'Rescue' )
-    FIRE            = ( 'Fire'           , 'e.g., wildfire warnings'                 , 'Fire' )
-    HEALTH          = ( 'Health'         , 'e.g., air quality alerts'                , 'Health' )
-    ENVIRONMENTAL   = ( 'Environmental'  , 'e.g., pollution warnings'                , 'Env' )
-    TRANSPORTATION  = ( 'Transportation' , 'e.g., road closures, marine warnings'    , 'Transport' )
-    INFRASTRUCTURE  = ( 'Infrastructure' , 'e.g., power outages'                     , 'Infra' )
-    OTHER           = ( 'Other'          , 'Alerts not fitting in other categories.' , 'Other' )
+class AlertCategory( LabeledEnum ):
+    METEOROLOGICAL  = ( 'Meteorological' , 'e.g., hurricanes, tornadoes, blizzards' )
+    GEOPHYSICAL     = ( 'Geophysical'    , 'e.g., earthquakes, tsunamis' )
+    PUBLIC_SAFETY   = ( 'Public Safety'  , 'e.g., child abduction alerts' )
+    SECURITY        = ( 'Security'       , 'e.g., terrorist threats' )
+    RESCUE          = ( 'Rescue'         , 'e.g., search and rescue' )
+    FIRE            = ( 'Fire'           , 'e.g., wildfire warnings' )
+    HEALTH          = ( 'Health'         , 'e.g., air quality alerts' )
+    ENVIRONMENTAL   = ( 'Environmental'  , 'e.g., pollution warnings' )
+    TRANSPORTATION  = ( 'Transportation' , 'e.g., road closures, marine warnings' )
+    INFRASTRUCTURE  = ( 'Infrastructure' , 'e.g., power outages' )
+    OTHER           = ( 'Other'          , 'Alerts not fitting in other categories.' )
     
 
-class AlertSeverity( WeatherCodeEnum ):
-    EXTREME      = ( 'Extreme'    , ''  , 'Extreme' )
-    SEVERE       = ( 'Severe'     , ''  , 'Severe' )
-    MODERATE     = ( 'Moderate'   , ''  , 'Moderate' )
-    MINOR        = ( 'Minor'      , ''  , 'Minor' )
+class AlertSeverity( LabeledEnum ):
+    EXTREME      = ( 'Extreme'    , '' )
+    SEVERE       = ( 'Severe'     , '' )
+    MODERATE     = ( 'Moderate'   , '' )
+    MINOR        = ( 'Minor'      , '' )
 
 
-class AlertUrgency( WeatherCodeEnum ):
-    IMMEDIATE    = ( 'Immediate'  , ''  , 'Immediate' )
-    EXPECTED     = ( 'Expected'   , ''  , 'Expected' )
-    FUTURE       = ( 'Future'     , ''  , 'Future' )
-    UNKNOWN      = ( 'Unknown'    , ''  , 'Unknown' )
-
-    
-class AlertCertainty( WeatherCodeEnum ):
-    OBSERVED     = ( 'Observed'   , ''  , 'Observed' )
-    LIKELY       = ( 'Likely'     , ''  , 'Likely' )
-    POSSIBLE     = ( 'Possible'   , ''  , 'Possible' )
-    UNLIKELY     = ( 'Unlikely'   , ''  , 'Unlikely' )
+class AlertUrgency( LabeledEnum ):
+    IMMEDIATE    = ( 'Immediate'  , '' )
+    EXPECTED     = ( 'Expected'   , '' )
+    FUTURE       = ( 'Future'     , '' )
+    UNKNOWN      = ( 'Unknown'    , '' )
 
     
-class AlertStatus( WeatherCodeEnum ):
-    ACTUAL    = ( 'Actual'    , ' A real-time alert currently in effect. '                 , 'Actual' )
-    EXERCISE  = ( 'Exercise'  , 'A test or drill alert (not an actual event).'             , 'Exercise' )
-    SYSTEM    = ( 'System'    , 'Internal system message (not a public alert).'            , 'System' )
-    TEST      = ( 'Test'      , 'A test message (e.g., weekly NOAA Weather Radio tests).'  , 'Test' )
-    DRAFT     = ( 'Draft'     , 'An alert being prepared but not yet issued.'              , 'Draft' )
+class AlertCertainty( LabeledEnum ):
+    OBSERVED     = ( 'Observed'   , '' )
+    LIKELY       = ( 'Likely'     , '' )
+    POSSIBLE     = ( 'Possible'   , '' )
+    UNLIKELY     = ( 'Unlikely'   , '' )
+
+    
+class AlertStatus( LabeledEnum ):
+    ACTUAL    = ( 'Actual'    , ' A real-time alert currently in effect.' )
+    EXERCISE  = ( 'Exercise'  , 'A test or drill alert (not an actual event).' )
+    SYSTEM    = ( 'System'    , 'Internal system message (not a public alert).' )
+    TEST      = ( 'Test'      , 'A test message (e.g., weekly NOAA Weather Radio tests).' )
+    DRAFT     = ( 'Draft'     , 'An alert being prepared but not yet issued.' )
 
 
-class CloudCoverage( LabeledEnum ):
-
-    CLEAR       = ( 'Clear'     , 'Clear skies.'
-                    , SkyCondition.CLEAR         , 'CLR'   , 0     , 5 )
-    FEW         = ( 'Few'       , 'Few clouds (1–2 oktas).'
-                    , SkyCondition.MOSTLY_CLEAR  , 'FEW'   , 5    , 25 )
-    SCATTERED   = ( 'Scattered' , 'Scattered clouds (3–4 oktas).'
-                    , SkyCondition.PARTLY_CLOUDY , 'SCT'  , 25    , 50 )
-    BROKEN      = ( 'Broken'    , 'Broken clouds (5–7 oktas).'
-                    , SkyCondition.MOSTLY_CLOUDY , 'BKN'  , 50    , 87.5 )
-    OVERCAST    = ( 'Overcast'  , 'Overcast (8 oktas).'
-                    , SkyCondition.CLOUDY        , 'OVC'  , 87.5 , 100 )
+class CloudCoverageType( LabeledEnum ):
+    """ Note that an "okta" is 1/8 of the sky covered as reported by automated weather stations """
+    
+    SKY_CLEAR = (
+        'Clear',
+        'Clear skies reported by human observer.',
+        SkyCondition.CLEAR,
+        'SKC',
+        0,
+        0
+    )
+    CLEAR = (
+        'Clear',
+        'Clear skies reported by automated weather station.',
+        SkyCondition.CLEAR,
+        'CLR',
+        0,
+        5
+    )
+    FEW = (
+        'Few',
+        'Few clouds (1–2 oktas).',
+        SkyCondition.MOSTLY_CLEAR,
+        'FEW',
+        5,
+        25
+    )
+    SCATTERED = (
+        'Scattered',
+        'Scattered clouds (3–4 oktas).',
+        SkyCondition.PARTLY_CLOUDY,
+        'SCT',
+        25,
+        50
+    )
+    BROKEN = (
+        'Broken',
+        'Broken clouds (5–7 oktas).',
+        SkyCondition.MOSTLY_CLOUDY,
+        'BKN',
+        50,
+        87.5
+    )
+    OVERCAST = (
+        'Overcast',
+        'Overcast (8 oktas).',
+        SkyCondition.CLOUDY,
+        'OVC',
+        87.5,
+        100
+    )
+    VERTICAL_VISIBILITY = (
+        'Vertical Visibility',
+        'Obscured sky (e.g., fog, smoke, volcanic ash, heavy rain).',
+        SkyCondition.CLOUDY,
+        'VV',
+        100,
+        100
+    )
 
     def __init__( self,
                   label                  : str,
                   description            : str,
                   sky_condition          : SkyCondition,
-                  wmo_code               : str,
+                  metar_code             : str,
                   coverage_percent_low   : float,
                   coverage_percent_high  : float ):
         super().__init__( label, description )
         self.sky_condition = sky_condition
-        self.wmo_code = wmo_code
-        self._coverage_percent_low = coverage_percent_low
-        self._coverage_percent_high = coverage_percent_high
+        self.metar_code = metar_code
+        self.coverage_percent_low = coverage_percent_low
+        self.coverage_percent_high = coverage_percent_high
         return
 
-    _ORDER = ["CLR", "FEW", "SCT", "BKN", "OVC"]
-
     def __lt__( self, other ):
-        if isinstance( other, CloudCoverage ):
-            return self._ORDER.index( self.wmo_code ) < self._ORDER.index( other.wmo_code )
+        ORDER = [ 'SKC', 'CLR', 'FEW', 'SCT', 'BKN', 'OVC', 'VV' ]
+        if isinstance( other, CloudCoverageType ):
+            return ORDER.index( self.metar_code ) < self._ORDER.index( other.metar_code )
         return False
 
     def __eq__( self, other ):
-        if isinstance( other, CloudCoverage ):
-            return self.wmo_code == other.wmo_code
+        if isinstance( other, CloudCoverageType ):
+            return self.metar_code == other.metar_code
         return False
 
     def __hash__(self):
-        return hash(self.wmo_code)
+        return hash(self.metar_code)
+
+    @property
+    def cloud_cover_percent(self):
+        return ( self.coverage_percent_low + self.coverage_percent_high ) / 2.0
     
-    @classmethod
-    def from_wmo_code( cls, wmo_code : str ):
-        for cloud_coverage in cls:
-            if cloud_coverage.wmo_code == wmo_code:
-                return cloud_coverage
-            continue
-        raise ValueError( f'Unknown WMO cloud coverage code: "{wmo_code}"' )
+    @property
+    def is_eligible_as_cloud_ceiling(self):
+        """
+        International Civil Aviation Organization (ICAO) defines ceiling as "The
+        height above the ground or water of the base of the lowest layer of
+        cloud below 6,000 meters (20,000 feet) covering more than half the
+        sky."
+        """
+        return self in { CloudCoverageType.BROKEN, CloudCoverageType.OVERCAST }
+
     
+class WeatherPhenomenon( LabeledEnum ):
+    DRIZZLE                  = ( 'Drizzle'                    , ''  , 'DZ' )
+    DUSTSTORM                = ( 'Duststorm'                  , ''  , 'DS' )
+    DUST_SAND_WHIRLS         = ( 'Dust/Sand Whirls'           , ''  , 'PO' )
+    FOG                      = ( 'Fog'                        , ''  , 'FG' ) 
+    FOG_MIST                 = ( 'Fog/Mist'                   , ''  , 'BR' ) 
+    FUNNEL_CLOUD             = ( 'Funnel Cloud'               , ''  , 'FC' )
+    HAIL                     = ( 'Hail'                       , ''  , 'GR' )
+    HAZE                     = ( 'Haze'                       , ''  , 'HZ' )
+    ICE_CRYSTALS             = ( 'Ice Crystals'               , ''  , 'IC' )
+    ICE_PELLETS              = ( 'Ice Pellets'                , ''  , 'PL' )
+    RAIN                     = ( 'Rain'                       , ''  , 'RA' )
+    SAND                     = ( 'Sand'                       , ''  , 'SA' )
+    SANDSTORM                = ( 'Sandstorm'                  , ''  , 'SS' )
+    SMALL_HAIL_SNOW_PELLETS  = ( 'Small Hail or Snow Pellets' , ''  , 'GS' )
+    SMOKE                    = ( 'Smoke'                      , ''  , 'FU' )
+    SNOW                     = ( 'Snow'                       , ''  , 'SN' )
+    SNOW_GRAINS              = ( 'Snow Grains'                , ''  , 'SG' )
+    SPRAY                    = ( 'Spray'                      , ''  , 'PY' )
+    SQUALLS                  = ( 'Squalls'                    , ''  , 'SQ' )
+    THUNDERSTORMS            = ( 'Thunderstorms'              , ''  , 'TS' )
+    UNKNOWN                  = ( 'Unknown'                    , ''  , 'UP' )
+    VOLCANIC_ASH             = ( 'Volcanic Ash'               , ''  , 'VA' )
+    WIDESPREAD_DUST          = ( 'Widespread Dust'            , ''  , 'DU' )
+
+    def __init__( self,
+                  label         : str,
+                  description   : str,
+                  metar_code    : str ):
+        super().__init__( label, description )
+        self.metar_code = metar_code  # METAR = Meteorological Aerodrome Report (used in aviation)
+        return
+    
+    
+class WeatherPhenomenonModifier( LabeledEnum ):
+    PATCHES       = ( 'Patches'       , '' , 'BC' )
+    BLOWING       = ( 'Blowing'       , '' , 'BL' )
+    LOW_DRIFTING  = ( 'Low Drifting'  , '' , 'DR' )
+    FREEZING      = ( 'Freezing'      , '' , 'FZ' )
+    SHALLOW       = ( 'Shallow'       , '' , 'MI' )
+    PARTIAL       = ( 'Partial'       , '' , 'PR' )
+    SHOWERS       = ( 'Showers'       , '' , 'SH' )
+    NONE          = ( 'None'          , '' , '' )
+    
+    def __init__( self,
+                  label         : str,
+                  description   : str,
+                  metar_code    : str ):
+        super().__init__( label, description )
+        self.metar_code = metar_code  # METAR = Meteorological Aerodrome Report (used in aviation)
+        return
+
+    
+class WeatherPhenomenonIntensity( LabeledEnum ):
+    LIGHT     = ( 'Light'     , '' , '-' )
+    MODERATE  = ( 'Moderate'  , '' , '' )
+    HEAVY     = ( 'Heavy'     , '' , '+' )
+    
+    def __init__( self,
+                  label           : str,
+                  description     : str,
+                  metar_modifier  : str ):
+        super().__init__( label, description )
+        self.metar_modifier = metar_modifier  # No prefix implies "MODERATE"
+        return

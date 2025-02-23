@@ -7,8 +7,9 @@ from hi.apps.weather.tests.synthetic_data import WeatherSyntheticData
 class TestUiWeatherHomeView( View ):
 
     def get(self, request, *args, **kwargs):
+        weather_overview_data = WeatherSyntheticData.get_random_weather_overview_data()
         context = {
-            'weather_overview_data': WeatherSyntheticData.get_random_weather_overview_data(),
+            'weather_overview_data': weather_overview_data,
         }
         return render(request, "weather/tests/ui/home.html", context )
 

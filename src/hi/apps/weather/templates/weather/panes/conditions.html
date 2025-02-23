@@ -1,6 +1,14 @@
 {% load static %}
 {% load units %}
 
+{% if conditions.notable_phenomenon_list %}
+{% for notable_phenomenon in conditions.notable_phenomenon_list %}
+<div class="text-info my-1">
+  {{ notable_phenomenon }}
+</div>
+{% endfor %}
+{% endif %}
+
 <div class="row">
   <div class="col-6" >
     <div class="h3">

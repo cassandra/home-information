@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import date, datetime, time
+from typing import List
 
 from hi.units import UnitQuantity
 
@@ -11,6 +12,9 @@ from .enums import (
     AlertUrgency,
     MoonPhase,
     SkyCondition,
+    WeatherPhenomenon,
+    WeatherPhenomenonIntensity,
+    WeatherPhenomenonModifier,
 )
 
 
@@ -43,11 +47,21 @@ class TimeDataPoint:
     source_datetime  : datetime
     value            : time
 
+    
+@dataclass
+class StringDataPoint:
+    source           : DataSource
+    source_datetime  : datetime
+    elevation        : UnitQuantity
+    value            : str
+
 
 @dataclass
 class CommonWeatherData:
 
-    cloud_cover                : NumericDataPoint  = None
+    description                : StringDataPoint   = None
+    cloud_cover                : NumericDataPoint  = None  # Percent
+    cloud_ceiling              : NumericDataPoint  = None
     windspeed_min              : NumericDataPoint  = None
     windspeed_ave              : NumericDataPoint  = None
     windspeed_max              : NumericDataPoint  = None  # a.k.a., "wind gust"
@@ -72,15 +86,35 @@ class CommonWeatherData:
 
     
 @dataclass
-class WeatherConditionsData( CommonWeatherData ):
-    temperature                : NumericDataPoint  = None
-    temperature_min_last_24h   : NumericDataPoint  = None
-    temperature_max_last_24h   : NumericDataPoint  = None
-    precipitation_last_hour    : NumericDataPoint  = None
-    precipitation_last_3h      : NumericDataPoint  = None
-    precipitation_last_6h      : NumericDataPoint  = None
-    precipitation_last_24h     : NumericDataPoint  = None
+class NotablePhenomenon:
+    weather_phenomenon            : WeatherPhenomenon
+    weather_phenomenon_modifier   : WeatherPhenomenonModifier
+    weather_phenomenon_intensity  : WeatherPhenomenonIntensity
+    in_vicinity                   : bool
 
+    def __str__(self):
+        if self.in_vicinity:
+            result = f'Nearby: {self.weather_phenomenon.label}'
+        else:
+            result = self.weather_phenomenon.label
+        if ( self.weather_phenomenon_modifier
+             and ( self.weather_phenomenon_modifier != WeatherPhenomenonModifier.NONE )):
+            result += f', {self.weather_phenomenon_modifier.label}'
+        result += f' ({self.weather_phenomenon_intensity.label})'
+        return result
+
+            
+@dataclass
+class WeatherConditionsData( CommonWeatherData ):
+    temperature                : NumericDataPoint           = None
+    temperature_min_last_24h   : NumericDataPoint           = None
+    temperature_max_last_24h   : NumericDataPoint           = None
+    precipitation_last_hour    : NumericDataPoint           = None
+    precipitation_last_3h      : NumericDataPoint           = None
+    precipitation_last_6h      : NumericDataPoint           = None
+    precipitation_last_24h     : NumericDataPoint           = None
+    notable_phenomenon_list    : List[ NotablePhenomenon ]  = None
+    
     @property
     def sky_condition( self ) -> SkyCondition:
         if not self.cloud_cover:

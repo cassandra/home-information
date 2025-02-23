@@ -3,10 +3,16 @@ import random
 from typing import List
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.weather.enums import (
+    WeatherPhenomenon,
+    WeatherPhenomenonIntensity,
+    WeatherPhenomenonModifier,
+)
 from hi.apps.weather.transient_models import (
     BooleanDataPoint,
     CommonWeatherData,
     DailyAstronomicalData,
+    NotablePhenomenon,
     NumericDataPoint,
     PeriodWeatherData,
     TimeDataPoint,
@@ -73,9 +79,8 @@ class WeatherSyntheticData:
                 elevation = UnitQuantity( 2, 'meters' ),
                 quantity = UnitQuantity( 4.0 * random.random(), 'inches' ),
             ),
-
-            # Common Weather Data filled below
         )
+        cls.set_random_notable_phenomenon( weather_conditions_data = weather_conditions_data )
         cls.set_random_common_weather_data( data_obj = weather_conditions_data )
         return weather_conditions_data
 
@@ -192,8 +197,6 @@ class WeatherSyntheticData:
         forecast_data = WeatherForecastData(
             period_start = period_start,
             period_end = period_end,
-
-            # Common Periodic Data filled below
         )
         cls.set_random_periodic_data( data_obj = forecast_data )
         return forecast_data
@@ -221,8 +224,6 @@ class WeatherSyntheticData:
         history_data = WeatherHistoryData(
             period_start = period_start,
             period_end = period_end,
-
-            # Common Periodic Data filled below
         )
         cls.set_random_periodic_data( data_obj = history_data )
         return history_data
@@ -235,6 +236,12 @@ class WeatherSyntheticData:
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( 0, 100 ), 'percent' ),
+        )
+        data_obj.cloud_ceiling = NumericDataPoint(
+            source = 'test',
+            source_datetime = now,
+            elevation = UnitQuantity( 2, 'meters' ),
+            quantity = UnitQuantity( random.randint( 300, 5000 ), 'm' ),
         )
         data_obj.windspeed_min = NumericDataPoint(
             source = 'test',
@@ -338,4 +345,18 @@ class WeatherSyntheticData:
             quantity = UnitQuantity( random.random(), 'probability' ),
         )
         cls.set_random_common_weather_data( data_obj = data_obj )
+        return
+
+    @classmethod
+    def set_random_notable_phenomenon( cls, weather_conditions_data : WeatherConditionsData ):
+        weather_conditions_data.notable_phenomenon_list = list()
+        for idx in range( random.randint( 0, 2 ) ):
+            notable_phenomenon = NotablePhenomenon(
+                weather_phenomenon = random.choice( list( WeatherPhenomenon )),
+                weather_phenomenon_modifier = random.choice( list( WeatherPhenomenonModifier )),
+                weather_phenomenon_intensity = random.choice( list( WeatherPhenomenonIntensity )),
+                in_vicinity = bool( random.random() < 0.5 ),
+            )
+            weather_conditions_data.notable_phenomenon_list.append( notable_phenomenon )
+            continue
         return

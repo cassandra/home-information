@@ -5,6 +5,9 @@ Current Conditions
 {% endblock %}
 
 {% block body %}
+{% if weather_conditions_data.description %}
+<div>{{ weather_conditions_data.description }}</div>
+{% endif %}
 {% include "weather/panes/conditions.html" with conditions=weather_conditions_data %}
 {% include "weather/panes/conditions_extended.html" with conditions=weather_conditions_data %}
 {% endblock %}

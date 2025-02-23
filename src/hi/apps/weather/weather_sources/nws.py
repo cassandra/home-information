@@ -2,15 +2,19 @@ from datetime import datetime
 import json
 import logging
 import requests
+from typing import Dict
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.weather_data_source import WeatherDataSource
-from hi.apps.weather.enums import CloudCoverage
 from hi.apps.weather.transient_models import (
+    NotablePhenomenon,
     NumericDataPoint,
+    StringDataPoint,
     WeatherConditionsData,
 )
 from hi.units import UnitQuantity
+
+from .nws_converters import NwsConverters
 
 logger = logging.getLogger(__name__)
 
@@ -162,43 +166,28 @@ class NationalWeatherService( WeatherDataSource ):
             source_datetime = source_datetime,
             elevation = elevation,
         )
-        
-        cloud_layers_list = properties.get( 'cloudLayers' )
-        if cloud_layers_list:
-
-            min_cloud_layer_base = None
-            highest_coverage = None
-            for cloud_layer_data in cloud_layers_list:
-                wmo_cloud_coverage_code = cloud_layer_data.get('amount')
-                try:
-                    cloud_coverage = CloudCoverage.from_wmo_code( wmo_cloud_coverage_code )
-                    if ( highest_coverage is None ) or ( cloud_coverage > highest_coverage ):
-                        highest_coverage = cloud_coverage
-                        
-                except ValueError as e:
-                    logger.warning( f'Problem parsing NWS cloudLayers amound: {e}' )
-                    continue
-
-                try:
-                    cloud_layer_base = self._parse_nws_quantity(
-                        nws_data_dict = cloud_layer_data.get( 'base' ),
-                    )
-                    if ( min_cloud_layer_base is None ) or ( cloud_layer_base < min_cloud_layer_base ):
-                        min_cloud_layer_base = cloud_layer_base
-                        
-                except Exception as e:
-                    logger.warning( f'Problem parsing NWS cloudLayers base: {e}' )
-                    continue
-                
-                
-        present_weather_list = properties.get( 'presentWeather' )
-
-        properties.get( 'textDescription' )
-        
-        
-
+        description = properties.get( 'textDescription' )
+        if description:
+            weather_conditions_data.description = StringDataPoint(
+                source = self.data_source,
+                source_datetime = source_datetime,
+                elevation = elevation,
+                description = description,
+            )
+        self._parse_cloud_layers( 
+            properties = properties,
+            weather_conditions_data = weather_conditions_data,
+            source_datetime = source_datetime,
+            elevation = elevation,
+        )
+        self._parse_present_weather( 
+            properties = properties,
+            weather_conditions_data = weather_conditions_data,
+            source_datetime = source_datetime,
+            elevation = elevation,
+        )
         return weather_conditions_data
-
+        
     def _get_observations_data( self, latitude : float, longitude : float ):
         cache_key = f'ws:{self.id}:observations:{latitude}:{longitude}'
         observations_data_str = self.redis_client.get( cache_key )
@@ -273,6 +262,8 @@ class NationalWeatherService( WeatherDataSource ):
             raise KeyError( 'Missing unit code' )
         if unit_code.startswith( 'wmoUnit:' ):
             units_str = unit_code[8:]
+        elif unit_code.startswith( 'wmo:' ):
+            units_str = unit_code[5:]
         elif unit_code.startswith( 'unit:' ):
             units_str = unit_code[5:]
         else:
@@ -297,5 +288,153 @@ class NationalWeatherService( WeatherDataSource ):
         except Exception as e:
             logger.error( f'Problem parsing NWS data: {nws_data_dict}: {e}' )
         return None
-    
-    
+
+    def _parse_cloud_layers( self,
+                             properties               : Dict[ str, str ],
+                             weather_conditions_data  : WeatherConditionsData,
+                             source_datetime          : datetime,
+                             elevation                : UnitQuantity ):
+        """
+        Translate NWS 'cloudLayers' data into a cloud coverage percentage and
+        cloud ceiling height.
+        """
+        
+        cloud_layers_list = properties.get( 'cloudLayers' )
+        if cloud_layers_list is None:
+            return
+        if not cloud_layers_list:
+            logger.info('NWS cloudLayers list is empty; assuming clear skies.')
+            weather_conditions_data.cloud_cover = NumericDataPoint(
+                source = self.data_source,
+                source_datetime = source_datetime,
+                elevation = elevation,
+                quantity = UnitQuantity( 0, 'percent' ),
+            )
+            return
+            
+        cloud_ceiling_quantity_min = None
+        cloud_coverage_type_max = None
+        
+        for cloud_layer_data in cloud_layers_list:
+            metar_cloud_coverage_code = cloud_layer_data.get('amount')
+            try:
+                cloud_coverage_type = NwsConverters.to_cloud_coverage_type( metar_cloud_coverage_code )
+                if (( cloud_coverage_type_max is None )
+                    or ( cloud_coverage_type > cloud_coverage_type_max )):
+                    cloud_coverage_type_max = cloud_coverage_type
+
+            except ( TypeError, KeyError ):
+                logger.warning( f'Problem parsing NWS cloudLayers amount "{metar_cloud_coverage_code}"' )
+                continue
+
+            if not cloud_coverage_type.is_eligible_as_cloud_ceiling:
+                continue
+
+            try:
+                cloud_layer_base_quantity = self._parse_nws_quantity(
+                    nws_data_dict = cloud_layer_data.get( 'base' ),
+                )
+                if (( cloud_ceiling_quantity_min is None )
+                    or ( cloud_layer_base_quantity < cloud_ceiling_quantity_min )):
+                    cloud_ceiling_quantity_min = cloud_layer_base_quantity
+
+            except Exception as e:
+                logger.warning( f'Problem parsing NWS cloudLayers base: {e}' )
+                continue
+            
+            continue
+
+        if cloud_ceiling_quantity_min:
+            weather_conditions_data.cloud_ceiling = NumericDataPoint(
+                source = self.data_source,
+                source_datetime = source_datetime,
+                elevation = elevation,
+                quantity = cloud_ceiling_quantity_min,
+            )                    
+
+        if cloud_coverage_type_max:
+            cloud_cover_quantity = UnitQuantity(
+                cloud_coverage_type_max.cloud_cover_percent,
+                'percent',
+            )
+            weather_conditions_data.cloud_cover = NumericDataPoint(
+                source = self.data_source,
+                source_datetime = source_datetime,
+                elevation = elevation,
+                quantity = cloud_cover_quantity,
+            )
+        return
+        
+    def _parse_present_weather( self,
+                                properties               : Dict[ str, str ],
+                                weather_conditions_data  : WeatherConditionsData,
+                                source_datetime          : datetime,
+                                elevation                : UnitQuantity ):
+        """
+        The presentWeather field is populated when
+        notable weather events are occurring at the observation time. This
+        includes phenomena like rain, snow, thunderstorms, fog, or haze.
+
+        If there are no significant weather events at the time of
+        observation, the presentWeather field may be an empty list,
+        indicating the absence of notable weather phenomena.
+
+          - intensity: Describes the strength of the weather event (e.g., light, moderate, heavy).
+          - modifier: Provides additional context or descriptors (e.g., shallow, partial, patches).
+          - weather: Specifies the type of weather phenomenon (e.g., rain, snow, fog).
+          - rawString: The original METAR or SYNOP code representing the weather condition.
+
+        """
+        present_weather_list = properties.get( 'presentWeather' )
+        if not present_weather_list:
+            return
+
+        weather_conditions_data.notable_phenomenon_list = list()
+
+        for present_weather in present_weather_list:
+
+            weather = present_weather.get('weather')
+            try:
+                weather_phenomenon = NwsConverters.to_weather_phenomenon( weather )
+            except ( TypeError, KeyError ):
+                logger.warning( f'Problem parsing NWS weather: {weather}' )
+                continue
+                
+            modifier = present_weather.get('modifier')
+            try:
+                weather_phenomenon_modifier = NwsConverters.to_weather_phenomenon_modifier( modifier )
+            except ( TypeError, KeyError ):
+                logger.warning( f'Problem parsing NWS weather modifier: {modifier}' )
+                continue
+                
+            intensity = present_weather.get('intensity')
+            try:
+                weather_phenomenon_intensity = NwsConverters.to_weather_phenomenon_intensity( intensity )
+            except ( TypeError, KeyError ):
+                logger.warning( f'Problem parsing NWS weather intensity: {intensity}' )
+                continue
+                
+            modifier = present_weather.get('modifier')
+            weather = present_weather.get('weather')
+
+            # A particular weather phenomenon is occurring near the
+            # observation station but not directly overhead. (METAR code
+            # 'VC')
+            #
+            in_vicinity = present_weather.get('inVicinity')
+
+            # Note that the intensity, modifier and weather fields are
+            # already parsed representations from the "rawString" field
+            # which has METAR codes and modifiers. Thus, we ignore the
+            # "rawString" field.
+            #
+            _ = present_weather.get('rawString')
+            notable_phenomenon = NotablePhenomenon(
+                weather_phenomenon = weather_phenomenon,
+                weather_phenomenon_modifier = weather_phenomenon_modifier,
+                weather_phenomenon_intensity = weather_phenomenon_intensity,
+                in_vicinity = in_vicinity,
+            )
+            weather_conditions_data.notable_phenomenon_list.append( notable_phenomenon )    
+            continue
+        return
