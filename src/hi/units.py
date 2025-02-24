@@ -19,6 +19,11 @@ ureg.define('joules_per_kilogram = 1 joule / kilogram = J_kg')
 ureg.define("weber = volt * second = tesla * meter ** 2 = Wb")
 ureg.define("dekapascal = 10 * pascal = daPa")
 ureg.define('okta = 1 / 8')
+ureg.define("dobson_unit = 2.69e16 * molecule / centimeter ** 2 = DU")
+ureg.define("centibar_per_12_hours = 100 * pascal / (12 * hour) = cb_per_12h = cb/12h")
+ureg.define("geopotential_meter = meter = gpm")
+ureg.define("hectopascal_per_3_hours = 100 * pascal / (3 * hour) = hPa_per_3h = hPa/3h")
+ureg.define("meter_two_thirds_per_second = meter ** (2/3) / second = m^(2/3)/s = m2/3/s")
 
 IMPERIAL_TO_METRIC_UNITS = {
     ureg.ft: ureg.m,

@@ -217,7 +217,7 @@ class CloudCoverageType( LabeledEnum ):
 
     @property
     def cloud_cover_percent(self):
-        return ( self.coverage_percent_low + self.coverage_percent_high ) / 2.0
+        return self.coverage_percent_high
     
     @property
     def is_eligible_as_cloud_ceiling(self):
@@ -227,7 +227,9 @@ class CloudCoverageType( LabeledEnum ):
         cloud below 6,000 meters (20,000 feet) covering more than half the
         sky."
         """
-        return self in { CloudCoverageType.BROKEN, CloudCoverageType.OVERCAST }
+        return self in { CloudCoverageType.BROKEN,
+                         CloudCoverageType.OVERCAST,
+                         CloudCoverageType.VERTICAL_VISIBILITY }
 
     
 class WeatherPhenomenon( LabeledEnum ):
@@ -241,6 +243,7 @@ class WeatherPhenomenon( LabeledEnum ):
     HAZE                     = ( 'Haze'                       , ''  , 'HZ' )
     ICE_CRYSTALS             = ( 'Ice Crystals'               , ''  , 'IC' )
     ICE_PELLETS              = ( 'Ice Pellets'                , ''  , 'PL' )
+    MIST                     = ( 'Mist'                       , ''  , 'BR' ) 
     RAIN                     = ( 'Rain'                       , ''  , 'RA' )
     SAND                     = ( 'Sand'                       , ''  , 'SA' )
     SANDSTORM                = ( 'Sandstorm'                  , ''  , 'SS' )
@@ -272,6 +275,7 @@ class WeatherPhenomenonModifier( LabeledEnum ):
     SHALLOW       = ( 'Shallow'       , '' , 'MI' )
     PARTIAL       = ( 'Partial'       , '' , 'PR' )
     SHOWERS       = ( 'Showers'       , '' , 'SH' )
+    THUNDERSTORMS = ( 'Thunderstorms' , '' , 'TS' )
     NONE          = ( 'None'          , '' , '' )
     
     def __init__( self,

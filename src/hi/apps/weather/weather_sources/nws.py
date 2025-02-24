@@ -6,6 +6,7 @@ from typing import Dict
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.weather_data_source import WeatherDataSource
+from hi.apps.weather.enums import WeatherPhenomenonModifier
 from hi.apps.weather.transient_models import (
     NotablePhenomenon,
     NumericDataPoint,
@@ -69,6 +70,10 @@ class NationalWeatherService( WeatherDataSource ):
 
     def get_current_conditions( self, latitude : float, longitude : float ) -> WeatherConditionsData:
         observations_data = self._get_observations_data( latitude = latitude, longitude = longitude )
+        return self._parse_observation_data( observations_data = observations_data )
+
+    def _parse_observation_data( self, observations_data : Dict ) -> WeatherConditionsData:
+        
         properties = observations_data['properties']
         if not properties:
             raise ValueError('Missing "properties" in NWS observation payload.')
@@ -179,7 +184,7 @@ class NationalWeatherService( WeatherDataSource ):
                 source = self.data_source,
                 source_datetime = source_datetime,
                 elevation = elevation,
-                description = description,
+                value = description,
             )
         self._parse_cloud_layers( 
             properties = properties,
@@ -266,13 +271,16 @@ class NationalWeatherService( WeatherDataSource ):
             raise ValueError('No data')
         unit_code = nws_data_dict.get('unitCode')
         if not unit_code:
-            raise KeyError( 'Missing unit code' )
+            raise ValueError( 'Missing unit code' )
         units_str = WmoUnits.normalize_unit( unit_code )
         value = nws_data_dict.get('value')
         if value is None:
-            raise 'Missing value'            
-        return UnitQuantity( value, units_str ),
-    
+            raise ValueError( 'Missing value' )
+        try:
+            return UnitQuantity( value, units_str )
+        except Exception as e:
+            raise ValueError( f'Bad units: {e}' )
+
     def _create_numeric_data_point( self,
                                     nws_data_dict    : dict,
                                     source_datetime  : datetime,
@@ -378,11 +386,11 @@ class NationalWeatherService( WeatherDataSource ):
         observation, the presentWeather field may be an empty list,
         indicating the absence of notable weather phenomena.
         """
+        weather_conditions_data.notable_phenomenon_list = list()
+
         present_weather_list = properties.get( 'presentWeather' )
         if not present_weather_list:
             return
-
-        weather_conditions_data.notable_phenomenon_list = list()
 
         for present_weather in present_weather_list:
 
@@ -394,12 +402,15 @@ class NationalWeatherService( WeatherDataSource ):
                 continue
                 
             modifier = present_weather.get('modifier')
-            try:
-                weather_phenomenon_modifier = NwsConverters.to_weather_phenomenon_modifier( modifier )
-            except ( TypeError, KeyError ):
-                logger.warning( f'Problem parsing NWS weather modifier: {modifier}' )
-                continue
-                
+            if modifier:
+                try:
+                    weather_phenomenon_modifier = NwsConverters.to_weather_phenomenon_modifier( modifier )
+                except ( TypeError, KeyError ):
+                    logger.warning( f'Problem parsing NWS weather modifier: {modifier}' )
+                    continue
+            else:
+                weather_phenomenon_modifier = WeatherPhenomenonModifier.NONE
+                    
             intensity = present_weather.get('intensity')
             try:
                 weather_phenomenon_intensity = NwsConverters.to_weather_phenomenon_intensity( intensity )
