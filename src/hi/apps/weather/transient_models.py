@@ -38,7 +38,7 @@ class BooleanDataPoint:
     source           : DataSource
     source_datetime  : datetime
     elevation        : UnitQuantity
-    value            : time
+    value            : bool
 
     
 @dataclass
@@ -172,19 +172,19 @@ class WeatherHistoryData( PeriodWeatherData ):
 @dataclass
 class DailyAstronomicalData:
     day                          : date
-    sunrise                      : TimeDataPoint
-    sunset                       : TimeDataPoint
-    solar_noon                   : TimeDataPoint
-    moonrise                     : TimeDataPoint
-    moonset                      : TimeDataPoint
-    moon_illumnination           : NumericDataPoint  # Percent
-    moon_is_waxing               : BooleanDataPoint
-    civil_twilight_begin         : TimeDataPoint
-    civil_twilight_end           : TimeDataPoint
-    nautical_twilight_begin      : TimeDataPoint
-    nautical_twilight_end        : TimeDataPoint
-    astronomical_twilight_begin  : TimeDataPoint
-    astronomical_twilight_end    : TimeDataPoint
+    sunrise                      : TimeDataPoint     = None
+    sunset                       : TimeDataPoint     = None
+    solar_noon                   : TimeDataPoint     = None
+    moonrise                     : TimeDataPoint     = None
+    moonset                      : TimeDataPoint     = None
+    moon_illumnination           : NumericDataPoint  = None # Percent
+    moon_is_waxing               : BooleanDataPoint  = None
+    civil_twilight_begin         : TimeDataPoint     = None
+    civil_twilight_end           : TimeDataPoint     = None
+    nautical_twilight_begin      : TimeDataPoint     = None
+    nautical_twilight_end        : TimeDataPoint     = None
+    astronomical_twilight_begin  : TimeDataPoint     = None
+    astronomical_twilight_end    : TimeDataPoint     = None
 
     @property
     def moon_phase(self) -> MoonPhase:
@@ -197,14 +197,18 @@ class DailyAstronomicalData:
 
     @property
     def days_until_full_moon(self) -> int:
+        if self.moon_phase == MoonPhase.FULL_MOON:
+            return 0
         if not self.moon_is_waxing.value:
-            return round( 14.77 + self.days_until_new_moon() )
+            return round( 14.77 + self.days_until_new_moon )
         return round( 14.77 * (( 100.0 - self.moon_illumnination.quantity.magnitude ) / 100.0 ))
     
     @property
     def days_until_new_moon(self):
+        if self.moon_phase == MoonPhase.NEW_MOON:
+            return 0
         if self.moon_is_waxing.value:
-            return round( 14.77 + self.days_until_full_moon() )
+            return round( 14.77 + self.days_until_full_moon )
         return round( 14.77 * ( self.moon_illumnination.quantity.magnitude / 100.0 ))
 
     

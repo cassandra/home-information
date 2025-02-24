@@ -53,24 +53,25 @@ class MoonPhase( LabeledEnum ):
 
     @classmethod
     def from_illumination( cls, illumination_percent : float, is_waxing : bool ):
+        """ Thresholds are balanced for people's perceptions, not technicla deifnitions. """
         if is_waxing:
-            if illumination_percent <= 1:
+            if illumination_percent <= 3:
                 return cls.NEW_MOON
-            if illumination_percent <= 49:
+            if illumination_percent < 47:
                 return cls.WAXING_CRESCENT
-            if illumination_percent <= 51:
+            if illumination_percent <= 53:
                 return cls.FIRST_QUARTER
-            if illumination_percent <= 99:
+            if illumination_percent < 97:
                 return cls.WAXING_GIBBOUS
             return cls.FULL_MOON
         else:
-            if illumination_percent <= 1:
+            if illumination_percent <= 3:
                 return cls.NEW_MOON
-            if illumination_percent <= 49:
+            if illumination_percent < 47:
                 return cls.WANING_CRESCENT
-            if illumination_percent <= 51:
+            if illumination_percent <= 53:
                 return cls.LAST_QUARTER
-            if illumination_percent <= 99:
+            if illumination_percent < 97:
                 return cls.WANING_GIBBOUS
             return cls.FULL_MOON
 
@@ -203,7 +204,7 @@ class CloudCoverageType( LabeledEnum ):
     def __lt__( self, other ):
         ORDER = [ 'SKC', 'CLR', 'FEW', 'SCT', 'BKN', 'OVC', 'VV' ]
         if isinstance( other, CloudCoverageType ):
-            return ORDER.index( self.metar_code ) < self._ORDER.index( other.metar_code )
+            return ORDER.index( self.metar_code ) < ORDER.index( other.metar_code )
         return False
 
     def __eq__( self, other ):
