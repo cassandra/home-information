@@ -11,6 +11,15 @@ ureg.define('probability = 1 = chance = prob')
 ureg.define('certain = 1 probability')
 ureg.define('impossible = 0 probability')
 
+# Some extras from WMO: https://codes.wmo.int/common/unit
+ureg.define('Dimensionless = 1')
+ureg.define('astronomic_unit = 149597870.7 * kilometer = AU')
+ureg.define('becquerel = 1 / second = Bq')
+ureg.define('joules_per_kilogram = 1 joule / kilogram = J_kg')
+ureg.define("weber = volt * second = tesla * meter ** 2 = Wb")
+ureg.define("dekapascal = 10 * pascal = daPa")
+ureg.define('okta = 1 / 8')
+
 IMPERIAL_TO_METRIC_UNITS = {
     ureg.ft: ureg.m,
     ureg.mph: ureg("km/h"),

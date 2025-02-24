@@ -12,6 +12,7 @@ from hi.apps.weather.transient_models import (
     StringDataPoint,
     WeatherConditionsData,
 )
+from hi.apps.weather.wmo_units import WmoUnits
 from hi.units import UnitQuantity
 
 from .nws_converters import NwsConverters
@@ -41,6 +42,10 @@ class NationalWeatherService( WeatherDataSource ):
     def get_data(self):
 
         geographic_location = self.geographic_location
+        if not geographic_location:
+            logger.warning( 'No geographic location setting. Skipping NWS weather fetch.' )
+            return
+            
         current_conditions_data = self.get_current_conditions(
             latitude = geographic_location.latitude,
             longitude = geographic_location.longitude,
@@ -51,8 +56,10 @@ class NationalWeatherService( WeatherDataSource ):
 
 
         
-        ##zzz_fold_into_weather_manager
-
+        ##zzz_fold_into: weather_manager.update_current_conditions( current_conditions_data )
+        #   - if None, set
+        #   - newer and same source -> overwrite
+        #   - not same source and significnatly stale, overwrite
 
 
 
@@ -260,14 +267,7 @@ class NationalWeatherService( WeatherDataSource ):
         unit_code = nws_data_dict.get('unitCode')
         if not unit_code:
             raise KeyError( 'Missing unit code' )
-        if unit_code.startswith( 'wmoUnit:' ):
-            units_str = unit_code[8:]
-        elif unit_code.startswith( 'wmo:' ):
-            units_str = unit_code[5:]
-        elif unit_code.startswith( 'unit:' ):
-            units_str = unit_code[5:]
-        else:
-            units_str = unit_code
+        units_str = WmoUnits.normalize_unit( unit_code )
         value = nws_data_dict.get('value')
         if value is None:
             raise 'Missing value'            
@@ -298,7 +298,6 @@ class NationalWeatherService( WeatherDataSource ):
         Translate NWS 'cloudLayers' data into a cloud coverage percentage and
         cloud ceiling height.
         """
-        
         cloud_layers_list = properties.get( 'cloudLayers' )
         if cloud_layers_list is None:
             return
@@ -378,12 +377,6 @@ class NationalWeatherService( WeatherDataSource ):
         If there are no significant weather events at the time of
         observation, the presentWeather field may be an empty list,
         indicating the absence of notable weather phenomena.
-
-          - intensity: Describes the strength of the weather event (e.g., light, moderate, heavy).
-          - modifier: Provides additional context or descriptors (e.g., shallow, partial, patches).
-          - weather: Specifies the type of weather phenomenon (e.g., rain, snow, fog).
-          - rawString: The original METAR or SYNOP code representing the weather condition.
-
         """
         present_weather_list = properties.get( 'presentWeather' )
         if not present_weather_list:
