@@ -19,7 +19,7 @@ from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationAttribute
 from hi.apps.location.transient_models import LocationEditData, LocationViewEditData
-from hi.apps.location.view_mixin import LocationViewMixin
+from hi.apps.location.view_mixins import LocationViewMixin
 
 from hi.constants import DIVID
 from hi.decorators import edit_required
@@ -27,7 +27,7 @@ from hi.enums import ItemType, ViewType
 from hi.hi_async_view import HiModalView, HiSideView
 
 from . import forms
-from .view_mixin import LocationEditViewMixin
+from .view_mixins import LocationEditViewMixin
 
 logger = logging.getLogger(__name__)
 

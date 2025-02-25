@@ -1,5 +1,5 @@
 from hi.apps.console.console_helper import ConsoleSettingsHelper
-from hi.apps.console.console_mixin import ConsoleMixin
+from hi.apps.console.console_mixins import ConsoleMixin
 
 
 def settings_context(request):

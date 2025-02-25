@@ -19,7 +19,6 @@ class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
     def __init_singleton__(self):
         self._alert_queue = AlertQueue()
         self._was_initialized = False
-        self._data_lock = threading.Lock()
         return
 
     def ensure_initialized(self):

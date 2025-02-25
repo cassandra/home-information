@@ -1,7 +1,7 @@
 from hi.apps.security.security_mixins import SecurityMixin
 from hi.apps.weather.weather_mixins import WeatherMixin
 
-from .console_mixin import ConsoleMixin
+from .console_mixins import ConsoleMixin
 
 
 class ConsoleSideHelper( ConsoleMixin, SecurityMixin, WeatherMixin ):
