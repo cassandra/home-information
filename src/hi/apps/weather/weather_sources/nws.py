@@ -4,6 +4,8 @@ import logging
 import requests
 from typing import Dict
 
+from django.conf import settings
+
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.weather_data_source import WeatherDataSource
 from hi.apps.weather.enums import WeatherPhenomenonModifier
@@ -27,16 +29,18 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
     BASE_URL = "https://api.weather.gov/"
 
-    POINTS_DATA_CACHE_EXPIRY_SECS = 12 * 60 * 60
-    STATIONS_DATA_CACHE_EXPIRY_SECS = 12 * 60 * 60
+    POINTS_DATA_CACHE_EXPIRY_SECS = 12 * 60 * 60  # Can change, but not often
+    STATIONS_DATA_CACHE_EXPIRY_SECS = 12 * 60 * 60  # Can change, but not often
     OBSERVATIONS_DATA_CACHE_EXPIRY_SECS = 5 * 60  # Cache for rate-limit risk reduction
+
+    SKIP_CACHE = False  # For debugging    
     
     def __init__( self ):
         super().__init__(
             id = 'nws',
             label = 'National Weather Service',
             priority = 1,
-            requests_per_day = 144,  # Every 10 minutes
+            requests_per_day_limit = 144,  # Every 10 minutes
         )
 
         self._headers = {'User-Agent': 'HomeInformation (weather@homeinformation.org)'}
@@ -54,7 +58,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             longitude = geographic_location.longitude,
         )
         weather_manager = await self.weather_manager_async()
-        weather_manager.update_current_conditions(
+        await weather_manager.update_current_conditions(
             weather_data_source = self,
             weather_conditions_data = current_conditions_data,
         )
@@ -195,7 +199,13 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
     def _get_observations_data( self, latitude : float, longitude : float ):
         cache_key = f'ws:{self.id}:observations:{latitude}:{longitude}'
         observations_data_str = self.redis_client.get( cache_key )
+
+        if settings.DEBUG and self.SKIP_CACHE:
+            logger.warning( 'Skip caching in effect.' )
+            observations_data_str = None
+            
         if observations_data_str:
+            logger.debug( 'NWS observations data from cache.' )
             observations_data = json.loads( observations_data_str )
             return observations_data
 
@@ -218,7 +228,13 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
     def _get_stations_data( self, latitude : float, longitude : float  ):
         cache_key = f'ws:{self.id}:stations:{latitude}:{longitude}'
         stations_data_str = self.redis_client.get( cache_key )
+
+        if settings.DEBUG and self.SKIP_CACHE:
+            logger.warning( 'Skip caching in effect.' )
+            stations_data_str = None
+            
         if stations_data_str:
+            logger.debug( 'NWS stations data from cache.' )
             stations_data = json.loads( stations_data_str )
             return stations_data
         stations_data = self._get_stations_data_from_api( latitude = latitude, longitude = longitude )
@@ -240,7 +256,13 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
     def _get_points_data( self, latitude : float, longitude : float  ):
         cache_key = f'ws:{self.id}:points:{latitude}:{longitude}'
         points_data_str = self.redis_client.get( cache_key )
+
+        if settings.DEBUG and self.SKIP_CACHE:
+            logger.warning( 'Skip caching in effect.' )
+            points_data_str = None
+            
         if points_data_str:
+            logger.debug( 'NWS points data from cache.' )
             points_data = json.loads( points_data_str )
             return points_data
         points_data = self._get_points_data_from_api( latitude = latitude, longitude = longitude )
@@ -260,14 +282,14 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
     def _parse_nws_quantity( self, nws_data_dict : dict ) -> UnitQuantity:
         if not nws_data_dict:
-            raise ValueError('No data')
+            return None
+        value = nws_data_dict.get('value')
+        if value is None:
+            return None
         unit_code = nws_data_dict.get('unitCode')
         if not unit_code:
             raise ValueError( 'Missing unit code' )
         units_str = WmoUnits.normalize_unit( unit_code )
-        value = nws_data_dict.get('value')
-        if value is None:
-            raise ValueError( 'Missing value' )
         try:
             return UnitQuantity( value, units_str )
         except Exception as e:
@@ -279,12 +301,13 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                                     elevation        : UnitQuantity ) -> NumericDataPoint:
         try:
             quantity = self._parse_nws_quantity( nws_data_dict = nws_data_dict )
-            return NumericDataPoint(
-                source = self.data_point_source,
-                source_datetime = source_datetime,
-                elevation = elevation,
-                quantity = quantity,
-            )
+            if quantity is not None:
+                return NumericDataPoint(
+                    source = self.data_point_source,
+                    source_datetime = source_datetime,
+                    elevation = elevation,
+                    quantity = quantity,
+                )
         except Exception as e:
             logger.error( f'Problem parsing NWS data: {nws_data_dict}: {e}' )
         return None

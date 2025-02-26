@@ -32,8 +32,8 @@ class WeatherManager( Singleton, SettingsMixin ):
 
     def __init_singleton__(self):
 
-        self._current_conditions_data = None
-        self._todays_astronomical_data = None
+        self._current_conditions_data = WeatherConditionsData()
+        self._todays_astronomical_data = DailyAstronomicalData()
         self._data_sync_lock = threading.Lock()
         self._data_async_lock = asyncio.Lock() 
         self._was_initialized = False
@@ -78,10 +78,10 @@ class WeatherManager( Singleton, SettingsMixin ):
         with self._data_sync_lock:
             return []
 
-    def update_current_conditions( self,
-                                   weather_data_source      : WeatherDataSource,
-                                   weather_conditions_data  : WeatherConditionsData ):
-        with self._data_async_lock:
+    async def update_current_conditions( self,
+                                         weather_data_source      : WeatherDataSource,
+                                         weather_conditions_data  : WeatherConditionsData ):
+        async with self._data_async_lock:
             self._update_weather_data(
                 current_weather_data = self._current_conditions_data,
                 new_weather_data = weather_conditions_data,

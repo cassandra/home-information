@@ -187,7 +187,7 @@ class WeatherHistoryData( PeriodWeatherData ):
     
 @dataclass
 class DailyAstronomicalData( WeatherData ):
-    day                          : date
+    day                          : date              = None
     sunrise                      : TimeDataPoint     = None
     sunset                       : TimeDataPoint     = None
     solar_noon                   : TimeDataPoint     = None

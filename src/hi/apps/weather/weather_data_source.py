@@ -2,6 +2,8 @@ from datetime import datetime
 import logging
 import redis
 
+from django.conf import settings
+
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.redis_client import get_redis_client
 from hi.apps.console.console_helper import ConsoleSettingsHelper
@@ -13,7 +15,8 @@ logger = logging.getLogger(__name__)
 class WeatherDataSource:
 
     TRACE = True
-
+    FORCE_CAN_POLL = False  # For debugging
+    
     async def get_data(self):
         raise NotImplementedError('Subclasses must override this.')
     
@@ -21,7 +24,7 @@ class WeatherDataSource:
                   id                   : str,
                   label                : str,
                   priority             : int,
-                  requests_per_day : int ):
+                  requests_per_day_limit     : int ):
         self._id = id
         self._label = label
         self._priority = priority  # Lower numbers are higher priority
@@ -30,8 +33,8 @@ class WeatherDataSource:
             label = self._label,
             priority = self._priority,
         )
-        self._requests_per_day = requests_per_day
-        self._min_polling_interval_secs = ( 24 * 60 * 60 ) / self._requests_per_day
+        self._requests_per_day_limit = requests_per_day_limit
+        self._min_polling_interval_secs = ( 24 * 60 * 60 ) / self._requests_per_day_limit
 
         self._console_settings_helper = ConsoleSettingsHelper()
         
@@ -75,12 +78,17 @@ class WeatherDataSource:
         logger.debug( f'Fetching weather data for: {self.label}' )
         self.set_last_poll_time()
         try:
-            self.get_data()
+            await self.get_data()
         except Exception:
             logger.exception( f'Problem with weather source: {self.label}' )
         return
     
     def can_poll(self):
+
+        if settings.DEBUG and self.FORCE_CAN_POLL:
+            logger.warning( f'Force polling in effect.' )
+            return True
+        
         last_poll_datetime = self.fetch_last_poll_datetime()
         if not last_poll_datetime:
             logger.info( f'No last polling data for: {self.label}' )
