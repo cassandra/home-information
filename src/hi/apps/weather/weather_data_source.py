@@ -5,7 +5,7 @@ import redis
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.redis_client import get_redis_client
 from hi.apps.console.console_helper import ConsoleSettingsHelper
-from hi.apps.weather.transient_models import DataSource
+from hi.apps.weather.transient_models import DataPointSource
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +14,8 @@ class WeatherDataSource:
 
     TRACE = True
 
-    def get_data(self):
-        raise NotImplementedError('Subclasses must override this')
+    async def get_data(self):
+        raise NotImplementedError('Subclasses must override this.')
     
     def __init__( self,
                   id                   : str,
@@ -24,11 +24,12 @@ class WeatherDataSource:
                   requests_per_day : int ):
         self._id = id
         self._label = label
-        self._data_source = DataSource(
+        self._priority = priority  # Lower numbers are higher priority
+        self._data_point_source = DataPointSource(
             id = self._id,
             label = self._label,
+            priority = self._priority,
         )
-        self._priority = priority  # Lower numbers are higher priority
         self._requests_per_day = requests_per_day
         self._min_polling_interval_secs = ( 24 * 60 * 60 ) / self._requests_per_day
 
@@ -50,8 +51,8 @@ class WeatherDataSource:
         return self._label
 
     @property
-    def data_source(self) -> DataSource:
-        return self._data_source
+    def data_point_source(self) -> DataPointSource:
+        return self._data_point_source
 
     @property
     def priority(self):
@@ -63,9 +64,9 @@ class WeatherDataSource:
 
     @property
     def geographic_location(self):
-        self._console_settings_helper.get_geographic_location()
+        return self._console_settings_helper.get_geographic_location()
         
-    def fetch(self):
+    async def fetch(self):
         if not self.can_poll():
             if self.TRACE:
                 logger.debug( f'Polling limits. Skipping weather data fetch for: {self.label}' )
@@ -73,7 +74,10 @@ class WeatherDataSource:
 
         logger.debug( f'Fetching weather data for: {self.label}' )
         self.set_last_poll_time()
-        self.get_data()
+        try:
+            self.get_data()
+        except Exception:
+            logger.exception( f'Problem with weather source: {self.label}' )
         return
     
     def can_poll(self):

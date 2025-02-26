@@ -1,3 +1,4 @@
+import asyncio
 import importlib
 import inspect
 import logging
@@ -45,14 +46,13 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin ):
             return
         
         logger.debug( 'Checking for weather data.' )
-
+        task_list = list()
         for weather_data_source in self._weather_data_source_instance_list:
-            try:
-                weather_data_source.fetch( )
-            except Exception:
-                logger.exception( f'Problem with weather source: {weather_data_source.label}' )
+            task = asyncio.create_task( weather_data_source.fetch() )
+            task_list.append( task )
             continue
-        
+
+        await asyncio.gather( *task_list )
         return
 
     def discover_weather_data_source_instances(self) -> List[ WeatherDataSource ]:

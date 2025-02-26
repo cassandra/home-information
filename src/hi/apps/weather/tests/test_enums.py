@@ -1,12 +1,12 @@
 import logging
 
-from hi.tests.base_test_case import BaseTestCase
-
 from hi.apps.weather.enums import (
     CloudCoverageType,
     MoonPhase,
     SkyCondition, 
 )
+
+from hi.tests.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

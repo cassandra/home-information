@@ -8,11 +8,13 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.weather_data_source import WeatherDataSource
 from hi.apps.weather.enums import WeatherPhenomenonModifier
 from hi.apps.weather.transient_models import (
+    ListDataPoint,
     NotablePhenomenon,
     NumericDataPoint,
     StringDataPoint,
     WeatherConditionsData,
 )
+from hi.apps.weather.weather_mixins import WeatherMixin
 from hi.apps.weather.wmo_units import WmoUnits
 from hi.units import UnitQuantity
 
@@ -21,7 +23,7 @@ from .nws_converters import NwsConverters
 logger = logging.getLogger(__name__)
 
 
-class NationalWeatherService( WeatherDataSource ):
+class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
     BASE_URL = "https://api.weather.gov/"
 
@@ -40,7 +42,7 @@ class NationalWeatherService( WeatherDataSource ):
         self._headers = {'User-Agent': 'HomeInformation (weather@homeinformation.org)'}
         return
     
-    def get_data(self):
+    async def get_data(self):
 
         geographic_location = self.geographic_location
         if not geographic_location:
@@ -51,21 +53,11 @@ class NationalWeatherService( WeatherDataSource ):
             latitude = geographic_location.latitude,
             longitude = geographic_location.longitude,
         )
-
-
-
-
-
-        
-        ##zzz_fold_into: weather_manager.update_current_conditions( current_conditions_data )
-        #   - if None, set
-        #   - newer and same source -> overwrite
-        #   - not same source and significnatly stale, overwrite
-
-
-
-
-        
+        weather_manager = await self.weather_manager_async()
+        weather_manager.update_current_conditions(
+            weather_data_source = self,
+            weather_conditions_data = current_conditions_data,
+        )
         return
 
     def get_current_conditions( self, latitude : float, longitude : float ) -> WeatherConditionsData:
@@ -181,7 +173,7 @@ class NationalWeatherService( WeatherDataSource ):
         description = properties.get( 'textDescription' )
         if description:
             weather_conditions_data.description = StringDataPoint(
-                source = self.data_source,
+                source = self.data_point_source,
                 source_datetime = source_datetime,
                 elevation = elevation,
                 value = description,
@@ -288,7 +280,7 @@ class NationalWeatherService( WeatherDataSource ):
         try:
             quantity = self._parse_nws_quantity( nws_data_dict = nws_data_dict )
             return NumericDataPoint(
-                source = self.data_source,
+                source = self.data_point_source,
                 source_datetime = source_datetime,
                 elevation = elevation,
                 quantity = quantity,
@@ -312,7 +304,7 @@ class NationalWeatherService( WeatherDataSource ):
         if not cloud_layers_list:
             logger.info('NWS cloudLayers list is empty; assuming clear skies.')
             weather_conditions_data.cloud_cover = NumericDataPoint(
-                source = self.data_source,
+                source = self.data_point_source,
                 source_datetime = source_datetime,
                 elevation = elevation,
                 quantity = UnitQuantity( 0, 'percent' ),
@@ -353,7 +345,7 @@ class NationalWeatherService( WeatherDataSource ):
 
         if cloud_ceiling_quantity_min:
             weather_conditions_data.cloud_ceiling = NumericDataPoint(
-                source = self.data_source,
+                source = self.data_point_source,
                 source_datetime = source_datetime,
                 elevation = elevation,
                 quantity = cloud_ceiling_quantity_min,
@@ -365,7 +357,7 @@ class NationalWeatherService( WeatherDataSource ):
                 'percent',
             )
             weather_conditions_data.cloud_cover = NumericDataPoint(
-                source = self.data_source,
+                source = self.data_point_source,
                 source_datetime = source_datetime,
                 elevation = elevation,
                 quantity = cloud_cover_quantity,
@@ -386,7 +378,7 @@ class NationalWeatherService( WeatherDataSource ):
         observation, the presentWeather field may be an empty list,
         indicating the absence of notable weather phenomena.
         """
-        weather_conditions_data.notable_phenomenon_list = list()
+        notable_phenomenon_list = list()
 
         present_weather_list = properties.get( 'presentWeather' )
         if not present_weather_list:
@@ -439,6 +431,13 @@ class NationalWeatherService( WeatherDataSource ):
                 weather_phenomenon_intensity = weather_phenomenon_intensity,
                 in_vicinity = in_vicinity,
             )
-            weather_conditions_data.notable_phenomenon_list.append( notable_phenomenon )    
+            notable_phenomenon_list.append( notable_phenomenon )    
             continue
+
+        weather_conditions_data.notable_phenomenon_data = ListDataPoint(
+            source = self.data_point_source,
+            source_datetime = source_datetime,
+            elevation = elevation,
+            list_value = notable_phenomenon_list,
+        )       
         return

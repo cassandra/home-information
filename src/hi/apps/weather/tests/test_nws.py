@@ -169,7 +169,7 @@ class TestNationalWeatherService( BaseTestCase ):
                 source_datetime = now,
                 elevation = elevation,
             )
-            self.assertEqual( nws.data_source, result_data_point.source )
+            self.assertEqual( nws.data_point_source, result_data_point.source )
             self.assertEqual( now, result_data_point.source_datetime )
             self.assertEqual( elevation, result_data_point.elevation )
             result_quantity = result_data_point.quantity
@@ -191,7 +191,7 @@ class TestNationalWeatherService( BaseTestCase ):
                 },
                 'expected_cloud_ceiling': None,
                 'expected_cloud_cover': NumericDataPoint(
-                    source = nws.data_source,
+                    source = nws.data_point_source,
                     source_datetime = source_datetime,
                     elevation = elevation,
                     quantity = UnitQuantity( 0, 'percent' ),
@@ -209,7 +209,7 @@ class TestNationalWeatherService( BaseTestCase ):
                 },
                 'expected_cloud_ceiling': None,
                 'expected_cloud_cover': NumericDataPoint(
-                    source = nws.data_source,
+                    source = nws.data_point_source,
                     source_datetime = source_datetime,
                     elevation = elevation,
                     quantity = UnitQuantity( 0, 'percent' ),
@@ -230,7 +230,7 @@ class TestNationalWeatherService( BaseTestCase ):
                 },
                 'expected_cloud_ceiling': None,
                 'expected_cloud_cover': NumericDataPoint(
-                    source = nws.data_source,
+                    source = nws.data_point_source,
                     source_datetime = source_datetime,
                     elevation = elevation,
                     quantity = UnitQuantity( 25, 'percent' ),
@@ -258,7 +258,7 @@ class TestNationalWeatherService( BaseTestCase ):
                 },
                 'expected_cloud_ceiling': None,
                 'expected_cloud_cover': NumericDataPoint(
-                    source = nws.data_source,
+                    source = nws.data_point_source,
                     source_datetime = source_datetime,
                     elevation = elevation,
                     quantity = UnitQuantity( 50, 'percent' ),
@@ -278,13 +278,13 @@ class TestNationalWeatherService( BaseTestCase ):
                     ]
                 },
                 'expected_cloud_ceiling': NumericDataPoint(
-                    source = nws.data_source,
+                    source = nws.data_point_source,
                     source_datetime = source_datetime,
                     elevation = elevation,
                     quantity = UnitQuantity( 8000, 'feet' ),
                 )    ,
                 'expected_cloud_cover': NumericDataPoint(
-                    source = nws.data_source,
+                    source = nws.data_point_source,
                     source_datetime = source_datetime,
                     elevation = elevation,
                     quantity = UnitQuantity( 87.5, 'percent' ),
@@ -304,13 +304,13 @@ class TestNationalWeatherService( BaseTestCase ):
                     ]
                 },
                 'expected_cloud_ceiling': NumericDataPoint(
-                    source = nws.data_source,
+                    source = nws.data_point_source,
                     source_datetime = source_datetime,
                     elevation = elevation,
                     quantity = UnitQuantity( 12000, 'feet' ),
                 )    ,
                 'expected_cloud_cover': NumericDataPoint(
-                    source = nws.data_source,
+                    source = nws.data_point_source,
                     source_datetime = source_datetime,
                     elevation = elevation,
                     quantity = UnitQuantity( 100, 'percent' ),
@@ -330,13 +330,13 @@ class TestNationalWeatherService( BaseTestCase ):
                     ]
                 },
                 'expected_cloud_ceiling': NumericDataPoint(
-                    source = nws.data_source,
+                    source = nws.data_point_source,
                     source_datetime = source_datetime,
                     elevation = elevation,
                     quantity = UnitQuantity( 300, 'feet' ),
                 )    ,
                 'expected_cloud_cover': NumericDataPoint(
-                    source = nws.data_source,
+                    source = nws.data_point_source,
                     source_datetime = source_datetime,
                     elevation = elevation,
                     quantity = UnitQuantity( 100, 'percent' ),
@@ -363,13 +363,13 @@ class TestNationalWeatherService( BaseTestCase ):
                     ]
                 },
                 'expected_cloud_ceiling': NumericDataPoint(
-                    source = nws.data_source,
+                    source = nws.data_point_source,
                     source_datetime = source_datetime,
                     elevation = elevation,
                     quantity = UnitQuantity( 10000, 'feet' ),
                 )    ,
                 'expected_cloud_cover': NumericDataPoint(
-                    source = nws.data_source,
+                    source = nws.data_point_source,
                     source_datetime = source_datetime,
                     elevation = elevation,
                     quantity = UnitQuantity( 100, 'percent' ),
@@ -663,23 +663,25 @@ class TestNationalWeatherService( BaseTestCase ):
             )
 
             expected_list = test_data['expected_list']
-            result_list = weather_conditions_data.notable_phenomenon_list
-            self.assertEqual( len(expected_list), len(result_list), test_data['label'] )
-
-            for expected_phenomenon, result_phenomenon in zip( expected_list, result_list ):
-                self.assertEqual( expected_phenomenon.weather_phenomenon,
-                                  result_phenomenon.weather_phenomenon,
-                                  test_data['label'] )
-                self.assertEqual( expected_phenomenon.weather_phenomenon_modifier,
-                                  result_phenomenon.weather_phenomenon_modifier,
-                                  test_data['label'] )
-                self.assertEqual( expected_phenomenon.weather_phenomenon_intensity,
-                                  result_phenomenon.weather_phenomenon_intensity,
-                                  test_data['label'] )
-                self.assertEqual( expected_phenomenon.in_vicinity,
-                                  result_phenomenon.in_vicinity,
-                                  test_data['label'] )
-                continue
+            if expected_list:
+                result_list = weather_conditions_data.notable_phenomenon_data.list_value
+                self.assertEqual( len(expected_list), len(result_list), test_data['label'] )
+                for expected_phenomenon, result_phenomenon in zip( expected_list, result_list ):
+                    self.assertEqual( expected_phenomenon.weather_phenomenon,
+                                      result_phenomenon.weather_phenomenon,
+                                      test_data['label'] )
+                    self.assertEqual( expected_phenomenon.weather_phenomenon_modifier,
+                                      result_phenomenon.weather_phenomenon_modifier,
+                                      test_data['label'] )
+                    self.assertEqual( expected_phenomenon.weather_phenomenon_intensity,
+                                      result_phenomenon.weather_phenomenon_intensity,
+                                      test_data['label'] )
+                    self.assertEqual( expected_phenomenon.in_vicinity,
+                                      result_phenomenon.in_vicinity,
+                                      test_data['label'] )
+                    continue
+            else:
+                self.assertIsNone( weather_conditions_data.notable_phenomenon_data, test_data['label'] )
             continue
         return
     
@@ -850,13 +852,13 @@ class TestNationalWeatherService( BaseTestCase ):
                 },
                 'expected': WeatherConditionsData(
                     barometric_pressure = NumericDataPoint(
-                        source = nws.data_source,
+                        source = nws.data_point_source,
                         source_datetime = source_datetime,
                         elevation = elevation,
                         quantity = UnitQuantity( 103420, 'Pa' ),
                     ),
                     dew_point = NumericDataPoint(
-                        source = nws.data_source,
+                        source = nws.data_point_source,
                         source_datetime = source_datetime,
                         elevation = elevation,
                         quantity = UnitQuantity( -9.4, 'degC' ),
@@ -868,67 +870,67 @@ class TestNationalWeatherService( BaseTestCase ):
                     precipitation_last_6h = None,
                     precipitation_last_hour = None,
                     relative_humidity = NumericDataPoint(
-                        source = nws.data_source,
+                        source = nws.data_point_source,
                         source_datetime = source_datetime,
                         elevation = elevation,
                         quantity = UnitQuantity( 65.595209439964, 'percent' ),
                     ),
                     sea_level_pressure = NumericDataPoint(
-                        source = nws.data_source,
+                        source = nws.data_point_source,
                         source_datetime = source_datetime,
                         elevation = elevation,
                         quantity = UnitQuantity( 103580, 'Pa' ),
                     ),
                     temperature = NumericDataPoint(
-                        source = nws.data_source,
+                        source = nws.data_point_source,
                         source_datetime = source_datetime,
                         elevation = elevation,
                         quantity = UnitQuantity( -3.9, 'degC' ),
                     ),
                     visibility = NumericDataPoint(
-                        source = nws.data_source,
+                        source = nws.data_point_source,
                         source_datetime = source_datetime,
                         elevation = elevation,
                         quantity = UnitQuantity( 16090, 'meters' ),
                     ),
                     wind_chill = NumericDataPoint(
-                        source = nws.data_source,
+                        source = nws.data_point_source,
                         source_datetime = source_datetime,
                         elevation = elevation,
                         quantity = UnitQuantity( -7.757550390365555, 'degC' ),
                     ),
                     wind_direction = NumericDataPoint(
-                        source = nws.data_source,
+                        source = nws.data_point_source,
                         source_datetime = source_datetime,
                         elevation = elevation,
                         quantity = UnitQuantity( 350, 'degrees' ),
                     ),
                     windspeed_max = None,
                     windspeed_ave = NumericDataPoint(
-                        source = nws.data_source,
+                        source = nws.data_point_source,
                         source_datetime = source_datetime,
                         elevation = elevation,
                         quantity = UnitQuantity( 9.36, 'km / h' ),
                     ),
                     description = StringDataPoint(
-                        source = nws.data_source,
+                        source = nws.data_point_source,
                         source_datetime = source_datetime,
                         elevation = elevation,
                         value = description,
                     ),
                     cloud_ceiling = NumericDataPoint(
-                        source = nws.data_source,
+                        source = nws.data_point_source,
                         source_datetime = source_datetime,
                         elevation = elevation,
                         quantity = UnitQuantity( 880, 'meters' ),
                     ),
                     cloud_cover = NumericDataPoint(
-                        source = nws.data_source,
+                        source = nws.data_point_source,
                         source_datetime = source_datetime,
                         elevation = elevation,
                         quantity = UnitQuantity( 100, 'percent' ),
                     ),
-                    notable_phenomenon_list = [],
+                    notable_phenomenon_data = None,
                 )
             }
         ]        
@@ -1008,24 +1010,27 @@ class TestNationalWeatherService( BaseTestCase ):
                               result.description.value,
                               test_data['label']  )
 
-            self.assertEqual( len(expected.notable_phenomenon_list),
-                              len(result.notable_phenomenon_list),
-                              test_data['label']  )
-
-            for expected_phenomenon, result_phenomenon in zip( expected.notable_phenomenon_list,
-                                                               result.notable_phenomenon_list ):
-                self.assertEqual( expected_phenomenon.weather_phenomenon,
-                                  result_phenomenon.weather_phenomenon,
-                                  test_data['label'] )
-                self.assertEqual( expected_phenomenon.weather_phenomenon_modifier,
-                                  result_phenomenon.weather_phenomenon_modifier,
-                                  test_data['label'] )
-                self.assertEqual( expected_phenomenon.weather_phenomenon_intensity,
-                                  result_phenomenon.weather_phenomenon_intensity,
-                                  test_data['label'] )
-                self.assertEqual( expected_phenomenon.in_vicinity,
-                                  result_phenomenon.in_vicinity,
-                                  test_data['label'] )
-                continue
+            if expected.notable_phenomenon_data:
+                self.assertEqual( len(expected.notable_phenomenon_data.list_value),
+                                  len(result.notable_phenomenon_data.list_value),
+                                  test_data['label']  )
+                for expected_phenomenon, result_phenomenon in zip( expected.notable_phenomenon_list,
+                                                                   result.notable_phenomenon_list ):
+                    self.assertEqual( expected_phenomenon.weather_phenomenon,
+                                      result_phenomenon.weather_phenomenon,
+                                      test_data['label'] )
+                    self.assertEqual( expected_phenomenon.weather_phenomenon_modifier,
+                                      result_phenomenon.weather_phenomenon_modifier,
+                                      test_data['label'] )
+                    self.assertEqual( expected_phenomenon.weather_phenomenon_intensity,
+                                      result_phenomenon.weather_phenomenon_intensity,
+                                      test_data['label'] )
+                    self.assertEqual( expected_phenomenon.in_vicinity,
+                                      result_phenomenon.in_vicinity,
+                                      test_data['label'] )
+                    continue
+            else:
+                self.assertIsNone( result.notable_phenomenon_data, test_data['label']  )
+                
             continue
         return
