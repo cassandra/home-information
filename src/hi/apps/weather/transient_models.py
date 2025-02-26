@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, time
 from typing import Generic, List, TypeVar
 
+from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
 
 from .enums import (
@@ -27,14 +28,52 @@ class DataPointSource:
     priority  : int  # Lower numbers are higher priority
 
     
+@dataclass( frozen = True )
+class WeatherStation:
+    source            : DataPointSource
+    station_id        : str                 = None
+    name              : str                 = None
+    geo_location      : GeographicLocation  = None
+    station_url       : str                 = None
+    observations_url  : str                 = None
+    forecast_url      : str                 = None
+
+    @property
+    def elevation(self) -> UnitQuantity:
+        if self.geo_location:
+            return self.geo_location.elevation
+        return None
+
+    @property
+    def key(self):
+        return f'{self.source}:{self.station_id}'
+    
+    def __hash__(self):
+        return hash( ( self.source, self.station_id ) )
+
+    def __eq__(self, other):
+        if not isinstance( other, WeatherStation ):
+            return False
+        return ( self.source == other.source ) and ( self.station_id == other.station_id )
+
+    
 @dataclass
 class DataPoint:
     """ Base class for all weather data point types. """
-    source           : DataPointSource
+    weather_station  : WeatherStation
     source_datetime  : datetime
     elevation        : UnitQuantity
 
+    def __post_init( self ):
+        if self.elevation is None:
+            self.elevation = self.weather_station.elevation
+        return
+    
+    @property
+    def source(self) -> DataPointSource:
+        return self.weather_station.source
 
+    
 @dataclass
 class NumericDataPoint( DataPoint ):
     quantity         : UnitQuantity

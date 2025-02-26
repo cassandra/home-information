@@ -16,11 +16,3 @@ class VideoStreamEntity:
         if name.lower().endswith('camera') and len(name) > len('camera'):
             name = name[:-len('camera')].strip()
         return name
-
-    
-@dataclass
-class GeographicLocation:
-
-    latitude   : float
-    longitude  : float
-    

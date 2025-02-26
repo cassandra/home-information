@@ -22,6 +22,7 @@ from hi.apps.weather.transient_models import (
     WeatherForecastData,
     WeatherHistoryData,
     WeatherOverviewData,
+    WeatherStation,
 )
 from hi.units import UnitQuantity
 
@@ -57,45 +58,55 @@ class WeatherSyntheticData:
                 label = 'Test',
                 priority = 1,
             )
+        weather_station = WeatherStation(
+            source = source,
+            station_id = 'test',
+            name = 'Testing',
+            geo_location = None,
+            station_url = None,
+            observations_url = None,
+            forecast_url = None,
+        )
+            
         weather_conditions_data = WeatherConditionsData(
             temperature = NumericDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = UnitQuantity( 2, 'meters' ),
                 quantity = UnitQuantity( random.randint( -5, 115 ), 'degF' ),
             ),
             temperature_min_last_24h = NumericDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = UnitQuantity( 2, 'meters' ),
                 quantity = UnitQuantity( random.randint( -5, 115 ), 'degF' ),
             ),
             temperature_max_last_24h = NumericDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = UnitQuantity( 2, 'meters' ),
                 quantity = UnitQuantity( random.randint( -5, 115 ), 'degF' ),
             ),
             precipitation_last_hour = NumericDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = UnitQuantity( 2, 'meters' ),
                 quantity = UnitQuantity( 1.0 * random.random(), 'inches' ),
             ),
             precipitation_last_3h = NumericDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = UnitQuantity( 2, 'meters' ),
                 quantity = UnitQuantity( 2.0 * random.random(), 'inches' ),
             ),
             precipitation_last_6h = NumericDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = UnitQuantity( 2, 'meters' ),
                 quantity = UnitQuantity( 3.0 * random.random(), 'inches' ),
             ),
             precipitation_last_24h = NumericDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = UnitQuantity( 2, 'meters' ),
                 quantity = UnitQuantity( 4.0 * random.random(), 'inches' ),
@@ -125,83 +136,92 @@ class WeatherSyntheticData:
                 label = 'Test',
                 priority = 1,
             )
+        weather_station = WeatherStation(
+            source = source,
+            station_id = 'test',
+            name = 'Testing',
+            geo_location = None,
+            station_url = None,
+            observations_url = None,
+            forecast_url = None,
+        )
         elevation = UnitQuantity( 2, 'meters' )
         return DailyAstronomicalData(
             day = now.date(),
             sunrise = TimeDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = elevation,
                 value = ( now - timedelta( minutes = random.randint( 0, 360 ))).time(),
             ),
             sunset = TimeDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = elevation,
                 value = ( now + timedelta( minutes = random.randint( 0, 360 ))).time(),
             ),
             solar_noon = TimeDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = elevation,
                 value = ( now + timedelta( minutes = random.randint( -90, 90 ))).time(),
             ),
             moonrise = TimeDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = elevation,
                 value = ( now + timedelta( minutes = random.randint( 90, 480 ))).time(),
             ),
             moonset = TimeDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = elevation,
                 value = ( now + timedelta( minutes = random.randint( 480, 600 ))).time(),
             ),
             moon_illumnination = NumericDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = None,
                 quantity = UnitQuantity( random.randint( 0, 100 ), 'percent' ),
             ),
             moon_is_waxing = BooleanDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = None,
                 value = bool( random.random() < 0.5 ),
             ),
             civil_twilight_begin = TimeDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = elevation,
                 value = ( now + timedelta( minutes = random.randint( -90, 90 ))).time(),
             ),
             civil_twilight_end = TimeDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = elevation,
                 value = ( now + timedelta( minutes = random.randint( -90, 90 ))).time(),
             ),
             nautical_twilight_begin = TimeDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = elevation,
                 value = ( now + timedelta( minutes = random.randint( -90, 90 ))).time(),
             ),
             nautical_twilight_end = TimeDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = elevation,
                 value = ( now + timedelta( minutes = random.randint( -90, 90 ))).time(),
             ),
             astronomical_twilight_begin = TimeDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = elevation,
                 value = ( now + timedelta( minutes = random.randint( -90, 90 ))).time(),
             ),
             astronomical_twilight_end = TimeDataPoint(
-                source = source,
+                weather_station = weather_station,
                 source_datetime = now,
                 elevation = elevation,
                 value = ( now + timedelta( minutes = random.randint( -90, 90 ))).time(),
@@ -354,80 +374,89 @@ class WeatherSyntheticData:
                 label = 'Test',
                 priority = 1,
             )
-        data_obj.cloud_cover = NumericDataPoint(
+        weather_station = WeatherStation(
             source = source,
+            station_id = 'test',
+            name = 'Testing',
+            geo_location = None,
+            station_url = None,
+            observations_url = None,
+            forecast_url = None,
+        )
+        data_obj.cloud_cover = NumericDataPoint(
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( 0, 100 ), 'percent' ),
         )
         data_obj.cloud_ceiling = NumericDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( 300, 5000 ), 'm' ),
         )
         data_obj.windspeed_min = NumericDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( 0, 20 ), 'mph' ),
         )
         data_obj.windspeed_ave = NumericDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( 0, 40 ), 'mph' ),
         )
         data_obj.windspeed_max = NumericDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( 0, 80 ), 'mph' ),
         )
         data_obj.wind_direction = NumericDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( 0, 359 ), 'deg' ),
         )
         data_obj.relative_humidity = NumericDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( 0, 100 ), 'percent' ),
         )
         data_obj.dew_point = NumericDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( 0, 100 ), 'degF' ),
         )
         data_obj.barometric_pressure = NumericDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( 950, 1100 ), 'inHg' ),
         )
         data_obj.sea_level_pressure = NumericDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( 950, 1100 ), 'inHg' ),
         )
         data_obj.heat_index = NumericDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( 0, 120 ), 'degF' ),
         )
         data_obj.wind_chill = NumericDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( -20, 90 ), 'degF' ),
         )
         data_obj.visibility = NumericDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( 0, 10 ), 'miles' ),
@@ -447,32 +476,41 @@ class WeatherSyntheticData:
                 label = 'Test',
                 priority = 1,
             )
-        data_obj.temperature_min = NumericDataPoint(
+        weather_station = WeatherStation(
             source = source,
+            station_id = 'test',
+            name = 'Testing',
+            geo_location = None,
+            station_url = None,
+            observations_url = None,
+            forecast_url = None,
+        )
+        data_obj.temperature_min = NumericDataPoint(
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( -5, 115 ), 'degF' ),
         )
         data_obj.temperature_ave = NumericDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( -5, 115 ), 'degF' ),
         )
         data_obj.temperature_max = NumericDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( -5, 115 ), 'degF' ),
         )
         data_obj.precipitation = NumericDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( 4.0 * random.random(), 'inches' ),
         )
         data_obj.precipitation_probability = NumericDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.random(), 'probability' ),
@@ -497,6 +535,15 @@ class WeatherSyntheticData:
                 label = 'Test',
                 priority = 1,
             )
+        weather_station = WeatherStation(
+            source = source,
+            station_id = 'test',
+            name = 'Testing',
+            geo_location = None,
+            station_url = None,
+            observations_url = None,
+            forecast_url = None,
+        )
         notable_phenomenon_list = list()
         for idx in range( random.randint( 0, 2 ) ):
             notable_phenomenon = NotablePhenomenon(
@@ -508,9 +555,9 @@ class WeatherSyntheticData:
             notable_phenomenon_list.append( notable_phenomenon )
             continue
         weather_conditions_data.notable_phenomenon_data = ListDataPoint(
-            source = source,
+            weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             list_value = notable_phenomenon_list,
-            )
+        )
         return

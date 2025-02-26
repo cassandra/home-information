@@ -5,11 +5,11 @@ from django.http import HttpRequest
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.geo_utils import parse_long_lat_from_text, GeoPointParseError
 from hi.apps.config.settings_mixins import SettingsMixin
+from hi.transient_models import GeographicLocation
 
 from .enums import DisplayUnits
 from .constants import ConsoleConstants
 from .settings import ConsoleSetting, DEFAULT_LATITUDE, DEFAULT_LONGITUDE
-from .transient_models import GeographicLocation
 
 logger = logging.getLogger(__name__)
 

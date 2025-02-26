@@ -274,9 +274,9 @@ def _validated_long_lat_values( latitude : float, longitude : float, usa_biased 
             raise GeoPointParseError( f'Latitude {latitude} appears to be outside U.S. boundaries.' )
     
     if abs(longitude) > 180.0:
-        raise GeoPointParseError( f'Longitude is not in the valid range: -180 < longitude < 180.')
+        raise GeoPointParseError( 'Longitude is not in the valid range: -180 < longitude < 180.')
     if abs(latitude) > 90.0:
-        raise GeoPointParseError( f'Latitude is not in the valid range: -90 < latitude < 90.')
+        raise GeoPointParseError( 'Latitude is not in the valid range: -90 < latitude < 90.')
     return ( latitude, longitude )
 
 

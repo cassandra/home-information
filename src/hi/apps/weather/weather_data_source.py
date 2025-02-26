@@ -21,10 +21,12 @@ class WeatherDataSource:
         raise NotImplementedError('Subclasses must override this.')
     
     def __init__( self,
-                  id                   : str,
-                  label                : str,
-                  priority             : int,
-                  requests_per_day_limit     : int ):
+                  id                             : str,
+                  label                          : str,
+                  priority                       : int,
+                  requests_per_day_limit         : int,
+                  requests_per_polling_interval  : int,
+                  min_polling_interval_secs      : int ):
         self._id = id
         self._label = label
         self._priority = priority  # Lower numbers are higher priority
@@ -33,8 +35,11 @@ class WeatherDataSource:
             label = self._label,
             priority = self._priority,
         )
-        self._requests_per_day_limit = requests_per_day_limit
-        self._min_polling_interval_secs = ( 24 * 60 * 60 ) / self._requests_per_day_limit
+
+        polling_intervals_per_day_limit = requests_per_day_limit / requests_per_polling_interval
+        limit_polling_interval_secs = ( 24 * 60 * 60 ) / polling_intervals_per_day_limit
+        self._polling_interval_secs = max( limit_polling_interval_secs,
+                                           min_polling_interval_secs )
 
         self._console_settings_helper = ConsoleSettingsHelper()
         
@@ -70,7 +75,7 @@ class WeatherDataSource:
         return self._console_settings_helper.get_geographic_location()
         
     async def fetch(self):
-        if not self.can_poll():
+        if not self.can_fetch():
             if self.TRACE:
                 logger.debug( f'Polling limits. Skipping weather data fetch for: {self.label}' )
             return
@@ -83,10 +88,10 @@ class WeatherDataSource:
             logger.exception( f'Problem with weather source: {self.label}' )
         return
     
-    def can_poll(self):
+    def can_fetch(self):
 
         if settings.DEBUG and self.FORCE_CAN_POLL:
-            logger.warning( f'Force polling in effect.' )
+            logger.warning( 'Force polling in effect.' )
             return True
         
         last_poll_datetime = self.fetch_last_poll_datetime()
@@ -96,10 +101,10 @@ class WeatherDataSource:
         
         last_poll_elapsed = datetimeproxy.now() - last_poll_datetime
         elapsed_secs = last_poll_elapsed.total_seconds()
-        if elapsed_secs < self._min_polling_interval_secs:
+        if elapsed_secs < self._polling_interval_secs:
             if self.TRACE:
                 logger.debug( f'[{self.id}] Last={last_poll_datetime}, Elapsed={elapsed_secs}s'
-                              f' < Limit={self._min_polling_interval_secs}s' )
+                              f' < Limit={self._polling_interval_secs}s' )
             return False
         return True
         

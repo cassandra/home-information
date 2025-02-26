@@ -4,6 +4,7 @@ from hi.apps.weather.transient_models import (
     BooleanDataPoint,
     DailyAstronomicalData,
     NumericDataPoint,
+    WeatherStation,
 )
 from hi.units import UnitQuantity
 
@@ -45,17 +46,28 @@ class TestWeatherTransientModels( BaseTestCase ):
             { 'percent': 1.0, 'is_waxing': False, 'expect': 15 },
             { 'percent': 0.0, 'is_waxing': False, 'expect': 15 },
         ]
+
+        weather_station = WeatherStation(
+            source = 'test',
+            station_id = 'test',
+            name = 'Testing',
+            geo_location = None,
+            station_url = None,
+            observations_url = None,
+            forecast_url = None,
+        )
+        
         for test_data in test_data_list:
             daily_astronommical_data = DailyAstronomicalData(
                 day = None,
                 moon_illumnination = NumericDataPoint(
-                    source = 'test',
+                    weather_station = weather_station,
                     source_datetime = None,
                     elevation = None,
                     quantity = UnitQuantity( test_data.get('percent'), 'percent' ),
                 ),
                 moon_is_waxing = BooleanDataPoint(
-                    source = 'test',
+                    weather_station = weather_station,
                     source_datetime = None,
                     elevation = None,
                     value = test_data.get('is_waxing'),
@@ -99,17 +111,28 @@ class TestWeatherTransientModels( BaseTestCase ):
             { 'percent': 1.0, 'is_waxing': False, 'expect': 0 },
             { 'percent': 0.0, 'is_waxing': False, 'expect': 0 },
         ]
+
+        weather_station = WeatherStation(
+            source = 'test',
+            station_id = 'test',
+            name = 'Testing',
+            geo_location = None,
+            station_url = None,
+            observations_url = None,
+            forecast_url = None,
+        )
+        
         for test_data in test_data_list:
             daily_astronommical_data = DailyAstronomicalData(
                 day = None,
                 moon_illumnination = NumericDataPoint(
-                    source = 'test',
+                    weather_station = weather_station,
                     source_datetime = None,
                     elevation = None,
                     quantity = UnitQuantity( test_data.get('percent'), 'percent' ),
                 ),
                 moon_is_waxing = BooleanDataPoint(
-                    source = 'test',
+                    weather_station = weather_station,
                     source_datetime = None,
                     elevation = None,
                     value = test_data.get('is_waxing'),
