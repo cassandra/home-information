@@ -40,7 +40,8 @@ class WeatherDataSource:
         limit_polling_interval_secs = ( 24 * 60 * 60 ) / polling_intervals_per_day_limit
         self._polling_interval_secs = max( limit_polling_interval_secs,
                                            min_polling_interval_secs )
-
+        self.polling_started = False
+        
         self._console_settings_helper = ConsoleSettingsHelper()
         
         # Store last query times in redis as external API rate limits do
@@ -75,7 +76,17 @@ class WeatherDataSource:
         return self._console_settings_helper.get_geographic_location()
         
     async def fetch(self):
-        if not self.can_fetch():
+        can_fetch = self.can_fetch()
+
+        # Need to deal with a server restart where we have recently cached
+        # the last poll time, but we have not populated the data in memory
+        # yet.
+        #
+        if not self.polling_started:
+            can_fetch = True
+            self.polling_started = True
+
+        if not can_fetch:
             if self.TRACE:
                 logger.debug( f'Polling limits. Skipping weather data fetch for: {self.label}' )
             return

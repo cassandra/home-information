@@ -15,6 +15,7 @@ from hi.apps.weather.transient_models import (
     WeatherStation,
 )
 from hi.apps.weather.weather_sources.nws import NationalWeatherService
+from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
 
 from hi.tests.base_test_case import BaseTestCase
@@ -24,6 +25,239 @@ logging.disable(logging.CRITICAL)
 
 
 class TestNationalWeatherService( BaseTestCase ):
+
+    def test_get_closest_station(self):
+
+        test_stations_data = {
+            "@context": [
+                "https://geojson.org/geojson-ld/geojson-context.jsonld",
+                {
+                    "@version": "1.1",
+                    "@vocab": "https://api.weather.gov/ontology#",
+                    "bearing": {
+                        "@type": "s:QuantitativeValue"
+                    },
+                    "city": "s:addressLocality",
+                    "county": {
+                        "@type": "@id"
+                    },
+                    "distance": {
+                        "@id": "s:Distance",
+                        "@type": "s:QuantitativeValue"
+                    },
+                    "forecastGridData": {
+                        "@type": "@id"
+                    },
+                    "forecastOffice": {
+                        "@type": "@id"
+                    },
+                    "geo": "http://www.opengis.net/ont/geosparql#",
+                    "geometry": {
+                        "@id": "s:GeoCoordinates",
+                        "@type": "geo:wktLiteral"
+                    },
+                    "observationStations": {
+                        "@container": "@list",
+                        "@type": "@id"
+                    },
+                    "publicZone": {
+                        "@type": "@id"
+                    },
+                    "s": "https://schema.org/",
+                    "state": "s:addressRegion",
+                    "unit": "http://codes.wmo.int/common/unit/",
+                    "unitCode": {
+                        "@id": "s:unitCode",
+                        "@type": "@id"
+                    },
+                    "value": {
+                        "@id": "s:value"
+                    },
+                    "wx": "https://api.weather.gov/ontology#"
+                }
+            ],
+            "features": [
+                {
+                    "geometry": {
+                        "coordinates": [
+                            -97.76667,
+                            30.31667
+                        ],
+                        "type": "Point"
+                    },
+                    "id": "https://api.weather.gov/stations/KATT",
+                    "properties": {
+                        "@id": "https://api.weather.gov/stations/KATT",
+                        "@type": "wx:ObservationStation",
+                        "county": "https://api.weather.gov/zones/county/TXC453",
+                        "elevation": {
+                            "unitCode": "wmoUnit:m",
+                            "value": 199.9488
+                        },
+                        "fireWeatherZone": "https://api.weather.gov/zones/fire/TXZ192",
+                        "forecast": "https://api.weather.gov/zones/forecast/TXZ192",
+                        "name": "Austin City, Austin Camp Mabry",
+                        "stationIdentifier": "KATT",
+                        "timeZone": "America/Chicago"
+                    },
+                    "type": "Feature"
+                },
+                {
+                    "geometry": {
+                        "coordinates": [
+                            -97.6798699,
+                            30.18304
+                        ],
+                        "type": "Point"
+                    },
+                    "id": "https://api.weather.gov/stations/KAUS",
+                    "properties": {
+                        "@id": "https://api.weather.gov/stations/KAUS",
+                        "@type": "wx:ObservationStation",
+                        "county": "https://api.weather.gov/zones/county/TXC453",
+                        "elevation": {
+                            "unitCode": "wmoUnit:m",
+                            "value": 148.1328
+                        },
+                        "fireWeatherZone": "https://api.weather.gov/zones/fire/TXZ192",
+                        "forecast": "https://api.weather.gov/zones/forecast/TXZ192",
+                        "name": "Austin-Bergstrom International Airport",
+                        "stationIdentifier": "KAUS",
+                        "timeZone": "America/Chicago"
+                    },
+                    "type": "Feature"
+                },
+                {
+                    "geometry": {
+                        "coordinates": [
+                            -97.9659,
+                            30.4967
+                        ],
+                        "type": "Point"
+                    },
+                    "id": "https://api.weather.gov/stations/KRYW",
+                    "properties": {
+                        "@id": "https://api.weather.gov/stations/KRYW",
+                        "@type": "wx:ObservationStation",
+                        "county": "https://api.weather.gov/zones/county/TXC453",
+                        "elevation": {
+                            "unitCode": "wmoUnit:m",
+                            "value": 374.904
+                        },
+                        "fireWeatherZone": "https://api.weather.gov/zones/fire/TXZ192",
+                        "forecast": "https://api.weather.gov/zones/forecast/TXZ192",
+                        "name": "Lago Vista TX, Rusty Allen Airport",
+                        "stationIdentifier": "KRYW",
+                        "timeZone": "America/Chicago"
+                    },
+                    "type": "Feature"
+                },
+                {
+                    "geometry": {
+                        "coordinates": [
+                            -102.21306,
+                            30.04806
+                        ],
+                        "type": "Point"
+                    },
+                    "id": "https://api.weather.gov/stations/K6R6",
+                    "properties": {
+                        "@id": "https://api.weather.gov/stations/K6R6",
+                        "@type": "wx:ObservationStation",
+                        "county": "https://api.weather.gov/zones/county/TXC443",
+                        "elevation": {
+                            "unitCode": "wmoUnit:m",
+                            "value": 707.136
+                        },
+                        "fireWeatherZone": "https://api.weather.gov/zones/fire/TXZ082",
+                        "forecast": "https://api.weather.gov/zones/forecast/TXZ082",
+                        "name": "Dryden - Terrell County Airport",
+                        "stationIdentifier": "K6R6",
+                        "timeZone": "America/Chicago"
+                    },
+                    "type": "Feature"
+                }
+            ],
+            "observationStations": [
+                "https://api.weather.gov/stations/KATT",
+                "https://api.weather.gov/stations/KAUS",
+                "https://api.weather.gov/stations/KRYW",
+                "https://api.weather.gov/stations/K6R6"
+            ],
+            "pagination": {
+                "next": "https://api.weather.gov/stations?id%5B0%5D=K11R&id%5B1%5D=K2R9&id%5B2%5D=K3T5&id%5B3%5D=K5C1&id%5B4%5D=K5T9&id%5B5%5D=K66R&id%5B6%5D=K6R6&id%5B7%5D=K8T6&id%5B8%5D=KACT&id%5B9%5D=KALI&id%5B10%5D=KAQO&id%5B11%5D=KARM&id%5B12%5D=KATT&id%5B13%5D=KAUS&id%5B14%5D=KBAZ&id%5B15%5D=KBBD&id%5B16%5D=KBEA&id%5B17%5D=KBMQ&id%5B18%5D=KCLL&id%5B19%5D=KCOT&id%5B20%5D=KCRP&id%5B21%5D=KCVB&id%5B22%5D=KCZT&id%5B23%5D=KDLF&id%5B24%5D=KDRT&id%5B25%5D=KDZB&id%5B26%5D=KECU&id%5B27%5D=KELA&id%5B28%5D=KERV&id%5B29%5D=KFTN&id%5B30%5D=KGOP&id%5B31%5D=KGRK&id%5B32%5D=KGTU&id%5B33%5D=KGYB&id%5B34%5D=KHDO&id%5B35%5D=KHYI&id%5B36%5D=KILE&id%5B37%5D=KJCT&id%5B38%5D=KLHB&id%5B39%5D=KLZZ&id%5B40%5D=KPEZ&id%5B41%5D=KPKV&id%5B42%5D=KPWG&id%5B43%5D=KRAS&id%5B44%5D=KRBO&id%5B45%5D=KRKP&id%5B46%5D=KRND&id%5B47%5D=KRWV&id%5B48%5D=KRYW&id%5B49%5D=KSAT&id%5B50%5D=KSEQ&id%5B51%5D=KSJT&id%5B52%5D=KSKF&id%5B53%5D=KSOA&id%5B54%5D=KSSF&id%5B55%5D=KT20&id%5B56%5D=KT35&id%5B57%5D=KT70&id%5B58%5D=KT74&id%5B59%5D=KT82&id%5B60%5D=KTPL&id%5B61%5D=KUVA&id%5B62%5D=KVCT&cursor=eyJzIjo1MDB9"
+            },
+            "type": "FeatureCollection"
+        }
+
+        test_data_list = [
+            {
+                'geographic_location': GeographicLocation(
+                    latitude = 30.3,
+                    longitude = -97.8,
+                ),
+                'expected': {
+                    'station_id': 'KATT',
+                    'name': 'Austin City, Austin Camp Mabry',
+                    'geo_location': GeographicLocation(
+                        latitude = 30.31667,
+                        longitude = -97.76667,
+                    ),
+                    'station_url': 'https://api.weather.gov/stations/KATT',
+                    'observations_url': 'https://api.weather.gov/stations/KATT/observations/latest',
+                    'forecast_url': 'https://api.weather.gov/zones/forecast/TXZ192',
+                },
+            },
+            {
+                'geographic_location': GeographicLocation(
+                    latitude = 30.2,
+                    longitude = -97.8,
+                ),
+                'expected': {
+                    'station_id': 'KAUS',
+                    'name': 'Austin-Bergstrom International Airport',
+                    'geo_location': GeographicLocation(
+                        latitude = 30.18304,
+                        longitude = -97.6798699,
+                    ),
+                    'station_url': 'https://api.weather.gov/stations/KAUS',
+                    'observations_url': 'https://api.weather.gov/stations/KAUS/observations/latest',
+                    'forecast_url': 'https://api.weather.gov/zones/forecast/TXZ192',
+                },
+            },
+        ]
+
+        nws = NationalWeatherService()
+        
+        for test_data in test_data_list:
+
+            weather_station = nws._get_closest_weather_station(
+                geographic_location = test_data['geographic_location'],
+                stations_data = test_stations_data,
+            )
+            self.assertEqual( test_data['expected']['station_id'],
+                              weather_station.station_id,
+                              test_data )
+            self.assertEqual( test_data['expected']['name'],
+                              weather_station.name,
+                              test_data )
+            self.assertEqual( test_data['expected']['geo_location'].latitude,
+                              weather_station.geo_location.latitude,
+                              test_data )
+            self.assertEqual( test_data['expected']['geo_location'].longitude,
+                              weather_station.geo_location.longitude,
+                              test_data )
+            self.assertEqual( test_data['expected']['station_url'],
+                              weather_station.station_url,
+                              test_data )
+            self.assertEqual( test_data['expected']['observations_url'],
+                              weather_station.observations_url,
+                              test_data )
+            self.assertEqual( test_data['expected']['forecast_url'],
+                              weather_station.forecast_url,
+                              test_data )
+            continue
+        return
 
     def test_parse_nws_quantity__exceptions(self):
         test_data_list = [

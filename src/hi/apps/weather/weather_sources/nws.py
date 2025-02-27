@@ -307,9 +307,9 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         points_data = points_response.json()
         return points_data
     
-    def _get_closest_station_url( self,
-                                  geographic_location : GeographicLocation,
-                                  stations_data       : Dict ) -> WeatherStation:
+    def _get_closest_weather_station( self,
+                                      geographic_location : GeographicLocation,
+                                      stations_data       : Dict ) -> WeatherStation:
 
         minimum_distance = 9999999.0
         closest_weather_station = None
@@ -332,7 +332,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                 logger.warning( f'NWS stations feature parsing problem: {e}' )
                 continue
             continue
-
+        
         if closest_weather_station:
             return closest_weather_station
         
@@ -355,38 +355,39 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         raise ValueError( 'Problem pasring NWS station data' )
         
     def _get_weather_station_from_station_data_feature( self, stations_feature_data ):
-
+        
         geometry_data = stations_feature_data.get('geometry')
         properties_data = stations_feature_data.get('properties')
 
         if properties_data.get('@type') != 'wx:ObservationStation':
             return None
 
+        if properties_data:
+            elevation = self._parse_elevation( properties_data.get('elevation') )
+        else:
+            elevation = None
+
+        geo_location = None
+        if geometry_data:
+            coordinates_data = geometry_data.get('coordinates')
+            if coordinates_data and ( len(coordinates_data) == 2 ):
+                geo_location = GeographicLocation(
+                    longitude = coordinates_data[0],
+                    latitude = coordinates_data[1],
+                    elevation = elevation,
+                )
+        
         station_url = properties_data.get('@id')  # Yes, id -> url
         observations_url = f'{station_url}/observations/latest'
         weather_station = WeatherStation(
             source = self.data_point_source,
             station_id = properties_data.get('stationIdentifier'),
             name = properties_data.get('name'),
-            geo_location = None,
+            geo_location = geo_location,
             station_url = station_url,
             observations_url = observations_url,
             forecast_url = properties_data.get('forecast'),
         )
-        
-        if properties_data:
-            elevation = self._parse_elevation( properties_data.get('elevation') )
-        else:
-            elevation = None
-        
-        if geometry_data:
-            coordinates_data = geometry_data.get('coordinates')
-            if coordinates_data and ( len(coordinates_data) == 2 ):
-                weather_station.geo_location = GeographicLocation(
-                    latitude = coordinates_data[0],
-                    longitude = coordinates_data[1],
-                    elevation = elevation,
-                )
         
         return weather_station
 
