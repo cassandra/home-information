@@ -10,4 +10,16 @@ Current Conditions
 {% endif %}
 {% include "weather/panes/conditions.html" with conditions=weather_conditions_data %}
 {% include "weather/panes/conditions_extended.html" with conditions=weather_conditions_data %}
+
+{% with weather_conditions_data.weather_stations as weather_station_list %}
+{% if weather_station_list %}
+<div class="h5">Weather Sources</div>
+{% for weather_station in weather_station_list %}
+<div>
+  {{ weather_station.source.label }} <small>{{ weather_station.name }} ({{ weather_station.station_id }})</small>
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
 {% endblock %}

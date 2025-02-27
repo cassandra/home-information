@@ -131,4 +131,48 @@ class WeatherManager( Singleton, SettingsMixin ):
             setattr( current_weather_data, field_name, new_datapoint )
             continue
         return
+
+    def _update_weather_data( self,
+                              current_weather_data : WeatherData,
+                              new_weather_data     : WeatherData,
+                              data_point_source    : DataPointSource ):
+
+        now = datetimeproxy.now()
+        for field in fields( current_weather_data ):
+            field_name = field.name
+            field_type = field.type
+            field_base_type = get_origin(field_type) or field_type  
+
+            if not issubclass( field_base_type, DataPoint ):
+                continue
+            
+            current_datapoint = getattr( current_weather_data, field_name )
+            new_datapoint = getattr( new_weather_data, field_name )
+
+            # Skip data not present in source's data 
+            if new_datapoint is None:
+                continue
+
+            # Always fill in blank data
+            if current_datapoint is None:
+                setattr( current_weather_data, field_name, new_datapoint )
+                continue
+
+            # Higher and same priority sources can always overwrite (if newer data).
+            current_priority = current_datapoint.source.priority
+            new_priority = new_datapoint.source.priority
+            if new_priority <= current_priority:
+                if new_datapoint.source_datetime > current_datapoint.source_datetime:
+                    setattr( current_weather_data, field_name, new_datapoint )
+                continue
+
+            # Lower priority sources can only overwrite if data is stale.
+            current_datapoint_age = now - current_datapoint.source_datetime
+            if current_datapoint_age.total_seconds() < self.STALE_DATA_POINT_AGE_SECONDS:
+                continue
+
+            setattr( current_weather_data, field_name, new_datapoint )
+            continue
+        return
+
     

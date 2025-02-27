@@ -1,6 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from datetime import date, datetime, time
-from typing import Generic, List, TypeVar
+from typing import Generic, List, TypeVar, get_origin
 
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
@@ -102,7 +102,22 @@ class ListDataPoint( DataPoint, Generic[T] ):
 @dataclass
 class WeatherData:
     """ Base class for all weather data that consists of a series of DataPoint fields """ 
-    pass
+
+    @property
+    def weather_stations(self) -> List[ WeatherStation ]:
+        weather_station_map = dict()
+        for field in fields( self ):
+            field_name = field.name
+            field_type = field.type
+            field_base_type = get_origin(field_type) or field_type  
+
+            if not issubclass( field_base_type, DataPoint ):
+                continue
+            datapoint = getattr( self, field_name )
+            weather_station_map[datapoint.weather_station.key] = datapoint.weather_station
+            continue
+        return list( weather_station_map.values() )
+        
 
 
 @dataclass
