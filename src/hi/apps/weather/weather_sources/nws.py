@@ -672,6 +672,30 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         
         return weather_station
 
+    def _create_numeric_data_point( self,
+                                    nws_data_dict    : Dict[ str, Any ],
+                                    source_datetime  : datetime,
+                                    weather_station  : WeatherStation,
+                                    elevation        : UnitQuantity,
+                                    for_min_value    : bool              = False,
+                                    for_max_value    : bool              = False  ) -> NumericDataPoint:
+        try:
+            quantity = self._parse_nws_quantity(
+                nws_data_dict = nws_data_dict,
+                for_min_value = for_min_value,
+                for_max_value = for_max_value,
+            )
+            if quantity is not None:
+                return NumericDataPoint(
+                    weather_station = weather_station,
+                    source_datetime = source_datetime,
+                    elevation = elevation,
+                    quantity = quantity,
+                )
+        except Exception as e:
+            logger.error( f'Problem parsing NWS data: {nws_data_dict}: {e}' )
+        return None        
+
     def _parse_geometry( self,
                          geometry_dict  : Dict[ str, Any ],
                          elevation      : UnitQuantity       = None) -> GeographicLocation:
@@ -707,43 +731,58 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                              nws_data_dict  : Dict[ str, Any ],
                              for_min_value  : bool              = False,
                              for_max_value  : bool              = False ) -> UnitQuantity:
+        assert not ( for_min_value and for_max_value )
+        
         if not nws_data_dict:
             return None
-        value = nws_data_dict.get('value')
-        if value is None:
+
+        min_value = nws_data_dict.get( 'minValue' )
+        value = nws_data_dict.get( 'value' )
+        max_value = nws_data_dict.get( 'maxValue' )
+
+        if min_value is None and value is None and max_value is None:
             return None
+        
         unit_code = nws_data_dict.get('unitCode')
         if not unit_code:
             raise ValueError( 'Missing unit code' )
         units_str = WmoUnits.normalize_unit( unit_code )
-        try:
-            return UnitQuantity( value, units_str )
-        except Exception as e:
-            raise ValueError( f'Bad units: {e}' )
 
-    def _create_numeric_data_point( self,
-                                    nws_data_dict    : Dict[ str, Any ],
-                                    source_datetime  : datetime,
-                                    weather_station  : WeatherStation,
-                                    elevation        : UnitQuantity,
-                                    for_min_value    : bool              = False,
-                                    for_max_value    : bool              = False  ) -> NumericDataPoint:
-        try:
-            quantity = self._parse_nws_quantity(
-                nws_data_dict = nws_data_dict,
-                for_min_value = for_min_value,
-                for_max_value = for_max_value,
-            )
+        def to_unit_quantity( nws_value : float ) -> UnitQuantity:
+            if nws_value is None:
+                return None
+            try:
+                return UnitQuantity( nws_value, units_str )
+            except Exception as e:
+                raise ValueError( f'Bad units: {e}' )
+            return
+
+        min_quantity = to_unit_quantity( min_value )
+        quantity = to_unit_quantity( value )
+        max_quantity = to_unit_quantity( max_value )
+        
+        if for_min_value:
+            if min_quantity is not None:
+                return min_quantity
             if quantity is not None:
-                return NumericDataPoint(
-                    weather_station = weather_station,
-                    source_datetime = source_datetime,
-                    elevation = elevation,
-                    quantity = quantity,
-                )
-        except Exception as e:
-            logger.error( f'Problem parsing NWS data: {nws_data_dict}: {e}' )
-        return None        
+                return quantity
+            return max_quantity
+        
+        elif for_max_value:
+            if max_quantity is not None:
+                return max_quantity
+            if quantity is not None:
+                return quantity
+            return min_quantity
+        
+        else:
+            if quantity is not None:
+                return quantity
+            if min_quantity is None:
+                return max_quantity
+            if max_quantity is None:
+                return min_quantity
+            return UnitQuantity( ( min_quantity.magnitude + max_quantity.magnitude ) / 2.0, units_str )
                                        
     def _parse_cloud_layers( self,
                              properties_data          : Dict[ str, str ],

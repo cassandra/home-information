@@ -268,6 +268,16 @@ class TestNationalWeatherService( BaseTestCase ):
                 "unitCode": "_undefined_unit_",
                 "value": 5
             },
+            {
+                "qualityControl": "Z",
+                "unitCode": "_undefined_unit_",
+                "maxValue": 5
+            },
+            {
+                "qualityControl": "Z",
+                "unitCode": "_undefined_unit_",
+                "minValue": 5
+            },
         ]
         nws = NationalWeatherService()
         for nws_data_dict in test_data_list:
@@ -283,7 +293,7 @@ class TestNationalWeatherService( BaseTestCase ):
             { 'foo': 'bar' },
             {
                 "qualityControl": "Z",
-                "value": None
+                "value": None,
             },
             {
                 "qualityControl": "Z",
@@ -292,7 +302,24 @@ class TestNationalWeatherService( BaseTestCase ):
             {
                 "qualityControl": "Z",
                 "unitCode": "wmoUnit:mm",
-                "value": None
+                "value": None,
+            },
+            {
+                "qualityControl": "Z",
+                "unitCode": "wmoUnit:mm",
+                "minValue": None,
+            },
+            {
+                "qualityControl": "Z",
+                "unitCode": "wmoUnit:mm",
+                "maxValue": None
+            },
+            {
+                "qualityControl": "Z",
+                "unitCode": "wmoUnit:mm",
+                "mainValue": None,
+                "value": None,
+                "maxValue": None,
             },
         ]
         nws = NationalWeatherService()
@@ -309,32 +336,228 @@ class TestNationalWeatherService( BaseTestCase ):
                     "unitCode": "wmoUnit:mm",
                     "value": 0
                 },
+                'for_min_value': False,
+                'for_max_value': False,
                 'expected': UnitQuantity( 0, 'millimeter' ),
             },
             {
                 "nws_data_dict": {
                     "qualityControl": "V",
                     "unitCode": "wmoUnit:percent",
-                    "value": 65.595209439964
+                    "value": 65.595209439964,
                 },
+                'for_min_value': False,
+                'for_max_value': False,
                 'expected': UnitQuantity( 65.595209439964, 'percent' ),
             },
             {
                 "nws_data_dict": {
                     "qualityControl": "V",
                     "unitCode": "wmoUnit:km_h-1",
-                    "value": 9.36
+                    "value": 9.36,
                 },
+                'for_min_value': False,
+                'for_max_value': False,
                 'expected': UnitQuantity( 9.36, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "minValue": 9.36,
+                },
+                'for_min_value': False,
+                'for_max_value': False,
+                'expected': UnitQuantity( 9.36, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "maxValue": 9.36,
+                },
+                'for_min_value': False,
+                'for_max_value': False,
+                'expected': UnitQuantity( 9.36, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "minValue": 5.0,
+                    "maxValue": 9.0,
+                },
+                'for_min_value': False,
+                'for_max_value': False,
+                'expected': UnitQuantity( 7.0, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "minValue": 5.0,
+                    "value": 11.0,
+                    "maxValue": 9.0,
+                },
+                'for_min_value': False,
+                'for_max_value': False,
+                'expected': UnitQuantity( 11.0, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "minValue": 11.0,
+                },
+                'for_min_value': True,
+                'for_max_value': False,
+                'expected': UnitQuantity( 11.0, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "value": 11.0,
+                },
+                'for_min_value': True,
+                'for_max_value': False,
+                'expected': UnitQuantity( 11.0, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "maxValue": 11.0,
+                },
+                'for_min_value': True,
+                'for_max_value': False,
+                'expected': UnitQuantity( 11.0, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "minValue": 11.0,
+                    "value": 8.0,
+                },
+                'for_min_value': True,
+                'for_max_value': False,
+                'expected': UnitQuantity( 11.0, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "minValue": 11.0,
+                    "maxValue": 8.0,
+                },
+                'for_min_value': True,
+                'for_max_value': False,
+                'expected': UnitQuantity( 11.0, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "value": 11.0,
+                    "maxValue": 8.0,
+                },
+                'for_min_value': True,
+                'for_max_value': False,
+                'expected': UnitQuantity( 11.0, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "minValue": 4.0,
+                    "value": 11.0,
+                    "maxValue": 8.0,
+                },
+                'for_min_value': True,
+                'for_max_value': False,
+                'expected': UnitQuantity( 4.0, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "minValue": 4.0,
+                },
+                'for_min_value': False,
+                'for_max_value': True,
+                'expected': UnitQuantity( 4.0, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "value": 4.0,
+                },
+                'for_min_value': False,
+                'for_max_value': True,
+                'expected': UnitQuantity( 4.0, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "maxValue": 4.0,
+                },
+                'for_min_value': False,
+                'for_max_value': True,
+                'expected': UnitQuantity( 4.0, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "minValue": 4.0,
+                    "value": 9.0,
+                },
+                'for_min_value': False,
+                'for_max_value': True,
+                'expected': UnitQuantity( 9.0, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "minValue": 4.0,
+                    "maxValue": 9.0,
+                },
+                'for_min_value': False,
+                'for_max_value': True,
+                'expected': UnitQuantity( 9.0, 'kilometers /hour' ),
+            },
+            {
+                "nws_data_dict": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "minValue": 4.0,
+                    "value": 12.0,
+                    "maxValue": 9.0,
+                },
+                'for_min_value': False,
+                'for_max_value': True,
+                'expected': UnitQuantity( 9.0, 'kilometers /hour' ),
             },
         ]
 
         nws = NationalWeatherService()
 
         for test_data in test_data_list:
-            result_quantity = nws._parse_nws_quantity( nws_data_dict = test_data['nws_data_dict'])
-            self.assertAlmostEqual( test_data['expected'].magnitude, result_quantity.magnitude, 3, test_data )
-            self.assertEqual( test_data['expected'].units, result_quantity.units, test_data )
+            result_quantity = nws._parse_nws_quantity(
+                nws_data_dict = test_data['nws_data_dict'],
+                for_min_value = test_data['for_min_value'],
+                for_max_value = test_data['for_max_value'],
+            )
+            self.assertAlmostEqual( test_data['expected'].magnitude,
+                                    result_quantity.magnitude,
+                                    3, test_data )
+            self.assertEqual( test_data['expected'].units,
+                              result_quantity.units,
+                              test_data )
             continue
         return
 
@@ -437,7 +660,8 @@ class TestNationalWeatherService( BaseTestCase ):
                 elevation = elevation,
             )
             self.assertEqual( nws.data_point_source.id,
-                              result_data_point.weather_station.source.id )
+                              result_data_point.weather_station.source.id,
+                              test_data )
             self.assertEqual( now, result_data_point.source_datetime )
             self.assertEqual( elevation, result_data_point.elevation )
             result_quantity = result_data_point.quantity
