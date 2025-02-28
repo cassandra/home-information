@@ -24,10 +24,10 @@
     {% endif %}    
   </td>
   <td>
-    {% if daily_history_data.precipitation %}
+    {% if daily_history_data.precipitation_amount %}
     <div>
-      {{ daily_history_data.precipitation.quantity|format_magnitude:1 }}
-      <small>{{ daily_history_data.precipitation.quantity|format_units }}</small>
+      {{ daily_history_data.precipitation_amount.quantity|format_magnitude:1 }}
+      <small>{{ daily_history_data.precipitation_amount.quantity|format_units }}</small>
     </div>
     {% endif %}
   </td>

@@ -468,6 +468,12 @@ class WeatherSyntheticData:
             elevation = UnitQuantity( 2, 'meters' ),
             value = 'A lot of weather today.',
         )
+        data_obj.description_long = StringDataPoint(
+            weather_station = weather_station,
+            source_datetime = now,
+            elevation = UnitQuantity( 2, 'meters' ),
+            value = 'A lot of weather today blah blah blah blah blah blah blah blah blah blah blah blah.',
+        )
         return
 
     @classmethod
@@ -510,7 +516,7 @@ class WeatherSyntheticData:
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( -5, 115 ), 'degF' ),
         )
-        data_obj.precipitation = NumericDataPoint(
+        data_obj.precipitation_amount = NumericDataPoint(
             weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
@@ -521,6 +527,24 @@ class WeatherSyntheticData:
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.random(), 'probability' ),
+        )
+        data_obj.windspeed_min = NumericDataPoint(
+            weather_station = weather_station,
+            source_datetime = now,
+            elevation = UnitQuantity( 10, 'meters' ),
+            quantity = UnitQuantity( random.randint( -5, 115 ), 'km / h' ),
+        )
+        data_obj.windspeed_ave = NumericDataPoint(
+            weather_station = weather_station,
+            source_datetime = now,
+            elevation = UnitQuantity( 18, 'meters' ),
+            quantity = UnitQuantity( random.randint( -5, 115 ), 'km / h' ),
+        )
+        data_obj.windspeed_max = NumericDataPoint(
+            weather_station = weather_station,
+            source_datetime = now,
+            elevation = UnitQuantity( 40, 'meters' ),
+            quantity = UnitQuantity( random.randint( -5, 115 ), 'km / h' ),
         )
         cls.set_random_common_weather_data(
             data_obj = data_obj,

@@ -24,10 +24,10 @@
     {% endif %}    
   </td>
   <td>
-    {% if hourly_forecast_data.precipitation %}
+    {% if hourly_forecast_data.precipitation_amount %}
     <div>
-      {{ hourly_forecast_data.precipitation.quantity|format_magnitude:1 }}
-      <small>{{ hourly_forecast_data.precipitation.quantity|format_units }}</small>
+      {{ hourly_forecast_data.precipitation_amount.quantity|format_magnitude:1 }}
+      <small>{{ hourly_forecast_data.precipitation_amount.quantity|format_units }}</small>
     </div>
     {% endif %}
     {% if hourly_forecast_data.precipitation_probability %}

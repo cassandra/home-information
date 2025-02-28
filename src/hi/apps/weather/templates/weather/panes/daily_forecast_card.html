@@ -36,9 +36,9 @@
     </div>
   </div>
   <div>
-    {% if daily_forecast_data.precipitation %}
-    {{ daily_forecast_data.precipitation.quantity|format_magnitude:1 }}
-    <small>{{ daily_forecast_data.precipitation.quantity|format_units }}</small>
+    {% if daily_forecast_data.precipitation_amount %}
+    {{ daily_forecast_data.precipitation_amount.quantity|format_magnitude:1 }}
+    <small>{{ daily_forecast_data.precipitation_amount.quantity|format_units }}</small>
     {% else %}
     ---
     {% endif %}
