@@ -1,4 +1,4 @@
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 from datetime import date, datetime, time
 from typing import Generic, List, TypeVar, get_origin
 
@@ -106,25 +106,28 @@ class WeatherData:
     @property
     def weather_stations(self) -> List[ WeatherStation ]:
         weather_station_map = dict()
-        for field in fields( self ):
-            field_name = field.name
-            field_type = field.type
-            field_base_type = get_origin(field_type) or field_type  
+        for a_field in fields( self ):
+            field_name = a_field.name
+            field_type = a_field.type
+            field_base_type = get_origin( field_type ) or field_type  
 
             if not issubclass( field_base_type, DataPoint ):
                 continue
             datapoint = getattr( self, field_name )
+            if not datapoint:
+                continue
             weather_station_map[datapoint.weather_station.key] = datapoint.weather_station
             continue
-        return list( weather_station_map.values() )
-        
+        return list( weather_station_map.values() ) 
 
 
 @dataclass
 class CommonWeatherData( WeatherData ):
     """ For those data points shared between current conditions and forecasts. """
     
-    description                : StringDataPoint   = None
+    description_short          : StringDataPoint   = None
+    description_long           : StringDataPoint   = None
+    is_daytime                 : BooleanDataPoint  = None
     cloud_cover                : NumericDataPoint  = None  # Percent
     cloud_ceiling              : NumericDataPoint  = None
     windspeed_min              : NumericDataPoint  = None
@@ -148,6 +151,14 @@ class CommonWeatherData( WeatherData ):
         if self.windspeed_min:
             return self.windspeed_min
         return None
+
+    @property
+    def sky_condition( self ) -> SkyCondition:
+        if not self.cloud_cover:
+            return None
+        return SkyCondition.from_cloud_cover(
+            cloud_cover_percent = self.cloud_cover.quantity.magnitude,
+        )
 
     
 @dataclass
@@ -202,22 +213,14 @@ class PeriodWeatherData( CommonWeatherData ):
     For those data points shared by forecast and historical data (which are
     defined for a specific period of time).
     """
-    
     period_start               : datetime          = None
     period_end                 : datetime          = None
+    period_name                : StringDataPoint   = None
     temperature_min            : NumericDataPoint  = None
     temperature_ave            : NumericDataPoint  = None
     temperature_max            : NumericDataPoint  = None
-    precipitation              : NumericDataPoint  = None
-
-    @property
-    def sky_condition( self ) -> SkyCondition:
-        if not self.cloud_cover:
-            return None
-        return SkyCondition.from_cloud_cover(
-            cloud_cover_percent = self.cloud_cover.quantity.magnitude,
-        )
-
+    precipitation_amount       : NumericDataPoint  = None
+    
     @property
     def temperature(self):
         if self.temperature_ave:
@@ -237,7 +240,7 @@ class WeatherForecastData( PeriodWeatherData ):
 @dataclass
 class WeatherHistoryData( PeriodWeatherData ):
     pass
-
+    
     
 @dataclass
 class DailyAstronomicalData( WeatherData ):
@@ -287,6 +290,21 @@ class WeatherOverviewData:
 
     current_conditions_data   : WeatherConditionsData
     todays_astronomical_data  : DailyAstronomicalData
+
+    
+@dataclass
+class HourlyForecast:
+    data_list    : List[ WeatherForecastData ]  = field( default_factory = list )
+    
+
+@dataclass
+class DailyForecast:
+    data_list    : List[ WeatherForecastData ]  = field( default_factory = list )
+
+    
+@dataclass
+class DailyHistory:
+    data_list    : List[ WeatherHistoryData ]  = field( default_factory = list )
 
 
 @dataclass

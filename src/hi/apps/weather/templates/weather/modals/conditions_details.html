@@ -5,8 +5,11 @@ Current Conditions
 {% endblock %}
 
 {% block body %}
-{% if weather_conditions_data.description %}
-<div>{{ weather_conditions_data.description.value }}</div>
+{% if weather_conditions_data.description_short %}
+<div>{{ weather_conditions_data.description_short.value }}</div>
+{% endif %}
+{% if weather_conditions_data.description_long %}
+<div>{{ weather_conditions_data.description_long.value }}</div>
 {% endif %}
 {% include "weather/panes/conditions.html" with conditions=weather_conditions_data %}
 {% include "weather/panes/conditions_extended.html" with conditions=weather_conditions_data %}

@@ -462,7 +462,7 @@ class WeatherSyntheticData:
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( 0, 10 ), 'miles' ),
         )
-        data_obj.description = StringDataPoint(
+        data_obj.description_short = StringDataPoint(
             weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),

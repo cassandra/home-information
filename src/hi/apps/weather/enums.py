@@ -299,3 +299,43 @@ class WeatherPhenomenonIntensity( LabeledEnum ):
         super().__init__( label, description )
         self.metar_modifier = metar_modifier  # No prefix implies "MODERATE"
         return
+
+
+class WindDirection( LabeledEnum ):
+    NORTH            = ( 'N'   , '', 0.0   , [ 'n' ] )
+    NORTH_NORTHEAST  = ( 'NNE' , '', 22.5  , [ 'nne' ] )
+    NORTHEAST        = ( 'NE'  , '', 45.0  , [ 'ne' ] )
+    EAST_NORTHEAST   = ( 'ENE' , '', 67.5  , [ 'ene' ] )
+    EAST             = ( 'E'   , '', 90.0  , [ 'e' ] )
+    EAST_SOUTHEAST   = ( 'ESE' , '', 112.5 , [ 'ese' ])
+    SOUTHEAST        = ( 'SE'  , '', 135.0 , [ 'se' ] )
+    SOUTH_SOUTHEAST  = ( 'SSE' , '', 157.5 , [ 'sse' ] )
+    SOUTH            = ( 'S'   , '', 180.0 , [ 's' ] )
+    SOUTH_SOUTHWEST  = ( 'SSW' , '', 202.5 , [ 'ssw' ] )
+    SOUTHWEST        = ( 'SW'  , '', 225.0 , [ 'sw' ] )
+    WEST_SOUTHWEST   = ( 'WSW' , '', 247.5 , [ 'wsw' ] )
+    WEST             = ( 'W'   , '', 270.0 , [ 'w' ] )
+    WEST_NORTHWEST   = ( 'WNW' , '', 292.5 , [ 'wnw' ] )
+    NORTHWEST        = ( 'NW'  , '', 315.0 , [ 'nw' ] )
+    NORTH_NORTHWEST  = ( 'NNW' , '', 337.5 , [ 'nnw' ] )
+    
+    def __init__( self,
+                  label           : str,
+                  description     : str,
+                  angle_degrees   : float,
+                  mnemonic_list   : str ):
+        super().__init__( label, description )
+        self.angle_degrees = angle_degrees
+        self.mnemonic_list = mnemonic_list
+        return
+
+    @classmethod
+    def from_menomic( cls, mnemonic_str : str ):
+        if not mnemonic_str:
+            raise ValueError( 'Blank wind speed mnemonic.' )
+        for mnemonic_enum in cls:
+            if mnemonic_str.strip().lower() in mnemonic_enum.mnemonic_list:
+                return mnemonic_enum
+            continue
+        raise ValueError( f'Unknown wind speed mnemonic "{mnemonic_str}".' )
+    

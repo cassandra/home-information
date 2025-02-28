@@ -2,20 +2,23 @@ from datetime import datetime
 import json
 import logging
 import requests
-from typing import Dict
+from typing import Any, Dict, List
 
 from django.conf import settings
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 import hi.apps.common.geo_utils as geo_utils
+from hi.apps.common.utils import str_to_bool
 from hi.apps.weather.weather_data_source import WeatherDataSource
-from hi.apps.weather.enums import WeatherPhenomenonModifier
+from hi.apps.weather.enums import WeatherPhenomenonModifier, WindDirection
 from hi.apps.weather.transient_models import (
+    BooleanDataPoint,
     ListDataPoint,
     NotablePhenomenon,
     NumericDataPoint,
     StringDataPoint,
     WeatherConditionsData,
+    WeatherForecastData,
     WeatherStation,
 )
 from hi.apps.weather.weather_mixins import WeatherMixin
@@ -35,7 +38,8 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
     POINTS_DATA_CACHE_EXPIRY_SECS = 12 * 60 * 60  # Can change, but not often
     STATIONS_DATA_CACHE_EXPIRY_SECS = 12 * 60 * 60  # Can change, but not often
     OBSERVATIONS_DATA_CACHE_EXPIRY_SECS = 5 * 60  # Cache for rate-limit risk reduction
-
+    FORECAST_DATA_CACHE_EXPIRY_SECS = 60 * 60
+    
     SKIP_CACHE = False  # For debugging    
     
     def __init__( self ):
@@ -48,7 +52,10 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             min_polling_interval_secs = 10 * 60,  # NWS stations seem to update only hourly
         )
 
-        self._headers = {'User-Agent': 'HomeInformation (weather@homeinformation.org)'}
+        self._headers = {
+            'User-Agent': 'HomeInformation (weather@homeinformation.org)',
+            'Feature-Flags': 'forecast_temperature_qv,forecast_wind_speed_qv',  # Important
+        }
         return
     
     async def get_data(self):
@@ -66,6 +73,24 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             weather_data_source = self,
             weather_conditions_data = current_conditions_data,
         )
+
+
+
+
+
+
+        #  ZZZZ get two type of forecasts, but only once an hour???
+        # reconsile with superclass logic Maybe the subclass should be
+        # responsible for all actual intervals, while superclass is just
+        # the min periodicx interval.
+
+
+
+
+
+
+        
+        
         return
 
     def get_current_conditions( self, geographic_location : GeographicLocation ) -> WeatherConditionsData:
@@ -76,149 +101,359 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             weather_station = weather_station,
         )
 
+    def get_forecast_hourly( self, geographic_location : GeographicLocation ) -> List[ WeatherForecastData ]:
+        points_data = self._get_points_data( geographic_location = geographic_location )
+
+        properties_data = points_data.get('properties')
+        if not properties_data:
+            logger.warning( 'No properties seen in NWS points data response.' )
+            return 
+
+        geo_location = self._parse_geometry(
+            geometry_dict = properties_data.get('geometry'),
+            elevation = None,
+        )
+        weather_station = WeatherStation(
+            source = self.data_point_source,
+            station_id = '%s:%s' % ( properties_data.get('gridId'), 'hourly' ),
+            name = properties_data.get('gridId'),
+            geo_location = geo_location,
+            station_url = properties_data.get('forecastOffice'),
+            observations_url = None,
+            forecast_url = properties_data.get('forecastHourly'),
+        )
+        if not weather_station.forecast_url:
+            logger.warning( 'No hourly forecast URL seen in NWS points data response.' )
+            return 
+
+        forecast_hourly_data = self._get_forecast_hourly_data( weather_station = weather_station )
+        return self._parse_forecast_data(
+            forecast_hourly_data = forecast_hourly_data,
+            weather_station = weather_station,
+        )
+
+    def get_forecast_12h( self, geographic_location : GeographicLocation ) -> List[ WeatherForecastData ]:
+        points_data = self._get_points_data( geographic_location = geographic_location )
+
+        properties_data = points_data.get('properties')
+        if not properties_data:
+            logger.warning( 'No properties seen in NWS points data response.' )
+            return 
+
+        geo_location = self._parse_geometry(
+            geometry_dict = properties_data.get('geometry'),
+            elevation = None,
+        )
+        weather_station = WeatherStation(
+            source = self.data_point_source,
+            station_id = '%s:%s' % ( properties_data.get('gridId'), '12h' ),
+            name = properties_data.get('gridId'),
+            geo_location = geo_location,
+            station_url = properties_data.get('forecastOffice'),
+            observations_url = None,
+            forecast_url = properties_data.get('forecast'),
+        )
+        if not weather_station.forecast_url:
+            logger.warning( 'No 12h forecast URL seen in NWS points data response.' )
+            return 
+
+        forecast_12h_data = self._get_forecast_12h_data( weather_station = weather_station )
+        return self._parse_forecast_data(
+            forecast_data = forecast_12h_data,
+            weather_station = weather_station,
+        )
+
     def _parse_observation_data( self,
                                  observations_data  : Dict,
                                  weather_station    : WeatherStation ) -> WeatherConditionsData:
         
-        properties = observations_data['properties']
-        if not properties:
+        properties_data = observations_data['properties']
+        if not properties_data:
             raise ValueError('Missing "properties" in NWS observation payload.')
         
         try:
-            timestamp_str = properties.get( 'timestamp' )
+            timestamp_str = properties_data.get( 'timestamp' )
             source_datetime = datetime.fromisoformat( timestamp_str )
         except Exception as e:
-            # Use local time if problem.
+            # Use current time if problem.
             logger.warning( f'Missing or bad timestamp in NWS observation payload: {e}' )
             source_datetime = datetimeproxy.now()
 
-        elevation = self._parse_elevation( properties.get('elevation'),
+        elevation = self._parse_elevation( properties_data.get('elevation'),
                                            default = weather_station.elevation )
             
         weather_conditions_data = WeatherConditionsData()
 
         weather_conditions_data.barometric_pressure = self._create_numeric_data_point(
-            nws_data_dict = properties.get( 'barometricPressure' ),
+            nws_data_dict = properties_data.get( 'barometricPressure' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
 
         weather_conditions_data.dew_point = self._create_numeric_data_point(
-            nws_data_dict = properties.get( 'dewpoint' ),
+            nws_data_dict = properties_data.get( 'dewpoint' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
         weather_conditions_data.heat_index = self._create_numeric_data_point(
-            nws_data_dict = properties.get( 'heatIndex' ),
+            nws_data_dict = properties_data.get( 'heatIndex' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
         weather_conditions_data.temperature_max_last_24h = self._create_numeric_data_point(
-            nws_data_dict = properties.get( 'maxTemperatureLast24Hours' ),
+            nws_data_dict = properties_data.get( 'maxTemperatureLast24Hours' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
         weather_conditions_data.temperature_min_last_24h = self._create_numeric_data_point(
-            nws_data_dict = properties.get( 'minTemperatureLast24Hours' ),
+            nws_data_dict = properties_data.get( 'minTemperatureLast24Hours' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
         weather_conditions_data.precipitation_last_3h = self._create_numeric_data_point(
-            nws_data_dict = properties.get( 'precipitationLast3Hours' ),
+            nws_data_dict = properties_data.get( 'precipitationLast3Hours' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
         weather_conditions_data.precipitation_last_6h = self._create_numeric_data_point(
-            nws_data_dict = properties.get( 'precipitationLast6Hours' ),
+            nws_data_dict = properties_data.get( 'precipitationLast6Hours' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
         weather_conditions_data.precipitation_last_hour = self._create_numeric_data_point(
-            nws_data_dict = properties.get( 'precipitationLastHour' ),
+            nws_data_dict = properties_data.get( 'precipitationLastHour' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
         weather_conditions_data.relative_humidity = self._create_numeric_data_point(
-            nws_data_dict = properties.get( 'relativeHumidity' ),
+            nws_data_dict = properties_data.get( 'relativeHumidity' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
         weather_conditions_data.sea_level_pressure = self._create_numeric_data_point(
-            nws_data_dict = properties.get( 'seaLevelPressure' ),
+            nws_data_dict = properties_data.get( 'seaLevelPressure' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
         weather_conditions_data.temperature = self._create_numeric_data_point(
-            nws_data_dict = properties.get( 'temperature' ),
+            nws_data_dict = properties_data.get( 'temperature' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
         weather_conditions_data.visibility = self._create_numeric_data_point(
-            nws_data_dict = properties.get( 'visibility' ),
+            nws_data_dict = properties_data.get( 'visibility' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
         weather_conditions_data.wind_chill = self._create_numeric_data_point(
-            nws_data_dict = properties.get( 'windChill' ),
+            nws_data_dict = properties_data.get( 'windChill' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
         weather_conditions_data.wind_direction = self._create_numeric_data_point(
-            nws_data_dict = properties.get( 'windDirection' ),
+            nws_data_dict = properties_data.get( 'windDirection' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
         weather_conditions_data.windspeed_max = self._create_numeric_data_point(
-            nws_data_dict = properties.get( 'windGust' ),
+            nws_data_dict = properties_data.get( 'windGust' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
         weather_conditions_data.windspeed_ave = self._create_numeric_data_point(
-            nws_data_dict = properties.get( 'windSpeed' ),
+            nws_data_dict = properties_data.get( 'windSpeed' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
-        description = properties.get( 'textDescription' )
-        if description:
-            weather_conditions_data.description = StringDataPoint(
+        description_short = properties_data.get( 'textDescription' )
+        if description_short:
+            weather_conditions_data.description_short = StringDataPoint(
                 weather_station = weather_station,
                 source_datetime = source_datetime,
                 elevation = elevation,
-                value = description,
+                value = description_short,
             )
         self._parse_cloud_layers( 
-            properties = properties,
+            properties_data = properties_data,
             weather_conditions_data = weather_conditions_data,
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
         self._parse_present_weather( 
-            properties = properties,
+            properties_data = properties_data,
             weather_conditions_data = weather_conditions_data,
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
         return weather_conditions_data
+    
+    def _parse_forecast_data( self,
+                              forecast_data  : Dict,
+                              weather_station       : WeatherStation ) -> List[ WeatherForecastData ]:
+
+        properties_data = forecast_data['properties']
+        if not properties_data:
+            raise ValueError('Missing "properties" in NWS hourly forecast payload.')
+
+        try:
+            timestamp_str = properties_data.get( 'generatedAt' )
+            source_datetime = datetime.fromisoformat( timestamp_str )
+        except Exception as e:
+            # Use current time if problem.
+            logger.warning( f'Missing or bad timestamp in NWS hourly forecast payload: {e}' )
+            source_datetime = datetimeproxy.now()
+
+        elevation = self._parse_elevation( properties_data.get('elevation'),
+                                           default = weather_station.elevation )
         
-    def _get_observations_data( self, weather_station : WeatherStation ):
+        period_data_list = properties_data['periods']
+        if not period_data_list:
+            raise ValueError('Missing "periods" in NWS hourly forecast payload.')
+
+        weather_forecast_data_list = list()
+        for period_data in period_data_list:
+
+            period_forecast_data = WeatherForecastData()
+            try:
+                period_start_str = period_data.get( 'startTime' )
+                period_forecast_data.period_start = datetime.fromisoformat( period_start_str )
+            except Exception as e:
+                logger.warning( f'Missing or bad startTime in NWS forecast payload: {e}' )
+                continue
+            try:
+                period_end_str = period_data.get( 'endTime' )
+                period_forecast_data.period_end = datetime.fromisoformat( period_end_str )
+            except Exception as e:
+                logger.warning( f'Missing or bad endTime in NWS forecast payload: {e}' )
+                continue
+            
+            period_name = period_data.get('name')
+            if period_name:
+                period_forecast_data.period_name = StringDataPoint(
+                    weather_station = weather_station,
+                    source_datetime = source_datetime,
+                    elevation = elevation,
+                    value = period_name,
+                )
+            description_short = period_data.get('shortForecast')
+            if description_short:
+                period_forecast_data.description_short = StringDataPoint(
+                    weather_station = weather_station,
+                    source_datetime = source_datetime,
+                    elevation = elevation,
+                    value = description_short,
+                )
+            description_long = period_data.get('detailedForecast')
+            if description_long:
+                period_forecast_data.description_long = StringDataPoint(
+                    weather_station = weather_station,
+                    source_datetime = source_datetime,
+                    elevation = elevation,
+                    value = description_long,
+                )
+            is_daytime = period_data.get('isDaytime')
+            if is_daytime is not None:
+                period_forecast_data.is_daytime = BooleanDataPoint(
+                    weather_station = weather_station,
+                    source_datetime = source_datetime,
+                    elevation = elevation,
+                    value = str_to_bool( is_daytime ),
+                )
+            period_forecast_data.precipitation_probability = self._create_numeric_data_point(
+                nws_data_dict = period_data.get( 'probabilityOfPrecipitation' ),
+                source_datetime = source_datetime,
+                weather_station = weather_station,
+                elevation = elevation,
+            )
+            period_forecast_data.dew_point = self._create_numeric_data_point(
+                nws_data_dict = period_data.get( 'dewpoint' ),
+                source_datetime = source_datetime,
+                weather_station = weather_station,
+                elevation = elevation,
+            )
+            period_forecast_data.relative_humidity = self._create_numeric_data_point(
+                nws_data_dict = period_data.get( 'relativeHumidity' ),
+                source_datetime = source_datetime,
+                weather_station = weather_station,
+                elevation = elevation,
+            )
+            period_forecast_data.temperature_ave = self._create_numeric_data_point(
+                nws_data_dict = period_data.get( 'temperature' ),
+                source_datetime = source_datetime,
+                weather_station = weather_station,
+                elevation = elevation,
+            )
+            period_forecast_data.temperature_min = self._create_numeric_data_point(
+                nws_data_dict = period_data.get( 'temperature' ),
+                source_datetime = source_datetime,
+                weather_station = weather_station,
+                elevation = elevation,
+                for_min_value = True,
+            )
+            period_forecast_data.temperature_max = self._create_numeric_data_point(
+                nws_data_dict = period_data.get( 'temperature' ),
+                source_datetime = source_datetime,
+                weather_station = weather_station,
+                elevation = elevation,
+                for_max_value = True,
+            )
+            period_forecast_data.windspeed_ave = self._create_numeric_data_point(
+                nws_data_dict = period_data.get( 'windSpeed' ),
+                source_datetime = source_datetime,
+                weather_station = weather_station,
+                elevation = elevation,
+            )
+            period_forecast_data.windspeed_min = self._create_numeric_data_point(
+                nws_data_dict = period_data.get( 'windSpeed' ),
+                source_datetime = source_datetime,
+                weather_station = weather_station,
+                elevation = elevation,
+                for_min_value = True,
+            )
+            period_forecast_data.windspeed_max = self._create_numeric_data_point(
+                nws_data_dict = period_data.get( 'windSpeed' ),
+                source_datetime = source_datetime,
+                weather_station = weather_station,
+                elevation = elevation,
+                for_max_value = True,
+            )
+            wind_direction_str = period_data.get( 'windDirection' )
+            if wind_direction_str:
+                try:
+                    wind_direction_enum = WindDirection.from_menomic( wind_direction_str )
+                    period_forecast_data.wind_direction = NumericDataPoint(
+                        weather_station = weather_station,
+                        source_datetime = source_datetime,
+                        elevation = elevation,
+                        quantity = UnitQuantity( wind_direction_enum.angle_degrees, 'degrees' )
+                    )
+                except ValueError:
+                    logger.warning( f'Unknown NWS wind direction "{wind_direction_str}"' )
+            
+            weather_forecast_data_list.append( period_forecast_data )
+            continue
+
+        return weather_forecast_data_list
+        
+    def _get_observations_data( self, weather_station : WeatherStation ) -> Dict[ str, Any ]:
         cache_key = f'ws:{self.id}:observations:{weather_station.key}'
         observations_data_str = self.redis_client.get( cache_key )
 
@@ -238,12 +473,64 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                                    ex = self.OBSERVATIONS_DATA_CACHE_EXPIRY_SECS  )
         return observations_data
 
-    def _get_observations_data_from_api( self, weather_station : WeatherStation ):
+    def _get_observations_data_from_api( self, weather_station : WeatherStation ) -> Dict[ str, Any ]:
         observations_response = requests.get( weather_station.observations_url, headers = self._headers )
         observations_response.raise_for_status()
         observations_data = observations_response.json()           
         return observations_data
 
+    def _get_forecast_hourly_data( self, weather_station : WeatherStation ) -> Dict[ str, Any ]:
+        cache_key = f'ws:{self.id}:forecast-hourly:{weather_station.key}'
+        forecast_hourly_data_str = self.redis_client.get( cache_key )
+
+        if settings.DEBUG and self.SKIP_CACHE:
+            logger.warning( 'Skip caching in effect.' )
+            forecast_hourly_data_str = None
+            
+        if forecast_hourly_data_str:
+            logger.debug( 'NWS hourly forecast data from cache.' )
+            forecast_hourly_data = json.loads( forecast_hourly_data_str )
+            return forecast_hourly_data
+
+        forecast_hourly_data = self._get_forecast_hourly_data_from_api( weather_station = weather_station )
+        if forecast_hourly_data:
+            forecast_hourly_data_str = json.dumps( forecast_hourly_data )
+            self.redis_client.set( cache_key, forecast_hourly_data_str,
+                                   ex = self.FORECAST_DATA_CACHE_EXPIRY_SECS  )
+        return forecast_hourly_data
+
+    def _get_forecast_hourly_data_from_api( self, weather_station : WeatherStation ) -> Dict[ str, Any ]:
+        forecast_hourly_response = requests.get( weather_station.forecast_url, headers = self._headers )
+        forecast_hourly_response.raise_for_status()
+        forecast_hourly_data = forecast_hourly_response.json()           
+        return forecast_hourly_data
+
+    def _get_forecast_12h_data( self, weather_station : WeatherStation ) -> Dict[ str, Any ]:
+        cache_key = f'ws:{self.id}:forecast-12h:{weather_station.key}'
+        forecast_12h_data_str = self.redis_client.get( cache_key )
+
+        if settings.DEBUG and self.SKIP_CACHE:
+            logger.warning( 'Skip caching in effect.' )
+            forecast_12h_data_str = None
+            
+        if forecast_12h_data_str:
+            logger.debug( 'NWS 12h forecast data from cache.' )
+            forecast_12h_data = json.loads( forecast_12h_data_str )
+            return forecast_12h_data
+
+        forecast_12h_data = self._get_forecast_12h_data_from_api( weather_station = weather_station )
+        if forecast_12h_data:
+            forecast_12h_data_str = json.dumps( forecast_12h_data )
+            self.redis_client.set( cache_key, forecast_12h_data_str,
+                                   ex = self.FORECAST_DATA_CACHE_EXPIRY_SECS  )
+        return forecast_12h_data
+
+    def _get_forecast_12h_data_from_api( self, weather_station : WeatherStation ) -> Dict[ str, Any ]:
+        forecast_12h_response = requests.get( weather_station.forecast_url, headers = self._headers )
+        forecast_12h_response.raise_for_status()
+        forecast_12h_data = forecast_12h_response.json()           
+        return forecast_12h_data
+    
     def _get_weather_station( self, geographic_location : GeographicLocation  ) -> WeatherStation:
         stations_data = self._get_stations_data( geographic_location = geographic_location )
         return self._get_closest_weather_station(
@@ -251,7 +538,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             stations_data = stations_data,
         )
     
-    def _get_stations_data( self, geographic_location : GeographicLocation ):
+    def _get_stations_data( self, geographic_location : GeographicLocation ) -> Dict[ str, Any ]:
         cache_key = f'ws:{self.id}:stations:{geographic_location}'
         stations_data_str = self.redis_client.get( cache_key )
 
@@ -271,7 +558,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                                    ex = self.STATIONS_DATA_CACHE_EXPIRY_SECS  )
         return stations_data
 
-    def _get_stations_data_from_api( self, geographic_location : GeographicLocation ):
+    def _get_stations_data_from_api( self, geographic_location : GeographicLocation ) -> Dict[ str, Any ]:
         # Can cache this data, expires 12 hours-ish (they do not change often)
         points_data = self._get_points_data( geographic_location = geographic_location )
         stations_url = points_data['properties']['observationStations']
@@ -280,7 +567,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         stations_data = stations_response.json()
         return stations_data
         
-    def _get_points_data( self, geographic_location : GeographicLocation ):
+    def _get_points_data( self, geographic_location : GeographicLocation ) -> Dict[ str, Any ]:
         cache_key = f'ws:{self.id}:points:{geographic_location}'
         points_data_str = self.redis_client.get( cache_key )
 
@@ -299,7 +586,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                                    ex = self.POINTS_DATA_CACHE_EXPIRY_SECS  )
         return points_data
 
-    def _get_points_data_from_api( self, geographic_location : GeographicLocation ):
+    def _get_points_data_from_api( self, geographic_location : GeographicLocation ) -> Dict[ str, Any ]:
         # Can cache this data, expires 12 hours-ish (they do not change often)
         points_url = f'{self.BASE_URL}points/{geographic_location.latitude},{geographic_location.longitude}'
         points_response = requests.get( points_url, headers = self._headers )
@@ -354,9 +641,8 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
         raise ValueError( 'Problem pasring NWS station data' )
         
-    def _get_weather_station_from_station_data_feature( self, stations_feature_data ):
+    def _get_weather_station_from_station_data_feature( self, stations_feature_data ) -> WeatherStation:
         
-        geometry_data = stations_feature_data.get('geometry')
         properties_data = stations_feature_data.get('properties')
 
         if properties_data.get('@type') != 'wx:ObservationStation':
@@ -367,15 +653,10 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         else:
             elevation = None
 
-        geo_location = None
-        if geometry_data:
-            coordinates_data = geometry_data.get('coordinates')
-            if coordinates_data and ( len(coordinates_data) == 2 ):
-                geo_location = GeographicLocation(
-                    longitude = coordinates_data[0],
-                    latitude = coordinates_data[1],
-                    elevation = elevation,
-                )
+        geo_location = self._parse_geometry(
+            geometry_dict = stations_feature_data.get('geometry'),
+            elevation = elevation,
+        )
         
         station_url = properties_data.get('@id')  # Yes, id -> url
         observations_url = f'{station_url}/observations/latest'
@@ -391,7 +672,23 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         
         return weather_station
 
-    def _parse_elevation( self, elevations_dict : dict, default : UnitQuantity = None ) -> UnitQuantity:
+    def _parse_geometry( self,
+                         geometry_dict  : Dict[ str, Any ],
+                         elevation      : UnitQuantity       = None) -> GeographicLocation:
+        if not geometry_dict:
+            return None
+        coordinates_data = geometry_dict.get('coordinates')
+        if not coordinates_data or ( len(coordinates_data) != 2 ):
+            return None
+        return GeographicLocation(
+            longitude = coordinates_data[0],
+            latitude = coordinates_data[1],
+            elevation = elevation,
+        )
+        
+    def _parse_elevation( self,
+                          elevations_dict  : Dict[ str, Any ],
+                          default          : UnitQuantity     = None ) -> UnitQuantity:
         try:
             elevation = self._parse_nws_quantity(
                 nws_data_dict = elevations_dict,
@@ -406,7 +703,10 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             return default
         return elevation
 
-    def _parse_nws_quantity( self, nws_data_dict : dict ) -> UnitQuantity:
+    def _parse_nws_quantity( self,
+                             nws_data_dict  : Dict[ str, Any ],
+                             for_min_value  : bool              = False,
+                             for_max_value  : bool              = False ) -> UnitQuantity:
         if not nws_data_dict:
             return None
         value = nws_data_dict.get('value')
@@ -422,12 +722,18 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             raise ValueError( f'Bad units: {e}' )
 
     def _create_numeric_data_point( self,
-                                    nws_data_dict    : dict,
+                                    nws_data_dict    : Dict[ str, Any ],
                                     source_datetime  : datetime,
                                     weather_station  : WeatherStation,
-                                    elevation        : UnitQuantity ) -> NumericDataPoint:
+                                    elevation        : UnitQuantity,
+                                    for_min_value    : bool              = False,
+                                    for_max_value    : bool              = False  ) -> NumericDataPoint:
         try:
-            quantity = self._parse_nws_quantity( nws_data_dict = nws_data_dict )
+            quantity = self._parse_nws_quantity(
+                nws_data_dict = nws_data_dict,
+                for_min_value = for_min_value,
+                for_max_value = for_max_value,
+            )
             if quantity is not None:
                 return NumericDataPoint(
                     weather_station = weather_station,
@@ -437,10 +743,10 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                 )
         except Exception as e:
             logger.error( f'Problem parsing NWS data: {nws_data_dict}: {e}' )
-        return None
-
+        return None        
+                                       
     def _parse_cloud_layers( self,
-                             properties               : Dict[ str, str ],
+                             properties_data          : Dict[ str, str ],
                              weather_conditions_data  : WeatherConditionsData,
                              source_datetime          : datetime,
                              weather_station          : WeatherStation,
@@ -449,7 +755,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         Translate NWS 'cloudLayers' data into a cloud coverage percentage and
         cloud ceiling height.
         """
-        cloud_layers_list = properties.get( 'cloudLayers' )
+        cloud_layers_list = properties_data.get( 'cloudLayers' )
         if cloud_layers_list is None:
             return
         if not cloud_layers_list:
@@ -516,7 +822,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         return
         
     def _parse_present_weather( self,
-                                properties               : Dict[ str, str ],
+                                properties_data          : Dict[ str, Any ],
                                 weather_conditions_data  : WeatherConditionsData,
                                 source_datetime          : datetime,
                                 weather_station          : WeatherStation,
@@ -532,7 +838,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         """
         notable_phenomenon_list = list()
 
-        present_weather_list = properties.get( 'presentWeather' )
+        present_weather_list = properties_data.get( 'presentWeather' )
         if not present_weather_list:
             return
 

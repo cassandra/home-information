@@ -1,5 +1,7 @@
 {% load static %}
 {% load units %}
+{% load tz %}
+{% timezone USER_TIMEZONE %}
 
 {% if conditions.notable_phenomenon_data %}
 {% for notable_phenomenon in conditions.notable_phenomenon_data.list_value %}
@@ -79,5 +81,6 @@
   </div>
 </div>
 <div class="text-muted">
-  <small><em>{{ conditions.temperature.source_datetime }}, {{ conditions.temperature.source.label }} </em></small>
+  <small><em>{{ conditions.temperature.source_datetime |localtime }}, {{ conditions.temperature.source.label }} </em></small>
 </div>
+{% endtimezone%}

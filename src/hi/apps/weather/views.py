@@ -33,9 +33,11 @@ class ForecastView( HiModalView, WeatherMixin ):
         return 'weather/modals/forecast.html'
     
     def get(self, request, *args, **kwargs):
+        hourly_forecast = self.weather_manager().get_hourly_forecast()
+        daily_forecast = self.weather_manager().get_daily_forecast()
         context = {
-            'hourly_forecast_data_list': self.weather_manager().get_hourly_forecast_data_list,
-            'daily_forecast_data_list': self.weather_manager().get_daily_forecast_data_list,
+            'hourly_forecast_data_list': hourly_forecast.data_list,
+            'daily_forecast_data_list': daily_forecast.data_list,
         }
         return self.modal_response( request, context )
 
@@ -57,8 +59,9 @@ class HistoryView( HiModalView, WeatherMixin ):
         return 'weather/modals/history.html'
     
     def get(self, request, *args, **kwargs):
+        daily_history = self.weather_manager().get_daily_history()
         context = {
-            'daily_history_data_list': self.weather_manager().get_daily_history_data_list,
+            'daily_history_data_list': daily_history.data_list,
         }
         return self.modal_response( request, context )
 

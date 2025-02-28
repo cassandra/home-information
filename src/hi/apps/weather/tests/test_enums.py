@@ -4,6 +4,7 @@ from hi.apps.weather.enums import (
     CloudCoverageType,
     MoonPhase,
     SkyCondition, 
+    WindDirection,
 )
 
 from hi.tests.base_test_case import BaseTestCase
@@ -84,3 +85,24 @@ class TestWeatherEnums( BaseTestCase ):
         self.assertTrue( CloudCoverageType.OVERCAST < CloudCoverageType.VERTICAL_VISIBILITY )
         return
     
+    def test_WindDirection__from_menomic__exceptions(self):
+        for bad_mnemonic in [ None, '', '    ', 'NN', 'foo', 'nnen' ]:
+            with self.assertRaises( ValueError ):
+                WindDirection.from_menomic( bad_mnemonic )
+            continue
+        return
+    
+    def test_WindDirection__from_menomic(self):
+        test_data_list = [
+            { 'mnemonic': 'NE'     , 'expect': WindDirection.NORTHEAST },
+            { 'mnemonic': ' ne  '     , 'expect': WindDirection.NORTHEAST },
+            { 'mnemonic': 'ssw'    , 'expect': WindDirection.SOUTH_SOUTHWEST },
+            { 'mnemonic': 'SW' , 'expect': WindDirection.SOUTHWEST },
+            { 'mnemonic': 'E'    , 'expect': WindDirection.EAST },
+        ]
+        for test_data in test_data_list:
+            result = WindDirection.from_menomic( test_data['mnemonic'] )
+            self.assertEqual( test_data['expect'], result, test_data )
+            continue
+        return
+

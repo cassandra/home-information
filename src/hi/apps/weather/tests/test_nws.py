@@ -8,10 +8,12 @@ from hi.apps.weather.enums import (
     WeatherPhenomenonModifier,
 )
 from hi.apps.weather.transient_models import (
+    BooleanDataPoint,
     NotablePhenomenon,
     NumericDataPoint,
     StringDataPoint,
     WeatherConditionsData,
+    WeatherForecastData,
     WeatherStation,
 )
 from hi.apps.weather.weather_sources.nws import NationalWeatherService
@@ -656,7 +658,7 @@ class TestNationalWeatherService( BaseTestCase ):
             weather_conditions_data = WeatherConditionsData()
             
             nws._parse_cloud_layers(
-                properties = test_data['properties'],
+                properties_data = test_data['properties'],
                 weather_conditions_data = weather_conditions_data,
                 source_datetime =source_datetime,
                 weather_station = weather_station,
@@ -941,7 +943,7 @@ class TestNationalWeatherService( BaseTestCase ):
             weather_conditions_data = WeatherConditionsData()
             
             nws._parse_present_weather(
-                properties = test_data['properties'],
+                properties_data = test_data['properties'],
                 weather_conditions_data = weather_conditions_data,
                 source_datetime =source_datetime,
                 weather_station = weather_station,
@@ -976,7 +978,7 @@ class TestNationalWeatherService( BaseTestCase ):
         timestamp_str = '2025-02-20T04:51:00+00:00'
         source_datetime = datetime.fromisoformat( timestamp_str )
         elevation = UnitQuantity( 198, 'meters' )
-        description = 'Cloudy'
+        description_short = 'Cloudy'
         weather_station = WeatherStation(
             source = nws.data_point_source,
             station_id = 'test',
@@ -1115,7 +1117,7 @@ class TestNationalWeatherService( BaseTestCase ):
                             "unitCode": "wmoUnit:degC",
                             "value": -3.9
                         },
-                        "textDescription": description,
+                        "textDescription": description_short,
                         "timestamp": timestamp_str,
                         "visibility": {
                             "qualityControl": "C",
@@ -1207,11 +1209,11 @@ class TestNationalWeatherService( BaseTestCase ):
                         elevation = elevation,
                         quantity = UnitQuantity( 9.36, 'km / h' ),
                     ),
-                    description = StringDataPoint(
+                    description_short = StringDataPoint(
                         weather_station = weather_station,
                         source_datetime = source_datetime,
                         elevation = elevation,
-                        value = description,
+                        value = description_short,
                     ),
                     cloud_ceiling = NumericDataPoint(
                         weather_station = weather_station,
@@ -1230,18 +1232,6 @@ class TestNationalWeatherService( BaseTestCase ):
             }
         ]        
 
-        def compare_numeric_data_point( expected, result, label ):
-            if expected is None:
-                self.assertIsNone( result, label )
-                return
-            
-            self.assertEqual( expected.source, result.source, label )
-            self.assertEqual( expected.source_datetime, result.source_datetime, label )
-            self.assertEqual( expected.elevation, result.elevation, label )
-            self.assertAlmostEqual( expected.quantity.magnitude, result.quantity.magnitude, 3, label )
-            self.assertEqual( expected.quantity.units, result.quantity.units, label )
-            return
-            
         for test_data in test_data_list:
             expected = test_data['expected']
             result = nws._parse_observation_data(
@@ -1249,63 +1239,63 @@ class TestNationalWeatherService( BaseTestCase ):
                 weather_station = weather_station,
             )
 
-            compare_numeric_data_point( expected.barometric_pressure,
-                                        result.barometric_pressure,
-                                        test_data['label']  )
-            compare_numeric_data_point( expected.dew_point,
-                                        result.dew_point,
-                                        test_data['label']  )
-            compare_numeric_data_point( expected.heat_index,
-                                        result.heat_index,
-                                        test_data['label'] )
-            compare_numeric_data_point( expected.temperature_max_last_24h,
-                                        result.temperature_max_last_24h,
-                                        test_data['label']  )
-            compare_numeric_data_point( expected.temperature_min_last_24h,
-                                        result.temperature_min_last_24h,
-                                        test_data['label']  )
-            compare_numeric_data_point( expected.precipitation_last_3h,
-                                        result.precipitation_last_3h,
-                                        test_data['label']  )
-            compare_numeric_data_point( expected.precipitation_last_6h,
-                                        result.precipitation_last_6h,
-                                        test_data['label']  )
-            compare_numeric_data_point( expected.precipitation_last_hour,
-                                        result.precipitation_last_hour,
-                                        test_data['label']  )
-            compare_numeric_data_point( expected.relative_humidity,
-                                        result.relative_humidity,
-                                        test_data['label']  )
-            compare_numeric_data_point( expected.sea_level_pressure,
-                                        result.sea_level_pressure,
-                                        test_data['label']  )
-            compare_numeric_data_point( expected.temperature,
-                                        result.temperature,
-                                        test_data['label']  )
-            compare_numeric_data_point( expected.visibility,
-                                        result.visibility,
-                                        test_data['label']  )
-            compare_numeric_data_point( expected.wind_chill,
-                                        result.wind_chill,
-                                        test_data['label']  )
-            compare_numeric_data_point( expected.wind_direction,
-                                        result.wind_direction,
-                                        test_data['label']  )
-            compare_numeric_data_point( expected.windspeed_max,
-                                        result.windspeed_max,
-                                        test_data['label']  )
-            compare_numeric_data_point( expected.windspeed_ave,
-                                        result.windspeed_ave,
-                                        test_data['label']  )
-            compare_numeric_data_point( expected.cloud_ceiling,
-                                        result.cloud_ceiling,
-                                        test_data['label']  )
-            compare_numeric_data_point( expected.cloud_cover,
-                                        result.cloud_cover,
-                                        test_data['label']  )
+            self._compare_numeric_data_point( expected.barometric_pressure,
+                                              result.barometric_pressure,
+                                              test_data['label']  )
+            self._compare_numeric_data_point( expected.dew_point,
+                                              result.dew_point,
+                                              test_data['label']  )
+            self._compare_numeric_data_point( expected.heat_index,
+                                              result.heat_index,
+                                              test_data['label'] )
+            self._compare_numeric_data_point( expected.temperature_max_last_24h,
+                                              result.temperature_max_last_24h,
+                                              test_data['label']  )
+            self._compare_numeric_data_point( expected.temperature_min_last_24h,
+                                              result.temperature_min_last_24h,
+                                              test_data['label']  )
+            self._compare_numeric_data_point( expected.precipitation_last_3h,
+                                              result.precipitation_last_3h,
+                                              test_data['label']  )
+            self._compare_numeric_data_point( expected.precipitation_last_6h,
+                                              result.precipitation_last_6h,
+                                              test_data['label']  )
+            self._compare_numeric_data_point( expected.precipitation_last_hour,
+                                              result.precipitation_last_hour,
+                                              test_data['label']  )
+            self._compare_numeric_data_point( expected.relative_humidity,
+                                              result.relative_humidity,
+                                              test_data['label']  )
+            self._compare_numeric_data_point( expected.sea_level_pressure,
+                                              result.sea_level_pressure,
+                                              test_data['label']  )
+            self._compare_numeric_data_point( expected.temperature,
+                                              result.temperature,
+                                              test_data['label']  )
+            self._compare_numeric_data_point( expected.visibility,
+                                              result.visibility,
+                                              test_data['label']  )
+            self._compare_numeric_data_point( expected.wind_chill,
+                                              result.wind_chill,
+                                              test_data['label']  )
+            self._compare_numeric_data_point( expected.wind_direction,
+                                              result.wind_direction,
+                                              test_data['label']  )
+            self._compare_numeric_data_point( expected.windspeed_max,
+                                              result.windspeed_max,
+                                              test_data['label']  )
+            self._compare_numeric_data_point( expected.windspeed_ave,
+                                              result.windspeed_ave,
+                                              test_data['label']  )
+            self._compare_numeric_data_point( expected.cloud_ceiling,
+                                              result.cloud_ceiling,
+                                              test_data['label']  )
+            self._compare_numeric_data_point( expected.cloud_cover,
+                                              result.cloud_cover,
+                                              test_data['label']  )
 
-            self.assertEqual( expected.description.value,
-                              result.description.value,
+            self.assertEqual( expected.description_short.value,
+                              result.description_short.value,
                               test_data['label']  )
 
             if expected.notable_phenomenon_data:
@@ -1332,3 +1322,338 @@ class TestNationalWeatherService( BaseTestCase ):
                 
             continue
         return
+
+    def test_parse_forecast_data(self):
+        nws = NationalWeatherService()
+        timestamp_str = '2025-02-28T20:36:26+00:00'
+        source_datetime = datetime.fromisoformat( timestamp_str )
+        elevation = UnitQuantity( 155.1432, 'meters' )
+        weather_station = WeatherStation(
+            source = nws.data_point_source,
+            station_id = 'test',
+            name = 'Testing',
+            geo_location = None,
+            station_url = None,
+            observations_url = None,
+            forecast_url = None,
+        )
+
+        test_data_list = [
+            {
+                'label': 'Response from Feb 20, 2025 for Austin, TX',
+                'response': {
+                    "@context": [
+                        "https://geojson.org/geojson-ld/geojson-context.jsonld",
+                        {
+                            "@version": "1.1",
+                            "@vocab": "https://api.weather.gov/ontology#",
+                            "geo": "http://www.opengis.net/ont/geosparql#",
+                            "unit": "http://codes.wmo.int/common/unit/",
+                            "wx": "https://api.weather.gov/ontology#"
+                        }
+                    ],
+                    "geometry": {
+                        "coordinates": [
+                            [
+                                [
+                                    -97.7255,
+                                    30.2592
+                                ],
+                                [
+                                    -97.726,
+                                    30.282
+                                ],
+                                [
+                                    -97.7524,
+                                    30.2815
+                                ],
+                                [
+                                    -97.75179999999999,
+                                    30.2588
+                                ],
+                                [
+                                    -97.7255,
+                                    30.2592
+                                ]
+                            ]
+                        ],
+                        "type": "Polygon"
+                    },
+                    "properties": {
+                        "elevation": {
+                            "unitCode": "wmoUnit:m",
+                            "value": 155.1432
+                        },
+                        "forecastGenerator": "BaselineForecastGenerator",
+                        "generatedAt": timestamp_str,
+                        "periods": [
+                            {
+                                "detailedForecast": "Sunny, with a high near 76. South wind around 0 mph.",
+                                "endTime": "2025-02-28T18:00:00-06:00",
+                                "icon": "https://api.weather.gov/icons/land/day/few?size=medium",
+                                "isDaytime": True,
+                                "name": "This Afternoon",
+                                "number": 1,
+                                "probabilityOfPrecipitation": {
+                                    "unitCode": "wmoUnit:percent",
+                                    "value": None
+                                },
+                                "shortForecast": "Sunny",
+                                "startTime": "2025-02-28T14:00:00-06:00",
+                                "temperature": {
+                                    "unitCode": "wmoUnit:degC",
+                                    "value": 24.444444444444443
+                                },
+                                "temperatureTrend": "",
+                                "windDirection": "",
+                                "windGust": None,
+                                "windSpeed": {
+                                    "unitCode": "wmoUnit:km_h-1",
+                                    "value": 0
+                                }
+                            },
+                            {
+                                "detailedForecast": "Mostly clear, with a low around 52. South southwest wind around 0 mph.",
+                                "endTime": "2025-03-01T06:00:00-06:00",
+                                "icon": "https://api.weather.gov/icons/land/night/few?size=medium",
+                                "isDaytime": False,
+                                "name": "Tonight",
+                                "number": 2,
+                                "probabilityOfPrecipitation": {
+                                    "unitCode": "wmoUnit:percent",
+                                    "value": None
+                                },
+                                "shortForecast": "Mostly Clear",
+                                "startTime": "2025-02-28T18:00:00-06:00",
+                                "temperature": {
+                                    "unitCode": "wmoUnit:degC",
+                                    "value": 11.11111111111111
+                                },
+                                "temperatureTrend": "",
+                                "windDirection": "",
+                                "windGust": None,
+                                "windSpeed": {
+                                    "unitCode": "wmoUnit:km_h-1",
+                                    "value": 0
+                                }
+                            },
+                        ],
+                        "units": "us",
+                        "updateTime": "2025-02-28T20:06:34+00:00",
+                        "validTimes": "2025-02-28T14:00:00+00:00/P7DT14H"
+                    },
+                    "type": "Feature"
+                },
+                'expected': [
+                    WeatherForecastData(
+                        period_start = datetime.fromisoformat( '2025-02-28T14:00:00-06:00' ),
+                        period_end = datetime.fromisoformat('2025-02-28T18:00:00-06:00' ),
+                        period_name = StringDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            value = 'This Afternoon',
+                        ),
+                        description_short = StringDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            value = 'Sunny',
+                        ),
+                        description_long = StringDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            value = 'Sunny, with a high near 76. South wind around 0 mph.',
+                        ),
+                        is_daytime = BooleanDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            value = True,
+                        ),
+                        precipitation_probability = None,
+                        dew_point = None,
+                        relative_humidity = None,
+                        temperature_ave = NumericDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            quantity = UnitQuantity( 24.444444444444443, 'degC' ),
+                        ),
+                        temperature_min =NumericDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            quantity = UnitQuantity(  24.444444444444443, 'degC' ),
+                        ),
+                        temperature_max = NumericDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            quantity = UnitQuantity( 24.444444444444443, 'degC' ),
+                        ),
+                        windspeed_ave = NumericDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            quantity = UnitQuantity( 0, 'km / h' ),
+                        ),
+                        windspeed_min = NumericDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            quantity = UnitQuantity( 0, 'km / h' ),
+                        ),
+                        windspeed_max = NumericDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            quantity = UnitQuantity( 0, 'km / h' ),
+                        ),
+                        wind_direction = None,
+                    ),
+                    WeatherForecastData(
+                        period_start = datetime.fromisoformat( '2025-02-28T18:00:00-06:00' ),
+                        period_end = datetime.fromisoformat('2025-03-01T06:00:00-06:00' ),
+                        period_name = StringDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            value ='Tonight',
+                        ),
+                        description_short = StringDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            value ='Mostly Clear',
+                        ),
+                        description_long = StringDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            value ='Mostly clear, with a low around 52. South southwest wind around 0 mph.',
+                        ),
+                        is_daytime = BooleanDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            value = False,
+                        ),
+                        precipitation_probability = None,
+                        dew_point = None,
+                        relative_humidity = None,
+                        temperature_ave = NumericDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            quantity = UnitQuantity( 11.1111111111, 'degC' ),
+                        ),
+                        temperature_min =NumericDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            quantity = UnitQuantity(  11.1111111111, 'degC' ),
+                        ),
+                        temperature_max = NumericDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            quantity = UnitQuantity( 11.1111111111, 'degC' ),
+                        ),
+                        windspeed_ave = NumericDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            quantity = UnitQuantity( 0, 'km / h' ),
+                        ),
+                        windspeed_min = NumericDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            quantity = UnitQuantity( 0, 'km / h' ),
+                        ),
+                        windspeed_max = NumericDataPoint(
+                            weather_station = weather_station,
+                            source_datetime = source_datetime,
+                            elevation = elevation,
+                            quantity = UnitQuantity( 0, 'km / h' ),
+                        ),
+                        wind_direction = None,
+                    ),
+                ],
+            },
+        ]
+        
+        for test_data in test_data_list:
+            expected = test_data['expected']
+            result_list = nws._parse_forecast_data(
+                test_data['response'],
+                weather_station = weather_station,
+            )
+            self.assertEqual( len(result_list), len(test_data['expected']) )
+            for idx, ( expected, result ) in enumerate( zip( test_data['expected'], result_list )):
+                
+                self.assertEqual( expected.period_start,
+                                  result.period_start,
+                                  f'[{idx}] %s' % test_data['label'] )
+                self.assertEqual( expected.period_end,
+                                  result.period_end,
+                                  f'[{idx}] %s' % test_data['label'] )
+                self.assertEqual( expected.period_name.value,
+                                  result.period_name.value,
+                                  f'[{idx}] %s' % test_data['label'] )
+                self.assertEqual( expected.description_short.value,
+                                  result.description_short.value,
+                                  f'[{idx}] %s' % test_data['label'] )
+                self.assertEqual( expected.description_long.value,
+                                  result.description_long.value,
+                                  f'[{idx}] %s' % test_data['label'] )
+                self.assertEqual( expected.is_daytime.value,
+                                  result.is_daytime.value,
+                                  f'[{idx}] %s' % test_data['label'] )
+                self._compare_numeric_data_point( expected.precipitation_probability,
+                                                  result.precipitation_probability,
+                                                  f'[{idx}] %s' % test_data['label']  )
+                self._compare_numeric_data_point( expected.dew_point,
+                                                  result.dew_point,
+                                                  f'[{idx}] %s' % test_data['label']  )
+                self._compare_numeric_data_point( expected.temperature_ave,
+                                                  result.temperature_ave,
+                                                  f'[{idx}] %s' % test_data['label']  )
+                self._compare_numeric_data_point( expected.temperature_min,
+                                                  result.temperature_min,
+                                                  f'[{idx}] %s' % test_data['label']  )
+                self._compare_numeric_data_point( expected.temperature_max,
+                                                  result.temperature_max,
+                                                  f'[{idx}] %s' % test_data['label']  )
+                self._compare_numeric_data_point( expected.windspeed_ave,
+                                                  result.windspeed_ave,
+                                                  f'[{idx}] %s' % test_data['label']  )
+                self._compare_numeric_data_point( expected.windspeed_min,
+                                                  result.windspeed_min,
+                                                  f'[{idx}] %s' % test_data['label']  )
+                self._compare_numeric_data_point( expected.windspeed_max,
+                                                  result.windspeed_max,
+                                                  f'[{idx}] %s' % test_data['label']  )
+                self._compare_numeric_data_point( expected.wind_direction,
+                                                  result.wind_direction,
+                                                  f'[{idx}] %s' % test_data['label']  )
+                continue
+            continue
+
+        return
+    
+    def _compare_numeric_data_point( self, expected, result, label ):
+        if expected is None:
+            self.assertIsNone( result, label )
+            return
+            
+        self.assertEqual( expected.source, result.source, label )
+        self.assertEqual( expected.source_datetime, result.source_datetime, label )
+        self.assertEqual( expected.elevation, result.elevation, label )
+        self.assertAlmostEqual( expected.quantity.magnitude, result.quantity.magnitude, 3, label )
+        self.assertEqual( expected.quantity.units, result.quantity.units, label )
+        return
+            
+        
