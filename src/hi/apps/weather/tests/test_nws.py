@@ -1670,9 +1670,9 @@ class TestNationalWeatherService( BaseTestCase ):
                 },
                 'expected': [
                     WeatherForecastData(
-                        period_start = datetime.fromisoformat( '2025-02-28T14:00:00-06:00' ),
-                        period_end = datetime.fromisoformat('2025-02-28T18:00:00-06:00' ),
-                        period_name = StringDataPoint(
+                        interval_start = datetime.fromisoformat( '2025-02-28T14:00:00-06:00' ),
+                        interval_end = datetime.fromisoformat('2025-02-28T18:00:00-06:00' ),
+                        interval_name = StringDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
                             elevation = elevation,
@@ -1738,9 +1738,9 @@ class TestNationalWeatherService( BaseTestCase ):
                         wind_direction = None,
                     ),
                     WeatherForecastData(
-                        period_start = datetime.fromisoformat( '2025-02-28T18:00:00-06:00' ),
-                        period_end = datetime.fromisoformat('2025-03-01T06:00:00-06:00' ),
-                        period_name = StringDataPoint(
+                        interval_start = datetime.fromisoformat( '2025-02-28T18:00:00-06:00' ),
+                        interval_end = datetime.fromisoformat('2025-03-01T06:00:00-06:00' ),
+                        interval_name = StringDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
                             elevation = elevation,
@@ -1818,14 +1818,14 @@ class TestNationalWeatherService( BaseTestCase ):
             self.assertEqual( len(result_list), len(test_data['expected']) )
             for idx, ( expected, result ) in enumerate( zip( test_data['expected'], result_list )):
                 
-                self.assertEqual( expected.period_start,
-                                  result.period_start,
+                self.assertEqual( expected.interval_start,
+                                  result.interval_start,
                                   f'[{idx}] %s' % test_data['label'] )
-                self.assertEqual( expected.period_end,
-                                  result.period_end,
+                self.assertEqual( expected.interval_end,
+                                  result.interval_end,
                                   f'[{idx}] %s' % test_data['label'] )
-                self.assertEqual( expected.period_name.value,
-                                  result.period_name.value,
+                self.assertEqual( expected.interval_name.value,
+                                  result.interval_name.value,
                                   f'[{idx}] %s' % test_data['label'] )
                 self.assertEqual( expected.description_short.value,
                                   result.description_short.value,

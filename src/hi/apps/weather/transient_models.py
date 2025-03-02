@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field, fields
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from typing import Generic, List, TypeVar, get_origin
 
 from hi.transient_models import GeographicLocation
@@ -95,7 +95,7 @@ class StringDataPoint( DataPoint ):
 
     
 @dataclass
-class ListDataPoint( DataPoint, Generic[T] ):
+class DataPointList( DataPoint, Generic[T] ):
     list_value       : List[ T ]
 
 
@@ -189,7 +189,7 @@ class WeatherConditionsData( CommonWeatherData ):
     precipitation_last_3h      : NumericDataPoint                    = None
     precipitation_last_6h      : NumericDataPoint                    = None
     precipitation_last_24h     : NumericDataPoint                    = None
-    notable_phenomenon_data    : ListDataPoint[ NotablePhenomenon ]  = None
+    notable_phenomenon_data    : DataPointList[ NotablePhenomenon ]  = None
     
     @property
     def sky_condition( self ) -> SkyCondition:
@@ -208,14 +208,22 @@ class WeatherConditionsData( CommonWeatherData ):
 
     
 @dataclass
-class PeriodWeatherData( CommonWeatherData ):
+class TimeInterval( CommonWeatherData ):
+    interval_start             : datetime          = None
+    interval_end               : datetime          = None
+    interval_name              : StringDataPoint   = None
+
+    @property
+    def interval_period(self) -> timedelta:
+        return self.interval_end - self.interval_start
+    
+    
+@dataclass
+class TimeIntervalWeatherData( TimeInterval, CommonWeatherData ):
     """
     For those data points shared by forecast and historical data (which are
     defined for a specific period of time).
     """
-    period_start               : datetime          = None
-    period_end                 : datetime          = None
-    period_name                : StringDataPoint   = None
     temperature_min            : NumericDataPoint  = None
     temperature_ave            : NumericDataPoint  = None
     temperature_max            : NumericDataPoint  = None
@@ -233,12 +241,12 @@ class PeriodWeatherData( CommonWeatherData ):
     
 
 @dataclass
-class WeatherForecastData( PeriodWeatherData ):
+class WeatherForecastData( TimeIntervalWeatherData ):
     precipitation_probability  : NumericDataPoint  = None
 
     
 @dataclass
-class WeatherHistoryData( PeriodWeatherData ):
+class WeatherHistoryData( TimeIntervalWeatherData ):
     pass
     
     

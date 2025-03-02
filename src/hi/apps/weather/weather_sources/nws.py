@@ -13,7 +13,7 @@ from hi.apps.weather.weather_data_source import WeatherDataSource
 from hi.apps.weather.enums import WeatherPhenomenonModifier, WindDirection
 from hi.apps.weather.transient_models import (
     BooleanDataPoint,
-    ListDataPoint,
+    DataPointList,
     NotablePhenomenon,
     NumericDataPoint,
     StringDataPoint,
@@ -77,15 +77,16 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
 
 
-
-
         #  ZZZZ get two type of forecasts, but only once an hour???
         # reconsile with superclass logic Maybe the subclass should be
         # responsible for all actual intervals, while superclass is just
         # the min periodicx interval.
 
 
+        # zzzz Also, need to update the forecast to remove past periods as
+        # time advances.
 
+        
 
 
 
@@ -331,31 +332,31 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         weather_forecast_data_list = list()
         for period_data in period_data_list:
 
-            period_forecast_data = WeatherForecastData()
+            forecast_data = WeatherForecastData()
             try:
-                period_start_str = period_data.get( 'startTime' )
-                period_forecast_data.period_start = datetime.fromisoformat( period_start_str )
+                interval_start_str = period_data.get( 'startTime' )
+                forecast_data.interval_start = datetime.fromisoformat( interval_start_str )
             except Exception as e:
                 logger.warning( f'Missing or bad startTime in NWS forecast payload: {e}' )
                 continue
             try:
-                period_end_str = period_data.get( 'endTime' )
-                period_forecast_data.period_end = datetime.fromisoformat( period_end_str )
+                interval_end_str = period_data.get( 'endTime' )
+                forecast_data.interval_end = datetime.fromisoformat( interval_end_str )
             except Exception as e:
                 logger.warning( f'Missing or bad endTime in NWS forecast payload: {e}' )
                 continue
             
-            period_name = period_data.get('name')
-            if period_name:
-                period_forecast_data.period_name = StringDataPoint(
+            interval_name = period_data.get('name')
+            if interval_name:
+                forecast_data.interval_name = StringDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
                     elevation = elevation,
-                    value = period_name,
+                    value = interval_name,
                 )
             description_short = period_data.get('shortForecast')
             if description_short:
-                period_forecast_data.description_short = StringDataPoint(
+                forecast_data.description_short = StringDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
                     elevation = elevation,
@@ -363,7 +364,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                 )
             description_long = period_data.get('detailedForecast')
             if description_long:
-                period_forecast_data.description_long = StringDataPoint(
+                forecast_data.description_long = StringDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
                     elevation = elevation,
@@ -371,64 +372,64 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                 )
             is_daytime = period_data.get('isDaytime')
             if is_daytime is not None:
-                period_forecast_data.is_daytime = BooleanDataPoint(
+                forecast_data.is_daytime = BooleanDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
                     elevation = elevation,
                     value = str_to_bool( is_daytime ),
                 )
-            period_forecast_data.precipitation_probability = self._create_numeric_data_point(
+            forecast_data.precipitation_probability = self._create_numeric_data_point(
                 nws_data_dict = period_data.get( 'probabilityOfPrecipitation' ),
                 source_datetime = source_datetime,
                 weather_station = weather_station,
                 elevation = elevation,
             )
-            period_forecast_data.dew_point = self._create_numeric_data_point(
+            forecast_data.dew_point = self._create_numeric_data_point(
                 nws_data_dict = period_data.get( 'dewpoint' ),
                 source_datetime = source_datetime,
                 weather_station = weather_station,
                 elevation = elevation,
             )
-            period_forecast_data.relative_humidity = self._create_numeric_data_point(
+            forecast_data.relative_humidity = self._create_numeric_data_point(
                 nws_data_dict = period_data.get( 'relativeHumidity' ),
                 source_datetime = source_datetime,
                 weather_station = weather_station,
                 elevation = elevation,
             )
-            period_forecast_data.temperature_ave = self._create_numeric_data_point(
+            forecast_data.temperature_ave = self._create_numeric_data_point(
                 nws_data_dict = period_data.get( 'temperature' ),
                 source_datetime = source_datetime,
                 weather_station = weather_station,
                 elevation = elevation,
             )
-            period_forecast_data.temperature_min = self._create_numeric_data_point(
+            forecast_data.temperature_min = self._create_numeric_data_point(
                 nws_data_dict = period_data.get( 'temperature' ),
                 source_datetime = source_datetime,
                 weather_station = weather_station,
                 elevation = elevation,
                 for_min_value = True,
             )
-            period_forecast_data.temperature_max = self._create_numeric_data_point(
+            forecast_data.temperature_max = self._create_numeric_data_point(
                 nws_data_dict = period_data.get( 'temperature' ),
                 source_datetime = source_datetime,
                 weather_station = weather_station,
                 elevation = elevation,
                 for_max_value = True,
             )
-            period_forecast_data.windspeed_ave = self._create_numeric_data_point(
+            forecast_data.windspeed_ave = self._create_numeric_data_point(
                 nws_data_dict = period_data.get( 'windSpeed' ),
                 source_datetime = source_datetime,
                 weather_station = weather_station,
                 elevation = elevation,
             )
-            period_forecast_data.windspeed_min = self._create_numeric_data_point(
+            forecast_data.windspeed_min = self._create_numeric_data_point(
                 nws_data_dict = period_data.get( 'windSpeed' ),
                 source_datetime = source_datetime,
                 weather_station = weather_station,
                 elevation = elevation,
                 for_min_value = True,
             )
-            period_forecast_data.windspeed_max = self._create_numeric_data_point(
+            forecast_data.windspeed_max = self._create_numeric_data_point(
                 nws_data_dict = period_data.get( 'windSpeed' ),
                 source_datetime = source_datetime,
                 weather_station = weather_station,
@@ -439,7 +440,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             if wind_direction_str:
                 try:
                     wind_direction_enum = WindDirection.from_menomic( wind_direction_str )
-                    period_forecast_data.wind_direction = NumericDataPoint(
+                    forecast_data.wind_direction = NumericDataPoint(
                         weather_station = weather_station,
                         source_datetime = source_datetime,
                         elevation = elevation,
@@ -448,7 +449,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                 except ValueError:
                     logger.warning( f'Unknown NWS wind direction "{wind_direction_str}"' )
             
-            weather_forecast_data_list.append( period_forecast_data )
+            weather_forecast_data_list.append( forecast_data )
             continue
 
         return weather_forecast_data_list
@@ -931,7 +932,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             notable_phenomenon_list.append( notable_phenomenon )    
             continue
 
-        weather_conditions_data.notable_phenomenon_data = ListDataPoint(
+        weather_conditions_data.notable_phenomenon_data = DataPointList(
             weather_station = weather_station,
             source_datetime = source_datetime,
             elevation = elevation,

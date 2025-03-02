@@ -13,10 +13,10 @@ from hi.apps.weather.transient_models import (
     CommonWeatherData,
     DailyAstronomicalData,
     DataPointSource,
-    ListDataPoint,
+    DataPointList,
     NotablePhenomenon,
     NumericDataPoint,
-    PeriodWeatherData,
+    TimeIntervalWeatherData,
     StringDataPoint,
     TimeDataPoint,
     WeatherConditionsData,
@@ -244,12 +244,12 @@ class WeatherSyntheticData:
             )            
         hourly_forecast_data_list = list()
         for hour_idx in range( 24 ):
-            period_start = now.replace( minute = 0, second = 0, microsecond = 0 )
-            period_start += timedelta( hours = hour_idx + 1 )
-            period_end = period_start + timedelta( hours = 1 )
+            interval_start = now.replace( minute = 0, second = 0, microsecond = 0 )
+            interval_start += timedelta( hours = hour_idx + 1 )
+            interval_end = interval_start + timedelta( hours = 1 )
             forecast_data = cls.get_random_forecast_data( 
-                period_start = period_start,
-                period_end = period_end,
+                interval_start = interval_start,
+                interval_end = interval_end,
                 now = now,
                 source = source,
             )
@@ -272,12 +272,12 @@ class WeatherSyntheticData:
             )
         daily_forecast_data_list = list()
         for day_idx in range( 10 ):
-            period_start = now.replace( hour = 0, minute = 0, second = 0, microsecond = 1 )
-            period_start += timedelta( hours = 24 * day_idx )
-            period_end = period_start + timedelta( hours = 24 )
+            interval_start = now.replace( hour = 0, minute = 0, second = 0, microsecond = 1 )
+            interval_start += timedelta( hours = 24 * day_idx )
+            interval_end = interval_start + timedelta( hours = 24 )
             forecast_data = cls.get_random_forecast_data( 
-                period_start = period_start,
-                period_end = period_end,
+                interval_start = interval_start,
+                interval_end = interval_end,
                 now = now,
                 source = source,
             )
@@ -287,10 +287,10 @@ class WeatherSyntheticData:
 
     @classmethod
     def get_random_forecast_data( cls,
-                                  period_start  : datetime,
-                                  period_end    : datetime,
-                                  now           : datetime         = None,
-                                  source        : DataPointSource  = None ) -> WeatherForecastData:
+                                  interval_start  : datetime,
+                                  interval_end    : datetime,
+                                  now             : datetime         = None,
+                                  source          : DataPointSource  = None ) -> WeatherForecastData:
         if not now:
             now = datetimeproxy.now()
         if not source:
@@ -300,10 +300,10 @@ class WeatherSyntheticData:
                 priority = 1,
             )
         forecast_data = WeatherForecastData(
-            period_start = period_start,
-            period_end = period_end,
+            interval_start = interval_start,
+            interval_end = interval_end,
         )
-        cls.set_random_periodic_data(
+        cls.set_random_time_interval_data(
             data_obj = forecast_data,
             now = now,
             source = source,
@@ -324,12 +324,12 @@ class WeatherSyntheticData:
             )
         daily_history_data_list = list()
         for day_idx in range( 10 ):
-            period_start = now.replace( hour = 0, minute = 0, second = 0, microsecond = 1 )
-            period_start -= timedelta( hours = 24 * ( day_idx + 1 ))
-            period_end = period_start + timedelta( hours = 24 )
+            interval_start = now.replace( hour = 0, minute = 0, second = 0, microsecond = 1 )
+            interval_start -= timedelta( hours = 24 * ( day_idx + 1 ))
+            interval_end = interval_start + timedelta( hours = 24 )
             history_data = cls.get_random_history_data( 
-                period_start = period_start,
-                period_end = period_end,
+                interval_start = interval_start,
+                interval_end = interval_end,
                 now = now,
                 source = source,
             )
@@ -339,10 +339,10 @@ class WeatherSyntheticData:
     
     @classmethod
     def get_random_history_data( cls,
-                                 period_start  : datetime,
-                                 period_end    : datetime,
-                                 now           : datetime         = None,
-                                 source        : DataPointSource  = None ) -> WeatherHistoryData:
+                                 interval_start  : datetime,
+                                 interval_end    : datetime,
+                                 now             : datetime         = None,
+                                 source          : DataPointSource  = None ) -> WeatherHistoryData:
         if not now:
             now = datetimeproxy.now()
         if not source:
@@ -352,10 +352,10 @@ class WeatherSyntheticData:
                 priority = 1,
             )
         history_data = WeatherHistoryData(
-            period_start = period_start,
-            period_end = period_end,
+            interval_start = interval_start,
+            interval_end = interval_end,
         )
-        cls.set_random_periodic_data(
+        cls.set_random_time_interval_data(
             data_obj = history_data,
             now = now,
             source = source,
@@ -477,10 +477,10 @@ class WeatherSyntheticData:
         return
 
     @classmethod
-    def set_random_periodic_data( cls,
-                                  data_obj  : PeriodWeatherData,
-                                  now       : datetime         = None,
-                                  source    : DataPointSource  = None ):
+    def set_random_time_interval_data( cls,
+                                       data_obj  : TimeIntervalWeatherData,
+                                       now       : datetime                 = None,
+                                       source    : DataPointSource          = None ):
         if not now:
             now = datetimeproxy.now()
         if not source:
@@ -585,7 +585,7 @@ class WeatherSyntheticData:
             )
             notable_phenomenon_list.append( notable_phenomenon )
             continue
-        weather_conditions_data.notable_phenomenon_data = ListDataPoint(
+        weather_conditions_data.notable_phenomenon_data = DataPointList(
             weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
