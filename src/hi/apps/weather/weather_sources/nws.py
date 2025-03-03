@@ -16,6 +16,7 @@ from hi.apps.weather.transient_models import (
     DataPointList,
     NotablePhenomenon,
     NumericDataPoint,
+    StatisticDataPoint,
     StringDataPoint,
     WeatherConditionsData,
     WeatherForecastData,
@@ -270,18 +271,21 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             weather_station = weather_station,
             elevation = elevation,
         )
-        weather_conditions_data.windspeed_max = self._create_numeric_data_point(
-            nws_data_dict = properties_data.get( 'windGust' ),
-            source_datetime = source_datetime,
-            weather_station = weather_station,
-            elevation = elevation,
-        )
-        weather_conditions_data.windspeed_ave = self._create_numeric_data_point(
+        weather_conditions_data.windspeed = self._create_statistic_data_point(
             nws_data_dict = properties_data.get( 'windSpeed' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
             elevation = elevation,
         )
+        wind_gust_data_point = self._create_numeric_data_point(
+            nws_data_dict = properties_data.get( 'windGust' ),
+            source_datetime = source_datetime,
+            weather_station = weather_station,
+            elevation = elevation,
+        )
+        if wind_gust_data_point is not None:
+            weather_conditions_data.windspeed.quantity_max = wind_gust_data_point.quantity
+            
         description_short = properties_data.get( 'textDescription' )
         if description_short:
             weather_conditions_data.description_short = StringDataPoint(
@@ -396,45 +400,17 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                 weather_station = weather_station,
                 elevation = elevation,
             )
-            forecast_data.temperature_ave = self._create_numeric_data_point(
+            forecast_data.temperature = self._create_statistic_data_point(
                 nws_data_dict = period_data.get( 'temperature' ),
                 source_datetime = source_datetime,
                 weather_station = weather_station,
                 elevation = elevation,
             )
-            forecast_data.temperature_min = self._create_numeric_data_point(
-                nws_data_dict = period_data.get( 'temperature' ),
-                source_datetime = source_datetime,
-                weather_station = weather_station,
-                elevation = elevation,
-                for_min_value = True,
-            )
-            forecast_data.temperature_max = self._create_numeric_data_point(
-                nws_data_dict = period_data.get( 'temperature' ),
-                source_datetime = source_datetime,
-                weather_station = weather_station,
-                elevation = elevation,
-                for_max_value = True,
-            )
-            forecast_data.windspeed_ave = self._create_numeric_data_point(
+            forecast_data.windspeed = self._create_statistic_data_point(
                 nws_data_dict = period_data.get( 'windSpeed' ),
                 source_datetime = source_datetime,
                 weather_station = weather_station,
                 elevation = elevation,
-            )
-            forecast_data.windspeed_min = self._create_numeric_data_point(
-                nws_data_dict = period_data.get( 'windSpeed' ),
-                source_datetime = source_datetime,
-                weather_station = weather_station,
-                elevation = elevation,
-                for_min_value = True,
-            )
-            forecast_data.windspeed_max = self._create_numeric_data_point(
-                nws_data_dict = period_data.get( 'windSpeed' ),
-                source_datetime = source_datetime,
-                weather_station = weather_station,
-                elevation = elevation,
-                for_max_value = True,
             )
             wind_direction_str = period_data.get( 'windDirection' )
             if wind_direction_str:
@@ -697,6 +673,48 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             logger.error( f'Problem parsing NWS data: {nws_data_dict}: {e}' )
         return None        
 
+    def _create_statistic_data_point( self,
+                                      nws_data_dict  : Dict[ str, Any ],
+                                      source_datetime  : datetime,
+                                      weather_station  : WeatherStation,
+                                      elevation        : UnitQuantity ) -> StatisticDataPoint:
+        if not nws_data_dict:
+            return None
+        
+        min_value = nws_data_dict.get( 'minValue' )
+        value = nws_data_dict.get( 'value' )
+        max_value = nws_data_dict.get( 'maxValue' )
+
+        if min_value is None and value is None and max_value is None:
+            return None
+        
+        unit_code = nws_data_dict.get('unitCode')
+        if not unit_code:
+            raise ValueError( 'Missing unit code' )
+        units_str = WmoUnits.normalize_unit( unit_code )
+
+        def to_unit_quantity( nws_value : float ) -> UnitQuantity:
+            if nws_value is None:
+                return None
+            try:
+                return UnitQuantity( nws_value, units_str )
+            except Exception as e:
+                raise ValueError( f'Bad units: {e}' )
+            return
+
+        quantity_min = to_unit_quantity( min_value )
+        quantity_ave = to_unit_quantity( value )
+        quantity_max = to_unit_quantity( max_value )
+
+        return StatisticDataPoint(
+            weather_station = weather_station,
+            source_datetime = source_datetime,
+            elevation = elevation,
+            quantity_min = quantity_min,
+            quantity_ave = quantity_ave,
+            quantity_max = quantity_max,
+        ) 
+
     def _parse_geometry( self,
                          geometry_dict  : Dict[ str, Any ],
                          elevation      : UnitQuantity       = None) -> GeographicLocation:
@@ -784,7 +802,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             if max_quantity is None:
                 return min_quantity
             return UnitQuantity( ( min_quantity.magnitude + max_quantity.magnitude ) / 2.0, units_str )
-                                       
+        
     def _parse_cloud_layers( self,
                              properties_data          : Dict[ str, str ],
                              weather_conditions_data  : WeatherConditionsData,

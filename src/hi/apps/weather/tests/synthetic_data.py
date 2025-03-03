@@ -17,6 +17,7 @@ from hi.apps.weather.transient_models import (
     NotablePhenomenon,
     NumericDataPoint,
     TimeIntervalWeatherData,
+    StatisticDataPoint,
     StringDataPoint,
     TimeDataPoint,
     WeatherConditionsData,
@@ -396,23 +397,13 @@ class WeatherSyntheticData:
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.randint( 300, 5000 ), 'm' ),
         )
-        data_obj.windspeed_min = NumericDataPoint(
+        data_obj.windspeed = StatisticDataPoint(
             weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
-            quantity = UnitQuantity( random.randint( 0, 20 ), 'mph' ),
-        )
-        data_obj.windspeed_ave = NumericDataPoint(
-            weather_station = weather_station,
-            source_datetime = now,
-            elevation = UnitQuantity( 2, 'meters' ),
-            quantity = UnitQuantity( random.randint( 0, 40 ), 'mph' ),
-        )
-        data_obj.windspeed_max = NumericDataPoint(
-            weather_station = weather_station,
-            source_datetime = now,
-            elevation = UnitQuantity( 2, 'meters' ),
-            quantity = UnitQuantity( random.randint( 0, 80 ), 'mph' ),
+            quantity_min = UnitQuantity( random.randint( 0, 15 ), 'mph' ),
+            quantity_ave = UnitQuantity( random.randint( 15, 30 ), 'mph' ),
+            quantity_max = UnitQuantity( random.randint( 30, 80 ), 'mph' ),
         )
         data_obj.wind_direction = NumericDataPoint(
             weather_station = weather_station,
@@ -498,23 +489,13 @@ class WeatherSyntheticData:
             observations_url = None,
             forecast_url = None,
         )
-        data_obj.temperature_min = NumericDataPoint(
+        data_obj.temperature = StatisticDataPoint(
             weather_station = weather_station,
             source_datetime = now,
             elevation = UnitQuantity( 2, 'meters' ),
-            quantity = UnitQuantity( random.randint( -5, 115 ), 'degF' ),
-        )
-        data_obj.temperature_ave = NumericDataPoint(
-            weather_station = weather_station,
-            source_datetime = now,
-            elevation = UnitQuantity( 2, 'meters' ),
-            quantity = UnitQuantity( random.randint( -5, 115 ), 'degF' ),
-        )
-        data_obj.temperature_max = NumericDataPoint(
-            weather_station = weather_station,
-            source_datetime = now,
-            elevation = UnitQuantity( 2, 'meters' ),
-            quantity = UnitQuantity( random.randint( -5, 115 ), 'degF' ),
+            quantity_min = UnitQuantity( random.randint( -5, 115 ), 'degF' ),
+            quantity_ave = UnitQuantity( random.randint( -5, 115 ), 'degF' ),
+            quantity_max = UnitQuantity( random.randint( -5, 115 ), 'degF' ),
         )
         data_obj.precipitation_amount = NumericDataPoint(
             weather_station = weather_station,
@@ -528,23 +509,13 @@ class WeatherSyntheticData:
             elevation = UnitQuantity( 2, 'meters' ),
             quantity = UnitQuantity( random.random(), 'probability' ),
         )
-        data_obj.windspeed_min = NumericDataPoint(
+        data_obj.windspeed = StatisticDataPoint(
             weather_station = weather_station,
             source_datetime = now,
-            elevation = UnitQuantity( 10, 'meters' ),
-            quantity = UnitQuantity( random.randint( -5, 115 ), 'km / h' ),
-        )
-        data_obj.windspeed_ave = NumericDataPoint(
-            weather_station = weather_station,
-            source_datetime = now,
-            elevation = UnitQuantity( 18, 'meters' ),
-            quantity = UnitQuantity( random.randint( -5, 115 ), 'km / h' ),
-        )
-        data_obj.windspeed_max = NumericDataPoint(
-            weather_station = weather_station,
-            source_datetime = now,
-            elevation = UnitQuantity( 40, 'meters' ),
-            quantity = UnitQuantity( random.randint( -5, 115 ), 'km / h' ),
+            elevation = UnitQuantity( 2, 'meters' ),
+            quantity_min = UnitQuantity( random.randint( 0, 15 ), 'mph' ),
+            quantity_ave = UnitQuantity( random.randint( 15, 30 ), 'mph' ),
+            quantity_max = UnitQuantity( random.randint( 30, 80 ), 'mph' ),
         )
         cls.set_random_common_weather_data(
             data_obj = data_obj,

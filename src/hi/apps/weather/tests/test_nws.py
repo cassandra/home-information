@@ -11,6 +11,7 @@ from hi.apps.weather.transient_models import (
     BooleanDataPoint,
     NotablePhenomenon,
     NumericDataPoint,
+    StatisticDataPoint,
     StringDataPoint,
     WeatherConditionsData,
     WeatherForecastData,
@@ -1426,12 +1427,13 @@ class TestNationalWeatherService( BaseTestCase ):
                         elevation = elevation,
                         quantity = UnitQuantity( 350, 'degrees' ),
                     ),
-                    windspeed_max = None,
-                    windspeed_ave = NumericDataPoint(
+                    windspeed = StatisticDataPoint(
                         weather_station = weather_station,
                         source_datetime = source_datetime,
                         elevation = elevation,
-                        quantity = UnitQuantity( 9.36, 'km / h' ),
+                        quantity_min = None,
+                        quantity_ave = UnitQuantity( 9.36, 'km / h' ),
+                        quantity_max = None,
                     ),
                     description_short = StringDataPoint(
                         weather_station = weather_station,
@@ -1505,12 +1507,9 @@ class TestNationalWeatherService( BaseTestCase ):
             self._compare_numeric_data_point( expected.wind_direction,
                                               result.wind_direction,
                                               test_data['label']  )
-            self._compare_numeric_data_point( expected.windspeed_max,
-                                              result.windspeed_max,
-                                              test_data['label']  )
-            self._compare_numeric_data_point( expected.windspeed_ave,
-                                              result.windspeed_ave,
-                                              test_data['label']  )
+            self._compare_statistic_data_point( expected.windspeed,
+                                                result.windspeed,
+                                                test_data['label']  )
             self._compare_numeric_data_point( expected.cloud_ceiling,
                                               result.cloud_ceiling,
                                               test_data['label']  )
@@ -1699,41 +1698,21 @@ class TestNationalWeatherService( BaseTestCase ):
                         precipitation_probability = None,
                         dew_point = None,
                         relative_humidity = None,
-                        temperature_ave = NumericDataPoint(
+                        temperature = StatisticDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
                             elevation = elevation,
-                            quantity = UnitQuantity( 24.444444444444443, 'degC' ),
+                            quantity_min = None,
+                            quantity_ave = UnitQuantity( 24.444444444444443, 'degC' ),
+                            quantity_max = None,
                         ),
-                        temperature_min =NumericDataPoint(
+                        windspeed = StatisticDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
                             elevation = elevation,
-                            quantity = UnitQuantity(  24.444444444444443, 'degC' ),
-                        ),
-                        temperature_max = NumericDataPoint(
-                            weather_station = weather_station,
-                            source_datetime = source_datetime,
-                            elevation = elevation,
-                            quantity = UnitQuantity( 24.444444444444443, 'degC' ),
-                        ),
-                        windspeed_ave = NumericDataPoint(
-                            weather_station = weather_station,
-                            source_datetime = source_datetime,
-                            elevation = elevation,
-                            quantity = UnitQuantity( 0, 'km / h' ),
-                        ),
-                        windspeed_min = NumericDataPoint(
-                            weather_station = weather_station,
-                            source_datetime = source_datetime,
-                            elevation = elevation,
-                            quantity = UnitQuantity( 0, 'km / h' ),
-                        ),
-                        windspeed_max = NumericDataPoint(
-                            weather_station = weather_station,
-                            source_datetime = source_datetime,
-                            elevation = elevation,
-                            quantity = UnitQuantity( 0, 'km / h' ),
+                            quantity_min = None,
+                            quantity_ave = UnitQuantity( 0, 'km / h' ),
+                            quantity_max = None,
                         ),
                         wind_direction = None,
                     ),
@@ -1767,41 +1746,21 @@ class TestNationalWeatherService( BaseTestCase ):
                         precipitation_probability = None,
                         dew_point = None,
                         relative_humidity = None,
-                        temperature_ave = NumericDataPoint(
+                        temperature = StatisticDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
                             elevation = elevation,
-                            quantity = UnitQuantity( 11.1111111111, 'degC' ),
+                            quantity_min = None,
+                            quantity_ave = UnitQuantity( 11.1111111111, 'degC' ),
+                            quantity_max = None,
                         ),
-                        temperature_min =NumericDataPoint(
+                        windspeed = StatisticDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
                             elevation = elevation,
-                            quantity = UnitQuantity(  11.1111111111, 'degC' ),
-                        ),
-                        temperature_max = NumericDataPoint(
-                            weather_station = weather_station,
-                            source_datetime = source_datetime,
-                            elevation = elevation,
-                            quantity = UnitQuantity( 11.1111111111, 'degC' ),
-                        ),
-                        windspeed_ave = NumericDataPoint(
-                            weather_station = weather_station,
-                            source_datetime = source_datetime,
-                            elevation = elevation,
-                            quantity = UnitQuantity( 0, 'km / h' ),
-                        ),
-                        windspeed_min = NumericDataPoint(
-                            weather_station = weather_station,
-                            source_datetime = source_datetime,
-                            elevation = elevation,
-                            quantity = UnitQuantity( 0, 'km / h' ),
-                        ),
-                        windspeed_max = NumericDataPoint(
-                            weather_station = weather_station,
-                            source_datetime = source_datetime,
-                            elevation = elevation,
-                            quantity = UnitQuantity( 0, 'km / h' ),
+                            quantity_min = None,
+                            quantity_ave = UnitQuantity( 0, 'km / h' ),
+                            quantity_max = None,
                         ),
                         wind_direction = None,
                     ),
@@ -1842,24 +1801,12 @@ class TestNationalWeatherService( BaseTestCase ):
                 self._compare_numeric_data_point( expected.dew_point,
                                                   result.dew_point,
                                                   f'[{idx}] %s' % test_data['label']  )
-                self._compare_numeric_data_point( expected.temperature_ave,
-                                                  result.temperature_ave,
-                                                  f'[{idx}] %s' % test_data['label']  )
-                self._compare_numeric_data_point( expected.temperature_min,
-                                                  result.temperature_min,
-                                                  f'[{idx}] %s' % test_data['label']  )
-                self._compare_numeric_data_point( expected.temperature_max,
-                                                  result.temperature_max,
-                                                  f'[{idx}] %s' % test_data['label']  )
-                self._compare_numeric_data_point( expected.windspeed_ave,
-                                                  result.windspeed_ave,
-                                                  f'[{idx}] %s' % test_data['label']  )
-                self._compare_numeric_data_point( expected.windspeed_min,
-                                                  result.windspeed_min,
-                                                  f'[{idx}] %s' % test_data['label']  )
-                self._compare_numeric_data_point( expected.windspeed_max,
-                                                  result.windspeed_max,
-                                                  f'[{idx}] %s' % test_data['label']  )
+                self._compare_statistic_data_point( expected.temperature,
+                                                    result.temperature,
+                                                    f'[{idx}] %s' % test_data['label']  )
+                self._compare_statistic_data_point( expected.windspeed,
+                                                    result.windspeed,
+                                                    f'[{idx}] %s' % test_data['label']  )
                 self._compare_numeric_data_point( expected.wind_direction,
                                                   result.wind_direction,
                                                   f'[{idx}] %s' % test_data['label']  )
@@ -1878,6 +1825,35 @@ class TestNationalWeatherService( BaseTestCase ):
         self.assertEqual( expected.elevation, result.elevation, label )
         self.assertAlmostEqual( expected.quantity.magnitude, result.quantity.magnitude, 3, label )
         self.assertEqual( expected.quantity.units, result.quantity.units, label )
+        return
+    
+    def _compare_statistic_data_point( self, expected, result, label ):
+        if expected is None:
+            self.assertIsNone( result, label )
+            return
+            
+        self.assertEqual( expected.source, result.source, label )
+        self.assertEqual( expected.source_datetime, result.source_datetime, label )
+        self.assertEqual( expected.elevation, result.elevation, label )
+
+        if expected.quantity_min is None:
+            self.assertIsNone( result.quantity_min, label )
+        else:
+            self.assertAlmostEqual( expected.quantity_min.magnitude, result.quantity_min.magnitude, 3, label )
+            self.assertEqual( expected.quantity_min.units, result.quantity_min.units, label )
+
+        if expected.quantity_ave is None:
+            self.assertIsNone( result.quantity_ave, label )
+        else:
+            self.assertAlmostEqual( expected.quantity_ave.magnitude, result.quantity_ave.magnitude, 3, label )
+            self.assertEqual( expected.quantity_ave.units, result.quantity_ave.units, label )
+
+        if expected.quantity_max is None:
+            self.assertIsNone( result.quantity_max, label )
+        else:
+            self.assertAlmostEqual( expected.quantity_max.magnitude, result.quantity_max.magnitude, 3, label )
+            self.assertEqual( expected.quantity_max.units, result.quantity_max.units, label )
+
         return
             
         

@@ -72,7 +72,7 @@ class DataPoint:
     @property
     def source(self) -> DataPointSource:
         return self.weather_station.source
-
+        
     
 @dataclass
 class NumericDataPoint( DataPoint ):
@@ -92,6 +92,25 @@ class TimeDataPoint( DataPoint ):
 @dataclass
 class StringDataPoint( DataPoint ):
     value            : str
+
+    
+@dataclass
+class StatisticDataPoint( DataPoint ):
+    quantity_min   : UnitQuantity
+    quantity_ave   : UnitQuantity
+    quantity_max   : UnitQuantity
+
+    @property
+    def quantity(self) -> UnitQuantity:
+        if self.quantity_ave is not None:
+            return self.quantity_ave
+        if self.quantity_min is not None and self.quantity_max is not None:
+            return ( self.quantity_min + self.quantity_max ) / 2.0
+        if self.quantity_max:
+            return self.quantity_max
+        if self.quantity_min:
+            return self.quantity_min
+        return None
 
     
 @dataclass
@@ -125,32 +144,20 @@ class WeatherData:
 class CommonWeatherData( WeatherData ):
     """ For those data points shared between current conditions and forecasts. """
     
-    description_short          : StringDataPoint   = None
-    description_long           : StringDataPoint   = None
-    is_daytime                 : BooleanDataPoint  = None
-    cloud_cover                : NumericDataPoint  = None  # Percent
-    cloud_ceiling              : NumericDataPoint  = None
-    windspeed_min              : NumericDataPoint  = None
-    windspeed_ave              : NumericDataPoint  = None
-    windspeed_max              : NumericDataPoint  = None  # a.k.a., "wind gust"
-    wind_direction             : NumericDataPoint  = None  # 0 to 360
-    relative_humidity          : NumericDataPoint  = None
-    visibility                 : NumericDataPoint  = None
-    dew_point                  : NumericDataPoint  = None
-    heat_index                 : NumericDataPoint  = None
-    wind_chill                 : NumericDataPoint  = None
-    barometric_pressure        : NumericDataPoint  = None
-    sea_level_pressure         : NumericDataPoint  = None
-
-    @property
-    def windspeed(self):
-        if self.windspeed_ave:
-            return self.windspeed_ave
-        if self.windspeed_max:
-            return self.windspeed_max
-        if self.windspeed_min:
-            return self.windspeed_min
-        return None
+    description_short          : StringDataPoint     = None
+    description_long           : StringDataPoint     = None
+    is_daytime                 : BooleanDataPoint    = None
+    cloud_cover                : NumericDataPoint    = None  # Percent
+    cloud_ceiling              : NumericDataPoint    = None
+    windspeed                  : StatisticDataPoint  = None  # max = "wind gust"
+    wind_direction             : NumericDataPoint    = None  # 0 to 360
+    relative_humidity          : NumericDataPoint    = None
+    visibility                 : NumericDataPoint    = None
+    dew_point                  : NumericDataPoint    = None
+    heat_index                 : NumericDataPoint    = None
+    wind_chill                 : NumericDataPoint    = None
+    barometric_pressure        : NumericDataPoint    = None
+    sea_level_pressure         : NumericDataPoint    = None
 
     @property
     def sky_condition( self ) -> SkyCondition:
@@ -224,20 +231,8 @@ class TimeIntervalWeatherData( TimeInterval, CommonWeatherData ):
     For those data points shared by forecast and historical data (which are
     defined for a specific period of time).
     """
-    temperature_min            : NumericDataPoint  = None
-    temperature_ave            : NumericDataPoint  = None
-    temperature_max            : NumericDataPoint  = None
-    precipitation_amount       : NumericDataPoint  = None
-    
-    @property
-    def temperature(self):
-        if self.temperature_ave:
-            return self.temperature_ave
-        if self.temperature_max:
-            return self.temperature_max
-        if self.temperature_min:
-            return self.temperature_min
-        return None
+    temperature                : StatisticDataPoint  = None
+    precipitation_amount       : NumericDataPoint    = None
     
 
 @dataclass

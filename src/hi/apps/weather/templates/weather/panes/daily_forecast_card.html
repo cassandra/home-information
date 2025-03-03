@@ -6,16 +6,16 @@
     {{ daily_forecast_data.interval_start.month }}/{{ daily_forecast_data.interval_start.day }}
   </div>
   <div>
-    {% if daily_forecast_data.temperature_max %}
-    {{ daily_forecast_data.temperature_max.quantity|format_magnitude:0 }}
-    <small>{{ daily_forecast_data.temperature_max.quantity|format_units }}</small>
+    {% if daily_forecast_data.temperature.quantity_max %}
+    {{ daily_forecast_data.temperature.quantity_max.quantity|format_magnitude:0 }}
+    <small>{{ daily_forecast_data.temperature.quantity_max|format_units }}</small>
     {% else %}
     -- °
     {% endif %}    
     |
-    {% if daily_forecast_data.temperature_min %}
-    {{ daily_forecast_data.temperature_min.quantity|format_magnitude:0 }}
-    <small>{{ daily_forecast_data.temperature_min.quantity|format_units }}</small>
+    {% if daily_forecast_data.temperature.quantity_min %}
+    {{ daily_forecast_data.temperature.quantity_min.quantity|format_magnitude:0 }}
+    <small>{{ daily_forecast_data.temperature.quantity_min|format_units }}</small>
     {% else %}
     -- °
     {% endif %}    
