@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field, fields
-from datetime import date, datetime, time, timedelta
+from datetime import datetime, time, timedelta
 from typing import Generic, List, TypeVar, get_origin
 
 from hi.transient_models import GeographicLocation
@@ -17,8 +17,6 @@ from .enums import (
     WeatherPhenomenonIntensity,
     WeatherPhenomenonModifier,
 )
-
-T = TypeVar("T")  # Define a generic type placeholder
 
 
 @dataclass
@@ -113,6 +111,9 @@ class StatisticDataPoint( DataPoint ):
         return None
 
     
+T = TypeVar("T")  # Define a generic type placeholder
+
+
 @dataclass
 class DataPointList( DataPoint, Generic[T] ):
     list_value       : List[ T ]
@@ -215,7 +216,7 @@ class WeatherConditionsData( CommonWeatherData ):
 
     
 @dataclass
-class TimeInterval( CommonWeatherData ):
+class TimeInterval:
     interval_start             : datetime          = None
     interval_end               : datetime          = None
     interval_name              : StringDataPoint   = None
@@ -226,34 +227,33 @@ class TimeInterval( CommonWeatherData ):
     
     
 @dataclass
-class TimeIntervalWeatherData( TimeInterval, CommonWeatherData ):
+class TimeIntervalCommonWeatherData( TimeInterval, CommonWeatherData ):
     """
     For those data points shared by forecast and historical data (which are
-    defined for a specific period of time).
+    defined for a specific interval of time).
     """
     temperature                : StatisticDataPoint  = None
     precipitation_amount       : NumericDataPoint    = None
     
 
 @dataclass
-class WeatherForecastData( TimeIntervalWeatherData ):
+class WeatherForecastData( TimeIntervalCommonWeatherData ):
     precipitation_probability  : NumericDataPoint  = None
 
     
 @dataclass
-class WeatherHistoryData( TimeIntervalWeatherData ):
+class WeatherHistoryData( TimeIntervalCommonWeatherData ):
     pass
     
     
 @dataclass
-class DailyAstronomicalData( WeatherData ):
-    day                          : date              = None
+class AstronomicalData( TimeInterval, WeatherData ):
     sunrise                      : TimeDataPoint     = None
     sunset                       : TimeDataPoint     = None
     solar_noon                   : TimeDataPoint     = None
     moonrise                     : TimeDataPoint     = None
     moonset                      : TimeDataPoint     = None
-    moon_illumnination           : NumericDataPoint  = None # Percent
+    moon_illumnination           : NumericDataPoint  = None  # Percent
     moon_is_waxing               : BooleanDataPoint  = None
     civil_twilight_begin         : TimeDataPoint     = None
     civil_twilight_end           : TimeDataPoint     = None
@@ -292,7 +292,7 @@ class DailyAstronomicalData( WeatherData ):
 class WeatherOverviewData:
 
     current_conditions_data   : WeatherConditionsData
-    todays_astronomical_data  : DailyAstronomicalData
+    todays_astronomical_data  : AstronomicalData
 
     
 @dataclass
@@ -308,6 +308,11 @@ class DailyForecast:
 @dataclass
 class DailyHistory:
     data_list    : List[ WeatherHistoryData ]  = field( default_factory = list )
+
+    
+@dataclass
+class DailyAstronomicalData:
+    data_list    : List[ AstronomicalData ]  = field( default_factory = list )
 
 
 @dataclass

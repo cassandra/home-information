@@ -11,12 +11,12 @@ from hi.apps.weather.enums import (
 from hi.apps.weather.transient_models import (
     BooleanDataPoint,
     CommonWeatherData,
-    DailyAstronomicalData,
+    AstronomicalData,
     DataPointSource,
     DataPointList,
     NotablePhenomenon,
     NumericDataPoint,
-    TimeIntervalWeatherData,
+    TimeIntervalCommonWeatherData,
     StatisticDataPoint,
     StringDataPoint,
     TimeDataPoint,
@@ -148,8 +148,10 @@ class WeatherSyntheticData:
             forecast_url = None,
         )
         elevation = UnitQuantity( 2, 'meters' )
-        return DailyAstronomicalData(
-            day = now.date(),
+        return AstronomicalData(
+            interval_start = datetimeproxy.date_to_datetime_day_begin( now.date() ),
+            interval_end = datetimeproxy.date_to_datetime_day_end( now.date() ),
+            interval_name = 'Today',
             sunrise = TimeDataPoint(
                 weather_station = weather_station,
                 source_datetime = now,
@@ -469,9 +471,9 @@ class WeatherSyntheticData:
 
     @classmethod
     def set_random_time_interval_data( cls,
-                                       data_obj  : TimeIntervalWeatherData,
-                                       now       : datetime                 = None,
-                                       source    : DataPointSource          = None ):
+                                       data_obj  : TimeIntervalCommonWeatherData,
+                                       now       : datetime                        = None,
+                                       source    : DataPointSource                 = None ):
         if not now:
             now = datetimeproxy.now()
         if not source:

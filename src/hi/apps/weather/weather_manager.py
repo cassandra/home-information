@@ -9,6 +9,7 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin
 
 from .transient_models import (
+    AstronomicalData,
     DailyAstronomicalData,
     DailyForecast,
     DataPoint,
@@ -34,10 +35,11 @@ class WeatherManager( Singleton, SettingsMixin ):
     def __init_singleton__(self):
 
         self._current_conditions_data = WeatherConditionsData()
-        self._todays_astronomical_data = DailyAstronomicalData()
+        self._todays_astronomical_data = AstronomicalData()
         self._hourly_forecast = HourlyForecast()
         self._daily_forecast = DailyForecast()
         self._daily_history = DailyHistory()
+        self._daily_astronomical_data = DailyAstronomicalData()
         self._data_sync_lock = threading.Lock()
         self._data_async_lock = asyncio.Lock() 
         self._was_initialized = False
@@ -60,7 +62,7 @@ class WeatherManager( Singleton, SettingsMixin ):
         with self._data_sync_lock:
             return self._current_conditions_data
     
-    def get_todays_astronomical_data(self) -> DailyAstronomicalData:
+    def get_todays_astronomical_data(self) -> AstronomicalData:
         with self._data_sync_lock:
             return self._todays_astronomical_data
     
@@ -82,6 +84,10 @@ class WeatherManager( Singleton, SettingsMixin ):
         with self._data_sync_lock:
             return self._daily_history
 
+    def get_daily_astronomical_data(self) -> DailyAstronomicalData:
+        with self._data_sync_lock:
+            return self._daily_astronomical_data
+    
     async def update_current_conditions( self,
                                          weather_data_source      : WeatherDataSource,
                                          weather_conditions_data  : WeatherConditionsData ):

@@ -2,7 +2,7 @@ import logging
 
 from hi.apps.weather.transient_models import (
     BooleanDataPoint,
-    DailyAstronomicalData,
+    AstronomicalData,
     NumericDataPoint,
     StatisticDataPoint,
     WeatherStation,
@@ -68,7 +68,7 @@ class TestWeatherTransientModels( BaseTestCase ):
             continue
         return
     
-    def test_DailyAstronomicalData__days_until_full_moon(self):
+    def test_AstronomicalData__days_until_full_moon(self):
         test_data_list = [
             { 'percent': 0.0, 'is_waxing'  : True , 'expect': 15 },
             { 'percent': 2.9, 'is_waxing'  : True , 'expect': 14 },
@@ -111,8 +111,10 @@ class TestWeatherTransientModels( BaseTestCase ):
         )
         
         for test_data in test_data_list:
-            daily_astronommical_data = DailyAstronomicalData(
-                day = None,
+            daily_astronommical_data = AstronomicalData(
+                interval_start = None,
+                interval_end = None,
+                interval_name = None,
                 moon_illumnination = NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = None,
@@ -133,7 +135,7 @@ class TestWeatherTransientModels( BaseTestCase ):
             continue
         return
 
-    def test_DailyAstronomicalData__days_until_new_moon(self):
+    def test_AstronomicalData__days_until_new_moon(self):
         test_data_list = [
             { 'percent': 0.0, 'is_waxing'  : True , 'expect': 0 },
             { 'percent': 2.9, 'is_waxing'  : True , 'expect': 0 },
@@ -176,8 +178,10 @@ class TestWeatherTransientModels( BaseTestCase ):
         )
         
         for test_data in test_data_list:
-            daily_astronommical_data = DailyAstronomicalData(
-                day = None,
+            daily_astronommical_data = AstronomicalData(
+                interval_start = None,
+                interval_end = None,
+                interval_name = None,
                 moon_illumnination = NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = None,

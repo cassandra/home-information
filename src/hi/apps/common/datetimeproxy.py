@@ -141,28 +141,6 @@ def components_to_datetime_utc( the_date, the_time, tzname ):
     return local_dt.astimezone( pytz.utc )
 
 
-def date_to_datetime_day_begin( the_date, tzname ):
-    """
-    Convert the date in the given timezone, into a UTC datetime
-    that correspsonds to the beginning of the day.
-    """
-    tzinfo = pytz.timezone( tzname )
-    naive_dt = datetime.datetime.combine( the_date, datetime.time.min )
-    local_dt = tzinfo.localize( naive_dt )
-    return local_dt.astimezone( pytz.utc )
-
-
-def date_to_datetime_day_end( the_date, tzname ):
-    """
-    Convert the date in the given timezone, into a UTC datetime
-    that correspsonds to the beginning of the day.
-    """
-    tzinfo = pytz.timezone( tzname )
-    naive_dt = datetime.datetime.combine( the_date, datetime.time.max )
-    local_dt = tzinfo.localize( naive_dt )
-    return local_dt.astimezone( pytz.utc )
-
-
 def week_of_month(dt):
     """ 
     Returns the week of the month for the specified date.
@@ -267,6 +245,28 @@ def time_str_to_time( time_str ):
     ( hour, minute ) = time_str.split('-')
     starts_dt = datetime.datetime( 2000, 1, 2, int(hour), int(minute) )
     return starts_dt.time()
+
+
+def date_to_datetime_day_begin( the_date, tzname ):
+    """
+    Convert the date in the given timezone, into a UTC datetime
+    that correspsonds to the beginning of the day.
+    """
+    tzinfo = pytz.timezone( tzname )
+    naive_dt = datetime.datetime.combine( the_date, datetime.time.min )
+    local_dt = tzinfo.localize( naive_dt )
+    return local_dt.astimezone( pytz.utc )
+
+
+def date_to_datetime_day_end( the_date, tzname ):
+    """
+    Convert the date in the given timezone, into a UTC datetime
+    that correspsonds to the beginning of the day.
+    """
+    tzinfo = pytz.timezone( tzname )
+    naive_dt = datetime.datetime.combine( the_date, datetime.time.max )
+    local_dt = tzinfo.localize( naive_dt )
+    return local_dt.astimezone( pytz.utc )
 
 
 def date_to_datetime_range_tuple( the_date, tzinfo=None ):
