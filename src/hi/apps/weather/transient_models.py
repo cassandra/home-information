@@ -19,11 +19,19 @@ from .enums import (
 )
 
 
-@dataclass
+@dataclass( frozen = True )
 class DataPointSource:
     id        : str
     label     : str
     priority  : int  # Lower numbers are higher priority
+
+    def __hash__(self):
+        return hash( self.id )
+
+    def __eq__(self, other):
+        if not isinstance( other, WeatherStation ):
+            return False
+        return bool( self.id == other.id )
 
     
 @dataclass( frozen = True )
@@ -104,9 +112,9 @@ class StatisticDataPoint( DataPoint ):
             return self.quantity_ave
         if self.quantity_min is not None and self.quantity_max is not None:
             return ( self.quantity_min + self.quantity_max ) / 2.0
-        if self.quantity_max:
+        if self.quantity_max is not None:
             return self.quantity_max
-        if self.quantity_min:
+        if self.quantity_min is not None:
             return self.quantity_min
         return None
 
@@ -162,7 +170,7 @@ class CommonWeatherData( WeatherData ):
 
     @property
     def sky_condition( self ) -> SkyCondition:
-        if not self.cloud_cover:
+        if self.cloud_cover is None:
             return None
         return SkyCondition.from_cloud_cover(
             cloud_cover_percent = self.cloud_cover.quantity.magnitude,
@@ -200,19 +208,11 @@ class WeatherConditionsData( CommonWeatherData ):
     notable_phenomenon_data    : DataPointList[ NotablePhenomenon ]  = None
     
     @property
-    def sky_condition( self ) -> SkyCondition:
-        if not self.cloud_cover:
-            return None
-        return SkyCondition.from_cloud_cover(
-            cloud_cover_percent = self.cloud_cover.quantity.magnitude,
-        )
-    
-    @property
     def has_precipitation(self):
-        return bool( self.precipitation_last_hour
-                     or self.precipitation_last_3h
-                     or self.precipitation_last_6h
-                     or self.precipitation_last_24h )
+        return bool( self.precipitation_last_hour is not None
+                     or self.precipitation_last_3h is not None
+                     or self.precipitation_last_6h is not None
+                     or self.precipitation_last_24h is not None )
 
     
 @dataclass
@@ -224,6 +224,84 @@ class TimeInterval:
     @property
     def interval_period(self) -> timedelta:
         return self.interval_end - self.interval_start
+
+
+
+
+
+# ========================================
+### ZZZ START: New Data Stuctures
+
+
+
+
+    
+
+@dataclass
+class WeatherForecastData( CommonWeatherData ):
+    zzz
+
+@dataclass
+class WeatherHistoryData( CommonWeatherData ):
+    zzz
+
+@dataclass
+class AstronomicalData( WeatherData ):
+    zzz
+
+@dataclass( frozen = True, order = True )
+class TimeInterval:
+    start   : datetime          = None
+    end     : datetime          = None
+    name    : StringDataPoint   = field( default = None, compare = False, hash = False )
+
+    def __post_init__(self):
+        # Invariant is start time always less that end time.
+        assert self.start < self.end
+        return
+    
+    def overlaps( self, other : 'TimeInterval' ) -> bool:
+        if other.end <= self.start:
+            return False
+        if other.start >= self.end:
+            return False
+        return True
+        
+    @property
+    def interval_period(self) -> timedelta:
+        return self.interval_end - self.interval_start
+    
+@dataclass
+class TimeIntervalWeatherData ( WeatherData ):
+    interval        : TimeInterval      = None
+    data            : WeatherData       = None
+
+@dataclass
+class IntervalWeatherForecast( TimeIntervalWeatherData ):
+    data            : WeatherForecastData       = None
+
+@dataclass
+class IntervalWeatherHistory( TimeIntervalWeatherData ):
+    data            : WeatherHistoryData       = None
+
+@dataclass
+class IntervalAstronomical( TimeIntervalWeatherData ):
+    data            : AstronomicalData       = None
+
+
+
+    
+### ZZZ END: New Data Stuctures
+# ========================================
+
+
+
+
+
+
+    
+
+
     
     
 @dataclass
@@ -264,7 +342,7 @@ class AstronomicalData( TimeInterval, WeatherData ):
 
     @property
     def moon_phase(self) -> MoonPhase:
-        if not self.moon_illumnination:
+        if self.moon_illumnination is None:
             return None
         return MoonPhase.from_illumination(
             illumination_percent = self.moon_illumnination.quantity.magnitude,
