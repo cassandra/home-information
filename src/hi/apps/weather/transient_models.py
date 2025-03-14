@@ -71,12 +71,14 @@ class DataPoint:
     elevation        : UnitQuantity
 
     def __post_init( self ):
-        if self.elevation is None:
+        if ( self.elevation is None ) and self.weather_station:
             self.elevation = self.weather_station.elevation
         return
     
     @property
     def source(self) -> DataPointSource:
+        if not self.weather_station:
+            return None
         return self.weather_station.source
         
     
@@ -249,16 +251,29 @@ class WeatherHistoryData( CommonWeatherData ):
 class AstronomicalData( WeatherData ):
     zzz
 
-@dataclass( frozen = True, order = True )
+@dataclass( frozen = True )
 class TimeInterval:
     start   : datetime          = None
     end     : datetime          = None
-    name    : StringDataPoint   = field( default = None, compare = False, hash = False )
+    name    : StringDataPoint   = None
 
     def __post_init__(self):
         # Invariant is start time always less that end time.
         assert self.start < self.end
         return
+    
+    def __lt__( self, other ):
+        if not isinstance( other, TimeInterval ):
+            return NotImplemented
+        return self.start < other.start
+
+    def __eq__(self, other):
+        if not isinstance( other, TimeInterval ):
+            return NotImplemented
+        return ( self.start == other.start ) and ( self.end == other.end )
+
+    def __hash__(self):
+        return hash((self.start, self.end))
     
     def overlaps( self, other : 'TimeInterval' ) -> bool:
         if other.end <= self.start:
@@ -266,6 +281,11 @@ class TimeInterval:
         if other.start >= self.end:
             return False
         return True
+    
+    def overlap_seconds( self, other : 'TimeInterval' ) -> float:
+        overlap_start = max( self.start, other.start )
+        overlap_end = min( self.end, other.end )
+        return = ( overlap_end - overlap_start ).total_seconds()
         
     @property
     def interval_period(self) -> timedelta:
