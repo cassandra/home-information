@@ -79,7 +79,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
 
         #  ZZZZ get two type of forecasts, but only once an hour???
-        # reconsile with superclass logic Maybe the subclass should be
+        # reconcile with superclass logic Maybe the subclass should be
         # responsible for all actual intervals, while superclass is just
         # the min periodicx interval.
 
@@ -144,7 +144,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
         geo_location = self._parse_geometry(
             geometry_dict = properties_data.get('geometry'),
-            elevation = None,
         )
         weather_station = WeatherStation(
             source = self.data_point_source,
@@ -183,6 +182,8 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
         elevation = self._parse_elevation( properties_data.get('elevation'),
                                            default = weather_station.elevation )
+        if weather_station and weather_station.geo_location:
+            weather_station.geo_location.elevation = elevation
             
         weather_conditions_data = WeatherConditionsData()
 
@@ -190,98 +191,82 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             nws_data_dict = properties_data.get( 'barometricPressure' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
 
         weather_conditions_data.dew_point = self._create_numeric_data_point(
             nws_data_dict = properties_data.get( 'dewpoint' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         weather_conditions_data.heat_index = self._create_numeric_data_point(
             nws_data_dict = properties_data.get( 'heatIndex' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         weather_conditions_data.temperature_max_last_24h = self._create_numeric_data_point(
             nws_data_dict = properties_data.get( 'maxTemperatureLast24Hours' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         weather_conditions_data.temperature_min_last_24h = self._create_numeric_data_point(
             nws_data_dict = properties_data.get( 'minTemperatureLast24Hours' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         weather_conditions_data.precipitation_last_3h = self._create_numeric_data_point(
             nws_data_dict = properties_data.get( 'precipitationLast3Hours' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         weather_conditions_data.precipitation_last_6h = self._create_numeric_data_point(
             nws_data_dict = properties_data.get( 'precipitationLast6Hours' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         weather_conditions_data.precipitation_last_hour = self._create_numeric_data_point(
             nws_data_dict = properties_data.get( 'precipitationLastHour' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         weather_conditions_data.relative_humidity = self._create_numeric_data_point(
             nws_data_dict = properties_data.get( 'relativeHumidity' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         weather_conditions_data.sea_level_pressure = self._create_numeric_data_point(
             nws_data_dict = properties_data.get( 'seaLevelPressure' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         weather_conditions_data.temperature = self._create_numeric_data_point(
             nws_data_dict = properties_data.get( 'temperature' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         weather_conditions_data.visibility = self._create_numeric_data_point(
             nws_data_dict = properties_data.get( 'visibility' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         weather_conditions_data.wind_chill = self._create_numeric_data_point(
             nws_data_dict = properties_data.get( 'windChill' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         weather_conditions_data.wind_direction = self._create_numeric_data_point(
             nws_data_dict = properties_data.get( 'windDirection' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         weather_conditions_data.windspeed = self._create_statistic_data_point(
             nws_data_dict = properties_data.get( 'windSpeed' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         wind_gust_data_point = self._create_numeric_data_point(
             nws_data_dict = properties_data.get( 'windGust' ),
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         if wind_gust_data_point is not None:
             weather_conditions_data.windspeed.quantity_max = wind_gust_data_point.quantity
@@ -291,7 +276,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             weather_conditions_data.description_short = StringDataPoint(
                 weather_station = weather_station,
                 source_datetime = source_datetime,
-                elevation = elevation,
                 value = description_short,
             )
         self._parse_cloud_layers( 
@@ -299,14 +283,12 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             weather_conditions_data = weather_conditions_data,
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         self._parse_present_weather( 
             properties_data = properties_data,
             weather_conditions_data = weather_conditions_data,
             source_datetime = source_datetime,
             weather_station = weather_station,
-            elevation = elevation,
         )
         return weather_conditions_data
     
@@ -328,7 +310,10 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
         elevation = self._parse_elevation( properties_data.get('elevation'),
                                            default = weather_station.elevation )
-        
+
+        if weather_station and weather_station.geo_location:
+            weather_station.geo_location.elevation = elevation
+            
         period_data_list = properties_data['periods']
         if not period_data_list:
             raise ValueError('Missing "periods" in NWS hourly forecast payload.')
@@ -355,7 +340,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                 forecast_data.interval_name = StringDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     value = interval_name,
                 )
             description_short = period_data.get('shortForecast')
@@ -363,7 +347,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                 forecast_data.description_short = StringDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     value = description_short,
                 )
             description_long = period_data.get('detailedForecast')
@@ -371,7 +354,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                 forecast_data.description_long = StringDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     value = description_long,
                 )
             is_daytime = period_data.get('isDaytime')
@@ -379,38 +361,32 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                 forecast_data.is_daytime = BooleanDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     value = str_to_bool( is_daytime ),
                 )
             forecast_data.precipitation_probability = self._create_numeric_data_point(
                 nws_data_dict = period_data.get( 'probabilityOfPrecipitation' ),
                 source_datetime = source_datetime,
                 weather_station = weather_station,
-                elevation = elevation,
             )
             forecast_data.dew_point = self._create_numeric_data_point(
                 nws_data_dict = period_data.get( 'dewpoint' ),
                 source_datetime = source_datetime,
                 weather_station = weather_station,
-                elevation = elevation,
             )
             forecast_data.relative_humidity = self._create_numeric_data_point(
                 nws_data_dict = period_data.get( 'relativeHumidity' ),
                 source_datetime = source_datetime,
                 weather_station = weather_station,
-                elevation = elevation,
             )
             forecast_data.temperature = self._create_statistic_data_point(
                 nws_data_dict = period_data.get( 'temperature' ),
                 source_datetime = source_datetime,
                 weather_station = weather_station,
-                elevation = elevation,
             )
             forecast_data.windspeed = self._create_statistic_data_point(
                 nws_data_dict = period_data.get( 'windSpeed' ),
                 source_datetime = source_datetime,
                 weather_station = weather_station,
-                elevation = elevation,
             )
             wind_direction_str = period_data.get( 'windDirection' )
             if wind_direction_str:
@@ -419,7 +395,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                     forecast_data.wind_direction = NumericDataPoint(
                         weather_station = weather_station,
                         source_datetime = source_datetime,
-                        elevation = elevation,
                         quantity = UnitQuantity( wind_direction_enum.angle_degrees, 'degrees' )
                     )
                 except ValueError:
@@ -653,7 +628,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                                     nws_data_dict    : Dict[ str, Any ],
                                     source_datetime  : datetime,
                                     weather_station  : WeatherStation,
-                                    elevation        : UnitQuantity,
                                     for_min_value    : bool              = False,
                                     for_max_value    : bool              = False  ) -> NumericDataPoint:
         try:
@@ -666,7 +640,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                 return NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     quantity = quantity,
                 )
         except Exception as e:
@@ -676,8 +649,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
     def _create_statistic_data_point( self,
                                       nws_data_dict  : Dict[ str, Any ],
                                       source_datetime  : datetime,
-                                      weather_station  : WeatherStation,
-                                      elevation        : UnitQuantity ) -> StatisticDataPoint:
+                                      weather_station  : WeatherStation ) -> StatisticDataPoint:
         if not nws_data_dict:
             return None
         
@@ -709,7 +681,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         return StatisticDataPoint(
             weather_station = weather_station,
             source_datetime = source_datetime,
-            elevation = elevation,
             quantity_min = quantity_min,
             quantity_ave = quantity_ave,
             quantity_max = quantity_max,
@@ -807,8 +778,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                              properties_data          : Dict[ str, str ],
                              weather_conditions_data  : WeatherConditionsData,
                              source_datetime          : datetime,
-                             weather_station          : WeatherStation,
-                             elevation                : UnitQuantity ):
+                             weather_station          : WeatherStation ):
         """
         Translate NWS 'cloudLayers' data into a cloud coverage percentage and
         cloud ceiling height.
@@ -821,7 +791,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             weather_conditions_data.cloud_cover = NumericDataPoint(
                 weather_station = weather_station,
                 source_datetime = source_datetime,
-                elevation = elevation,
                 quantity = UnitQuantity( 0, 'percent' ),
             )
             return
@@ -862,7 +831,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             weather_conditions_data.cloud_ceiling = NumericDataPoint(
                 weather_station = weather_station,
                 source_datetime = source_datetime,
-                elevation = elevation,
                 quantity = cloud_ceiling_quantity_min,
             )                    
 
@@ -874,7 +842,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             weather_conditions_data.cloud_cover = NumericDataPoint(
                 weather_station = weather_station,
                 source_datetime = source_datetime,
-                elevation = elevation,
                 quantity = cloud_cover_quantity,
             )
         return
@@ -883,8 +850,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                                 properties_data          : Dict[ str, Any ],
                                 weather_conditions_data  : WeatherConditionsData,
                                 source_datetime          : datetime,
-                                weather_station          : WeatherStation,
-                                elevation                : UnitQuantity ):
+                                weather_station          : WeatherStation ):
         """
         The presentWeather field is populated when
         notable weather events are occurring at the observation time. This
@@ -953,7 +919,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         weather_conditions_data.notable_phenomenon_data = DataPointList(
             weather_station = weather_station,
             source_datetime = source_datetime,
-            elevation = elevation,
             list_value = notable_phenomenon_list,
         )       
         return

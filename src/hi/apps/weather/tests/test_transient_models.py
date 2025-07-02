@@ -37,7 +37,6 @@ class TestWeatherTransientModels( BaseTestCase ):
             forecast_url = None,
         )
         source_datetime = None
-        elevation = None
         
         for test_data in test_data_list:
             if test_data['min'] is not None:
@@ -55,7 +54,6 @@ class TestWeatherTransientModels( BaseTestCase ):
             result_data_point = StatisticDataPoint(
                 weather_station = weather_station,
                 source_datetime = source_datetime,
-                elevation = elevation,
                 quantity_min = quantity_min,
                 quantity_ave = quantity_ave,
                 quantity_max = quantity_max,
@@ -118,13 +116,11 @@ class TestWeatherTransientModels( BaseTestCase ):
                 moon_illumnination = NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = None,
-                    elevation = None,
                     quantity = UnitQuantity( test_data.get('percent'), 'percent' ),
                 ),
                 moon_is_waxing = BooleanDataPoint(
                     weather_station = weather_station,
                     source_datetime = None,
-                    elevation = None,
                     value = test_data.get('is_waxing'),
                 ),
             )
@@ -185,13 +181,11 @@ class TestWeatherTransientModels( BaseTestCase ):
                 moon_illumnination = NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = None,
-                    elevation = None,
                     quantity = UnitQuantity( test_data.get('percent'), 'percent' ),
                 ),
                 moon_is_waxing = BooleanDataPoint(
                     weather_station = weather_station,
                     source_datetime = None,
-                    elevation = None,
                     value = test_data.get('is_waxing'),
                 ),
             )

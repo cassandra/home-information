@@ -587,7 +587,6 @@ class TestNationalWeatherService( BaseTestCase ):
             },
         ]
         now = datetimeproxy.now()
-        elevation = UnitQuantity( 2, 'meters' )
 
         nws = NationalWeatherService()
         weather_station = WeatherStation(
@@ -605,7 +604,6 @@ class TestNationalWeatherService( BaseTestCase ):
                 nws_data_dict = nws_data_dict,
                 source_datetime = now,
                 weather_station = weather_station,
-                elevation = elevation,
             )
             self.assertIsNone( result_data_point )
             continue
@@ -640,7 +638,6 @@ class TestNationalWeatherService( BaseTestCase ):
         ]
 
         now = datetimeproxy.now()
-        elevation = UnitQuantity( 2, 'meters' )
 
         nws = NationalWeatherService()
         weather_station = WeatherStation(
@@ -658,13 +655,11 @@ class TestNationalWeatherService( BaseTestCase ):
                 nws_data_dict = test_data['nws_data_dict'],
                 source_datetime = now,
                 weather_station = weather_station,
-                elevation = elevation,
             )
             self.assertEqual( nws.data_point_source.id,
                               result_data_point.weather_station.source.id,
                               test_data )
             self.assertEqual( now, result_data_point.source_datetime )
-            self.assertEqual( elevation, result_data_point.elevation )
             result_quantity = result_data_point.quantity
             self.assertAlmostEqual( test_data['expected'].magnitude, result_quantity.magnitude, 3, test_data )
             self.assertEqual( test_data['expected'].units, result_quantity.units, test_data )
@@ -673,7 +668,6 @@ class TestNationalWeatherService( BaseTestCase ):
 
     def test_parse_cloud_layers(self):
         source_datetime = datetimeproxy.now()
-        elevation = UnitQuantity( 2, 'meters' )
         nws = NationalWeatherService()
         weather_station = WeatherStation(
             source = nws.data_point_source,
@@ -695,7 +689,6 @@ class TestNationalWeatherService( BaseTestCase ):
                 'expected_cloud_cover': NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     quantity = UnitQuantity( 0, 'percent' ),
                 ),
             },
@@ -713,7 +706,6 @@ class TestNationalWeatherService( BaseTestCase ):
                 'expected_cloud_cover': NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     quantity = UnitQuantity( 0, 'percent' ),
                 ),
             },
@@ -734,7 +726,6 @@ class TestNationalWeatherService( BaseTestCase ):
                 'expected_cloud_cover': NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     quantity = UnitQuantity( 25, 'percent' ),
                 ),
             },
@@ -762,7 +753,6 @@ class TestNationalWeatherService( BaseTestCase ):
                 'expected_cloud_cover': NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     quantity = UnitQuantity( 50, 'percent' ),
                 ),
             },
@@ -782,13 +772,11 @@ class TestNationalWeatherService( BaseTestCase ):
                 'expected_cloud_ceiling': NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     quantity = UnitQuantity( 8000, 'feet' ),
                 )    ,
                 'expected_cloud_cover': NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     quantity = UnitQuantity( 87.5, 'percent' ),
                 ),
             },
@@ -808,13 +796,11 @@ class TestNationalWeatherService( BaseTestCase ):
                 'expected_cloud_ceiling': NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     quantity = UnitQuantity( 12000, 'feet' ),
                 )    ,
                 'expected_cloud_cover': NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     quantity = UnitQuantity( 100, 'percent' ),
                 ),
             },
@@ -834,13 +820,11 @@ class TestNationalWeatherService( BaseTestCase ):
                 'expected_cloud_ceiling': NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     quantity = UnitQuantity( 300, 'feet' ),
                 )    ,
                 'expected_cloud_cover': NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     quantity = UnitQuantity( 100, 'percent' ),
                 ),
             },
@@ -867,13 +851,11 @@ class TestNationalWeatherService( BaseTestCase ):
                 'expected_cloud_ceiling': NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     quantity = UnitQuantity( 10000, 'feet' ),
                 )    ,
                 'expected_cloud_cover': NumericDataPoint(
                     weather_station = weather_station,
                     source_datetime = source_datetime,
-                    elevation = elevation,
                     quantity = UnitQuantity( 100, 'percent' ),
                 ),
             },
@@ -887,7 +869,6 @@ class TestNationalWeatherService( BaseTestCase ):
                 weather_conditions_data = weather_conditions_data,
                 source_datetime =source_datetime,
                 weather_station = weather_station,
-                elevation = elevation,
             )
 
             result_cloud_ceiling = weather_conditions_data.cloud_ceiling
@@ -918,7 +899,6 @@ class TestNationalWeatherService( BaseTestCase ):
 
     def test_parse_present_weather(self):
         source_datetime = datetimeproxy.now()
-        elevation = UnitQuantity( 2, 'meters' )
         nws = NationalWeatherService()
         weather_station = WeatherStation(
             source = nws.data_point_source,
@@ -1172,7 +1152,6 @@ class TestNationalWeatherService( BaseTestCase ):
                 weather_conditions_data = weather_conditions_data,
                 source_datetime =source_datetime,
                 weather_station = weather_station,
-                elevation = elevation,
             )
 
             expected_list = test_data['expected_list']
@@ -1202,7 +1181,6 @@ class TestNationalWeatherService( BaseTestCase ):
         nws = NationalWeatherService()
         timestamp_str = '2025-02-20T04:51:00+00:00'
         source_datetime = datetime.fromisoformat( timestamp_str )
-        elevation = UnitQuantity( 198, 'meters' )
         description_short = 'Cloudy'
         weather_station = WeatherStation(
             source = nws.data_point_source,
@@ -1376,13 +1354,11 @@ class TestNationalWeatherService( BaseTestCase ):
                     barometric_pressure = NumericDataPoint(
                         weather_station = weather_station,
                         source_datetime = source_datetime,
-                        elevation = elevation,
                         quantity = UnitQuantity( 103420, 'Pa' ),
                     ),
                     dew_point = NumericDataPoint(
                         weather_station = weather_station,
                         source_datetime = source_datetime,
-                        elevation = elevation,
                         quantity = UnitQuantity( -9.4, 'degC' ),
                     ),
                     heat_index = None,
@@ -1394,43 +1370,36 @@ class TestNationalWeatherService( BaseTestCase ):
                     relative_humidity = NumericDataPoint(
                         weather_station = weather_station,
                         source_datetime = source_datetime,
-                        elevation = elevation,
                         quantity = UnitQuantity( 65.595209439964, 'percent' ),
                     ),
                     sea_level_pressure = NumericDataPoint(
                         weather_station = weather_station,
                         source_datetime = source_datetime,
-                        elevation = elevation,
                         quantity = UnitQuantity( 103580, 'Pa' ),
                     ),
                     temperature = NumericDataPoint(
                         weather_station = weather_station,
                         source_datetime = source_datetime,
-                        elevation = elevation,
                         quantity = UnitQuantity( -3.9, 'degC' ),
                     ),
                     visibility = NumericDataPoint(
                         weather_station = weather_station,
                         source_datetime = source_datetime,
-                        elevation = elevation,
                         quantity = UnitQuantity( 16090, 'meters' ),
                     ),
                     wind_chill = NumericDataPoint(
                         weather_station = weather_station,
                         source_datetime = source_datetime,
-                        elevation = elevation,
                         quantity = UnitQuantity( -7.757550390365555, 'degC' ),
                     ),
                     wind_direction = NumericDataPoint(
                         weather_station = weather_station,
                         source_datetime = source_datetime,
-                        elevation = elevation,
                         quantity = UnitQuantity( 350, 'degrees' ),
                     ),
                     windspeed = StatisticDataPoint(
                         weather_station = weather_station,
                         source_datetime = source_datetime,
-                        elevation = elevation,
                         quantity_min = None,
                         quantity_ave = UnitQuantity( 9.36, 'km / h' ),
                         quantity_max = None,
@@ -1438,19 +1407,16 @@ class TestNationalWeatherService( BaseTestCase ):
                     description_short = StringDataPoint(
                         weather_station = weather_station,
                         source_datetime = source_datetime,
-                        elevation = elevation,
                         value = description_short,
                     ),
                     cloud_ceiling = NumericDataPoint(
                         weather_station = weather_station,
                         source_datetime = source_datetime,
-                        elevation = elevation,
                         quantity = UnitQuantity( 880, 'meters' ),
                     ),
                     cloud_cover = NumericDataPoint(
                         weather_station = weather_station,
                         source_datetime = source_datetime,
-                        elevation = elevation,
                         quantity = UnitQuantity( 100, 'percent' ),
                     ),
                     notable_phenomenon_data = None,
@@ -1550,7 +1516,6 @@ class TestNationalWeatherService( BaseTestCase ):
         nws = NationalWeatherService()
         timestamp_str = '2025-02-28T20:36:26+00:00'
         source_datetime = datetime.fromisoformat( timestamp_str )
-        elevation = UnitQuantity( 155.1432, 'meters' )
         weather_station = WeatherStation(
             source = nws.data_point_source,
             station_id = 'test',
@@ -1674,25 +1639,21 @@ class TestNationalWeatherService( BaseTestCase ):
                         interval_name = StringDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
-                            elevation = elevation,
                             value = 'This Afternoon',
                         ),
                         description_short = StringDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
-                            elevation = elevation,
                             value = 'Sunny',
                         ),
                         description_long = StringDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
-                            elevation = elevation,
                             value = 'Sunny, with a high near 76. South wind around 0 mph.',
                         ),
                         is_daytime = BooleanDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
-                            elevation = elevation,
                             value = True,
                         ),
                         precipitation_probability = None,
@@ -1701,7 +1662,6 @@ class TestNationalWeatherService( BaseTestCase ):
                         temperature = StatisticDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
-                            elevation = elevation,
                             quantity_min = None,
                             quantity_ave = UnitQuantity( 24.444444444444443, 'degC' ),
                             quantity_max = None,
@@ -1709,7 +1669,6 @@ class TestNationalWeatherService( BaseTestCase ):
                         windspeed = StatisticDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
-                            elevation = elevation,
                             quantity_min = None,
                             quantity_ave = UnitQuantity( 0, 'km / h' ),
                             quantity_max = None,
@@ -1722,25 +1681,21 @@ class TestNationalWeatherService( BaseTestCase ):
                         interval_name = StringDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
-                            elevation = elevation,
                             value ='Tonight',
                         ),
                         description_short = StringDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
-                            elevation = elevation,
                             value ='Mostly Clear',
                         ),
                         description_long = StringDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
-                            elevation = elevation,
                             value ='Mostly clear, with a low around 52. South southwest wind around 0 mph.',
                         ),
                         is_daytime = BooleanDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
-                            elevation = elevation,
                             value = False,
                         ),
                         precipitation_probability = None,
@@ -1749,7 +1704,6 @@ class TestNationalWeatherService( BaseTestCase ):
                         temperature = StatisticDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
-                            elevation = elevation,
                             quantity_min = None,
                             quantity_ave = UnitQuantity( 11.1111111111, 'degC' ),
                             quantity_max = None,
@@ -1757,7 +1711,6 @@ class TestNationalWeatherService( BaseTestCase ):
                         windspeed = StatisticDataPoint(
                             weather_station = weather_station,
                             source_datetime = source_datetime,
-                            elevation = elevation,
                             quantity_min = None,
                             quantity_ave = UnitQuantity( 0, 'km / h' ),
                             quantity_max = None,
@@ -1822,7 +1775,6 @@ class TestNationalWeatherService( BaseTestCase ):
             
         self.assertEqual( expected.source, result.source, label )
         self.assertEqual( expected.source_datetime, result.source_datetime, label )
-        self.assertEqual( expected.elevation, result.elevation, label )
         self.assertAlmostEqual( expected.quantity.magnitude, result.quantity.magnitude, 3, label )
         self.assertEqual( expected.quantity.units, result.quantity.units, label )
         return
@@ -1834,8 +1786,6 @@ class TestNationalWeatherService( BaseTestCase ):
             
         self.assertEqual( expected.source, result.source, label )
         self.assertEqual( expected.source_datetime, result.source_datetime, label )
-        self.assertEqual( expected.elevation, result.elevation, label )
-
         if expected.quantity_min is None:
             self.assertIsNone( result.quantity_min, label )
         else:

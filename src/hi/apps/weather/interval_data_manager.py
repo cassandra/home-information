@@ -167,7 +167,6 @@ class AggregatedIntervalWeatherData:
         return NumericDataPoint(
             weather_station = None,
             source_datetime = None,
-            elevation = None,
             quantity = aggregated_quanity,
         )
         
@@ -196,7 +195,6 @@ class AggregatedIntervalWeatherData:
         return BooleanDataPoint(
             weather_station = None,
             source_datetime = None,
-            elevation = None,
             value = aggregated_value,
         )
 
@@ -220,7 +218,6 @@ class AggregatedIntervalWeatherData:
         return TimeDataPoint(
             weather_station = None,
             source_datetime = None,
-            elevation = None,
             value = max_value,
         )
 
@@ -244,7 +241,6 @@ class AggregatedIntervalWeatherData:
         return StringDataPoint(
             weather_station = None,
             source_datetime = None,
-            elevation = None,
             value = max_value,
         )
 
@@ -281,7 +277,6 @@ class AggregatedIntervalWeatherData:
         return StatisticDataPoint(
             weather_station = None,
             source_datetime = None,
-            elevation = None,
             quantity_min = min_quantity,
             quantity_ave = aggregated_quanity,
             quantity_max = max_quantity,

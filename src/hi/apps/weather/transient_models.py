@@ -68,12 +68,12 @@ class DataPoint:
     """ Base class for all weather data point types. """
     weather_station  : WeatherStation
     source_datetime  : datetime
-    elevation        : UnitQuantity
 
-    def __post_init( self ):
-        if ( self.elevation is None ) and self.weather_station:
-            self.elevation = self.weather_station.elevation
-        return
+    @property
+    def elevation(self) -> UnitQuantity:
+        if self.weather_station:
+            return self.weather_station.elevation
+        return None
     
     @property
     def source(self) -> DataPointSource:
@@ -109,7 +109,7 @@ class StatisticDataPoint( DataPoint ):
     quantity_max   : UnitQuantity
 
     @property
-    def quantity(self) -> UnitQuantity:
+`    def quantity(self) -> UnitQuantity:
         if self.quantity_ave is not None:
             return self.quantity_ave
         if self.quantity_min is not None and self.quantity_max is not None:
@@ -285,7 +285,7 @@ class TimeInterval:
     def overlap_seconds( self, other : 'TimeInterval' ) -> float:
         overlap_start = max( self.start, other.start )
         overlap_end = min( self.end, other.end )
-        return = ( overlap_end - overlap_start ).total_seconds()
+        return ( overlap_end - overlap_start ).total_seconds()
         
     @property
     def interval_period(self) -> timedelta:
