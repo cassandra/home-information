@@ -330,7 +330,7 @@ class WindDirection( LabeledEnum ):
         return
 
     @classmethod
-    def from_menomic( cls, mnemonic_str : str ):
+    def from_mnemonic( cls, mnemonic_str : str ):
         if not mnemonic_str:
             raise ValueError( 'Blank wind speed mnemonic.' )
         for mnemonic_enum in cls:

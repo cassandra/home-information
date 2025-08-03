@@ -2,13 +2,13 @@
 {% load units %}
 <tr>
   <td>
-    {{ hourly_forecast_data.interval_start }}
+    {{ hourly_forecast_data.start }}
   </td>
   <td>
     {% if hourly_forecast_data.cloud_cover %}
     {% with hourly_forecast_data.sky_condition as sky_condition %}
     <img height="32" src="{% static sky_condition.icon_filename %}"
-	 alt="{{ sky_condition.label }}" />
+         alt="{{ sky_condition.label }}" />
     {{ sky_condition.label }}
     {% endwith %}
     {% else %}
@@ -24,10 +24,10 @@
     {% endif %}    
   </td>
   <td>
-    {% if hourly_forecast_data.precipitation_amount %}
+    {% if hourly_forecast_data.precipitation %}
     <div>
-      {{ hourly_forecast_data.precipitation_amount.quantity|format_magnitude:1 }}
-      <small>{{ hourly_forecast_data.precipitation_amount.quantity|format_units }}</small>
+      {{ hourly_forecast_data.precipitation.quantity|format_magnitude:1 }}
+      <small>{{ hourly_forecast_data.precipitation.quantity|format_units }}</small>
     </div>
     {% endif %}
     {% if hourly_forecast_data.precipitation_probability %}

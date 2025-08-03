@@ -19,30 +19,30 @@ from .enums import (
 )
 
 
-@dataclass( frozen = True )
+@dataclass( kw_only = True, frozen = True )
 class DataPointSource:
     id        : str
     label     : str
-    priority  : int  # Lower numbers are higher priority
+    priority  : int  # The lower the number, the higher the priority
 
     def __hash__(self):
         return hash( self.id )
 
     def __eq__(self, other):
-        if not isinstance( other, WeatherStation ):
+        if not isinstance( other, DataPointSource ):
             return False
         return bool( self.id == other.id )
 
     
-@dataclass( frozen = True )
-class WeatherStation:
+@dataclass( kw_only = True, frozen = True )
+class Station:
     source            : DataPointSource
-    station_id        : str                 = None
-    name              : str                 = None
-    geo_location      : GeographicLocation  = None
-    station_url       : str                 = None
-    observations_url  : str                 = None
-    forecast_url      : str                 = None
+    station_id        : str                 | None = None
+    name              : str                 | None = None
+    geo_location      : GeographicLocation  | None = None
+    station_url       : str                 | None = None
+    observations_url  : str                 | None = None
+    forecast_url      : str                 | None = None
 
     @property
     def elevation(self) -> UnitQuantity:
@@ -58,84 +58,100 @@ class WeatherStation:
         return hash( ( self.source, self.station_id ) )
 
     def __eq__(self, other):
-        if not isinstance( other, WeatherStation ):
+        if not isinstance( other, Station ):
             return False
         return ( self.source == other.source ) and ( self.station_id == other.station_id )
 
     
-@dataclass
+@dataclass( kw_only = True )
 class DataPoint:
     """ Base class for all weather data point types. """
-    weather_station  : WeatherStation
+    station          : Station
     source_datetime  : datetime
 
     @property
     def elevation(self) -> UnitQuantity:
-        if self.weather_station:
-            return self.weather_station.elevation
+        if self.station:
+            return self.station.elevation
         return None
     
     @property
     def source(self) -> DataPointSource:
-        if not self.weather_station:
+        if not self.station:
             return None
-        return self.weather_station.source
+        return self.station.source
         
     
-@dataclass
-class NumericDataPoint( DataPoint ):
-    quantity         : UnitQuantity
+T = TypeVar("T")  # Define a generic type placeholder
 
-    
-@dataclass
+
+@dataclass( kw_only = True )
+class DataPointList( DataPoint, Generic[T] ):
+    list_value       : List[ T ]
+
+
+@dataclass( kw_only = True )
 class BooleanDataPoint( DataPoint ):
     value            : bool
 
     
-@dataclass
+@dataclass( kw_only = True )
 class TimeDataPoint( DataPoint ):
     value            : time
 
     
-@dataclass
+@dataclass( kw_only = True )
 class StringDataPoint( DataPoint ):
     value            : str
 
     
-@dataclass
-class StatisticDataPoint( DataPoint ):
-    quantity_min   : UnitQuantity
-    quantity_ave   : UnitQuantity
-    quantity_max   : UnitQuantity
+@dataclass( kw_only = True )
+class NumericDataPoint( DataPoint ):
+    quantity_ave   : UnitQuantity  | None = None 
+    quantity_min   : UnitQuantity  | None = None
+    quantity_max   : UnitQuantity  | None = None
 
+    def __post_init__(self):
+        if self.quantity_ave is not None:
+            if self.quantity_min is None:
+                self.quantity_min = self.quantity_ave
+            if self.quantity_max is None:
+                self.quantity_max = self.quantity_ave
+        elif self.quantity_min is not None and self.quantity_max is not None:
+            if self.quantity_ave is None:
+                self.quantity_ave = ( self.quantity_min + self.quantity_max ) / 2.0
+        elif self.quantity_min is not None:
+            if self.quantity_ave is None:
+                self.quantity_ave = self.quantity_min
+            if self.quantity_max is None:
+                self.quantity_max = self.quantity_min
+        elif self.quantity_max is not None:
+            if self.quantity_ave is None:
+                self.quantity_ave = self.quantity_max
+            if self.quantity_min is None:
+                self.quantity_min = self.quantity_max
+        else:
+            raise ValueError('At least one constructor value required.')
+        return
+    
     @property
-`    def quantity(self) -> UnitQuantity:
+    def quantity(self) -> UnitQuantity:
         if self.quantity_ave is not None:
             return self.quantity_ave
         if self.quantity_min is not None and self.quantity_max is not None:
             return ( self.quantity_min + self.quantity_max ) / 2.0
         if self.quantity_max is not None:
             return self.quantity_max
-        if self.quantity_min is not None:
-            return self.quantity_min
-        return None
-
+        return self.quantity_min
     
-T = TypeVar("T")  # Define a generic type placeholder
-
-
-@dataclass
-class DataPointList( DataPoint, Generic[T] ):
-    list_value       : List[ T ]
-
-
-@dataclass
-class WeatherData:
+    
+@dataclass( kw_only = True )
+class EnvironmentalData:
     """ Base class for all weather data that consists of a series of DataPoint fields """ 
 
     @property
-    def weather_stations(self) -> List[ WeatherStation ]:
-        weather_station_map = dict()
+    def stations(self) -> List[ Station ]:
+        station_map = dict()
         for a_field in fields( self ):
             field_name = a_field.name
             field_type = a_field.type
@@ -146,29 +162,31 @@ class WeatherData:
             datapoint = getattr( self, field_name )
             if not datapoint:
                 continue
-            weather_station_map[datapoint.weather_station.key] = datapoint.weather_station
+            station_map[datapoint.station.key] = datapoint.station
             continue
-        return list( weather_station_map.values() ) 
+        return list( station_map.values() ) 
 
 
-@dataclass
-class CommonWeatherData( WeatherData ):
+@dataclass( kw_only = True )
+class CommonWeatherData( EnvironmentalData ):
     """ For those data points shared between current conditions and forecasts. """
     
-    description_short          : StringDataPoint     = None
-    description_long           : StringDataPoint     = None
-    is_daytime                 : BooleanDataPoint    = None
-    cloud_cover                : NumericDataPoint    = None  # Percent
-    cloud_ceiling              : NumericDataPoint    = None
-    windspeed                  : StatisticDataPoint  = None  # max = "wind gust"
-    wind_direction             : NumericDataPoint    = None  # 0 to 360
-    relative_humidity          : NumericDataPoint    = None
-    visibility                 : NumericDataPoint    = None
-    dew_point                  : NumericDataPoint    = None
-    heat_index                 : NumericDataPoint    = None
-    wind_chill                 : NumericDataPoint    = None
-    barometric_pressure        : NumericDataPoint    = None
-    sea_level_pressure         : NumericDataPoint    = None
+    description_short          : StringDataPoint     | None = None
+    description_long           : StringDataPoint     | None = None
+    is_daytime                 : BooleanDataPoint    | None = None
+    temperature                : NumericDataPoint    | None = None
+    precipitation              : NumericDataPoint    | None = None
+    cloud_cover                : NumericDataPoint    | None = None  # Percent
+    cloud_ceiling              : NumericDataPoint    | None = None
+    windspeed                  : NumericDataPoint    | None = None  # max = "wind gust"
+    wind_direction             : NumericDataPoint    | None = None  # 0 to 360
+    relative_humidity          : NumericDataPoint    | None = None
+    visibility                 : NumericDataPoint    | None = None
+    dew_point                  : NumericDataPoint    | None = None
+    heat_index                 : NumericDataPoint    | None = None
+    wind_chill                 : NumericDataPoint    | None = None
+    barometric_pressure        : NumericDataPoint    | None = None
+    sea_level_pressure         : NumericDataPoint    | None = None
 
     @property
     def sky_condition( self ) -> SkyCondition:
@@ -179,7 +197,7 @@ class CommonWeatherData( WeatherData ):
         )
 
     
-@dataclass
+@dataclass( kw_only = True )
 class NotablePhenomenon:
     weather_phenomenon            : WeatherPhenomenon
     weather_phenomenon_modifier   : WeatherPhenomenonModifier
@@ -198,16 +216,15 @@ class NotablePhenomenon:
         return result
 
             
-@dataclass
+@dataclass( kw_only = True )
 class WeatherConditionsData( CommonWeatherData ):
-    temperature                : NumericDataPoint                    = None
-    temperature_min_last_24h   : NumericDataPoint                    = None
-    temperature_max_last_24h   : NumericDataPoint                    = None
-    precipitation_last_hour    : NumericDataPoint                    = None
-    precipitation_last_3h      : NumericDataPoint                    = None
-    precipitation_last_6h      : NumericDataPoint                    = None
-    precipitation_last_24h     : NumericDataPoint                    = None
-    notable_phenomenon_data    : DataPointList[ NotablePhenomenon ]  = None
+    temperature_min_last_24h   : NumericDataPoint                    | None = None
+    temperature_max_last_24h   : NumericDataPoint                    | None = None
+    precipitation_last_hour    : NumericDataPoint                    | None = None
+    precipitation_last_3h      : NumericDataPoint                    | None = None
+    precipitation_last_6h      : NumericDataPoint                    | None = None
+    precipitation_last_24h     : NumericDataPoint                    | None = None
+    notable_phenomenon_data    : DataPointList[ NotablePhenomenon ]  | None = None
     
     @property
     def has_precipitation(self):
@@ -217,45 +234,63 @@ class WeatherConditionsData( CommonWeatherData ):
                      or self.precipitation_last_24h is not None )
 
     
-@dataclass
-class TimeInterval:
-    interval_start             : datetime          = None
-    interval_end               : datetime          = None
-    interval_name              : StringDataPoint   = None
-
-    @property
-    def interval_period(self) -> timedelta:
-        return self.interval_end - self.interval_start
-
-
-
-
-
-# ========================================
-### ZZZ START: New Data Stuctures
-
-
-
+@dataclass( kw_only = True )
+class WeatherForecastData( CommonWeatherData ):
+    precipitation_probability  : NumericDataPoint  | None = None
 
     
-
-@dataclass
-class WeatherForecastData( CommonWeatherData ):
-    zzz
-
-@dataclass
+@dataclass( kw_only = True )
 class WeatherHistoryData( CommonWeatherData ):
-    zzz
+    pass
 
-@dataclass
-class AstronomicalData( WeatherData ):
-    zzz
+    
+@dataclass( kw_only = True )
+class AstronomicalData( EnvironmentalData ):
+    sunrise                      : TimeDataPoint     | None = None
+    sunset                       : TimeDataPoint     | None = None
+    solar_noon                   : TimeDataPoint     | None = None
+    moonrise                     : TimeDataPoint     | None = None
+    moonset                      : TimeDataPoint     | None = None
+    moon_illumnination           : NumericDataPoint  | None = None  # Percent
+    moon_is_waxing               : BooleanDataPoint  | None = None
+    civil_twilight_begin         : TimeDataPoint     | None = None
+    civil_twilight_end           : TimeDataPoint     | None = None
+    nautical_twilight_begin      : TimeDataPoint     | None = None
+    nautical_twilight_end        : TimeDataPoint     | None = None
+    astronomical_twilight_begin  : TimeDataPoint     | None = None
+    astronomical_twilight_end    : TimeDataPoint     | None = None
 
-@dataclass( frozen = True )
+    @property
+    def moon_phase(self) -> MoonPhase:
+        if self.moon_illumnination is None or self.moon_is_waxing is None:
+            return None
+        return MoonPhase.from_illumination(
+            illumination_percent = self.moon_illumnination.quantity.magnitude,
+            is_waxing = self.moon_is_waxing.value,
+        )
+
+    @property
+    def days_until_full_moon(self) -> int:
+        if self.moon_phase == MoonPhase.FULL_MOON:
+            return 0
+        if not self.moon_is_waxing.value:
+            return round( 14.77 + self.days_until_new_moon )
+        return round( 14.77 * (( 100.0 - self.moon_illumnination.quantity.magnitude ) / 100.0 ))
+    
+    @property
+    def days_until_new_moon(self):
+        if self.moon_phase == MoonPhase.NEW_MOON:
+            return 0
+        if self.moon_is_waxing.value:
+            return round( 14.77 + self.days_until_full_moon )
+        return round( 14.77 * ( self.moon_illumnination.quantity.magnitude / 100.0 ))
+
+    
+@dataclass( kw_only = True, frozen = True )
 class TimeInterval:
-    start   : datetime          = None
-    end     : datetime          = None
-    name    : StringDataPoint   = None
+    start   : datetime          | None = None
+    end     : datetime          | None = None
+    name    : StringDataPoint   | None = None
 
     def __post_init__(self):
         # Invariant is start time always less that end time.
@@ -289,131 +324,58 @@ class TimeInterval:
         
     @property
     def interval_period(self) -> timedelta:
-        return self.interval_end - self.interval_start
-    
-@dataclass
-class TimeIntervalWeatherData ( WeatherData ):
-    interval        : TimeInterval      = None
-    data            : WeatherData       = None
-
-@dataclass
-class IntervalWeatherForecast( TimeIntervalWeatherData ):
-    data            : WeatherForecastData       = None
-
-@dataclass
-class IntervalWeatherHistory( TimeIntervalWeatherData ):
-    data            : WeatherHistoryData       = None
-
-@dataclass
-class IntervalAstronomical( TimeIntervalWeatherData ):
-    data            : AstronomicalData       = None
-
-
+        return self.end - self.start
 
     
-### ZZZ END: New Data Stuctures
-# ========================================
-
-
-
-
-
+@dataclass( kw_only = True )
+class IntervalEnvironmentalData ( EnvironmentalData ):
+    interval        : TimeInterval       | None = None
+    data            : EnvironmentalData  | None = None
 
     
-
-
-    
-    
-@dataclass
-class TimeIntervalCommonWeatherData( TimeInterval, CommonWeatherData ):
-    """
-    For those data points shared by forecast and historical data (which are
-    defined for a specific interval of time).
-    """
-    temperature                : StatisticDataPoint  = None
-    precipitation_amount       : NumericDataPoint    = None
-    
-
-@dataclass
-class WeatherForecastData( TimeIntervalCommonWeatherData ):
-    precipitation_probability  : NumericDataPoint  = None
+@dataclass( kw_only = True )
+class IntervalWeatherForecast( IntervalEnvironmentalData ):
+    data            : WeatherForecastData       | None = None
 
     
-@dataclass
-class WeatherHistoryData( TimeIntervalCommonWeatherData ):
-    pass
-    
-    
-@dataclass
-class AstronomicalData( TimeInterval, WeatherData ):
-    sunrise                      : TimeDataPoint     = None
-    sunset                       : TimeDataPoint     = None
-    solar_noon                   : TimeDataPoint     = None
-    moonrise                     : TimeDataPoint     = None
-    moonset                      : TimeDataPoint     = None
-    moon_illumnination           : NumericDataPoint  = None  # Percent
-    moon_is_waxing               : BooleanDataPoint  = None
-    civil_twilight_begin         : TimeDataPoint     = None
-    civil_twilight_end           : TimeDataPoint     = None
-    nautical_twilight_begin      : TimeDataPoint     = None
-    nautical_twilight_end        : TimeDataPoint     = None
-    astronomical_twilight_begin  : TimeDataPoint     = None
-    astronomical_twilight_end    : TimeDataPoint     = None
-
-    @property
-    def moon_phase(self) -> MoonPhase:
-        if self.moon_illumnination is None:
-            return None
-        return MoonPhase.from_illumination(
-            illumination_percent = self.moon_illumnination.quantity.magnitude,
-            is_waxing = self.moon_is_waxing.value,
-        )
-
-    @property
-    def days_until_full_moon(self) -> int:
-        if self.moon_phase == MoonPhase.FULL_MOON:
-            return 0
-        if not self.moon_is_waxing.value:
-            return round( 14.77 + self.days_until_new_moon )
-        return round( 14.77 * (( 100.0 - self.moon_illumnination.quantity.magnitude ) / 100.0 ))
-    
-    @property
-    def days_until_new_moon(self):
-        if self.moon_phase == MoonPhase.NEW_MOON:
-            return 0
-        if self.moon_is_waxing.value:
-            return round( 14.77 + self.days_until_full_moon )
-        return round( 14.77 * ( self.moon_illumnination.quantity.magnitude / 100.0 ))
+@dataclass( kw_only = True )
+class IntervalWeatherHistory( IntervalEnvironmentalData ):
+    data            : WeatherHistoryData       | None = None
 
     
-@dataclass
+@dataclass( kw_only = True )
+class IntervalAstronomical( IntervalEnvironmentalData ):
+    data            : AstronomicalData       | None = None
+
+    
+@dataclass( kw_only = True )
 class WeatherOverviewData:
 
     current_conditions_data   : WeatherConditionsData
     todays_astronomical_data  : AstronomicalData
 
     
-@dataclass
+@dataclass( kw_only = True )
 class HourlyForecast:
     data_list    : List[ WeatherForecastData ]  = field( default_factory = list )
     
 
-@dataclass
+@dataclass( kw_only = True )
 class DailyForecast:
     data_list    : List[ WeatherForecastData ]  = field( default_factory = list )
 
     
-@dataclass
+@dataclass( kw_only = True )
 class DailyHistory:
     data_list    : List[ WeatherHistoryData ]  = field( default_factory = list )
 
     
-@dataclass
+@dataclass( kw_only = True )
 class DailyAstronomicalData:
     data_list    : List[ AstronomicalData ]  = field( default_factory = list )
 
 
-@dataclass
+@dataclass( kw_only = True )
 class WeatherAlert:
 
     event           : str

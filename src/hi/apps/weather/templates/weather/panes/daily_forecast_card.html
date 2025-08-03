@@ -25,9 +25,9 @@
       {% if daily_forecast_data.cloud_cover %}
       {% with daily_forecast_data.sky_condition as sky_condition %}
       <img height="32" src="{% static sky_condition.icon_filename %}"
-	   alt="{{ sky_condition.label }}" />
+           alt="{{ sky_condition.label }}" />
       <div>
-	{{ sky_condition.label }}
+        {{ sky_condition.label }}
       </div>
       {% endwith %}
       {% else %}
@@ -36,9 +36,9 @@
     </div>
   </div>
   <div>
-    {% if daily_forecast_data.precipitation_amount %}
-    {{ daily_forecast_data.precipitation_amount.quantity|format_magnitude:1 }}
-    <small>{{ daily_forecast_data.precipitation_amount.quantity|format_units }}</small>
+    {% if daily_forecast_data.precipitation %}
+    {{ daily_forecast_data.precipitation.quantity|format_magnitude:1 }}
+    <small>{{ daily_forecast_data.precipitation.quantity|format_units }}</small>
     {% else %}
     ---
     {% endif %}

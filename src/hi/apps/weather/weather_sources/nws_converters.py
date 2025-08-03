@@ -153,7 +153,7 @@ class NwsConverters:
     @classmethod
     def to_weather_phenomenon_modifier( cls, nws_string : str ) -> WeatherPhenomenonModifier:
         if not nws_string:
-            WeatherPhenomenonModifier.NONE
+            return WeatherPhenomenonModifier.NONE
         return cls.NwsWeatherPhenomenonModifierMap.get( nws_string.strip().lower() )
         
         
