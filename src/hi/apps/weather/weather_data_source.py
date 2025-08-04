@@ -20,6 +20,14 @@ class WeatherDataSource:
     async def get_data(self):
         raise NotImplementedError('Subclasses must override this.')
     
+    def requires_api_key(self) -> bool:
+        """Override in subclasses that require an API key."""
+        return False
+    
+    def get_default_enabled_state(self) -> bool:
+        """Override in subclasses to set default enabled/disabled state."""
+        return True
+    
     def __init__( self,
                   id                             : str,
                   label                          : str,
@@ -43,6 +51,7 @@ class WeatherDataSource:
         self.polling_started = False
         
         self._console_settings_helper = ConsoleSettingsHelper()
+        self._weather_settings_helper = None  # Lazy initialized to avoid circular imports
         
         # Store last query times in redis as external API rate limits do
         # not care how many times our server restarts.
@@ -74,6 +83,28 @@ class WeatherDataSource:
     @property
     def geographic_location(self):
         return self._console_settings_helper.get_geographic_location()
+    
+    def _get_weather_settings_helper(self):
+        """Lazy initialization of weather settings helper to avoid circular imports."""
+        if self._weather_settings_helper is None:
+            from hi.apps.weather.weather_settings_helper import WeatherSettingsHelper
+            self._weather_settings_helper = WeatherSettingsHelper()
+        return self._weather_settings_helper
+    
+    @property 
+    def is_enabled(self) -> bool:
+        """Check if this weather source is enabled in settings."""
+        return self._get_weather_settings_helper().is_weather_source_enabled(self._id)
+    
+    @property
+    def api_key(self) -> str:
+        """Get the API key for this weather source from settings."""
+        return self._get_weather_settings_helper().get_weather_source_api_key(self._id)
+    
+    @property
+    def is_cache_enabled(self) -> bool:
+        """Check if weather data caching is enabled."""
+        return self._get_weather_settings_helper().is_weather_cache_enabled()
         
     async def fetch(self):
         can_fetch = self.can_fetch()

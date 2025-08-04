@@ -1,9 +1,5 @@
 import asyncio
-import importlib
-import inspect
 import logging
-import os
-from pathlib import Path
 from typing import List
 
 import hi.apps.common.datetimeproxy as datetimeproxy
@@ -12,6 +8,8 @@ from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.alert.alert_mixins import AlertMixin
 
 from .weather_data_source import WeatherDataSource
+from .weather_settings_helper import WeatherSettingsHelper
+from .weather_source_discovery import WeatherSourceDiscovery
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +26,19 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin ):
         )
         self._weather_data_source_instance_list = list()
         self._started_datetime = datetimeproxy.now()
+        self._settings_helper = WeatherSettingsHelper()
         return
     
     async def initialize(self) -> None:
-        self._weather_data_source_instance_list = self.discover_weather_data_source_instances()
+        discovered_sources = WeatherSourceDiscovery.discover_weather_data_source_instances()
+        
+        # Log discovered sources and their enabled status
+        for source in discovered_sources:
+            enabled_status = "enabled" if self._settings_helper.is_weather_source_enabled(source.id) else "disabled"
+            logger.info( f'Discovered weather source: {source.label} ({source.id}, priority {source.priority}) - {enabled_status}' )
+            continue
+            
+        self._weather_data_source_instance_list = discovered_sources
         return
     
     async def do_work(self):
@@ -48,31 +55,17 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin ):
         logger.debug( 'Checking for weather data.' )
         task_list = list()
         for weather_data_source in self._weather_data_source_instance_list:
-            task = asyncio.create_task( weather_data_source.fetch() )
-            task_list.append( task )
+            # Only fetch from enabled weather sources
+            if self._settings_helper.is_weather_source_enabled(weather_data_source.id):
+                task = asyncio.create_task( weather_data_source.fetch() )
+                task_list.append( task )
+            else:
+                logger.debug( f'Weather source {weather_data_source.id} is disabled, skipping' )
             continue
 
-        await asyncio.gather( *task_list )
+        if task_list:
+            await asyncio.gather( *task_list )
+        else:
+            logger.debug( 'No enabled weather sources found' )
         return
 
-    def discover_weather_data_source_instances(self) -> List[ WeatherDataSource ]:
-
-        sources_dir = os.path.join( Path( __file__ ).parent, 'weather_sources' )
-        logger.debug( f'Discovering weather sources in: {sources_dir}' )
-
-        discovered_source_instance_list = list()
-        for file in os.listdir( sources_dir ):
-            if not file.endswith(".py") or file == "__init__.py":
-                continue
-            module_name = f"hi.apps.weather.weather_sources.{file[:-3]}"
-            module = importlib.import_module( module_name )
-
-            for name, obj in inspect.getmembers( module, inspect.isclass ):
-                if issubclass( obj, WeatherDataSource ) and obj is not WeatherDataSource:
-                    discovered_source_instance = obj()
-                    discovered_source_instance_list.append( discovered_source_instance )
-                continue
-            continue
-        
-        discovered_source_instance_list.sort( key = lambda item : item.priority )
-        return discovered_source_instance_list       

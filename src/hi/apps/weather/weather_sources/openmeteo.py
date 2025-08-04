@@ -34,7 +34,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
     CURRENT_DATA_CACHE_EXPIRY_SECS = 10 * 60  # Cache for 10 minutes
     FORECAST_DATA_CACHE_EXPIRY_SECS = 60 * 60  # Cache for 1 hour
-    HISTORICAL_DATA_CACHE_EXPIRY_SECS = 24 * 60 * 60  # Cache for 24 hours
+    HISTORICAL_DATA_CACHE_EXPIRY_SECS = 30 * 24 * 60 * 60  # Cache for 30 days - historical data rarely changes
     
     SKIP_CACHE = False  # For debugging    
     
@@ -52,6 +52,14 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             'User-Agent': 'HomeInformation (weather@homeinformation.org)',
         }
         return
+    
+    def requires_api_key(self) -> bool:
+        """Open-Meteo does not require an API key."""
+        return False
+    
+    def get_default_enabled_state(self) -> bool:
+        """Open-Meteo is enabled by default."""
+        return True
     
     async def get_data(self):
 

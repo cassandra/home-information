@@ -58,6 +58,14 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         }
         return
     
+    def requires_api_key(self) -> bool:
+        """NWS does not require an API key."""
+        return False
+    
+    def get_default_enabled_state(self) -> bool:
+        """NWS is enabled by default."""
+        return True
+    
     async def get_data(self):
 
         geographic_location = self.geographic_location
