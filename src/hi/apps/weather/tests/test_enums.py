@@ -238,7 +238,8 @@ class TestWeatherEnums(BaseTestCase):
 
     def test_AlertUrgency_basic_functionality(self):
         """Test AlertUrgency enum has expected values"""
-        expected_urgencies = ['IMMEDIATE', 'EXPECTED', 'FUTURE', 'PAST']
+        # Note: PAST is deliberately excluded - weather alerts are for current/future threats
+        expected_urgencies = ['IMMEDIATE', 'EXPECTED', 'FUTURE', 'UNKNOWN']
         
         for urgency_name in expected_urgencies:
             with self.subTest(urgency=urgency_name):

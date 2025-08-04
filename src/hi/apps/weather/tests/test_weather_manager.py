@@ -151,8 +151,8 @@ class TestWeatherManager( BaseTestCase ):
             )
 
             # Force values to different values (ensures random values do not collide: rare, but possible)
-            current_data.temperature.quantity = UnitQuantity( 20, 'degF' )
-            new_data.temperature.quantity = UnitQuantity( 33, 'degF' )
+            current_data.temperature.quantity_ave = UnitQuantity( 20, 'degF' )
+            new_data.temperature.quantity_ave = UnitQuantity( 33, 'degF' )
 
             if test_data['null_current_data']:
                 current_data.temperature = None

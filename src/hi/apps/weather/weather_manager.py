@@ -211,14 +211,13 @@ class WeatherManager( Singleton, SettingsMixin ):
         now = datetimeproxy.now()
         for field in fields( current_weather_data ):
             field_name = field.name
-            field_type = field.type
-            field_base_type = get_origin(field_type) or field_type  
-
-            if not issubclass( field_base_type, DataPoint ):
-                continue
             
             current_datapoint = getattr( current_weather_data, field_name )
             new_datapoint = getattr( new_weather_data, field_name )
+
+            # Skip fields that are not DataPoint fields (but allow None datapoints to be processed)
+            if current_datapoint is not None and not isinstance( current_datapoint, DataPoint ):
+                continue
 
             # Skip data not present in source's data 
             if new_datapoint is None:

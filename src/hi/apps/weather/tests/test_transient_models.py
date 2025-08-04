@@ -505,12 +505,12 @@ class TestWeatherTransientModels(BaseTestCase):
         # Test normal phenomenon
         phenomenon = NotablePhenomenon(
             weather_phenomenon=WeatherPhenomenon.RAIN,
-            weather_phenomenon_modifier=WeatherPhenomenonModifier.LIGHT,
+            weather_phenomenon_modifier=WeatherPhenomenonModifier.NONE,
             weather_phenomenon_intensity=WeatherPhenomenonIntensity.LIGHT,
             in_vicinity=False
         )
         
-        expected = f"{WeatherPhenomenon.RAIN.label}, {WeatherPhenomenonModifier.LIGHT.label} ({WeatherPhenomenonIntensity.LIGHT.label})"
+        expected = f"{WeatherPhenomenon.RAIN.label} ({WeatherPhenomenonIntensity.LIGHT.label})"
         self.assertEqual(str(phenomenon), expected)
         
         # Test vicinity phenomenon
@@ -530,7 +530,7 @@ class TestWeatherTransientModels(BaseTestCase):
         alert = WeatherAlert(
             event="Winter Storm Warning",
             status=AlertStatus.ACTUAL,
-            category=AlertCategory.MET,
+            category=AlertCategory.METEOROLOGICAL,
             headline="Winter Storm Warning issued",
             description="Heavy snow expected",
             instruction="Avoid travel",

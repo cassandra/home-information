@@ -2,6 +2,8 @@ from dataclasses import dataclass, field, fields
 from datetime import datetime, time, timedelta
 from typing import Generic, List, TypeVar, get_origin
 
+from pint.errors import OffsetUnitCalculusError
+
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
 
@@ -119,7 +121,16 @@ class NumericDataPoint( DataPoint ):
                 self.quantity_max = self.quantity_ave
         elif self.quantity_min is not None and self.quantity_max is not None:
             if self.quantity_ave is None:
-                self.quantity_ave = ( self.quantity_min + self.quantity_max ) / 2.0
+                # For offset units (like Celsius), convert to absolute units for arithmetic
+                try:
+                    self.quantity_ave = ( self.quantity_min + self.quantity_max ) / 2.0
+                except OffsetUnitCalculusError:
+                    # Handle offset unit arithmetic by converting to absolute units
+                    # Convert to absolute units (e.g., Celsius -> Kelvin), average, then convert back
+                    min_abs = self.quantity_min.to_base_units()
+                    max_abs = self.quantity_max.to_base_units() 
+                    ave_abs = (min_abs + max_abs) / 2.0
+                    self.quantity_ave = ave_abs.to(self.quantity_min.units)
         elif self.quantity_min is not None:
             if self.quantity_ave is None:
                 self.quantity_ave = self.quantity_min
@@ -154,13 +165,12 @@ class EnvironmentalData:
         station_map = dict()
         for a_field in fields( self ):
             field_name = a_field.name
-            field_type = a_field.type
-            field_base_type = get_origin( field_type ) or field_type  
-
-            if not issubclass( field_base_type, DataPoint ):
-                continue
             datapoint = getattr( self, field_name )
-            if not datapoint:
+            
+            # Check if the actual value is a DataPoint instance (not the type annotation)
+            if not isinstance( datapoint, DataPoint ):
+                continue
+            if not datapoint.station:
                 continue
             station_map[datapoint.station.key] = datapoint.station
             continue

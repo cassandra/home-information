@@ -119,8 +119,8 @@ class IntervalDataManager:
                 interval_start = rounded_start + timedelta( hours = idx * self._interval_hours )
                 interval_end = rounded_start + timedelta( hours = ( idx + 1 ) * self._interval_hours )
             else:
-                interval_start = rounded_start - timedelta( hours = idx * self._interval_hours )
-                interval_end = rounded_start - timedelta( hours = ( idx + 1 ) * self._interval_hours )
+                interval_end = rounded_start - timedelta( hours = idx * self._interval_hours )
+                interval_start = rounded_start - timedelta( hours = ( idx + 1 ) * self._interval_hours )
 
             time_interval = TimeInterval(
                 start = interval_start,

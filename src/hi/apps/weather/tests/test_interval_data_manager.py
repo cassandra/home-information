@@ -88,13 +88,13 @@ class TestIntervalDataManager(BaseTestCase):
         # Should create 2 intervals going backwards from midnight
         self.assertEqual(len(intervals), 2)
         
-        # First interval: today 00:00-23:59
-        self.assertEqual(intervals[0].start, datetime(2024, 1, 1, 0, 0, 0))
-        self.assertEqual(intervals[0].end, datetime(2023, 12, 31, 0, 0, 0))
+        # First interval: yesterday 00:00 to today 00:00 (most recent 24h)
+        self.assertEqual(intervals[0].start, datetime(2023, 12, 31, 0, 0, 0))
+        self.assertEqual(intervals[0].end, datetime(2024, 1, 1, 0, 0, 0))
         
-        # Second interval: yesterday 00:00-23:59  
-        self.assertEqual(intervals[1].start, datetime(2023, 12, 31, 0, 0, 0))
-        self.assertEqual(intervals[1].end, datetime(2023, 12, 30, 0, 0, 0))
+        # Second interval: day before yesterday to yesterday (previous 24h)  
+        self.assertEqual(intervals[1].start, datetime(2023, 12, 30, 0, 0, 0))
+        self.assertEqual(intervals[1].end, datetime(2023, 12, 31, 0, 0, 0))
         return
 
     def test_initialization_creates_intervals(self):
