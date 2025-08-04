@@ -161,3 +161,24 @@ def simple_function():
 - Follow existing code patterns and conventions in the codebase
 - Use descriptive variable and function names
 - Maintain consistency with Django and Python best practices
+
+## Git Commit Guidelines
+
+### Commit Message Style
+- Use concise, descriptive commit messages without attribution text
+- Focus on **what** was changed and **why**, not implementation details
+- Keep messages professional and project-focused
+- **Do NOT include** Claude Code attribution, co-author tags, or generated-by comments
+
+**Good examples:**
+```
+Fix weather module unit test failures and improve WMO units handling
+Add support for temperature offset unit arithmetic in Pint
+Remove invalid AlertUrgency.PAST enum value for weather alerts
+```
+
+**Avoid:**
+```
+🤖 Generated with Claude Code
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
