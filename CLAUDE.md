@@ -114,6 +114,114 @@ make docker-stop
 - Visual testing pages: Available at `/tests/ui` when `DEBUG=True`
 - Integration tests: Custom management commands (`hass_test`, `zm_test`)
 
+#### High-Value vs Low-Value Testing Criteria
+
+**HIGH-VALUE Tests (Focus Here)**
+- **Database constraints and cascade deletion behavior** - Critical for data integrity
+- **Complex business logic and algorithms** - Custom calculations, aggregation, processing
+- **Singleton pattern behavior** - Manager classes, initialization, thread safety
+- **Enum property conversions with custom logic** - from_name_safe(), business rules
+- **File handling and storage operations** - Upload, deletion, cleanup, error handling
+- **Integration key parsing and external system interfaces** - API boundaries
+- **Complex calculations** - Geometric (SVG positioning), ordering, aggregation logic
+- **Caching and performance optimizations** - TTL caches, database indexing
+- **Auto-discovery and Django startup integration** - Module loading, initialization sequences
+- **Thread safety and concurrent operations** - Locks, shared state, race conditions
+- **Background process coordination** - Async/sync dual access, event loop management
+
+**LOW-VALUE Tests (Avoid These)**
+- Simple property getters/setters that just return field values
+- Django ORM internals verification (Django already tests this)
+- Trivial enum label checking without business logic
+- Basic field access and obvious default values
+- Simple string formatting without complex logic
+
+#### Django-Specific Testing Patterns
+
+```python
+# Abstract Model Testing - Create concrete test class
+class ConcreteTestModel(AbstractModel):
+    def required_abstract_method(self):
+        return "test_implementation"
+
+# Mock Django operations for database-less testing
+with patch('django.db.models.Model.save') as mock_save:
+    instance.save()
+    mock_save.assert_called_once()
+
+# Integration Key Pattern Testing
+def test_integration_key_inheritance(self):
+    model = TestModel.objects.create(
+        integration_id='test_id',
+        integration_name='test_integration'
+    )
+    self.assertEqual(model.integration_id, 'test_id')
+
+# Singleton Manager Testing
+def test_manager_singleton_behavior(self):
+    manager1 = ManagerClass()
+    manager2 = ManagerClass()
+    self.assertIs(manager1, manager2)
+
+# Background Process and Threading Testing
+async def test_async_manager_method(self):
+    with patch('asyncio.run') as mock_run:
+        result = await manager.async_method()
+        mock_run.assert_called()
+
+def test_manager_thread_safety(self):
+    results = []
+    def worker():
+        results.append(manager.thread_safe_operation())
+    
+    threads = [threading.Thread(target=worker) for _ in range(5)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+```
+
+#### System Architecture Patterns Discovered
+
+**Module Dependency Hierarchy**
+- **Entity/EntityState**: Central hub used by control, event, sense, collection modules
+- **Location/LocationView**: Complex SVG positioning system used by entity, collection
+- **Integration Key Pattern**: Shared across control, event, sense for external system integration
+- **Cascade Deletion Chains**: Critical data integrity enforcement across related models
+
+**Auto-Discovery and Django Integration**
+- **Settings Manager**: Tightly integrated with Django initialization, requires special handling in tests
+- **Module Loading**: Some managers use Django apps registry for auto-discovery of monitors/handlers
+- **Startup Dependencies**: Initialization order matters for singleton managers
+- **Cache Integration**: Some managers integrate with Redis/cache systems requiring mocking in tests
+- **Background Process Integration**: Manager classes designed for both Django web context and background processes
+- **Thread Management**: Some managers spawn background threads that must coordinate with Django lifecycle
+- **Async/Sync Dual Access**: Manager classes provide both synchronous and asynchronous interfaces for different contexts
+
+**Background Process and Threading Patterns**
+- **AppMonitorManager**: Manages async event loops and background monitoring threads
+- **Dual Interface Pattern**: Manager classes expose both sync and async methods (e.g., `do_control()` and `do_control_async()`)
+- **Django + AsyncIO Integration**: Background processes must coordinate Django ORM with asyncio event loops
+- **Startup Coordination**: Background threads initialized during Django startup sequence
+- **Graceful Shutdown**: Background processes must handle Django shutdown signals properly
+- **Thread Safety**: Manager singletons use threading.Lock() for safe access from multiple threads
+- **Event Loop Management**: Some managers maintain their own asyncio event loops separate from Django
+- **Process Separation**: Some functionality runs in separate processes from Django web server
+- **Shared State Management**: Managers handle state synchronization between web and background processes
+- **Database Connection Handling**: Background processes manage their own DB connections separate from request cycle
+
+**Performance and Concurrency Patterns**
+- **TTL Caching**: StatusDisplayManager uses cachetools for performance optimization
+- **Thread Safety**: Manager classes use threading.Lock() for concurrent access
+- **Deque-based Aggregation**: Alert system uses collections.deque with maxlen for memory efficiency
+- **Database Indexing**: Strategic use of db_index=True for query performance
+
+**Complex Business Logic Patterns**
+- **SVG Geometric Calculations**: Location positioning, viewbox conversions, bounds calculation
+- **Enum Business Rules**: Security states with auto_change_allowed and notification logic
+- **File Lifecycle Management**: Automatic cleanup on deletion, unique filename generation
+- **Event Window Logic**: Time-based event aggregation with deduplication windows
+
 ### Security and Configuration
 
 - Environment variables managed via `.private/env/` (not committed)
