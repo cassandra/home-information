@@ -6,6 +6,7 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from hi.apps.alert.alert_mixins import AlertMixin
+from hi.apps.config.settings_mixins import SettingsMixin
 
 from .weather_data_source import WeatherDataSource
 from .weather_settings_helper import WeatherSettingsHelper
@@ -14,7 +15,7 @@ from .weather_source_discovery import WeatherSourceDiscovery
 logger = logging.getLogger(__name__)
 
 
-class WeatherMonitor( PeriodicMonitor, AlertMixin ):
+class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
 
     WEATHER_POLLING_INTERVAL_SECS = 5
     STARTUP_SAFETY_SECS = 10
@@ -34,7 +35,7 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin ):
         
         # Log discovered sources and their enabled status
         for source in discovered_sources:
-            enabled_status = "enabled" if self._settings_helper.is_weather_source_enabled(source.id) else "disabled"
+            enabled_status = "enabled" if await self._settings_helper.is_weather_source_enabled_async(source.id) else "disabled"
             logger.info( f'Discovered weather source: {source.label} ({source.id}, priority {source.priority}) - {enabled_status}' )
             continue
             
@@ -56,7 +57,7 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin ):
         task_list = list()
         for weather_data_source in self._weather_data_source_instance_list:
             # Only fetch from enabled weather sources
-            if self._settings_helper.is_weather_source_enabled(weather_data_source.id):
+            if await self._settings_helper.is_weather_source_enabled_async(weather_data_source.id):
                 task = asyncio.create_task( weather_data_source.fetch() )
                 task_list.append( task )
             else:

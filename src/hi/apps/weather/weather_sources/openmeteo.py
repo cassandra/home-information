@@ -177,7 +177,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         
         try:
             timestamp_str = current_weather_data.get('time')
-            source_datetime = datetime.fromisoformat(timestamp_str)
+            source_datetime = datetimeproxy.iso_naive_to_datetime_utc(timestamp_str)
         except Exception as e:
             logger.warning(f'Missing or bad timestamp in OpenMeteo current weather payload: {e}')
             source_datetime = datetimeproxy.now()
@@ -347,7 +347,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             
             forecast_data = WeatherForecastData()
             try:
-                forecast_data.start = datetime.fromisoformat(time_str)
+                forecast_data.start = datetimeproxy.iso_naive_to_datetime_utc(time_str)
                 forecast_data.end = forecast_data.start + timedelta(hours = 1)
             except Exception as e:
                 logger.warning(f'Missing or bad time in OpenMeteo hourly forecast payload: {e}')
@@ -466,7 +466,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             forecast_data = WeatherForecastData()
             try:
                 date_obj = datetime.fromisoformat(date_str).date()
-                forecast_data.start = datetime.combine(date_obj, datetime.min.time())
+                forecast_data.start = datetimeproxy.iso_naive_to_datetime_utc(datetime.combine(date_obj, datetime.min.time()).isoformat())
                 forecast_data.end = forecast_data.start + timedelta(days = 1)
             except Exception as e:
                 logger.warning(f'Missing or bad date in OpenMeteo daily forecast payload: {e}')
@@ -564,7 +564,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             history_data = WeatherHistoryData()
             try:
                 date_obj = datetime.fromisoformat(date_str).date()
-                history_data.start = datetime.combine(date_obj, datetime.min.time())
+                history_data.start = datetimeproxy.iso_naive_to_datetime_utc(datetime.combine(date_obj, datetime.min.time()).isoformat())
                 history_data.end = history_data.start + timedelta(days = 1)
             except Exception as e:
                 logger.warning(f'Missing or bad date in OpenMeteo historical payload: {e}')

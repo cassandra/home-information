@@ -22,10 +22,12 @@ class IntervalDataManager:
     def __init__( self,
                   interval_hours      : int,
                   max_interval_count  : int,
-                  is_order_ascending  : bool ):
+                  is_order_ascending  : bool,
+                  data_class          : type ):
         self._interval_hours = interval_hours
         self._max_interval_count = max_interval_count
         self._is_order_ascending = is_order_ascending 
+        self._data_class = data_class
         self._aggregated_interval_data_list = list()
         self._was_initialized = False
         return
@@ -93,6 +95,7 @@ class IntervalDataManager:
             else:
                 aggregated_interval_data = AggregatedWeatherData.from_time_interval(
                     time_interval = new_time_interval,
+                    data_class = self._data_class,
                 )
             new_aggregated_interval_data_list.append( aggregated_interval_data )
             continue

@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 class WeatherSettingsHelper(SettingsMixin):
     """Helper class to access weather-related settings."""
     
-    def is_weather_source_enabled(self, source_id: str) -> bool:
-        """Check if a specific weather source is enabled."""
+    def _get_weather_source_enabled_value(self, source_id: str, settings_manager):
+        """Private helper to get weather source enabled value with any settings manager."""
         # Dynamically find the setting enum for this source
         enabled_setting_name = f"{source_id.upper()}_ENABLED"
         
@@ -21,13 +21,24 @@ class WeatherSettingsHelper(SettingsMixin):
             logger.warning(f'No enabled setting found for weather source: {source_id}')
             return False
             
-        value = self.settings_manager().get_setting_value(setting_enum)
+        value = settings_manager.get_setting_value(setting_enum)
         if value is None:
             return False
         # Handle string boolean values from database
         if isinstance(value, str):
             return value.lower() in ('true', '1', 'yes', 'on')
         return bool(value)
+    
+    def is_weather_source_enabled(self, source_id: str) -> bool:
+        """Check if a specific weather source is enabled."""
+        return self._get_weather_source_enabled_value(source_id, self.settings_manager())
+    
+    async def is_weather_source_enabled_async(self, source_id: str) -> bool:
+        """Check if a specific weather source is enabled (async version)."""
+        settings_manager = await self.settings_manager_async()
+        if not settings_manager:
+            return False
+        return self._get_weather_source_enabled_value(source_id, settings_manager)
     
     def get_weather_source_api_key(self, source_id: str) -> str:
         """Get the API key for a specific weather source."""

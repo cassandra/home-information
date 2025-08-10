@@ -27,7 +27,8 @@ class TestIntervalDataManager(BaseTestCase):
         self.manager = IntervalDataManager(
             interval_hours=1,
             max_interval_count=3,
-            is_order_ascending=True
+            is_order_ascending=True,
+            data_class=WeatherForecastData
         )
         
         self.test_source = DataPointSource(
@@ -77,7 +78,8 @@ class TestIntervalDataManager(BaseTestCase):
         history_manager = IntervalDataManager(
             interval_hours=24,
             max_interval_count=2,
-            is_order_ascending=False
+            is_order_ascending=False,
+            data_class=WeatherForecastData
         )
         
         # Mock current time: 2024-01-01 14:35:22

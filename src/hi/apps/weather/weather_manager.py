@@ -49,22 +49,26 @@ class WeatherManager( Singleton, SettingsMixin ):
         self._hourly_forecast_manager = IntervalDataManager(
             interval_hours=1,           # 1-hour intervals
             max_interval_count=48,      # 48 hours of forecast
-            is_order_ascending=True     # Future forecasts
+            is_order_ascending=True,    # Future forecasts
+            data_class=WeatherForecastData
         )
         self._daily_forecast_manager = IntervalDataManager(
             interval_hours=24,          # 24-hour intervals  
             max_interval_count=10,      # 10 days of forecast
-            is_order_ascending=True     # Future forecasts
+            is_order_ascending=True,    # Future forecasts
+            data_class=WeatherForecastData
         )
         self._daily_history_manager = IntervalDataManager(
             interval_hours=24,          # 24-hour intervals
             max_interval_count=30,      # 30 days of history
-            is_order_ascending=False    # Past history
+            is_order_ascending=False,   # Past history
+            data_class=WeatherHistoryData
         )
         self._daily_astronomical_manager = IntervalDataManager(
             interval_hours=24,          # 24-hour intervals
             max_interval_count=10,      # 10 days of astronomical data
-            is_order_ascending=True     # Future astronomical data
+            is_order_ascending=True,    # Future astronomical data
+            data_class=AstronomicalData
         )
         
         self._data_sync_lock = threading.Lock()

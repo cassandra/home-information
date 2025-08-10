@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from hi.units import UnitQuantity
 
 
-@dataclass( frozen = True )
+@dataclass
 class GeographicLocation:
 
     latitude   : float

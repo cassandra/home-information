@@ -303,7 +303,7 @@ class AggregatedWeatherData:
         )
 
     @classmethod
-    def from_time_interval( cls, time_interval : TimeInterval, data_class : Type[ EnvironmentalData ] = None ):
+    def from_time_interval( cls, time_interval : TimeInterval, data_class : Type[ EnvironmentalData ] ):
         """
         Create an AggregatedWeatherData instance for a given time interval.
         
@@ -318,8 +318,6 @@ class AggregatedWeatherData:
         from .interval_models import SourceFieldData
         from dataclasses import fields
         
-        if data_class is None:
-            data_class = WeatherForecastData
             
         # Initialize source_data with SourceFieldData for each field
         source_data = {}

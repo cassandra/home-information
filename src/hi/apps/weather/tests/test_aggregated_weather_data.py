@@ -66,7 +66,10 @@ class TestAggregatedWeatherData(BaseTestCase):
 
     def test_from_time_interval_class_method(self):
         """Test AggregatedWeatherData.from_time_interval() class method."""
-        aggregated_data = AggregatedWeatherData.from_time_interval(self.test_interval)
+        aggregated_data = AggregatedWeatherData.from_time_interval(
+            time_interval=self.test_interval,
+            data_class=WeatherForecastData
+        )
         
         self.assertIsInstance(aggregated_data, AggregatedWeatherData)
         self.assertEqual(aggregated_data.interval_data.interval, self.test_interval)
