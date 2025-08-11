@@ -18,10 +18,13 @@ from hi.apps.weather.transient_models import (
     NumericDataPoint,
     StringDataPoint,
     TimeDataPoint,
+    TimeInterval,
     WeatherConditionsData,
     WeatherForecastData,
     WeatherHistoryData,
     WeatherOverviewData,
+    IntervalWeatherForecast,
+    IntervalWeatherHistory,
     Station,
 )
 from hi.units import UnitQuantity
@@ -303,6 +306,129 @@ class WeatherSyntheticData:
             daily_forecast_data_list.append(forecast_data)
             continue
         return daily_forecast_data_list
+
+    @classmethod
+    def get_random_hourly_interval_forecast_data_list(cls,
+                                                      now: datetime = None,
+                                                      source: DataPointSource = None) -> List[IntervalWeatherForecast]:
+        """Get random hourly forecast data wrapped in IntervalWeatherForecast objects."""
+        if not now:
+            now = datetimeproxy.now()
+        if not source:
+            source = cls._create_default_source()
+        
+        station = cls._create_test_station(source)
+        interval_forecast_data_list = list()
+        
+        for hour_idx in range(24):
+            interval_start = now.replace(minute=0, second=0, microsecond=0)
+            interval_start += timedelta(hours=hour_idx + 1)
+            interval_end = interval_start + timedelta(hours=1)
+            
+            # Create time interval
+            time_interval = TimeInterval(
+                start=interval_start,
+                end=interval_end
+            )
+            
+            # Create forecast data
+            forecast_data = cls.get_random_forecast_data(
+                interval_start=interval_start,
+                interval_end=interval_end,
+                now=now,
+                source=source,
+            )
+            
+            # Create interval weather forecast
+            interval_weather_forecast = IntervalWeatherForecast(
+                interval=time_interval,
+                data=forecast_data
+            )
+            interval_forecast_data_list.append(interval_weather_forecast)
+            continue
+        return interval_forecast_data_list
+    
+    @classmethod
+    def get_random_daily_interval_forecast_data_list(cls,
+                                                     now: datetime = None,
+                                                     source: DataPointSource = None) -> List[IntervalWeatherForecast]:
+        """Get random daily forecast data wrapped in IntervalWeatherForecast objects."""
+        if not now:
+            now = datetimeproxy.now()
+        if not source:
+            source = cls._create_default_source()
+        
+        station = cls._create_test_station(source)
+        interval_forecast_data_list = list()
+        
+        for day_idx in range(10):
+            interval_start = now.replace(hour=0, minute=0, second=0, microsecond=1)
+            interval_start += timedelta(hours=24 * day_idx)
+            interval_end = interval_start + timedelta(hours=24)
+            
+            # Create time interval
+            time_interval = TimeInterval(
+                start=interval_start,
+                end=interval_end
+            )
+            
+            # Create forecast data
+            forecast_data = cls.get_random_forecast_data(
+                interval_start=interval_start,
+                interval_end=interval_end,
+                now=now,
+                source=source,
+            )
+            
+            # Create interval weather forecast
+            interval_weather_forecast = IntervalWeatherForecast(
+                interval=time_interval,
+                data=forecast_data
+            )
+            interval_forecast_data_list.append(interval_weather_forecast)
+            continue
+        return interval_forecast_data_list
+
+    @classmethod
+    def get_random_daily_interval_history_data_list(cls,
+                                                    now: datetime = None,
+                                                    source: DataPointSource = None) -> List[IntervalWeatherHistory]:
+        """Get random daily history data wrapped in IntervalWeatherHistory objects."""
+        if not now:
+            now = datetimeproxy.now()
+        if not source:
+            source = cls._create_default_source()
+        
+        station = cls._create_test_station(source)
+        interval_history_data_list = list()
+        
+        for day_idx in range(10):
+            interval_start = now.replace(hour=0, minute=0, second=0, microsecond=1)
+            interval_start -= timedelta(hours=24 * (day_idx + 1))
+            interval_end = interval_start + timedelta(hours=24)
+            
+            # Create time interval
+            time_interval = TimeInterval(
+                start=interval_start,
+                end=interval_end
+            )
+            
+            # Create history data
+            history_data = cls.get_random_history_data(
+                interval_start=interval_start,
+                interval_end=interval_end,
+                now=now,
+                source=source,
+            )
+            
+            # Create interval weather history
+            interval_weather_history = IntervalWeatherHistory(
+                interval=time_interval,
+                data=history_data
+            )
+            interval_history_data_list.append(interval_weather_history)
+            continue
+        return interval_history_data_list
 
     @classmethod
     def get_random_forecast_data(cls,

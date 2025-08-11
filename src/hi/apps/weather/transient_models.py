@@ -71,6 +71,13 @@ class DataPoint:
     station          : Station
     source_datetime  : datetime
 
+    def __str__(self):
+        return f'{self.value_str} [{self.source_datetime}]'
+
+    @property
+    def value_str(self):
+        return str(self)
+    
     @property
     def elevation(self) -> UnitQuantity:
         if self.station:
@@ -96,15 +103,27 @@ class DataPointList( DataPoint, Generic[T] ):
 class BooleanDataPoint( DataPoint ):
     value            : bool
 
+    @property
+    def value_str(self):
+        return str(self.value)
+
     
 @dataclass( kw_only = True )
 class TimeDataPoint( DataPoint ):
     value            : time
 
+    @property
+    def value_str(self):
+        return str(self.value)
+
     
 @dataclass( kw_only = True )
 class StringDataPoint( DataPoint ):
     value            : str
+
+    @property
+    def value_str(self):
+        return self.value
 
     
 @dataclass( kw_only = True )
@@ -112,6 +131,10 @@ class NumericDataPoint( DataPoint ):
     quantity_ave   : UnitQuantity  | None = None 
     quantity_min   : UnitQuantity  | None = None
     quantity_max   : UnitQuantity  | None = None
+
+    @property
+    def value_str(self):
+        return f'[ {self.quantity_min}, {self.quantity_ave}, {self.quantity_max} ]' 
 
     def __post_init__(self):
         if self.quantity_ave is not None:

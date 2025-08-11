@@ -17,8 +17,11 @@ from hi.apps.weather.transient_models import (
     NotablePhenomenon,
     NumericDataPoint,
     StringDataPoint,
+    TimeInterval,
     WeatherConditionsData,
     WeatherForecastData,
+    IntervalWeatherForecast,
+    IntervalWeatherHistory,
     Station,
 )
 from hi.apps.weather.weather_mixins import WeatherMixin
@@ -131,7 +134,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             station = station,
         )
 
-    def get_forecast_hourly( self, geographic_location : GeographicLocation ) -> List[ WeatherForecastData ]:
+    def get_forecast_hourly( self, geographic_location : GeographicLocation ) -> List[ IntervalWeatherForecast ]:
         points_data = self._get_points_data( geographic_location = geographic_location )
 
         properties_data = points_data.get('properties')
@@ -162,7 +165,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             station = station,
         )
 
-    def get_forecast_12h( self, geographic_location : GeographicLocation ) -> List[ WeatherForecastData ]:
+    def get_forecast_12h( self, geographic_location : GeographicLocation ) -> List[ IntervalWeatherForecast ]:
         points_data = self._get_points_data( geographic_location = geographic_location )
 
         properties_data = points_data.get('properties')
@@ -323,7 +326,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
     
     def _parse_forecast_data( self,
                               forecast_data  : Dict,
-                              station        : Station ) -> List[ WeatherForecastData ]:
+                              station        : Station ) -> List[ IntervalWeatherForecast ]:
 
         properties_data = forecast_data['properties']
         if not properties_data:
@@ -347,30 +350,42 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         if not period_data_list:
             raise ValueError('Missing "periods" in NWS hourly forecast payload.')
 
-        weather_forecast_data_list = list()
+        interval_weather_forecast_list = list()
         for period_data in period_data_list:
 
-            forecast_data = WeatherForecastData()
+            # Parse time interval
             try:
                 interval_start_str = period_data.get( 'startTime' )
-                forecast_data.start = datetime.fromisoformat( interval_start_str )
+                interval_start = datetime.fromisoformat( interval_start_str )
             except Exception as e:
                 logger.warning( f'Missing or bad startTime in NWS forecast payload: {e}' )
                 continue
             try:
                 interval_end_str = period_data.get( 'endTime' )
-                forecast_data.end = datetime.fromisoformat( interval_end_str )
+                interval_end = datetime.fromisoformat( interval_end_str )
             except Exception as e:
                 logger.warning( f'Missing or bad endTime in NWS forecast payload: {e}' )
                 continue
             
+            # Create name for time interval
             interval_name = period_data.get('name')
+            name_data_point = None
             if interval_name:
-                forecast_data.name = StringDataPoint(
+                name_data_point = StringDataPoint(
                     station = station,
                     source_datetime = source_datetime,
                     value = interval_name,
                 )
+            
+            # Create time interval
+            time_interval = TimeInterval(
+                start=interval_start,
+                end=interval_end,
+                name=name_data_point
+            )
+            
+            # Create weather forecast data
+            forecast_data = WeatherForecastData()
             description_short = period_data.get('shortForecast')
             if description_short:
                 forecast_data.description_short = StringDataPoint(
@@ -429,10 +444,15 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                 except ValueError:
                     logger.warning( f'Unknown NWS wind direction "{wind_direction_str}"' )
             
-            weather_forecast_data_list.append( forecast_data )
+            # Create interval weather forecast
+            interval_weather_forecast = IntervalWeatherForecast(
+                interval=time_interval,
+                data=forecast_data
+            )
+            interval_weather_forecast_list.append( interval_weather_forecast )
             continue
 
-        return weather_forecast_data_list
+        return interval_weather_forecast_list
         
     def _get_observations_data( self, station : Station ) -> Dict[ str, Any ]:
         cache_key = f'ws:{self.id}:observations:{station.key}'

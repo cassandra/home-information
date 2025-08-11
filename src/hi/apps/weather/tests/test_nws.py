@@ -16,6 +16,7 @@ from hi.apps.weather.transient_models import (
     StringDataPoint,
     WeatherConditionsData,
     WeatherForecastData,
+    IntervalWeatherForecast,
     Station,
 )
 from hi.apps.weather.weather_sources.nws import NationalWeatherService
@@ -1817,37 +1818,37 @@ class TestNationalWeatherService( BaseTestCase ):
             for idx, ( expected, result ) in enumerate( zip( test_data['expected'], result_list )):
                 
                 self.assertEqual( expected['start'],
-                                  result.start,
+                                  result.interval.start,
                                   f'[{idx}] %s' % test_data['label'] )
                 self.assertEqual( expected['end'],
-                                  result.end,
+                                  result.interval.end,
                                   f'[{idx}] %s' % test_data['label'] )
                 self.assertEqual( expected['name'].value,
-                                  result.name.value,
+                                  result.interval.name.value,
                                   f'[{idx}] %s' % test_data['label'] )
                 self.assertEqual( expected['description_short'].value,
-                                  result.description_short.value,
+                                  result.data.description_short.value,
                                   f'[{idx}] %s' % test_data['label'] )
                 self.assertEqual( expected['description_long'].value,
-                                  result.description_long.value,
+                                  result.data.description_long.value,
                                   f'[{idx}] %s' % test_data['label'] )
                 self.assertEqual( expected['is_daytime'].value,
-                                  result.is_daytime.value,
+                                  result.data.is_daytime.value,
                                   f'[{idx}] %s' % test_data['label'] )
                 self._compare_numeric_data_point( expected['precipitation_probability'],
-                                                  result.precipitation_probability,
+                                                  result.data.precipitation_probability,
                                                   f'[{idx}] %s' % test_data['label']  )
                 self._compare_numeric_data_point( expected['dew_point'],
-                                                  result.dew_point,
+                                                  result.data.dew_point,
                                                   f'[{idx}] %s' % test_data['label']  )
                 self._compare_statistic_data_point( expected['temperature'],
-                                                    result.temperature,
+                                                    result.data.temperature,
                                                     f'[{idx}] %s' % test_data['label']  )
                 self._compare_statistic_data_point( expected['windspeed'],
-                                                    result.windspeed,
+                                                    result.data.windspeed,
                                                     f'[{idx}] %s' % test_data['label']  )
                 self._compare_numeric_data_point( expected['wind_direction'],
-                                                  result.wind_direction,
+                                                  result.data.wind_direction,
                                                   f'[{idx}] %s' % test_data['label']  )
                 continue
             continue

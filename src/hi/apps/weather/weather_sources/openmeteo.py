@@ -12,9 +12,12 @@ from hi.apps.weather.transient_models import (
     BooleanDataPoint,
     NumericDataPoint,
     StringDataPoint,
+    TimeInterval,
     WeatherConditionsData,
     WeatherForecastData,
     WeatherHistoryData,
+    IntervalWeatherForecast,
+    IntervalWeatherHistory,
     Station,
 )
 from hi.apps.weather.weather_mixins import WeatherMixin
@@ -138,21 +141,21 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             geographic_location = geographic_location,
         )
 
-    def get_forecast_hourly(self, geographic_location: GeographicLocation) -> List[WeatherForecastData]:
+    def get_forecast_hourly(self, geographic_location: GeographicLocation) -> List[IntervalWeatherForecast]:
         forecast_data = self._get_hourly_forecast_data(geographic_location = geographic_location)
         return self._parse_hourly_forecast_data(
             forecast_data = forecast_data,
             geographic_location = geographic_location,
         )
 
-    def get_forecast_daily(self, geographic_location: GeographicLocation) -> List[WeatherForecastData]:
+    def get_forecast_daily(self, geographic_location: GeographicLocation) -> List[IntervalWeatherForecast]:
         forecast_data = self._get_daily_forecast_data(geographic_location = geographic_location)
         return self._parse_daily_forecast_data(
             forecast_data = forecast_data,
             geographic_location = geographic_location,
         )
 
-    def get_historical_weather(self, geographic_location: GeographicLocation, days_back: int = 7) -> List[WeatherHistoryData]:
+    def get_historical_weather(self, geographic_location: GeographicLocation, days_back: int = 7) -> List[IntervalWeatherHistory]:
         end_date = datetimeproxy.now().date()
         start_date = end_date - timedelta(days = days_back)
         
@@ -308,7 +311,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
     
     def _parse_hourly_forecast_data(self, 
                                     forecast_data: Dict,
-                                    geographic_location: GeographicLocation) -> List[WeatherForecastData]:
+                                    geographic_location: GeographicLocation) -> List[IntervalWeatherForecast]:
 
         hourly_data = forecast_data.get('hourly', {})
         hourly_units = forecast_data.get('hourly_units', {})
@@ -341,17 +344,26 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         )
 
         time_list = hourly_data['time']
-        weather_forecast_data_list = list()
+        interval_weather_forecast_list = list()
         
         for i, time_str in enumerate(time_list):
             
-            forecast_data = WeatherForecastData()
+            # Parse time interval
             try:
-                forecast_data.start = datetimeproxy.iso_naive_to_datetime_utc(time_str)
-                forecast_data.end = forecast_data.start + timedelta(hours = 1)
+                interval_start = datetimeproxy.iso_naive_to_datetime_utc(time_str)
+                interval_end = interval_start + timedelta(hours = 1)
             except Exception as e:
                 logger.warning(f'Missing or bad time in OpenMeteo hourly forecast payload: {e}')
                 continue
+                
+            # Create time interval
+            time_interval = TimeInterval(
+                start=interval_start,
+                end=interval_end
+            )
+            
+            # Create weather forecast data
+            forecast_data = WeatherForecastData()
             
             # Temperature
             if 'temperature_2m' in hourly_data and i < len(hourly_data['temperature_2m']):
@@ -420,14 +432,19 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                     except ValueError:
                         logger.warning(f'Unknown OpenMeteo weather code: {weather_code}')
 
-            weather_forecast_data_list.append(forecast_data)
+            # Create interval weather forecast
+            interval_weather_forecast = IntervalWeatherForecast(
+                interval=time_interval,
+                data=forecast_data
+            )
+            interval_weather_forecast_list.append(interval_weather_forecast)
             continue
 
-        return weather_forecast_data_list
+        return interval_weather_forecast_list
 
     def _parse_daily_forecast_data(self, 
                                    forecast_data: Dict,
-                                   geographic_location: GeographicLocation) -> List[WeatherForecastData]:
+                                   geographic_location: GeographicLocation) -> List[IntervalWeatherForecast]:
 
         daily_data = forecast_data.get('daily', {})
         daily_units = forecast_data.get('daily_units', {})
@@ -459,18 +476,26 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         )
 
         time_list = daily_data['time']
-        weather_forecast_data_list = list()
+        interval_weather_forecast_list = list()
         
         for i, date_str in enumerate(time_list):
             
-            forecast_data = WeatherForecastData()
+            # Parse time interval
             try:
                 date_obj = datetime.fromisoformat(date_str).date()
-                forecast_data.start = datetimeproxy.iso_naive_to_datetime_utc(datetime.combine(date_obj, datetime.min.time()).isoformat())
-                forecast_data.end = forecast_data.start + timedelta(days = 1)
+                interval_start = datetimeproxy.iso_naive_to_datetime_utc(datetime.combine(date_obj, datetime.min.time()).isoformat())
+                interval_end = interval_start + timedelta(days = 1)
             except Exception as e:
                 logger.warning(f'Missing or bad date in OpenMeteo daily forecast payload: {e}')
                 continue
+                
+            time_interval = TimeInterval(
+                start=interval_start,
+                end=interval_end
+            )
+            
+            # Create weather forecast data
+            forecast_data = WeatherForecastData()
             
             # Temperature max
             if 'temperature_2m_max' in daily_data and i < len(daily_data['temperature_2m_max']):
@@ -522,10 +547,15 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                     except ValueError:
                         logger.warning(f'Unknown OpenMeteo weather code: {weather_code}')
 
-            weather_forecast_data_list.append(forecast_data)
+            # Create interval weather forecast
+            interval_weather_forecast = IntervalWeatherForecast(
+                interval=time_interval,
+                data=forecast_data
+            )
+            interval_weather_forecast_list.append(interval_weather_forecast)
             continue
 
-        return weather_forecast_data_list
+        return interval_weather_forecast_list
 
     def _parse_historical_weather_data(self, 
                                        historical_data: Dict,
@@ -557,18 +587,24 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         )
 
         time_list = daily_data['time']
-        weather_history_data_list = list()
+        interval_weather_history_list = list()
         
         for i, date_str in enumerate(time_list):
             
-            history_data = WeatherHistoryData()
             try:
                 date_obj = datetime.fromisoformat(date_str).date()
-                history_data.start = datetimeproxy.iso_naive_to_datetime_utc(datetime.combine(date_obj, datetime.min.time()).isoformat())
-                history_data.end = history_data.start + timedelta(days = 1)
+                interval_start = datetimeproxy.iso_naive_to_datetime_utc(datetime.combine(date_obj, datetime.min.time()).isoformat())
+                interval_end = interval_start + timedelta(days = 1)
             except Exception as e:
                 logger.warning(f'Missing or bad date in OpenMeteo historical payload: {e}')
                 continue
+
+            time_interval = TimeInterval(
+                start = interval_start,
+                end = interval_end,
+            )
+
+            history_data = WeatherHistoryData()
             
             # Temperature max
             if 'temperature_2m_max' in daily_data and i < len(daily_data['temperature_2m_max']):
@@ -617,10 +653,14 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                     except ValueError:
                         logger.warning(f'Unknown OpenMeteo weather code: {weather_code}')
 
-            weather_history_data_list.append(history_data)
+            interval_weather_history = IntervalWeatherHistory(
+                interval = time_interval,
+                data = history_data,
+            )
+            interval_weather_history_list.append( interval_weather_history )
             continue
 
-        return weather_history_data_list
+        return interval_weather_history_list
         
     def _get_current_weather_data(self, geographic_location: GeographicLocation) -> Dict[str, Any]:
         cache_key = f'ws:{self.id}:current:{geographic_location}'

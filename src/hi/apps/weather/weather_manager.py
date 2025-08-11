@@ -22,6 +22,8 @@ from .transient_models import (
     DailyHistory,
     WeatherOverviewData,
     IntervalEnvironmentalData,
+    IntervalWeatherForecast,
+    IntervalWeatherHistory,
 )
 from .weather_data_source import WeatherDataSource
 from .interval_data_manager import IntervalDataManager
@@ -34,8 +36,10 @@ class WeatherManager( Singleton, SettingsMixin ):
     # Age of a weather DataPoint at which a lower priority source is
     # allowed to overwrite a higher priority source's (now stale) data.
     #
-    STALE_DATA_POINT_AGE_SECONDS = 30 * 60
+    STALE_DATA_POINT_AGE_SECONDS = 60 * 60
 
+    TRACE = True  # For debugging
+    
     def __init_singleton__(self):
 
         self._current_conditions_data = WeatherConditionsData()
@@ -137,11 +141,11 @@ class WeatherManager( Singleton, SettingsMixin ):
 
     async def update_hourly_forecast( self,
                                       weather_data_source : WeatherDataSource,
-                                      forecast_data_list  : List[WeatherForecastData] ):
+                                      forecast_data_list  : List[IntervalWeatherForecast] ):
         """Update hourly forecast data using IntervalDataManager for interval reconciliation."""
         async with self._data_async_lock:
-            # Convert forecast data to IntervalEnvironmentalData format
-            interval_data_list = self._convert_forecast_to_interval_data(forecast_data_list)
+            # Convert IntervalWeatherForecast to IntervalEnvironmentalData format
+            interval_data_list = self._convert_interval_forecast_to_interval_data(forecast_data_list)
             
             # Add to interval manager for aggregation
             self._hourly_forecast_manager.add_data(
@@ -155,11 +159,11 @@ class WeatherManager( Singleton, SettingsMixin ):
 
     async def update_daily_forecast( self,
                                      weather_data_source : WeatherDataSource,
-                                     forecast_data_list  : List[WeatherForecastData] ):
+                                     forecast_data_list  : List[IntervalWeatherForecast] ):
         """Update daily forecast data using IntervalDataManager for interval reconciliation."""
         async with self._data_async_lock:
-            # Convert forecast data to IntervalEnvironmentalData format
-            interval_data_list = self._convert_forecast_to_interval_data(forecast_data_list)
+            # Convert IntervalWeatherForecast to IntervalEnvironmentalData format
+            interval_data_list = self._convert_interval_forecast_to_interval_data(forecast_data_list)
             
             # Add to interval manager for aggregation
             self._daily_forecast_manager.add_data(
@@ -173,11 +177,11 @@ class WeatherManager( Singleton, SettingsMixin ):
 
     async def update_daily_history( self,
                                     weather_data_source : WeatherDataSource,
-                                    history_data_list   : List[WeatherHistoryData] ):
+                                    history_data_list   : List[IntervalWeatherHistory] ):
         """Update daily history data using IntervalDataManager for interval reconciliation.""" 
         async with self._data_async_lock:
-            # Convert history data to IntervalEnvironmentalData format
-            interval_data_list = self._convert_history_to_interval_data(history_data_list)
+            # Convert IntervalWeatherHistory to IntervalEnvironmentalData format
+            interval_data_list = self._convert_interval_history_to_interval_data(history_data_list)
             
             # Add to interval manager for aggregation
             self._daily_history_manager.add_data(
@@ -212,6 +216,9 @@ class WeatherManager( Singleton, SettingsMixin ):
                               new_weather_data     : EnvironmentalData,
                               data_point_source    : DataPointSource ):
 
+        if self.TRACE:
+            logger.debug( f'Updating weather data from: {data_point_source.id}' )
+        
         now = datetimeproxy.now()
         for field in fields( current_weather_data ):
             field_name = field.name
@@ -229,21 +236,39 @@ class WeatherManager( Singleton, SettingsMixin ):
 
             # Always fill in blank data
             if current_datapoint is None:
+                if self.TRACE:
+                    logger.debug( f'Setting first data: {field_name} = {new_datapoint}' )
                 setattr( current_weather_data, field_name, new_datapoint )
                 continue
-
-            # Higher and same priority sources can always overwrite (if newer data).
+                    
+            # Same and higher priority sources can overwrite as long as data is fresher.
+            # (N.B. lower priority sources have larger integer values)
             current_priority = current_datapoint.source.priority
             new_priority = new_datapoint.source.priority
             if new_priority <= current_priority:
                 if new_datapoint.source_datetime > current_datapoint.source_datetime:
+                    if self.TRACE:
+                        logger.debug( f'Overwrite with fresher data: {field_name} = {new_datapoint}' )
                     setattr( current_weather_data, field_name, new_datapoint )
+                else:
+                    if self.TRACE:
+                        logger.debug( f'Skipping older data: {field_name} = {new_datapoint}' )
+                continue
+            
+            # Lower priority sources can only overwrite if current data is stale and new data is newer.
+            if new_datapoint.source_datetime <= current_datapoint.source_datetime:
+                if self.TRACE:
+                    logger.debug( f'Skipping old, lower priority data: {field_name} = {new_datapoint}' )
                 continue
 
-            # Lower priority sources can only overwrite if data is stale.
-            current_datapoint_age = now - current_datapoint.source_datetime
+            current_datapoint_age = new_datapoint.source_datetime - current_datapoint.source_datetime
             if current_datapoint_age.total_seconds() < self.STALE_DATA_POINT_AGE_SECONDS:
+                if self.TRACE:
+                    logger.debug( f'Skipping lower priority data: {field_name} = {new_datapoint}' )
                 continue
+
+            if self.TRACE:
+                logger.debug( f'Overwriting stale data: {field_name} = {new_datapoint} [age={current_datapoint_age}]' )
 
             setattr( current_weather_data, field_name, new_datapoint )
             continue
@@ -251,37 +276,27 @@ class WeatherManager( Singleton, SettingsMixin ):
 
     # Helper methods for converting API data to IntervalEnvironmentalData format
     
-    def _convert_forecast_to_interval_data(self, forecast_data_list: List[WeatherForecastData]) -> List[IntervalEnvironmentalData]:
-        """Convert WeatherForecastData list to IntervalEnvironmentalData format."""
+    def _convert_interval_forecast_to_interval_data(self, forecast_data_list: List[IntervalWeatherForecast]) -> List[IntervalEnvironmentalData]:
+        """Convert IntervalWeatherForecast list to IntervalEnvironmentalData format."""
         interval_data_list = []
-        for forecast_data in forecast_data_list:
-            if forecast_data.start and forecast_data.end:
-                from .transient_models import TimeInterval
-                interval = TimeInterval(
-                    start=forecast_data.start,
-                    end=forecast_data.end
-                )
+        for interval_forecast in forecast_data_list:
+            if interval_forecast.interval and interval_forecast.data:
                 interval_data = IntervalEnvironmentalData(
-                    interval=interval,
-                    data=forecast_data
+                    interval=interval_forecast.interval,
+                    data=interval_forecast.data
                 )
                 interval_data_list.append(interval_data)
             continue
         return interval_data_list
 
-    def _convert_history_to_interval_data(self, history_data_list: List[WeatherHistoryData]) -> List[IntervalEnvironmentalData]:
-        """Convert WeatherHistoryData list to IntervalEnvironmentalData format."""
+    def _convert_interval_history_to_interval_data(self, history_data_list: List[IntervalWeatherHistory]) -> List[IntervalEnvironmentalData]:
+        """Convert IntervalWeatherHistory list to IntervalEnvironmentalData format."""
         interval_data_list = []
-        for history_data in history_data_list:
-            if history_data.start and history_data.end:
-                from .transient_models import TimeInterval
-                interval = TimeInterval(
-                    start=history_data.start,
-                    end=history_data.end
-                )
+        for interval_history in history_data_list:
+            if interval_history.interval and interval_history.data:
                 interval_data = IntervalEnvironmentalData(
-                    interval=interval,
-                    data=history_data
+                    interval=interval_history.interval,
+                    data=interval_history.data
                 )
                 interval_data_list.append(interval_data)
             continue

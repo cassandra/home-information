@@ -10,6 +10,7 @@ from hi.apps.weather.transient_models import (
     WeatherConditionsData,
     WeatherForecastData,
     WeatherHistoryData,
+    IntervalWeatherForecast,
 )
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
@@ -170,11 +171,14 @@ class TestOpenMeteo(BaseTestCase):
         self.assertEqual(len(result), 2)
         
         first_forecast = result[0]
-        self.assertIsInstance(first_forecast, WeatherForecastData)
-        self.assertIsNotNone(first_forecast.temperature)
-        self.assertEqual(first_forecast.temperature.quantity_ave.magnitude, 25.5)
-        self.assertIsNotNone(first_forecast.relative_humidity)
-        self.assertEqual(first_forecast.relative_humidity.quantity_ave.magnitude, 70)
+        self.assertIsInstance(first_forecast, IntervalWeatherForecast)
+        self.assertIsNotNone(first_forecast.interval)
+        self.assertIsNotNone(first_forecast.data)
+        self.assertIsInstance(first_forecast.data, WeatherForecastData)
+        self.assertIsNotNone(first_forecast.data.temperature)
+        self.assertEqual(first_forecast.data.temperature.quantity_ave.magnitude, 25.5)
+        self.assertIsNotNone(first_forecast.data.relative_humidity)
+        self.assertEqual(first_forecast.data.relative_humidity.quantity_ave.magnitude, 70)
         return
 
     def test_parse_daily_forecast_data(self):
@@ -206,12 +210,15 @@ class TestOpenMeteo(BaseTestCase):
         self.assertEqual(len(result), 2)
         
         first_forecast = result[0]
-        self.assertIsInstance(first_forecast, WeatherForecastData)
-        self.assertIsNotNone(first_forecast.temperature)
-        self.assertEqual(first_forecast.temperature.quantity_max.magnitude, 28.0)
-        self.assertEqual(first_forecast.temperature.quantity_min.magnitude, 18.0)
-        self.assertIsNotNone(first_forecast.description_short)
-        self.assertEqual(first_forecast.description_short.value, "Clear sky")
+        self.assertIsInstance(first_forecast, IntervalWeatherForecast)
+        self.assertIsNotNone(first_forecast.interval)
+        self.assertIsNotNone(first_forecast.data)
+        self.assertIsInstance(first_forecast.data, WeatherForecastData)
+        self.assertIsNotNone(first_forecast.data.temperature)
+        self.assertEqual(first_forecast.data.temperature.quantity_max.magnitude, 28.0)
+        self.assertEqual(first_forecast.data.temperature.quantity_min.magnitude, 18.0)
+        self.assertIsNotNone(first_forecast.data.description_short)
+        self.assertEqual(first_forecast.data.description_short.value, "Clear sky")
         return
 
     def test_parse_historical_weather_data(self):
