@@ -29,6 +29,7 @@ from .transient_models import (
     IntervalEnvironmentalData,
     IntervalWeatherForecast,
     IntervalWeatherHistory,
+    IntervalAstronomical,
 )
 from .weather_data_source import WeatherDataSource
 from .interval_data_manager import IntervalDataManager
@@ -160,14 +161,11 @@ class WeatherManager( Singleton, SettingsMixin ):
                                       forecast_data_list  : List[IntervalWeatherForecast] ):
         """Update hourly forecast data using IntervalDataManager for interval reconciliation."""
         async with self._data_async_lock:
-            # Convert IntervalWeatherForecast to IntervalEnvironmentalData format
-            interval_data_list = self._convert_interval_forecast_to_interval_data(forecast_data_list)
-
-            logger.debug( f'Adding hourly forecast : {weather_data_source.id} [{len(interval_data_list)} items]' )
-            # Add to interval manager for aggregation
+            # Add to interval manager for aggregation (no conversion needed - IntervalWeatherForecast extends IntervalEnvironmentalData)
+            logger.debug( f'Adding hourly forecast : {weather_data_source.id} [{len(forecast_data_list)} items]' )
             self._hourly_forecast_manager.add_data(
                 data_point_source = weather_data_source.data_point_source,
-                new_interval_data_list = interval_data_list
+                new_interval_data_list = forecast_data_list
             )
             
             # Update canonical forecast data from aggregated intervals
@@ -179,14 +177,11 @@ class WeatherManager( Singleton, SettingsMixin ):
                                      forecast_data_list  : List[IntervalWeatherForecast] ):
         """Update daily forecast data using IntervalDataManager for interval reconciliation."""
         async with self._data_async_lock:
-            # Convert IntervalWeatherForecast to IntervalEnvironmentalData format
-            interval_data_list = self._convert_interval_forecast_to_interval_data(forecast_data_list)
-            
-            # Add to interval manager for aggregation
-            logger.debug( f'Adding daily forecast: {weather_data_source.id} [{len(interval_data_list)} items]' )
+            # Add to interval manager for aggregation (no conversion needed - IntervalWeatherForecast extends IntervalEnvironmentalData)
+            logger.debug( f'Adding daily forecast: {weather_data_source.id} [{len(forecast_data_list)} items]' )
             self._daily_forecast_manager.add_data(
                 data_point_source = weather_data_source.data_point_source,
-                new_interval_data_list = interval_data_list
+                new_interval_data_list = forecast_data_list
             )
             
             # Update canonical forecast data from aggregated intervals
@@ -198,14 +193,11 @@ class WeatherManager( Singleton, SettingsMixin ):
                                     history_data_list   : List[IntervalWeatherHistory] ):
         """Update daily history data using IntervalDataManager for interval reconciliation.""" 
         async with self._data_async_lock:
-            # Convert IntervalWeatherHistory to IntervalEnvironmentalData format
-            interval_data_list = self._convert_interval_history_to_interval_data(history_data_list)
-            
-            # Add to interval manager for aggregation
-            logger.debug( f'Adding daily history: {weather_data_source.id} [{len(interval_data_list)} items]' )
+            # Add to interval manager for aggregation (no conversion needed - IntervalWeatherHistory extends IntervalEnvironmentalData)
+            logger.debug( f'Adding daily history: {weather_data_source.id} [{len(history_data_list)} items]' )
             self._daily_history_manager.add_data(
                 data_point_source = weather_data_source.data_point_source,
-                new_interval_data_list = interval_data_list
+                new_interval_data_list = history_data_list
             )
             
             # Update canonical history data from aggregated intervals
@@ -214,19 +206,15 @@ class WeatherManager( Singleton, SettingsMixin ):
 
     async def update_astronomical_data( self,
                                         weather_data_source : WeatherDataSource,
-                                        astronomical_data_list : List[AstronomicalData] ):
+                                        astronomical_data_list : List[IntervalAstronomical] ):
         """Update astronomical data using IntervalDataManager for interval reconciliation."""
         async with self._data_async_lock:
-            # Convert astronomical data to IntervalEnvironmentalData format  
-            interval_data_list = self._convert_astronomical_to_interval_data(astronomical_data_list)
-            
-            # Add to interval manager for aggregation
-            logger.debug( f'Adding astronomical: {weather_data_source.id} [{len(interval_data_list)} items]' )
+            # Add to interval manager for aggregation (no conversion needed - IntervalAstronomical extends IntervalEnvironmentalData)
+            logger.debug( f'Adding astronomical: {weather_data_source.id} [{len(astronomical_data_list)} items]' )
             self._daily_astronomical_manager.add_data(
                 data_point_source = weather_data_source.data_point_source,
-                new_interval_data_list = interval_data_list
+                new_interval_data_list = astronomical_data_list
             )
-            
             # Update canonical astronomical data from aggregated intervals
             self._update_daily_astronomical_from_manager()
         return
@@ -294,71 +282,7 @@ class WeatherManager( Singleton, SettingsMixin ):
             continue
         return
 
-    # Helper methods for converting API data to IntervalEnvironmentalData format
-    
-    def _convert_interval_forecast_to_interval_data(self, forecast_data_list: List[IntervalWeatherForecast]) -> List[IntervalEnvironmentalData]:
-        """Convert IntervalWeatherForecast list to IntervalEnvironmentalData format."""
-        interval_data_list = []
-        for interval_forecast in forecast_data_list:
-            if interval_forecast.interval and interval_forecast.data:
-                interval_data = IntervalEnvironmentalData(
-                    interval=interval_forecast.interval,
-                    data=interval_forecast.data
-                )
-                interval_data_list.append(interval_data)
-            continue
-        return interval_data_list
-
-    def _convert_interval_history_to_interval_data(self, history_data_list: List[IntervalWeatherHistory]) -> List[IntervalEnvironmentalData]:
-        """Convert IntervalWeatherHistory list to IntervalEnvironmentalData format."""
-        interval_data_list = []
-        for interval_history in history_data_list:
-            if interval_history.interval and interval_history.data:
-                interval_data = IntervalEnvironmentalData(
-                    interval=interval_history.interval,
-                    data=interval_history.data
-                )
-                interval_data_list.append(interval_data)
-            continue
-        return interval_data_list
-
-    def _convert_astronomical_to_interval_data(self, astronomical_data_list: List[AstronomicalData]) -> List[IntervalEnvironmentalData]:
-        """Convert AstronomicalData list to IntervalEnvironmentalData format."""
-        interval_data_list = []
-        for astronomical_data in astronomical_data_list:
-            # For astronomical data, create 24-hour intervals based on the date
-            # We need to infer the date from the data points
-            if astronomical_data.sunrise and astronomical_data.sunrise.source_datetime:
-                date = astronomical_data.sunrise.source_datetime.date()
-                from datetime import datetime, time
-                from .transient_models import TimeInterval
-                import pytz
-                
-                # Get user timezone for local day boundaries
-                from hi.apps.console.console_helper import ConsoleSettingsHelper
-                console_helper = ConsoleSettingsHelper()
-                user_timezone = console_helper.get_tz_name()
-                local_tz = pytz.timezone(user_timezone)
-                
-                # Create local day boundaries (midnight to midnight in local time)
-                local_start = local_tz.localize(datetime.combine(date, time.min))
-                local_end = local_tz.localize(datetime.combine(date, time.max))
-                
-                # Convert to UTC for internal storage (following IntervalDataManager pattern)
-                interval_start = local_start.astimezone(pytz.UTC)
-                interval_end = local_end.astimezone(pytz.UTC)
-                
-                interval = TimeInterval(
-                    start=interval_start,
-                    end=interval_end
-                )
-                interval_data = IntervalEnvironmentalData(
-                    interval=interval,
-                    data=astronomical_data
-                )
-                interval_data_list.append(interval_data)
-            continue
-        return interval_data_list
+    # Removed useless conversion methods - interval types already extend IntervalEnvironmentalData
 
     # Helper methods for updating canonical data from IntervalDataManager
     
@@ -416,7 +340,12 @@ class WeatherManager( Singleton, SettingsMixin ):
         astronomical_data_list = []
         for aggregated_data in self._daily_astronomical_manager._aggregated_interval_data_list:
             if aggregated_data.interval_data.data:
-                astronomical_data_list.append(aggregated_data.interval_data.data)
+
+                interval_astronomical = IntervalAstronomical(
+                    interval=aggregated_data.interval_data.interval,
+                    data=aggregated_data.interval_data.data
+                )
+                astronomical_data_list.append(interval_astronomical)
             continue
         
         self._daily_astronomical_data.data_list = astronomical_data_list

@@ -1,8 +1,9 @@
 import json
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import unittest
 from unittest.mock import Mock, patch
+import pytz
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.weather_sources.sunrise_sunset_org import (
@@ -11,7 +12,9 @@ from hi.apps.weather.weather_sources.sunrise_sunset_org import (
 )
 from hi.apps.weather.transient_models import (
     AstronomicalData,
+    IntervalAstronomical,
     TimeDataPoint,
+    TimeInterval,
     Station,
 )
 from hi.transient_models import GeographicLocation
@@ -378,4 +381,262 @@ class TestSunriseSunsetOrg(BaseTestCase):
         # Verify our enum covers all documented statuses
         self.assertEqual(documented_statuses, enum_statuses, 
                         "SunriseSunsetStatus enum should cover all documented API status codes")
+        return
+
+    @patch('hi.apps.weather.weather_sources.sunrise_sunset_org.SunriseSunsetOrg.get_astronomical_data')
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_get_astronomical_data_list_success(self, mock_now, mock_get_astronomical_data):
+        """Test successful multi-day astronomical data fetching - HIGH VALUE for new feature."""
+        # Mock current time
+        mock_today = datetime(2024, 3, 15, 10, 0, 0)
+        mock_now.return_value = mock_today
+        
+        # Mock timezone from superclass
+        with patch.object(self.sunrise_sunset, 'tz_name', 'America/Chicago'):
+            # Mock successful astronomical data for each day
+            mock_astronomical_data = AstronomicalData(
+                sunrise = TimeDataPoint(
+                    station = Station(
+                        source = self.sunrise_sunset.data_point_source,
+                        station_id = 'test-station',
+                        name = 'Test Station',
+                        geo_location = self.test_location,
+                    ),
+                    source_datetime = mock_today,
+                    value = datetime(2024, 3, 15, 12, 30, 0).time(),
+                ),
+            )
+            mock_get_astronomical_data.return_value = mock_astronomical_data
+            
+            # Test with 3 days instead of default 10 for faster test
+            result = self.sunrise_sunset.get_astronomical_data_list(
+                geographic_location = self.test_location,
+                days_count = 3
+            )
+            
+            # Verify result structure
+            self.assertIsInstance(result, list)
+            self.assertEqual(len(result), 3)
+            
+            # Verify each item is IntervalAstronomical
+            for item in result:
+                self.assertIsInstance(item, IntervalAstronomical)
+                self.assertIsInstance(item.interval, TimeInterval)
+                self.assertIsInstance(item.data, AstronomicalData)
+                
+            # Verify get_astronomical_data was called for each day
+            self.assertEqual(mock_get_astronomical_data.call_count, 3)
+            
+            # Verify intervals are properly aligned to local day boundaries
+            chicago_tz = pytz.timezone('America/Chicago')
+            first_interval = result[0].interval
+            
+            # First day should start at local midnight
+            expected_start_local = chicago_tz.localize(datetime.combine(mock_today.date(), datetime.min.time()))
+            expected_start_utc = expected_start_local.astimezone(pytz.UTC)
+            self.assertEqual(first_interval.start, expected_start_utc)
+        return
+
+    @patch('hi.apps.weather.weather_sources.sunrise_sunset_org.SunriseSunsetOrg.get_astronomical_data')
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_get_astronomical_data_list_partial_failures(self, mock_now, mock_get_astronomical_data):
+        """Test multi-day fetching with some day failures - HIGH VALUE for error resilience."""
+        # Mock current time
+        mock_today = datetime(2024, 3, 15, 10, 0, 0)
+        mock_now.return_value = mock_today
+        
+        # Mock timezone from superclass
+        with patch.object(self.sunrise_sunset, 'tz_name', 'America/Chicago'):
+            # Mock some successes and some failures
+            def side_effect(*args, **kwargs):
+                target_date = kwargs.get('target_date')
+                if target_date == date(2024, 3, 16):  # Second day fails
+                    raise Exception("API error for this date")
+                return AstronomicalData()  # Other days succeed
+                
+            mock_get_astronomical_data.side_effect = side_effect
+            
+            # Test with 3 days
+            result = self.sunrise_sunset.get_astronomical_data_list(
+                geographic_location = self.test_location,
+                days_count = 3
+            )
+            
+            # Should only return successful days
+            self.assertIsInstance(result, list)
+            self.assertEqual(len(result), 2)  # Only days 1 and 3 succeeded
+            
+            # Verify get_astronomical_data was called for each day attempt
+            self.assertEqual(mock_get_astronomical_data.call_count, 3)
+        return
+
+    @patch('hi.apps.weather.weather_sources.sunrise_sunset_org.SunriseSunsetOrg.get_astronomical_data')
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_get_astronomical_data_list_timezone_boundaries(self, mock_now, mock_get_astronomical_data):
+        """Test timezone-aware interval boundaries - HIGH VALUE for timezone correctness."""
+        # Mock current time
+        mock_today = datetime(2024, 3, 15, 10, 0, 0)
+        mock_now.return_value = mock_today
+        
+        # Test with different timezones
+        timezone_tests = ['America/Chicago', 'America/New_York', 'Europe/London', 'Asia/Tokyo']
+        
+        for tz_name in timezone_tests:
+            with patch.object(self.sunrise_sunset, 'tz_name', tz_name):
+                mock_get_astronomical_data.return_value = AstronomicalData()
+                
+                result = self.sunrise_sunset.get_astronomical_data_list(
+                    geographic_location = self.test_location,
+                    days_count = 1
+                )
+                
+                # Verify interval boundaries align with local timezone
+                local_tz = pytz.timezone(tz_name)
+                interval = result[0].interval
+                
+                # Convert back to local timezone to verify boundaries
+                local_start = interval.start.astimezone(local_tz)
+                local_end = interval.end.astimezone(local_tz)
+                
+                # Should be midnight to 23:59:59.999999 in local time
+                self.assertEqual(local_start.time(), datetime.min.time())
+                self.assertEqual(local_end.time(), datetime.max.time())
+                self.assertEqual(local_start.date(), mock_today.date())
+                self.assertEqual(local_end.date(), mock_today.date())
+        return
+
+    @patch('hi.apps.weather.weather_sources.sunrise_sunset_org.SunriseSunsetOrg.get_astronomical_data')
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_get_astronomical_data_list_empty_data_handling(self, mock_now, mock_get_astronomical_data):
+        """Test handling when get_astronomical_data returns None - HIGH VALUE for robustness."""
+        # Mock current time
+        mock_today = datetime(2024, 3, 15, 10, 0, 0)
+        mock_now.return_value = mock_today
+        
+        with patch.object(self.sunrise_sunset, 'tz_name', 'America/Chicago'):
+            # Mock returning None (no data available)
+            mock_get_astronomical_data.return_value = None
+            
+            result = self.sunrise_sunset.get_astronomical_data_list(
+                geographic_location = self.test_location,
+                days_count = 2
+            )
+            
+            # Should return empty list when no data available
+            self.assertIsInstance(result, list)
+            self.assertEqual(len(result), 0)
+        return
+
+    @patch('hi.apps.weather.weather_sources.sunrise_sunset_org.SunriseSunsetOrg.get_astronomical_data_list')
+    @patch('hi.apps.weather.weather_sources.sunrise_sunset_org.SunriseSunsetOrg.get_astronomical_data')
+    async def test_get_data_calls_multi_day_method(self, mock_get_astronomical_data, mock_get_astronomical_data_list):
+        """Test that get_data calls the new multi-day method - HIGH VALUE for integration."""
+        # Mock weather manager
+        mock_weather_manager = Mock()
+        mock_weather_manager.update_astronomical_data = Mock()
+        mock_weather_manager.update_todays_astronomical_data = Mock()
+        
+        with patch.object(self.sunrise_sunset, 'geographic_location', self.test_location), \
+             patch.object(self.sunrise_sunset, 'weather_manager_async', return_value=mock_weather_manager):
+            
+            # Mock successful multi-day data
+            mock_interval_data = IntervalAstronomical(
+                interval = TimeInterval(
+                    start = datetime(2024, 3, 15, 6, 0, 0, tzinfo=pytz.UTC),
+                    end = datetime(2024, 3, 15, 23, 59, 59, tzinfo=pytz.UTC)
+                ),
+                data = AstronomicalData()
+            )
+            mock_get_astronomical_data_list.return_value = [mock_interval_data]
+            
+            # Mock today's data
+            mock_get_astronomical_data.return_value = AstronomicalData()
+            
+            # Call get_data
+            await self.sunrise_sunset.get_data()
+            
+            # Verify multi-day method was called
+            mock_get_astronomical_data_list.assert_called_once_with(
+                geographic_location = self.test_location,
+                days_count = 10
+            )
+            
+            # Verify weather manager methods were called
+            mock_weather_manager.update_astronomical_data.assert_called_once_with(
+                weather_data_source = self.sunrise_sunset,
+                astronomical_data_list = [mock_interval_data]
+            )
+            
+            # Verify today's data is also updated for backwards compatibility
+            mock_get_astronomical_data.assert_called_once_with(
+                geographic_location = self.test_location
+            )
+            mock_weather_manager.update_todays_astronomical_data.assert_called_once()
+        return
+
+    @patch('hi.apps.weather.weather_sources.sunrise_sunset_org.SunriseSunsetOrg.get_astronomical_data_list')
+    @patch('hi.apps.weather.weather_sources.sunrise_sunset_org.SunriseSunsetOrg.get_astronomical_data')
+    async def test_get_data_handles_multi_day_failure_gracefully(self, mock_get_astronomical_data, mock_get_astronomical_data_list):
+        """Test that failures in multi-day fetch don't affect today's data - HIGH VALUE for error isolation."""
+        # Mock weather manager
+        mock_weather_manager = Mock()
+        mock_weather_manager.update_astronomical_data = Mock()
+        mock_weather_manager.update_todays_astronomical_data = Mock()
+        
+        with patch.object(self.sunrise_sunset, 'geographic_location', self.test_location), \
+             patch.object(self.sunrise_sunset, 'weather_manager_async', return_value=mock_weather_manager):
+            
+            # Mock multi-day failure but today's data succeeds
+            mock_get_astronomical_data_list.side_effect = Exception("Multi-day API error")
+            mock_get_astronomical_data.return_value = AstronomicalData()
+            
+            # Should not raise exception
+            await self.sunrise_sunset.get_data()
+            
+            # Multi-day method should have been attempted
+            mock_get_astronomical_data_list.assert_called_once()
+            
+            # update_astronomical_data should not have been called due to exception
+            mock_weather_manager.update_astronomical_data.assert_not_called()
+            
+            # Today's data should still be updated
+            mock_get_astronomical_data.assert_called_once()
+            mock_weather_manager.update_todays_astronomical_data.assert_called_once()
+        return
+
+    @patch('hi.apps.weather.weather_sources.sunrise_sunset_org.SunriseSunsetOrg.get_astronomical_data_list')
+    @patch('hi.apps.weather.weather_sources.sunrise_sunset_org.SunriseSunsetOrg.get_astronomical_data')
+    async def test_get_data_handles_todays_data_failure_gracefully(self, mock_get_astronomical_data, mock_get_astronomical_data_list):
+        """Test that failures in today's data don't affect multi-day fetch - HIGH VALUE for error isolation."""
+        # Mock weather manager
+        mock_weather_manager = Mock()
+        mock_weather_manager.update_astronomical_data = Mock()
+        mock_weather_manager.update_todays_astronomical_data = Mock()
+        
+        with patch.object(self.sunrise_sunset, 'geographic_location', self.test_location), \
+             patch.object(self.sunrise_sunset, 'weather_manager_async', return_value=mock_weather_manager):
+            
+            # Mock multi-day success but today's data fails
+            mock_interval_data = IntervalAstronomical(
+                interval = TimeInterval(
+                    start = datetime(2024, 3, 15, 6, 0, 0, tzinfo=pytz.UTC),
+                    end = datetime(2024, 3, 15, 23, 59, 59, tzinfo=pytz.UTC)
+                ),
+                data = AstronomicalData()
+            )
+            mock_get_astronomical_data_list.return_value = [mock_interval_data]
+            mock_get_astronomical_data.side_effect = Exception("Today's data API error")
+            
+            # Should not raise exception
+            await self.sunrise_sunset.get_data()
+            
+            # Multi-day method should have succeeded
+            mock_get_astronomical_data_list.assert_called_once()
+            mock_weather_manager.update_astronomical_data.assert_called_once()
+            
+            # Today's data method should have been attempted
+            mock_get_astronomical_data.assert_called_once()
+            
+            # update_todays_astronomical_data should not have been called due to exception
+            mock_weather_manager.update_todays_astronomical_data.assert_not_called()
         return

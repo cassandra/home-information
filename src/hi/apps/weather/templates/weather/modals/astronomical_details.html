@@ -1,12 +1,17 @@
 {% extends "modals/action_ok.html" %}
 
 {% block title_text %}
-Today's Astronomical
+Astronomical
 {% endblock %}
 
 {% block body %}
-{% include "weather/panes/astronomical.html" with astronomical=daily_astronomical_data %}
-{% include "weather/panes/astronomical_extended.html" with astronomical=daily_astronomical_data %}
+<h3>Today</h3>
+{% include "weather/panes/astronomical_brief.html" with astronomical_data=todays_astronomical_data %}
+{% include "weather/panes/astronomical_extended.html" with astronomical_data=todays_astronomical_data %}
+
+<h3>Future</h3>
+
+{% include "weather/panes/astronomical_daily.html" with daily_astronomical_data=daily_astronomical_data %}
 
 {% if has_sunrise_sunset_attribution %}
 <div class="text-muted small mt-3">

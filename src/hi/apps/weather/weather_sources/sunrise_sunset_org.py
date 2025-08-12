@@ -1,10 +1,10 @@
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from enum import Enum
 import json
 import logging
 import pytz
 import requests
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from django.conf import settings
 
@@ -12,7 +12,9 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.weather_data_source import WeatherDataSource
 from hi.apps.weather.transient_models import (
     AstronomicalData,
+    IntervalAstronomical,
     TimeDataPoint,
+    TimeInterval,
     Station,
 )
 from hi.apps.weather.weather_mixins import WeatherMixin
@@ -76,18 +78,32 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
             logger.warning('Weather manager not available. Skipping Sunrise-Sunset.org fetch.')
             return
 
-        # Fetch today's astronomical data
+        # Fetch 10 days of astronomical data using the new multi-day method
         try:
-            astronomical_data = self.get_astronomical_data(
+            astronomical_data_list = self.get_astronomical_data_list(
                 geographic_location = geographic_location,
+                days_count = 10
             )
-            if astronomical_data:
-                await weather_manager.update_todays_astronomical_data(
+            if astronomical_data_list:
+                await weather_manager.update_astronomical_data(
                     weather_data_source = self,
-                    astronomical_data = astronomical_data,
+                    astronomical_data_list = astronomical_data_list,
                 )
         except Exception as e:
-            logger.exception(f'Problem fetching Sunrise-Sunset.org astronomical data: {e}')
+            logger.exception(f'Problem fetching Sunrise-Sunset.org multi-day astronomical data: {e}')
+                
+        # Also update today's astronomical data for backwards compatibility
+        try:
+            todays_astronomical_data = self.get_astronomical_data(
+                geographic_location = geographic_location,
+            )
+            if todays_astronomical_data:
+                await weather_manager.update_todays_astronomical_data(
+                    weather_data_source = self,
+                    astronomical_data = todays_astronomical_data,
+                )
+        except Exception as e:
+            logger.exception(f'Problem fetching Sunrise-Sunset.org today\'s astronomical data: {e}')
 
         return
 
@@ -167,6 +183,52 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
                     logger.warning(f'Problem parsing {api_field} time "{time_str}": {e}')
 
         return astronomical_data
+
+    def get_astronomical_data_list(self, geographic_location: GeographicLocation, days_count: int = 10) -> List[IntervalAstronomical]:
+        """Get astronomical data for multiple consecutive days starting from today."""
+        
+        astronomical_data_list = []
+        today = datetimeproxy.now().date()
+        
+        # Get local timezone from superclass
+        local_tz = pytz.timezone(self.tz_name)
+        
+        for day_offset in range(days_count):
+            target_date = today + timedelta(days=day_offset)
+            
+            try:
+                # Get astronomical data for this date
+                astronomical_data = self.get_astronomical_data(
+                    geographic_location=geographic_location,
+                    target_date=target_date
+                )
+                
+                if astronomical_data:
+                    # Create local day boundaries (midnight to midnight in local time)
+                    local_start = local_tz.localize(datetime.combine(target_date, datetime.min.time()))
+                    local_end = local_tz.localize(datetime.combine(target_date, datetime.max.time()))
+                    
+                    # Convert to UTC for internal storage (following IntervalDataManager pattern)
+                    interval_start = local_start.astimezone(pytz.UTC)
+                    interval_end = local_end.astimezone(pytz.UTC)
+                    
+                    interval = TimeInterval(
+                        start=interval_start,
+                        end=interval_end
+                    )
+                    
+                    interval_astronomical = IntervalAstronomical(
+                        interval=interval,
+                        data=astronomical_data
+                    )
+                    
+                    astronomical_data_list.append(interval_astronomical)
+                    
+            except Exception as e:
+                logger.warning(f'Problem fetching astronomical data for {target_date}: {e}')
+                continue
+                
+        return astronomical_data_list
         
     def _get_astronomical_api_data(self, geographic_location: GeographicLocation, target_date: date) -> Dict[str, Any]:
         cache_key = f'ws:{self.id}:astronomical:{geographic_location.latitude:.3f}:{geographic_location.longitude:.3f}:{target_date}'
