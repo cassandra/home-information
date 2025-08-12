@@ -3,6 +3,7 @@ from hi.hi_async_view import HiModalView
 
 from .weather_mixins import WeatherMixin
 from .weather_sources.sunrise_sunset_org import SunriseSunsetOrg
+from .weather_sources.usno import USNO
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +35,17 @@ class TodaysAstronomicalDetailsView( HiModalView, WeatherMixin ):
             and SunriseSunsetOrg.SOURCE_ID in {x.id for x in todays_astronomical_data.data_sources}
         )
         
+        # Check if any astronomical data comes from USNO source
+        has_usno_data = bool(
+            todays_astronomical_data
+            and USNO.SOURCE_ID in {x.id for x in todays_astronomical_data.data_sources}
+        )
+        
         context = {
             'todays_astronomical_data': todays_astronomical_data,
             'daily_astronomical_data': daily_astronomical_data,
             'has_sunrise_sunset_attribution': has_sunrise_sunset_data,
+            'has_usno_attribution': has_usno_data,
         }
         return self.modal_response( request, context )
 

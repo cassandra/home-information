@@ -36,6 +36,7 @@
           <img height="32" src="{% static moon_phase.icon_filename %}"
                alt="{{ moon_phase.label }}" />
           {% endwith %}
+          {{  interval_astronommical.data.moon_illumnination.quantity }}
           {% else %}
           --
           {% endif %}     

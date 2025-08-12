@@ -13,11 +13,18 @@ Astronomical
 
 {% include "weather/panes/astronomical_daily.html" with daily_astronomical_data=daily_astronomical_data %}
 
-{% if has_sunrise_sunset_attribution %}
+{% if has_sunrise_sunset_attribution or has_usno_attribution %}
 <div class="text-muted small mt-3">
+    {% if has_sunrise_sunset_attribution %}
     <p class="mb-0">
         Some data provided by <a href="https://sunrise-sunset.org/" target="_blank" rel="noopener">Sunrise-Sunset.org</a>
     </p>
+    {% endif %}
+    {% if has_usno_attribution %}
+    <p class="mb-0">
+        Some data provided by <a href="https://aa.usno.navy.mil/" target="_blank" rel="noopener">US Naval Observatory</a>
+    </p>
+    {% endif %}
 </div>
 {% endif %}
 {% endblock %}
