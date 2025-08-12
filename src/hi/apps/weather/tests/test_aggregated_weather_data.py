@@ -29,12 +29,14 @@ class TestAggregatedWeatherData(BaseTestCase):
         self.test_source_high_priority = DataPointSource(
             id='high_priority',
             label='High Priority Source',
+            abbreviation='HIGH',
             priority=1
         )
         
         self.test_source_low_priority = DataPointSource(
             id='low_priority', 
             label='Low Priority Source',
+            abbreviation='LOW',
             priority=2
         )
         
@@ -73,7 +75,16 @@ class TestAggregatedWeatherData(BaseTestCase):
         
         self.assertIsInstance(aggregated_data, AggregatedWeatherData)
         self.assertEqual(aggregated_data.interval_data.interval, self.test_interval)
-        self.assertEqual(aggregated_data.source_data, {})
+        
+        # Verify source_data is properly initialized with SourceFieldData for each DataPoint field
+        self.assertIsInstance(aggregated_data.source_data, dict)
+        self.assertGreater(len(aggregated_data.source_data), 0)  # Should have DataPoint fields
+        
+        # Check that all expected WeatherForecastData DataPoint fields are initialized
+        expected_fields = ['description_short', 'temperature', 'relative_humidity', 'is_daytime']
+        for field_name in expected_fields:
+            self.assertIn(field_name, aggregated_data.source_data)
+            self.assertIsNotNone(aggregated_data.source_data[field_name])
         return
 
     def test_numeric_data_point_aggregation(self):

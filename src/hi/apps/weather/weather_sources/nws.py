@@ -49,10 +49,11 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         super().__init__(
             id = 'nws',
             label = 'National Weather Service',
+            abbreviation = 'NWS',
             priority = 1,
             requests_per_day_limit = 432,
             requests_per_polling_interval = 3,
-            min_polling_interval_secs = 10 * 60,  # NWS stations seem to update only hourly
+            min_polling_interval_secs = 10 * 60,  # NWS station's data seem to update only hourly
         )
 
         self._headers = {

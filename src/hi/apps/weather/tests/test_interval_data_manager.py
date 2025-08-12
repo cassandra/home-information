@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timedelta
 import unittest
 from unittest.mock import patch
+import pytz
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.interval_data_manager import IntervalDataManager
@@ -34,6 +35,7 @@ class TestIntervalDataManager(BaseTestCase):
         self.test_source = DataPointSource(
             id='test_source',
             label='Test Source',
+            abbreviation='TEST',
             priority=1
         )
         return
@@ -71,9 +73,13 @@ class TestIntervalDataManager(BaseTestCase):
         self.assertEqual(intervals[2].end, datetime(2024, 1, 1, 17, 0, 0))
         return
 
+    @patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name')
     @patch('hi.apps.common.datetimeproxy.now')
-    def test_get_calculated_intervals_descending(self, mock_now):
+    def test_get_calculated_intervals_descending(self, mock_now, mock_tz):
         """Test interval calculation for descending (historical) intervals."""
+        # Mock timezone as UTC to get predictable results
+        mock_tz.return_value = 'UTC'
+        
         # Create manager for historical data
         history_manager = IntervalDataManager(
             interval_hours=24,
@@ -82,8 +88,8 @@ class TestIntervalDataManager(BaseTestCase):
             data_class=WeatherForecastData
         )
         
-        # Mock current time: 2024-01-01 14:35:22
-        mock_now.return_value = datetime(2024, 1, 1, 14, 35, 22)
+        # Mock current time: 2024-01-01 14:35:22 UTC
+        mock_now.return_value = datetime(2024, 1, 1, 14, 35, 22, tzinfo=pytz.UTC)
         
         intervals = history_manager._get_calculated_intervals()
         
@@ -91,12 +97,13 @@ class TestIntervalDataManager(BaseTestCase):
         self.assertEqual(len(intervals), 2)
         
         # First interval: yesterday 00:00 to today 00:00 (most recent 24h)
-        self.assertEqual(intervals[0].start, datetime(2023, 12, 31, 0, 0, 0))
-        self.assertEqual(intervals[0].end, datetime(2024, 1, 1, 0, 0, 0))
+        # Since we're using UTC timezone, these should be UTC times
+        self.assertEqual(intervals[0].start, datetime(2023, 12, 31, 0, 0, 0, tzinfo=pytz.UTC))
+        self.assertEqual(intervals[0].end, datetime(2024, 1, 1, 0, 0, 0, tzinfo=pytz.UTC))
         
         # Second interval: day before yesterday to yesterday (previous 24h)  
-        self.assertEqual(intervals[1].start, datetime(2023, 12, 30, 0, 0, 0))
-        self.assertEqual(intervals[1].end, datetime(2023, 12, 31, 0, 0, 0))
+        self.assertEqual(intervals[1].start, datetime(2023, 12, 30, 0, 0, 0, tzinfo=pytz.UTC))
+        self.assertEqual(intervals[1].end, datetime(2023, 12, 31, 0, 0, 0, tzinfo=pytz.UTC))
         return
 
     def test_initialization_creates_intervals(self):

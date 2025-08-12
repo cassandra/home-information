@@ -33,9 +33,9 @@ Weather Forecast
     <div class="container">
       <div class="scroll-container">
         <div class="row flex-nowrap">
-	  {% for daily_forecast_data in daily_forecast_data_list %}
+	  {% for daily_forecast_interval in daily_forecast_data_list %}
 	  <div class="weather-forecast-daily-col col-1 border p-3">
-	    {% include "weather/panes/daily_forecast_card.html" with daily_forecast_data=daily_forecast_data %}
+	    {% include "weather/panes/daily_forecast_card.html" with daily_forecast_interval=daily_forecast_interval %}
 	  </div>
 	  {% empty %}
 	  <div class="alert alert-info">No forecast daily data available.</div>
@@ -53,8 +53,8 @@ Weather Forecast
 	  {% include "weather/panes/hourly_forecast_row_header.html" %}
 	</thead>
 	<tbody>
-	  {% for hourly_forecast_data in hourly_forecast_data_list %}
-	  {% include "weather/panes/hourly_forecast_row.html" with hourly_forecast_data=hourly_forecast_data %}
+	  {% for hourly_forecast_interval in hourly_forecast_data_list %}
+	  {% include "weather/panes/hourly_forecast_row.html" with hourly_forecast_interval=hourly_forecast_interval %}
 	  {% empty %}
 	  <tr><td colspan="99"><div class="alert alert-info">No forecast hourly data available.</div></td></tr>
 	  {% endfor %}

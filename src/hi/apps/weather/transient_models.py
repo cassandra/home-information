@@ -23,9 +23,10 @@ from .enums import (
 
 @dataclass( kw_only = True, frozen = True )
 class DataPointSource:
-    id        : str
-    label     : str
-    priority  : int  # The lower the number, the higher the priority
+    id           : str
+    label        : str
+    abbreviation : str
+    priority     : int  # The lower the number, the higher the priority
 
     def __hash__(self):
         return hash( self.id )
@@ -76,7 +77,8 @@ class DataPoint:
 
     @property
     def value_str(self):
-        return str(self)
+        # Use the default dataclass representation to avoid recursion
+        return super().__str__()
     
     @property
     def elevation(self) -> UnitQuantity:
@@ -390,17 +392,17 @@ class WeatherOverviewData:
     
 @dataclass( kw_only = True )
 class HourlyForecast:
-    data_list    : List[ WeatherForecastData ]  = field( default_factory = list )
+    data_list    : List[ IntervalWeatherForecast ]  = field( default_factory = list )
     
 
 @dataclass( kw_only = True )
 class DailyForecast:
-    data_list    : List[ WeatherForecastData ]  = field( default_factory = list )
+    data_list    : List[ IntervalWeatherForecast ]  = field( default_factory = list )
 
     
 @dataclass( kw_only = True )
 class DailyHistory:
-    data_list    : List[ WeatherHistoryData ]  = field( default_factory = list )
+    data_list    : List[ IntervalWeatherHistory ]  = field( default_factory = list )
 
     
 @dataclass( kw_only = True )

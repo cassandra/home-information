@@ -1,5 +1,6 @@
 from dataclasses import dataclass, fields
-from typing import get_origin, Dict, Type
+import logging
+from typing import Dict, Type
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.units import UnitQuantity
@@ -16,6 +17,8 @@ from .transient_models import (
     EnvironmentalData,
 )
 from .interval_models import SourceFieldData
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -55,16 +58,22 @@ class AggregatedWeatherData:
         source_interval = source_interval_data.interval
         source_data = source_interval_data.data
         
+        from .model_helpers import is_datapoint_field
+
+        logger.debug( f'Adding source data: {[ x.name for x in fields( source_data )]}' )
+        
         for a_field in fields( source_data ):
             field_name = a_field.name
-            field_type = a_field.type
-            field_base_type = get_origin(field_type) or field_type  
-
-            if not issubclass( field_base_type, DataPoint ):
+            
+            if not is_datapoint_field(a_field.type):
+                logger.debug( 'Add source skipped field: {a_field}' )
                 continue
 
             source_data_point = getattr( source_data, field_name )
-            self.source_data[field_name][data_point_source][source_interval] = source_data_point
+            logger.debug( f'Add source field: {field_name} = {source_data_point}' )
+            # Skip None values to avoid type confusion during aggregation
+            if source_data_point is not None:
+                self.source_data[field_name][data_point_source][source_interval] = source_data_point
             continue
         return
                   
@@ -82,7 +91,20 @@ class AggregatedWeatherData:
         for field_name, source_map in self.source_data.items():
 
             data_point_source = self.get_best_data_point_source( source_map )
+            if data_point_source is None:
+                setattr( self.interval_data.data, field_name, None )
+                continue
+                
             interval_data_point_map = source_map[data_point_source]
+            
+            # Filter out any None values that might have been added
+            interval_data_point_map = {k: v for k, v in interval_data_point_map.items() if v is not None}
+            
+            # Debug: Check if we have any data points for this field after filtering
+            if not interval_data_point_map:
+                logger.debug(f'No data points for field "{field_name}" after filtering None values')
+            else:
+                logger.debug(f'Field "{field_name}" has {len(interval_data_point_map)} data points for aggregation')
 
             if not interval_data_point_map:
                 setattr( self.interval_data.data, field_name, None )
@@ -93,24 +115,37 @@ class AggregatedWeatherData:
                 setattr( self.interval_data.data, field_name, new_data_point )
                 continue
             
-            data_point = getattr( self.interval_data.data, field_name )
-
-            if isinstance( data_point, NumericDataPoint ):
+            # Determine the expected DataPoint type from the first source data point
+            sample_data_point = next(iter(interval_data_point_map.values()))
+            
+            # Debug: Check if all data points are the same type
+            all_types = set(type(dp) for dp in interval_data_point_map.values())
+            if len(all_types) > 1:
+                logger.error(f"Mixed data point types for field '{field_name}': {all_types}")
+                logger.error(f"Sample type: {type(sample_data_point)}")
+                for interval, dp in interval_data_point_map.items():
+                    logger.error(f"  Interval {interval}: {type(dp)} = {dp}")
+            
+            if isinstance( sample_data_point, NumericDataPoint ):
                 new_data_point = self.aggregate_numeric_data_points(
                     interval_data_point_map = interval_data_point_map,
                 )
-            elif isinstance( data_point, BooleanDataPoint ):
+            elif isinstance( sample_data_point, BooleanDataPoint ):
                 new_data_point = self.aggregate_boolean_data_points(
                     interval_data_point_map = interval_data_point_map,
                 )
-            elif isinstance( data_point, TimeDataPoint ):
+            elif isinstance( sample_data_point, TimeDataPoint ):
                 new_data_point = self.aggregate_time_data_points(
                     interval_data_point_map = interval_data_point_map,
                 )
-            elif isinstance( data_point, StringDataPoint ):
+            elif isinstance( sample_data_point, StringDataPoint ):
                 new_data_point = self.aggregate_string_data_points(
                     interval_data_point_map = interval_data_point_map,
                 )
+            else:
+                # Unknown DataPoint type - skip this field
+                logger.warning(f"Unknown DataPoint type for field '{field_name}': {type(sample_data_point)}")
+                continue
             
             setattr( self.interval_data.data, field_name, new_data_point )
             continue
@@ -118,7 +153,7 @@ class AggregatedWeatherData:
 
     def get_best_data_point_source(
             self,
-            source_map : Dict[ DataPointSource, Dict[ TimeInterval, DataPoint ]] ) -> DataPointSource:
+            source_map : Dict[ DataPointSource, Dict[ TimeInterval, DataPoint ]] ) -> DataPointSource | None:
         """
         Select the best data source based on priority and freshness.
         
@@ -126,8 +161,11 @@ class AggregatedWeatherData:
             source_map: Map of data sources to their interval data
             
         Returns:
-            The data source that should be used for aggregation
+            The data source that should be used for aggregation, or None if no valid sources
         """
+        if not source_map:
+            return None
+            
         data_point_source_list = list( source_map.keys() )
         data_point_source_list.sort( key = lambda item: item.priority )
 
@@ -136,16 +174,31 @@ class AggregatedWeatherData:
         stale_data_tuple_list = list()
         for data_point_source in data_point_source_list:
             interval_map = source_map[data_point_source]
-            max_source_datetime = max([ x.source_datetime for x in interval_map.values() ])
+            
+            # Skip sources with no intervals or no data points
+            if not interval_map:
+                continue
+                
+            # Get valid data points (non-None)
+            valid_data_points = [dp for dp in interval_map.values() if dp is not None]
+            if not valid_data_points:
+                continue
+                
+            # Find the most recent data point
+            max_source_datetime = max(dp.source_datetime for dp in valid_data_points)
             source_data_age = now - max_source_datetime
             if source_data_age.total_seconds() < self.DATA_AGE_STALE_SECS:
                 return data_point_source
             stale_data_tuple_list.append( ( data_point_source, source_data_age ) )
             continue
 
-        # Else, if all data is stale, return freshest data.
-        stale_data_tuple_list.sort( key = lambda item: item[1], reverse = True )
-        return stale_data_tuple_list[0][0]
+        # If all data is stale, return freshest data.
+        if stale_data_tuple_list:
+            stale_data_tuple_list.sort( key = lambda item: item[1], reverse = True )
+            return stale_data_tuple_list[0][0]
+        
+        # No valid data sources found
+        return None
         
     def aggregate_boolean_data_points(
             self,
@@ -319,11 +372,13 @@ class AggregatedWeatherData:
         from dataclasses import fields
         
             
-        # Initialize source_data with SourceFieldData for each field
+        # Initialize source_data with SourceFieldData for each DataPoint field
+        from .model_helpers import is_datapoint_field
+        
         source_data = {}
         data_instance = data_class()
         for field in fields(data_instance):
-            if hasattr(field.type, '__origin__') or issubclass(getattr(field.type, '__class__', type), type):
+            if is_datapoint_field(field.type):
                 source_data[field.name] = SourceFieldData()
             
         interval_data = IntervalEnvironmentalData(

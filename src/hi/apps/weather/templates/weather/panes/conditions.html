@@ -14,7 +14,7 @@
 <div class="row">
   <div class="col-6" >
     <div class="h3">
-      {% if conditions.temperature %}
+      {% if conditions.temperature is not None %}
       {{ conditions.temperature.quantity|format_magnitude:1 }}
       <small>{{ conditions.temperature.quantity|format_units }}</small>
       {% else %}
@@ -23,22 +23,22 @@
     </div>
     <div class="d-flex justify-content-left">
       <div>
-	Min:
-	{% if conditions.temperature_min_last_24h %}
-	{{ conditions.temperature_min_last_24h.quantity|format_magnitude:1 }}
-	<small>{{ conditions.temperature_min_last_24h.quantity|format_units }}</small>
-	{% else %}
-	-- °
-	{% endif %}
+        Min:
+        {% if conditions.temperature_min_last_24h is not None %}
+        {{ conditions.temperature_min_last_24h.quantity|format_magnitude:1 }}
+        <small>{{ conditions.temperature_min_last_24h.quantity|format_units }}</small>
+        {% else %}
+        -- °
+        {% endif %}
       </div>
       <div class="pl-1">
-	Max:
-	{% if conditions.temperature_max_last_24h %}
-	{{ conditions.temperature_max_last_24h.quantity|format_magnitude:1 }}
-	<small>{{ conditions.temperature_max_last_24h.quantity|format_units }}</small>
-	{% else %}
-	-- °
-	{% endif %}
+        Max:
+        {% if conditions.temperature_max_last_24h is not None %}
+        {{ conditions.temperature_max_last_24h.quantity|format_magnitude:1 }}
+        <small>{{ conditions.temperature_max_last_24h.quantity|format_units }}</small>
+        {% else %}
+        -- °
+        {% endif %}
       </div>
     </div>
   </div>
@@ -48,7 +48,7 @@
       {% if conditions.cloud_cover %}
       {% with conditions.sky_condition as sky_condition %}
       <img height="32" src="{% static sky_condition.icon_filename %}"
-	   alt="{{ sky_condition.label }}" />
+           alt="{{ sky_condition.label }}" />
 
       {{ conditions.cloud_cover.quantity|format_magnitude:1 }}
       <small>{{ conditions.cloud_cover.quantity|format_units }}</small>
@@ -81,6 +81,6 @@
   </div>
 </div>
 <div class="text-muted">
-  <small><em>{{ conditions.temperature.source_datetime |localtime }}, {{ conditions.temperature.source.label }} </em></small>
+  <small><em>{{ conditions.temperature.source_datetime |localtime }}, {{ conditions.temperature.source.abbreviation }} </em></small>
 </div>
 {% endtimezone%}

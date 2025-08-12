@@ -31,16 +31,19 @@ class WeatherDataSource:
     def __init__( self,
                   id                             : str,
                   label                          : str,
+                  abbreviation                   : str,
                   priority                       : int,
                   requests_per_day_limit         : int,
                   requests_per_polling_interval  : int,
                   min_polling_interval_secs      : int ):
         self._id = id
         self._label = label
+        self._abbreviation = abbreviation
         self._priority = priority  # Lower numbers are higher priority
         self._data_point_source = DataPointSource(
             id = self._id,
             label = self._label,
+            abbreviation = self._abbreviation,
             priority = self._priority,
         )
 
@@ -67,6 +70,10 @@ class WeatherDataSource:
     @property
     def label(self):
         return self._label
+
+    @property
+    def abbreviation(self):
+        return self._abbreviation
 
     @property
     def data_point_source(self) -> DataPointSource:

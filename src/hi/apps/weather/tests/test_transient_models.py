@@ -44,6 +44,7 @@ class TestWeatherTransientModels(BaseTestCase):
         self.test_source = DataPointSource(
             id='test_source',
             label='Test Weather Source',
+            abbreviation='TEST',
             priority=1
         )
         
@@ -68,7 +69,7 @@ class TestWeatherTransientModels(BaseTestCase):
     # DataPointSource Tests
     def test_DataPointSource_creation(self):
         """Test DataPointSource creation and properties"""
-        source = DataPointSource(id='nws', label='National Weather Service', priority=1)
+        source = DataPointSource(id='nws', label='National Weather Service', abbreviation='NWS', priority=1)
         
         self.assertEqual(source.id, 'nws')
         self.assertEqual(source.label, 'National Weather Service')
@@ -76,9 +77,9 @@ class TestWeatherTransientModels(BaseTestCase):
 
     def test_DataPointSource_equality_and_hash(self):
         """Test DataPointSource equality and hash methods"""
-        source1 = DataPointSource(id='nws', label='National Weather Service', priority=1)
-        source2 = DataPointSource(id='nws', label='Different Label', priority=2)
-        source3 = DataPointSource(id='owm', label='OpenWeatherMap', priority=1)
+        source1 = DataPointSource(id='nws', label='National Weather Service', abbreviation='NWS', priority=1)
+        source2 = DataPointSource(id='nws', label='Different Label', abbreviation='NWS', priority=2)
+        source3 = DataPointSource(id='owm', label='OpenWeatherMap', abbreviation='OWM', priority=1)
         
         # Same ID should be equal
         self.assertEqual(source1, source2)
@@ -552,7 +553,7 @@ class TestWeatherTransientModels(BaseTestCase):
     def test_EnvironmentalData_stations_property(self):
         """Test stations property extracts unique stations from data points"""
         # Create another station for testing
-        other_source = DataPointSource(id='other', label='Other Source', priority=2)
+        other_source = DataPointSource(id='other', label='Other Source', abbreviation='OTHER', priority=2)
         other_station = Station(source=other_source, station_id='OTHER001')
         
         weather_data = CommonWeatherData(
@@ -637,8 +638,8 @@ class TestWeatherTransientModels(BaseTestCase):
     # Integration Tests for Bug Fixes
     def test_bug_fix_DataPointSource_equality(self):
         """Test the bug fix for DataPointSource.__eq__ method"""
-        source1 = DataPointSource(id='test', label='Test', priority=1)
-        source2 = DataPointSource(id='test', label='Test', priority=1)
+        source1 = DataPointSource(id='test', label='Test', abbreviation='TEST', priority=1)
+        source2 = DataPointSource(id='test', label='Test', abbreviation='TEST', priority=1)
         station = Station(source=source1, station_id='TEST001')
         
         # This should not raise an error now

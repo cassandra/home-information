@@ -1,6 +1,9 @@
+import logging
 from hi.hi_async_view import HiModalView
 
 from .weather_mixins import WeatherMixin
+
+logger = logging.getLogger(__name__)
 
 
 class CurrentConditionsDetailsView( HiModalView, WeatherMixin ):
@@ -60,6 +63,7 @@ class HistoryView( HiModalView, WeatherMixin ):
     
     def get(self, request, *args, **kwargs):
         daily_history = self.weather_manager().get_daily_history()
+        logger.debug(f'History view: daily_history.data_list has {len(daily_history.data_list)} items')
         context = {
             'daily_history_data_list': daily_history.data_list,
         }

@@ -2,9 +2,8 @@ import asyncio
 from dataclasses import fields
 import logging
 import threading
-from typing import get_origin, List
+from typing import List
 
-import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin
 
@@ -146,7 +145,8 @@ class WeatherManager( Singleton, SettingsMixin ):
         async with self._data_async_lock:
             # Convert IntervalWeatherForecast to IntervalEnvironmentalData format
             interval_data_list = self._convert_interval_forecast_to_interval_data(forecast_data_list)
-            
+
+            logger.debug( f'Adding hourly forecast : {weather_data_source.id} [{len(interval_data_list)} items]' )
             # Add to interval manager for aggregation
             self._hourly_forecast_manager.add_data(
                 data_point_source = weather_data_source.data_point_source,
@@ -166,6 +166,7 @@ class WeatherManager( Singleton, SettingsMixin ):
             interval_data_list = self._convert_interval_forecast_to_interval_data(forecast_data_list)
             
             # Add to interval manager for aggregation
+            logger.debug( f'Adding daily forecast: {weather_data_source.id} [{len(interval_data_list)} items]' )
             self._daily_forecast_manager.add_data(
                 data_point_source = weather_data_source.data_point_source,
                 new_interval_data_list = interval_data_list
@@ -184,6 +185,7 @@ class WeatherManager( Singleton, SettingsMixin ):
             interval_data_list = self._convert_interval_history_to_interval_data(history_data_list)
             
             # Add to interval manager for aggregation
+            logger.debug( f'Adding daily history: {weather_data_source.id} [{len(interval_data_list)} items]' )
             self._daily_history_manager.add_data(
                 data_point_source = weather_data_source.data_point_source,
                 new_interval_data_list = interval_data_list
@@ -202,6 +204,7 @@ class WeatherManager( Singleton, SettingsMixin ):
             interval_data_list = self._convert_astronomical_to_interval_data(astronomical_data_list)
             
             # Add to interval manager for aggregation
+            logger.debug( f'Adding astronomical: {weather_data_source.id} [{len(interval_data_list)} items]' )
             self._daily_astronomical_manager.add_data(
                 data_point_source = weather_data_source.data_point_source,
                 new_interval_data_list = interval_data_list
@@ -219,7 +222,6 @@ class WeatherManager( Singleton, SettingsMixin ):
         if self.TRACE:
             logger.debug( f'Updating weather data from: {data_point_source.id}' )
         
-        now = datetimeproxy.now()
         for field in fields( current_weather_data ):
             field_name = field.name
             
@@ -335,7 +337,12 @@ class WeatherManager( Singleton, SettingsMixin ):
         forecast_data_list = []
         for aggregated_data in self._hourly_forecast_manager._aggregated_interval_data_list:
             if aggregated_data.interval_data.data:
-                forecast_data_list.append(aggregated_data.interval_data.data)
+                # Create IntervalWeatherForecast with both interval and data
+                interval_forecast = IntervalWeatherForecast(
+                    interval=aggregated_data.interval_data.interval,
+                    data=aggregated_data.interval_data.data
+                )
+                forecast_data_list.append(interval_forecast)
             continue
         
         self._hourly_forecast.data_list = forecast_data_list
@@ -346,7 +353,12 @@ class WeatherManager( Singleton, SettingsMixin ):
         forecast_data_list = []
         for aggregated_data in self._daily_forecast_manager._aggregated_interval_data_list:
             if aggregated_data.interval_data.data:
-                forecast_data_list.append(aggregated_data.interval_data.data)
+                # Create IntervalWeatherForecast with both interval and data
+                interval_forecast = IntervalWeatherForecast(
+                    interval=aggregated_data.interval_data.interval,
+                    data=aggregated_data.interval_data.data
+                )
+                forecast_data_list.append(interval_forecast)
             continue
         
         self._daily_forecast.data_list = forecast_data_list
@@ -357,10 +369,16 @@ class WeatherManager( Singleton, SettingsMixin ):
         history_data_list = []
         for aggregated_data in self._daily_history_manager._aggregated_interval_data_list:
             if aggregated_data.interval_data.data:
-                history_data_list.append(aggregated_data.interval_data.data)
+                # Create IntervalWeatherHistory with both interval and data
+                interval_history = IntervalWeatherHistory(
+                    interval=aggregated_data.interval_data.interval,
+                    data=aggregated_data.interval_data.data
+                )
+                history_data_list.append(interval_history)
             continue
         
         self._daily_history.data_list = history_data_list
+        logger.debug(f'Updated daily history: {len(history_data_list)} items in data_list')
         return
 
     def _update_daily_astronomical_from_manager(self):

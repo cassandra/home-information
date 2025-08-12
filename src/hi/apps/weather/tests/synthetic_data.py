@@ -51,6 +51,7 @@ class WeatherSyntheticData:
         return DataPointSource(
             id='test',
             label='Test',
+            abbreviation='TEST',
             priority=1,
         )
 

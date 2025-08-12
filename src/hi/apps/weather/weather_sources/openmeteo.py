@@ -45,6 +45,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         super().__init__(
             id = 'openmeteo',
             label = 'Open-Meteo',
+            abbreviation = 'OpenMeteo',
             priority = 2,  # Lower priority than NWS
             requests_per_day_limit = 10000,  # Open-Meteo is very generous
             requests_per_polling_interval = 5,
@@ -117,15 +118,20 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
         # Fetch historical weather data (last 7 days)
         try:
+            logger.debug(f'Fetching OpenMeteo historical weather data for 7 days')
             historical_data_list = self.get_historical_weather(
                 geographic_location = geographic_location,
                 days_back = 7,
             )
+            logger.debug(f'OpenMeteo returned {len(historical_data_list) if historical_data_list else 0} historical data items')
             if historical_data_list:
                 await weather_manager.update_daily_history(
                     weather_data_source = self,
                     history_data_list = historical_data_list,
                 )
+                logger.debug(f'Successfully updated daily history with {len(historical_data_list)} items')
+            else:
+                logger.warning('OpenMeteo returned no historical weather data')
         except Exception as e:
             logger.exception(f'Problem fetching OpenMeteo historical data: {e}')
 
@@ -513,14 +519,15 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 temp_min = daily_data['temperature_2m_min'][i]
                 if temp_min is not None:
                     temp_unit = daily_units.get('temperature_2m_min', '°C')
+                    quantity_min = UnitQuantity(temp_min, OpenMeteoConverters.normalize_temperature_unit(temp_unit))
                     if forecast_data.temperature is None:
                         forecast_data.temperature = NumericDataPoint(
                             station = station,
                             source_datetime = source_datetime,
-                            quantity_min = UnitQuantity(temp_min, OpenMeteoConverters.normalize_temperature_unit(temp_unit)),
+                            quantity_min = quantity_min,
                         )
                     else:
-                        forecast_data.temperature.quantity_min = UnitQuantity(temp_min, OpenMeteoConverters.normalize_temperature_unit(temp_unit))
+                        forecast_data.temperature.quantity_min = quantity_min
 
             # Precipitation sum
             if 'precipitation_sum' in daily_data and i < len(daily_data['precipitation_sum']):
@@ -611,10 +618,10 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 temp_max = daily_data['temperature_2m_max'][i]
                 if temp_max is not None:
                     temp_unit = daily_units.get('temperature_2m_max', '°C')
-                    history_data.temperature_max = NumericDataPoint(
+                    history_data.temperature = NumericDataPoint(
                         station = station,
                         source_datetime = source_datetime,
-                        quantity_ave = UnitQuantity(temp_max, OpenMeteoConverters.normalize_temperature_unit(temp_unit)),
+                        quantity_max = UnitQuantity(temp_max, OpenMeteoConverters.normalize_temperature_unit(temp_unit)),
                     )
 
             # Temperature min
@@ -622,18 +629,22 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 temp_min = daily_data['temperature_2m_min'][i]
                 if temp_min is not None:
                     temp_unit = daily_units.get('temperature_2m_min', '°C')
-                    history_data.temperature_min = NumericDataPoint(
-                        station = station,
-                        source_datetime = source_datetime,
-                        quantity_ave = UnitQuantity(temp_min, OpenMeteoConverters.normalize_temperature_unit(temp_unit)),
-                    )
-
+                    quantity_min = UnitQuantity( temp_min, OpenMeteoConverters.normalize_temperature_unit(temp_unit ))
+                    if history_data.temperature is None:
+                        history_data.temperature = NumericDataPoint(
+                            station = station,
+                            source_datetime = source_datetime,
+                            quantity_min = quantity_min,
+                        )
+                    else:
+                        history_data.temperature.quantity_min = quantity_min
+                        
             # Precipitation sum
             if 'precipitation_sum' in daily_data and i < len(daily_data['precipitation_sum']):
                 precipitation = daily_data['precipitation_sum'][i]
                 if precipitation is not None:
                     precip_unit = daily_units.get('precipitation_sum', 'mm')
-                    history_data.precipitation_total = NumericDataPoint(
+                    history_data.precipitation = NumericDataPoint(
                         station = station,
                         source_datetime = source_datetime,
                         quantity_ave = UnitQuantity(precipitation, OpenMeteoConverters.normalize_precipitation_unit(precip_unit)),

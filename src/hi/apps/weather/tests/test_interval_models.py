@@ -25,6 +25,7 @@ class TestIntervalModels(BaseTestCase):
         self.test_source = DataPointSource(
             id='test_source',
             label='Test Source',
+            abbreviation='TEST',
             priority=1
         )
         
@@ -135,6 +136,7 @@ class TestIntervalModels(BaseTestCase):
         source2 = DataPointSource(
             id='test_source_2',
             label='Test Source 2',
+            abbreviation='TEST2',
             priority=2
         )
         
