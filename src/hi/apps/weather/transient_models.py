@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field, fields
 from datetime import datetime, time, timedelta
-from typing import Generic, List, TypeVar, get_origin
+from typing import Dict, Generic, List, Set, TypeVar, get_origin
 
 from pint.errors import OffsetUnitCalculusError
 
@@ -199,7 +199,31 @@ class EnvironmentalData:
                 continue
             station_map[datapoint.station.key] = datapoint.station
             continue
-        return list( station_map.values() ) 
+        return list( station_map.values() )
+
+    @property 
+    def data_source_counts(self) -> Dict[DataPointSource, int]:
+        """Get counts of DataPoint fields by data source."""
+        source_counts = dict()
+        for a_field in fields( self ):
+            field_name = a_field.name
+            datapoint = getattr( self, field_name )
+            
+            # Check if the actual value is a DataPoint instance (not the type annotation)
+            if not isinstance( datapoint, DataPoint ):
+                continue
+            if not datapoint.source:
+                continue
+                
+            source = datapoint.source
+            source_counts[source] = source_counts.get(source, 0) + 1
+            continue
+        return source_counts
+
+    @property
+    def data_sources(self) -> Set[DataPointSource]:
+        """Get all data sources that have at least one DataPoint field."""
+        return set(self.data_source_counts.keys()) 
 
 
 @dataclass( kw_only = True )

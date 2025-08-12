@@ -43,7 +43,7 @@ class WeatherManager( Singleton, SettingsMixin ):
     #
     STALE_DATA_POINT_AGE_SECONDS = 60 * 60
 
-    TRACE = True  # For debugging
+    TRACE = False  # For debugging
     
     def __init_singleton__(self):
 

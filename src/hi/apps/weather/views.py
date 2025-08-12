@@ -2,6 +2,7 @@ import logging
 from hi.hi_async_view import HiModalView
 
 from .weather_mixins import WeatherMixin
+from .weather_sources.sunrise_sunset_org import SunriseSunsetOrg
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +25,17 @@ class TodaysAstronomicalDetailsView( HiModalView, WeatherMixin ):
         return 'weather/modals/astronomical_details.html'
     
     def get(self, request, *args, **kwargs):
+        daily_astronomical_data = self.weather_manager().get_todays_astronomical_data()
+        
+        # Check if any astronomical data comes from sunrise-sunset-org source
+        has_sunrise_sunset_data = bool(
+            daily_astronomical_data and 
+            SunriseSunsetOrg.SOURCE_ID in {x.id for x in daily_astronomical_data.data_sources}
+        )
+        
         context = {
-            'daily_astronomical_data': self.weather_manager().get_todays_astronomical_data(),
+            'daily_astronomical_data': daily_astronomical_data,
+            'has_sunrise_sunset_attribution': has_sunrise_sunset_data,
         }
         return self.modal_response( request, context )
 

@@ -23,10 +23,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AggregatedWeatherData:
-    
-    # How old source data has to be for lower priority sources to
-    # override higher priority sources (in seconds)
-    DATA_AGE_STALE_SECS = 2 * 60 * 60  # 2 hours
     """
     Represents aggregated weather data for a single time interval from multiple sources.
     
@@ -35,6 +31,11 @@ class AggregatedWeatherData:
     that considers source priority, data freshness, and time-weighted averaging.
     """
 
+    
+    # How old source data has to be for lower priority sources to
+    # override higher priority sources (in seconds)
+    DATA_AGE_STALE_SECS = 2 * 60 * 60  # 2 hours
+    
     interval_data  : IntervalEnvironmentalData
     source_data    : Dict[ str, SourceFieldData ]
     data_class     : Type[ EnvironmentalData ]
@@ -60,17 +61,14 @@ class AggregatedWeatherData:
         
         from .model_helpers import is_datapoint_field
 
-        logger.debug( f'Adding source data: {[ x.name for x in fields( source_data )]}' )
-        
         for a_field in fields( source_data ):
             field_name = a_field.name
             
             if not is_datapoint_field(a_field.type):
-                logger.debug( 'Add source skipped field: {a_field}' )
                 continue
 
             source_data_point = getattr( source_data, field_name )
-            logger.debug( f'Add source field: {field_name} = {source_data_point}' )
+
             # Skip None values to avoid type confusion during aggregation
             if source_data_point is not None:
                 self.source_data[field_name][data_point_source][source_interval] = source_data_point
@@ -100,12 +98,6 @@ class AggregatedWeatherData:
             # Filter out any None values that might have been added
             interval_data_point_map = {k: v for k, v in interval_data_point_map.items() if v is not None}
             
-            # Debug: Check if we have any data points for this field after filtering
-            if not interval_data_point_map:
-                logger.debug(f'No data points for field "{field_name}" after filtering None values')
-            else:
-                logger.debug(f'Field "{field_name}" has {len(interval_data_point_map)} data points for aggregation')
-
             if not interval_data_point_map:
                 setattr( self.interval_data.data, field_name, None )
                 continue
@@ -117,15 +109,7 @@ class AggregatedWeatherData:
             
             # Determine the expected DataPoint type from the first source data point
             sample_data_point = next(iter(interval_data_point_map.values()))
-            
-            # Debug: Check if all data points are the same type
-            all_types = set(type(dp) for dp in interval_data_point_map.values())
-            if len(all_types) > 1:
-                logger.error(f"Mixed data point types for field '{field_name}': {all_types}")
-                logger.error(f"Sample type: {type(sample_data_point)}")
-                for interval, dp in interval_data_point_map.items():
-                    logger.error(f"  Interval {interval}: {type(dp)} = {dp}")
-            
+                        
             if isinstance( sample_data_point, NumericDataPoint ):
                 new_data_point = self.aggregate_numeric_data_points(
                     interval_data_point_map = interval_data_point_map,

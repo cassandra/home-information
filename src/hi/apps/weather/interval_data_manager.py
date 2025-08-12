@@ -21,7 +21,7 @@ class IntervalDataManager:
     INTERVAL_MATCH_OVERLAP_THRESHOLD = 0.4
     INTERVAL_NEW_FRACTION_THRESHOLD = 0.6
 
-    TRACE = True  # For debugging
+    TRACE = False  # For debugging
     
     def __init__( self,
                   interval_hours      : int,
@@ -85,7 +85,6 @@ class IntervalDataManager:
                 existing_interval = aggregated_interval_data.interval_data.interval
                 overlaps = existing_interval.overlaps( source_interval_data.interval )
                 if overlaps:
-                    logger.debug( f'Overlapping intervals: src={source_interval_data.interval}, existing={existing_interval}' )
                     aggregated_interval_data.add_source_data(
                         data_point_source = data_point_source,
                         source_interval_data = source_interval_data,

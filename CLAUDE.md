@@ -226,7 +226,6 @@ def test_manager_thread_safety(self):
 
 - Environment variables managed via `.private/env/` (not committed)
 - Settings split by environment: `development.py`, `production.py`, `staging.py`
-- Security app manages access control and monitoring states
 - Config app provides centralized system configuration storage
 
 ## Coding Style Guidelines

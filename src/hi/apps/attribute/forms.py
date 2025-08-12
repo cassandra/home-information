@@ -47,7 +47,7 @@ class AttributeForm( forms.ModelForm ):
 
         if instance and instance.value_type.is_boolean:
             self.initial['value'] = str_to_bool( instance.value )
-                                                  
+            
         for field in self.fields.values():
             if self._show_as_editable or ( instance and instance.is_editable ):
                 continue
@@ -73,7 +73,7 @@ class AttributeForm( forms.ModelForm ):
                 self.add_error( 'value', 'A value is required.')
             if self.instance.value_type.is_boolean:
                 cleaned_data['value'] = str(str_to_bool( value ))
-            
+                
         if self.cleaned_data.get('secret'):
             stripped_value = value.strip()
             value_lines = stripped_value.splitlines()
@@ -84,7 +84,7 @@ class AttributeForm( forms.ModelForm ):
 
     def save( self, commit = True ):
         instance = super().save( commit = False )
-        
+
         if not instance.pk:
             instance.attribute_type_str = str(AttributeType.CUSTOM)
             instance.is_editable = True

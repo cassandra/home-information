@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class WeatherDataSource:
 
-    TRACE = True
+    TRACE = False
     FORCE_CAN_POLL = False  # For debugging
     
     async def get_data(self):
