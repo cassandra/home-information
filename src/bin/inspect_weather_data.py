@@ -66,6 +66,7 @@ class WeatherDataInspector:
     
     def _initialize_sync_components(self):
         """Initialize Django components in sync context."""
+        
         if self.weather_manager is None:
             self.weather_manager = WeatherManager()
             self.weather_manager.ensure_initialized()
@@ -616,7 +617,7 @@ class WeatherDataInspector:
         print(f"Weather Data Inspector - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"Inspecting: {source_filter} sources, {data_type_filter} data types")
         print(f"Output mode: {'Compact' if self.compact else 'Detailed'}, Limit: {self.limit}")
-        
+
         # Initialize Django components in sync context
         await self._initialize_components()
         
@@ -673,7 +674,6 @@ def main():
                        help='Limit number of records shown (default: 5)')
     
     args = parser.parse_args()
-    
     inspector = WeatherDataInspector(compact=args.compact, limit=args.limit)
     
     try:

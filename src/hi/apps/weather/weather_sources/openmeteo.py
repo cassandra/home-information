@@ -92,26 +92,26 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
         # Fetch hourly forecast data
         try:
-            hourly_forecast_data_list = self.get_forecast_hourly(
+            interval_hourly_forecast_list = self.get_forecast_hourly(
                 geographic_location = geographic_location,
             )
-            if hourly_forecast_data_list:
+            if interval_hourly_forecast_list:
                 await weather_manager.update_hourly_forecast(
                     weather_data_source = self,
-                    forecast_data_list = hourly_forecast_data_list,
+                    forecast_data_list = interval_hourly_forecast_list,
                 )
         except Exception as e:
             logger.exception(f'Problem fetching OpenMeteo hourly forecast: {e}')
 
         # Fetch daily forecast data
         try:
-            daily_forecast_data_list = self.get_forecast_daily(
+            interval_daily_forecast_list = self.get_forecast_daily(
                 geographic_location = geographic_location,
             )
-            if daily_forecast_data_list:
+            if interval_daily_forecast_list:
                 await weather_manager.update_daily_forecast(
                     weather_data_source = self,
-                    forecast_data_list = daily_forecast_data_list,
+                    forecast_data_list = interval_daily_forecast_list,
                 )
         except Exception as e:
             logger.exception(f'Problem fetching OpenMeteo daily forecast: {e}')
@@ -119,17 +119,17 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         # Fetch historical weather data (last 7 days)
         try:
             logger.debug(f'Fetching OpenMeteo historical weather data for 7 days')
-            historical_data_list = self.get_historical_weather(
+            interval_daily_history_list = self.get_historical_weather(
                 geographic_location = geographic_location,
                 days_back = 7,
             )
-            logger.debug(f'OpenMeteo returned {len(historical_data_list) if historical_data_list else 0} historical data items')
-            if historical_data_list:
+            logger.debug(f'OpenMeteo returned {len(interval_daily_history_list) if interval_daily_history_list else 0} historical data items')
+            if interval_daily_history_list:
                 await weather_manager.update_daily_history(
                     weather_data_source = self,
-                    history_data_list = historical_data_list,
+                    history_data_list = interval_daily_history_list,
                 )
-                logger.debug(f'Successfully updated daily history with {len(historical_data_list)} items')
+                logger.debug(f'Successfully updated daily history with {len(interval_daily_history_list)} items')
             else:
                 logger.warning('OpenMeteo returned no historical weather data')
         except Exception as e:
@@ -566,7 +566,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
     def _parse_historical_weather_data(self, 
                                        historical_data: Dict,
-                                       geographic_location: GeographicLocation) -> List[WeatherHistoryData]:
+                                       geographic_location: GeographicLocation) -> List[IntervalWeatherHistory]:
 
         daily_data = historical_data.get('daily', {})
         daily_units = historical_data.get('daily_units', {})

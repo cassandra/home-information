@@ -98,26 +98,26 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
         # Fetch hourly forecast data
         try:
-            hourly_forecast_data_list = self.get_forecast_hourly(
+            interval_hourly_forecast_list = self.get_forecast_hourly(
                 geographic_location = geographic_location,
             )
-            if hourly_forecast_data_list:
+            if interval_hourly_forecast_list:
                 await weather_manager.update_hourly_forecast(
                     weather_data_source = self,
-                    forecast_data_list = hourly_forecast_data_list,
+                    forecast_data_list = interval_hourly_forecast_list,
                 )
         except Exception as e:
             logger.exception( f'Problem fetching NWS hourly forecast: {e}' )
 
         # Fetch 12-hour forecast data (used for daily forecast)
         try:
-            daily_forecast_data_list = self.get_forecast_12h(
+            interval_daily_forecast_list = self.get_forecast_12h(
                 geographic_location = geographic_location,
             )
-            if daily_forecast_data_list:
+            if interval_daily_forecast_list:
                 await weather_manager.update_daily_forecast(
                     weather_data_source = self,
-                    forecast_data_list = daily_forecast_data_list,
+                    forecast_data_list = interval_daily_forecast_list,
                 )
         except Exception as e:
             logger.exception( f'Problem fetching NWS daily forecast: {e}' )

@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timedelta
 import unittest
 from unittest.mock import patch
+import pytz
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.interval_data_manager import IntervalDataManager
@@ -168,9 +169,13 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
         self.assertIsNotNone(second_aggregated.interval_data.data.temperature)
         self.assertEqual(second_aggregated.interval_data.data.temperature.quantity_ave.magnitude, 22.0)
 
+    @patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name')
     @patch('hi.apps.common.datetimeproxy.now')
-    def test_daily_history_realistic_scenario(self, mock_now):
+    def test_daily_history_realistic_scenario(self, mock_now, mock_tz_name):
         """Test daily history aggregation with realistic weather data."""
+        # Mock timezone to UTC for predictable results
+        mock_tz_name.return_value = 'UTC'
+        
         # Mock current time: 2024-01-15 14:30:00
         current_time = datetime(2024, 1, 15, 14, 30, 0)
         mock_now.return_value = current_time
@@ -190,9 +195,11 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
         
         # First interval should be most recent 24h period (yesterday)
         first_interval = manager._aggregated_interval_data_list[0].interval_data.interval
-        # Should be from Jan 14 00:00 to Jan 15 00:00
-        self.assertEqual(first_interval.start, datetime(2024, 1, 14, 0, 0, 0))
-        self.assertEqual(first_interval.end, datetime(2024, 1, 15, 0, 0, 0))
+        # Should be from Jan 14 00:00 to Jan 15 00:00 (timezone-aware in UTC)
+        expected_start = datetime(2024, 1, 14, 0, 0, 0, tzinfo=pytz.UTC)
+        expected_end = datetime(2024, 1, 15, 0, 0, 0, tzinfo=pytz.UTC)
+        self.assertEqual(first_interval.start, expected_start)
+        self.assertEqual(first_interval.end, expected_end)
         
         # Create historical data (daily summary from yesterday)
         yesterday_data = WeatherHistoryData()
@@ -204,9 +211,10 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
             quantity_max=UnitQuantity(21.0, 'degC')
         )
         
+        # Create source interval with timezone-aware datetimes to match manager's intervals
         source_interval = self.create_interval_weather_forecast(
-            start_time=datetime(2024, 1, 14, 0, 0, 0),
-            end_time=datetime(2024, 1, 15, 0, 0, 0),
+            start_time=datetime(2024, 1, 14, 0, 0, 0, tzinfo=pytz.UTC),
+            end_time=datetime(2024, 1, 15, 0, 0, 0, tzinfo=pytz.UTC),
             weather_data=yesterday_data
         )
         
@@ -321,9 +329,12 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
             self.assertEqual(aggregated.interval_data.data.relative_humidity.quantity_ave.magnitude, 60)
             self.assertTrue(aggregated.interval_data.data.is_daytime.value)
 
+    @patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name')
     @patch('hi.apps.common.datetimeproxy.now')
-    def test_time_boundary_edge_cases(self, mock_now):
+    def test_time_boundary_edge_cases(self, mock_now, mock_tz_name):
         """Test edge cases around time boundaries and interval calculations."""
+        # Mock timezone to UTC for predictable results
+        mock_tz_name.return_value = 'UTC'
         
         # Test case 1: Exactly at hour boundary
         mock_now.return_value = datetime(2024, 1, 15, 15, 0, 0)  # Exactly 3 PM
@@ -358,10 +369,99 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
         intervals = daily_manager._get_calculated_intervals()
         self.assertEqual(len(intervals), 2)
         
-        # Most recent 24h period should be from yesterday midnight to today midnight  
+        # Most recent 24h period should be from yesterday midnight to today midnight (timezone-aware)
         first_interval = intervals[0]
-        self.assertEqual(first_interval.start, datetime(2024, 1, 14, 0, 0, 0))
-        self.assertEqual(first_interval.end, datetime(2024, 1, 15, 0, 0, 0))
+        self.assertEqual(first_interval.start, datetime(2024, 1, 14, 0, 0, 0, tzinfo=pytz.UTC))
+        self.assertEqual(first_interval.end, datetime(2024, 1, 15, 0, 0, 0, tzinfo=pytz.UTC))
+
+    @patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name')
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_timezone_handling_comprehensive(self, mock_now, mock_tz_name):
+        """Test that IntervalDataManager correctly handles different timezones."""
+        
+        # Test 1: UTC timezone (baseline)
+        mock_tz_name.return_value = 'UTC'
+        mock_now.return_value = datetime(2024, 1, 15, 14, 30, 0)
+        
+        utc_manager = IntervalDataManager(
+            interval_hours=24,
+            max_interval_count=2,
+            is_order_ascending=True,
+            data_class=WeatherForecastData
+        )
+        utc_manager.ensure_initialized()
+        
+        utc_intervals = [agg.interval_data.interval for agg in utc_manager._aggregated_interval_data_list]
+        
+        # Verify UTC intervals start at midnight UTC
+        self.assertEqual(utc_intervals[0].start, datetime(2024, 1, 15, 0, 0, 0, tzinfo=pytz.UTC))
+        self.assertEqual(utc_intervals[0].end, datetime(2024, 1, 16, 0, 0, 0, tzinfo=pytz.UTC))
+        
+        # Test 2: America/Chicago timezone (UTC-6)
+        mock_tz_name.return_value = 'America/Chicago'
+        
+        chicago_manager = IntervalDataManager(
+            interval_hours=24,
+            max_interval_count=2,
+            is_order_ascending=True,
+            data_class=WeatherForecastData
+        )
+        chicago_manager.ensure_initialized()
+        
+        chicago_intervals = [agg.interval_data.interval for agg in chicago_manager._aggregated_interval_data_list]
+        
+        # Verify Chicago intervals: local midnight in Chicago is 06:00 UTC
+        chicago_tz = pytz.timezone('America/Chicago')
+        expected_start_utc = chicago_tz.localize(datetime(2024, 1, 15, 0, 0, 0)).astimezone(pytz.UTC)
+        expected_end_utc = chicago_tz.localize(datetime(2024, 1, 16, 0, 0, 0)).astimezone(pytz.UTC)
+        
+        self.assertEqual(chicago_intervals[0].start, expected_start_utc)
+        self.assertEqual(chicago_intervals[0].end, expected_end_utc)
+        
+        # Test 3: Europe/London timezone with daylight saving time
+        mock_tz_name.return_value = 'Europe/London'
+        # Use July date to test daylight saving time (BST = UTC+1)
+        mock_now.return_value = datetime(2024, 7, 15, 14, 30, 0)
+        
+        london_manager = IntervalDataManager(
+            interval_hours=24,
+            max_interval_count=2,
+            is_order_ascending=True,
+            data_class=WeatherForecastData
+        )
+        london_manager.ensure_initialized()
+        
+        london_intervals = [agg.interval_data.interval for agg in london_manager._aggregated_interval_data_list]
+        
+        # Verify London intervals: local midnight in London BST (UTC+1) is 23:00 UTC
+        london_tz = pytz.timezone('Europe/London')
+        expected_start_utc = london_tz.localize(datetime(2024, 7, 15, 0, 0, 0)).astimezone(pytz.UTC)
+        expected_end_utc = london_tz.localize(datetime(2024, 7, 16, 0, 0, 0)).astimezone(pytz.UTC)
+        
+        self.assertEqual(london_intervals[0].start, expected_start_utc)
+        self.assertEqual(london_intervals[0].end, expected_end_utc)
+        
+        # Test 4: Hourly intervals should remain UTC regardless of timezone setting
+        mock_tz_name.return_value = 'America/New_York'  # UTC-5
+        mock_now.return_value = datetime(2024, 1, 15, 14, 30, 0)
+        
+        hourly_manager = IntervalDataManager(
+            interval_hours=1,  # Hourly intervals
+            max_interval_count=2,
+            is_order_ascending=True,
+            data_class=WeatherForecastData
+        )
+        hourly_manager.ensure_initialized()
+        
+        hourly_intervals = [agg.interval_data.interval for agg in hourly_manager._aggregated_interval_data_list]
+        
+        # Hourly intervals should be UTC-based (naive datetimes)
+        # Should start at 14:00 UTC (current hour)
+        expected_start = datetime(2024, 1, 15, 14, 0, 0)
+        expected_end = datetime(2024, 1, 15, 15, 0, 0)
+        
+        self.assertEqual(hourly_intervals[0].start.replace(tzinfo=None), expected_start)
+        self.assertEqual(hourly_intervals[0].end.replace(tzinfo=None), expected_end)
 
     @patch('hi.apps.common.datetimeproxy.now')
     def test_complex_multi_source_aggregation(self, mock_now):
@@ -525,9 +625,13 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
             self.assertIsNone(first_agg.interval_data.data.temperature)
             self.assertIsNone(first_agg.interval_data.data.relative_humidity)
 
+    @patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name')
     @patch('hi.apps.common.datetimeproxy.now')
-    def test_nws_12hour_to_daily_aggregation_scenario(self, mock_now):
+    def test_nws_12hour_to_daily_aggregation_scenario(self, mock_now, mock_tz_name):
         """Test NWS-style 12-hour forecast aggregation into daily intervals (real world scenario)."""
+        # Mock timezone to UTC for predictable results
+        mock_tz_name.return_value = 'UTC'
+        
         current_time = datetime(2024, 1, 15, 10, 0, 0)  # 10 AM
         mock_now.return_value = current_time
         
@@ -545,8 +649,8 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
         
         # Today afternoon: 10:00-22:00 (12 hours)
         today_afternoon = self.create_interval_weather_forecast(
-            start_time=datetime(2024, 1, 15, 10, 0, 0),
-            end_time=datetime(2024, 1, 15, 22, 0, 0),
+            start_time=datetime(2024, 1, 15, 10, 0, 0, tzinfo=pytz.UTC),
+            end_time=datetime(2024, 1, 15, 22, 0, 0, tzinfo=pytz.UTC),
             weather_data=self.create_weather_forecast_data(
                 temperature_c=22.0,
                 humidity_pct=60,
@@ -557,8 +661,8 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
         
         # Tonight: 22:00 today to 10:00 tomorrow (12 hours)
         tonight = self.create_interval_weather_forecast(
-            start_time=datetime(2024, 1, 15, 22, 0, 0),
-            end_time=datetime(2024, 1, 16, 10, 0, 0),
+            start_time=datetime(2024, 1, 15, 22, 0, 0, tzinfo=pytz.UTC),
+            end_time=datetime(2024, 1, 16, 10, 0, 0, tzinfo=pytz.UTC),
             weather_data=self.create_weather_forecast_data(
                 temperature_c=10.0,
                 humidity_pct=80,
@@ -569,8 +673,8 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
         
         # Tomorrow afternoon: 10:00-22:00 (12 hours)
         tomorrow_afternoon = self.create_interval_weather_forecast(
-            start_time=datetime(2024, 1, 16, 10, 0, 0),
-            end_time=datetime(2024, 1, 16, 22, 0, 0),
+            start_time=datetime(2024, 1, 16, 10, 0, 0, tzinfo=pytz.UTC),
+            end_time=datetime(2024, 1, 16, 22, 0, 0, tzinfo=pytz.UTC),
             weather_data=self.create_weather_forecast_data(
                 temperature_c=25.0,
                 humidity_pct=55,
@@ -590,8 +694,9 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
         # Today (Jan 15): Should aggregate today afternoon + tonight
         today_daily = manager._aggregated_interval_data_list[0] 
         today_interval = today_daily.interval_data.interval
-        self.assertEqual(today_interval.start, datetime(2024, 1, 15, 0, 0, 0))
-        self.assertEqual(today_interval.end, datetime(2024, 1, 16, 0, 0, 0))
+        # Intervals should be timezone-aware in UTC
+        self.assertEqual(today_interval.start, datetime(2024, 1, 15, 0, 0, 0, tzinfo=pytz.UTC))
+        self.assertEqual(today_interval.end, datetime(2024, 1, 16, 0, 0, 0, tzinfo=pytz.UTC))
         
         # Should have aggregated data from both 12-hour periods
         self.assertIsNotNone(today_daily.interval_data.data.temperature)
@@ -601,8 +706,8 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
         # Tomorrow (Jan 16): Should have tomorrow afternoon data
         tomorrow_daily = manager._aggregated_interval_data_list[1]
         tomorrow_interval = tomorrow_daily.interval_data.interval
-        self.assertEqual(tomorrow_interval.start, datetime(2024, 1, 16, 0, 0, 0))
-        self.assertEqual(tomorrow_interval.end, datetime(2024, 1, 17, 0, 0, 0))
+        self.assertEqual(tomorrow_interval.start, datetime(2024, 1, 16, 0, 0, 0, tzinfo=pytz.UTC))
+        self.assertEqual(tomorrow_interval.end, datetime(2024, 1, 17, 0, 0, 0, tzinfo=pytz.UTC))
         
         # Should have data from tonight (partial) and tomorrow afternoon
         self.assertIsNotNone(tomorrow_daily.interval_data.data.temperature)

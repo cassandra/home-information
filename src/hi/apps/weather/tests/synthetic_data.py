@@ -261,52 +261,82 @@ class WeatherSyntheticData:
         )
 
     @classmethod
-    def get_random_hourly_forecast_data_list(cls,
+    def get_random_interval_hourly_forecast_list(cls,
                                              now: datetime = None,
-                                             source: DataPointSource = None) -> List[WeatherForecastData]:
+                                             source: DataPointSource = None) -> List[IntervalWeatherForecast]:
         if not now:
             now = datetimeproxy.now()
         if not source:
             source = cls._create_default_source()
         
-        hourly_forecast_data_list = list()
+        interval_hourly_forecast_list = list()
         for hour_idx in range(24):
             interval_start = now.replace(minute=0, second=0, microsecond=0)
             interval_start += timedelta(hours=hour_idx + 1)
             interval_end = interval_start + timedelta(hours=1)
+            
+            # Create the interval
+            time_interval = TimeInterval(
+                start=interval_start,
+                end=interval_end
+            )
+            
+            # Create the forecast data
             forecast_data = cls.get_random_forecast_data( 
                 interval_start=interval_start,
                 interval_end=interval_end,
                 now=now,
                 source=source,
             )
-            hourly_forecast_data_list.append(forecast_data)
+            
+            # Create the interval forecast
+            interval_forecast = IntervalWeatherForecast(
+                interval=time_interval,
+                data=forecast_data
+            )
+            
+            interval_hourly_forecast_list.append(interval_forecast)
             continue
-        return hourly_forecast_data_list
+        return interval_hourly_forecast_list
     
     @classmethod
-    def get_random_daily_forecast_data_list(cls,
+    def get_random_interval_daily_forecast_list(cls,
                                             now: datetime = None,
-                                            source: DataPointSource = None) -> List[WeatherForecastData]:
+                                            source: DataPointSource = None) -> List[IntervalWeatherForecast]:
         if not now:
             now = datetimeproxy.now()
         if not source:
             source = cls._create_default_source()
         
-        daily_forecast_data_list = list()
+        interval_daily_forecast_list = list()
         for day_idx in range(10):
             interval_start = now.replace(hour=0, minute=0, second=0, microsecond=1)
             interval_start += timedelta(hours=24 * day_idx)
             interval_end = interval_start + timedelta(hours=24)
+            
+            # Create the interval
+            time_interval = TimeInterval(
+                start=interval_start,
+                end=interval_end
+            )
+            
+            # Create the forecast data
             forecast_data = cls.get_random_forecast_data( 
                 interval_start=interval_start,
                 interval_end=interval_end,
                 now=now,
                 source=source,
             )
-            daily_forecast_data_list.append(forecast_data)
+            
+            # Create the interval forecast
+            interval_forecast = IntervalWeatherForecast(
+                interval=time_interval,
+                data=forecast_data
+            )
+            
+            interval_daily_forecast_list.append(interval_forecast)
             continue
-        return daily_forecast_data_list
+        return interval_daily_forecast_list
 
     @classmethod
     def get_random_hourly_interval_forecast_data_list(cls,
@@ -452,28 +482,43 @@ class WeatherSyntheticData:
         return forecast_data
 
     @classmethod
-    def get_random_daily_history_data_list(cls,
+    def get_random_interval_daily_history_list(cls,
                                            now: datetime = None,
-                                           source: DataPointSource = None) -> List[WeatherHistoryData]:
+                                           source: DataPointSource = None) -> List[IntervalWeatherHistory]:
         if not now:
             now = datetimeproxy.now()
         if not source:
             source = cls._create_default_source()
         
-        daily_history_data_list = list()
+        interval_daily_history_list = list()
         for day_idx in range(10):
             interval_start = now.replace(hour=0, minute=0, second=0, microsecond=1)
             interval_start -= timedelta(hours=24 * (day_idx + 1))
             interval_end = interval_start + timedelta(hours=24)
+            
+            # Create the interval
+            time_interval = TimeInterval(
+                start=interval_start,
+                end=interval_end
+            )
+            
+            # Create the history data
             history_data = cls.get_random_history_data( 
                 interval_start=interval_start,
                 interval_end=interval_end,
                 now=now,
                 source=source,
             )
-            daily_history_data_list.append(history_data)
+            
+            # Create the interval history
+            interval_history = IntervalWeatherHistory(
+                interval=time_interval,
+                data=history_data
+            )
+            
+            interval_daily_history_list.append(interval_history)
             continue
-        return daily_history_data_list
+        return interval_daily_history_list
     
     @classmethod
     def get_random_history_data(cls,

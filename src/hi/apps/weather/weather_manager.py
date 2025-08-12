@@ -2,11 +2,17 @@ import asyncio
 from dataclasses import fields
 import logging
 import threading
-from typing import List
+from typing import Dict, List
+
+from django.http import HttpRequest
+from django.template.loader import get_template
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin
 
+from hi.constants import DIVID
+
+from .constants import WeatherConstants
 from .transient_models import (
     AstronomicalData,
     DailyAstronomicalData,
@@ -391,5 +397,15 @@ class WeatherManager( Singleton, SettingsMixin ):
         
         self._daily_astronomical_data.data_list = astronomical_data_list
         return
+
+    def get_status_id_replace_map( self, request : HttpRequest ) -> Dict[ str, str ]:
+
+        weather_overview_data = self.get_weather_overview_data()
+        context = { 'weather_overview_data': weather_overview_data }
+        template = get_template( WeatherConstants.WEATHER_OVERVIEW_TEMPLATE_NAME )
+        weather_overview_html_str = template.render( context, request = request )
+        return {
+            DIVID['WEATHER_OVERVIEW']: weather_overview_html_str,
+        }
 
     

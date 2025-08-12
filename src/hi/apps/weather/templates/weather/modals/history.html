@@ -13,7 +13,7 @@ Weather History
       {% include "weather/panes/daily_history_row_header.html" %}
     </thead>
     <tbody>
-    {% for daily_history_interval in daily_history_data_list %}    
+    {% for daily_history_interval in interval_daily_history_list %}    
       {% include "weather/panes/daily_history_row.html" with daily_history_interval=daily_history_interval %}
       {% empty %}
       <tr><td colspan="99"><div class="alert alert-info">No weather history data available.</div></td></tr>

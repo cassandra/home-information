@@ -11,6 +11,7 @@ from hi.apps.weather.transient_models import (
     WeatherForecastData,
     WeatherHistoryData,
     IntervalWeatherForecast,
+    IntervalWeatherHistory,
 )
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
@@ -249,12 +250,19 @@ class TestOpenMeteo(BaseTestCase):
         self.assertIsInstance(result, list)
         self.assertEqual(len(result), 2)
         
-        first_history = result[0]
+        first_interval_history = result[0]
+        self.assertIsInstance(first_interval_history, IntervalWeatherHistory)
+        
+        # Test the interval part
+        self.assertIsNotNone(first_interval_history.interval)
+        
+        # Test the data part
+        first_history = first_interval_history.data
         self.assertIsInstance(first_history, WeatherHistoryData)
-        self.assertIsNotNone(first_history.temperature_max)
-        self.assertEqual(first_history.temperature_max.quantity_ave.magnitude, 28.0)
-        self.assertIsNotNone(first_history.temperature_min)
-        self.assertEqual(first_history.temperature_min.quantity_ave.magnitude, 18.0)
+        self.assertIsNotNone(first_history.temperature)
+        # The temperature should have min/max values from the daily data
+        self.assertEqual(first_history.temperature.quantity_max.magnitude, 28.0)
+        self.assertEqual(first_history.temperature.quantity_min.magnitude, 18.0)
         return
 
 

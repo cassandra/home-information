@@ -26,6 +26,7 @@ ureg.define("hectopascal_per_3_hours = 100 * pascal / (3 * hour) = hPa_per_3h = 
 ureg.define("meter_two_thirds_per_second = meter ** (2/3) / second = m^(2/3)/s = m2/3/s")
 
 IMPERIAL_TO_METRIC_UNITS = {
+    ureg('inches'): ureg.mm,
     ureg.ft: ureg.m,
     ureg.mph: ureg("km/h"),
     ureg.degF: ureg.degC,

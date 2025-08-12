@@ -36,8 +36,8 @@ class TestUiForecastView( View ):
 
     def get(self, request, *args, **kwargs):
         context = {
-            'hourly_forecast_data_list': WeatherSyntheticData.get_random_hourly_forecast_data_list(),
-            'daily_forecast_data_list': WeatherSyntheticData.get_random_daily_forecast_data_list(),
+            'interval_hourly_forecast_list': WeatherSyntheticData.get_random_interval_hourly_forecast_list(),
+            'interval_daily_forecast_list': WeatherSyntheticData.get_random_interval_daily_forecast_list(),
         }
         return render(request, "weather/modals/forecast.html", context )
 
@@ -54,7 +54,7 @@ class TestUiHistoryView( View ):
 
     def get(self, request, *args, **kwargs):
         context = {
-            'daily_history_data_list': WeatherSyntheticData.get_random_daily_history_data_list(),
+            'interval_daily_history_list': WeatherSyntheticData.get_random_interval_daily_history_list(),
         }
         return render(request, "weather/modals/history.html", context )
 
