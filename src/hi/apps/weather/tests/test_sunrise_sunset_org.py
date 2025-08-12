@@ -156,29 +156,13 @@ class TestSunriseSunsetOrg(BaseTestCase):
         return
 
     @patch('hi.apps.common.datetimeproxy.now')
-    @patch('hi.apps.common.datetimeproxy.iso_naive_to_datetime_utc')
-    def test_parse_astronomical_data_success(self, mock_iso_parse, mock_now):
+    def test_parse_astronomical_data_success(self, mock_now):
         """Test successful parsing of astronomical data - HIGH VALUE for field mapping."""
         # Mock current time
         mock_source_datetime = datetime(2024, 3, 15, 14, 30, 0)
         mock_now.return_value = mock_source_datetime
 
-        # Mock time parsing
-        def mock_time_parse(time_str):
-            time_map = {
-                "2024-03-15T12:30:00+00:00": datetime(2024, 3, 15, 12, 30, 0),
-                "2024-03-16T01:15:00+00:00": datetime(2024, 3, 16, 1, 15, 0),
-                "2024-03-15T18:52:30+00:00": datetime(2024, 3, 15, 18, 52, 30),
-                "2024-03-15T12:05:00+00:00": datetime(2024, 3, 15, 12, 5, 0),
-                "2024-03-16T01:40:00+00:00": datetime(2024, 3, 16, 1, 40, 0),
-                "2024-03-15T11:35:00+00:00": datetime(2024, 3, 15, 11, 35, 0),
-                "2024-03-16T02:10:00+00:00": datetime(2024, 3, 16, 2, 10, 0),
-                "2024-03-15T11:05:00+00:00": datetime(2024, 3, 15, 11, 5, 0),
-                "2024-03-16T02:40:00+00:00": datetime(2024, 3, 16, 2, 40, 0),
-            }
-            return time_map[time_str]
-        
-        mock_iso_parse.side_effect = mock_time_parse
+        # No need to mock datetime.fromisoformat - it handles timezone-aware strings natively
 
         # Valid API response with all astronomical fields
         api_data = {
@@ -243,22 +227,16 @@ class TestSunriseSunsetOrg(BaseTestCase):
         with patch('hi.apps.common.datetimeproxy.now') as mock_now:
             mock_now.return_value = datetime(2024, 3, 15, 14, 30, 0)
             
-            with patch('hi.apps.common.datetimeproxy.iso_naive_to_datetime_utc') as mock_iso_parse:
-                mock_iso_parse.side_effect = lambda time_str: {
-                    "2024-03-15T12:30:00+00:00": datetime(2024, 3, 15, 12, 30, 0),
-                    "2024-03-15T18:52:30+00:00": datetime(2024, 3, 15, 18, 52, 30),
-                }[time_str]
+            result = self.sunrise_sunset._parse_astronomical_data(
+                api_data = api_data,
+                geographic_location = self.test_location,
+                target_date = date(2024, 3, 15)
+            )
 
-                result = self.sunrise_sunset._parse_astronomical_data(
-                    api_data = api_data,
-                    geographic_location = self.test_location,
-                    target_date = date(2024, 3, 15)
-                )
-
-                # Should have sunrise and solar_noon, but not sunset
-                self.assertIsInstance(result.sunrise, TimeDataPoint)
-                self.assertIsInstance(result.solar_noon, TimeDataPoint)
-                self.assertIsNone(result.sunset)
+            # Should have sunrise and solar_noon, but not sunset
+            self.assertIsInstance(result.sunrise, TimeDataPoint)
+            self.assertIsInstance(result.solar_noon, TimeDataPoint)
+            self.assertIsNone(result.sunset)
         return
 
     def test_parse_astronomical_data_invalid_time_format(self):
@@ -274,24 +252,16 @@ class TestSunriseSunsetOrg(BaseTestCase):
         with patch('hi.apps.common.datetimeproxy.now') as mock_now:
             mock_now.return_value = datetime(2024, 3, 15, 14, 30, 0)
             
-            with patch('hi.apps.common.datetimeproxy.iso_naive_to_datetime_utc') as mock_iso_parse:
-                def mock_parse_with_error(time_str):
-                    if time_str == "invalid-time-format":
-                        raise ValueError("Invalid time format")
-                    return datetime(2024, 3, 16, 1, 15, 0)
-                
-                mock_iso_parse.side_effect = mock_parse_with_error
+            # Should not crash, just skip invalid fields
+            result = self.sunrise_sunset._parse_astronomical_data(
+                api_data = api_data,
+                geographic_location = self.test_location,
+                target_date = date(2024, 3, 15)
+            )
 
-                # Should not crash, just skip invalid fields
-                result = self.sunrise_sunset._parse_astronomical_data(
-                    api_data = api_data,
-                    geographic_location = self.test_location,
-                    target_date = date(2024, 3, 15)
-                )
-
-                # Should have sunset but not sunrise due to parsing error
-                self.assertIsNone(result.sunrise)
-                self.assertIsInstance(result.sunset, TimeDataPoint)
+            # Should have sunset but not sunrise due to parsing error
+            self.assertIsNone(result.sunrise)
+            self.assertIsInstance(result.sunset, TimeDataPoint)
         return
 
     def test_get_astronomical_data_caching(self):
@@ -311,11 +281,8 @@ class TestSunriseSunsetOrg(BaseTestCase):
             
             mock_redis.get.return_value = json.dumps(cached_api_data)
             
-            with patch('hi.apps.common.datetimeproxy.now') as mock_now, \
-                 patch('hi.apps.common.datetimeproxy.iso_naive_to_datetime_utc') as mock_iso_parse:
-                
+            with patch('hi.apps.common.datetimeproxy.now') as mock_now:
                 mock_now.return_value = datetime(2024, 3, 15, 14, 30, 0)
-                mock_iso_parse.return_value = datetime(2024, 3, 15, 12, 30, 0)
                 
                 result = self.sunrise_sunset.get_astronomical_data(
                     geographic_location = self.test_location,

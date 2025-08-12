@@ -53,7 +53,6 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
             logger.debug( 'Startup safety period. Skipping weather data fetch.' )
             return
         
-        logger.debug( 'Checking for weather data.' )
         task_list = list()
         for weather_data_source in self._weather_data_source_instance_list:
             # Only fetch from enabled weather sources

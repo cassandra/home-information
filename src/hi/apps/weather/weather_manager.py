@@ -137,13 +137,24 @@ class WeatherManager( Singleton, SettingsMixin ):
                                          weather_data_source      : WeatherDataSource,
                                          weather_conditions_data  : WeatherConditionsData ):
         async with self._data_async_lock:
-            self._update_weather_data(
-                current_weather_data = self._current_conditions_data,
-                new_weather_data = weather_conditions_data,
+            self._update_environmental_data(
+                current_data = self._current_conditions_data,
+                new_data = weather_conditions_data,
                 data_point_source = weather_data_source.data_point_source,
             )
         return
 
+    async def update_todays_astronomical_data( self,
+                                               weather_data_source : WeatherDataSource,
+                                               astronomical_data : AstronomicalData ):
+        async with self._data_async_lock:
+            self._update_environmental_data(
+                current_data = self._todays_astronomical_data,
+                new_data = astronomical_data,
+                data_point_source = weather_data_source.data_point_source,
+            )
+        return
+            
     async def update_hourly_forecast( self,
                                       weather_data_source : WeatherDataSource,
                                       forecast_data_list  : List[IntervalWeatherForecast] ):
@@ -220,19 +231,20 @@ class WeatherManager( Singleton, SettingsMixin ):
             self._update_daily_astronomical_from_manager()
         return
 
-    def _update_weather_data( self,
-                              current_weather_data : EnvironmentalData,
-                              new_weather_data     : EnvironmentalData,
-                              data_point_source    : DataPointSource ):
-
-        if self.TRACE:
-            logger.debug( f'Updating weather data from: {data_point_source.id}' )
+    def _update_environmental_data( self,
+                                    current_data       : EnvironmentalData,
+                                    new_data           : EnvironmentalData,
+                                    data_point_source  : DataPointSource ):
+        """ Generic updating method for all subclass of EnvironmentalData """
         
-        for field in fields( current_weather_data ):
+        if self.TRACE:
+            logger.debug( f'Updating {current_data.__class__} data from: {data_point_source.id}' )
+        
+        for field in fields( current_data ):
             field_name = field.name
             
-            current_datapoint = getattr( current_weather_data, field_name )
-            new_datapoint = getattr( new_weather_data, field_name )
+            current_datapoint = getattr( current_data, field_name )
+            new_datapoint = getattr( new_data, field_name )
 
             # Skip fields that are not DataPoint fields (but allow None datapoints to be processed)
             if current_datapoint is not None and not isinstance( current_datapoint, DataPoint ):
@@ -246,7 +258,7 @@ class WeatherManager( Singleton, SettingsMixin ):
             if current_datapoint is None:
                 if self.TRACE:
                     logger.debug( f'Setting first data: {field_name} = {new_datapoint}' )
-                setattr( current_weather_data, field_name, new_datapoint )
+                setattr( current_data, field_name, new_datapoint )
                 continue
                     
             # Same and higher priority sources can overwrite as long as data is fresher.
@@ -257,7 +269,7 @@ class WeatherManager( Singleton, SettingsMixin ):
                 if new_datapoint.source_datetime > current_datapoint.source_datetime:
                     if self.TRACE:
                         logger.debug( f'Overwrite with fresher data: {field_name} = {new_datapoint}' )
-                    setattr( current_weather_data, field_name, new_datapoint )
+                    setattr( current_data, field_name, new_datapoint )
                 else:
                     if self.TRACE:
                         logger.debug( f'Skipping older data: {field_name} = {new_datapoint}' )
@@ -278,7 +290,7 @@ class WeatherManager( Singleton, SettingsMixin ):
             if self.TRACE:
                 logger.debug( f'Overwriting stale data: {field_name} = {new_datapoint} [age={current_datapoint_age}]' )
 
-            setattr( current_weather_data, field_name, new_datapoint )
+            setattr( current_data, field_name, new_datapoint )
             continue
         return
 
@@ -320,9 +332,21 @@ class WeatherManager( Singleton, SettingsMixin ):
                 date = astronomical_data.sunrise.source_datetime.date()
                 from datetime import datetime, time
                 from .transient_models import TimeInterval
+                import pytz
                 
-                interval_start = datetime.combine(date, time.min)
-                interval_end = datetime.combine(date, time.max)
+                # Get user timezone for local day boundaries
+                from hi.apps.console.console_helper import ConsoleSettingsHelper
+                console_helper = ConsoleSettingsHelper()
+                user_timezone = console_helper.get_tz_name()
+                local_tz = pytz.timezone(user_timezone)
+                
+                # Create local day boundaries (midnight to midnight in local time)
+                local_start = local_tz.localize(datetime.combine(date, time.min))
+                local_end = local_tz.localize(datetime.combine(date, time.max))
+                
+                # Convert to UTC for internal storage (following IntervalDataManager pattern)
+                interval_start = local_start.astimezone(pytz.UTC)
+                interval_end = local_end.astimezone(pytz.UTC)
                 
                 interval = TimeInterval(
                     start=interval_start,

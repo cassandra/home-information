@@ -169,9 +169,9 @@ class TestWeatherManager( BaseTestCase ):
             old_value = current_data.temperature
             new_value = new_data.temperature
             
-            weather_manager._update_weather_data(
-                current_weather_data = current_data,
-                new_weather_data = new_data,
+            weather_manager._update_environmental_data(
+                current_data = current_data,
+                new_data = new_data,
                 data_point_source = new_source,
             )
 

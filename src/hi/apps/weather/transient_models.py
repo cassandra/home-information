@@ -431,7 +431,7 @@ class DailyHistory:
     
 @dataclass( kw_only = True )
 class DailyAstronomicalData:
-    data_list    : List[ AstronomicalData ]  = field( default_factory = list )
+    data_list    : List[ IntervalAstronomical ]  = field( default_factory = list )
 
 
 @dataclass( kw_only = True )

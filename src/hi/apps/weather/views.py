@@ -29,8 +29,8 @@ class TodaysAstronomicalDetailsView( HiModalView, WeatherMixin ):
         
         # Check if any astronomical data comes from sunrise-sunset-org source
         has_sunrise_sunset_data = bool(
-            daily_astronomical_data and 
-            SunriseSunsetOrg.SOURCE_ID in {x.id for x in daily_astronomical_data.data_sources}
+            daily_astronomical_data
+            and SunriseSunsetOrg.SOURCE_ID in {x.id for x in daily_astronomical_data.data_sources}
         )
         
         context = {

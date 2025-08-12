@@ -91,6 +91,10 @@ class WeatherDataSource:
     def geographic_location(self):
         return self._console_settings_helper.get_geographic_location()
     
+    @property
+    def tz_name(self):
+        return self._console_settings_helper.get_tz_name()
+    
     def _get_weather_settings_helper(self):
         """Lazy initialization of weather settings helper to avoid circular imports."""
         if self._weather_settings_helper is None:

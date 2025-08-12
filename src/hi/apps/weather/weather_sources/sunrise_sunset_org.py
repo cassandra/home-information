@@ -2,6 +2,7 @@ from datetime import datetime, date
 from enum import Enum
 import json
 import logging
+import pytz
 import requests
 from typing import Any, Dict
 
@@ -75,15 +76,15 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
             logger.warning('Weather manager not available. Skipping Sunrise-Sunset.org fetch.')
             return
 
-        # Fetch astronomical data
+        # Fetch today's astronomical data
         try:
             astronomical_data = self.get_astronomical_data(
                 geographic_location = geographic_location,
             )
             if astronomical_data:
-                await weather_manager.update_astronomical_data(
+                await weather_manager.update_todays_astronomical_data(
                     weather_data_source = self,
-                    astronomical_data_list = [astronomical_data],
+                    astronomical_data = astronomical_data,
                 )
         except Exception as e:
             logger.exception(f'Problem fetching Sunrise-Sunset.org astronomical data: {e}')
@@ -150,11 +151,16 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
             time_str = results.get(api_field)
             if time_str:
                 try:
-                    time_utc = datetimeproxy.iso_naive_to_datetime_utc(time_str)
+                    # Sunrise-Sunset API returns timezone-aware UTC strings like "2025-08-12T11:55:20+00:00"
+                    time_utc = datetime.fromisoformat(time_str)
+
+                    local_tz = pytz.timezone( self.tz_name )
+                    time_local = time_utc.astimezone( local_tz )
+                    
                     time_data_point = TimeDataPoint(
                         station = station,
                         source_datetime = source_datetime,
-                        value = time_utc.time(),
+                        value = time_local.time(),
                     )
                     setattr(astronomical_data, data_field, time_data_point)
                 except Exception as e:
