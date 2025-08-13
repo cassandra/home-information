@@ -51,6 +51,67 @@ class NwsConverters:
         'test' : AlertStatus.TEST,
         'draft' : AlertStatus.DRAFT,
     }
+    NwsAlertCodeMap = {
+        "ADR": "Administrative Message",
+        "AFW": "Ashfall Warning",
+        "AVA": "Avalanche Watch",
+        "AVW": "Avalanche Warning",
+        "BHW": "Beach Hazards Statement",
+        "BLU": "Blue Alert",
+        "BZW": "Blizzard Warning",
+        "CAE": "Child Abduction Emergency (AMBER Alert)",
+        "CDW": "Civil Danger Warning",
+        "CEM": "Civil Emergency Message",
+        "CFA": "Coastal Flood Watch",
+        "CFW": "Coastal Flood Warning",
+        "DSW": "Dust Storm Warning",
+        "EQW": "Earthquake Warning",
+        "EVI": "Evacuation Immediate",
+        "EWW": "Extreme Wind Warning",
+        "FFA": "Flash Flood Watch",
+        "FFS": "Flash Flood Statement",
+        "FFW": "Flash Flood Warning",
+        "FLA": "Flood Watch",
+        "FLS": "Flood Statement",
+        "FLW": "Flood Warning",
+        "FRW": "Fire Warning",
+        "GFA": "Gale Watch",
+        "GFW": "Gale Warning",
+        "HMW": "Hazardous Materials Warning",
+        "HUA": "Hurricane Watch",
+        "HUW": "Hurricane Warning",
+        "HWA": "High Wind Watch",
+        "HWW": "High Wind Warning",
+        "LAE": "Local Area Emergency",
+        "LEW": "Law Enforcement Warning",
+        "LSA": "Lakeshore Flood Watch",
+        "LSW": "Lakeshore Flood Warning",
+        "MWS": "Marine Weather Statement",
+        "RFW": "Red Flag Warning",
+        "RHW": "Radiological Hazard Warning",
+        "RWT": "Required Weekly Test",
+        "SCA": "Small Craft Advisory",
+        "SEW": "Hazardous Seas Warning",
+        "SMW": "Special Marine Warning",
+        "SPS": "Special Weather Statement",
+        "SSA": "Storm Surge Watch",
+        "SSW": "Storm Surge Warning",
+        "SVA": "Severe Thunderstorm Watch",
+        "SVR": "Severe Thunderstorm Warning",
+        "SVS": "Severe Weather Statement",
+        "TOA": "Tornado Watch",
+        "TOE": "911 Telephone Outage Emergency",
+        "TOR": "Tornado Warning",
+        "TRA": "Tropical Storm Watch",
+        "TRW": "Tropical Storm Warning",
+        "TSA": "Tsunami Watch",
+        "TSW": "Tsunami Warning",
+        "TST": "Test Message",
+        "VOW": "Volcano Warning",
+        "WSA": "Winter Storm Watch",
+        "WSW": "Winter Storm Warning",
+    }
+    
     NwsCloudCoverageTypeMap = {
         # METAR codes
         'skc' : CloudCoverageType.SKY_CLEAR,
@@ -121,7 +182,7 @@ class NwsConverters:
         return cls.NwsAlertCategoryMap.get( nws_string.strip().lower() )
 
     @classmethod
-    def to_alerts_everity( cls, nws_string : str ) -> AlertSeverity:
+    def to_alerts_severity( cls, nws_string : str ) -> AlertSeverity:
         return cls.NwsAlertSeverityMap.get( nws_string.strip().lower() )
         
     @classmethod

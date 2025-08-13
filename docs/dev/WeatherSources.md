@@ -1,3 +1,5 @@
+<img src="../../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
+
 # Adding Weather Data Sources
 
 This guide explains how to add new weather data sources to the Home Information system. The weather system uses auto-discovery, making it extremely simple to add new sources.
@@ -55,7 +57,7 @@ When you add your weather source file:
 
 ## Configuration UI
 
-Once added, your weather source will automatically appear in the system configuration under **Settings > Weather** with appropriate controls based on your implementation.
+Once added, your weather source will automatically appear in the system configuration under **Settings > Weather** with appropriate controls based on your implementation. However, you will need to run Django migrations after adding the new source.  Even though there may be no new migrations to run, the discovery and automatic creation of the database settings is triggered with a post-mmigration signal.
 
 ## Testing Your Source
 

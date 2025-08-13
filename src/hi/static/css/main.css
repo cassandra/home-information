@@ -219,7 +219,7 @@ a.clickable-card:active {
 @media (min-aspect-ratio: 16/9) {
     .interstitial-page {
         flex-direction: row;
-	margin-top: 1rem;
+        margin-top: 1rem;
     }
     .interstitial-header {
         width: 30%;
@@ -626,4 +626,25 @@ g[hover] {
 }
 .weather-forecast-daily-col {
     min-width: 100px;
+}
+
+
+.details-popup-wrapper {
+  position: relative;
+}
+.details-popup-summary {
+  cursor: pointer;
+}
+.details-popup-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  background: white;
+  border: 1px solid #ccc;
+  padding: 1em;
+  width: 100%;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
 }

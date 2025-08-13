@@ -451,3 +451,7 @@ class WeatherAlert:
     severity        : AlertSeverity
     certainty       : AlertCertainty
     urgency         : AlertUrgency
+
+    def css_class(self):
+        """Return Bootstrap alert CSS class for this alert's severity."""
+        return self.severity.css_class()

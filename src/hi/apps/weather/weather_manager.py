@@ -30,6 +30,7 @@ from .transient_models import (
     IntervalWeatherForecast,
     IntervalWeatherHistory,
     IntervalAstronomical,
+    WeatherAlert,
 )
 from .weather_data_source import WeatherDataSource
 from .interval_data_manager import IntervalDataManager
@@ -54,6 +55,7 @@ class WeatherManager( Singleton, SettingsMixin ):
         self._daily_forecast = DailyForecast()
         self._daily_history = DailyHistory()
         self._daily_astronomical_data = DailyAstronomicalData()
+        self._weather_alerts = []  # List[WeatherAlert]
         
         # IntervalDataManager instances for handling API data reconciliation
         self._hourly_forecast_manager = IntervalDataManager(
@@ -133,6 +135,10 @@ class WeatherManager( Singleton, SettingsMixin ):
     def get_daily_astronomical_data(self) -> DailyAstronomicalData:
         with self._data_sync_lock:
             return self._daily_astronomical_data
+    
+    def get_weather_alerts(self) -> List[WeatherAlert]:
+        with self._data_sync_lock:
+            return self._weather_alerts
     
     async def update_current_conditions( self,
                                          weather_data_source      : WeatherDataSource,
@@ -217,6 +223,22 @@ class WeatherManager( Singleton, SettingsMixin ):
             )
             # Update canonical astronomical data from aggregated intervals
             self._update_daily_astronomical_from_manager()
+        return
+
+    async def update_weather_alerts( self,
+                                     weather_data_source : WeatherDataSource,
+                                     weather_alerts      : List[WeatherAlert] ):
+        """Update weather alerts from data sources."""
+        async with self._data_async_lock:
+            logger.debug( f'Received weather alerts from {weather_data_source.id}: {len(weather_alerts)} alerts' )
+            
+            # For now, simply replace all alerts with the new ones from this source
+            # TODO: Future enhancement could merge alerts from multiple sources
+            self._weather_alerts = weather_alerts
+            
+            # Log alerts for development visibility
+            for alert in weather_alerts:
+                logger.info( f'Weather Alert: {alert.event} - {alert.severity.label} - {alert.headline}' )
         return
 
     def _update_environmental_data( self,
@@ -357,8 +379,17 @@ class WeatherManager( Singleton, SettingsMixin ):
         context = { 'weather_overview_data': weather_overview_data }
         template = get_template( WeatherConstants.WEATHER_OVERVIEW_TEMPLATE_NAME )
         weather_overview_html_str = template.render( context, request = request )
+        
+        weather_alert_list = self.get_weather_alerts()
+        alerts_context = { 
+            'weather_alert_list': weather_alert_list
+        }
+        alerts_template = get_template( 'weather/panes/weather_alerts.html' )
+        weather_alerts_html_str = alerts_template.render( alerts_context, request = request )
+        
         return {
             DIVID['WEATHER_OVERVIEW']: weather_overview_html_str,
+            DIVID['WEATHER_ALERTS']: weather_alerts_html_str,
         }
 
     

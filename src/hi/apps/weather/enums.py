@@ -104,6 +104,16 @@ class AlertSeverity( LabeledEnum ):
     MODERATE     = ( 'Moderate'   , '' )
     MINOR        = ( 'Minor'      , '' )
 
+    def css_class(self):
+        """Return Bootstrap alert CSS class for this severity level."""
+        severity_css_map = {
+            'EXTREME': 'danger',
+            'SEVERE': 'warning', 
+            'MODERATE': 'primary',
+            'MINOR': 'info'
+        }
+        return severity_css_map.get(self.name, 'secondary')
+
 
 class AlertUrgency( LabeledEnum ):
     IMMEDIATE    = ( 'Immediate'  , '' )

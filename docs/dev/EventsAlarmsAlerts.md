@@ -15,3 +15,5 @@ If the `Alarm` matches the current system security level, it becomes an `Alert` 
 Alerts are those `Alarms` that we want to get the user's attention for.
 
 An `Alert` may contain one or more `Alarm` instances since there is only ever one `Alert` active for a given alarm signature.
+
+A WeatherAlert can also create an alarm and (system) alert.

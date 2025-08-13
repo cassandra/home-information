@@ -8,6 +8,11 @@ from hi.apps.weather.enums import (
     WeatherPhenomenon,
     WeatherPhenomenonIntensity,
     WeatherPhenomenonModifier,
+    AlertCategory,
+    AlertSeverity,
+    AlertUrgency,
+    AlertCertainty,
+    AlertStatus,
 )
 from hi.apps.weather.transient_models import (
     BooleanDataPoint,
@@ -18,6 +23,7 @@ from hi.apps.weather.transient_models import (
     WeatherForecastData,
     IntervalWeatherForecast,
     Station,
+    WeatherAlert,
 )
 from hi.apps.weather.weather_sources.nws import NationalWeatherService
 from hi.transient_models import GeographicLocation
@@ -1891,6 +1897,333 @@ class TestNationalWeatherService( BaseTestCase ):
             self.assertAlmostEqual( expected.quantity_max.magnitude, result.quantity_max.magnitude, 3, label )
             self.assertEqual( expected.quantity_max.units, result.quantity_max.units, label )
 
+        return
+
+    @patch('hi.apps.weather.weather_sources.nws.requests.get')
+    def test_get_alerts_data_from_api_success(self, mock_get):
+        """Test successful API call for weather alerts - HIGH VALUE for alerts integration."""
+        # Mock successful API response based on NWS alerts API format
+        mock_response_data = {
+            "@context": [
+                "https://geojson.org/geojson-ld/geojson-context.jsonld",
+                {"@version": "1.1"}
+            ],
+            "type": "FeatureCollection",
+            "title": "Current watches, warnings, and advisories for 30.27 N, 97.74 W",
+            "updated": "2024-03-15T20:00:00Z",
+            "features": [
+                {
+                    "id": "urn:oid:2.49.0.1.840.0.123abc",
+                    "type": "Feature",
+                    "geometry": None,
+                    "properties": {
+                        "@type": "wx:Alert",
+                        "id": "urn:oid:2.49.0.1.840.0.123abc",
+                        "areaDesc": "Travis; Williamson",
+                        "geocode": {
+                            "SAME": ["048453", "048491"],
+                            "UGC": ["TXZ191", "TXZ192"]
+                        },
+                        "status": "Actual",
+                        "messageType": "Alert",
+                        "category": "Met",
+                        "severity": "Moderate",
+                        "certainty": "Likely",
+                        "urgency": "Expected",
+                        "event": "Flood Warning",
+                        "effective": "2024-03-15T18:00:00-05:00",
+                        "expires": "2024-03-16T06:00:00-05:00",
+                        "onset": "2024-03-15T18:00:00-05:00",
+                        "ends": "2024-03-16T06:00:00-05:00",
+                        "headline": "Flood Warning issued March 15 at 6:00PM CDT until March 16 at 6:00AM CDT by NWS Austin/San Antonio",
+                        "description": "The National Weather Service in Austin San Antonio has issued a Flood Warning for the following rivers in Texas...",
+                        "instruction": "Motorists should not attempt to drive around barricades or drive cars through flooded areas."
+                    }
+                }
+            ]
+        }
+
+        mock_response = Mock()
+        mock_response.json.return_value = mock_response_data
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+
+        nws = NationalWeatherService()
+        test_location = GeographicLocation(
+            latitude=30.27,
+            longitude=-97.74,
+            elevation=UnitQuantity(167.0, 'm')
+        )
+
+        result = nws._get_alerts_data_from_api(geographic_location=test_location)
+
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result['type'], 'FeatureCollection')
+        self.assertIn('features', result)
+        self.assertEqual(len(result['features']), 1)
+        
+        # Verify correct URL was called
+        mock_get.assert_called_once()
+        actual_url = mock_get.call_args[0][0]
+        self.assertIn(f'point={test_location.latitude},{test_location.longitude}', actual_url)
+        self.assertIn('alerts/active', actual_url)
+        return
+
+    @patch('hi.apps.weather.weather_sources.nws.requests.get')
+    def test_get_alerts_data_from_api_no_alerts(self, mock_get):
+        """Test API response with no active alerts - HIGH VALUE for empty response handling."""
+        # Mock API response with no alerts
+        mock_response_data = {
+            "type": "FeatureCollection",
+            "title": "Current watches, warnings, and advisories for 30.27 N, 97.74 W",
+            "updated": "2024-03-15T20:00:00Z",
+            "features": []
+        }
+
+        mock_response = Mock()
+        mock_response.json.return_value = mock_response_data
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+
+        nws = NationalWeatherService()
+        test_location = GeographicLocation(
+            latitude=30.27,
+            longitude=-97.74,
+            elevation=UnitQuantity(167.0, 'm')
+        )
+
+        result = nws.get_weather_alerts(geographic_location=test_location)
+        
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 0)
+        return
+
+    def test_parse_alerts_data_success(self):
+        """Test successful parsing of weather alerts - HIGH VALUE for alert field mapping."""
+        nws = NationalWeatherService()
+        test_location = GeographicLocation(
+            latitude=30.27,
+            longitude=-97.74,
+            elevation=UnitQuantity(167.0, 'm')
+        )
+
+        # Valid alerts API response
+        alerts_data = {
+            "features": [
+                {
+                    "properties": {
+                        "event": "Tornado Warning",
+                        "status": "Actual",
+                        "category": "Met",
+                        "severity": "Extreme",
+                        "certainty": "Observed",
+                        "urgency": "Immediate",
+                        "headline": "Tornado Warning issued March 15 at 8:00PM CDT",
+                        "description": "At 800 PM CDT, a severe thunderstorm capable of producing a tornado was located...",
+                        "instruction": "TAKE COVER NOW! Move to a basement or an interior room on the lowest floor of a sturdy building.",
+                        "areaDesc": "Travis County",
+                        "effective": "2024-03-15T20:00:00-05:00",
+                        "expires": "2024-03-15T20:30:00-05:00",
+                        "onset": "2024-03-15T20:00:00-05:00",
+                        "ends": "2024-03-15T20:30:00-05:00"
+                    }
+                }
+            ]
+        }
+
+        result = nws._parse_alerts_data(
+            alerts_data=alerts_data,
+            geographic_location=test_location
+        )
+
+        # Verify result structure
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 1)
+        
+        alert = result[0]
+        self.assertIsInstance(alert, WeatherAlert)
+        
+        # Verify alert fields
+        self.assertEqual(alert.event, "Tornado Warning")
+        self.assertEqual(alert.status, AlertStatus.ACTUAL)
+        self.assertEqual(alert.category, AlertCategory.METEOROLOGICAL)
+        self.assertEqual(alert.severity, AlertSeverity.EXTREME)
+        self.assertEqual(alert.certainty, AlertCertainty.OBSERVED)
+        self.assertEqual(alert.urgency, AlertUrgency.IMMEDIATE)
+        self.assertEqual(alert.headline, "Tornado Warning issued March 15 at 8:00PM CDT")
+        self.assertIn("severe thunderstorm", alert.description)
+        self.assertIn("TAKE COVER NOW", alert.instruction)
+        self.assertEqual(alert.affected_areas, "Travis County")
+        
+        # Verify timestamps are datetime objects
+        self.assertIsInstance(alert.effective, datetime)
+        self.assertIsInstance(alert.expires, datetime)
+        self.assertIsInstance(alert.onset, datetime)
+        self.assertIsInstance(alert.ends, datetime)
+        return
+
+    def test_parse_alerts_data_partial_fields(self):
+        """Test parsing alerts with some missing fields - HIGH VALUE for robustness."""
+        nws = NationalWeatherService()
+        test_location = GeographicLocation(
+            latitude=30.27,
+            longitude=-97.74,
+            elevation=UnitQuantity(167.0, 'm')
+        )
+
+        # API response with only some fields
+        alerts_data = {
+            "features": [
+                {
+                    "properties": {
+                        "event": "Heat Advisory",
+                        "status": "Actual",
+                        "severity": "Minor",
+                        "headline": "Heat Advisory in effect",
+                        "effective": "2024-03-15T12:00:00-05:00",
+                        "expires": "2024-03-15T20:00:00-05:00",
+                        # Missing: certainty, urgency, description, instruction, etc.
+                    }
+                }
+            ]
+        }
+
+        result = nws._parse_alerts_data(
+            alerts_data=alerts_data,
+            geographic_location=test_location
+        )
+
+        # Should succeed with defaults for missing fields
+        self.assertEqual(len(result), 1)
+        alert = result[0]
+        
+        self.assertEqual(alert.event, "Heat Advisory")
+        self.assertEqual(alert.status, AlertStatus.ACTUAL)
+        self.assertEqual(alert.severity, AlertSeverity.MINOR)
+        # Should use defaults for missing fields
+        self.assertEqual(alert.certainty, AlertCertainty.POSSIBLE)
+        self.assertEqual(alert.urgency, AlertUrgency.UNKNOWN)
+        self.assertEqual(alert.category, AlertCategory.METEOROLOGICAL)
+        return
+
+    def test_parse_iso_datetime_formats(self):
+        """Test ISO datetime parsing with various formats - HIGH VALUE for timestamp handling."""
+        nws = NationalWeatherService()
+        
+        test_cases = [
+            ("2024-03-15T20:00:00-05:00", datetime),  # Standard ISO with timezone
+            ("2024-03-15T20:00:00Z", datetime),       # UTC format
+            ("2024-03-15T20:00:00", datetime),        # No timezone
+            ("", None),                               # Empty string
+            (None, None),                             # None input
+        ]
+
+        for iso_string, expected_type in test_cases:
+            result = nws._parse_iso_datetime(iso_string)
+            if expected_type is None:
+                self.assertIsNone(result, f"Failed for: {iso_string}")
+            else:
+                self.assertIsInstance(result, expected_type, f"Failed for: {iso_string}")
+        return
+
+    def test_alerts_caching(self):
+        """Test Redis caching behavior for alerts - HIGH VALUE for performance."""
+        nws = NationalWeatherService()
+        test_location = GeographicLocation(
+            latitude=30.27,
+            longitude=-97.74,
+            elevation=UnitQuantity(167.0, 'm')
+        )
+        
+        cache_key = f'ws:nws:alerts:{test_location.latitude:.3f}:{test_location.longitude:.3f}'
+        
+        # Mock cached data
+        cached_alerts_data = {
+            "features": [
+                {
+                    "properties": {
+                        "event": "Cached Alert",
+                        "status": "Actual",
+                        "severity": "Minor",
+                        "effective": "2024-03-15T12:00:00-05:00",
+                        "expires": "2024-03-15T20:00:00-05:00"
+                    }
+                }
+            ]
+        }
+        
+        # Mock Redis client
+        with patch.object(nws, '_redis_client') as mock_redis, \
+             patch.object(nws, '_get_alerts_data_from_api') as mock_api_call:
+            
+            import json
+            mock_redis.get.return_value = json.dumps(cached_alerts_data)
+            
+            result = nws._get_alerts_data(geographic_location=test_location)
+            
+            # Verify cache was checked and API was not called
+            mock_redis.get.assert_called_once_with(cache_key)
+            mock_api_call.assert_not_called()
+            self.assertEqual(result, cached_alerts_data)
+        return
+
+    @patch('hi.apps.weather.weather_sources.nws.NationalWeatherService.get_weather_alerts')
+    async def test_get_data_calls_alerts_method(self, mock_get_weather_alerts):
+        """Test that get_data calls the weather alerts method - HIGH VALUE for integration."""
+        # Mock weather manager
+        mock_weather_manager = Mock()
+        mock_weather_manager.update_current_conditions = Mock()
+        mock_weather_manager.update_hourly_forecast = Mock()
+        mock_weather_manager.update_daily_forecast = Mock()
+        mock_weather_manager.update_weather_alerts = Mock()
+        
+        nws = NationalWeatherService()
+        test_location = GeographicLocation(
+            latitude=30.27,
+            longitude=-97.74,
+            elevation=UnitQuantity(167.0, 'm')
+        )
+        
+        with patch.object(type(nws), 'geographic_location', new_callable=lambda: property(lambda self: test_location)), \
+             patch.object(nws, 'weather_manager_async', return_value=mock_weather_manager), \
+             patch.object(nws, 'get_current_conditions', return_value=None), \
+             patch.object(nws, 'get_forecast_hourly', return_value=None), \
+             patch.object(nws, 'get_forecast_12h', return_value=None):
+            
+            # Mock successful alerts
+            mock_alerts = [
+                WeatherAlert(
+                    event="Test Alert",
+                    status=AlertStatus.ACTUAL,
+                    category=AlertCategory.METEOROLOGICAL,
+                    headline="Test Headline",
+                    description="Test Description",
+                    instruction="Test Instruction",
+                    affected_areas="Test Area",
+                    effective=datetime(2024, 3, 15, 20, 0, 0),
+                    onset=datetime(2024, 3, 15, 20, 0, 0),
+                    expires=datetime(2024, 3, 15, 23, 0, 0),
+                    ends=datetime(2024, 3, 15, 23, 0, 0),
+                    severity=AlertSeverity.MODERATE,
+                    certainty=AlertCertainty.LIKELY,
+                    urgency=AlertUrgency.EXPECTED,
+                )
+            ]
+            mock_get_weather_alerts.return_value = mock_alerts
+            
+            # Call get_data
+            await nws.get_data()
+            
+            # Verify alerts method was called
+            mock_get_weather_alerts.assert_called_once_with(
+                geographic_location=test_location
+            )
+            
+            # Verify weather manager was called with alerts
+            mock_weather_manager.update_weather_alerts.assert_called_once_with(
+                weather_data_source=nws,
+                weather_alerts=mock_alerts
+            )
         return
             
         

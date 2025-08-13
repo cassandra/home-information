@@ -4,6 +4,7 @@ from hi.apps.common.enums import LabeledEnum
 class AlarmSource( LabeledEnum ):
     
     EVENT          = ( 'Event'      , '' )
+    WEATHER        = ( 'Weather'    , '' )
 
     
 class AlarmLevel( LabeledEnum ):

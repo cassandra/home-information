@@ -9,6 +9,7 @@ class ConsoleSideHelper( ConsoleMixin, SecurityMixin, WeatherMixin ):
     def get_side_template_name_and_context( self, request, *args, **kwargs ):
         context = {
             'weather_overview_data': self.weather_manager().get_weather_overview_data(),
+            'weather_alert_list': self.weather_manager().get_weather_alerts(),
             'security_status_data': self.security_manager().get_security_status_data(),
             'video_stream_entity_list': self.console_manager().get_video_stream_entity_list(),
         }
