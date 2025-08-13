@@ -29,7 +29,6 @@ from hi.apps.weather.transient_models import (
     WeatherConditionsData,
     WeatherForecastData,
     IntervalWeatherForecast,
-    IntervalWeatherHistory,
     Station,
     WeatherAlert,
 )
@@ -105,7 +104,6 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         except Exception as e:
             logger.exception( f'Problem fetching NWS current conditions: {e}' )
 
-
         # Fetch hourly forecast data
         try:
             interval_hourly_forecast_list = self.get_forecast_hourly(
@@ -158,7 +156,8 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             station = station,
         )
 
-    def get_forecast_hourly( self, geographic_location : GeographicLocation ) -> List[ IntervalWeatherForecast ]:
+    def get_forecast_hourly( self,
+                             geographic_location : GeographicLocation ) -> List[ IntervalWeatherForecast ]:
         points_data = self._get_points_data( geographic_location = geographic_location )
 
         properties_data = points_data.get('properties')
@@ -1038,8 +1037,8 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         return alerts_data
 
     def _parse_alerts_data( self, 
-                           alerts_data : Dict[str, Any],
-                           geographic_location : GeographicLocation ) -> List[WeatherAlert]:
+                            alerts_data : Dict[str, Any],
+                            geographic_location : GeographicLocation ) -> List[WeatherAlert]:
         """Parse NWS alerts API response into WeatherAlert objects."""
         weather_alerts = []
         
@@ -1114,8 +1113,10 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                 try:
                     effective = self._parse_iso_datetime(properties.get('effective'))
                     expires = self._parse_iso_datetime(properties.get('expires'))
-                    onset = self._parse_iso_datetime(properties.get('onset')) if properties.get('onset') else effective
-                    ends = self._parse_iso_datetime(properties.get('ends')) if properties.get('ends') else expires
+                    onset = self._parse_iso_datetime(properties.get('onset')) \
+                        if properties.get('onset') else effective
+                    ends = self._parse_iso_datetime(properties.get('ends')) \
+                        if properties.get('ends') else expires
                 except Exception as e:
                     logger.warning(f'Problem parsing alert timestamps: {e}')
                     continue

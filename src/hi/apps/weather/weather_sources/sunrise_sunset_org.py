@@ -107,7 +107,9 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
 
         return
 
-    def get_astronomical_data(self, geographic_location: GeographicLocation, target_date: date = None) -> AstronomicalData:
+    def get_astronomical_data( self,
+                               geographic_location : GeographicLocation,
+                               target_date         : date = None) -> AstronomicalData:
         """Get astronomical data for a specific date and location."""
         if target_date is None:
             target_date = datetimeproxy.now().date()
@@ -184,7 +186,9 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
 
         return astronomical_data
 
-    def get_astronomical_data_list(self, geographic_location: GeographicLocation, days_count: int = 10) -> List[IntervalAstronomical]:
+    def get_astronomical_data_list( self,
+                                    geographic_location : GeographicLocation,
+                                    days_count          : int = 10) -> List[IntervalAstronomical]:
         """Get astronomical data for multiple consecutive days starting from today."""
         
         astronomical_data_list = []
@@ -230,7 +234,9 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
                 
         return astronomical_data_list
         
-    def _get_astronomical_api_data(self, geographic_location: GeographicLocation, target_date: date) -> Dict[str, Any]:
+    def _get_astronomical_api_data( self,
+                                    geographic_location : GeographicLocation,
+                                    target_date         : date) -> Dict[str, Any]:
         cache_key = f'ws:{self.id}:astronomical:{geographic_location.latitude:.3f}:{geographic_location.longitude:.3f}:{target_date}'
         api_data_str = self.redis_client.get(cache_key)
 
@@ -253,7 +259,9 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
                                   ex = self.ASTRONOMICAL_DATA_CACHE_EXPIRY_SECS)
         return api_data
 
-    def _get_astronomical_api_data_from_api(self, geographic_location: GeographicLocation, target_date: date) -> Dict[str, Any]:
+    def _get_astronomical_api_data_from_api( self,
+                                             geographic_location : GeographicLocation,
+                                             target_date         : date) -> Dict[str, Any]:
         # Build API URL with parameters
         url = (f"{self.BASE_URL}?"
                f"lat={geographic_location.latitude}&"

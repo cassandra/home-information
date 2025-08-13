@@ -28,7 +28,6 @@ from .transient_models import (
     EnvironmentalData,
     DailyHistory,
     WeatherOverviewData,
-    IntervalEnvironmentalData,
     IntervalWeatherForecast,
     IntervalWeatherHistory,
     IntervalAstronomical,
@@ -123,7 +122,7 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
                     location_key=location_key
                 )
             except Exception as e:
-                logger.warning(f"Error populating daily weather fallbacks (returning data without fallbacks): {e}")
+                logger.warning(f"Error populating daily weather fallbacks: {e}")
             
             return self._current_conditions_data
     
@@ -175,7 +174,7 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
                     location_key=location_key
                 )
             except Exception as e:
-                logger.warning(f"Error recording daily weather tracking data (continuing with main processing): {e}")
+                logger.warning(f"Error recording daily weather tracking data: {e}")
         return
 
     async def update_todays_astronomical_data( self,
@@ -194,8 +193,7 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
                                       forecast_data_list  : List[IntervalWeatherForecast] ):
         """Update hourly forecast data using IntervalDataManager for interval reconciliation."""
         async with self._data_async_lock:
-            # Add to interval manager for aggregation (no conversion needed - IntervalWeatherForecast extends IntervalEnvironmentalData)
-            logger.debug( f'Adding hourly forecast : {weather_data_source.id} [{len(forecast_data_list)} items]' )
+            logger.debug( f'Adding hourly forecast : {weather_data_source.id} [{len(forecast_data_list)}]' )
             self._hourly_forecast_manager.add_data(
                 data_point_source = weather_data_source.data_point_source,
                 new_interval_data_list = forecast_data_list
@@ -210,8 +208,7 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
                                      forecast_data_list  : List[IntervalWeatherForecast] ):
         """Update daily forecast data using IntervalDataManager for interval reconciliation."""
         async with self._data_async_lock:
-            # Add to interval manager for aggregation (no conversion needed - IntervalWeatherForecast extends IntervalEnvironmentalData)
-            logger.debug( f'Adding daily forecast: {weather_data_source.id} [{len(forecast_data_list)} items]' )
+            logger.debug( f'Adding daily forecast: {weather_data_source.id} [{len(forecast_data_list)}]' )
             self._daily_forecast_manager.add_data(
                 data_point_source = weather_data_source.data_point_source,
                 new_interval_data_list = forecast_data_list
@@ -226,8 +223,7 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
                                     history_data_list   : List[IntervalWeatherHistory] ):
         """Update daily history data using IntervalDataManager for interval reconciliation.""" 
         async with self._data_async_lock:
-            # Add to interval manager for aggregation (no conversion needed - IntervalWeatherHistory extends IntervalEnvironmentalData)
-            logger.debug( f'Adding daily history: {weather_data_source.id} [{len(history_data_list)} items]' )
+            logger.debug( f'Adding daily history: {weather_data_source.id} [{len(history_data_list)}]' )
             self._daily_history_manager.add_data(
                 data_point_source = weather_data_source.data_point_source,
                 new_interval_data_list = history_data_list
@@ -242,8 +238,8 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
                                         astronomical_data_list : List[IntervalAstronomical] ):
         """Update astronomical data using IntervalDataManager for interval reconciliation."""
         async with self._data_async_lock:
-            # Add to interval manager for aggregation (no conversion needed - IntervalAstronomical extends IntervalEnvironmentalData)
-            logger.debug( f'Adding astronomical: {weather_data_source.id} [{len(astronomical_data_list)} items]' )
+            logger.debug( f'Adding astronomical: {weather_data_source.id}'
+                          f' [{len(astronomical_data_list)} items]' )
             self._daily_astronomical_manager.add_data(
                 data_point_source = weather_data_source.data_point_source,
                 new_interval_data_list = astronomical_data_list
@@ -259,11 +255,13 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
         # Check if weather alerts processing is enabled
         weather_settings_helper = WeatherSettingsHelper()
         if not weather_settings_helper.is_weather_alerts_enabled():
-            logger.debug(f'Weather alerts processing disabled, ignoring {len(weather_alerts)} alerts from {weather_data_source.id}')
+            logger.debug(f'Weather alerts processing disabled, ignoring'
+                         f' {len(weather_alerts)} alerts from {weather_data_source.id}')
             return
             
         async with self._data_async_lock:
-            logger.debug( f'Received weather alerts from {weather_data_source.id}: {len(weather_alerts)} alerts' )
+            logger.debug( f'Received weather alerts from {weather_data_source.id}:'
+                          f' {len(weather_alerts)} alerts' )
             
             # For now, simply replace all alerts with the new ones from this source
             # TODO: Future enhancement could merge alerts from multiple sources
@@ -271,7 +269,8 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
             
             # Log alerts for development visibility
             for alert in weather_alerts:
-                logger.info( f'Weather Alert: {alert.event_type.label} ({alert.event}) - {alert.severity.label} - {alert.headline}' )
+                logger.info( f'Weather Alert: {alert.event_type.label}'
+                             f' ({alert.event}) - {alert.severity.label} - {alert.headline}' )
             
             # Create system alarms from weather alerts
             try:
@@ -347,7 +346,8 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
                 continue
 
             if self.TRACE:
-                logger.debug( f'Overwriting stale data: {field_name} = {new_datapoint} [age={current_datapoint_age}]' )
+                logger.debug( f'Overwriting stale data:'
+                              f' {field_name} = {new_datapoint} [age={current_datapoint_age}]' )
 
             setattr( current_data, field_name, new_datapoint )
             continue

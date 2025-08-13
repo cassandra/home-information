@@ -11,7 +11,6 @@ The mapping strategy is based on:
 4. Alert urgency and certainty
 """
 import logging
-from datetime import datetime, timedelta
 from typing import List, Optional
 
 import hi.apps.common.datetimeproxy as datetimeproxy
@@ -203,8 +202,8 @@ class WeatherAlertAlarmMapper:
             # Create alarms for EXTREME and SEVERE, optionally for MODERATE based on urgency
             if weather_alert.severity in [AlertSeverity.EXTREME, AlertSeverity.SEVERE]:
                 return True
-            if (weather_alert.severity == AlertSeverity.MODERATE and 
-                weather_alert.urgency == AlertUrgency.IMMEDIATE):
+            if ( weather_alert.severity == AlertSeverity.MODERATE
+                 and weather_alert.urgency == AlertUrgency.IMMEDIATE ):
                 return True
         
         # Don't create alarms for informational events

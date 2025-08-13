@@ -78,7 +78,8 @@ class IntervalDataManager:
         """ Distribute source interval data into the existing aggregate intervals it overlaps with. """
 
         if self.TRACE:
-            logger.debug( f'Adding interval data from: {data_point_source.id} [{len(source_interval_data_list)} intervals]' )
+            logger.debug( f'Adding interval data from:'
+                          f' {data_point_source.id} [{len(source_interval_data_list)} intervals]' )
             
         for source_interval_data in source_interval_data_list:
             for aggregated_interval_data in self._aggregated_interval_data_list:

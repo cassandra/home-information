@@ -105,3 +105,4 @@ class WeatherSettingsHelper(SettingsMixin):
             'polling_interval_minutes': self.get_default_polling_interval_minutes(),
             'cache_enabled': self.is_weather_cache_enabled(),
         }
+    

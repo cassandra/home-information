@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import json
 import logging
 import requests
@@ -21,7 +21,6 @@ from hi.apps.weather.transient_models import (
     Station,
 )
 from hi.apps.weather.weather_mixins import WeatherMixin
-from hi.apps.weather.wmo_units import WmoUnits
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
 
@@ -37,7 +36,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
     CURRENT_DATA_CACHE_EXPIRY_SECS = 10 * 60  # Cache for 10 minutes
     FORECAST_DATA_CACHE_EXPIRY_SECS = 60 * 60  # Cache for 1 hour
-    HISTORICAL_DATA_CACHE_EXPIRY_SECS = 30 * 24 * 60 * 60  # Cache for 30 days - historical data rarely changes
+    HISTORICAL_DATA_CACHE_EXPIRY_SECS = 30 * 24 * 60 * 60  # 30 days - historical data rarely changes
     
     SKIP_CACHE = False  # For debugging    
     
@@ -123,13 +122,11 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 geographic_location = geographic_location,
                 days_back = 7,
             )
-            logger.debug(f'OpenMeteo returned {len(interval_daily_history_list) if interval_daily_history_list else 0} historical data items')
             if interval_daily_history_list:
                 await weather_manager.update_daily_history(
                     weather_data_source = self,
                     history_data_list = interval_daily_history_list,
                 )
-                logger.debug(f'Successfully updated daily history with {len(interval_daily_history_list)} items')
             else:
                 logger.warning('OpenMeteo returned no historical weather data')
         except Exception as e:
@@ -161,7 +158,9 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             geographic_location = geographic_location,
         )
 
-    def get_historical_weather(self, geographic_location: GeographicLocation, days_back: int = 7) -> List[IntervalWeatherHistory]:
+    def get_historical_weather( self,
+                                geographic_location : GeographicLocation,
+                                days_back           : int = 7) -> List[IntervalWeatherHistory]:
         end_date = datetimeproxy.now().date()
         start_date = end_date - timedelta(days = days_back)
         
@@ -217,7 +216,8 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             weather_conditions_data.temperature = NumericDataPoint(
                 station = station,
                 source_datetime = source_datetime,
-                quantity_ave = UnitQuantity(temperature, OpenMeteoConverters.normalize_temperature_unit(temp_unit)),
+                quantity_ave = UnitQuantity( temperature,
+                                             OpenMeteoConverters.normalize_temperature_unit(temp_unit)),
             )
 
         # Wind speed from current weather
@@ -285,7 +285,10 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                         weather_conditions_data.dew_point = NumericDataPoint(
                             station = station,
                             source_datetime = source_datetime,
-                            quantity_ave = UnitQuantity(dewpoint, OpenMeteoConverters.normalize_temperature_unit(dewpoint_unit)),
+                            quantity_ave = UnitQuantity(
+                                dewpoint,
+                                OpenMeteoConverters.normalize_temperature_unit(dewpoint_unit)
+                            ),
                         )
 
                 # Precipitation
@@ -296,7 +299,10 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                         weather_conditions_data.precipitation_last_hour = NumericDataPoint(
                             station = station,
                             source_datetime = source_datetime,
-                            quantity_ave = UnitQuantity(precipitation, OpenMeteoConverters.normalize_precipitation_unit(precip_unit)),
+                            quantity_ave = UnitQuantity(
+                                precipitation, OpenMeteoConverters
+                                .normalize_precipitation_unit(precip_unit)
+                            ),
                         )
 
                 # Pressure (sea level)
@@ -307,7 +313,10 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                         weather_conditions_data.sea_level_pressure = NumericDataPoint(
                             station = station,
                             source_datetime = source_datetime,
-                            quantity_ave = UnitQuantity(pressure, OpenMeteoConverters.normalize_pressure_unit(pressure_unit)),
+                            quantity_ave = UnitQuantity(
+                                pressure,
+                                OpenMeteoConverters.normalize_pressure_unit(pressure_unit)
+                            ),
                         )
 
             except (ValueError, IndexError):
@@ -325,20 +334,14 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         if not hourly_data or not hourly_data.get('time'):
             raise ValueError('Missing "hourly" or "time" in OpenMeteo forecast payload.')
 
-        try:
-            generation_time = forecast_data.get('generationtime_ms', 0) / 1000.0
-            source_datetime = datetimeproxy.now()
-        except Exception as e:
-            logger.warning(f'Problem with OpenMeteo generation time: {e}')
-            source_datetime = datetimeproxy.now()
-
+        source_datetime = datetimeproxy.now()
         elevation = forecast_data.get('elevation')
         elevation_quantity = UnitQuantity(elevation, 'm') if elevation is not None else None
 
         station = Station(
             source = self.data_point_source,
-            station_id = f'openmeteo-hourly:{geographic_location.latitude:.3f}:{geographic_location.longitude:.3f}',
-            name = f'OpenMeteo Hourly ({geographic_location.latitude:.3f}, {geographic_location.longitude:.3f})',
+            station_id = f'openmeteo-hourly:{geographic_location}',
+            name = f'OpenMeteo Hourly ({geographic_location})',
             geo_location = GeographicLocation(
                 latitude = forecast_data.get('latitude', geographic_location.latitude),
                 longitude = forecast_data.get('longitude', geographic_location.longitude),
@@ -379,7 +382,10 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                     forecast_data.temperature = NumericDataPoint(
                         station = station,
                         source_datetime = source_datetime,
-                        quantity_ave = UnitQuantity(temperature, OpenMeteoConverters.normalize_temperature_unit(temp_unit)),
+                        quantity_ave = UnitQuantity(
+                            temperature,
+                            OpenMeteoConverters.normalize_temperature_unit(temp_unit)
+                        ),
                     )
 
             # Relative humidity
@@ -400,7 +406,10 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                     forecast_data.windspeed = NumericDataPoint(
                         station = station,
                         source_datetime = source_datetime,
-                        quantity_ave = UnitQuantity(windspeed, OpenMeteoConverters.normalize_wind_unit(wind_unit)),
+                        quantity_ave = UnitQuantity(
+                            windspeed,
+                            OpenMeteoConverters.normalize_wind_unit(wind_unit)
+                        ),
                     )
 
             # Wind direction
@@ -421,7 +430,10 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                     forecast_data.precipitation_probability = NumericDataPoint(
                         station = station,
                         source_datetime = source_datetime,
-                        quantity_ave = UnitQuantity(precipitation, OpenMeteoConverters.normalize_precipitation_unit(precip_unit)),
+                        quantity_ave = UnitQuantity(
+                            precipitation,
+                            OpenMeteoConverters.normalize_precipitation_unit(precip_unit)
+                        ),
                     )
 
             # Weather code
@@ -469,8 +481,8 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
         station = Station(
             source = self.data_point_source,
-            station_id = f'openmeteo-daily:{geographic_location.latitude:.3f}:{geographic_location.longitude:.3f}',
-            name = f'OpenMeteo Daily ({geographic_location.latitude:.3f}, {geographic_location.longitude:.3f})',
+            station_id = f'openmeteo-daily:{geographic_location}',
+            name = f'OpenMeteo Daily ({geographic_location})',
             geo_location = GeographicLocation(
                 latitude = forecast_data.get('latitude', geographic_location.latitude),
                 longitude = forecast_data.get('longitude', geographic_location.longitude),
@@ -489,7 +501,8 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             # Parse time interval
             try:
                 date_obj = datetime.fromisoformat(date_str).date()
-                interval_start = datetimeproxy.iso_naive_to_datetime_utc(datetime.combine(date_obj, datetime.min.time()).isoformat())
+                datetime_obj = datetime.combine( date_obj, datetime.min.time() ).isoformat()
+                interval_start = datetimeproxy.iso_naive_to_datetime_utc( datetime_obj )
                 interval_end = interval_start + timedelta(days = 1)
             except Exception as e:
                 logger.warning(f'Missing or bad date in OpenMeteo daily forecast payload: {e}')
@@ -511,7 +524,10 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                     forecast_data.temperature = NumericDataPoint(
                         station = station,
                         source_datetime = source_datetime,
-                        quantity_max = UnitQuantity(temp_max, OpenMeteoConverters.normalize_temperature_unit(temp_unit)),
+                        quantity_max = UnitQuantity(
+                            temp_max,
+                            OpenMeteoConverters.normalize_temperature_unit(temp_unit)
+                        ),
                     )
 
             # Temperature min
@@ -519,7 +535,10 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 temp_min = daily_data['temperature_2m_min'][i]
                 if temp_min is not None:
                     temp_unit = daily_units.get('temperature_2m_min', '°C')
-                    quantity_min = UnitQuantity(temp_min, OpenMeteoConverters.normalize_temperature_unit(temp_unit))
+                    quantity_min = UnitQuantity(
+                        temp_min,
+                        OpenMeteoConverters.normalize_temperature_unit(temp_unit)
+                    )
                     if forecast_data.temperature is None:
                         forecast_data.temperature = NumericDataPoint(
                             station = station,
@@ -537,7 +556,10 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                     forecast_data.precipitation_probability = NumericDataPoint(
                         station = station,
                         source_datetime = source_datetime,
-                        quantity_ave = UnitQuantity(precipitation, OpenMeteoConverters.normalize_precipitation_unit(precip_unit)),
+                        quantity_ave = UnitQuantity(
+                            precipitation,
+                            OpenMeteoConverters.normalize_precipitation_unit(precip_unit)
+                        ),
                     )
 
             # Weather code
@@ -564,9 +586,10 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
         return interval_weather_forecast_list
 
-    def _parse_historical_weather_data(self, 
-                                       historical_data: Dict,
-                                       geographic_location: GeographicLocation) -> List[IntervalWeatherHistory]:
+    def _parse_historical_weather_data(
+            self, 
+            historical_data: Dict,
+            geographic_location: GeographicLocation) -> List[IntervalWeatherHistory]:
 
         daily_data = historical_data.get('daily', {})
         daily_units = historical_data.get('daily_units', {})
@@ -581,8 +604,8 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
         station = Station(
             source = self.data_point_source,
-            station_id = f'openmeteo-history:{geographic_location.latitude:.3f}:{geographic_location.longitude:.3f}',
-            name = f'OpenMeteo History ({geographic_location.latitude:.3f}, {geographic_location.longitude:.3f})',
+            station_id = f'openmeteo-history:{geographic_location}',
+            name = f'OpenMeteo History ({geographic_location})',
             geo_location = GeographicLocation(
                 latitude = historical_data.get('latitude', geographic_location.latitude),
                 longitude = historical_data.get('longitude', geographic_location.longitude),
@@ -600,7 +623,8 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             
             try:
                 date_obj = datetime.fromisoformat(date_str).date()
-                interval_start = datetimeproxy.iso_naive_to_datetime_utc(datetime.combine(date_obj, datetime.min.time()).isoformat())
+                datetime_obj = datetime.combine(date_obj, datetime.min.time()).isoformat()
+                interval_start = datetimeproxy.iso_naive_to_datetime_utc( datetime_obj )
                 interval_end = interval_start + timedelta(days = 1)
             except Exception as e:
                 logger.warning(f'Missing or bad date in OpenMeteo historical payload: {e}')
@@ -621,7 +645,10 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                     history_data.temperature = NumericDataPoint(
                         station = station,
                         source_datetime = source_datetime,
-                        quantity_max = UnitQuantity(temp_max, OpenMeteoConverters.normalize_temperature_unit(temp_unit)),
+                        quantity_max = UnitQuantity(
+                            temp_max,
+                            OpenMeteoConverters.normalize_temperature_unit(temp_unit)
+                        ),
                     )
 
             # Temperature min
@@ -629,7 +656,10 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                 temp_min = daily_data['temperature_2m_min'][i]
                 if temp_min is not None:
                     temp_unit = daily_units.get('temperature_2m_min', '°C')
-                    quantity_min = UnitQuantity( temp_min, OpenMeteoConverters.normalize_temperature_unit(temp_unit ))
+                    quantity_min = UnitQuantity(
+                        temp_min,
+                        OpenMeteoConverters.normalize_temperature_unit(temp_unit )
+                    )
                     if history_data.temperature is None:
                         history_data.temperature = NumericDataPoint(
                             station = station,
@@ -647,7 +677,10 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                     history_data.precipitation = NumericDataPoint(
                         station = station,
                         source_datetime = source_datetime,
-                        quantity_ave = UnitQuantity(precipitation, OpenMeteoConverters.normalize_precipitation_unit(precip_unit)),
+                        quantity_ave = UnitQuantity(
+                            precipitation,
+                            OpenMeteoConverters.normalize_precipitation_unit(precip_unit)
+                        ),
                     )
 
             # Weather code
@@ -775,7 +808,10 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
         forecast_data = response.json()           
         return forecast_data
 
-    def _get_historical_weather_data(self, geographic_location: GeographicLocation, start_date, end_date) -> Dict[str, Any]:
+    def _get_historical_weather_data( self,
+                                      geographic_location  : GeographicLocation,
+                                      start_date           : date,
+                                      end_date             : date ) -> Dict[str, Any]:
         cache_key = f'ws:{self.id}:historical:{geographic_location}:{start_date}:{end_date}'
         historical_data_str = self.redis_client.get(cache_key)
 
@@ -799,7 +835,10 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                                   ex = self.HISTORICAL_DATA_CACHE_EXPIRY_SECS)
         return historical_data
 
-    def _get_historical_weather_data_from_api(self, geographic_location: GeographicLocation, start_date, end_date) -> Dict[str, Any]:
+    def _get_historical_weather_data_from_api( self,
+                                               geographic_location  : GeographicLocation,
+                                               start_date           : date,
+                                               end_date             : date ) -> Dict[str, Any]:
         # Request historical weather data from archive API
         url = (f"{self.ARCHIVE_BASE_URL}?"
                f"latitude={geographic_location.latitude}&"

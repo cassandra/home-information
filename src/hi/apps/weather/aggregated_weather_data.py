@@ -30,7 +30,6 @@ class AggregatedWeatherData:
     that overlap with a target time interval. It provides sophisticated merging logic
     that considers source priority, data freshness, and time-weighted averaging.
     """
-
     
     # How old source data has to be for lower priority sources to
     # override higher priority sources (in seconds)
@@ -351,11 +350,9 @@ class AggregatedWeatherData:
         Returns:
             New AggregatedWeatherData instance ready for source data
         """
-        from .transient_models import WeatherForecastData
         from .interval_models import SourceFieldData
         from dataclasses import fields
         
-            
         # Initialize source_data with SourceFieldData for each DataPoint field
         from .model_helpers import is_datapoint_field
         

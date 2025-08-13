@@ -31,7 +31,7 @@ def _create_dynamic_weather_settings() -> Dict[str, SettingDefinition]:
             api_key_key = f"{source.id.upper()}_API_KEY"
             settings_dict[api_key_key] = SettingDefinition(
                 label=f'{source.label} API Key',
-                description=f'API key for {source.label} weather service (required if {source.label} is enabled).',
+                description=f'API key for {source.label} weather service (required if is enabled).',
                 value_type=AttributeValueType.SECRET,
                 value_range_str='',
                 is_editable=True,

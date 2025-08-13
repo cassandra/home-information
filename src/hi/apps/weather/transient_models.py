@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field, fields
 from datetime import datetime, time, timedelta
-from typing import Dict, Generic, List, Set, TypeVar, get_origin
+from typing import Dict, Generic, List, Set, TypeVar
 
 from pint.errors import OffsetUnitCalculusError
 

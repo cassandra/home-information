@@ -365,7 +365,6 @@ class WeatherSyntheticData:
         if not source:
             source = cls._create_default_source()
         
-        station = cls._create_test_station(source)
         interval_forecast_data_list = list()
         
         for hour_idx in range(24):
@@ -406,7 +405,6 @@ class WeatherSyntheticData:
         if not source:
             source = cls._create_default_source()
         
-        station = cls._create_test_station(source)
         interval_forecast_data_list = list()
         
         for day_idx in range(10):
@@ -447,7 +445,6 @@ class WeatherSyntheticData:
         if not source:
             source = cls._create_default_source()
         
-        station = cls._create_test_station(source)
         interval_history_data_list = list()
         
         for day_idx in range(10):

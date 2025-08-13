@@ -41,7 +41,8 @@ class WeatherSourceDiscovery:
                             try:
                                 source_instance = obj()
                                 discovered_sources.append(source_instance)
-                                logger.debug(f'Discovered weather source: {source_instance.label} ({source_instance.id})')
+                                logger.debug(f'Discovered weather source:'
+                                             f' {source_instance.label} ({source_instance.id})')
                             except Exception as e:
                                 logger.warning(f'Failed to instantiate weather source {name}: {e}')
                             continue

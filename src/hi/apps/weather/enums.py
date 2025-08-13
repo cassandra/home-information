@@ -144,84 +144,84 @@ class WeatherEventType( LabeledEnum ):
     """
     
     # Severe Weather Events
-    TORNADO                = ( 'Tornado'                    , 'Rotating column of air extending from thunderstorm to ground' )
-    SEVERE_THUNDERSTORM    = ( 'Severe Thunderstorm'       , 'Thunderstorm with damaging winds, hail, or tornadoes' )
-    EXTREME_WIND           = ( 'Extreme Wind'              , 'Exceptionally strong winds causing widespread damage' )
-    HAIL                   = ( 'Hail'                       , 'Ice pellets falling from thunderstorms' )
-    LIGHTNING              = ( 'Lightning'                  , 'Electrical discharge from thunderstorms' )
+    TORNADO                = ( 'Tornado'   , 'Rotating column of air extending from thunderstorm to ground' )
+    SEVERE_THUNDERSTORM    = ( 'Severe Thunderstorm', 'Thunderstorm with damaging winds, hail, or tornadoes' )
+    EXTREME_WIND           = ( 'Extreme Wind'       , 'Exceptionally strong winds causing widespread damage' )
+    HAIL                   = ( 'Hail'               , 'Ice pellets falling from thunderstorms' )
+    LIGHTNING              = ( 'Lightning'          , 'Electrical discharge from thunderstorms' )
     
     # Flooding Events  
-    FLASH_FLOOD            = ( 'Flash Flood'               , 'Sudden flooding in normally dry areas' )
-    FLOOD                  = ( 'Flood'                     , 'Overflow of water onto normally dry land' )
-    COASTAL_FLOOD          = ( 'Coastal Flood'             , 'Flooding of coastal areas due to storm surge or high tide' )
-    LAKESHORE_FLOOD        = ( 'Lakeshore Flood'           , 'Flooding along lake shores' )
+    FLASH_FLOOD            = ( 'Flash Flood'       , 'Sudden flooding in normally dry areas' )
+    FLOOD                  = ( 'Flood'             , 'Overflow of water onto normally dry land' )
+    COASTAL_FLOOD          = ( 'Coastal Flood' , 'Flooding of coastal areas due to storm surge or high tide' )
+    LAKESHORE_FLOOD        = ( 'Lakeshore Flood'   , 'Flooding along lake shores' )
     
     # Winter Weather Events
-    BLIZZARD               = ( 'Blizzard'                  , 'Severe snowstorm with strong winds and low visibility' )
-    WINTER_STORM           = ( 'Winter Storm'              , 'Storm with snow, ice, sleet, or freezing rain' )
-    ICE_STORM              = ( 'Ice Storm'                 , 'Freezing rain creating dangerous ice accumulation' )
-    HEAVY_SNOW             = ( 'Heavy Snow'                , 'Significant snow accumulation' )
-    FREEZING_RAIN          = ( 'Freezing Rain'             , 'Rain that freezes upon contact with surfaces' )
+    BLIZZARD               = ( 'Blizzard'          , 'Severe snowstorm with strong winds and low visibility' )
+    WINTER_STORM           = ( 'Winter Storm'      , 'Storm with snow, ice, sleet, or freezing rain' )
+    ICE_STORM              = ( 'Ice Storm'         , 'Freezing rain creating dangerous ice accumulation' )
+    HEAVY_SNOW             = ( 'Heavy Snow'        , 'Significant snow accumulation' )
+    FREEZING_RAIN          = ( 'Freezing Rain'     , 'Rain that freezes upon contact with surfaces' )
     
     # Tropical Weather Events
-    HURRICANE              = ( 'Hurricane'                 , 'Tropical cyclone with sustained winds 74+ mph' )
-    TROPICAL_STORM         = ( 'Tropical Storm'            , 'Tropical cyclone with sustained winds 39-73 mph' )
-    STORM_SURGE            = ( 'Storm Surge'               , 'Abnormal rise in sea level during storms' )
+    HURRICANE              = ( 'Hurricane'         , 'Tropical cyclone with sustained winds 74+ mph' )
+    TROPICAL_STORM         = ( 'Tropical Storm'    , 'Tropical cyclone with sustained winds 39-73 mph' )
+    STORM_SURGE            = ( 'Storm Surge'       , 'Abnormal rise in sea level during storms' )
     
     # Temperature Extremes
-    EXTREME_HEAT           = ( 'Extreme Heat'              , 'Dangerously high temperatures' )
-    EXTREME_COLD           = ( 'Extreme Cold'              , 'Dangerously low temperatures' )
-    WIND_CHILL             = ( 'Wind Chill'                , 'Dangerous cold from combination of wind and temperature' )
+    EXTREME_HEAT           = ( 'Extreme Heat'      , 'Dangerously high temperatures' )
+    EXTREME_COLD           = ( 'Extreme Cold'      , 'Dangerously low temperatures' )
+    WIND_CHILL             = ( 'Wind Chill'    , 'Dangerous cold from combination of wind and temperature' )
     
     # Geophysical Events
-    EARTHQUAKE             = ( 'Earthquake'                , 'Ground shaking from tectonic activity' )
-    TSUNAMI                = ( 'Tsunami'                   , 'Ocean waves caused by underwater disturbances' )
-    VOLCANIC_ACTIVITY      = ( 'Volcanic Activity'         , 'Volcanic eruptions or related phenomena' )
-    ASHFALL               = ( 'Ashfall'                   , 'Volcanic ash falling from the atmosphere' )
-    AVALANCHE              = ( 'Avalanche'                 , 'Mass of snow sliding down mountainside' )
+    EARTHQUAKE             = ( 'Earthquake'        , 'Ground shaking from tectonic activity' )
+    TSUNAMI                = ( 'Tsunami'           , 'Ocean waves caused by underwater disturbances' )
+    VOLCANIC_ACTIVITY      = ( 'Volcanic Activity' , 'Volcanic eruptions or related phenomena' )
+    ASHFALL               = ( 'Ashfall'           , 'Volcanic ash falling from the atmosphere' )
+    AVALANCHE              = ( 'Avalanche'         , 'Mass of snow sliding down mountainside' )
     
     # Fire and Atmospheric Events
-    WILDFIRE               = ( 'Wildfire'                  , 'Uncontrolled fire in natural areas' )
+    WILDFIRE               = ( 'Wildfire'          , 'Uncontrolled fire in natural areas' )
     RED_FLAG_CONDITIONS    = ( 'Red Flag Conditions'       , 'Weather conditions conducive to wildfire' )
-    DUST_STORM             = ( 'Dust Storm'                , 'Strong winds carrying clouds of dust' )
-    AIR_QUALITY            = ( 'Air Quality'               , 'Poor air quality affecting health' )
-    SMOKE                  = ( 'Smoke'                     , 'Smoke from fires affecting air quality' )
+    DUST_STORM             = ( 'Dust Storm'        , 'Strong winds carrying clouds of dust' )
+    AIR_QUALITY            = ( 'Air Quality'       , 'Poor air quality affecting health' )
+    SMOKE                  = ( 'Smoke'             , 'Smoke from fires affecting air quality' )
     
     # Marine Events
-    HIGH_SURF              = ( 'High Surf'                 , 'Dangerous waves along coastlines' )
-    RIP_CURRENT            = ( 'Rip Current'               , 'Strong ocean currents flowing away from shore' )
-    MARINE_WEATHER         = ( 'Marine Weather'            , 'Hazardous conditions for marine activities' )
-    GALE                   = ( 'Gale'                      , 'Strong winds on water bodies' )
+    HIGH_SURF              = ( 'High Surf'         , 'Dangerous waves along coastlines' )
+    RIP_CURRENT            = ( 'Rip Current'       , 'Strong ocean currents flowing away from shore' )
+    MARINE_WEATHER         = ( 'Marine Weather'    , 'Hazardous conditions for marine activities' )
+    GALE                   = ( 'Gale'              , 'Strong winds on water bodies' )
     
     # Astronomical/Space Events
-    METEOR_SHOWER          = ( 'Meteor Shower'             , 'Multiple meteors visible in night sky' )
-    SOLAR_FLARE            = ( 'Solar Flare'               , 'Intense radiation from solar activity' )
-    GEOMAGNETIC_STORM      = ( 'Geomagnetic Storm'         , 'Disturbance in Earth\'s magnetic field' )
-    AURORA                 = ( 'Aurora'                    , 'Natural light display in polar regions' )
+    METEOR_SHOWER          = ( 'Meteor Shower'     , 'Multiple meteors visible in night sky' )
+    SOLAR_FLARE            = ( 'Solar Flare'       , 'Intense radiation from solar activity' )
+    GEOMAGNETIC_STORM      = ( 'Geomagnetic Storm' , 'Disturbance in Earth\'s magnetic field' )
+    AURORA                 = ( 'Aurora'            , 'Natural light display in polar regions' )
     
     # Public Safety Events
-    CIVIL_DANGER           = ( 'Civil Danger'              , 'Civil emergency requiring immediate action' )
-    EVACUATION             = ( 'Evacuation'                , 'Order to leave area due to danger' )
-    SHELTER_IN_PLACE       = ( 'Shelter in Place'          , 'Order to remain indoors for safety' )
+    CIVIL_DANGER           = ( 'Civil Danger'      , 'Civil emergency requiring immediate action' )
+    EVACUATION             = ( 'Evacuation'        , 'Order to leave area due to danger' )
+    SHELTER_IN_PLACE       = ( 'Shelter in Place'  , 'Order to remain indoors for safety' )
     HAZARDOUS_MATERIALS    = ( 'Hazardous Materials'       , 'Release or threat of dangerous substances' )
     RADIOLOGICAL_HAZARD    = ( 'Radiological Hazard'       , 'Radiation threat to public safety' )
     
     # Security/Emergency Events
-    AMBER_ALERT            = ( 'AMBER Alert'               , 'Child abduction emergency' )
-    BLUE_ALERT             = ( 'Blue Alert'                , 'Threat to law enforcement officers' )
-    LAW_ENFORCEMENT        = ( 'Law Enforcement'           , 'Law enforcement emergency or warning' )
+    AMBER_ALERT            = ( 'AMBER Alert'       , 'Child abduction emergency' )
+    BLUE_ALERT             = ( 'Blue Alert'        , 'Threat to law enforcement officers' )
+    LAW_ENFORCEMENT        = ( 'Law Enforcement'   , 'Law enforcement emergency or warning' )
     
     # Communication/Infrastructure
-    TELEPHONE_OUTAGE       = ( 'Telephone Outage'          , 'Emergency telephone service disruption' )
-    POWER_OUTAGE           = ( 'Power Outage'              , 'Electrical power service disruption' )
+    TELEPHONE_OUTAGE       = ( 'Telephone Outage'  , 'Emergency telephone service disruption' )
+    POWER_OUTAGE           = ( 'Power Outage'      , 'Electrical power service disruption' )
     
     # Test and Administrative
-    TEST_MESSAGE           = ( 'Test Message'              , 'System test or drill message' )
-    ADMINISTRATIVE         = ( 'Administrative'            , 'Administrative or informational message' )
+    TEST_MESSAGE           = ( 'Test Message'      , 'System test or drill message' )
+    ADMINISTRATIVE         = ( 'Administrative'    , 'Administrative or informational message' )
     
     # General/Other
-    SPECIAL_WEATHER        = ( 'Special Weather'           , 'Unusual weather conditions not fitting other categories' )
-    OTHER                  = ( 'Other'                     , 'Events not fitting standard categories' )
+    SPECIAL_WEATHER        = ( 'Special Weather', 'Unusual weather conditions not fitting other categories' )
+    OTHER                  = ( 'Other'             , 'Events not fitting standard categories' )
 
 
 class CloudCoverageType( LabeledEnum ):

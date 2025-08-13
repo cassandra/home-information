@@ -65,7 +65,9 @@ class DailyWeatherTracker:
             priority=1000  # Low priority fallback source
         )
     
-    def record_weather_conditions(self, weather_conditions_data: WeatherConditionsData, location_key: str = "default") -> None:
+    def record_weather_conditions( self,
+                                   weather_conditions_data : WeatherConditionsData,
+                                   location_key            : str = "default") -> None:
         """
         Record weather conditions and update daily statistics.
         
@@ -77,8 +79,8 @@ class DailyWeatherTracker:
             location_key: Unique identifier for the location
         """
         # Record temperature if available
-        if (weather_conditions_data.temperature and 
-            weather_conditions_data.temperature.quantity_ave is not None):
+        if ( weather_conditions_data.temperature 
+             and weather_conditions_data.temperature.quantity_ave is not None ):
             temp_celsius = weather_conditions_data.temperature.quantity_ave.to('degree_Celsius').magnitude
             temp_timestamp = weather_conditions_data.temperature.source_datetime or datetimeproxy.now()
             
@@ -97,7 +99,9 @@ class DailyWeatherTracker:
         # if weather_conditions_data.windspeed:
         #     self._record_wind_speed(weather_conditions_data.windspeed, location_key)
     
-    def populate_daily_fallbacks(self, weather_conditions_data: WeatherConditionsData, location_key: str = "default") -> None:
+    def populate_daily_fallbacks( self,
+                                  weather_conditions_data : WeatherConditionsData,
+                                  location_key            : str = "default") -> None:
         """
         Populate missing daily weather data with fallback values from tracking.
         
@@ -110,7 +114,8 @@ class DailyWeatherTracker:
         """
         try:
             # Populate today's temperature min/max if not already provided by APIs
-            if not weather_conditions_data.temperature_min_today or not weather_conditions_data.temperature_max_today:
+            if ( not weather_conditions_data.temperature_min_today
+                 or not weather_conditions_data.temperature_max_today ):
                 min_temp, max_temp = self.get_temperature_min_max_today(location_key)
                 
                 if min_temp and not weather_conditions_data.temperature_min_today:
@@ -126,7 +131,9 @@ class DailyWeatherTracker:
             logger.exception(f"Error in populate_daily_fallbacks for location {location_key}: {e}")
             # Don't re-raise - this should never break the caller
     
-    def get_temperature_min_max_today(self, location_key: str = "default") -> Tuple[Optional[NumericDataPoint], Optional[NumericDataPoint]]:
+    def get_temperature_min_max_today(
+            self,
+            location_key: str = "default") -> Tuple[Optional[NumericDataPoint], Optional[NumericDataPoint]]:
         """
         Get today's minimum and maximum temperatures.
         
@@ -166,7 +173,8 @@ class DailyWeatherTracker:
                 quantity_ave=UnitQuantity(max_data['value'], max_data['units'])
             )
             
-            logger.debug(f"Retrieved today's temperature min/max: {min_data['value']:.1f}°C / {max_data['value']:.1f}°C")
+            logger.debug(f"Retrieved today's temperature min/max:"
+                         f" {min_data['value']:.1f}°C / {max_data['value']:.1f}°C")
             
             return min_datapoint, max_datapoint
             
@@ -174,13 +182,13 @@ class DailyWeatherTracker:
             logger.exception(f"Error getting today's temperature min/max: {e}")
             return None, None
     
-    def _record_field_value(self, 
-                           location_key: str, 
-                           field_name: str, 
-                           value: float, 
-                           units: str,
-                           timestamp: datetime,
-                           track_stats: list) -> None:
+    def _record_field_value( self, 
+                             location_key : str, 
+                             field_name   : str, 
+                             value        : float, 
+                             units        : str,
+                             timestamp    : datetime,
+                             track_stats  : list ) -> None:
         """
         Record a value for a weather field and update specified statistics.
         
@@ -267,7 +275,11 @@ class DailyWeatherTracker:
         date_key = today_local.strftime('%Y-%m-%d')
         return self._get_field_stats(location_key, date_key, field_name)
     
-    def _store_field_stats(self, location_key: str, date_key: str, field_name: str, stats: Dict[str, Any]) -> None:
+    def _store_field_stats( self,
+                            location_key : str,
+                            date_key     : str,
+                            field_name   : str,
+                            stats        : Dict[str, Any]) -> None:
         """Store field statistics to cache."""
         cache_key = f"{self.CACHE_KEY_PREFIX}:{location_key}:{date_key}:{field_name}"
         stats_json = json.dumps(stats)
