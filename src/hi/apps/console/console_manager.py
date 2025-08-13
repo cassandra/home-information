@@ -1,18 +1,15 @@
 import logging
 from typing import Dict, List
 
-from django.http import HttpRequest
-
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.entity_manager import EntityManager
+
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 
 from .audio_file import AudioFile
 from .audio_signal import AudioSignal
-from .constants import ConsoleConstants
-from .settings import ConsoleSetting
 from .transient_models import VideoStreamEntity
 
 logger = logging.getLogger(__name__)
@@ -37,20 +34,11 @@ class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin ):
         self._was_initialized = True
         return
 
-    def is_console_locked( self, request : HttpRequest ) -> bool:
-        return request.session.get( ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR, False )
-
     def get_console_audio_map( self ) -> Dict[ str, str ]:
         return self._console_audio_map
 
-    def get_side_template_name_and_context( self, request, *args, **kwargs ):
-        context = {
-            'video_stream_entity_list': self._video_stream_entity_list
-        }
-        return ( 'console/panes/hi_grid_side.html', context )
-    
-    def get_sleep_overlay_opacity( self ) -> str:
-        return self.settings_manager().get_setting_value( ConsoleSetting.SLEEP_OVERLAY_OPACITY )
+    def get_video_stream_entity_list( self ) -> List[ VideoStreamEntity ]:
+        return self._video_stream_entity_list
 
     def _reload_console_audio_map( self ):
         logger.debug( 'Reloading console audio map' )

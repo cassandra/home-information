@@ -12,7 +12,7 @@ from hi.hi_async_view import HiModalView
 from .controller_history_manager import ControllerHistoryManager
 from .control_mixins import ControllerMixin
 from .models import Controller, ControllerHistory
-from .view_mixin import ControlViewMixin
+from .view_mixins import ControlViewMixin
 
 logger = logging.getLogger(__name__)
 

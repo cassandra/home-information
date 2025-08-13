@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
 from hi.apps.console.audio_file import AudioFile
-from hi.apps.console.enums import Theme
+from hi.apps.console.enums import Theme, DisplayUnits
 
 from hi.constants import TIME_OF_DAY_CHOICES, TIMEZONE_NAME_LIST
 
@@ -19,6 +19,7 @@ class PredefinedValueRanges:
     """
 
     TIMEZONE_CHOICES_ID = 'hi.timezone'
+    UNITS_CHOICES_ID = 'hi.units'
     THEME_CHOICES_ID = 'hi.theme'
     AUDIO_FILE_CHOICES_ID = 'hi.audio.file'
     TIME_OF_DAY_CHOICES_ID = 'hi.datetime.time-of-day'
@@ -26,6 +27,7 @@ class PredefinedValueRanges:
     ID_TO_CHOICES = {
         TIME_OF_DAY_CHOICES_ID: TIME_OF_DAY_CHOICES,
         TIMEZONE_CHOICES_ID: [ ( x, x ) for x in TIMEZONE_NAME_LIST ],
+        UNITS_CHOICES_ID: DisplayUnits.choices(),
         THEME_CHOICES_ID: Theme.choices(),
         AUDIO_FILE_CHOICES_ID: AudioFile.choices(),
     }

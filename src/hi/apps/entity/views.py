@@ -14,7 +14,7 @@ from .entity_manager import EntityManager
 from . import forms
 from .models import EntityAttribute
 from .transient_models import EntityEditData, EntityStateHistoryData
-from .view_mixin import EntityViewMixin
+from .view_mixins import EntityViewMixin
 
 logger = logging.getLogger(__name__)
 

@@ -15,7 +15,7 @@ from hi.hi_grid_view import HiGridView
 from .location_manager import LocationManager
 from .models import LocationView
 from .transient_models import LocationEditData, LocationViewEditData
-from .view_mixin import LocationViewMixin
+from .view_mixins import LocationViewMixin
 
 logger = logging.getLogger(__name__)
 

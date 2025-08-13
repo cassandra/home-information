@@ -84,6 +84,19 @@ a.underline:visited {
     border-bottom: 2px solid var(--primary-color);
 }
 
+a.clickable-card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+}
+a.clickable-card:hover,
+a.clickable-card:focus,
+a.clickable-card:active {
+    text-decoration: none;
+    opacity: 0.75;
+}
+
 .text-primary {
     color: var(--primary-color) !important;
 }
@@ -206,7 +219,7 @@ a.underline:visited {
 @media (min-aspect-ratio: 16/9) {
     .interstitial-page {
         flex-direction: row;
-	margin-top: 1rem;
+        margin-top: 1rem;
     }
     .interstitial-header {
         width: 30%;
@@ -292,6 +305,9 @@ a.underline:visited {
 
 .hi-modal-dialog-600 {
     max-width: 600px;
+}
+.hi-modal-dialog-800 {
+    max-width: 800px;
 }
 
 .btn-control {
@@ -597,4 +613,38 @@ g[hover] {
     background-color: black;
     z-index: 9999;
     transition: opacity 0.3s ease;
+}
+
+.scroll-container {
+    overflow-x: auto;
+    white-space: nowrap;
+    adding-bottom: 10px;
+}
+
+.row.flex-nowrap {
+    flex-wrap: nowrap;
+}
+.weather-forecast-daily-col {
+    min-width: 100px;
+}
+
+
+.details-popup-wrapper {
+  position: relative;
+}
+.details-popup-summary {
+  cursor: pointer;
+}
+.details-popup-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  background: white;
+  border: 1px solid #ccc;
+  padding: 1em;
+  width: 100%;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
 }

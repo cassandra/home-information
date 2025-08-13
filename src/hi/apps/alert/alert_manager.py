@@ -1,9 +1,8 @@
 from datetime import datetime
 import logging
-import threading
 
 from hi.apps.common.singleton import Singleton
-from hi.apps.security.security_manager import SecurityManager
+from hi.apps.security.security_mixins import SecurityMixin
 from hi.apps.notify.notify_mixins import NotificationMixin
 
 from .alert import Alert
@@ -14,12 +13,11 @@ from .alert_status import AlertStatusData
 logger = logging.getLogger(__name__)
 
 
-class AlertManager( Singleton, NotificationMixin ):
+class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
 
     def __init_singleton__(self):
         self._alert_queue = AlertQueue()
         self._was_initialized = False
-        self._data_lock = threading.Lock()
         return
 
     def ensure_initialized(self):
@@ -89,7 +87,7 @@ class AlertManager( Singleton, NotificationMixin ):
         if not notification_manager:
             return
         logging.debug( f'Adding Alarm: {alarm}' )
-        security_state = SecurityManager().security_state
+        security_state = self.security_manager().security_state
         try:
             alert = self._alert_queue.add_alarm( alarm = alarm )
             if security_state.uses_notifications and alert.has_single_alarm:

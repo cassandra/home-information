@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.urls import reverse
 
-from hi.apps.event.view_mixin import EventViewMixin
+from hi.apps.event.view_mixins import EventViewMixin
 from hi.apps.event.event_mixins import EventMixin
 
 from hi.hi_async_view import HiModalView

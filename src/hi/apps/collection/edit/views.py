@@ -12,9 +12,9 @@ from django.views.generic import View
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection, CollectionPosition
 from hi.apps.collection.transient_models import CollectionEditData
-from hi.apps.collection.view_mixin import CollectionViewMixin
+from hi.apps.collection.view_mixins import CollectionViewMixin
 import hi.apps.common.antinode as antinode
-from hi.apps.entity.view_mixin import EntityViewMixin
+from hi.apps.entity.view_mixins import EntityViewMixin
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory

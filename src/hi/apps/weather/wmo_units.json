@@ -1,0 +1,2083 @@
+{
+  "@graph" : [ {
+    "@id" : "http://codes.wmo.int/common/unit",
+    "@type" : [ "reg:Register", "skos:Collection", "ldp:Container" ],
+    "dct:description" : {
+      "@language" : "en",
+      "@value" : "WMO No. 306 Vol I.2 Common Code-table C-6 List of units for TDCFs."
+    },
+    "dct:modified" : {
+      "@type" : "xsd:dateTime",
+      "@value" : "2014-09-03T09:53:15.193Z"
+    },
+    "reg:manager" : {
+      "@id" : "http://codes.wmo.int/system/organization/www-dm"
+    },
+    "reg:owner" : {
+      "@id" : "http://codes.wmo.int/system/organization/wmo"
+    },
+    "rdfs:label" : {
+      "@language" : "en",
+      "@value" : "Code Table C-6: List of units for TDCFs"
+    },
+    "owl:versionInfo" : {
+      "@type" : "xsd:integer",
+      "@value" : "1"
+    },
+    "skos:member" : [ {
+      "@id" : "http://codes.wmo.int/common/unit/daPa"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/dB_m-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/E_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/N"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/degC"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/cm_s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/cd"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/K_m-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/'"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/T"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/kg_m-3"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/h_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/0.001"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/C_m-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/nbar"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/Bq_l-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/K_m2_kg-1_s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/hPa_s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/okta"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m2_s-2"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/Bq"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m4"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/hPa"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/K_m_s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/kg_kg-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/cb_-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/pH_unit"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/(Y)_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/g_kg-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/kg"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/dB"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/N_m-2"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/deg2"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/mm_h-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/log_(m-1)"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/mm_s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/kg_m-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/kg_kg-1_s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/Gy"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/W_m-2_sr-1_cm"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/cm_h-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/u"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m3_m-3"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/min"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/s"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/ha"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/degree_(angle)"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/km_h-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m2"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/percent"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/W_m-2_sr-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/kt_km-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m_s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/(z)_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m_s-1_m-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/kt"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/mol_mol-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/mm6_m-3"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/a"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/mon"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/rad_m-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/Sv"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/u_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/lx"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/Bq_s_m-3"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/N_units"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/G_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/Bq_m-3"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/g_kg-1_s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/ft"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/J_kg-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m2_Hz-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/kPa"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/d"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/s_m-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/W_m-2"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/s-2"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m2_-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/da_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m2_s"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m3_s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/Wb"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/pc"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/mol"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/dPa_s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/nautical_mile"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/kg-2_s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/h"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m3"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/W_m-2_sr-1_m"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/(Z)_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m_s-2"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/S_m-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/DU"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/Pa"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/dm"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/mSv"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/cm"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/f_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/C"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/rad"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/a_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/t"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m2_rad-1_s"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/cb_s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/hPa_-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/gpm"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/F"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/d_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/eV"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/c_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/lm"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/km"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/T_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/km_d-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m2_s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/C_-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/A"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/J"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/mm"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/P_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/week"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/AU"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/W_m-1_sr-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/m_s-1_km-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/n_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/''"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/l"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/S"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/M_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/W"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/W_m-3_sr-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/kg_m-2"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/sr"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/Bq_m-2"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/Cel"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/hPa_h-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/Hz"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/Pa_s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/J_m-2"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/log_(m-2)"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/V"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/deg_s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/dB_deg-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/g"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/H"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/degrees_true"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/p_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/Ohm"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/K"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/(y)_pref"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/kg_m-2_s-1"
+    }, {
+      "@id" : "http://codes.wmo.int/common/unit/k_pref"
+    } ],
+    "skos:notation" : "C-6",
+    "ldp:membershipPredicate" : {
+      "@id" : "skos:member"
+    }
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/'",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "111",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "'",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "'",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "MNT",
+    "rdfs:label" : "minute (angle)",
+    "skos:altLabel" : "'",
+    "skos:notation" : "'",
+    "skos:prefLabel" : "minute (angle)"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/''",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "112",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "''",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "''",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "SEC",
+    "rdfs:label" : "second (angle)",
+    "skos:altLabel" : "''",
+    "skos:notation" : "''",
+    "skos:prefLabel" : "second (angle)"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/(Y)_pref",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "(Y)",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "(Y)",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "(Y)",
+    "rdfs:label" : "(yotta)",
+    "skos:altLabel" : "(Y)",
+    "skos:notation" : "(Y)",
+    "skos:prefLabel" : "(yotta)"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/(Z)_pref",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "(Z)",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "(Z)",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "(Z)",
+    "rdfs:label" : "(zetta)",
+    "skos:altLabel" : "(Z)",
+    "skos:notation" : "(Z)",
+    "skos:prefLabel" : "(zetta)"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/(y)_pref",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "(y)",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "(y)",
+    "rdfs:label" : "(yocto)",
+    "skos:altLabel" : "(y)",
+    "skos:notation" : "(y)",
+    "skos:prefLabel" : "(yocto)"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/(z)_pref",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "(z)",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "(z)",
+    "rdfs:label" : "(zepto)",
+    "skos:altLabel" : "(z)",
+    "skos:notation" : "(z)",
+    "skos:prefLabel" : "(zepto)"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/0.001",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "301",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "‰",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "0/00",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "PERTHOU",
+    "rdfs:label" : "parts per thousand",
+    "skos:altLabel" : "‰",
+    "skos:notation" : "0/00",
+    "skos:prefLabel" : "parts per thousand"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/1",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "000",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "1",
+    "rdfs:label" : "Dimensionless",
+    "skos:altLabel" : "1",
+    "skos:notation" : "1",
+    "skos:prefLabel" : "Dimensionless"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/A",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "004",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "A",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "A",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "A",
+    "rdfs:label" : "ampere",
+    "skos:altLabel" : "A",
+    "skos:notation" : "A",
+    "skos:prefLabel" : "ampere"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/AU",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "170",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "AU",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "AU",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "ASU",
+    "rdfs:label" : "astronomic unit",
+    "skos:altLabel" : "AU",
+    "skos:notation" : "AU",
+    "skos:prefLabel" : "astronomic unit"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/Bq",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "080",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "Bq",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "Bq",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "BQ",
+    "dct:definition" : "s^-1",
+    "rdfs:label" : "becquerel",
+    "skos:altLabel" : "Bq",
+    "skos:notation" : "Bq",
+    "skos:prefLabel" : "becquerel"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/Bq_l-1",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "750",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "Bq l^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "Bq/l",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "BQ/L",
+    "rdfs:label" : "becquerels per litre",
+    "skos:altLabel" : "Bq l^-1",
+    "skos:notation" : "Bq/l",
+    "skos:prefLabel" : "becquerels per litre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/Bq_m-2",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "751",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "Bq m^-2",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "Bq m-2",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "BQ/M2",
+    "rdfs:label" : "becquerels per square metre",
+    "skos:altLabel" : "Bq m^-2",
+    "skos:notation" : "Bq m-2",
+    "skos:prefLabel" : "becquerels per square metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/Bq_m-3",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "752",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "Bq m^-3",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "Bq m-3",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "BQ/M3",
+    "rdfs:label" : "becquerels per cubic metre",
+    "skos:altLabel" : "Bq m^-3",
+    "skos:notation" : "Bq m-3",
+    "skos:prefLabel" : "becquerels per cubic metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/Bq_s_m-3",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "830",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "Bq s m^-3",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "Bq s m-3",
+    "rdfs:label" : "becquerel seconds per cubic metre",
+    "skos:altLabel" : "Bq s m^-3",
+    "skos:notation" : "Bq s m-3",
+    "skos:prefLabel" : "becquerel seconds per cubic metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/C",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "035",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "C",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "C",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "C",
+    "dct:definition" : "A s",
+    "rdfs:label" : "coulomb",
+    "skos:altLabel" : "C",
+    "skos:notation" : "C",
+    "skos:prefLabel" : "coulomb"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/C_-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "352",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "˚ C/100 m",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "C/100 m",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "C/100 M",
+    "rdfs:label" : "degrees Celsius per 100 metres",
+    "skos:altLabel" : "˚ C/100 m",
+    "skos:notation" : "C/100 m",
+    "skos:prefLabel" : "degrees Celsius per 100 metres"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/C_m-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "351",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "˚ C/m",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "C/m",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "C/M",
+    "rdfs:label" : "degrees Celsius per metre",
+    "skos:altLabel" : "˚ C/m",
+    "skos:notation" : "C/m",
+    "skos:prefLabel" : "degrees Celsius per metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/Cel",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "060",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "˚C",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "Cel",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "CEL",
+    "dct:definition" : "K+273.15",
+    "rdfs:label" : "degree Celsius",
+    "skos:altLabel" : "˚C",
+    "skos:notation" : "Cel",
+    "skos:prefLabel" : "degree Celsius"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/DU",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "360",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "DU",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "DU",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "DU",
+    "rdfs:label" : "Dobson Unit (9)",
+    "skos:altLabel" : "DU",
+    "skos:notation" : "DU",
+    "skos:prefLabel" : "Dobson Unit (9)"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/E_pref",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "E",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "E",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "E",
+    "rdfs:label" : "exa",
+    "skos:altLabel" : "E",
+    "skos:notation" : "E",
+    "skos:prefLabel" : "exa"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/F",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "037",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "F",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "F",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "F",
+    "dct:definition" : "kg^-1 m^-2 s^4 A^2",
+    "rdfs:label" : "farad",
+    "skos:altLabel" : "F",
+    "skos:notation" : "F",
+    "skos:prefLabel" : "farad"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/G_pref",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "G",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "G",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "G",
+    "rdfs:label" : "giga",
+    "skos:altLabel" : "G",
+    "skos:notation" : "G",
+    "skos:prefLabel" : "giga"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/Gy",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "081",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "Gy",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "Gy",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "GY",
+    "dct:definition" : "m^2 s^-2",
+    "rdfs:label" : "gray",
+    "skos:altLabel" : "Gy",
+    "skos:notation" : "Gy",
+    "skos:prefLabel" : "gray"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/H",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "042",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "H",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "H",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "H",
+    "dct:definition" : "kg m^2 s^-2 A^-2",
+    "rdfs:label" : "henry",
+    "skos:altLabel" : "H",
+    "skos:notation" : "H",
+    "skos:prefLabel" : "henry"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/Hz",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "030",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "Hz",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "Hz",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "HZ",
+    "dct:definition" : "s-^1",
+    "rdfs:label" : "hertz",
+    "skos:altLabel" : "Hz",
+    "skos:notation" : "Hz",
+    "skos:prefLabel" : "hertz"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/J",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "033",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "J",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "J",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "J",
+    "dct:definition" : "kg m^2 s^-2",
+    "rdfs:label" : "joule",
+    "skos:altLabel" : "J",
+    "skos:notation" : "J",
+    "skos:prefLabel" : "joule"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/J_kg-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "806",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "J kg^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "J/kg",
+    "rdfs:label" : "joules per kilogram",
+    "skos:altLabel" : "J kg^-1",
+    "skos:notation" : "J/kg",
+    "skos:prefLabel" : "joules per kilogram"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/J_m-2",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "805",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "J m^-2",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "J m-2",
+    "rdfs:label" : "joules per square metre",
+    "skos:altLabel" : "J m^-2",
+    "skos:notation" : "J m-2",
+    "skos:prefLabel" : "joules per square metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/K",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "005",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "K",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "K",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "K",
+    "rdfs:label" : "kelvin",
+    "skos:altLabel" : "K",
+    "skos:notation" : "K",
+    "skos:prefLabel" : "kelvin"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/K_m-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "786",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "K m^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "K/m",
+    "rdfs:label" : "kelvins per metre",
+    "skos:altLabel" : "K m^-1",
+    "skos:notation" : "K/m",
+    "skos:prefLabel" : "kelvins per metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/K_m2_kg-1_s-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "787",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "K m^2 kg^-1 s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "K m2 kg-1 s-1",
+    "rdfs:label" : "kelvin square metres per kilogram per second",
+    "skos:altLabel" : "K m^2 kg^-1 s^-1",
+    "skos:notation" : "K m2 kg-1 s-1",
+    "skos:prefLabel" : "kelvin square metres per kilogram per second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/K_m_s-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "785",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "K m s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "K m s-1",
+    "rdfs:label" : "kelvin metres per second",
+    "skos:altLabel" : "K m s^-1",
+    "skos:notation" : "K m s-1",
+    "skos:prefLabel" : "kelvin metres per second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/M_pref",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "M",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "M",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "MA",
+    "rdfs:label" : "mega",
+    "skos:altLabel" : "M",
+    "skos:notation" : "M",
+    "skos:prefLabel" : "mega"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/N",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "031",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "N",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "N",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "N",
+    "dct:definition" : "kg m s^-2",
+    "rdfs:label" : "newton",
+    "skos:altLabel" : "N",
+    "skos:notation" : "N",
+    "skos:prefLabel" : "newton"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/N_m-2",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "795",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "N m^-2",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "N m-2",
+    "rdfs:label" : "newtons per square metre",
+    "skos:altLabel" : "N m^-2",
+    "skos:notation" : "N m-2",
+    "skos:prefLabel" : "newtons per square metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/N_units",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "842",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "N units",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "N units",
+    "rdfs:label" : "N units",
+    "skos:altLabel" : "N units",
+    "skos:notation" : "N units",
+    "skos:prefLabel" : "N units"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/Ohm",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "038",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "Ω",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "Ohm",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "OHM",
+    "dct:definition" : "kg m^2 s^-3 A^-2",
+    "rdfs:label" : "ohm",
+    "skos:altLabel" : "Ω",
+    "skos:notation" : "Ohm",
+    "skos:prefLabel" : "ohm"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/P_pref",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "P",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "P",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "PE",
+    "rdfs:label" : "peta",
+    "skos:altLabel" : "P",
+    "skos:notation" : "P",
+    "skos:prefLabel" : "peta"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/Pa",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "032",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "Pa",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "Pa",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "PAL",
+    "dct:definition" : "kg m^-1 s^-2",
+    "rdfs:label" : "pascal",
+    "skos:altLabel" : "Pa",
+    "skos:notation" : "Pa",
+    "skos:prefLabel" : "pascal"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/Pa_s-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "800",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "Pa s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "Pa/s",
+    "rdfs:label" : "pascals per second",
+    "skos:altLabel" : "Pa s^-1",
+    "skos:notation" : "Pa/s",
+    "skos:prefLabel" : "pascals per second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/S",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "039",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "S",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "S",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "SIE",
+    "dct:definition" : "kg^-1 m^-2 s^3 A^2",
+    "rdfs:label" : "siemens",
+    "skos:altLabel" : "S",
+    "skos:notation" : "S",
+    "skos:prefLabel" : "siemens"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/S_m-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "820",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "S m^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "S/m",
+    "rdfs:label" : "siemens per metre",
+    "skos:altLabel" : "S m^-1",
+    "skos:notation" : "S/m",
+    "skos:prefLabel" : "siemens per metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/Sv",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "082",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "Sv",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "Sv",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "SV",
+    "dct:definition" : "m^2 s^-2",
+    "rdfs:label" : "sievert",
+    "skos:altLabel" : "Sv",
+    "skos:notation" : "Sv",
+    "skos:prefLabel" : "sievert"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/T",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "041",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "T",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "T",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "T",
+    "dct:definition" : "kg s^-2 A^-1",
+    "rdfs:label" : "tesla",
+    "skos:altLabel" : "T",
+    "skos:notation" : "T",
+    "skos:prefLabel" : "tesla"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/T_pref",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "T",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "T",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "T",
+    "rdfs:label" : "tera",
+    "skos:altLabel" : "T",
+    "skos:notation" : "T",
+    "skos:prefLabel" : "tera"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/V",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "036",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "V",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "V",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "V",
+    "dct:definition" : "kg m^2 s^-3 A^-1",
+    "rdfs:label" : "volt",
+    "skos:altLabel" : "V",
+    "skos:notation" : "V",
+    "skos:prefLabel" : "volt"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/W",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "034",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "W",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "W",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "W",
+    "dct:definition" : "kg m^2 s^-3",
+    "rdfs:label" : "watt",
+    "skos:altLabel" : "W",
+    "skos:notation" : "W",
+    "skos:prefLabel" : "watt"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/W_m-1_sr-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "810",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "W m^-1 sr^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "W m-1 sr-1",
+    "rdfs:label" : "watts per metre per steradian",
+    "skos:altLabel" : "W m^-1 sr^-1",
+    "skos:notation" : "W m-1 sr-1",
+    "skos:prefLabel" : "watts per metre per steradian"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/W_m-2",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "811",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "W m^-2",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "W m-2",
+    "rdfs:label" : "watts per square metre",
+    "skos:altLabel" : "W m^-2",
+    "skos:notation" : "W m-2",
+    "skos:prefLabel" : "watts per square metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/W_m-2_sr-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "812",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "W m^-2 sr^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "W m-2 sr-1",
+    "rdfs:label" : "watts per square metre per steradian",
+    "skos:altLabel" : "W m^-2 sr^-1",
+    "skos:notation" : "W m-2 sr-1",
+    "skos:prefLabel" : "watts per square metre per steradian"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/W_m-2_sr-1_cm",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "813",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "W m^-2 sr^-1 cm",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "W m-2 sr-1 cm",
+    "rdfs:label" : "watts per square metre per steradian centimetre",
+    "skos:altLabel" : "W m^-2 sr^-1 cm",
+    "skos:notation" : "W m-2 sr-1 cm",
+    "skos:prefLabel" : "watts per square metre per steradian centimetre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/W_m-2_sr-1_m",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "814",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "W m^-2 sr^-1 m",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "W m-2 sr-1 m",
+    "rdfs:label" : "watts per square metre per steradian metre",
+    "skos:altLabel" : "W m^-2 sr^-1 m",
+    "skos:notation" : "W m-2 sr-1 m",
+    "skos:prefLabel" : "watts per square metre per steradian metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/W_m-3_sr-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "815",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "W m^-3 sr^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "W m-3 sr-1",
+    "rdfs:label" : "watts per cubic metre per steradian",
+    "skos:altLabel" : "W m^-3 sr^-1",
+    "skos:notation" : "W m-3 sr-1",
+    "skos:prefLabel" : "watts per cubic metre per steradian"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/Wb",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "040",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "Wb",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "Wb",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "WB",
+    "dct:definition" : "kg m^2 s^-2 A^-1",
+    "rdfs:label" : "weber",
+    "skos:altLabel" : "Wb",
+    "skos:notation" : "Wb",
+    "skos:prefLabel" : "weber"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/a",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "231",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "a",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "a",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "A",
+    "rdfs:label" : "year",
+    "skos:altLabel" : "a",
+    "skos:notation" : "a",
+    "skos:prefLabel" : "year"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/a_pref",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "a",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "a",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "A",
+    "rdfs:label" : "atto",
+    "skos:altLabel" : "a",
+    "skos:notation" : "a",
+    "skos:prefLabel" : "atto"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/c_pref",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "c",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "c",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "C",
+    "rdfs:label" : "centi",
+    "skos:altLabel" : "c",
+    "skos:notation" : "c",
+    "skos:prefLabel" : "centi"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/cb_-1",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "522",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "cb/12 h",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "cb/12 h",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "CB/12 HR",
+    "rdfs:label" : "centibars per 12 hours",
+    "skos:altLabel" : "cb/12 h",
+    "skos:notation" : "cb/12 h",
+    "skos:prefLabel" : "centibars per 12 hours"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/cb_s-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "521",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "cb s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "cb/s",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "CB/S",
+    "rdfs:label" : "centibars per second",
+    "skos:altLabel" : "cb s^-1",
+    "skos:notation" : "cb/s",
+    "skos:prefLabel" : "centibars per second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/cd",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "007",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "cd",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "cd",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "CD",
+    "rdfs:label" : "candela",
+    "skos:altLabel" : "cd",
+    "skos:notation" : "cd",
+    "skos:prefLabel" : "candela"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/cm",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "715",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "cm",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "cm",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "CM",
+    "rdfs:label" : "centimetre",
+    "skos:altLabel" : "cm",
+    "skos:notation" : "cm",
+    "skos:prefLabel" : "centimetre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/cm_h-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "717",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "cm h^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "cm/h",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "CM/HR",
+    "rdfs:label" : "centimetres per hour",
+    "skos:altLabel" : "cm h^-1",
+    "skos:notation" : "cm/h",
+    "skos:prefLabel" : "centimetres per hour"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/cm_s-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "716",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "cm s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "cm/s",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "CM/S",
+    "rdfs:label" : "centimetres per second",
+    "skos:altLabel" : "cm s^-1",
+    "skos:notation" : "cm/s",
+    "skos:prefLabel" : "centimetres per second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/d",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "132",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "d",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "d",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "D",
+    "rdfs:label" : "day",
+    "skos:altLabel" : "d",
+    "skos:notation" : "d",
+    "skos:prefLabel" : "day"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/dB",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "210",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "dB",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "dB",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "DB",
+    "rdfs:label" : "decibel (6)",
+    "skos:altLabel" : "dB",
+    "skos:notation" : "dB",
+    "skos:prefLabel" : "decibel (6)"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/dB_deg-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "836",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "dB degree^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "dB/deg",
+    "rdfs:label" : "decibels per degree",
+    "skos:altLabel" : "dB degree^-1",
+    "skos:notation" : "dB/deg",
+    "skos:prefLabel" : "decibels per degree"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/dB_m-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "835",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "dB m^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "dB/m",
+    "rdfs:label" : "decibels per metre",
+    "skos:altLabel" : "dB m^-1",
+    "skos:notation" : "dB/m",
+    "skos:prefLabel" : "decibels per metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/dPa_s-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "520",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "dPa s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "dPa/s",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "DPAL/S",
+    "rdfs:label" : "decipascals per second (microbar per second)",
+    "skos:altLabel" : "dPa s^-1",
+    "skos:notation" : "dPa/s",
+    "skos:prefLabel" : "decipascals per second (microbar per second)"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/d_pref",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "d",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "d",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "D",
+    "rdfs:label" : "deci",
+    "skos:altLabel" : "d",
+    "skos:notation" : "d",
+    "skos:prefLabel" : "deci"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/daPa",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "523",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "daPa",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "daPa",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "DAPAL",
+    "rdfs:label" : "dekapascal",
+    "skos:altLabel" : "daPa",
+    "skos:notation" : "daPa",
+    "skos:prefLabel" : "dekapascal"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/da_pref",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "da",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "da",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "D",
+    "rdfs:label" : "deca",
+    "skos:altLabel" : "da",
+    "skos:notation" : "da",
+    "skos:prefLabel" : "deca"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/deg2",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "825",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "degrees^2",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "deg^2",
+    "rdfs:label" : "square degrees",
+    "skos:altLabel" : "degrees^2",
+    "skos:notation" : "deg^2",
+    "skos:prefLabel" : "square degrees"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/degC",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "350",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "˚ C",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "C",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "C",
+    "rdfs:label" : "degrees Celsius (8)",
+    "skos:altLabel" : "˚ C",
+    "skos:notation" : "degC",
+    "skos:prefLabel" : "degrees Celsius (8)"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/deg_s-1",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "321",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "degree/s",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "deg/s",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "DEG/S",
+    "rdfs:label" : "degrees per second",
+    "skos:altLabel" : "degree/s",
+    "skos:notation" : "deg/s",
+    "skos:prefLabel" : "degrees per second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/degree_(angle)",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "110",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "˚",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "deg",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "DEG",
+    "rdfs:label" : "degree (angle)",
+    "skos:altLabel" : "˚",
+    "skos:notation" : "deg",
+    "skos:prefLabel" : "degree (angle)"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/degrees_true",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "320",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "˚",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "deg",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "DEG",
+    "rdfs:label" : "degrees true",
+    "skos:altLabel" : "˚",
+    "skos:notation" : "deg",
+    "skos:prefLabel" : "degrees true"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/dm",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "720",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "dm",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "dm",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "DM",
+    "rdfs:label" : "decimetre",
+    "skos:altLabel" : "dm",
+    "skos:notation" : "dm",
+    "skos:prefLabel" : "decimetre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/eV",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "160",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "eV",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "eV",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "EV",
+    "rdfs:label" : "electron volt",
+    "skos:altLabel" : "eV",
+    "skos:notation" : "eV",
+    "skos:prefLabel" : "electron volt"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/f_pref",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "f",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "f",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "F",
+    "rdfs:label" : "femto",
+    "skos:altLabel" : "f",
+    "skos:notation" : "f",
+    "skos:prefLabel" : "femto"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/ft",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "510",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "ft",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "ft",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "FT",
+    "rdfs:label" : "foot",
+    "skos:altLabel" : "ft",
+    "skos:notation" : "ft",
+    "skos:prefLabel" : "foot"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/g",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "630",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "g",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "g",
+    "rdfs:label" : "acceleration due to gravity",
+    "skos:altLabel" : "g",
+    "skos:notation" : "g",
+    "skos:prefLabel" : "acceleration due to gravity"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/g_kg-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "620",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "g kg^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "g/kg",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "G/KG",
+    "rdfs:label" : "grams per kilogram",
+    "skos:altLabel" : "g kg^-1",
+    "skos:notation" : "g/kg",
+    "skos:prefLabel" : "grams per kilogram"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/g_kg-1_s-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "621",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "g kg^-1 s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "g kg-1 s-1",
+    "rdfs:label" : "grams per kilogram per second",
+    "skos:altLabel" : "g kg^-1 s^-1",
+    "skos:notation" : "g kg-1 s-1",
+    "skos:prefLabel" : "grams per kilogram per second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/gpm",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "631",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "gpm",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "gpm",
+    "rdfs:label" : "geopotential metre",
+    "skos:altLabel" : "gpm",
+    "skos:notation" : "gpm",
+    "skos:prefLabel" : "geopotential metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/h",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "131",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "h",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "h",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "HR",
+    "rdfs:label" : "hour",
+    "skos:altLabel" : "h",
+    "skos:notation" : "h",
+    "skos:prefLabel" : "hour"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/hPa",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "530",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "hPa",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "hPa",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "HPAL",
+    "rdfs:label" : "hectopascal",
+    "skos:altLabel" : "hPa",
+    "skos:notation" : "hPa",
+    "skos:prefLabel" : "hectopascal"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/hPa_-1",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "533",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "hPa/3 h",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "hPa/3 h",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "HPAL/3 HR",
+    "rdfs:label" : "hectopascals per 3 hours",
+    "skos:altLabel" : "hPa/3 h",
+    "skos:notation" : "hPa/3 h",
+    "skos:prefLabel" : "hectopascals per 3 hours"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/hPa_h-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "532",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "hPa h^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "hPa/h",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "HPAL/HR",
+    "rdfs:label" : "hectopascals per hour",
+    "skos:altLabel" : "hPa h^-1",
+    "skos:notation" : "hPa/h",
+    "skos:prefLabel" : "hectopascals per hour"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/hPa_s-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "531",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "hPa s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "hPa/s",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "HPAL/S",
+    "rdfs:label" : "hectopascals per second",
+    "skos:altLabel" : "hPa s^-1",
+    "skos:notation" : "hPa/s",
+    "skos:prefLabel" : "hectopascals per second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/h_pref",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "h",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "h",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "H",
+    "rdfs:label" : "hecto",
+    "skos:altLabel" : "h",
+    "skos:notation" : "h",
+    "skos:prefLabel" : "hecto"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/ha",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "220",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "ha",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "ha",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "HAR",
+    "rdfs:label" : "hectare",
+    "skos:altLabel" : "ha",
+    "skos:notation" : "ha",
+    "skos:prefLabel" : "hectare"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/kPa",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "801",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "kPa",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "kPa",
+    "rdfs:label" : "kilopascal",
+    "skos:altLabel" : "kPa",
+    "skos:notation" : "kPa",
+    "skos:prefLabel" : "kilopascal"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/k_pref",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "k",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "k",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "K",
+    "rdfs:label" : "kilo",
+    "skos:altLabel" : "k",
+    "skos:notation" : "k",
+    "skos:prefLabel" : "kilo"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/kg",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "002",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "kg",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "kg",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "KG",
+    "rdfs:label" : "kilogram",
+    "skos:altLabel" : "kg",
+    "skos:notation" : "kg",
+    "skos:prefLabel" : "kilogram"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/kg-2_s-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "778",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "kg^-2 s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "kg-2 s-1",
+    "rdfs:label" : "per square kilogram per second",
+    "skos:altLabel" : "kg^-2 s^-1",
+    "skos:notation" : "kg-2 s-1",
+    "skos:prefLabel" : "per square kilogram per second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/kg_kg-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "622",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "kg kg^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "kg/kg",
+    "rdfs:label" : "kilograms per kilogram",
+    "skos:altLabel" : "kg kg^-1",
+    "skos:notation" : "kg/kg",
+    "skos:prefLabel" : "kilograms per kilogram"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/kg_kg-1_s-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "623",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "kg kg^-1 s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "kg kg-1 s-1",
+    "rdfs:label" : "kilograms per kilogram per second",
+    "skos:altLabel" : "kg kg^-1 s^-1",
+    "skos:notation" : "kg kg-1 s-1",
+    "skos:prefLabel" : "kilograms per kilogram per second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/kg_m-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "775",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "km m^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "kg/m",
+    "rdfs:label" : "kilograms per metre",
+    "skos:altLabel" : "km m^-1",
+    "skos:notation" : "kg/m",
+    "skos:prefLabel" : "kilograms per metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/kg_m-2",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "624",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "kg m^-2",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "kg m-2",
+    "rdfs:label" : "kilograms per square metre",
+    "skos:altLabel" : "kg m^-2",
+    "skos:notation" : "kg m-2",
+    "skos:prefLabel" : "kilograms per square metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/kg_m-2_s-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "776",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "kg m^-2 s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "kg m-2 s-1",
+    "rdfs:label" : "kilograms per square metre per second",
+    "skos:altLabel" : "kg m^-2 s^-1",
+    "skos:notation" : "kg m-2 s-1",
+    "skos:prefLabel" : "kilograms per square metre per second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/kg_m-3",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "777",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "kg m^-3",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "kg m-3",
+    "rdfs:label" : "kilograms per cubic metre",
+    "skos:altLabel" : "kg m^-3",
+    "skos:notation" : "kg m-3",
+    "skos:prefLabel" : "kilograms per cubic metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/km",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "740",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "km",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "km",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "KM",
+    "rdfs:label" : "kilometre",
+    "skos:altLabel" : "km",
+    "skos:notation" : "km",
+    "skos:prefLabel" : "kilometre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/km_d-1",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "742",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "km/d",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "km/d",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "KM/D",
+    "rdfs:label" : "kilometres per day",
+    "skos:altLabel" : "km/d",
+    "skos:notation" : "km/d",
+    "skos:prefLabel" : "kilometres per day"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/km_h-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "741",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "km h^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "km/h",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "KM/HR",
+    "rdfs:label" : "kilometres per hour",
+    "skos:altLabel" : "km h^-1",
+    "skos:notation" : "km/h",
+    "skos:prefLabel" : "kilometres per hour"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/kt",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "201",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "kt",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "kt",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "KT",
+    "rdfs:label" : "knot",
+    "skos:altLabel" : "kt",
+    "skos:notation" : "kt",
+    "skos:prefLabel" : "knot"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/kt_km-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "501",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "kt/1000 m",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "kt/km",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "KT/KM",
+    "rdfs:label" : "knots per 1000 metres",
+    "skos:altLabel" : "kt/1000 m",
+    "skos:notation" : "kt/km",
+    "skos:prefLabel" : "knots per 1000 metres"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/l",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "120",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "l",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "l",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "L",
+    "rdfs:label" : "litre",
+    "skos:altLabel" : "l",
+    "skos:notation" : "l",
+    "skos:prefLabel" : "litre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/lm",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "070",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "lm",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "lm",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "LM",
+    "dct:definition" : "cd sr",
+    "rdfs:label" : "lumen",
+    "skos:altLabel" : "lm",
+    "skos:notation" : "lm",
+    "skos:prefLabel" : "lumen"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/log_(m-1)",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "772",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "log (m^-1)",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "log (m-1)",
+    "rdfs:label" : "logarithm per metre",
+    "skos:altLabel" : "log (m^-1)",
+    "skos:notation" : "log (m-1)",
+    "skos:prefLabel" : "logarithm per metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/log_(m-2)",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "773",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "log (m^-2)",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "log (m-2)",
+    "rdfs:label" : "logarithm per square metre",
+    "skos:altLabel" : "log (m^-2)",
+    "skos:notation" : "log (m-2)",
+    "skos:prefLabel" : "logarithm per square metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/lx",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "071",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "lx",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "lx",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "LX",
+    "dct:definition" : "cd sr m^-2",
+    "rdfs:label" : "lux",
+    "skos:altLabel" : "lx",
+    "skos:notation" : "lx",
+    "skos:prefLabel" : "lux"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "001",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "M",
+    "rdfs:label" : "metre",
+    "skos:altLabel" : "m",
+    "skos:notation" : "m",
+    "skos:prefLabel" : "metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "743",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "/M",
+    "rdfs:label" : "per metre",
+    "skos:altLabel" : "m^-1",
+    "skos:notation" : "m-1",
+    "skos:prefLabel" : "per metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m2",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "734",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m^2",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m2",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "M2",
+    "rdfs:label" : "square metres",
+    "skos:altLabel" : "m^2",
+    "skos:notation" : "m2",
+    "skos:prefLabel" : "square metres"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m2_-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "769",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m^2/3 s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m2/3 s-1",
+    "rdfs:label" : "metres to the two thirds power per second",
+    "skos:altLabel" : "m^2/3 s^-1",
+    "skos:notation" : "m2/3 s-1",
+    "skos:prefLabel" : "metres to the two thirds power per second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m2_Hz-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "764",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m^2 Hz^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m2/Hz",
+    "rdfs:label" : "square metres per hertz",
+    "skos:altLabel" : "m^2 Hz^-1",
+    "skos:notation" : "m2/Hz",
+    "skos:prefLabel" : "square metres per hertz"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m2_rad-1_s",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "763",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m^2 rad^-1 s",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m2 rad-1 s",
+    "rdfs:label" : "square metres per radian squared",
+    "skos:altLabel" : "m^2 rad^-1 s",
+    "skos:notation" : "m2 rad-1 s",
+    "skos:prefLabel" : "square metres per radian squared"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m2_s",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "761",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m^2 s",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m2 s",
+    "rdfs:label" : "square metres second",
+    "skos:altLabel" : "m^2 s",
+    "skos:notation" : "m2 s",
+    "skos:prefLabel" : "square metres second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m2_s-1",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "735",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m^2 s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m2/s",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "M2/S",
+    "rdfs:label" : "square metres per second",
+    "skos:altLabel" : "m^2 s^-1",
+    "skos:notation" : "m2/s",
+    "skos:prefLabel" : "square metres per second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m2_s-2",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "762",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m^2 s^-2",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m2 s-2",
+    "rdfs:label" : "square metres per second squared",
+    "skos:altLabel" : "m^2 s^-2",
+    "skos:notation" : "m2 s-2",
+    "skos:prefLabel" : "square metres per second squared"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m3",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "765",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m^3",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m3",
+    "rdfs:label" : "cubic metres",
+    "skos:altLabel" : "m^3",
+    "skos:notation" : "m3",
+    "skos:prefLabel" : "cubic metres"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m3_m-3",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "767",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m^3 m^-3",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m3 m-3",
+    "rdfs:label" : "cubic metres per cubic metre",
+    "skos:altLabel" : "m^3 m^-3",
+    "skos:notation" : "m3 m-3",
+    "skos:prefLabel" : "cubic metres per cubic metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m3_s-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "766",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m^3 s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m3/s",
+    "rdfs:label" : "cubic metres per second",
+    "skos:altLabel" : "m^3 s^-1",
+    "skos:notation" : "m3/s",
+    "skos:prefLabel" : "cubic metres per second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m4",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "768",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m^4",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m4",
+    "rdfs:label" : "metres to the fourth power",
+    "skos:altLabel" : "m^4",
+    "skos:notation" : "m4",
+    "skos:prefLabel" : "metres to the fourth power"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/mSv",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "753",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "mSv",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "mSv",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "MSV",
+    "rdfs:label" : "millisievert",
+    "skos:altLabel" : "mSv",
+    "skos:notation" : "mSv",
+    "skos:prefLabel" : "millisievert"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m_pref",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "M",
+    "rdfs:label" : "milli",
+    "skos:altLabel" : "m",
+    "skos:notation" : "m",
+    "skos:prefLabel" : "milli"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m_s-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "731",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m/s",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "M/S",
+    "rdfs:label" : "metres per second",
+    "skos:altLabel" : "m s^-1",
+    "skos:notation" : "m/s",
+    "skos:prefLabel" : "metres per second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m_s-1_km-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "733",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m s^-1/1000 m",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m s-1/km",
+    "rdfs:label" : "metres per second per 1000 metres",
+    "skos:altLabel" : "m s^-1/1000 m",
+    "skos:notation" : "m s-1/km",
+    "skos:prefLabel" : "metres per second per 1000 metres"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m_s-1_m-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "732",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m s^-1/m",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m s-1/m",
+    "rdfs:label" : "metres per second per metre",
+    "skos:altLabel" : "m s^-1/m",
+    "skos:notation" : "m s-1/m",
+    "skos:prefLabel" : "metres per second per metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/m_s-2",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "760",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "m s^-2",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "m s-2",
+    "rdfs:label" : "metres per second squared",
+    "skos:altLabel" : "m s^-2",
+    "skos:notation" : "m s-2",
+    "skos:prefLabel" : "metres per second squared"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/min",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "130",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "min",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "min",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "MIN",
+    "rdfs:label" : "minute (time)",
+    "skos:altLabel" : "min",
+    "skos:notation" : "min",
+    "skos:prefLabel" : "minute (time)"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/mm",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "710",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "mm",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "mm",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "MM",
+    "rdfs:label" : "millimetre",
+    "skos:altLabel" : "mm",
+    "skos:notation" : "mm",
+    "skos:prefLabel" : "millimetre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/mm6_m-3",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "713",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "mm^6 m^-3",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "mm6 m-3",
+    "rdfs:label" : "millimetres per the sixth power per cubic metre",
+    "skos:altLabel" : "mm^6 m^-3",
+    "skos:notation" : "mm6 m-3",
+    "skos:prefLabel" : "millimetres per the sixth power per cubic metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/mm_h-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "712",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "mm h^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "mm/h",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "MM/HR",
+    "rdfs:label" : "millimetres per hour",
+    "skos:altLabel" : "mm h^-1",
+    "skos:notation" : "mm/h",
+    "skos:prefLabel" : "millimetres per hour"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/mm_s-1",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "711",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "mm s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "mm/s",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "MM/S",
+    "rdfs:label" : "millimetres per seconds",
+    "skos:altLabel" : "mm s^-1",
+    "skos:notation" : "mm/s",
+    "skos:prefLabel" : "millimetres per seconds"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/mol",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "006",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "mol",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "mol",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "MOL",
+    "rdfs:label" : "mole",
+    "skos:altLabel" : "mol",
+    "skos:notation" : "mol",
+    "skos:prefLabel" : "mole"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/mol_mol-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "788",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : " mol mol^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "mol/mol",
+    "rdfs:label" : "moles per mole",
+    "skos:altLabel" : " mol mol^-1",
+    "skos:notation" : "mol/mol",
+    "skos:prefLabel" : "moles per mole"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/mon",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "430",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "mon",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "mon",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "MON",
+    "rdfs:label" : "month",
+    "skos:altLabel" : "mon",
+    "skos:notation" : "mon",
+    "skos:prefLabel" : "month"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/n_pref",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "n",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "n",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "N",
+    "rdfs:label" : "nano",
+    "skos:altLabel" : "n",
+    "skos:notation" : "n",
+    "skos:prefLabel" : "nano"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/nautical_mile",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "200",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : " ",
+    "rdfs:label" : "nautical mile",
+    "skos:altLabel" : " ",
+    "skos:notation" : " ",
+    "skos:prefLabel" : "nautical mile"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/nbar",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "535",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "nbar",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "nbar",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "NBAR",
+    "rdfs:label" : "nanobar = hPa 10^-6",
+    "skos:altLabel" : "nbar",
+    "skos:notation" : "nbar",
+    "skos:prefLabel" : "nanobar = hPa 10^-6"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/okta",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "310",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "okta",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "okta",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "OKTA",
+    "rdfs:label" : "eighths of cloud",
+    "skos:altLabel" : "okta",
+    "skos:notation" : "okta",
+    "skos:prefLabel" : "eighths of cloud"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/pH_unit",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "841",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "pH unit",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "pH unit",
+    "rdfs:label" : "pH unit",
+    "skos:altLabel" : "pH unit",
+    "skos:notation" : "pH unit",
+    "skos:prefLabel" : "pH unit"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/p_pref",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "p",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "p",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "P",
+    "rdfs:label" : "pico",
+    "skos:altLabel" : "p",
+    "skos:notation" : "p",
+    "skos:prefLabel" : "pico"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/pc",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "171",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "pc",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "pc",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "PRS",
+    "rdfs:label" : "parsec",
+    "skos:altLabel" : "pc",
+    "skos:notation" : "pc",
+    "skos:prefLabel" : "parsec"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/percent",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "300",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "%",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "%",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "PERCENT",
+    "rdfs:label" : "per cent",
+    "skos:altLabel" : "%",
+    "skos:notation" : "%",
+    "skos:prefLabel" : "per cent"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/rad",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "021",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "rad",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "rad",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "RAD",
+    "rdfs:label" : "radian",
+    "skos:altLabel" : "rad",
+    "skos:notation" : "rad",
+    "skos:prefLabel" : "radian"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/rad_m-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "790",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "rad m^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "rad/m",
+    "rdfs:label" : "radians per metre",
+    "skos:altLabel" : "rad m^-1",
+    "skos:notation" : "rad/m",
+    "skos:prefLabel" : "radians per metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/s",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "003",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "s",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "s",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "S",
+    "rdfs:label" : "second",
+    "skos:altLabel" : "s",
+    "skos:notation" : "s",
+    "skos:prefLabel" : "second"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/s-1",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "441",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "s^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "/s",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "/S",
+    "rdfs:label" : "per second (same as hertz)",
+    "skos:altLabel" : "s^-1",
+    "skos:notation" : "/s",
+    "skos:prefLabel" : "per second (same as hertz)"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/s-2",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "442",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "s^-2",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "s-2",
+    "rdfs:label" : "per second squared",
+    "skos:altLabel" : "s^-2",
+    "skos:notation" : "s-2",
+    "skos:prefLabel" : "per second squared"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/s_m-1",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "779",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "s m^-1",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "s/m",
+    "rdfs:label" : "seconds per metre",
+    "skos:altLabel" : "s m^-1",
+    "skos:notation" : "s/m",
+    "skos:prefLabel" : "seconds per metre"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/sr",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "022",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "sr",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "sr",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "SR",
+    "rdfs:label" : "steradian",
+    "skos:altLabel" : "sr",
+    "skos:notation" : "sr",
+    "skos:prefLabel" : "steradian"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/t",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "150",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "t",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "t",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "TNE",
+    "rdfs:label" : "tonne",
+    "skos:altLabel" : "t",
+    "skos:notation" : "t",
+    "skos:prefLabel" : "tonne"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/u",
+    "@type" : [ "http://codes.wmo.int/def/common/Unit", "skos:Concept" ],
+    "http://codes.wmo.int/def/common/code_figure" : "161",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "u",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "u",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "U",
+    "rdfs:label" : "atomic mass unit",
+    "skos:altLabel" : "u",
+    "skos:notation" : "u",
+    "skos:prefLabel" : "atomic mass unit"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/u_pref",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "no",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : "µ",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA2" : "u",
+    "http://codes.wmo.int/def/common/wmoAbbreviationIA5" : "U",
+    "rdfs:label" : "micro",
+    "skos:altLabel" : "µ",
+    "skos:notation" : "u",
+    "skos:prefLabel" : "micro"
+  }, {
+    "@id" : "http://codes.wmo.int/common/unit/week",
+    "@type" : [ "skos:Concept", "http://codes.wmo.int/def/common/Unit" ],
+    "http://codes.wmo.int/def/common/code_figure" : "230",
+    "http://codes.wmo.int/def/common/wmoAbbreviation" : " ",
+    "rdfs:label" : "week",
+    "skos:altLabel" : " ",
+    "skos:notation" : " ",
+    "skos:prefLabel" : "week"
+  } ],
+  "@context" : {
+    "qudt" : "http://qudt.org/schema/qudt#",
+    "ssd" : "http://www.w3.org/ns/sparql-service-description#",
+    "owl" : "http://www.w3.org/2002/07/owl#",
+    "xsd" : "http://www.w3.org/2001/XMLSchema#",
+    "skos" : "http://www.w3.org/2004/02/skos/core#",
+    "rdfs" : "http://www.w3.org/2000/01/rdf-schema#",
+    "qudt-unit" : "http://qudt.org/vocab/unit#",
+    "qb" : "http://purl.org/linked-data/cube#",
+    "dgu" : "http://reference.data.gov.uk/def/reference/",
+    "dct" : "http://purl.org/dc/terms/",
+    "ui" : "http://purl.org/linked-data/registry-ui#",
+    "reg" : "http://purl.org/linked-data/registry#",
+    "grib2-parameter" : "http://codes.wmo.int/grib2/schema/parameter/",
+    "qudt-quantity" : "http://qudt.org/vocab/quantity#",
+    "api" : "http://purl.org/linked-data/api/vocab#",
+    "vann" : "http://purl.org/vocab/vann/",
+    "prov" : "http://www.w3.org/ns/prov#",
+    "foaf" : "http://xmlns.com/foaf/0.1/",
+    "cc" : "http://creativecommons.org/ns#",
+    "common-unit" : "http://codes.wmo.int/common/schema/unit/",
+    "grib2-core" : "http://codes.wmo.int/grib2/schema/core/",
+    "void" : "http://rdfs.org/ns/void#",
+    "version" : "http://purl.org/linked-data/version#",
+    "bufr4-core" : "http://codes.wmo.int/bufr4/schema/core/",
+    "rdf" : "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "ldp" : "http://www.w3.org/ns/ldp#",
+    "time" : "http://www.w3.org/2006/time#",
+    "qudt-dimension" : "http://qudt.org/vocab/dimension#",
+    "vs" : "http://www.w3.org/2003/06/sw-vocab-status/ns#",
+    "dc" : "http://purl.org/dc/elements/1.1/",
+    "common-core" : "http://codes.wmo.int/common/schema/core/"
+  }
+}

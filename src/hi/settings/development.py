@@ -4,6 +4,12 @@ from .base import *
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# Override template options for development debugging
+TEMPLATES[0]['OPTIONS'].update({
+    'debug': True,
+    #'string_if_invalid': 'INVALID_VARIABLE_%s',
+})
+
 INSTALLED_APPS += [ 'hi.tests' ]
 
 STATIC_ROOT = '/tmp/hi/static'
@@ -19,6 +25,9 @@ LOGGING = {
     'filters': {
         'suppress_select_request_endpoints': {
             '()': 'hi.tests.utils.log_filters.SuppressSelectRequestEndpointsFilter',
+        },
+        'suppress_pipeline_template_vars': {
+            '()': 'hi.apps.common.log_filters.SuppressPipelineTemplateVarsFilter',
         },
     },
     'formatters': {
@@ -86,6 +95,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        'hi.apps.weather': {
+            'handlers': ['console' ],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
         'hi.integrations': {
             'handlers': ['console' ],
             'level': 'INFO',
@@ -104,6 +118,12 @@ LOGGING = {
         'hi': {
             'handlers': ['console' ],
             'level': 'INFO',
+        },
+        'django.template': {
+            'handlers': ['console'],
+            'level': 'INFO',  # Changed from DEBUG to INFO to reduce verbose variable lookup messages
+            'filters': ['suppress_pipeline_template_vars'],
+            'propagate': False,
         },
     },
 }

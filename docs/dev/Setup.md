@@ -104,6 +104,7 @@ It is a good idea to run the unit tests to validate that you can and that the in
 
 ### Running
 
+Ensure that the Redis server is running, then:
 
 ``` shell
 ./manage.py runserver

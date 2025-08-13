@@ -1,0 +1,24 @@
+{% extends "modals/action_ok.html" %}
+
+{% block modal_dialog_class %}hi-modal-dialog-800{% endblock %}
+
+{% block title_text %}
+Weather History
+{% endblock %}
+
+{% block body %}
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+      {% include "weather/panes/daily_history_row_header.html" %}
+    </thead>
+    <tbody>
+    {% for daily_history_interval in interval_daily_history_list %}    
+      {% include "weather/panes/daily_history_row.html" with daily_history_interval=daily_history_interval %}
+      {% empty %}
+      <tr><td colspan="99"><div class="alert alert-info">No weather history data available.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

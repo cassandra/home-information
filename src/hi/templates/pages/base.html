@@ -39,7 +39,7 @@
     {% javascript 'js_after_content' %}
     {% block footer_post_javascript %}{% endblock %}
 
-    {% if initial_modal_template_name %}
+    {% if initial_modal_template_name|default:None %}
     <div id="antinode-initial-modal">
       {% include initial_modal_template_name %}
     </div>

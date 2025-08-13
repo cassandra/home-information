@@ -6,6 +6,9 @@ SCRIPTS = deploy/env-generate.py deploy/run_container.sh
 
 .DEFAULT_GOAL := fix-permissions
 
+test:
+	cd src && ./manage.py test --keepdb
+
 docker-build:	Dockerfile
 	@HI_VERSION=$$(cat HI_VERSION); \
 	docker build \

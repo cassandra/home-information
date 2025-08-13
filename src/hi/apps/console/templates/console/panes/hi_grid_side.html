@@ -9,9 +9,8 @@
   </div>
   {% endif %}
 
-  <div id="hi-side-info" class="flex-grow-1 text-center my-2 bg-muted" >
-    <div class="h4" style="padding-top: 8rem;">Coming Soon.</div>
-  </div>
+  {% include "weather/panes/weather_alerts.html" %}
+  {% include "weather/panes/weather_overview.html" %}
   
   <div class="d-flex justify-content-center my-2">
     {% if video_stream_entity_list %}

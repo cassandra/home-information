@@ -1,0 +1,97 @@
+{% load humanize %}
+{% load units %}
+
+<div class="row">
+  <div class="col-6" >
+    <div class="">
+      <div class="h6">Precipitation</div>
+      {% if not conditions.has_precipitation %}
+      --
+      {% endif %}
+      {% if conditions.precipitation_last_hour %}
+      <div>
+	Last hour:
+	{{ conditions.precipitation_last_hour.quantity|format_magnitude:1 }}
+	<small>{{ conditions.precipitation_last_hour.quantity|format_units }}</small>
+      </div>
+      {% endif %}
+      {% if conditions.precipitation_last_3h %}
+      <div>
+	Last 3 hrs:
+	{{ conditions.precipitation_last_3h.quantity|format_magnitude:1 }}
+	<small>{{ conditions.precipitation_last_3h.quantity|format_units }}</small>
+      </div>
+      {% endif %}
+      {% if conditions.precipitation_last_6h %}
+      <div>
+	Last 6 hrs:
+	{{ conditions.precipitation_last_6h.quantity|format_magnitude:1 }}
+	<small>{{ conditions.precipitation_last_6h.quantity|format_units }}</small>
+      </div>
+      {% endif %}
+      {% if conditions.precipitation_last_24h %}
+      <div>
+	Last 24 hrs:
+	{{ conditions.precipitation_last_24h.quantity|format_magnitude:1 }}
+	<small>{{ conditions.precipitation_last_24h.quantity|format_units }}</small>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-6" >
+    <div>
+      Wind Chill:
+      {% if conditions.wind_chill %}
+      {{ conditions.wind_chill.quantity|format_magnitude:1 }}
+      <small>{{ conditions.wind_chill.quantity|format_units }}</small>
+      {% else %}
+      --
+      {% endif %}
+    </div>
+    <div>
+      Heat Index:
+      {% if conditions.heat_index %}
+      {{ conditions.heat_index.quantity|format_magnitude:1 }}
+      <small>{{ conditions.heat_index.quantity|format_units }}</small>
+      {% else %}
+      --
+      {% endif %}
+    </div>
+    <div>
+      Air Pressure:
+      {% if conditions.barometric_pressure %}
+      {{ conditions.barometric_pressure.quantity|format_magnitude:0 | intcomma }}
+      <small>{{ conditions.barometric_pressure.quantity|format_units }}</small>
+      {% else %}
+      --
+      {% endif %}
+    </div>
+    <div>
+      Visibility:
+      {% if conditions.visibility %}
+      {{ conditions.visibility.quantity|format_magnitude:1 }}
+      <small>{{ conditions.visibility.quantity|format_units }}</small>
+      {% else %}
+      --
+      {% endif %}
+    </div>
+    <div>
+      Cloud Ceiling:
+      {% if conditions.cloud_ceiling %}
+      {{ conditions.cloud_ceiling.quantity|format_magnitude:0 | intcomma }}
+      <small>{{ conditions.cloud_ceiling.quantity|format_units }}</small>
+      {% else %}
+      --
+      {% endif %}
+    </div>
+    <div>
+      Dew Point:
+      {% if conditions.dew_point %}
+      {{ conditions.dew_point.quantity|format_magnitude:1 }}
+      <small>{{ conditions.dew_point.quantity|format_units }}</small>
+      {% else %}
+      --
+      {% endif %}
+    </div>
+  </div>
+</div>

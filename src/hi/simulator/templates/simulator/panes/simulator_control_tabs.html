@@ -7,7 +7,6 @@
 	 class="nav-link {% if simulator.id == current_simulator.id %}active{% endif %}"
 	 data-toggle="tab" 
 	 href="#simulator-{{ simulator.id }}" 
-	 role="tab" 
 	 aria-controls="simulator-{{ simulator.id }}" 
 	 aria-selected="{% if simulator.id == current_simulator.id %}true{% else %}false{% endif %}">
 	{{ simulator.label }}</a>
@@ -19,11 +18,9 @@
   <div id="hi-simulator-content" class="tab-content">
     {% for simulator_data in simulator_data_list %}
     {% with simulator_data.simulator as simulator %}
-    <div id="simulator-{{ simulator.id }}" 
+    <div id="simulator-{{ simulator.id }}" role="tabpanel" 
 	 class="tab-pane fade {% if simulator.id == current_simulator.id %}show active{% endif %}" 
-	 role="tabpanel" 
 	 aria-labelledby="hi-simulator-tab-{{ simulator.id }}">
-
       <div>
 	<div class="dropdown">
 	  <button class="btn btn-secondary btn-control dropdown-toggle" type="button"

@@ -1,0 +1,51 @@
+{% load static %}
+{% load units %}
+{% load tz %}
+{% timezone USER_TIMEZONE %}
+
+<div class="table-responsive">
+  <table class="table">
+    <thead>
+      <th>Date</th>
+      <th>Sunrise</th>
+      <th>Sunset</th>
+      <th>Moon</th>
+    </thead>
+    <tbody>
+      {% for interval_astronommical in daily_astronomical_data.data_list %}
+      <tr>
+        <td>{{ interval_astronommical.interval.start |localtime|date:"n/j" }}
+        </td>
+        <td>
+          {% if interval_astronommical.data.sunrise %}
+          {{ interval_astronommical.data.sunrise.value }}
+          {% else %}
+          --
+          {% endif %}     
+        </td>
+        <td>
+          {% if interval_astronommical.data.sunset %}
+          {{ interval_astronommical.data.sunset.value }}
+          {% else %}
+          --
+          {% endif %}     
+        </td>
+        <td>
+          {% if interval_astronommical.data.moon_illumnination %}
+          {% with interval_astronommical.data.moon_phase as moon_phase %}
+          <img height="32" src="{% static moon_phase.icon_filename %}"
+               alt="{{ moon_phase.label }}" />
+          {% endwith %}
+          {{  interval_astronommical.data.moon_illumnination.quantity }}
+          {% else %}
+          --
+          {% endif %}     
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4"><div class="alert alert-info">No data.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endtimezone%}

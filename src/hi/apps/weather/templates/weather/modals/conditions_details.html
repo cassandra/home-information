@@ -1,0 +1,28 @@
+{% extends "modals/action_ok.html" %}
+
+{% block title_text %}
+Current Conditions
+{% endblock %}
+
+{% block body %}
+{% if weather_conditions_data.description_long %}
+<div>{{ weather_conditions_data.description_long.value }}</div>
+{% elif weather_conditions_data.description_short %}
+<div>{{ weather_conditions_data.description_short.value }}</div>
+{% endif %}
+
+{% include "weather/panes/conditions.html" with conditions=weather_conditions_data %}
+{% include "weather/panes/conditions_extended.html" with conditions=weather_conditions_data %}
+
+{% with weather_conditions_data.stations as station_list %}
+{% if station_list %}
+<div class="h5">Weather Sources</div>
+{% for station in station_list %}
+<div>
+  {{ station.source.label }} <small>{{ station.name }} ({{ station.station_id }})</small>
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+{% endblock %}

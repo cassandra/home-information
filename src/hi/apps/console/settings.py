@@ -3,9 +3,14 @@ from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.attribute.value_ranges import PredefinedValueRanges
 
 from .audio_file import AudioFile
-from .enums import Theme
+from .enums import Theme, DisplayUnits
 
 Label = 'Console'
+
+# Austin, TX
+DEFAULT_LATITUDE = 30.268043
+DEFAULT_LONGITUDE = -97.742804
+DEFAULT_GEO_LOCATION = f'{DEFAULT_LATITUDE:.6}, {DEFAULT_LONGITUDE:.6}'
 
 
 class ConsoleSetting( SettingEnum ):
@@ -19,6 +24,33 @@ class ConsoleSetting( SettingEnum ):
         is_required = True,
         initial_value = 'America/Chicago',
     )
+    DISPLAY_UNITS = SettingDefinition(
+        label = 'Display Units',
+        description = 'Units used when displaying',
+        value_type = AttributeValueType.ENUM,
+        value_range_str = PredefinedValueRanges.UNITS_CHOICES_ID,
+        is_editable = True,
+        is_required = True,
+        initial_value = str( DisplayUnits.default() ),
+    )
+    GEO_LOCATION = SettingDefinition(
+        label = 'Latitude, Longitude',
+        description = 'Latitude and longitude. e.g., for weather data',
+        value_type = AttributeValueType.TEXT,
+        value_range_str = '',
+        is_editable = True,
+        is_required = True,
+        initial_value = DEFAULT_GEO_LOCATION,
+    )
+    THEME = SettingDefinition(
+        label = 'Theme',
+        description = 'Overall look and feel of interfaces',
+        value_type = AttributeValueType.ENUM,
+        value_range_str = PredefinedValueRanges.THEME_CHOICES_ID,
+        is_editable = True,
+        is_required = True,
+        initial_value = str( Theme.default() ),
+    )
     CONSOLE_LOCK_PASSWORD = SettingDefinition(
         label = 'Lock Password',
         description = 'Password to use to unlock console',
@@ -29,22 +61,13 @@ class ConsoleSetting( SettingEnum ):
         initial_value = '',
     )
     SLEEP_OVERLAY_OPACITY = SettingDefinition(
-        label = 'Sleep Overlap Opacity',
+        label = 'Sleep Overlay Opacity',
         description = 'Opacity to use for sleep mode: 0.0 for none to 1.0 for fully opaque.',
         value_type = AttributeValueType.FLOAT,
         value_range_str = '[ 0.0, 1.0 ]',
         is_editable = True,
         is_required = True,
         initial_value = '0.95',
-    )
-    THEME = SettingDefinition(
-        label = 'Theme',
-        description = 'Overall look and feel of interfaces',
-        value_type = AttributeValueType.ENUM,
-        value_range_str = PredefinedValueRanges.THEME_CHOICES_ID,
-        is_editable = True,
-        is_required = True,
-        initial_value = str( Theme.default() ),
     )
     CONSOLE_INFO_AUDIO_FILE = SettingDefinition(
         label = 'Info Alert Sound',

@@ -1,0 +1,40 @@
+{% load tz %}
+{% timezone USER_TIMEZONE %}
+<div id="{{ DIVID.WEATHER_ALERTS }}">
+  {% if weather_alert_list %}
+  {% for weather_alert in weather_alert_list %}
+  <div class="details-popup-wrapper alert alert-{{ weather_alert.css_class }} mb-2">
+    <div class="details-popup-summary"
+         onclick="Hi.toggleDetails('weather-alert-{{ forloop.counter }}');">
+      <strong>{{ weather_alert.event }}</strong> • {{ weather_alert.severity.label }} •       
+    </div>
+    <div id="weather-alert-{{ forloop.counter }}" class="details-popup-content"
+         onclick="Hi.toggleDetails('weather-alert-{{ forloop.counter }}');">
+      <p>
+        <strong>{{ weather_alert.headline }}</strong>
+      </p>
+      <hr>
+      <p class="mb-1">{{ weather_alert.description }}</p>
+      <hr>
+      <small>
+        <strong>{{ weather_alert.event_type.label }}</strong> • {{ weather_alert.severity.label }} • 
+        Effective: {{ weather_alert.effective|date:"M j, Y g:i A" }}
+        {% if weather_alert.expires %} • Expires: {{ weather_alert.expires|date:"M j, Y g:i A" }}{% endif %}
+      </small>
+    </div>
+
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="text-center">
+    <div class="">
+      {% now "l, F jS" %}
+    </div>
+    <div class="h3">
+      {% now "g:i a" %}
+    </div>
+  </div>
+  <hr />
+  {% endif %}
+</div>
+{% endtimezone %}

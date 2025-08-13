@@ -1,3 +1,5 @@
+import logging
+
 from django.db import transaction
 from django.shortcuts import render
 
@@ -13,6 +15,8 @@ from hi.hi_grid_view import HiGridView
 from .enums import ConfigPageType
 from .forms import SubsystemAttributeFormSet
 from .settings_mixins import SettingsMixin
+
+logger = logging.getLogger('__name__')
 
 
 class ConfigPageView( HiGridView ):

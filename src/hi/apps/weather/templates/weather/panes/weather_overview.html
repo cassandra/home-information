@@ -1,0 +1,18 @@
+<div id="{{ DIVID.WEATHER_OVERVIEW }}">
+  <a class="clickable-card" href="{% url 'weather_current_conditions_details' %}" data-async="modal">
+    {% include "weather/panes/conditions.html" with conditions=weather_overview_data.current_conditions_data %}
+  </a>
+  <div class="border-top">
+    <a class="clickable-card" href="{% url 'weather_todays_astronomical_details' %}" data-async="modal">
+      {% include "weather/panes/astronomical_brief.html" with astronomical_data=weather_overview_data.todays_astronomical_data %}
+    </a>
+  </div>
+  <div class="d-flex justify-content-around my-2">
+    <div><a role="button" href="{% url 'weather_forecast' %}"
+            class="btn btn-sm btn-primary" data-async="modal">FORECAST</a></div>
+    <div><a role="button" href="{% url 'weather_radar' %}"
+            class="btn btn-sm btn-primary" data-async="modal">RADAR</a></div>
+    <div><a role="button" href="{% url 'weather_history' %}"
+            class="btn btn-sm btn-primary" data-async="modal">HISTORY</a></div>
+  </div>
+</div>

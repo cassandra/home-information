@@ -1,0 +1,61 @@
+{% load static %}
+{% load units %}
+{% load tz %}
+{% timezone USER_TIMEZONE %}
+
+<div>
+  <div>
+    {{ daily_forecast_interval.interval.start|localtime|date:"n/j" }}
+  </div>
+  <div>
+  {% if daily_forecast_interval.data.temperature.quantity_min is not None %}
+  {{ daily_forecast_interval.data.temperature.quantity_min|format_magnitude:0 }}
+  <small>{{ daily_forecast_interval.data.temperature.quantity_min|format_units }}</small>
+  {% else %}
+  -- °
+  {% endif %}
+  |
+  {% if daily_forecast_interval.data.temperature.quantity_max is not None %}
+  {{ daily_forecast_interval.data.temperature.quantity_max|format_magnitude:0 }}
+  <small>{{ daily_forecast_interval.data.temperature.quantity_max|format_units }}</small>
+    {% else %}
+    -- °
+    {% endif %}    
+        
+  </div>
+  <div>
+    <div>
+      {% if daily_forecast_interval.data.cloud_cover %}
+      {% with daily_forecast_interval.data.sky_condition as sky_condition %}
+      <img height="32" src="{% static sky_condition.icon_filename %}"
+           alt="{{ sky_condition.label }}" />
+      <div>
+        {{ sky_condition.label }}
+      </div>
+      {% endwith %}
+      {% else %}
+      --
+      {% endif %}
+    </div>
+  </div>
+  <div>
+    {% if daily_forecast_interval.data.precipitation %}
+    {{ daily_forecast_interval.data.precipitation.quantity|format_magnitude:1 }}
+    <small>{{ daily_forecast_interval.data.precipitation.quantity|format_units }}</small>
+    {% else %}
+    ---
+    {% endif %}
+  </div>
+  <div>
+    {% if daily_forecast_interval.data.windspeed %}
+    {{ daily_forecast_interval.data.windspeed.quantity|format_magnitude:0 }}
+    <small>{{ daily_forecast_interval.data.windspeed.quantity|format_units }}</small>
+    {% else %}
+    -- 
+    {% endif %}
+    {% if daily_forecast_interval.data.wind_direction %}
+    {{ daily_forecast_interval.data.wind_direction.quantity|format_compass }}
+    {% endif %}
+  </div>
+</div>
+{% endtimezone%}

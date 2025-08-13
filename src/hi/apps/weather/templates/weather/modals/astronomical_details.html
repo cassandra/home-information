@@ -1,0 +1,30 @@
+{% extends "modals/action_ok.html" %}
+
+{% block title_text %}
+Astronomical
+{% endblock %}
+
+{% block body %}
+<h3>Today</h3>
+{% include "weather/panes/astronomical_brief.html" with astronomical_data=todays_astronomical_data %}
+{% include "weather/panes/astronomical_extended.html" with astronomical_data=todays_astronomical_data %}
+
+<h3>Future</h3>
+
+{% include "weather/panes/astronomical_daily.html" with daily_astronomical_data=daily_astronomical_data %}
+
+{% if has_sunrise_sunset_attribution or has_usno_attribution %}
+<div class="text-muted small mt-3">
+    {% if has_sunrise_sunset_attribution %}
+    <p class="mb-0">
+        Some data provided by <a href="https://sunrise-sunset.org/" target="_blank" rel="noopener">Sunrise-Sunset.org</a>
+    </p>
+    {% endif %}
+    {% if has_usno_attribution %}
+    <p class="mb-0">
+        Some data provided by <a href="https://aa.usno.navy.mil/" target="_blank" rel="noopener">US Naval Observatory</a>
+    </p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

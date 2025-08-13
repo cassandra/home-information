@@ -1,0 +1,81 @@
+{% load static %}
+{% load units %}
+{% load tz %}
+{% timezone USER_TIMEZONE %}
+<tr>
+  <td>
+  {{ daily_history_interval.interval.start |localtime|date:"n/j" }}
+  </td>
+  <td>
+    {% if daily_history_interval.data.cloud_cover %}
+    {% with daily_history_interval.data.sky_condition as sky_condition %}
+    <img height="32" src="{% static sky_condition.icon_filename %}"
+         alt="{{ sky_condition.label }}" />
+    {{ sky_condition.label }}
+    {% endwith %}
+    {% else %}
+    --
+    {% endif %}
+  </td>
+  <td>
+    {% if daily_history_interval.data.temperature is not None %}
+    {{ daily_history_interval.data.temperature.quantity_min|format_magnitude:1 }}
+    <small>{{ daily_history_interval.data.temperature.quantity_min|format_units }}</small>
+    {% else %}
+    -- °
+    {% endif %}
+    |
+    {% if daily_history_interval.data.temperature is not None %}
+    {{ daily_history_interval.data.temperature.quantity_max|format_magnitude:1 }}
+    <small>{{ daily_history_interval.data.temperature.quantity_max|format_units }}</small>
+    {% else %}
+    -- °
+    {% endif %}    
+  </td>
+  <td>
+    {% if daily_history_interval.data.precipitation %}
+    <div>
+      {{ daily_history_interval.data.precipitation.quantity|format_magnitude:1 }}
+      <small>{{ daily_history_interval.data.precipitation.quantity|format_units }}</small>
+    </div>
+    {% endif %}
+  </td>
+  <td>
+    {% if daily_history_interval.data.cloud_cover %}
+    {{ daily_history_interval.data.cloud_cover.quantity|format_magnitude:1 }}
+    <small>{{ daily_history_interval.data.cloud_cover.quantity|format_units }}</small>
+    {% else %}
+    --
+    {% endif %}    
+  </td>
+  <td>
+    {% if daily_history_interval.data.windspeed %}
+    {{ daily_history_interval.data.windspeed.quantity|format_magnitude:1 }}
+    <small>{{ daily_history_interval.data.windspeed.quantity|format_units }}</small>
+    {% else %}
+    -- 
+    {% endif %}
+    {% if daily_history_interval.data.wind_direction %}
+    {{ daily_history_interval.data.wind_direction.quantity|format_compass }}
+    {% endif %}
+  </td>
+  <td>
+    {% if daily_history_interval.data.relative_humidity %}
+    {{ daily_history_interval.data.relative_humidity.quantity|format_magnitude:1 }}
+    <small>{{ daily_history_interval.data.relative_humidity.quantity|format_units }}</small>
+    {% else %}
+    -- %
+    {% endif %}
+    
+  </td>
+  <td>
+    {% if daily_history_interval.data.barometric_pressure %}
+    {{ daily_history_interval.data.barometric_pressure.quantity|format_magnitude:1 }}
+    <small>{{ daily_history_interval.data.barometric_pressure.quantity|format_units }}</small>
+    {% else %}
+    --
+    {% endif %}    
+  </td>
+  <td></td>
+</tr>
+{% endtimezone%}

@@ -143,6 +143,10 @@ Here is a sequence of adding purchase information and uploading a PDF of the ite
 
 ## Other Features
 
+### Weather Data
+
+The weather data requires knowing your longitude and latitude.  These are located in the "Setting" page.  By default, these are set to Austin, TX, USA. The data comes from a few free weather APIs (e.g., National Weather Service, OpenMeteo).
+
 ### Location Attributes
 
 All the items you add can have any number of attributes.  However, there are some attributes that may not belong to any item, but are are associated with the entire location.  For example, I have the elevation, GPS coordinates and Plat Map of the property for my home that I want to associated with the entire house Location itself.

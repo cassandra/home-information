@@ -67,8 +67,7 @@ class SettingsInitializer:
         return subsystem
 
     def _create_attributes_if_needed( self, subsystem, app_settings ):
-        all_defined_setting_definitions_map = app_settings.all_setting_definitions()
-        
+        all_defined_setting_definitions_map = app_settings.all_setting_definitions()        
         for setting_key, setting_definition in all_defined_setting_definitions_map.items():
             _ = self._create_setting_attribute_if_needed(
                 subsystem = subsystem,

@@ -15,7 +15,7 @@ from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.entity_pairing_manager import EntityPairingManager
 from hi.apps.entity.forms import EntityForm
 from hi.apps.entity.models import Entity, EntityPosition
-from hi.apps.entity.view_mixin import EntityViewMixin
+from hi.apps.entity.view_mixins import EntityViewMixin
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory

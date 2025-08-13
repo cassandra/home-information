@@ -22,6 +22,7 @@ multidict==6.0.5
 mysql-connector-python==9.0.0
 numpy==2.1.0
 pillow==10.4.0
+Pint==0.24.4
 portalocker==2.10.1
 progressbar2==4.4.2
 psutil==6.0.0

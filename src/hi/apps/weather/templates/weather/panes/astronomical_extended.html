@@ -1,0 +1,75 @@
+{% load units %}
+
+{% with astronomical_data.moon_phase as moon_phase %}
+<div class="d-flex justify-content-between">
+  <div>
+    Moonrise:
+    {% if astronomical_data.moonrise %}
+    {{ astronomical_data.moonrise.value }}
+    {% else %}
+    --
+    {% endif %}
+  </div>
+  <div>
+    Moonset:
+    {% if astronomical_data.moonset %}
+    {{ astronomical_data.moonset.value }}
+    {% else %}
+    --
+    {% endif %}
+  </div>
+  <div>
+    Moon:
+    {% if astronomical_data.moon_illumnination %}
+    {% if astronomical_data.moon_is_waxing.value %}Waxing{% else %}Waning{% endif %}
+    {% else %}
+    --
+    {% endif %}
+  </div>
+</div>
+
+<div class="d-flex justify-content-around">
+  <div>
+    Moon Illumination:
+    {% if astronomical_data.moon_illumnination %}
+    {{ astronomical_data.moon_illumnination.quantity|format_magnitude:1 }}
+    <small>{{ astronomical_data.moon_illumnination.quantity|format_units }}</small>
+    {% else %}
+    --
+    {% endif %}
+  </div>
+  <div>
+    Moon Phase:
+    {% if astronomical_data.moon_illumnination %}
+    {{ moon_phase.label  }}
+    {% else %}
+    --
+    {% endif %}
+  </div>
+</div>
+{% endwith %}
+
+<div class="table-responsive">
+  <table class="table">
+    <thead>
+      <th>Twilight</th>
+      <th>Civil</th>
+      <th>Nautical</th>
+      <th>Astronomical</th>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Start</td>
+        <td>{% if astronomical_data.civil_twilight_begin %}{{ astronomical_data.civil_twilight_begin.value }}{% else %}--{% endif %}</td>
+        <td>{% if astronomical_data.nautical_twilight_begin %}{{ astronomical_data.nautical_twilight_begin.value }}{% else %}--{% endif %}</td>
+        <td>{% if astronomical_data.astronomical_twilight_begin %}{{ astronomical_data.astronomical_twilight_begin.value }}{% else %}--{% endif %}</td>
+      </tr>
+      <tr>
+        <td>End</td>
+        <td>{% if astronomical_data.civil_twilight_end %}{{ astronomical_data.civil_twilight_end.value }}{% else %}--{% endif %}</td>
+        <td>{% if astronomical_data.nautical_twilight_end %}{{ astronomical_data.nautical_twilight_end.value }}{% else %}--{% endif %}</td>
+        <td>{% if astronomical_data.astronomical_twilight_end %}{{ astronomical_data.astronomical_twilight_end.value }}{% else %}--{% endif %}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

@@ -23,6 +23,8 @@ def is_blank( obj ):
 
 
 def str_to_bool( value: str ) -> bool:
+    if isinstance( value, bool ):
+        return value
     truthy_values = {'true', '1', 'on', 'yes', 'y', 't', 'enabled'}
     if isinstance( value, str ):
         return value.strip().lower() in truthy_values

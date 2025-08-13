@@ -15,7 +15,7 @@ from hi.hi_grid_view import HiGridView
 
 from .collection_manager import CollectionManager
 from .models import Collection
-from .view_mixin import CollectionViewMixin
+from .view_mixins import CollectionViewMixin
 
 logger = logging.getLogger(__name__)
 

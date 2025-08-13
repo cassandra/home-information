@@ -56,6 +56,8 @@ DIVID = {
     'ALERT_BANNER_CONTAINER': 'hi-alert-banner-container',
     'ALERT_BANNER_CONTENT': 'hi-alert-banner-content',
     'SECURITY_STATE_CONTROL': 'hi-security-state-control',
-
+    'WEATHER_OVERVIEW': 'hi-weather-overview',
+    'WEATHER_ALERTS': 'hi-weather-alerts',
+    
     'CONSOLE_LOCK_BUTTON': 'hi-console-lock-button',
 }
