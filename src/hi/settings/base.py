@@ -152,7 +152,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'hi.context_processors.constants_context',
-                'hi.apps.config.context_processors.settings_context',
+                'hi.apps.console.context_processors.settings_context',
             ],
         },
     },
