@@ -15,6 +15,7 @@ from .enums import (
     AlertUrgency,
     MoonPhase,
     SkyCondition,
+    WeatherEventType,
     WeatherPhenomenon,
     WeatherPhenomenonIntensity,
     WeatherPhenomenonModifier,
@@ -437,6 +438,7 @@ class DailyAstronomicalData:
 @dataclass( kw_only = True )
 class WeatherAlert:
 
+    event_type      : WeatherEventType
     event           : str
     status          : AlertStatus
     category        : AlertCategory

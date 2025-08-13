@@ -7,6 +7,7 @@ from typing import Dict, List
 from django.http import HttpRequest
 from django.template.loader import get_template
 
+from hi.apps.alert.alert_mixins import AlertMixin
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin
 
@@ -34,11 +35,12 @@ from .transient_models import (
 )
 from .weather_data_source import WeatherDataSource
 from .interval_data_manager import IntervalDataManager
+from .weather_alert_alarm_mapper import WeatherAlertAlarmMapper
 
 logger = logging.getLogger(__name__)
 
 
-class WeatherManager( Singleton, SettingsMixin ):
+class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
 
     # Age of a weather DataPoint at which a lower priority source is
     # allowed to overwrite a higher priority source's (now stale) data.
@@ -85,6 +87,7 @@ class WeatherManager( Singleton, SettingsMixin ):
         
         self._data_sync_lock = threading.Lock()
         self._data_async_lock = asyncio.Lock() 
+        self._weather_alert_alarm_mapper = WeatherAlertAlarmMapper()
         self._was_initialized = False
         return
 
@@ -228,7 +231,7 @@ class WeatherManager( Singleton, SettingsMixin ):
     async def update_weather_alerts( self,
                                      weather_data_source : WeatherDataSource,
                                      weather_alerts      : List[WeatherAlert] ):
-        """Update weather alerts from data sources."""
+        """Update weather alerts from data sources and create system alarms for qualifying alerts."""
         async with self._data_async_lock:
             logger.debug( f'Received weather alerts from {weather_data_source.id}: {len(weather_alerts)} alerts' )
             
@@ -238,7 +241,23 @@ class WeatherManager( Singleton, SettingsMixin ):
             
             # Log alerts for development visibility
             for alert in weather_alerts:
-                logger.info( f'Weather Alert: {alert.event} - {alert.severity.label} - {alert.headline}' )
+                logger.info( f'Weather Alert: {alert.event_type.label} ({alert.event}) - {alert.severity.label} - {alert.headline}' )
+            
+            # Create system alarms from weather alerts
+            try:
+                alarms = self._weather_alert_alarm_mapper.create_alarms_from_weather_alerts(weather_alerts)
+                
+                # Add each alarm to the alert manager
+                alert_manager = await self.alert_manager_async()
+                if alert_manager:
+                    for alarm in alarms:
+                        await alert_manager.add_alarm(alarm)
+                        logger.info(f'Added weather alarm to system: {alarm.signature}')
+                else:
+                    logger.warning('Alert manager not available, weather alarms not created')
+                    
+            except Exception as e:
+                logger.exception(f'Error creating system alarms from weather alerts: {e}')
         return
 
     def _update_environmental_data( self,

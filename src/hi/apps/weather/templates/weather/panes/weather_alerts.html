@@ -17,7 +17,7 @@
       <p class="mb-1">{{ weather_alert.description }}</p>
       <hr>
       <small>
-        <strong>{{ weather_alert.event }}</strong> • {{ weather_alert.severity.label }} • 
+        <strong>{{ weather_alert.event_type.label }}</strong> • {{ weather_alert.severity.label }} • 
         Effective: {{ weather_alert.effective|date:"M j, Y g:i A" }}
         {% if weather_alert.expires %} • Expires: {{ weather_alert.expires|date:"M j, Y g:i A" }}{% endif %}
       </small>

@@ -1095,6 +1095,21 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                 if category is None:
                     category = AlertCategory.METEOROLOGICAL
                 
+                # Extract NWS event code and convert to canonical event type
+                event_code = None
+                event_code_data = properties.get('eventCode', {})
+                if event_code_data and 'NationalWeatherService' in event_code_data:
+                    nws_codes = event_code_data['NationalWeatherService']
+                    if nws_codes and len(nws_codes) > 0:
+                        event_code = nws_codes[0]  # Take the first code
+                
+                # Convert to canonical event type (with fallback to event name)
+                if event_code:
+                    event_type = NwsConverters.to_weather_event_type(event_code)
+                else:
+                    event_type = NwsConverters.to_weather_event_type_from_event_name(event)
+                    logger.debug(f'No event code found for {event}, using fallback mapping to {event_type}')
+                
                 # Parse timestamps
                 try:
                     effective = self._parse_iso_datetime(properties.get('effective'))
@@ -1106,6 +1121,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
                     continue
                 
                 weather_alert = WeatherAlert(
+                    event_type = event_type,
                     event = event,
                     status = status,
                     category = category,

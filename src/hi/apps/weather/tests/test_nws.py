@@ -13,6 +13,7 @@ from hi.apps.weather.enums import (
     AlertUrgency,
     AlertCertainty,
     AlertStatus,
+    WeatherEventType,
 )
 from hi.apps.weather.transient_models import (
     BooleanDataPoint,
@@ -2044,6 +2045,7 @@ class TestNationalWeatherService( BaseTestCase ):
         self.assertIsInstance(alert, WeatherAlert)
         
         # Verify alert fields
+        self.assertEqual(alert.event_type, WeatherEventType.TORNADO)  # Should map from event name fallback
         self.assertEqual(alert.event, "Tornado Warning")
         self.assertEqual(alert.status, AlertStatus.ACTUAL)
         self.assertEqual(alert.category, AlertCategory.METEOROLOGICAL)
@@ -2060,6 +2062,60 @@ class TestNationalWeatherService( BaseTestCase ):
         self.assertIsInstance(alert.expires, datetime)
         self.assertIsInstance(alert.onset, datetime)
         self.assertIsInstance(alert.ends, datetime)
+        return
+
+    def test_parse_alerts_data_with_event_code(self):
+        """Test parsing alerts with eventCode field - HIGH VALUE for canonical event type mapping."""
+        nws = NationalWeatherService()
+        test_location = GeographicLocation(
+            latitude=30.27,
+            longitude=-97.74,
+            elevation=UnitQuantity(167.0, 'm')
+        )
+
+        # API response with eventCode field (like Lake Wind Advisory example)
+        alerts_data = {
+            "features": [
+                {
+                    "properties": {
+                        "event": "Lake Wind Advisory",
+                        "status": "Actual",
+                        "category": "Met",
+                        "severity": "Moderate",
+                        "certainty": "Likely",
+                        "urgency": "Expected",
+                        "headline": "Lake Wind Advisory issued until 9:00PM MDT",
+                        "description": "Southwest winds 10 to 20 mph with gusts up to 30 mph expected.",
+                        "instruction": "Boaters on area lakes should use extra caution.",
+                        "areaDesc": "Flathead/Mission Valleys",
+                        "effective": "2024-03-15T12:00:00-06:00",
+                        "expires": "2024-03-15T21:00:00-06:00",
+                        "eventCode": {
+                            "SAME": ["NWS"],
+                            "NationalWeatherService": ["LWY"]
+                        }
+                    }
+                }
+            ]
+        }
+
+        result = nws._parse_alerts_data(
+            alerts_data=alerts_data,
+            geographic_location=test_location
+        )
+
+        # Verify result structure
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 1)
+        
+        alert = result[0]
+        self.assertIsInstance(alert, WeatherAlert)
+        
+        # Verify event type mapping from NWS code
+        self.assertEqual(alert.event_type, WeatherEventType.MARINE_WEATHER)  # LWY maps to MARINE_WEATHER
+        self.assertEqual(alert.event, "Lake Wind Advisory")
+        self.assertEqual(alert.status, AlertStatus.ACTUAL)
+        self.assertEqual(alert.severity, AlertSeverity.MODERATE)
         return
 
     def test_parse_alerts_data_partial_fields(self):
