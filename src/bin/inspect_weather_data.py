@@ -487,7 +487,8 @@ class WeatherDataInspector:
         
         try:
             # Current conditions
-            current_conditions = await sync_to_async(self.weather_manager.get_current_conditions_data, thread_sensitive=True)()
+            current_conditions = await sync_to_async(self.weather_manager.get_current_conditions_data,
+                                                     thread_sensitive=True)()
             if current_conditions:
                 aggregated_data['current_conditions'] = current_conditions
                 print(self.format_weather_data_summary(current_conditions, "Current Conditions"))

@@ -901,8 +901,8 @@ class WeatherSyntheticData:
                 descriptions = [
                     f"The National Weather Service has issued a {event_name} for {affected_areas}.",
                     f"Hazardous weather conditions are expected across {affected_areas}.",
-                    f"Monitor weather conditions closely and take appropriate precautions.",
-                    f"Conditions may become dangerous. Stay informed and be prepared to take action."
+                    "Monitor weather conditions closely and take appropriate precautions.",
+                    "Conditions may become dangerous. Stay informed and be prepared to take action."
                 ]
                 description = random.choice(descriptions)
             
@@ -949,7 +949,7 @@ class WeatherSyntheticData:
             
             # Category is mostly meteorological for weather
             category_weights = [(AlertCategory.METEOROLOGICAL, 0.9), (AlertCategory.GEOPHYSICAL, 0.05),
-                               (AlertCategory.PUBLIC_SAFETY, 0.03), (AlertCategory.SECURITY, 0.02)]
+                                (AlertCategory.PUBLIC_SAFETY, 0.03), (AlertCategory.SECURITY, 0.02)]
             category = random.choices(
                 [c for c, w in category_weights],
                 weights=[w for c, w in category_weights]
