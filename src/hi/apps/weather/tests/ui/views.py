@@ -8,8 +8,10 @@ class TestUiWeatherHomeView( View ):
 
     def get(self, request, *args, **kwargs):
         weather_overview_data = WeatherSyntheticData.get_random_weather_overview_data()
+        weather_alert_list = WeatherSyntheticData.get_random_weather_alerts()
         context = {
             'weather_overview_data': weather_overview_data,
+            'weather_alert_list': weather_alert_list,
         }
         return render(request, "weather/tests/ui/home.html", context )
 

@@ -10,6 +10,7 @@ from django.template.loader import get_template
 from hi.apps.alert.alert_mixins import AlertMixin
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin
+from hi.apps.console.console_helper import ConsoleSettingsHelper
 
 from hi.constants import DIVID
 
@@ -254,6 +255,13 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
                                      weather_data_source : WeatherDataSource,
                                      weather_alerts      : List[WeatherAlert] ):
         """Update weather alerts from data sources and create system alarms for qualifying alerts."""
+        # Check if weather alerts processing is enabled
+        from .settings import WeatherSetting
+        console_helper = ConsoleSettingsHelper()
+        if not console_helper.get_setting_value(WeatherSetting.WEATHER_ALERTS_ENABLED):
+            logger.debug(f'Weather alerts processing disabled, ignoring {len(weather_alerts)} alerts from {weather_data_source.id}')
+            return
+            
         async with self._data_async_lock:
             logger.debug( f'Received weather alerts from {weather_data_source.id}: {len(weather_alerts)} alerts' )
             
@@ -448,7 +456,6 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
         else:
             # Fallback: try to get location from any available weather source
             # This is needed when called from get_current_conditions_data()
-            from hi.apps.console.console_helper import ConsoleSettingsHelper
             console_helper = ConsoleSettingsHelper()
             geo_location = console_helper.get_geographic_location()
         

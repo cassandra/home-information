@@ -8,9 +8,10 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 
 from hi.apps.weather.transient_models import (
     DataPointSource, IntervalWeatherHistory, WeatherHistoryData,
-    TimeInterval, NumericDataPoint, StringDataPoint, Station
+    TimeInterval, NumericDataPoint, StringDataPoint, Station, WeatherAlert
 )
 from hi.apps.weather.weather_manager import WeatherManager
+from hi.apps.weather.enums import AlertSeverity, AlertStatus, AlertCategory, WeatherEventType, AlertCertainty, AlertUrgency
 from hi.units import UnitQuantity
 
 from hi.tests.base_test_case import BaseTestCase
@@ -283,4 +284,92 @@ class TestWeatherManager( BaseTestCase ):
             if daily_history_interval.data.precipitation:
                 self.assertIsInstance(daily_history_interval.data.precipitation, NumericDataPoint) 
                 self.assertIsNotNone(daily_history_interval.data.precipitation.quantity)
+    
+    def test_weather_alerts_enabled_disabled(self):
+        """Test that weather alerts processing respects the WEATHER_ALERTS_ENABLED setting."""
+        weather_manager = WeatherManager()
+        weather_manager.ensure_initialized()
+        
+        # Create mock weather data source
+        test_source = DataPointSource(
+            id='test_source',
+            label='Test Weather Source',
+            abbreviation='TEST',
+            priority=1
+        )
+        mock_weather_source = AsyncMock()
+        mock_weather_source.data_point_source = test_source
+        mock_weather_source.id = 'test_source'
+        
+        # Create test weather alert
+        now = datetimeproxy.now()
+        test_alert = WeatherAlert(
+            event="Severe Thunderstorm Warning",
+            event_type=WeatherEventType.SEVERE_THUNDERSTORM,
+            headline="Severe Thunderstorm Warning issued for Test County",
+            description="A severe thunderstorm warning is in effect...",
+            instruction="Move to interior room on lowest floor of building...",
+            severity=AlertSeverity.SEVERE,
+            status=AlertStatus.ACTUAL,
+            category=AlertCategory.METEOROLOGICAL,
+            effective=now,
+            onset=now + timedelta(minutes=15),
+            expires=now + timedelta(hours=2),
+            ends=now + timedelta(hours=2),
+            affected_areas="Test County",
+            certainty=AlertCertainty.LIKELY,
+            urgency=AlertUrgency.IMMEDIATE
+        )
+        
+        async def test_alerts_enabled():
+            """Test with weather alerts enabled (default)."""
+            # Mock the ConsoleSettingsHelper to return True (enabled)
+            with patch('hi.apps.weather.weather_manager.ConsoleSettingsHelper') as mock_helper_class:
+                mock_helper = mock_helper_class.return_value
+                mock_helper.get_setting_value.return_value = True
+                
+                # Mock the alert manager and alarm mapper to avoid system integration
+                with patch.object(weather_manager, 'alert_manager_async', return_value=AsyncMock()):
+                    with patch.object(weather_manager._weather_alert_alarm_mapper, 'create_alarms_from_weather_alerts', return_value=[]):
+                        # Update weather alerts
+                        await weather_manager.update_weather_alerts(
+                            weather_data_source=mock_weather_source,
+                            weather_alerts=[test_alert]
+                        )
+                        
+                        # Verify alerts were processed and stored
+                        stored_alerts = weather_manager.get_weather_alerts()
+                        self.assertEqual(len(stored_alerts), 1)
+                        self.assertEqual(stored_alerts[0].event, "Severe Thunderstorm Warning")
+        
+        async def test_alerts_disabled():
+            """Test with weather alerts disabled."""
+            # Clear any existing alerts
+            weather_manager._weather_alerts = []
+            
+            # Mock the ConsoleSettingsHelper to return False (disabled)
+            with patch('hi.apps.weather.weather_manager.ConsoleSettingsHelper') as mock_helper_class:
+                mock_helper = mock_helper_class.return_value
+                mock_helper.get_setting_value.return_value = False
+                
+                # Mock the alert manager and alarm mapper to ensure they're NOT called when disabled
+                with patch.object(weather_manager, 'alert_manager_async') as mock_alert_manager:
+                    with patch.object(weather_manager._weather_alert_alarm_mapper, 'create_alarms_from_weather_alerts') as mock_create_alarms:
+                        # Update weather alerts
+                        await weather_manager.update_weather_alerts(
+                            weather_data_source=mock_weather_source,
+                            weather_alerts=[test_alert]
+                        )
+                        
+                        # Verify alerts were NOT processed or stored
+                        stored_alerts = weather_manager.get_weather_alerts()
+                        self.assertEqual(len(stored_alerts), 0, "No alerts should be stored when processing is disabled")
+                        
+                        # Verify that alert processing methods were NOT called
+                        mock_alert_manager.assert_not_called()
+                        mock_create_alarms.assert_not_called()
+        
+        # Run both test scenarios
+        asyncio.run(test_alerts_enabled())
+        asyncio.run(test_alerts_disabled())
     

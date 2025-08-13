@@ -7,6 +7,12 @@ from hi.apps.weather.enums import (
     WeatherPhenomenon,
     WeatherPhenomenonIntensity,
     WeatherPhenomenonModifier,
+    WeatherEventType,
+    AlertStatus,
+    AlertCategory,
+    AlertSeverity,
+    AlertCertainty,
+    AlertUrgency,
 )
 from hi.apps.weather.transient_models import (
     BooleanDataPoint,
@@ -26,6 +32,7 @@ from hi.apps.weather.transient_models import (
     IntervalWeatherForecast,
     IntervalWeatherHistory,
     Station,
+    WeatherAlert,
 )
 from hi.units import UnitQuantity
 
@@ -96,6 +103,16 @@ class WeatherSyntheticData:
                 source_datetime=now,
                 quantity_ave=UnitQuantity(random.randint(40, 115), 'degF'),
             ),
+            temperature_min_today=NumericDataPoint(
+                station=station,
+                source_datetime=now,
+                quantity_ave=UnitQuantity(random.randint(-5, 90), 'degF'),
+            ),
+            temperature_max_today=NumericDataPoint(
+                station=station,
+                source_datetime=now,
+                quantity_ave=UnitQuantity(random.randint(40, 115), 'degF'),
+            ),
             precipitation_last_hour=NumericDataPoint(
                 station=station,
                 source_datetime=now,
@@ -156,7 +173,7 @@ class WeatherSyntheticData:
         )
         solar_noon_time = time(
             hour=12,
-            minute=random.randint(-30, 30),
+            minute=random.randint(0, 59),
             second=random.randint(0, 59)
         )
         
@@ -732,3 +749,248 @@ class WeatherSyntheticData:
             list_value=notable_phenomenon_list,
         )
         return
+    
+    @classmethod
+    def get_random_weather_alerts(cls, 
+                                 count: int = None,
+                                 now: datetime = None,
+                                 source: DataPointSource = None) -> List[WeatherAlert]:
+        """
+        Generate a list of random WeatherAlert instances for UI testing.
+        
+        Args:
+            count: Number of alerts to generate (default: random 0-5)
+            now: Base datetime for alerts (default: current time)
+            source: Data source (unused but kept for consistency)
+            
+        Returns:
+            List of randomly generated WeatherAlert instances
+        """
+        if count is None:
+            count = random.randint(0, 3)  # 0 to 3 random alerts
+        if not now:
+            now = datetimeproxy.now()
+        
+        alerts = []
+        
+        # Define realistic event types with their common descriptions
+        event_scenarios = [
+            # Critical weather events
+            (WeatherEventType.TORNADO, "Tornado Warning", "Tornado Warning issued"),
+            (WeatherEventType.FLASH_FLOOD, "Flash Flood Warning", "Flash Flood Warning issued"),
+            (WeatherEventType.SEVERE_THUNDERSTORM, "Severe Thunderstorm Warning", "Severe Thunderstorm Warning issued"),
+            (WeatherEventType.HURRICANE, "Hurricane Warning", "Hurricane Warning issued"),
+            (WeatherEventType.BLIZZARD, "Blizzard Warning", "Blizzard Warning issued"),
+            (WeatherEventType.WINTER_STORM, "Winter Storm Warning", "Winter Storm Warning issued"),
+            (WeatherEventType.ICE_STORM, "Ice Storm Warning", "Ice Storm Warning issued"),
+            
+            # Watches and advisories
+            (WeatherEventType.SEVERE_THUNDERSTORM, "Severe Thunderstorm Watch", "Severe Thunderstorm Watch issued"),
+            (WeatherEventType.TORNADO, "Tornado Watch", "Tornado Watch issued"),
+            (WeatherEventType.FLOOD, "Flood Advisory", "Flood Advisory issued"),
+            (WeatherEventType.EXTREME_HEAT, "Excessive Heat Warning", "Excessive Heat Warning issued"),
+            (WeatherEventType.EXTREME_COLD, "Wind Chill Warning", "Wind Chill Warning issued"),
+            (WeatherEventType.WINTER_STORM, "Winter Weather Advisory", "Winter Weather Advisory issued"),
+            (WeatherEventType.COASTAL_FLOOD, "Coastal Flood Advisory", "Coastal Flood Advisory issued"),
+            
+            # Marine weather
+            (WeatherEventType.MARINE_WEATHER, "Small Craft Advisory", "Small Craft Advisory issued"),
+            (WeatherEventType.GALE, "Gale Warning", "Gale Warning issued for marine areas"),
+            (WeatherEventType.HIGH_SURF, "High Surf Advisory", "High Surf Advisory issued"),
+            
+            # Fire weather
+            (WeatherEventType.RED_FLAG_CONDITIONS, "Red Flag Warning", "Red Flag Warning issued"),
+            (WeatherEventType.WILDFIRE, "Fire Weather Watch", "Fire Weather Watch issued"),
+            
+            # Special conditions  
+            (WeatherEventType.DUST_STORM, "Dust Storm Warning", "Dust Storm Warning issued"),
+            (WeatherEventType.SPECIAL_WEATHER, "Dense Fog Advisory", "Dense Fog Advisory issued"),
+            (WeatherEventType.AIR_QUALITY, "Air Quality Alert", "Air Quality Alert issued"),
+            (WeatherEventType.AVALANCHE, "Avalanche Warning", "Avalanche Warning issued"),
+            
+            # Test/special messages
+            (WeatherEventType.SPECIAL_WEATHER, "Special Weather Statement", "Special Weather Statement issued"),
+            (WeatherEventType.TEST_MESSAGE, "Test Message", "This is a test message"),
+        ]
+        
+        for i in range(count):
+            # Pick a random event scenario
+            event_type, event_name, headline_base = random.choice(event_scenarios)
+            
+            # Generate time windows (effective -> expires)
+            effective_offset_hours = random.randint(-2, 24)  # Can be past, current, or future
+            duration_hours = random.randint(1, 72)  # 1 to 72 hours duration
+            
+            effective_time = now + timedelta(hours=effective_offset_hours)
+            expires_time = effective_time + timedelta(hours=duration_hours)
+            onset_time = effective_time + timedelta(minutes=random.randint(0, 60))
+            ends_time = expires_time + timedelta(minutes=random.randint(-30, 30))
+            
+            # Generate geographic areas (realistic county/region names)
+            areas_options = [
+                "Travis County", "Williamson County", "Hays County",
+                "Harris County", "Dallas County", "Tarrant County", 
+                "Bexar County", "Collin County", "Denton County",
+                "Fort Bend County", "Montgomery County", "Brazoria County",
+                "Central Texas", "East Texas", "North Texas", "South Texas",
+                "Austin Metro Area", "Dallas-Fort Worth Metroplex", "Houston Metro Area",
+                "Hill Country", "Coastal Plains", "Piney Woods Region"
+            ]
+            affected_areas = random.choice(areas_options)
+            
+            # Generate severity based on event type (some events tend to be more severe)
+            if event_type in [WeatherEventType.TORNADO, WeatherEventType.HURRICANE, 
+                             WeatherEventType.FLASH_FLOOD, WeatherEventType.EARTHQUAKE]:
+                # Critical events tend to be severe/extreme
+                severity_weights = [(AlertSeverity.EXTREME, 0.4), (AlertSeverity.SEVERE, 0.4), 
+                                  (AlertSeverity.MODERATE, 0.15), (AlertSeverity.MINOR, 0.05)]
+            elif "Warning" in event_name:
+                # Warnings tend to be more severe than watches/advisories
+                severity_weights = [(AlertSeverity.SEVERE, 0.5), (AlertSeverity.MODERATE, 0.3),
+                                  (AlertSeverity.EXTREME, 0.15), (AlertSeverity.MINOR, 0.05)]
+            elif "Watch" in event_name or "Advisory" in event_name:
+                # Watches and advisories tend to be less severe
+                severity_weights = [(AlertSeverity.MODERATE, 0.5), (AlertSeverity.MINOR, 0.3),
+                                  (AlertSeverity.SEVERE, 0.15), (AlertSeverity.EXTREME, 0.05)]
+            else:
+                # Default distribution
+                severity_weights = [(AlertSeverity.MODERATE, 0.4), (AlertSeverity.MINOR, 0.3),
+                                  (AlertSeverity.SEVERE, 0.2), (AlertSeverity.EXTREME, 0.1)]
+            
+            # Weighted random selection
+            severity = random.choices(
+                [s for s, w in severity_weights], 
+                weights=[w for s, w in severity_weights]
+            )[0]
+            
+            # Generate realistic headlines with timing
+            time_phrases = [
+                f"until {expires_time.strftime('%I:%M %p')} {expires_time.strftime('%Z')}",
+                f"from {effective_time.strftime('%I:%M %p')} to {expires_time.strftime('%I:%M %p')} {expires_time.strftime('%Z')}",
+                f"in effect until {expires_time.strftime('%A %I:%M %p')}",
+                f"issued {effective_time.strftime('%B %d at %I:%M %p')} {effective_time.strftime('%Z')}",
+            ]
+            headline = f"{headline_base} {random.choice(time_phrases)}"
+            
+            # Generate descriptions based on event type
+            description_templates = {
+                WeatherEventType.TORNADO: "At {time}, a severe thunderstorm capable of producing a tornado was located {location}. This dangerous storm was moving {direction} at {speed} mph. Damaging winds and large hail are also possible.",
+                WeatherEventType.SEVERE_THUNDERSTORM: "At {time}, severe thunderstorms were located {location}, moving {direction} at {speed} mph. Hazards include {hazards}.",
+                WeatherEventType.FLASH_FLOOD: "Heavy rainfall has caused flash flooding across {location}. Water levels are rising rapidly in low-lying areas and near creeks and streams.",
+                WeatherEventType.EXTREME_HEAT: "Dangerously hot temperatures are expected with heat index values reaching {temp}°F. The combination of hot temperatures and high humidity will create dangerous conditions.",
+                WeatherEventType.WINTER_STORM: "Heavy snow and strong winds are expected. Total snow accumulations of {amount} inches are forecast. Winds could gust as high as {wind} mph.",
+            }
+            
+            if event_type in description_templates:
+                desc_template = description_templates[event_type]
+                description = desc_template.format(
+                    time=effective_time.strftime('%I:%M %p'),
+                    location=f"near {affected_areas.split(' ')[0]}",
+                    direction=random.choice(["northeast", "southeast", "northwest", "southwest", "north", "south"]),
+                    speed=random.randint(15, 45),
+                    hazards=random.choice(["60 mph wind gusts and quarter size hail", "70 mph wind gusts and half dollar size hail", "destructive winds and large hail"]),
+                    temp=random.randint(100, 115),
+                    amount=random.randint(3, 12),
+                    wind=random.randint(30, 50)
+                )
+            else:
+                # Generic description
+                descriptions = [
+                    f"The National Weather Service has issued a {event_name} for {affected_areas}.",
+                    f"Hazardous weather conditions are expected across {affected_areas}.",
+                    f"Monitor weather conditions closely and take appropriate precautions.",
+                    f"Conditions may become dangerous. Stay informed and be prepared to take action."
+                ]
+                description = random.choice(descriptions)
+            
+            # Generate instructions based on event type and severity
+            instruction_templates = {
+                WeatherEventType.TORNADO: [
+                    "TAKE COVER NOW! Move to a basement or an interior room on the lowest floor of a sturdy building. Avoid windows.",
+                    "Move immediately to the lowest floor and get under a sturdy object. Avoid auditoriums, cafeterias and gymnasiums.",
+                    "Flying debris will be dangerous to those caught without shelter."
+                ],
+                WeatherEventType.FLASH_FLOOD: [
+                    "Turn around, don't drown when encountering flooded roads. Most flood deaths occur in vehicles.",
+                    "Move to higher ground immediately. Do not drive through flooded roadways.",
+                    "Stay away from storm drains, culverts, creeks and streams."
+                ],
+                WeatherEventType.SEVERE_THUNDERSTORM: [
+                    "Prepare immediately for large hail and damaging winds. Move to an interior room on the lowest floor.",
+                    "For your protection move to an interior room on the lowest floor of a building.",
+                    "Large hail and damaging winds and continuous cloud to ground lightning is occurring."
+                ],
+                WeatherEventType.EXTREME_HEAT: [
+                    "Drink plenty of fluids, stay in an air-conditioned room, and avoid sun exposure.",
+                    "Take extra precautions if you work or spend time outside. Reschedule strenuous activities to early morning or evening.",
+                    "Check on relatives and neighbors. Young children and adults over 65 are more vulnerable to heat illness."
+                ]
+            }
+            
+            if event_type in instruction_templates:
+                instruction = random.choice(instruction_templates[event_type])
+            else:
+                # Generic instructions based on severity
+                if severity in [AlertSeverity.EXTREME, AlertSeverity.SEVERE]:
+                    instruction = "Take immediate action to protect life and property. Monitor official sources for updates."
+                else:
+                    instruction = "Monitor weather conditions and be prepared to take action if conditions worsen."
+            
+            # Generate status (mostly actual, some tests)
+            status_weights = [(AlertStatus.ACTUAL, 0.85), (AlertStatus.TEST, 0.1), 
+                             (AlertStatus.EXERCISE, 0.03), (AlertStatus.DRAFT, 0.02)]
+            status = random.choices(
+                [s for s, w in status_weights],
+                weights=[w for s, w in status_weights]
+            )[0]
+            
+            # Category is mostly meteorological for weather
+            category_weights = [(AlertCategory.METEOROLOGICAL, 0.9), (AlertCategory.GEOPHYSICAL, 0.05),
+                               (AlertCategory.PUBLIC_SAFETY, 0.03), (AlertCategory.SECURITY, 0.02)]
+            category = random.choices(
+                [c for c, w in category_weights],
+                weights=[w for c, w in category_weights]
+            )[0]
+            
+            # Certainty and urgency correlate with severity
+            if severity == AlertSeverity.EXTREME:
+                certainty = random.choices([AlertCertainty.OBSERVED, AlertCertainty.LIKELY, AlertCertainty.POSSIBLE], 
+                                         weights=[0.6, 0.3, 0.1])[0]
+                urgency = random.choices([AlertUrgency.IMMEDIATE, AlertUrgency.EXPECTED], weights=[0.8, 0.2])[0]
+            elif severity == AlertSeverity.SEVERE:
+                certainty = random.choices([AlertCertainty.LIKELY, AlertCertainty.OBSERVED, AlertCertainty.POSSIBLE], 
+                                         weights=[0.5, 0.3, 0.2])[0]
+                urgency = random.choices([AlertUrgency.IMMEDIATE, AlertUrgency.EXPECTED], weights=[0.6, 0.4])[0]
+            else:
+                certainty = random.choices([AlertCertainty.LIKELY, AlertCertainty.POSSIBLE, AlertCertainty.OBSERVED], 
+                                         weights=[0.4, 0.4, 0.2])[0]
+                urgency = random.choices([AlertUrgency.EXPECTED, AlertUrgency.FUTURE, AlertUrgency.IMMEDIATE], 
+                                       weights=[0.5, 0.3, 0.2])[0]
+            
+            # Create the weather alert
+            alert = WeatherAlert(
+                event_type=event_type,
+                event=event_name,
+                status=status,
+                category=category,
+                headline=headline,
+                description=description,
+                instruction=instruction,
+                affected_areas=affected_areas,
+                effective=effective_time,
+                onset=onset_time,
+                expires=expires_time,
+                ends=ends_time,
+                severity=severity,
+                certainty=certainty,
+                urgency=urgency,
+            )
+            
+            alerts.append(alert)
+        
+        # Sort alerts by severity (extreme first) for better UI display
+        severity_order = {AlertSeverity.EXTREME: 0, AlertSeverity.SEVERE: 1, 
+                         AlertSeverity.MODERATE: 2, AlertSeverity.MINOR: 3}
+        alerts.sort(key=lambda a: severity_order.get(a.severity, 4))
+        
+        return alerts

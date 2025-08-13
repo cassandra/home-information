@@ -60,6 +60,16 @@ def _create_dynamic_weather_settings() -> Dict[str, SettingDefinition]:
         initial_value=True,
     )
     
+    settings_dict['WEATHER_ALERTS_ENABLED'] = SettingDefinition(
+        label='Enable Weather Alerts',
+        description='Enable processing of weather alerts from data sources and creation of system alarms.',
+        value_type=AttributeValueType.BOOLEAN,
+        value_range_str='',
+        is_editable=True,
+        is_required=True,
+        initial_value=True,
+    )
+    
     return settings_dict
 
 
