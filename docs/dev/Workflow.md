@@ -89,6 +89,7 @@ git checkout -b feature/$(ISSUE_NUM}-${MNEMONIC} upstream/staging
 - Ensure the base repository is set to `cassandra/home-information -> staging`
 - Ensure the compare branch is set to: `${YOURUSERNAME}/home-information -> feature/${YOUR_FEATURE_NAME}`
 - Fill out the PR template (describe what your change does).
+- If applicable, add a line that says which ticket it closes. i.e., "Closes #39"
 - Submit the PR and wait for review!
 
 ## PR Reviews
