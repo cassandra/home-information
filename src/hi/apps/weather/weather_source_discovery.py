@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 from typing import List
 
+from .weather_data_source import WeatherDataSource
+
 logger = logging.getLogger(__name__)
 
 
@@ -12,14 +14,13 @@ class WeatherSourceDiscovery:
     """Centralized weather data source discovery utility."""
     
     @classmethod
-    def discover_weather_data_source_instances(cls) -> List['WeatherDataSource']:
+    def discover_weather_data_source_instances(cls) -> List[WeatherDataSource]:
         """
         Discover all WeatherDataSource instances from the weather_sources directory.
         
         This is the single source of truth for weather source discovery,
         used by both the settings system and the monitoring system.
         """
-        from .weather_data_source import WeatherDataSource
         
         sources_dir = os.path.join(Path(__file__).parent, 'weather_sources')
         logger.debug(f'Discovering weather sources in: {sources_dir}')
