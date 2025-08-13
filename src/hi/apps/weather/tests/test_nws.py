@@ -2249,6 +2249,7 @@ class TestNationalWeatherService( BaseTestCase ):
             # Mock successful alerts
             mock_alerts = [
                 WeatherAlert(
+                    event_type=WeatherEventType.SEVERE_THUNDERSTORM,
                     event="Test Alert",
                     status=AlertStatus.ACTUAL,
                     category=AlertCategory.METEOROLOGICAL,

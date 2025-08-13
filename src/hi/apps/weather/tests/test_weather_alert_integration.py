@@ -150,7 +150,7 @@ class TestWeatherAlertIntegration(unittest.TestCase):
         alarm = mapper.create_alarm(alert)
         self.assertIsNone(alarm)
     
-    async def test_weather_manager_integration(self):
+    def test_weather_manager_integration(self):
         """Test that WeatherManager properly creates alarms from weather alerts."""
         # Mock alert manager to capture alarms
         mock_alert_manager = AsyncMock()
@@ -186,10 +186,10 @@ class TestWeatherAlertIntegration(unittest.TestCase):
         mock_data_source.id = "test_nws"
         
         # Update weather alerts (this should create alarms)
-        await mock_weather_manager.update_weather_alerts(
+        run_async_test(mock_weather_manager.update_weather_alerts(
             weather_data_source=mock_data_source,
             weather_alerts=test_alerts
-        )
+        ))
         
         # Verify alert manager was called to add alarms
         self.assertEqual(mock_alert_manager.add_alarm.call_count, 2)  # Only 2 should create alarms
@@ -252,4 +252,4 @@ class AsyncTestCase(unittest.TestCase):
     def test_weather_manager_integration_wrapper(self):
         """Wrapper to run async test."""
         test_instance = TestWeatherAlertIntegration()
-        run_async_test(test_instance.test_weather_manager_integration())
+        test_instance.test_weather_manager_integration()

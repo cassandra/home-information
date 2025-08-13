@@ -347,10 +347,10 @@ class TestWeatherManager( BaseTestCase ):
             # Clear any existing alerts
             weather_manager._weather_alerts = []
             
-            # Mock the ConsoleSettingsHelper to return False (disabled)
-            with patch('hi.apps.weather.weather_manager.ConsoleSettingsHelper') as mock_helper_class:
+            # Mock the WeatherSettingsHelper to return False (disabled)
+            with patch('hi.apps.weather.weather_manager.WeatherSettingsHelper') as mock_helper_class:
                 mock_helper = mock_helper_class.return_value
-                mock_helper.get_setting_value.return_value = False
+                mock_helper.is_weather_alerts_enabled.return_value = False
                 
                 # Mock the alert manager and alarm mapper to ensure they're NOT called when disabled
                 with patch.object(weather_manager, 'alert_manager_async') as mock_alert_manager:

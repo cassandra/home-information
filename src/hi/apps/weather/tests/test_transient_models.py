@@ -25,6 +25,7 @@ from hi.apps.weather.enums import (
     AlertUrgency,
     MoonPhase,
     SkyCondition,
+    WeatherEventType,
     WeatherPhenomenon,
     WeatherPhenomenonIntensity,
     WeatherPhenomenonModifier,
@@ -529,6 +530,7 @@ class TestWeatherTransientModels(BaseTestCase):
     def test_WeatherAlert_creation(self):
         """Test WeatherAlert creation with all required fields"""
         alert = WeatherAlert(
+            event_type=WeatherEventType.WINTER_STORM,
             event="Winter Storm Warning",
             status=AlertStatus.ACTUAL,
             category=AlertCategory.METEOROLOGICAL,

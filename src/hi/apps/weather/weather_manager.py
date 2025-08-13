@@ -38,6 +38,7 @@ from .weather_data_source import WeatherDataSource
 from .interval_data_manager import IntervalDataManager
 from .weather_alert_alarm_mapper import WeatherAlertAlarmMapper
 from .daily_weather_tracker import DailyWeatherTracker
+from .weather_settings_helper import WeatherSettingsHelper
 
 logger = logging.getLogger(__name__)
 
@@ -256,9 +257,8 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
                                      weather_alerts      : List[WeatherAlert] ):
         """Update weather alerts from data sources and create system alarms for qualifying alerts."""
         # Check if weather alerts processing is enabled
-        from .settings import WeatherSetting
-        console_helper = ConsoleSettingsHelper()
-        if not console_helper.get_setting_value(WeatherSetting.WEATHER_ALERTS_ENABLED):
+        weather_settings_helper = WeatherSettingsHelper()
+        if not weather_settings_helper.is_weather_alerts_enabled():
             logger.debug(f'Weather alerts processing disabled, ignoring {len(weather_alerts)} alerts from {weather_data_source.id}')
             return
             

@@ -136,6 +136,28 @@ make docker-stop
 - Basic field access and obvious default values
 - Simple string formatting without complex logic
 
+#### Critical Testing Anti-Patterns (Never Do These)
+
+**NEVER Test Behavior Based on Log Messages**
+- **Problem**: Log message assertions (`self.assertLogs()`, checking log output) are fragile and break easily when logging changes
+- **Issue**: Many existing tests deliberately disable logging for performance and clarity
+- **Solution**: Test actual behavior changes - state modifications, return values, method calls, side effects
+- **Example**: Instead of `assertLogs('module', level='WARNING')`, verify the actual error handling behavior occurred
+
+```python
+# BAD - Testing based on log messages
+with self.assertLogs('weather.manager', level='WARNING') as log_context:
+    manager.process_data(invalid_data)
+    self.assertTrue(any("Error processing" in msg for msg in log_context.output))
+
+# GOOD - Testing actual behavior
+mock_fallback = Mock()
+with patch.object(manager, 'fallback_handler', mock_fallback):
+    result = manager.process_data(invalid_data)
+    mock_fallback.assert_called_once()
+    self.assertIsNone(result)  # Verify expected failure behavior
+```
+
 #### Django-Specific Testing Patterns
 
 ```python

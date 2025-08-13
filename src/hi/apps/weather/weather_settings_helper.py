@@ -87,6 +87,16 @@ class WeatherSettingsHelper(SettingsMixin):
             return value.lower() in ('true', '1', 'yes', 'on')
         return bool(value)
     
+    def is_weather_alerts_enabled(self) -> bool:
+        """Check if weather alerts processing is enabled."""
+        value = self.settings_manager().get_setting_value(WeatherSetting.WEATHER_ALERTS_ENABLED)
+        if value is None:
+            return True
+        # Handle string boolean values from database
+        if isinstance(value, str):
+            return value.lower() in ('true', '1', 'yes', 'on')
+        return bool(value)
+    
     def get_weather_source_config(self, source_id: str) -> Dict[str, any]:
         """Get complete configuration for a weather source."""
         return {
