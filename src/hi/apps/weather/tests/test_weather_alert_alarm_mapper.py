@@ -19,9 +19,10 @@ from hi.apps.weather.enums import (
 )
 from hi.apps.weather.transient_models import WeatherAlert
 from hi.apps.weather.weather_alert_alarm_mapper import WeatherAlertAlarmMapper
+from hi.tests.base_test_case import BaseTestCase
 
 
-class TestWeatherAlertAlarmMapper(unittest.TestCase):
+class TestWeatherAlertAlarmMapper(BaseTestCase):
     """Test weather alert to system alarm conversion logic."""
     
     def setUp(self):
