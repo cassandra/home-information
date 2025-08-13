@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
 
-    WEATHER_POLLING_INTERVAL_SECS = 5
-    STARTUP_SAFETY_SECS = 10
+    WEATHER_POLLING_INTERVAL_SECS = 150
+    STARTUP_SAFETY_SECS = 30
     
     def __init__( self ):
         super().__init__(
