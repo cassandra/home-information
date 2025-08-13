@@ -1,6 +1,5 @@
 from datetime import datetime
 import logging
-import threading
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.security.security_mixins import SecurityMixin

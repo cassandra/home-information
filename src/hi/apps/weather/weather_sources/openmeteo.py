@@ -117,7 +117,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
         # Fetch historical weather data (last 7 days)
         try:
-            logger.debug(f'Fetching OpenMeteo historical weather data for 7 days')
+            logger.debug('Fetching OpenMeteo historical weather data for 7 days')
             interval_daily_history_list = self.get_historical_weather(
                 geographic_location = geographic_location,
                 days_back = 7,

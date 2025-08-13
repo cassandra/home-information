@@ -3,7 +3,6 @@ from unittest.mock import patch
 from datetime import datetime
 import pytz
 
-import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.interval_data_manager import IntervalDataManager
 from hi.apps.weather.transient_models import WeatherForecastData, WeatherHistoryData
 
@@ -17,7 +16,8 @@ class TimezoneIntervalTest(TestCase):
         # Test with US/Central timezone (UTC-6 in winter, UTC-5 in summer)
         test_timezone = 'America/Chicago'
         
-        with patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name', return_value=test_timezone):
+        with patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name',
+                   return_value=test_timezone):
             # Create daily forecast manager
             daily_manager = IntervalDataManager(
                 interval_hours=24,
@@ -68,7 +68,8 @@ class TimezoneIntervalTest(TestCase):
         
         test_timezone = 'America/New_York'  # UTC-5 in winter, UTC-4 in summer
         
-        with patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name', return_value=test_timezone):
+        with patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name',
+                   return_value=test_timezone):
             # Create daily history manager (descending order)
             history_manager = IntervalDataManager(
                 interval_hours=24,
@@ -111,7 +112,8 @@ class TimezoneIntervalTest(TestCase):
         
         test_timezone = 'America/Chicago'
         
-        with patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name', return_value=test_timezone):
+        with patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name',
+                   return_value=test_timezone):
             # Create hourly forecast manager
             hourly_manager = IntervalDataManager(
                 interval_hours=1,
@@ -131,9 +133,6 @@ class TimezoneIntervalTest(TestCase):
                 for agg_data in hourly_manager._aggregated_interval_data_list:
                     interval = agg_data.interval_data.interval
                     intervals.append((interval.start.hour, interval.end.hour))
-                
-                # Should start from current UTC hour (22:00-23:00)
-                expected_hours = [(22, 23), (23, 0), (0, 1)]
                 
                 # Handle the hour rollover for the third interval
                 actual_hours = []
@@ -165,7 +164,8 @@ class TimezoneIntervalTest(TestCase):
         test_utc_time = datetime(2025, 8, 11, 20, 0, 0, tzinfo=pytz.UTC)
         
         # Initialize with first timezone
-        with patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name', return_value=initial_timezone):
+        with patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name',
+                   return_value=initial_timezone):
             with patch('hi.apps.common.datetimeproxy.now', return_value=test_utc_time):
                 daily_manager.ensure_initialized()
                 
@@ -184,7 +184,8 @@ class TimezoneIntervalTest(TestCase):
         )
         
         # Initialize with new timezone
-        with patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name', return_value=new_timezone):
+        with patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name',
+                   return_value=new_timezone):
             with patch('hi.apps.common.datetimeproxy.now', return_value=test_utc_time):
                 daily_manager_new_tz.ensure_initialized()
                 
@@ -200,3 +201,4 @@ class TimezoneIntervalTest(TestCase):
         # The difference should be exactly 1 hour (Eastern is 1 hour ahead of Central)
         time_diff = new_intervals[0] - initial_intervals[0]
         self.assertEqual(time_diff.total_seconds(), -3600)  # 1 hour earlier in UTC for Eastern
+        

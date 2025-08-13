@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 import unittest
 from unittest.mock import patch
 import pytz
@@ -12,7 +12,6 @@ from hi.apps.weather.transient_models import (
     NumericDataPoint,
     StringDataPoint,
     BooleanDataPoint,
-    TimeDataPoint,
     TimeInterval,
     WeatherForecastData,
     WeatherHistoryData,
@@ -56,7 +55,13 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
         
         return
 
-    def create_weather_forecast_data(self, temperature_c=None, humidity_pct=None, description=None, is_daytime=None, source_datetime=None, station=None):
+    def create_weather_forecast_data( self,
+                                      temperature_c    = None,
+                                      humidity_pct     = None,
+                                      description      = None,
+                                      is_daytime       = None,
+                                      source_datetime  = None,
+                                      station          = None ):
         """Helper to create WeatherForecastData with test values."""
         if not station:
             station = self.test_station
@@ -408,7 +413,8 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
         )
         chicago_manager.ensure_initialized()
         
-        chicago_intervals = [agg.interval_data.interval for agg in chicago_manager._aggregated_interval_data_list]
+        chicago_intervals = [agg.interval_data.interval 
+                             for agg in chicago_manager._aggregated_interval_data_list]
         
         # Verify Chicago intervals: local midnight in Chicago is 06:00 UTC
         chicago_tz = pytz.timezone('America/Chicago')
@@ -431,7 +437,8 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
         )
         london_manager.ensure_initialized()
         
-        london_intervals = [agg.interval_data.interval for agg in london_manager._aggregated_interval_data_list]
+        london_intervals = [agg.interval_data.interval
+                            for agg in london_manager._aggregated_interval_data_list]
         
         # Verify London intervals: local midnight in London BST (UTC+1) is 23:00 UTC
         london_tz = pytz.timezone('Europe/London')
@@ -453,7 +460,8 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
         )
         hourly_manager.ensure_initialized()
         
-        hourly_intervals = [agg.interval_data.interval for agg in hourly_manager._aggregated_interval_data_list]
+        hourly_intervals = [agg.interval_data.interval
+                            for agg in hourly_manager._aggregated_interval_data_list]
         
         # Hourly intervals should be UTC-based (naive datetimes)
         # Should start at 14:00 UTC (current hour)
@@ -516,21 +524,21 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
         
         # Verify aggregation results
         
-        # First interval (14:00-16:00): Should have NWS temperature, OpenMeteo humidity (from overlap 15:00-16:00)
+        # First (14:00-16:00): Should have NWS temperature, OpenMeteo humidity (from overlap 15:00-16:00)
         first_agg = manager._aggregated_interval_data_list[0]
         self.assertEqual(first_agg.interval_data.data.temperature.quantity_ave.magnitude, 22.0)
         self.assertEqual(first_agg.interval_data.data.description_short.value, "NWS 6h Forecast")
-        self.assertEqual(first_agg.interval_data.data.relative_humidity.quantity_ave.magnitude, 75)  # OpenMeteo fills gap
+        self.assertEqual(first_agg.interval_data.data.relative_humidity.quantity_ave.magnitude, 75)  # fills
         
         # Second interval (16:00-18:00): Should have NWS temperature, OpenMeteo humidity
         second_agg = manager._aggregated_interval_data_list[1]
         self.assertEqual(second_agg.interval_data.data.temperature.quantity_ave.magnitude, 22.0)  # NWS wins
-        self.assertEqual(second_agg.interval_data.data.relative_humidity.quantity_ave.magnitude, 75)  # OpenMeteo fills gap
+        self.assertEqual(second_agg.interval_data.data.relative_humidity.quantity_ave.magnitude, 75)  # fills
         
         # Third interval (18:00-20:00): Should have only NWS data
         third_agg = manager._aggregated_interval_data_list[2]
         self.assertEqual(third_agg.interval_data.data.temperature.quantity_ave.magnitude, 22.0)
-        self.assertIsNone(third_agg.interval_data.data.relative_humidity)  # OpenMeteo doesn't cover this period
+        self.assertIsNone(third_agg.interval_data.data.relative_humidity)  # OpenMeteo doesn't cover this
 
     @patch('hi.apps.common.datetimeproxy.now')
     def test_interval_update_with_time_advancement(self, mock_now):
@@ -593,7 +601,7 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
         )
         
         with patch('hi.apps.common.datetimeproxy.now', 
-                  return_value=datetime(2024, 1, 15, 14, 30, 0)):
+                   return_value=datetime(2024, 1, 15, 14, 30, 0)):
             manager.ensure_initialized()
             
             # Add empty interval data list
@@ -728,7 +736,7 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
         )
         
         with patch('hi.apps.common.datetimeproxy.now', 
-                  return_value=datetime(2024, 1, 15, 14, 30, 0)):
+                   return_value=datetime(2024, 1, 15, 14, 30, 0)):
             
             manager.ensure_initialized()
             
@@ -744,10 +752,14 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
             forecast_fields = ['temperature', 'relative_humidity', 'description_short', 'is_daytime']
             
             for field_name in forecast_fields:
-                self.assertIn(field_name, agg_data.source_data, 
-                             f"Field {field_name} missing from source_data - initialization bug detected")
-                self.assertIsNotNone(agg_data.source_data[field_name],
-                                   f"Field {field_name} is None in source_data - initialization bug detected")
+                self.assertIn(
+                    field_name, agg_data.source_data, 
+                    f"Field {field_name} missing from source_data - initialization bug detected"
+                )
+                self.assertIsNotNone(
+                    agg_data.source_data[field_name],
+                    f"Field {field_name} is None in source_data - initialization bug detected"
+                )
 
 
 if __name__ == '__main__':

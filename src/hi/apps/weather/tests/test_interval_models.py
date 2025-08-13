@@ -180,3 +180,4 @@ class TestIntervalModels(BaseTestCase):
         self.assertEqual(len(retrieved), 1)
         self.assertIn(self.test_interval, retrieved)
         return
+    

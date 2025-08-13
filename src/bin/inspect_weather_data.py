@@ -27,12 +27,11 @@ Options:
 
 import argparse
 import asyncio
-import json
 import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 import zoneinfo
 
 # Add the Django app to the Python path
@@ -46,11 +45,15 @@ django.setup()
 
 # Now import the weather modules
 from asgiref.sync import sync_to_async
-import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.weather_manager import WeatherManager
 from hi.apps.weather.weather_source_discovery import WeatherSourceDiscovery
-from hi.apps.weather.transient_models import DataPoint, NumericDataPoint, StringDataPoint, BooleanDataPoint, TimeDataPoint
-from hi.units import UnitQuantity
+from hi.apps.weather.transient_models import (
+    DataPoint,
+    NumericDataPoint,
+    StringDataPoint,
+    BooleanDataPoint,
+    TimeDataPoint,
+)
 
 
 class WeatherDataInspector:
@@ -607,11 +610,12 @@ class WeatherDataInspector:
         
         return aggregated_data
     
-    async def run_inspection(self, source_filter: str = 'all', 
-                           data_type_filter: str = 'all',
-                           raw_only: bool = False,
-                           parsed_only: bool = False, 
-                           aggregated_only: bool = False):
+    async def run_inspection( self,
+                              source_filter    : str = 'all', 
+                              data_type_filter : str = 'all',
+                              raw_only         : bool = False,
+                              parsed_only      : bool = False, 
+                              aggregated_only  : bool = False):
         """Run the complete inspection."""
         
         print(f"Weather Data Inspector - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -637,7 +641,7 @@ class WeatherDataInspector:
         for weather_source in weather_sources:
             if not aggregated_only:
                 # Show both raw data and call get_data()
-                source_data = await self.inspect_weather_source_data(weather_source)
+                _ = await self.inspect_weather_source_data(weather_source)
             else:
                 # Only call get_data() without showing raw data
                 print(f"Calling {weather_source.label} get_data() to populate WeatherManager...")
@@ -649,29 +653,29 @@ class WeatherDataInspector:
         
         # Inspect aggregated data from weather manager (the main output)
         if not raw_only and not parsed_only:
-            aggregated_data = await self.inspect_aggregated_data()
+            _ = await self.inspect_aggregated_data()
         
-        print(self.format_header("Inspection Complete"))
-        print(f"Tip: Use --compact for shorter output, --limit N to control record count")
-        print(f"     Use --source <name> to focus on specific weather source")
+        print( self.format_header("Inspection Complete") )
+        print( "Tip: Use --compact for shorter output, --limit N to control record count" )
+        print( "     Use --source <name> to focus on specific weather source" )
 
 
 def main():
     parser = argparse.ArgumentParser(description='Inspect weather data flow from sources to aggregated data')
     parser.add_argument('--source', default='all', 
-                       help='Weather source to inspect (openmeteo, nws, all)')
+                        help='Weather source to inspect (openmeteo, nws, all)')
     parser.add_argument('--data-type', default='all',
-                       help='Data type to inspect (current, hourly, daily, history, all)')
+                        help='Data type to inspect (current, hourly, daily, history, all)')
     parser.add_argument('--compact', action='store_true',
-                       help='Use compact output format')
+                        help='Use compact output format')
     parser.add_argument('--raw-only', action='store_true',
-                       help='Show only weather source data')
+                        help='Show only weather source data')
     parser.add_argument('--parsed-only', action='store_true', 
-                       help='Show only parsed data structures (same as raw-only)')
+                        help='Show only parsed data structures (same as raw-only)')
     parser.add_argument('--aggregated-only', action='store_true',
-                       help='Show only aggregated data from weather manager')
+                        help='Show only aggregated data from weather manager')
     parser.add_argument('--limit', type=int, default=5,
-                       help='Limit number of records shown (default: 5)')
+                        help='Limit number of records shown (default: 5)')
     
     args = parser.parse_args()
     inspector = WeatherDataInspector(compact=args.compact, limit=args.limit)

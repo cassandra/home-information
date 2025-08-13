@@ -245,3 +245,4 @@ class TestWmoUnits(BaseTestCase):
             with self.subTest(input_unit=input_unit):
                 result = WmoUnits.normalize_unit(input_unit)
                 self.assertEqual(result, expected_output)
+                

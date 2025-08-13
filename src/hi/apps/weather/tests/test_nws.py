@@ -1,6 +1,5 @@
 from datetime import datetime
 import logging
-import unittest
 from unittest.mock import Mock, patch
 
 import hi.apps.common.datetimeproxy as datetimeproxy
@@ -21,8 +20,6 @@ from hi.apps.weather.transient_models import (
     NumericDataPoint,
     StringDataPoint,
     WeatherConditionsData,
-    WeatherForecastData,
-    IntervalWeatherForecast,
     Station,
     WeatherAlert,
 )
@@ -1593,8 +1590,9 @@ class TestNationalWeatherService( BaseTestCase ):
                 self.assertEqual( len(expected.notable_phenomenon_data.list_value),
                                   len(result.notable_phenomenon_data.list_value),
                                   test_data['label']  )
-                for expected_phenomenon, result_phenomenon in zip( expected.notable_phenomenon_data.list_value,
-                                                                   result.notable_phenomenon_data.list_value ):
+                for expected_phenomenon, result_phenomenon in zip(
+                        expected.notable_phenomenon_data.list_value,
+                        result.notable_phenomenon_data.list_value ):
                     self.assertEqual( expected_phenomenon.weather_phenomenon,
                                       result_phenomenon.weather_phenomenon,
                                       test_data['label'] )
@@ -2240,7 +2238,8 @@ class TestNationalWeatherService( BaseTestCase ):
             elevation=UnitQuantity(167.0, 'm')
         )
         
-        with patch.object(type(nws), 'geographic_location', new_callable=lambda: property(lambda self: test_location)), \
+        with patch.object(type(nws), 'geographic_location',
+                          new_callable=lambda: property(lambda self: test_location)), \
              patch.object(nws, 'weather_manager_async', return_value=mock_weather_manager), \
              patch.object(nws, 'get_current_conditions', return_value=None), \
              patch.object(nws, 'get_forecast_hourly', return_value=None), \

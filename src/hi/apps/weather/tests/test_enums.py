@@ -110,7 +110,7 @@ class TestWeatherEnums(BaseTestCase):
         ]
         for test_data in test_data_list:
             with self.subTest(percent=test_data['percent'], waxing=test_data['is_waxing']):
-                result = MoonPhase.from_illumination(illumination_percent=test_data['percent'],
+                result = MoonPhase.from_illumination( illumination_percent=test_data['percent'],
                                                       is_waxing=test_data['is_waxing'])
                 self.assertEqual(test_data['expect'], result, test_data)
                 continue
@@ -156,7 +156,8 @@ class TestWeatherEnums(BaseTestCase):
     
     def test_CloudCoverageType_completeness(self):
         """Test CloudCoverageType has expected coverage levels"""
-        expected_types = ['SKY_CLEAR', 'CLEAR', 'FEW', 'SCATTERED', 'BROKEN', 'OVERCAST', 'VERTICAL_VISIBILITY']
+        expected_types = ['SKY_CLEAR', 'CLEAR', 'FEW', 'SCATTERED',
+                          'BROKEN', 'OVERCAST', 'VERTICAL_VISIBILITY']
         
         for type_name in expected_types:
             with self.subTest(type_name=type_name):
@@ -195,7 +196,7 @@ class TestWeatherEnums(BaseTestCase):
         """Test WindDirection has comprehensive directional coverage"""
         # Test all major directions exist
         major_directions = ['NORTH', 'NORTHEAST', 'EAST', 'SOUTHEAST', 
-                           'SOUTH', 'SOUTHWEST', 'WEST', 'NORTHWEST']
+                            'SOUTH', 'SOUTHWEST', 'WEST', 'NORTHWEST']
         
         for direction_name in major_directions:
             with self.subTest(direction=direction_name):
@@ -212,8 +213,8 @@ class TestWeatherEnums(BaseTestCase):
     def test_AlertCategory_basic_functionality(self):
         """Test AlertCategory enum has expected values"""
         expected_categories = ['METEOROLOGICAL', 'GEOPHYSICAL', 'PUBLIC_SAFETY', 
-                              'SECURITY', 'RESCUE', 'FIRE', 'HEALTH', 
-                              'ENVIRONMENTAL', 'TRANSPORTATION', 'INFRASTRUCTURE', 'OTHER']
+                               'SECURITY', 'RESCUE', 'FIRE', 'HEALTH', 
+                               'ENVIRONMENTAL', 'TRANSPORTATION', 'INFRASTRUCTURE', 'OTHER']
         
         for category_name in expected_categories:
             with self.subTest(category=category_name):

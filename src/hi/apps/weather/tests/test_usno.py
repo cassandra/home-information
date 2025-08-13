@@ -1,14 +1,11 @@
 import json
 import logging
-from datetime import datetime, date, time, timedelta
-import unittest
+from datetime import datetime, date, time
 from unittest.mock import Mock, patch
 import pytz
 
-import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.weather_sources.usno import (
     USNO,
-    USNOStatus,
 )
 from hi.apps.weather.transient_models import (
     AstronomicalData,
@@ -199,7 +196,7 @@ class TestUSNO(BaseTestCase):
 
     @patch('hi.apps.common.datetimeproxy.now')
     def test_parse_astronomical_data_success(self, mock_now):
-        """Test successful parsing of astronomical data - HIGH VALUE for field mapping and moon phase integration."""
+        """Test successful parsing of astronomical data - HIGH VALUE for field mapping and moon phase."""
         # Mock current time
         mock_source_datetime = datetime(2024, 3, 15, 14, 30, 0)
         mock_now.return_value = mock_source_datetime
@@ -400,7 +397,8 @@ class TestUSNO(BaseTestCase):
         mock_now.return_value = mock_today
         
         # Mock timezone from superclass using property return value
-        with patch.object(type(self.usno), 'tz_name', new_callable=lambda: property(lambda self: 'America/Chicago')):
+        with patch.object(type(self.usno), 'tz_name',
+                          new_callable=lambda: property(lambda self: 'America/Chicago')):
             # Mock successful astronomical data for each day
             mock_astronomical_data = AstronomicalData(
                 sunrise = TimeDataPoint(
@@ -448,7 +446,9 @@ class TestUSNO(BaseTestCase):
 
     @patch('hi.apps.weather.weather_sources.usno.USNO.get_astronomical_data_list')
     @patch('hi.apps.weather.weather_sources.usno.USNO.get_astronomical_data')
-    async def test_get_data_calls_multi_day_method(self, mock_get_astronomical_data, mock_get_astronomical_data_list):
+    async def test_get_data_calls_multi_day_method(self,
+                                                   mock_get_astronomical_data,
+                                                   mock_get_astronomical_data_list):
         """Test that get_data calls the new multi-day method - HIGH VALUE for integration."""
         # Mock weather manager
         mock_weather_manager = Mock()
@@ -456,7 +456,8 @@ class TestUSNO(BaseTestCase):
         mock_weather_manager.update_todays_astronomical_data = Mock()
         
         test_location = self.test_location  # Capture for lambda
-        with patch.object(type(self.usno), 'geographic_location', new_callable=lambda: property(lambda self: test_location)), \
+        with patch.object(type(self.usno), 'geographic_location',
+                          new_callable=lambda: property(lambda self: test_location)), \
              patch.object(self.usno, 'weather_manager_async', return_value=mock_weather_manager):
             
             # Mock successful multi-day data
@@ -546,16 +547,16 @@ class TestUSNO(BaseTestCase):
 
         # Test various moon phases (based on actual MoonPhase.from_illumination logic)
         test_cases = [
-            (2.0, True, "NEW_MOON"),         # New moon - very low illumination (<=3), waxing
-            (5.0, True, "WAXING_CRESCENT"),  # Waxing crescent (>3, <47)
-            (35.0, True, "WAXING_CRESCENT"), # Waxing crescent 
-            (50.0, True, "FIRST_QUARTER"),   # First quarter (47-53)
-            (75.0, True, "WAXING_GIBBOUS"),  # Waxing gibbous (53-97)
-            (98.0, True, "FULL_MOON"),       # Full moon - high illumination (>=97)
-            (75.0, False, "WANING_GIBBOUS"), # Waning gibbous (53-97)
-            (50.0, False, "LAST_QUARTER"),   # Last quarter (47-53)
-            (25.0, False, "WANING_CRESCENT"), # Waning crescent (3-47)
-            (2.0, False, "NEW_MOON"),        # New moon - very low illumination (<=3), waning
+            (2.0, True, "NEW_MOON"),           # New moon - very low illumination (<=3), waxing
+            (5.0, True, "WAXING_CRESCENT"),    # Waxing crescent (>3, <47)
+            (35.0, True, "WAXING_CRESCENT"),   # Waxing crescent 
+            (50.0, True, "FIRST_QUARTER"),     # First quarter (47-53)
+            (75.0, True, "WAXING_GIBBOUS"),    # Waxing gibbous (53-97)
+            (98.0, True, "FULL_MOON"),         # Full moon - high illumination (>=97)
+            (75.0, False, "WANING_GIBBOUS"),   # Waning gibbous (53-97)
+            (50.0, False, "LAST_QUARTER"),     # Last quarter (47-53)
+            (25.0, False, "WANING_CRESCENT"),  # Waning crescent (3-47)
+            (2.0, False, "NEW_MOON"),          # New moon - very low illumination (<=3), waning
         ]
 
         for illumination, is_waxing, expected_phase_name in test_cases:
@@ -576,5 +577,5 @@ class TestUSNO(BaseTestCase):
             moon_phase = astronomical_data.moon_phase
             self.assertIsNotNone(moon_phase)
             self.assertEqual(moon_phase.name, expected_phase_name,
-                           f"Failed for illumination={illumination}, waxing={is_waxing}")
+                             f"Failed for illumination={illumination}, waxing={is_waxing}")
         return

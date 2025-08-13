@@ -3,6 +3,7 @@ from threading import Lock
 # Global dictionary to store locks for each singleton class
 _singleton_locks = {}
 
+
 class Singleton:
     _instance = None
     _initialized = False

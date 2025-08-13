@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 import logging
 from typing import Dict
 
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.models import User as UserType
 

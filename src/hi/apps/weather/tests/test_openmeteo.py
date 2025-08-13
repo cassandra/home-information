@@ -1,6 +1,4 @@
-import json
 import logging
-from datetime import datetime
 import unittest
 from unittest.mock import Mock, patch
 
@@ -323,9 +321,9 @@ class TestOpenMeteoConverters(BaseTestCase):
         self.assertFalse(OpenMeteoConverters.is_weather_code_precipitation(0))  # Clear
         
         # Test clear codes
-        self.assertTrue(OpenMeteoConverters.is_weather_code_clear(0))   # Clear sky
-        self.assertTrue(OpenMeteoConverters.is_weather_code_clear(1))   # Mainly clear
-        self.assertFalse(OpenMeteoConverters.is_weather_code_clear(61)) # Rain
+        self.assertTrue(OpenMeteoConverters.is_weather_code_clear(0))    # Clear sky
+        self.assertTrue(OpenMeteoConverters.is_weather_code_clear(1))    # Mainly clear
+        self.assertFalse(OpenMeteoConverters.is_weather_code_clear(61))  # Rain
         
         # Test severity
         self.assertEqual(OpenMeteoConverters.get_weather_code_severity(0), 'clear')

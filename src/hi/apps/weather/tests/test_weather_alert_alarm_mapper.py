@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 
 from django.utils import timezone
 
-import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.security.enums import SecurityLevel
 from hi.apps.weather.enums import (
@@ -20,7 +19,6 @@ from hi.apps.weather.enums import (
 )
 from hi.apps.weather.transient_models import WeatherAlert
 from hi.apps.weather.weather_alert_alarm_mapper import WeatherAlertAlarmMapper
-from hi.units import UnitQuantity
 
 
 class TestWeatherAlertAlarmMapper(unittest.TestCase):
@@ -70,7 +68,8 @@ class TestWeatherAlertAlarmMapper(unittest.TestCase):
         ]
         
         for event_type in critical_types:
-            for severity in [AlertSeverity.MINOR, AlertSeverity.MODERATE, AlertSeverity.SEVERE, AlertSeverity.EXTREME]:
+            for severity in [ AlertSeverity.MINOR, AlertSeverity.MODERATE,
+                              AlertSeverity.SEVERE, AlertSeverity.EXTREME ]:
                 with self.subTest(event_type=event_type, severity=severity):
                     alert = self.create_test_weather_alert(
                         event_type=event_type,
@@ -363,3 +362,4 @@ class TestWeatherAlertAlarmMapper(unittest.TestCase):
             self.mapper.DEFAULT_LIFETIME_SECS
         )
         self.assertEqual(alarm.alarm_lifetime_secs, expected_lifetime)
+        

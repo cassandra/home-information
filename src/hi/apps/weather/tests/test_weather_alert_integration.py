@@ -253,3 +253,4 @@ class AsyncTestCase(unittest.TestCase):
         """Wrapper to run async test."""
         test_instance = TestWeatherAlertIntegration()
         test_instance.test_weather_manager_integration()
+        

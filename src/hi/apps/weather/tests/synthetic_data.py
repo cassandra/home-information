@@ -278,9 +278,10 @@ class WeatherSyntheticData:
         )
 
     @classmethod
-    def get_random_interval_hourly_forecast_list(cls,
-                                             now: datetime = None,
-                                             source: DataPointSource = None) -> List[IntervalWeatherForecast]:
+    def get_random_interval_hourly_forecast_list(
+            cls,
+            now    : datetime = None,
+            source : DataPointSource = None) -> List[IntervalWeatherForecast]:
         if not now:
             now = datetimeproxy.now()
         if not source:
@@ -317,9 +318,10 @@ class WeatherSyntheticData:
         return interval_hourly_forecast_list
     
     @classmethod
-    def get_random_interval_daily_forecast_list(cls,
-                                            now: datetime = None,
-                                            source: DataPointSource = None) -> List[IntervalWeatherForecast]:
+    def get_random_interval_daily_forecast_list(
+            cls,
+            now    : datetime = None,
+            source : DataPointSource = None) -> List[IntervalWeatherForecast]:
         if not now:
             now = datetimeproxy.now()
         if not source:
@@ -356,9 +358,10 @@ class WeatherSyntheticData:
         return interval_daily_forecast_list
 
     @classmethod
-    def get_random_hourly_interval_forecast_data_list(cls,
-                                                      now: datetime = None,
-                                                      source: DataPointSource = None) -> List[IntervalWeatherForecast]:
+    def get_random_hourly_interval_forecast_data_list(
+            cls,
+            now    : datetime = None,
+            source : DataPointSource = None) -> List[IntervalWeatherForecast]:
         """Get random hourly forecast data wrapped in IntervalWeatherForecast objects."""
         if not now:
             now = datetimeproxy.now()
@@ -396,9 +399,10 @@ class WeatherSyntheticData:
         return interval_forecast_data_list
     
     @classmethod
-    def get_random_daily_interval_forecast_data_list(cls,
-                                                     now: datetime = None,
-                                                     source: DataPointSource = None) -> List[IntervalWeatherForecast]:
+    def get_random_daily_interval_forecast_data_list(
+            cls,
+            now    : datetime = None,
+            source : DataPointSource = None) -> List[IntervalWeatherForecast]:
         """Get random daily forecast data wrapped in IntervalWeatherForecast objects."""
         if not now:
             now = datetimeproxy.now()
@@ -436,9 +440,10 @@ class WeatherSyntheticData:
         return interval_forecast_data_list
 
     @classmethod
-    def get_random_daily_interval_history_data_list(cls,
-                                                    now: datetime = None,
-                                                    source: DataPointSource = None) -> List[IntervalWeatherHistory]:
+    def get_random_daily_interval_history_data_list(
+            cls,
+            now    : datetime = None,
+            source : DataPointSource = None) -> List[IntervalWeatherHistory]:
         """Get random daily history data wrapped in IntervalWeatherHistory objects."""
         if not now:
             now = datetimeproxy.now()
@@ -496,9 +501,10 @@ class WeatherSyntheticData:
         return forecast_data
 
     @classmethod
-    def get_random_interval_daily_history_list(cls,
-                                           now: datetime = None,
-                                           source: DataPointSource = None) -> List[IntervalWeatherHistory]:
+    def get_random_interval_daily_history_list(
+            cls,
+            now    : datetime = None,
+            source : DataPointSource = None) -> List[IntervalWeatherHistory]:
         if not now:
             now = datetimeproxy.now()
         if not source:
@@ -748,10 +754,10 @@ class WeatherSyntheticData:
         return
     
     @classmethod
-    def get_random_weather_alerts(cls, 
-                                 count: int = None,
-                                 now: datetime = None,
-                                 source: DataPointSource = None) -> List[WeatherAlert]:
+    def get_random_weather_alerts( cls, 
+                                   count  : int = None,
+                                   now    : datetime = None,
+                                   source : DataPointSource = None) -> List[WeatherAlert]:
         """
         Generate a list of random WeatherAlert instances for UI testing.
         
@@ -836,23 +842,23 @@ class WeatherSyntheticData:
             affected_areas = random.choice(areas_options)
             
             # Generate severity based on event type (some events tend to be more severe)
-            if event_type in [WeatherEventType.TORNADO, WeatherEventType.HURRICANE, 
-                             WeatherEventType.FLASH_FLOOD, WeatherEventType.EARTHQUAKE]:
+            if event_type in [ WeatherEventType.TORNADO, WeatherEventType.HURRICANE, 
+                               WeatherEventType.FLASH_FLOOD, WeatherEventType.EARTHQUAKE ]:
                 # Critical events tend to be severe/extreme
-                severity_weights = [(AlertSeverity.EXTREME, 0.4), (AlertSeverity.SEVERE, 0.4), 
-                                  (AlertSeverity.MODERATE, 0.15), (AlertSeverity.MINOR, 0.05)]
+                severity_weights = [ (AlertSeverity.EXTREME, 0.4), (AlertSeverity.SEVERE, 0.4), 
+                                     (AlertSeverity.MODERATE, 0.15), (AlertSeverity.MINOR, 0.05) ]
             elif "Warning" in event_name:
                 # Warnings tend to be more severe than watches/advisories
-                severity_weights = [(AlertSeverity.SEVERE, 0.5), (AlertSeverity.MODERATE, 0.3),
-                                  (AlertSeverity.EXTREME, 0.15), (AlertSeverity.MINOR, 0.05)]
+                severity_weights = [ (AlertSeverity.SEVERE, 0.5), (AlertSeverity.MODERATE, 0.3),
+                                     (AlertSeverity.EXTREME, 0.15), (AlertSeverity.MINOR, 0.05) ]
             elif "Watch" in event_name or "Advisory" in event_name:
                 # Watches and advisories tend to be less severe
-                severity_weights = [(AlertSeverity.MODERATE, 0.5), (AlertSeverity.MINOR, 0.3),
-                                  (AlertSeverity.SEVERE, 0.15), (AlertSeverity.EXTREME, 0.05)]
+                severity_weights = [ (AlertSeverity.MODERATE, 0.5), (AlertSeverity.MINOR, 0.3),
+                                     (AlertSeverity.SEVERE, 0.15), (AlertSeverity.EXTREME, 0.05) ]
             else:
                 # Default distribution
-                severity_weights = [(AlertSeverity.MODERATE, 0.4), (AlertSeverity.MINOR, 0.3),
-                                  (AlertSeverity.SEVERE, 0.2), (AlertSeverity.EXTREME, 0.1)]
+                severity_weights = [ (AlertSeverity.MODERATE, 0.4), (AlertSeverity.MINOR, 0.3),
+                                     (AlertSeverity.SEVERE, 0.2), (AlertSeverity.EXTREME, 0.1) ]
             
             # Weighted random selection
             severity = random.choices(
@@ -934,8 +940,8 @@ class WeatherSyntheticData:
                     instruction = "Monitor weather conditions and be prepared to take action if conditions worsen."
             
             # Generate status (mostly actual, some tests)
-            status_weights = [(AlertStatus.ACTUAL, 0.85), (AlertStatus.TEST, 0.1), 
-                             (AlertStatus.EXERCISE, 0.03), (AlertStatus.DRAFT, 0.02)]
+            status_weights = [ (AlertStatus.ACTUAL, 0.85), (AlertStatus.TEST, 0.1), 
+                               (AlertStatus.EXERCISE, 0.03), (AlertStatus.DRAFT, 0.02) ]
             status = random.choices(
                 [s for s, w in status_weights],
                 weights=[w for s, w in status_weights]
@@ -951,18 +957,29 @@ class WeatherSyntheticData:
             
             # Certainty and urgency correlate with severity
             if severity == AlertSeverity.EXTREME:
-                certainty = random.choices([AlertCertainty.OBSERVED, AlertCertainty.LIKELY, AlertCertainty.POSSIBLE], 
-                                         weights=[0.6, 0.3, 0.1])[0]
+                certainty = random.choices(
+                    [AlertCertainty.OBSERVED, AlertCertainty.LIKELY, AlertCertainty.POSSIBLE], 
+                    weights=[0.6, 0.3, 0.1]
+                )[0]
                 urgency = random.choices([AlertUrgency.IMMEDIATE, AlertUrgency.EXPECTED], weights=[0.8, 0.2])[0]
             elif severity == AlertSeverity.SEVERE:
-                certainty = random.choices([AlertCertainty.LIKELY, AlertCertainty.OBSERVED, AlertCertainty.POSSIBLE], 
-                                         weights=[0.5, 0.3, 0.2])[0]
-                urgency = random.choices([AlertUrgency.IMMEDIATE, AlertUrgency.EXPECTED], weights=[0.6, 0.4])[0]
+                certainty = random.choices(
+                    [AlertCertainty.LIKELY, AlertCertainty.OBSERVED, AlertCertainty.POSSIBLE], 
+                    weights=[0.5, 0.3, 0.2]
+                )[0]
+                urgency = random.choices(
+                    [AlertUrgency.IMMEDIATE, AlertUrgency.EXPECTED],
+                    weights=[0.6, 0.4]
+                )[0]
             else:
-                certainty = random.choices([AlertCertainty.LIKELY, AlertCertainty.POSSIBLE, AlertCertainty.OBSERVED], 
-                                         weights=[0.4, 0.4, 0.2])[0]
-                urgency = random.choices([AlertUrgency.EXPECTED, AlertUrgency.FUTURE, AlertUrgency.IMMEDIATE], 
-                                       weights=[0.5, 0.3, 0.2])[0]
+                certainty = random.choices(
+                    [AlertCertainty.LIKELY, AlertCertainty.POSSIBLE, AlertCertainty.OBSERVED], 
+                    weights=[0.4, 0.4, 0.2]
+                )[0]
+                urgency = random.choices(
+                    [AlertUrgency.EXPECTED, AlertUrgency.FUTURE, AlertUrgency.IMMEDIATE], 
+                    weights=[0.5, 0.3, 0.2]
+                )[0]
             
             # Create the weather alert
             alert = WeatherAlert(
@@ -986,8 +1003,8 @@ class WeatherSyntheticData:
             alerts.append(alert)
         
         # Sort alerts by severity (extreme first) for better UI display
-        severity_order = {AlertSeverity.EXTREME: 0, AlertSeverity.SEVERE: 1, 
-                         AlertSeverity.MODERATE: 2, AlertSeverity.MINOR: 3}
+        severity_order = { AlertSeverity.EXTREME: 0, AlertSeverity.SEVERE: 1, 
+                           AlertSeverity.MODERATE: 2, AlertSeverity.MINOR: 3}
         alerts.sort(key=lambda a: severity_order.get(a.severity, 4))
         
         return alerts

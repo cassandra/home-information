@@ -7,11 +7,23 @@ import pytz
 import hi.apps.common.datetimeproxy as datetimeproxy
 
 from hi.apps.weather.transient_models import (
-    DataPointSource, IntervalWeatherHistory, WeatherHistoryData,
-    TimeInterval, NumericDataPoint, StringDataPoint, Station, WeatherAlert
+    DataPointSource,
+    IntervalWeatherHistory,
+    WeatherHistoryData,
+    TimeInterval,
+    NumericDataPoint,
+    Station,
+    WeatherAlert,
 )
 from hi.apps.weather.weather_manager import WeatherManager
-from hi.apps.weather.enums import AlertSeverity, AlertStatus, AlertCategory, WeatherEventType, AlertCertainty, AlertUrgency
+from hi.apps.weather.enums import (
+    AlertSeverity,
+    AlertStatus,
+    AlertCategory,
+    WeatherEventType,
+    AlertCertainty,
+    AlertUrgency,
+)
 from hi.units import UnitQuantity
 
 from hi.tests.base_test_case import BaseTestCase
@@ -220,8 +232,8 @@ class TestWeatherManager( BaseTestCase ):
         base_time = datetime(2024, 1, 10, 0, 0, 0, tzinfo=pytz.UTC)
         
         for i in range(3):  # 3 days of history
-            interval_start = base_time - timedelta(days=i+1)
-            interval_end = base_time - timedelta(days=i)
+            interval_start = base_time - timedelta( days = i + 1)
+            interval_end = base_time - timedelta( days = i )
             
             history_data = WeatherHistoryData(
                 temperature=NumericDataPoint(
@@ -265,7 +277,7 @@ class TestWeatherManager( BaseTestCase ):
         self.assertIsNotNone(daily_history)
         self.assertIsNotNone(daily_history.data_list)
         self.assertGreater(len(daily_history.data_list), 0, 
-                          "Daily history should contain data after update")
+                           "Daily history should contain data after update")
         
         # Verify the structure matches what templates expect
         for daily_history_interval in daily_history.data_list:
@@ -330,7 +342,8 @@ class TestWeatherManager( BaseTestCase ):
                 
                 # Mock the alert manager and alarm mapper to avoid system integration
                 with patch.object(weather_manager, 'alert_manager_async', return_value=AsyncMock()):
-                    with patch.object(weather_manager._weather_alert_alarm_mapper, 'create_alarms_from_weather_alerts', return_value=[]):
+                    with patch.object(weather_manager._weather_alert_alarm_mapper,
+                                      'create_alarms_from_weather_alerts', return_value=[]):
                         # Update weather alerts
                         await weather_manager.update_weather_alerts(
                             weather_data_source=mock_weather_source,
@@ -354,7 +367,8 @@ class TestWeatherManager( BaseTestCase ):
                 
                 # Mock the alert manager and alarm mapper to ensure they're NOT called when disabled
                 with patch.object(weather_manager, 'alert_manager_async') as mock_alert_manager:
-                    with patch.object(weather_manager._weather_alert_alarm_mapper, 'create_alarms_from_weather_alerts') as mock_create_alarms:
+                    with patch.object(weather_manager._weather_alert_alarm_mapper,
+                                      'create_alarms_from_weather_alerts') as mock_create_alarms:
                         # Update weather alerts
                         await weather_manager.update_weather_alerts(
                             weather_data_source=mock_weather_source,
@@ -363,7 +377,8 @@ class TestWeatherManager( BaseTestCase ):
                         
                         # Verify alerts were NOT processed or stored
                         stored_alerts = weather_manager.get_weather_alerts()
-                        self.assertEqual(len(stored_alerts), 0, "No alerts should be stored when processing is disabled")
+                        self.assertEqual(len(stored_alerts), 0,
+                                         "No alerts should be stored when processing is disabled")
                         
                         # Verify that alert processing methods were NOT called
                         mock_alert_manager.assert_not_called()

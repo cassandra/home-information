@@ -3,17 +3,16 @@ Test that WeatherManager gracefully handles errors in daily weather tracking
 without breaking core weather API functionality.
 """
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from datetime import datetime
 import asyncio
-import logging
 
 from django.core.cache import cache
 from django.utils import timezone
 import pytz
 
 from hi.apps.weather.weather_manager import WeatherManager
-from hi.apps.weather.transient_models import WeatherConditionsData, NumericDataPoint, DataPointSource, Station
+from hi.apps.weather.transient_models import WeatherConditionsData, NumericDataPoint, Station
 from hi.apps.weather.weather_data_source import WeatherDataSource
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
@@ -85,7 +84,8 @@ class TestWeatherManagerDefensiveHandling(unittest.TestCase):
         """Test that errors in daily tracking don't break weather data updates."""
         
         # Mock the daily tracker to raise an exception
-        with patch.object(self.weather_manager._daily_weather_tracker, 'record_weather_conditions') as mock_record:
+        with patch.object(self.weather_manager._daily_weather_tracker,
+                          'record_weather_conditions') as mock_record:
             mock_record.side_effect = Exception("Simulated daily tracker error")
             
             # This should NOT raise an exception despite the daily tracker error
@@ -113,7 +113,8 @@ class TestWeatherManagerDefensiveHandling(unittest.TestCase):
         self.weather_manager._current_conditions_data = conditions
         
         # Mock the daily tracker to raise an exception during fallback population
-        with patch.object(self.weather_manager._daily_weather_tracker, 'populate_daily_fallbacks') as mock_populate:
+        with patch.object(self.weather_manager._daily_weather_tracker,
+                          'populate_daily_fallbacks') as mock_populate:
             mock_populate.side_effect = Exception("Simulated fallback population error")
             
             # This should NOT raise an exception despite the daily tracker error
@@ -156,7 +157,8 @@ class TestWeatherManagerDefensiveHandling(unittest.TestCase):
         conditions = WeatherConditionsData()
         
         # Mock get_temperature_min_max_today to raise an exception
-        with patch.object(self.weather_manager._daily_weather_tracker, 'get_temperature_min_max_today') as mock_get_temp:
+        with patch.object(self.weather_manager._daily_weather_tracker,
+                          'get_temperature_min_max_today') as mock_get_temp:
             mock_get_temp.side_effect = Exception("Simulated internal tracker error")
             
             # This should NOT raise an exception
@@ -200,8 +202,10 @@ class TestWeatherManagerDefensiveHandling(unittest.TestCase):
         """Test that multiple errors in daily tracking don't affect main processing."""
         
         # Mock multiple parts of the daily tracker to fail
-        with patch.object(self.weather_manager._daily_weather_tracker, 'record_weather_conditions') as mock_record, \
-             patch.object(self.weather_manager._daily_weather_tracker, 'populate_daily_fallbacks') as mock_populate:
+        with patch.object(self.weather_manager._daily_weather_tracker,
+                          'record_weather_conditions') as mock_record, \
+             patch.object(self.weather_manager._daily_weather_tracker,
+                          'populate_daily_fallbacks') as mock_populate:
             
             mock_record.side_effect = Exception("Recording error")
             mock_populate.side_effect = Exception("Fallback error")

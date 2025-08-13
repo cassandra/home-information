@@ -3,7 +3,6 @@ from unittest.mock import patch
 from datetime import datetime
 import pytz
 
-import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.interval_data_manager import IntervalDataManager
 from hi.apps.weather.transient_models import (
     WeatherForecastData, DataPointSource, IntervalEnvironmentalData, TimeInterval
@@ -160,3 +159,4 @@ class IntervalUpdatingTest(TestCase):
             # Verify old hours (14, 15) are gone
             for start_hour, end_hour in updated_intervals:
                 self.assertNotIn(start_hour, [14, 15])
+                

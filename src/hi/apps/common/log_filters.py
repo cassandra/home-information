@@ -40,3 +40,4 @@ class SuppressPipelineTemplateVarsFilter(logging.Filter):
                 return False
         
         return True
+    

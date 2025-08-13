@@ -4,13 +4,12 @@ Unit tests for DailyWeatherTracker - daily weather statistics tracking.
 import json
 import unittest
 from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from django.core.cache import cache
 from django.utils import timezone
 import pytz
 
-import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.daily_weather_tracker import DailyWeatherTracker
 from hi.apps.weather.transient_models import WeatherConditionsData, NumericDataPoint, DataPointSource, Station
 from hi.units import UnitQuantity

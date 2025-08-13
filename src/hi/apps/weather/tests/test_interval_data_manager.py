@@ -1,10 +1,9 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 import unittest
 from unittest.mock import patch
 import pytz
 
-import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.weather.interval_data_manager import IntervalDataManager
 from hi.apps.weather.transient_models import (
     DataPointSource,
@@ -109,7 +108,7 @@ class TestIntervalDataManager(BaseTestCase):
     def test_initialization_creates_intervals(self):
         """Test that initialization creates the expected intervals."""
         with patch('hi.apps.common.datetimeproxy.now', 
-                  return_value=datetime(2024, 1, 1, 14, 35, 22)):
+                   return_value=datetime(2024, 1, 1, 14, 35, 22)):
             
             self.manager.ensure_initialized()
             
@@ -125,7 +124,7 @@ class TestIntervalDataManager(BaseTestCase):
     def test_add_data_distributes_to_overlapping_intervals(self):
         """Test that adding data distributes it to overlapping intervals."""
         with patch('hi.apps.common.datetimeproxy.now',
-                  return_value=datetime(2024, 1, 1, 14, 35, 22)):
+                   return_value=datetime(2024, 1, 1, 14, 35, 22)):
             
             self.manager.ensure_initialized()
             
@@ -162,14 +161,14 @@ class TestIntervalDataManager(BaseTestCase):
     def test_update_intervals_maintains_existing_data(self):
         """Test that updating intervals preserves existing aggregated data."""
         with patch('hi.apps.common.datetimeproxy.now',
-                  return_value=datetime(2024, 1, 1, 14, 35, 22)):
+                   return_value=datetime(2024, 1, 1, 14, 35, 22)):
             
             self.manager.ensure_initialized()
             initial_count = len(self.manager._aggregated_interval_data_list)
             
             # Simulate time advancing by updating intervals
             with patch('hi.apps.common.datetimeproxy.now',
-                      return_value=datetime(2024, 1, 1, 15, 35, 22)):
+                       return_value=datetime(2024, 1, 1, 15, 35, 22)):
                 
                 self.manager._update_intervals()
                 
