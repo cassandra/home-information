@@ -2,7 +2,6 @@
 Test that WeatherManager gracefully handles errors in daily weather tracking
 without breaking core weather API functionality.
 """
-import unittest
 from unittest.mock import patch
 from datetime import datetime
 import asyncio

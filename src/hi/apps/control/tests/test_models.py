@@ -4,7 +4,6 @@ from django.db import IntegrityError
 from hi.apps.control.models import Controller, ControllerHistory
 from hi.apps.control.enums import ControllerType
 from hi.apps.entity.models import Entity, EntityState
-from hi.apps.entity.enums import EntityType, EntityStateType
 from hi.tests.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)

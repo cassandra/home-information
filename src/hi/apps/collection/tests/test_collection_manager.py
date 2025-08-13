@@ -3,10 +3,8 @@ from decimal import Decimal
 from unittest.mock import Mock, patch
 
 from hi.apps.collection.collection_manager import CollectionManager
-from hi.apps.collection.models import Collection, CollectionEntity, CollectionPosition, CollectionPath, CollectionView
-from hi.apps.collection.enums import CollectionType, CollectionViewType
+from hi.apps.collection.models import Collection, CollectionEntity, CollectionPosition, CollectionView
 from hi.apps.entity.models import Entity
-from hi.apps.entity.enums import EntityGroupType
 from hi.apps.location.models import Location, LocationView
 from hi.tests.base_test_case import BaseTestCase
 

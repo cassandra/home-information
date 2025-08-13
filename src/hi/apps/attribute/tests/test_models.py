@@ -1,6 +1,6 @@
 import json
 import logging
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from hi.apps.attribute.models import AttributeModel
@@ -138,7 +138,7 @@ class TestAttributeModel(BaseTestCase):
         attr.pk = None
         
         # Mock the super().save() call to avoid database issues
-        with patch('django.db.models.Model.save') as mock_super_save:
+        with patch('django.db.models.Model.save'):
             # Simulate calling save
             attr.save()
             
@@ -171,7 +171,7 @@ class TestAttributeModel(BaseTestCase):
         attr.pk = 1  # Set a fake primary key
         
         # Mock the delete operation to avoid database issues
-        with patch('django.db.models.Model.delete') as mock_super_delete:
+        with patch('django.db.models.Model.delete'):
             attr.delete()
             
             # Should check and delete file
@@ -194,7 +194,7 @@ class TestAttributeModel(BaseTestCase):
         attr.pk = 1  # Set a fake primary key
         
         # Mock the delete operation to avoid database issues
-        with patch('django.db.models.Model.delete') as mock_super_delete:
+        with patch('django.db.models.Model.delete'):
             attr.delete()
             
             # Should check existence but not try to delete
@@ -217,7 +217,7 @@ class TestAttributeModel(BaseTestCase):
         attr.pk = 1  # Set a fake primary key
         
         # Mock the delete operation to avoid database issues  
-        with patch('django.db.models.Model.delete') as mock_super_delete:
+        with patch('django.db.models.Model.delete'):
             # Delete should not raise exception even if storage deletion fails
             attr.delete()
             

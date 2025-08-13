@@ -203,7 +203,7 @@ class TestSvgItemFactory(BaseTestCase):
         # Should be a line path
         self.assertIn('M ', svg_path)    # Move to start
         self.assertIn(' L ', svg_path)   # Line command
-        self.assertNotIn(' Z', svg_path) # No close command
+        self.assertNotIn(' Z', svg_path)  # No close command
         
         # Should contain reasonable coordinates
         self.assertIn('50', svg_path)   # Should have center Y coordinate
