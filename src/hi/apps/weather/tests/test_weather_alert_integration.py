@@ -3,7 +3,6 @@ Integration tests for weather alert to system alarm conversion.
 Tests the complete flow from NWS data parsing to alarm creation.
 """
 import asyncio
-import unittest
 from unittest.mock import Mock, AsyncMock
 
 from hi.apps.weather.enums import WeatherEventType, AlertSeverity
@@ -11,9 +10,10 @@ from hi.apps.weather.weather_sources.nws import NationalWeatherService
 from hi.apps.weather.weather_manager import WeatherManager
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
+from hi.tests.base_test_case import BaseTestCase
 
 
-class TestWeatherAlertIntegration(unittest.TestCase):
+class TestWeatherAlertIntegration(BaseTestCase):
     """Test end-to-end weather alert to alarm integration."""
     
     def test_nws_tornado_warning_creates_critical_alarm(self):
@@ -186,10 +186,13 @@ class TestWeatherAlertIntegration(unittest.TestCase):
         mock_data_source.id = "test_nws"
         
         # Update weather alerts (this should create alarms)
-        run_async_test(mock_weather_manager.update_weather_alerts(
-            weather_data_source=mock_data_source,
-            weather_alerts=test_alerts
-        ))
+        async def test_update():
+            await mock_weather_manager.update_weather_alerts(
+                weather_data_source=mock_data_source,
+                weather_alerts=test_alerts
+            )
+        
+        asyncio.run(test_update())
         
         # Verify alert manager was called to add alarms
         self.assertEqual(mock_alert_manager.add_alarm.call_count, 2)  # Only 2 should create alarms
@@ -236,21 +239,4 @@ class TestWeatherAlertIntegration(unittest.TestCase):
         )
 
 
-# Async test runner
-def run_async_test(coro):
-    """Helper to run async tests."""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
-
-
-# Add async test wrapper
-class AsyncTestCase(unittest.TestCase):
-    def test_weather_manager_integration_wrapper(self):
-        """Wrapper to run async test."""
-        test_instance = TestWeatherAlertIntegration()
-        test_instance.test_weather_manager_integration()
         

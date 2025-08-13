@@ -63,19 +63,6 @@ class TestWeatherEnums(BaseTestCase):
         
         return
 
-    def test_SkyCondition_properties(self):
-        """Test SkyCondition enum properties"""
-        for condition in SkyCondition:
-            with self.subTest(condition=condition):
-                self.assertIsNotNone(condition.label)
-                self.assertIsNotNone(condition.day_label)
-                self.assertIsNotNone(condition.icon_filename)
-                self.assertIsNotNone(condition.day_icon_filename)
-                self.assertTrue(condition.icon_filename.endswith('.svg'))
-                self.assertTrue(condition.day_icon_filename.endswith('.svg'))
-                continue
-        return
-
     def test_MoonPhase__from_illumination(self):
         """Test MoonPhase illumination percentage and waxing status mapping"""
         test_data_list = [

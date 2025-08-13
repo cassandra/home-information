@@ -1,0 +1,141 @@
+import logging
+
+import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.alert.alert_manager import AlertManager
+from hi.apps.alert.alert import Alert
+from hi.apps.alert.alarm import Alarm
+from hi.apps.alert.enums import AlarmLevel, AlarmSource
+from hi.apps.security.enums import SecurityLevel
+from hi.tests.base_test_case import BaseTestCase
+
+logging.disable(logging.CRITICAL)
+
+
+class TestAlertManager(BaseTestCase):
+
+    def test_alert_manager_singleton_behavior(self):
+        """Test AlertManager singleton pattern - critical for system consistency."""
+        manager1 = AlertManager()
+        manager2 = AlertManager()
+        
+        self.assertIs(manager1, manager2)
+        return
+
+    def test_alert_manager_initialization(self):
+        """Test AlertManager initialization and ensure_initialized - critical setup logic."""
+        manager = AlertManager()
+        
+        # Should have alert queue
+        self.assertIsNotNone(manager._alert_queue)
+        
+        # May already be initialized due to singleton pattern
+        # Test ensure_initialized works without error
+        manager.ensure_initialized()
+        self.assertTrue(manager._was_initialized)
+        
+        # Subsequent calls should not change state
+        manager.ensure_initialized()
+        self.assertTrue(manager._was_initialized)
+        return
+
+    def test_alert_manager_unacknowledged_alert_list_delegation(self):
+        """Test unacknowledged_alert_list property delegation - critical UI integration."""
+        manager = AlertManager()
+        
+        # Should delegate to alert queue
+        unack_list = manager.unacknowledged_alert_list
+        expected_list = manager._alert_queue.unacknowledged_alert_list
+        self.assertEqual(unack_list, expected_list)
+        return
+
+    def test_alert_manager_get_alert_delegation(self):
+        """Test get_alert method delegation - critical for alert lookup."""
+        manager = AlertManager()
+        
+        # Create test alert and add to queue
+        test_alarm = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='test_alarm',
+            alarm_level=AlarmLevel.WARNING,
+            title='Test Alarm',
+            source_details_list=[],
+            security_level=SecurityLevel.LOW,
+            alarm_lifetime_secs=300,
+            timestamp=datetimeproxy.now(),
+        )
+        alert = Alert(test_alarm)
+        manager._alert_queue._alert_list.append(alert)
+        
+        # Should delegate to alert queue
+        found_alert = manager.get_alert(alert.id)
+        self.assertEqual(found_alert, alert)
+        
+        # Should raise KeyError for non-existent ID
+        with self.assertRaises(KeyError):
+            manager.get_alert('non_existent_id')
+        return
+
+    def test_alert_manager_get_alert_status_data_structure(self):
+        """Test get_alert_status_data method structure - complex business logic integration."""
+        manager = AlertManager()
+        manager.ensure_initialized()
+        
+        test_datetime = datetimeproxy.now()
+        
+        # Method should exist and return AlertStatusData
+        status_data = manager.get_alert_status_data(test_datetime)
+        
+        # Should return some form of status data structure
+        self.assertIsNotNone(status_data)
+        
+        # The exact structure depends on AlertStatusData implementation,
+        # but we're testing that the method executes without error
+        return
+
+    def test_alert_manager_mixin_inheritance(self):
+        """Test AlertManager mixin inheritance - critical for system integration."""
+        manager = AlertManager()
+        
+        # Should inherit from NotificationMixin
+        self.assertTrue(hasattr(manager, 'notification_manager'))
+        
+        # Should inherit from SecurityMixin  
+        self.assertTrue(hasattr(manager, 'security_manager'))
+        
+        # Should be a Singleton
+        from hi.apps.common.singleton import Singleton
+        self.assertIsInstance(manager, Singleton)
+        return
+
+    def test_alert_manager_alert_queue_integration(self):
+        """Test AlertManager integration with AlertQueue - critical system interaction."""
+        manager = AlertManager()
+        
+        # Should have working alert queue
+        self.assertIsNotNone(manager._alert_queue)
+        
+        # Queue operations should work through manager
+        initial_count = len(manager.unacknowledged_alert_list)
+        
+        # Add alert directly to queue
+        test_alarm = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='test_alarm',
+            alarm_level=AlarmLevel.CRITICAL,
+            title='Test Alarm',
+            source_details_list=[],
+            security_level=SecurityLevel.LOW,
+            alarm_lifetime_secs=300,
+            timestamp=datetimeproxy.now(),
+        )
+        alert = Alert(test_alarm)
+        manager._alert_queue._alert_list.append(alert)
+        
+        # Should be reflected in unacknowledged list
+        self.assertEqual(len(manager.unacknowledged_alert_list), initial_count + 1)
+        self.assertIn(alert, manager.unacknowledged_alert_list)
+        
+        # Should be retrievable by ID
+        retrieved_alert = manager.get_alert(alert.id)
+        self.assertEqual(retrieved_alert, alert)
+        return
