@@ -280,6 +280,8 @@ class NotablePhenomenon:
 class WeatherConditionsData( CommonWeatherData ):
     temperature_min_last_24h   : NumericDataPoint                    | None = None
     temperature_max_last_24h   : NumericDataPoint                    | None = None
+    temperature_min_today      : NumericDataPoint                    | None = None
+    temperature_max_today      : NumericDataPoint                    | None = None
     precipitation_last_hour    : NumericDataPoint                    | None = None
     precipitation_last_3h      : NumericDataPoint                    | None = None
     precipitation_last_6h      : NumericDataPoint                    | None = None

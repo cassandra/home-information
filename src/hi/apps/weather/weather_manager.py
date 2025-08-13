@@ -36,6 +36,7 @@ from .transient_models import (
 from .weather_data_source import WeatherDataSource
 from .interval_data_manager import IntervalDataManager
 from .weather_alert_alarm_mapper import WeatherAlertAlarmMapper
+from .daily_weather_tracker import DailyWeatherTracker
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +89,7 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
         self._data_sync_lock = threading.Lock()
         self._data_async_lock = asyncio.Lock() 
         self._weather_alert_alarm_mapper = WeatherAlertAlarmMapper()
+        self._daily_weather_tracker = DailyWeatherTracker()
         self._was_initialized = False
         return
 
@@ -111,6 +113,16 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
     
     def get_current_conditions_data(self) -> WeatherConditionsData:
         with self._data_sync_lock:
+            # Populate any missing daily weather data with fallback values (defensive)
+            try:
+                location_key = self._get_location_key()
+                self._daily_weather_tracker.populate_daily_fallbacks(
+                    weather_conditions_data=self._current_conditions_data,
+                    location_key=location_key
+                )
+            except Exception as e:
+                logger.warning(f"Error populating daily weather fallbacks (returning data without fallbacks): {e}")
+            
             return self._current_conditions_data
     
     def get_todays_astronomical_data(self) -> AstronomicalData:
@@ -152,6 +164,16 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
                 new_data = weather_conditions_data,
                 data_point_source = weather_data_source.data_point_source,
             )
+            
+            # Record weather conditions for daily tracking (defensive - don't let this break main processing)
+            try:
+                location_key = self._get_location_key(weather_data_source)
+                self._daily_weather_tracker.record_weather_conditions(
+                    weather_conditions_data=weather_conditions_data,
+                    location_key=location_key
+                )
+            except Exception as e:
+                logger.warning(f"Error recording daily weather tracking data (continuing with main processing): {e}")
         return
 
     async def update_todays_astronomical_data( self,
@@ -410,5 +432,31 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
             DIVID['WEATHER_OVERVIEW']: weather_overview_html_str,
             DIVID['WEATHER_ALERTS']: weather_alerts_html_str,
         }
+    
+    def _get_location_key(self, weather_data_source=None):
+        """
+        Generate a location key for the daily weather tracker.
+        
+        Args:
+            weather_data_source: Optional weather source to get location from
+            
+        Returns:
+            String key representing the geographic location
+        """
+        if weather_data_source and hasattr(weather_data_source, 'geographic_location'):
+            geo_location = weather_data_source.geographic_location
+        else:
+            # Fallback: try to get location from any available weather source
+            # This is needed when called from get_current_conditions_data()
+            from hi.apps.console.console_helper import ConsoleSettingsHelper
+            console_helper = ConsoleSettingsHelper()
+            geo_location = console_helper.get_geographic_location()
+        
+        if geo_location:
+            # Create location key from lat/lon rounded to 3 decimal places
+            return f"{geo_location.latitude:.3f},{geo_location.longitude:.3f}"
+        
+        # Ultimate fallback
+        return "default"
 
     

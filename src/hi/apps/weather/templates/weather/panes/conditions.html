@@ -24,18 +24,18 @@
     <div class="d-flex justify-content-left">
       <div>
         Min:
-        {% if conditions.temperature_min_last_24h is not None %}
-        {{ conditions.temperature_min_last_24h.quantity|format_magnitude:1 }}
-        <small>{{ conditions.temperature_min_last_24h.quantity|format_units }}</small>
+        {% if conditions.temperature_min_today is not None %}
+        {{ conditions.temperature_min_today.quantity|format_magnitude:1 }}
+        <small>{{ conditions.temperature_min_today.quantity|format_units }}</small>
         {% else %}
         -- °
         {% endif %}
       </div>
       <div class="pl-1">
         Max:
-        {% if conditions.temperature_max_last_24h is not None %}
-        {{ conditions.temperature_max_last_24h.quantity|format_magnitude:1 }}
-        <small>{{ conditions.temperature_max_last_24h.quantity|format_units }}</small>
+        {% if conditions.temperature_max_today is not None %}
+        {{ conditions.temperature_max_today.quantity|format_magnitude:1 }}
+        <small>{{ conditions.temperature_max_today.quantity|format_units }}</small>
         {% else %}
         -- °
         {% endif %}
