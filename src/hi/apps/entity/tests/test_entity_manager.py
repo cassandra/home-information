@@ -1,6 +1,5 @@
 import logging
-from unittest.mock import Mock, patch
-from threading import Lock
+from unittest.mock import Mock
 
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity
@@ -153,8 +152,6 @@ class TestEntityManager(BaseTestCase):
         manager = EntityManager()
         
         try:
-            from hi.apps.location.models import Location, LocationView
-            
             # Create test data
             entity = Entity.objects.create(
                 name='Test Entity',
@@ -163,7 +160,6 @@ class TestEntityManager(BaseTestCase):
                 integration_name='test_integration',
             )
             
-            location = Location.objects.create(name='Test Location')
             # LocationView requires additional fields, skip detailed integration test
             # Focus on testing the business logic we can test without complex setup
             location_view = None

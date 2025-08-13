@@ -3,7 +3,6 @@ Integration tests for weather alert to system alarm conversion.
 Tests the complete flow from NWS data parsing to alarm creation.
 """
 import asyncio
-import unittest
 from unittest.mock import Mock, AsyncMock
 
 from hi.apps.weather.enums import WeatherEventType, AlertSeverity

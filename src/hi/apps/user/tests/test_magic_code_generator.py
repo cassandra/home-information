@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from hi.apps.user.magic_code_generator import MagicCodeGenerator, MagicCodeStatus

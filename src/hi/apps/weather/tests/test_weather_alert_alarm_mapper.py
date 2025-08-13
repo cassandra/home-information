@@ -1,7 +1,6 @@
 """
 Tests for WeatherAlertAlarmMapper - converting weather alerts to system alarms.
 """
-import unittest
 from unittest.mock import patch
 from datetime import datetime, timedelta
 

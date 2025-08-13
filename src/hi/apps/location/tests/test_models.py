@@ -1,9 +1,7 @@
 import logging
-from unittest.mock import Mock, patch
-from django.db import IntegrityError
+from unittest.mock import patch
 
 from hi.apps.location.models import Location, LocationAttribute, LocationView
-from hi.apps.location.enums import LocationViewType, SvgStyleName
 from hi.apps.common.svg_models import SvgViewBox, SvgItemPositionBounds
 from hi.apps.attribute.enums import AttributeValueType
 from hi.enums import ItemType

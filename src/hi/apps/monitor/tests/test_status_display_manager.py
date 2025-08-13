@@ -1,6 +1,6 @@
 import logging
 import threading
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.tests.base_test_case import BaseTestCase

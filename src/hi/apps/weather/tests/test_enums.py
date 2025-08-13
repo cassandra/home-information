@@ -63,7 +63,6 @@ class TestWeatherEnums(BaseTestCase):
         
         return
 
-
     def test_MoonPhase__from_illumination(self):
         """Test MoonPhase illumination percentage and waxing status mapping"""
         test_data_list = [

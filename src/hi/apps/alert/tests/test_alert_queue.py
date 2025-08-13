@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime
 import threading
-import time
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.alert.alert_queue import AlertQueue

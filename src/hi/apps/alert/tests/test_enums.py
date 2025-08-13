@@ -47,19 +47,6 @@ class TestAlertState(BaseTestCase):
     def test_alert_state_priority_ordering(self):
         """Test AlertState priority ordering - critical for state prioritization."""
         # Test that priorities are in correct ascending order
-        states_by_priority = [
-            (AlertState.ERROR, -12),  # ERROR has lowest priority
-            (AlertState.UNKNOWN, -3),
-            (AlertState.DISABLED, -1),
-            (AlertState.ENABLED, 0),
-            (AlertState.IDLE, 1),
-            (AlertState.INFO_RECENT, 9),
-            (AlertState.INFO, 10),
-            (AlertState.ALERT_RECENT, 99),
-            (AlertState.ALERT, 100),
-            (AlertState.ALARM_RECENT, 999),
-            (AlertState.ALARM, 1000),  # ALARM has highest priority
-        ]
         
         # Verify specific critical priorities
         self.assertEqual(AlertState.ERROR.priority, -12)

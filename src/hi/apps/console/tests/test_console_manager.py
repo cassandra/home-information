@@ -1,8 +1,6 @@
 import logging
-from unittest.mock import Mock, patch
 
 from hi.apps.console.console_manager import ConsoleManager
-from hi.apps.console.transient_models import VideoStreamEntity
 from hi.tests.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)

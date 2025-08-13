@@ -1,6 +1,6 @@
 import logging
 
-from hi.apps.config.models import Subsystem, SubsystemAttribute
+from hi.apps.config.models import SubsystemAttribute
 from hi.apps.config.settings_manager import SettingsManager
 from hi.apps.attribute.enums import AttributeValueType
 from hi.tests.base_test_case import BaseTestCase

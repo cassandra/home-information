@@ -1,5 +1,4 @@
 import logging
-from django.db import IntegrityError
 
 from hi.apps.event.models import EventDefinition, EventClause, AlarmAction, ControlAction, EventHistory
 from hi.apps.event.enums import EventType
