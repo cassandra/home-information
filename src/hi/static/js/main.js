@@ -3,6 +3,7 @@
     const Hi = {
 
         DEBUG: true,
+        DEBUG_AUDIO: true, // Enable diagnostic background audio testing
         isEditMode: ( gHiViewMode == 'edit' ),  // Set by server to keep front-end in sync with back-end
         LOCATION_VIEW_AREA_SELECTOR: '#hi-location-view-main',
         LOCATION_VIEW_SVG_CLASS: 'hi-location-view-svg',
@@ -14,6 +15,7 @@
         HIGHLIGHTED_CLASS: 'highlighted',
         ATTRIBUTE_CONTAINER_SELECTOR: '.hi-attribute',
         FORM_FIELD_CONTAINER_SELECTOR: '.input-group',
+        AUDIO_PERMISSION_GUIDANCE_SELECTOR: '#hi-audio-permission-guidance',
         SVG_ACTION_STATE_ATTR_NAME: 'action-state',
 
         DATA_TYPE_ATTR: 'data-type',

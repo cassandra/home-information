@@ -188,7 +188,7 @@ class TestWeatherAlertIntegration(BaseTestCase):
         # Update weather alerts (this should create alarms)
         async def test_update():
             await mock_weather_manager.update_weather_alerts(
-                weather_data_source=mock_data_source,
+                data_point_source=mock_data_source.data_point_source,
                 weather_alerts=test_alerts
             )
         

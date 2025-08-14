@@ -8,8 +8,6 @@ from hi.apps.entity.entity_manager import EntityManager
 
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 
-from .audio_file import AudioFile
-from .audio_signal import AudioSignal
 from .transient_models import VideoStreamEntity
 
 logger = logging.getLogger(__name__)
@@ -25,25 +23,15 @@ class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin ):
         if self._was_initialized:
             return
         
-        self.settings_manager().register_change_listener( self._reload_console_audio_map )
         EntityManager().register_change_listener( self._reload_video_stream_entity_list )
 
-        self._console_audio_map = self._build_console_audio_map()
         self._video_stream_entity_list = self._build_video_stream_entity_list()
 
         self._was_initialized = True
         return
 
-    def get_console_audio_map( self ) -> Dict[ str, str ]:
-        return self._console_audio_map
-
     def get_video_stream_entity_list( self ) -> List[ VideoStreamEntity ]:
         return self._video_stream_entity_list
-
-    def _reload_console_audio_map( self ):
-        logger.debug( 'Reloading console audio map' )
-        self._console_audio_map = self._build_console_audio_map()
-        return
 
     def _reload_video_stream_entity_list(self):
         self._video_stream_entity_list = self._build_video_stream_entity_list()
@@ -74,18 +62,4 @@ class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin ):
 
         video_stream_entity_list.sort( key = lambda item : item.entity.name )
         return video_stream_entity_list
-        
-    def _build_console_audio_map( self ) -> Dict[ str, str ]:
-        logger.debug( 'Building console audio map' )
-        settings_manager = self.settings_manager()
-
-        console_audio_map = dict()
-        for audio_signal in AudioSignal:
-            if audio_signal.console_setting:
-                attr_value = settings_manager.get_setting_value( audio_signal.console_setting )
-                if attr_value:
-                    audio_file = AudioFile.from_name( attr_value )
-                    console_audio_map[str(audio_signal)] = audio_file.url
-            continue
-        return console_audio_map
     

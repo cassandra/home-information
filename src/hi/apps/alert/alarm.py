@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List
 
-from hi.apps.console.audio_signal import AudioSignal
+from hi.apps.audio.audio_signal import AudioSignal
 from hi.apps.security.enums import SecurityLevel
 
 from .enums import AlarmLevel, AlarmSource
@@ -28,12 +28,10 @@ class Alarm:
 
     @property
     def audio_signal(self):
-
-        # TODO: Currently based only on the alarm level, but eventually
-        # allow alarm-specific sounds. e.g., tornado siren sound when
-        # there's a weather alert.
-        
-        return AudioSignal.from_alarm_level( self.alarm_level )
+        # Enhanced to support alarm-specific sounds based on level, source, and type.
+        # Weather alerts get different sounds from event alerts, and tornado alerts
+        # get special treatment regardless of level.
+        return AudioSignal.from_alarm_attributes( self.alarm_level, self.alarm_source, self.alarm_type )
 
     @property
     def signature(self):

@@ -83,7 +83,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             )
             if current_conditions_data:
                 await weather_manager.update_current_conditions(
-                    weather_data_source = self,
+                    data_point_source = self.data_point_source,
                     weather_conditions_data = current_conditions_data,
                 )
         except Exception as e:
@@ -96,7 +96,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             )
             if interval_hourly_forecast_list:
                 await weather_manager.update_hourly_forecast(
-                    weather_data_source = self,
+                    data_point_source = self.data_point_source,
                     forecast_data_list = interval_hourly_forecast_list,
                 )
         except Exception as e:
@@ -109,7 +109,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             )
             if interval_daily_forecast_list:
                 await weather_manager.update_daily_forecast(
-                    weather_data_source = self,
+                    data_point_source = self.data_point_source,
                     forecast_data_list = interval_daily_forecast_list,
                 )
         except Exception as e:
@@ -124,7 +124,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             )
             if interval_daily_history_list:
                 await weather_manager.update_daily_history(
-                    weather_data_source = self,
+                    data_point_source = self.data_point_source,
                     history_data_list = interval_daily_history_list,
                 )
             else:

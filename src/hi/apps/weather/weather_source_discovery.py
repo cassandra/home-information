@@ -21,6 +21,7 @@ class WeatherSourceDiscovery:
         This is the single source of truth for weather source discovery,
         used by both the settings system and the monitoring system.
         """
+        from .weather_data_source import WeatherDataSource
         
         sources_dir = os.path.join(Path(__file__).parent, 'weather_sources')
         logger.debug(f'Discovering weather sources in: {sources_dir}')

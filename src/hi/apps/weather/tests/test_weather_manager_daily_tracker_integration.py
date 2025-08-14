@@ -37,10 +37,6 @@ class MockWeatherDataSource(WeatherDataSource):
             elevation=UnitQuantity(167.0, 'm')
         )
     
-    @property
-    def geographic_location(self):
-        return self._mock_location
-    
     async def get_data(self):
         pass  # Not used in these tests
 
@@ -107,12 +103,12 @@ class TestWeatherManagerDailyTrackerIntegration(unittest.TestCase):
             
             # Update current conditions (should record temperature)
             asyncio.run(self.weather_manager.update_current_conditions(
-                weather_data_source=self.mock_source,
+                data_point_source=self.mock_source.data_point_source,
                 weather_conditions_data=conditions
             ))
             
             # Check that temperature was recorded in daily tracker
-            location_key = self.weather_manager._get_location_key(self.mock_source)
+            location_key = self.weather_manager._get_location_key()
             summary = self.weather_manager._daily_weather_tracker.get_daily_summary(location_key)
             
             self.assertIsNotNone(summary)
@@ -204,9 +200,6 @@ class TestWeatherManagerDailyTrackerIntegration(unittest.TestCase):
     def test_location_key_generation(self):
         """Test that location keys are generated correctly."""
         # Test with weather data source
-        location_key = self.weather_manager._get_location_key(self.mock_source)
-        expected_key = "30.270,-97.740"  # Based on mock location
-        self.assertEqual(location_key, expected_key)
         
         # Test with no weather data source (should fall back to console settings)
         with patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_geographic_location') as mock_geo:
@@ -231,7 +224,7 @@ class TestWeatherManagerDailyTrackerIntegration(unittest.TestCase):
             for temp in temperatures:
                 conditions = self.create_test_conditions(temp, include_today_fields=False)
                 asyncio.run(self.weather_manager.update_current_conditions(
-                    weather_data_source=self.mock_source,
+                    data_point_source=self.mock_source.data_point_source,
                     weather_conditions_data=conditions
                 ))
             
@@ -291,7 +284,7 @@ class TestWeatherManagerDailyTrackerIntegration(unittest.TestCase):
             # Record temperature
             conditions = self.create_test_conditions(25.0, utc_late, include_today_fields=False)
             asyncio.run(self.weather_manager.update_current_conditions(
-                weather_data_source=self.mock_source,
+                data_point_source=self.mock_source.data_point_source,
                 weather_conditions_data=conditions
             ))
             

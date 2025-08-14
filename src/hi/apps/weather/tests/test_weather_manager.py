@@ -263,7 +263,7 @@ class TestWeatherManager( BaseTestCase ):
             
             # Update daily history through weather manager
             await weather_manager.update_daily_history(
-                weather_data_source=mock_weather_source,
+                data_point_source=mock_weather_source.data_point_source,
                 history_data_list=history_data_list
             )
         
@@ -346,7 +346,7 @@ class TestWeatherManager( BaseTestCase ):
                                       'create_alarms_from_weather_alerts', return_value=[]):
                         # Update weather alerts
                         await weather_manager.update_weather_alerts(
-                            weather_data_source=mock_weather_source,
+                            data_point_source=mock_weather_source.data_point,
                             weather_alerts=[test_alert]
                         )
                         
@@ -371,7 +371,7 @@ class TestWeatherManager( BaseTestCase ):
                                       'create_alarms_from_weather_alerts') as mock_create_alarms:
                         # Update weather alerts
                         await weather_manager.update_weather_alerts(
-                            weather_data_source=mock_weather_source,
+                            data_point_source=mock_weather_source.data_point_source,
                             weather_alerts=[test_alert]
                         )
                         

@@ -37,7 +37,7 @@
     const AlertStatusDataAttr = 'alertData';
     const AlertBannerContainerSelector = '#hi-alert-banner-container';
     const AlertBannerContentSelector = '#hi-alert-banner-content';
-    const MaxAudioSignalNameAttr = 'maxAudioSignaName';
+    const MaxAudioSignalNameAttr = 'maxAudioSignalName';
     const NewAudioSignalNameAttr = 'newAudioSignalName';
     const AlarmMessageHtmlAttr = 'alarmMessageHtml';
     
@@ -260,7 +260,7 @@
 	}
 	$(ServerErrorMessageSelector).show();
 	gIsServerErrorShowing = true;
-	Hi.sound.startAudibleSignal( Hi.sound.WARNING_SIGNAL_NAME );
+	Hi.audio.startAudibleSignal( Hi.audio.WARNING_SIGNAL_NAME );
     }
 
     function clearServerErrorIfNeeded() {
@@ -269,7 +269,7 @@
 	}
 	$(ServerErrorMessageSelector).hide();
 	gIsServerErrorShowing = false;
-	Hi.sound.startAudibleSignal( Hi.sound.INFO_SIGNAL_NAME );
+	Hi.audio.startAudibleSignal( Hi.audio.INFO_SIGNAL_NAME );
     }
 
 })();

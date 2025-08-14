@@ -86,7 +86,7 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
             )
             if astronomical_data_list:
                 await weather_manager.update_astronomical_data(
-                    weather_data_source = self,
+                    data_point_source = self.data_point_source,
                     astronomical_data_list = astronomical_data_list,
                 )
         except Exception as e:
@@ -99,7 +99,7 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
             )
             if todays_astronomical_data:
                 await weather_manager.update_todays_astronomical_data(
-                    weather_data_source = self,
+                    data_point_source = self.data_point_source,
                     astronomical_data = todays_astronomical_data,
                 )
         except Exception as e:

@@ -3,7 +3,7 @@ from typing import ClassVar, List
 
 from django.http import HttpRequest
 
-from hi.apps.console.audio_signal import AudioSignal
+from hi.apps.audio.audio_signal import AudioSignal
 
 from .alert import Alert
 from .alert_helpers import AlertHelpers
@@ -19,7 +19,7 @@ class AlertStatusData:
     new_audio_signal        : AudioSignal  # Not seen before (for immediate audio notification)
 
     NewAudioSignalNameAttr  : ClassVar  = 'newAudioSignalName'
-    MaxAudioSignalNameAttr  : ClassVar  = 'maxAudioSignaName'
+    MaxAudioSignalNameAttr  : ClassVar  = 'maxAudioSignalName'
     AlarmMessageHtmlAttr    : ClassVar  = 'alarmMessageHtml'
 
     def to_dict(self, request : HttpRequest ):
