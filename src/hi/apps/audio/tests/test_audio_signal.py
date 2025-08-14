@@ -10,7 +10,6 @@ logging.disable(logging.CRITICAL)
 
 class TestAudioSignal(BaseTestCase):
 
-
     def test_audio_signal_audio_setting_mapping(self):
         """Test audio setting association - critical for audio configuration."""
         # Each AudioSignal should have proper audio setting

@@ -161,17 +161,27 @@
     
     function handleAlertStatusData( alertStatusData ) {
 	if ( ! alertStatusData ) {
+	    if ( Hi.DEBUG ) { console.log('🔇 No alert status data received'); }
 	    return;
 	}
 	
+	if ( Hi.DEBUG ) { console.log('🔎 Alert status data:', alertStatusData); }
+	
 	if (( MaxAudioSignalNameAttr in alertStatusData )
 	    && ( alertStatusData[MaxAudioSignalNameAttr] )) {
+	    if ( Hi.DEBUG ) { console.log(`🔊 Found max audio signal: ${alertStatusData[MaxAudioSignalNameAttr]}`); }
 	    Hi.audio.setMaxSignalName( alertStatusData[MaxAudioSignalNameAttr] );
+	    if ( Hi.DEBUG ) { console.log(`🔊 setMaxSignalName completed for: ${alertStatusData[MaxAudioSignalNameAttr]}`); }
+	} else {
+	    if ( Hi.DEBUG ) { console.log('🔇 No max audio signal in alert data'); }
 	}
 	
 	if (( NewAudioSignalNameAttr in alertStatusData )
 	    && ( alertStatusData[NewAudioSignalNameAttr] )) {
+	    if ( Hi.DEBUG ) { console.log(`🎵 Found new audio signal: ${alertStatusData[NewAudioSignalNameAttr]}`); }
 	    Hi.audio.startAudibleSignal( alertStatusData[NewAudioSignalNameAttr] );
+	} else {
+	    if ( Hi.DEBUG ) { console.log('🎵 No new audio signal in alert data'); }
 	}
 
 	if (( AlarmMessageHtmlAttr in alertStatusData )

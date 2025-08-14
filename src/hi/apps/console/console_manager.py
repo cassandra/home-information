@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List
+from typing import List
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin

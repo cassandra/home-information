@@ -43,10 +43,21 @@
     let gCurrentMaxSignalName = null;
     
     function startAudioPolling() {
+        if (Hi.DEBUG) { console.log('🎵 Starting audio polling system'); }
+        
+        if (typeof Hi.watchdog === 'undefined') {
+            if (Hi.DEBUG) { console.error('❌ Hi.watchdog not available - audio polling disabled'); }
+            return;
+        }
+        
+        if (Hi.DEBUG) { console.log(`🔄 Adding audio watchdog (interval: ${AudioPollingIntervalMs}ms, start delay: ${AudioPollingStartDelayMs}ms)`); }
+        
         Hi.watchdog.add( AudioPollingWatchdogType, 
                          checkAudioStatus,
                          AudioPollingIntervalMs );
         gAudioPollingTimer = setTimeout( checkAudioStatus, AudioPollingStartDelayMs );
+        
+        if (Hi.DEBUG) { console.log('✅ Audio polling system initialized'); }
     }
 
     function setAudioPollingTimer() {
@@ -64,11 +75,15 @@
     function checkAudioStatus() {
         clearAudioPollingTimer();
         try {
+            if (Hi.DEBUG) { console.log(`🔍 Audio polling check - current max signal: ${gCurrentMaxSignalName}`); }
+            
             Hi.watchdog.ok( AudioPollingWatchdogType );
 
             if ( gCurrentMaxSignalName ) {
-                if ( Hi.DEBUG ) { console.log( "Audio max signal found." ); }
+                if ( Hi.DEBUG ) { console.log( `🔊 Audio max signal found: ${gCurrentMaxSignalName}` ); }
                 _startAudibleSignal( gCurrentMaxSignalName );
+            } else {
+                if ( Hi.DEBUG ) { console.log( "🔇 No audio signal to play" ); }
             }
         } catch (e) {
             console.error( `Exception in audio polling: ${e} (line=${e.lineNumber})` );
@@ -84,7 +99,9 @@
     let gActiveAudibleSignalName = null;
 
     function _setMaxSignalName( signalName ) {
+        if (Hi.DEBUG) { console.log(`📢 Setting max audio signal: ${signalName}`); }
         gCurrentMaxSignalName = signalName;
+        if (Hi.DEBUG) { console.log(`📢 gCurrentMaxSignalName is now: ${gCurrentMaxSignalName}`); }
         return true;
     }
     
@@ -105,19 +122,23 @@
     }
     
     function _startAudibleSignal( signalName ) {
-        if ( Hi.DEBUG ) { console.log( `Starting audio signal = ${signalName}` ); }
+        if ( Hi.DEBUG ) { console.log( `🎵 Starting audio signal = ${signalName}` ); }
+        if ( Hi.DEBUG ) { console.log( `🔧 Audio enabled check: ${Hi.settings.isAudioEnabled()}` ); }
         try {
             stopAudio( );
             clearAudibleSignalTimer();
             if ( ! Hi.settings.isAudioEnabled() ) {
+                if ( Hi.DEBUG ) { console.log( `🔇 Audio disabled, not playing signal: ${signalName}` ); }
                 return;
             }
             let id = getAudioElementId( signalName );
+            if ( Hi.DEBUG ) { console.log( `🔍 Looking for audio element with ID: ${id}` ); }
             let elem = document.getElementById(id);
             if ( ! elem ) {
-                if ( Hi.DEBUG ) { console.log( `Missing audio tag for ${signalName}` ); }
+                if ( Hi.DEBUG ) { console.log( `❌ Missing audio tag for ${signalName}` ); }
                 return;
             }
+            if ( Hi.DEBUG ) { console.log( `✅ Found audio element for ${signalName}` ); }
             
             // Check if audio file loaded successfully
             if (elem.readyState === 0) {
@@ -134,15 +155,17 @@
                 elem.currentTime = 0;
                 // Handle autoplay policy restrictions
                 const playPromise = elem.play();
+                if ( Hi.DEBUG ) { console.log( `🎵 Attempting to play audio element: ${id}` ); }
                 if (playPromise !== undefined) {
                     playPromise.then(() => {
                         // Audio playback started successfully
+                        if ( Hi.DEBUG ) { console.log( `✅ Audio playback started successfully: ${signalName}` ); }
                         gActiveAudibleSignalName = signalName;
                         setAudibleSignalTimer();
                     }).catch(error => {
                         // Autoplay was prevented
                         if (error.name === 'NotAllowedError') {
-                            if ( Hi.DEBUG ) { console.log( `Audio autoplay blocked for ${signalName}` ); }
+                            if ( Hi.DEBUG ) { console.log( `❌ Audio autoplay blocked for ${signalName}` ); }
                             _showPermissionGuidanceIfNeeded();
                         } else {
                             console.error( `Audio playback error for ${signalName}: ${error}` );
@@ -241,6 +264,18 @@
         UNKNOWN: 'unknown'
     };
     
+    const FirefoxAutoplayPolicy = {
+        ALLOWED: 'allowed',
+        ALLOWED_MUTED: 'allowed-muted', 
+        DISALLOWED: 'disallowed'
+    };
+    
+    const AudioButtonState = {
+        ENABLED: 'enabled',
+        DISABLED: 'disabled',
+        BLOCKED: 'blocked'
+    };
+    
     function _getAudioPermissionState() {
         if (Hi.DEBUG) { console.log('_getAudioPermissionState() called'); }
         
@@ -253,7 +288,7 @@
             // "allowed" = Background alerts can play audio automatically
             // "allowed-muted" = Background alerts blocked (can only play muted audio)
             // "disallowed" = Background alerts completely blocked
-            if (policy === 'allowed') {
+            if (policy === FirefoxAutoplayPolicy.ALLOWED) {
                 if (Hi.DEBUG) { console.log('Firefox: Background alert audio allowed'); }
                 return AudioPermissionState.GRANTED;
             } else {
@@ -321,7 +356,7 @@
                         const policyAfter = navigator.getAutoplayPolicy('mediaelement');
                         if (Hi.DEBUG) { console.log('Policy after user activation:', policyAfter); }
                         
-                        if (policyAfter === 'allowed') {
+                        if (policyAfter === FirefoxAutoplayPolicy.ALLOWED) {
                             if (Hi.DEBUG) { console.log('Firefox: User activation granted full autoplay permission'); }
                             return AudioPermissionState.GRANTED;
                         } else {
@@ -447,10 +482,15 @@
         // Set initial baseline immediately on page load (cleanest state)
         await _setInitialBaselineState();
         
-        // Check for baseline changes every 60 seconds
-        baselineRecheckTimer = setInterval(async () => {
-            await _checkForBaselineStateChange();
-        }, BASELINE_STATE_MONITOR_INTERVAL_MS );
+        // Only start baseline monitoring if baseline state is blocked
+        if (baselineAudioState === AudioPermissionState.BLOCKED) {
+            if (Hi.DEBUG) { console.log('🔄 Starting baseline state monitoring (baseline is blocked)'); }
+            baselineRecheckTimer = setInterval(async () => {
+                await _checkForBaselineStateChange();
+            }, BASELINE_STATE_MONITOR_INTERVAL_MS );
+        } else {
+            if (Hi.DEBUG) { console.log('✅ Baseline state is allowed - no monitoring needed'); }
+        }
     }
 
     async function _updateAudioButtonState() {
@@ -467,7 +507,7 @@
             if (!Hi.settings.isAudioEnabled()) {
                 // User has explicitly disabled audio - show disabled (takes precedence)
                 $('#hi-audio-state-disabled').show();
-            } else if (permissionState === 'blocked') {
+            } else if (permissionState === AudioPermissionState.BLOCKED) {
                 // User wants audio but permissions are blocked - show blocked
                 $('#hi-audio-state-blocked').show();
             } else {
@@ -477,14 +517,14 @@
             
             if (Hi.DEBUG) { 
                 const changeStatus = hasBaselineStateChanged() ? 'changed' : 'unchanged';
-                const userSetting = Hi.settings.isAudioEnabled() ? 'enabled' : 'disabled';
+                const userSetting = Hi.settings.isAudioEnabled() ? AudioButtonState.ENABLED : AudioButtonState.DISABLED;
                 let buttonState;
                 if (!Hi.settings.isAudioEnabled()) {
-                    buttonState = 'disabled';
-                } else if (permissionState === 'blocked') {
-                    buttonState = 'blocked';
+                    buttonState = AudioButtonState.DISABLED;
+                } else if (permissionState === AudioPermissionState.BLOCKED) {
+                    buttonState = AudioButtonState.BLOCKED;
                 } else {
-                    buttonState = 'enabled';
+                    buttonState = AudioButtonState.ENABLED;
                 }
                 console.log(`Button showing: ${buttonState} (permission: ${permissionState}, user: ${userSetting}, baseline: ${baselineAudioState}, current: ${currentAudioState}, status: ${changeStatus})`); 
             }
@@ -506,7 +546,7 @@
             if (Hi.DEBUG) { console.log(`Current states - baseline: ${baselineAudioState}, current: ${currentAudioState}, settings enabled: ${Hi.settings.isAudioEnabled()}`); }
             
             // Check if we should show guidance dialog
-            if (baselineAudioState === 'blocked' && Hi.settings.isAudioEnabled()) {
+            if (baselineAudioState === AudioPermissionState.BLOCKED && Hi.settings.isAudioEnabled()) {
                 if (Hi.DEBUG) { console.log('📋 Showing guidance dialog (baseline blocked + audio enabled)'); }
                 await _showAudioPermissionGuidanceDialog();
             } else {

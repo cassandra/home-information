@@ -215,7 +215,7 @@ class TestWeatherManagerDailyTrackerIntegration(unittest.TestCase):
     
     def test_multiple_temperature_updates_tracking(self):
         """Test that multiple temperature updates are tracked correctly."""
-        location_key = "30.270,-97.740"
+        location_key = "30.268,-97.743"  # This matches what the WeatherManager actually uses
         
         with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
             # Update with multiple different temperatures
@@ -274,7 +274,7 @@ class TestWeatherManagerDailyTrackerIntegration(unittest.TestCase):
             user_timezone=pacific_tz
         )
         
-        location_key = "30.270,-97.740"
+        location_key = "30.268,-97.743"  # This matches what the WeatherManager actually uses
         
         # Time that's late in the day Pacific time
         pacific_late = pacific_tz.localize(datetime(2024, 3, 15, 23, 30, 0))
