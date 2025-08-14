@@ -33,7 +33,6 @@ from .transient_models import (
     IntervalAstronomical,
     WeatherAlert,
 )
-from .weather_data_source import WeatherDataSource
 from .interval_data_manager import IntervalDataManager
 from .weather_alert_alarm_mapper import WeatherAlertAlarmMapper
 from .daily_weather_tracker import DailyWeatherTracker
@@ -157,18 +156,18 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
             return self._weather_alerts
     
     async def update_current_conditions( self,
-                                         weather_data_source      : WeatherDataSource,
+                                         data_point_source        : DataPointSource,
                                          weather_conditions_data  : WeatherConditionsData ):
         async with self._data_async_lock:
             self._update_environmental_data(
                 current_data = self._current_conditions_data,
                 new_data = weather_conditions_data,
-                data_point_source = weather_data_source.data_point_source,
+                data_point_source = data_point_source,
             )
             
             # Record weather conditions for daily tracking (defensive - don't let this break main processing)
             try:
-                location_key = self._get_location_key(weather_data_source)
+                location_key = self._get_location_key()
                 self._daily_weather_tracker.record_weather_conditions(
                     weather_conditions_data=weather_conditions_data,
                     location_key=location_key
@@ -178,24 +177,24 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
         return
 
     async def update_todays_astronomical_data( self,
-                                               weather_data_source : WeatherDataSource,
-                                               astronomical_data : AstronomicalData ):
+                                               data_point_source  : DataPointSource,
+                                               astronomical_data  : AstronomicalData ):
         async with self._data_async_lock:
             self._update_environmental_data(
                 current_data = self._todays_astronomical_data,
                 new_data = astronomical_data,
-                data_point_source = weather_data_source.data_point_source,
+                data_point_source = data_point_source,
             )
         return
             
     async def update_hourly_forecast( self,
-                                      weather_data_source : WeatherDataSource,
+                                      data_point_source   : DataPointSource,
                                       forecast_data_list  : List[IntervalWeatherForecast] ):
         """Update hourly forecast data using IntervalDataManager for interval reconciliation."""
         async with self._data_async_lock:
-            logger.debug( f'Adding hourly forecast : {weather_data_source.id} [{len(forecast_data_list)}]' )
+            logger.debug( f'Adding hourly forecast : {data_point_source.id} [{len(forecast_data_list)}]' )
             self._hourly_forecast_manager.add_data(
-                data_point_source = weather_data_source.data_point_source,
+                data_point_source = data_point_source,
                 new_interval_data_list = forecast_data_list
             )
             
@@ -204,13 +203,13 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
         return
 
     async def update_daily_forecast( self,
-                                     weather_data_source : WeatherDataSource,
+                                     data_point_source   : DataPointSource,
                                      forecast_data_list  : List[IntervalWeatherForecast] ):
         """Update daily forecast data using IntervalDataManager for interval reconciliation."""
         async with self._data_async_lock:
-            logger.debug( f'Adding daily forecast: {weather_data_source.id} [{len(forecast_data_list)}]' )
+            logger.debug( f'Adding daily forecast: {data_point_source.id} [{len(forecast_data_list)}]' )
             self._daily_forecast_manager.add_data(
-                data_point_source = weather_data_source.data_point_source,
+                data_point_source = data_point_source,
                 new_interval_data_list = forecast_data_list
             )
             
@@ -219,13 +218,13 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
         return
 
     async def update_daily_history( self,
-                                    weather_data_source : WeatherDataSource,
-                                    history_data_list   : List[IntervalWeatherHistory] ):
+                                    data_point_source  : DataPointSource,
+                                    history_data_list  : List[IntervalWeatherHistory] ):
         """Update daily history data using IntervalDataManager for interval reconciliation.""" 
         async with self._data_async_lock:
-            logger.debug( f'Adding daily history: {weather_data_source.id} [{len(history_data_list)}]' )
+            logger.debug( f'Adding daily history: {data_point_source.id} [{len(history_data_list)}]' )
             self._daily_history_manager.add_data(
-                data_point_source = weather_data_source.data_point_source,
+                data_point_source = data_point_source,
                 new_interval_data_list = history_data_list
             )
             
@@ -234,14 +233,14 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
         return
 
     async def update_astronomical_data( self,
-                                        weather_data_source : WeatherDataSource,
-                                        astronomical_data_list : List[IntervalAstronomical] ):
+                                        data_point_source       : DataPointSource,
+                                        astronomical_data_list  : List[IntervalAstronomical] ):
         """Update astronomical data using IntervalDataManager for interval reconciliation."""
         async with self._data_async_lock:
-            logger.debug( f'Adding astronomical: {weather_data_source.id}'
+            logger.debug( f'Adding astronomical: {data_point_source.id}'
                           f' [{len(astronomical_data_list)} items]' )
             self._daily_astronomical_manager.add_data(
-                data_point_source = weather_data_source.data_point_source,
+                data_point_source = data_point_source,
                 new_interval_data_list = astronomical_data_list
             )
             # Update canonical astronomical data from aggregated intervals
@@ -249,18 +248,18 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
         return
 
     async def update_weather_alerts( self,
-                                     weather_data_source : WeatherDataSource,
-                                     weather_alerts      : List[WeatherAlert] ):
+                                     data_point_source  : DataPointSource,
+                                     weather_alerts     : List[WeatherAlert] ):
         """Update weather alerts from data sources and create system alarms for qualifying alerts."""
         # Check if weather alerts processing is enabled
         weather_settings_helper = WeatherSettingsHelper()
         if not weather_settings_helper.is_weather_alerts_enabled():
             logger.debug(f'Weather alerts processing disabled, ignoring'
-                         f' {len(weather_alerts)} alerts from {weather_data_source.id}')
+                         f' {len(weather_alerts)} alerts from {data_point_source.id}')
             return
             
         async with self._data_async_lock:
-            logger.debug( f'Received weather alerts from {weather_data_source.id}:'
+            logger.debug( f'Received weather alerts from {data_point_source.id}:'
                           f' {len(weather_alerts)} alerts' )
             
             # For now, simply replace all alerts with the new ones from this source
@@ -441,23 +440,15 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
             DIVID['WEATHER_ALERTS']: weather_alerts_html_str,
         }
     
-    def _get_location_key(self, weather_data_source=None):
+    def _get_location_key(self):
         """
         Generate a location key for the daily weather tracker.
-        
-        Args:
-            weather_data_source: Optional weather source to get location from
             
         Returns:
             String key representing the geographic location
         """
-        if weather_data_source and hasattr(weather_data_source, 'geographic_location'):
-            geo_location = weather_data_source.geographic_location
-        else:
-            # Fallback: try to get location from any available weather source
-            # This is needed when called from get_current_conditions_data()
-            console_helper = ConsoleSettingsHelper()
-            geo_location = console_helper.get_geographic_location()
+        console_helper = ConsoleSettingsHelper()
+        geo_location = console_helper.get_geographic_location()
         
         if geo_location:
             # Create location key from lat/lon rounded to 3 decimal places

@@ -64,7 +64,7 @@ class AlertQueue:
                 elif alert.alert_priority > max_alert.alert_priority:
                     max_alert = alert
                 continue
-        return
+        return max_alert
 
     def get_most_recent_alarm( self, since_datetime : datetime = None ):
         """
@@ -73,6 +73,8 @@ class AlertQueue:
         was to find a URL to switch to when automatically changing displays
         based on alarms.
         """
+        latest_alarm = None
+        
         with self._active_alerts_lock:
             if len(self._alert_list) < 1:
                 return None
@@ -80,7 +82,6 @@ class AlertQueue:
             if since_datetime is None:
                 since_datetime = datetimeproxy.min()
 
-            latest_alarm = None
             latest_alarm_datetime = datetimeproxy.min()
             for alert in self._alert_list:
                 if alert.is_acknowledged:
@@ -95,8 +96,7 @@ class AlertQueue:
                     latest_alarm_datetime = alarm.timestamp
                 continue
             
-            return latest_alarm
-        return
+        return latest_alarm
     
     def add_alarm( self, alarm : Alarm ) -> Alert:
         if alarm.alarm_level == AlarmLevel.NONE:

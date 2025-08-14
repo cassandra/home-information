@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from hi.apps.console.audio_file import AudioFile
+from hi.apps.audio.audio_file import AudioFile
 from hi.apps.console.enums import Theme, DisplayUnits
 
 from hi.constants import TIME_OF_DAY_CHOICES, TIMEZONE_NAME_LIST

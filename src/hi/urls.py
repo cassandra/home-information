@@ -44,6 +44,7 @@ urlpatterns = [
     re_path( r'^notify/', include('hi.apps.notify.urls' )),
     re_path( r'^console/', include('hi.apps.console.urls' )),
     re_path( r'^weather/', include('hi.apps.weather.urls' )),
+    re_path( r'^audio/', include('hi.apps.audio.urls' )),
 
     # Custom error pages
     re_path( r'^400.html$', views.bad_request_response, name='bad_request' ),

@@ -3,7 +3,7 @@ from datetime import datetime
 
 from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
-from hi.apps.console.audio_signal import AudioSignal
+from hi.apps.audio.audio_signal import AudioSignal
 from hi.apps.security.enums import SecurityLevel
 from hi.tests.base_test_case import BaseTestCase
 

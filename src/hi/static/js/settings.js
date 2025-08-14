@@ -13,6 +13,12 @@
 	isAudioEnabled: function() {
 	    return _isAudioEnabled( );
 	},
+	hasShownPermissionGuidance: function() {
+	    return _hasShownPermissionGuidance( );
+	},
+	markPermissionGuidanceShown: function() {
+	    return _markPermissionGuidanceShown( );
+	},
 	enableSleepMode: function() {
 	    return _enableSleepMode( );
 	},
@@ -33,6 +39,8 @@
     const AudioStateSettingName = 'audioState';
     const AudioStateEnabled = 'enabled';
     const AudioStateDisabled = 'disabled';
+    const PermissionGuidanceShownSettingName = 'audioPermissionGuidanceShown';
+    const PermissionGuidanceShownValue = 'true';
 
     function setConsoleSetting( name, value ) {
 	Hi.setCookie( name, value );
@@ -66,6 +74,16 @@
     }
     function _disableSleepMode() {
 	$(SleepOverlaySelector).hide();
+    }
+
+    function _hasShownPermissionGuidance() {
+	var guidanceShown = getConsoleSetting( PermissionGuidanceShownSettingName );
+	return guidanceShown === PermissionGuidanceShownValue;
+    }
+    
+    function _markPermissionGuidanceShown() {
+	setConsoleSetting( PermissionGuidanceShownSettingName, PermissionGuidanceShownValue );
+	return true;
     }
     
 })();

@@ -57,10 +57,14 @@ class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
         new_alert = self._alert_queue.get_most_important_alert(
             since_datetime = last_alert_status_datetime,
         )
+        logger.debug(f"🔍 new_alert from queue: {new_alert}")
+        
         if new_alert:
-            max_alert = new_alert.audio_signal_name if new_alert else None
+            max_alert = new_alert
         else:
             max_alert = self._alert_queue.get_most_important_alert()
+        
+        logger.debug(f"🔍 max_alert from queue: {max_alert}")
 
         # TODO: Use this latest new alarm for providing auto-switching to
         # show something related to the latest event, e.g., camera feed.

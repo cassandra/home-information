@@ -93,7 +93,7 @@ class TestWeatherManagerDefensiveHandling(BaseTestCase):
             
             # The update should complete successfully
             asyncio.run(self.weather_manager.update_current_conditions(
-                weather_data_source=self.mock_source,
+                data_point_source=self.mock_source.data_point_source,
                 weather_conditions_data=conditions
             ))
             
@@ -139,7 +139,7 @@ class TestWeatherManagerDefensiveHandling(BaseTestCase):
             conditions = self.create_test_conditions(20.0)
             
             asyncio.run(self.weather_manager.update_current_conditions(
-                weather_data_source=self.mock_source,
+                data_point_source=self.mock_source.data_point_source,
                 weather_conditions_data=conditions
             ))
             
@@ -213,7 +213,7 @@ class TestWeatherManagerDefensiveHandling(BaseTestCase):
             # Update conditions
             conditions = self.create_test_conditions(30.0)
             asyncio.run(self.weather_manager.update_current_conditions(
-                weather_data_source=self.mock_source,
+                data_point_source=self.mock_source.data_point_source,
                 weather_conditions_data=conditions
             ))
             

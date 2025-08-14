@@ -50,9 +50,7 @@ class TestConsoleManager(BaseTestCase):
         manager = ConsoleManager()
         
         # Should have public interface methods
-        self.assertTrue(hasattr(manager, 'get_console_audio_map'))
         self.assertTrue(hasattr(manager, 'get_video_stream_entity_list'))
-        self.assertTrue(callable(manager.get_console_audio_map))
         self.assertTrue(callable(manager.get_video_stream_entity_list))
         return
 
@@ -61,11 +59,9 @@ class TestConsoleManager(BaseTestCase):
         manager = ConsoleManager()
         
         # Should have reload methods for change listeners
-        self.assertTrue(hasattr(manager, '_reload_console_audio_map'))
         self.assertTrue(hasattr(manager, '_reload_video_stream_entity_list'))
         
         # Methods should be callable
-        self.assertTrue(callable(manager._reload_console_audio_map))
         self.assertTrue(callable(manager._reload_video_stream_entity_list))
         return
 
@@ -74,10 +70,8 @@ class TestConsoleManager(BaseTestCase):
         manager = ConsoleManager()
         
         # Should have build methods
-        self.assertTrue(hasattr(manager, '_build_console_audio_map'))
         self.assertTrue(hasattr(manager, '_build_video_stream_entity_list'))
         
         # Methods should be callable
-        self.assertTrue(callable(manager._build_console_audio_map))
         self.assertTrue(callable(manager._build_video_stream_entity_list))
         return

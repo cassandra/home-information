@@ -37,7 +37,7 @@
     const AlertStatusDataAttr = 'alertData';
     const AlertBannerContainerSelector = '#hi-alert-banner-container';
     const AlertBannerContentSelector = '#hi-alert-banner-content';
-    const MaxAudioSignalNameAttr = 'maxAudioSignaName';
+    const MaxAudioSignalNameAttr = 'maxAudioSignalName';
     const NewAudioSignalNameAttr = 'newAudioSignalName';
     const AlarmMessageHtmlAttr = 'alarmMessageHtml';
     
@@ -161,17 +161,27 @@
     
     function handleAlertStatusData( alertStatusData ) {
 	if ( ! alertStatusData ) {
+	    if ( Hi.DEBUG ) { console.log('🔇 No alert status data received'); }
 	    return;
 	}
 	
+	if ( Hi.DEBUG ) { console.log('🔎 Alert status data:', alertStatusData); }
+	
 	if (( MaxAudioSignalNameAttr in alertStatusData )
 	    && ( alertStatusData[MaxAudioSignalNameAttr] )) {
+	    if ( Hi.DEBUG ) { console.log(`🔊 Found max audio signal: ${alertStatusData[MaxAudioSignalNameAttr]}`); }
 	    Hi.audio.setMaxSignalName( alertStatusData[MaxAudioSignalNameAttr] );
+	    if ( Hi.DEBUG ) { console.log(`🔊 setMaxSignalName completed for: ${alertStatusData[MaxAudioSignalNameAttr]}`); }
+	} else {
+	    if ( Hi.DEBUG ) { console.log('🔇 No max audio signal in alert data'); }
 	}
 	
 	if (( NewAudioSignalNameAttr in alertStatusData )
 	    && ( alertStatusData[NewAudioSignalNameAttr] )) {
+	    if ( Hi.DEBUG ) { console.log(`🎵 Found new audio signal: ${alertStatusData[NewAudioSignalNameAttr]}`); }
 	    Hi.audio.startAudibleSignal( alertStatusData[NewAudioSignalNameAttr] );
+	} else {
+	    if ( Hi.DEBUG ) { console.log('🎵 No new audio signal in alert data'); }
 	}
 
 	if (( AlarmMessageHtmlAttr in alertStatusData )
@@ -260,7 +270,7 @@
 	}
 	$(ServerErrorMessageSelector).show();
 	gIsServerErrorShowing = true;
-	Hi.sound.startAudibleSignal( Hi.sound.WARNING_SIGNAL_NAME );
+	Hi.audio.startAudibleSignal( Hi.audio.WARNING_SIGNAL_NAME );
     }
 
     function clearServerErrorIfNeeded() {
@@ -269,7 +279,7 @@
 	}
 	$(ServerErrorMessageSelector).hide();
 	gIsServerErrorShowing = false;
-	Hi.sound.startAudibleSignal( Hi.sound.INFO_SIGNAL_NAME );
+	Hi.audio.startAudibleSignal( Hi.audio.INFO_SIGNAL_NAME );
     }
 
 })();

@@ -2,7 +2,6 @@ from hi.apps.config.setting_enums import SettingEnum, SettingDefinition
 from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.attribute.value_ranges import PredefinedValueRanges
 
-from .audio_file import AudioFile
 from .enums import Theme, DisplayUnits
 
 Label = 'Console'
@@ -68,32 +67,5 @@ class ConsoleSetting( SettingEnum ):
         is_editable = True,
         is_required = True,
         initial_value = '0.95',
-    )
-    CONSOLE_INFO_AUDIO_FILE = SettingDefinition(
-        label = 'Info Alert Sound',
-        description = 'The sound to play when an INFO level alert arrives.',
-        value_type = AttributeValueType.ENUM,
-        value_range_str = PredefinedValueRanges.AUDIO_FILE_CHOICES_ID,
-        is_editable = True,
-        is_required = False,
-        initial_value = AudioFile.INFO,
-    )
-    CONSOLE_WARNING_AUDIO_FILE = SettingDefinition(
-        label = 'Warning Alert Sound',
-        description = 'The sound to play when an WARNING level alert arrives.',
-        value_type = AttributeValueType.ENUM,
-        value_range_str = PredefinedValueRanges.AUDIO_FILE_CHOICES_ID,
-        is_editable = True,
-        is_required = False,
-        initial_value = AudioFile.WARNING,
-    )
-    CONSOLE_CRITICAL_AUDIO_FILE = SettingDefinition(
-        label = 'Critical Alert Sound',
-        description = 'The sound to play when an CRITICAL level alert arrives.',
-        value_type = AttributeValueType.ENUM,
-        value_range_str = PredefinedValueRanges.AUDIO_FILE_CHOICES_ID,
-        is_editable = True,
-        is_required = False,
-        initial_value = AudioFile.CRITICAL,
     )
     

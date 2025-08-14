@@ -2277,7 +2277,7 @@ class TestNationalWeatherService( BaseTestCase ):
             
             # Verify weather manager was called with alerts
             mock_weather_manager.update_weather_alerts.assert_called_once_with(
-                weather_data_source=nws,
+                data_point_source=nws.data_point_source,
                 weather_alerts=mock_alerts
             )
         return

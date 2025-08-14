@@ -484,7 +484,7 @@ class TestUSNO(BaseTestCase):
             
             # Verify weather manager methods were called
             mock_weather_manager.update_astronomical_data.assert_called_once_with(
-                weather_data_source = self.usno,
+                data_point_source = self.usno.data_point_source,
                 astronomical_data_list = [mock_interval_data]
             )
             

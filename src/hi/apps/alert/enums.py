@@ -5,6 +5,7 @@ class AlarmSource( LabeledEnum ):
     
     EVENT          = ( 'Event'      , '' )
     WEATHER        = ( 'Weather'    , '' )
+    CONSOLE        = ( 'Console'    , '' )
 
     
 class AlarmLevel( LabeledEnum ):
