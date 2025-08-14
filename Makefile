@@ -9,6 +9,11 @@ SCRIPTS = deploy/env-generate.py deploy/run_container.sh
 test:
 	cd src && ./manage.py test --keepdb
 
+lint:
+	cd src && flake8 --config=.flake8-ci hi/ 2>/dev/null
+
+check:	test lint
+
 docker-build:	Dockerfile
 	@HI_VERSION=$$(cat HI_VERSION); \
 	docker build \

@@ -10,8 +10,11 @@
         startAudibleSignal: function( signalName ) {
             _startAudibleSignal( signalName );
         },
-        setMaxSignalName: function( signalName ) {
-            return _setMaxSignalName( signalName );
+        setActiveSignalName: function( signalName ) {
+            return _setActiveSignalName( signalName );
+        },
+        clearAudibleSignal: function() {
+            _clearAudibleSignal();
         },
         
         // Audio control UI methods used by audio_control.html
@@ -40,24 +43,13 @@
     const AudioPollingIntervalMs = 3 * 60 * 1000;
 
     let gAudioPollingTimer = null;
-    let gCurrentMaxSignalName = null;
+    let gActiveSignalName = null;
     
     function startAudioPolling() {
-        if (Hi.DEBUG) { console.log('🎵 Starting audio polling system'); }
-        
-        if (typeof Hi.watchdog === 'undefined') {
-            if (Hi.DEBUG) { console.error('❌ Hi.watchdog not available - audio polling disabled'); }
-            return;
-        }
-        
-        if (Hi.DEBUG) { console.log(`🔄 Adding audio watchdog (interval: ${AudioPollingIntervalMs}ms, start delay: ${AudioPollingStartDelayMs}ms)`); }
-        
         Hi.watchdog.add( AudioPollingWatchdogType, 
                          checkAudioStatus,
                          AudioPollingIntervalMs );
         gAudioPollingTimer = setTimeout( checkAudioStatus, AudioPollingStartDelayMs );
-        
-        if (Hi.DEBUG) { console.log('✅ Audio polling system initialized'); }
     }
 
     function setAudioPollingTimer() {
@@ -75,15 +67,12 @@
     function checkAudioStatus() {
         clearAudioPollingTimer();
         try {
-            if (Hi.DEBUG) { console.log(`🔍 Audio polling check - current max signal: ${gCurrentMaxSignalName}`); }
+            if (Hi.DEBUG) { console.log(`Audio polling check - current: ${gActiveSignalName}`); }
             
             Hi.watchdog.ok( AudioPollingWatchdogType );
 
-            if ( gCurrentMaxSignalName ) {
-                if ( Hi.DEBUG ) { console.log( `🔊 Audio max signal found: ${gCurrentMaxSignalName}` ); }
-                _startAudibleSignal( gCurrentMaxSignalName );
-            } else {
-                if ( Hi.DEBUG ) { console.log( "🔇 No audio signal to play" ); }
+            if ( gActiveSignalName ) {
+                _startAudibleSignal( gActiveSignalName );
             }
         } catch (e) {
             console.error( `Exception in audio polling: ${e} (line=${e.lineNumber})` );
@@ -98,11 +87,15 @@
     let gAudibleSignalTimer = null;
     let gActiveAudibleSignalName = null;
 
-    function _setMaxSignalName( signalName ) {
-        if (Hi.DEBUG) { console.log(`📢 Setting max audio signal: ${signalName}`); }
-        gCurrentMaxSignalName = signalName;
-        if (Hi.DEBUG) { console.log(`📢 gCurrentMaxSignalName is now: ${gCurrentMaxSignalName}`); }
+    function _setActiveSignalName( signalName ) {
+        if (Hi.DEBUG) { console.log(`Setting active audio signal: ${signalName}`); }
+        gActiveSignalName = signalName;
         return true;
+    }
+
+    function _clearAudibleSignal() {
+        gActiveSignalName = null;
+        endAudibleSignal();
     }
     
     function setAudibleSignalTimer( ) {
@@ -122,23 +115,22 @@
     }
     
     function _startAudibleSignal( signalName ) {
-        if ( Hi.DEBUG ) { console.log( `🎵 Starting audio signal = ${signalName}` ); }
-        if ( Hi.DEBUG ) { console.log( `🔧 Audio enabled check: ${Hi.settings.isAudioEnabled()}` ); }
+        if ( Hi.DEBUG ) { console.log( `Starting audio signal = ${signalName}` ); }
         try {
             stopAudio( );
             clearAudibleSignalTimer();
             if ( ! Hi.settings.isAudioEnabled() ) {
-                if ( Hi.DEBUG ) { console.log( `🔇 Audio disabled, not playing signal: ${signalName}` ); }
+                if ( Hi.DEBUG ) { console.log( `Audio disabled, not playing signal: ${signalName}` ); }
                 return;
             }
             let id = getAudioElementId( signalName );
-            if ( Hi.DEBUG ) { console.log( `🔍 Looking for audio element with ID: ${id}` ); }
+            if ( Hi.DEBUG ) { console.log( `Looking for audio element with ID: ${id}` ); }
             let elem = document.getElementById(id);
             if ( ! elem ) {
-                if ( Hi.DEBUG ) { console.log( `❌ Missing audio tag for ${signalName}` ); }
+                if ( Hi.DEBUG ) { console.log( `Missing audio tag for ${signalName}` ); }
                 return;
             }
-            if ( Hi.DEBUG ) { console.log( `✅ Found audio element for ${signalName}` ); }
+            if ( Hi.DEBUG ) { console.log( `Found audio element for ${signalName}` ); }
             
             // Check if audio file loaded successfully
             if (elem.readyState === 0) {
@@ -155,17 +147,17 @@
                 elem.currentTime = 0;
                 // Handle autoplay policy restrictions
                 const playPromise = elem.play();
-                if ( Hi.DEBUG ) { console.log( `🎵 Attempting to play audio element: ${id}` ); }
+                if ( Hi.DEBUG ) { console.log( `Attempting to play audio element: ${id}` ); }
                 if (playPromise !== undefined) {
                     playPromise.then(() => {
                         // Audio playback started successfully
-                        if ( Hi.DEBUG ) { console.log( `✅ Audio playback started successfully: ${signalName}` ); }
+                        if ( Hi.DEBUG ) { console.log( `Audio playback started successfully: ${signalName}` ); }
                         gActiveAudibleSignalName = signalName;
                         setAudibleSignalTimer();
                     }).catch(error => {
                         // Autoplay was prevented
                         if (error.name === 'NotAllowedError') {
-                            if ( Hi.DEBUG ) { console.log( `❌ Audio autoplay blocked for ${signalName}` ); }
+                            if ( Hi.DEBUG ) { console.log( `Audio autoplay blocked for ${signalName}` ); }
                             _showPermissionGuidanceIfNeeded();
                         } else {
                             console.error( `Audio playback error for ${signalName}: ${error}` );

@@ -54,7 +54,7 @@ class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
         # in the view. Also, we return it if it has changed, which include
         # it having become empty.
         
-        new_alert = self._alert_queue.get_most_important_alert(
+        new_alert = self._alert_queue.get_most_important_unacknowledged_alert(
             since_datetime = last_alert_status_datetime,
         )
         logger.debug(f"🔍 new_alert from queue: {new_alert}")
@@ -62,7 +62,7 @@ class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
         if new_alert:
             max_alert = new_alert
         else:
-            max_alert = self._alert_queue.get_most_important_alert()
+            max_alert = self._alert_queue.get_most_important_unacknowledged_alert()
         
         logger.debug(f"🔍 max_alert from queue: {max_alert}")
 

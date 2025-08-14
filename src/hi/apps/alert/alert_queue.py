@@ -38,7 +38,7 @@ class AlertQueue:
             continue
         raise KeyError( f'Alert not found for {alert_id}' )
         
-    def get_most_important_alert( self, since_datetime : datetime = None ):
+    def get_most_important_unacknowledged_alert( self, since_datetime : datetime = None ):
         """
         Returns the active alert that has the highest priority and which was
         created since the "since_datetime" passed (if any).  If there are

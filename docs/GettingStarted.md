@@ -159,7 +159,7 @@ For those higher-level, attributes, you can add them to a location using the "In
 
 #### Sounds
 
-For features that use sounds (e.g., alerts), this allows toggling to mute and unmute.
+For features that use sounds (e.g., alerts), this allows toggling to mute and unmute.  The alert sounds are considered "auto-play" by browsers, so you may need to allow this in the browser in order to hear the alert sounds.  If you see "blocked' on this button, click it to see more info about fixing it.
 
 #### Sleep
 

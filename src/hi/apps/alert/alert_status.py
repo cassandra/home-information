@@ -32,24 +32,24 @@ class AlertStatusData:
         )
         response_dict = dict()
         
-        logger.debug(f"🎵 AlertStatusData.to_dict() - max_audio_signal: {self.max_audio_signal}")
-        logger.debug(f"🎵 AlertStatusData.to_dict() - new_audio_signal: {self.new_audio_signal}")
-        logger.debug(f"🎵 AlertStatusData.to_dict() - alert_list length: {len(self.alert_list) if self.alert_list else 0}")
+        logger.debug(f"AlertStatusData.to_dict() - max_audio_signal: {self.max_audio_signal}")
+        logger.debug(f"AlertStatusData.to_dict() - new_audio_signal: {self.new_audio_signal}")
+        logger.debug(f"AlertStatusData.to_dict() - alert_list length: {len(self.alert_list) if self.alert_list else 0}")
         
         if self.max_audio_signal:
             response_dict[self.MaxAudioSignalNameAttr] = self.max_audio_signal.label
-            logger.debug(f"🔊 Added max_audio_signal: {self.max_audio_signal.label}")
+            logger.debug(f"Added max_audio_signal: {self.max_audio_signal.label}")
         else:
-            logger.debug("🔇 No max_audio_signal to add")
+            logger.debug("No max_audio_signal to add")
             
         if self.new_audio_signal:            
             response_dict[self.NewAudioSignalNameAttr] = self.new_audio_signal.label
-            logger.debug(f"🎵 Added new_audio_signal: {self.new_audio_signal.label}")
+            logger.debug(f"Added new_audio_signal: {self.new_audio_signal.label}")
         else:
-            logger.debug("🎵 No new_audio_signal to add")
+            logger.debug("No new_audio_signal to add")
             
         if self.alert_list:
             response_dict[self.AlarmMessageHtmlAttr] = alert_list_html_str
             
-        logger.debug(f"🔍 Final response_dict keys: {list(response_dict.keys())}")
+        logger.debug(f"Final response_dict keys: {list(response_dict.keys())}")
         return response_dict

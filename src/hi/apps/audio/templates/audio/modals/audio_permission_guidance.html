@@ -1,4 +1,4 @@
-{% extends "modals/action_3.html" %}
+{% extends "modals/action_2_with_cancel.html" %}
 
 {% block modal_dialog_id %}audio-guidance-modal{% endblock %}
 
@@ -67,19 +67,11 @@
 </div>
 {% endblock %}
 
-{% block action_left %}
-<button type="button" 
-        class="btn btn-outline-secondary" 
-        data-dismiss="modal">
-  Cancel
-</button>
-{% endblock %}
-
 {% block action_center %}
 <button type="button" 
-        class="btn btn-secondary"
+        class="btn btn-secondary btn-lg"
         onclick="Hi.settings.disableAudio(); Hi.audio.updateAudioButtonState(); $(this).closest('.modal').modal('hide');">
-  Disable Sounds Instead
+  Disable Sounds
 </button>
 {% endblock %}
 
@@ -87,6 +79,6 @@
 <button type="button" 
         class="btn btn-primary btn-lg"
         onclick="location.reload();">
-  I Fixed It - Reload Page
+  I Fixed It
 </button>
 {% endblock %}
