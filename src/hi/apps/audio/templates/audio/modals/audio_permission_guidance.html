@@ -1,0 +1,92 @@
+{% extends "modals/action_3.html" %}
+
+{% block modal_dialog_id %}audio-guidance-modal{% endblock %}
+
+{% block header_class %}bg-warning{% endblock %}
+
+{% block title_text %}Audio Blocked{% endblock %}
+
+{% block body %}
+<div class="mb-3">
+  <p>We have detected that your browser is blocking auto-play of alert sounds. In order to hear these alerts, you must grant this app permission by adjusting your browser settings for "auto-play" of audio.</p>
+  
+  <p>Generally, browsers have per-site permission settings that can be viewed and adjusted with some icon/button near the address bar, often to the left. You'll want to allow "auto-play" for this site.</p>
+</div>
+
+<div class="browser-guidance">
+  <p><strong>To adjust your browser's settings, here are specific steps for each browser:</strong></p>
+  
+  <!-- Firefox Instructions -->
+  <div class="card mb-3">
+    <div class="card-header">
+      <strong>🦊 Firefox</strong>
+    </div>
+    <div class="card-body">
+      <ol class="mb-2">
+        <li>Click the <strong>🔒 lock icon</strong> or <strong>🛡️ shield icon</strong> in the address bar</li>
+        <li>Find <strong>"Autoplay"</strong> setting</li>
+        <li>Change from <strong>"Block Audio"</strong> to <strong>"Allow Audio and Video"</strong></li>
+        <li>Refresh this page</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Chrome Instructions -->
+  <div class="card mb-3">
+    <div class="card-header">
+      <strong>🎯 Chrome</strong>
+    </div>
+    <div class="card-body">
+      <ol class="mb-2">
+        <li>Click the <strong>🔒 lock icon</strong> in the address bar</li>
+        <li>Find <strong>"Sound"</strong> setting</li>
+        <li>Change from <strong>"Block"</strong> to <strong>"Allow"</strong></li>
+        <li>Chrome will prompt you to refresh - click <strong>"Reload"</strong></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Safari Instructions -->
+  <div class="card mb-3">
+    <div class="card-header">
+      <strong>🧭 Safari</strong>
+    </div>
+    <div class="card-body">
+      <ol class="mb-2">
+        <li>Go to <strong>Safari menu → Settings → Websites</strong></li>
+        <li>Click <strong>"Auto-Play"</strong> in the left sidebar</li>
+        <li>Find this website and change to <strong>"Allow All Auto-Play"</strong></li>
+        <li>Close settings and refresh this page</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-info mt-3">
+  <strong>💡 Why is this needed?</strong> Modern browsers block background audio by default to prevent annoying ads. Since this is a monitoring application that you actively want to receive alerts from, enabling audio is safe and recommended.
+</div>
+{% endblock %}
+
+{% block action_left %}
+<button type="button" 
+        class="btn btn-outline-secondary" 
+        data-dismiss="modal">
+  Cancel
+</button>
+{% endblock %}
+
+{% block action_center %}
+<button type="button" 
+        class="btn btn-secondary"
+        onclick="Hi.settings.disableAudio(); Hi.audio.updateAudioButtonState(); $(this).closest('.modal').modal('hide');">
+  Disable Sounds Instead
+</button>
+{% endblock %}
+
+{% block action_right %}
+<button type="button" 
+        class="btn btn-primary btn-lg"
+        onclick="location.reload();">
+  I Fixed It - Reload Page
+</button>
+{% endblock %}

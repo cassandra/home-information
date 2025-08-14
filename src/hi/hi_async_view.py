@@ -108,6 +108,9 @@ class HiModalView( View ):
     def get_template_name( self ) -> str:
         raise NotImplementedError('Subclasses must override this method.')
 
+    def get( self, request, *args, **kwargs ):
+        return self.modal_response( request )
+    
     def modal_response( self, request, context = None, status = 200 ):
         if context is None:
             context = dict()

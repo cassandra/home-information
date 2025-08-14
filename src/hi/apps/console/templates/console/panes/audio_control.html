@@ -3,7 +3,7 @@
           role="button"
           style="display: none;"
           class="btn btn-success btn-control" 
-          onclick="Hi.settings.disableAudio(); Hi.audio.updateAudioButtonState();"  
+          onclick="Hi.audio.handleAudioButtonClick();"  
           title="Sounds enabled. Click to Disable">
     Sounds: On
   </button>
@@ -11,7 +11,7 @@
           role="button"
           style="display: none;"
           class="btn btn-warning btn-control"
-          onclick="Hi.settings.enableAudio(); Hi.audio.updateAudioButtonState();"  
+          onclick="Hi.audio.handleAudioButtonClick();"  
           title="Sounds disabled. Click to enable">
     Sounds: Off
   </button>
@@ -19,8 +19,8 @@
           role="button"
           style="display: none;"
           class="btn btn-danger btn-control"
-          onclick="Hi.audio.requestAudioPermissionAndUpdate();"  
-          title="Browser blocked audio. Click to enable permissions">
+          onclick="Hi.audio.handleAudioButtonClick();"  
+          title="Browser blocked audio. Click for help">
     Sounds: Blocked
   </button>
 </div>

@@ -35,14 +35,6 @@
       <div>Server Is Down !</div>
     </div>
 
-    <div id="hi-audio-permission-guidance" class="alert alert-warning alert-dismissible" role="alert" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 1050; max-width: 300px;">
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-      </button>
-      <strong>Audio Blocked</strong><br>
-      Click the <strong>Sounds</strong> button to enable audio notifications.
-    </div>
-
     {% block footer_pre_javascript %}{% endblock %}
     {% javascript 'js_after_content' %}
     {% block footer_post_javascript %}{% endblock %}
@@ -52,6 +44,6 @@
       {% include initial_modal_template_name %}
     </div>
     {% endif %}
-    
+
   </body>
 </html>

@@ -18,8 +18,8 @@
         updateAudioButtonState: function() {
             return _updateAudioButtonState();
         },
-        requestAudioPermissionAndUpdate: function() {
-            return _requestAudioPermissionAndUpdate();
+        handleAudioButtonClick: function() {
+            return _handleAudioButtonClick();
         },
         
         // Initialization
@@ -463,21 +463,30 @@
             // Use current state for button display (fallback to fresh check if needed)
             const permissionState = currentAudioState || await _getAudioPermissionState();
             
-            if (permissionState === 'blocked') {
-                // Permissions are blocked - show blocked regardless of user setting
-                $('#hi-audio-state-blocked').show();
-            } else if (Hi.settings.isAudioEnabled()) {
-                // Permissions OK and user has enabled audio - show on
-                $('#hi-audio-state-enabled').show();
-            } else {
-                // Permissions OK but user has disabled audio - show off
+            // Priority order: Disabled > Blocked > Enabled
+            if (!Hi.settings.isAudioEnabled()) {
+                // User has explicitly disabled audio - show disabled (takes precedence)
                 $('#hi-audio-state-disabled').show();
+            } else if (permissionState === 'blocked') {
+                // User wants audio but permissions are blocked - show blocked
+                $('#hi-audio-state-blocked').show();
+            } else {
+                // User wants audio and permissions are OK - show enabled
+                $('#hi-audio-state-enabled').show();
             }
             
             if (Hi.DEBUG) { 
                 const changeStatus = hasBaselineStateChanged() ? 'changed' : 'unchanged';
                 const userSetting = Hi.settings.isAudioEnabled() ? 'enabled' : 'disabled';
-                console.log(`Button showing: ${permissionState === 'blocked' ? 'blocked' : (Hi.settings.isAudioEnabled() ? 'on' : 'off')} (permission: ${permissionState}, user: ${userSetting}, baseline: ${baselineAudioState}, current: ${currentAudioState}, status: ${changeStatus})`); 
+                let buttonState;
+                if (!Hi.settings.isAudioEnabled()) {
+                    buttonState = 'disabled';
+                } else if (permissionState === 'blocked') {
+                    buttonState = 'blocked';
+                } else {
+                    buttonState = 'enabled';
+                }
+                console.log(`Button showing: ${buttonState} (permission: ${permissionState}, user: ${userSetting}, baseline: ${baselineAudioState}, current: ${currentAudioState}, status: ${changeStatus})`); 
             }
             
         } catch (error) {
@@ -491,36 +500,63 @@
         }
     }
 
-    async function _requestAudioPermissionAndUpdate() {
+    async function _handleAudioButtonClick() {
         try {
-            if (Hi.DEBUG) { console.log('Requesting audio permission...'); }
+            if (Hi.DEBUG) { console.log('🔘 Audio button clicked'); }
+            if (Hi.DEBUG) { console.log(`Current states - baseline: ${baselineAudioState}, current: ${currentAudioState}, settings enabled: ${Hi.settings.isAudioEnabled()}`); }
             
-            const result = await _requestAudioPermission();
-            if (Hi.DEBUG) { console.log('Permission request result:', result); }
-            
-            // Update current state since user interaction may have changed permissions
-            currentAudioState = result;
-            
-            if (result === 'granted') {
-                // Permission granted, enable audio and update state
-                if (Hi.DEBUG) { console.log('Enabling audio based on granted permission'); }
-                Hi.settings.enableAudio();
+            // Check if we should show guidance dialog
+            if (baselineAudioState === 'blocked' && Hi.settings.isAudioEnabled()) {
+                if (Hi.DEBUG) { console.log('📋 Showing guidance dialog (baseline blocked + audio enabled)'); }
+                await _showAudioPermissionGuidanceDialog();
             } else {
-                if (Hi.DEBUG) { console.log('Permission not granted, result was:', result); }
+                if (Hi.DEBUG) { console.log('🔄 No guidance needed - normal button toggle'); }
+                // Normal case: just toggle audio setting and update button
+                if (Hi.settings.isAudioEnabled()) {
+                    if (Hi.DEBUG) { console.log('🔇 Disabling audio'); }
+                    Hi.settings.disableAudio();
+                } else {
+                    if (Hi.DEBUG) { console.log('🔊 Enabling audio'); }
+                    Hi.settings.enableAudio();
+                }
+                await _updateAudioButtonState();
             }
-            
-            // Stop baseline monitoring since user interaction contaminates future detection
-            if (baselineRecheckTimer && hasBaselineStateChanged()) {
-                if (Hi.DEBUG) { console.log('🛑 Stopping baseline monitoring due to state change from user interaction'); }
-                clearInterval(baselineRecheckTimer);
-                baselineRecheckTimer = null;
-            }
-            
-            // Update button state regardless of result
-            await _updateAudioButtonState();
         } catch (error) {
-            if (Hi.DEBUG) { console.error('Error requesting audio permission:', error); }
-            await _updateAudioButtonState();
+            if (Hi.DEBUG) { console.error('❌ Error handling audio button click:', error); }
+        }
+    }
+    
+    async function _showAudioPermissionGuidanceDialog() {
+        try {
+            if (Hi.DEBUG) { console.log('🔄 Fetching and showing audio permission guidance dialog...'); }
+            
+            // Use antinode's direct API instead of triggering events
+            if (typeof window.AN !== 'undefined') {
+                if (Hi.DEBUG) { console.log('📡 Using antinode AN.get() to fetch modal content'); }
+                window.AN.get('/audio/permission-guidance');
+            } else {
+                if (Hi.DEBUG) { console.log('⚠️  Antinode not available, using fallback approach'); }
+                // Fallback: manual AJAX call
+                $.get('/audio/permission-guidance')
+                 .done(function(html) {
+                     if (Hi.DEBUG) { console.log('✅ Got guidance HTML, creating modal'); }
+                     // Create modal manually
+                     let modalId = 'audio-guidance-modal-' + Date.now();
+                     let modalHtml = `<div id="${modalId}" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">${html}</div>`;
+                     $('body').append(modalHtml);
+                     $(`#${modalId}`).modal('show');
+                 })
+                 .fail(function(xhr, status, error) {
+                     if (Hi.DEBUG) { console.error('❌ Failed to fetch guidance dialog:', error); }
+                     alert('Audio is blocked by your browser. Please check your browser\'s autoplay settings.');
+                 });
+            }
+            
+            if (Hi.DEBUG) { console.log('🚀 Audio guidance dialog request initiated'); }
+        } catch (error) {
+            if (Hi.DEBUG) { console.error('❌ Error showing audio guidance dialog:', error); }
+            // Fallback: show simple alert
+            alert('Audio is blocked by your browser. Please check your browser\'s autoplay settings.');
         }
     }
 
