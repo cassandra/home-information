@@ -112,7 +112,57 @@ Ensure that the Redis server is running (see the Dependencies page for installat
 
 Then, visit: [http://127.0.0.1:8411](http://127.0.0.1:8411) to access the app.
 
-If you want to familiarize yourself with how to use the app before diving inot the code, see the [Getting Started Page](../GettingStarted.md).
+## Daily Development Commands
+
+Once your environment is set up, these are the common commands for daily development work:
+
+### Environment Activation
+```bash
+# Daily development setup (run this first each day)
+. ./init-env-dev.sh  # Sources virtual env and environment variables
+```
+
+### Django Management
+```bash
+cd src
+
+# Database operations
+./manage.py migrate
+./manage.py makemigrations
+./manage.py check
+
+# Testing
+./manage.py test                    # Run all unit tests
+./manage.py test weather.tests     # Run specific app tests
+
+# User management
+./manage.py hi_createsuperuser
+./manage.py hi_creategroups
+
+# Development server
+./manage.py runserver              # Runs on http://127.0.0.1:8411
+```
+
+### Code Quality
+```bash
+# Linting and formatting (from development.txt requirements)
+black src/                         # Format code
+flake8 --config=.flake8-ci src/   # Lint code with CI configuration
+autopep8 --in-place --recursive src/  # Auto-format
+```
+
+### Docker Operations
+```bash
+# Build and run in containers
+make docker-build
+make docker-run-fg                 # Foreground
+make docker-run                    # Background
+make docker-stop
+```
+
+## Getting Started
+
+If you want to familiarize yourself with how to use the app before diving into the code, see the [Getting Started Page](../GettingStarted.md).
 
 A look through these docs might also be a good starting point:
 - [Data Model](DataModel.md)

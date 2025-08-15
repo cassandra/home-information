@@ -8,7 +8,98 @@
 ./manage.py test
 ```
 
-## Integation Tests
+## Testing Guidelines and Best Practices
+
+### High-Value vs Low-Value Testing Criteria
+
+**HIGH-VALUE Tests (Focus Here)**
+- **Database constraints and cascade deletion behavior** - Critical for data integrity
+- **Complex business logic and algorithms** - Custom calculations, aggregation, processing
+- **Singleton pattern behavior** - Manager classes, initialization, thread safety
+- **Enum property conversions with custom logic** - from_name_safe(), business rules
+- **File handling and storage operations** - Upload, deletion, cleanup, error handling
+- **Integration key parsing and external system interfaces** - API boundaries
+- **Complex calculations** - Geometric (SVG positioning), ordering, aggregation logic
+- **Caching and performance optimizations** - TTL caches, database indexing
+- **Auto-discovery and Django startup integration** - Module loading, initialization sequences
+- **Thread safety and concurrent operations** - Locks, shared state, race conditions
+- **Background process coordination** - Async/sync dual access, event loop management
+
+**LOW-VALUE Tests (Avoid These)**
+- Simple property getters/setters that just return field values
+- Django ORM internals verification (Django already tests this)
+- Trivial enum label checking without business logic
+- Basic field access and obvious default values
+- Simple string formatting without complex logic
+
+### Critical Testing Anti-Patterns (Never Do These)
+
+**NEVER Test Behavior Based on Log Messages**
+- **Problem**: Log message assertions (`self.assertLogs()`, checking log output) are fragile and break easily when logging changes
+- **Issue**: Many existing tests deliberately disable logging for performance and clarity
+- **Solution**: Test actual behavior changes - state modifications, return values, method calls, side effects
+- **Example**: Instead of `assertLogs('module', level='WARNING')`, verify the actual error handling behavior occurred
+
+```python
+# BAD - Testing based on log messages
+with self.assertLogs('weather.manager', level='WARNING') as log_context:
+    manager.process_data(invalid_data)
+    self.assertTrue(any("Error processing" in msg for msg in log_context.output))
+
+# GOOD - Testing actual behavior
+mock_fallback = Mock()
+with patch.object(manager, 'fallback_handler', mock_fallback):
+    result = manager.process_data(invalid_data)
+    mock_fallback.assert_called_once()
+    self.assertIsNone(result)  # Verify expected failure behavior
+```
+
+### Django-Specific Testing Patterns
+
+```python
+# Abstract Model Testing - Create concrete test class
+class ConcreteTestModel(AbstractModel):
+    def required_abstract_method(self):
+        return "test_implementation"
+
+# Mock Django operations for database-less testing
+with patch('django.db.models.Model.save') as mock_save:
+    instance.save()
+    mock_save.assert_called_once()
+
+# Integration Key Pattern Testing
+def test_integration_key_inheritance(self):
+    model = TestModel.objects.create(
+        integration_id='test_id',
+        integration_name='test_integration'
+    )
+    self.assertEqual(model.integration_id, 'test_id')
+
+# Singleton Manager Testing
+def test_manager_singleton_behavior(self):
+    manager1 = ManagerClass()
+    manager2 = ManagerClass()
+    self.assertIs(manager1, manager2)
+
+# Background Process and Threading Testing
+async def test_async_manager_method(self):
+    with patch('asyncio.run') as mock_run:
+        result = await manager.async_method()
+        mock_run.assert_called()
+
+def test_manager_thread_safety(self):
+    results = []
+    def worker():
+        results.append(manager.thread_safe_operation())
+    
+    threads = [threading.Thread(target=worker) for _ in range(5)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+```
+
+## Integration Tests
 
 _TBD_
 
