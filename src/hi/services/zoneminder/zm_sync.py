@@ -13,6 +13,7 @@ from hi.apps.sense.models import Sensor
 from hi.apps.model_helper import HiModelHelper
 
 from hi.integrations.transient_models import IntegrationKey
+from hi.integrations.sync_mixins import IntegrationSyncMixin
 
 from .zm_metadata import ZmMetaData
 from .zm_mixins import ZoneMinderMixin
@@ -20,7 +21,7 @@ from .zm_mixins import ZoneMinderMixin
 logger = logging.getLogger(__name__)
 
 
-class ZoneMinderSynchronizer( ZoneMinderMixin ):
+class ZoneMinderSynchronizer( ZoneMinderMixin, IntegrationSyncMixin ):
 
     SYNCHRONIZATION_LOCK_NAME = 'zm_integration_sync'
 
@@ -256,9 +257,12 @@ class ZoneMinderSynchronizer( ZoneMinderMixin ):
     def _remove_entity( self,
                         entity  : Entity,
                         result  : ProcessingResult ):
-
-        # TODO: Should we remove the EventDefinitions that were auto-created (with integration key)?
+        """
+        Remove an entity that no longer exists in the ZoneMinder integration.
         
-        entity.delete()  # Deletion cascades to attributes, positions, sensors, controllers, etc.
-        result.message_list.append( f'Removed stale ZM entity: {entity}' )
+        Uses intelligent deletion that preserves user-created data.
+        
+        TODO: Should we remove the EventDefinitions that were auto-created (with integration key)?
+        """
+        self._remove_entity_intelligently(entity, result, 'ZoneMinder')
         return
