@@ -1,6 +1,7 @@
+{% load tz %}
 <div>
   <div>
-    Alarmed at: {{ alarm.timestamp }}
+    Alarmed at: {{ alarm.timestamp|localtime }}
     {{ alarm.source_details_list|length }}
   </div>
   <div>
