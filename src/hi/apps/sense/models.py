@@ -4,12 +4,12 @@ from django.db import models
 
 from hi.apps.entity.models import EntityState
 
-from hi.integrations.models import IntegrationDataModel
+from hi.integrations.models import IntegrationDetailsModel
 
 from .enums import SensorType
 
 
-class Sensor( IntegrationDataModel ):
+class Sensor( IntegrationDetailsModel ):
     """
     - Represents an observed state of an entity.
     - Will sense exactly one EntityState

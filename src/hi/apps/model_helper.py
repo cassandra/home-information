@@ -18,7 +18,7 @@ from hi.apps.security.enums import SecurityLevel
 from hi.apps.sense.enums import SensorType
 from hi.apps.sense.models import Sensor
 
-from hi.integrations.integration_key import IntegrationKey
+from hi.integrations.transient_models import IntegrationKey
 
 
 class HiModelHelper:
@@ -274,10 +274,10 @@ class HiModelHelper:
 
     @classmethod
     def create_light_dimmer_controller( cls,
-                                       entity           : Entity,
-                                       integration_key  : IntegrationKey  = None,
-                                       name             : str             = None,
-                                       is_sensed        : bool            = True ) -> Controller:
+                                        entity           : Entity,
+                                        integration_key  : IntegrationKey  = None,
+                                        name             : str             = None,
+                                        is_sensed        : bool            = True ) -> Controller:
         if not name:
             name = f'{entity.name} Dimmer'
         # Light dimmer range: 0-100 (percentage)

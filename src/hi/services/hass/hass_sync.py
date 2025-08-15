@@ -7,7 +7,7 @@ from hi.apps.common.database_lock import ExclusionLockContext
 from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.entity.models import Entity
 
-from hi.integrations.integration_key import IntegrationKey
+from hi.integrations.transient_models import IntegrationKey
 
 from .hass_converter import HassConverter
 from .hass_models import HassDevice

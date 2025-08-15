@@ -1,12 +1,12 @@
 from django.db import models
 
 from hi.apps.entity.models import EntityState
-from hi.integrations.models import IntegrationDataModel
+from hi.integrations.models import IntegrationDetailsModel
 
 from .enums import ControllerType
 
 
-class Controller( IntegrationDataModel ):
+class Controller( IntegrationDetailsModel ):
     """
     - Represents an action that can be taken.
     - Will control exactly one EntityState

@@ -12,7 +12,7 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.common.utils import str_to_bool
 
 from hi.integrations.exceptions import IntegrationAttributeError, IntegrationError
-from hi.integrations.integration_key import IntegrationKey
+from hi.integrations.transient_models import IntegrationKey
 from hi.integrations.models import Integration, IntegrationAttribute
 
 from .enums import ZmAttributeType

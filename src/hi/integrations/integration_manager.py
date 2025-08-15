@@ -17,7 +17,7 @@ from .enums import IntegrationAttributeType
 from .forms import IntegrationAttributeFormSet
 from .integration_data import IntegrationData
 from .integration_gateway import IntegrationGateway
-from .integration_key import IntegrationKey
+from .transient_models import IntegrationKey
 from .models import Integration, IntegrationAttribute
 from .transient_models import IntegrationMetaData
 

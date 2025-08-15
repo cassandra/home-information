@@ -83,7 +83,7 @@ class TestSensor(BaseTestCase):
             integration_name='test_integration'
         )
         
-        # Should inherit integration key fields from IntegrationDataModel
+        # Should inherit integration key fields from IntegrationDetailsModel
         self.assertEqual(sensor.integration_id, 'sensor_123')
         self.assertEqual(sensor.integration_name, 'test_integration')
         return

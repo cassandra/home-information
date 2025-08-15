@@ -18,7 +18,7 @@ from hi.apps.entity.enums import (
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.model_helper import HiModelHelper
 
-from hi.integrations.integration_key import IntegrationKey
+from hi.integrations.transient_models import IntegrationKey
 
 from .enums import HassStateValue
 from .hass_metadata import HassMetaData
@@ -57,28 +57,28 @@ class HassConverter:
        - SENSOR_ONLY_DOMAINS: binary_sensor, sensor, camera (read-only)
        - Uses _is_controllable_domain_and_type() for precise control determination
     
-    4. SERVICE CALL METADATA (storage of service routing info for device control):
+    4. SERVICE CALL PAYLOAD (storage of service routing info for device control):
        - CONTROL_SERVICE_MAPPING: (domain, EntityStateType) → service names and parameters
-       - Metadata stored during import contains: domain, on_service, off_service, capabilities
-       - Controller uses metadata directly without runtime lookups or EntityStateType awareness
+       - Payload data stored during import contains: domain, on_service, off_service, capabilities
+       - Controller uses payload data directly without runtime lookups or EntityStateType awareness
        - Enables proper HA service calls (turn_on/turn_off) instead of unreliable set_state API
     
     5. CONTROLLER + SENSOR CREATION:
        - Controllable devices: Create Controller (which auto-creates associated Sensor)
        - Sensor-only devices: Create Sensor only
-       - All models store integration metadata for service call routing
+       - All models store integration payload data for service call routing
        - Maintains 1:1 HassState ↔ EntityState mapping with proper separation of concerns
     
     RATIONALE:
     - Centralizes all HA integration complexity in converter (import-time)  
-    - Controller becomes simple metadata consumer (runtime)
+    - Controller becomes simple payload consumer (runtime)
     - Service calls work reliably vs set_state which only updates HA internal state
     - Structured mappings are maintainable vs scattered heuristic logic
     - Backward compatible with existing device grouping and alarm event creation
     
     FLOW:
-    HA API → HassStates → Device Grouping → EntityState Mapping → Service Metadata → 
-    Controller/Sensor Creation → Metadata Storage → Runtime Service Calls
+    HA API → HassStates → Device Grouping → EntityState Mapping → Service Payload → 
+    Controller/Sensor Creation → Payload Storage → Runtime Service Calls
     """
 
     # Ignore all states from these domains - typically non-physical entities
@@ -153,7 +153,6 @@ class HassConverter:
         HassApi.SUN_DOMAIN,
         HassApi.WEATHER_DOMAIN,
     }
-    
 
     # Domains that should be preferred when choosing friendly names for devices
     #
@@ -540,7 +539,7 @@ class HassConverter:
                 sensor = entiity_sensors.get( state_integration_key )
                 controller = entiity_controllers.get( state_integration_key )
 
-                # Update integration metadata for existing sensors and controllers
+                # Update integration payload for existing sensors and controllers
                 # Every HassState should have at least a sensor, potentially also a controller
                 if sensor or controller:
                     # Use sensor or controller to determine EntityStateType (they should be the same)
@@ -548,15 +547,15 @@ class HassConverter:
                     existing_entity_state_type = model_with_entity_state.entity_state.entity_state_type
                     is_controllable = cls._is_controllable_domain_and_type(hass_state.domain, existing_entity_state_type)
                     
-                    # Generate new metadata using existing logic
-                    new_metadata = cls._create_service_metadata(hass_state, existing_entity_state_type, is_controllable)
+                    # Generate new payload using existing logic
+                    new_payload = cls._create_service_payload(hass_state, existing_entity_state_type, is_controllable)
                     
-                    # Update metadata for both sensor and controller if they exist
+                    # Update payload for both sensor and controller if they exist
                     for model, model_type in [(sensor, 'sensor'), (controller, 'controller')]:
                         if model:
-                            changed_fields = model.update_integration_metadata(new_metadata)
+                            changed_fields = model.update_integration_payload(new_payload)
                             if changed_fields:
-                                messages.append(f'Updated metadata for {model_type} {model}: {", ".join(changed_fields)}')
+                                messages.append(f'Updated payload for {model_type} {model}: {", ".join(changed_fields)}')
                 else:
                     messages.append( f'Missing sensors/controllers for {entity}. Adding {hass_state}' )
                     new_hass_state_list.append( hass_state )
@@ -665,15 +664,15 @@ class HassConverter:
         entity_state_type = cls._determine_entity_state_type_from_mapping( hass_state )
         is_controllable = cls._is_controllable_domain_and_type( hass_state.domain, entity_state_type )
         
-        # Create domain metadata for service calls - store service routing info directly
-        domain_metadata = cls._create_service_metadata( hass_state, entity_state_type, is_controllable )
+        # Create domain payload for service calls - store service routing info directly
+        domain_payload = cls._create_service_payload( hass_state, entity_state_type, is_controllable )
 
         ##########
         # Controllers - Create controller (which also creates sensor) for controllable states
         
         if is_controllable:
             controller = cls._create_controller_from_entity_state_type(
-                entity_state_type, entity, integration_key, name, domain_metadata
+                entity_state_type, entity, integration_key, name, domain_payload
             )
             return controller.entity_state
 
@@ -681,34 +680,34 @@ class HassConverter:
         # Sensors - Create sensor-only for non-controllable states using mapping logic
         
         sensor = cls._create_sensor_from_entity_state_type_with_params(
-            entity_state_type, entity, integration_key, name, domain_metadata,
+            entity_state_type, entity, integration_key, name, domain_payload,
             hass_state, add_alarm_events
         )
         return sensor.entity_state
 
     @classmethod
     def _create_hass_state_with_mapping( cls,
-                                        hass_device       : HassDevice,
-                                        hass_state        : HassState,
-                                        entity            : Entity,
-                                        integration_key   : IntegrationKey,
-                                        add_alarm_events  : bool ) -> EntityState:
+                                         hass_device       : HassDevice,
+                                         hass_state        : HassState,
+                                         entity            : Entity,
+                                         integration_key   : IntegrationKey,
+                                         add_alarm_events  : bool ) -> EntityState:
         """
         New method using mapping tables to determine EntityStateType and create
-        appropriate sensor or controller with domain metadata storage.
+        appropriate sensor or controller with domain payload storage.
         """
         
         # Step 1: Determine EntityStateType using our mapping table
         entity_state_type = cls._determine_entity_state_type_from_mapping( hass_state )
         
-        # Step 2: Create domain metadata to store for future service calls
-        domain_metadata = {
+        # Step 2: Create domain payload to store for future service calls
+        domain_payload = {
             'domain': hass_state.domain,
             'device_class': hass_state.device_class,
             'has_brightness': cls._has_brightness_capability( hass_state ),
         }
         
-        # Step 3: Create IntegrationKey (metadata will be stored separately)
+        # Step 3: Create IntegrationKey (payload will be stored separately)
         integration_key_for_storage = integration_key
         
         # Step 4: Determine if this should be a controller or sensor
@@ -718,14 +717,14 @@ class HassConverter:
         name = hass_state.friendly_name or f'{entity.name} ({hass_state.domain})'
         
         if is_controllable:
-            # Create controller and store metadata
+            # Create controller and store payload
             entity_state = cls._create_controller_from_entity_state_type(
-                entity_state_type, entity, integration_key_for_storage, name, domain_metadata
+                entity_state_type, entity, integration_key_for_storage, name, domain_payload
             )
         else:
-            # Create sensor and store metadata  
+            # Create sensor and store payload  
             entity_state = cls._create_sensor_from_entity_state_type(
-                entity_state_type, entity, integration_key_for_storage, name, domain_metadata
+                entity_state_type, entity, integration_key_for_storage, name, domain_payload
             )
         
         return entity_state
@@ -778,9 +777,12 @@ class HassConverter:
         return (domain, entity_state_type) in cls.CONTROL_SERVICE_MAPPING
 
     @classmethod  
-    def _create_controller_from_entity_state_type( cls, entity_state_type: EntityStateType, 
-                                                  entity: Entity, integration_key: IntegrationKey, 
-                                                  name: str, domain_metadata: dict ):
+    def _create_controller_from_entity_state_type( cls,
+                                                   entity_state_type : EntityStateType, 
+                                                   entity            : Entity,
+                                                   integration_key   : IntegrationKey, 
+                                                   name              : str,
+                                                   domain_payload   : dict ):
         """Create appropriate controller based on EntityStateType"""
         
         if entity_state_type == EntityStateType.ON_OFF:
@@ -816,15 +818,18 @@ class HassConverter:
                 name = name,
             )
         
-        # Store domain metadata
-        controller.integration_metadata = domain_metadata
+        # Store domain payload
+        controller.integration_payload = domain_payload
         controller.save()
         return controller.entity_state
 
     @classmethod  
-    def _create_sensor_from_entity_state_type( cls, entity_state_type: EntityStateType, 
-                                              entity: Entity, integration_key: IntegrationKey, 
-                                              name: str, domain_metadata: dict ):
+    def _create_sensor_from_entity_state_type( cls,
+                                               entity_state_type : EntityStateType, 
+                                               entity            : Entity,
+                                               integration_key   : IntegrationKey, 
+                                               name              : str,
+                                               domain_payload   : dict ):
         """Create appropriate sensor based on EntityStateType"""
         
         if entity_state_type == EntityStateType.MOVEMENT:
@@ -883,16 +888,20 @@ class HassConverter:
                 name = name,
             )
         
-        # Store domain metadata for sensors too
-        sensor.integration_metadata = domain_metadata
+        # Store domain payload for sensors too
+        sensor.integration_payload = domain_payload
         sensor.save()
         return sensor.entity_state
     
     @classmethod
-    def _create_sensor_from_entity_state_type_with_params( cls, entity_state_type: EntityStateType, 
-                                                          entity: Entity, integration_key: IntegrationKey, 
-                                                          name: str, domain_metadata: dict,
-                                                          hass_state: HassState, add_alarm_events: bool ):
+    def _create_sensor_from_entity_state_type_with_params( cls,
+                                                           entity_state_type : EntityStateType, 
+                                                           entity            : Entity,
+                                                           integration_key   : IntegrationKey, 
+                                                           name              : str,
+                                                           domain_payload   : dict,
+                                                           hass_state        : HassState,
+                                                           add_alarm_events  : bool ):
         """Create appropriate sensor with legacy parameter handling"""
         
         if entity_state_type == EntityStateType.TEMPERATURE:
@@ -1014,17 +1023,17 @@ class HassConverter:
                 name = name,
             )
         
-        # Store domain metadata for sensors
-        sensor.integration_metadata = domain_metadata
+        # Store domain payload for sensors
+        sensor.integration_payload = domain_payload
         sensor.save()
         return sensor
     
     @classmethod
-    def _create_service_metadata( cls, hass_state: HassState, entity_state_type: EntityStateType, is_controllable: bool ) -> dict:
-        """Create metadata with service routing information for controllers"""
+    def _create_service_payload( cls, hass_state: HassState, entity_state_type: EntityStateType, is_controllable: bool ) -> dict:
+        """Create payload with service routing information for controllers"""
         
-        # Base metadata for all entities
-        metadata = {
+        # Base payload for all entities
+        payload = {
             'domain': hass_state.domain,
             'device_class': hass_state.device_class,
             'entity_state_type': str(entity_state_type),
@@ -1036,19 +1045,18 @@ class HassConverter:
             mapping_key = (hass_state.domain, entity_state_type)
             if mapping_key in cls.CONTROL_SERVICE_MAPPING:
                 service_mapping = cls.CONTROL_SERVICE_MAPPING[mapping_key]
-                metadata.update(service_mapping)
+                payload.update(service_mapping)
             
             # Add special capabilities
             if entity_state_type == EntityStateType.LIGHT_DIMMER:
-                metadata['supports_brightness'] = True
+                payload['supports_brightness'] = True
                 has_brightness = cls._has_brightness_capability( hass_state )
-                metadata['has_brightness'] = has_brightness
+                payload['has_brightness'] = has_brightness
             else:
-                metadata['supports_brightness'] = False
-                metadata['has_brightness'] = False
+                payload['supports_brightness'] = False
+                payload['has_brightness'] = False
         
-        return metadata
-    
+        return payload
 
     @classmethod
     def hass_device_to_entity_name( cls, hass_device : HassDevice ) -> str:

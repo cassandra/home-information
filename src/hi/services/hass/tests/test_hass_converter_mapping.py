@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock
 
 from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.models import Entity
-from hi.integrations.integration_key import IntegrationKey
+from hi.integrations.transient_models import IntegrationKey
 from hi.services.hass.hass_converter import HassConverter
 from hi.services.hass.hass_models import HassApi
 
@@ -34,8 +34,8 @@ class TestHassConverterMapping(TestCase):
         # Find a real dimmer light from the test data
         dimmer_data = None
         for state_data in self.real_ha_states_data:
-            if (state_data.get('entity_id', '').startswith('light.switchlinc_dimmer') or
-                    state_data.get('entity_id', '').startswith('light.keypadlinc_dimmer')):
+            if ( state_data.get('entity_id', '').startswith('light.switchlinc_dimmer')
+                 or state_data.get('entity_id', '').startswith('light.keypadlinc_dimmer') ):
                 dimmer_data = state_data
                 break
         
@@ -60,8 +60,8 @@ class TestHassConverterMapping(TestCase):
         # Find a regular relay light from the test data
         relay_data = None
         for state_data in self.real_ha_states_data:
-            if (state_data.get('entity_id', '').startswith('light.switchlinc_relay') and
-                    state_data.get('attributes', {}).get('color_mode') == 'onoff'):
+            if ( state_data.get('entity_id', '').startswith('light.switchlinc_relay')
+                 and state_data.get('attributes', {}).get('color_mode') == 'onoff' ):
                 relay_data = state_data
                 break
         
@@ -131,8 +131,8 @@ class TestHassConverterMapping(TestCase):
         # Test with a known dimmer light
         dimmer_data = None
         for state_data in self.real_ha_states_data:
-            if (state_data.get('entity_id', '').startswith('light.') and
-                    'brightness' in state_data.get('attributes', {})):
+            if ( state_data.get('entity_id', '').startswith('light.')
+                 and 'brightness' in state_data.get('attributes', {}) ):
                 dimmer_data = state_data
                 break
         
@@ -144,8 +144,8 @@ class TestHassConverterMapping(TestCase):
         # Test with a regular light
         relay_data = None
         for state_data in self.real_ha_states_data:
-            if (state_data.get('entity_id', '').startswith('light.') and
-                    state_data.get('attributes', {}).get('color_mode') == 'onoff'):
+            if ( state_data.get('entity_id', '').startswith('light.')
+                 and state_data.get('attributes', {}).get('color_mode') == 'onoff' ):
                 relay_data = state_data
                 break
         
@@ -159,27 +159,35 @@ class TestHassConverterMapping(TestCase):
         
         # Test controllable combinations
         self.assertTrue(
-            HassConverter._is_controllable_domain_and_type(HassApi.LIGHT_DOMAIN, EntityStateType.ON_OFF)
+            HassConverter._is_controllable_domain_and_type( HassApi.LIGHT_DOMAIN,
+                                                            EntityStateType.ON_OFF )
         )
         self.assertTrue(
-            HassConverter._is_controllable_domain_and_type(HassApi.LIGHT_DOMAIN, EntityStateType.LIGHT_DIMMER)
+            HassConverter._is_controllable_domain_and_type( HassApi.LIGHT_DOMAIN,
+                                                            EntityStateType.LIGHT_DIMMER )
         )
         self.assertTrue(
-            HassConverter._is_controllable_domain_and_type(HassApi.SWITCH_DOMAIN, EntityStateType.ON_OFF)
+            HassConverter._is_controllable_domain_and_type( HassApi.SWITCH_DOMAIN,
+                                                            EntityStateType.ON_OFF )
         )
         
         # Test non-controllable combinations
         self.assertFalse(
-            HassConverter._is_controllable_domain_and_type(HassApi.SENSOR_DOMAIN, EntityStateType.TEMPERATURE)
+            HassConverter._is_controllable_domain_and_type( HassApi.SENSOR_DOMAIN,
+                                                            EntityStateType.TEMPERATURE )
         )
         self.assertFalse(
-            HassConverter._is_controllable_domain_and_type(HassApi.BINARY_SENSOR_DOMAIN, EntityStateType.MOVEMENT)
+            HassConverter._is_controllable_domain_and_type( HassApi.BINARY_SENSOR_DOMAIN,
+                                                            EntityStateType.MOVEMENT )
         )
 
     @patch('hi.apps.model_helper.HiModelHelper.create_on_off_controller')
     @patch('hi.apps.model_helper.HiModelHelper.create_light_dimmer_controller')
     @patch('hi.apps.model_helper.HiModelHelper.create_blob_sensor')
-    def test_create_hass_state_with_mapping_integration(self, mock_blob_sensor, mock_light_dimmer_controller, mock_on_off_controller):
+    def test_create_hass_state_with_mapping_integration( self, 
+                                                         mock_blob_sensor,
+                                                         mock_light_dimmer_controller,
+                                                         mock_on_off_controller ):
         """Test the complete integration of the new mapping method"""
         
         # Mock the return values

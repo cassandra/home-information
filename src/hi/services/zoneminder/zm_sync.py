@@ -12,7 +12,7 @@ from hi.apps.sense.models import Sensor
 
 from hi.apps.model_helper import HiModelHelper
 
-from hi.integrations.integration_key import IntegrationKey
+from hi.integrations.transient_models import IntegrationKey
 
 from .zm_metadata import ZmMetaData
 from .zm_mixins import ZoneMinderMixin
