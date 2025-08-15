@@ -4,11 +4,9 @@ Unit tests for EntityUserDataDetector utility.
 
 from django.test import TestCase
 
-from hi.apps.entity.models import Entity, EntityAttribute, EntityState, EntityPosition
+from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
-from hi.apps.collection.models import Collection, CollectionEntity
-from hi.apps.location.models import Location
 
 from hi.integrations.user_data_detector import EntityUserDataDetector
 
@@ -183,7 +181,7 @@ class EntityUserDataDetectorTestCase(TestCase):
         )
         
         # Create user sensor (should keep the state)
-        user_sensor = Sensor.objects.create(
+        Sensor.objects.create(
             name='User Sensor',
             entity_state=self.entity_state,
             sensor_type_str='DISCRETE'
@@ -227,7 +225,7 @@ class EntityUserDataDetectorTestCase(TestCase):
             integration_name='sensor_2'
         )
         
-        user_sensor2 = Sensor.objects.create(
+        Sensor.objects.create(
             name='User Sensor 2',
             entity_state=entity_state2,
             sensor_type_str='CONTINUOUS'

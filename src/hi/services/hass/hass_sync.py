@@ -5,9 +5,7 @@ from django.db import transaction
 
 from hi.apps.common.database_lock import ExclusionLockContext
 from hi.apps.common.processing_result import ProcessingResult
-from hi.apps.entity.models import Entity, EntityState
-from hi.apps.sense.models import Sensor
-from hi.apps.control.models import Controller
+from hi.apps.entity.models import Entity
 
 from hi.integrations.transient_models import IntegrationKey
 from hi.integrations.sync_mixins import IntegrationSyncMixin
