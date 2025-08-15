@@ -62,8 +62,7 @@ class IntegrationKey:
 
 
 @dataclass
-class IntegrationData:
-    """ Integration key plus metadata for cases where additional integration-specific data is needed """
-    
-    key: IntegrationKey
-    metadata: Optional[Dict] = None
+class IntegrationDetails:
+    """ Integration key plus data for cases where additional integration-specific data is needed """
+    key      : IntegrationKey
+    payload  : Optional[Dict] = None

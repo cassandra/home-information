@@ -80,8 +80,8 @@ class TestControllerManager(BaseTestCase):
         # Get the actual call arguments
         call_args = mock_integration_controller.do_control.call_args
         self.assertEqual(call_args.kwargs['control_value'], 'on')
-        self.assertEqual(call_args.kwargs['integration_data'].key, controller.integration_key)
-        self.assertEqual(call_args.kwargs['integration_data'].metadata, controller.integration_metadata)
+        self.assertEqual(call_args.kwargs['integration_details'].key, controller.integration_key)
+        self.assertEqual(call_args.kwargs['integration_details'].payload, controller.integration_payload)
         
         self.assertEqual(result, mock_control_result)
         return
@@ -130,8 +130,8 @@ class TestControllerManager(BaseTestCase):
         # Get the actual call arguments
         call_args = mock_integration_controller.do_control.call_args
         self.assertEqual(call_args.kwargs['control_value'], 'off')
-        self.assertEqual(call_args.kwargs['integration_data'].key, controller.integration_key)
-        self.assertEqual(call_args.kwargs['integration_data'].metadata, controller.integration_metadata)
+        self.assertEqual(call_args.kwargs['integration_details'].key, controller.integration_key)
+        self.assertEqual(call_args.kwargs['integration_details'].payload, controller.integration_payload)
         
         self.assertEqual(result, mock_control_result)
         return

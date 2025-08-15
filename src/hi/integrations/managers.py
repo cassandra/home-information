@@ -6,7 +6,7 @@ from django.db.models import Q
 from .transient_models import IntegrationKey
 
 
-class IntegrationKeyManager(models.Manager):
+class IntegrationDetailsManager(models.Manager):
 
     def filter_by_integration_key( self, integration_key : IntegrationKey ):
         return self.filter( integration_id = integration_key.integration_id,
