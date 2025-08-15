@@ -31,6 +31,22 @@ class HassApi:
     WEATHER_DOMAIN = 'weather'
     ZONE_DOMAIN = 'zone'
     
+    # Home Assistant Service Name Constants
+    TURN_ON_SERVICE = 'turn_on'
+    TURN_OFF_SERVICE = 'turn_off'
+    OPEN_COVER_SERVICE = 'open_cover'
+    CLOSE_COVER_SERVICE = 'close_cover'
+    SET_COVER_POSITION_SERVICE = 'set_cover_position'
+    SET_TEMPERATURE_SERVICE = 'set_temperature'
+    SET_HVAC_MODE_SERVICE = 'set_hvac_mode'
+    LOCK_SERVICE = 'lock'
+    UNLOCK_SERVICE = 'unlock'
+    MEDIA_PLAY_SERVICE = 'media_play'
+    MEDIA_PAUSE_SERVICE = 'media_pause'
+    MEDIA_STOP_SERVICE = 'media_stop'
+    VOLUME_SET_SERVICE = 'volume_set'
+    SET_PERCENTAGE_SERVICE = 'set_percentage'
+    
     # Legacy aliases for backward compatibility (remove after migration)
     AUTOMATION_ID_PREFIX = AUTOMATION_DOMAIN
     BINARY_SENSOR_ID_PREFIX = BINARY_SENSOR_DOMAIN

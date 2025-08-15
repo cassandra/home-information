@@ -29,11 +29,56 @@ logger = logging.getLogger(__name__)
 
 class HassConverter:
     """
-    - Converts HAss API states into devices.
-    - HAss devices might consist of multiple states.
-    - A HAss device is the equivalent of an HI Entity.
-    - Determines which HAss devices will be imported into HI.
-    - The HAss API reponse does not make the the state to device relationship explicit.
+    Converts Home Assistant API states into HI devices with comprehensive service call support.
+    
+    OVERVIEW:
+    - Converts HA API states into HI devices (Entity models)
+    - HA devices may consist of multiple states (e.g., light.kitchen + switch.kitchen = one device)
+    - Determines which HA devices are imported into HI
+    - HA API response doesn't make state-to-device relationships explicit, so we use heuristics
+    
+    ARCHITECTURE:
+    
+    1. DEVICE AGGREGATION (heuristic grouping of HassStates into HassDevices):
+       - device_group_id: States with same Insteon address are grouped together
+       - full_name matching: States with same name but different domains are grouped
+       - suffix-based logic: Removes known suffixes (_temperature, _battery) to find base device
+       - switch/light deduplication: Avoids creating duplicate entities for dual-domain devices
+    
+    2. ENTITY-STATE MAPPING (structured mapping from HA domains/device_classes to EntityStateTypes):
+       - Uses HASS_STATE_TO_ENTITY_STATE_TYPE_MAPPING table for consistent, predictable mapping
+       - Key: (domain, device_class, has_brightness) → EntityStateType
+       - Handles special cases: dimmer lights, door sensors, temperature sensors, etc.
+       - Replaces old heuristic if/else chains with maintainable lookup tables
+    
+    3. CONTROLLABILITY DETERMINATION:
+       - ON_OFF_CONTROLLABLE_DOMAINS: light, switch (simple on/off control)  
+       - COMPLEX_CONTROLLABLE_DOMAINS: cover, fan, climate, etc. (multiple services)
+       - SENSOR_ONLY_DOMAINS: binary_sensor, sensor, camera (read-only)
+       - Uses _is_controllable_domain_and_type() for precise control determination
+    
+    4. SERVICE CALL METADATA (storage of service routing info for device control):
+       - CONTROL_SERVICE_MAPPING: (domain, EntityStateType) → service names and parameters
+       - Metadata stored during import contains: domain, on_service, off_service, capabilities
+       - Controller uses metadata directly without runtime lookups or EntityStateType awareness
+       - Enables proper HA service calls (turn_on/turn_off) instead of unreliable set_state API
+    
+    5. CONTROLLER + SENSOR CREATION:
+       - Controllable devices: Create Controller (which auto-creates associated Sensor)
+       - Sensor-only devices: Create Sensor only
+       - All models store integration metadata for service call routing
+       - Maintains 1:1 HassState ↔ EntityState mapping with proper separation of concerns
+    
+    RATIONALE:
+    - Centralizes all HA integration complexity in converter (import-time)  
+    - Controller becomes simple metadata consumer (runtime)
+    - Service calls work reliably vs set_state which only updates HA internal state
+    - Structured mappings are maintainable vs scattered heuristic logic
+    - Backward compatible with existing device grouping and alarm event creation
+    
+    FLOW:
+    HA API → HassStates → Device Grouping → EntityState Mapping → Service Metadata → 
+    Controller/Sensor Creation → Metadata Storage → Runtime Service Calls
     """
 
     # Ignore all states from these domains - typically non-physical entities
@@ -126,6 +171,134 @@ class HassConverter:
     PREFERRED_NAME_PREFIXES = PREFERRED_NAME_DOMAINS
     PREFERRED_NAME_DEVICE_CLASSES = {
         HassApi.MOTION_DEVICE_CLASS,
+    }
+
+    # Mapping 1: Import Mapping - determines EntityStateType during import
+    # Key: (domain, device_class_or_None, has_brightness_or_None)
+    # Value: EntityStateType
+    #
+    HASS_STATE_TO_ENTITY_STATE_TYPE_MAPPING = {
+        
+        # Light Domain
+        (HassApi.LIGHT_DOMAIN, None, True): EntityStateType.LIGHT_DIMMER,
+        (HassApi.LIGHT_DOMAIN, None, False): EntityStateType.ON_OFF,
+        (HassApi.LIGHT_DOMAIN, None, None): EntityStateType.ON_OFF,  # Default when brightness unknown
+        
+        # Switch Domain
+        (HassApi.SWITCH_DOMAIN, None, None): EntityStateType.ON_OFF,
+        
+        # Cover Domain (blinds, curtains, garage doors)
+        (HassApi.COVER_DOMAIN, HassApi.DOOR_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
+        (HassApi.COVER_DOMAIN, HassApi.GARAGE_DOOR_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
+        (HassApi.COVER_DOMAIN, HassApi.WINDOW_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
+        (HassApi.COVER_DOMAIN, None, None): EntityStateType.OPEN_CLOSE,  # Default for covers
+        
+        # Fan Domain
+        (HassApi.FAN_DOMAIN, None, None): EntityStateType.ON_OFF,
+        
+        # Climate Domain
+        (HassApi.CLIMATE_DOMAIN, None, None): EntityStateType.TEMPERATURE,
+        
+        # Lock Domain
+        (HassApi.LOCK_DOMAIN, None, None): EntityStateType.ON_OFF,  # on=locked, off=unlocked
+        
+        # Media Player Domain
+        (HassApi.MEDIA_PLAYER_DOMAIN, None, None): EntityStateType.ON_OFF,
+        
+        # Binary Sensor Domain (read-only sensors)
+        (HassApi.BINARY_SENSOR_DOMAIN, HassApi.MOTION_DEVICE_CLASS, None): EntityStateType.MOVEMENT,
+        (HassApi.BINARY_SENSOR_DOMAIN, HassApi.CONNECTIVITY_DEVICE_CLASS, None): EntityStateType.CONNECTIVITY,
+        (HassApi.BINARY_SENSOR_DOMAIN, HassApi.BATTERY_DEVICE_CLASS, None): EntityStateType.HIGH_LOW,
+        (HassApi.BINARY_SENSOR_DOMAIN, HassApi.DOOR_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
+        (HassApi.BINARY_SENSOR_DOMAIN, HassApi.GARAGE_DOOR_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
+        (HassApi.BINARY_SENSOR_DOMAIN, HassApi.WINDOW_DEVICE_CLASS, None): EntityStateType.OPEN_CLOSE,
+        (HassApi.BINARY_SENSOR_DOMAIN, None, None): EntityStateType.ON_OFF,  # Generic binary sensor
+        
+        # Sensor Domain (read-only sensors)
+        (HassApi.SENSOR_DOMAIN, HassApi.TEMPERATURE_DEVICE_CLASS, None): EntityStateType.TEMPERATURE,
+        (HassApi.SENSOR_DOMAIN, HassApi.HUMIDITY_DEVICE_CLASS, None): EntityStateType.HUMIDITY,
+        (HassApi.SENSOR_DOMAIN, HassApi.TIMESTAMP_DEVICE_CLASS, None): EntityStateType.DATETIME,
+        (HassApi.SENSOR_DOMAIN, HassApi.ENUM_DEVICE_CLASS, None): EntityStateType.DISCRETE,
+        (HassApi.SENSOR_DOMAIN, None, None): EntityStateType.BLOB,  # Generic sensor
+        
+        # Other domains (read-only)
+        (HassApi.CAMERA_DOMAIN, None, None): EntityStateType.VIDEO_STREAM,
+        (HassApi.SUN_DOMAIN, None, None): EntityStateType.MULTVALUED,
+        (HassApi.WEATHER_DOMAIN, None, None): EntityStateType.MULTVALUED,
+    }
+
+    # Mapping 2: Control Service Mapping - only for controllable EntityStates
+    # Key: (domain, EntityStateType)
+    # Value: dict with service names and parameter mappings
+    #
+    CONTROL_SERVICE_MAPPING = {
+        
+        # Light Domain Services
+        (HassApi.LIGHT_DOMAIN, EntityStateType.ON_OFF): {
+            'on_service': HassApi.TURN_ON_SERVICE,
+            'off_service': HassApi.TURN_OFF_SERVICE,
+            'parameters': {},
+        },
+        (HassApi.LIGHT_DOMAIN, EntityStateType.LIGHT_DIMMER): {
+            'on_service': HassApi.TURN_ON_SERVICE,
+            'off_service': HassApi.TURN_OFF_SERVICE,
+            'set_service': HassApi.TURN_ON_SERVICE,  # For brightness setting
+            'parameters': {
+                'brightness_pct': 'percentage',  # 0-100
+            },
+        },
+        
+        # Switch Domain Services
+        (HassApi.SWITCH_DOMAIN, EntityStateType.ON_OFF): {
+            'on_service': HassApi.TURN_ON_SERVICE,
+            'off_service': HassApi.TURN_OFF_SERVICE,
+            'parameters': {},
+        },
+        
+        # Cover Domain Services
+        (HassApi.COVER_DOMAIN, EntityStateType.OPEN_CLOSE): {
+            'on_service': HassApi.OPEN_COVER_SERVICE,    # 'on' = open
+            'off_service': HassApi.CLOSE_COVER_SERVICE,  # 'off' = close
+            'set_service': HassApi.SET_COVER_POSITION_SERVICE,
+            'parameters': {
+                'position': 'percentage',  # 0-100
+            },
+        },
+        
+        # Fan Domain Services
+        (HassApi.FAN_DOMAIN, EntityStateType.ON_OFF): {
+            'on_service': HassApi.TURN_ON_SERVICE,
+            'off_service': HassApi.TURN_OFF_SERVICE,
+            'set_service': HassApi.SET_PERCENTAGE_SERVICE,
+            'parameters': {
+                'percentage': 'percentage',  # 0-100
+            },
+        },
+        
+        # Climate Domain Services
+        (HassApi.CLIMATE_DOMAIN, EntityStateType.TEMPERATURE): {
+            'set_service': HassApi.SET_TEMPERATURE_SERVICE,
+            'parameters': {
+                'temperature': 'temperature',  # Numeric temperature value
+            },
+        },
+        
+        # Lock Domain Services
+        (HassApi.LOCK_DOMAIN, EntityStateType.ON_OFF): {
+            'on_service': HassApi.LOCK_SERVICE,      # 'on' = locked
+            'off_service': HassApi.UNLOCK_SERVICE,   # 'off' = unlocked
+            'parameters': {},
+        },
+        
+        # Media Player Domain Services
+        (HassApi.MEDIA_PLAYER_DOMAIN, EntityStateType.ON_OFF): {
+            'on_service': HassApi.TURN_ON_SERVICE,
+            'off_service': HassApi.TURN_OFF_SERVICE,
+            'set_service': HassApi.VOLUME_SET_SERVICE,
+            'parameters': {
+                'volume_level': 'percentage_decimal',  # 0.0-1.0
+            },
+        },
     }
 
     INSTEON_ADDRESS_ATTR_NAME = 'Insteon Address'
@@ -473,69 +646,263 @@ class HassConverter:
                                                  integration_key   : IntegrationKey,
                                                  add_alarm_events  : bool ) -> EntityState: 
         name = hass_state.friendly_name
-        device_class = hass_state.device_class
         if not name:
-            name = f'{entity.name} ({hass_state.entity_id_prefix})'
+            name = f'{entity.name} ({hass_state.domain})'
+
+        # Use new mapping logic to determine EntityStateType and controllability
+        entity_state_type = cls._determine_entity_state_type_from_mapping( hass_state )
+        is_controllable = cls._is_controllable_domain_and_type( hass_state.domain, entity_state_type )
+        
+        # Create domain metadata for service calls - store service routing info directly
+        domain_metadata = cls._create_service_metadata( hass_state, entity_state_type, is_controllable )
 
         ##########
-        # Controllers - Only for states we explicitly know are controllable.
+        # Controllers - Create controller (which also creates sensor) for controllable states
         
-        if hass_state.entity_id_prefix in cls.SWITCH_PREFIXES:
+        if is_controllable:
+            controller = cls._create_controller_from_entity_state_type(
+                entity_state_type, entity, integration_key, name, domain_metadata
+            )
+            return controller.entity_state
+
+        ##########
+        # Sensors - Create sensor-only for non-controllable states using mapping logic
+        
+        sensor = cls._create_sensor_from_entity_state_type_with_params(
+            entity_state_type, entity, integration_key, name, domain_metadata,
+            hass_state, add_alarm_events
+        )
+        return sensor.entity_state
+
+    @classmethod
+    def _create_hass_state_with_mapping( cls,
+                                        hass_device       : HassDevice,
+                                        hass_state        : HassState,
+                                        entity            : Entity,
+                                        integration_key   : IntegrationKey,
+                                        add_alarm_events  : bool ) -> EntityState:
+        """
+        New method using mapping tables to determine EntityStateType and create
+        appropriate sensor or controller with domain metadata storage.
+        """
+        
+        # Step 1: Determine EntityStateType using our mapping table
+        entity_state_type = cls._determine_entity_state_type_from_mapping( hass_state )
+        
+        # Step 2: Create domain metadata to store for future service calls
+        domain_metadata = {
+            'domain': hass_state.domain,
+            'device_class': hass_state.device_class,
+            'has_brightness': cls._has_brightness_capability( hass_state ),
+        }
+        
+        # Step 3: Create IntegrationKey (metadata will be stored separately)
+        integration_key_for_storage = integration_key
+        
+        # Step 4: Determine if this should be a controller or sensor
+        is_controllable = cls._is_controllable_domain_and_type( hass_state.domain, entity_state_type )
+        
+        # Step 5: Create appropriate model (controller or sensor)
+        name = hass_state.friendly_name or f'{entity.name} ({hass_state.domain})'
+        
+        if is_controllable:
+            # Create controller and store metadata
+            entity_state = cls._create_controller_from_entity_state_type(
+                entity_state_type, entity, integration_key_for_storage, name, domain_metadata
+            )
+        else:
+            # Create sensor and store metadata  
+            entity_state = cls._create_sensor_from_entity_state_type(
+                entity_state_type, entity, integration_key_for_storage, name, domain_metadata
+            )
+        
+        return entity_state
+
+    @classmethod
+    def _determine_entity_state_type_from_mapping( cls, hass_state: HassState ) -> EntityStateType:
+        """Use mapping table to determine EntityStateType from HassState"""
+        
+        domain = hass_state.domain
+        device_class = hass_state.device_class
+        has_brightness = cls._has_brightness_capability( hass_state )
+        
+        # Try exact match first
+        mapping_key = (domain, device_class, has_brightness)
+        if mapping_key in cls.HASS_STATE_TO_ENTITY_STATE_TYPE_MAPPING:
+            return cls.HASS_STATE_TO_ENTITY_STATE_TYPE_MAPPING[mapping_key]
+        
+        # Try with None device_class
+        mapping_key = (domain, None, has_brightness)
+        if mapping_key in cls.HASS_STATE_TO_ENTITY_STATE_TYPE_MAPPING:
+            return cls.HASS_STATE_TO_ENTITY_STATE_TYPE_MAPPING[mapping_key]
+        
+        # Try with None brightness
+        mapping_key = (domain, device_class, None)
+        if mapping_key in cls.HASS_STATE_TO_ENTITY_STATE_TYPE_MAPPING:
+            return cls.HASS_STATE_TO_ENTITY_STATE_TYPE_MAPPING[mapping_key]
+        
+        # Try with both None
+        mapping_key = (domain, None, None)
+        if mapping_key in cls.HASS_STATE_TO_ENTITY_STATE_TYPE_MAPPING:
+            return cls.HASS_STATE_TO_ENTITY_STATE_TYPE_MAPPING[mapping_key]
+        
+        # Fallback for unmapped domains
+        logger.warning( f'No mapping found for domain {domain}, device_class {device_class}. Using BLOB.' )
+        return EntityStateType.BLOB
+
+    @classmethod
+    def _has_brightness_capability( cls, hass_state: HassState ) -> bool:
+        """Check if a light has brightness/dimming capability"""
+        if hass_state.domain != HassApi.LIGHT_DOMAIN:
+            return False
+        
+        # Check if brightness is in the state attributes
+        attributes = hass_state.attributes
+        return 'brightness' in attributes or 'brightness_pct' in attributes
+
+    @classmethod
+    def _is_controllable_domain_and_type( cls, domain: str, entity_state_type: EntityStateType ) -> bool:
+        """Check if this domain+type combination is controllable"""
+        return (domain, entity_state_type) in cls.CONTROL_SERVICE_MAPPING
+
+    @classmethod  
+    def _create_controller_from_entity_state_type( cls, entity_state_type: EntityStateType, 
+                                                  entity: Entity, integration_key: IntegrationKey, 
+                                                  name: str, domain_metadata: dict ):
+        """Create appropriate controller based on EntityStateType"""
+        
+        if entity_state_type == EntityStateType.ON_OFF:
             controller = HiModelHelper.create_on_off_controller(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
             )
-            return controller.entity_state
-
-        ##########
-        # Sensors - All HAss states are at least a sensor except for those
-        # we know are controllable.  
-
-        if hass_state.entity_id_prefix == HassApi.SUN_ID_PREFIX:
-            sensor = HiModelHelper.create_multivalued_sensor(
+        elif entity_state_type == EntityStateType.LIGHT_DIMMER:
+            controller = HiModelHelper.create_light_dimmer_controller(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
             )
-            return sensor.entity_state
-
-        if hass_state.entity_id_prefix == HassApi.WEATHER_ID_PREFIX:
-            sensor = HiModelHelper.create_multivalued_sensor(
+        elif entity_state_type == EntityStateType.OPEN_CLOSE:
+            controller = HiModelHelper.create_open_close_controller(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
             )
-            return sensor.entity_state
-
-        if hass_state.entity_id_prefix == HassApi.BINARY_SENSOR_ID_PREFIX:
-            sensor = cls._create_hass_state_binary_sensor(
-                hass_device = hass_device,
-                hass_state = hass_state,
+        elif entity_state_type == EntityStateType.TEMPERATURE:
+            controller = HiModelHelper.create_temperature_controller(
                 entity = entity,
                 integration_key = integration_key,
-                add_alarm_events = add_alarm_events,
+                name = name,
             )
-            return        
+        else:
+            # Fallback - shouldn't happen for controllable types
+            logger.warning( f'Unknown controllable EntityStateType: {entity_state_type}' )
+            controller = HiModelHelper.create_on_off_controller(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
         
-        if device_class == HassApi.TEMPERATURE_DEVICE_CLASS:
-            if 'c' in hass_state.unit_of_measurement.lower():
+        # Store domain metadata
+        controller.integration_metadata = domain_metadata
+        controller.save()
+        return controller.entity_state
+
+    @classmethod  
+    def _create_sensor_from_entity_state_type( cls, entity_state_type: EntityStateType, 
+                                              entity: Entity, integration_key: IntegrationKey, 
+                                              name: str, domain_metadata: dict ):
+        """Create appropriate sensor based on EntityStateType"""
+        
+        if entity_state_type == EntityStateType.MOVEMENT:
+            sensor = HiModelHelper.create_movement_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+        elif entity_state_type == EntityStateType.TEMPERATURE:
+            sensor = HiModelHelper.create_temperature_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+        elif entity_state_type == EntityStateType.HUMIDITY:
+            sensor = HiModelHelper.create_humidity_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+        elif entity_state_type == EntityStateType.MULTVALUED:
+            sensor = HiModelHelper.create_multivalued_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+        elif entity_state_type == EntityStateType.VIDEO_STREAM:
+            sensor = HiModelHelper.create_video_stream_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+        elif entity_state_type == EntityStateType.CONNECTIVITY:
+            sensor = HiModelHelper.create_connectivity_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+        elif entity_state_type == EntityStateType.HIGH_LOW:
+            sensor = HiModelHelper.create_high_low_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+        elif entity_state_type == EntityStateType.ON_OFF:
+            sensor = HiModelHelper.create_on_off_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+        else:
+            # Default fallback
+            sensor = HiModelHelper.create_blob_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+        
+        # Store domain metadata for sensors too
+        sensor.integration_metadata = domain_metadata
+        sensor.save()
+        return sensor.entity_state
+    
+    @classmethod
+    def _create_sensor_from_entity_state_type_with_params( cls, entity_state_type: EntityStateType, 
+                                                          entity: Entity, integration_key: IntegrationKey, 
+                                                          name: str, domain_metadata: dict,
+                                                          hass_state: HassState, add_alarm_events: bool ):
+        """Create appropriate sensor with legacy parameter handling"""
+        
+        if entity_state_type == EntityStateType.TEMPERATURE:
+            # Handle temperature units from HA data
+            unit_str = hass_state.unit_of_measurement or ''
+            if 'c' in unit_str.lower():
                 temperature_unit = TemperatureUnit.CELSIUS
             else:
                 temperature_unit = TemperatureUnit.FAHRENHEIT
-
+            
             sensor = HiModelHelper.create_temperature_sensor(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
                 temperature_unit = temperature_unit,
             )
-            return sensor.entity_state
-
-        if device_class == HassApi.HUMIDITY_DEVICE_CLASS:
-            if 'kg' in hass_state.unit_of_measurement.lower():
+        elif entity_state_type == EntityStateType.HUMIDITY:
+            # Handle humidity units from HA data
+            unit_str = hass_state.unit_of_measurement or ''
+            if 'kg' in unit_str.lower():
                 humidity_unit = HumidityUnit.GRAMS_PER_KILOGRAM
-            elif 'g' in hass_state.unit_of_measurement.lower():
+            elif 'g' in unit_str.lower():
                 humidity_unit = HumidityUnit.GRAMS_PER_CUBIN_METER
             else:  
                 humidity_unit = HumidityUnit.PERCENT
@@ -546,31 +913,129 @@ class HassConverter:
                 name = name,
                 humidity_unit = humidity_unit,
             )
-            return sensor.entity_state
-
-        if device_class == HassApi.TIMESTAMP_DEVICE_CLASS:
+        elif entity_state_type == EntityStateType.DISCRETE:
+            # Handle enum device class with options
+            name_label_dict = { x: x for x in hass_state.options } if hass_state.options else {}
+            sensor = HiModelHelper.create_discrete_sensor(
+                entity = entity,
+                name_label_dict = name_label_dict,
+                integration_key = integration_key,
+                name = name,
+            )
+        elif entity_state_type == EntityStateType.CONNECTIVITY:
+            sensor = HiModelHelper.create_connectivity_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+            if add_alarm_events:
+                HiModelHelper.create_connectivity_event_definition(
+                    name = f'{sensor.name} Alarm',
+                    entity_state = sensor.entity_state,
+                    integration_key = integration_key,
+                )
+        elif entity_state_type == EntityStateType.OPEN_CLOSE:
+            sensor = HiModelHelper.create_open_close_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+            if add_alarm_events:
+                HiModelHelper.create_open_close_event_definition(
+                    name = f'{sensor.name} Alarm',
+                    entity_state = sensor.entity_state,
+                    integration_key = integration_key,
+                )
+        elif entity_state_type == EntityStateType.MOVEMENT:
+            sensor = HiModelHelper.create_movement_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+            if add_alarm_events:
+                HiModelHelper.create_movement_event_definition(
+                    name = f'{sensor.name} Alarm',
+                    entity_state = sensor.entity_state,
+                    integration_key = integration_key,
+                )
+        elif entity_state_type == EntityStateType.HIGH_LOW:
+            sensor = HiModelHelper.create_high_low_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+            if add_alarm_events and hass_state.device_class == HassApi.BATTERY_DEVICE_CLASS:
+                HiModelHelper.create_battery_event_definition(
+                    name = f'{sensor.name} Alarm',
+                    entity_state = sensor.entity_state,
+                    integration_key = integration_key,
+                )
+        elif entity_state_type == EntityStateType.DATETIME:
             sensor = HiModelHelper.create_datetime_sensor(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,
             )
-            return sensor.entity_state
-
-        if device_class == HassApi.ENUM_DEVICE_CLASS:
-            sensor = HiModelHelper.create_discrete_sensor(
+        elif entity_state_type == EntityStateType.MULTVALUED:
+            sensor = HiModelHelper.create_multivalued_sensor(
                 entity = entity,
-                name_label_dict = { x: x for x in hass_state.options },
                 integration_key = integration_key,
                 name = name,
             )
-            return sensor.entity_state
-
-        sensor = HiModelHelper.create_blob_sensor(
-            entity = entity,
-            integration_key = integration_key,
-            name = name,
-        )
-        return sensor.entity_state
+        elif entity_state_type == EntityStateType.VIDEO_STREAM:
+            sensor = HiModelHelper.create_video_stream_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+        elif entity_state_type == EntityStateType.ON_OFF:
+            sensor = HiModelHelper.create_on_off_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+        else:
+            # Default fallback
+            sensor = HiModelHelper.create_blob_sensor(
+                entity = entity,
+                integration_key = integration_key,
+                name = name,
+            )
+        
+        # Store domain metadata for sensors
+        sensor.integration_metadata = domain_metadata
+        sensor.save()
+        return sensor
+    
+    @classmethod
+    def _create_service_metadata( cls, hass_state: HassState, entity_state_type: EntityStateType, is_controllable: bool ) -> dict:
+        """Create metadata with service routing information for controllers"""
+        
+        # Base metadata for all entities
+        metadata = {
+            'domain': hass_state.domain,
+            'device_class': hass_state.device_class,
+            'entity_state_type': str(entity_state_type),
+            'is_controllable': is_controllable,
+        }
+        
+        # Add service routing information for controllable entities
+        if is_controllable:
+            mapping_key = (hass_state.domain, entity_state_type)
+            if mapping_key in cls.CONTROL_SERVICE_MAPPING:
+                service_mapping = cls.CONTROL_SERVICE_MAPPING[mapping_key]
+                metadata.update(service_mapping)
+            
+            # Add special capabilities
+            if entity_state_type == EntityStateType.LIGHT_DIMMER:
+                metadata['supports_brightness'] = True
+                has_brightness = cls._has_brightness_capability( hass_state )
+                metadata['has_brightness'] = has_brightness
+            else:
+                metadata['supports_brightness'] = False
+                metadata['has_brightness'] = False
+        
+        return metadata
     
     @classmethod
     def _create_hass_state_binary_sensor( cls,

@@ -2,7 +2,7 @@ import logging
 import re
 
 from hi.integrations.integration_controller import IntegrationController
-from hi.integrations.integration_key import IntegrationKey
+from hi.integrations.integration_key import IntegrationKey, IntegrationData
 from hi.integrations.transient_models import IntegrationControlResult
 
 from .zm_mixins import ZoneMinderMixin
@@ -13,9 +13,10 @@ logger = logging.getLogger(__name__)
 class ZoneMinderController( IntegrationController, ZoneMinderMixin ):
 
     def do_control( self,
-                    integration_key  : IntegrationKey,
+                    integration_data : IntegrationData,
                     control_value    : str             ) -> IntegrationControlResult:
         zm_manager = self.zm_manager()
+        integration_key = integration_data.key
         try:
             if integration_key.integration_name == zm_manager.ZM_RUN_STATE_SENSOR_INTEGRATION_NAME:
                 return self.set_run_state( run_state_value = control_value )

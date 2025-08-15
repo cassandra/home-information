@@ -1,0 +1,2436 @@
+[
+    {
+        "attributes": {
+            "device_trackers": [],
+            "editable": true,
+            "entity_picture": "/api/image/serve/6e091524e540239d51f3a41b007989d5/512x512",
+            "friendly_name": "Cassandra",
+            "icon": "mdi:account-group",
+            "id": "cassandra",
+            "user_id": "f6707281e954491cbccb97307afa2c0e"
+        },
+        "context": {
+            "id": "01JDJQTJRVA2ZEVPT7QA10H85K",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "person.cassandra",
+        "last_changed": "2024-11-25T22:41:46.842744+00:00",
+        "last_reported": "2024-11-25T22:42:10.331715+00:00",
+        "last_updated": "2024-11-25T22:42:10.331715+00:00",
+        "state": "unknown"
+    },
+    {
+        "attributes": {
+            "editable": true,
+            "friendly_name": "Cassandra HQ",
+            "icon": "mdi:home",
+            "latitude": 30.430472,
+            "longitude": -97.80474843885351,
+            "passive": false,
+            "persons": [],
+            "radius": 21
+        },
+        "context": {
+            "id": "01JDJQT1VS8DPSJY6Z90EA52HQ",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "zone.home",
+        "last_changed": "2024-11-25T22:41:53.017376+00:00",
+        "last_reported": "2024-11-25T22:41:53.017376+00:00",
+        "last_updated": "2024-11-25T22:41:53.017376+00:00",
+        "state": "0"
+    },
+    {
+        "attributes": {
+            "current": 0,
+            "friendly_name": "Play Door Chime",
+            "icon": "mdi:bullhorn-outline",
+            "last_triggered": "2024-11-30T02:13:45.358983+00:00",
+            "mode": "single"
+        },
+        "context": {
+            "id": "01JDXDGW8DX5KKY59P5S91ZSE2",
+            "parent_id": "01JDXDGT9XD74EH88MHYKF88PG",
+            "user_id": null
+        },
+        "entity_id": "script.play_door_chime",
+        "last_changed": "2024-11-30T02:13:45.359458+00:00",
+        "last_reported": "2024-11-30T02:13:45.359458+00:00",
+        "last_updated": "2024-11-30T02:13:45.359458+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "access_token": "9886f62fe6e1e59fc8f9fc9b0afb942156ddf1b3aaf440c5d4fa9506f5656f01",
+            "entity_picture": "/api/camera_proxy/camera.highcamera?token=9886f62fe6e1e59fc8f9fc9b0afb942156ddf1b3aaf440c5d4fa9506f5656f01",
+            "friendly_name": "HighCamera",
+            "supported_features": 0
+        },
+        "context": {
+            "id": "01JE596742C62P6SKVN76P26HC",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "camera.highcamera",
+        "last_changed": "2024-12-01T18:01:48.880152+00:00",
+        "last_reported": "2024-12-03T03:31:57.186566+00:00",
+        "last_updated": "2024-12-03T03:31:57.186566+00:00",
+        "state": "idle"
+    },
+    {
+        "attributes": {
+            "access_token": "e8da62c3bad3831df2a33e8c84010fedc388bfcf04e35ccb6d404ab160c03fd",
+            "entity_picture": "/api/camera_proxy/camera.backcamera?token=e8da62c3bad3831df2a33e8c84010fedc388bfcf04e35ccb6d404ab160c03fd",
+            "friendly_name": "BackCamera",
+            "supported_features": 0
+        },
+        "context": {
+            "id": "01JE596742HNSTEGGTPTFV2THZ",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "camera.backcamera",
+        "last_changed": "2024-11-25T22:42:26.480827+00:00",
+        "last_reported": "2024-12-03T03:31:57.186805+00:00",
+        "last_updated": "2024-12-03T03:31:57.186805+00:00",
+        "state": "idle"
+    },
+    {
+        "attributes": {
+            "access_token": "20881b57735a0b64bb8cc3c2784c7ea39138f9233e9ac0280dc6cc345020e11f",
+            "entity_picture": "/api/camera_proxy/camera.frontcamera?token=20881b57735a0b64bb8cc3c2784c7ea39138f9233e9ac0280dc6cc345020e11f",
+            "friendly_name": "FrontCamera",
+            "supported_features": 0
+        },
+        "context": {
+            "id": "01JE596742Z5P5R88297RGJX8Y",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "camera.frontcamera",
+        "last_changed": "2024-11-30T02:14:13.263993+00:00",
+        "last_reported": "2024-12-03T03:31:57.186941+00:00",
+        "last_updated": "2024-12-03T03:31:57.186941+00:00",
+        "state": "idle"
+    },
+    {
+        "attributes": {
+            "access_token": "7b6ab8674bfa408884b674c666efb1969a8a3c2da51e36079f9a8244cdcc9e01",
+            "entity_picture": "/api/camera_proxy/camera.patiocamera?token=7b6ab8674bfa408884b674c666efb1969a8a3c2da51e36079f9a8244cdcc9e01",
+            "friendly_name": "PatioCamera",
+            "supported_features": 0
+        },
+        "context": {
+            "id": "01JE596743EAVGR4VE6PW6YZ7A",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "camera.patiocamera",
+        "last_changed": "2024-12-03T02:49:26.435307+00:00",
+        "last_reported": "2024-12-03T03:31:57.187153+00:00",
+        "last_updated": "2024-12-03T03:31:57.187153+00:00",
+        "state": "idle"
+    },
+    {
+        "attributes": {
+            "access_token": "ea48604138f62cb57a3e977eacf3fa7ab221718113510d592e9828606163c611",
+            "entity_picture": "/api/camera_proxy/camera.sidecamera?token=ea48604138f62cb57a3e977eacf3fa7ab221718113510d592e9828606163c611",
+            "friendly_name": "SideCamera",
+            "supported_features": 0
+        },
+        "context": {
+            "id": "01JE596743NQFZQF7JTCRVZ190",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "camera.sidecamera",
+        "last_changed": "2024-12-03T02:49:26.977233+00:00",
+        "last_reported": "2024-12-03T03:31:57.232103+00:00",
+        "last_updated": "2024-12-03T03:31:57.187377+00:00",
+        "state": "idle"
+    },
+    {
+        "attributes": {
+            "access_token": "e27bfa3f1a7d9c81aad4253b4a6f99940c168c06ed27bd0197c024180231dc5",
+            "entity_picture": "/api/camera_proxy/camera.drivecamera?token=e27bfa3f1a7d9c81aad4253b4a6f99940c168c06ed27bd0197c024180231dc5",
+            "friendly_name": "DriveCamera",
+            "supported_features": 0
+        },
+        "context": {
+            "id": "01JE596743E3A9QR4Z3M8HGHA4",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "camera.drivecamera",
+        "last_changed": "2024-12-03T02:49:27.498058+00:00",
+        "last_reported": "2024-12-03T03:31:57.764053+00:00",
+        "last_updated": "2024-12-03T03:31:57.187572+00:00",
+        "state": "idle"
+    },
+    {
+        "attributes": {
+            "access_token": "e432cd3b6bc74fa55af462c635203714e355f8f2de8e9c15a3912a3fdb6ee1a7",
+            "entity_picture": "/api/camera_proxy/camera.poolcamera?token=e432cd3b6bc74fa55af462c635203714e355f8f2de8e9c15a3912a3fdb6ee1a7",
+            "friendly_name": "PoolCamera",
+            "supported_features": 0
+        },
+        "context": {
+            "id": "01JE5967435MP6Y14WV0VP25C4",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "camera.poolcamera",
+        "last_changed": "2024-12-03T02:49:28.026092+00:00",
+        "last_reported": "2024-12-03T03:31:58.310776+00:00",
+        "last_updated": "2024-12-03T03:31:57.187760+00:00",
+        "state": "idle"
+    },
+    {
+        "attributes": {
+            "access_token": "1740793333aa83baf3a3a61432ebce8ef6da26cdb629951eb01776b81dba4431",
+            "entity_picture": "/api/camera_proxy/camera.carcamera?token=1740793333aa83baf3a3a61432ebce8ef6da26cdb629951eb01776b81dba4431",
+            "friendly_name": "CarCamera",
+            "supported_features": 0
+        },
+        "context": {
+            "id": "01JE596743TBXYWYS847A7R08Y",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "camera.carcamera",
+        "last_changed": "2024-12-03T02:50:28.926328+00:00",
+        "last_reported": "2024-12-03T03:31:58.857247+00:00",
+        "last_updated": "2024-12-03T03:31:57.187934+00:00",
+        "state": "idle"
+    },
+    {
+        "attributes": {
+            "access_token": "ccfb108bddd680b96786a638824a8e47a7aa7db86ca370be3ab28f99aa6d7db2",
+            "entity_picture": "/api/camera_proxy/camera.garagecamera?token=ccfb108bddd680b96786a638824a8e47a7aa7db86ca370be3ab28f99aa6d7db2",
+            "friendly_name": "GarageCamera",
+            "supported_features": 0
+        },
+        "context": {
+            "id": "01JE596744QRTSGGV6D093N5QP",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "camera.garagecamera",
+        "last_changed": "2024-12-03T02:50:29.525326+00:00",
+        "last_reported": "2024-12-03T03:31:59.414579+00:00",
+        "last_updated": "2024-12-03T03:31:57.188100+00:00",
+        "state": "idle"
+    },
+    {
+        "attributes": {
+            "friendly_name": "HighCamera Status"
+        },
+        "context": {
+            "id": "01JE56RAJ05MAY8ABEK5JG2Q5Z",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.highcamera_status",
+        "last_changed": "2024-12-03T02:49:24.800428+00:00",
+        "last_reported": "2024-12-03T02:49:24.800428+00:00",
+        "last_updated": "2024-12-03T02:49:24.800428+00:00",
+        "state": "Modect"
+    },
+    {
+        "attributes": {
+            "friendly_name": "HighCamera Events Last Hour",
+            "unit_of_measurement": "Events"
+        },
+        "context": {
+            "id": "01JE1SJG2FK24F83155FV384BM",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.highcamera_events_last_hour",
+        "last_changed": "2024-12-01T19:01:19.055164+00:00",
+        "last_reported": "2024-12-01T19:01:19.055164+00:00",
+        "last_updated": "2024-12-01T19:01:19.055164+00:00",
+        "state": "0"
+    },
+    {
+        "attributes": {
+            "friendly_name": "BackCamera Status"
+        },
+        "context": {
+            "id": "01JE56RB23WY44YFNE6KW6QQ7F",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.backcamera_status",
+        "last_changed": "2024-12-03T02:49:25.315314+00:00",
+        "last_reported": "2024-12-03T02:49:25.315314+00:00",
+        "last_updated": "2024-12-03T02:49:25.315314+00:00",
+        "state": "Modect"
+    },
+    {
+        "attributes": {
+            "friendly_name": "BackCamera Events Last Hour",
+            "unit_of_measurement": "Events"
+        },
+        "context": {
+            "id": "01JDJQV2GFBQ68SS510N67NFJY",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.backcamera_events_last_hour",
+        "last_changed": "2024-11-25T22:42:26.447471+00:00",
+        "last_reported": "2024-11-25T22:42:26.447471+00:00",
+        "last_updated": "2024-11-25T22:42:26.447471+00:00",
+        "state": "0"
+    },
+    {
+        "attributes": {
+            "friendly_name": "FrontCamera Status"
+        },
+        "context": {
+            "id": "01JE56RBJ85R96MK61SF0HCD65",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.frontcamera_status",
+        "last_changed": "2024-12-03T02:49:25.832891+00:00",
+        "last_reported": "2024-12-03T02:49:25.832891+00:00",
+        "last_updated": "2024-12-03T02:49:25.832891+00:00",
+        "state": "Modect"
+    },
+    {
+        "attributes": {
+            "friendly_name": "FrontCamera Events Last Hour",
+            "unit_of_measurement": "Events"
+        },
+        "context": {
+            "id": "01JE4Q76WCTGMGRZCTZ6SR570M",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.frontcamera_events_last_hour",
+        "last_changed": "2024-12-02T22:17:55.340858+00:00",
+        "last_reported": "2024-12-02T22:17:55.340858+00:00",
+        "last_updated": "2024-12-02T22:17:55.340858+00:00",
+        "state": "0"
+    },
+    {
+        "attributes": {
+            "friendly_name": "PatioCamera Status"
+        },
+        "context": {
+            "id": "01JE56RC28AD7T766HX3TJ9SZA",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.patiocamera_status",
+        "last_changed": "2024-12-03T02:49:26.344808+00:00",
+        "last_reported": "2024-12-03T02:49:26.344808+00:00",
+        "last_updated": "2024-12-03T02:49:26.344808+00:00",
+        "state": "Modect"
+    },
+    {
+        "attributes": {
+            "friendly_name": "PatioCamera Events Last Hour",
+            "unit_of_measurement": "Events"
+        },
+        "context": {
+            "id": "01JDJQV3N7TDPAXKMYKBAB4CNQ",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.patiocamera_events_last_hour",
+        "last_changed": "2024-11-25T22:42:27.623408+00:00",
+        "last_reported": "2024-11-25T22:42:27.623408+00:00",
+        "last_updated": "2024-11-25T22:42:27.623408+00:00",
+        "state": "0"
+    },
+    {
+        "attributes": {
+            "friendly_name": "SideCamera Status"
+        },
+        "context": {
+            "id": "01JE56RCHNNR0AQ8ZHF28HYM7E",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.sidecamera_status",
+        "last_changed": "2024-12-03T02:49:26.837249+00:00",
+        "last_reported": "2024-12-03T02:49:26.837249+00:00",
+        "last_updated": "2024-12-03T02:49:26.837249+00:00",
+        "state": "Modect"
+    },
+    {
+        "attributes": {
+            "friendly_name": "SideCamera Events Last Hour",
+            "unit_of_measurement": "Events"
+        },
+        "context": {
+            "id": "01JDJQV45FHH0PAWYMG80KNQVZ",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.sidecamera_events_last_hour",
+        "last_changed": "2024-11-25T22:42:28.143523+00:00",
+        "last_reported": "2024-11-25T22:42:28.143523+00:00",
+        "last_updated": "2024-11-25T22:42:28.143523+00:00",
+        "state": "0"
+    },
+    {
+        "attributes": {
+            "friendly_name": "DriveCamera Status"
+        },
+        "context": {
+            "id": "01JE56RD1VB7GQTC2YH45X47JR",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.drivecamera_status",
+        "last_changed": "2024-12-03T02:49:27.355107+00:00",
+        "last_reported": "2024-12-03T02:49:27.355107+00:00",
+        "last_updated": "2024-12-03T02:49:27.355107+00:00",
+        "state": "Modect"
+    },
+    {
+        "attributes": {
+            "friendly_name": "DriveCamera Events Last Hour",
+            "unit_of_measurement": "Events"
+        },
+        "context": {
+            "id": "01JE590R0SGVSVGS4EEJX34XES",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.drivecamera_events_last_hour",
+        "last_changed": "2024-12-03T03:28:57.881168+00:00",
+        "last_reported": "2024-12-03T03:28:57.881168+00:00",
+        "last_updated": "2024-12-03T03:28:57.881168+00:00",
+        "state": "0"
+    },
+    {
+        "attributes": {
+            "friendly_name": "PoolCamera Status"
+        },
+        "context": {
+            "id": "01JE56RDJFZH2YKWRC14KPFWED",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.poolcamera_status",
+        "last_changed": "2024-12-03T02:49:27.887676+00:00",
+        "last_reported": "2024-12-03T02:49:27.887676+00:00",
+        "last_updated": "2024-12-03T02:49:27.887676+00:00",
+        "state": "Modect"
+    },
+    {
+        "attributes": {
+            "friendly_name": "PoolCamera Events Last Hour",
+            "unit_of_measurement": "Events"
+        },
+        "context": {
+            "id": "01JDJQV58Z4AEQ7QNNN885ZQCN",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.poolcamera_events_last_hour",
+        "last_changed": "2024-11-25T22:42:29.279834+00:00",
+        "last_reported": "2024-11-25T22:42:29.279834+00:00",
+        "last_updated": "2024-11-25T22:42:29.279834+00:00",
+        "state": "0"
+    },
+    {
+        "attributes": {
+            "friendly_name": "CarCamera Status"
+        },
+        "context": {
+            "id": "01JE56T9411BBQ8JSCNMBKB625",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.carcamera_status",
+        "last_changed": "2024-12-03T02:50:28.865691+00:00",
+        "last_reported": "2024-12-03T02:50:28.865691+00:00",
+        "last_updated": "2024-12-03T02:50:28.865691+00:00",
+        "state": "Modect"
+    },
+    {
+        "attributes": {
+            "friendly_name": "CarCamera Events Last Hour",
+            "unit_of_measurement": "Events"
+        },
+        "context": {
+            "id": "01JE590S43AYCSVXSH3C97P0ZF",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.carcamera_events_last_hour",
+        "last_changed": "2024-12-03T03:28:59.011195+00:00",
+        "last_reported": "2024-12-03T03:28:59.011195+00:00",
+        "last_updated": "2024-12-03T03:28:59.011195+00:00",
+        "state": "0"
+    },
+    {
+        "attributes": {
+            "friendly_name": "GarageCamera Status"
+        },
+        "context": {
+            "id": "01JE56T9R7HYJEWG3PR98K3DX8",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.garagecamera_status",
+        "last_changed": "2024-12-03T02:50:29.511903+00:00",
+        "last_reported": "2024-12-03T02:50:29.511903+00:00",
+        "last_updated": "2024-12-03T02:50:29.511903+00:00",
+        "state": "Modect"
+    },
+    {
+        "attributes": {
+            "friendly_name": "GarageCamera Events Last Hour",
+            "unit_of_measurement": "Events"
+        },
+        "context": {
+            "id": "01JE599YJSJEW36EMRFF8BMG4Z",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.garagecamera_events_last_hour",
+        "last_changed": "2024-12-03T03:33:59.513894+00:00",
+        "last_reported": "2024-12-03T03:33:59.513894+00:00",
+        "last_updated": "2024-12-03T03:33:59.513894+00:00",
+        "state": "0"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Run State"
+        },
+        "context": {
+            "id": "01JE56QH97ZFYAPYM7D34P1QT4",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.run_state",
+        "last_changed": "2024-12-03T02:48:58.919796+00:00",
+        "last_reported": "2024-12-03T02:48:58.919796+00:00",
+        "last_updated": "2024-12-03T02:48:58.919796+00:00",
+        "state": "Away"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Home Assistant"
+        },
+        "context": {
+            "id": "01JDJQT41QXVRR2HMDT7889KDZ",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "conversation.home_assistant",
+        "last_changed": "2024-11-25T22:41:55.255485+00:00",
+        "last_reported": "2024-11-25T22:41:55.255485+00:00",
+        "last_updated": "2024-11-25T22:41:55.255485+00:00",
+        "state": "unknown"
+    },
+    {
+        "attributes": {
+            "color_mode": "onoff",
+            "friendly_name": "Kitchen Cooktop Light",
+            "supported_color_modes": [
+                "onoff"
+            ],
+            "supported_features": 0
+        },
+        "context": {
+            "id": "01JE4X5SVR69D47WR7VMKKJRG6",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "light.switchlinc_relay_18_36_41",
+        "last_changed": "2024-12-03T00:02:01.877409+00:00",
+        "last_reported": "2024-12-03T00:02:01.877409+00:00",
+        "last_updated": "2024-12-03T00:02:01.877409+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "color_mode": "onoff",
+            "friendly_name": "Deck Lights",
+            "supported_color_modes": [
+                "onoff"
+            ],
+            "supported_features": 0
+        },
+        "context": {
+            "id": "01JE4X5SVR69D47WR7VMKKJRG6",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "light.switchlinc_relay_dual_band_23_fa_31",
+        "last_changed": "2024-12-03T00:02:01.075887+00:00",
+        "last_reported": "2024-12-03T00:02:01.075887+00:00",
+        "last_updated": "2024-12-03T00:02:01.075887+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "color_mode": "onoff",
+            "friendly_name": "Kitchen Fridge Light",
+            "supported_color_modes": [
+                "onoff"
+            ],
+            "supported_features": 0
+        },
+        "context": {
+            "id": "01JE4X5V0NHR79CC315ZPH84SY",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "light.switchlinc_relay_18_36_41_2",
+        "last_changed": "2024-12-03T00:02:01.877574+00:00",
+        "last_reported": "2024-12-03T00:02:01.877574+00:00",
+        "last_updated": "2024-12-03T00:02:01.877574+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {},
+        "context": {
+            "id": "01JE58WCJVP4659S8SYW3HZPAY",
+            "parent_id": null,
+            "user_id": "f6707281e954491cbccb97307afa2c0e"
+        },
+        "entity_id": "light.switchlinc_relay_dual_band_43_54_48",
+        "last_changed": "2024-12-03T03:26:35.099256+00:00",
+        "last_reported": "2024-12-03T03:26:35.099256+00:00",
+        "last_updated": "2024-12-03T03:26:35.099256+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "color_mode": null,
+            "friendly_name": "Side Deck Light",
+            "supported_color_modes": [
+                "onoff"
+            ],
+            "supported_features": 0
+        },
+        "context": {
+            "id": "01JDJQTG1191V2R6544JS17VY5",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "light.switchlinc_relay_dual_band_23_ee_08",
+        "last_changed": "2024-11-25T22:42:07.521822+00:00",
+        "last_reported": "2024-11-25T22:42:07.521822+00:00",
+        "last_updated": "2024-11-25T22:42:07.521822+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "color_mode": null,
+            "friendly_name": "Fireplace Light",
+            "supported_color_modes": [
+                "onoff"
+            ],
+            "supported_features": 0
+        },
+        "context": {
+            "id": "01JE4T4QPQ3SC6TY0KFGWAKTRR",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "light.switchlinc_relay_18_36_cb",
+        "last_changed": "2024-12-02T23:08:59.991416+00:00",
+        "last_reported": "2024-12-02T23:08:59.991416+00:00",
+        "last_updated": "2024-12-02T23:08:59.991416+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "azimuth": 270.15,
+            "elevation": -48.37,
+            "friendly_name": "Sun",
+            "next_dawn": "2024-12-03T12:43:12.069747+00:00",
+            "next_dusk": "2024-12-03T23:59:17.247866+00:00",
+            "next_midnight": "2024-12-03T06:21:19+00:00",
+            "next_noon": "2024-12-03T18:21:01+00:00",
+            "next_rising": "2024-12-03T13:10:27.114722+00:00",
+            "next_setting": "2024-12-03T23:32:02.229044+00:00",
+            "rising": false
+        },
+        "context": {
+            "id": "01JE58CABAB2S5HN3XPT4R76ZZ",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sun.sun",
+        "last_changed": "2024-12-02T23:32:00.699271+00:00",
+        "last_reported": "2024-12-03T03:17:48.522474+00:00",
+        "last_updated": "2024-12-03T03:17:48.522474+00:00",
+        "state": "below_horizon"
+    },
+    {
+        "attributes": {
+            "device_class": "timestamp",
+            "friendly_name": "Sun Next dawn"
+        },
+        "context": {
+            "id": "01JE3P9FZTAQEHPZ63GZ6SWKKD",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.sun_next_dawn",
+        "last_changed": "2024-12-02T12:42:27.194381+00:00",
+        "last_reported": "2024-12-02T12:42:27.194381+00:00",
+        "last_updated": "2024-12-02T12:42:27.194381+00:00",
+        "state": "2024-12-03T12:43:12+00:00"
+    },
+    {
+        "attributes": {
+            "device_class": "timestamp",
+            "friendly_name": "Sun Next dusk"
+        },
+        "context": {
+            "id": "01JE4X0PRZX15QTQ1KEXZ0CGNY",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.sun_next_dusk",
+        "last_changed": "2024-12-02T23:59:13.695151+00:00",
+        "last_reported": "2024-12-02T23:59:13.695151+00:00",
+        "last_updated": "2024-12-02T23:59:13.695151+00:00",
+        "state": "2024-12-03T23:59:17+00:00"
+    },
+    {
+        "attributes": {
+            "device_class": "timestamp",
+            "friendly_name": "Sun Next midnight"
+        },
+        "context": {
+            "id": "01JE30EWAVW6FCKVTCV15B15P3",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.sun_next_midnight",
+        "last_changed": "2024-12-02T06:20:55.003357+00:00",
+        "last_reported": "2024-12-02T06:20:55.003357+00:00",
+        "last_updated": "2024-12-02T06:20:55.003357+00:00",
+        "state": "2024-12-03T06:21:19+00:00"
+    },
+    {
+        "attributes": {
+            "device_class": "timestamp",
+            "friendly_name": "Sun Next noon"
+        },
+        "context": {
+            "id": "01JE49MP8CHPMR4TDWKPZEFEEJ",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.sun_next_noon",
+        "last_changed": "2024-12-02T18:20:37.004049+00:00",
+        "last_reported": "2024-12-02T18:20:37.004049+00:00",
+        "last_updated": "2024-12-02T18:20:37.004049+00:00",
+        "state": "2024-12-03T18:21:01+00:00"
+    },
+    {
+        "attributes": {
+            "device_class": "timestamp",
+            "friendly_name": "Sun Next rising"
+        },
+        "context": {
+            "id": "01JE3QVAR1HRD4W5SMTFQG2HAP",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.sun_next_rising",
+        "last_changed": "2024-12-02T13:09:40.225325+00:00",
+        "last_reported": "2024-12-02T13:09:40.225325+00:00",
+        "last_updated": "2024-12-02T13:09:40.225325+00:00",
+        "state": "2024-12-03T13:10:27+00:00"
+    },
+    {
+        "attributes": {
+            "device_class": "timestamp",
+            "friendly_name": "Sun Next setting"
+        },
+        "context": {
+            "id": "01JE4VEW1WFYXVSFAGJ1F9V25N",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.sun_next_setting",
+        "last_changed": "2024-12-02T23:32:00.700201+00:00",
+        "last_reported": "2024-12-02T23:32:00.700201+00:00",
+        "last_updated": "2024-12-02T23:32:00.700201+00:00",
+        "state": "2024-12-03T23:32:02+00:00"
+    },
+    {
+        "attributes": {
+            "device_class": "connectivity",
+            "friendly_name": "ZoneMinder Health",
+            "icon": "mdi:heart-pulse"
+        },
+        "context": {
+            "id": "01JDJQV4P1EZSSC6QNPCSPERKA",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.192_168_100_2_8443",
+        "last_changed": "2024-11-25T22:42:28.673517+00:00",
+        "last_reported": "2024-11-25T22:42:28.673517+00:00",
+        "last_updated": "2024-11-25T22:42:28.673517+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Severe Weather Alerts",
+            "icon": "mdi:weather-lightning"
+        },
+        "context": {
+            "id": "01JDQM291EP7Q5YGKCHGX3H25H",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.severe_weather_alerts",
+        "last_changed": "2024-11-27T20:12:40.366505+00:00",
+        "last_reported": "2024-11-27T20:12:40.366505+00:00",
+        "last_updated": "2024-11-27T20:12:40.366505+00:00",
+        "state": "0"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Google en com"
+        },
+        "context": {
+            "id": "01JDJQT7AYFCPW565HE493E4E3",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "tts.google_en_com",
+        "last_changed": "2024-11-25T22:41:58.622077+00:00",
+        "last_reported": "2024-11-25T22:41:58.622077+00:00",
+        "last_updated": "2024-11-25T22:41:58.622077+00:00",
+        "state": "unknown"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Shopping List",
+            "supported_features": 15
+        },
+        "context": {
+            "id": "01JDJQTB70WA4JC7J820V2FN4G",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "todo.shopping_list",
+        "last_changed": "2024-11-25T22:42:02.592056+00:00",
+        "last_reported": "2024-11-25T22:42:02.592056+00:00",
+        "last_updated": "2024-11-25T22:42:02.592056+00:00",
+        "state": "0"
+    },
+    {
+        "attributes": {
+            "friendly_name": "HP LaserJet Pro M404-M405 black cartridge",
+            "marker_high_level": 100,
+            "marker_low_level": 2,
+            "marker_type": "toner-cartridge",
+            "state_class": "measurement",
+            "unit_of_measurement": "%"
+        },
+        "context": {
+            "id": "01JDJQTCJB84QH2ND9GQZD1GKX",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.hp_laserjet_pro_m404_m405_black_cartridge",
+        "last_changed": "2024-11-25T22:42:03.979831+00:00",
+        "last_reported": "2024-11-25T22:42:04.149393+00:00",
+        "last_updated": "2024-11-25T22:42:03.979831+00:00",
+        "state": "90"
+    },
+    {
+        "attributes": {
+            "attribution": "Weather forecast from met.no, delivered by the Norwegian Meteorological Institute.",
+            "cloud_coverage": 19.5,
+            "dew_point": 39,
+            "friendly_name": "Austin Weather",
+            "humidity": 57,
+            "precipitation_unit": "in",
+            "pressure": 1029.6,
+            "pressure_unit": "mbar",
+            "supported_features": 3,
+            "temperature": 54,
+            "temperature_unit": "\u00b0F",
+            "visibility_unit": "mi",
+            "wind_bearing": 42.4,
+            "wind_speed": 6.28,
+            "wind_speed_unit": "mph"
+        },
+        "context": {
+            "id": "01JE599ME32V4PG4RQ0C44Q0F0",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "weather.forecast_home_2",
+        "last_changed": "2024-12-02T07:13:37.274242+00:00",
+        "last_reported": "2024-12-03T03:33:49.123833+00:00",
+        "last_updated": "2024-12-03T03:33:49.123833+00:00",
+        "state": "partlycloudy"
+    },
+    {
+        "attributes": {
+            "attribution": "Weather forecast from met.no, delivered by the Norwegian Meteorological Institute.",
+            "cloud_coverage": 69.5,
+            "dew_point": 47,
+            "friendly_name": "Forecast Antibes",
+            "humidity": 77,
+            "precipitation_unit": "in",
+            "pressure": 29.98,
+            "pressure_unit": "inHg",
+            "supported_features": 3,
+            "temperature": 53,
+            "temperature_unit": "\u00b0F",
+            "visibility_unit": "mi",
+            "wind_bearing": 21.8,
+            "wind_speed": 12.99,
+            "wind_speed_unit": "mph"
+        },
+        "context": {
+            "id": "01JE565F0PDE0A6CK8M2XNKHEA",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "weather.forecast_antibes",
+        "last_changed": "2024-12-02T18:06:06.895107+00:00",
+        "last_reported": "2024-12-03T02:39:06.774917+00:00",
+        "last_updated": "2024-12-03T02:39:06.774917+00:00",
+        "state": "partlycloudy"
+    },
+    {
+        "attributes": {
+            "attribution": "Weather forecast from met.no, delivered by the Norwegian Meteorological Institute.",
+            "cloud_coverage": 1.6,
+            "dew_point": 25,
+            "friendly_name": "Forecast Commack",
+            "humidity": 72,
+            "precipitation_unit": "in",
+            "pressure": 30.16,
+            "pressure_unit": "inHg",
+            "supported_features": 3,
+            "temperature": 33,
+            "temperature_unit": "\u00b0F",
+            "visibility_unit": "mi",
+            "wind_bearing": 310.8,
+            "wind_speed": 12.99,
+            "wind_speed_unit": "mph"
+        },
+        "context": {
+            "id": "01JE589612HE7NAHZ7XJWHX11A",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "weather.forecast_commack",
+        "last_changed": "2024-12-02T22:06:05.781601+00:00",
+        "last_reported": "2024-12-03T03:16:05.794451+00:00",
+        "last_updated": "2024-12-03T03:16:05.794451+00:00",
+        "state": "clear-night"
+    },
+    {
+        "attributes": {
+            "attribution": "Weather forecast from met.no, delivered by the Norwegian Meteorological Institute.",
+            "cloud_coverage": 6.2,
+            "dew_point": 50,
+            "friendly_name": "Forecast Delray Beach",
+            "humidity": 63,
+            "precipitation_unit": "in",
+            "pressure": 30.25,
+            "pressure_unit": "inHg",
+            "supported_features": 3,
+            "temperature": 62,
+            "temperature_unit": "\u00b0F",
+            "visibility_unit": "mi",
+            "wind_bearing": 337.7,
+            "wind_speed": 17.21,
+            "wind_speed_unit": "mph"
+        },
+        "context": {
+            "id": "01JE56J85BGN6QE6NPDEMQ1A6M",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "weather.forecast_delray_beach",
+        "last_changed": "2024-12-02T22:54:05.754131+00:00",
+        "last_reported": "2024-12-03T02:46:05.739769+00:00",
+        "last_updated": "2024-12-03T02:46:05.739769+00:00",
+        "state": "clear-night"
+    },
+    {
+        "attributes": {
+            "friendly_name": "HighCamera State",
+            "icon": "mdi:record-rec"
+        },
+        "context": {
+            "id": "01JDJQVA15DWAZEPA2AF4PC64G",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.highcamera_state",
+        "last_changed": "2024-11-25T22:42:34.149924+00:00",
+        "last_reported": "2024-11-25T22:42:34.149924+00:00",
+        "last_updated": "2024-11-25T22:42:34.149924+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "friendly_name": "BackCamera State",
+            "icon": "mdi:record-rec"
+        },
+        "context": {
+            "id": "01JE56QPD78R64C61S52210M3X",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.backcamera_state",
+        "last_changed": "2024-12-03T02:49:04.167562+00:00",
+        "last_reported": "2024-12-03T02:49:04.167562+00:00",
+        "last_updated": "2024-12-03T02:49:04.167562+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "friendly_name": "FrontCamera State",
+            "icon": "mdi:record-rec"
+        },
+        "context": {
+            "id": "01JDJQVA725BG2CM1YDZ6DJN59",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.frontcamera_state",
+        "last_changed": "2024-11-25T22:42:34.338995+00:00",
+        "last_reported": "2024-11-25T22:42:34.338995+00:00",
+        "last_updated": "2024-11-25T22:42:34.338995+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "friendly_name": "PatioCamera State",
+            "icon": "mdi:record-rec"
+        },
+        "context": {
+            "id": "01JE56QPJS7ZJNHZ3YX3PW5N6R",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.patiocamera_state",
+        "last_changed": "2024-12-03T02:49:04.345207+00:00",
+        "last_reported": "2024-12-03T02:49:04.345207+00:00",
+        "last_updated": "2024-12-03T02:49:04.345207+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "friendly_name": "SideCamera State",
+            "icon": "mdi:record-rec"
+        },
+        "context": {
+            "id": "01JE56QPNGQBWMGX1QWY9PGWPY",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.sidecamera_state",
+        "last_changed": "2024-12-03T02:49:04.432763+00:00",
+        "last_reported": "2024-12-03T02:49:04.432763+00:00",
+        "last_updated": "2024-12-03T02:49:04.432763+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "friendly_name": "DriveCamera State",
+            "icon": "mdi:record-rec"
+        },
+        "context": {
+            "id": "01JDJQVAF8YNVZG7VR0MXPN2JH",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.drivecamera_state",
+        "last_changed": "2024-11-25T22:42:34.600178+00:00",
+        "last_reported": "2024-11-25T22:42:34.600178+00:00",
+        "last_updated": "2024-11-25T22:42:34.600178+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "friendly_name": "PoolCamera State",
+            "icon": "mdi:record-rec"
+        },
+        "context": {
+            "id": "01JE56QPV10YMG2JVYJWV9YGZ0",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.poolcamera_state",
+        "last_changed": "2024-12-03T02:49:04.609188+00:00",
+        "last_reported": "2024-12-03T02:49:04.609188+00:00",
+        "last_updated": "2024-12-03T02:49:04.609188+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "friendly_name": "CarCamera State",
+            "icon": "mdi:record-rec"
+        },
+        "context": {
+            "id": "01JE56SHGTS82ZJRB28N9K61AW",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.carcamera_state",
+        "last_changed": "2024-12-03T02:50:04.698981+00:00",
+        "last_reported": "2024-12-03T02:50:04.698981+00:00",
+        "last_updated": "2024-12-03T02:50:04.698981+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "friendly_name": "GarageCamera State",
+            "icon": "mdi:record-rec"
+        },
+        "context": {
+            "id": "01JE56TEWV5QCP0SYD9J528F9B",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.garagecamera_state",
+        "last_changed": "2024-12-03T02:50:34.779475+00:00",
+        "last_reported": "2024-12-03T02:50:34.779475+00:00",
+        "last_updated": "2024-12-03T02:50:34.779475+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "command_set": "PCL5c,PCLXL,POSTSCRIPT,PDF,PJL,Automatic,JPEG,AppleRaster,PWGRaster,PCLM,802.3,DESKJET,DYN",
+            "device_class": "enum",
+            "friendly_name": "HP LaserJet Pro M404-M405",
+            "info": "HP LaserJet Pro M404-M405 [C1C4EA]",
+            "location": "",
+            "options": [
+                "idle",
+                "printing",
+                "stopped"
+            ],
+            "serial": "VND3F07336",
+            "state_message": "",
+            "state_reason": null,
+            "uri_supported": "ipp://192.168.100.250/ipp/print,ipps://192.168.100.250:631/ipp/print"
+        },
+        "context": {
+            "id": "01JDJQTCQNNFG8KQD03ZYWBJBH",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.hp_laserjet_pro_m404_m405",
+        "last_changed": "2024-11-25T22:42:04.149906+00:00",
+        "last_reported": "2024-11-25T22:42:04.149906+00:00",
+        "last_updated": "2024-11-25T22:42:04.149906+00:00",
+        "state": "idle"
+    },
+    {
+        "attributes": {
+            "device_class": "door",
+            "friendly_name": "Front Door",
+            "icon": "mdi:door",
+            "insteon_address": "2D.4A.03",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JE4KRY5J7GHSH1V1KM6D4622",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.open_close_sensor_2d_4a_03",
+        "last_changed": "2024-12-02T21:17:41.938411+00:00",
+        "last_reported": "2024-12-02T21:17:41.938411+00:00",
+        "last_updated": "2024-12-02T21:17:41.938411+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "door",
+            "friendly_name": "Master Bath Door",
+            "icon": "mdi:door-sliding",
+            "insteon_address": "32.50.1C",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JDJQTFY4XB6G9DZR4PCG6SYN",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.open_close_sensor_32_50_1c",
+        "last_changed": "2024-11-25T22:42:07.428855+00:00",
+        "last_reported": "2024-11-25T22:42:07.428855+00:00",
+        "last_updated": "2024-11-25T22:42:07.428855+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "door",
+            "friendly_name": "Back Patio Door",
+            "icon": "mdi:door-sliding",
+            "insteon_address": "2D.6F.D5",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JE4C17W48E53SS3H701HKHHZ",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.open_close_sensor_2d_6f_d5",
+        "last_changed": "2024-12-02T19:02:25.412638+00:00",
+        "last_reported": "2024-12-02T19:02:25.412638+00:00",
+        "last_updated": "2024-12-02T19:02:25.412638+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "door",
+            "friendly_name": "Garage Outer Door",
+            "icon": "mdi:door",
+            "insteon_address": "2D.79.55",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JDJR4QW40J5N90NHR89MRS22",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.open_close_sensor_2d_79_55",
+        "last_changed": "2024-11-25T22:47:43.236919+00:00",
+        "last_reported": "2024-11-25T22:47:43.236919+00:00",
+        "last_updated": "2024-11-25T22:47:43.236919+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "door",
+            "friendly_name": "Side Deck Door",
+            "icon": "mdi:door",
+            "insteon_address": "2D.71.73",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JE4XBGCB1VEV9VZS0KXQTAYK",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.open_close_sensor_2d_71_73",
+        "last_changed": "2024-12-03T00:05:07.595648+00:00",
+        "last_reported": "2024-12-03T00:05:07.595648+00:00",
+        "last_updated": "2024-12-03T00:05:07.595648+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "garage_door",
+            "friendly_name": "Garage Overhead Door",
+            "icon": "mdi:garage",
+            "insteon_address": "2D.23.5C",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JE55K4N1GGE5118G4VSB85A1",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.open_close_sensor_2d_23_5c",
+        "last_changed": "2024-12-03T02:29:06.337173+00:00",
+        "last_reported": "2024-12-03T02:29:06.337173+00:00",
+        "last_updated": "2024-12-03T02:29:06.337173+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "device_class": "motion",
+            "friendly_name": "Side Deck Motion",
+            "insteon_address": "28.5B.C1",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JE4XD4B0RJHCS9NJFPABNVA1",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.motion_sensor_28_5b_c1_motion",
+        "last_changed": "2024-12-03T00:06:00.800925+00:00",
+        "last_reported": "2024-12-03T00:06:00.800925+00:00",
+        "last_updated": "2024-12-03T00:06:00.800925+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "light",
+            "friendly_name": "Side Deck Motion Light",
+            "insteon_address": "28.5B.C1",
+            "insteon_group": 2
+        },
+        "context": {
+            "id": "01JDJQTFYKVK2ZGTMRK04TBDAA",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.motion_sensor_28_5b_c1_light",
+        "last_changed": "2024-11-25T22:42:07.443544+00:00",
+        "last_reported": "2024-11-25T22:42:07.443544+00:00",
+        "last_updated": "2024-11-25T22:42:07.443544+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "battery",
+            "friendly_name": "Side Deck Motion Battery",
+            "insteon_address": "28.5B.C1",
+            "insteon_group": 3
+        },
+        "context": {
+            "id": "01JDJQTFYMEM232A0F9NBZ2NAR",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.motion_sensor_28_5b_c1_battery",
+        "last_changed": "2024-11-25T22:42:07.444282+00:00",
+        "last_reported": "2024-11-25T22:42:07.444282+00:00",
+        "last_updated": "2024-11-25T22:42:07.444282+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "motion",
+            "friendly_name": "Back Patio Motion",
+            "insteon_address": "2D.69.4B",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JE4XCGGNNVWSRHN7VZFDNANJ",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.motion_sensor_2d_69_4b_motion",
+        "last_changed": "2024-12-03T00:05:40.501330+00:00",
+        "last_reported": "2024-12-03T00:05:40.501330+00:00",
+        "last_updated": "2024-12-03T00:05:40.501330+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "light",
+            "friendly_name": "Back Patio Motion Light",
+            "insteon_address": "2D.69.4B",
+            "insteon_group": 2
+        },
+        "context": {
+            "id": "01JDJQTFYSMFYW6CE26HY2HGN8",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.motion_sensor_2d_69_4b_light",
+        "last_changed": "2024-11-25T22:42:07.449396+00:00",
+        "last_reported": "2024-11-25T22:42:07.449396+00:00",
+        "last_updated": "2024-11-25T22:42:07.449396+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "battery",
+            "friendly_name": "Back Patio Motion Battery",
+            "insteon_address": "2D.69.4B",
+            "insteon_group": 3
+        },
+        "context": {
+            "id": "01JDJQTFYT2HZMZG025CV00CES",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.motion_sensor_2d_69_4b_battery",
+        "last_changed": "2024-11-25T22:42:07.450088+00:00",
+        "last_reported": "2024-11-25T22:42:07.450088+00:00",
+        "last_updated": "2024-11-25T22:42:07.450088+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "motion",
+            "friendly_name": "Driveway Motion",
+            "insteon_address": "31.DD.A6",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JE55MJFQEBVM96H56QGS64YX",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.motion_sensor_31_dd_a6_motion",
+        "last_changed": "2024-12-03T02:29:53.271766+00:00",
+        "last_reported": "2024-12-03T02:29:53.271766+00:00",
+        "last_updated": "2024-12-03T02:29:53.271766+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "light",
+            "friendly_name": "Driveway Motion Light",
+            "insteon_address": "31.DD.A6",
+            "insteon_group": 2
+        },
+        "context": {
+            "id": "01JDJQTFYY2SEPCDPYKZM5DQWX",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.motion_sensor_31_dd_a6_light",
+        "last_changed": "2024-11-25T22:42:07.454681+00:00",
+        "last_reported": "2024-11-25T22:42:07.454681+00:00",
+        "last_updated": "2024-11-25T22:42:07.454681+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "battery",
+            "friendly_name": "Driveway Motion Battery",
+            "insteon_address": "31.DD.A6",
+            "insteon_group": 3
+        },
+        "context": {
+            "id": "01JDJQTFYZBSENGPJX5GXR9HR6",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.motion_sensor_31_dd_a6_battery",
+        "last_changed": "2024-11-25T22:42:07.455372+00:00",
+        "last_reported": "2024-11-25T22:42:07.455372+00:00",
+        "last_updated": "2024-11-25T22:42:07.455372+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "motion",
+            "friendly_name": "Master Entry Motion",
+            "insteon_address": "2D.6A.C9",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JDJQTFZ0GQ7NPPENZZQF392J",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.motion_sensor_2d_6a_c9_motion",
+        "last_changed": "2024-11-25T22:42:07.456266+00:00",
+        "last_reported": "2024-11-25T22:42:07.456266+00:00",
+        "last_updated": "2024-11-25T22:42:07.456266+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "light",
+            "friendly_name": "Master Entry Motion Light",
+            "insteon_address": "2D.6A.C9",
+            "insteon_group": 2
+        },
+        "context": {
+            "id": "01JDJQTFZ35KH86Z5Z3BJQ3PHM",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.motion_sensor_2d_6a_c9_light",
+        "last_changed": "2024-11-25T22:42:07.459986+00:00",
+        "last_reported": "2024-11-25T22:42:07.459986+00:00",
+        "last_updated": "2024-11-25T22:42:07.459986+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "battery",
+            "friendly_name": "Master Entry Motion Battery",
+            "insteon_address": "2D.6A.C9",
+            "insteon_group": 3
+        },
+        "context": {
+            "id": "01JDJQTFZ48CCQ7HVWMPQCBJDT",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.motion_sensor_2d_6a_c9_battery",
+        "last_changed": "2024-11-25T22:42:07.460712+00:00",
+        "last_reported": "2024-11-25T22:42:07.460712+00:00",
+        "last_updated": "2024-11-25T22:42:07.460712+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "motion",
+            "friendly_name": "Front Porch Motion",
+            "insteon_address": "2D.68.BE",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JE4PZR27WM75YKD3NMXQJDPF",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.motion_sensor_2d_68_be_motion",
+        "last_changed": "2024-12-02T22:13:50.791592+00:00",
+        "last_reported": "2024-12-02T22:13:50.791592+00:00",
+        "last_updated": "2024-12-02T22:13:50.791592+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "light",
+            "friendly_name": "Front Porch Motion Light",
+            "insteon_address": "2D.68.BE",
+            "insteon_group": 2
+        },
+        "context": {
+            "id": "01JDJQTFZ6ZWQY8TETPHX24N60",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.motion_sensor_2d_68_be_light",
+        "last_changed": "2024-11-25T22:42:07.462445+00:00",
+        "last_reported": "2024-11-25T22:42:07.462445+00:00",
+        "last_updated": "2024-11-25T22:42:07.462445+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "battery",
+            "friendly_name": "Front Porch Motion Battery",
+            "insteon_address": "2D.68.BE",
+            "insteon_group": 3
+        },
+        "context": {
+            "id": "01JDJQTFZ8V4TVKR4M5QBX4SSQ",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.motion_sensor_2d_68_be_battery",
+        "last_changed": "2024-11-25T22:42:07.464615+00:00",
+        "last_reported": "2024-11-25T22:42:07.464615+00:00",
+        "last_updated": "2024-11-25T22:42:07.464615+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "brightness": 255,
+            "color_mode": "brightness",
+            "friendly_name": "Dining Room Light",
+            "insteon_address": "17.2E.C3",
+            "insteon_group": 1,
+            "supported_color_modes": [
+                "brightness"
+            ],
+            "supported_features": 0
+        },
+        "context": {
+            "id": "01JE4SQY7SGDKP51GHZWTY7ZJ7",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "light.switchlinc_dimmer_17_2e_c3",
+        "last_changed": "2024-12-02T23:02:01.119014+00:00",
+        "last_reported": "2024-12-02T23:02:01.119014+00:00",
+        "last_updated": "2024-12-02T23:02:01.119014+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "brightness": null,
+            "color_mode": null,
+            "friendly_name": "Office Light & Keypad Main",
+            "insteon_address": "23.D0.86",
+            "insteon_group": 1,
+            "supported_color_modes": [
+                "brightness"
+            ],
+            "supported_features": 0
+        },
+        "context": {
+            "id": "01JDWCRNJZNF11FVJP68E97ZCR",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "light.keypadlinc_dimmer_23_d0_86_main",
+        "last_changed": "2024-11-29T16:41:17.663616+00:00",
+        "last_reported": "2024-11-29T16:41:17.663616+00:00",
+        "last_updated": "2024-11-29T16:41:17.663616+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Fireplace Light",
+            "icon": "mdi:lightbulb",
+            "insteon_address": "18.36.CB",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JE4T4QPQJA0DDH757DCC6K7M",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.switchlinc_relay_18_36_cb",
+        "last_changed": "2024-12-02T23:08:59.991237+00:00",
+        "last_reported": "2024-12-02T23:08:59.991237+00:00",
+        "last_updated": "2024-12-02T23:08:59.991237+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Living Room Light",
+            "icon": "mdi:lightbulb",
+            "insteon_address": "43.54.48",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JE2XVWMWZJVTFA1JSBC76TDA",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.switchlinc_relay_dual_band_43_54_48",
+        "last_changed": "2024-12-02T05:35:35.580881+00:00",
+        "last_reported": "2024-12-02T05:35:35.580881+00:00",
+        "last_updated": "2024-12-02T05:35:35.580881+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Kitchen Cooktop Light",
+            "icon": "mdi:lightbulb",
+            "insteon_address": "18.36.41",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JE4X5SVR69D47WR7VMKKJRG6",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.switchlinc_relay_18_36_41",
+        "last_changed": "2024-12-03T00:02:01.877257+00:00",
+        "last_reported": "2024-12-03T00:02:01.877257+00:00",
+        "last_updated": "2024-12-03T00:02:01.877257+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Deck Lights",
+            "icon": "mdi:lightbulb",
+            "insteon_address": "23.FA.31",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JE4X5SVR69D47WR7VMKKJRG6",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.switchlinc_relay_dual_band_23_fa_31",
+        "last_changed": "2024-12-03T00:02:01.075667+00:00",
+        "last_reported": "2024-12-03T00:02:01.075667+00:00",
+        "last_updated": "2024-12-03T00:02:01.075667+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Side Door Light",
+            "icon": "mdi:lightbulb",
+            "insteon_address": "23.EE.08",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JDJQTG11CDPAF1N1404VPSP8",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.switchlinc_relay_dual_band_23_ee_08",
+        "last_changed": "2024-11-25T22:42:07.521625+00:00",
+        "last_reported": "2024-11-25T22:42:12.515707+00:00",
+        "last_updated": "2024-11-25T22:42:07.521625+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Main Kitchen Light",
+            "icon": "mdi:lightbulb",
+            "insteon_address": "70.63.E1",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JE4T803HR9QFJRM4DM1TG6K0",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.switchlinc_relay_dual_band_70_63_e1",
+        "last_changed": "2024-12-02T23:10:46.897596+00:00",
+        "last_reported": "2024-12-02T23:10:46.897596+00:00",
+        "last_updated": "2024-12-02T23:10:46.897596+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "outlet",
+            "friendly_name": "Living Room Outlet",
+            "insteon_address": "19.9E.0D",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JDN8FDY67CYC8GPAF5QJWGR2",
+            "parent_id": null,
+            "user_id": "f6707281e954491cbccb97307afa2c0e"
+        },
+        "entity_id": "switch.outletlinc_relay_19_9e_0d",
+        "last_changed": "2024-11-26T22:11:41.537737+00:00",
+        "last_reported": "2024-11-26T22:11:41.537737+00:00",
+        "last_updated": "2024-11-26T22:11:41.537737+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Office Outlet (east)",
+            "icon": "mdi:power-plug",
+            "insteon_address": "22.CE.EB",
+            "insteon_group": 1
+        },
+        "context": {
+            "id": "01JDWMG4VZ8BYYQ7R8NK1J4SP7",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.outletlinc_relay_22_ce_eb",
+        "last_changed": "2024-11-25T22:42:07.531151+00:00",
+        "last_reported": "2024-11-29T18:56:27.007149+00:00",
+        "last_updated": "2024-11-29T18:56:27.007149+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Office Light & Keypad Button A",
+            "insteon_address": "23.D0.86",
+            "insteon_group": 3
+        },
+        "context": {
+            "id": "01JDJQTG1C8JC43M304ZZ78QPM",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.keypadlinc_dimmer_23_d0_86_button_a",
+        "last_changed": "2024-11-25T22:42:07.532022+00:00",
+        "last_reported": "2024-11-25T22:42:07.532022+00:00",
+        "last_updated": "2024-11-25T22:42:07.532022+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Office Light & Keypad Button B",
+            "insteon_address": "23.D0.86",
+            "insteon_group": 4
+        },
+        "context": {
+            "id": "01JDJQTG1CGAJ4XWBJ1YPFTK3A",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.keypadlinc_dimmer_23_d0_86_button_b",
+        "last_changed": "2024-11-25T22:42:07.532762+00:00",
+        "last_reported": "2024-11-25T22:42:07.532762+00:00",
+        "last_updated": "2024-11-25T22:42:07.532762+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Office Light & Keypad Button C",
+            "insteon_address": "23.D0.86",
+            "insteon_group": 5
+        },
+        "context": {
+            "id": "01JDJQTG1D7DDQMWGEJMQQCJDH",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.keypadlinc_dimmer_23_d0_86_button_c",
+        "last_changed": "2024-11-25T22:42:07.533437+00:00",
+        "last_reported": "2024-11-25T22:42:07.533437+00:00",
+        "last_updated": "2024-11-25T22:42:07.533437+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Office Light & Keypad Button D",
+            "insteon_address": "23.D0.86",
+            "insteon_group": 6
+        },
+        "context": {
+            "id": "01JDJQTG1E5HXGRS51YYW91E55",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "switch.keypadlinc_dimmer_23_d0_86_button_d",
+        "last_changed": "2024-11-25T22:42:07.534145+00:00",
+        "last_reported": "2024-11-25T22:42:07.534145+00:00",
+        "last_updated": "2024-11-25T22:42:07.534145+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "connectivity",
+            "friendly_name": "Internet Access",
+            "round_trip_time_avg": "6.539",
+            "round_trip_time_max": "6.623",
+            "round_trip_time_mdev": "0.067",
+            "round_trip_time_min": "6.466"
+        },
+        "context": {
+            "id": "01JE59BR2CG0A4AMN437MMW9N6",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.8_8_8_8",
+        "last_changed": "2024-11-25T22:42:07.570329+00:00",
+        "last_reported": "2024-12-03T03:34:58.380015+00:00",
+        "last_updated": "2024-12-03T03:34:58.380015+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "device_class": "connectivity",
+            "friendly_name": "Bordeaux Server",
+            "round_trip_time_avg": "0.035",
+            "round_trip_time_max": "0.043",
+            "round_trip_time_mdev": "0.005",
+            "round_trip_time_min": "0.028"
+        },
+        "context": {
+            "id": "01JE59BQ7GHZSWMPR8HP1MPRQH",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.192_168_100_2",
+        "last_changed": "2024-11-25T22:42:07.579659+00:00",
+        "last_reported": "2024-12-03T03:34:57.520288+00:00",
+        "last_updated": "2024-12-03T03:34:57.520288+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "device_class": "connectivity",
+            "friendly_name": "Internal Network",
+            "round_trip_time_avg": "0.191",
+            "round_trip_time_max": "0.204",
+            "round_trip_time_mdev": "0.008",
+            "round_trip_time_min": "0.178"
+        },
+        "context": {
+            "id": "01JE59BQ7N1RW8CWEN5Q4PFGGV",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.192_168_100_1",
+        "last_changed": "2024-11-25T22:42:07.585445+00:00",
+        "last_reported": "2024-12-03T03:34:57.525560+00:00",
+        "last_updated": "2024-12-03T03:34:57.525560+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "device_class": "connectivity",
+            "friendly_name": "Cassandra Server",
+            "round_trip_time_avg": "0.226",
+            "round_trip_time_max": "0.245",
+            "round_trip_time_mdev": "0.014",
+            "round_trip_time_min": "0.200"
+        },
+        "context": {
+            "id": "01JE59C25GXM93RGHB6RVCJCN7",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.192_168_100_4",
+        "last_changed": "2024-11-25T22:42:07.587454+00:00",
+        "last_reported": "2024-12-03T03:35:08.720364+00:00",
+        "last_updated": "2024-12-03T03:35:08.720364+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "device_class": "connectivity",
+            "friendly_name": "Groovy Desktop",
+            "round_trip_time_avg": "0.285",
+            "round_trip_time_max": "0.337",
+            "round_trip_time_mdev": "0.027",
+            "round_trip_time_min": "0.263"
+        },
+        "context": {
+            "id": "01JE59BQ7GMDQJ96T9PQSD3G9M",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "binary_sensor.192_168_100_6",
+        "last_changed": "2024-11-25T22:42:07.593820+00:00",
+        "last_reported": "2024-12-03T03:34:57.520625+00:00",
+        "last_updated": "2024-12-03T03:34:57.520625+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "friendly_name": "WAN Address",
+            "icon": "mdi:ip"
+        },
+        "context": {
+            "id": "01JDJQTG72X7C51KZFATSYZ3AA",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.wan_address",
+        "last_changed": "2024-11-25T22:42:07.714967+00:00",
+        "last_reported": "2024-11-25T22:42:07.714967+00:00",
+        "last_updated": "2024-11-25T22:42:07.714967+00:00",
+        "state": "136.62.87.253"
+    },
+    {
+        "attributes": {
+            "friendly_name": "House maintenance",
+            "icon": "mdi:shovel",
+            "supported_features": 127
+        },
+        "context": {
+            "id": "01JDJQTGC6WYTEXD2G8E38MRVQ",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "todo.house_maintenance",
+        "last_changed": "2024-11-25T22:42:07.878619+00:00",
+        "last_reported": "2024-11-25T22:42:07.878619+00:00",
+        "last_updated": "2024-11-25T22:42:07.878619+00:00",
+        "state": "0"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Finances",
+            "icon": "mdi:currency-usd",
+            "supported_features": 127
+        },
+        "context": {
+            "id": "01JDJQTGC7AKSFY6AQ573M7BCF",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "todo.finances",
+        "last_changed": "2024-11-25T22:42:07.879127+00:00",
+        "last_reported": "2024-11-25T22:42:07.879127+00:00",
+        "last_updated": "2024-11-25T22:42:07.879127+00:00",
+        "state": "0"
+    },
+    {
+        "attributes": {
+            "current": 0,
+            "friendly_name": "Before Sunset",
+            "id": "1722910476870",
+            "last_triggered": "2024-12-02T23:02:00.697478+00:00",
+            "mode": "single"
+        },
+        "context": {
+            "id": "01JE4SQY7SGDKP51GHZWTY7ZJ7",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "automation.before_sunset",
+        "last_changed": "2024-11-25T22:42:08.094136+00:00",
+        "last_reported": "2024-12-02T23:02:01.873630+00:00",
+        "last_updated": "2024-12-02T23:02:01.873630+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "current": 0,
+            "friendly_name": "After Sunset",
+            "id": "1722910547631",
+            "last_triggered": "2024-12-03T00:02:00.696241+00:00",
+            "mode": "single"
+        },
+        "context": {
+            "id": "01JE4X5SVR69D47WR7VMKKJRG6",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "automation.after_sunset",
+        "last_changed": "2024-11-25T22:42:08.094378+00:00",
+        "last_reported": "2024-12-03T00:02:01.881128+00:00",
+        "last_updated": "2024-12-03T00:02:01.881128+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "current": 0,
+            "friendly_name": "Pre-sleep Time",
+            "id": "1722910637175",
+            "last_triggered": "2024-12-02T04:00:00.302860+00:00",
+            "mode": "single"
+        },
+        "context": {
+            "id": "01JE2RCVSEWM7K75CB8HRDKPFP",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "automation.pre_sleep_time",
+        "last_changed": "2024-11-25T22:42:08.094572+00:00",
+        "last_reported": "2024-12-02T04:00:01.541680+00:00",
+        "last_updated": "2024-12-02T04:00:01.541680+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "current": 0,
+            "friendly_name": "Sleep Time",
+            "id": "1722910694959",
+            "last_triggered": "2024-12-02T05:00:00.204833+00:00",
+            "mode": "single"
+        },
+        "context": {
+            "id": "01JE2VTQACZGAWM0NRNT6SAV9B",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "automation.sleep_time",
+        "last_changed": "2024-11-25T22:42:08.094761+00:00",
+        "last_reported": "2024-12-02T05:00:00.582009+00:00",
+        "last_updated": "2024-12-02T05:00:00.582009+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "current": 0,
+            "friendly_name": "Deck Lights Off",
+            "id": "1722910724832",
+            "last_triggered": "2024-12-02T05:30:00.065994+00:00",
+            "mode": "single"
+        },
+        "context": {
+            "id": "01JE2XHN01GCF5KVKYP0WEMGGG",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "automation.deck_lights_off",
+        "last_changed": "2024-11-25T22:42:08.094940+00:00",
+        "last_reported": "2024-12-02T05:30:00.439823+00:00",
+        "last_updated": "2024-12-02T05:30:00.439823+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "current": 0,
+            "friendly_name": "Switch to HomeDay Camera Mode",
+            "id": "1723244134721",
+            "last_triggered": "2024-12-02T13:09:40.221578+00:00",
+            "mode": "single"
+        },
+        "context": {
+            "id": "01JE3QVAQX5XXVQAM2CZFK44TT",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "automation.switch_to_homeday_camera_mode",
+        "last_changed": "2024-11-25T22:42:08.095127+00:00",
+        "last_reported": "2024-12-02T13:09:40.222427+00:00",
+        "last_updated": "2024-12-02T13:09:40.222427+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "current": 0,
+            "friendly_name": "Set to HomeNight Camera Mode",
+            "id": "1723244218673",
+            "last_triggered": "2024-12-02T05:00:00.271741+00:00",
+            "mode": "single"
+        },
+        "context": {
+            "id": "01JE2VTQCFRSGY501WP220X6GS",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "automation.set_to_homenight_camera_state",
+        "last_changed": "2024-11-25T22:42:08.095468+00:00",
+        "last_reported": "2024-12-02T05:00:00.272477+00:00",
+        "last_updated": "2024-12-02T05:00:00.272477+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "current": 0,
+            "friendly_name": "Front Motion",
+            "id": "1723304564522",
+            "last_triggered": "2024-08-10T17:15:05.832422+00:00",
+            "mode": "single"
+        },
+        "context": {
+            "id": "01JDJQTGJZ5CZBKVB8EJ0MFEJN",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "automation.front_motion",
+        "last_changed": "2024-11-25T22:42:08.095632+00:00",
+        "last_reported": "2024-11-25T22:42:08.095632+00:00",
+        "last_updated": "2024-11-25T22:42:08.095632+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "current": 0,
+            "friendly_name": "Severe Weather Alert",
+            "id": "1723436201934",
+            "last_triggered": "2024-11-17T11:47:05.902399+00:00",
+            "mode": "single"
+        },
+        "context": {
+            "id": "01JDJQTGJZXNENJ2B09VEPJEWS",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "automation.severe_weather_alert",
+        "last_changed": "2024-11-25T22:42:08.095821+00:00",
+        "last_reported": "2024-11-25T22:42:08.095821+00:00",
+        "last_updated": "2024-11-25T22:42:08.095821+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "current": 0,
+            "friendly_name": "Front Camera Recording",
+            "id": "1723490543413",
+            "last_triggered": "2024-11-30T02:13:45.358137+00:00",
+            "mode": "single"
+        },
+        "context": {
+            "id": "01JDXDGW8DX5KKY59P5S91ZSE2",
+            "parent_id": "01JDXDGT9XD74EH88MHYKF88PG",
+            "user_id": null
+        },
+        "entity_id": "automation.front_camera_recording",
+        "last_changed": "2024-11-25T22:42:08.096058+00:00",
+        "last_reported": "2024-11-30T02:13:45.359648+00:00",
+        "last_updated": "2024-11-30T02:13:45.359648+00:00",
+        "state": "on"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Events",
+            "supported_features": 3
+        },
+        "context": {
+            "id": "01JDJQTHGA0RDBQ1CDCDQDEA88",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "calendar.events",
+        "last_changed": "2024-11-25T22:42:09.034123+00:00",
+        "last_reported": "2024-11-25T22:42:09.034123+00:00",
+        "last_updated": "2024-11-25T22:42:09.034123+00:00",
+        "state": "unavailable"
+    },
+    {
+        "attributes": {
+            "all_day": true,
+            "description": "",
+            "end_time": "2024-12-07 00:00:00",
+            "friendly_name": "Maintenance",
+            "location": "Cars",
+            "message": "Change Oil in Cars",
+            "offset_reached": false,
+            "start_time": "2024-12-06 00:00:00",
+            "supported_features": 3
+        },
+        "context": {
+            "id": "01JE2BBMG2MAAKQDX4GF66ZK6F",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "calendar.maintenance",
+        "last_changed": "2024-12-02T00:12:08.578806+00:00",
+        "last_reported": "2024-12-02T00:12:08.578806+00:00",
+        "last_updated": "2024-12-02T00:12:08.578806+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "all_day": true,
+            "description": "Bills go to email, pay manually paid through UFCU Bill Pay (Trust account).",
+            "end_time": "2024-12-11 00:00:00",
+            "friendly_name": "Financial",
+            "location": "",
+            "message": "Pay City of Austin",
+            "offset_reached": false,
+            "start_time": "2024-12-10 00:00:00",
+            "supported_features": 3
+        },
+        "context": {
+            "id": "01JE47E93S3SF2FHVVR697TK1B",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "calendar.financial",
+        "last_changed": "2024-12-02T00:12:09.634079+00:00",
+        "last_reported": "2024-12-02T17:42:09.785926+00:00",
+        "last_updated": "2024-12-02T17:42:09.785926+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "all_day": true,
+            "description": "Observance\nTo hide observances, go to Google Calendar Settings > Holidays in United States",
+            "end_time": "2024-12-25 00:00:00",
+            "friendly_name": "Holidays in united states",
+            "location": "",
+            "message": "Christmas Eve",
+            "offset_reached": false,
+            "start_time": "2024-12-24 00:00:00"
+        },
+        "context": {
+            "id": "01JDXTF4R23QGNHA7E6Z9AXVDX",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "calendar.holidays_in_united_states",
+        "last_changed": "2024-11-30T06:00:00.002442+00:00",
+        "last_reported": "2024-11-30T06:00:00.002442+00:00",
+        "last_updated": "2024-11-30T06:00:00.002442+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "all_day": true,
+            "description": "Tony Ca is in New York, NY from Dec 22, 2024 to Jan 2, 2025\nView and/or edit details in TripIt : https://www.tripit.com/trip/show?id=356652638\nTripIt - organize your travel at https://www.tripit.com\n",
+            "end_time": "2025-01-03 00:00:00",
+            "friendly_name": "Tony ca (tripit)",
+            "location": "New York, NY",
+            "message": "New York, NY, December 2024",
+            "offset_reached": false,
+            "start_time": "2024-12-22 00:00:00"
+        },
+        "context": {
+            "id": "01JDJQTHG7Q30JQXFASHBGPV7B",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "calendar.tony_ca_tripit",
+        "last_changed": "2024-11-25T22:42:08.330730+00:00",
+        "last_reported": "2024-11-25T22:42:09.031817+00:00",
+        "last_updated": "2024-11-25T22:42:09.031817+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "all_day": true,
+            "description": "This is Debbie Mawad's birthday!",
+            "end_time": "2025-03-09 00:00:00",
+            "friendly_name": "Birthdays",
+            "location": "",
+            "message": "Debbie Mawad's birthday",
+            "offset_reached": false,
+            "start_time": "2025-03-08 00:00:00"
+        },
+        "context": {
+            "id": "01JDJQTJ3KD7FSXAHTRCYX1J0E",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "calendar.birthdays_2",
+        "last_changed": "2024-11-25T22:42:08.330943+00:00",
+        "last_reported": "2024-11-25T22:42:09.651120+00:00",
+        "last_updated": "2024-11-25T22:42:09.651120+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "all_day": false,
+            "description": "",
+            "end_time": "2024-12-03 20:30:00",
+            "friendly_name": "Cassandra shared",
+            "location": "",
+            "message": "Garbage Night (no recyclables)",
+            "offset_reached": false,
+            "start_time": "2024-12-03 20:00:00",
+            "supported_features": 3
+        },
+        "context": {
+            "id": "01JE2AQBJW57VHFJV24H6PY661",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "calendar.cassandra_shared",
+        "last_changed": "2024-12-02T00:01:04.092911+00:00",
+        "last_reported": "2024-12-02T00:01:04.092911+00:00",
+        "last_updated": "2024-12-02T00:01:04.092911+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "all_day": true,
+            "description": "",
+            "end_time": "2024-12-11 00:00:00",
+            "friendly_name": "Birthdays",
+            "location": "",
+            "message": "Birthday: Robert Mawad",
+            "offset_reached": false,
+            "start_time": "2024-12-10 00:00:00",
+            "supported_features": 3
+        },
+        "context": {
+            "id": "01JDTM5JKMJ6MD2FB9SDRRHC72",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "calendar.birthdays",
+        "last_changed": "2024-11-29T00:12:11.764661+00:00",
+        "last_reported": "2024-11-29T16:42:12.120614+00:00",
+        "last_updated": "2024-11-29T00:12:11.764661+00:00",
+        "state": "off"
+    },
+    {
+        "attributes": {
+            "device_class": "timestamp",
+            "friendly_name": "Shared Mail",
+            "icon": "mdi:email"
+        },
+        "context": {
+            "id": "01JDJQTGWZCY2AXF2MPFHR7AJX",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.shared_cassandra_gmail_com_vacation_end_date",
+        "last_changed": "2024-11-25T22:42:08.415909+00:00",
+        "last_reported": "2024-11-25T22:42:08.415909+00:00",
+        "last_updated": "2024-11-25T22:42:08.415909+00:00",
+        "state": "unknown"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Disk Status - Bordeaux",
+            "icon": "mdi:harddisk"
+        },
+        "context": {
+            "id": "01JDJQTGY5P4RYPAV6VEVPNQSS",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.disk_status_bordeaux",
+        "last_changed": "2024-11-25T22:42:08.453352+00:00",
+        "last_reported": "2024-11-25T22:42:08.453352+00:00",
+        "last_updated": "2024-11-25T22:42:08.453352+00:00",
+        "state": "RAID_OK"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Disk Status - Groovy",
+            "icon": "mdi:harddisk"
+        },
+        "context": {
+            "id": "01JE10EH3EK4VGWE4VX4SJZ7DE",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.disk_status_groovy",
+        "last_changed": "2024-12-01T11:42:14.638032+00:00",
+        "last_reported": "2024-12-01T11:42:14.638032+00:00",
+        "last_updated": "2024-12-01T11:42:14.638032+00:00",
+        "state": "RAID_OK"
+    },
+    {
+        "attributes": {
+            "friendly_name": "Disk Status - Cassandra",
+            "icon": "mdi:harddisk"
+        },
+        "context": {
+            "id": "01JDJQTJ3QJ6SQRBWS0SXQ082D",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.disk_status_cassandra",
+        "last_changed": "2024-11-25T22:42:09.655124+00:00",
+        "last_reported": "2024-11-25T22:42:09.655124+00:00",
+        "last_updated": "2024-11-25T22:42:09.655124+00:00",
+        "state": "RAID_OK"
+    },
+    {
+        "attributes": {
+            "current_temperature": 74,
+            "fan_mode": "off",
+            "fan_modes": [
+                "on",
+                "off"
+            ],
+            "friendly_name": "Hallway",
+            "hvac_action": "idle",
+            "hvac_modes": [
+                "heat",
+                "cool",
+                "heat_cool",
+                "off"
+            ],
+            "max_temp": 90,
+            "min_temp": 50,
+            "preset_mode": "none",
+            "preset_modes": [
+                "none",
+                "eco"
+            ],
+            "supported_features": 411,
+            "target_temp_high": 77,
+            "target_temp_low": 72,
+            "temperature": null
+        },
+        "context": {
+            "id": "01JE58XQR0GX63BK9DAVSKQCBX",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "climate.hallway",
+        "last_changed": "2024-11-25T22:42:10.325431+00:00",
+        "last_reported": "2024-12-03T03:27:19.296902+00:00",
+        "last_updated": "2024-12-03T03:27:19.296902+00:00",
+        "state": "heat_cool"
+    },
+    {
+        "attributes": {
+            "device_class": "temperature",
+            "friendly_name": "Hallway Temperature",
+            "state_class": "measurement",
+            "unit_of_measurement": "\u00b0F"
+        },
+        "context": {
+            "id": "01JE58XQR194Z5XTQMY59NDYH8",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.hallway_temperature",
+        "last_changed": "2024-12-03T03:27:19.297458+00:00",
+        "last_reported": "2024-12-03T03:27:19.297458+00:00",
+        "last_updated": "2024-12-03T03:27:19.297458+00:00",
+        "state": "74.3"
+    },
+    {
+        "attributes": {
+            "device_class": "humidity",
+            "friendly_name": "Hallway Humidity",
+            "state_class": "measurement",
+            "unit_of_measurement": "%"
+        },
+        "context": {
+            "id": "01JE4A9D7WT5EG5NCYP9R3MYN6",
+            "parent_id": null,
+            "user_id": null
+        },
+        "entity_id": "sensor.hallway_humidity",
+        "last_changed": "2024-12-02T18:31:55.900614+00:00",
+        "last_reported": "2024-12-02T18:31:55.900614+00:00",
+        "last_updated": "2024-12-02T18:31:55.900614+00:00",
+        "state": "45"
+    }
+]

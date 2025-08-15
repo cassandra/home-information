@@ -273,6 +273,25 @@ class HiModelHelper:
         )
 
     @classmethod
+    def create_light_dimmer_controller( cls,
+                                       entity           : Entity,
+                                       integration_key  : IntegrationKey  = None,
+                                       name             : str             = None,
+                                       is_sensed        : bool            = True ) -> Controller:
+        if not name:
+            name = f'{entity.name} Dimmer'
+        # Light dimmer range: 0-100 (percentage)
+        value_range = {'min': 0, 'max': 100}
+        return cls.create_controller(
+            entity = entity,
+            entity_state_type = EntityStateType.LIGHT_DIMMER,
+            name = name,
+            is_sensed = is_sensed,
+            integration_key = integration_key,
+            value_range_str = json.dumps( value_range ),
+        )
+
+    @classmethod
     def create_sensor( cls,
                        entity             : Entity,
                        entity_state_type  : EntityStateType,
