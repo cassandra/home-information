@@ -8,6 +8,7 @@ from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.entity.models import Entity
 
 from hi.integrations.transient_models import IntegrationKey
+from hi.integrations.sync_mixins import IntegrationSyncMixin
 
 from .hass_converter import HassConverter
 from .hass_models import HassDevice
@@ -17,7 +18,7 @@ from .hass_metadata import HassMetaData
 logger = logging.getLogger(__name__)
 
 
-class HassSynchronizer( HassMixin ):
+class HassSynchronizer( HassMixin, IntegrationSyncMixin ):
 
     SYNCHRONIZATION_LOCK_NAME = 'hass_integration_sync'
 
@@ -130,8 +131,12 @@ class HassSynchronizer( HassMixin ):
     def _remove_entity( self,
                         entity   : Entity,
                         result   : ProcessingResult ):
-        entity.delete()  # Deletion cascades to attributes, positions, sensors, controllers, etc.
-        result.message_list.append( f'Removed stale HAss entity: {entity}' )
+        """
+        Remove an entity that no longer exists in the HASS integration.
+        
+        Uses intelligent deletion that preserves user-created data.
+        """
+        self._remove_entity_intelligently(entity, result, 'HASS')
         return
 
     
