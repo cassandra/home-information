@@ -154,9 +154,6 @@ class HassConverter:
         HassApi.WEATHER_DOMAIN,
     }
     
-    # Legacy aliases for backward compatibility (remove after migration)
-    SWITCH_PREFIXES = ON_OFF_CONTROLLABLE_DOMAINS
-    SENSOR_PREFIXES = SENSOR_ONLY_DOMAINS
 
     # Domains that should be preferred when choosing friendly names for devices
     #
@@ -167,8 +164,6 @@ class HassConverter:
         HassApi.SUN_DOMAIN,
     }
     
-    # Legacy alias for backward compatibility (remove after migration)
-    PREFERRED_NAME_PREFIXES = PREFERRED_NAME_DOMAINS
     PREFERRED_NAME_DEVICE_CLASSES = {
         HassApi.MOTION_DEVICE_CLASS,
     }
@@ -545,7 +540,24 @@ class HassConverter:
                 sensor = entiity_sensors.get( state_integration_key )
                 controller = entiity_controllers.get( state_integration_key )
 
-                if not sensor and not controller:
+                # Update integration metadata for existing sensors and controllers
+                # Every HassState should have at least a sensor, potentially also a controller
+                if sensor or controller:
+                    # Use sensor or controller to determine EntityStateType (they should be the same)
+                    model_with_entity_state = controller if controller else sensor
+                    existing_entity_state_type = model_with_entity_state.entity_state.entity_state_type
+                    is_controllable = cls._is_controllable_domain_and_type(hass_state.domain, existing_entity_state_type)
+                    
+                    # Generate new metadata using existing logic
+                    new_metadata = cls._create_service_metadata(hass_state, existing_entity_state_type, is_controllable)
+                    
+                    # Update metadata for both sensor and controller if they exist
+                    for model, model_type in [(sensor, 'sensor'), (controller, 'controller')]:
+                        if model:
+                            changed_fields = model.update_integration_metadata(new_metadata)
+                            if changed_fields:
+                                messages.append(f'Updated metadata for {model_type} {model}: {", ".join(changed_fields)}')
+                else:
                     messages.append( f'Missing sensors/controllers for {entity}. Adding {hass_state}' )
                     new_hass_state_list.append( hass_state )
                     
@@ -608,23 +620,23 @@ class HassConverter:
         
         for hass_state in hass_state_list:
             
-            if (( hass_state.entity_id_prefix == HassApi.SWITCH_ID_PREFIX )
-                and ( HassApi.LIGHT_ID_PREFIX in prefixes_seen )):
-                ignore_light_state_prefixes.add( hass_state.entity_id_prefix )
+            if (( hass_state.domain == HassApi.SWITCH_DOMAIN )
+                and ( HassApi.LIGHT_DOMAIN in prefixes_seen )):
+                ignore_light_state_prefixes.add( hass_state.domain )
 
-            elif (( hass_state.entity_id_prefix == HassApi.LIGHT_ID_PREFIX )
-                  and ( HassApi.SWITCH_ID_PREFIX in prefixes_seen )):
-                ignore_light_state_prefixes.add( hass_state.entity_id_prefix )
+            elif (( hass_state.domain == HassApi.LIGHT_DOMAIN )
+                  and ( HassApi.SWITCH_DOMAIN in prefixes_seen )):
+                ignore_light_state_prefixes.add( hass_state.domain )
 
-            prefixes_seen.add( hass_state.entity_id_prefix )
+            prefixes_seen.add( hass_state.domain )
             continue
         
         prefix_to_entity_state = dict()
         for hass_state in hass_state_list:
             state_integration_key = cls.hass_state_to_integration_key( hass_state = hass_state )
 
-            if (( hass_state.entity_id_prefix == HassApi.LIGHT_ID_PREFIX )
-                and ( hass_state.entity_id_prefix in ignore_light_state_prefixes )):
+            if (( hass_state.domain == HassApi.LIGHT_DOMAIN )
+                and ( hass_state.domain in ignore_light_state_prefixes )):
                 continue
 
             entity_state = cls._create_hass_state_sensor_or_controller(
@@ -634,7 +646,7 @@ class HassConverter:
                 integration_key = state_integration_key,
                 add_alarm_events = add_alarm_events,
             )
-            prefix_to_entity_state[hass_state.entity_id_prefix] = entity_state
+            prefix_to_entity_state[hass_state.domain] = entity_state
             continue
         return
     
@@ -1037,81 +1049,6 @@ class HassConverter:
         
         return metadata
     
-    @classmethod
-    def _create_hass_state_binary_sensor( cls,
-                                          hass_device       : HassDevice,
-                                          hass_state        : HassState,
-                                          entity            : Entity,
-                                          integration_key   : IntegrationKey,
-                                          add_alarm_events  : bool ):
-        name = hass_state.friendly_name
-        device_class = hass_state.device_class
-        if not name and device_class:
-            name = f'{entity.name} ({device_class})'
-        elif not name:
-            name = f'{entity.name} ({hass_state.entity_id_prefix})'
-
-        if hass_state.device_class == HassApi.CONNECTIVITY_DEVICE_CLASS:
-            sensor = HiModelHelper.create_connectivity_sensor(
-                entity = entity,
-                integration_key = integration_key,
-                name = name,
-            )
-            if add_alarm_events:
-                HiModelHelper.create_connectivity_event_definition(
-                    name = f'{sensor.name} Alarm',
-                    entity_state = sensor.entity_state,
-                    integration_key = integration_key,
-                )
-        elif hass_state.device_class in HassApi.OPEN_CLOSE_DEVICE_CLASS_SET:
-            sensor = HiModelHelper.create_open_close_sensor(
-                entity = entity,
-                integration_key = integration_key,
-                name = name,
-            )
-            if add_alarm_events:
-                HiModelHelper.create_open_close_event_definition(
-                    name = f'{sensor.name} Alarm',
-                    entity_state = sensor.entity_state,
-                    integration_key = integration_key,
-                )
-        elif hass_state.device_class == HassApi.MOTION_DEVICE_CLASS:
-            sensor = HiModelHelper.create_movement_sensor(
-                entity = entity,
-                integration_key = integration_key,
-                name = name,
-            )
-            if add_alarm_events:
-                HiModelHelper.create_movement_event_definition(
-                    name = f'{sensor.name} Alarm',
-                    entity_state = sensor.entity_state,
-                    integration_key = integration_key,
-                )
-        elif hass_state.device_class == HassApi.LIGHT_DEVICE_CLASS:
-            HiModelHelper.create_on_off_sensor(
-                entity = entity,
-                integration_key = integration_key,
-                name = name,
-            )
-        elif hass_state.device_class == HassApi.BATTERY_DEVICE_CLASS:
-            sensor = HiModelHelper.create_high_low_sensor(
-                entity = entity,
-                integration_key = integration_key,
-                name = name,
-            )
-            if add_alarm_events:
-                HiModelHelper.create_battery_event_definition(
-                    name = f'{sensor.name} Alarm',
-                    entity_state = sensor.entity_state,
-                    integration_key = integration_key,
-                )
-        else:
-            HiModelHelper.create_on_off_sensor(
-                entity = entity,
-                integration_key = integration_key,
-                name = name,
-            )
-        return
 
     @classmethod
     def hass_device_to_entity_name( cls, hass_device : HassDevice ) -> str:
@@ -1122,7 +1059,7 @@ class HassConverter:
             friendly_name = hass_state.friendly_name
             if not friendly_name:
                 continue
-            if hass_state.entity_id_prefix in cls.PREFERRED_NAME_PREFIXES:
+            if hass_state.domain in cls.PREFERRED_NAME_DOMAINS:
                 return friendly_name
             if hass_state.device_class in cls.PREFERRED_NAME_DEVICE_CLASSES:
                 return friendly_name
@@ -1138,21 +1075,21 @@ class HassConverter:
         
     @classmethod
     def hass_device_to_entity_type( cls, hass_device : HassDevice ) -> EntityType:
-        prefix_set = hass_device.entity_id_prefix_set
+        domain_set = hass_device.domain_set
         device_class_set = hass_device.device_class_set
 
-        if HassApi.CAMERA_ID_PREFIX in prefix_set:
+        if HassApi.CAMERA_DOMAIN in domain_set:
             return EntityType.CAMERA
-        if HassApi.WEATHER_ID_PREFIX in prefix_set:
+        if HassApi.WEATHER_DOMAIN in domain_set:
             return EntityType.WEATHER_STATION
         if HassApi.TIMESTAMP_DEVICE_CLASS in device_class_set:
             return EntityType.TIME_SOURCE
-        if ( HassApi.BINARY_SENSOR_ID_PREFIX in prefix_set
+        if ( HassApi.BINARY_SENSOR_DOMAIN in domain_set
              and device_class_set.intersection( HassApi.OPEN_CLOSE_DEVICE_CLASS_SET )):
             return EntityType.OPEN_CLOSE_SENSOR
         if HassApi.MOTION_DEVICE_CLASS in device_class_set:
             return EntityType.MOTION_SENSOR
-        if ( HassApi.LIGHT_ID_PREFIX in prefix_set
+        if ( HassApi.LIGHT_DOMAIN in domain_set
              or HassApi.LIGHT_DEVICE_CLASS in device_class_set ):
             return EntityType.LIGHT
         if HassApi.OUTLET_DEVICE_CLASS in device_class_set:
@@ -1189,13 +1126,13 @@ class HassConverter:
     @classmethod
     def hass_state_to_sensor_value_str( self, hass_state : HassState ) -> str:
 
-        if hass_state.entity_id_prefix == HassApi.SUN_ID_PREFIX:
+        if hass_state.domain == HassApi.SUN_DOMAIN:
             return hass_state.state_value
         
-        elif hass_state.entity_id_prefix == HassApi.WEATHER_ID_PREFIX:
+        elif hass_state.domain == HassApi.WEATHER_DOMAIN:
             return hass_state.state_value
         
-        elif hass_state.entity_id_prefix == HassApi.BINARY_SENSOR_ID_PREFIX:
+        elif hass_state.domain == HassApi.BINARY_SENSOR_DOMAIN:
 
             if hass_state.state_value.lower() == HassStateValue.ON:
                 if hass_state.device_class in HassApi.MOTION_DEVICE_CLASS:

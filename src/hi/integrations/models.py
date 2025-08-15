@@ -113,3 +113,23 @@ class IntegrationDataModel( models.Model ):
             key = self.integration_key,
             metadata = self.integration_metadata,
         )
+
+    def update_integration_metadata(self, new_metadata: dict) -> list:
+        """
+        Update integration metadata and return list of changed fields.
+        Only reports changes to existing fields (ignores new fields).
+        Returns list of strings describing changes, empty if no existing values changed.
+        """
+        old_metadata = self.integration_metadata or {}
+        changed_fields = []
+        
+        # Check for changes to existing fields only
+        for key, new_value in new_metadata.items():
+            if key in old_metadata and old_metadata[key] != new_value:
+                changed_fields.append(f'{key}: {old_metadata[key]} -> {new_value}')
+        
+        # Always update metadata (even if no existing fields changed)
+        self.integration_metadata = new_metadata
+        self.save()
+        
+        return changed_fields
