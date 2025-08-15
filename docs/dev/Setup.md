@@ -19,7 +19,7 @@ mkdir -p $PROJ_DIR
 cd $PROJ_DIR
 ```
 
-Clone your fork to your local development envirnoment:
+Clone your fork to your local development environment:
 ``` shell
 git clone https://github.com/${YOURUSERNAME}/home-information.git
 
@@ -104,7 +104,7 @@ It is a good idea to run the unit tests to validate that you can and that the in
 
 ### Running
 
-Ensure that the Redis server is running, then:
+Ensure that the Redis server is running (see the Dependencies page for installation instructions), then:
 
 ``` shell
 ./manage.py runserver
