@@ -153,7 +153,6 @@ class HassConverter:
         HassApi.SUN_DOMAIN,
         HassApi.WEATHER_DOMAIN,
     }
-    
 
     # Domains that should be preferred when choosing friendly names for devices
     #
@@ -688,11 +687,11 @@ class HassConverter:
 
     @classmethod
     def _create_hass_state_with_mapping( cls,
-                                        hass_device       : HassDevice,
-                                        hass_state        : HassState,
-                                        entity            : Entity,
-                                        integration_key   : IntegrationKey,
-                                        add_alarm_events  : bool ) -> EntityState:
+                                         hass_device       : HassDevice,
+                                         hass_state        : HassState,
+                                         entity            : Entity,
+                                         integration_key   : IntegrationKey,
+                                         add_alarm_events  : bool ) -> EntityState:
         """
         New method using mapping tables to determine EntityStateType and create
         appropriate sensor or controller with domain metadata storage.
@@ -778,9 +777,12 @@ class HassConverter:
         return (domain, entity_state_type) in cls.CONTROL_SERVICE_MAPPING
 
     @classmethod  
-    def _create_controller_from_entity_state_type( cls, entity_state_type: EntityStateType, 
-                                                  entity: Entity, integration_key: IntegrationKey, 
-                                                  name: str, domain_metadata: dict ):
+    def _create_controller_from_entity_state_type( cls,
+                                                   entity_state_type : EntityStateType, 
+                                                   entity            : Entity,
+                                                   integration_key   : IntegrationKey, 
+                                                   name              : str,
+                                                   domain_metadata   : dict ):
         """Create appropriate controller based on EntityStateType"""
         
         if entity_state_type == EntityStateType.ON_OFF:
@@ -822,9 +824,12 @@ class HassConverter:
         return controller.entity_state
 
     @classmethod  
-    def _create_sensor_from_entity_state_type( cls, entity_state_type: EntityStateType, 
-                                              entity: Entity, integration_key: IntegrationKey, 
-                                              name: str, domain_metadata: dict ):
+    def _create_sensor_from_entity_state_type( cls,
+                                               entity_state_type : EntityStateType, 
+                                               entity            : Entity,
+                                               integration_key   : IntegrationKey, 
+                                               name              : str,
+                                               domain_metadata   : dict ):
         """Create appropriate sensor based on EntityStateType"""
         
         if entity_state_type == EntityStateType.MOVEMENT:
@@ -889,10 +894,14 @@ class HassConverter:
         return sensor.entity_state
     
     @classmethod
-    def _create_sensor_from_entity_state_type_with_params( cls, entity_state_type: EntityStateType, 
-                                                          entity: Entity, integration_key: IntegrationKey, 
-                                                          name: str, domain_metadata: dict,
-                                                          hass_state: HassState, add_alarm_events: bool ):
+    def _create_sensor_from_entity_state_type_with_params( cls,
+                                                           entity_state_type : EntityStateType, 
+                                                           entity            : Entity,
+                                                           integration_key   : IntegrationKey, 
+                                                           name              : str,
+                                                           domain_metadata   : dict,
+                                                           hass_state        : HassState,
+                                                           add_alarm_events  : bool ):
         """Create appropriate sensor with legacy parameter handling"""
         
         if entity_state_type == EntityStateType.TEMPERATURE:
@@ -1048,7 +1057,6 @@ class HassConverter:
                 metadata['has_brightness'] = False
         
         return metadata
-    
 
     @classmethod
     def hass_device_to_entity_name( cls, hass_device : HassDevice ) -> str:

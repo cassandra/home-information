@@ -168,12 +168,16 @@ class HassController( IntegrationController, HassMixin ):
             float(control_value)
             
             # Must have either brightness support or set_service for numeric parameters  
-            return (domain_metadata.get('supports_brightness', False) or
-                    domain_metadata.get('set_service') is not None)
+            return ( domain_metadata.get('supports_brightness', False)
+                     or domain_metadata.get('set_service') is not None )
         except (ValueError, TypeError):
             return False
     
-    def _control_numeric_parameter_device( self, domain: str, hass_state_id: str, control_value: str, domain_metadata: dict ) -> IntegrationControlResult:
+    def _control_numeric_parameter_device( self,
+                                           domain          : str,
+                                           hass_state_id   : str,
+                                           control_value   : str,
+                                           domain_metadata : dict ) -> IntegrationControlResult:
         """Handle numeric parameter controls (brightness, temperature, volume, position, etc.)"""
         try:
             numeric_value = float(control_value)

@@ -274,10 +274,10 @@ class HiModelHelper:
 
     @classmethod
     def create_light_dimmer_controller( cls,
-                                       entity           : Entity,
-                                       integration_key  : IntegrationKey  = None,
-                                       name             : str             = None,
-                                       is_sensed        : bool            = True ) -> Controller:
+                                        entity           : Entity,
+                                        integration_key  : IntegrationKey  = None,
+                                        name             : str             = None,
+                                        is_sensed        : bool            = True ) -> Controller:
         if not name:
             name = f'{entity.name} Dimmer'
         # Light dimmer range: 0-100 (percentage)
