@@ -293,6 +293,10 @@ def simple_function():
 
 ## Git Commit Guidelines
 
+### Remote Repository
+- The remote repository name is `github` (not `origin`)
+- Use `git push github` or `git push -u github branch-name` for pushing branches
+
 ### Commit Message Style
 - Use concise, descriptive commit messages without attribution text
 - Focus on **what** was changed and **why**, not implementation details
