@@ -35,18 +35,22 @@ class HassConverter:
     - The HAss API reponse does not make the the state to device relationship explicit.
     """
 
-    # Ignore all states that have these prefixes.
+    # Ignore all states from these domains - typically non-physical entities
+    # that don't represent controllable devices or useful sensors
     #
-    IGNORE_PREFIXES = {
-        HassApi.AUTOMATION_ID_PREFIX,
-        HassApi.CALENDAR_ID_PREFIX,
-        HassApi.CONVERSATION_ID_PREFIX,
-        HassApi.PERSON_ID_PREFIX,
-        HassApi.SCRIPT_ID_PREFIX,
-        HassApi.TODO_ID_PREFIX,
-        HassApi.TTS_ID_PREFIX,
-        HassApi.ZONE_ID_PREFIX,
+    IGNORE_DOMAINS = {
+        HassApi.AUTOMATION_DOMAIN,
+        HassApi.CALENDAR_DOMAIN,
+        HassApi.CONVERSATION_DOMAIN,
+        HassApi.PERSON_DOMAIN,
+        HassApi.SCRIPT_DOMAIN,
+        HassApi.TODO_DOMAIN,
+        HassApi.TTS_DOMAIN,
+        HassApi.ZONE_DOMAIN,
     }
+    
+    # Legacy alias for backward compatibility (remove after migration)
+    IGNORE_PREFIXES = IGNORE_DOMAINS
 
     # Suffixes that suggest the HAss state may be part of another device
     # and the "name" of the device precedes the suffix.
@@ -74,23 +78,51 @@ class HassConverter:
         HassApi.BLACK_CARTRIDGE_ID_SUFFIX,
     }
 
-    # HAss entity id prefixes that define an two-value (on-off) switch
+    # Domains for controllable devices that support on/off operations
     #
-    SWITCH_PREFIXES = {
-        HassApi.SWITCH_ID_PREFIX,
-        HassApi.LIGHT_ID_PREFIX,
+    ON_OFF_CONTROLLABLE_DOMAINS = {
+        HassApi.SWITCH_DOMAIN,
+        HassApi.LIGHT_DOMAIN,
     }
-    SENSOR_PREFIXES = {
-        HassApi.BINARY_SENSOR_ID_PREFIX,
-        HassApi.SENSOR_ID_PREFIX,
+    
+    # Domains for controllable devices that support more complex operations
+    #
+    COMPLEX_CONTROLLABLE_DOMAINS = {
+        HassApi.COVER_DOMAIN,      # open, close, set_position
+        HassApi.FAN_DOMAIN,        # turn_on, turn_off, set_speed
+        HassApi.CLIMATE_DOMAIN,    # set_temperature, set_hvac_mode
+        HassApi.LOCK_DOMAIN,       # lock, unlock
+        HassApi.MEDIA_PLAYER_DOMAIN, # play, pause, volume_set
     }
+    
+    # All controllable domains
+    ALL_CONTROLLABLE_DOMAINS = ON_OFF_CONTROLLABLE_DOMAINS | COMPLEX_CONTROLLABLE_DOMAINS
+    
+    # Domains for sensor-only devices (read-only)
+    #
+    SENSOR_ONLY_DOMAINS = {
+        HassApi.BINARY_SENSOR_DOMAIN,
+        HassApi.SENSOR_DOMAIN,
+        HassApi.CAMERA_DOMAIN,
+        HassApi.SUN_DOMAIN,
+        HassApi.WEATHER_DOMAIN,
+    }
+    
+    # Legacy aliases for backward compatibility (remove after migration)
+    SWITCH_PREFIXES = ON_OFF_CONTROLLABLE_DOMAINS
+    SENSOR_PREFIXES = SENSOR_ONLY_DOMAINS
 
-    PREFERRED_NAME_PREFIXES = {
-        HassApi.CAMERA_ID_PREFIX,
-        HassApi.CLIMATE_ID_PREFIX,
-        HassApi.LIGHT_ID_PREFIX,
-        HassApi.SUN_ID_PREFIX,
+    # Domains that should be preferred when choosing friendly names for devices
+    #
+    PREFERRED_NAME_DOMAINS = {
+        HassApi.CAMERA_DOMAIN,
+        HassApi.CLIMATE_DOMAIN,
+        HassApi.LIGHT_DOMAIN,
+        HassApi.SUN_DOMAIN,
     }
+    
+    # Legacy alias for backward compatibility (remove after migration)
+    PREFERRED_NAME_PREFIXES = PREFERRED_NAME_DOMAINS
     PREFERRED_NAME_DEVICE_CLASSES = {
         HassApi.MOTION_DEVICE_CLASS,
     }
@@ -102,15 +134,17 @@ class HassConverter:
 
         entity_id = api_dict.get( HassApi.ENTITY_ID_FIELD )
 
-        # Since a device/entity can have multiple HAss states, and since the API does not 
+        # Parse domain from entity_id (e.g., 'light' from 'light.living_room_lamp')
         m = re.search( r'^([^\.]+)\.(.+)$', entity_id )
         if m:
-            prefix = m.group(1)
+            domain = m.group(1)
             full_name = m.group(2)
         else:
-            prefix = entity_id
+            # Fallback for malformed entity_ids
+            domain = entity_id
             full_name = entity_id
 
+        # Remove known suffixes to get device name
         name = full_name
         for suffix in cls.STATE_SUFFIXES:
             if not full_name.endswith( suffix ):
@@ -121,7 +155,7 @@ class HassConverter:
         return HassState(
             api_dict = api_dict,
             entity_id = entity_id,
-            entity_id_prefix = prefix,
+            domain = domain,
             entity_name_sans_prefix = full_name,
             entity_name_sans_suffix = name,
         )
@@ -142,41 +176,41 @@ class HassConverter:
         ##########
         # First pass to gather candidate device names.
         
-        # All names (ignoring prefix) seen with a known suffix. Values are set of prefixes seen.
+        # All names (ignoring domain) seen with a known suffix. Values are set of domains seen.
         names_seen_with_suffixes = dict()
 
-        # All full names seen (ignoring suffix). Values are set of prefixes seen.
-        full_names_without_prefix = dict()
+        # All full names seen (ignoring suffix). Values are set of domains seen.
+        full_names_without_domain = dict()
 
-        # Special group names when there are othere attributes that
+        # Special group names when there are other attributes that
         # uniquely identify a device.
         #
         group_ids = dict()
         
         for hass_state in hass_entity_id_to_state.values():
-            prefix = hass_state.entity_id_prefix
+            domain = hass_state.domain
             full_name = hass_state.entity_name_sans_prefix
             short_name = hass_state.entity_name_sans_suffix
 
-            if prefix in cls.IGNORE_PREFIXES:
+            if domain in cls.IGNORE_DOMAINS:
                 continue
 
             # All states with same insteon address are from same device
             if hass_state.device_group_id:
                 if hass_state.device_group_id not in group_ids:
                     group_ids[hass_state.device_group_id] = set()
-                group_ids[hass_state.device_group_id].add( prefix )
+                group_ids[hass_state.device_group_id].add( domain )
             
-            if full_name not in full_names_without_prefix:
-                full_names_without_prefix[full_name] = set()
-            full_names_without_prefix[full_name].add( prefix )
+            if full_name not in full_names_without_domain:
+                full_names_without_domain[full_name] = set()
+            full_names_without_domain[full_name].add( domain )
 
             if short_name == full_name:
                 continue
 
             if short_name not in names_seen_with_suffixes:
                 names_seen_with_suffixes[short_name] = set()
-            names_seen_with_suffixes[short_name].add( prefix )
+            names_seen_with_suffixes[short_name].add( domain )
             
             continue
 
@@ -187,11 +221,11 @@ class HassConverter:
 
         for hass_state in hass_entity_id_to_state.values():
 
-            prefix = hass_state.entity_id_prefix
+            domain = hass_state.domain
             full_name = hass_state.entity_name_sans_prefix
             short_name = hass_state.entity_name_sans_suffix
 
-            if prefix in cls.IGNORE_PREFIXES:
+            if domain in cls.IGNORE_DOMAINS:
                 continue
 
             # Simplest case of having explicit group id
@@ -200,7 +234,7 @@ class HassConverter:
                 hass_device.add_state( hass_state = hass_state )
                 continue
                 
-            # Next case of joining states is when only the prefix is different.
+            # Next case of joining states is when only the domain is different.
             if full_name in hass_device_id_to_device:
                 hass_device = hass_device_id_to_device[full_name]
                 hass_device.add_state( hass_state = hass_state )
