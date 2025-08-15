@@ -1,0 +1,42 @@
+{"monitors": [
+  {
+    "Monitor": {
+      "Id": "1", "Name": "HighCamera", "Function": "Modect", "Enabled": "1",
+      "Width": "1280", "Height": "800", "Orientation": "ROTATE_270",
+      "TotalEvents": "61", "ZoneCount": "5", "Sequence": "1"
+    },
+    "Monitor_Status": {
+      "MonitorId": "1", "Status": "Connected", "CaptureFPS": "5.00", "AnalysisFPS": "5.00"
+    }
+  },
+  {
+    "Monitor": {
+      "Id": "3", "Name": "FrontCamera", "Function": "Modect", "Enabled": "1", 
+      "Width": "1920", "Height": "1080", "Orientation": "ROTATE_0",
+      "TotalEvents": "295", "ZoneCount": "4", "Sequence": "0"
+    },
+    "Monitor_Status": {
+      "MonitorId": "3", "Status": "Connected", "CaptureFPS": "8.33", "AnalysisFPS": "6.67"
+    }
+  },
+  {
+    "Monitor": {
+      "Id": "6", "Name": "DriveCamera", "Function": "Modect", "Enabled": "1",
+      "Width": "640", "Height": "480", "Orientation": "ROTATE_0", 
+      "TotalEvents": "697", "ArchivedEvents": "3", "ZoneCount": "9", "Sequence": "2"
+    },
+    "Monitor_Status": {
+      "MonitorId": "6", "Status": "Connected", "CaptureFPS": "10.00", "AnalysisFPS": "6.67"
+    }
+  },
+  {
+    "Monitor": {
+      "Id": "9", "Name": "GarageCamera", "Function": "Modect", "Enabled": "1",
+      "Width": "640", "Height": "480", "Orientation": "ROTATE_0",
+      "TotalEvents": "113", "ZoneCount": "3", "Sequence": "4"
+    },
+    "Monitor_Status": {
+      "MonitorId": "9", "Status": "Connected", "CaptureFPS": "7.69", "AnalysisFPS": "8.33"
+    }
+  }
+]}
