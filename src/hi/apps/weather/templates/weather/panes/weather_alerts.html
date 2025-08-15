@@ -18,8 +18,8 @@
       <hr>
       <small>
         <strong>{{ weather_alert.event_type.label }}</strong> • {{ weather_alert.severity.label }} • 
-        Effective: {{ weather_alert.effective|date:"M j, Y g:i A" }}
-        {% if weather_alert.expires %} • Expires: {{ weather_alert.expires|date:"M j, Y g:i A" }}{% endif %}
+        Effective: {{ weather_alert.effective|localtime|date:"M j, Y g:i A" }}
+        {% if weather_alert.expires %} • Expires: {{ weather_alert.expires|localtime|date:"M j, Y g:i A" }}{% endif %}
       </small>
     </div>
 

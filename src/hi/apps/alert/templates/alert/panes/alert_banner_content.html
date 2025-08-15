@@ -1,4 +1,6 @@
 {% load humanize %}
+{% load tz %}
+{% timezone USER_TIMEZONE %}
 <div class="hi-alert-banner-alert-list">
   {% for alert in alert_list %}
   <div class="hi-alert hi-alarm-level-{{ alert.alarm_level }} row">
@@ -9,7 +11,7 @@
     <div class="col-1">{{ alert.alarm_level.label }}</div>
     <div class="col-6">{{ alert.title }}</div>
     <div class="col-3">
-      Since {{ alert.start_datetime|naturaltime }}
+      Since {{ alert.start_datetime|localtime|naturaltime }}
     </div>
     <div class="col-1">
       <form action="{% url 'alert_acknowledge' alert_id=alert.id %}" method="post"
@@ -23,3 +25,4 @@
   <div class="alert alert-warning">No alerts.</div>
   {% endfor %}
 </div>
+{% endtimezone %}

@@ -1,6 +1,8 @@
+{% load tz %}
+{% timezone USER_TIMEZONE %}
 <div>
   <div>
-    Alarmed at: {{ alarm.timestamp }}
+    Alarmed at: {{ alarm.timestamp|localtime }}
     {{ alarm.source_details_list|length }}
   </div>
   <div>
@@ -12,3 +14,4 @@
     {% endfor %}
   </div>
 </div>
+{% endtimezone %}
