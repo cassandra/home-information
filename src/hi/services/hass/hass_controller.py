@@ -1,7 +1,7 @@
 import logging
 
 from hi.integrations.integration_controller import IntegrationController
-from hi.integrations.integration_key import IntegrationData
+from hi.integrations.transient_models import IntegrationData
 from hi.integrations.transient_models import IntegrationControlResult
 
 from .hass_converter import HassConverter
@@ -11,10 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 class HassController( IntegrationController, HassMixin ):
-
-    # Use service calls for device control (recommended approach)
-    # Set to False to fall back to set_state API for debugging/special cases
-    USE_SERVICE_CALLS = True
 
     def do_control( self,
                     integration_data : IntegrationData,
@@ -31,10 +27,7 @@ class HassController( IntegrationController, HassMixin ):
             )
             logger.debug( f'HAss do_control converted value: {hass_state_value}' )
                 
-            if self.USE_SERVICE_CALLS:
-                return self._do_control_with_services( entity_id, control_value, hass_state_value, domain_metadata )
-            else:
-                return self._do_control_with_set_state( entity_id, control_value, hass_state_value )
+            return self._do_control_with_services( entity_id, control_value, hass_state_value, domain_metadata )
         except Exception as e:
             logger.warning( f'Exception in HAss do_control: {e}' )
             return IntegrationControlResult(
@@ -73,12 +66,18 @@ class HassController( IntegrationController, HassMixin ):
             # Fallback to parsing from entity_id if metadata missing
             if '.' not in hass_state_id:
                 logger.warning( f'Invalid hass_state_id format and no domain metadata: {hass_state_id}' )
-                return self._do_control_with_set_state( hass_state_id, control_value, hass_state_value )
+                return IntegrationControlResult(
+                    new_value = None,
+                    error_list = [f'Invalid entity_id format: {hass_state_id}'],
+                )
             domain = hass_state_id.split('.', 1)[0]
             logger.warning( f'Missing domain metadata for {hass_state_id}, using parsed domain: {domain}' )
         
-        # Use metadata-based service routing
-        return self._control_device_with_metadata( domain, hass_state_id, control_value, hass_state_value, domain_metadata )
+        # Use metadata-based service routing if available, otherwise best-effort
+        if domain_metadata:
+            return self._control_device_with_metadata( domain, hass_state_id, control_value, hass_state_value, domain_metadata )
+        else:
+            return self._control_device_best_effort( domain, hass_state_id, control_value, hass_state_value )
 
     def _control_on_off_device( self, domain: str, hass_state_id: str, control_value: str, hass_state_value: str ) -> IntegrationControlResult:
         """Handle on/off control for lights, switches, and similar devices"""
@@ -90,8 +89,11 @@ class HassController( IntegrationController, HassMixin ):
         elif control_value.lower() in ['off', 'false', '0']:
             service = 'turn_off'
         else:
-            logger.warning( f'Unknown {domain} control value "{control_value}", falling back to set_state' )
-            return self._do_control_with_set_state( hass_state_id, control_value, hass_state_value )
+            logger.warning( f'Unknown {domain} control value "{control_value}"' )
+            return IntegrationControlResult(
+                new_value = None,
+                error_list = [f'Unknown control value: {control_value}'],
+            )
         
         # Call the Home Assistant service
         self.hass_manager().hass_client.call_service(
@@ -106,6 +108,189 @@ class HassController( IntegrationController, HassMixin ):
             new_value = control_value,
             error_list = error_list,
         )
+
+    def _control_device_best_effort( self, domain: str, hass_state_id: str, control_value: str, hass_state_value: str ) -> IntegrationControlResult:
+        """
+        Best-effort device control when metadata is missing.
+        Uses standard Home Assistant service patterns based on domain and control value.
+        """
+        logger.debug( f'HAss best-effort control: {domain} {hass_state_id}={control_value}' )
+        
+        try:
+            # Handle numeric controls for known domains
+            if self._is_numeric_value( control_value ):
+                return self._control_numeric_best_effort( domain, hass_state_id, control_value )
+            
+            # Handle on/off/open/close controls
+            return self._control_on_off_best_effort( domain, hass_state_id, control_value )
+            
+        except Exception as e:
+            logger.warning( f'Best-effort control failed for {hass_state_id}: {e}' )
+            return IntegrationControlResult(
+                new_value = None,
+                error_list = [f'Best-effort control failed: {str(e)}'],
+            )
+
+    def _is_numeric_value( self, control_value: str ) -> bool:
+        """Check if control value is numeric"""
+        try:
+            float(control_value)
+            return True
+        except (ValueError, TypeError):
+            return False
+
+    def _control_on_off_best_effort( self, domain: str, hass_state_id: str, control_value: str ) -> IntegrationControlResult:
+        """Best-effort on/off/open/close control based on standard HA patterns"""
+        logger.debug( f'HAss best-effort on/off control: {domain} {hass_state_id}={control_value}' )
+        
+        # Determine service based on control value and domain
+        control_lower = control_value.lower()
+        
+        if control_lower in ['on', 'true', '1']:
+            service = 'turn_on'
+        elif control_lower in ['off', 'false', '0']:
+            service = 'turn_off'
+        elif control_lower in ['open']:
+            if domain == 'cover':
+                service = 'open_cover'
+            elif domain == 'lock':
+                service = 'unlock'
+            else:
+                service = 'turn_on'  # Fallback
+        elif control_lower in ['close']:
+            if domain == 'cover':
+                service = 'close_cover'
+            elif domain == 'lock':
+                service = 'lock'
+            else:
+                service = 'turn_off'  # Fallback
+        else:
+            logger.warning( f'Unknown control value "{control_value}" for best-effort control of {hass_state_id}' )
+            return IntegrationControlResult(
+                new_value = None,
+                error_list = [f'Unknown control value: {control_value}'],
+            )
+        
+        # Call the Home Assistant service
+        self.hass_manager().hass_client.call_service(
+            domain = domain,
+            service = service,
+            hass_state_id = hass_state_id,
+        )
+        
+        logger.debug( f'HAss best-effort service call SUCCESS: {domain}.{service} for {hass_state_id}' )
+        return IntegrationControlResult(
+            new_value = control_value,
+            error_list = [],
+        )
+
+    def _control_numeric_best_effort( self, domain: str, hass_state_id: str, control_value: str ) -> IntegrationControlResult:
+        """Best-effort numeric control based on common HA patterns"""
+        logger.debug( f'HAss best-effort numeric control: {domain} {hass_state_id}={control_value}' )
+        
+        try:
+            numeric_value = float(control_value)
+            
+            # Light brightness (0-100%)
+            if domain == 'light':
+                brightness_pct = int(numeric_value)
+                if not (0 <= brightness_pct <= 100):
+                    return IntegrationControlResult(
+                        new_value = None,
+                        error_list = [f'Invalid brightness value: {brightness_pct} (must be 0-100)'],
+                    )
+                
+                if brightness_pct == 0:
+                    service = 'turn_off'
+                    service_data = None
+                else:
+                    service = 'turn_on'
+                    service_data = {'brightness_pct': brightness_pct}
+                
+                self.hass_manager().hass_client.call_service(
+                    domain = domain,
+                    service = service,
+                    hass_state_id = hass_state_id,
+                    service_data = service_data,
+                )
+                
+                logger.debug( f'HAss best-effort light control SUCCESS: {domain}.{service} for {hass_state_id}' )
+                return IntegrationControlResult(
+                    new_value = str(brightness_pct),
+                    error_list = [],
+                )
+            
+            # Climate temperature
+            elif domain == 'climate':
+                self.hass_manager().hass_client.call_service(
+                    domain = domain,
+                    service = 'set_temperature',
+                    hass_state_id = hass_state_id,
+                    service_data = {'temperature': numeric_value},
+                )
+                
+                logger.debug( f'HAss best-effort climate control SUCCESS: climate.set_temperature for {hass_state_id}' )
+                return IntegrationControlResult(
+                    new_value = str(numeric_value),
+                    error_list = [],
+                )
+            
+            # Cover position (0-100%)
+            elif domain == 'cover':
+                position_pct = int(numeric_value)
+                if not (0 <= position_pct <= 100):
+                    return IntegrationControlResult(
+                        new_value = None,
+                        error_list = [f'Invalid position value: {position_pct} (must be 0-100)'],
+                    )
+                
+                self.hass_manager().hass_client.call_service(
+                    domain = domain,
+                    service = 'set_cover_position',
+                    hass_state_id = hass_state_id,
+                    service_data = {'position': position_pct},
+                )
+                
+                logger.debug( f'HAss best-effort cover control SUCCESS: cover.set_cover_position for {hass_state_id}' )
+                return IntegrationControlResult(
+                    new_value = str(position_pct),
+                    error_list = [],
+                )
+            
+            # Media player volume (0.0-1.0)
+            elif domain == 'media_player':
+                if not (0.0 <= numeric_value <= 1.0):
+                    return IntegrationControlResult(
+                        new_value = None,
+                        error_list = [f'Invalid volume value: {numeric_value} (must be 0.0-1.0)'],
+                    )
+                
+                self.hass_manager().hass_client.call_service(
+                    domain = domain,
+                    service = 'volume_set',
+                    hass_state_id = hass_state_id,
+                    service_data = {'volume_level': numeric_value},
+                )
+                
+                logger.debug( f'HAss best-effort media_player control SUCCESS: media_player.volume_set for {hass_state_id}' )
+                return IntegrationControlResult(
+                    new_value = str(numeric_value),
+                    error_list = [],
+                )
+            
+            # Other domains - try generic approach
+            else:
+                logger.warning( f'No best-effort numeric control pattern for domain {domain}, entity {hass_state_id}' )
+                return IntegrationControlResult(
+                    new_value = None,
+                    error_list = [f'No numeric control pattern for domain: {domain}'],
+                )
+                
+        except ValueError:
+            return IntegrationControlResult(
+                new_value = None,
+                error_list = [f'Invalid numeric value: {control_value}'],
+            )
     
     def _control_device_with_metadata( self, domain: str, hass_state_id: str, control_value: str, hass_state_value: str, domain_metadata: dict ) -> IntegrationControlResult:
         """Use stored metadata to control device directly"""
@@ -113,8 +298,8 @@ class HassController( IntegrationController, HassMixin ):
         
         # Check if device is controllable
         if not domain_metadata.get('is_controllable', False):
-            logger.warning( f'Device {hass_state_id} is not controllable, falling back to set_state' )
-            return self._do_control_with_set_state( hass_state_id, control_value, hass_state_value )
+            logger.warning( f'Device {hass_state_id} is not controllable, attempting best-effort control' )
+            return self._control_device_best_effort( domain, hass_state_id, control_value, hass_state_value )
         
         # Handle complex numeric controls (brightness, temperature, volume, etc.)
         if self._is_numeric_control( control_value, domain_metadata ):
@@ -124,23 +309,23 @@ class HassController( IntegrationController, HassMixin ):
         if control_value.lower() in ['on', 'true', '1']:
             service = domain_metadata.get('on_service')
             if not service:
-                logger.warning( f'No on_service defined in metadata for {hass_state_id}' )
-                return self._do_control_with_set_state( hass_state_id, control_value, hass_state_value )
+                logger.warning( f'No on_service defined in metadata for {hass_state_id}, using best-effort control' )
+                return self._control_device_best_effort( domain, hass_state_id, control_value, hass_state_value )
         elif control_value.lower() in ['off', 'false', '0']:
             service = domain_metadata.get('off_service')
             if not service:
-                logger.warning( f'No off_service defined in metadata for {hass_state_id}' )
-                return self._do_control_with_set_state( hass_state_id, control_value, hass_state_value )
+                logger.warning( f'No off_service defined in metadata for {hass_state_id}, using best-effort control' )
+                return self._control_device_best_effort( domain, hass_state_id, control_value, hass_state_value )
         elif control_value.lower() in ['open']:
             service = domain_metadata.get('open_service')
             if not service:
-                logger.warning( f'No open_service defined in metadata for {hass_state_id}' )
-                return self._do_control_with_set_state( hass_state_id, control_value, hass_state_value )
+                logger.warning( f'No open_service defined in metadata for {hass_state_id}, using best-effort control' )
+                return self._control_device_best_effort( domain, hass_state_id, control_value, hass_state_value )
         elif control_value.lower() in ['close']:
             service = domain_metadata.get('close_service')
             if not service:
-                logger.warning( f'No close_service defined in metadata for {hass_state_id}' )
-                return self._do_control_with_set_state( hass_state_id, control_value, hass_state_value )
+                logger.warning( f'No close_service defined in metadata for {hass_state_id}, using best-effort control' )
+                return self._control_device_best_effort( domain, hass_state_id, control_value, hass_state_value )
         else:
             logger.warning( f'Unknown control value "{control_value}" for {hass_state_id}' )
             return IntegrationControlResult(

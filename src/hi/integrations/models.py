@@ -4,7 +4,7 @@ from django.db import models
 
 from hi.apps.attribute.models import AttributeModel
 
-from .integration_key import IntegrationKey, IntegrationData
+from .transient_models import IntegrationKey, IntegrationData
 from .managers import IntegrationKeyManager
 
 

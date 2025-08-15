@@ -1,4 +1,4 @@
-from .integration_key import IntegrationData
+from .transient_models import IntegrationData
 from .transient_models import IntegrationControlResult
 
 

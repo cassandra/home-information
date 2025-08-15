@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock
 
 from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.models import Entity
-from hi.integrations.integration_key import IntegrationKey
+from hi.integrations.transient_models import IntegrationKey
 from hi.services.hass.hass_converter import HassConverter
 from hi.services.hass.hass_models import HassApi
 

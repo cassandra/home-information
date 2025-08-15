@@ -2,7 +2,7 @@ import logging
 import re
 
 from hi.integrations.integration_controller import IntegrationController
-from hi.integrations.integration_key import IntegrationData
+from hi.integrations.transient_models import IntegrationData
 from hi.integrations.transient_models import IntegrationControlResult
 
 from .zm_mixins import ZoneMinderMixin

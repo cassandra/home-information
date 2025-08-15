@@ -3,7 +3,7 @@ from typing import Sequence
 from django.db import models
 from django.db.models import Q
 
-from .integration_key import IntegrationKey
+from .transient_models import IntegrationKey
 
 
 class IntegrationKeyManager(models.Manager):

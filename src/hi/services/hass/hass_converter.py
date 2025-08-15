@@ -18,7 +18,7 @@ from hi.apps.entity.enums import (
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.model_helper import HiModelHelper
 
-from hi.integrations.integration_key import IntegrationKey
+from hi.integrations.transient_models import IntegrationKey
 
 from .enums import HassStateValue
 from .hass_metadata import HassMetaData
