@@ -2,6 +2,20 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Development Workflow for GitHub Issues
+
+When working on GitHub issues, follow this development workflow:
+
+1. **Read the GitHub issue and all its comments** - Understand the requirements, context, and any discussion
+2. **Ensure staging branch is in sync with GitHub** - Make sure you have the latest changes
+3. **Create a dev branch off the staging branch** - Follow naming conventions from `docs/dev/Workflow.md`
+4. **Do development changes** - Commit to git at logical checkpoints during development
+5. **After first commit, push the branch to GitHub** - Use the same branch name as the local one
+6. **Once issue is complete and all changes pushed** - Create a pull request using the template
+7. **Before creating the pull request** - Ensure all unit tests pass and linting is clean
+
+For detailed branching conventions and additional workflow information, see `docs/dev/Workflow.md`.
+
 ## Common Development Commands
 
 ### Environment Setup

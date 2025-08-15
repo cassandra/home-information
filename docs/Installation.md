@@ -36,13 +36,13 @@ cd $PROJ_DIR
 
 Download the code from: https://github.com/cassandra/home-information/releases/latest.
 
-Un'zip (or un'tar) the release code in your chosen project root location. e.g., 
+Unzip (or untar) the release code in your chosen project root location. e.g., 
 
 ``` shell
 cd $PROJ_DIR
 unzip ~/Downloads/home-information-*.zip 
 
-# Or if using tar'ball:
+# Or if using tarball:
 tar zxvf ~/Downloads/home-information-*.tar.gz
 ```
 

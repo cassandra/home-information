@@ -10,7 +10,7 @@
 
 - `src`: application source code (see below).
 - `deploy`: helper scripts and files for deploying and setting up the application.
-- `package`: extra items that need to be packaged up to support running trhe application in Docker.
+- `package`: extra items that need to be packaged up to support running the application in Docker.
 - `Makefile`: provides convenience wrappers around command for building, packaging and running.
 - `docs`: all documentation that suitable to be in markdown files.
 
@@ -48,13 +48,13 @@
 
 If a module provides views or functionality that is only applicable to edit mode, then an `edit` subdirectory is used with the same structure, e.g., 
 
-- `edit/urls.py` - UURLs if module provides edit-only views.
+- `edit/urls.py` - URLs if module provides edit-only views.
 - `edit/views.py` - Edit-only views for module.
 - etc.
 
 ## Coding Style
 
-The project triued to adhere to PEP8 but we strongly disagree with the broadly accepted coding guidelines around spaces.  Spaces are great visual delimiters and greatly enhance readability. The whitespace deviations we make to PEP8 are shown in this Flake8 config file (`ignore`).
+The project tries to adhere to PEP8 but we strongly disagree with the broadly accepted coding guidelines around spaces.  Spaces are great visual delimiters and greatly enhance readability. The whitespace deviations we make to PEP8 are shown in this Flake8 config file (`ignore`).
 
 ``` shell
 [flake8]

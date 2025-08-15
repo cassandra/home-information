@@ -24,11 +24,11 @@ This view with the background graphic is called a "Location View".
 
 You will start in "editing mode" where you can begin adding items to your home. When adding an item, it will appear in the middle of the screen, but you can move it around, change its size and change its orientation.
 
-An an example, we'll add a refrigerator by clicking the "ADD NEW ITEM" button, giving it a name and choosing the "type" of item it is:
+As an example, we'll add a refrigerator by clicking the "ADD NEW ITEM" button, giving it a name and choosing the "type" of item it is:
 
 <img src="img/screenshot-add-item.png" alt="Home Information Add Item Dialog" width="250"> 
 
-After clicking the add button, you will see an icon for the refrigerator in the middle of the screen.  We can now use the mouse or touch screen to reposition it. Click the icon to highlight it, then drag it to the position you want. Use the `s` key and thne the `+` and `-` keys to change its size.
+After clicking the add button, you will see an icon for the refrigerator in the middle of the screen.  We can now use the mouse or touch screen to reposition it. Click the icon to highlight it, then drag it to the position you want. Use the `s` key and then the `+` and `-` keys to change its size.
 
 <img src="img/screenshot-item-initial.png" alt="Home Information Initial Item" width="350">  <img src="img/screenshot-item-moved.png" alt="Home Information Moved Item" width="350"> 
 
@@ -48,7 +48,7 @@ This will result in a square area that you can move and reshape. Click the squar
 
 <img src="img/screenshot-pool-selected.png" alt="Home Information Pool Selected" width="350"> <img src="img/screenshot-pool-moved.png" alt="Home Information Pool Moved" width="350">
 
-You are not limited to square shapes either.  With an dot or line selected, press the `i` to insert new points and move them where you want.  Press the `ESC` key when done editing.
+You are not limited to square shapes either. With a dot or line selected, press the `i` key to insert new points and move them where you want.  Press the `ESC` key when done editing.
 
 <img src="img/screenshot-pool-reshaped.png" alt="Home Information Pool Reshaped" width="350"> <img src="img/screenshot-pool-done.png" alt="Home Information Pool Done" width="350">
 
@@ -56,7 +56,7 @@ You are not limited to square shapes either.  With an dot or line selected, pres
 
 Another type of item is like an area, but for representing linear items. For example, suppose you have underground electric service and would like to show where the underground line runs. 
 
-Click "ADD NEW ITEM", give it the name "Electric Service LIne", choose the "Electric Wire LIne" type and click the "ADD" button. 
+Click "ADD NEW ITEM", give it the name "Electric Service Line", choose the "Electric Wire Line" type and click the "ADD" button. 
 
 <img src="img/screenshot-add-electric.png" alt="Home Information Adding Electric" width="350"> <img src="img/screenshot-electric-initial.png" alt="Home Information Initial Electric Item" width="350">
 
@@ -67,7 +67,7 @@ As with the area items, clicking it will give you the ability to edit by moving 
 
 ### Collections
 
-Not every item you may want to keep information about will make sense to have a specific location. For example, power tools and small appliances are items that you may have user manuals, replacement part info, etc.  Though you could add them as we have been, sometimes you just want to keep a list of these "movable" items.
+Not every item you may want to keep information about will make sense to have a specific location. For example, power tools and small appliances are items that you may have user manuals, replacement part info, etc.  Though you could add them as we have been doing, sometimes you just want to keep a list of these "movable" items.
 
 A "collection" can be used to put items into meaningful groups, like "Small Appliances" or "Power Tools".  The bottom left of the screen will show all the defined collections, though we need to add some first by clicking the "ADD" button which brings up a dialog.
 
@@ -86,7 +86,7 @@ However, since we have not added any small appliances yet, we can go and do this
 
 <img src="img/screenshot-collection-list.png" alt="Home Information Collection List" width="350">  <img src="img/screenshot-collection-grid.png" alt="Home Information Collection Grid" width="350"> 
 
-The message you see "_No status data available_" can be ignored for now. This refers to these items not being connected to any integations that monitor its status.  Integrations are discussed a little more below.
+The message you see "_No status data available_" can be ignored for now. This refers to these items not being connected to any integrations that monitor their status.  Integrations are discussed a little more below.
 
 ### Multiple Location Views
 
@@ -104,13 +104,13 @@ This is a good start, but we'd also like to zoom in to focus just on that kitche
 
 <img src="img/screenshot-view-zoomed.png" alt="Home Information Zoomed Location View" width="350">
 
-However, most of the time, zooming and moving the Location View is done on a temporary basis as you move around the view.  For the Kitchen view, we want to have this change permanent, so we need to enter the Location View editing pane in order for changes ot be saved.
+However, most of the time, zooming and moving the Location View is done on a temporary basis as you move around the view. For the Kitchen view, we want to have this change permanent, so we need to enter the Location View editing pane in order for changes to be saved.
 
 Near the top right, there is the "View: Kitchen" label and a "EDIT" button to its right.  That is how to enter the editing mode for this location view to make any zooming and moving permanent. 
 
 <img src="img/screenshot-view-edit.png" alt="Home Information Location View Edit" width="350">
 
- After adjusting view with the Location View editing area open, now when you click the "Kitchen" button on the top left, it will zoom in to that saved geometry.
+After adjusting the view with the Location View editing area open, now when you click the "Kitchen" button on the top left, it will zoom in to that saved geometry.
 
 ### Multiple Locations
 
@@ -118,7 +118,7 @@ The Location Views we've seen so far are all defined with respect to a single "L
 
 However, if you have a two-story house, an attic or basement, you may want to define two or three locations, so you can place items in a more logical place.  For example, if your Air Conditioner's Air Handler is in your attic and you want to keep information about it, it would make sense to define an "Attic" location and represent it there instead of placing it on the floor below.
 
-When in editing mode, there is a Location drop-down on the top right that allows you to add a new Location.  This opens the same dialog as when you first started and created the initial location.  You given it a name and an optional SVG background image and from then on can change to that location with the drop down.
+When in editing mode, there is a Location drop-down on the top right that allows you to add a new Location.  This opens the same dialog as when you first started and created the initial location.  You give it a name and an optional SVG background image and from then on can change to that location with the drop-down.
 
 <img src="img/screenshot-add-location.png" alt="Home Information New Location" width="250"> <img src="img/screenshot-location-dialog.png" alt="Home Information Location Dialog" width="250"> <img src="img/screenshot-location-menu.png" alt="Home Information Location Menu" width="250">
 
@@ -134,7 +134,7 @@ Normal operation looks and behaves mostly the same as editing mode, but there is
 
 <img src="img/screenshot-view-normal.png" alt="Home Information Normal View" width="350"> <img src="img/screenshot-item-edit.png" alt="Home Information Item Edit" width="350">
 
-We have not yet added any attributes to the cooktop yet, but can do so now with the "Add New Attribute" button.  Add a name for the attribute and put in the information. For example, the make and model number might be information you want to keep.  You can also upload files, so it is a good place to keep a manual, purchase receipt, warranty information, repair information, etc.
+We have not yet added any attributes to the cooktop, but can do so now with the "Add New Attribute" button.  Add a name for the attribute and put in the information. For example, the make and model number might be information you want to keep.  You can also upload files, so it is a good place to keep a manual, purchase receipt, warranty information, repair information, etc.
 
 Here is a sequence of adding purchase information and uploading a PDF of the item's specs.
 
@@ -149,7 +149,7 @@ The weather data requires knowing your longitude and latitude.  These are locate
 
 ### Location Attributes
 
-All the items you add can have any number of attributes.  However, there are some attributes that may not belong to any item, but are are associated with the entire location.  For example, I have the elevation, GPS coordinates and Plat Map of the property for my home that I want to associated with the entire house Location itself.
+All the items you add can have any number of attributes.  However, there are some attributes that may not belong to any item, but are associated with the entire location.  For example, I have the elevation, GPS coordinates and Plat Map of the property for my home that I want to associated with the entire house Location itself.
 
 For those higher-level, attributes, you can add them to a location using the "Info" button at top right just under the location drop down. That brings up a dialog where you can add location-specific attributes.
 
@@ -167,9 +167,9 @@ For always on devices, this darkens the screen in case the light is disruptive, 
 
 #### Lock
 
-When visitors are in your house, be they friends, acquaintences, service or maintenance people, you may want to temporarily lock the screen so they cannot access the information you've stored. To unlock, it uses a password you set the first time you lock the screen.
+When visitors are in your house, be they friends, acquaintances, service or maintenance people, you may want to temporarily lock the screen so they cannot access the information you've stored. To unlock, it uses a password you set the first time you lock the screen.
 
-## Security States, Events, Alerts and Integations
+## Security States, Events, Alerts and Integrations
 
 Storing and accessing information about your home as shown above is useful, but it is only half of what Home Information was designed for.  With home security and home automation systems having become prevalent, these are now very important parts of the overall "Home Information" need.  With Google Home, Apple Home, Amazon Alex, etc.,  there is no shortage of platforms for managing those devices.  These platforms are device-centric and miss the information-centric view needed to truly unify all your home information in one place.
 
