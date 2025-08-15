@@ -385,7 +385,7 @@ input[type="password"],
     text-align: center;
     font-size: 2rem;
     font-weight: bold;
-    color: #fff12e;
+    color: var(--warning-color);
     background-color: #282425;
     border-radius: 0.8rem;
     border: 0.1rem solid #282425;
@@ -399,7 +399,7 @@ input[type="password"],
     height: 14rem;
     color: #282425;
     font-size: 4rem;
-    background-color: #fff12e;
+    background-color: var(--warning-color);
     border-bottom-left-radius: 0.8rem;
     border-bottom-right-radius: 0.8rem;
     text-align: center;

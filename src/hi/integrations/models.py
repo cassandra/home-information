@@ -4,8 +4,8 @@ from django.db import models
 
 from hi.apps.attribute.models import AttributeModel
 
-from .integration_key import IntegrationKey
-from .managers import IntegrationKeyManager
+from .transient_models import IntegrationKey, IntegrationDetails
+from .managers import IntegrationDetailsManager
 
 
 class Integration( models.Model ):
@@ -64,12 +64,12 @@ class IntegrationAttribute( AttributeModel ):
         return 'integration/attributes/'
         
         
-class IntegrationKeyModel( models.Model ):
+class IntegrationDetailsModel( models.Model ):
     """
     For use in DB objects that need to be associated with an integration
     device, sensor, controller, attribute, etc.
     """
-    objects = IntegrationKeyManager()
+    objects = IntegrationDetailsManager()
     
     class Meta:
         abstract = True
@@ -83,6 +83,12 @@ class IntegrationKeyModel( models.Model ):
         'Integration Name',
         max_length = 128,
         null = True, blank = True,
+    )
+    integration_payload = models.JSONField(
+        'Integration Payload',
+        default = dict,
+        blank = True,
+        help_text = 'Integration-specific data (e.g., HA domain, device capabilities)',
     )
 
     @property
@@ -101,3 +107,29 @@ class IntegrationKeyModel( models.Model ):
         self.integration_id = integration_key.integration_id
         self.integration_name = integration_key.integration_name
         return 
+
+    def get_integration_details(self) -> IntegrationDetails:
+        return IntegrationDetails(
+            key = self.integration_key,
+            payload = self.integration_payload,
+        )
+
+    def update_integration_payload(self, new_payload: dict) -> list:
+        """
+        Update integration payload and return list of changed fields.
+        Only reports changes to existing fields (ignores new fields).
+        Returns list of strings describing changes, empty if no existing values changed.
+        """
+        old_payload = self.integration_payload or {}
+        changed_fields = []
+        
+        # Check for changes to existing fields only
+        for key, new_value in new_payload.items():
+            if key in old_payload and old_payload[key] != new_value:
+                changed_fields.append(f'{key}: {old_payload[key]} -> {new_value}')
+        
+        # Always update payload (even if no existing fields changed)
+        self.integration_payload = new_payload
+        self.save()
+        
+        return changed_fields

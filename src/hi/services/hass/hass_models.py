@@ -9,22 +9,61 @@ class HassApi:
     ENTITY_ID_FIELD = 'entity_id'
     STATE_FIELD = 'state'
         
-    AUTOMATION_ID_PREFIX = 'automation'
-    BINARY_SENSOR_ID_PREFIX = 'binary_sensor'
-    CALENDAR_ID_PREFIX = 'calendar'
-    CAMERA_ID_PREFIX = 'camera'
-    CLIMATE_ID_PREFIX = ''
-    CONVERSATION_ID_PREFIX = 'conversation'
-    LIGHT_ID_PREFIX = 'light'
-    PERSON_ID_PREFIX = 'person'
-    SCRIPT_ID_PREFIX = 'script'
-    SENSOR_ID_PREFIX = 'sensor'
-    SUN_ID_PREFIX = 'sun'
-    SWITCH_ID_PREFIX = 'switch'
-    TODO_ID_PREFIX = 'todo'
-    TTS_ID_PREFIX = 'tts'
-    WEATHER_ID_PREFIX = 'weather'
-    ZONE_ID_PREFIX = 'zone'
+    # Home Assistant Domain Constants
+    AUTOMATION_DOMAIN = 'automation'
+    BINARY_SENSOR_DOMAIN = 'binary_sensor'
+    CALENDAR_DOMAIN = 'calendar'
+    CAMERA_DOMAIN = 'camera'
+    CLIMATE_DOMAIN = 'climate'
+    CONVERSATION_DOMAIN = 'conversation'
+    COVER_DOMAIN = 'cover'
+    FAN_DOMAIN = 'fan'
+    LIGHT_DOMAIN = 'light'
+    LOCK_DOMAIN = 'lock'
+    MEDIA_PLAYER_DOMAIN = 'media_player'
+    PERSON_DOMAIN = 'person'
+    SCRIPT_DOMAIN = 'script'
+    SENSOR_DOMAIN = 'sensor'
+    SUN_DOMAIN = 'sun'
+    SWITCH_DOMAIN = 'switch'
+    TODO_DOMAIN = 'todo'
+    TTS_DOMAIN = 'tts'
+    WEATHER_DOMAIN = 'weather'
+    ZONE_DOMAIN = 'zone'
+    
+    # Home Assistant Service Name Constants
+    TURN_ON_SERVICE = 'turn_on'
+    TURN_OFF_SERVICE = 'turn_off'
+    OPEN_COVER_SERVICE = 'open_cover'
+    CLOSE_COVER_SERVICE = 'close_cover'
+    SET_COVER_POSITION_SERVICE = 'set_cover_position'
+    SET_TEMPERATURE_SERVICE = 'set_temperature'
+    SET_HVAC_MODE_SERVICE = 'set_hvac_mode'
+    LOCK_SERVICE = 'lock'
+    UNLOCK_SERVICE = 'unlock'
+    MEDIA_PLAY_SERVICE = 'media_play'
+    MEDIA_PAUSE_SERVICE = 'media_pause'
+    MEDIA_STOP_SERVICE = 'media_stop'
+    VOLUME_SET_SERVICE = 'volume_set'
+    SET_PERCENTAGE_SERVICE = 'set_percentage'
+    
+    # Legacy aliases for backward compatibility (remove after migration)
+    AUTOMATION_ID_PREFIX = AUTOMATION_DOMAIN
+    BINARY_SENSOR_ID_PREFIX = BINARY_SENSOR_DOMAIN
+    CALENDAR_ID_PREFIX = CALENDAR_DOMAIN
+    CAMERA_ID_PREFIX = CAMERA_DOMAIN
+    CLIMATE_ID_PREFIX = CLIMATE_DOMAIN
+    CONVERSATION_ID_PREFIX = CONVERSATION_DOMAIN
+    LIGHT_ID_PREFIX = LIGHT_DOMAIN
+    PERSON_ID_PREFIX = PERSON_DOMAIN
+    SCRIPT_ID_PREFIX = SCRIPT_DOMAIN
+    SENSOR_ID_PREFIX = SENSOR_DOMAIN
+    SUN_ID_PREFIX = SUN_DOMAIN
+    SWITCH_ID_PREFIX = SWITCH_DOMAIN
+    TODO_ID_PREFIX = TODO_DOMAIN
+    TTS_ID_PREFIX = TTS_DOMAIN
+    WEATHER_ID_PREFIX = WEATHER_DOMAIN
+    ZONE_ID_PREFIX = ZONE_DOMAIN
 
     BATTERY_ID_SUFFIX = '_battery'
     EVENTS_last_HOUR_ID_SUFFIX = '_events_last_hour'
@@ -74,10 +113,15 @@ class HassState:
 
     api_dict                 : Dict
     entity_id                : str
-    entity_id_prefix         : str
+    domain                   : str
     entity_name_sans_prefix  : str
     entity_name_sans_suffix  : str
     ignore                   : bool  = True
+    
+    # Legacy property for backward compatibility (remove after migration)
+    @property
+    def entity_id_prefix(self) -> str:
+        return self.domain
     
     def __str__(self):
         return f'HassState: {self.entity_id}'
@@ -157,8 +201,13 @@ class HassDevice:
         return { x.device_class for x in self._hass_state_list if x.device_class }
     
     @property
+    def domain_set(self):
+        return { x.domain for x in self._hass_state_list }
+    
+    # Legacy property for backward compatibility (remove after migration)
+    @property
     def entity_id_prefix_set(self):
-        return { x.entity_id_prefix for x in self._hass_state_list }
+        return self.domain_set
     
     def to_dict(self):
         return {

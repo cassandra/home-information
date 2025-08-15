@@ -35,7 +35,7 @@ class ControllerManager( Singleton ):
         integration_controller = integration_gateway.get_controller()
         
         control_result = integration_controller.do_control(
-            integration_key = controller.integration_key,
+            integration_details = controller.get_integration_details(),
             control_value = control_value,
         )
         return control_result

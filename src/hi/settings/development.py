@@ -67,7 +67,7 @@ LOGGING = {
         },
         'hi.apps.alert': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
         'hi.apps.control': {
@@ -107,7 +107,7 @@ LOGGING = {
         },
         'hi.services.hass': {
             'handlers': ['console' ],
-            'level': 'INFO',
+            'level': 'DEBUG',
             'propagate': False,
         },
         'hi.services.zoneminder': {

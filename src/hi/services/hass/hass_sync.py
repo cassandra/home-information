@@ -7,7 +7,7 @@ from hi.apps.common.database_lock import ExclusionLockContext
 from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.entity.models import Entity
 
-from hi.integrations.integration_key import IntegrationKey
+from hi.integrations.transient_models import IntegrationKey
 
 from .hass_converter import HassConverter
 from .hass_models import HassDevice
@@ -63,7 +63,7 @@ class HassSynchronizer( HassMixin ):
             HassConverter.hass_device_to_integration_key( hass_device ): hass_device
             for hass_device in hass_device_id_to_device.values()
         }
-        
+    
         with transaction.atomic():
             for integration_key, hass_device in integration_key_to_hass_device.items():
                 entity = integration_key_to_entity.get( integration_key )

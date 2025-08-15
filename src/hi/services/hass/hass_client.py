@@ -16,6 +16,8 @@ class HassClient:
     API_BASE_URL = 'api_base_url'
     API_TOKEN = 'api_token'
 
+    TRACE = False  # For debugging
+
     def __init__( self, api_options : Dict[ str, str ] ):
 
         self._api_base_url = api_options.get( self.API_BASE_URL )
@@ -37,7 +39,8 @@ class HassClient:
         url = f'{self._api_base_url}/api/states'
         response = get( url, headers = self._headers )
         data = json.loads(response.text)
-        logger.debug( f'HAss Response = {response.text}' )
+        if self.TRACE:
+            logger.debug( f'HAss Response = {response.text}' )
         return [ HassConverter.create_hass_state(x) for x in data ]
 
     def set_state( self, entity_id: str, state: str, attributes: dict = None ) -> dict:
@@ -53,5 +56,32 @@ class HassClient:
             raise ValueError( f"Failed to set state: {response.status_code} {response.text}" )
         
         return response.json()
+
+    def call_service( self, domain: str, service: str, hass_state_id: str, service_data: dict = None ):
+        """
+        Call a Home Assistant service for a specific HassState.
+        
+        Args:
+            domain: The domain (e.g., 'light', 'switch')
+            service: The service name (e.g., 'turn_on', 'turn_off')
+            hass_state_id: The HassState identifier (e.g., 'light.switch_name')
+            service_data: Additional service data (optional)
+        
+        Returns:
+            Response object
+        """
+        url = f'{self._api_base_url}/api/services/{domain}/{service}'
+        data = {
+            'entity_id': hass_state_id,
+        }
+        if service_data:
+            data.update(service_data)
+            
+        response = post( url, json = data, headers = self._headers )
+        if response.status_code not in [200, 201]:
+            raise ValueError( f"Failed to call service: {response.status_code} {response.text}" )
+            
+        logger.debug( f'HAss call_service: {domain}.{service} for {hass_state_id}, response={response.status_code}' )
+        return response
 
     

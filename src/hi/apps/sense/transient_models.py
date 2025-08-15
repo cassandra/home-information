@@ -5,7 +5,7 @@ from typing import Dict
 
 from hi.apps.entity.enums import EntityStateValue
 
-from hi.integrations.integration_key import IntegrationKey
+from hi.integrations.transient_models import IntegrationKey
 
 from .models import Sensor, SensorHistory
 
