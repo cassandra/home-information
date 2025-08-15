@@ -123,6 +123,7 @@ class EntityStateType(LabeledEnum):
     ELECTRIC_USAGE   = ( 'Electric Usage'   , '' )
     HIGH_LOW         = ( 'High/Low'         , '' )    
     HUMIDITY         = ( 'Humidity'         , '' )
+    LIGHT_DIMMER     = ( 'Light Dimmer'     , 'Controllable light brightness (0-100%)' )
     LIGHT_LEVEL      = ( 'Light Level'      , '' )
     MOISTURE         = ( 'Moisture'         , '' )
     MOVEMENT         = ( 'Movement'         , '' )    
