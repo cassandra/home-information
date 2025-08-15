@@ -9,6 +9,7 @@ from hi.apps.attribute.enums import (
     AttributeValueType,
 )
 from hi.apps.entity.enums import (
+    EntityStateType,
     EntityType,
     EntityStateValue,
     HumidityUnit,
