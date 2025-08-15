@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Dict, Optional
 
 
 @dataclass
@@ -36,6 +37,14 @@ class IntegrationKey:
             integration_id = prefix,
             integration_name = suffix,
         )
+
+
+@dataclass
+class IntegrationData:
+    """ Integration key plus metadata for cases where additional integration-specific data is needed """
+    
+    key: IntegrationKey
+    metadata: Optional[Dict] = None
 
 
     

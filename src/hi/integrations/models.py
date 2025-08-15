@@ -4,7 +4,7 @@ from django.db import models
 
 from hi.apps.attribute.models import AttributeModel
 
-from .integration_key import IntegrationKey
+from .integration_key import IntegrationKey, IntegrationData
 from .managers import IntegrationKeyManager
 
 
@@ -84,6 +84,12 @@ class IntegrationKeyModel( models.Model ):
         max_length = 128,
         null = True, blank = True,
     )
+    integration_metadata = models.JSONField(
+        'Integration Metadata',
+        default = dict,
+        blank = True,
+        help_text = 'Integration-specific metadata (e.g., HA domain, device capabilities)',
+    )
 
     @property
     def integration_key(self) -> IntegrationKey:
@@ -101,3 +107,9 @@ class IntegrationKeyModel( models.Model ):
         self.integration_id = integration_key.integration_id
         self.integration_name = integration_key.integration_name
         return 
+
+    def get_integration_data(self) -> IntegrationData:
+        return IntegrationData(
+            key = self.integration_key,
+            metadata = self.integration_metadata,
+        )
