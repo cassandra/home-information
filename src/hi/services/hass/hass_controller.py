@@ -94,7 +94,7 @@ class HassController( IntegrationController, HassMixin ):
             return self._do_control_with_set_state( hass_state_id, control_value, hass_state_value )
         
         # Call the Home Assistant service
-        response = self.hass_manager().hass_client.call_service(
+        self.hass_manager().hass_client.call_service(
             domain = domain,
             service = service,
             hass_state_id = hass_state_id,
@@ -149,7 +149,7 @@ class HassController( IntegrationController, HassMixin ):
             )
         
         # Call the Home Assistant service
-        response = self.hass_manager().hass_client.call_service(
+        self.hass_manager().hass_client.call_service(
             domain = domain,
             service = service,
             hass_state_id = hass_state_id,
@@ -168,7 +168,7 @@ class HassController( IntegrationController, HassMixin ):
             float(control_value)
             
             # Must have either brightness support or set_service for numeric parameters  
-            return (domain_metadata.get('supports_brightness', False) or 
+            return (domain_metadata.get('supports_brightness', False) or
                     domain_metadata.get('set_service') is not None)
         except (ValueError, TypeError):
             return False
@@ -200,7 +200,7 @@ class HassController( IntegrationController, HassMixin ):
                 # Use the numeric value directly - service will determine parameter name
                 service_data = {domain.rstrip('s'): numeric_value}  # e.g., climate -> temperature
                 
-                response = self.hass_manager().hass_client.call_service(
+                self.hass_manager().hass_client.call_service(
                     domain = domain,
                     service = service,
                     hass_state_id = hass_state_id,
@@ -254,7 +254,7 @@ class HassController( IntegrationController, HassMixin ):
             )
         
         # Call the Home Assistant service
-        response = self.hass_manager().hass_client.call_service(
+        self.hass_manager().hass_client.call_service(
             domain = domain,
             service = service,
             hass_state_id = hass_state_id,
@@ -278,7 +278,7 @@ class HassController( IntegrationController, HassMixin ):
             )
         
         # Call the Home Assistant service
-        response = self.hass_manager().hass_client.call_service(
+        self.hass_manager().hass_client.call_service(
             domain = domain,
             service = service,
             hass_state_id = hass_state_id,
@@ -303,7 +303,7 @@ class HassController( IntegrationController, HassMixin ):
         service = domain_metadata.get('set_service', 'volume_set')
         
         # Call the Home Assistant service
-        response = self.hass_manager().hass_client.call_service(
+        self.hass_manager().hass_client.call_service(
             domain = domain,
             service = service,
             hass_state_id = hass_state_id,
@@ -329,7 +329,7 @@ class HassController( IntegrationController, HassMixin ):
         service = domain_metadata.get('set_service', 'set_cover_position')
         
         # Call the Home Assistant service
-        response = self.hass_manager().hass_client.call_service(
+        self.hass_manager().hass_client.call_service(
             domain = domain,
             service = service,
             hass_state_id = hass_state_id,

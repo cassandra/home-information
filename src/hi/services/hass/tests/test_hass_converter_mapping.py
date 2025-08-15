@@ -7,7 +7,7 @@ from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.models import Entity
 from hi.integrations.integration_key import IntegrationKey
 from hi.services.hass.hass_converter import HassConverter
-from hi.services.hass.hass_models import HassApi, HassState
+from hi.services.hass.hass_models import HassApi
 
 
 class TestHassConverterMapping(TestCase):
@@ -35,7 +35,7 @@ class TestHassConverterMapping(TestCase):
         dimmer_data = None
         for state_data in self.real_ha_states_data:
             if (state_data.get('entity_id', '').startswith('light.switchlinc_dimmer') or
-                state_data.get('entity_id', '').startswith('light.keypadlinc_dimmer')):
+                    state_data.get('entity_id', '').startswith('light.keypadlinc_dimmer')):
                 dimmer_data = state_data
                 break
         
@@ -61,7 +61,7 @@ class TestHassConverterMapping(TestCase):
         relay_data = None
         for state_data in self.real_ha_states_data:
             if (state_data.get('entity_id', '').startswith('light.switchlinc_relay') and
-                state_data.get('attributes', {}).get('color_mode') == 'onoff'):
+                    state_data.get('attributes', {}).get('color_mode') == 'onoff'):
                 relay_data = state_data
                 break
         
@@ -131,8 +131,8 @@ class TestHassConverterMapping(TestCase):
         # Test with a known dimmer light
         dimmer_data = None
         for state_data in self.real_ha_states_data:
-            if (state_data.get('entity_id', '').startswith('light.') and 
-                'brightness' in state_data.get('attributes', {})):
+            if (state_data.get('entity_id', '').startswith('light.') and
+                    'brightness' in state_data.get('attributes', {})):
                 dimmer_data = state_data
                 break
         
@@ -145,7 +145,7 @@ class TestHassConverterMapping(TestCase):
         relay_data = None
         for state_data in self.real_ha_states_data:
             if (state_data.get('entity_id', '').startswith('light.') and
-                state_data.get('attributes', {}).get('color_mode') == 'onoff'):
+                    state_data.get('attributes', {}).get('color_mode') == 'onoff'):
                 relay_data = state_data
                 break
         
@@ -240,13 +240,13 @@ class TestHassConverterMapping(TestCase):
                 # Create HassState and check domain
                 hass_state = HassConverter.create_hass_state(state_data)
                 
-                self.assertEqual(hass_state.domain, expected_domain, 
-                                f"Domain parsing failed for {entity_id}")
+                self.assertEqual(hass_state.domain, expected_domain,
+                                 f"Domain parsing failed for {entity_id}")
                 
                 # Should also have a mapping for this domain (or fallback to BLOB)
                 entity_state_type = HassConverter._determine_entity_state_type_from_mapping(hass_state)
-                self.assertIsNotNone(entity_state_type, 
-                                   f"Should have EntityStateType mapping for domain {expected_domain}")
+                self.assertIsNotNone(entity_state_type,
+                                     f"Should have EntityStateType mapping for domain {expected_domain}")
 
     def test_service_mapping_completeness(self):
         """Test that all controllable domains have service mappings"""

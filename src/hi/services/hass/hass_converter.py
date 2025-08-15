@@ -138,7 +138,7 @@ class HassConverter:
         HassApi.FAN_DOMAIN,        # turn_on, turn_off, set_speed
         HassApi.CLIMATE_DOMAIN,    # set_temperature, set_hvac_mode
         HassApi.LOCK_DOMAIN,       # lock, unlock
-        HassApi.MEDIA_PLAYER_DOMAIN, # play, pause, volume_set
+        HassApi.MEDIA_PLAYER_DOMAIN,  # play, pause, volume_set
     }
     
     # All controllable domains
