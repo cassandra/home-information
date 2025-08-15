@@ -63,7 +63,7 @@ class HassSynchronizer( HassMixin ):
             HassConverter.hass_device_to_integration_key( hass_device ): hass_device
             for hass_device in hass_device_id_to_device.values()
         }
-        
+    
         with transaction.atomic():
             for integration_key, hass_device in integration_key_to_hass_device.items():
                 entity = integration_key_to_entity.get( integration_key )

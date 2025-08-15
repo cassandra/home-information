@@ -11,7 +11,7 @@ from hi.apps.location.models import (
     LocationView,
 )
 from hi.apps.attribute.models import AttributeModel
-from hi.integrations.models import IntegrationKeyModel
+from hi.integrations.models import IntegrationDataModel
 from hi.enums import ItemType
 
 from .enums import (
@@ -21,7 +21,7 @@ from .enums import (
 )
 
 
-class Entity( IntegrationKeyModel, LocationItemModelMixin ):
+class Entity( IntegrationDataModel, LocationItemModelMixin ):
     """
     - A physical feature, device or software artifact.
     - May have a fixed physical location (or can just be part of a collection)

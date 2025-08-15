@@ -64,7 +64,7 @@ class IntegrationAttribute( AttributeModel ):
         return 'integration/attributes/'
         
         
-class IntegrationKeyModel( models.Model ):
+class IntegrationDataModel( models.Model ):
     """
     For use in DB objects that need to be associated with an integration
     device, sensor, controller, attribute, etc.

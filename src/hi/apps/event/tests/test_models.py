@@ -24,7 +24,7 @@ class TestEventDefinition(BaseTestCase):
             integration_name='test_integration'
         )
         
-        # Should inherit integration key fields from IntegrationKeyModel
+        # Should inherit integration key fields from IntegrationDataModel
         self.assertEqual(event_def.integration_id, 'test_id')
         self.assertEqual(event_def.integration_name, 'test_integration')
         return
