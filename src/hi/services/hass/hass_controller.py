@@ -1,7 +1,7 @@
 import logging
 
 from hi.integrations.integration_controller import IntegrationController
-from hi.integrations.integration_key import IntegrationKey, IntegrationData
+from hi.integrations.integration_key import IntegrationData
 from hi.integrations.transient_models import IntegrationControlResult
 
 from .hass_converter import HassConverter
