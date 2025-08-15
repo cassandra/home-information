@@ -15,11 +15,16 @@
     const POINTER_MOVE_THRESHOLD_PIXELS = 2;
     const POINTER_SCALE_THRESHOLD_PIXELS = 3;
     const POINTER_ROTATE_THRESHOLD_DEGREES = 3;
+    const POTENTIAL_CLICK_TIME_DELTA_THRESHOLD_MS = 150;
+    const POTENTIAL_CLICK_POSITION_DELTA_THRESHOLD = 5;
+    const POTENTIAL_CLICK_DELAY_MS = 50;
 
     const activePointers = new Map();
     const gLastMoveEventTimes = new Map();
     let gCurrentSingleEvent = null;
     let gCurrentDoubleEvent = null;
+    // Tracks pointer down/up events to generate synthetic click events when real clicks don't fire (e.g., MacBook trackpads on SVG elements)
+    let gPotentialClickState = null;
 	
     class SinglePointerEvent {
 	constructor( startEvent ) {
@@ -109,6 +114,50 @@
 	}
 	return false;
     }
+
+    function startPotentialClickTracking(event) {
+	gPotentialClickState = {
+	    startTimeMs: performance.now(),
+	    startPosition: { x: event.clientX, y: event.clientY },
+	    pointerId: event.pointerId
+	};
+    }
+
+    function checkAndHandlePotentialClick(event, initialActivePointersSize, currentActivePointersSize) {
+	if (!gPotentialClickState || 
+	    event.pointerId !== gPotentialClickState.pointerId ||
+	    initialActivePointersSize !== 1 || 
+	    currentActivePointersSize !== 0) {
+	    return;
+	}
+	
+	const timeDeltaMs = performance.now() - gPotentialClickState.startTimeMs;
+	const positionDeltaX = Math.abs(event.clientX - gPotentialClickState.startPosition.x);
+	const positionDeltaY = Math.abs(event.clientY - gPotentialClickState.startPosition.y);
+	const positionDeltaMax = Math.max(positionDeltaX, positionDeltaY);
+
+	if (timeDeltaMs < POTENTIAL_CLICK_TIME_DELTA_THRESHOLD_MS && 
+	    positionDeltaMax < POTENTIAL_CLICK_POSITION_DELTA_THRESHOLD) {
+	    
+	    gPotentialClickState.waitingForClick = true;
+	    
+	    setTimeout(() => {
+		if (gPotentialClickState?.waitingForClick) {
+		    const clickEvent = new MouseEvent('click', {
+			bubbles: true,
+			cancelable: true,
+			clientX: event.clientX,
+			clientY: event.clientY,
+			button: event.button
+		    });
+		    event.target.dispatchEvent(clickEvent);
+		    gPotentialClickState = null;
+		}
+	    }, POTENTIAL_CLICK_DELAY_MS);
+	} else {
+	    gPotentialClickState = null;
+	}
+    }
     
     function handlePointerDownEvent( event ) {
 	if ( shouldIgnoreEvent( event )) { return; }
@@ -116,6 +165,11 @@
 	const initialActivePointersSize = activePointers.size;
 	activePointers.set( event.pointerId, { x: event.clientX, y: event.clientY } );
 	const currentActivePointersSize = activePointers.size;
+
+	// Start potential click tracking for single pointer events
+	if (currentActivePointersSize === 1) {
+	    startPotentialClickTracking(event);
+	}
 
 	if (( initialActivePointersSize === 0 ) && ( currentActivePointersSize === 1 )) {
 	    gCurrentSingleEvent = new SinglePointerEvent( event );
@@ -168,12 +222,16 @@
 	activePointers.set( event.pointerId, { x: event.clientX, y: event.clientY } );
 
 	if ( activePointers.size === 1 ) {
-	    gCurrentSingleEvent.update( event );
-	    dispatchSinglePointerEventMove( event, gCurrentSingleEvent );
+	    if (gCurrentSingleEvent) {
+		gCurrentSingleEvent.update( event );
+		dispatchSinglePointerEventMove( event, gCurrentSingleEvent );
+	    }
 	    
 	} else if ( activePointers.size === 2 ) {
-	    gCurrentDoubleEvent.update( event, activePointers );
-	    dispatchDoublePointerEventMove( event, gCurrentDoubleEvent );
+	    if (gCurrentDoubleEvent) {
+		gCurrentDoubleEvent.update( event, activePointers );
+		dispatchDoublePointerEventMove( event, gCurrentDoubleEvent );
+	    }
 
 	} else {
 	    // Only one and two pointer events supported.
@@ -189,11 +247,22 @@
 	    return;
 	}
 	activePointers.delete( event.pointerId );
+	gLastMoveEventTimes.delete( event.pointerId );
 	const currentActivePointersSize = activePointers.size;
 
+	// Reset potential click state when switching to multi-touch
+	if (currentActivePointersSize > 1) {
+	    gPotentialClickState = null;
+	}
+
+	// Check for potential click (trackpad compatibility)
+	checkAndHandlePotentialClick(event, initialActivePointersSize, currentActivePointersSize);
+
 	if (( initialActivePointersSize === 1 ) && ( currentActivePointersSize === 0 )) {
-	    gCurrentSingleEvent.update( event );
-	    dispatchSinglePointerEventEnd( event, gCurrentSingleEvent );
+	    if (gCurrentSingleEvent) {
+		gCurrentSingleEvent.update( event );
+		dispatchSinglePointerEventEnd( event, gCurrentSingleEvent );
+	    }
 
 	} else if (( initialActivePointersSize === 2 ) && ( currentActivePointersSize === 1 )) {
 	    dispatchDoublePointerEventEnd( null, gCurrentDoubleEvent );
@@ -217,8 +286,8 @@
     }
 
     function handlePointerCancelEvent( event ) {
-	// Treat the same ad an "up" event for now.
-	handlePointerUpEvent();
+	// Treat the same as an "up" event for now.
+	handlePointerUpEvent(event);
     }
 
     function dispatchLastPointerPosition( x, y ) {
@@ -322,6 +391,11 @@
 
 	$(document).on('click', Hi.LOCATION_VIEW_AREA_SELECTOR, function( event ) {
 	    if ( shouldIgnoreEvent( event )) { return; }
+	    
+	    // Cancel synthetic click if real click event fires
+	    if (gPotentialClickState?.waitingForClick) {
+		gPotentialClickState = null;
+	    }
 	    
 	    let handled = Hi.edit.icon.handleClick( event );
 	    if ( ! handled ) {

@@ -19,7 +19,7 @@
 - Do your thing and add to and/or change the code: use clear commit messages.
 - Create a PR: should be focused on a single feature or fix.
 
-## Ensure Your Code is in Sync
+## Ensure Your Fork is in Sync
 
 Switch to your local copy of staging branch:
 ``` shell
