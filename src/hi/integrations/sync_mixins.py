@@ -98,7 +98,7 @@ class IntegrationSyncMixin:
             
             # Remove integration-related attributes (keep user-created ones)
             removed_attr_count = entity.attributes.filter(
-                integration_id__isnull=False
+                integration_key_str__isnull=False
             ).delete()[0]
             if removed_attr_count:
                 logger.debug(f'Removed {removed_attr_count} integration attributes for {entity}')

@@ -31,7 +31,7 @@ class EntityUserDataDetector:
         
         This is the primary decision criteria for whether to preserve an entity
         during integration sync deletion. Only user-created attributes (those
-        without integration_id) are considered significant enough to preserve
+        without integration_key_str) are considered significant enough to preserve
         the entire entity.
         
         Args:
@@ -41,7 +41,7 @@ class EntityUserDataDetector:
             True if the entity has user-created attributes, False otherwise
         """
         user_attributes = entity.attributes.filter(
-            integration_id__isnull=True
+            integration_key_str__isnull=True
         ).exists()
         
         if user_attributes:
