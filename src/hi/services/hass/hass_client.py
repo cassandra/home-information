@@ -16,6 +16,8 @@ class HassClient:
     API_BASE_URL = 'api_base_url'
     API_TOKEN = 'api_token'
 
+    TRACE = False  # For debugging
+
     def __init__( self, api_options : Dict[ str, str ] ):
 
         self._api_base_url = api_options.get( self.API_BASE_URL )
@@ -37,7 +39,8 @@ class HassClient:
         url = f'{self._api_base_url}/api/states'
         response = get( url, headers = self._headers )
         data = json.loads(response.text)
-        logger.debug( f'HAss Response = {response.text}' )
+        if self.TRACE:
+            logger.debug( f'HAss Response = {response.text}' )
         return [ HassConverter.create_hass_state(x) for x in data ]
 
     def set_state( self, entity_id: str, state: str, attributes: dict = None ) -> dict:

@@ -22,17 +22,16 @@ class HassController( IntegrationController, HassMixin ):
                 hi_value = control_value,
             )
                 
-            response = self.hass_manager().hass_client.set_state(
+            logger.debug( f'HAss attempting set state: {entity_id}={hass_state_value}' )
+            
+            response_data = self.hass_manager().hass_client.set_state(
                 entity_id = entity_id,
                 state = hass_state_value,
             )
 
-            if response.status_code == 200:
-                error_list = list()
-            else:
-                error_list = [ f'Bad HAss response. Status code = {response.status_code}' ]
-            
-            logger.debug( f'HAss set state: {entity_id}={hass_state_value}, response={response}' )
+            # If we get here, the HTTP call succeeded (set_state raises exception on failure)
+            error_list = list()
+            logger.debug( f'HAss set state SUCCESS: {entity_id}={hass_state_value}, response_data={response_data}' )
             return IntegrationControlResult(
                 new_value = control_value,
                 error_list = error_list,
