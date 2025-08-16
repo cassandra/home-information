@@ -114,13 +114,14 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
         return bool( recent_event_timedelta.total_seconds() <= event_definition.dedupe_window_secs )
     
     async def _create_event_if_detected( self, event_definition : EventDefinition ) -> bool:
-        if not event_definition.event_clauses.exists():
+        if not await sync_to_async(event_definition.event_clauses.exists)():
             return False
 
         current_timestamp = datetimeproxy.now()
         sensor_response_list = list()
         
-        for event_clause in event_definition.event_clauses.all():
+        event_clauses = await sync_to_async(list)(event_definition.event_clauses.select_related('entity_state').all())
+        for event_clause in event_clauses:
             matches = False
             for transition in self._recent_transitions:
                 if transition.entity_state != event_clause.entity_state:
@@ -150,7 +151,7 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
             if not self._recent_transitions:
                 return
             transition_age = current_timestamp - self._recent_transitions[0].timestamp
-            if transition_age.seconds < self.RECENT_TRANSITION_QUEUE_MAX_WINDOW_SECS:
+            if transition_age.total_seconds() < self.RECENT_TRANSITION_QUEUE_MAX_WINDOW_SECS:
                 return
             self._recent_transitions.popleft()
             continue
@@ -166,14 +167,16 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
 
         for event in event_list:
 
-            for alarm_action in event.event_definition.alarm_actions.all():
+            alarm_actions = await sync_to_async(list)(event.event_definition.alarm_actions.all())
+            for alarm_action in alarm_actions:
                 if alarm_action.security_level != current_security_level:
                     continue
                 alarm = event.to_alarm( alarm_action = alarm_action )
                 await alert_manager.add_alarm( alarm )
                 continue
             
-            for control_action in event.event_definition.control_actions.all():
+            control_actions = await sync_to_async(list)(event.event_definition.control_actions.all())
+            for control_action in control_actions:
                 await controller_manager.do_control_async(
                     controller = control_action.controller,
                     control_value = control_action.value,

@@ -417,3 +417,338 @@ class TestEventHistory(BaseTestCase):
         
         self.assertFalse(EventHistory.objects.filter(id=history_id).exists())
         return
+
+
+class TestEventDefinitionAdvanced(BaseTestCase):
+    """Advanced EventDefinition tests for edge cases and business logic."""
+
+    def test_event_definition_timing_window_constraints_validation(self):
+        """Test invalid timing window combinations and edge cases."""
+        # Test zero event window (should be valid for immediate events)
+        event_def = EventDefinition.objects.create(
+            name='Immediate Event',
+            event_type_str='AUTOMATION',
+            event_window_secs=0,
+            dedupe_window_secs=60,
+            integration_id='test_id',
+            integration_name='test_integration'
+        )
+        self.assertEqual(event_def.event_window_secs, 0)
+        
+        # Test zero dedupe window (should be valid for non-deduplicated events)
+        event_def2 = EventDefinition.objects.create(
+            name='No Dedupe Event',
+            event_type_str='INFORMATION',
+            event_window_secs=30,
+            dedupe_window_secs=0,
+            integration_id='test_id2',
+            integration_name='test_integration2'
+        )
+        self.assertEqual(event_def2.dedupe_window_secs, 0)
+        return
+
+    def test_event_definition_enum_conversion_edge_cases(self):
+        """Test enum conversion with invalid and edge case values."""
+        event_def = EventDefinition.objects.create(
+            name='Test Event',
+            event_type_str='INVALID_TYPE',  # Invalid enum value
+            event_window_secs=60,
+            dedupe_window_secs=300,
+            integration_id='test_id',
+            integration_name='test_integration'
+        )
+        
+        # Should handle invalid enum gracefully
+        event_type = event_def.event_type
+        self.assertEqual(event_type, EventType.SECURITY)  # from_name_safe returns default for invalid
+        return
+
+    def test_event_definition_multiple_clause_relationships(self):
+        """Test EventDefinition with multiple clauses - critical for complex events."""
+        entity1 = Entity.objects.create(name='Entity 1', entity_type_str='CAMERA')
+        entity_state1 = EntityState.objects.create(
+            entity=entity1,
+            entity_state_type_str='ON_OFF'
+        )
+        
+        entity2 = Entity.objects.create(name='Entity 2', entity_type_str='SENSOR')
+        entity_state2 = EntityState.objects.create(
+            entity=entity2,
+            entity_state_type_str='DETECTED'
+        )
+        
+        event_def = EventDefinition.objects.create(
+            name='Multi-Clause Event',
+            event_type_str='SECURITY',
+            event_window_secs=120,
+            dedupe_window_secs=600,
+            integration_id='test_id',
+            integration_name='test_integration'
+        )
+        
+        # Create multiple clauses
+        clause1 = EventClause.objects.create(
+            event_definition=event_def,
+            entity_state=entity_state1,
+            value='on'
+        )
+        clause2 = EventClause.objects.create(
+            event_definition=event_def,
+            entity_state=entity_state2,
+            value='detected'
+        )
+        
+        # Should have multiple clauses accessible via relationship
+        clauses = event_def.event_clauses.all()
+        self.assertEqual(clauses.count(), 2)
+        self.assertIn(clause1, clauses)
+        self.assertIn(clause2, clauses)
+        return
+
+    def test_event_definition_multiple_action_types(self):
+        """Test EventDefinition with both alarm and control actions."""
+        entity = Entity.objects.create(name='Test Entity', entity_type_str='CAMERA')
+        entity_state = EntityState.objects.create(
+            entity=entity,
+            entity_state_type_str='ON_OFF'
+        )
+        
+        controller = Controller.objects.create(
+            name='Test Controller',
+            entity_state=entity_state,
+            controller_type_str='DEFAULT',
+            integration_id='ctrl_id',
+            integration_name='ctrl_integration'
+        )
+        
+        event_def = EventDefinition.objects.create(
+            name='Mixed Actions Event',
+            event_type_str='AUTOMATION',
+            event_window_secs=60,
+            dedupe_window_secs=300,
+            integration_id='test_id',
+            integration_name='test_integration'
+        )
+        
+        # Create alarm action
+        alarm_action = AlarmAction.objects.create(
+            event_definition=event_def,
+            security_level_str='HIGH',
+            alarm_level_str='WARNING',
+            alarm_lifetime_secs=1800
+        )
+        
+        # Create control action
+        control_action = ControlAction.objects.create(
+            event_definition=event_def,
+            controller=controller,
+            value='on'
+        )
+        
+        # Should have both action types
+        self.assertEqual(event_def.alarm_actions.count(), 1)
+        self.assertEqual(event_def.control_actions.count(), 1)
+        self.assertEqual(event_def.alarm_actions.first(), alarm_action)
+        self.assertEqual(event_def.control_actions.first(), control_action)
+        return
+
+
+class TestAlarmActionAdvanced(BaseTestCase):
+    """Advanced AlarmAction tests for business logic and edge cases."""
+
+    def test_alarm_action_enum_conversion_invalid_values(self):
+        """Test enum conversion with invalid security and alarm levels."""
+        event_def = EventDefinition.objects.create(
+            name='Test Event',
+            event_type_str='SECURITY',
+            event_window_secs=60,
+            dedupe_window_secs=300,
+            integration_id='test_id',
+            integration_name='test_integration'
+        )
+        
+        # Create alarm action with invalid enum values
+        alarm_action = AlarmAction.objects.create(
+            event_definition=event_def,
+            security_level_str='INVALID_SECURITY',
+            alarm_level_str='INVALID_ALARM',
+            alarm_lifetime_secs=3600
+        )
+        
+        # Should handle invalid enums gracefully  
+        self.assertEqual(alarm_action.security_level, SecurityLevel.HIGH)  # from_name_safe returns default (first enum)
+        self.assertEqual(alarm_action.alarm_level, AlarmLevel.NONE)  # from_name_safe returns default (first enum)
+        return
+
+    def test_alarm_action_zero_lifetime_manual_acknowledgment(self):
+        """Test alarm action with zero lifetime for manual acknowledgment only."""
+        event_def = EventDefinition.objects.create(
+            name='Manual Alarm Event',
+            event_type_str='SECURITY',
+            event_window_secs=60,
+            dedupe_window_secs=300,
+            integration_id='test_id',
+            integration_name='test_integration'
+        )
+        
+        alarm_action = AlarmAction.objects.create(
+            event_definition=event_def,
+            security_level_str='CRITICAL',
+            alarm_level_str='CRITICAL',
+            alarm_lifetime_secs=0  # Manual acknowledgment only
+        )
+        
+        # Zero lifetime should indicate manual acknowledgment requirement
+        self.assertEqual(alarm_action.alarm_lifetime_secs, 0)
+        return
+
+    def test_alarm_action_multiple_per_event_definition(self):
+        """Test multiple alarm actions for different security levels."""
+        event_def = EventDefinition.objects.create(
+            name='Multi-Level Alarm Event',
+            event_type_str='SECURITY',
+            event_window_secs=60,
+            dedupe_window_secs=300,
+            integration_id='test_id',
+            integration_name='test_integration'
+        )
+        
+        # Create alarm actions for different security levels
+        high_alarm = AlarmAction.objects.create(
+            event_definition=event_def,
+            security_level_str='HIGH',
+            alarm_level_str='CRITICAL',
+            alarm_lifetime_secs=7200
+        )
+        
+        low_alarm = AlarmAction.objects.create(
+            event_definition=event_def,
+            security_level_str='LOW',
+            alarm_level_str='INFO',
+            alarm_lifetime_secs=1800
+        )
+        
+        # Should have multiple alarm actions with different configurations
+        alarm_actions = event_def.alarm_actions.all()
+        self.assertEqual(alarm_actions.count(), 2)
+        
+        security_levels = [action.security_level for action in alarm_actions]
+        self.assertIn(SecurityLevel.HIGH, security_levels)
+        self.assertIn(SecurityLevel.LOW, security_levels)
+        return
+
+
+class TestEventHistoryAdvanced(BaseTestCase):
+    """Advanced EventHistory tests for performance and data integrity."""
+
+    def test_event_history_bulk_insertion_performance(self):
+        """Test bulk creation of event history records for performance."""
+        event_def = EventDefinition.objects.create(
+            name='High Volume Event',
+            event_type_str='INFORMATION',
+            event_window_secs=60,
+            dedupe_window_secs=300,
+            integration_id='test_id',
+            integration_name='test_integration'
+        )
+        
+        from django.utils import timezone
+        
+        # Create multiple history records
+        history_records = []
+        base_time = timezone.now()
+        
+        for i in range(100):
+            history_records.append(EventHistory(
+                event_definition=event_def,
+                event_datetime=base_time - timezone.timedelta(seconds=i)
+            ))
+        
+        # Bulk create should handle large numbers efficiently
+        EventHistory.objects.bulk_create(history_records)
+        
+        # Verify all records were created
+        created_count = EventHistory.objects.filter(event_definition=event_def).count()
+        self.assertEqual(created_count, 100)
+        return
+
+    def test_event_history_datetime_range_queries(self):
+        """Test datetime range queries use database indexing efficiently."""
+        event_def = EventDefinition.objects.create(
+            name='Time Range Event',
+            event_type_str='AUTOMATION',
+            event_window_secs=60,
+            dedupe_window_secs=300,
+            integration_id='test_id',
+            integration_name='test_integration'
+        )
+        
+        from django.utils import timezone
+        
+        # Create history records across different time ranges
+        now = timezone.now()
+        
+        # Recent (last hour)
+        recent_history = EventHistory.objects.create(
+            event_definition=event_def,
+            event_datetime=now - timezone.timedelta(minutes=30)
+        )
+        
+        # Old (last week)
+        old_history = EventHistory.objects.create(
+            event_definition=event_def,
+            event_datetime=now - timezone.timedelta(days=7)
+        )
+        
+        # Test range queries that should use datetime index
+        last_day = EventHistory.objects.filter(
+            event_datetime__gte=now - timezone.timedelta(days=1)
+        )
+        self.assertIn(recent_history, last_day)
+        self.assertNotIn(old_history, last_day)
+        
+        last_week = EventHistory.objects.filter(
+            event_datetime__gte=now - timezone.timedelta(days=8)
+        )
+        self.assertIn(recent_history, last_week)
+        self.assertIn(old_history, last_week)
+        return
+
+    def test_event_history_ordering_with_identical_timestamps(self):
+        """Test ordering behavior with identical event timestamps."""
+        event_def = EventDefinition.objects.create(
+            name='Simultaneous Events',
+            event_type_str='SECURITY',
+            event_window_secs=60,
+            dedupe_window_secs=300,
+            integration_id='test_id',
+            integration_name='test_integration'
+        )
+        
+        from django.utils import timezone
+        
+        # Create multiple events with same timestamp
+        same_timestamp = timezone.now()
+        
+        history1 = EventHistory.objects.create(
+            event_definition=event_def,
+            event_datetime=same_timestamp
+        )
+        history2 = EventHistory.objects.create(
+            event_definition=event_def,
+            event_datetime=same_timestamp
+        )
+        history3 = EventHistory.objects.create(
+            event_definition=event_def,
+            event_datetime=same_timestamp
+        )
+        
+        # Should handle identical timestamps gracefully
+        # Ordering should be consistent (by ID when timestamps are equal)
+        all_history = list(EventHistory.objects.filter(event_definition=event_def))
+        self.assertEqual(len(all_history), 3)
+        
+        # All should have the same timestamp
+        timestamps = [h.event_datetime for h in all_history]
+        self.assertTrue(all(t == same_timestamp for t in timestamps))
+        return
