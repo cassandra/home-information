@@ -208,18 +208,6 @@ class IntegrationKeyTestCase(TestCase):
         with self.assertRaises(AttributeError):
             IntegrationKey.from_string(None)
 
-    def test_integration_key_with_none_values(self):
-        """Test IntegrationKey behavior with None values."""
-        # IntegrationKey should handle None values gracefully
-        key = IntegrationKey(None, None)
-        
-        # Values should remain None after __post_init__
-        self.assertIsNone(key.integration_id)
-        self.assertIsNone(key.integration_name)
-        
-        # String representation should handle None values
-        self.assertEqual(key.integration_key_str, '.')
-
 
 class IntegrationDetailsTestCase(TestCase):
     """Test cases for IntegrationDetails dataclass functionality."""

@@ -109,11 +109,13 @@ class IntegrationDetailsManagerTestCase(TransactionTestCase):
         self.assertEqual(result.count(), 1)
         self.assertEqual(result.first(), self.model1)
 
-    def test_filter_by_integration_key_with_none_values(self):
-        """Test filter_by_integration_key with None integration values."""
-        # Create key with None values
-        none_key = IntegrationKey(None, None)
-        result = ManagerTestModel.objects.filter_by_integration_key(none_key)
+    def test_filter_entities_without_integration(self):
+        """Test filtering entities that have no integration data."""
+        # Query directly for entities without integration data
+        result = ManagerTestModel.objects.filter(
+            integration_id=None,
+            integration_name=None
+        )
         
         # Should match the model without integration
         self.assertEqual(result.count(), 1)

@@ -28,13 +28,13 @@ class IntegrationControlResult:
 class IntegrationKey:
     """ Internal identifier to help map to/from an integration's external names/identifiers """
 
-    integration_id    : Optional[str]  # Internally defined unique identifier for the integration source
-    integration_name  : Optional[str]  # Name or identifier that is used by the external source.
+    integration_id    : str  # Internally defined unique identifier for the integration source
+    integration_name  : str  # Name or identifier that is used by the external source.
 
     def __post_init__(self):
-        # Want to make matching more robust, so handle None values
-        self.integration_id = self.integration_id.lower() if self.integration_id is not None else None
-        self.integration_name = self.integration_name.lower() if self.integration_name is not None else None
+        # Want to make matching more robust, so convert to lowercase
+        self.integration_id = self.integration_id.lower()
+        self.integration_name = self.integration_name.lower()
         return
     
     def __str__(self):
@@ -50,9 +50,7 @@ class IntegrationKey:
     
     @property
     def integration_key_str(self):
-        id_part = self.integration_id or ''
-        name_part = self.integration_name or ''
-        return f'{id_part}.{name_part}'
+        return f'{self.integration_id}.{self.integration_name}'
 
     @classmethod
     def from_string( cls, a_string : str ):

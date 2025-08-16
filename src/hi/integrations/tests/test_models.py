@@ -335,6 +335,8 @@ class IntegrationDetailsModelTestCase(TestCase):
             
             @property
             def integration_key(self):
+                if self.integration_id is None or self.integration_name is None:
+                    return None
                 return IntegrationKey(
                     integration_id=self.integration_id,
                     integration_name=self.integration_name,
@@ -348,13 +350,11 @@ class IntegrationDetailsModelTestCase(TestCase):
         self.assertEqual(key.integration_id, 'test_integration')
         self.assertEqual(key.integration_name, 'device_1')
         
-        # Test with None values
+        # Test with None values - should return None instead of IntegrationKey
         mock_obj_none = MockIntegrationDetails(None, None)
         key_none = mock_obj_none.integration_key
         
-        self.assertIsInstance(key_none, IntegrationKey)
-        self.assertIsNone(key_none.integration_id)
-        self.assertIsNone(key_none.integration_name)
+        self.assertIsNone(key_none)
 
     def test_integration_key_property_setter(self):
         """Test integration_key property setter updates fields correctly."""
@@ -365,6 +365,8 @@ class IntegrationDetailsModelTestCase(TestCase):
             
             @property
             def integration_key(self):
+                if self.integration_id is None or self.integration_name is None:
+                    return None
                 return IntegrationKey(
                     integration_id=self.integration_id,
                     integration_name=self.integration_name,
