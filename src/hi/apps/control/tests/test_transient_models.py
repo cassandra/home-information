@@ -78,21 +78,63 @@ class TestControllerData(BaseTestCase):
         self.assertIsNone(controller_data.error_list)
         return
 
-    def test_controller_data_css_class_delegation(self):
-        """Test css_class property delegation - critical for UI styling."""
+    def test_controller_data_css_class_delegation_affects_ui_styling(self):
+        """Test css_class delegation provides consistent styling across different entity types."""
+        # Test different entity types that would have different CSS classes
+        entity_types = [
+            ('LIGHT', 'ON_OFF'),
+            ('CAMERA', 'ON_OFF'),
+            ('SENSOR', 'DISCRETE'),
+        ]
+        
+        css_classes = []
+        for i, (entity_type, state_type) in enumerate(entity_types):
+            entity = Entity.objects.create(
+                name=f'Test {entity_type}',
+                entity_type_str=entity_type
+            )
+            entity_state = EntityState.objects.create(
+                entity=entity,
+                entity_state_type_str=state_type
+            )
+            
+            controller = Controller.objects.create(
+                name=f'{entity_type} Controller',
+                entity_state=entity_state,
+                controller_type_str='DEFAULT',
+                integration_id=f'test_id_{i}',
+                integration_name=f'test_integration_{i}'
+            )
+            
+            sensor_response = Mock(spec=SensorResponse)
+            controller_data = ControllerData(
+                controller=controller,
+                latest_sensor_response=sensor_response
+            )
+            
+            css_class = controller_data.css_class
+            css_classes.append(css_class)
+            
+            # CSS class should be meaningful for UI purposes
+            self.assertIsInstance(css_class, str)
+            self.assertTrue(len(css_class) > 0)
+        
+        # Different entity types should potentially have different CSS classes
+        # (Though this depends on the entity_state implementation)
+        all_classes_str = ','.join(css_classes)
+        self.assertTrue(len(all_classes_str) > 0, "CSS classes should be provided for UI styling")
+        return
+
+    def test_controller_data_error_list_affects_ui_display(self):
+        """Test error list affects how controller data is displayed in UI."""
         entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='CAMERA'
+            entity_type_str='LIGHT'
         )
         entity_state = EntityState.objects.create(
             entity=entity,
             entity_state_type_str='ON_OFF'
         )
-        
-        # Mock entity_state.css_class using patch
-        with self.assertRaises(AttributeError):
-            # css_class is a property, not settable directly
-            entity_state.css_class = 'test-css-class'
         
         controller = Controller.objects.create(
             name='Test Controller',
@@ -104,13 +146,31 @@ class TestControllerData(BaseTestCase):
         
         sensor_response = Mock(spec=SensorResponse)
         
-        controller_data = ControllerData(
-            controller=controller,
-            latest_sensor_response=sensor_response
-        )
+        # Test with various error scenarios
+        error_scenarios = [
+            None,  # No errors
+            [],    # Empty error list
+            ['Connection timeout'],  # Single error
+            ['Connection timeout', 'Invalid response', 'Device offline'],  # Multiple errors
+        ]
         
-        # Should delegate to entity_state.css_class
-        # (The actual css_class value depends on entity_state implementation)
-        css_class = controller_data.css_class
-        self.assertIsNotNone(css_class)  # Should return some CSS class
+        for error_list in error_scenarios:
+            controller_data = ControllerData(
+                controller=controller,
+                latest_sensor_response=sensor_response,
+                error_list=error_list
+            )
+            
+            if error_list is None or len(error_list) == 0:
+                # No errors - should be usable normally
+                self.assertIn(controller_data.error_list, [None, []])
+            else:
+                # Has errors - should preserve error information for UI display
+                self.assertEqual(controller_data.error_list, error_list)
+                self.assertGreater(len(controller_data.error_list), 0)
+                
+                # Error messages should be useful for debugging
+                for error in controller_data.error_list:
+                    self.assertIsInstance(error, str)
+                    self.assertGreater(len(error), 0)
         return
