@@ -614,14 +614,14 @@ class TestAlarmActionAdvanced(BaseTestCase):
         )
         
         # Create alarm actions for different security levels
-        high_alarm = AlarmAction.objects.create(
+        _ = AlarmAction.objects.create(
             event_definition=event_def,
             security_level_str='HIGH',
             alarm_level_str='CRITICAL',
             alarm_lifetime_secs=7200
         )
         
-        low_alarm = AlarmAction.objects.create(
+        _ = AlarmAction.objects.create(
             event_definition=event_def,
             security_level_str='LOW',
             alarm_level_str='INFO',
@@ -730,15 +730,15 @@ class TestEventHistoryAdvanced(BaseTestCase):
         # Create multiple events with same timestamp
         same_timestamp = timezone.now()
         
-        history1 = EventHistory.objects.create(
+        _ = EventHistory.objects.create(
             event_definition=event_def,
             event_datetime=same_timestamp
         )
-        history2 = EventHistory.objects.create(
+        _ = EventHistory.objects.create(
             event_definition=event_def,
             event_datetime=same_timestamp
         )
-        history3 = EventHistory.objects.create(
+        _ = EventHistory.objects.create(
             event_definition=event_def,
             event_datetime=same_timestamp
         )

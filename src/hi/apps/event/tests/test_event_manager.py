@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import timedelta
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 from asgiref.sync import sync_to_async
 
 from django.test import TransactionTestCase
@@ -521,7 +521,7 @@ class TestEventManagerEventActions(AsyncEventManagerTestCase):
             event_def = await self.create_test_event_definition_async()
             
             # Create alarm action for HIGH security level
-            alarm_action = await sync_to_async(AlarmAction.objects.create)(
+            _ = await sync_to_async(AlarmAction.objects.create)(
                 event_definition=event_def,
                 security_level_str='HIGH',
                 alarm_level_str='CRITICAL',
@@ -569,7 +569,7 @@ class TestEventManagerEventActions(AsyncEventManagerTestCase):
             event_def = await self.create_test_event_definition_async()
             
             # Create alarm action for HIGH security level
-            alarm_action = await sync_to_async(AlarmAction.objects.create)(
+            _ = await sync_to_async(AlarmAction.objects.create)(
                 event_definition=event_def,
                 security_level_str='HIGH',
                 alarm_level_str='CRITICAL',
@@ -693,3 +693,4 @@ class TestEventManagerHelperMethods(BaseTestCase):
         # Should mark for reload
         self.assertTrue(manager._event_definition_reload_needed)
         return
+    
