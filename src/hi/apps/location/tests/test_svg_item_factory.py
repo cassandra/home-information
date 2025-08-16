@@ -218,3 +218,83 @@ class TestSvgItemFactory(BaseTestCase):
         self.assertGreater(factory.NEW_PATH_RADIUS_PERCENT, 0)
         self.assertLess(factory.NEW_PATH_RADIUS_PERCENT, 50)
         return
+        
+    def test_svg_item_factory_display_only_icon_generation(self):
+        """Test display-only icon generation for UI previews."""
+        factory = SvgItemFactory()
+        
+        # Create real entity
+        entity = Entity.objects.create(
+            integration_id='test_light',
+            integration_name='test_integration',
+            entity_type=EntityType.LIGHT,
+            name='Test Light'
+        )
+        
+        # Generate display-only icon
+        display_icon = factory.get_display_only_svg_icon_item(entity)
+        
+        # Test that display icon has no positioning or status
+        self.assertIsInstance(display_icon, SvgIconItem)
+        self.assertIsNone(display_icon.html_id)
+        self.assertIsNone(display_icon.css_class)
+        self.assertIsNone(display_icon.status_value)
+        self.assertIsNone(display_icon.position_x)
+        self.assertIsNone(display_icon.position_y)
+        self.assertIsNone(display_icon.rotate)
+        self.assertIsNone(display_icon.scale)
+        
+        # But should have template and bounding box for rendering
+        self.assertIsNotNone(display_icon.template_name)
+        self.assertIsNotNone(display_icon.bounding_box)
+        self.assertGreater(display_icon.bounding_box.width, 0)
+        self.assertGreater(display_icon.bounding_box.height, 0)
+        
+        entity.delete()
+        return
+        
+    def test_svg_item_type_classification_consistency_across_factory(self):
+        """Test that factory classification is consistent with SvgItemType logic."""
+        factory = SvgItemFactory()
+        
+        # Create entities and collections
+        entity = Entity.objects.create(
+            integration_id='test_switch',
+            integration_name='test_integration',
+            entity_type=EntityType.ON_OFF_SWITCH,
+            name='Test Switch'
+        )
+        
+        collection = Collection.objects.create(
+            name='Test Room',
+            collection_type_str='OTHER',
+            collection_view_type_str='DEFAULT'
+        )
+        
+        # Test entity classification
+        entity_type = factory.get_svg_item_type(entity)
+        self.assertIsInstance(entity_type, SvgItemType)
+        
+        # Verify classification properties are self-consistent
+        if entity_type.is_icon:
+            self.assertFalse(entity_type.is_path)
+            self.assertFalse(entity_type.is_path_closed)
+        elif entity_type.is_path:
+            self.assertFalse(entity_type.is_icon)
+            # is_path_closed can be True or False for paths
+        
+        # Test collection classification
+        collection_type = factory.get_svg_item_type(collection)
+        self.assertEqual(collection_type, SvgItemType.CLOSED_PATH)
+        self.assertTrue(collection_type.is_path)
+        self.assertTrue(collection_type.is_path_closed)
+        self.assertFalse(collection_type.is_icon)
+        
+        # Test unknown object defaults to icon
+        unknown_object = Mock()
+        unknown_type = factory.get_svg_item_type(unknown_object)
+        self.assertEqual(unknown_type, SvgItemType.ICON)
+        
+        entity.delete()
+        collection.delete()
+        return

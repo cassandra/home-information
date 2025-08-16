@@ -137,3 +137,99 @@ class TestSvgStyleName(BaseTestCase):
         self.assertEqual(SvgStyleName.COLOR.label, 'Color')
         self.assertEqual(SvgStyleName.GREYSCALE.label, 'Grey Scale ')
         return
+        
+    def test_svg_style_name_template_generation_consistency(self):
+        """Test template and CSS file generation follows consistent patterns."""
+        all_styles = [SvgStyleName.COLOR, SvgStyleName.GREYSCALE]
+        
+        # Test template name pattern consistency
+        for style in all_styles:
+            template_name = style.svg_defs_template_name
+            css_file_name = style.css_static_file_name
+            
+            # Template should follow location/panes/svg_fill_patterns_{style}.html pattern
+            expected_template = f'location/panes/svg_fill_patterns_{style}.html'
+            self.assertEqual(template_name, expected_template)
+            
+            # CSS should follow css/svg-location-{style}.css pattern
+            expected_css = f'css/svg-location-{style}.css'
+            self.assertEqual(css_file_name, expected_css)
+            
+            # Verify paths use consistent separators and extensions
+            self.assertTrue(template_name.startswith('location/panes/'))
+            self.assertTrue(template_name.endswith('.html'))
+            self.assertTrue(css_file_name.startswith('css/'))
+            self.assertTrue(css_file_name.endswith('.css'))
+        
+        # Verify each style generates unique file paths
+        template_names = [style.svg_defs_template_name for style in all_styles]
+        css_names = [style.css_static_file_name for style in all_styles]
+        
+        self.assertEqual(len(set(template_names)), len(all_styles))
+        self.assertEqual(len(set(css_names)), len(all_styles))
+        return
+        
+    def test_location_view_type_filtering_behavior(self):
+        """Test how view types would filter entity states in real scenarios."""
+        # Test that specialized views are truly subsets of DEFAULT
+        default_states = set(LocationViewType.DEFAULT.entity_state_type_priority_list)
+        
+        specialized_views = [
+            LocationViewType.SECURITY, LocationViewType.LIGHTS, LocationViewType.SOUNDS,
+            LocationViewType.CLIMATE, LocationViewType.ENERGY
+        ]
+        
+        for view_type in specialized_views:
+            view_states = set(view_type.entity_state_type_priority_list)
+            # Each specialized view should be a subset of DEFAULT
+            self.assertTrue(view_states.issubset(default_states),
+                            f'{view_type} states should be subset of DEFAULT states')
+            
+            # Specialized views should have fewer states than DEFAULT
+            self.assertLess(len(view_states), len(default_states),
+                            f'{view_type} should filter down from DEFAULT')
+        
+        # Test that LIGHTS view only includes lighting-related states
+        lights_states = set(LocationViewType.LIGHTS.entity_state_type_priority_list)
+        non_lighting_states = {EntityStateType.MOVEMENT, EntityStateType.ELECTRIC_USAGE,
+                               EntityStateType.TEMPERATURE, EntityStateType.WATER_FLOW}
+        
+        # LIGHTS should not include non-lighting states
+        intersection = lights_states.intersection(non_lighting_states)
+        self.assertEqual(len(intersection), 0,
+                         'LIGHTS view should not include non-lighting entity states')
+        return
+        
+    def test_enum_string_conversion_consistency(self):
+        """Test enum string representations work correctly for database storage."""
+        # Test LocationViewType string conversion
+        view_types = [LocationViewType.DEFAULT, LocationViewType.SECURITY,
+                      LocationViewType.CLIMATE, LocationViewType.SUPPRESS]
+        
+        for view_type in view_types:
+            # String representation should be lowercase of enum name
+            self.assertEqual(str(view_type), view_type.name.lower())
+            
+            # from_name_safe should round-trip correctly
+            converted = LocationViewType.from_name_safe(str(view_type))
+            self.assertEqual(converted, view_type)
+        
+        # Test SvgStyleName string conversion
+        style_names = [SvgStyleName.COLOR, SvgStyleName.GREYSCALE]
+        
+        for style_name in style_names:
+            # String representation should be lowercase of enum name
+            self.assertEqual(str(style_name), style_name.name.lower())
+            
+            # from_name_safe should round-trip correctly
+            converted = SvgStyleName.from_name_safe(str(style_name))
+            self.assertEqual(converted, style_name)
+        
+        # Test invalid string handling
+        invalid_view_type = LocationViewType.from_name_safe('INVALID_TYPE')
+        invalid_style = SvgStyleName.from_name_safe('INVALID_STYLE')
+        
+        # Should handle invalid strings gracefully (implementation dependent)
+        self.assertIsNotNone(invalid_view_type)
+        self.assertIsNotNone(invalid_style)
+        return
