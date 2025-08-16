@@ -89,8 +89,7 @@ pip install -r src/hi/requirements/development.txt
 
 Initialize the database and add the admin users and groups.
 ``` shell
-cd $PROJ_DIR
-cd src
+cd $PROJ_DIR/src
 ./manage.py check
 ./manage.py migrate
 ./manage.py hi_createsuperuser
@@ -99,6 +98,7 @@ cd src
 
 It is a good idea to run the unit tests to validate that you can and that the installation seem fine.
 ``` shell
+cd $PROJ_DIR/src
 ./manage.py test
 ```
 
@@ -107,6 +107,7 @@ It is a good idea to run the unit tests to validate that you can and that the in
 Ensure that the Redis server is running (see the Dependencies page for installation instructions), then:
 
 ``` shell
+cd $PROJ_DIR/src
 ./manage.py runserver
 ```
 
@@ -124,7 +125,7 @@ Once your environment is set up, these are the common commands for daily develop
 
 ### Django Management
 ```bash
-cd src
+cd $PROJ_DIR/src
 
 # Database operations
 ./manage.py migrate
@@ -147,7 +148,7 @@ cd src
 ```bash
 # Linting and formatting (from development.txt requirements)
 black src/                         # Format code
-flake8 --config=.flake8-ci src/   # Lint code with CI configuration
+flake8 --config=src/.flake8-ci src/   # Lint code with CI configuration
 autopep8 --in-place --recursive src/  # Auto-format
 ```
 

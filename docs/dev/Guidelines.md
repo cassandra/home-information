@@ -86,7 +86,7 @@ ignore = E129,D203,E201,E202,E203,E221,E231,E251,W293,W291,W391,W503
 #### CI Configuration (`.flake8-ci`)
 **Hard requirement** for pull request approval. GitHub uses this configuration to enforce code quality standards and will block PR merging if linting fails.
 
-**Before submitting any PR**, you must run: `flake8 --config=.flake8-ci src/` and ensure it passes with no violations.
+**Before submitting any PR**, you must run: `flake8 --config=src/.flake8-ci src/` and ensure it passes with no violations.
 
 ### Generated Code Standards
 

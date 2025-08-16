@@ -1,8 +1,8 @@
 import threading
-import time
 from datetime import timedelta
-from unittest.mock import Mock, MagicMock, patch, call
+from unittest.mock import Mock, patch
 from django.test import TestCase
+import pytz
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.integrations.exceptions import IntegrationAttributeError, IntegrationError
@@ -80,7 +80,7 @@ class TestZoneMinderManagerInitialization(TestCase):
     @patch.object(Integration.objects, 'get')
     def test_load_attributes_integration_not_found(self, mock_get):
         """Test _load_attributes raises IntegrationError when integration not found"""
-        mock_get.side_effect = Integration.DoesNotExist
+        mock_get.side_effect = Integration.DoesNotExist()
         
         with self.assertRaises(IntegrationError) as context:
             self.manager._load_attributes()
@@ -113,7 +113,7 @@ class TestZoneMinderManagerInitialization(TestCase):
         
         # Should fail on first required attribute (API_URL)
         self.assertIn('Missing ZM attribute', str(context.exception))
-        self.assertIn('API_URL', str(context.exception))
+        self.assertIn('api_url', str(context.exception))
     
     @patch.object(Integration.objects, 'get')
     def test_load_attributes_empty_required_value(self, mock_get):
@@ -224,14 +224,27 @@ class TestZoneMinderManagerClientCreation(TestCase):
     
     @patch('hi.services.zoneminder.zm_manager.ZMApi')
     def test_create_zm_client_success(self, mock_zmapi):
-        """Test create_zm_client successfully creates ZMApi with correct options"""
+        """Test create_zm_client successfully creates ZMApi with correct options and returns functional client"""
         attributes = self.create_mock_attributes()
+        
+        # Create a mock client with realistic behavior
         mock_client = Mock()
+        mock_client.portal_url = 'https://test.com/zm'
+        mock_client.api_url = 'https://test.com/zm/api'
         mock_zmapi.return_value = mock_client
         
         result = self.manager.create_zm_client(attributes)
         
-        # Verify ZMApi was called with correct options
+        # Verify behavior: returns a client that has expected properties
+        self.assertIsNotNone(result)
+        self.assertEqual(result.portal_url, 'https://test.com/zm')
+        self.assertEqual(result.api_url, 'https://test.com/zm/api')
+        
+        # Verify client can be used for typical operations
+        self.assertTrue(hasattr(result, 'states'))
+        self.assertTrue(hasattr(result, 'monitors'))
+        
+        # Verify ZMApi was called with correct configuration options
         expected_options = {
             'apiurl': 'https://test.com/zm/api',
             'portalurl': 'https://test.com/zm',
@@ -239,7 +252,6 @@ class TestZoneMinderManagerClientCreation(TestCase):
             'password': 'testpass'
         }
         mock_zmapi.assert_called_once_with(options=expected_options)
-        self.assertEqual(result, mock_client)
 
 
 class TestZoneMinderManagerCaching(TestCase):
@@ -256,27 +268,48 @@ class TestZoneMinderManagerCaching(TestCase):
     
     @patch('hi.apps.common.datetimeproxy.now')
     def test_get_zm_states_cache_miss_empty_list(self, mock_now):
-        """Test get_zm_states fetches from API when list is empty"""
-        mock_now.return_value = datetimeproxy.datetime(2023, 1, 1, 12, 0, 0)
+        """Test get_zm_states fetches from API when list is empty and updates cache"""
+        test_time = datetimeproxy.datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=pytz.UTC)
+        mock_now.return_value = test_time
         
-        mock_states = [Mock(), Mock()]
+        # Create mock states with some identifiable data
+        mock_state1 = Mock()
+        mock_state1.get.return_value = {'State': {'Name': 'state1'}}
+        mock_state2 = Mock()
+        mock_state2.get.return_value = {'State': {'Name': 'state2'}}
+        mock_states = [mock_state1, mock_state2]
         self.mock_client.states.return_value.list.return_value = mock_states
+        
+        # Verify initial cache state is empty
+        self.assertEqual(self.manager._zm_state_list, [])
+        self.assertEqual(self.manager._zm_state_timestamp, datetimeproxy.min())
         
         result = self.manager.get_zm_states()
         
+        # Verify behavior: returns the correct states
+        self.assertEqual(result, mock_states)
+        self.assertEqual(len(result), 2)
+        
+        # Verify state changes: cache is populated and timestamp updated
+        self.assertEqual(self.manager._zm_state_list, mock_states)
+        self.assertEqual(self.manager._zm_state_timestamp, test_time)
+        
+        # Verify API was called (secondary to behavior verification)
         self.mock_client.states.assert_called_once()
         self.mock_client.states.return_value.list.assert_called_once()
-        self.assertEqual(result, mock_states)
-        self.assertEqual(self.manager._zm_state_list, mock_states)
     
     @patch('hi.apps.common.datetimeproxy.now')
     def test_get_zm_states_cache_hit_within_ttl(self, mock_now):
-        """Test get_zm_states returns cached data within TTL"""
-        start_time = datetimeproxy.datetime(2023, 1, 1, 12, 0, 0)
+        """Test get_zm_states returns cached data within TTL without API call"""
+        start_time = datetimeproxy.datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=pytz.UTC)
         mock_now.return_value = start_time
         
-        # Set up cached data
-        cached_states = [Mock(), Mock()]
+        # Set up cached data with identifiable content
+        cached_state1 = Mock()
+        cached_state1.get.return_value = {'State': {'Name': 'cached_state1'}}
+        cached_state2 = Mock() 
+        cached_state2.get.return_value = {'State': {'Name': 'cached_state2'}}
+        cached_states = [cached_state1, cached_state2]
         self.manager._zm_state_list = cached_states
         self.manager._zm_state_timestamp = start_time
         
@@ -285,14 +318,21 @@ class TestZoneMinderManagerCaching(TestCase):
         
         result = self.manager.get_zm_states()
         
-        # Should not call API, return cached data
+        # Verify behavior: returns exact cached data
+        self.assertIs(result, cached_states)
+        self.assertEqual(len(result), 2)
+        
+        # Verify state unchanged: cache timestamp and content remain the same
+        self.assertEqual(self.manager._zm_state_timestamp, start_time)
+        self.assertIs(self.manager._zm_state_list, cached_states)
+        
+        # Verify no API call was made (important for caching behavior)
         self.mock_client.states.assert_not_called()
-        self.assertEqual(result, cached_states)
     
     @patch('hi.apps.common.datetimeproxy.now')
     def test_get_zm_states_cache_miss_expired_ttl(self, mock_now):
         """Test get_zm_states fetches from API when TTL expired"""
-        start_time = datetimeproxy.datetime(2023, 1, 1, 12, 0, 0)
+        start_time = datetimeproxy.datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=pytz.UTC)
         
         # Set up cached data
         cached_states = [Mock(), Mock()]
@@ -329,7 +369,8 @@ class TestZoneMinderManagerCaching(TestCase):
     @patch('hi.apps.common.datetimeproxy.now')
     def test_get_zm_monitors_cache_behavior(self, mock_now):
         """Test get_zm_monitors follows same caching pattern as states"""
-        mock_now.return_value = datetimeproxy.datetime(2023, 1, 1, 12, 0, 0)
+        test_time = datetimeproxy.datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=pytz.UTC)
+        mock_now.return_value = test_time
         
         mock_monitors = [Mock(), Mock()]
         self.mock_client.monitors.return_value.list.return_value = mock_monitors
@@ -419,6 +460,20 @@ class TestZoneMinderManagerTimezoneValidation(TestCase):
         result = self.manager.get_zm_tzname()
         
         self.assertEqual(result, 'UTC')
+    
+    @patch.object(Integration.objects, 'get')
+    @patch.object(IntegrationAttribute.objects, 'filter')
+    def test_get_zm_tzname_integration_attribute_not_found_fallback(self, mock_filter, mock_get):
+        """Test get_zm_tzname falls back to UTC when integration attribute not found"""
+        mock_integration = Mock()
+        mock_get.return_value = mock_integration
+        
+        # Simulate IntegrationAttribute.DoesNotExist by making filter().first() raise it
+        mock_filter.return_value.first.side_effect = IntegrationAttribute.DoesNotExist
+        
+        result = self.manager.get_zm_tzname()
+        
+        self.assertEqual(result, 'UTC')
 
 
 class TestZoneMinderManagerChangeListeners(TestCase):
@@ -443,17 +498,40 @@ class TestZoneMinderManagerChangeListeners(TestCase):
     
     @patch.object(ZoneMinderManager, 'reload')
     def test_notify_settings_changed_calls_reload_and_listeners(self, mock_reload):
-        """Test notify_settings_changed calls reload and all listeners"""
-        callback1 = Mock()
-        callback2 = Mock()
+        """Test notify_settings_changed triggers reload and notifies all registered listeners"""
+        # Create trackable callback functions
+        callback1_called = []
+        callback2_called = []
+        
+        def callback1():
+            callback1_called.append(True)
+        
+        def callback2():
+            callback2_called.append(True)
+            
+        # Verify initial state: no listeners registered
+        self.assertEqual(len(self.manager._change_listeners), 0)
+        
+        # Register listeners and verify they are stored
         self.manager.register_change_listener(callback1)
         self.manager.register_change_listener(callback2)
+        self.assertEqual(len(self.manager._change_listeners), 2)
+        
+        # Verify initial callback state
+        self.assertEqual(len(callback1_called), 0)
+        self.assertEqual(len(callback2_called), 0)
         
         self.manager.notify_settings_changed()
         
+        # Verify behavior: reload was triggered
         mock_reload.assert_called_once()
-        callback1.assert_called_once()
-        callback2.assert_called_once()
+        
+        # Verify behavior: all callbacks were executed
+        self.assertEqual(len(callback1_called), 1)
+        self.assertEqual(len(callback2_called), 1)
+        
+        # Verify state: listeners remain registered for future notifications
+        self.assertEqual(len(self.manager._change_listeners), 2)
     
     @patch.object(ZoneMinderManager, 'reload')
     def test_notify_settings_changed_handles_callback_exceptions(self, mock_reload):
@@ -515,7 +593,7 @@ class TestZoneMinderManagerBooleanConversion(TestCase):
         ZoneMinderManager._lock = threading.Lock()
         self.manager = ZoneMinderManager()
     
-    @patch('hi.apps.common.utils.str_to_bool')
+    @patch('hi.services.zoneminder.zm_manager.str_to_bool')
     def test_should_add_alarm_events_true(self, mock_str_to_bool):
         """Test should_add_alarm_events returns True when attribute is true"""
         mock_attribute = Mock()

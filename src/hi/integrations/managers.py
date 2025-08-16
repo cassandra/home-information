@@ -13,6 +13,9 @@ class IntegrationDetailsManager(models.Manager):
                             integration_name = integration_key.integration_name )
 
     def filter_by_integration_keys( self, integration_keys : Sequence[ IntegrationKey ] ):
+        if not integration_keys:
+            return self.none()
+        
         query = Q()
         for integration_key in integration_keys:
             query |= Q( integration_id = integration_key.integration_id,

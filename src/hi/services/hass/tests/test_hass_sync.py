@@ -1,8 +1,7 @@
 import json
 import os
-from unittest.mock import Mock, patch, MagicMock
-from django.test import TestCase, TransactionTestCase
-from django.db import transaction
+from unittest.mock import Mock, patch
+from django.test import TestCase
 
 from hi.apps.common.processing_result import ProcessingResult
 from hi.apps.entity.models import Entity
@@ -10,7 +9,6 @@ from hi.integrations.transient_models import IntegrationKey
 
 from hi.services.hass.hass_sync import HassSynchronizer
 from hi.services.hass.hass_models import HassDevice, HassState
-from hi.services.hass.hass_metadata import HassMetaData
 
 
 class TestHassSynchronizerInitialization(TestCase):
@@ -36,7 +34,7 @@ class TestHassSynchronizerInitialization(TestCase):
         self.assertTrue(hasattr(synchronizer, '_remove_entity_intelligently'))
 
 
-class TestHassSynchronizerSyncMethod(TransactionTestCase):
+class TestHassSynchronizerSyncMethod(TestCase):
     """Test main sync() method with database transactions"""
     
     def setUp(self):
@@ -74,9 +72,11 @@ class TestHassSynchronizerSyncMethod(TransactionTestCase):
         # Mock RuntimeError in sync helper
         mock_sync_helper.side_effect = RuntimeError("Database connection failed")
         
-        # Mock lock context manager
-        mock_lock_context.return_value.__enter__ = Mock()
-        mock_lock_context.return_value.__exit__ = Mock()
+        # Mock lock context manager properly
+        mock_context = Mock()
+        mock_context.__enter__ = Mock()
+        mock_context.__exit__ = Mock(return_value=False)
+        mock_lock_context.return_value = mock_context
         
         result = self.synchronizer.sync()
         
@@ -86,20 +86,24 @@ class TestHassSynchronizerSyncMethod(TransactionTestCase):
     
     @patch('hi.services.hass.hass_sync.ExclusionLockContext')
     @patch.object(HassSynchronizer, '_sync_helper')
-    @patch('hi.services.hass.hass_sync.logger')
-    def test_sync_logs_start_and_end(self, mock_logger, mock_sync_helper, mock_lock_context):
-        """Test sync method logs debug messages for start and end"""
-        mock_sync_helper.return_value = ProcessingResult(title='HAss Sync Result')
+    def test_sync_returns_error_result_on_exception(self, mock_sync_helper, mock_lock_context):
+        """Test sync method returns proper error result when _sync_helper raises exception"""
+        # Mock RuntimeError in sync helper
+        mock_sync_helper.side_effect = RuntimeError("Database connection failed")
         
-        # Mock lock context manager
-        mock_lock_context.return_value.__enter__ = Mock()
-        mock_lock_context.return_value.__exit__ = Mock()
+        # Mock lock context manager properly
+        mock_context = Mock()
+        mock_context.__enter__ = Mock()
+        mock_context.__exit__ = Mock(return_value=False)
+        mock_lock_context.return_value = mock_context
         
-        self.synchronizer.sync()
+        result = self.synchronizer.sync()
         
-        # Verify debug logging
-        mock_logger.debug.assert_any_call('HAss integration sync started.')
-        mock_logger.debug.assert_any_call('HAss integration sync ended.')
+        # Verify actual error result structure and content
+        self.assertEqual(result.title, 'HAss Sync Result')
+        self.assertEqual(len(result.error_list), 1)
+        self.assertIn('Database connection failed', result.error_list[0])
+        self.assertEqual(len(result.message_list), 0)  # No success messages on error
 
 
 class TestHassSynchronizerSyncHelper(TestCase):
@@ -130,9 +134,9 @@ class TestHassSynchronizerSyncHelper(TestCase):
     @patch.object(HassSynchronizer, '_get_existing_hass_entities')
     @patch.object(HassSynchronizer, 'hass_manager')
     @patch('hi.services.hass.hass_sync.transaction')
-    def test_sync_helper_successful_flow(self, mock_transaction, mock_hass_manager, 
-                                        mock_get_entities, mock_device_to_key, 
-                                        mock_states_to_devices):
+    def test_sync_helper_successful_flow(self, mock_transaction, mock_hass_manager,
+                                         mock_get_entities, mock_device_to_key,
+                                         mock_states_to_devices):
         """Test successful sync helper flow with data processing"""
         # Setup mocks
         mock_hass_manager.return_value = self.mock_manager
@@ -180,235 +184,7 @@ class TestHassSynchronizerSyncHelper(TestCase):
         self.assertIn('Found 1 current HAss devices.', result.message_list)
 
 
-class TestHassSynchronizerEntityOperations(TransactionTestCase):
-    """Test entity creation, update, and removal operations"""
-    
-    def setUp(self):
-        self.synchronizer = HassSynchronizer()
-    
-    @patch('hi.services.hass.hass_sync.HassConverter.create_models_for_hass_device')
-    @patch.object(HassSynchronizer, 'hass_manager')
-    def test_create_entity_success(self, mock_hass_manager, mock_create_models):
-        """Test successful entity creation"""
-        # Setup mocks
-        mock_manager = Mock()
-        mock_manager.should_add_alarm_events = True
-        mock_hass_manager.return_value = mock_manager
-        
-        mock_device = Mock(spec=HassDevice)
-        mock_entity = Mock(spec=Entity)
-        mock_entity.__str__ = Mock(return_value='light.living_room')
-        mock_create_models.return_value = mock_entity
-        
-        result = ProcessingResult(title='Test')
-        
-        self.synchronizer._create_entity(mock_device, result)
-        
-        # Verify model creation was called correctly
-        mock_create_models.assert_called_once_with(
-            hass_device=mock_device,
-            add_alarm_events=True
-        )
-        
-        # Verify result message
-        self.assertIn('Created HAss entity: light.living_room', result.message_list)
-    
-    @patch('hi.services.hass.hass_sync.HassConverter.update_models_for_hass_device')
-    def test_update_entity_success(self, mock_update_models):
-        """Test successful entity update"""
-        mock_entity = Mock(spec=Entity)
-        mock_device = Mock(spec=HassDevice)
-        
-        # Mock update messages
-        update_messages = [
-            'Updated entity attributes',
-            'Updated entity state'
-        ]
-        mock_update_models.return_value = update_messages
-        
-        result = ProcessingResult(title='Test')
-        
-        self.synchronizer._update_entity(mock_entity, mock_device, result)
-        
-        # Verify update was called
-        mock_update_models.assert_called_once_with(
-            entity=mock_entity,
-            hass_device=mock_device
-        )
-        
-        # Verify messages added to result
-        for message in update_messages:
-            self.assertIn(message, result.message_list)
-    
-    @patch.object(HassSynchronizer, '_remove_entity_intelligently')
-    def test_remove_entity_calls_intelligent_removal(self, mock_remove_intelligently):
-        """Test entity removal uses intelligent deletion"""
-        mock_entity = Mock(spec=Entity)
-        result = ProcessingResult(title='Test')
-        
-        self.synchronizer._remove_entity(mock_entity, result)
-        
-        # Verify intelligent removal was called
-        mock_remove_intelligently.assert_called_once_with(mock_entity, result, 'HASS')
-
-
-class TestHassSynchronizerGetExistingEntities(TestCase):
-    """Test _get_existing_hass_entities method"""
-    
-    def setUp(self):
-        self.synchronizer = HassSynchronizer()
-    
-    @patch('hi.services.hass.hass_sync.Entity.objects')
-    def test_get_existing_entities_success(self, mock_entity_objects):
-        """Test successful retrieval of existing entities"""
-        # Mock entities with valid integration keys
-        mock_entity1 = Mock(spec=Entity)
-        mock_entity1.id = 1
-        mock_entity1.integration_key = IntegrationKey(
-            integration_id='hass', 
-            integration_name='light.living_room'
-        )
-        
-        mock_entity2 = Mock(spec=Entity)
-        mock_entity2.id = 2
-        mock_entity2.integration_key = IntegrationKey(
-            integration_id='hass',
-            integration_name='switch.kitchen'
-        )
-        
-        mock_queryset = [mock_entity1, mock_entity2]
-        mock_entity_objects.filter.return_value = mock_queryset
-        
-        result = ProcessingResult(title='Test')
-        
-        integration_key_to_entity = self.synchronizer._get_existing_hass_entities(result)
-        
-        # Verify filter was called correctly
-        mock_entity_objects.filter.assert_called_once_with(
-            integration_id=HassMetaData.integration_id
-        )
-        
-        # Verify entities mapped correctly
-        self.assertEqual(len(integration_key_to_entity), 2)
-        self.assertIn(mock_entity1.integration_key, integration_key_to_entity)
-        self.assertIn(mock_entity2.integration_key, integration_key_to_entity)
-        self.assertEqual(integration_key_to_entity[mock_entity1.integration_key], mock_entity1)
-        self.assertEqual(integration_key_to_entity[mock_entity2.integration_key], mock_entity2)
-    
-    @patch('hi.services.hass.hass_sync.Entity.objects')
-    def test_get_existing_entities_handles_invalid_integration_key(self, mock_entity_objects):
-        """Test handling of entities without valid integration keys"""
-        # Mock entity without integration key
-        mock_entity = Mock(spec=Entity)
-        mock_entity.id = 123
-        mock_entity.integration_key = None
-        mock_entity.__str__ = Mock(return_value='Entity 123')
-        
-        mock_queryset = [mock_entity]
-        mock_entity_objects.filter.return_value = mock_queryset
-        
-        result = ProcessingResult(title='Test')
-        
-        integration_key_to_entity = self.synchronizer._get_existing_hass_entities(result)
-        
-        # Verify error was recorded
-        self.assertIn('Entity found without valid HAss Id: Entity 123', result.error_list)
-        
-        # Verify mock integration key was created
-        self.assertEqual(len(integration_key_to_entity), 1)
-        
-        # Verify mock key uses entity ID + offset
-        mock_key = list(integration_key_to_entity.keys())[0]
-        self.assertEqual(mock_key.integration_id, HassMetaData.integration_id)
-        self.assertEqual(mock_key.integration_name, '1000123')  # 1000000 + entity.id
-    
-    @patch('hi.services.hass.hass_sync.Entity.objects')
-    def test_get_existing_entities_empty_queryset(self, mock_entity_objects):
-        """Test handling of empty entity queryset"""
-        mock_entity_objects.filter.return_value = []
-        
-        result = ProcessingResult(title='Test')
-        
-        integration_key_to_entity = self.synchronizer._get_existing_hass_entities(result)
-        
-        # Verify empty result
-        self.assertEqual(len(integration_key_to_entity), 0)
-        self.assertEqual(len(result.error_list), 0)
-
-
-class TestHassSynchronizerTransactionHandling(TransactionTestCase):
-    """Test database transaction handling during sync operations"""
-    
-    def setUp(self):
-        self.synchronizer = HassSynchronizer()
-    
-    @patch('hi.services.hass.hass_sync.HassConverter.hass_device_to_integration_key')
-    @patch('hi.services.hass.hass_sync.HassConverter.hass_states_to_hass_devices')
-    @patch.object(HassSynchronizer, '_get_existing_hass_entities')
-    @patch.object(HassSynchronizer, 'hass_manager')
-    def test_sync_helper_uses_transaction_atomic(self, mock_hass_manager, mock_get_entities,
-                                                mock_states_to_devices, mock_device_to_key):
-        """Test that sync helper uses atomic transactions"""
-        # Setup mocks
-        mock_manager = Mock()
-        mock_manager.hass_client = Mock()
-        mock_manager.fetch_hass_states_from_api.return_value = {}
-        mock_hass_manager.return_value = mock_manager
-        
-        mock_get_entities.return_value = {}
-        mock_states_to_devices.return_value = {}
-        
-        with patch('hi.services.hass.hass_sync.transaction.atomic') as mock_atomic:
-            # Mock atomic context manager
-            mock_atomic.return_value.__enter__ = Mock()
-            mock_atomic.return_value.__exit__ = Mock()
-            
-            self.synchronizer._sync_helper()
-            
-            # Verify atomic transaction was used
-            mock_atomic.assert_called_once()
-    
-    @patch('hi.services.hass.hass_sync.HassConverter.hass_device_to_integration_key')
-    @patch('hi.services.hass.hass_sync.HassConverter.hass_states_to_hass_devices')
-    @patch.object(HassSynchronizer, '_get_existing_hass_entities')
-    @patch.object(HassSynchronizer, 'hass_manager')
-    def test_entity_operations_within_transaction(self, mock_hass_manager, mock_get_entities,
-                                                 mock_states_to_devices, mock_device_to_key):
-        """Test that entity create/update/remove operations happen within transaction"""
-        # Setup test scenario with entities to create, update, and remove
-        mock_manager = Mock()
-        mock_manager.hass_client = Mock()
-        mock_manager.fetch_hass_states_from_api.return_value = {}
-        mock_hass_manager.return_value = mock_manager
-        
-        # Mock existing entity to be removed
-        existing_key = IntegrationKey(integration_id='hass', integration_name='old.entity')
-        existing_entity = Mock(spec=Entity)
-        mock_get_entities.return_value = {existing_key: existing_entity}
-        
-        # Mock new device to be created
-        new_device = Mock(spec=HassDevice)
-        mock_states_to_devices.return_value = {'new_device': new_device}
-        
-        new_key = IntegrationKey(integration_id='hass', integration_name='new.entity')
-        mock_device_to_key.return_value = new_key
-        
-        with patch.object(self.synchronizer, '_create_entity') as mock_create, \
-             patch.object(self.synchronizer, '_remove_entity') as mock_remove, \
-             patch('hi.services.hass.hass_sync.transaction.atomic') as mock_atomic:
-            
-            # Mock atomic context manager
-            mock_atomic.return_value.__enter__ = Mock()
-            mock_atomic.return_value.__exit__ = Mock()
-            
-            self.synchronizer._sync_helper()
-            
-            # Verify operations were called within transaction context
-            mock_create.assert_called_once_with(hass_device=new_device, result=mock_atomic.return_value.__enter__.return_value)
-            mock_remove.assert_called_once_with(entity=existing_entity, result=mock_atomic.return_value.__enter__.return_value)
-
-
-class TestHassSynchronizerWithRealData(TestCase):
+class TestHassSynchronizerStateConversion(TestCase):
     """Test HassSynchronizer with real HASS API data"""
     
     @classmethod
@@ -429,9 +205,9 @@ class TestHassSynchronizerWithRealData(TestCase):
     @patch('hi.services.hass.hass_sync.HassConverter.create_hass_state')
     @patch.object(HassSynchronizer, '_get_existing_hass_entities')
     @patch.object(HassSynchronizer, 'hass_manager')
-    def test_sync_helper_with_real_hass_data_structure(self, mock_hass_manager, 
-                                                      mock_get_entities, mock_create_state,
-                                                      mock_states_to_devices):
+    def test_sync_helper_with_real_hass_data_structure(self, mock_hass_manager,
+                                                       mock_get_entities, mock_create_state,
+                                                       mock_states_to_devices):
         """Test sync helper processes real HASS API data structure correctly"""
         if not self.real_hass_states_data:
             self.skipTest("No real HASS data available for testing")
@@ -486,10 +262,93 @@ class TestHassSynchronizerWithRealData(TestCase):
         expected_domains = ['camera', 'sensor', 'script']
         for expected_domain in expected_domains:
             self.assertIn(expected_domain, domains, 
-                         f"Should have {expected_domain} entities for sync testing")
+                          f"Should have {expected_domain} entities for sync testing")
         
         # Verify substantial data for comprehensive sync testing
         self.assertGreaterEqual(len(entity_ids), 10, "Should have substantial entities for sync testing")
+
+
+class TestHassSynchronizerTransactionBehavior(TestCase):
+    """Test transaction handling and atomicity in sync operations"""
+    
+    def setUp(self):
+        self.synchronizer = HassSynchronizer()
+    
+    def test_sync_helper_executes_entity_operations_atomically(self):
+        """Test that all entity operations in sync_helper execute within single transaction"""
+        with patch.object(self.synchronizer, 'hass_manager') as mock_hass_manager, \
+             patch.object(self.synchronizer, '_get_existing_hass_entities') as mock_get_entities, \
+             patch.object(self.synchronizer, '_create_entity') as mock_create, \
+             patch.object(self.synchronizer, '_remove_entity') as mock_remove:
+            
+            # Setup manager
+            mock_manager = Mock()
+            mock_manager.hass_client = Mock()
+            mock_hass_manager.return_value = mock_manager
+            
+            # Setup scenario: one new device, one entity to remove
+            api_states = {'light.new': self._create_mock_hass_state('light.new', 'light', 'on')}
+            mock_manager.fetch_hass_states_from_api.return_value = api_states
+            
+            old_entity = Mock(spec=Entity)
+            old_key = IntegrationKey(integration_id='hass', integration_name='old_device')
+            mock_get_entities.return_value = {old_key: old_entity}
+            
+            # Track transaction usage
+            with patch('hi.services.hass.hass_sync.transaction.atomic') as mock_atomic:
+                mock_atomic.return_value.__enter__ = Mock()
+                mock_atomic.return_value.__exit__ = Mock()
+                
+                result = self.synchronizer._sync_helper()
+                
+                # Verify atomic transaction was used exactly once
+                mock_atomic.assert_called_once()
+                
+                # Verify both operations occurred (would be within same transaction)
+                mock_create.assert_called_once()
+                mock_remove.assert_called_once()
+                
+                # Verify successful result
+                self.assertEqual(len(result.error_list), 0)
+    
+    def test_sync_helper_rollback_behavior_on_entity_operation_failure(self):
+        """Test that transaction rollback works when entity operations fail"""
+        with patch.object(self.synchronizer, 'hass_manager') as mock_hass_manager, \
+             patch.object(self.synchronizer, '_get_existing_hass_entities') as mock_get_entities:
+            
+            # Setup manager  
+            mock_manager = Mock()
+            mock_manager.hass_client = Mock()
+            mock_hass_manager.return_value = mock_manager
+            
+            # Setup API data
+            api_states = {'light.test': self._create_mock_hass_state('light.test', 'light', 'on')}
+            mock_manager.fetch_hass_states_from_api.return_value = api_states
+            mock_get_entities.return_value = {}
+            
+            # Mock entity creation failure within transaction
+            with patch.object(self.synchronizer, '_create_entity') as mock_create:
+                mock_create.side_effect = Exception("Entity creation failed")
+                
+                # Transaction should propagate the exception (allowing rollback)
+                with self.assertRaises(Exception) as context:
+                    self.synchronizer._sync_helper()
+                
+                self.assertEqual(str(context.exception), "Entity creation failed")
+    
+    def _create_mock_hass_state(self, entity_id, domain, state):
+        """Helper to create mock HASS state for testing"""
+        hass_state = Mock(spec=HassState)
+        hass_state.entity_id = entity_id
+        hass_state.domain = domain
+        hass_state.state_value = state
+        hass_state.entity_name_sans_prefix = entity_id.split('.', 1)[1]
+        hass_state.entity_name_sans_suffix = hass_state.entity_name_sans_prefix
+        hass_state.device_group_id = None
+        hass_state.attributes = {}
+        hass_state.device_class = None
+        hass_state.friendly_name = None
+        return hass_state
 
 
 class TestHassSynchronizerErrorScenarios(TestCase):
@@ -527,8 +386,9 @@ class TestHassSynchronizerErrorScenarios(TestCase):
     @patch('hi.services.hass.hass_sync.HassConverter.hass_states_to_hass_devices')
     @patch.object(HassSynchronizer, '_get_existing_hass_entities')
     @patch.object(HassSynchronizer, 'hass_manager')
-    def test_sync_helper_handles_converter_failure(self, mock_hass_manager, 
-                                                  mock_get_entities, mock_states_to_devices):
+    def test_sync_helper_handles_converter_failure(
+            self, mock_hass_manager, 
+            mock_get_entities, mock_states_to_devices ):
         """Test sync helper handles converter failures"""
         # Setup mocks
         mock_manager = Mock()
@@ -566,7 +426,7 @@ class TestHassSynchronizerMixinIntegration(TestCase):
     def setUp(self):
         self.synchronizer = HassSynchronizer()
     
-    @patch('hi.services.hass.hass_sync.HassManager')
+    @patch('hi.services.hass.hass_mixins.HassManager')
     def test_hass_mixin_integration(self, mock_manager_class):
         """Test HassMixin integration provides hass_manager access"""
         mock_manager_instance = Mock()

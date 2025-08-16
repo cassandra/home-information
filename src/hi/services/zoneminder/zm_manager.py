@@ -75,8 +75,8 @@ class ZoneMinderManager( Singleton ):
         for callback in self._change_listeners:
             try:
                 callback()
-            except Exception as e:
-                logger.exception( 'Problem calling setting change callback.', e )
+            except Exception:
+                logger.exception( 'Problem calling setting change callback.' )
             continue
         return
     
@@ -241,7 +241,7 @@ class ZoneMinderManager( Singleton ):
                     
             logger.error( 'ZoneMinder timezone name is not available.' )
                 
-        except IntegrationAttribute.DoesNotExist:
+        except (Integration.DoesNotExist, IntegrationAttribute.DoesNotExist):
             logger.error( 'ZoneMinder timezone not found.' )
 
         return 'UTC'
