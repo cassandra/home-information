@@ -13,102 +13,131 @@ logging.disable(logging.CRITICAL)
 
 class TestCollection(BaseTestCase):
 
-    def test_collection_enum_property_conversions(self):
-        """Test Collection enum property conversions - custom business logic."""
+    def test_collection_type_change_affects_default_behavior(self):
+        """Test Collection type changes impact system behavior - business logic validation."""
         collection = Collection.objects.create(
-            name='Test Collection',
+            name='Camera Collection',
             collection_type_str='CAMERAS',
             collection_view_type_str='GRID'
         )
         
-        # Test getter converts string to enum
+        # Verify initial type
         self.assertEqual(collection.collection_type, CollectionType.CAMERAS)
-        self.assertEqual(collection.collection_view_type, CollectionViewType.GRID)
         
-        # Test setter converts enum to string
+        # Change to TOOLS type should update both enum property and string storage
         collection.collection_type = CollectionType.TOOLS
-        collection.collection_view_type = CollectionViewType.LIST
+        collection.save()
+        
+        # Reload from database to verify persistence
+        collection.refresh_from_db()
+        self.assertEqual(collection.collection_type, CollectionType.TOOLS)
         self.assertEqual(collection.collection_type_str, 'tools')
+        
+        # Verify view type changes work similarly
+        collection.collection_view_type = CollectionViewType.LIST
+        collection.save()
+        collection.refresh_from_db()
+        self.assertEqual(collection.collection_view_type, CollectionViewType.LIST)
         self.assertEqual(collection.collection_view_type_str, 'list')
-        return
 
-    def test_collection_item_type_property(self):
-        """Test item_type property - critical for type system integration."""
+    def test_collection_integrates_with_item_type_system(self):
+        """Test Collection item_type integration - enables polymorphic location item handling."""
         collection = Collection.objects.create(
             name='Test Collection',
             collection_type_str='OTHER',
             collection_view_type_str='GRID'
         )
         
+        # Verify collection implements location item interface
         self.assertEqual(collection.item_type, ItemType.COLLECTION)
-        return
-
-    def test_collection_ordering_by_order_id(self):
-        """Test Collection ordering - critical for UI display order."""
-        # Create collections with different order_ids
-        collection1 = Collection.objects.create(
-            name='First Collection',
-            collection_type_str='OTHER',
-            collection_view_type_str='GRID',
-            order_id=2
-        )
-        collection2 = Collection.objects.create(
-            name='Second Collection',
-            collection_type_str='OTHER',
-            collection_view_type_str='GRID',
-            order_id=1
-        )
-        collection3 = Collection.objects.create(
-            name='Third Collection',
-            collection_type_str='OTHER',
-            collection_view_type_str='GRID',
-            order_id=3
+        
+        # Verify this enables polymorphic handling in location positioning
+        location = Location.objects.create(
+            name='Test Location',
+            svg_fragment_filename='test.svg',
+            svg_view_box_str='0 0 100 100'
         )
         
-        # Should be ordered by order_id
-        collections = list(Collection.objects.all())
-        self.assertEqual(collections[0], collection2)  # order_id=1
-        self.assertEqual(collections[1], collection1)  # order_id=2
-        self.assertEqual(collections[2], collection3)  # order_id=3
-        return
+        position = CollectionPosition.objects.create(
+            location=location,
+            collection=collection,
+            svg_x=10.0, svg_y=20.0, svg_scale=1.0, svg_rotate=0.0
+        )
+        
+        # location_item property should delegate to collection
+        self.assertEqual(position.location_item, collection)
+        self.assertEqual(position.location_item.item_type, ItemType.COLLECTION)
+
+    def test_collection_ordering_supports_ui_drag_and_drop_resequencing(self):
+        """Test Collection ordering behavior - enables dynamic UI reordering."""
+        # Create collections simulating user drag-and-drop reordering
+        tools = Collection.objects.create(
+            name='Tools', collection_type_str='TOOLS',
+            collection_view_type_str='GRID', order_id=3
+        )
+        cameras = Collection.objects.create(
+            name='Cameras', collection_type_str='CAMERAS',
+            collection_view_type_str='GRID', order_id=1
+        )
+        Collection.objects.create(
+            name='Lights', collection_type_str='OTHER',
+            collection_view_type_str='LIST', order_id=2
+        )
+        
+        # Verify default ordering matches order_id sequence
+        ordered_collections = list(Collection.objects.all())
+        names = [c.name for c in ordered_collections]
+        self.assertEqual(names, ['Cameras', 'Lights', 'Tools'])
+        
+        # Simulate reordering Tools to first position
+        tools.order_id = 0
+        tools.save()
+        
+        # Verify new ordering takes effect immediately
+        reordered_collections = list(Collection.objects.all())
+        new_names = [c.name for c in reordered_collections]
+        self.assertEqual(new_names, ['Tools', 'Cameras', 'Lights'])
+        
+        # Verify ordering is stable across different collection types
+        cameras.order_id = 5
+        cameras.save()
+        final_collections = list(Collection.objects.all())
+        final_names = [c.name for c in final_collections]
+        self.assertEqual(final_names, ['Tools', 'Lights', 'Cameras'])
 
 
 class TestCollectionEntity(BaseTestCase):
 
-    def test_collection_entity_ordering_by_order_id(self):
-        """Test CollectionEntity ordering - critical for entity display order."""
+    def test_collection_entity_ordering_preserves_user_arrangement(self):
+        """Test CollectionEntity ordering persistence - maintains user-defined entity sequence."""
         collection = Collection.objects.create(
-            name='Test Collection',
-            collection_type_str='OTHER',
+            name='Security System',
+            collection_type_str='CAMERAS',
             collection_view_type_str='GRID'
         )
         
-        entity1 = Entity.objects.create(
-            name='Entity 1',
-            entity_type_str='CAMERA'
-        )
-        entity2 = Entity.objects.create(
-            name='Entity 2',
-            entity_type_str='LIGHT'
-        )
+        # Create entities representing physical layout order
+        front_door = Entity.objects.create(name='Front Door Camera', entity_type_str='CAMERA')
+        garage = Entity.objects.create(name='Garage Camera', entity_type_str='CAMERA')
+        backyard = Entity.objects.create(name='Backyard Camera', entity_type_str='CAMERA')
         
-        # Create collection entities with specific order
-        ce1 = CollectionEntity.objects.create(
-            collection=collection,
-            entity=entity1,
-            order_id=2
-        )
-        ce2 = CollectionEntity.objects.create(
-            collection=collection,
-            entity=entity2,
-            order_id=1
-        )
+        # User arranges cameras in specific order: garage, backyard, front_door
+        CollectionEntity.objects.create(collection=collection, entity=garage, order_id=1)
+        CollectionEntity.objects.create(collection=collection, entity=backyard, order_id=2)
+        CollectionEntity.objects.create(collection=collection, entity=front_door, order_id=3)
         
-        # Should be ordered by order_id
-        collection_entities = list(CollectionEntity.objects.filter(collection=collection))
-        self.assertEqual(collection_entities[0], ce2)  # order_id=1
-        self.assertEqual(collection_entities[1], ce1)  # order_id=2
-        return
+        # Verify entities maintain user-specified order through collection relationship
+        ordered_entities = collection.entities.order_by('order_id')
+        entity_names = [ce.entity.name for ce in ordered_entities]
+        self.assertEqual(entity_names, [
+            'Garage Camera', 'Backyard Camera', 'Front Door Camera'
+        ])
+        
+        # Test order persistence across app restarts (database reload)
+        collection.refresh_from_db()
+        reloaded_entities = collection.entities.order_by('order_id')
+        reloaded_names = [ce.entity.name for ce in reloaded_entities]
+        self.assertEqual(reloaded_names, entity_names)
 
     def test_collection_entity_cascade_deletion_from_collection(self):
         """Test cascade deletion from collection - critical for data integrity."""
@@ -162,33 +191,48 @@ class TestCollectionEntity(BaseTestCase):
         self.assertFalse(CollectionEntity.objects.filter(id=ce_id).exists())
         return
 
-    def test_collection_entity_database_indexing(self):
-        """Test CollectionEntity database indexing - critical for query performance."""
-        collection = Collection.objects.create(
-            name='Test Collection',
-            collection_type_str='OTHER',
+    def test_collection_entity_efficient_membership_queries(self):
+        """Test CollectionEntity query optimization - supports fast membership checks."""
+        cameras = Collection.objects.create(
+            name='Cameras', collection_type_str='CAMERAS',
             collection_view_type_str='GRID'
         )
-        
-        entity = Entity.objects.create(
-            name='Test Entity',
-            entity_type_str='CAMERA'
+        lights = Collection.objects.create(
+            name='Lights', collection_type_str='LIGHTS',
+            collection_view_type_str='LIST'
         )
         
-        collection_entity = CollectionEntity.objects.create(
-            collection=collection,
-            entity=entity
-        )
+        # Create entities in both collections
+        outdoor_cam = Entity.objects.create(name='Outdoor Camera', entity_type_str='CAMERA')
+        indoor_cam = Entity.objects.create(name='Indoor Camera', entity_type_str='CAMERA')
+        porch_light = Entity.objects.create(name='Porch Light', entity_type_str='LIGHT')
         
-        # Test that indexed query works efficiently
-        # (The actual index performance isn't testable in unit tests,
-        # but we can verify the fields are queryable)
-        results = CollectionEntity.objects.filter(
-            collection=collection,
-            entity=entity
-        )
-        self.assertIn(collection_entity, results)
-        return
+        CollectionEntity.objects.create(collection=cameras, entity=outdoor_cam)
+        CollectionEntity.objects.create(collection=cameras, entity=indoor_cam)
+        CollectionEntity.objects.create(collection=lights, entity=porch_light)
+        
+        # Test efficient membership queries that UI depends on
+        camera_entities = CollectionEntity.objects.filter(collection=cameras)
+        self.assertEqual(camera_entities.count(), 2)
+        
+        camera_entity_names = set(ce.entity.name for ce in camera_entities)
+        self.assertEqual(camera_entity_names, {'Outdoor Camera', 'Indoor Camera'})
+        
+        # Test cross-collection entity queries
+        outdoor_cam_collections = CollectionEntity.objects.filter(entity=outdoor_cam)
+        self.assertEqual(outdoor_cam_collections.count(), 1)
+        self.assertEqual(outdoor_cam_collections.first().collection, cameras)
+        
+        # Test that entity can be efficiently checked against multiple collections
+        all_collections = Collection.objects.all()
+        for collection in all_collections:
+            entity_exists = CollectionEntity.objects.filter(
+                collection=collection, entity=porch_light
+            ).exists()
+            if collection == lights:
+                self.assertTrue(entity_exists)
+            else:
+                self.assertFalse(entity_exists)
 
 
 class TestCollectionPosition(BaseTestCase):
@@ -229,32 +273,45 @@ class TestCollectionPosition(BaseTestCase):
             )
         return
 
-    def test_collection_position_location_item_property(self):
-        """Test location_item property delegation - critical for interface compliance."""
+    def test_collection_position_enables_polymorphic_svg_rendering(self):
+        """Test CollectionPosition location_item delegation - supports unified SVG positioning."""
         location = Location.objects.create(
-            name='Test Location',
-            svg_fragment_filename='test.svg',
-            svg_view_box_str='0 0 100 100'
+            name='Floor Plan',
+            svg_fragment_filename='floor.svg',
+            svg_view_box_str='0 0 800 600'
         )
         
-        collection = Collection.objects.create(
-            name='Test Collection',
-            collection_type_str='OTHER',
+        # Create collections with different visual characteristics
+        cameras = Collection.objects.create(
+            name='Security Cameras', collection_type_str='CAMERAS',
             collection_view_type_str='GRID'
         )
-        
-        position = CollectionPosition.objects.create(
-            location=location,
-            collection=collection,
-            svg_x=10.0,
-            svg_y=20.0,
-            svg_scale=1.0,
-            svg_rotate=0.0
+        lights = Collection.objects.create(
+            name='Smart Lights', collection_type_str='OTHER',
+            collection_view_type_str='LIST'
         )
         
-        # Should delegate to collection
-        self.assertEqual(position.location_item, collection)
-        return
+        # Position collections at different locations
+        camera_pos = CollectionPosition.objects.create(
+            location=location, collection=cameras,
+            svg_x=100.0, svg_y=150.0, svg_scale=1.2, svg_rotate=0.0
+        )
+        light_pos = CollectionPosition.objects.create(
+            location=location, collection=lights,
+            svg_x=300.0, svg_y=400.0, svg_scale=0.8, svg_rotate=45.0
+        )
+        
+        # Verify polymorphic access to positioned items
+        self.assertEqual(camera_pos.location_item, cameras)
+        self.assertEqual(light_pos.location_item, lights)
+        
+        # Verify each position references correct collection type
+        self.assertEqual(camera_pos.location_item.collection_type, CollectionType.CAMERAS)
+        self.assertEqual(light_pos.location_item.collection_type, CollectionType.OTHER)
+        
+        # Test that positioning data is preserved for SVG rendering
+        self.assertEqual(float(camera_pos.svg_scale), 1.2)
+        self.assertEqual(float(light_pos.svg_rotate), 45.0)
 
 
 class TestCollectionPath(BaseTestCase):
@@ -289,29 +346,46 @@ class TestCollectionPath(BaseTestCase):
             )
         return
 
-    def test_collection_path_location_item_property(self):
-        """Test location_item property delegation - critical for interface compliance."""
+    def test_collection_path_supports_complex_svg_shapes(self):
+        """Test CollectionPath SVG path handling - enables custom collection visualizations."""
         location = Location.objects.create(
-            name='Test Location',
-            svg_fragment_filename='test.svg',
-            svg_view_box_str='0 0 100 100'
+            name='Property Layout',
+            svg_fragment_filename='property.svg',
+            svg_view_box_str='0 0 1000 800'
         )
         
-        collection = Collection.objects.create(
-            name='Test Collection',
-            collection_type_str='OTHER',
+        # Create collections requiring path-based visualization
+        patrol_route = Collection.objects.create(
+            name='Security Patrol Route', collection_type_str='OTHER',
+            collection_view_type_str='LIST'
+        )
+        irrigation_zone = Collection.objects.create(
+            name='Garden Irrigation Zone', collection_type_str='OTHER',
             collection_view_type_str='GRID'
         )
         
-        path = CollectionPath.objects.create(
-            location=location,
-            collection=collection,
-            svg_path='M 10,10 L 50,50 Z'
+        # Define complex SVG paths for different collection visualizations
+        route_path = CollectionPath.objects.create(
+            location=location, collection=patrol_route,
+            svg_path='M 50,100 L 200,100 L 200,300 L 400,300 L 400,100 L 600,100'
+        )
+        zone_path = CollectionPath.objects.create(
+            location=location, collection=irrigation_zone,
+            svg_path='M 100,400 Q 300,350 500,400 Q 300,450 100,400 Z'
         )
         
-        # Should delegate to collection
-        self.assertEqual(path.location_item, collection)
-        return
+        # Verify path delegation enables polymorphic handling
+        self.assertEqual(route_path.location_item, patrol_route)
+        self.assertEqual(zone_path.location_item, irrigation_zone)
+        
+        # Verify different path types can coexist for same location
+        location_paths = CollectionPath.objects.filter(location=location)
+        self.assertEqual(location_paths.count(), 2)
+        
+        # Verify SVG path data is preserved for rendering
+        self.assertIn('M 50,100', route_path.svg_path)
+        self.assertIn('Q 300,350', zone_path.svg_path)  # Quadratic curve
+        self.assertTrue(zone_path.svg_path.endswith('Z'))  # Closed path
 
 
 class TestCollectionView(BaseTestCase):
