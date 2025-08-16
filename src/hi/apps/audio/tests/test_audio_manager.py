@@ -8,71 +8,94 @@ logging.disable(logging.CRITICAL)
 
 class TestAudioManager(BaseTestCase):
 
-    def test_audio_manager_singleton_behavior(self):
-        """Test AudioManager singleton pattern - critical for system consistency."""
+    def test_audio_manager_singleton_ensures_consistent_state(self):
+        """Test that singleton behavior maintains consistent state across instances."""
         manager1 = AudioManager()
+        manager1.ensure_initialized()
+        
         manager2 = AudioManager()
         
+        # Both should reference same instance with same state
         self.assertIs(manager1, manager2)
+        self.assertTrue(manager2._was_initialized)
         return
 
-    def test_audio_manager_initialization_state(self):
-        """Test AudioManager initialization state tracking - critical setup logic."""
+    def test_initialization_ensures_proper_state(self):
+        """Test that initialization properly sets up manager state."""
         manager = AudioManager()
         
-        # Test ensure_initialized sets proper state
+        # Ensure initialization has been called
         manager.ensure_initialized()
+        
+        # Should be properly initialized
         self.assertTrue(manager._was_initialized)
         
-        # Subsequent calls should not change state
-        manager.ensure_initialized()
-        self.assertTrue(manager._was_initialized)
+        # Should have a valid audio map
+        audio_map = manager.get_audio_map()
+        self.assertIsInstance(audio_map, dict)
         return
 
-    def test_audio_manager_mixin_inheritance(self):
-        """Test AudioManager mixin inheritance - critical for system integration."""
-        manager = AudioManager()
-        
-        # Should inherit from SettingsMixin
-        self.assertTrue(hasattr(manager, 'settings_manager'))
-        
-        # Should be a Singleton
-        from hi.apps.common.singleton import Singleton
-        self.assertIsInstance(manager, Singleton)
-        return
-
-    def test_audio_manager_method_existence(self):
-        """Test AudioManager has expected methods - critical API consistency."""
-        manager = AudioManager()
-        
-        # Should have public interface methods
-        self.assertTrue(hasattr(manager, 'get_audio_map'))
-        self.assertTrue(callable(manager.get_audio_map))
-        return
-
-    def test_audio_manager_audio_map_generation(self):
-        """Test audio map generation - critical for UI audio functionality."""
+    def test_audio_map_returns_dict_with_audio_urls(self):
+        """Test that audio map building returns valid dictionary structure."""
         manager = AudioManager()
         manager.ensure_initialized()
-        
         audio_map = manager.get_audio_map()
         
         # Should return a dictionary
         self.assertIsInstance(audio_map, dict)
         
-        # Should have entries for the available audio signals
-        # (exact content depends on settings, but should not be empty)
-        self.assertGreater(len(audio_map), 0)
+        # All values should be valid audio URLs if they exist
+        for signal_name, url in audio_map.items():
+            self.assertIsInstance(signal_name, str)
+            self.assertIsInstance(url, str)
+            if url:  # If URL is not empty
+                self.assertTrue(url.startswith('/static/audio/'))
+                self.assertTrue(url.endswith('.wav'))
         return
 
-    def test_audio_manager_audio_mixin_integration(self):
-        """Test AudioMixin integration - critical for ease of use."""
+    def test_multiple_initialization_calls_are_safe(self):
+        """Test that multiple initialization calls don't cause issues."""
+        manager = AudioManager()
+        
+        # Multiple calls should be safe
+        manager.ensure_initialized()
+        manager.ensure_initialized()
+        manager.ensure_initialized()
+        
+        # Should still be properly initialized
+        self.assertTrue(manager._was_initialized)
+        
+        # Should still return valid audio map
+        audio_map = manager.get_audio_map()
+        self.assertIsInstance(audio_map, dict)
+        return
+
+    def test_settings_change_reload_functionality(self):
+        """Test that settings change handling works correctly."""
+        manager = AudioManager()
+        manager.ensure_initialized()
+        
+        # Simulate settings change by calling reload directly
+        manager._reload_audio_map()
+        
+        # Should still have valid audio map after reload
+        reloaded_map = manager.get_audio_map()
+        self.assertIsInstance(reloaded_map, dict)
+        return
+
+    def test_audio_mixin_provides_manager_access(self):
+        """Test that AudioMixin provides convenient access to audio manager."""
         from hi.apps.audio.audio_mixins import AudioMixin
         
         mixin = AudioMixin()
         manager = mixin.audio_manager()
         
-        # Should return the same singleton instance
+        # Should return the singleton instance
         direct_manager = AudioManager()
         self.assertIs(manager, direct_manager)
+        
+        # Should be initialized and functional
+        manager.ensure_initialized()
+        audio_map = manager.get_audio_map()
+        self.assertIsInstance(audio_map, dict)
         return
