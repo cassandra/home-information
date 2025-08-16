@@ -54,6 +54,214 @@ class TestUSNO(BaseTestCase):
         self.assertEqual(self.usno.id, USNO.SOURCE_ID)
         return
 
+    # ============= NEW BEHAVIOR-FOCUSED TESTS =============
+    # These tests focus on testing the public interface of USNO
+    # rather than testing private implementation details
+    
+    @patch('hi.apps.weather.weather_sources.usno.requests.get')
+    def test_get_astronomical_data_returns_complete_data(self, mock_get):
+        """Test that get_astronomical_data returns properly structured astronomical data."""
+        # Mock successful API response with comprehensive data
+        mock_response_data = {
+            "apiversion": "4.0.1",
+            "properties": {
+                "data": {
+                    "curphase": "Waxing Crescent",
+                    "fracillum": "35%",
+                    "sundata": [
+                        {"phen": "Rise", "time": "07:40"},
+                        {"phen": "Set", "time": "19:40"},
+                        {"phen": "Upper Transit", "time": "13:40"},
+                    ],
+                    "moondata": [
+                        {"phen": "Rise", "time": "11:11"},
+                        {"phen": "Set", "time": "00:52"},
+                    ],
+                    "tz": -5.0
+                }
+            }
+        }
+        
+        mock_response = Mock()
+        mock_response.json.return_value = mock_response_data
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+        
+        # Test public interface
+        result = self.usno.get_astronomical_data(
+            geographic_location=self.test_location,
+            target_date=date(2024, 3, 15)
+        )
+        
+        # Verify proper astronomical data structure is returned
+        self.assertIsInstance(result, AstronomicalData)
+        
+        # Verify solar data is populated
+        self.assertIsNotNone(result.sunrise)
+        self.assertIsInstance(result.sunrise, TimeDataPoint)
+        self.assertEqual(result.sunrise.value, time(7, 40))
+        
+        self.assertIsNotNone(result.sunset)
+        self.assertIsInstance(result.sunset, TimeDataPoint)
+        self.assertEqual(result.sunset.value, time(19, 40))
+        
+        self.assertIsNotNone(result.solar_noon)
+        self.assertIsInstance(result.solar_noon, TimeDataPoint)
+        self.assertEqual(result.solar_noon.value, time(13, 40))
+        
+        # Verify lunar data is populated
+        self.assertIsNotNone(result.moonrise)
+        self.assertIsInstance(result.moonrise, TimeDataPoint)
+        self.assertEqual(result.moonrise.value, time(11, 11))
+        
+        self.assertIsNotNone(result.moonset)
+        self.assertIsInstance(result.moonset, TimeDataPoint)
+        self.assertEqual(result.moonset.value, time(0, 52))
+        
+        # Verify moon phase data
+        self.assertIsNotNone(result.moon_illumnination)
+        self.assertIsInstance(result.moon_illumnination, NumericDataPoint)
+        self.assertEqual(result.moon_illumnination.quantity_ave.magnitude, 35.0)
+        
+        self.assertIsNotNone(result.moon_is_waxing)
+        self.assertIsInstance(result.moon_is_waxing, BooleanDataPoint)
+        self.assertTrue(result.moon_is_waxing.value)
+        
+        # Verify data source attribution
+        self.assertEqual(result.sunrise.source.id, 'usno')
+        self.assertEqual(result.sunrise.station.source.id, 'usno')
+        return
+    
+    @patch('hi.apps.weather.weather_sources.usno.requests.get')
+    def test_get_astronomical_data_handles_api_errors_gracefully(self, mock_get):
+        """Test that API errors are handled gracefully in public interface."""
+        # Mock API error - need to mock the redis client to skip cache
+        with patch.object(self.usno, '_redis_client') as mock_redis:
+            mock_redis.get.return_value = None  # Cache miss
+            
+            # Mock API error
+            mock_response = Mock()
+            mock_response.raise_for_status.side_effect = Exception("HTTP 500 Internal Server Error")
+            mock_get.return_value = mock_response
+            
+            # Public interface should handle errors gracefully
+            with self.assertRaises(Exception):
+                self.usno.get_astronomical_data(
+                    geographic_location=self.test_location,
+                    target_date=date(2024, 3, 15)
+                )
+        return
+    
+    @patch('hi.apps.weather.weather_sources.usno.requests.get')
+    def test_get_astronomical_data_uses_caching(self, mock_get):
+        """Test that the public interface properly uses Redis caching."""
+        # Mock cached data
+        cached_api_data = {
+            "properties": {
+                "data": {
+                    "curphase": "Waxing Crescent",
+                    "fracillum": "35%",
+                    "sundata": [{"phen": "Rise", "time": "07:40"}],
+                    "tz": -5.0
+                }
+            }
+        }
+        
+        target_date = date(2024, 3, 15)
+        cache_key = (f'ws:usno:astronomical:{self.test_location.latitude:.3f}:'
+                     f'{self.test_location.longitude:.3f}:{target_date}')
+        
+        # Mock Redis to return cached data
+        with patch.object(self.usno, '_redis_client') as mock_redis:
+            mock_redis.get.return_value = json.dumps(cached_api_data)
+            
+            with patch('hi.apps.common.datetimeproxy.now') as mock_now:
+                mock_now.return_value = datetime(2024, 3, 15, 14, 30, 0)
+                
+                # Call public interface
+                result = self.usno.get_astronomical_data(
+                    geographic_location=self.test_location,
+                    target_date=target_date
+                )
+                
+                # Verify cache was used and API was not called
+                mock_redis.get.assert_called_once_with(cache_key)
+                mock_get.assert_not_called()
+                
+                # Verify result structure is correct
+                self.assertIsInstance(result, AstronomicalData)
+                self.assertIsNotNone(result.sunrise)
+        return
+    
+    @patch('hi.apps.weather.weather_sources.usno.USNO.get_astronomical_data')
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_get_astronomical_data_list_aggregates_multiple_days(self, mock_now, mock_get_astronomical_data):
+        """Test that get_astronomical_data_list properly aggregates multiple days of data."""
+        # Mock current time
+        mock_today = datetime(2024, 3, 15, 10, 0, 0)
+        mock_now.return_value = mock_today
+        
+        # Mock timezone from superclass
+        with patch.object(type(self.usno), 'tz_name',
+                          new_callable=lambda: property(lambda self: 'America/Chicago')):
+            
+            # Mock successful astronomical data for each day
+            mock_astronomical_data = AstronomicalData(
+                sunrise=TimeDataPoint(
+                    station=Station(
+                        source=self.usno.data_point_source,
+                        station_id='test-station',
+                        name='Test Station',
+                        geo_location=self.test_location,
+                    ),
+                    source_datetime=mock_today,
+                    value=time(7, 40),
+                ),
+                sunset=TimeDataPoint(
+                    station=Station(
+                        source=self.usno.data_point_source,
+                        station_id='test-station',
+                        name='Test Station',
+                        geo_location=self.test_location,
+                    ),
+                    source_datetime=mock_today,
+                    value=time(19, 40),
+                ),
+            )
+            mock_get_astronomical_data.return_value = mock_astronomical_data
+            
+            # Test with 3 days instead of default 10 for faster test
+            result = self.usno.get_astronomical_data_list(
+                geographic_location=self.test_location,
+                days_count=3
+            )
+            
+            # Verify result structure
+            self.assertIsInstance(result, list)
+            self.assertEqual(len(result), 3)
+            
+            # Verify each item is IntervalAstronomical
+            for item in result:
+                self.assertIsInstance(item, IntervalAstronomical)
+                self.assertIsInstance(item.interval, TimeInterval)
+                self.assertIsInstance(item.data, AstronomicalData)
+                
+            # Verify get_astronomical_data was called for each day
+            self.assertEqual(mock_get_astronomical_data.call_count, 3)
+            
+            # Verify intervals are properly aligned to local day boundaries
+            chicago_tz = pytz.timezone('America/Chicago')
+            first_interval = result[0].interval
+            
+            # First day should start at local midnight
+            expected_start_local = chicago_tz.localize(datetime.combine(mock_today.date(),
+                                                                        datetime.min.time()))
+            expected_start_utc = expected_start_local.astimezone(pytz.UTC)
+            self.assertEqual(first_interval.start, expected_start_utc)
+        return
+    
+    # ============= ORIGINAL TESTS (TO BE DEPRECATED) =============
+
     @patch('hi.apps.weather.weather_sources.usno.requests.get')
     def test_get_astronomical_api_data_from_api_success(self, mock_get):
         """Test successful API call for astronomical data."""
@@ -354,7 +562,8 @@ class TestUSNO(BaseTestCase):
     def test_get_astronomical_data_caching(self):
         """Test Redis caching behavior - HIGH VALUE for performance optimization."""
         target_date = date(2024, 3, 15)
-        cache_key = f'ws:usno:astronomical:{self.test_location.latitude:.3f}:{self.test_location.longitude:.3f}:{target_date}'
+        cache_key = (f'ws:usno:astronomical:{self.test_location.latitude:.3f}:'
+                     f'{self.test_location.longitude:.3f}:{target_date}')
         
         # Mock cached data
         cached_api_data = {

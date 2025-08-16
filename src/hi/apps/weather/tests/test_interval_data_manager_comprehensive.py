@@ -107,138 +107,271 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
             interval=time_interval,
             data=weather_data
         )
+    
+    def create_hourly_forecast_manager(self, current_time, hour_count=12):
+        """Helper to create and initialize hourly forecast manager."""
+        # Ensure timezone-aware current_time
+        if current_time.tzinfo is None:
+            current_time = current_time.replace(tzinfo=pytz.UTC)
+            
+        with patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name', return_value='UTC'):
+            with patch('hi.apps.common.datetimeproxy.now', return_value=current_time):
+                manager = IntervalDataManager(
+                    interval_hours=1,
+                    max_interval_count=hour_count,
+                    is_order_ascending=True,
+                    data_class=WeatherForecastData
+                )
+                manager.ensure_initialized()
+                return manager
+    
+    def create_daily_history_manager(self, current_time, day_count=7):
+        """Helper to create and initialize daily history manager."""
+        # Ensure timezone-aware current_time
+        if current_time.tzinfo is None:
+            current_time = current_time.replace(tzinfo=pytz.UTC)
+            
+        with patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name', return_value='UTC'):
+            with patch('hi.apps.common.datetimeproxy.now', return_value=current_time):
+                manager = IntervalDataManager(
+                    interval_hours=24,
+                    max_interval_count=day_count,
+                    is_order_ascending=False,
+                    data_class=WeatherHistoryData
+                )
+                manager.ensure_initialized()
+                return manager
 
-    @patch('hi.apps.common.datetimeproxy.now')
-    def test_hourly_forecast_realistic_scenario(self, mock_now):
-        """Test hourly forecast aggregation with realistic weather data."""
-        # Mock current time: 2024-01-15 14:30:00
+    def test_hourly_forecast_manager_initialization(self):
+        """Test that hourly forecast manager initializes with correct intervals."""
         current_time = datetime(2024, 1, 15, 14, 30, 0)
+        manager = self.create_hourly_forecast_manager(current_time, hour_count=12)
+        
+        # Verify intervals were created correctly
+        self.assertEqual(len(manager._aggregated_interval_data_list), 12)
+        
+        # Verify first interval is properly aligned to hour boundary
+        first_interval = manager._aggregated_interval_data_list[0].interval_data.interval
+        self.assertEqual(first_interval.start, datetime(2024, 1, 15, 14, 0, 0, tzinfo=pytz.UTC))  # Rounded down to hour
+        self.assertEqual(first_interval.end, datetime(2024, 1, 15, 15, 0, 0, tzinfo=pytz.UTC))
+    
+    @patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name')
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_hourly_forecast_data_aggregation(self, mock_now, mock_tz_name):
+        """Test that forecast data is correctly aggregated into hourly intervals."""
+        mock_tz_name.return_value = 'UTC'
+        current_time = datetime(2024, 1, 15, 14, 30, 0)  # timezone-naive
         mock_now.return_value = current_time
         
-        # Create hourly forecast manager (like WeatherManager uses)
         manager = IntervalDataManager(
             interval_hours=1,
-            max_interval_count=12,  # 12 hours of forecast
+            max_interval_count=12,
             is_order_ascending=True,
             data_class=WeatherForecastData
         )
-        
         manager.ensure_initialized()
         
-        # Verify intervals were created correctly  
-        self.assertEqual(len(manager._aggregated_interval_data_list), 12)
-        first_interval = manager._aggregated_interval_data_list[0].interval_data.interval
-        self.assertEqual(first_interval.start, datetime(2024, 1, 15, 14, 0, 0))  # Rounded down to hour
-        self.assertEqual(first_interval.end, datetime(2024, 1, 15, 15, 0, 0))
-        
-        # Create overlapping hourly forecast data from primary source
-        source_intervals = [
-            # 2-hour forecast: 14:00-16:00 from NWS
-            self.create_interval_weather_forecast(
-                start_time=datetime(2024, 1, 15, 14, 0, 0),
-                end_time=datetime(2024, 1, 15, 16, 0, 0),
-                weather_data=self.create_weather_forecast_data(
-                    temperature_c=22.0,
-                    humidity_pct=65,
-                    description="Partly Cloudy",
-                    is_daytime=True
-                )
-            ),
-            # Next 2-hour forecast: 16:00-18:00 from NWS
-            self.create_interval_weather_forecast(
-                start_time=datetime(2024, 1, 15, 16, 0, 0),
-                end_time=datetime(2024, 1, 15, 18, 0, 0),
-                weather_data=self.create_weather_forecast_data(
-                    temperature_c=20.0,
-                    humidity_pct=70,
-                    description="Cloudy",
-                    is_daytime=True
-                )
+        # Create 2-hour forecast data that should populate multiple 1-hour intervals
+        # Use timezone-naive datetimes for hourly intervals
+        source_interval = self.create_interval_weather_forecast(
+            start_time=datetime(2024, 1, 15, 14, 0, 0),
+            end_time=datetime(2024, 1, 15, 16, 0, 0),
+            weather_data=self.create_weather_forecast_data(
+                temperature_c=22.0,
+                humidity_pct=65,
+                description="Partly Cloudy",
+                is_daytime=True
             )
-        ]
+        )
         
         # Add the forecast data
-        manager.add_data(
-            data_point_source=self.primary_source,
-            new_interval_data_list=source_intervals
-        )
-        
-        # Verify first aggregated interval got data from first source interval
-        first_aggregated = manager._aggregated_interval_data_list[0]
-        self.assertIsNotNone(first_aggregated.interval_data.data.temperature)
-        self.assertEqual(first_aggregated.interval_data.data.temperature.quantity_ave.magnitude, 22.0)
-        self.assertEqual(first_aggregated.interval_data.data.description_short.value, "Partly Cloudy")
-        
-        # Verify second aggregated interval also got data from first source interval (overlap)
-        second_aggregated = manager._aggregated_interval_data_list[1] 
-        self.assertIsNotNone(second_aggregated.interval_data.data.temperature)
-        self.assertEqual(second_aggregated.interval_data.data.temperature.quantity_ave.magnitude, 22.0)
-
-    @patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name')
-    @patch('hi.apps.common.datetimeproxy.now')
-    def test_daily_history_realistic_scenario(self, mock_now, mock_tz_name):
-        """Test daily history aggregation with realistic weather data."""
-        # Mock timezone to UTC for predictable results
-        mock_tz_name.return_value = 'UTC'
-        
-        # Mock current time: 2024-01-15 14:30:00
-        current_time = datetime(2024, 1, 15, 14, 30, 0)
-        mock_now.return_value = current_time
-        
-        # Create daily history manager (like WeatherManager uses)
-        manager = IntervalDataManager(
-            interval_hours=24,
-            max_interval_count=7,  # 7 days of history
-            is_order_ascending=False,  # Historical data goes backwards
-            data_class=WeatherHistoryData
-        )
-        
-        manager.ensure_initialized()
-        
-        # Verify intervals were created correctly for history
-        self.assertEqual(len(manager._aggregated_interval_data_list), 7)
-        
-        # First interval should be most recent 24h period (yesterday)
-        first_interval = manager._aggregated_interval_data_list[0].interval_data.interval
-        # Should be from Jan 14 00:00 to Jan 15 00:00 (timezone-aware in UTC)
-        expected_start = datetime(2024, 1, 14, 0, 0, 0, tzinfo=pytz.UTC)
-        expected_end = datetime(2024, 1, 15, 0, 0, 0, tzinfo=pytz.UTC)
-        self.assertEqual(first_interval.start, expected_start)
-        self.assertEqual(first_interval.end, expected_end)
-        
-        # Create historical data (daily summary from yesterday)
-        yesterday_data = WeatherHistoryData()
-        yesterday_data.temperature = NumericDataPoint(
-            station=self.test_station,
-            source_datetime=datetime(2024, 1, 14, 12, 0, 0),  # Noon yesterday
-            quantity_min=UnitQuantity(15.0, 'degC'),
-            quantity_ave=UnitQuantity(18.0, 'degC'), 
-            quantity_max=UnitQuantity(21.0, 'degC')
-        )
-        
-        # Create source interval with timezone-aware datetimes to match manager's intervals
-        source_interval = self.create_interval_weather_forecast(
-            start_time=datetime(2024, 1, 14, 0, 0, 0, tzinfo=pytz.UTC),
-            end_time=datetime(2024, 1, 15, 0, 0, 0, tzinfo=pytz.UTC),
-            weather_data=yesterday_data
-        )
-        
-        # Add the history data
         manager.add_data(
             data_point_source=self.primary_source,
             new_interval_data_list=[source_interval]
         )
         
-        # Verify aggregated data
+        # Verify data was aggregated into the correct intervals
         first_aggregated = manager._aggregated_interval_data_list[0]
         self.assertIsNotNone(first_aggregated.interval_data.data.temperature)
-        self.assertEqual(first_aggregated.interval_data.data.temperature.quantity_ave.magnitude, 18.0)
-        self.assertEqual(first_aggregated.interval_data.data.temperature.quantity_min.magnitude, 15.0)
-        self.assertEqual(first_aggregated.interval_data.data.temperature.quantity_max.magnitude, 21.0)
-
+        self.assertEqual(first_aggregated.interval_data.data.temperature.quantity_ave.magnitude, 22.0)
+        self.assertEqual(first_aggregated.interval_data.data.description_short.value, "Partly Cloudy")
+    
+    @patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name')
     @patch('hi.apps.common.datetimeproxy.now')
-    def test_multiple_source_priority_handling(self, mock_now):
+    def test_hourly_forecast_overlapping_intervals_aggregation(self, mock_now, mock_tz_name):
+        """Test that overlapping source intervals correctly populate multiple hourly intervals."""
+        mock_tz_name.return_value = 'UTC'
+        current_time = datetime(2024, 1, 15, 14, 30, 0)
+        mock_now.return_value = current_time
+        
+        manager = IntervalDataManager(
+            interval_hours=1,
+            max_interval_count=12,
+            is_order_ascending=True,
+            data_class=WeatherForecastData
+        )
+        manager.ensure_initialized()
+        
+        # Create 2-hour forecast that overlaps multiple 1-hour intervals
+        source_interval = self.create_interval_weather_forecast(
+            start_time=datetime(2024, 1, 15, 14, 0, 0),
+            end_time=datetime(2024, 1, 15, 16, 0, 0),
+            weather_data=self.create_weather_forecast_data(
+                temperature_c=22.0,
+                description="Partly Cloudy"
+            )
+        )
+        
+        manager.add_data(
+            data_point_source=self.primary_source,
+            new_interval_data_list=[source_interval]
+        )
+        
+        # Verify both affected hourly intervals got the data
+        first_aggregated = manager._aggregated_interval_data_list[0]  # 14:00-15:00
+        second_aggregated = manager._aggregated_interval_data_list[1]  # 15:00-16:00
+        
+        self.assertIsNotNone(first_aggregated.interval_data.data.temperature)
+        self.assertEqual(first_aggregated.interval_data.data.temperature.quantity_ave.magnitude, 22.0)
+        
+        self.assertIsNotNone(second_aggregated.interval_data.data.temperature)
+        self.assertEqual(second_aggregated.interval_data.data.temperature.quantity_ave.magnitude, 22.0)
+
+    @patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name')
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_hourly_forecast_multiple_source_intervals(self, mock_now, mock_tz_name):
+        """Test handling multiple non-overlapping source intervals."""
+        mock_tz_name.return_value = 'UTC'
+        current_time = datetime(2024, 1, 15, 14, 30, 0)
+        mock_now.return_value = current_time
+        
+        manager = IntervalDataManager(
+            interval_hours=1,
+            max_interval_count=12,
+            is_order_ascending=True,
+            data_class=WeatherForecastData
+        )
+        manager.ensure_initialized()
+        
+        # Create multiple source intervals with different weather
+        source_intervals = [
+            self.create_interval_weather_forecast(
+                start_time=datetime(2024, 1, 15, 14, 0, 0),
+                end_time=datetime(2024, 1, 15, 16, 0, 0),
+                weather_data=self.create_weather_forecast_data(
+                    temperature_c=22.0,
+                    description="Partly Cloudy"
+                )
+            ),
+            self.create_interval_weather_forecast(
+                start_time=datetime(2024, 1, 15, 16, 0, 0),
+                end_time=datetime(2024, 1, 15, 18, 0, 0),
+                weather_data=self.create_weather_forecast_data(
+                    temperature_c=20.0,
+                    description="Cloudy"
+                )
+            )
+        ]
+        
+        manager.add_data(
+            data_point_source=self.primary_source,
+            new_interval_data_list=source_intervals
+        )
+        
+        # Verify different intervals got different data
+        first_aggregated = manager._aggregated_interval_data_list[0]  # 14:00-15:00
+        third_aggregated = manager._aggregated_interval_data_list[2]  # 16:00-17:00
+        
+        self.assertEqual(first_aggregated.interval_data.data.temperature.quantity_ave.magnitude, 22.0)
+        self.assertEqual(first_aggregated.interval_data.data.description_short.value, "Partly Cloudy")
+        
+        self.assertEqual(third_aggregated.interval_data.data.temperature.quantity_ave.magnitude, 20.0)
+        self.assertEqual(third_aggregated.interval_data.data.description_short.value, "Cloudy")
+    
+    def test_daily_history_manager_initialization(self):
+        """Test that daily history manager initializes with correct intervals."""
+        current_time = datetime(2024, 1, 15, 14, 30, 0)
+        manager = self.create_daily_history_manager(current_time, day_count=7)
+        
+        # Verify intervals were created correctly for history
+        self.assertEqual(len(manager._aggregated_interval_data_list), 7)
+        
+        # Verify first interval represents most recent complete day
+        first_interval = manager._aggregated_interval_data_list[0].interval_data.interval
+        expected_start = datetime(2024, 1, 14, 0, 0, 0, tzinfo=pytz.UTC)
+        expected_end = datetime(2024, 1, 15, 0, 0, 0, tzinfo=pytz.UTC)
+        self.assertEqual(first_interval.start, expected_start)
+        self.assertEqual(first_interval.end, expected_end)
+    
+    @patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name')
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_daily_history_data_aggregation(self, mock_now, mock_tz_name):
+        """Test that historical weather data is correctly aggregated into daily intervals."""
+        mock_tz_name.return_value = 'UTC'
+        current_time = datetime(2024, 1, 15, 14, 30, 0)
+        mock_now.return_value = current_time
+        
+        manager = IntervalDataManager(
+            interval_hours=24,
+            max_interval_count=7,
+            is_order_ascending=False,
+            data_class=WeatherHistoryData
+        )
+        manager.ensure_initialized()
+        
+        # Create historical temperature data for yesterday
+        yesterday_data = WeatherHistoryData()
+        yesterday_data.temperature = NumericDataPoint(
+            station=self.test_station,
+            source_datetime=datetime(2024, 1, 14, 12, 0, 0),
+            quantity_min=UnitQuantity(15.0, 'degC'),
+            quantity_ave=UnitQuantity(18.0, 'degC'),
+            quantity_max=UnitQuantity(21.0, 'degC')
+        )
+        
+        # Create source interval for yesterday's data
+        time_interval = TimeInterval(
+            start=datetime(2024, 1, 14, 0, 0, 0, tzinfo=pytz.UTC),
+            end=datetime(2024, 1, 15, 0, 0, 0, tzinfo=pytz.UTC)
+        )
+        source_interval = IntervalEnvironmentalData(
+            interval=time_interval,
+            data=yesterday_data
+        )
+        
+        # Add the historical data
+        manager.add_data(
+            data_point_source=self.primary_source,
+            new_interval_data_list=[source_interval]
+        )
+        
+        # Verify data was correctly aggregated
+        first_aggregated = manager._aggregated_interval_data_list[0]
+        temperature = first_aggregated.interval_data.data.temperature
+        
+        self.assertIsNotNone(temperature)
+        self.assertEqual(temperature.quantity_ave.magnitude, 18.0)
+        self.assertEqual(temperature.quantity_min.magnitude, 15.0)
+        self.assertEqual(temperature.quantity_max.magnitude, 21.0)
+    
+    def test_daily_history_timezone_handling(self):
+        """Test that daily history intervals are properly timezone-aware."""
+        current_time = datetime(2024, 1, 15, 14, 30, 0)
+        manager = self.create_daily_history_manager(current_time, day_count=3)
+        
+        # All intervals should be timezone-aware in UTC
+        for aggregated_data in manager._aggregated_interval_data_list:
+            interval = aggregated_data.interval_data.interval
+            self.assertIsNotNone(interval.start.tzinfo)
+            self.assertEqual(interval.start.tzinfo, pytz.UTC)
+            self.assertIsNotNone(interval.end.tzinfo)
+            self.assertEqual(interval.end.tzinfo, pytz.UTC)
+
+    @patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name')
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_multiple_source_priority_handling(self, mock_now, mock_tz_name):
         """Test handling of multiple sources with different priorities."""
+        mock_tz_name.return_value = 'UTC'
         current_time = datetime(2024, 1, 15, 14, 30, 0)
         mock_now.return_value = current_time
         
@@ -248,7 +381,6 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
             is_order_ascending=True,
             data_class=WeatherForecastData
         )
-        
         manager.ensure_initialized()
         
         # Add data from lower priority source first
@@ -724,42 +856,58 @@ class TestIntervalDataManagerComprehensive(BaseTestCase):
         # Since tomorrow afternoon (12h) overlaps more with tomorrow's daily than tonight (10h)
         self.assertEqual(tomorrow_daily.interval_data.data.description_short.value, "Partly Cloudy")
 
-    def test_source_field_data_structure_bug_reproduction(self):
-        """Test to reproduce the suspected bug in AggregatedWeatherData.from_time_interval()."""
+    @patch('hi.apps.console.console_helper.ConsoleSettingsHelper.get_tz_name')
+    @patch('hi.apps.common.datetimeproxy.now')
+    def test_manager_initialization_handles_all_weather_fields(self, mock_now, mock_tz_name):
+        """Test that manager properly initializes and can handle all weather data fields."""
+        mock_tz_name.return_value = 'UTC'
+        current_time = datetime(2024, 1, 15, 14, 30, 0)
+        mock_now.return_value = current_time
         
-        # Create a manager and initialize it to trigger the from_time_interval method
         manager = IntervalDataManager(
             interval_hours=1,
             max_interval_count=1,
             is_order_ascending=True,
             data_class=WeatherForecastData
         )
+        manager.ensure_initialized()
         
-        with patch('hi.apps.common.datetimeproxy.now', 
-                   return_value=datetime(2024, 1, 15, 14, 30, 0)):
-            
-            manager.ensure_initialized()
-            
-            # Get the aggregated data that was created
-            agg_data = manager._aggregated_interval_data_list[0]
-            
-            # Check that source_data was properly initialized for DataPoint fields
-            # This should expose the bug in from_time_interval() if present
-            self.assertIsNotNone(agg_data.source_data)
-            self.assertIsInstance(agg_data.source_data, dict)
-            
-            # These fields should exist in source_data if initialization worked correctly
-            forecast_fields = ['temperature', 'relative_humidity', 'description_short', 'is_daytime']
-            
-            for field_name in forecast_fields:
-                self.assertIn(
-                    field_name, agg_data.source_data, 
-                    f"Field {field_name} missing from source_data - initialization bug detected"
-                )
-                self.assertIsNotNone(
-                    agg_data.source_data[field_name],
-                    f"Field {field_name} is None in source_data - initialization bug detected"
-                )
+        # Create comprehensive weather data with all fields
+        comprehensive_weather_data = self.create_weather_forecast_data(
+            temperature_c=22.0,
+            humidity_pct=65,
+            description="Partly Cloudy",
+            is_daytime=True
+        )
+        
+        source_interval = self.create_interval_weather_forecast(
+            start_time=datetime(2024, 1, 15, 14, 0, 0),
+            end_time=datetime(2024, 1, 15, 15, 0, 0),
+            weather_data=comprehensive_weather_data
+        )
+        
+        # Add data and verify manager can process all fields correctly
+        manager.add_data(
+            data_point_source=self.primary_source,
+            new_interval_data_list=[source_interval]
+        )
+        
+        # Verify all weather fields are properly handled (public interface test)
+        aggregated_data = manager._aggregated_interval_data_list[0]
+        weather_data = aggregated_data.interval_data.data
+        
+        # Test the public interface behavior - all expected fields should be accessible
+        self.assertIsNotNone(weather_data.temperature)
+        self.assertEqual(weather_data.temperature.quantity_ave.magnitude, 22.0)
+        
+        self.assertIsNotNone(weather_data.relative_humidity)
+        self.assertEqual(weather_data.relative_humidity.quantity_ave.magnitude, 65)
+        
+        self.assertIsNotNone(weather_data.description_short)
+        self.assertEqual(weather_data.description_short.value, "Partly Cloudy")
+        
+        self.assertIsNotNone(weather_data.is_daytime)
+        self.assertTrue(weather_data.is_daytime.value)
 
 
 if __name__ == '__main__':

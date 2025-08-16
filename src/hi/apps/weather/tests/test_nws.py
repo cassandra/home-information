@@ -387,7 +387,7 @@ class TestNationalWeatherService( BaseTestCase ):
             continue
         return
         
-    def test_parse_nws_quantity(self):
+    def test_parse_nws_quantity_original_massive_test_DEPRECATED(self):
         test_data_list = [
             {
                 "nws_data_dict": {
@@ -619,6 +619,188 @@ class TestNationalWeatherService( BaseTestCase ):
                               test_data )
             continue
         return
+
+    def test_parse_nws_quantity_with_basic_values(self):
+        """Test NWS quantity parsing with basic value scenarios."""
+        nws = NationalWeatherService()
+        
+        # Test basic value with different units
+        result = nws._parse_nws_quantity(
+            nws_data_dict={
+                "qualityControl": "Z",
+                "unitCode": "wmoUnit:mm",
+                "value": 0
+            },
+            for_min_value=False,
+            for_max_value=False,
+        )
+        self.assertAlmostEqual(result.magnitude, 0, 3)
+        self.assertEqual(result.units, UnitQuantity(0, 'millimeter').units)
+        
+        # Test percentage value
+        result = nws._parse_nws_quantity(
+            nws_data_dict={
+                "qualityControl": "V",
+                "unitCode": "wmoUnit:percent",
+                "value": 65.595209439964,
+            },
+            for_min_value=False,
+            for_max_value=False,
+        )
+        self.assertAlmostEqual(result.magnitude, 65.595209439964, 3)
+        self.assertEqual(result.units, UnitQuantity(0, 'percent').units)
+        
+        # Test wind speed value
+        result = nws._parse_nws_quantity(
+            nws_data_dict={
+                "qualityControl": "V",
+                "unitCode": "wmoUnit:km_h-1",
+                "value": 9.36,
+            },
+            for_min_value=False,
+            for_max_value=False,
+        )
+        self.assertAlmostEqual(result.magnitude, 9.36, 3)
+        self.assertEqual(result.units, UnitQuantity(0, 'kilometers /hour').units)
+
+    def test_parse_nws_quantity_with_min_max_values(self):
+        """Test NWS quantity parsing when only min or max values are provided."""
+        nws = NationalWeatherService()
+        
+        # Test minValue only
+        result = nws._parse_nws_quantity(
+            nws_data_dict={
+                "qualityControl": "V",
+                "unitCode": "wmoUnit:km_h-1",
+                "minValue": 9.36,
+            },
+            for_min_value=False,
+            for_max_value=False,
+        )
+        self.assertAlmostEqual(result.magnitude, 9.36, 3)
+        self.assertEqual(result.units, UnitQuantity(0, 'kilometers /hour').units)
+        
+        # Test maxValue only
+        result = nws._parse_nws_quantity(
+            nws_data_dict={
+                "qualityControl": "V",
+                "unitCode": "wmoUnit:km_h-1",
+                "maxValue": 9.36,
+            },
+            for_min_value=False,
+            for_max_value=False,
+        )
+        self.assertAlmostEqual(result.magnitude, 9.36, 3)
+        self.assertEqual(result.units, UnitQuantity(0, 'kilometers /hour').units)
+
+    def test_parse_nws_quantity_averages_min_max_range(self):
+        """Test NWS quantity parsing averages min and max values when both provided."""
+        nws = NationalWeatherService()
+        
+        # Test minValue and maxValue averaging
+        result = nws._parse_nws_quantity(
+            nws_data_dict={
+                "qualityControl": "V",
+                "unitCode": "wmoUnit:km_h-1",
+                "minValue": 5.0,
+                "maxValue": 9.0,
+            },
+            for_min_value=False,
+            for_max_value=False,
+        )
+        self.assertAlmostEqual(result.magnitude, 7.0, 3)  # Average of 5.0 and 9.0
+        self.assertEqual(result.units, UnitQuantity(0, 'kilometers /hour').units)
+
+    def test_parse_nws_quantity_value_priority_over_min_max(self):
+        """Test that explicit value takes priority over min/max when all are provided."""
+        nws = NationalWeatherService()
+        
+        # Test value takes priority when all three are present
+        result = nws._parse_nws_quantity(
+            nws_data_dict={
+                "qualityControl": "V",
+                "unitCode": "wmoUnit:km_h-1",
+                "minValue": 5.0,
+                "value": 11.0,
+                "maxValue": 9.0,
+            },
+            for_min_value=False,
+            for_max_value=False,
+        )
+        self.assertAlmostEqual(result.magnitude, 11.0, 3)  # Value takes priority
+        self.assertEqual(result.units, UnitQuantity(0, 'kilometers /hour').units)
+
+    def test_parse_nws_quantity_for_min_value_preference(self):
+        """Test NWS quantity parsing when for_min_value=True to prefer minimum values."""
+        nws = NationalWeatherService()
+        
+        # Test minValue preference
+        result = nws._parse_nws_quantity(
+            nws_data_dict={
+                "qualityControl": "V",
+                "unitCode": "wmoUnit:km_h-1",
+                "minValue": 11.0,
+            },
+            for_min_value=True,
+            for_max_value=False,
+        )
+        self.assertAlmostEqual(result.magnitude, 11.0, 3)
+        
+        # Test value used when for_min_value=True
+        result = nws._parse_nws_quantity(
+            nws_data_dict={
+                "qualityControl": "V",
+                "unitCode": "wmoUnit:km_h-1",
+                "value": 11.0,
+            },
+            for_min_value=True,
+            for_max_value=False,
+        )
+        self.assertAlmostEqual(result.magnitude, 11.0, 3)
+        
+        # Test minValue preferred over other values when for_min_value=True
+        result = nws._parse_nws_quantity(
+            nws_data_dict={
+                "qualityControl": "V",
+                "unitCode": "wmoUnit:km_h-1",
+                "minValue": 11.0,
+                "value": 8.0,
+                "maxValue": 9.0,
+            },
+            for_min_value=True,
+            for_max_value=False,
+        )
+        self.assertAlmostEqual(result.magnitude, 11.0, 3)  # minValue preferred
+
+    def test_parse_nws_quantity_for_max_value_preference(self):
+        """Test NWS quantity parsing when for_max_value=True to prefer maximum values."""
+        nws = NationalWeatherService()
+        
+        # Test maxValue preferred when for_max_value=True
+        result = nws._parse_nws_quantity(
+            nws_data_dict={
+                "qualityControl": "V",
+                "unitCode": "wmoUnit:km_h-1",
+                "minValue": 4.0,
+                "value": 11.0,
+                "maxValue": 9.0,
+            },
+            for_min_value=False,
+            for_max_value=True,
+        )
+        self.assertAlmostEqual(result.magnitude, 9.0, 3)  # maxValue preferred
+        
+        # Test fallback when only minValue available
+        result = nws._parse_nws_quantity(
+            nws_data_dict={
+                "qualityControl": "V",
+                "unitCode": "wmoUnit:km_h-1",
+                "minValue": 4.0,
+            },
+            for_min_value=False,
+            for_max_value=True,
+        )
+        self.assertAlmostEqual(result.magnitude, 4.0, 3)  # Falls back to minValue
 
     def test_create_numeric_data_point__exceptions(self):
         test_data_list = [
@@ -1278,7 +1460,260 @@ class TestNationalWeatherService( BaseTestCase ):
             nws._get_points_data_from_api(test_location)
         return
     
-    def test_parse_observations_data(self):
+    def test_parse_observations_data_basic_temperature_parsing(self):
+        """Test that observation data parsing correctly extracts temperature."""
+        nws = NationalWeatherService()
+        timestamp_str = '2025-02-20T04:51:00+00:00'
+        source_datetime = datetime.fromisoformat(timestamp_str)
+        station = Station(
+            source=nws.data_point_source,
+            station_id='test',
+            name='Testing',
+            geo_location=None,
+            station_url=None,
+            observations_url=None,
+            forecast_url=None,
+        )
+        
+        # Minimal response with just temperature data
+        response = {
+            "type": "Feature",
+            "properties": {
+                "timestamp": timestamp_str,
+                "temperature": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:degC",
+                    "value": -3.9
+                }
+            }
+        }
+        
+        result = nws._parse_observation_data(response, station=station)
+        
+        # Verify temperature was parsed correctly
+        self.assertIsNotNone(result.temperature)
+        self.assertAlmostEqual(result.temperature.quantity_ave.magnitude, -3.9, 3)
+        self.assertEqual(str(result.temperature.quantity_ave.units), 'degree_Celsius')
+        self.assertEqual(result.temperature.station, station)
+        self.assertEqual(result.temperature.source_datetime, source_datetime)
+
+    def test_parse_observations_data_pressure_parsing(self):
+        """Test that observation data parsing correctly extracts pressure data."""
+        nws = NationalWeatherService()
+        timestamp_str = '2025-02-20T04:51:00+00:00'
+        station = Station(
+            source=nws.data_point_source,
+            station_id='test',
+            name='Testing',
+            geo_location=None,
+            station_url=None,
+            observations_url=None,
+            forecast_url=None,
+        )
+        
+        # Response with pressure data
+        response = {
+            "type": "Feature",
+            "properties": {
+                "timestamp": timestamp_str,
+                "barometricPressure": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:Pa",
+                    "value": 103420
+                },
+                "seaLevelPressure": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:Pa",
+                    "value": 103580
+                }
+            }
+        }
+        
+        result = nws._parse_observation_data(response, station=station)
+        
+        # Verify pressure data was parsed correctly
+        self.assertIsNotNone(result.barometric_pressure)
+        self.assertAlmostEqual(result.barometric_pressure.quantity_ave.magnitude, 103420, 3)
+        self.assertEqual(str(result.barometric_pressure.quantity_ave.units), 'pascal')
+        
+        self.assertIsNotNone(result.sea_level_pressure)
+        self.assertAlmostEqual(result.sea_level_pressure.quantity_ave.magnitude, 103580, 3)
+        self.assertEqual(str(result.sea_level_pressure.quantity_ave.units), 'pascal')
+
+    def test_parse_observations_data_wind_parsing(self):
+        """Test that observation data parsing correctly extracts wind data."""
+        nws = NationalWeatherService()
+        timestamp_str = '2025-02-20T04:51:00+00:00'
+        station = Station(
+            source=nws.data_point_source,
+            station_id='test',
+            name='Testing',
+            geo_location=None,
+            station_url=None,
+            observations_url=None,
+            forecast_url=None,
+        )
+        
+        # Response with wind data
+        response = {
+            "type": "Feature",
+            "properties": {
+                "timestamp": timestamp_str,
+                "windSpeed": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "value": 9.36
+                },
+                "windDirection": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:degree_(angle)",
+                    "value": 350
+                },
+                "windGust": {
+                    "qualityControl": "Z",
+                    "unitCode": "wmoUnit:km_h-1",
+                    "value": None
+                }
+            }
+        }
+        
+        result = nws._parse_observation_data(response, station=station)
+        
+        # Verify wind data was parsed correctly
+        self.assertIsNotNone(result.windspeed)
+        self.assertAlmostEqual(result.windspeed.quantity_ave.magnitude, 9.36, 3)
+        self.assertEqual(str(result.windspeed.quantity_ave.units), 'kilometer / hour')
+        
+        self.assertIsNotNone(result.wind_direction)
+        self.assertAlmostEqual(result.wind_direction.quantity_ave.magnitude, 350, 3)
+        self.assertEqual(str(result.wind_direction.quantity_ave.units), 'degree')
+
+    def test_parse_observations_data_humidity_and_dew_point(self):
+        """Test that observation data parsing correctly extracts humidity and dew point."""
+        nws = NationalWeatherService()
+        timestamp_str = '2025-02-20T04:51:00+00:00'
+        station = Station(
+            source=nws.data_point_source,
+            station_id='test',
+            name='Testing',
+            geo_location=None,
+            station_url=None,
+            observations_url=None,
+            forecast_url=None,
+        )
+        
+        # Response with humidity and dew point data
+        response = {
+            "type": "Feature",
+            "properties": {
+                "timestamp": timestamp_str,
+                "relativeHumidity": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:percent",
+                    "value": 65.595209439964
+                },
+                "dewpoint": {
+                    "qualityControl": "V",
+                    "unitCode": "wmoUnit:degC",
+                    "value": -9.4
+                }
+            }
+        }
+        
+        result = nws._parse_observation_data(response, station=station)
+        
+        # Verify humidity and dew point were parsed correctly
+        self.assertIsNotNone(result.relative_humidity)
+        self.assertAlmostEqual(result.relative_humidity.quantity_ave.magnitude, 65.595209439964, 3)
+        self.assertEqual(str(result.relative_humidity.quantity_ave.units), 'percent')
+        
+        self.assertIsNotNone(result.dew_point)
+        self.assertAlmostEqual(result.dew_point.quantity_ave.magnitude, -9.4, 3)
+        self.assertEqual(str(result.dew_point.quantity_ave.units), 'degree_Celsius')
+
+    def test_parse_observations_data_precipitation_parsing(self):
+        """Test that observation data parsing correctly extracts precipitation data."""
+        nws = NationalWeatherService()
+        timestamp_str = '2025-02-20T04:51:00+00:00'
+        station = Station(
+            source=nws.data_point_source,
+            station_id='test',
+            name='Testing',
+            geo_location=None,
+            station_url=None,
+            observations_url=None,
+            forecast_url=None,
+        )
+        
+        # Response with precipitation data
+        response = {
+            "type": "Feature",
+            "properties": {
+                "timestamp": timestamp_str,
+                "precipitationLastHour": {
+                    "qualityControl": "Z",
+                    "unitCode": "wmoUnit:mm",
+                    "value": None
+                },
+                "precipitationLast3Hours": {
+                    "qualityControl": "Z",
+                    "unitCode": "wmoUnit:mm", 
+                    "value": None
+                },
+                "precipitationLast6Hours": {
+                    "qualityControl": "Z",
+                    "unitCode": "wmoUnit:mm",
+                    "value": None
+                }
+            }
+        }
+        
+        result = nws._parse_observation_data(response, station=station)
+        
+        # Verify precipitation data handling (should be None for null values)
+        self.assertIsNone(result.precipitation_last_hour)
+        self.assertIsNone(result.precipitation_last_3h) 
+        self.assertIsNone(result.precipitation_last_6h)
+
+    def test_parse_observations_data_visibility_and_description(self):
+        """Test that observation data parsing correctly extracts visibility and weather description."""
+        nws = NationalWeatherService()
+        timestamp_str = '2025-02-20T04:51:00+00:00'
+        station = Station(
+            source=nws.data_point_source,
+            station_id='test',
+            name='Testing',
+            geo_location=None,
+            station_url=None,
+            observations_url=None,
+            forecast_url=None,
+        )
+        
+        # Response with visibility and description
+        response = {
+            "type": "Feature", 
+            "properties": {
+                "timestamp": timestamp_str,
+                "visibility": {
+                    "qualityControl": "C",
+                    "unitCode": "wmoUnit:m",
+                    "value": 16090
+                },
+                "textDescription": "Cloudy"
+            }
+        }
+        
+        result = nws._parse_observation_data(response, station=station)
+        
+        # Verify visibility and description were parsed correctly
+        self.assertIsNotNone(result.visibility)
+        self.assertAlmostEqual(result.visibility.quantity_ave.magnitude, 16090, 3)
+        self.assertEqual(str(result.visibility.quantity_ave.units), 'meter')
+        
+        self.assertIsNotNone(result.description_short)
+        self.assertEqual(result.description_short.value, "Cloudy")
+
+    def test_parse_observations_data_original_massive_test_DEPRECATED(self):
         nws = NationalWeatherService()
         timestamp_str = '2025-02-20T04:51:00+00:00'
         source_datetime = datetime.fromisoformat( timestamp_str )
