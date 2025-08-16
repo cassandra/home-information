@@ -32,7 +32,7 @@ class IntegrationKey:
     integration_name  : str  # Name or identifier that is used by the external source.
 
     def __post_init__(self):
-        # Want to make matching more robust, so only 
+        # Want to make matching more robust, so convert to lowercase
         self.integration_id = self.integration_id.lower()
         self.integration_name = self.integration_name.lower()
         return

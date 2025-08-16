@@ -52,7 +52,7 @@ For detailed setup and daily commands, see [Development Setup](dev/Setup.md).
 
 # Common commands
 cd src && ./manage.py test
-flake8 --config=.flake8-ci src/
+cd src && flake8 --config=.flake8-ci src/
 ./manage.py runserver  # http://127.0.0.1:8411
 ```
 
@@ -76,7 +76,7 @@ All generated code must comply with the `.flake8-ci` configuration rules. Common
 4. **Line Continuation**: Proper indentation for multi-line statements following PEP 8
 5. **Line Length**: Respect maximum line length limits defined in `.flake8-ci`
 
-Before submitting code, always run: `flake8 --config=.flake8-ci src/` to verify compliance.
+Before submitting code, always run: `cd src && flake8 --config=.flake8-ci src/` to verify compliance.
 
 ## Commit Message Guidelines (Claude-Specific)
 

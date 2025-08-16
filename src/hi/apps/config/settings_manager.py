@@ -43,11 +43,16 @@ class SettingsManager( Singleton ):
         with self._attributes_lock:
             self._attribute_value_map = dict()
             for subsystem in self._subsystem_list:
-                subsystem.refresh_from_db()
-                for subsystem_attribute in subsystem.attributes.all():
-                    attr_type = subsystem_attribute.setting_key
-                    self._attribute_value_map[attr_type] = subsystem_attribute.value
-                    continue
+                try:
+                    subsystem.refresh_from_db()
+                    for subsystem_attribute in subsystem.attributes.all():
+                        attr_type = subsystem_attribute.setting_key
+                        self._attribute_value_map[attr_type] = subsystem_attribute.value
+                        continue
+                except Subsystem.DoesNotExist:
+                    # Log error - this should not normally happen outside of test teardown
+                    logger.error(f'Subsystem {subsystem} no longer exists in database during reload. '
+                                 'This may indicate a configuration issue or test teardown problem.')
                 continue
             
         self._notify_change_listeners()
