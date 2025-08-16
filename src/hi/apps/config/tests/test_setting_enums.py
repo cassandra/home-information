@@ -7,7 +7,7 @@ from hi.tests.base_test_case import BaseTestCase
 logging.disable(logging.CRITICAL)
 
 
-# Create test setting enums for testing
+# Create test setting enums for testing key generation and enum behavior
 class TestSetting(SettingEnum):
     FIRST_SETTING = SettingDefinition(
         label='First Setting',
@@ -38,6 +38,19 @@ class AnotherTestSetting(SettingEnum):
         is_editable=True,
         is_required=True,
         initial_value='true',
+    )
+
+
+class NestedModuleTestSetting(SettingEnum):
+    """Setting enum for testing nested module key generation."""
+    NESTED_SETTING = SettingDefinition(
+        label='Nested Setting',
+        description='Setting in nested module context',
+        value_type=AttributeValueType.TEXT,
+        value_range_str='',
+        is_editable=True,
+        is_required=True,
+        initial_value='nested_default',
     )
 
 
@@ -96,21 +109,25 @@ class TestSettingDefinition(BaseTestCase):
 
 class TestSettingEnum(BaseTestCase):
 
-    def test_setting_enum_creation(self):
-        """Test that SettingEnum creates properly."""
-        # Test enum members exist
+    def test_enum_auto_numbering_pattern(self):
+        """Test that SettingEnum auto-numbers values correctly."""
+        # Test enum members exist and are numbered sequentially
         self.assertTrue(hasattr(TestSetting, 'FIRST_SETTING'))
         self.assertTrue(hasattr(TestSetting, 'SECOND_SETTING'))
         
-        # Test values are auto-assigned
+        # Test auto-assigned sequential values
         self.assertEqual(TestSetting.FIRST_SETTING.value, 1)
         self.assertEqual(TestSetting.SECOND_SETTING.value, 2)
+        
+        # Different enum classes should start numbering independently
+        self.assertEqual(AnotherTestSetting.ANOTHER_SETTING.value, 1)
         return
 
-    def test_setting_enum_definition_access(self):
-        """Test accessing SettingDefinition through enum."""
+    def test_definition_attachment_to_enum_members(self):
+        """Test that SettingDefinitions are correctly attached to enum members."""
         first_setting = TestSetting.FIRST_SETTING
         
+        # Definition should be attached and accessible
         self.assertIsInstance(first_setting.definition, SettingDefinition)
         self.assertEqual(first_setting.definition.label, 'First Setting')
         self.assertEqual(first_setting.definition.description, 'Description for first setting')
@@ -120,87 +137,105 @@ class TestSettingEnum(BaseTestCase):
         self.assertEqual(first_setting.definition.initial_value, 'default_first')
         return
 
-    def test_setting_enum_key_property(self):
-        """Test the key property generates correct keys."""
+    def test_key_generation_algorithm(self):
+        """Test the key generation algorithm produces correct and unique keys."""
         first_key = TestSetting.FIRST_SETTING.key
         second_key = TestSetting.SECOND_SETTING.key
-        
-        # Keys should include module and class information
-        self.assertIn('TestSetting', first_key)
-        self.assertIn('FIRST_SETTING', first_key)
-        self.assertIn('TestSetting', second_key)
-        self.assertIn('SECOND_SETTING', second_key)
-        
-        # Keys should be unique
-        self.assertNotEqual(first_key, second_key)
-        return
-
-    def test_setting_enum_key_format(self):
-        """Test the key property format is correct."""
-        key = TestSetting.FIRST_SETTING.key
-        
-        # Should follow format: module.class.name
-        parts = key.split('.')
-        self.assertGreater(len(parts), 2)  # At least module.class.name
-        self.assertEqual(parts[-2], 'TestSetting')  # Class name
-        self.assertEqual(parts[-1], 'FIRST_SETTING')  # Enum name
-        return
-
-    def test_multiple_setting_enums(self):
-        """Test multiple SettingEnum classes work independently."""
-        test_key = TestSetting.FIRST_SETTING.key
         another_key = AnotherTestSetting.ANOTHER_SETTING.key
         
-        # Keys should be different
-        self.assertNotEqual(test_key, another_key)
+        # Keys should include full module path, class name, and enum name
+        self.assertIn('test_setting_enums', first_key)  # Module name
+        self.assertIn('TestSetting', first_key)         # Class name
+        self.assertIn('FIRST_SETTING', first_key)       # Enum member name
         
-        # Should contain respective class names
-        self.assertIn('TestSetting', test_key)
+        # Keys should be unique across different enum members
+        self.assertNotEqual(first_key, second_key)
+        self.assertNotEqual(first_key, another_key)
+        
+        # Keys should reflect their enum class
+        self.assertIn('TestSetting', first_key)
         self.assertIn('AnotherTestSetting', another_key)
         return
 
-    def test_setting_enum_iteration(self):
-        """Test iterating over SettingEnum members."""
+    def test_key_format_consistency(self):
+        """Test that all generated keys follow consistent format."""
+        keys_to_test = [
+            TestSetting.FIRST_SETTING.key,
+            TestSetting.SECOND_SETTING.key,
+            AnotherTestSetting.ANOTHER_SETTING.key,
+            NestedModuleTestSetting.NESTED_SETTING.key,
+        ]
+        
+        for key in keys_to_test:
+            with self.subTest(key=key):
+                # Should follow format: module.class.name
+                parts = key.split('.')
+                self.assertGreaterEqual(len(parts), 3)  # At least module.class.name
+                
+                # Last part should be enum member name
+                enum_name = parts[-1]
+                self.assertTrue(enum_name.isupper())  # Convention: enum names are uppercase
+                
+                # Second to last should be class name
+                class_name = parts[-2]
+                self.assertTrue(class_name[0].isupper())  # Convention: class names start with uppercase
+        return
+
+    def test_key_uniqueness_across_modules(self):
+        """Test that keys are unique even across different module contexts."""
+        all_keys = [
+            TestSetting.FIRST_SETTING.key,
+            TestSetting.SECOND_SETTING.key,
+            AnotherTestSetting.ANOTHER_SETTING.key,
+            NestedModuleTestSetting.NESTED_SETTING.key,
+        ]
+        
+        # All keys should be unique
+        unique_keys = set(all_keys)
+        self.assertEqual(len(all_keys), len(unique_keys))
+        return
+
+    def test_enum_iteration_behavior(self):
+        """Test that SettingEnum supports standard enum iteration patterns."""
         members = list(TestSetting)
         
         self.assertEqual(len(members), 2)
         self.assertIn(TestSetting.FIRST_SETTING, members)
         self.assertIn(TestSetting.SECOND_SETTING, members)
+        
+        # Test that iteration order is predictable (based on definition order)
+        self.assertEqual(members[0], TestSetting.FIRST_SETTING)
+        self.assertEqual(members[1], TestSetting.SECOND_SETTING)
         return
 
-    def test_setting_enum_membership(self):
-        """Test membership testing for SettingEnum."""
+    def test_enum_membership_operations(self):
+        """Test membership operations work correctly across enum classes."""
+        # Test membership within same enum
         self.assertIn(TestSetting.FIRST_SETTING, TestSetting)
         self.assertIn(TestSetting.SECOND_SETTING, TestSetting)
+        
+        # Test non-membership across different enums
         self.assertNotIn(AnotherTestSetting.ANOTHER_SETTING, TestSetting)
+        self.assertNotIn(TestSetting.FIRST_SETTING, AnotherTestSetting)
         return
 
-    def test_setting_definition_attributes(self):
-        """Test various SettingDefinition attributes through enum."""
-        # Test editable setting
+    def test_setting_definition_attribute_accessibility(self):
+        """Test that all SettingDefinition attributes are accessible through enum."""
+        # Test editable setting attributes
         editable_setting = TestSetting.FIRST_SETTING
         self.assertTrue(editable_setting.definition.is_editable)
         self.assertTrue(editable_setting.definition.is_required)
+        self.assertEqual(editable_setting.definition.value_range_str, '')
         
-        # Test non-editable setting
+        # Test non-editable setting attributes
         readonly_setting = TestSetting.SECOND_SETTING
         self.assertFalse(readonly_setting.definition.is_editable)
         self.assertFalse(readonly_setting.definition.is_required)
+        self.assertEqual(readonly_setting.definition.value_range_str, '[1, 100]')
         return
 
-    def test_setting_value_ranges(self):
-        """Test value range specifications."""
-        # Setting with no range
-        first_setting = TestSetting.FIRST_SETTING
-        self.assertEqual(first_setting.definition.value_range_str, '')
-        
-        # Setting with range
-        second_setting = TestSetting.SECOND_SETTING
-        self.assertEqual(second_setting.definition.value_range_str, '[1, 100]')
-        return
-
-    def test_different_value_types(self):
-        """Test settings with different value types."""
+    def test_enum_value_type_preservation(self):
+        """Test that value types are preserved correctly across different settings."""
         text_setting = TestSetting.FIRST_SETTING
         integer_setting = TestSetting.SECOND_SETTING
         boolean_setting = AnotherTestSetting.ANOTHER_SETTING
@@ -208,4 +243,17 @@ class TestSettingEnum(BaseTestCase):
         self.assertEqual(text_setting.definition.value_type, AttributeValueType.TEXT)
         self.assertEqual(integer_setting.definition.value_type, AttributeValueType.INTEGER)
         self.assertEqual(boolean_setting.definition.value_type, AttributeValueType.BOOLEAN)
+        return
+
+    def test_enum_class_isolation(self):
+        """Test that enum classes are properly isolated from each other."""
+        # Each enum class should have its own members
+        test_members = list(TestSetting.__members__.keys())
+        another_members = list(AnotherTestSetting.__members__.keys())
+        
+        self.assertEqual(set(test_members), {'FIRST_SETTING', 'SECOND_SETTING'})
+        self.assertEqual(set(another_members), {'ANOTHER_SETTING'})
+        
+        # Members should not overlap between classes
+        self.assertEqual(set(test_members) & set(another_members), set())
         return
