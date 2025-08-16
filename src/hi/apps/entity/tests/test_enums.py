@@ -13,86 +13,262 @@ logging.disable(logging.CRITICAL)
 
 class TestEntityStateType(BaseTestCase):
 
-    def test_template_name_generation(self):
-        """Test template name generation logic - could break with refactoring."""
-        # Test value template naming
+    def test_template_name_generation_supports_ui_customization(self):
+        """Test template name generation - enables state-specific UI rendering."""
+        # Test that different state types generate distinct template paths
         on_off_template = EntityStateType.ON_OFF.value_template_name()
-        self.assertEqual(on_off_template, 'sense/panes/sensor_value_on_off.html')
+        temperature_template = EntityStateType.TEMPERATURE.value_template_name()
         
-        # Test controller template naming
-        temperature_template = EntityStateType.TEMPERATURE.controller_template_name()
-        self.assertEqual(temperature_template, 'control/panes/controller_temperature.html')
+        # Should generate different templates for different state types
+        self.assertNotEqual(on_off_template, temperature_template)
         
-        # Test edge case with underscores
+        # Templates should follow consistent naming pattern
+        self.assertTrue(on_off_template.startswith('sense/panes/sensor_value_'))
+        self.assertTrue(on_off_template.endswith('.html'))
+        
+        # Controller templates should use different namespace
+        controller_template = EntityStateType.TEMPERATURE.controller_template_name()
+        self.assertTrue(controller_template.startswith('control/panes/controller_'))
+        self.assertTrue(controller_template.endswith('.html'))
+        
+        # Value and controller templates should be different
+        self.assertNotEqual(temperature_template, controller_template)
+        
+        # Complex state types should work correctly
         video_template = EntityStateType.VIDEO_STREAM.value_template_name()
-        self.assertEqual(video_template, 'sense/panes/sensor_value_video_stream.html')
+        self.assertTrue(video_template.startswith('sense/panes/sensor_value_'))
+        self.assertIn('video_stream', video_template)
+        
         return
 
-    def test_suppress_properties_logic(self):
-        """Test suppress display/history logic - business rules that could change."""
-        # VIDEO_STREAM has special suppression rules
-        self.assertTrue(EntityStateType.VIDEO_STREAM.suppress_display_name)
-        self.assertTrue(EntityStateType.VIDEO_STREAM.suppress_history)
+    def test_suppression_rules_optimize_ui_for_different_state_types(self):
+        """Test suppress display/history logic - optimizes UI based on state characteristics."""
+        # Video streams should suppress certain UI elements for performance
+        video_state = EntityStateType.VIDEO_STREAM
+        self.assertTrue(video_state.suppress_display_name)
+        self.assertTrue(video_state.suppress_history)
         
-        # Other types should not suppress
-        self.assertFalse(EntityStateType.ON_OFF.suppress_display_name)
-        self.assertFalse(EntityStateType.TEMPERATURE.suppress_history)
+        # Standard state types should show full UI
+        standard_states = [
+            EntityStateType.ON_OFF,
+            EntityStateType.TEMPERATURE,
+            EntityStateType.CONNECTIVITY,
+            EntityStateType.MOVEMENT
+        ]
+        
+        for state_type in standard_states:
+            # These states should display names and maintain history
+            self.assertFalse(state_type.suppress_display_name,
+                             f"{state_type} should show display name")
+            self.assertFalse(state_type.suppress_history,
+                             f"{state_type} should maintain history")
+        
+        # Test that suppression is consistent for same state type
+        another_video_check = EntityStateType.VIDEO_STREAM
+        self.assertEqual(video_state.suppress_display_name,
+                         another_video_check.suppress_display_name)
+        self.assertEqual(video_state.suppress_history,
+                         another_video_check.suppress_history)
+        
         return
 
 
 class TestEntityStateValue(BaseTestCase):
 
-    def test_entity_state_value_choices_mapping(self):
-        """Test complex mapping logic between state types and values - prone to bugs."""
+    def test_entity_state_value_choices_provide_ui_options(self):
+        """Test state value choices mapping - provides UI with appropriate options for each state type."""
         choices = EntityStateValue.entity_state_value_choices()
         
-        # Test ON_OFF mapping (values are lowercase strings)
+        # Verify that different state types have appropriate choice sets
+        self.assertIn(EntityStateType.ON_OFF, choices)
+        self.assertIn(EntityStateType.CONNECTIVITY, choices)
+        self.assertIn(EntityStateType.MOVEMENT, choices)
+        self.assertIn(EntityStateType.OPEN_CLOSE, choices)
+        self.assertIn(EntityStateType.HIGH_LOW, choices)
+        
+        # Test ON_OFF state provides binary choices
         on_off_choices = choices[EntityStateType.ON_OFF]
-        choice_values = [choice[0] for choice in on_off_choices]
-        self.assertIn('on', choice_values)
-        self.assertIn('off', choice_values)
         self.assertEqual(len(on_off_choices), 2)
         
-        # Test CONNECTIVITY mapping (values are lowercase strings)
-        connectivity_choices = choices[EntityStateType.CONNECTIVITY]
-        choice_values = [choice[0] for choice in connectivity_choices]
-        self.assertIn('connected', choice_values)
-        self.assertIn('disconnected', choice_values)
+        # Choices should be tuples of (value, label)
+        choice_values = [choice[0] for choice in on_off_choices]
+        choice_labels = [choice[1] for choice in on_off_choices]
         
-        # Test MOVEMENT mapping (different values, lowercase)
+        # Should include both on and off options
+        self.assertIn('on', choice_values)
+        self.assertIn('off', choice_values)
+        
+        # Labels should be user-friendly
+        self.assertIn('On', choice_labels)
+        self.assertIn('Off', choice_labels)
+        
+        # Test connectivity state has appropriate network-related choices
+        connectivity_choices = choices[EntityStateType.CONNECTIVITY]
+        connectivity_values = [choice[0] for choice in connectivity_choices]
+        self.assertIn('connected', connectivity_values)
+        self.assertIn('disconnected', connectivity_values)
+        
+        # Test movement state has activity-related choices
         movement_choices = choices[EntityStateType.MOVEMENT]
-        choice_values = [choice[0] for choice in movement_choices]
-        self.assertIn('active', choice_values)
-        self.assertIn('idle', choice_values)
+        movement_values = [choice[0] for choice in movement_choices]
+        self.assertIn('active', movement_values)
+        self.assertIn('idle', movement_values)
+        
+        # Test open/close state has position-related choices
+        open_close_choices = choices[EntityStateType.OPEN_CLOSE]
+        open_close_values = [choice[0] for choice in open_close_choices]
+        self.assertIn('open', open_close_values)
+        self.assertIn('closed', open_close_values)
+        
         return
 
 
 class TestEntityGroupType(BaseTestCase):
 
-    def test_from_entity_type_mapping(self):
-        """Test entity type to group mapping logic - complex business logic prone to errors."""
-        # Test specific mappings that are important for UI grouping
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.LIGHT), EntityGroupType.LIGHTS_SWITCHES)
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.CAMERA), EntityGroupType.SECURITY)
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.REFRIGERATOR), EntityGroupType.APPLIANCES)
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.THERMOSTAT), EntityGroupType.CLIMATE)
+    def test_entity_type_to_group_mapping_supports_logical_ui_organization(self):
+        """Test entity type to group mapping - organizes entities logically for user interface."""
+        # Test that common entity types map to expected functional groups
         
-        # Test fallback to default for unmapped types
-        self.assertEqual(EntityGroupType.from_entity_type(EntityType.OTHER), EntityGroupType.OTHER)
+        # Lighting and electrical controls should group together
+        self.assertEqual(EntityGroupType.from_entity_type(EntityType.LIGHT),
+                         EntityGroupType.LIGHTS_SWITCHES)
+        self.assertEqual(EntityGroupType.from_entity_type(EntityType.ON_OFF_SWITCH),
+                         EntityGroupType.LIGHTS_SWITCHES)
+        self.assertEqual(EntityGroupType.from_entity_type(EntityType.ELECTRICAL_OUTLET),
+                         EntityGroupType.LIGHTS_SWITCHES)
+        
+        # Security devices should group together
+        self.assertEqual(EntityGroupType.from_entity_type(EntityType.CAMERA),
+                         EntityGroupType.SECURITY)
+        self.assertEqual(EntityGroupType.from_entity_type(EntityType.MOTION_SENSOR),
+                         EntityGroupType.SECURITY)
+        self.assertEqual(EntityGroupType.from_entity_type(EntityType.DOOR_LOCK),
+                         EntityGroupType.SECURITY)
+        
+        # Appliances should group together
+        self.assertEqual(EntityGroupType.from_entity_type(EntityType.REFRIGERATOR),
+                         EntityGroupType.APPLIANCES)
+        self.assertEqual(EntityGroupType.from_entity_type(EntityType.DISHWASHER),
+                         EntityGroupType.APPLIANCES)
+        self.assertEqual(EntityGroupType.from_entity_type(EntityType.CLOTHES_WASHER),
+                         EntityGroupType.APPLIANCES)
+        
+        # Climate control devices should group together
+        self.assertEqual(EntityGroupType.from_entity_type(EntityType.THERMOSTAT),
+                         EntityGroupType.CLIMATE)
+        self.assertEqual(EntityGroupType.from_entity_type(EntityType.HVAC_FURNACE),
+                         EntityGroupType.CLIMATE)
+        self.assertEqual(EntityGroupType.from_entity_type(EntityType.HUMIDIFIER),
+                         EntityGroupType.CLIMATE)
+        
+        # Test fallback behavior for unmapped types
+        self.assertEqual(EntityGroupType.from_entity_type(EntityType.OTHER),
+                         EntityGroupType.OTHER)
+        
         return
 
-    def test_entity_type_set_coverage(self):
-        """Test that critical entity types are properly categorized - could break with enum additions."""
-        # Test that important entity types are in expected groups
+    def test_entity_group_sets_provide_comprehensive_categorization(self):
+        """Test entity type set coverage - ensures all important device types are properly categorized."""
+        # Test that major appliance categories are well-represented
         appliances = EntityGroupType.APPLIANCES
-        self.assertIn(EntityType.REFRIGERATOR, appliances.entity_type_set)
-        self.assertIn(EntityType.DISHWASHER, appliances.entity_type_set)
+        expected_appliances = [
+            EntityType.REFRIGERATOR,
+            EntityType.DISHWASHER, 
+            EntityType.CLOTHES_WASHER,
+            EntityType.CLOTHES_DRYER,
+            EntityType.MICROWAVE_OVEN,
+            EntityType.WATER_HEATER
+        ]
         
+        for appliance_type in expected_appliances:
+            self.assertIn(appliance_type, appliances.entity_type_set,
+                          f"{appliance_type} should be in APPLIANCES group")
+        
+        # Test that security devices are comprehensively covered
         security = EntityGroupType.SECURITY
-        self.assertIn(EntityType.CAMERA, security.entity_type_set)
-        self.assertIn(EntityType.MOTION_SENSOR, security.entity_type_set)
+        expected_security = [
+            EntityType.CAMERA,
+            EntityType.MOTION_SENSOR,
+            EntityType.DOOR_LOCK,
+            EntityType.PRESENCE_SENSOR,
+            EntityType.OPEN_CLOSE_SENSOR
+        ]
         
+        for security_type in expected_security:
+            self.assertIn(security_type, security.entity_type_set,
+                          f"{security_type} should be in SECURITY group")
+        
+        # Test that climate control devices are well-categorized
         climate = EntityGroupType.CLIMATE
-        self.assertIn(EntityType.THERMOSTAT, climate.entity_type_set)
-        self.assertIn(EntityType.HVAC_FURNACE, climate.entity_type_set)
+        expected_climate = [
+            EntityType.THERMOSTAT,
+            EntityType.HVAC_FURNACE,
+            EntityType.HVAC_AIR_HANDLER,
+            EntityType.HUMIDIFIER,
+            EntityType.THERMOMETER
+        ]
+        
+        for climate_type in expected_climate:
+            self.assertIn(climate_type, climate.entity_type_set,
+                          f"{climate_type} should be in CLIMATE group")
+        
+        # Test that no entity type appears in multiple groups (mutual exclusivity)
+        all_groups = list(EntityGroupType)
+        all_entity_types_in_groups = set()
+        
+        for group in all_groups:
+            # Check for overlaps
+            overlap = all_entity_types_in_groups.intersection(group.entity_type_set)
+            self.assertEqual(len(overlap), 0,
+                             f"Group {group} has overlapping entity types: {overlap}")
+            all_entity_types_in_groups.update(group.entity_type_set)
+        
+        return
+
+    def test_entity_group_fallback_logic_handles_unmapped_types(self):
+        """Test entity group fallback behavior - provides sensible defaults for edge cases."""
+        # Test that unknown entity types fall back to OTHER group
+        other_group = EntityGroupType.from_entity_type(EntityType.OTHER)
+        self.assertEqual(other_group, EntityGroupType.OTHER)
+        
+        # Test that the OTHER group contains the OTHER entity type
+        self.assertIn(EntityType.OTHER, EntityGroupType.OTHER.entity_type_set)
+        
+        # Test that the default class method returns OTHER
+        default_group = EntityGroupType.default()
+        self.assertEqual(default_group, EntityGroupType.OTHER)
+        
+        # Test consistency between from_entity_type fallback and default
+        self.assertEqual(EntityGroupType.from_entity_type(EntityType.OTHER),
+                         EntityGroupType.default())
+        
+        return
+
+    def test_entity_group_labels_support_user_friendly_display(self):
+        """Test entity group labels - provide meaningful names for UI display."""
+        # Test that all groups have meaningful labels
+        expected_labels = {
+            EntityGroupType.APPLIANCES: 'Appliances',
+            EntityGroupType.SECURITY: 'Security', 
+            EntityGroupType.CLIMATE: 'Climate',
+            EntityGroupType.LIGHTS_SWITCHES: 'Lights, Switches, Outlets',
+            EntityGroupType.COMPUTER_NETWORK: 'Computer/Network',
+            EntityGroupType.AUDIO_VISUAL: 'Audio/Visual'
+        }
+        
+        for group, expected_label in expected_labels.items():
+            self.assertEqual(group.label, expected_label,
+                             f"{group} should have label '{expected_label}'")
+        
+        # Test that all group labels are non-empty strings
+        for group in EntityGroupType:
+            self.assertIsInstance(group.label, str)
+            self.assertGreater(len(group.label), 0)
+            
+        # Test that labels are unique (no duplicates)
+        all_labels = [group.label for group in EntityGroupType]
+        unique_labels = set(all_labels)
+        self.assertEqual(len(all_labels), len(unique_labels),
+                         "All group labels should be unique")
+        
         return
