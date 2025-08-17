@@ -15,7 +15,7 @@ from django.views.generic import View
 import hi.apps.common.antinode as antinode
 from hi.apps.common.healthcheck import do_healthcheck
 from hi.apps.common.utils import is_ajax
-from hi.apps.location.models import Location
+from hi.apps.location.models import Location, LocationView
 
 from hi.enums import ViewMode
 
@@ -169,7 +169,7 @@ class HomeView( View ):
 
     def get(self, request, *args, **kwargs):
 
-        if not Location.objects.all().exists():
+        if not LocationView.objects.all().exists():
             redirect_url = reverse( 'start' )
             return HttpResponseRedirect( redirect_url )
 
@@ -184,8 +184,8 @@ class StartView( View ):
 
     def get(self, request, *args, **kwargs):
     
-        # This view only for first time users (when no Locations exist)
-        if Location.objects.all().exists():
+        # This view only for first time users (when no LocationViews exist)
+        if LocationView.objects.all().exists():
             redirect_url = reverse( 'home' )
             return HttpResponseRedirect( redirect_url )
 

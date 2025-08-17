@@ -405,6 +405,327 @@ event_clauses = await sync_to_async(list)(
 entity = await sync_to_async(Entity.objects.create)(name='Test')
 ```
 
+## Django View Testing
+
+Django views in this application come in five distinct patterns that require different testing approaches:
+
+1. **Synchronous HTML Views** - Traditional Django page views returning HTML responses
+2. **Synchronous JSON Views** - API endpoints returning JSON responses 
+3. **Asynchronous HTML Views** - AJAX views returning HTML snippets for DOM insertion
+4. **Asynchronous JSON Views** - AJAX views returning JSON data for JavaScript processing
+5. **Dual-Mode Views** - Views (HiModalView/HiGridView) that handle both sync and async requests
+
+### View Testing Base Classes
+
+The framework uses a mixin-based architecture to provide clean separation of concerns:
+
+- `ViewTestBase` - Common utilities and core assertions
+- `SyncTestMixin` - Synchronous testing capabilities (regular `client.get()`, `client.post()`)  
+- `AsyncTestMixin` - Asynchronous testing capabilities (`async_get()`, `async_post()` with AJAX headers)
+
+These are composed into test case classes:
+
+Use these base classes from `hi.tests.view_test_base` for consistent view testing:
+
+```python
+from django.urls import reverse
+from hi.tests.view_test_base import SyncViewTestCase, AsyncViewTestCase, DualModeViewTestCase
+
+class TestMySyncViews(SyncViewTestCase):
+    def test_synchronous_html_view(self):
+        url = reverse('my_view_name')
+        response = self.client.get(url)  # Regular Django test client
+        self.assertSuccessResponse(response)
+        self.assertHtmlResponse(response)
+        self.assertTemplateRendered(response, 'my_app/template.html')
+        
+class TestMyAsyncViews(AsyncViewTestCase):
+    def test_asynchronous_html_view(self):
+        url = reverse('my_async_view_name')
+        response = self.async_get(url)  # Automatically includes AJAX headers
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+
+class TestMyDualModeViews(DualModeViewTestCase):
+    def test_view_synchronous_mode(self):
+        url = reverse('my_dual_view_name')
+        response = self.client.get(url)  # Regular request
+        self.assertSuccessResponse(response)
+        self.assertHtmlResponse(response)
+        
+    def test_view_asynchronous_mode(self):
+        url = reverse('my_dual_view_name') 
+        response = self.async_get(url)  # AJAX request
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+```
+
+### Helper Methods
+
+The base test classes provide these assertion and utility methods:
+
+**Status Code Assertions:**
+- `assertResponseStatusCode(response, expected_code)` - Verifies specific status code
+- `assertSuccessResponse(response)` - Verifies 2xx status code
+- `assertErrorResponse(response)` - Verifies 4xx status code
+- `assertServerErrorResponse(response)` - Verifies 5xx status code
+
+**Response Type Assertions:**
+- `assertHtmlResponse(response)` - Verifies HTML content type (status code independent)
+- `assertJsonResponse(response)` - Verifies JSON content type (status code independent)
+
+**Template Assertions:**
+- `assertTemplateRendered(response, template_name)` - Verifies specific template was used
+
+**Session Assertions:**
+- `assertSessionValue(response, key, expected_value)` - Verifies session contains specific key-value pair
+- `assertSessionContains(response, key)` - Verifies session contains specific key
+
+**Session Management:**
+- `setSessionViewType(view_type)` - Set ViewType in session for subsequent requests
+- `setSessionViewMode(view_mode)` - Set ViewMode in session for subsequent requests  
+- `setSessionLocationView(location_view)` - Set location_view_id in session for subsequent requests
+- `setSessionCollection(collection)` - Set collection_id in session for subsequent requests
+- `setSessionViewParameters(view_type=None, view_mode=None, location_view=None, collection=None)` - Set multiple view parameters at once
+
+**Redirect Testing:**
+- `assertRedirectsToTemplates(initial_url, expected_templates)` - Follow redirects and verify final templates rendered
+
+**AJAX Request Methods:**
+- `async_get(url, data=None)` - GET request with AJAX headers
+- `async_post(url, data=None)` - POST request with AJAX headers  
+- `async_put(url, data=None)` - PUT request with AJAX headers
+- `async_delete(url, data=None)` - DELETE request with AJAX headers
+
+### Testing Patterns by View Type
+
+#### Synchronous HTML Views
+- Test status code, response type, and template rendering separately
+- Verify error handling and edge cases
+- Validate form processing and context data
+
+```python
+def test_location_view_renders_correctly(self):
+    location = Location.objects.create(name='Test Location')
+    url = reverse('location_detail', kwargs={'location_id': location.id})
+    response = self.client.get(url)
+    
+    self.assertSuccessResponse(response)
+    self.assertHtmlResponse(response)
+    self.assertTemplateRendered(response, 'location/detail.html')
+    self.assertEqual(response.context['location'], location)
+
+def test_location_view_not_found(self):
+    url = reverse('location_detail', kwargs={'location_id': 999})
+    response = self.client.get(url)
+    
+    self.assertResponseStatusCode(response, 404)
+    self.assertHtmlResponse(response)
+```
+
+#### Synchronous JSON Views
+- Test status codes and JSON response structure separately
+- Verify API endpoint error responses
+
+```python
+def test_api_status_returns_json(self):
+    url = reverse('api_status')
+    response = self.client.get(url)
+    
+    self.assertSuccessResponse(response)
+    self.assertJsonResponse(response)
+    data = response.json()
+    self.assertIn('timestamp', data)
+    self.assertIn('alertData', data)
+
+def test_api_invalid_request(self):
+    url = reverse('api_update')
+    response = self.client.post(url, {'invalid': 'data'})
+    
+    self.assertErrorResponse(response)
+    self.assertJsonResponse(response)
+```
+
+#### Asynchronous HTML Views
+- Test AJAX request detection and proper status codes
+- Verify HTML snippet responses for DOM insertion
+- Test response when called incorrectly (sync instead of async)
+
+```python
+def test_async_html_view_with_ajax_header(self):
+    url = reverse('console_sensor_view', kwargs={'sensor_id': 1})
+    response = self.async_get(url)  # Includes HTTP_X_REQUESTED_WITH header
+    
+    self.assertSuccessResponse(response)
+    self.assertJsonResponse(response)
+    # Test that async view returns content for DOM insertion
+    data = response.json()
+    self.assertIn('insert_map', data)
+    
+def test_async_view_called_synchronously_redirects(self):
+    url = reverse('console_sensor_view', kwargs={'sensor_id': 1})
+    response = self.client.get(url)  # Regular GET without AJAX headers
+    
+    expected_redirect = reverse('console_home')
+    self.assertRedirects(response, expected_redirect)
+
+def test_async_view_error_handling(self):
+    url = reverse('console_sensor_view', kwargs={'sensor_id': 999})
+    response = self.async_get(url)
+    
+    self.assertErrorResponse(response)
+    self.assertJsonResponse(response)  # Error responses may be JSON
+```
+
+#### Asynchronous JSON Views
+- Test AJAX JSON responses with correct status codes
+- Verify JavaScript-consumable data formats
+- Test error handling in async context
+
+```python
+def test_async_json_view_returns_update_data(self):
+    url = reverse('api_update')
+    response = self.async_post(url, {'entity_id': 1})  # Includes AJAX headers
+    
+    self.assertSuccessResponse(response)
+    self.assertJsonResponse(response)
+    data = response.json()
+    self.assertIn('timestamp', data)
+    self.assertIn('alertData', data)
+
+def test_async_json_view_validation_error(self):
+    url = reverse('api_update')
+    response = self.async_post(url, {})  # Missing required data
+    
+    self.assertErrorResponse(response)
+    self.assertJsonResponse(response)
+```
+
+#### Dual-Mode Views (HiModalView/HiGridView)
+- Test both synchronous and asynchronous call patterns
+- Verify correct response type based on request context
+- Test modal rendering vs. full page rendering
+
+```python
+def test_modal_view_sync_request(self):
+    url = reverse('weather_current_conditions_details')
+    response = self.client.get(url)  # Regular request without AJAX headers
+    
+    self.assertSuccessResponse(response)
+    self.assertHtmlResponse(response)
+    # Should render both the base page and the modal template
+    self.assertTemplateRendered(response, 'pages/main_default.html')
+    self.assertTemplateRendered(response, 'weather/modals/conditions_details.html')
+
+def test_modal_view_async_request(self):
+    url = reverse('weather_current_conditions_details')
+    response = self.async_get(url)  # Request with AJAX headers
+    
+    self.assertSuccessResponse(response)
+    self.assertJsonResponse(response)
+    self.assertTemplateRendered(response, 'weather/modals/conditions_details.html')
+    # Verify modal response structure for AJAX
+    data = response.json()
+    self.assertIn('modal', data)
+```
+
+### View Testing Guidelines
+
+**DO:**
+- Use `reverse()` with URL names instead of hardcoded URL strings
+- Use `async_get()`, `async_post()` etc. for AJAX requests to ensure proper headers
+- Test status codes, response types, and template rendering as separate concerns
+- Use `assertTemplateRendered()` to verify template usage independently
+- Use real database operations and test data setup
+- Test actual request/response flows through real code paths
+- Mock only at system boundaries (HTTP calls, external services)
+- Test conditional logic that affects response content or status codes
+- Test error handling and edge cases with appropriate status code assertions
+- Verify context data correctness
+- **Test each view's specific decisions, not downstream redirect effects** (use `fetch_redirect_response=False` for immediate redirects)
+
+**DON'T:**
+- Use hardcoded URL strings - always use `reverse()` with URL names
+- Use regular `client.get()` for AJAX requests - use `async_get()` helper methods
+- Mix status code, response type, and template assertions in single method calls
+- Test template content text that may change - use template name verification instead
+- Use magic strings instead of defined enums/constants (e.g., `'EDIT'` vs `ViewMode.EDIT`)
+- Mock internal Django components or ORM operations
+- Test implementation details instead of interface contracts
+- Create tests that depend on log message assertions
+- Over-mock internal application components
+
+### Database Setup for View Tests
+
+View tests should create real test data to verify complete request/response flows:
+
+```python
+def setUp(self):
+    super().setUp()
+    self.location = Location.objects.create(name='Test Location')
+    self.entity = Entity.objects.create(
+        integration_id='test.entity',
+        integration_name='test_integration',
+        location=self.location
+    )
+
+def test_location_view_with_entities(self):
+    url = reverse('location_detail', kwargs={'location_id': self.location.id})
+    response = self.client.get(url)
+    
+    self.assertSuccessResponse(response)
+    self.assertHtmlResponse(response)
+    self.assertTemplateRendered(response, 'location/detail.html')
+    self.assertEqual(response.context['location'], self.location)
+    # Test that entity is in context or response data
+    self.assertIn(self.entity, response.context['entities'])
+```
+
+### Authentication and Permission Testing
+
+For views requiring authentication:
+
+```python
+def test_protected_view_requires_authentication(self):
+    url = reverse('protected_view')
+    response = self.client.get(url)
+    login_url = reverse('login')
+    self.assertRedirects(response, f'{login_url}?next={url}')
+
+def test_protected_view_with_authenticated_user(self):
+    self.client.force_login(self.user)
+    url = reverse('protected_view')
+    response = self.client.get(url)
+    
+    self.assertSuccessResponse(response)
+    self.assertHtmlResponse(response)
+```
+
+### Form Validation Testing
+
+For views that process forms:
+
+```python
+def test_form_validation_success(self):
+    form_data = {'name': 'Test Entity', 'location': self.location.id}
+    url = reverse('entity_create')
+    response = self.client.post(url, form_data)
+    
+    success_url = reverse('entity_list')
+    self.assertRedirects(response, success_url)
+    self.assertTrue(Entity.objects.filter(name='Test Entity').exists())
+
+def test_form_validation_errors(self):
+    form_data = {'name': ''}  # Missing required field
+    url = reverse('entity_create')
+    response = self.client.post(url, form_data)
+    
+    self.assertSuccessResponse(response)  # Form errors return 200, not 4xx
+    self.assertHtmlResponse(response)
+    self.assertTemplateRendered(response, 'entity/create.html')
+    self.assertFormError(response, 'form', 'name', 'This field is required.')
+```
+
 ## Integration Tests
 
 _TBD_
