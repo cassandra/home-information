@@ -40,9 +40,9 @@ class TestOpenMeteo(BaseTestCase):
         return
 
     @patch('hi.apps.weather.weather_sources.openmeteo.requests.get')
-    def test_get_current_weather_data_from_api(self, mock_get):
-        """Test fetching current weather data from API."""
-        # Mock response data based on the example in the exploration file
+    def test_current_weather_api_integration(self, mock_get):
+        """Test that OpenMeteo API integration works correctly end-to-end."""
+        # Mock realistic OpenMeteo API response
         mock_response_data = {
             "current_weather": {
                 "interval": 900,
@@ -64,14 +64,11 @@ class TestOpenMeteo(BaseTestCase):
             },
             "elevation": 167.0,
             "hourly": {
-                "relativehumidity_2m": [68, 70, 72],
-                "temperature_2m": [25.0, 25.5, 26.0],
-                "time": ["2024-01-01T11:00", "2024-01-01T12:00", "2024-01-01T13:00"]
+                "relativehumidity_2m": [70],
+                "time": ["2024-01-01T12:00"]
             },
             "hourly_units": {
-                "relativehumidity_2m": "%",
-                "temperature_2m": "°C",
-                "time": "iso8601"
+                "relativehumidity_2m": "%"
             },
             "latitude": 30.269146,
             "longitude": -97.75338
@@ -82,13 +79,174 @@ class TestOpenMeteo(BaseTestCase):
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
 
+        # Test the private method since public method may use caching
         result = self.openmeteo._get_current_weather_data_from_api(
-            geographic_location = self.test_location
+            geographic_location=self.test_location
         )
 
+        # Test actual API integration behavior - proper response handling
         self.assertIsInstance(result, dict)
         self.assertIn('current_weather', result)
-        self.assertEqual(result['current_weather']['temperature'], 25.5)
+        self.assertIn('current_weather_units', result)
+        
+        # Test data integrity - verify key weather data is present
+        current_weather = result['current_weather']
+        self.assertEqual(current_weather['temperature'], 25.5)
+        self.assertEqual(current_weather['weathercode'], 0)
+        self.assertEqual(current_weather['windspeed'], 10.5)
+        self.assertEqual(current_weather['winddirection'], 180)
+        self.assertEqual(current_weather['is_day'], 1)
+        
+        # Verify units are properly included
+        units = result['current_weather_units']
+        self.assertEqual(units['temperature'], '°C')
+        self.assertEqual(units['windspeed'], 'km/h')
+        
+        # Verify HTTP call was made with reasonable parameters
+        mock_get.assert_called_once()
+        call_url = mock_get.call_args[0][0]
+        self.assertIn('api.open-meteo.com', call_url)
+        
+        return
+    
+    @patch('hi.apps.weather.weather_sources.openmeteo.OpenMeteo._get_hourly_forecast_data')
+    def test_get_forecast_hourly_returns_interval_list(self, mock_get_hourly_data):
+        """Test that get_forecast_hourly returns properly parsed forecast intervals."""
+        # Mock OpenMeteo API response for hourly forecast
+        mock_response_data = {
+            "hourly": {
+                "time": ["2024-01-01T12:00", "2024-01-01T13:00", "2024-01-01T14:00"],
+                "temperature_2m": [25.5, 26.0, 26.5],
+                "relativehumidity_2m": [65, 67, 70],
+                "weathercode": [0, 1, 2],
+                "is_day": [1, 1, 1],
+                "windspeed_10m": [10.5, 11.0, 11.5],
+                "winddirection_10m": [180, 185, 190]
+            },
+            "hourly_units": {
+                "time": "iso8601",
+                "temperature_2m": "°C",
+                "relativehumidity_2m": "%",
+                "weathercode": "wmo code",
+                "is_day": "",
+                "windspeed_10m": "km/h",
+                "winddirection_10m": "°"
+            },
+            "latitude": 30.269146,
+            "longitude": -97.75338
+        }
+
+        # Mock the private data method directly
+        mock_get_hourly_data.return_value = mock_response_data
+
+        # Test the public interface
+        result = self.openmeteo.get_forecast_hourly(self.test_location)
+
+        # Test the interface contract - verify it returns list of IntervalWeatherForecast
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 3)
+        
+        # Test first forecast interval
+        first_forecast = result[0]
+        self.assertIsInstance(first_forecast, IntervalWeatherForecast)
+        
+        # Verify interval structure
+        self.assertIsNotNone(first_forecast.interval)
+        self.assertIsNotNone(first_forecast.data)
+        
+        # Test that weather data is properly parsed
+        weather_data = first_forecast.data
+        self.assertIsInstance(weather_data, WeatherForecastData)
+        
+        # Verify temperature conversion and units
+        self.assertIsNotNone(weather_data.temperature)
+        self.assertEqual(weather_data.temperature.quantity_ave.magnitude, 25.5)
+        self.assertEqual(str(weather_data.temperature.quantity_ave.units), 'degree_Celsius')
+        
+        # Verify humidity data
+        self.assertIsNotNone(weather_data.relative_humidity)
+        self.assertEqual(weather_data.relative_humidity.quantity_ave.magnitude, 65)
+        
+        # Verify description conversion from weather code
+        self.assertIsNotNone(weather_data.description_short)
+        self.assertEqual(weather_data.description_short.value, "Clear sky")
+        
+        # Note: is_daytime is not included in hourly forecast data from OpenMeteo
+        # This field is only available in current weather conditions
+        
+        mock_get_hourly_data.assert_called_once()
+        return
+    
+    @patch('hi.apps.weather.weather_sources.openmeteo.OpenMeteo._get_current_weather_data')
+    def test_openmeteo_data_transformation_integration(self, mock_get_current_data):
+        """Test that OpenMeteo properly transforms API data through the entire pipeline."""
+        # Mock realistic OpenMeteo API response
+        mock_response_data = {
+            "current_weather": {
+                "temperature": 22.3,
+                "time": "2024-01-01T14:30",
+                "weathercode": 3,  # Overcast
+                "winddirection": 225,
+                "windspeed": 15.2,
+                "is_day": 0
+            },
+            "current_weather_units": {
+                "temperature": "°C",
+                "windspeed": "km/h",
+                "winddirection": "°"
+            },
+            "hourly": {
+                "relativehumidity_2m": [78],
+                "time": ["2024-01-01T14:00"]
+            },
+            "hourly_units": {
+                "relativehumidity_2m": "%"
+            },
+            "elevation": 167.0,
+            "latitude": 30.269146,
+            "longitude": -97.75338
+        }
+
+        # Mock the private data method directly
+        mock_get_current_data.return_value = mock_response_data
+
+        # Test complete data transformation pipeline
+        result = self.openmeteo.get_current_conditions(self.test_location)
+
+        # Verify complex data transformations work correctly
+        
+        # Test weather code to description conversion (weathercode 3 = Overcast)
+        self.assertEqual(result.description_short.value, "Overcast")
+        
+        # Test unit conversions (OpenMeteo returns km/h, we should handle properly)
+        self.assertAlmostEqual(result.windspeed.quantity.magnitude, 15.2, places=1)
+        
+        # Test is_day boolean conversion (0 = night)
+        self.assertFalse(result.is_daytime.value)
+        
+        # Test wind direction handling
+        self.assertEqual(result.wind_direction.quantity.magnitude, 225)
+        
+        # Test temperature with realistic value
+        self.assertAlmostEqual(result.temperature.quantity.magnitude, 22.3, places=1)
+        
+        # Test that station information is properly set
+        self.assertIsNotNone(result.temperature.station)
+        self.assertEqual(result.temperature.station.geo_location.latitude, 30.269146)
+        self.assertEqual(result.temperature.station.geo_location.longitude, -97.75338)
+        
+        return
+    
+    @patch('hi.apps.weather.weather_sources.openmeteo.OpenMeteo._get_current_weather_data')
+    def test_openmeteo_error_handling_behavior(self, mock_get_current_data):
+        """Test that OpenMeteo properly handles API errors and edge cases."""
+        # Test case where API returns None (indicating error)
+        mock_get_current_data.return_value = None
+        
+        # The method should handle None input by raising an exception or failing gracefully
+        with self.assertRaises(Exception):
+            self.openmeteo.get_current_conditions(self.test_location)
+            
         return
 
     def test_parse_current_weather_data(self):

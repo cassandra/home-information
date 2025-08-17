@@ -272,6 +272,21 @@ def test_invalid_entity_provides_descriptive_error(self):
 6. **Create focused tests** that test one behavior well
 7. **Test meaningful edge cases** that affect business logic
 8. **Verify data transformations** work correctly end-to-end
+9. **Use real database operations over ORM mocking** when testing business logic
+10. **Test database state changes** rather than mocking ORM calls to verify actual behavior
+
+#### Database vs Mock Testing Strategy
+
+**Prefer Real Database Operations:**
+- Database state verification tests actual business logic and relationships
+- Cascade deletion, constraints, and indexing are critical system behaviors
+- TransactionTestCase provides proper isolation for database-dependent tests
+- Real data flows through real code paths reveal integration issues
+
+**When to Mock vs Real Database:**
+- **Mock external APIs** (HTTP calls, third-party services)
+- **Use real database** for business logic, relationships, and data transformations
+- **Mock at system boundaries**, not internal ORM operations
 
 ### Django-Specific Testing Patterns
 
@@ -316,6 +331,78 @@ def test_manager_thread_safety(self):
         t.start()
     for t in threads:
         t.join()
+```
+
+### Manager Class Async/Sync Testing
+
+Many manager classes in this codebase follow a dual sync/async pattern to support both traditional Django views and async integration services. These require special testing infrastructure.
+
+#### Manager Pattern Characteristics
+- Singleton pattern with `__init_singleton__()` 
+- Both sync `ensure_initialized()` and async initialization methods
+- Mix of sync methods for Django ORM access and async methods for integration services
+- Thread safety considerations and shared state management
+
+#### Async Testing Infrastructure
+Use this pattern for testing manager classes with async methods:
+
+```python
+class AsyncManagerTestCase(TransactionTestCase):
+    """Base class for async manager tests with proper infrastructure."""
+    
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # Create a single shared event loop for all tests in this class
+        cls._test_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(cls._test_loop)
+    
+    @classmethod
+    def tearDownClass(cls):
+        if hasattr(cls, '_test_loop'):
+            cls._test_loop.close()
+        super().tearDownClass()
+    
+    def run_async(self, coro):
+        """Helper method to run async coroutines using the shared event loop."""
+        return self._test_loop.run_until_complete(coro)
+    
+    def setUp(self):
+        super().setUp()
+        # Reset singleton state for each test
+        ManagerClass._instances = {}
+        self.manager = ManagerClass()
+        # Clear any cached state
+        if hasattr(self.manager, '_recent_transitions'):
+            self.manager._recent_transitions.clear()
+
+    def test_async_method(self):
+        """Example async test using wrapper pattern."""
+        async def async_test_logic():
+            # Use sync_to_async for database operations
+            entity = await sync_to_async(Entity.objects.create)(name='Test Entity')
+            result = await self.manager.async_method(entity)
+            self.assertIsNotNone(result)
+        
+        self.run_async(async_test_logic())
+```
+
+**Key Requirements:**
+- **Use `TransactionTestCase`** instead of `BaseTestCase` to avoid database locking
+- **Shared event loop** prevents SQLite concurrency issues with multiple async tests
+- **Reset singleton state** between tests to ensure isolation
+- **Wrap sync database operations** with `sync_to_async()` in async test code
+- **Use `select_related()`** in manager code to prevent lazy loading in async contexts
+
+**Critical ORM Access Pattern:**
+```python
+# In manager async methods - avoid lazy loading issues
+event_clauses = await sync_to_async(list)(
+    event_definition.event_clauses.select_related('entity_state').all()
+)
+
+# In tests - wrap database operations
+entity = await sync_to_async(Entity.objects.create)(name='Test')
 ```
 
 ## Integration Tests

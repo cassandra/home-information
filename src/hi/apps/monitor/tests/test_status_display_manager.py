@@ -1,8 +1,11 @@
 import logging
-import threading
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
+from hi.apps.entity.models import Entity, EntityState
+from hi.apps.sense.models import Sensor
+from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
+from hi.apps.monitor.transient_models import EntityStateStatusData
 from hi.tests.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
@@ -11,117 +14,148 @@ logging.disable(logging.CRITICAL)
 class TestStatusDisplayManager(BaseTestCase):
 
     def test_status_display_manager_singleton_behavior(self):
-        """Test StatusDisplayManager singleton pattern - critical for system consistency."""
+        """Test StatusDisplayManager maintains single instance across calls."""
         manager1 = StatusDisplayManager()
         manager2 = StatusDisplayManager()
         
-        # Should be the same instance
         self.assertIs(manager1, manager2)
-        return
 
-    def test_status_display_manager_ttl_cache_initialization(self):
-        """Test TTL cache initialization - critical for performance optimization."""
+    def test_entity_state_value_override_storage_and_retrieval(self):
+        """Test value override storage and TTL cache behavior."""
+        entity = Entity.objects.create(name='Test Entity', entity_type_str='CAMERA')
+        entity_state = EntityState.objects.create(
+            entity=entity,
+            entity_state_type_str='ON_OFF'
+        )
+        
+        # Create a new manager instance to ensure clean state
         manager = StatusDisplayManager()
+        manager._status_value_overrides.clear()  # Clear any existing state
         
-        # Should have initialized TTL cache for status value overrides
-        self.assertIsNotNone(manager._status_value_overrides)
+        # Verify no override initially
+        self.assertNotIn(entity_state.id, manager._status_value_overrides)
         
-        # Cache should have reasonable TTL
-        self.assertEqual(manager.STATUS_VALUE_OVERRIDES_SECS, 11)
-        self.assertGreater(manager.STATUS_VALUE_OVERRIDES_SECS, 0)
-        self.assertLess(manager.STATUS_VALUE_OVERRIDES_SECS, 60)
-        return
+        # Add override value
+        manager.add_entity_state_value_override(entity_state, 'ON')
+        
+        # Verify override is stored
+        self.assertIn(entity_state.id, manager._status_value_overrides)
+        self.assertEqual(manager._status_value_overrides[entity_state.id], 'ON')
+        
+        # Test updating override
+        manager.add_entity_state_value_override(entity_state, 'OFF')
+        self.assertEqual(manager._status_value_overrides[entity_state.id], 'OFF')
 
-    def test_status_display_manager_cache_maxsize(self):
-        """Test TTL cache size limits - important for memory management."""
-        manager = StatusDisplayManager()
-        
-        # Cache should have reasonable size limit
-        cache = manager._status_value_overrides
-        self.assertEqual(cache.maxsize, 100)
-        self.assertGreater(cache.maxsize, 0)
-        self.assertLess(cache.maxsize, 1000)
-        return
-
-    def test_status_display_manager_cache_ttl_behavior(self):
-        """Test TTL cache expiration behavior - critical for data freshness."""
-        manager = StatusDisplayManager()
-        cache = manager._status_value_overrides
-        
-        # Test that cache accepts and stores values
-        test_key = 'test_entity_123'
-        test_value = 'override_value'
-        
-        cache[test_key] = test_value
-        
-        # Should retrieve stored value
-        self.assertEqual(cache[test_key], test_value)
-        self.assertIn(test_key, cache)
-        
-        # Should have proper TTL (we can't easily test expiration in unit tests)
-        self.assertEqual(cache.ttl, manager.STATUS_VALUE_OVERRIDES_SECS)
-        return
-
-    def test_status_display_manager_mixin_inheritance(self):
-        """Test SensorResponseMixin inheritance - critical for sensor integration."""
-        manager = StatusDisplayManager()
-        
-        # Should inherit from SensorResponseMixin
-        from hi.apps.sense.sensor_response_manager import SensorResponseMixin
-        self.assertIsInstance(manager, SensorResponseMixin)
-        return
-
-    @patch('hi.apps.monitor.status_display_manager.StatusDisplayManager.get_all_entity_state_status_data_list')
-    def test_status_display_manager_get_status_css_class_update_map(self, mock_get_data):
-        """Test CSS class update map generation - critical for UI updates."""
-        # Mock the complex data retrieval method
-        mock_get_data.return_value = []
+    def test_get_entity_status_data_handles_entity_with_no_states(self):
+        """Test entity status data generation for entity without states."""
+        entity = Entity.objects.create(name='Empty Entity', entity_type_str='CAMERA')
         
         manager = StatusDisplayManager()
         
-        # Should return a dictionary for CSS class updates
-        update_map = manager.get_status_css_class_update_map()
-        self.assertIsInstance(update_map, dict)
-        
-        # Should call the data retrieval method
-        mock_get_data.assert_called_once()
-        return
+        with patch.object(manager, '_get_latest_sensor_responses_helper') as mock_helper:
+            mock_helper.return_value = {}
+            
+            entity_status_data = manager.get_entity_status_data(entity)
+            
+            self.assertEqual(entity_status_data.entity, entity)
+            self.assertEqual(len(entity_status_data.entity_state_status_data_list), 0)
 
-    def test_status_display_manager_thread_safety_cache_access(self):
-        """Test thread-safe cache access - critical for concurrent operations."""
+    def test_get_entity_status_data_aggregates_multiple_states(self):
+        """Test entity status data properly aggregates multiple entity states."""
+        entity = Entity.objects.create(name='Multi-State Entity', entity_type_str='CAMERA')
+        state1 = EntityState.objects.create(
+            entity=entity,
+            entity_state_type_str='ON_OFF'
+        )
+        state2 = EntityState.objects.create(
+            entity=entity,
+            entity_state_type_str='MOTION'
+        )
+        
         manager = StatusDisplayManager()
-        cache = manager._status_value_overrides
         
-        results = []
-        errors = []
+        with patch.object(manager, '_get_entity_state_to_entity_state_status_data') as mock_method:
+            status_data1 = Mock(spec=EntityStateStatusData)
+            status_data2 = Mock(spec=EntityStateStatusData)
+            mock_method.return_value = {
+                state1: status_data1,
+                state2: status_data2
+            }
+            
+            entity_status_data = manager.get_entity_status_data(entity)
+            
+            self.assertEqual(entity_status_data.entity, entity)
+            self.assertIn(status_data1, entity_status_data.entity_state_status_data_list)
+            self.assertIn(status_data2, entity_status_data.entity_state_status_data_list)
+            self.assertEqual(len(entity_status_data.entity_state_status_data_list), 2)
+
+    def test_get_latest_sensor_response_returns_most_recent(self):
+        """Test latest sensor response selection from multiple responses."""
+        entity = Entity.objects.create(name='Test Entity', entity_type_str='CAMERA')
+        entity_state = EntityState.objects.create(
+            entity=entity,
+            entity_state_type_str='ON_OFF'
+        )
+        sensor = Sensor.objects.create(
+            name='Test Sensor',
+            entity_state=entity_state,
+            sensor_type_str='BINARY'
+        )
         
-        def cache_operation(thread_id):
-            try:
-                # Perform cache operations that might conflict
-                key = f'test_key_{thread_id}'
-                value = f'test_value_{thread_id}'
-                
-                cache[key] = value
-                retrieved = cache.get(key)
-                results.append((thread_id, retrieved == value))
-            except Exception as e:
-                errors.append((thread_id, str(e)))
+        manager = StatusDisplayManager()
         
-        # Create multiple threads to test concurrent access
-        threads = []
-        for i in range(5):
-            thread = threading.Thread(target=cache_operation, args=(i,))
-            threads.append(thread)
-            thread.start()
+        # Create mock responses with different timestamps
+        older_response = Mock(spec=SensorResponse)
+        older_response.timestamp = '2023-01-01T10:00:00Z'
+        older_response.value = 'OFF'
         
-        # Wait for all threads to complete
-        for thread in threads:
-            thread.join()
+        newer_response = Mock(spec=SensorResponse)
+        newer_response.timestamp = '2023-01-01T11:00:00Z'
+        newer_response.value = 'ON'
         
-        # Should not have any errors and all operations should succeed
-        self.assertEqual(len(errors), 0, f"Thread errors: {errors}")
-        self.assertEqual(len(results), 5)
+        with patch.object(manager, '_get_latest_sensor_responses_helper') as mock_helper:
+            # Mock returns list in timestamp-sorted order (newest first)
+            mock_helper.return_value = {sensor: [newer_response, older_response]}
+            
+            latest_response = manager.get_latest_sensor_response(entity_state)
+            
+            # Should return newer response (first in sorted list)
+            self.assertEqual(latest_response.value, 'ON')
+
+    def test_get_latest_sensor_response_handles_no_responses(self):
+        """Test latest sensor response when no responses exist."""
+        entity = Entity.objects.create(name='Test Entity', entity_type_str='CAMERA')
+        entity_state = EntityState.objects.create(
+            entity=entity,
+            entity_state_type_str='ON_OFF'
+        )
         
-        for thread_id, success in results:
-            self.assertTrue(success, f"Thread {thread_id} cache operation failed")
-        return
+        manager = StatusDisplayManager()
+        
+        with patch.object(manager, '_get_latest_sensor_responses_helper') as mock_helper:
+            mock_helper.return_value = {}
+            
+            latest_response = manager.get_latest_sensor_response(entity_state)
+            
+            self.assertIsNone(latest_response)
+
+    def test_get_entity_status_data_list_preserves_order(self):
+        """Test entity status data list maintains input entity order."""
+        entity1 = Entity.objects.create(name='Entity 1', entity_type_str='CAMERA')
+        entity2 = Entity.objects.create(name='Entity 2', entity_type_str='LIGHT')
+        entity3 = Entity.objects.create(name='Entity 3', entity_type_str='SENSOR')
+        
+        entities = [entity1, entity2, entity3]
+        
+        manager = StatusDisplayManager()
+        
+        with patch.object(manager, '_get_entity_to_entity_status_data') as mock_method:
+            mock_method.return_value = {}  # Empty results
+            
+            result_list = manager.get_entity_status_data_list(entities)
+            
+            # Should maintain same order as input
+            self.assertEqual(len(result_list), 3)
+            self.assertEqual(result_list[0].entity, entity1)
+            self.assertEqual(result_list[1].entity, entity2)
+            self.assertEqual(result_list[2].entity, entity3)

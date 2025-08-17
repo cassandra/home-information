@@ -2,6 +2,15 @@
 
 # Release Process
 
+## Preamble 
+
+- Releases are only done by the core maintainers with direct repo access and not done on a fork of the repo.
+- All work is done in feature branches that get merged into the staging branch.
+- The master branch is the release branch.
+- The release process is mainly about merging the accumulated PRs in staging into master.
+
+## Step by Step
+
 - Change to `staging` branch locally.
 - Get your local `staging` branch fuly in sync with remote/upstream.
 - Bump the version number in the file `HI_VERSION` as appropriate: major, minor or suffix.

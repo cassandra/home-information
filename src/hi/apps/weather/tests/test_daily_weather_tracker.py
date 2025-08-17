@@ -317,6 +317,190 @@ class TestDailyWeatherTracker(unittest.TestCase):
             self.assertAlmostEqual(min_temp.quantity_ave.magnitude, 25.0, places=1)
             self.assertEqual(min_temp.quantity_ave.units, 'degree_Celsius')
     
+    # ============= NEW BEHAVIOR-FOCUSED TESTS =============
+    # These tests focus on testing the public interface of DailyWeatherTracker
+    # rather than testing private implementation details
+    
+    def test_record_weather_conditions_tracks_temperature_statistics(self):
+        """Test that recording weather conditions properly tracks temperature min/max."""
+        location_key = "test_location"
+        
+        with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
+            # Record multiple temperature readings throughout the day
+            temperatures = [18.0, 25.0, 22.0, 30.0, 15.0, 28.0]
+            
+            for temp in temperatures:
+                weather_data = WeatherConditionsData(
+                    temperature=self.create_test_temperature_datapoint(temp)
+                )
+                
+                # Use public interface to record weather conditions
+                self.tracker.record_weather_conditions(weather_data, location_key)
+            
+            # Verify min/max tracking using public interface
+            min_temp, max_temp = self.tracker.get_temperature_min_max_today(location_key)
+            
+            self.assertIsNotNone(min_temp)
+            self.assertIsNotNone(max_temp)
+            self.assertAlmostEqual(min_temp.quantity_ave.magnitude, 15.0, places=1)
+            self.assertAlmostEqual(max_temp.quantity_ave.magnitude, 30.0, places=1)
+            self.assertEqual(min_temp.quantity_ave.units, 'degree_Celsius')
+            self.assertEqual(max_temp.quantity_ave.units, 'degree_Celsius')
+    
+    def test_populate_daily_fallbacks_fills_missing_temperature_data(self):
+        """Test that populate_daily_fallbacks correctly fills missing temperature min/max."""
+        location_key = "test_location"
+        
+        with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
+            # First, record some temperature data to establish tracking
+            weather_data = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(20.0)
+            )
+            self.tracker.record_weather_conditions(weather_data, location_key)
+            
+            weather_data2 = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(25.0)
+            )
+            self.tracker.record_weather_conditions(weather_data2, location_key)
+            
+            # Create weather data with missing daily min/max
+            incomplete_weather_data = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(22.0),
+                # Note: temperature_min_today and temperature_max_today are None
+            )
+            
+            # Verify fallbacks are initially None
+            self.assertIsNone(incomplete_weather_data.temperature_min_today)
+            self.assertIsNone(incomplete_weather_data.temperature_max_today)
+            
+            # Use public interface to populate fallbacks
+            self.tracker.populate_daily_fallbacks(incomplete_weather_data, location_key)
+            
+            # Verify fallbacks were populated
+            self.assertIsNotNone(incomplete_weather_data.temperature_min_today)
+            self.assertIsNotNone(incomplete_weather_data.temperature_max_today)
+            self.assertAlmostEqual(
+                incomplete_weather_data.temperature_min_today.quantity_ave.magnitude, 20.0, places=1)
+            self.assertAlmostEqual(
+                incomplete_weather_data.temperature_max_today.quantity_ave.magnitude, 25.0, places=1)
+    
+    def test_populate_daily_fallbacks_preserves_existing_data(self):
+        """Test that populate_daily_fallbacks doesn't overwrite existing min/max data."""
+        location_key = "test_location"
+        
+        with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
+            # Record some tracking data
+            weather_data = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(20.0)
+            )
+            self.tracker.record_weather_conditions(weather_data, location_key)
+            
+            # Create weather data that already has min/max values
+            existing_min = self.create_test_temperature_datapoint(15.0)
+            existing_max = self.create_test_temperature_datapoint(30.0)
+            
+            complete_weather_data = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(22.0),
+                temperature_min_today=existing_min,
+                temperature_max_today=existing_max
+            )
+            
+            # Use public interface - should not overwrite existing data
+            self.tracker.populate_daily_fallbacks(complete_weather_data, location_key)
+            
+            # Verify existing data was preserved
+            self.assertAlmostEqual(
+                complete_weather_data.temperature_min_today.quantity_ave.magnitude, 15.0, places=1)
+            self.assertAlmostEqual(
+                complete_weather_data.temperature_max_today.quantity_ave.magnitude, 30.0, places=1)
+    
+    def test_get_daily_summary_provides_debug_information(self):
+        """Test that get_daily_summary provides useful debugging information."""
+        location_key = "test_location"
+        
+        with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
+            # Record some temperature data
+            temperatures = [18.0, 25.0, 22.0]
+            for temp in temperatures:
+                weather_data = WeatherConditionsData(
+                    temperature=self.create_test_temperature_datapoint(temp)
+                )
+                self.tracker.record_weather_conditions(weather_data, location_key)
+            
+            # Get daily summary using public interface
+            summary = self.tracker.get_daily_summary(location_key)
+            
+            # Verify summary structure and content
+            self.assertIn('date', summary)
+            self.assertIn('timezone', summary)
+            self.assertIn('fields', summary)
+            
+            # Verify temperature field is included
+            self.assertIn('temperature', summary['fields'])
+            temp_stats = summary['fields']['temperature']
+            
+            # Verify statistics are present
+            self.assertIn('min', temp_stats)
+            self.assertIn('max', temp_stats)
+            self.assertEqual(temp_stats['min']['value'], 18.0)
+            self.assertEqual(temp_stats['max']['value'], 25.0)
+    
+    def test_multiple_locations_tracked_independently(self):
+        """Test that different locations are tracked independently."""
+        location1 = "location_1"
+        location2 = "location_2"
+        
+        with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
+            # Record different temperatures for different locations
+            weather_data1 = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(10.0)
+            )
+            self.tracker.record_weather_conditions(weather_data1, location1)
+            
+            weather_data2 = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(20.0)
+            )
+            self.tracker.record_weather_conditions(weather_data2, location2)
+            
+            # Verify each location has its own independent tracking
+            min1, max1 = self.tracker.get_temperature_min_max_today(location1)
+            min2, max2 = self.tracker.get_temperature_min_max_today(location2)
+            
+            self.assertAlmostEqual(min1.quantity_ave.magnitude, 10.0, places=1)
+            self.assertAlmostEqual(max1.quantity_ave.magnitude, 10.0, places=1)
+            self.assertAlmostEqual(min2.quantity_ave.magnitude, 20.0, places=1)
+            self.assertAlmostEqual(max2.quantity_ave.magnitude, 20.0, places=1)
+    
+    def test_clear_today_resets_tracking_data(self):
+        """Test that clear_today properly resets tracking for a location."""
+        location_key = "test_location"
+        
+        with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
+            # Record some temperature data
+            weather_data = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(20.0)
+            )
+            self.tracker.record_weather_conditions(weather_data, location_key)
+            
+            # Verify data exists
+            min_temp, max_temp = self.tracker.get_temperature_min_max_today(location_key)
+            self.assertIsNotNone(min_temp)
+            self.assertIsNotNone(max_temp)
+            
+            # Clear the data using public interface
+            self.tracker.clear_today(location_key)
+            
+            # Verify data was cleared
+            min_temp, max_temp = self.tracker.get_temperature_min_max_today(location_key)
+            self.assertIsNone(min_temp)
+            self.assertIsNone(max_temp)
+            
+            # Verify summary is empty (should return None when no data)
+            summary = self.tracker.get_daily_summary(location_key)
+            self.assertIsNone(summary)
+    
+    # ============= ORIGINAL TESTS (TO BE DEPRECATED) =============
+    
     def test_extensibility_for_future_fields(self):
         """Test that the architecture supports future weather field additions."""
         # This test verifies the general field recording mechanism

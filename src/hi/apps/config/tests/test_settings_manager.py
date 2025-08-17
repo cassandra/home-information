@@ -1,14 +1,26 @@
 import logging
-from unittest.mock import Mock
 from threading import Lock
 import threading
 
 from hi.apps.config.models import Subsystem, SubsystemAttribute
 from hi.apps.config.settings_manager import SettingsManager
+from hi.apps.config.setting_enums import SettingEnum, SettingDefinition
 from hi.apps.attribute.enums import AttributeValueType
 from hi.tests.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
+
+
+class TestSetting(SettingEnum):
+    TEST_SETTING = SettingDefinition(
+        label='Test Setting',
+        description='A test setting',
+        value_type=AttributeValueType.TEXT,
+        value_range_str='',
+        is_editable=True,
+        is_required=True,
+        initial_value='test_initial',
+    )
 
 
 class TestSettingsManager(BaseTestCase):
@@ -21,148 +33,230 @@ class TestSettingsManager(BaseTestCase):
         self.assertIs(manager1, manager2)
         return
 
-    def test_set_setting_value_with_database_update(self):
-        """Test set_setting_value updates both memory and database - complex business logic."""
+    def test_initialization_lifecycle(self):
+        """Test complete initialization lifecycle."""
         manager = SettingsManager()
         
-        # Create test data
+        # Ensure manager is initialized (it may already be from other tests)
+        manager.ensure_initialized()
+        self.assertTrue(manager._was_initialized)
+        
+        # Subsystems should be loaded
+        subsystems = manager.get_subsystems()
+        self.assertIsInstance(subsystems, list)
+        return
+
+    def test_setting_value_management_workflow(self):
+        """Test complete workflow of setting value management."""
+        manager = SettingsManager()
+        manager.ensure_initialized()
+        
+        # Create test subsystem and attribute
         subsystem = Subsystem.objects.create(
             name='Test Subsystem',
-            subsystem_key='test_subsystem',
+            subsystem_key='test_workflow',
         )
-        test_key = 'test.set.setting.key'
-        SubsystemAttribute.objects.create(
+        test_key = TestSetting.TEST_SETTING.key
+        attribute = SubsystemAttribute.objects.create(
             subsystem=subsystem,
             setting_key=test_key,
             value_type=AttributeValueType.TEXT,
-            value='initial_value',
+            value='initial_workflow_value',
         )
         
+        # Reload subsystems and attributes to pick up new data
+        manager._subsystem_list = manager._load_settings()
         manager.reload()
         
-        # Create a mock setting enum for testing
-        mock_setting = Mock()
-        mock_setting.key = test_key
+        # Test getting setting value
+        initial_value = manager.get_setting_value(TestSetting.TEST_SETTING)
+        self.assertEqual(initial_value, 'initial_workflow_value')
         
-        # Update setting value
-        manager.set_setting_value(mock_setting, 'new_value')
+        # Test updating setting value
+        manager.set_setting_value(TestSetting.TEST_SETTING, 'updated_workflow_value')
         
-        # Verify value was updated in memory
-        value = manager._attribute_value_map.get(test_key)
-        self.assertEqual(value, 'new_value')
+        # Verify update was applied
+        updated_value = manager.get_setting_value(TestSetting.TEST_SETTING)
+        self.assertEqual(updated_value, 'updated_workflow_value')
         
-        # Verify database was updated
-        attribute = SubsystemAttribute.objects.get(setting_key=test_key)
-        self.assertEqual(attribute.value, 'new_value')
+        # Verify database persistence
+        attribute.refresh_from_db()
+        self.assertEqual(attribute.value, 'updated_workflow_value')
         return
 
-    def test_set_setting_value_nonexistent_key_error(self):
-        """Test set_setting_value error handling for non-existent settings - critical error handling."""
+    def test_setting_value_error_scenarios(self):
+        """Test error handling in setting value operations."""
         manager = SettingsManager()
         manager.ensure_initialized()
         
-        # Create mock setting with non-existent key
-        mock_setting = Mock()
-        mock_setting.key = 'non.existent.setting.key'
-        
+        # Test KeyError for non-existent setting
         with self.assertRaises(KeyError):
-            manager.set_setting_value(mock_setting, 'any_value')
+            manager.set_setting_value(TestSetting.TEST_SETTING, 'any_value')
+        
+        # Test None return for non-existent setting
+        value = manager.get_setting_value(TestSetting.TEST_SETTING)
+        self.assertIsNone(value)
         return
 
-    def test_change_listener_system_notification(self):
-        """Test change listener system - core functionality for system integration."""
+    def test_change_listener_notification_system(self):
+        """Test change listener system with real callbacks."""
         manager = SettingsManager()
         
-        # Create mock callbacks
-        callback1 = Mock()
-        callback2 = Mock()
+        # Track notifications with simple state
+        notification_count = [0]  # Use list for mutable reference
+        listener_called = [False]
         
-        manager.register_change_listener(callback1)
-        manager.register_change_listener(callback2)
+        def test_callback():
+            notification_count[0] += 1
+            listener_called[0] = True
         
-        # Create minimal test data for reload
+        manager.register_change_listener(test_callback)
+        
+        # Create test data to trigger reload
         Subsystem.objects.create(
-            name='Test Subsystem',
-            subsystem_key='test_subsystem',
+            name='Listener Test Subsystem',
+            subsystem_key='listener_test',
         )
         
+        # Initialize and reload to trigger notifications
         manager.ensure_initialized()
+        initial_count = notification_count[0]
         
-        # Reset mocks to focus on reload call
-        callback1.reset_mock()
-        callback2.reset_mock()
-        
-        # Trigger reload which should notify listeners
         manager.reload()
         
-        callback1.assert_called_once()
-        callback2.assert_called_once()
+        # Verify callback was invoked
+        self.assertTrue(listener_called[0])
+        self.assertGreater(notification_count[0], initial_count)
         return
 
-    def test_change_listener_exception_handling(self):
-        """Test change listener error handling - system should be resilient to callback failures."""
+    def test_change_listener_resilience(self):
+        """Test system resilience when change listeners fail."""
         manager = SettingsManager()
         
-        # Create callback that raises exception
+        # Track successful callback execution
+        successful_callback_executed = [False]
+        
         def failing_callback():
-            raise ValueError("Test exception")
+            raise ValueError("Simulated callback failure")
         
-        # Create normal callback
-        normal_callback = Mock()
+        def successful_callback():
+            successful_callback_executed[0] = True
         
+        # Register both callbacks
         manager.register_change_listener(failing_callback)
-        manager.register_change_listener(normal_callback)
+        manager.register_change_listener(successful_callback)
         
-        # Create minimal test data
+        # Create test data
         Subsystem.objects.create(
-            name='Test Subsystem',
-            subsystem_key='test_subsystem',
+            name='Resilience Test Subsystem',
+            subsystem_key='resilience_test',
         )
         
-        # Clear any previous calls to focus on this test
-        normal_callback.reset_mock()
-        
-        # Reload should not fail despite exception in callback
+        # Reload should not fail despite exception in first callback
+        manager.ensure_initialized()
+        successful_callback_executed[0] = False  # Reset flag
         manager.reload()
         
-        # Normal callback should still be called
-        normal_callback.assert_called_once()
+        # Successful callback should still execute
+        self.assertTrue(successful_callback_executed[0])
         return
 
-    def test_reload_picks_up_database_changes(self):
-        """Test reload method detects database changes - critical synchronization logic."""
+    def test_database_synchronization(self):
+        """Test manager stays synchronized with database changes."""
         manager = SettingsManager()
         manager.ensure_initialized()
         
-        # Test that reload picks up changes by modifying an existing system setting
-        existing_attrs = list(SubsystemAttribute.objects.all()[:1])
-        if existing_attrs:
-            attr = existing_attrs[0]
-            original_value = attr.value
-            
-            # Change the value
-            attr.value = f'test_modified_{original_value}'
-            attr.save()
-            
-            # Reload should pick up the change
-            manager.reload()
-            updated_value = manager._attribute_value_map.get(attr.setting_key)
-            self.assertEqual(updated_value, f'test_modified_{original_value}')
-            
-            # Restore original value
-            attr.value = original_value
-            attr.save()
-            manager.reload()
-        else:
-            self.skipTest("No existing attributes to test reload with")
+        # Create initial test data
+        subsystem = Subsystem.objects.create(
+            name='Sync Test Subsystem',
+            subsystem_key='sync_test',
+        )
+        test_key = 'test.sync.setting'
+        attribute = SubsystemAttribute.objects.create(
+            subsystem=subsystem,
+            setting_key=test_key,
+            value_type=AttributeValueType.TEXT,
+            value='sync_initial_value',
+        )
+        
+        # Reload subsystems and attributes to pick up new data
+        manager._subsystem_list = manager._load_settings()
+        manager.reload()
+        
+        # Verify initial state
+        initial_value = manager.get_setting_value(
+            type('MockSetting', (), {'key': test_key})()
+        )
+        self.assertEqual(initial_value, 'sync_initial_value')
+        
+        # Modify database directly
+        attribute.value = 'sync_modified_value'
+        attribute.save()
+        
+        # Reload should pick up changes
+        manager.reload()
+        updated_value = manager.get_setting_value(
+            type('MockSetting', (), {'key': test_key})()
+        )
+        self.assertEqual(updated_value, 'sync_modified_value')
         return
 
-    def test_thread_safety_locks_exist(self):
-        """Test thread safety locks are properly initialized - critical for concurrent access."""
+    def test_subsystem_management(self):
+        """Test subsystem management functionality."""
+        manager = SettingsManager()
+        manager.ensure_initialized()
+        
+        # Create test subsystems
+        Subsystem.objects.create(
+            name='Management Test 1',
+            subsystem_key='mgmt_test_1',
+        )
+        Subsystem.objects.create(
+            name='Management Test 2',
+            subsystem_key='mgmt_test_2',
+        )
+        
+        # Reload subsystems to pick up new subsystems
+        manager._subsystem_list = manager._load_settings()
+        manager.reload()
+        
+        # Test subsystem retrieval - just verify the new ones are present
+        updated_subsystems = manager.get_subsystems()
+        subsystem_keys = [s.subsystem_key for s in updated_subsystems]
+        
+        self.assertIn('mgmt_test_1', subsystem_keys)
+        self.assertIn('mgmt_test_2', subsystem_keys)
+        
+        # Verify subsystems can be retrieved individually
+        mgmt_subsystems = [s for s in updated_subsystems if s.subsystem_key.startswith('mgmt_test_')]
+        self.assertEqual(len(mgmt_subsystems), 2)
+        return
+
+    def test_server_startup_tracking(self):
+        """Test server startup datetime tracking."""
+        manager = SettingsManager()
+        
+        startup_time = manager.get_server_start_datetime()
+        self.assertIsNotNone(startup_time)
+        
+        # Should be consistent across calls
+        startup_time2 = manager.get_server_start_datetime()
+        self.assertEqual(startup_time, startup_time2)
+        return
+
+    def test_thread_safety_infrastructure(self):
+        """Test thread safety infrastructure is properly configured."""
         manager = SettingsManager()
         
         # Verify locks exist and are proper lock types  
         lock_types = (type(Lock()), type(threading.Lock()), type(threading.RLock()))
         self.assertIsInstance(manager._subsystems_lock, lock_types)
         self.assertIsInstance(manager._attributes_lock, lock_types)
+        
+        # Test that locks can be acquired and released
+        with manager._subsystems_lock:
+            self.assertTrue(True)  # Lock acquisition succeeded
+        
+        with manager._attributes_lock:
+            self.assertTrue(True)  # Lock acquisition succeeded
         return

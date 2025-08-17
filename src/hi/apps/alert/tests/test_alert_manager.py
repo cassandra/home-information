@@ -2,7 +2,6 @@ import logging
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.alert.alert_manager import AlertManager
-from hi.apps.alert.alert import Alert
 from hi.apps.alert.alarm import Alarm
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.security.enums import SecurityLevel
@@ -48,11 +47,11 @@ class TestAlertManager(BaseTestCase):
         self.assertEqual(unack_list, expected_list)
         return
 
-    def test_alert_manager_get_alert_delegation(self):
-        """Test get_alert method delegation - critical for alert lookup."""
+    def test_alert_manager_get_alert_integration(self):
+        """Test get_alert method through proper interface - critical for alert lookup."""
         manager = AlertManager()
         
-        # Create test alert and add to queue
+        # Create test alarm and add through proper interface
         test_alarm = Alarm(
             alarm_source=AlarmSource.EVENT,
             alarm_type='test_alarm',
@@ -63,12 +62,13 @@ class TestAlertManager(BaseTestCase):
             alarm_lifetime_secs=300,
             timestamp=datetimeproxy.now(),
         )
-        alert = Alert(test_alarm)
-        manager._alert_queue._alert_list.append(alert)
         
-        # Should delegate to alert queue
-        found_alert = manager.get_alert(alert.id)
-        self.assertEqual(found_alert, alert)
+        # Add alarm through AlertQueue's public interface
+        created_alert = manager._alert_queue.add_alarm(test_alarm)
+        
+        # Should be retrievable through manager
+        found_alert = manager.get_alert(created_alert.id)
+        self.assertEqual(found_alert, created_alert)
         
         # Should raise KeyError for non-existent ID
         with self.assertRaises(KeyError):
@@ -114,10 +114,10 @@ class TestAlertManager(BaseTestCase):
         # Should have working alert queue
         self.assertIsNotNone(manager._alert_queue)
         
-        # Queue operations should work through manager
+        # Queue operations should work through manager interface
         initial_count = len(manager.unacknowledged_alert_list)
         
-        # Add alert directly to queue
+        # Add alarm through queue's public interface
         test_alarm = Alarm(
             alarm_source=AlarmSource.EVENT,
             alarm_type='test_alarm',
@@ -128,14 +128,13 @@ class TestAlertManager(BaseTestCase):
             alarm_lifetime_secs=300,
             timestamp=datetimeproxy.now(),
         )
-        alert = Alert(test_alarm)
-        manager._alert_queue._alert_list.append(alert)
+        created_alert = manager._alert_queue.add_alarm(test_alarm)
         
-        # Should be reflected in unacknowledged list
+        # Should be reflected in manager's unacknowledged list
         self.assertEqual(len(manager.unacknowledged_alert_list), initial_count + 1)
-        self.assertIn(alert, manager.unacknowledged_alert_list)
+        self.assertIn(created_alert, manager.unacknowledged_alert_list)
         
-        # Should be retrievable by ID
-        retrieved_alert = manager.get_alert(alert.id)
-        self.assertEqual(retrieved_alert, alert)
+        # Should be retrievable through manager
+        retrieved_alert = manager.get_alert(created_alert.id)
+        self.assertEqual(retrieved_alert, created_alert)
         return
