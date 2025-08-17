@@ -1,7 +1,7 @@
 import logging
 
 from django.core.exceptions import BadRequest
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseNotAllowed
 from django.urls import reverse
 from django.views.generic import View
 
@@ -102,6 +102,9 @@ class LocationDetailsView( HiSideView, LocationViewMixin ):
             location = location,
         )
         return location_edit_data.to_template_context()
+    
+    def post( self, request, *args, **kwargs ):
+        return HttpResponseNotAllowed(['GET'])
 
 
 class LocationViewDetailsView( HiSideView, LocationViewMixin ):
@@ -118,6 +121,9 @@ class LocationViewDetailsView( HiSideView, LocationViewMixin ):
             location_view = location_view,
         )
         return location_view_edit_data.to_template_context()
+    
+    def post( self, request, *args, **kwargs ):
+        return HttpResponseNotAllowed(['GET'])
 
 
 class LocationItemInfoView( View ):
@@ -126,7 +132,7 @@ class LocationItemInfoView( View ):
         try:
             ( item_type, item_id ) = ItemType.parse_from_dict( kwargs )
         except ValueError:
-            raise BadRequest( request, message = 'Bad item id.' )
+            raise BadRequest( 'Bad item id.' )
         
         if item_type == ItemType.ENTITY:
             redirect_url = reverse( 'entity_status', kwargs = { 'entity_id': item_id } )
@@ -136,7 +142,7 @@ class LocationItemInfoView( View ):
             redirect_url = reverse( 'collection_view', kwargs = { 'collection_id': item_id } )
             return HttpResponseRedirect( redirect_url )
 
-        raise BadRequest( 'Unknown item type "{item_type}".' )
+        raise BadRequest( f'Unknown item type "{item_type}".' )
 
 
 class LocationItemDetailsView( View ):
@@ -145,7 +151,7 @@ class LocationItemDetailsView( View ):
         try:
             ( item_type, item_id ) = ItemType.parse_from_dict( kwargs )
         except ValueError:
-            raise BadRequest( request, message = 'Bad item id.' )
+            raise BadRequest( 'Bad item id.' )
         
         if item_type == ItemType.ENTITY:
             redirect_url = reverse( 'entity_details', kwargs = { 'entity_id': item_id } )
@@ -155,5 +161,5 @@ class LocationItemDetailsView( View ):
             redirect_url = reverse( 'collection_details', kwargs = { 'collection_id': item_id } )
             return HttpResponseRedirect( redirect_url )
 
-        raise BadRequest( 'Unknown item type "{item_type}".' )
+        raise BadRequest( f'Unknown item type "{item_type}".' )
     

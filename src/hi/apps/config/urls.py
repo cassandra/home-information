@@ -11,6 +11,6 @@ urlpatterns = [
 
     re_path( r'^internal$', 
              views.ConfigInternalView.as_view(), 
-             name='config_interns' ),
+             name='config_internal' ),
 
 ]

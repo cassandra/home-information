@@ -41,6 +41,14 @@ class SecurityManager( Singleton, SettingsMixin ):
         self._redis_client = get_redis_client()
         self._was_initialized = False
         return
+    
+    def cleanup(self):
+        """Clean up resources, particularly timer threads."""
+        if self._delayed_security_state_timer:
+            self._delayed_security_state_timer.cancel()
+            self._delayed_security_state_timer = None
+        self._delayed_security_state = None
+        return
 
     def ensure_initialized(self):
         if self._was_initialized:

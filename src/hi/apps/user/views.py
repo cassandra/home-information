@@ -91,7 +91,9 @@ class SigninMagicCodeView( View ):
         context = {
             'magic_code_form': magic_code_form,
         }
-        return render( request, self.TEMPLATE_NAME, context )
+        response = render( request, self.TEMPLATE_NAME, context )
+        response.status_code = status
+        return response
     
     def post( self, request, *args, **kwargs ):
         
@@ -151,7 +153,7 @@ class SigninMagicLinkView( View ):
         try:
             existing_user = User.objects.get( email = email_address )
         except User.DoesNotExist:
-            return BadRequest( 'Email is not valid.' )
+            raise BadRequest( 'Email is not valid.' )
 
         # We re-purpose the clever way tokens are used for password resets in Django
         token_generator = PasswordResetTokenGenerator()

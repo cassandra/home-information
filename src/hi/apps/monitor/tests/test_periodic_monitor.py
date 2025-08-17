@@ -1,8 +1,7 @@
 import asyncio
 import logging
 
-from django.test import TransactionTestCase
-
+from hi.tests.async_task_utils import AsyncTaskTestCase
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 logging.disable(logging.CRITICAL)
@@ -32,28 +31,11 @@ class ConcreteTestMonitor(PeriodicMonitor):
         await super().cleanup()
 
 
-class TestPeriodicMonitor(TransactionTestCase):
+class TestPeriodicMonitor(AsyncTaskTestCase):
     """Test PeriodicMonitor async lifecycle and behavior.
     
-    Uses TransactionTestCase to avoid database locking issues with async code.
+    Uses AsyncTaskTestCase to avoid database locking issues with async code.
     """
-    
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        # Create a single shared event loop for all tests
-        cls._test_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(cls._test_loop)
-    
-    @classmethod
-    def tearDownClass(cls):
-        if hasattr(cls, '_test_loop'):
-            cls._test_loop.close()
-        super().tearDownClass()
-    
-    def run_async(self, coro):
-        """Helper to run async coroutines using the shared event loop."""
-        return self._test_loop.run_until_complete(coro)
     
     def setUp(self):
         super().setUp()

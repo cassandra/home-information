@@ -15,7 +15,7 @@ from django.views.generic import View
 import hi.apps.common.antinode as antinode
 from hi.apps.common.healthcheck import do_healthcheck
 from hi.apps.common.utils import is_ajax
-from hi.apps.location.models import Location, LocationView
+from hi.apps.location.models import LocationView
 
 from hi.enums import ViewMode
 

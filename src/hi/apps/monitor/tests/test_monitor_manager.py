@@ -3,7 +3,8 @@ import logging
 import threading
 from unittest.mock import Mock, patch, MagicMock
 
-from django.test import TransactionTestCase, override_settings
+from django.test import override_settings
+from hi.tests.async_task_utils import AsyncTaskTestCase
 
 from hi.apps.monitor.monitor_manager import AppMonitorManager
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
@@ -29,28 +30,11 @@ class TestMonitor2(PeriodicMonitor):
         pass
 
 
-class TestAppMonitorManager(TransactionTestCase):
+class TestAppMonitorManager(AsyncTaskTestCase):
     """Test AppMonitorManager singleton and async behavior.
     
-    Uses TransactionTestCase for async compatibility.
+    Uses AsyncTaskTestCase for async compatibility.
     """
-    
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        # Create a single shared event loop for all tests
-        cls._test_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(cls._test_loop)
-    
-    @classmethod
-    def tearDownClass(cls):
-        if hasattr(cls, '_test_loop'):
-            cls._test_loop.close()
-        super().tearDownClass()
-    
-    def run_async(self, coro):
-        """Helper to run async coroutines using the shared event loop."""
-        return self._test_loop.run_until_complete(coro)
     
     def setUp(self):
         super().setUp()
