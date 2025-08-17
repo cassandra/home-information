@@ -7,7 +7,6 @@ from django.urls import reverse
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection, CollectionPosition
 from hi.apps.entity.models import Entity
-from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
 from hi.enums import ViewMode, ViewType
 from hi.tests.view_test_base import SyncViewTestCase, DualModeViewTestCase
@@ -54,7 +53,7 @@ class TestCollectionAddView(DualModeViewTestCase):
         
         # Form should include location view option
         form = response.context['collection_add_form']
-        self.assertTrue(form.include_in_location_view)
+        self.assertTrue(form.fields['include_in_location_view'].initial)
 
     def test_get_collection_add_form_non_location_view(self):
         """Test getting collection add form when not in location view context."""
@@ -67,7 +66,7 @@ class TestCollectionAddView(DualModeViewTestCase):
         self.assertSuccessResponse(response)
         # Form should not include location view option
         form = response.context['collection_add_form']
-        self.assertFalse(form.include_in_location_view)
+        self.assertFalse(form.fields['include_in_location_view'].initial)
 
     def test_get_collection_add_form_async(self):
         """Test getting collection add form with AJAX request."""
@@ -81,95 +80,108 @@ class TestCollectionAddView(DualModeViewTestCase):
         data = response.json()
         self.assertIn('modal', data)
 
-    @patch('hi.apps.collection.edit.forms.CollectionAddForm')
-    def test_post_invalid_form(self, mock_form_class):
+    def test_post_invalid_form(self):
         """Test POST request with invalid form data."""
-        # Mock invalid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = False
-        mock_form_class.return_value = mock_form
-
         url = reverse('collection_add')
+        # Post empty data to trigger validation errors (name is required)
         response = self.client.post(url, {})
 
         self.assertSuccessResponse(response)
         # Should render form with errors
-        self.assertEqual(response.context['collection_add_form'], mock_form)
+        form = response.context['collection_add_form']
+        self.assertFalse(form.is_valid())
+        self.assertIn('name', form.errors)
 
-    @patch.object(CollectionManager, 'create_collection_view')
-    @patch.object(LocationManager, 'get_default_location_view')
-    @patch('hi.apps.collection.edit.forms.CollectionAddForm')
-    def test_post_valid_form_with_location_view(
-            self, mock_form_class, mock_get_location_view, mock_create_view):
+    def test_post_valid_form_with_location_view(self):
         """Test POST request with valid form data including location view."""
-        # Mock valid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = True
-        mock_form.clean.return_value = {'include_in_location_view': True}
-        mock_collection = Mock()
-        mock_form.save.return_value = mock_collection
-        mock_form_class.return_value = mock_form
-
-        # Mock location manager
-        mock_get_location_view.return_value = self.location_view
-
+        # Set location view context so include_in_location_view is available
+        self.setSessionViewType(ViewType.LOCATION_VIEW)
+        
         url = reverse('collection_add')
         response = self.client.post(url, {
             'name': 'Test Collection',
+            'collection_type_str': 'appliances',
+            'collection_view_type_str': 'grid',
+            'order_id': 1,
             'include_in_location_view': True
         })
 
-        self.assertEqual(response.status_code, 302)
-        expected_url = reverse('home')
-        self.assertEqual(response.url, expected_url)
+        # Should return success with JSON redirect response
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
         
-        # Should create collection view
-        mock_create_view.assert_called_once_with(
-            collection=mock_collection,
-            location_view=self.location_view
-        )
+        data = response.json()
+        expected_url = reverse('home')
+        self.assertEqual(data['location'], expected_url)
+        
+        # Verify collection was created
+        collection = Collection.objects.get(name='Test Collection')
+        self.assertEqual(collection.collection_type_str, 'appliances')
+        self.assertEqual(collection.collection_view_type_str, 'grid')
+        
+        # Verify collection view was created
+        from hi.apps.collection.models import CollectionView
+        collection_view = CollectionView.objects.get(collection=collection)
+        self.assertEqual(collection_view.location_view, self.location_view)
 
-    @patch('hi.apps.collection.edit.forms.CollectionAddForm')
-    def test_post_valid_form_without_location_view(self, mock_form_class):
+    def test_post_valid_form_without_location_view(self):
         """Test POST request with valid form data without location view."""
-        # Mock valid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = True
-        mock_form.clean.return_value = {'include_in_location_view': False}
-        mock_collection = Mock()
-        mock_form.save.return_value = mock_collection
-        mock_form_class.return_value = mock_form
+        # Set configuration context so include_in_location_view is available but not checked
+        self.setSessionViewType(ViewType.CONFIGURATION)
 
         url = reverse('collection_add')
         response = self.client.post(url, {
-            'name': 'Test Collection',
+            'name': 'Test Collection Without View',
+            'collection_type_str': 'devices',
+            'collection_view_type_str': 'list',
+            'order_id': 2,
             'include_in_location_view': False
         })
 
-        self.assertEqual(response.status_code, 302)
+        # Should return success with JSON redirect response
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        data = response.json()
         expected_url = reverse('home')
-        self.assertEqual(response.url, expected_url)
+        self.assertEqual(data['location'], expected_url)
+        
+        # Verify collection was created
+        collection = Collection.objects.get(name='Test Collection Without View')
+        self.assertEqual(collection.collection_type_str, 'devices')
+        self.assertEqual(collection.collection_view_type_str, 'list')
+        
+        # Verify no collection view was created
+        from hi.apps.collection.models import CollectionView
+        self.assertFalse(CollectionView.objects.filter(collection=collection).exists())
 
-    @patch('hi.apps.collection.edit.forms.CollectionAddForm')
-    def test_post_updates_collection_context(self, mock_form_class):
+    def test_post_updates_collection_context(self):
         """Test that POST updates collection context when in collection view."""
         # Set collection view context
         self.setSessionViewType(ViewType.COLLECTION)
-        
-        # Mock valid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = True
-        mock_form.clean.return_value = {'include_in_location_view': False}
-        mock_collection = Mock()
-        mock_collection.id = 123
-        mock_form.save.return_value = mock_collection
-        mock_form_class.return_value = mock_form
 
         url = reverse('collection_add')
-        response = self.client.post(url, {'name': 'Test Collection'})
+        response = self.client.post(url, {
+            'name': 'Test Collection Context',
+            'collection_type_str': 'tools',
+            'collection_view_type_str': 'grid',
+            'order_id': 3
+        })
 
-        self.assertEqual(response.status_code, 302)
-        # Should update session with new collection
+        # Should return success with JSON redirect response
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        data = response.json()
+        expected_url = reverse('home')
+        self.assertEqual(data['location'], expected_url)
+        
+        # Verify collection was created
+        collection = Collection.objects.get(name='Test Collection Context')
+        self.assertEqual(collection.collection_type_str, 'tools')
+        self.assertEqual(collection.collection_view_type_str, 'grid')
+        # Note: Session context update behavior would need to be verified by checking
+        # the actual session state if that's part of the view's functionality
 
 
 class TestCollectionDeleteView(DualModeViewTestCase):
@@ -186,8 +198,8 @@ class TestCollectionDeleteView(DualModeViewTestCase):
         # Create test collection
         self.collection = Collection.objects.create(
             name='Test Collection',
-            collection_type_str='ROOM',
-            collection_view_type_str='MAIN'
+            collection_type_str='other',
+            collection_view_type_str='grid'
         )
 
     def test_get_collection_delete_confirmation(self):
@@ -231,9 +243,13 @@ class TestCollectionDeleteView(DualModeViewTestCase):
         url = reverse('collection_delete', kwargs={'collection_id': self.collection.id})
         response = self.client.post(url, {'action': 'confirm'})
 
-        self.assertEqual(response.status_code, 302)
+        # Should return success with JSON redirect response
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        data = response.json()
         expected_url = reverse('home')
-        self.assertEqual(response.url, expected_url)
+        self.assertEqual(data['location'], expected_url)
         
         # Collection should be deleted
         with self.assertRaises(Collection.DoesNotExist):
@@ -269,41 +285,44 @@ class TestCollectionEditView(SyncViewTestCase):
         # Create test collection
         self.collection = Collection.objects.create(
             name='Test Collection',
-            collection_type_str='ROOM',
-            collection_view_type_str='MAIN'
+            collection_type_str='other',
+            collection_view_type_str='grid'
         )
 
-    @patch('hi.apps.collection.edit.forms.CollectionEditForm')
-    @patch('hi.apps.common.antinode.refresh_response')
-    def test_post_valid_edit(self, mock_refresh_response, mock_form_class):
+    def test_post_valid_edit(self):
         """Test POST request with valid edit data."""
-        # Mock valid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = True
-        mock_form_class.return_value = mock_form
+        url = reverse('collection_edit', kwargs={'collection_id': self.collection.id})
+        response = self.client.post(url, {
+            'name': 'Updated Collection Name',
+            'collection_type_str': 'electronics',
+            'collection_view_type_str': 'list',
+            'order_id': 1
+        })
+
+        # Should return success with JSON refresh response
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
         
-        # Mock refresh response
-        mock_refresh_response.return_value = 'refresh_response'
+        data = response.json()
+        self.assertEqual(data['refresh'], True)
+        
+        # Verify collection was updated in database
+        updated_collection = Collection.objects.get(id=self.collection.id)
+        self.assertEqual(updated_collection.name, 'Updated Collection Name')
+        self.assertEqual(updated_collection.collection_type_str, 'electronics')
+        self.assertEqual(updated_collection.collection_view_type_str, 'list')
 
-        url = reverse('collection_edit', kwargs={'collection_id': self.collection.id})
-        _ = self.client.post(url, {'name': 'Updated Collection Name'})
-
-        mock_form.save.assert_called_once()
-        mock_refresh_response.assert_called_once()
-
-    @patch('hi.apps.collection.edit.forms.CollectionEditForm')
-    def test_post_invalid_edit(self, mock_form_class):
+    def test_post_invalid_edit(self):
         """Test POST request with invalid edit data."""
-        # Mock invalid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = False
-        mock_form_class.return_value = mock_form
-
         url = reverse('collection_edit', kwargs={'collection_id': self.collection.id})
+        # Post empty name to trigger validation error
         response = self.client.post(url, {'name': ''})
 
         self.assertEqual(response.status_code, 400)
-        mock_form.save.assert_not_called()
+        
+        # Verify collection was not modified in database
+        unchanged_collection = Collection.objects.get(id=self.collection.id)
+        self.assertEqual(unchanged_collection.name, 'Test Collection')  # Should be unchanged
 
     def test_nonexistent_collection_returns_404(self):
         """Test that accessing nonexistent collection returns 404."""
@@ -334,13 +353,13 @@ class TestCollectionReorder(SyncViewTestCase):
         # Create test collections
         self.collection1 = Collection.objects.create(
             name='Collection 1',
-            collection_type_str='ROOM',
-            collection_view_type_str='MAIN'
+            collection_type_str='other',
+            collection_view_type_str='grid'
         )
         self.collection2 = Collection.objects.create(
             name='Collection 2',
-            collection_type_str='GROUP',
-            collection_view_type_str='MAIN'
+            collection_type_str='electronics',
+            collection_view_type_str='grid'
         )
 
     @patch.object(CollectionManager, 'set_collection_order')
@@ -405,70 +424,61 @@ class TestCollectionPositionEditView(SyncViewTestCase):
         )
         self.collection = Collection.objects.create(
             name='Test Collection',
-            collection_type_str='ROOM',
-            collection_view_type_str='MAIN'
+            collection_type_str='other',
+            collection_view_type_str='grid'
         )
         self.collection_position = CollectionPosition.objects.create(
             collection=self.collection,
             location=self.location,
-            x=50.0,
-            y=50.0
+            svg_x=50.0,
+            svg_y=50.0
         )
 
-    @patch.object(LocationManager, 'get_default_location')
-    @patch('hi.apps.collection.edit.forms.CollectionPositionForm')
-    @patch('hi.apps.common.antinode.response')
-    def test_post_valid_position_edit(self, mock_antinode_response, mock_form_class, mock_get_location):
+    def test_post_valid_position_edit(self):
         """Test POST request with valid position data."""
-        mock_get_location.return_value = self.location
-        
-        # Mock valid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = True
-        mock_form_class.return_value = mock_form
-        
-        mock_antinode_response.return_value = 'success_response'
-
-        url = reverse('collection_position_edit', kwargs={'collection_id': self.collection.id})
-        _ = self.client.post(url, {
-            'x': '60.0',
-            'y': '70.0'
-        })
-
-        mock_form.save.assert_called_once()
-        mock_antinode_response.assert_called_once()
-
-    @patch.object(LocationManager, 'get_default_location')
-    @patch('hi.apps.collection.edit.forms.CollectionPositionForm')
-    def test_post_invalid_position_edit(self, mock_form_class, mock_get_location):
-        """Test POST request with invalid position data."""
-        mock_get_location.return_value = self.location
-        
-        # Mock invalid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = False
-        mock_form_class.return_value = mock_form
-
         url = reverse('collection_position_edit', kwargs={'collection_id': self.collection.id})
         response = self.client.post(url, {
-            'x': 'invalid',
-            'y': 'invalid'
+            'svg_x': '60.0',
+            'svg_y': '70.0'
         })
 
-        # Should still return success but log warning
-        self.assertSuccessResponse(response)
-        mock_form.save.assert_not_called()
-
-    @patch.object(LocationManager, 'get_default_location')
-    def test_post_nonexistent_position(self, mock_get_location):
-        """Test POST request for nonexistent collection position."""
-        mock_get_location.return_value = self.location
+        # Debug response if not successful
+        if response.status_code >= 400:
+            print(f"Response status: {response.status_code}")
+            print(f"Response content: {response.content[:1000]}")
         
+        # Should return success with JSON response
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        # Verify position was updated in database
+        updated_position = CollectionPosition.objects.get(collection=self.collection)
+        self.assertEqual(float(updated_position.svg_x), 60.0)
+        self.assertEqual(float(updated_position.svg_y), 70.0)
+
+    def test_post_invalid_position_edit(self):
+        """Test POST request with invalid position data."""
+        url = reverse('collection_position_edit', kwargs={'collection_id': self.collection.id})
+        response = self.client.post(url, {
+            'svg_x': 'invalid',
+            'svg_y': 'invalid'
+        })
+
+        # Should still return success but log warning (based on original test comment)
+        self.assertSuccessResponse(response)
+        
+        # Verify position was not changed in database
+        unchanged_position = CollectionPosition.objects.get(collection=self.collection)
+        self.assertEqual(float(unchanged_position.svg_x), 50.0)  # Should be unchanged
+        self.assertEqual(float(unchanged_position.svg_y), 50.0)  # Should be unchanged
+
+    def test_post_nonexistent_position(self):
+        """Test POST request for nonexistent collection position."""
         # Create collection without position
         other_collection = Collection.objects.create(
             name='Other Collection',
-            collection_type_str='GROUP',
-            collection_view_type_str='MAIN'
+            collection_type_str='cameras',  # Use valid enum value
+            collection_view_type_str='list'  # Use valid enum value
         )
 
         url = reverse('collection_position_edit', kwargs={'collection_id': other_collection.id})
@@ -505,8 +515,8 @@ class TestCollectionManageItemsView(SyncViewTestCase):
         # Create test collection
         self.collection = Collection.objects.create(
             name='Test Collection',
-            collection_type_str='ROOM',
-            collection_view_type_str='MAIN'
+            collection_type_str='other',
+            collection_view_type_str='grid'
         )
 
     @patch.object(CollectionManager, 'get_default_collection')
@@ -549,16 +559,16 @@ class TestCollectionReorderEntitiesView(SyncViewTestCase):
         # Create test collection and entities
         self.collection = Collection.objects.create(
             name='Test Collection',
-            collection_type_str='ROOM',
-            collection_view_type_str='MAIN'
+            collection_type_str='other',
+            collection_view_type_str='grid'
         )
         self.entity1 = Entity.objects.create(
             name='Entity 1',
-            entity_type_str='LIGHT'
+            entity_type_str='light'
         )
         self.entity2 = Entity.objects.create(
             name='Entity 2',
-            entity_type_str='SWITCH'
+            entity_type_str='on_off_switch'
         )
 
     @patch.object(CollectionManager, 'set_collection_entity_order')
@@ -635,12 +645,12 @@ class TestCollectionEntityToggleView(SyncViewTestCase):
         # Create test collection and entity
         self.collection = Collection.objects.create(
             name='Test Collection',
-            collection_type_str='ROOM',
-            collection_view_type_str='MAIN'
+            collection_type_str='other',  # Use valid enum value
+            collection_view_type_str='grid'  # Use valid enum value
         )
         self.entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='LIGHT'
+            entity_type_str='light'
         )
 
     @patch.object(CollectionManager, 'get_collection_data')
