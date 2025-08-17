@@ -1,8 +1,8 @@
 import asyncio
 from datetime import datetime
 from unittest.mock import Mock, patch
-from django.test import TransactionTestCase
 from django.utils import timezone
+from hi.tests.async_task_utils import AsyncTaskTestCase
 
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor, SensorHistory
@@ -11,24 +11,8 @@ from hi.apps.sense.transient_models import SensorResponse
 from hi.integrations.transient_models import IntegrationKey
 
 
-class AsyncSensorResponseManagerTestCase(TransactionTestCase):
+class AsyncSensorResponseManagerTestCase(AsyncTaskTestCase):
     """Test SensorResponseManager with proper async infrastructure."""
-    
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls._test_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(cls._test_loop)
-    
-    @classmethod
-    def tearDownClass(cls):
-        if hasattr(cls, '_test_loop'):
-            cls._test_loop.close()
-        super().tearDownClass()
-    
-    def run_async(self, coro):
-        """Helper method to run async coroutines using the shared event loop."""
-        return self._test_loop.run_until_complete(coro)
     
     def setUp(self):
         super().setUp()

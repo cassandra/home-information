@@ -2,7 +2,7 @@ import asyncio
 import logging
 from unittest.mock import Mock, patch, AsyncMock
 
-from django.test import TransactionTestCase
+from hi.tests.async_task_utils import AsyncTaskTestCase
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.security.enums import SecurityState
@@ -11,24 +11,11 @@ from hi.apps.security.monitors import SecurityMonitor
 logging.disable(logging.CRITICAL)
 
 
-class TestSecurityMonitor(TransactionTestCase):
+class TestSecurityMonitor(AsyncTaskTestCase):
     """Test SecurityMonitor async behavior and time-based transitions.
     
-    Uses TransactionTestCase to avoid database locking issues with async code.
+    Uses AsyncTaskTestCase to avoid database locking issues with async code.
     """
-    
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        # Create a single shared event loop for all tests
-        cls._test_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(cls._test_loop)
-    
-    @classmethod
-    def tearDownClass(cls):
-        if hasattr(cls, '_test_loop'):
-            cls._test_loop.close()
-        super().tearDownClass()
     
     def setUp(self):
         super().setUp()

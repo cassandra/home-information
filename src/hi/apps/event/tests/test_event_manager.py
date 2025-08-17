@@ -4,7 +4,6 @@ from datetime import timedelta
 from unittest.mock import patch, AsyncMock
 from asgiref.sync import sync_to_async
 
-from django.test import TransactionTestCase
 from django.utils import timezone
 
 from hi.apps.alert.enums import AlarmLevel
@@ -13,6 +12,7 @@ from hi.apps.security.enums import SecurityLevel
 from hi.apps.sense.transient_models import SensorResponse
 from hi.integrations.transient_models import IntegrationKey
 from hi.tests.base_test_case import BaseTestCase
+from hi.tests.async_task_utils import AsyncTaskTestCase
 
 from hi.apps.event.enums import EventType
 from hi.apps.event.event_manager import EventManager
@@ -34,26 +34,8 @@ def create_test_sensor_response(value, timestamp, detail_attrs=None):
     )
 
 
-class AsyncEventManagerTestCase(TransactionTestCase):
+class AsyncEventManagerTestCase(AsyncTaskTestCase):
     """Base class for async EventManager tests with proper infrastructure."""
-    
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        # Create a single shared event loop for all tests in this class
-        cls._test_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(cls._test_loop)
-    
-    @classmethod
-    def tearDownClass(cls):
-        # Clean up the shared event loop
-        if hasattr(cls, '_test_loop'):
-            cls._test_loop.close()
-        super().tearDownClass()
-    
-    def run_async(self, coro):
-        """Helper method to run async coroutines using the shared event loop."""
-        return self._test_loop.run_until_complete(coro)
     
     def setUp(self):
         super().setUp()
