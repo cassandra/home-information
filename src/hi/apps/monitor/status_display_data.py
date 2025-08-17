@@ -128,7 +128,7 @@ class StatusDisplayData:
     def _get_presence_status_style( self ):
 
         if self.latest_sensor_value == str(EntityStateValue.ACTIVE):
-            return StatusStyle.PresenceActive
+            return StatusStyle.MovementActive
 
         if self.penultimate_sensor_value == str(EntityStateValue.ACTIVE):
             presence_timedelta = datetimeproxy.now() - self.penultimate_sensor_timestamp
