@@ -416,12 +416,25 @@ class TestCollectionPositionEditView(SyncViewTestCase):
         # Set edit mode (required by decorator)
         self.setSessionViewMode(ViewMode.EDIT)
         
-        # Create test data
+        # Create test location with order_id so LocationManager can find it as default
         self.location = Location.objects.create(
             name='Test Location',
             svg_fragment_filename='test.svg',
-            svg_view_box_str='0 0 100 100'
+            svg_view_box_str='0 0 100 100',
+            order_id=1  # This makes it findable by get_default_location()
         )
+        
+        # Create location view for the location and set it in session
+        # This makes request.view_parameters.location available to LocationManager
+        self.location_view = LocationView.objects.create(
+            location=self.location,
+            name='Test View',
+            location_view_type_str='MAIN',
+            svg_view_box_str='0 0 100 100',
+            svg_rotate=0.0
+        )
+        self.setSessionLocationView(self.location_view)
+        
         self.collection = Collection.objects.create(
             name='Test Collection',
             collection_type_str='other',
@@ -442,11 +455,6 @@ class TestCollectionPositionEditView(SyncViewTestCase):
             'svg_y': '70.0'
         })
 
-        # Debug response if not successful
-        if response.status_code >= 400:
-            print(f"Response status: {response.status_code}")
-            print(f"Response content: {response.content[:1000]}")
-        
         # Should return success with JSON response
         self.assertSuccessResponse(response)
         self.assertJsonResponse(response)

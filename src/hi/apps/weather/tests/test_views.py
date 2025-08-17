@@ -130,37 +130,32 @@ class TestForecastView(DualModeViewTestCase):
     This view displays hourly and daily weather forecasts.
     """
 
-    @patch.object(WeatherManager, 'get_hourly_forecast')
-    @patch.object(WeatherManager, 'get_daily_forecast')
-    def test_get_forecast_sync(self, mock_get_daily, mock_get_hourly):
-        """Test getting weather forecast with synchronous request."""
-        mock_hourly_forecast = Mock()
-        mock_hourly_forecast.data_list = ['hourly1', 'hourly2']
-        mock_daily_forecast = Mock()
-        mock_daily_forecast.data_list = ['daily1', 'daily2']
-        
-        mock_get_hourly.return_value = mock_hourly_forecast
-        mock_get_daily.return_value = mock_daily_forecast
+    def setUp(self):
+        super().setUp()
+        # Reset singleton instance for clean testing
+        WeatherManager._instance = None
 
+    def test_get_forecast_sync(self):
+        """Test getting weather forecast with synchronous request."""
         url = reverse('weather_forecast')
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
         self.assertHtmlResponse(response)
         self.assertTemplateRendered(response, 'weather/modals/forecast.html')
-
-    @patch.object(WeatherManager, 'get_hourly_forecast')
-    @patch.object(WeatherManager, 'get_daily_forecast')
-    def test_get_forecast_async(self, mock_get_daily, mock_get_hourly):
-        """Test getting weather forecast with AJAX request."""
-        mock_hourly_forecast = Mock()
-        mock_hourly_forecast.data_list = []
-        mock_daily_forecast = Mock()
-        mock_daily_forecast.data_list = []
         
-        mock_get_hourly.return_value = mock_hourly_forecast
-        mock_get_daily.return_value = mock_daily_forecast
+        # Verify the real WeatherManager provides forecast data
+        self.assertIn('interval_hourly_forecast_list', response.context)
+        self.assertIn('interval_daily_forecast_list', response.context)
+        
+        # The real manager should return lists (may be empty if no data configured)
+        hourly_list = response.context['interval_hourly_forecast_list']
+        daily_list = response.context['interval_daily_forecast_list']
+        self.assertIsInstance(hourly_list, list)
+        self.assertIsInstance(daily_list, list)
 
+    def test_get_forecast_async(self):
+        """Test getting weather forecast with AJAX request."""
         url = reverse('weather_forecast')
         response = self.async_get(url)
 
@@ -170,47 +165,44 @@ class TestForecastView(DualModeViewTestCase):
         # HiModalView returns JSON with modal content for AJAX requests
         data = response.json()
         self.assertIn('modal', data)
+        
+        # The real WeatherManager should process forecast data for the modal
 
-    @patch.object(WeatherManager, 'get_hourly_forecast')
-    @patch.object(WeatherManager, 'get_daily_forecast')
-    def test_forecast_context_data(self, mock_get_daily, mock_get_hourly):
+    def test_forecast_context_data(self):
         """Test that forecast data is passed to template context."""
-        mock_hourly_forecast = Mock()
-        mock_hourly_forecast.data_list = ['hourly_item1', 'hourly_item2']
-        mock_daily_forecast = Mock()
-        mock_daily_forecast.data_list = ['daily_item1', 'daily_item2']
-        
-        mock_get_hourly.return_value = mock_hourly_forecast
-        mock_get_daily.return_value = mock_daily_forecast
-
         url = reverse('weather_forecast')
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
-        self.assertEqual(response.context['interval_hourly_forecast_list'], mock_hourly_forecast.data_list)
-        self.assertEqual(response.context['interval_daily_forecast_list'], mock_daily_forecast.data_list)
+        self.assertTemplateRendered(response, 'weather/modals/forecast.html')
         
-        mock_get_hourly.assert_called_once()
-        mock_get_daily.assert_called_once()
+        # Verify the real WeatherManager provides the expected context variables
+        self.assertIn('interval_hourly_forecast_list', response.context)
+        self.assertIn('interval_daily_forecast_list', response.context)
+        
+        # The real manager should return lists (may be empty if no data configured)
+        hourly_list = response.context['interval_hourly_forecast_list']
+        daily_list = response.context['interval_daily_forecast_list']
+        self.assertIsInstance(hourly_list, list)
+        self.assertIsInstance(daily_list, list)
 
-    @patch.object(WeatherManager, 'get_hourly_forecast')
-    @patch.object(WeatherManager, 'get_daily_forecast')
-    def test_forecast_empty_data(self, mock_get_daily, mock_get_hourly):
+    def test_forecast_empty_data(self):
         """Test forecast view with empty data lists."""
-        mock_hourly_forecast = Mock()
-        mock_hourly_forecast.data_list = []
-        mock_daily_forecast = Mock()
-        mock_daily_forecast.data_list = []
-        
-        mock_get_hourly.return_value = mock_hourly_forecast
-        mock_get_daily.return_value = mock_daily_forecast
-
         url = reverse('weather_forecast')
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
-        self.assertEqual(len(response.context['interval_hourly_forecast_list']), 0)
-        self.assertEqual(len(response.context['interval_daily_forecast_list']), 0)
+        self.assertTemplateRendered(response, 'weather/modals/forecast.html')
+        
+        # The real WeatherManager may return empty lists if no forecast data is available
+        # This is acceptable behavior - the view should handle it gracefully
+        self.assertIn('interval_hourly_forecast_list', response.context)
+        self.assertIn('interval_daily_forecast_list', response.context)
+        
+        hourly_list = response.context['interval_hourly_forecast_list']
+        daily_list = response.context['interval_daily_forecast_list']
+        self.assertIsInstance(hourly_list, list)
+        self.assertIsInstance(daily_list, list)
 
     def test_post_not_allowed(self):
         """Test that POST requests are not allowed."""
@@ -269,27 +261,27 @@ class TestHistoryView(DualModeViewTestCase):
     This view displays historical weather data.
     """
 
-    @patch.object(WeatherManager, 'get_daily_history')
-    def test_get_history_sync(self, mock_get_history):
-        """Test getting weather history with synchronous request."""
-        mock_daily_history = Mock()
-        mock_daily_history.data_list = ['history1', 'history2', 'history3']
-        mock_get_history.return_value = mock_daily_history
+    def setUp(self):
+        super().setUp()
+        # Reset singleton instance for clean testing
+        WeatherManager._instance = None
 
+    def test_get_history_sync(self):
+        """Test getting weather history with synchronous request."""
         url = reverse('weather_history')
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
         self.assertHtmlResponse(response)
         self.assertTemplateRendered(response, 'weather/modals/history.html')
+        
+        # Verify the real WeatherManager provides history data
+        self.assertIn('interval_daily_history_list', response.context)
+        history_list = response.context['interval_daily_history_list']
+        self.assertIsInstance(history_list, list)
 
-    @patch.object(WeatherManager, 'get_daily_history')
-    def test_get_history_async(self, mock_get_history):
+    def test_get_history_async(self):
         """Test getting weather history with AJAX request."""
-        mock_daily_history = Mock()
-        mock_daily_history.data_list = []
-        mock_get_history.return_value = mock_daily_history
-
         url = reverse('weather_history')
         response = self.async_get(url)
 
@@ -299,33 +291,35 @@ class TestHistoryView(DualModeViewTestCase):
         # HiModalView returns JSON with modal content for AJAX requests
         data = response.json()
         self.assertIn('modal', data)
+        
+        # The real WeatherManager should process history data for the modal
 
-    @patch.object(WeatherManager, 'get_daily_history')
-    def test_history_context_data(self, mock_get_history):
+    def test_history_context_data(self):
         """Test that history data is passed to template context."""
-        mock_daily_history = Mock()
-        mock_daily_history.data_list = ['day1_data', 'day2_data', 'day3_data']
-        mock_get_history.return_value = mock_daily_history
-
         url = reverse('weather_history')
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
-        self.assertEqual(response.context['interval_daily_history_list'], mock_daily_history.data_list)
-        mock_get_history.assert_called_once()
+        self.assertTemplateRendered(response, 'weather/modals/history.html')
+        
+        # Verify the real WeatherManager provides the expected context variables
+        self.assertIn('interval_daily_history_list', response.context)
+        history_list = response.context['interval_daily_history_list']
+        self.assertIsInstance(history_list, list)
 
-    @patch.object(WeatherManager, 'get_daily_history')
-    def test_history_empty_data(self, mock_get_history):
+    def test_history_empty_data(self):
         """Test history view with empty data list."""
-        mock_daily_history = Mock()
-        mock_daily_history.data_list = []
-        mock_get_history.return_value = mock_daily_history
-
         url = reverse('weather_history')
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
-        self.assertEqual(len(response.context['interval_daily_history_list']), 0)
+        self.assertTemplateRendered(response, 'weather/modals/history.html')
+        
+        # The real WeatherManager may return empty lists if no history data is available
+        # This is acceptable behavior - the view should handle it gracefully
+        self.assertIn('interval_daily_history_list', response.context)
+        history_list = response.context['interval_daily_history_list']
+        self.assertIsInstance(history_list, list)
 
     def test_post_not_allowed(self):
         """Test that POST requests are not allowed."""

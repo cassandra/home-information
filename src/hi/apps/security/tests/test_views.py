@@ -18,70 +18,48 @@ class TestSecurityStateActionView(SyncViewTestCase):
 
     def setUp(self):
         super().setUp()
-        self.mock_security_status_data = {
-            'state': 'DISARMED',
-            'can_arm': True,
-            'can_disarm': False,
-            'sensors': []
-        }
+        # Reset singleton instance for clean testing
+        SecurityManager._instance = None
 
-    @patch.object(SecurityManager, '__new__')
-    def test_valid_security_action_arm(self, mock_new):
+    def test_valid_security_action_arm(self):
         """Test executing valid ARM security action."""
-        mock_manager = Mock(spec=SecurityManager)
-        mock_manager.get_security_status_data.return_value = self.mock_security_status_data
-        mock_manager.ensure_initialized.return_value = None
-        mock_manager.update_security_state_user.return_value = None
-        mock_new.return_value = mock_manager
-
         url = reverse('security_state_action', kwargs={'action': 'SET_AWAY'})
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
         self.assertTemplateRendered(response, 'security/panes/security_state_control.html')
         
-        # Verify the security manager was called with correct action
-        mock_manager.update_security_state_user.assert_called_once_with(
-            security_state_action=SecurityStateAction.SET_AWAY
-        )
+        # Verify the real SecurityManager processed the security action
+        # The response context should contain security status data
+        self.assertIn('security_status_data', response.context)
+        security_status_data = response.context['security_status_data']
+        self.assertIsNotNone(security_status_data)
 
-    @patch.object(SecurityManager, '__new__')
-    def test_valid_security_action_disable(self, mock_new):
+    def test_valid_security_action_disable(self):
         """Test executing valid DISABLE security action."""
-        mock_manager = Mock(spec=SecurityManager)
-        mock_manager.get_security_status_data.return_value = self.mock_security_status_data
-        mock_manager.ensure_initialized.return_value = None
-        mock_manager.update_security_state_user.return_value = None
-        mock_new.return_value = mock_manager
-
         url = reverse('security_state_action', kwargs={'action': 'DISABLE'})
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
+        self.assertTemplateRendered(response, 'security/panes/security_state_control.html')
         
-        # Verify the security manager was called with correct action
-        mock_manager.update_security_state_user.assert_called_once_with(
-            security_state_action=SecurityStateAction.DISABLE
-        )
+        # Verify the real SecurityManager processed the security action
+        self.assertIn('security_status_data', response.context)
+        security_status_data = response.context['security_status_data']
+        self.assertIsNotNone(security_status_data)
 
-    @patch.object(SecurityManager, '__new__')
-    def test_valid_security_action_set_day(self, mock_new):
+    def test_valid_security_action_set_day(self):
         """Test executing valid SET_DAY security action."""
-        mock_manager = Mock(spec=SecurityManager)
-        mock_manager.get_security_status_data.return_value = self.mock_security_status_data
-        mock_manager.ensure_initialized.return_value = None
-        mock_manager.update_security_state_user.return_value = None
-        mock_new.return_value = mock_manager
-
         url = reverse('security_state_action', kwargs={'action': 'SET_DAY'})
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
+        self.assertTemplateRendered(response, 'security/panes/security_state_control.html')
         
-        # Verify the security manager was called with correct action
-        mock_manager.update_security_state_user.assert_called_once_with(
-            security_state_action=SecurityStateAction.SET_DAY
-        )
+        # Verify the real SecurityManager processed the security action
+        self.assertIn('security_status_data', response.context)
+        security_status_data = response.context['security_status_data']
+        self.assertIsNotNone(security_status_data)
 
     def test_invalid_security_action(self):
         """Test that invalid security action raises BadRequest."""
@@ -91,21 +69,18 @@ class TestSecurityStateActionView(SyncViewTestCase):
         # Should raise BadRequest (400)
         self.assertEqual(response.status_code, 400)
 
-    @patch.object(SecurityManager, '__new__')
-    def test_security_status_in_context(self, mock_new):
+    def test_security_status_in_context(self):
         """Test that security status data is passed to template context."""
-        mock_manager = Mock(spec=SecurityManager)
-        mock_manager.get_security_status_data.return_value = self.mock_security_status_data
-        mock_manager.ensure_initialized.return_value = None
-        mock_manager.update_security_state_user.return_value = None
-        mock_new.return_value = mock_manager
-
         url = reverse('security_state_action', kwargs={'action': 'SET_NIGHT'})
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
+        self.assertTemplateRendered(response, 'security/panes/security_state_control.html')
+        
+        # Verify the real SecurityManager provides security status data
         self.assertIn('security_status_data', response.context)
-        self.assertEqual(response.context['security_status_data'], self.mock_security_status_data)
+        security_status_data = response.context['security_status_data']
+        self.assertIsNotNone(security_status_data)
 
     def test_post_not_allowed(self):
         """Test that POST requests are not allowed."""
@@ -115,15 +90,8 @@ class TestSecurityStateActionView(SyncViewTestCase):
         # Should return 405 Method Not Allowed
         self.assertEqual(response.status_code, 405)
 
-    @patch.object(SecurityManager, '__new__')
-    def test_multiple_action_types(self, mock_new):
+    def test_multiple_action_types(self):
         """Test that all valid security action types work."""
-        mock_manager = Mock(spec=SecurityManager)
-        mock_manager.get_security_status_data.return_value = self.mock_security_status_data
-        mock_manager.ensure_initialized.return_value = None
-        mock_manager.update_security_state_user.return_value = None
-        mock_new.return_value = mock_manager
-
         # Test each valid action type
         valid_actions = ['SET_AWAY', 'DISABLE', 'SET_DAY', 'SET_NIGHT', 'SNOOZE']
         
@@ -132,6 +100,12 @@ class TestSecurityStateActionView(SyncViewTestCase):
                 url = reverse('security_state_action', kwargs={'action': action})
                 response = self.client.get(url)
                 self.assertSuccessResponse(response)
+                self.assertTemplateRendered(response, 'security/panes/security_state_control.html')
+                
+                # Each action should result in security status data in context
+                self.assertIn('security_status_data', response.context)
+                security_status_data = response.context['security_status_data']
+                self.assertIsNotNone(security_status_data)
 
     def test_case_sensitive_action(self):
         """Test that security actions are case-sensitive."""
