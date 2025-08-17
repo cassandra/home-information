@@ -30,7 +30,7 @@ class TestLocationAddView(DualModeViewTestCase):
 
     def test_get_location_add_form(self):
         """Test getting location add form."""
-        url = reverse('location_add')
+        url = reverse('location_edit_location_add')
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
@@ -40,7 +40,7 @@ class TestLocationAddView(DualModeViewTestCase):
 
     def test_get_location_add_form_async(self):
         """Test getting location add form with AJAX request."""
-        url = reverse('location_add')
+        url = reverse('location_edit_location_add')
         response = self.async_get(url)
 
         self.assertSuccessResponse(response)
@@ -50,61 +50,69 @@ class TestLocationAddView(DualModeViewTestCase):
         data = response.json()
         self.assertIn('modal', data)
 
-    @patch('hi.apps.location.edit.forms.LocationAddForm')
-    def test_post_invalid_form(self, mock_form_class):
+    def test_post_invalid_form(self):
         """Test POST request with invalid form data."""
-        # Mock invalid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = False
-        mock_form_class.return_value = mock_form
-
-        url = reverse('location_add')
-        response = self.client.post(url, {})
-
-        self.assertSuccessResponse(response)
-        # Should render form with errors
-        self.assertEqual(response.context['location_add_form'], mock_form)
-
-    @patch.object(LocationManager, 'create_location')
-    @patch('hi.apps.location.edit.forms.LocationAddForm')
-    @patch('hi.apps.common.antinode.redirect_response')
-    def test_post_valid_form(self, mock_redirect, mock_form_class, mock_create_location):
-        """Test POST request with valid form data."""
-        # Mock valid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = True
-        mock_form.cleaned_data = {
-            'name': 'Test Location',
-            'svg_fragment_filename': 'test.svg',
-            'svg_fragment_content': '<svg>test</svg>',
-            'svg_viewbox': '0 0 100 100'
+        # Submit form with missing required fields
+        form_data = {
+            'name': '',  # Required field is empty
+            # Missing svg_fragment_content (required)
         }
-        mock_form_class.return_value = mock_form
 
-        # Mock location creation
-        mock_location = Mock()
-        mock_location_view = Mock()
-        mock_location_view.id = 1
-        mock_location.views.order_by.return_value.first.return_value = mock_location_view
-        mock_create_location.return_value = mock_location
+        url = reverse('location_edit_location_add')
+        response = self.client.post(url, form_data)
 
-        mock_redirect.return_value = 'redirect_response'
+        # Should return success with form errors (not redirect)
+        self.assertSuccessResponse(response)
+        self.assertHtmlResponse(response)
+        
+        # Test that form errors are present in context
+        self.assertIn('location_add_form', response.context)
+        form = response.context['location_add_form']
+        self.assertFalse(form.is_valid())
+        
+        # Should have validation errors for required fields
+        self.assertTrue(form.errors)
+        
+        # Verify no Location was created with invalid data
+        self.assertFalse(Location.objects.filter(name='').exists())
 
-        url = reverse('location_add')
-        _ = self.client.post(url, {
+    def test_post_valid_form(self):
+        """Test POST request with valid form data."""
+        # Create comprehensive form data for new location
+        form_data = {
             'name': 'Test Location',
-            'svg_fragment_filename': 'test.svg'
-        })
+            'use_default_svg_file': 'on',  # Use default SVG file
+        }
 
-        # Should create location and redirect
-        mock_create_location.assert_called_once_with(
-            name='Test Location',
-            svg_fragment_filename='test.svg',
-            svg_fragment_content='<svg>test</svg>',
-            svg_viewbox='0 0 100 100'
-        )
+        # Count existing locations before
+        initial_location_count = Location.objects.count()
+
+        url = reverse('location_edit_location_add')
+        response = self.client.post(url, form_data)
+
+        # Test actual redirect behavior (JSON redirect)
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        data = response.json()
         home_url = reverse('home')
-        mock_redirect.assert_called_once_with(home_url)
+        self.assertEqual(data['location'], home_url)
+        
+        # Test that new Location was created
+        self.assertEqual(Location.objects.count(), initial_location_count + 1)
+        
+        # Get the newly created location
+        new_location = Location.objects.get(name='Test Location')
+        self.assertEqual(new_location.name, 'Test Location')
+        
+        # Verify the location has the required SVG fields set
+        self.assertTrue(new_location.svg_fragment_filename)
+        self.assertTrue(new_location.svg_view_box_str)
+        
+        # Test that a default location view was created
+        location_views = new_location.views.all()
+        self.assertEqual(len(location_views), 1)
+        self.assertEqual(location_views[0].location, new_location)
 
     @patch.object(LocationManager, 'create_location')
     @patch('hi.apps.location.edit.forms.LocationAddForm')
@@ -119,7 +127,7 @@ class TestLocationAddView(DualModeViewTestCase):
         # Mock location manager raising error
         mock_create_location.side_effect = ValueError("Invalid SVG")
 
-        url = reverse('location_add')
+        url = reverse('location_edit_location_add')
         response = self.client.post(url, {'name': 'Test Location'})
 
         self.assertEqual(response.status_code, 400)

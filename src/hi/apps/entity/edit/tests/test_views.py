@@ -50,7 +50,7 @@ class TestEntityAddView(DualModeViewTestCase):
 
     def test_get_entity_add_form(self):
         """Test getting entity add form."""
-        url = reverse('entity_add')
+        url = reverse('entity_edit_entity_add')
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
@@ -60,7 +60,7 @@ class TestEntityAddView(DualModeViewTestCase):
 
     def test_get_entity_add_form_async(self):
         """Test getting entity add form with AJAX request."""
-        url = reverse('entity_add')
+        url = reverse('entity_edit_entity_add')
         response = self.async_get(url)
 
         self.assertSuccessResponse(response)
@@ -70,54 +70,74 @@ class TestEntityAddView(DualModeViewTestCase):
         data = response.json()
         self.assertIn('modal', data)
 
-    @patch('hi.apps.entity.forms.EntityForm')
-    def test_post_invalid_form(self, mock_form_class):
+    def test_post_invalid_form(self):
         """Test POST request with invalid form data."""
-        # Mock invalid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = False
-        mock_form_class.return_value = mock_form
+        # Submit form with missing required fields
+        form_data = {
+            'name': '',  # Required field is empty
+            # Missing entity_type_str (required)
+        }
 
-        url = reverse('entity_add')
-        response = self.client.post(url, {})
+        url = reverse('entity_edit_entity_add')
+        response = self.client.post(url, form_data)
 
+        # Should return success with form errors (not redirect)
         self.assertSuccessResponse(response)
-        # Should render form with errors
-        self.assertEqual(response.context['entity_form'], mock_form)
+        self.assertHtmlResponse(response)
+        
+        # Test that form errors are present in context
+        self.assertIn('entity_form', response.context)
+        form = response.context['entity_form']
+        self.assertFalse(form.is_valid())
+        
+        # Should have validation errors for required fields
+        self.assertTrue(form.errors)
+        self.assertIn('name', form.errors)
+        self.assertIn('entity_type_str', form.errors)
+        
+        # Verify no Entity was created with invalid data
+        self.assertFalse(Entity.objects.filter(name='').exists())
 
-    @patch.object(EntityManager, 'add_entity_to_view')
-    @patch.object(LocationManager, 'get_default_location_view')
-    @patch('hi.apps.entity.forms.EntityForm')
-    def test_post_valid_form_location_view(self, mock_form_class, mock_get_location_view, mock_add_to_view):
+    def test_post_valid_form_location_view(self):
         """Test POST request with valid form data in location view context."""
         # Set location view context
         self.setSessionViewType(ViewType.LOCATION_VIEW)
         
-        # Mock valid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = True
-        mock_entity = Mock()
-        mock_form.save.return_value = mock_entity
-        mock_form_class.return_value = mock_form
-
-        # Mock location manager
-        mock_get_location_view.return_value = self.location_view
-
-        url = reverse('entity_add')
-        response = self.client.post(url, {
+        # Create comprehensive form data for new entity
+        form_data = {
             'name': 'Test Entity',
-            'entity_type_str': 'LIGHT'
-        })
+            'entity_type_str': 'light'
+        }
 
-        self.assertEqual(response.status_code, 302)
-        expected_url = reverse('home')
-        self.assertEqual(response.url, expected_url)
+        # Count existing entities before
+        initial_entity_count = Entity.objects.count()
+        initial_position_count = EntityPosition.objects.count()
+
+        url = reverse('entity_edit_entity_add')
+        response = self.client.post(url, form_data)
+
+        # Test actual redirect behavior (JSON redirect)
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
         
-        # Should add entity to location view
-        mock_add_to_view.assert_called_once_with(
-            entity=mock_entity,
-            location_view=self.location_view
-        )
+        data = response.json()
+        expected_url = reverse('home')
+        self.assertEqual(data['location'], expected_url)
+        
+        # Test that new Entity was created
+        self.assertEqual(Entity.objects.count(), initial_entity_count + 1)
+        
+        # Get the newly created entity
+        new_entity = Entity.objects.get(name='Test Entity')
+        self.assertEqual(new_entity.entity_type_str, 'light')
+        
+        # Test that entity was added to the location view (EntityPosition created)
+        # The real managers should handle this integration
+        self.assertEqual(EntityPosition.objects.count(), initial_position_count + 1)
+        
+        # Verify the EntityPosition links the entity to the location
+        entity_position = EntityPosition.objects.get(entity=new_entity)
+        self.assertEqual(entity_position.location, self.location_view.location)
 
     @patch.object(CollectionManager, 'add_entity_to_collection')
     @patch.object(CollectionManager, 'get_default_collection')
@@ -138,7 +158,7 @@ class TestEntityAddView(DualModeViewTestCase):
         # Mock collection manager
         mock_get_collection.return_value = self.collection
 
-        url = reverse('entity_add')
+        url = reverse('entity_edit_entity_add')
         response = self.client.post(url, {
             'name': 'Test Entity',
             'entity_type_str': 'SWITCH'
@@ -167,7 +187,7 @@ class TestEntityAddView(DualModeViewTestCase):
         mock_form.save.return_value = mock_entity
         mock_form_class.return_value = mock_form
 
-        url = reverse('entity_add')
+        url = reverse('entity_edit_entity_add')
         response = self.client.post(url, {
             'name': 'Test Entity',
             'entity_type_str': 'SENSOR'
@@ -196,7 +216,7 @@ class TestEntityAddView(DualModeViewTestCase):
         # Mock location manager raising exception
         mock_get_location_view.side_effect = LocationView.DoesNotExist()
 
-        url = reverse('entity_add')
+        url = reverse('entity_edit_entity_add')
         response = self.client.post(url, {'name': 'Test Entity'})
 
         self.assertEqual(response.status_code, 302)
