@@ -1,4 +1,5 @@
 import logging
+from unittest.mock import patch
 
 from django.urls import reverse
 
@@ -180,3 +181,59 @@ class TestHomeView(SyncViewTestCase):
         
         location_view_url = reverse('location_view_default')
         self.assertRedirects(response, location_view_url, fetch_redirect_response=False)
+
+
+class TestHealthView(SyncViewTestCase):
+    """
+    Tests for HealthView - demonstrates health check endpoint testing.
+    This view returns JSON with system health status.
+    """
+
+    @patch('hi.views.do_healthcheck')
+    def test_health_check_healthy(self, mock_healthcheck):
+        """Test health check when system is healthy."""
+        mock_healthcheck.return_value = {
+            'is_healthy': True,
+            'database': 'ok',
+            'redis': 'ok',
+            'subsystems': []
+        }
+
+        url = reverse('health')
+        response = self.client.get(url)
+
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        data = response.json()
+        self.assertIn('status', data)
+        self.assertTrue(data['status']['is_healthy'])
+
+    @patch('hi.views.do_healthcheck')
+    def test_health_check_unhealthy(self, mock_healthcheck):
+        """Test health check when system is unhealthy."""
+        mock_healthcheck.return_value = {
+            'is_healthy': False,
+            'database': 'error',
+            'redis': 'ok',
+            'error_message': 'Database connection failed'
+        }
+
+        url = reverse('health')
+        response = self.client.get(url)
+
+        # Should return 500 when unhealthy
+        self.assertServerErrorResponse(response)
+        self.assertJsonResponse(response)
+        
+        data = response.json()
+        self.assertIn('status', data)
+        self.assertFalse(data['status']['is_healthy'])
+
+    def test_health_post_not_allowed(self):
+        """Test that POST requests are not allowed."""
+        url = reverse('health')
+        response = self.client.post(url)
+
+        # Should return 405 Method Not Allowed
+        self.assertEqual(response.status_code, 405)

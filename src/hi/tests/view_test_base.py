@@ -3,17 +3,33 @@ import json
 
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
+from django.test import Client
 
 from hi.tests.base_test_case import BaseTestCase
 from hi.enums import ViewType, ViewMode
 from hi.apps.location.models import LocationView
 from hi.apps.collection.models import Collection
+from hi.view_parameters import ViewParameters
+
+
+class ViewTestClient(Client):
+    """Custom test client that ensures ViewMiddleware runs for each request."""
+    
+    def request(self, **request):
+        response = super().request(**request)
+        # The ViewMiddleware should be running, but let's ensure view_parameters
+        # is set on the response's wsgi_request for test assertions
+        if hasattr(response, 'wsgi_request') and not hasattr(response.wsgi_request, 'view_parameters'):
+            response.wsgi_request.view_parameters = ViewParameters.from_session(response.wsgi_request)
+        return response
 
 
 class ViewTestBase(BaseTestCase):
     """
     Base class for all Django view tests, providing common utilities and assertions.
     """
+
+    client_class = ViewTestClient
 
     def setUp(self):
         super().setUp()

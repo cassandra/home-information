@@ -334,7 +334,7 @@ class TestEntityManager(BaseTestCase):
         
         try:
             from hi.apps.location.models import Location
-            from hi.apps.location.svg_view_box import SvgViewBox
+            from hi.apps.common.svg_models import SvgViewBox
             
             # Create test data
             entity = Entity.objects.create(
