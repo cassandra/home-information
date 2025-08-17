@@ -1,9 +1,7 @@
 import logging
-from unittest.mock import Mock, patch
 
 from django.urls import reverse
 
-from hi.apps.security.enums import SecurityStateAction
 from hi.apps.security.security_manager import SecurityManager
 from hi.tests.view_test_base import SyncViewTestCase
 
@@ -20,6 +18,13 @@ class TestSecurityStateActionView(SyncViewTestCase):
         super().setUp()
         # Reset singleton instance for clean testing
         SecurityManager._instance = None
+    
+    def tearDown(self):
+        """Clean up SecurityManager resources."""
+        # Clean up any timer threads that may have been created
+        if hasattr(SecurityManager, '_instance') and SecurityManager._instance:
+            SecurityManager._instance.cleanup()
+        super().tearDown()
 
     def test_valid_security_action_arm(self):
         """Test executing valid ARM security action."""

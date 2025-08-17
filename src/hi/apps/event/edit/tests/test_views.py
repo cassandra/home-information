@@ -425,7 +425,6 @@ class TestEventDefinitionAddView(DualModeViewTestCase):
         url = reverse('event_definition_add')
         response = self.client.post(url, form_data)
 
-
         # Test actual redirect behavior (JSON redirect)
         self.assertSuccessResponse(response)
         self.assertJsonResponse(response)

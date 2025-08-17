@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from datetime import timedelta
 from unittest.mock import patch, AsyncMock

@@ -1,4 +1,3 @@
-import asyncio
 from datetime import datetime
 from unittest.mock import Mock, patch
 from django.utils import timezone

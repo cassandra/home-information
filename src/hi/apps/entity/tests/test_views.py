@@ -7,7 +7,6 @@ from django.urls import reverse
 from hi.apps.control.controller_history_manager import ControllerHistoryManager
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location, LocationView
-from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.apps.sense.sensor_history_manager import SensorHistoryManager
 from hi.enums import ViewType
 from hi.tests.view_test_base import SyncViewTestCase, DualModeViewTestCase
