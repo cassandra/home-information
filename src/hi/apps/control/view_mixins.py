@@ -27,7 +27,8 @@ class ControlViewMixin:
                                   request                : HttpRequest,
                                   controller             : Controller,
                                   error_list             : List[ str ],
-                                  override_sensor_value  : str           = None ) -> HttpResponse:
+                                  override_sensor_value  : str           = None,
+                                  in_modal_context       : bool          = False ) -> HttpResponse:
 
         latest_sensor_response = StatusDisplayManager().get_latest_sensor_response(
             entity_state = controller.entity_state,
@@ -42,5 +43,6 @@ class ControlViewMixin:
             
         context = {
             'controller_data': controller_data,
+            'in_modal_context': in_modal_context,
         }
         return render( request, 'control/panes/controller_data.html', context )

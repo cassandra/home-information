@@ -6,7 +6,7 @@
       {% if entity_state_status_data.controller_data_list %}
       
       {% for controller_data in entity_state_status_data.controller_data_list %}
-      {% include "control/panes/controller_data.html" with controller_data=controller_data %}
+      {% include "control/panes/controller_data.html" with controller_data=controller_data in_modal_context=True %}
       {% endfor %}
       
       {% else %}

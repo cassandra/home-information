@@ -1,5 +1,7 @@
 import logging
+from typing import List
 
+from django.http import HttpRequest, HttpResponse
 from django.urls import reverse
 from django.views.generic import View
 
@@ -71,12 +73,24 @@ class ControllerView( View, ControlViewMixin, ControllerMixin ):
                 value = control_value,
             )
 
-        return self.controller_data_response(
-            request = request,
-            controller = controller,
-            error_list = control_result.error_list,
-            override_sensor_value = override_sensor_value,
-        )
+        response_context = request.POST.get('response_context', 'page')
+        
+        # For modal context, we need to pass the context to the template
+        if response_context == 'modal':
+            return self.controller_data_response(
+                request = request,
+                controller = controller,
+                error_list = control_result.error_list,
+                override_sensor_value = override_sensor_value,
+                in_modal_context = True,
+            )
+        else:
+            return self.controller_data_response(
+                request = request,
+                controller = controller,
+                error_list = control_result.error_list,
+                override_sensor_value = override_sensor_value,
+            )
     
     def _get_value_for_missing_input( self, controller : Controller ) -> str:
         if controller.entity_state.entity_state_type in self.MISSING_VALUE_MAP:
