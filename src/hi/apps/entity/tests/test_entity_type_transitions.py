@@ -45,7 +45,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
     def test_icon_to_path_transition_preserves_position(self):
         """Test that icon->path transition preserves EntityPosition"""
         # Create initial position
-        entity_position = EntityPosition.objects.create(
+        EntityPosition.objects.create(
             entity = self.entity,
             location = self.location,
             svg_x = Decimal('500'),
@@ -96,7 +96,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         self.entity.save()
         
         # Create initial path
-        entity_path = EntityPath.objects.create(
+        EntityPath.objects.create(
             entity = self.entity,
             location = self.location,
             svg_path = 'M 100,100 L 200,200 L 300,100 Z',
@@ -312,3 +312,4 @@ class TestEntityTypeTransitions(TransactionTestCase):
         self.assertIsNone(center_x)
         self.assertIsNone(center_y)
         return
+
