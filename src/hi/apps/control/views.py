@@ -1,7 +1,5 @@
 import logging
-from typing import List
 
-from django.http import HttpRequest, HttpResponse
 from django.urls import reverse
 from django.views.generic import View
 
