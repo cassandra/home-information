@@ -12,15 +12,36 @@ When working on GitHub issues, follow this development workflow:
 4. **Do development changes** - Commit to git at logical checkpoints during development
 5. **After first commit, push the branch to GitHub** - Use the same branch name as the local one
 6. **Once issue is complete and all changes pushed** - Create a pull request using the template
-7. **Before creating the pull request** - Ensure all unit tests pass and flake8 linting with .flake8-ci config is clean
+7. **Before creating the pull request** - Run full test validation (see Testing Workflow below)
+
+### Testing Workflow (Required Before Pull Requests)
+
+**MANDATORY**: Before creating any pull request, you must run and pass all of these checks:
+
+```bash
+# 1. Run full unit test suite
+./manage.py test
+# Must show: "OK" with all tests passing
+
+# 2. Run code quality check (only if source code was modified)
+flake8 --config=.flake8-ci hi/
+# Must show: no output (clean)
+
+# 3. Verify Django configuration
+./manage.py check
+# Must show: "System check identified no issues"
+```
+
+**Important**: Do not create pull requests if any of these checks fail. Fix all issues first.
 
 ### Pull Request Requirements
 
 Before any pull request can be merged, the following requirements must be met:
 
 1. **Unit Tests**: All unit tests must pass (`./manage.py test`)
-2. **Code Quality**: flake8 linting with `.flake8-ci` configuration must pass with no violations
-3. **GitHub CI**: GitHub Actions will automatically verify these requirements and will block PR merging if they fail
+2. **Code Quality**: flake8 linting with `.flake8-ci` configuration must pass with no violations (if source code modified)
+3. **Django Check**: Django system check must pass with no issues (`./manage.py check`)
+4. **GitHub CI**: GitHub Actions will automatically verify these requirements and will block PR merging if they fail
 
 These requirements are enforced by GitHub branch protection rules and cannot be bypassed.
 
