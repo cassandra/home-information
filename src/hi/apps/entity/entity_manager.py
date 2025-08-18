@@ -279,46 +279,52 @@ class EntityManager(Singleton):
         needs_path = new_svg_item_type.is_path
         
         with transaction.atomic():
-            if has_position and needs_path:
-                # icon → path transition
-                return self._transition_icon_to_path(
-                    entity = entity,
-                    location_view = location_view,
-                    entity_position = entity_position,
-                    is_path_closed = new_svg_item_type.is_path_closed,
-                )
-                
-            elif has_path and needs_icon:
-                # path → icon transition
-                return self._transition_path_to_icon(
-                    entity = entity,
-                    location_view = location_view,
-                    entity_path = entity_path,
-                )
-                
-            elif has_position and needs_icon:
-                # icon → icon (no database change needed)
-                return True, "icon_to_icon"
-                
-            elif has_path and needs_path:
-                # path → path (no database change needed, just styling)
-                return True, "path_to_path"
-                
-            elif not has_position and not has_path:
-                # No existing representation, create appropriate one
-                if needs_icon:
-                    self.add_entity_position_if_needed(
-                        entity = entity,
-                        location_view = location_view,
-                    )
-                    return True, "created_position"
+            # Handle all cases including when both position and path exist
+            # With preservation strategy, both can coexist
+            
+            if needs_icon:
+                # Entity type needs icon representation
+                if not has_position:
+                    # Need to create position (from path center if path exists)
+                    if has_path:
+                        return self._transition_path_to_icon(
+                            entity = entity,
+                            location_view = location_view,
+                            entity_path = entity_path,
+                        )
+                    else:
+                        # No existing representation, create new position
+                        self.add_entity_position_if_needed(
+                            entity = entity,
+                            location_view = location_view,
+                        )
+                        return True, "created_position"
                 else:
-                    self.add_entity_path_if_needed(
-                        entity = entity,
-                        location_view = location_view,
-                        is_path_closed = new_svg_item_type.is_path_closed,
-                    )
-                    return True, "created_path"
+                    # Position already exists, just a visual update
+                    return True, "icon_to_icon"
+                    
+            elif needs_path:
+                # Entity type needs path representation
+                if not has_path:
+                    # Need to create path (from position if position exists)
+                    if has_position:
+                        return self._transition_icon_to_path(
+                            entity = entity,
+                            location_view = location_view,
+                            entity_position = entity_position,
+                            is_path_closed = new_svg_item_type.is_path_closed,
+                        )
+                    else:
+                        # No existing representation, create new path
+                        self.add_entity_path_if_needed(
+                            entity = entity,
+                            location_view = location_view,
+                            is_path_closed = new_svg_item_type.is_path_closed,
+                        )
+                        return True, "created_path"
+                else:
+                    # Path already exists, just a visual update
+                    return True, "path_to_path"
         
         return False, "no_transition_needed"
 
@@ -327,20 +333,21 @@ class EntityManager(Singleton):
                                   location_view   : LocationView,
                                   entity_position : EntityPosition,
                                   is_path_closed  : bool          ) -> Tuple[bool, str]:
-        """Convert EntityPosition to EntityPath, placing path at icon location"""
+        """Create or update EntityPath based on EntityPosition location, preserving both"""
         
         # Get center point of the icon for path placement
         center_x = float(entity_position.svg_x)
         center_y = float(entity_position.svg_y)
         
-        # Create a small path centered at the icon position
+        # Create a reasonably sized path centered at the icon position
         svg_item_factory = SvgItemFactory()
-        radius = svg_item_factory.NEW_PATH_RADIUS_PERCENT / 100.0
+        # Use larger radius for better UX - control points need to be visible
+        radius = svg_item_factory.NEW_PATH_RADIUS_PERCENT / 100.0 * 2  # Double the original size
         
         if is_path_closed:
-            # Create small rectangle centered at icon position
-            radius_x = location_view.svg_view_box.width * radius / 4
-            radius_y = location_view.svg_view_box.height * radius / 4
+            # Create reasonably sized rectangle centered at icon position
+            radius_x = location_view.svg_view_box.width * radius / 2
+            radius_y = location_view.svg_view_box.height * radius / 2
             
             top_left_x = center_x - radius_x
             top_left_y = center_y - radius_y
@@ -353,8 +360,8 @@ class EntityManager(Singleton):
             
             svg_path = f'M {top_left_x},{top_left_y} L {top_right_x},{top_right_y} L {bottom_right_x},{bottom_right_y} L {bottom_left_x},{bottom_left_y} Z'
         else:
-            # Create small line centered at icon position
-            radius_x = location_view.svg_view_box.width * radius / 4
+            # Create reasonably sized line centered at icon position
+            radius_x = location_view.svg_view_box.width * radius / 2
             start_x = center_x - radius_x
             start_y = center_y
             end_x = center_x + radius_x
@@ -362,13 +369,17 @@ class EntityManager(Singleton):
             
             svg_path = f'M {start_x},{start_y} L {end_x},{end_y}'
         
-        # Delete EntityPosition and create EntityPath
-        entity_position.delete()
-        EntityPath.objects.create(
+        # Preserve EntityPosition and create/update EntityPath
+        # This allows easy reversion when users change their mind
+        entity_path, created = EntityPath.objects.get_or_create(
             entity = entity,
             location = location_view.location,
-            svg_path = svg_path,
+            defaults = {'svg_path': svg_path}
         )
+        
+        if not created:
+            # EntityPath already exists - preserve existing geometry
+            pass  # Keep existing path geometry
         
         return True, "icon_to_path"
 
@@ -376,7 +387,7 @@ class EntityManager(Singleton):
                                   entity        : Entity,
                                   location_view : LocationView,
                                   entity_path   : EntityPath    ) -> Tuple[bool, str]:
-        """Convert EntityPath to EntityPosition, placing icon at path center"""
+        """Create or update EntityPosition based on EntityPath center, preserving both"""
         
         # Calculate geometric center of the path
         center_x, center_y = self._calculate_path_center(entity_path.svg_path)
@@ -386,16 +397,22 @@ class EntityManager(Singleton):
             center_x = location_view.svg_view_box.x + (location_view.svg_view_box.width / 2.0)
             center_y = location_view.svg_view_box.y + (location_view.svg_view_box.height / 2.0)
         
-        # Delete EntityPath and create EntityPosition
-        entity_path.delete()
-        EntityPosition.objects.create(
+        # Preserve EntityPath and create/update EntityPosition
+        # This allows easy reversion when users change their mind
+        entity_position, created = EntityPosition.objects.get_or_create(
             entity = entity,
             location = location_view.location,
-            svg_x = Decimal(center_x),
-            svg_y = Decimal(center_y),
-            svg_scale = Decimal(1.0),
-            svg_rotate = Decimal(0.0),
+            defaults = {
+                'svg_x': Decimal(center_x),
+                'svg_y': Decimal(center_y),
+                'svg_scale': Decimal(1.0),
+                'svg_rotate': Decimal(0.0),
+            }
         )
+        
+        if not created:
+            # EntityPosition already exists - preserve existing position
+            pass  # Keep existing position
         
         return True, "path_to_icon"
 
