@@ -3,6 +3,7 @@ import logging
 from django.db import transaction
 from django.views.generic import View
 
+import hi.apps.common.antinode as antinode
 from hi.apps.control.controller_history_manager import ControllerHistoryManager
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
@@ -32,6 +33,9 @@ class EntityEditView( View, EntityViewMixin ):
     def post( self, request, *args, **kwargs ):
         entity = self.get_entity( request, *args, **kwargs )
 
+        # Store original entity_type_str to detect changes
+        original_entity_type_str = entity.entity_type_str
+
         entity_form = forms.EntityForm( request.POST, instance = entity )
         entity_attribute_formset = forms.EntityAttributeFormSet(
             request.POST,
@@ -43,6 +47,10 @@ class EntityEditView( View, EntityViewMixin ):
             with transaction.atomic():
                 entity_form.save()   
                 entity_attribute_formset.save()
+                
+            # Check if EntityType changed and refresh entire page if so
+            if original_entity_type_str != entity.entity_type_str:
+                return antinode.refresh_response()
                 
             # Recreate to preserve "max" to show new form
             entity_attribute_formset = forms.EntityAttributeFormSet(
