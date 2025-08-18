@@ -44,15 +44,21 @@ class EntityEditView( View, EntityViewMixin ):
             prefix = f'entity-{entity.id}',
         )
         if entity_form.is_valid() and entity_attribute_formset.is_valid():
+            # Track EntityType change and response needed after transaction
+            entity_type_changed = original_entity_type_str != entity.entity_type_str
+            transition_response = None
+            
             with transaction.atomic():
                 entity_form.save()   
                 entity_attribute_formset.save()
                 
-                # Check if EntityType changed and handle transitions within same transaction
-                if original_entity_type_str != entity.entity_type_str:
-                    response = self._handle_entity_type_change(request, entity)
-                    if response is not None:
-                        return response
+                # Handle transitions within same transaction but defer response
+                if entity_type_changed:
+                    transition_response = self._handle_entity_type_change(request, entity)
+                
+            # Now that transaction is committed, handle any transition response
+            if transition_response is not None:
+                return transition_response
                 
             # Recreate to preserve "max" to show new form
             entity_attribute_formset = forms.EntityAttributeFormSet(
