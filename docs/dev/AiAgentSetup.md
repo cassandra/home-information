@@ -161,8 +161,73 @@ git config --global user.name "AI Agent"
 git config --global user.email "ai-agent@cassandra.org"
 ```
 
+## App Development Setup
 
-### Install Claude Code
+### Environment Variables
+
+**Note**: This is mostly duplicative to [Setup.md](Setup.md) though slightly customized for the AI agent setup.  Check there if you run into issues in case this file gets outdated.
+
+Create environment variables for secrets (never commit these!)
+```
+# Copy your development.sh file
+
+cd ~/proj/hi
+mkdir -p .private/env
+cat > .private/env/development.sh << 'EOF'
+[[paste your development.sh contents here]]
+EOF
+```
+
+### Redis Tweaks
+
+If you also are presonally also doing development on the same machine, then you should be running Redis and that can also be used by the agent with no extra Redis server needed, but with an environment variable tweak needed (see below). 
+
+If Redis is not running on the machine, you'll need to install and/or start redis as shown in [Dependencies.md](Dependencies.md).
+
+When sharing the same Redis server, we will need to avoid collisions on the key space between development environments.  There is a Redis key prefix environment variable that can be used to do that. For the ai-agent user, chnage this:
+
+export HI_REDIS_KEY_PREFIX="dev-ai"
+```
+grep -q "HI_REDIS_KEY_PREFIX" .private/env/development.sh && sed -i '' '/HI_REDIS_KEY_PREFIX/c\
+export HI_REDIS_KEY_PREFIX="dev-ai"
+' .private/env/development.sh
+
+# Then verify value change
+grep HI_REDIS_KEY_PREFIX .private/env/development.sh
+```
+
+### Virtual Environment
+
+Create and initialize virtual environment
+```
+python3.11 -m venv venv
+
+# Activate and source
+. ./init-env-dev.sh
+```
+
+Install python dependencies
+```
+pip install -r src/hi/requirements/development.txt
+```
+
+### App and Database Initializations
+```
+cd ~/proj/hi
+mkdir -p data/database
+./src/manage.py check
+./src/manage.py migrate
+./src/manage.py hi_createsuperuser
+./src/manage.py hi_creategroups
+```
+
+Verify app code
+```
+cd ~/proj/hi
+make check
+```
+
+## Claude Code
 
 Install Claude Code using the official installer
 ```
@@ -182,7 +247,7 @@ claude-code --version
 ```
 
 
-## MacOS-only Create Keychain for Claude OAuth token
+### MacOS-only Create Keychain for Claude OAuth token
 
 **Critical**: Terminal-created users don't have a login keychain, which Claude needs.
 
@@ -225,7 +290,7 @@ chmod +x ~/start-claude.sh
 ~/start-claude.sh
 ```
 
-## Run OAuth flow to Autheticate to Anthropic
+### Run OAuth flow to Autheticate to Anthropic
 
 - Start up with `claude`.
 - Select the color scheme when prompted
@@ -314,9 +379,9 @@ gh auth login
 4. Paste token from 1Password
 
 
-### Option 2: GitHub App Setup (Aborted)
+## Option to Avoid: GitHub App Setup (Aborted)
 
-* THIS DID NOT WORK. LIKELY BUG IN CLAUDE CODE *
+* THIS DID NOT WORK. LIKELY BUG IN CLAUDE CODE. SAVING STEPS FOR REFERFENCE ONLY.  *
 
 #### Create GitHub App
 
@@ -432,7 +497,7 @@ which npm
 ### Verify Authentication to GitHub
 
 
- est GitHub App authentication by starting Claude and asking it to list issues
+Test GitHub App authentication by starting Claude and asking it to list issues
 ```
 claude
 ```

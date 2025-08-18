@@ -1,6 +1,6 @@
 <img src="../../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
-# Development Setup (one-time setup)
+# Development Setup (one-time setup, external dev)
 
 ## Fork the Repository
 
@@ -47,7 +47,6 @@ origin    https://github.com/${YOURUSERNAME}/home-information.git (push)
 upstream  https://github.com/cassandra/home-information.git (fetch)
 upstream  https://github.com/cassandra/home-information.git (push)
 ```
-
 
 If your origin is not set properly, re-verify after setting with:
 ``` shell

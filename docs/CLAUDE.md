@@ -32,9 +32,7 @@ When working on GitHub issues, follow this development workflow:
      - The proposed changes have significant architectural implications
    - Otherwise, proceed directly to implementation
 
-4. **Initialize development environment** - MANDATORY before any development work:
-   - Run environment setup: `. ./init-env-dev.sh`
-   - This sets up the virtual environment and all necessary environment variables
+4. **Development environment check** - The virtual environment and necessary environment variables should be set before starting claude. If there is no virtual environment, this is an indication that the environment has not been properly set up. That means the unit test cannot run and code changes cannot be validated.  We shoudl stop the process and fix it.  There is no need to check ever time since this shoudl be rare, but if running tests is failing, that is a good thing to look for.
 
 5. **Create a dev branch off the staging branch** - Use proper naming convention:
    - **Bug fixes**: `bugfix/##-description` (e.g., `bugfix/31-controller-modal-fix`)
@@ -56,9 +54,6 @@ When working on GitHub issues, follow this development workflow:
 **NOTE**: All commands run from PROJECT ROOT directory for consistency.
 
 ```bash
-# First ensure environment is initialized (if not already done in step 4)
-. ./init-env-dev.sh
-
 # 1. Run full unit test suite
 src/manage.py test
 # Must show: "OK" with all tests passing
@@ -155,9 +150,6 @@ This documentation helps maintain continuity across work sessions and provides v
 For detailed setup and daily commands, see [Development Setup](dev/Setup.md).
 
 ```bash
-# Daily development setup
-. ./init-env-dev.sh
-
 # Common commands (all run from PROJECT ROOT)
 src/manage.py test
 flake8 --config=src/.flake8-ci src/hi/
