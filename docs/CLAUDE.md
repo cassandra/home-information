@@ -7,12 +7,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 When working on GitHub issues, follow this development workflow:
 
 1. **Read the GitHub issue and all its comments** - Understand the requirements, context, and any discussion
-2. **Ensure staging branch is in sync with GitHub** - Make sure you have the latest changes
-3. **Create a dev branch off the staging branch** - Follow naming conventions from `docs/dev/Workflow.md`
-4. **Do development changes** - Commit to git at logical checkpoints during development
-5. **After first commit, push the branch to GitHub** - Use the same branch name as the local one
-6. **Once issue is complete and all changes pushed** - Create a pull request using the template
-7. **Before creating the pull request** - Run full test validation (see Testing Workflow below)
+
+2. **Investigate and plan the implementation** - MANDATORY step for all issues:
+   - Assign the issue to yourself: `gh issue edit <issue-number> --add-assignee @me`
+   - Research the codebase to understand current implementation  
+   - Identify files, functions, and components that need changes
+   - Consider edge cases, dependencies, and potential impacts
+   - Plan the implementation approach and sequence of changes
+   - **Post a comment on the GitHub issue** documenting:
+     - Summary of investigation findings
+     - Proposed implementation approach
+     - Key files/components that will be modified
+     - Any questions or concerns identified
+   - **Wait for confirmation only if**:
+     - You have critical questions that could affect the implementation
+     - Important information is missing or unclear from the issue
+     - Multiple solution approaches exist with no clear best choice
+     - The proposed changes have significant architectural implications
+   - Otherwise, proceed directly to implementation
+
+3. **Ensure staging branch is in sync with GitHub** - Make sure you have the latest changes
+4. **Create a dev branch off the staging branch** - Follow naming conventions from `docs/dev/Workflow.md`
+5. **Do development changes** - Commit to git at logical checkpoints during development
+6. **After first commit, push the branch to GitHub** - Use the same branch name as the local one
+7. **Once issue is complete and all changes pushed** - Create a pull request using the template
+8. **Before creating the pull request** - Run full test validation (see Testing Workflow below)
 
 ### Testing Workflow (Required Before Pull Requests)
 
