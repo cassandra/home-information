@@ -136,6 +136,16 @@ def simple_function():
 - Follow existing code patterns and conventions in the codebase
 - Use descriptive variable and function names
 - Maintain consistency with Django and Python best practices
+- **Boolean expressions**: When assigning or returning boolean values, wrap expressions in `bool()` to make intent explicit and improve readability:
+  ```python
+  # Good - explicit boolean conversion
+  is_active = bool(user.last_login)
+  in_modal_context = bool(request.POST.get('context') == 'modal')
+  
+  # Avoid - implicit boolean conversion
+  is_active = user.last_login
+  in_modal_context = request.POST.get('context') == 'modal'
+  ```
 
 ## Testing Conventions
 

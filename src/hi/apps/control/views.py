@@ -74,23 +74,15 @@ class ControllerView( View, ControlViewMixin, ControllerMixin ):
             )
 
         response_context = request.POST.get('response_context', 'page')
+        in_modal_context = bool(response_context == 'modal')
         
-        # For modal context, we need to pass the context to the template
-        if response_context == 'modal':
-            return self.controller_data_response(
-                request = request,
-                controller = controller,
-                error_list = control_result.error_list,
-                override_sensor_value = override_sensor_value,
-                in_modal_context = True,
-            )
-        else:
-            return self.controller_data_response(
-                request = request,
-                controller = controller,
-                error_list = control_result.error_list,
-                override_sensor_value = override_sensor_value,
-            )
+        return self.controller_data_response(
+            request = request,
+            controller = controller,
+            error_list = control_result.error_list,
+            override_sensor_value = override_sensor_value,
+            in_modal_context = in_modal_context,
+        )
     
     def _get_value_for_missing_input( self, controller : Controller ) -> str:
         if controller.entity_state.entity_state_type in self.MISSING_VALUE_MAP:
