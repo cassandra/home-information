@@ -48,9 +48,33 @@ class EntityEditView( View, EntityViewMixin ):
                 entity_form.save()   
                 entity_attribute_formset.save()
                 
-            # Check if EntityType changed and refresh entire page if so
+            # Check if EntityType changed and handle transitions
             if original_entity_type_str != entity.entity_type_str:
-                return antinode.refresh_response()
+                # Try advanced transition handling if in editing mode
+                if request.view_parameters.is_editing and request.view_parameters.view_type.is_location_view:
+                    try:
+                        current_location_view = LocationManager().get_default_location_view( request = request )
+                        transition_occurred, transition_type = EntityManager().handle_entity_type_transition(
+                            entity = entity,
+                            location_view = current_location_view,
+                        )
+                        
+                        if transition_occurred and transition_type in ["icon_to_icon", "path_to_path"]:
+                            # These transitions only need visual updates, can continue with sidebar refresh
+                            pass
+                        elif transition_occurred:
+                            # Database structure changed, need full page refresh
+                            return antinode.refresh_response()
+                        else:
+                            # Transition failed, fallback to page refresh
+                            return antinode.refresh_response()
+                            
+                    except Exception as e:
+                        logger.warning(f'EntityType transition failed: {e}, falling back to page refresh')
+                        return antinode.refresh_response()
+                else:
+                    # Not in editing mode or not in location view, use simple page refresh
+                    return antinode.refresh_response()
                 
             # Recreate to preserve "max" to show new form
             entity_attribute_formset = forms.EntityAttributeFormSet(

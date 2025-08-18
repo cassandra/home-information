@@ -1,7 +1,7 @@
 from decimal import Decimal
 import logging
 from threading import local
-from typing import List, Sequence
+from typing import List, Sequence, Tuple
 
 from django.db import transaction
 from django.db.models.signals import post_save, post_delete
@@ -9,6 +9,7 @@ from django.dispatch import receiver
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.entity.edit.forms import EntityPositionForm
+from hi.apps.location.enums import SvgItemType
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 
@@ -248,6 +249,185 @@ class EntityManager(Singleton):
             svg_path = svg_path,
         )
         return entity_path
+
+    def handle_entity_type_transition( self,
+                                       entity         : Entity,
+                                       location_view  : LocationView   = None ) -> Tuple[bool, str]:
+        """
+        Handle transitions between EntityType icon and path representations.
+        Returns (transition_occurred, transition_type)
+        """
+        if not location_view:
+            # If no location view provided, we can't handle position/path transitions
+            return False, "no_location_view"
+            
+        svg_item_factory = SvgItemFactory()
+        new_svg_item_type = svg_item_factory.get_svg_item_type( entity )
+        
+        # Check current state in database
+        entity_position = EntityPosition.objects.filter(
+            entity = entity,
+            location = location_view.location,
+        ).first()
+        entity_path = EntityPath.objects.filter(
+            entity = entity,
+            location = location_view.location,
+        ).first()
+        
+        has_position = bool(entity_position)
+        has_path = bool(entity_path)
+        needs_icon = new_svg_item_type.is_icon
+        needs_path = new_svg_item_type.is_path
+        
+        with transaction.atomic():
+            if has_position and needs_path:
+                # icon → path transition
+                return self._transition_icon_to_path(
+                    entity = entity,
+                    location_view = location_view,
+                    entity_position = entity_position,
+                    is_path_closed = new_svg_item_type.is_path_closed,
+                )
+                
+            elif has_path and needs_icon:
+                # path → icon transition
+                return self._transition_path_to_icon(
+                    entity = entity,
+                    location_view = location_view,
+                    entity_path = entity_path,
+                )
+                
+            elif has_position and needs_icon:
+                # icon → icon (no database change needed)
+                return True, "icon_to_icon"
+                
+            elif has_path and needs_path:
+                # path → path (no database change needed, just styling)
+                return True, "path_to_path"
+                
+            elif not has_position and not has_path:
+                # No existing representation, create appropriate one
+                if needs_icon:
+                    self.add_entity_position_if_needed(
+                        entity = entity,
+                        location_view = location_view,
+                    )
+                    return True, "created_position"
+                else:
+                    self.add_entity_path_if_needed(
+                        entity = entity,
+                        location_view = location_view,
+                        is_path_closed = new_svg_item_type.is_path_closed,
+                    )
+                    return True, "created_path"
+        
+        return False, "no_transition_needed"
+
+    def _transition_icon_to_path( self,
+                                  entity          : Entity,
+                                  location_view   : LocationView,
+                                  entity_position : EntityPosition,
+                                  is_path_closed  : bool          ) -> Tuple[bool, str]:
+        """Convert EntityPosition to EntityPath, placing path at icon location"""
+        
+        # Get center point of the icon for path placement
+        center_x = float(entity_position.svg_x)
+        center_y = float(entity_position.svg_y)
+        
+        # Create a small path centered at the icon position
+        svg_item_factory = SvgItemFactory()
+        radius = svg_item_factory.NEW_PATH_RADIUS_PERCENT / 100.0
+        
+        if is_path_closed:
+            # Create small rectangle centered at icon position
+            radius_x = location_view.svg_view_box.width * radius / 4
+            radius_y = location_view.svg_view_box.height * radius / 4
+            
+            top_left_x = center_x - radius_x
+            top_left_y = center_y - radius_y
+            top_right_x = center_x + radius_x
+            top_right_y = center_y - radius_y
+            bottom_right_x = center_x + radius_x
+            bottom_right_y = center_y + radius_y
+            bottom_left_x = center_x - radius_x
+            bottom_left_y = center_y + radius_y
+            
+            svg_path = f'M {top_left_x},{top_left_y} L {top_right_x},{top_right_y} L {bottom_right_x},{bottom_right_y} L {bottom_left_x},{bottom_left_y} Z'
+        else:
+            # Create small line centered at icon position
+            radius_x = location_view.svg_view_box.width * radius / 4
+            start_x = center_x - radius_x
+            start_y = center_y
+            end_x = center_x + radius_x
+            end_y = center_y
+            
+            svg_path = f'M {start_x},{start_y} L {end_x},{end_y}'
+        
+        # Delete EntityPosition and create EntityPath
+        entity_position.delete()
+        EntityPath.objects.create(
+            entity = entity,
+            location = location_view.location,
+            svg_path = svg_path,
+        )
+        
+        return True, "icon_to_path"
+
+    def _transition_path_to_icon( self,
+                                  entity        : Entity,
+                                  location_view : LocationView,
+                                  entity_path   : EntityPath    ) -> Tuple[bool, str]:
+        """Convert EntityPath to EntityPosition, placing icon at path center"""
+        
+        # Calculate geometric center of the path
+        center_x, center_y = self._calculate_path_center(entity_path.svg_path)
+        
+        # If calculation fails, use location view center
+        if center_x is None or center_y is None:
+            center_x = location_view.svg_view_box.x + (location_view.svg_view_box.width / 2.0)
+            center_y = location_view.svg_view_box.y + (location_view.svg_view_box.height / 2.0)
+        
+        # Delete EntityPath and create EntityPosition
+        entity_path.delete()
+        EntityPosition.objects.create(
+            entity = entity,
+            location = location_view.location,
+            svg_x = Decimal(center_x),
+            svg_y = Decimal(center_y),
+            svg_scale = Decimal(1.0),
+            svg_rotate = Decimal(0.0),
+        )
+        
+        return True, "path_to_icon"
+
+    def _calculate_path_center( self, svg_path : str ) -> Tuple[float, float]:
+        """Calculate the geometric center of an SVG path"""
+        try:
+            # Simple path center calculation - find all coordinate pairs and average them
+            import re
+            
+            # Extract all numbers from the path (x,y coordinates)
+            numbers = re.findall(r'[-+]?(?:\d*\.\d+|\d+)', svg_path)
+            if len(numbers) < 4:  # Need at least 2 points (4 numbers)
+                return None, None
+                
+            coords = [float(n) for n in numbers]
+            
+            # Group into x,y pairs
+            x_coords = [coords[i] for i in range(0, len(coords), 2)]
+            y_coords = [coords[i] for i in range(1, len(coords), 2)]
+            
+            if not x_coords or not y_coords:
+                return None, None
+                
+            # Return the average of all points
+            center_x = sum(x_coords) / len(x_coords)
+            center_y = sum(y_coords) / len(y_coords)
+            
+            return center_x, center_y
+            
+        except (ValueError, IndexError, ZeroDivisionError):
+            return None, None
 
     def create_location_entity_view_group_list( self, location_view : LocationView ) -> List[EntityViewGroup]:
         existing_entities = [ x.entity
