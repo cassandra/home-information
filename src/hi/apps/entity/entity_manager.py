@@ -9,7 +9,6 @@ from django.dispatch import receiver
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.entity.edit.forms import EntityPositionForm
-from hi.apps.location.enums import SvgItemType
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 
