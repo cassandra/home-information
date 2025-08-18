@@ -50,31 +50,9 @@ class EntityEditView( View, EntityViewMixin ):
                 
             # Check if EntityType changed and handle transitions
             if original_entity_type_str != entity.entity_type_str:
-                # Try advanced transition handling if in editing mode
-                if request.view_parameters.is_editing and request.view_parameters.view_type.is_location_view:
-                    try:
-                        current_location_view = LocationManager().get_default_location_view( request = request )
-                        transition_occurred, transition_type = EntityManager().handle_entity_type_transition(
-                            entity = entity,
-                            location_view = current_location_view,
-                        )
-                        
-                        if transition_occurred and transition_type in ["icon_to_icon", "path_to_path"]:
-                            # These transitions only need visual updates, can continue with sidebar refresh
-                            pass
-                        elif transition_occurred:
-                            # Database structure changed, need full page refresh
-                            return antinode.refresh_response()
-                        else:
-                            # Transition failed, fallback to page refresh
-                            return antinode.refresh_response()
-                            
-                    except Exception as e:
-                        logger.warning(f'EntityType transition failed: {e}, falling back to page refresh')
-                        return antinode.refresh_response()
-                else:
-                    # Not in editing mode or not in location view, use simple page refresh
-                    return antinode.refresh_response()
+                response = self._handle_entity_type_change(request, entity)
+                if response is not None:
+                    return response
                 
             # Recreate to preserve "max" to show new form
             entity_attribute_formset = forms.EntityAttributeFormSet(
@@ -95,6 +73,40 @@ class EntityEditView( View, EntityViewMixin ):
             entity_edit_data = entity_edit_data,
             status_code = status_code,
         )
+    
+    def _handle_entity_type_change(self, request, entity):
+        """Handle EntityType changes with appropriate transition logic"""
+        try:
+            # Always attempt advanced transition handling regardless of mode/view
+            current_location_view = LocationManager().get_default_location_view( request = request )
+            transition_occurred, transition_type = EntityManager().handle_entity_type_transition(
+                entity = entity,
+                location_view = current_location_view,
+            )
+            
+            if self._needs_full_page_refresh(transition_occurred, transition_type):
+                return antinode.refresh_response()
+            
+            # Simple transitions can continue with sidebar-only refresh
+            # (will fall through to normal entity_edit_response)
+            return None
+            
+        except Exception as e:
+            logger.warning(f'EntityType transition failed: {e}, falling back to page refresh')
+            return antinode.refresh_response()
+    
+    def _needs_full_page_refresh(self, transition_occurred, transition_type):
+        """Determine if EntityType change requires full page refresh"""
+        if not transition_occurred:
+            # Transition failed, use page refresh for safety
+            return True
+            
+        if transition_type in ["icon_to_icon", "path_to_path"]:
+            # Visual-only changes, sidebar refresh sufficient
+            return False
+            
+        # Database structure changed (icon↔path), need full refresh
+        return True
 
         
 class EntityAttributeUploadView( View, EntityViewMixin ):
