@@ -107,11 +107,14 @@ class EntityEditView( View, EntityViewMixin ):
             # Transition failed, use page refresh for safety
             return True
             
-        if transition_type in ["icon_to_icon", "path_to_path"]:
-            # Visual-only changes, sidebar refresh sufficient
+        if transition_type == "path_to_path":
+            # Path style changes only, sidebar refresh sufficient
             return False
             
-        # Database structure changed (icon↔path), need full refresh
+        # All other transitions need full refresh to show visual changes:
+        # - icon_to_icon: New icon type needs to be visible
+        # - icon_to_path: Database structure changed
+        # - path_to_icon: Database structure changed
         return True
 
         
