@@ -1,6 +1,6 @@
 aiofiles==24.1.0
 aiohappyeyeballs==2.4.0
-aiohttp==3.10.5
+aiohttp==3.10.11
 aiosignal==1.3.1
 asgiref==3.8.1
 attrs==24.2.0
@@ -8,7 +8,7 @@ cachetools==5.5.0
 certifi==2024.7.4
 charset-normalizer==3.3.2
 dateparser==1.2.0
-Django==4.2.15
+Django==4.2.22
 django-constance==3.1.0
 django-csp==3.8
 django-picklefield==3.2
@@ -19,7 +19,7 @@ gunicorn==23.0.0
 idna==3.7
 imutils==0.5.4
 multidict==6.0.5
-mysql-connector-python==9.0.0
+mysql-connector-python==9.4.0
 numpy==2.1.0
 pillow==10.4.0
 Pint==0.24.4
@@ -45,7 +45,7 @@ SQLAlchemy==1.3.24
 sqlparse==0.5.1
 typing_extensions==4.12.2
 tzlocal==5.2
-urllib3==2.2.2
+urllib3==2.2.3
 voluptuous==0.15.2
 websocket-client==1.8.0
-yarl==1.9.4
+yarl==1.12.0
