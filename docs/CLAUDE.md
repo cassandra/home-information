@@ -8,7 +8,12 @@ When working on GitHub issues, follow this development workflow:
 
 1. **Read the GitHub issue and all its comments** - Understand the requirements, context, and any discussion
 
-2. **Investigate and plan the implementation** - MANDATORY step for all issues:
+2. **Ensure you're on the latest staging branch** - MANDATORY step before any work:
+   - Switch to staging branch: `git checkout staging`
+   - Pull latest changes: `git pull origin staging`
+   - Verify you're on the correct branch: `git status`
+
+3. **Investigate and plan the implementation** - MANDATORY step for all issues:
    - Assign the issue to yourself: `gh issue edit <issue-number> --add-assignee @me`
    - Research the codebase to understand current implementation  
    - Identify files, functions, and components that need changes
@@ -26,7 +31,6 @@ When working on GitHub issues, follow this development workflow:
      - The proposed changes have significant architectural implications
    - Otherwise, proceed directly to implementation
 
-3. **Ensure staging branch is in sync with GitHub** - Make sure you have the latest changes
 4. **Create a dev branch off the staging branch** - Follow naming conventions from `docs/dev/Workflow.md`
 5. **Do development changes** - Commit to git at logical checkpoints during development
 6. **After first commit, push the branch to GitHub** - Use the same branch name as the local one
