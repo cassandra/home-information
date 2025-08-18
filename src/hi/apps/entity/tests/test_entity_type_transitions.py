@@ -4,6 +4,7 @@ Focus on actual behavior and database state changes per testing guidelines.
 """
 from decimal import Decimal
 
+from django.db import transaction
 from django.test import TransactionTestCase
 
 from hi.apps.entity.entity_manager import EntityManager
@@ -311,5 +312,44 @@ class TestEntityTypeTransitions(TransactionTestCase):
         # Should return None for invalid paths
         self.assertIsNone(center_x)
         self.assertIsNone(center_y)
+        return
+    
+    def test_transaction_rollback_on_transition_failure(self):
+        """Test that database transaction rolls back if transition logic fails"""
+        from unittest.mock import patch
+        
+        # Start with valid entity
+        original_name = self.entity.name
+        original_type = self.entity.entity_type_str
+        
+        # Mock handle_entity_type_transition to raise an exception
+        with patch.object(EntityManager, 'handle_entity_type_transition') as mock_transition:
+            mock_transition.side_effect = Exception("Simulated transition failure")
+            
+            # Attempt entity update with EntityType change
+            try:
+                with transaction.atomic():
+                    self.entity.name = "Updated Name"
+                    self.entity.entity_type_str = str(EntityType.WALL)
+                    self.entity.save()
+                    
+                    # This should raise exception and rollback transaction
+                    EntityManager().handle_entity_type_transition(
+                        entity = self.entity,
+                        location_view = self.location_view,
+                    )
+            except Exception:
+                pass  # Expected due to mock
+        
+        # Reload entity from database
+        self.entity.refresh_from_db()
+        
+        # Verify transaction was rolled back - changes should be reverted
+        self.assertEqual(self.entity.name, original_name)
+        self.assertEqual(self.entity.entity_type_str, original_type)
+        
+        # Verify no orphaned EntityPosition/EntityPath records created
+        self.assertEqual(EntityPosition.objects.filter(entity=self.entity).count(), 0)
+        self.assertEqual(EntityPath.objects.filter(entity=self.entity).count(), 0)
         return
 

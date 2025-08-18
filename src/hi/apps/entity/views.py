@@ -48,11 +48,11 @@ class EntityEditView( View, EntityViewMixin ):
                 entity_form.save()   
                 entity_attribute_formset.save()
                 
-            # Check if EntityType changed and handle transitions
-            if original_entity_type_str != entity.entity_type_str:
-                response = self._handle_entity_type_change(request, entity)
-                if response is not None:
-                    return response
+                # Check if EntityType changed and handle transitions within same transaction
+                if original_entity_type_str != entity.entity_type_str:
+                    response = self._handle_entity_type_change(request, entity)
+                    if response is not None:
+                        return response
                 
             # Recreate to preserve "max" to show new form
             entity_attribute_formset = forms.EntityAttributeFormSet(
