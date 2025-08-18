@@ -557,7 +557,10 @@ function doAutofocusIfNeeded( contentObj ) {
 function beforeAsyncCall( $node ) {
 
     // If the content lies in a modal, then close the modal.
-    hideModalIfNeeded( $node );
+    // Unless the form has data-stay-in-modal attribute.
+    if ( ! $node.attr('data-stay-in-modal') ) {
+        hideModalIfNeeded( $node );
+    }
     saveScrollBarPositions();
 };
 

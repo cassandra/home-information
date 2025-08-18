@@ -8,7 +8,13 @@ When working on GitHub issues, follow this development workflow:
 
 1. **Read the GitHub issue and all its comments** - Understand the requirements, context, and any discussion
 
-2. **Investigate and plan the implementation** - MANDATORY step for all issues:
+2. **Ensure you're on the latest staging branch** - MANDATORY step before any work:
+   - If coming from a merged PR, run Post-PR Cleanup first (see step 10)
+   - Switch to staging branch: `git checkout staging`
+   - Pull latest changes: `git pull origin staging`
+   - Verify you're on the correct branch: `git status`
+
+3. **Investigate and plan the implementation** - MANDATORY step for all issues:
    - Assign the issue to yourself: `gh issue edit <issue-number> --add-assignee @me`
    - Research the codebase to understand current implementation  
    - Identify files, functions, and components that need changes
@@ -26,28 +32,43 @@ When working on GitHub issues, follow this development workflow:
      - The proposed changes have significant architectural implications
    - Otherwise, proceed directly to implementation
 
-3. **Ensure staging branch is in sync with GitHub** - Make sure you have the latest changes
-4. **Create a dev branch off the staging branch** - Follow naming conventions from `docs/dev/Workflow.md`
-5. **Do development changes** - Commit to git at logical checkpoints during development
-6. **After first commit, push the branch to GitHub** - Use the same branch name as the local one
-7. **Once issue is complete and all changes pushed** - Create a pull request using the template
-8. **Before creating the pull request** - Run full test validation (see Testing Workflow below)
+4. **Initialize development environment** - MANDATORY before any development work:
+   - Run environment setup: `. ./init-env-dev.sh`
+   - This sets up the virtual environment and all necessary environment variables
+
+5. **Create a dev branch off the staging branch** - Use proper naming convention:
+   - **Bug fixes**: `bugfix/##-description` (e.g., `bugfix/31-controller-modal-fix`)
+   - **New features**: `feature/##-description` (e.g., `feature/45-weather-alerts`)
+   - **Documentation**: `docs/##-description` (e.g., `docs/22-api-documentation`)
+   - **Operations**: `ops/##-description` (e.g., `ops/18-docker-improvements`)
+   - **Refactoring**: `refactor/##-description` (e.g., `refactor/33-cleanup-views`)
+   - See `docs/dev/Workflow.md` for complete conventions including test-only and tweak branches
+6. **Do development changes** - Commit to git at logical checkpoints during development
+7. **After first commit, push the branch to GitHub** - Use the same branch name as the local one
+8. **Once issue is complete and all changes pushed** - Create a pull request using the template
+9. **Before creating the pull request** - Run full test validation (see Testing Workflow below)
+10. **After pull request is merged** - Clean up and prepare for next work (see Post-PR Cleanup below)
 
 ### Testing Workflow (Required Before Pull Requests)
 
 **MANDATORY**: Before creating any pull request, you must run and pass all of these checks:
 
+**NOTE**: All commands run from PROJECT ROOT directory for consistency.
+
 ```bash
+# First ensure environment is initialized (if not already done in step 4)
+. ./init-env-dev.sh
+
 # 1. Run full unit test suite
-./manage.py test
+src/manage.py test
 # Must show: "OK" with all tests passing
 
 # 2. Run code quality check (only if source code was modified)
-flake8 --config=.flake8-ci hi/
+flake8 --config=src/.flake8-ci src/hi/
 # Must show: no output (clean)
 
 # 3. Verify Django configuration
-./manage.py check
+src/manage.py check
 # Must show: "System check identified no issues"
 ```
 
@@ -57,14 +78,62 @@ flake8 --config=.flake8-ci hi/
 
 Before any pull request can be merged, the following requirements must be met:
 
-1. **Unit Tests**: All unit tests must pass (`./manage.py test`)
-2. **Code Quality**: flake8 linting with `.flake8-ci` configuration must pass with no violations (if source code modified)
-3. **Django Check**: Django system check must pass with no issues (`./manage.py check`)
+1. **Unit Tests**: All unit tests must pass (`src/manage.py test`)
+2. **Code Quality**: flake8 linting with `.flake8-ci` configuration must pass with no violations (if source code modified) (`flake8 --config=src/.flake8-ci src/hi/`)
+3. **Django Check**: Django system check must pass with no issues (`src/manage.py check`)
 4. **GitHub CI**: GitHub Actions will automatically verify these requirements and will block PR merging if they fail
 
 These requirements are enforced by GitHub branch protection rules and cannot be bypassed.
 
 For detailed branching conventions and additional workflow information, see `docs/dev/Workflow.md`.
+
+### Post-PR Cleanup (After Pull Request Merged)
+
+**HUMAN INITIATED**: This workflow must be triggered manually when you confirm a PR has been merged. Never run without explicit confirmation that the PR is merged.
+
+**MANDATORY Safety Checks** - Execute these verification steps before any cleanup actions:
+
+```bash
+# 1. Verify current branch is a feature branch (not staging/master)
+git branch --show-current
+# Must show a feature branch pattern like: bugfix/##-description, feature/##-description, etc.
+# STOP if output shows: staging, master, main
+
+# 2. Verify working directory is clean (no uncommitted changes)
+git status
+# Must show: "nothing to commit, working tree clean"
+# STOP if there are uncommitted changes - commit or stash them first
+
+# 3. Verify the PR is actually merged
+gh pr view --json state,mergedAt
+# Must show: "state": "MERGED" and "mergedAt": with a timestamp
+# STOP if state is not "MERGED"
+```
+
+**Cleanup Actions** - Only proceed if all safety checks pass:
+
+```bash
+# 4. Switch to staging branch
+git checkout staging
+
+# 5. Sync with latest remote changes
+git pull origin staging
+
+# 6. Delete the merged feature branch (use branch name from step 1)
+git branch -d <feature-branch-name>
+# Example: git branch -d bugfix/31-controller-modal-fix
+
+# 7. Verify clean final state
+git status
+# Should show: "On branch staging" and "nothing to commit, working tree clean"
+```
+
+**If any safety check fails:**
+- **DO NOT proceed** with cleanup actions
+- **Address the issue** (commit changes, wait for PR merge, etc.)
+- **Re-run verification** before attempting cleanup
+
+This process ensures you're ready for the next issue while preventing accidental data loss.
 
 ### Work Documentation for Non-Trivial Issues
 
@@ -89,10 +158,10 @@ For detailed setup and daily commands, see [Development Setup](dev/Setup.md).
 # Daily development setup
 . ./init-env-dev.sh
 
-# Common commands
-cd src && ./manage.py test
-cd src && flake8 --config=.flake8-ci src/
-./manage.py runserver  # http://127.0.0.1:8411
+# Common commands (all run from PROJECT ROOT)
+src/manage.py test
+flake8 --config=src/.flake8-ci src/hi/
+src/manage.py runserver  # http://127.0.0.1:8411
 ```
 
 ## Project Documentation References
@@ -144,7 +213,7 @@ All generated code must comply with the `.flake8-ci` configuration rules. Common
 4. **Line Continuation**: Proper indentation for multi-line statements following PEP 8
 5. **Line Length**: Respect maximum line length limits defined in `.flake8-ci`
 
-Before submitting code, always run: `cd src && flake8 --config=.flake8-ci src/` to verify compliance.
+Before submitting code, always run: `flake8 --config=src/.flake8-ci src/hi/` to verify compliance.
 
 ## Commit Message Guidelines (Claude-Specific)
 

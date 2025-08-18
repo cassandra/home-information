@@ -4,8 +4,9 @@
      class="{{ controller_data.css_class }}" >
   <form action="{% url 'control_controller' controller_id=controller_data.controller.id %}"
 	method="post"
-	class="form" data-async="#hi-controller-{{ controller_data.controller.id }}-{{ unique_id }}" data-mode="replace">
+	class="form" data-async="#hi-controller-{{ controller_data.controller.id }}-{{ unique_id }}" data-mode="replace"{% if in_modal_context %} data-stay-in-modal="true"{% endif %}>
     {% csrf_token %}
+    <input type="hidden" name="response_context" value="{% if in_modal_context %}modal{% else %}page{% endif %}">
     
     {% include_with_fallback controller_data.controller.entity_state.entity_state_type.controller_template_name "control/panes/controller_default.html" %}
     {% if controller_data.error_list %}

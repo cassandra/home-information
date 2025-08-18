@@ -71,11 +71,15 @@ class ControllerView( View, ControlViewMixin, ControllerMixin ):
                 value = control_value,
             )
 
+        response_context = request.POST.get('response_context', 'page')
+        in_modal_context = bool(response_context == 'modal')
+        
         return self.controller_data_response(
             request = request,
             controller = controller,
             error_list = control_result.error_list,
             override_sensor_value = override_sensor_value,
+            in_modal_context = in_modal_context,
         )
     
     def _get_value_for_missing_input( self, controller : Controller ) -> str:
