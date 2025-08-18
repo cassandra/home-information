@@ -31,27 +31,34 @@ When working on GitHub issues, follow this development workflow:
      - The proposed changes have significant architectural implications
    - Otherwise, proceed directly to implementation
 
-4. **Create a dev branch off the staging branch** - Follow naming conventions from `docs/dev/Workflow.md`
-5. **Do development changes** - Commit to git at logical checkpoints during development
-6. **After first commit, push the branch to GitHub** - Use the same branch name as the local one
-7. **Once issue is complete and all changes pushed** - Create a pull request using the template
-8. **Before creating the pull request** - Run full test validation (see Testing Workflow below)
+4. **Initialize development environment** - MANDATORY before any development work:
+   - Run environment setup: `. ./init-env-dev.sh`
+   - This sets up the virtual environment and all necessary environment variables
+
+5. **Create a dev branch off the staging branch** - Follow naming conventions from `docs/dev/Workflow.md`
+6. **Do development changes** - Commit to git at logical checkpoints during development
+7. **After first commit, push the branch to GitHub** - Use the same branch name as the local one
+8. **Once issue is complete and all changes pushed** - Create a pull request using the template
+9. **Before creating the pull request** - Run full test validation (see Testing Workflow below)
 
 ### Testing Workflow (Required Before Pull Requests)
 
 **MANDATORY**: Before creating any pull request, you must run and pass all of these checks:
 
 ```bash
+# First ensure environment is initialized (if not already done in step 4)
+. ./init-env-dev.sh
+
 # 1. Run full unit test suite
-./manage.py test
+cd src && ./manage.py test
 # Must show: "OK" with all tests passing
 
 # 2. Run code quality check (only if source code was modified)
-flake8 --config=.flake8-ci hi/
+cd src && flake8 --config=.flake8-ci hi/
 # Must show: no output (clean)
 
 # 3. Verify Django configuration
-./manage.py check
+cd src && ./manage.py check
 # Must show: "System check identified no issues"
 ```
 
@@ -61,9 +68,9 @@ flake8 --config=.flake8-ci hi/
 
 Before any pull request can be merged, the following requirements must be met:
 
-1. **Unit Tests**: All unit tests must pass (`./manage.py test`)
-2. **Code Quality**: flake8 linting with `.flake8-ci` configuration must pass with no violations (if source code modified)
-3. **Django Check**: Django system check must pass with no issues (`./manage.py check`)
+1. **Unit Tests**: All unit tests must pass (`cd src && ./manage.py test`)
+2. **Code Quality**: flake8 linting with `.flake8-ci` configuration must pass with no violations (if source code modified) (`cd src && flake8 --config=.flake8-ci hi/`)
+3. **Django Check**: Django system check must pass with no issues (`cd src && ./manage.py check`)
 4. **GitHub CI**: GitHub Actions will automatically verify these requirements and will block PR merging if they fail
 
 These requirements are enforced by GitHub branch protection rules and cannot be bypassed.
@@ -95,8 +102,8 @@ For detailed setup and daily commands, see [Development Setup](dev/Setup.md).
 
 # Common commands
 cd src && ./manage.py test
-cd src && flake8 --config=.flake8-ci src/
-./manage.py runserver  # http://127.0.0.1:8411
+cd src && flake8 --config=.flake8-ci hi/
+cd src && ./manage.py runserver  # http://127.0.0.1:8411
 ```
 
 ## Project Documentation References
@@ -148,7 +155,7 @@ All generated code must comply with the `.flake8-ci` configuration rules. Common
 4. **Line Continuation**: Proper indentation for multi-line statements following PEP 8
 5. **Line Length**: Respect maximum line length limits defined in `.flake8-ci`
 
-Before submitting code, always run: `cd src && flake8 --config=.flake8-ci src/` to verify compliance.
+Before submitting code, always run: `cd src && flake8 --config=.flake8-ci hi/` to verify compliance.
 
 ## Commit Message Guidelines (Claude-Specific)
 
