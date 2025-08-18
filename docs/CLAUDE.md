@@ -9,6 +9,7 @@ When working on GitHub issues, follow this development workflow:
 1. **Read the GitHub issue and all its comments** - Understand the requirements, context, and any discussion
 
 2. **Ensure you're on the latest staging branch** - MANDATORY step before any work:
+   - If coming from a merged PR, run Post-PR Cleanup first (see step 10)
    - Switch to staging branch: `git checkout staging`
    - Pull latest changes: `git pull origin staging`
    - Verify you're on the correct branch: `git status`
@@ -46,6 +47,7 @@ When working on GitHub issues, follow this development workflow:
 7. **After first commit, push the branch to GitHub** - Use the same branch name as the local one
 8. **Once issue is complete and all changes pushed** - Create a pull request using the template
 9. **Before creating the pull request** - Run full test validation (see Testing Workflow below)
+10. **After pull request is merged** - Clean up and prepare for next work (see Post-PR Cleanup below)
 
 ### Testing Workflow (Required Before Pull Requests)
 
@@ -84,6 +86,54 @@ Before any pull request can be merged, the following requirements must be met:
 These requirements are enforced by GitHub branch protection rules and cannot be bypassed.
 
 For detailed branching conventions and additional workflow information, see `docs/dev/Workflow.md`.
+
+### Post-PR Cleanup (After Pull Request Merged)
+
+**HUMAN INITIATED**: This workflow must be triggered manually when you confirm a PR has been merged. Never run without explicit confirmation that the PR is merged.
+
+**MANDATORY Safety Checks** - Execute these verification steps before any cleanup actions:
+
+```bash
+# 1. Verify current branch is a feature branch (not staging/master)
+git branch --show-current
+# Must show a feature branch pattern like: bugfix/##-description, feature/##-description, etc.
+# STOP if output shows: staging, master, main
+
+# 2. Verify working directory is clean (no uncommitted changes)
+git status
+# Must show: "nothing to commit, working tree clean"
+# STOP if there are uncommitted changes - commit or stash them first
+
+# 3. Verify the PR is actually merged
+gh pr view --json state,mergedAt
+# Must show: "state": "MERGED" and "mergedAt": with a timestamp
+# STOP if state is not "MERGED"
+```
+
+**Cleanup Actions** - Only proceed if all safety checks pass:
+
+```bash
+# 4. Switch to staging branch
+git checkout staging
+
+# 5. Sync with latest remote changes
+git pull origin staging
+
+# 6. Delete the merged feature branch (use branch name from step 1)
+git branch -d <feature-branch-name>
+# Example: git branch -d bugfix/31-controller-modal-fix
+
+# 7. Verify clean final state
+git status
+# Should show: "On branch staging" and "nothing to commit, working tree clean"
+```
+
+**If any safety check fails:**
+- **DO NOT proceed** with cleanup actions
+- **Address the issue** (commit changes, wait for PR merge, etc.)
+- **Re-run verification** before attempting cleanup
+
+This process ensures you're ready for the next issue while preventing accidental data loss.
 
 ### Work Documentation for Non-Trivial Issues
 
