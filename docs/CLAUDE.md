@@ -40,8 +40,7 @@ This documentation helps maintain continuity across work sessions and provides v
 ## Environment-Specific Configuration
 
 ### Git Remote Configuration
-- The remote repository name is `github` (not `origin`)
-- Use `git push github` or `git push -u github branch-name` for pushing branches
+- Use `git push origin` or `git push -u origin branch-name` for pushing branches
 
 ### Development Commands Quick Reference
 For detailed setup and daily commands, see [Development Setup](dev/Setup.md).
@@ -65,6 +64,35 @@ For comprehensive project information, see:
 - **Testing**: [dev/Testing.md](dev/Testing.md) - Testing patterns, best practices, and anti-patterns
 - **Setup**: [dev/Setup.md](dev/Setup.md) - Environment setup and daily development commands
 - **Workflow**: [dev/Workflow.md](dev/Workflow.md) - Branching, commits, and pull request process
+
+## Release Process (Claude-Specific)
+
+When executing the release process documented in `docs/dev/ReleaseProcesses.md`, use these AI-specific commands and considerations:
+
+### Release Execution Commands
+```bash
+# Pre-release verification (combine all checks)
+git status && make check
+
+# Version bump and commit
+git add HI_VERSION && git commit -m "Bump version number to vX.X.X"
+git push origin staging
+
+# Merge to master
+git checkout master && git pull origin master
+git merge staging && git push origin master
+
+# Create release (CLI method - preferred for automation)
+gh release create vX.X.X --title "vX.X.X" --generate-notes --latest
+```
+
+### Release Process Considerations
+- **Working Directory**: Always verify clean working directory before starting
+- **Dependency Vulnerabilities**: GitHub may warn about dependencies during push - note but don't block release
+- **Documentation Changes**: Commit any documentation updates to staging before switching branches
+- **GitHub CLI**: Prefer `gh` command for release creation over manual UI steps
+
+See `docs/dev/ReleaseProcesses.md` for the complete process documentation.
 
 ## Generated Code Standards (Claude-Specific)
 
