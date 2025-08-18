@@ -51,20 +51,22 @@ When working on GitHub issues, follow this development workflow:
 
 **MANDATORY**: Before creating any pull request, you must run and pass all of these checks:
 
+**NOTE**: All commands run from PROJECT ROOT directory for consistency.
+
 ```bash
 # First ensure environment is initialized (if not already done in step 4)
 . ./init-env-dev.sh
 
 # 1. Run full unit test suite
-cd src && ./manage.py test
+src/manage.py test
 # Must show: "OK" with all tests passing
 
 # 2. Run code quality check (only if source code was modified)
-cd src && flake8 --config=.flake8-ci hi/
+flake8 --config=src/.flake8-ci src/hi/
 # Must show: no output (clean)
 
 # 3. Verify Django configuration
-cd src && ./manage.py check
+src/manage.py check
 # Must show: "System check identified no issues"
 ```
 
@@ -74,9 +76,9 @@ cd src && ./manage.py check
 
 Before any pull request can be merged, the following requirements must be met:
 
-1. **Unit Tests**: All unit tests must pass (`cd src && ./manage.py test`)
-2. **Code Quality**: flake8 linting with `.flake8-ci` configuration must pass with no violations (if source code modified) (`cd src && flake8 --config=.flake8-ci hi/`)
-3. **Django Check**: Django system check must pass with no issues (`cd src && ./manage.py check`)
+1. **Unit Tests**: All unit tests must pass (`src/manage.py test`)
+2. **Code Quality**: flake8 linting with `.flake8-ci` configuration must pass with no violations (if source code modified) (`flake8 --config=src/.flake8-ci src/hi/`)
+3. **Django Check**: Django system check must pass with no issues (`src/manage.py check`)
 4. **GitHub CI**: GitHub Actions will automatically verify these requirements and will block PR merging if they fail
 
 These requirements are enforced by GitHub branch protection rules and cannot be bypassed.
@@ -106,10 +108,10 @@ For detailed setup and daily commands, see [Development Setup](dev/Setup.md).
 # Daily development setup
 . ./init-env-dev.sh
 
-# Common commands
-cd src && ./manage.py test
-cd src && flake8 --config=.flake8-ci hi/
-cd src && ./manage.py runserver  # http://127.0.0.1:8411
+# Common commands (all run from PROJECT ROOT)
+src/manage.py test
+flake8 --config=src/.flake8-ci src/hi/
+src/manage.py runserver  # http://127.0.0.1:8411
 ```
 
 ## Project Documentation References
@@ -161,7 +163,7 @@ All generated code must comply with the `.flake8-ci` configuration rules. Common
 4. **Line Continuation**: Proper indentation for multi-line statements following PEP 8
 5. **Line Length**: Respect maximum line length limits defined in `.flake8-ci`
 
-Before submitting code, always run: `cd src && flake8 --config=.flake8-ci hi/` to verify compliance.
+Before submitting code, always run: `flake8 --config=src/.flake8-ci src/hi/` to verify compliance.
 
 ## Commit Message Guidelines (Claude-Specific)
 
