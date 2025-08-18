@@ -35,7 +35,13 @@ When working on GitHub issues, follow this development workflow:
    - Run environment setup: `. ./init-env-dev.sh`
    - This sets up the virtual environment and all necessary environment variables
 
-5. **Create a dev branch off the staging branch** - Follow naming conventions from `docs/dev/Workflow.md`
+5. **Create a dev branch off the staging branch** - Use proper naming convention:
+   - **Bug fixes**: `bugfix/##-description` (e.g., `bugfix/31-controller-modal-fix`)
+   - **New features**: `feature/##-description` (e.g., `feature/45-weather-alerts`)
+   - **Documentation**: `docs/##-description` (e.g., `docs/22-api-documentation`)
+   - **Operations**: `ops/##-description` (e.g., `ops/18-docker-improvements`)
+   - **Refactoring**: `refactor/##-description` (e.g., `refactor/33-cleanup-views`)
+   - See `docs/dev/Workflow.md` for complete conventions including test-only and tweak branches
 6. **Do development changes** - Commit to git at logical checkpoints during development
 7. **After first commit, push the branch to GitHub** - Use the same branch name as the local one
 8. **Once issue is complete and all changes pushed** - Create a pull request using the template
