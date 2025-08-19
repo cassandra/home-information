@@ -4,10 +4,13 @@ import argparse
 import os
 import re
 import secrets
+import shlex
 import stat
 import shutil
 import string
 import sys
+import tempfile
+from typing import Union
 
 from dataclasses import dataclass
 
@@ -30,7 +33,7 @@ class SmtpSettings:
         return True
 
     @staticmethod
-    def is_valid_port( port: str ) -> bool:
+    def is_valid_port( port: Union[str, int] ) -> bool:
         try:
             port_number = int( port )
             if ( port_number < 1 ) or ( port_number > 65535 ):
@@ -196,16 +199,21 @@ class HiEnvironmentGenerator:
         self.print_important( f'Review your settings file: {self._destination_filename}' )
         self.print_important( 'Your Django admin credentials:'
                               f'\n    Email: {django_admin_email}'
-                              f'\n    Password: {django_admin_password}' )
+                              f'\n    Password: {django_admin_password}'
+                              '\n\nIMPORTANT: Store these credentials securely!' )
         return
     
     def _setup_secrets_directory( self ):
-        if not os.path.exists( self._env_config.secrets_directory ):
-            self.print_notice( f'Creating directory: {self._env_config.secrets_directory}' )
-            os.makedirs( self._env_config.secrets_directory, exist_ok = True )
-            os.chmod( self._env_config.secrets_directory, stat.S_IRWXU )  # Read/write/execute for user only
-        elif not os.path.isdir( self._env_config.secrets_directory ):
-            self.print_warning( 'Secrets home "{self._env_config.secrets_directory}" not a directory.' )
+        try:
+            if not os.path.exists( self._env_config.secrets_directory ):
+                self.print_notice( f'Creating directory: {self._env_config.secrets_directory}' )
+                os.makedirs( self._env_config.secrets_directory, exist_ok = True )
+                os.chmod( self._env_config.secrets_directory, stat.S_IRWXU )  # Read/write/execute for user only
+            elif not os.path.isdir( self._env_config.secrets_directory ):
+                self.print_warning( f'Secrets home "{self._env_config.secrets_directory}" not a directory.' )
+                exit(1)
+        except (OSError, IOError) as e:
+            self.print_warning( f'Error setting up secrets directory: {e}' )
             exit(1)
         return
     
@@ -218,11 +226,15 @@ class HiEnvironmentGenerator:
                 self.print_warning( 'Env file generation cancelled.' )
                 exit(1)
 
-            backup_filename = f'{self._destination_filename}.BAK'
-            if os.path.exists( backup_filename ):
-                os.rename( backup_filename, f'{backup_filename}.BAK' )
-            self.print_notice( f'Creating backup: {backup_filename}' )
-            shutil.copy2( self._destination_filename, backup_filename )
+            import time
+            timestamp = int(time.time())
+            backup_filename = f'{self._destination_filename}.BAK.{timestamp}'
+            try:
+                self.print_notice( f'Creating backup: {backup_filename}' )
+                shutil.copy2( self._destination_filename, backup_filename )
+            except (OSError, IOError) as e:
+                self.print_warning( f'Error creating backup: {e}' )
+                exit(1)
         return
 
     def _get_data_directories( self ):
@@ -253,20 +265,28 @@ class HiEnvironmentGenerator:
                 should_create = self.input_boolean( 'Do you want to create it?', default = False )
                 if not should_create:
                     continue
-                os.makedirs( database_dir, exist_ok = True )
-                os.makedirs( media_dir, exist_ok = True )
-                return ( database_dir, media_dir )
+                try:
+                    os.makedirs( database_dir, exist_ok = True )
+                    os.makedirs( media_dir, exist_ok = True )
+                    return ( database_dir, media_dir )
+                except (OSError, IOError) as e:
+                    self.print_warning( f'Error creating directories: {e}' )
+                    continue
             
             elif not os.path.isdir( data_dir ):
                 self.print_warning( f'The path "{data_dir}" exists, but it is not a directory.' )
                 continue
             
             else:
-                if not os.path.exists( database_dir ):
-                    os.makedirs( database_dir, exist_ok = True )
-                if not os.path.exists( media_dir ):
-                    os.makedirs( media_dir, exist_ok = True )
-                return ( database_dir, media_dir )
+                try:
+                    if not os.path.exists( database_dir ):
+                        os.makedirs( database_dir, exist_ok = True )
+                    if not os.path.exists( media_dir ):
+                        os.makedirs( media_dir, exist_ok = True )
+                    return ( database_dir, media_dir )
+                except (OSError, IOError) as e:
+                    self.print_warning( f'Error creating subdirectories: {e}' )
+                    continue
             continue
         return
         
@@ -298,14 +318,14 @@ class HiEnvironmentGenerator:
             password = self.input_string( 'Enter your email password' )
             if password:
                 break
-            self.print_warning( 'Password canot be empty' )
+            self.print_warning( 'Password cannot be empty' )
             continue
 
         domain = email_address.split('@')[-1]
 
         smtp_settings = None
         if domain in self.COMMON_EMAIL_PROVIDER_SETTINGS:
-            use_predefined = self.input_boolean( f'Used predefined settings for {domain}?' )
+            use_predefined = self.input_boolean( f'Use predefined settings for {domain}?' )
             if use_predefined:
                 smtp_settings = self.COMMON_EMAIL_PROVIDER_SETTINGS[domain]
                 
@@ -313,18 +333,31 @@ class HiEnvironmentGenerator:
             self.print_notice( 'Please provide SMTP settings.' )
             smtp_settings = self._get_smtp_settings()
             
-        return EmailSettings(
+        email_settings = EmailSettings(
             email_address = email_address,
             password = password,
             smtp_settings = smtp_settings,
         )
+        
+        # Optional SMTP validation
+        test_smtp = self.input_boolean( 'Test SMTP connection now? (recommended)', default = True )
+        if test_smtp and not self._test_smtp_connection(email_settings):
+            self.print_warning( 'SMTP test failed. You may need to:\n'
+                               '  - Enable "less secure apps" or use app-specific passwords\n'
+                               '  - Check firewall settings\n'
+                               '  - Verify SMTP server settings' )
+            continue_anyway = self.input_boolean( 'Continue with these settings anyway?', default = False )
+            if not continue_anyway:
+                return self._get_email_settings()  # Retry email configuration
+        
+        return email_settings
 
     def _get_smtp_settings( self ) -> SmtpSettings:
         while True:
             host = self.input_string('Enter SMTP email host')
             if host:
                 break
-            self.print_warning( 'Host name canot be empty' )
+            self.print_warning( 'Host name cannot be empty' )
             continue
 
         use_tls = self.input_boolean( 'SMTP server uses TLS (STARTTLS)', default = True )
@@ -348,16 +381,45 @@ class HiEnvironmentGenerator:
             use_tls = use_tls,
             use_ssl = use_ssl,
         )
+    
+    def _test_smtp_connection(self, email_settings: EmailSettings) -> bool:
+        """
+        Test SMTP connection without sending email.
+        Returns True if connection successful, False otherwise.
+        """
+        try:
+            import smtplib
+            
+            self.print_notice( 'Testing SMTP connection...' )
+            
+            smtp_class = smtplib.SMTP_SSL if email_settings.smtp_settings.use_ssl else smtplib.SMTP
+            
+            with smtp_class(email_settings.smtp_settings.host, email_settings.smtp_settings.port, timeout=10) as server:
+                if email_settings.smtp_settings.use_tls:
+                    server.starttls()
+                
+                server.login(email_settings.email_address, email_settings.password)
+                self.print_success( 'SMTP connection test successful!' )
+                return True
+                
+        except ImportError:
+            self.print_warning( 'Cannot test SMTP connection: smtplib not available' )
+            return True  # Don't fail if we can't test
+        except Exception as e:
+            self.print_warning( f'SMTP connection test failed: {e}' )
+            return False
         
-    def _generate_memorable_password( self, num_words : int = 2, separator : str = "-" ):
+    def _generate_memorable_password( self, num_words : int = 3, separator : str = "-" ):
 
         words = [
             'apple', 'banana', 'cherry', 'delta', 'eagle', 'falcon', 'grape', 
-            'hunter', 'island', 'joker', 'kitten', 'lemon', 'melon', 'ninja', 'ocean'
+            'hunter', 'island', 'joker', 'kitten', 'lemon', 'melon', 'ninja', 'ocean',
+            'piano', 'queen', 'robot', 'stone', 'tiger', 'unity', 'voice', 'water',
+            'xenon', 'yacht', 'zebra', 'anchor', 'bridge', 'camera', 'dream', 'energy'
         ]
 
         chosen_words = [ secrets.choice(words) for _ in range(num_words) ]
-        random_number = str( secrets.randbelow( 100 ))  # A number between 0-99
+        random_number = str( secrets.randbelow( 1000 ))  # A number between 0-999
         chosen_words.append( str(random_number) )
             
         password = separator.join(chosen_words)
@@ -366,25 +428,54 @@ class HiEnvironmentGenerator:
     def _write_file( self ):
 
         is_sh_file = self._destination_filename.endswith( self.SH_FILE_SUFFIX )
-        with open( self._destination_filename, 'w' ) as fh:
-            for name, value in self._settings_map.items():
-                value = str(value)  # ensure string
-                if is_sh_file:
-                    escaped_value = value.replace("\\", "\\\\")  # Escape backslashes FIRST
-                    escaped_value = escaped_value.replace("\"", "\\\"")
-                    escaped_value = escaped_value.replace("$", "\\$")
-                    escaped_value = escaped_value.replace("`", "\\`")
-                    fh.write( f'export {name}="{escaped_value}"\n' )
-                else:
-                    fh.write( f'{name}={value}\n' )
-                continue
-        self.print_success( f'File created: {self._destination_filename}' )
+        
+        # Use atomic write with temporary file for safety
+        temp_dir = os.path.dirname(self._destination_filename)
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', dir=temp_dir, delete=False, 
+                                           prefix='.env_temp_', suffix='.tmp') as temp_fh:
+                temp_filename = temp_fh.name
+                for name, value in self._settings_map.items():
+                    value = str(value)  # ensure string
+                    if is_sh_file:
+                        escaped_value = shlex.quote(value)
+                        temp_fh.write( f'export {name}={escaped_value}\n' )
+                    else:
+                        temp_fh.write( f'{name}={value}\n' )
+                    continue
+            
+            # Set secure file permissions before moving
+            os.chmod( temp_filename, stat.S_IRUSR | stat.S_IWUSR )
+            
+            # Atomically move temp file to final destination
+            shutil.move( temp_filename, self._destination_filename )
+            self.print_success( f'File created: {self._destination_filename}' )
+            
+        except (OSError, IOError) as e:
+            self.print_warning( f'Error writing environment file: {e}' )
+            # Clean up temp file if it exists
+            if 'temp_filename' in locals() and os.path.exists(temp_filename):
+                try:
+                    os.unlink(temp_filename)
+                except OSError:
+                    pass
+            raise
 
         if self._verbose:
             self.print_debug( 'Files contents:' )
             print( '----------')
             with open( self._destination_filename, 'r' ) as fh:
-                print( fh.read(), end = '' )
+                content = fh.read()
+                # Mask sensitive values in verbose output
+                import re
+                sensitive_patterns = [
+                    (r'(DJANGO_SECRET_KEY=)([^\n]+)', r'\1[MASKED]'),
+                    (r'(DJANGO_SUPERUSER_PASSWORD=)([^\n]+)', r'\1[MASKED]'),
+                    (r'(HI_EMAIL_HOST_PASSWORD=)([^\n]+)', r'\1[MASKED]'),
+                ]
+                for pattern, replacement in sensitive_patterns:
+                    content = re.sub(pattern, replacement, content)
+                print( content, end = '' )
             print('----------')    
         return
     
