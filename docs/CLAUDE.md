@@ -252,6 +252,29 @@ git status
 
 This process ensures you're ready for the next issue while preventing accidental data loss.
 
+## Creating GitHub Issues
+
+When creating new GitHub issues, use the appropriate issue template:
+
+### Available Issue Templates
+- **Bug Report** (`[Bug]`): For reporting bugs or unexpected behavior
+- **Feature Request** (`[Feature]`): For proposing new features or enhancements  
+- **Refactor Request** (`[Refactor]`): For improving code quality without changing behavior
+- **Ops/Deployment Issue** (`[Ops]`): For infrastructure, CI/CD, or deployment issues
+- **Documentation** (`[Docs]`): For documentation improvements
+- **Tests** (`[Tests]`): For test-related improvements
+
+### Creating Issues via GitHub CLI
+When using `gh issue create`, specify the template with the `--template` flag:
+```bash
+# Examples:
+gh issue create --template bug_report.md --title "[Bug] Description"
+gh issue create --template refactor.md --title "[Refactor] Description"
+gh issue create --template operations.md --title "[Ops] Description"
+```
+
+**Note**: The repository has `blank_issues_enabled: false`, so you must use a template.
+
 ### Work Documentation for Non-Trivial Issues
 
 When working on complex issues that involve significant planning or multi-step implementation:
