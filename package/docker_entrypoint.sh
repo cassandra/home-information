@@ -13,5 +13,8 @@ echo "Creating superuser and groups..."
 python manage.py hi_createsuperuser
 python manage.py hi_creategroups
 
+echo "Syncing settings..."
+python manage.py sync_settings
+
 echo "Starting supervisord..."
 exec "$@"
