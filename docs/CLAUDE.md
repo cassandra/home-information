@@ -32,6 +32,15 @@ When working on GitHub issues, follow this development workflow:
      - The proposed changes have significant architectural implications
    - Otherwise, proceed directly to implementation
 
+3.5. **For Complex Issues - Apply Multi-Phase Strategy** (when applicable):
+   - If issue involves multiple aspects, significant trade-offs, or substantial complexity, apply the multi-phase methodology from [Guidelines.md](dev/Guidelines.md#complex-issue-implementation-strategy)
+   - Post phase breakdown to GitHub issue before starting implementation
+   - Complete Phase 1 fully, commit and push (but don't create PR yet)
+   - Update TodoWrite tool with phase completion status
+   - Stop and report Phase 1 completion with summary
+   - Wait for human feedback before proceeding to subsequent phases
+   - Only create PR when all phases complete or explicitly requested
+
 4. **Development environment check** - The virtual environment and necessary environment variables should be set before starting claude. If there is no virtual environment, this is an indication that the environment has not been properly set up. That means the unit test cannot run and code changes cannot be validated.  We shoudl stop the process and fix it.  There is no need to check ever time since this shoudl be rare, but if running tests is failing, that is a good thing to look for.
 
 5. **Create a dev branch off the staging branch** - Use proper naming convention:

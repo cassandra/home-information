@@ -151,6 +151,49 @@ def simple_function():
 
 See [Testing Guidelines](Testing.md) for comprehensive testing patterns, conventions, and best practices.
 
+## Complex Issue Implementation Strategy
+
+When tackling issues that involve multiple aspects, trade-offs, or significant complexity, use this proven multi-phase approach:
+
+### Core Methodology
+
+1. **Analyze and Break Down**: Identify distinct phases or approaches
+   - Phase 1: Simple, reliable solution that fully addresses the core issue
+   - Phase 2+: Advanced optimizations, UX improvements, or edge cases
+
+2. **Implement Incrementally**: Complete phases sequentially
+   - Complete Phase 1 first - ensure the bug/issue is FULLY RESOLVED
+   - Commit and push Phase 1 (but do not create PR yet)
+   - Validate approach before proceeding to optimizations
+   - Wait for feedback before proceeding to Phase 2
+
+3. **Communication and Review**: Natural checkpoints for feedback
+   - Post investigation findings and phase breakdown to GitHub issue
+   - After each phase, update issue with implementation details
+   - Only create PR when all phases are complete or explicitly requested
+   - Enable course correction if needed
+
+4. **Benefits of This Approach**:
+   - Allows for early validation of approach
+   - Enables course correction if needed
+   - Provides natural checkpoints for review
+   - Ensures core functionality before optimizations
+   - Independent value delivery per phase
+
+### Key Principles
+
+1. **Always solve the core issue first** - Phase 1 must fully resolve the bug
+2. **Incremental value delivery** - Each phase should be independently valuable
+3. **Natural stopping points** - Complete phases are good moments for review
+4. **No PR until complete** - Unless explicitly asked, wait until all phases done
+
+### Case Study: Issue #30 - EntityType Icon Updates
+
+- **Phase 1**: Simple page refresh on EntityType change (reliable, addresses core issue)
+- **Phase 2**: Smart transitions with database management (UX optimization)
+
+This strategy proved highly effective by providing early validation of the approach, allowing for feedback before complex optimizations, ensuring the core bug was fixed before adding enhancements, and creating natural checkpoints for code review.
+
 ## Commit Messages
 
 See [Workflow Guidelines](Workflow.md) for commit message standards and branching conventions.
