@@ -8,6 +8,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 from hi.apps.common.singleton import Singleton
+from hi.apps.common.path_geometry import PathGeometry
 from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.location.models import Location, LocationView
 
@@ -236,31 +237,12 @@ class EntityManager(Singleton):
         except EntityPath.DoesNotExist:
             pass
 
-        # Create default path geometry in middle of current view
-        radius_percent = 5.0  # Match SvgItemFactory.NEW_PATH_RADIUS_PERCENT
-        center_x = location_view.svg_view_box.x + (location_view.svg_view_box.width / 2.0)
-        center_y = location_view.svg_view_box.y + (location_view.svg_view_box.height / 2.0)
-        radius_x = location_view.svg_view_box.width * (radius_percent / 50.0)
-        radius_y = location_view.svg_view_box.height * (radius_percent / 50.0)
-
-        if is_path_closed:
-            # Rectangle for closed paths
-            top_left_x = center_x - radius_x
-            top_left_y = center_y - radius_y
-            top_right_x = center_x + radius_x
-            top_right_y = center_y - radius_y
-            bottom_right_x = center_x + radius_x
-            bottom_right_y = center_y + radius_y
-            bottom_left_x = center_x - radius_x
-            bottom_left_y = center_y + radius_y
-            svg_path = f'M {top_left_x},{top_left_y} L {top_right_x},{top_right_y} L {bottom_right_x},{bottom_right_y} L {bottom_left_x},{bottom_left_y} Z'
-        else:
-            # Line for open paths
-            start_x = center_x - radius_x
-            start_y = center_y
-            end_x = start_x + radius_x
-            end_y = start_y
-            svg_path = f'M {start_x},{start_y} L {end_x},{end_y}'        
+        # Create default path geometry using utility function
+        svg_path = PathGeometry.create_default_path_string(
+            location_view=location_view,
+            is_path_closed=is_path_closed,
+            entity_type=entity.entity_type,
+        )        
         entity_path = EntityPath.objects.create(
             entity = entity,
             location = location_view.location,
@@ -358,35 +340,15 @@ class EntityManager(Singleton):
         center_x = float(entity_position.svg_x)
         center_y = float(entity_position.svg_y)
         
-        # Create a reasonably sized path centered at the icon position
-        # Use larger radius for better UX - control points need to be visible
-        radius_percent = 5.0  # Match SvgItemFactory.NEW_PATH_RADIUS_PERCENT
-        radius = radius_percent / 100.0 * 2  # Double the original size
-        
-        if is_path_closed:
-            # Create reasonably sized rectangle centered at icon position
-            radius_x = location_view.svg_view_box.width * radius / 2
-            radius_y = location_view.svg_view_box.height * radius / 2
-            
-            top_left_x = center_x - radius_x
-            top_left_y = center_y - radius_y
-            top_right_x = center_x + radius_x
-            top_right_y = center_y - radius_y
-            bottom_right_x = center_x + radius_x
-            bottom_right_y = center_y + radius_y
-            bottom_left_x = center_x - radius_x
-            bottom_left_y = center_y + radius_y
-            
-            svg_path = f'M {top_left_x},{top_left_y} L {top_right_x},{top_right_y} L {bottom_right_x},{bottom_right_y} L {bottom_left_x},{bottom_left_y} Z'
-        else:
-            # Create reasonably sized line centered at icon position
-            radius_x = location_view.svg_view_box.width * radius / 2
-            start_x = center_x - radius_x
-            start_y = center_y
-            end_x = center_x + radius_x
-            end_y = center_y
-            
-            svg_path = f'M {start_x},{start_y} L {end_x},{end_y}'
+        # Create path centered at icon position with larger size for better UX
+        svg_path = PathGeometry.create_default_path_string(
+            location_view=location_view,
+            is_path_closed=is_path_closed,
+            center_x=center_x,
+            center_y=center_y,
+            entity_type=entity.entity_type,
+            radius_multiplier=2.0,  # Double size for better control point visibility
+        )
         
         # Preserve EntityPosition and create/update EntityPath
         # This allows easy reversion when users change their mind

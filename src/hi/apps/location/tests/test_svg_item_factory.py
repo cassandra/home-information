@@ -139,8 +139,8 @@ class TestSvgItemFactory(BaseTestCase):
         self.assertEqual(path_item.fill_color, '#00ff00')
         return
 
-    def test_get_default_svg_path_str_closed_path(self):
-        """Test default closed path generation - complex geometric calculations."""
+    def test_get_default_entity_svg_path_str_closed_path(self):
+        """Test SvgItemFactory integration with PathGeometry for entity paths."""
         factory = SvgItemFactory()
         
         location = Location.objects.create(
@@ -158,25 +158,34 @@ class TestSvgItemFactory(BaseTestCase):
             svg_style_name_str='COLOR'
         )
         
-        # Generate closed path (rectangle)
-        svg_path = factory.get_default_svg_path_str(
+        # Create entity with path-based EntityType
+        from hi.apps.entity.models import Entity
+        from hi.apps.entity.enums import EntityType
+        entity = Entity.objects.create(
+            name='Test Door',
+            entity_type=EntityType.DOOR  # Closed path type with y=16 radius
+        )
+        
+        # Test SvgItemFactory correctly delegates to PathGeometry
+        svg_path = factory.get_default_entity_svg_path_str(
+            entity=entity,
             location_view=location_view,
             is_path_closed=True
         )
         
-        # Should be a rectangle path centered in viewbox
+        # Should be a rectangle path
         self.assertIn('M ', svg_path)  # Move to start
         self.assertIn(' L ', svg_path)  # Line commands
         self.assertIn(' Z', svg_path)   # Close path
         
-        # Should contain reasonable coordinates
-        # Path should be a rectangle with move and line commands
-        coordinates = svg_path.replace('M ', '').replace(' L ', ',').replace(' Z', '').split(',')
-        self.assertGreater(len(coordinates), 6)  # Should have multiple coordinate pairs
+        # Should use entity-specific radius (DOOR has y=16)
+        # This verifies SvgItemFactory passes entity_type to PathGeometry
+        self.assertIn('34.0', svg_path)  # Should have y=50-16=34
+        self.assertIn('66.0', svg_path)  # Should have y=50+16=66
         return
 
-    def test_get_default_svg_path_str_open_path(self):
-        """Test default open path generation - geometric calculations."""
+    def test_get_default_entity_svg_path_str_open_path(self):
+        """Test SvgItemFactory integration with PathGeometry for open paths."""
         factory = SvgItemFactory()
         
         location = Location.objects.create(
@@ -194,8 +203,17 @@ class TestSvgItemFactory(BaseTestCase):
             svg_style_name_str='COLOR'
         )
         
-        # Generate open path (line)
-        svg_path = factory.get_default_svg_path_str(
+        # Create entity with open path EntityType
+        from hi.apps.entity.models import Entity
+        from hi.apps.entity.enums import EntityType
+        entity = Entity.objects.create(
+            name='Test Wire',
+            entity_type=EntityType.ELECTRIC_WIRE  # Open path type, uses defaults
+        )
+        
+        # Test SvgItemFactory correctly delegates to PathGeometry
+        svg_path = factory.get_default_entity_svg_path_str(
+            entity=entity,
             location_view=location_view,
             is_path_closed=False
         )
@@ -205,18 +223,16 @@ class TestSvgItemFactory(BaseTestCase):
         self.assertIn(' L ', svg_path)   # Line command
         self.assertNotIn(' Z', svg_path)  # No close command
         
-        # Should contain reasonable coordinates
-        self.assertIn('50', svg_path)   # Should have center Y coordinate
+        # Should be centered horizontally at Y=50
+        self.assertIn('50.0', svg_path)   # Should have center Y coordinate
         return
 
-    def test_new_path_radius_percent_constant(self):
-        """Test NEW_PATH_RADIUS_PERCENT constant - important for UI consistency."""
+    def test_svg_item_factory_delegates_to_path_geometry(self):
+        """Test that SvgItemFactory properly delegates path generation to PathGeometry."""
+        # This test is already covered by the entity path generation tests above
+        # but we keep this as a placeholder to document the architectural relationship
         factory = SvgItemFactory()
-        
-        # Should have reasonable default radius percentage
-        self.assertEqual(factory.NEW_PATH_RADIUS_PERCENT, 5.0)
-        self.assertGreater(factory.NEW_PATH_RADIUS_PERCENT, 0)
-        self.assertLess(factory.NEW_PATH_RADIUS_PERCENT, 50)
+        self.assertTrue(hasattr(factory, 'get_default_entity_svg_path_str'))
         return
         
     def test_svg_item_factory_display_only_icon_generation(self):

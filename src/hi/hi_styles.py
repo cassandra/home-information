@@ -363,13 +363,6 @@ class EntityStyle:
         EntityType.WATER_LINE: WaterLine,
         EntityType.WINDOW: Window,
     }
-    EntityTypePathInitialRadius = {
-        EntityType.APPLIANCE: SvgRadius( x = 32, y = 32 ),
-        EntityType.DOOR: SvgRadius( x = None, y = 16 ),
-        EntityType.FURNITURE: SvgRadius( x = 64, y = 32 ),
-        EntityType.WALL: SvgRadius( x = 16, y = None ),
-        EntityType.WINDOW: SvgRadius( x = None, y = 16.0 ),
-    }
 
     @classmethod
     def get_svg_icon_viewbox( cls, entity_type : EntityType ) -> SvgViewBox:
@@ -389,11 +382,6 @@ class EntityStyle:
             return cls.PathEntityTypeToSvgStatusStyle.get( entity_type )
         return ItemStyle.get_default_svg_path_status_style()
 
-    @classmethod
-    def get_svg_path_initial_radius( cls, entity_type : EntityType ) -> SvgRadius:
-        if entity_type in cls.EntityTypePathInitialRadius:
-            return cls.EntityTypePathInitialRadius.get( entity_type )
-        return SvgRadius( x = None, y = None )
 
     
 class StatusStyle:
