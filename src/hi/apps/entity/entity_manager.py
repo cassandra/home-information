@@ -279,11 +279,8 @@ class EntityManager(Singleton):
         needs_position = entity_type.requires_position()
         needs_path = entity_type.requires_path()
         
-        # Determine the previous state based on what exists in the database
-        # This is needed to correctly classify transitions with preserved data
-        had_position_based_type = has_position and not has_path  # Only position exists
-        had_path_based_type = has_path and not has_position      # Only path exists
-        had_both = has_position and has_path                     # Both exist (from preservation)
+        # Check if entity has both representations (from preservation strategy)
+        had_both = has_position and has_path
         
         # For entities with both, we need to determine the transition type
         # based on the actual EntityType change, not just database state
@@ -293,11 +290,11 @@ class EntityManager(Singleton):
             if needs_position:
                 # Transitioning to position-based type, classify as path->icon
                 # since the entity had both but will now primarily use position
-                transition_type = "path_to_icon"
+                pass  # Will use path_to_icon transition
             else:
                 # Transitioning to path-based type, classify as icon->path  
                 # since the entity had both but will now primarily use path
-                transition_type = "icon_to_path"
+                pass  # Will use icon_to_path transition
                 
             # Execute the appropriate transition
             with transaction.atomic():

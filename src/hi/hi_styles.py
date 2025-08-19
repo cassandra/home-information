@@ -383,7 +383,6 @@ class EntityStyle:
         return ItemStyle.get_default_svg_path_status_style()
 
 
-    
 class StatusStyle:
 
     DEFAULT_STATUS_VALUE = ''

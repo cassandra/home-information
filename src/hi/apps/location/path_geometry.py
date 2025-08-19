@@ -1,7 +1,6 @@
-from decimal import Decimal
-from typing import Optional, Tuple
+from typing import Optional
 
-from hi.apps.common.svg_models import SvgRadius, SvgViewBox
+from hi.apps.common.svg_models import SvgRadius
 from hi.apps.entity.enums import EntityType
 from hi.apps.collection.enums import CollectionType
 from hi.apps.location.models import LocationView
