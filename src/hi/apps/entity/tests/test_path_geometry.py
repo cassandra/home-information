@@ -3,7 +3,7 @@ from django.test import TestCase
 
 from hi.apps.entity.enums import EntityType
 from hi.apps.location.models import Location, LocationView
-from hi.apps.common.path_geometry import PathGeometry
+from hi.apps.entity.path_geometry import PathGeometry
 
 
 class TestPathGeometry(TestCase):

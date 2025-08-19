@@ -1,5 +1,5 @@
 from hi.apps.common.singleton import Singleton
-from hi.apps.common.path_geometry import PathGeometry
+from hi.apps.entity.path_geometry import PathGeometry
 from hi.apps.common.svg_models import SvgIconItem, SvgPathItem, SvgStatusStyle, SvgViewBox
 from hi.apps.collection.models import Collection
 from hi.apps.entity.models import Entity
