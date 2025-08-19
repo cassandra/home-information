@@ -1,16 +1,16 @@
 from decimal import Decimal
 import logging
 from threading import local
-from typing import List, Sequence
+from typing import List, Sequence, Tuple
 
 from django.db import transaction
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 from hi.apps.common.singleton import Singleton
+from hi.apps.location.path_geometry import PathGeometry
 from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.location.models import Location, LocationView
-from hi.apps.location.svg_item_factory import SvgItemFactory
 
 from .entity_pairing_manager import EntityPairingManager
 from .enums import (
@@ -117,12 +117,12 @@ class EntityManager(Singleton):
         with transaction.atomic():
 
             # Need to make sure it has some visible representation in the view if none exists.
-            svg_item_type = SvgItemFactory().get_svg_item_type( entity )
-            if svg_item_type.is_path:
+            entity_type = entity.entity_type
+            if entity_type.requires_path():
                 self.add_entity_path_if_needed(
                     entity = entity,
                     location_view = location_view,
-                    is_path_closed = svg_item_type.is_path_closed,
+                    is_path_closed = entity_type.requires_closed_path(),
                 )
             else:
                 self.add_entity_position_if_needed(
@@ -237,10 +237,11 @@ class EntityManager(Singleton):
         except EntityPath.DoesNotExist:
             pass
 
-        svg_path = SvgItemFactory().get_default_entity_svg_path_str(
-            entity = entity,
-            location_view = location_view,
-            is_path_closed = is_path_closed,
+        # Create default path geometry using utility function
+        svg_path = PathGeometry.create_default_path_string(
+            location_view=location_view,
+            is_path_closed=is_path_closed,
+            entity_type=entity.entity_type,
         )        
         entity_path = EntityPath.objects.create(
             entity = entity,
@@ -248,6 +249,213 @@ class EntityManager(Singleton):
             svg_path = svg_path,
         )
         return entity_path
+
+    def handle_entity_type_transition( self,
+                                       entity         : Entity,
+                                       location_view  : LocationView   = None ) -> Tuple[bool, str]:
+        """
+        Handle transitions between EntityType icon and path representations.
+        Returns (transition_occurred, transition_type)
+        """
+        if not location_view:
+            # If no location view provided, we can't handle position/path transitions
+            return False, "no_location_view"
+            
+        # Use EntityType structural methods instead of SvgItemFactory
+        entity_type = entity.entity_type
+        
+        # Check current state in database
+        entity_position = EntityPosition.objects.filter(
+            entity = entity,
+            location = location_view.location,
+        ).first()
+        entity_path = EntityPath.objects.filter(
+            entity = entity,
+            location = location_view.location,
+        ).first()
+        
+        has_position = bool(entity_position)
+        has_path = bool(entity_path)
+        needs_position = entity_type.requires_position()
+        needs_path = entity_type.requires_path()
+        
+        # Check if entity has both representations (from preservation strategy)
+        had_both = has_position and has_path
+        
+        # For entities with both, we need to determine the transition type
+        # based on the actual EntityType change, not just database state
+        if had_both:
+            # With preservation strategy, both representations exist
+            # Determine transition type based on what the NEW EntityType needs
+            if needs_position:
+                # Transitioning to position-based type, classify as path->icon
+                # since the entity had both but will now primarily use position
+                pass  # Will use path_to_icon transition
+            else:
+                # Transitioning to path-based type, classify as icon->path  
+                # since the entity had both but will now primarily use path
+                pass  # Will use icon_to_path transition
+                
+            # Execute the appropriate transition
+            with transaction.atomic():
+                if needs_position:
+                    return self._transition_path_to_icon(
+                        entity = entity,
+                        location_view = location_view,
+                        entity_path = entity_path,
+                    )
+                else:
+                    return self._transition_icon_to_path(
+                        entity = entity,
+                        location_view = location_view,
+                        entity_position = entity_position,
+                        is_path_closed = entity_type.requires_closed_path(),
+                    )
+        
+        with transaction.atomic():
+            # Handle cases where entity doesn't have both representations
+            if needs_position:
+                # Entity type needs position representation
+                if not has_position:
+                    # Need to create position (from path center if path exists)
+                    if has_path:
+                        return self._transition_path_to_icon(
+                            entity = entity,
+                            location_view = location_view,
+                            entity_path = entity_path,
+                        )
+                    else:
+                        # No existing representation, create new position
+                        self.add_entity_position_if_needed(
+                            entity = entity,
+                            location_view = location_view,
+                        )
+                        return True, "created_position"
+                else:
+                    # Position already exists, just a visual update
+                    return True, "icon_to_icon"
+                    
+            elif needs_path:
+                # Entity type needs path representation
+                if not has_path:
+                    # Need to create path (from position if position exists)
+                    if has_position:
+                        return self._transition_icon_to_path(
+                            entity = entity,
+                            location_view = location_view,
+                            entity_position = entity_position,
+                            is_path_closed = entity_type.requires_closed_path(),
+                        )
+                    else:
+                        # No existing representation, create new path
+                        self.add_entity_path_if_needed(
+                            entity = entity,
+                            location_view = location_view,
+                            is_path_closed = entity_type.requires_closed_path(),
+                        )
+                        return True, "created_path"
+                else:
+                    # Path already exists, just a visual update
+                    return True, "path_to_path"
+        
+        return False, "no_transition_needed"
+
+    def _transition_icon_to_path( self,
+                                  entity          : Entity,
+                                  location_view   : LocationView,
+                                  entity_position : EntityPosition,
+                                  is_path_closed  : bool          ) -> Tuple[bool, str]:
+        """Create or update EntityPath based on EntityPosition location, preserving both"""
+        
+        # Get center point of the icon for path placement
+        center_x = float(entity_position.svg_x)
+        center_y = float(entity_position.svg_y)
+        
+        # Create path centered at icon position with larger size for better UX
+        svg_path = PathGeometry.create_default_path_string(
+            location_view=location_view,
+            is_path_closed=is_path_closed,
+            center_x=center_x,
+            center_y=center_y,
+            entity_type=entity.entity_type,
+            radius_multiplier=2.0,  # Double size for better control point visibility
+        )
+        
+        # Preserve EntityPosition and create/update EntityPath
+        # This allows easy reversion when users change their mind
+        entity_path, created = EntityPath.objects.get_or_create(
+            entity = entity,
+            location = location_view.location,
+            defaults = {'svg_path': svg_path}
+        )
+        
+        if not created:
+            # EntityPath already exists - preserve existing geometry
+            pass  # Keep existing path geometry
+        
+        return True, "icon_to_path"
+
+    def _transition_path_to_icon( self,
+                                  entity        : Entity,
+                                  location_view : LocationView,
+                                  entity_path   : EntityPath    ) -> Tuple[bool, str]:
+        """Create or update EntityPosition based on EntityPath center, preserving both"""
+        
+        # Calculate geometric center of the path
+        center_x, center_y = self._calculate_path_center(entity_path.svg_path)
+        
+        # If calculation fails, use location view center
+        if center_x is None or center_y is None:
+            center_x = location_view.svg_view_box.x + (location_view.svg_view_box.width / 2.0)
+            center_y = location_view.svg_view_box.y + (location_view.svg_view_box.height / 2.0)
+        
+        # Preserve EntityPath and create/update EntityPosition
+        # This allows easy reversion when users change their mind
+        entity_position, created = EntityPosition.objects.get_or_create(
+            entity = entity,
+            location = location_view.location,
+            defaults = {
+                'svg_x': Decimal(center_x),
+                'svg_y': Decimal(center_y),
+                'svg_scale': Decimal(1.0),
+                'svg_rotate': Decimal(0.0),
+            }
+        )
+        
+        if not created:
+            # EntityPosition already exists - preserve existing position
+            pass  # Keep existing position
+        
+        return True, "path_to_icon"
+
+    def _calculate_path_center( self, svg_path : str ) -> Tuple[float, float]:
+        """Calculate the geometric center of an SVG path"""
+        try:
+            # Simple path center calculation - find all coordinate pairs and average them
+            import re
+            
+            # Extract all numbers from the path (x,y coordinates)
+            numbers = re.findall(r'[-+]?(?:\d*\.\d+|\d+)', svg_path)
+            if len(numbers) < 4:  # Need at least 2 points (4 numbers)
+                return None, None
+                
+            coords = [float(n) for n in numbers]
+            
+            # Group into x,y pairs
+            x_coords = [coords[i] for i in range(0, len(coords), 2)]
+            y_coords = [coords[i] for i in range(1, len(coords), 2)]
+            
+            if not x_coords or not y_coords:
+                return None, None
+                
+            # Return the average of all points
+            center_x = sum(x_coords) / len(x_coords)
+            center_y = sum(y_coords) / len(y_coords)
+            
+            return center_x, center_y
+            
+        except (ValueError, IndexError, ZeroDivisionError):
+            return None, None
 
     def create_location_entity_view_group_list( self, location_view : LocationView ) -> List[EntityViewGroup]:
         existing_entities = [ x.entity

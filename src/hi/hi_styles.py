@@ -345,26 +345,6 @@ class EntityStyle:
         EntityType.WATER_HEATER: SvgViewBox( x = 0, y = 0, width = 38, height = 64 ),
         EntityType.WATER_METER: SvgViewBox( x = 0, y = 0, width = 64, height = 43 ),
     }
-    EntityTypeClosedPaths = {
-        EntityType.APPLIANCE,
-        EntityType.AREA,
-        EntityType.DOOR,
-        EntityType.FURNITURE,
-        EntityType.GREENHOUSE,
-        EntityType.WALL,
-        EntityType.WINDOW,
-    }
-    EntityTypeOpenPaths = {
-        EntityType.CONTROL_WIRE,
-        EntityType.ELECTRIC_WIRE,
-        EntityType.FENCE,
-        EntityType.PIPE,
-        EntityType.SEWER_LINE,
-        EntityType.SPEAKER_WIRE,
-        EntityType.SPRINKLER_WIRE,
-        EntityType.TELECOM_WIRE,
-        EntityType.WATER_LINE,
-    }
     PathEntityTypeToSvgStatusStyle = {
         EntityType.APPLIANCE: Appliance,
         EntityType.AREA: Area,
@@ -382,13 +362,6 @@ class EntityStyle:
         EntityType.WALL: Wall,
         EntityType.WATER_LINE: WaterLine,
         EntityType.WINDOW: Window,
-    }
-    EntityTypePathInitialRadius = {
-        EntityType.APPLIANCE: SvgRadius( x = 32, y = 32 ),
-        EntityType.DOOR: SvgRadius( x = None, y = 16 ),
-        EntityType.FURNITURE: SvgRadius( x = 64, y = 32 ),
-        EntityType.WALL: SvgRadius( x = 16, y = None ),
-        EntityType.WINDOW: SvgRadius( x = None, y = 16.0 ),
     }
 
     @classmethod
@@ -409,13 +382,7 @@ class EntityStyle:
             return cls.PathEntityTypeToSvgStatusStyle.get( entity_type )
         return ItemStyle.get_default_svg_path_status_style()
 
-    @classmethod
-    def get_svg_path_initial_radius( cls, entity_type : EntityType ) -> SvgRadius:
-        if entity_type in cls.EntityTypePathInitialRadius:
-            return cls.EntityTypePathInitialRadius.get( entity_type )
-        return SvgRadius( x = None, y = None )
 
-    
 class StatusStyle:
 
     DEFAULT_STATUS_VALUE = ''

@@ -3,6 +3,7 @@ import logging
 from django.db import transaction
 from django.views.generic import View
 
+import hi.apps.common.antinode as antinode
 from hi.apps.control.controller_history_manager import ControllerHistoryManager
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
@@ -32,6 +33,9 @@ class EntityEditView( View, EntityViewMixin ):
     def post( self, request, *args, **kwargs ):
         entity = self.get_entity( request, *args, **kwargs )
 
+        # Store original entity_type_str to detect changes
+        original_entity_type_str = entity.entity_type_str
+
         entity_form = forms.EntityForm( request.POST, instance = entity )
         entity_attribute_formset = forms.EntityAttributeFormSet(
             request.POST,
@@ -40,9 +44,21 @@ class EntityEditView( View, EntityViewMixin ):
             prefix = f'entity-{entity.id}',
         )
         if entity_form.is_valid() and entity_attribute_formset.is_valid():
+            # Track EntityType change and response needed after transaction
+            entity_type_changed = original_entity_type_str != entity.entity_type_str
+            transition_response = None
+            
             with transaction.atomic():
                 entity_form.save()   
                 entity_attribute_formset.save()
+                
+                # Handle transitions within same transaction but defer response
+                if entity_type_changed:
+                    transition_response = self._handle_entity_type_change(request, entity)
+                
+            # Now that transaction is committed, handle any transition response
+            if transition_response is not None:
+                return transition_response
                 
             # Recreate to preserve "max" to show new form
             entity_attribute_formset = forms.EntityAttributeFormSet(
@@ -63,6 +79,43 @@ class EntityEditView( View, EntityViewMixin ):
             entity_edit_data = entity_edit_data,
             status_code = status_code,
         )
+    
+    def _handle_entity_type_change(self, request, entity):
+        """Handle EntityType changes with appropriate transition logic"""
+        try:
+            # Always attempt advanced transition handling regardless of mode/view
+            current_location_view = LocationManager().get_default_location_view( request = request )
+            transition_occurred, transition_type = EntityManager().handle_entity_type_transition(
+                entity = entity,
+                location_view = current_location_view,
+            )
+            
+            if self._needs_full_page_refresh(transition_occurred, transition_type):
+                return antinode.refresh_response()
+            
+            # Simple transitions can continue with sidebar-only refresh
+            # (will fall through to normal entity_edit_response)
+            return None
+            
+        except Exception as e:
+            logger.warning(f'EntityType transition failed: {e}, falling back to page refresh')
+            return antinode.refresh_response()
+    
+    def _needs_full_page_refresh(self, transition_occurred, transition_type):
+        """Determine if EntityType change requires full page refresh"""
+        if not transition_occurred:
+            # Transition failed, use page refresh for safety
+            return True
+            
+        if transition_type == "path_to_path":
+            # Path style changes only, sidebar refresh sufficient
+            return False
+            
+        # All other transitions need full refresh to show visual changes:
+        # - icon_to_icon: New icon type needs to be visible
+        # - icon_to_path: Database structure changed
+        # - path_to_icon: Database structure changed
+        return True
 
         
 class EntityAttributeUploadView( View, EntityViewMixin ):
