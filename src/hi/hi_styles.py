@@ -345,26 +345,6 @@ class EntityStyle:
         EntityType.WATER_HEATER: SvgViewBox( x = 0, y = 0, width = 38, height = 64 ),
         EntityType.WATER_METER: SvgViewBox( x = 0, y = 0, width = 64, height = 43 ),
     }
-    EntityTypeClosedPaths = {
-        EntityType.APPLIANCE,
-        EntityType.AREA,
-        EntityType.DOOR,
-        EntityType.FURNITURE,
-        EntityType.GREENHOUSE,
-        EntityType.WALL,
-        EntityType.WINDOW,
-    }
-    EntityTypeOpenPaths = {
-        EntityType.CONTROL_WIRE,
-        EntityType.ELECTRIC_WIRE,
-        EntityType.FENCE,
-        EntityType.PIPE,
-        EntityType.SEWER_LINE,
-        EntityType.SPEAKER_WIRE,
-        EntityType.SPRINKLER_WIRE,
-        EntityType.TELECOM_WIRE,
-        EntityType.WATER_LINE,
-    }
     PathEntityTypeToSvgStatusStyle = {
         EntityType.APPLIANCE: Appliance,
         EntityType.AREA: Area,

@@ -165,16 +165,21 @@ class LocationManager(Singleton):
         for entity_view in location_view.entity_views.select_related('entity').all():
             entity = entity_view.entity
             is_visible = False
-            entity_position = entity.positions.filter( location = location ).first()
-            if entity_position:
-                is_visible = True
-                entity_positions.append( entity_position )
-                displayed_entities.add( entity )
-            entity_path = entity.paths.filter( location = location ).first()
-            if entity_path:
-                is_visible = True
-                entity_paths.append( entity_path )
-                displayed_entities.add( entity )
+            
+            # Only collect position OR path based on EntityType, not both
+            if entity.entity_type.requires_position():
+                entity_position = entity.positions.filter( location = location ).first()
+                if entity_position:
+                    is_visible = True
+                    entity_positions.append( entity_position )
+                    displayed_entities.add( entity )
+            elif entity.entity_type.requires_path():
+                entity_path = entity.paths.filter( location = location ).first()
+                if entity_path:
+                    is_visible = True
+                    entity_paths.append( entity_path )
+                    displayed_entities.add( entity )
+            
             if not is_visible:
                 non_displayed_entities.add( entity )
             continue

@@ -100,6 +100,52 @@ class EntityType(LabeledEnum):
     @classmethod
     def default(cls):
         return cls.OTHER
+    
+    # Single source of truth for position vs path classification
+    @classmethod
+    def get_closed_path_types(cls) -> Set['EntityType']:
+        """EntityTypes that require closed paths (areas/regions)"""
+        return {
+            cls.APPLIANCE,
+            cls.AREA,
+            cls.DOOR,
+            cls.FURNITURE,
+            cls.GREENHOUSE,
+            cls.WALL,
+            cls.WINDOW,
+        }
+    
+    @classmethod  
+    def get_open_path_types(cls) -> Set['EntityType']:
+        """EntityTypes that require open paths (lines/routes)"""
+        return {
+            cls.CONTROL_WIRE,
+            cls.ELECTRIC_WIRE,
+            cls.FENCE,
+            cls.PIPE,
+            cls.SEWER_LINE,
+            cls.SPEAKER_WIRE,
+            cls.SPRINKLER_WIRE,
+            cls.TELECOM_WIRE,
+            cls.WATER_LINE,
+        }
+    
+    # Convenience methods for structural decisions
+    def requires_position(self) -> bool:
+        """True if EntityType should be represented as EntityPosition (icon) - DEFAULT"""
+        return not self.requires_path()
+    
+    def requires_path(self) -> bool:
+        """True if EntityType should be represented as EntityPath"""
+        return self in (self.get_closed_path_types() | self.get_open_path_types())
+    
+    def requires_closed_path(self) -> bool:
+        """True if EntityType requires a closed path"""
+        return self in self.get_closed_path_types()
+    
+    def requires_open_path(self) -> bool:
+        """True if EntityType requires an open path"""
+        return self in self.get_open_path_types()
                     
     
 class EntityStateType(LabeledEnum):

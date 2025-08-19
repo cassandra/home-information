@@ -10,7 +10,6 @@ from django.dispatch import receiver
 from hi.apps.common.singleton import Singleton
 from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.location.models import Location, LocationView
-from hi.apps.location.svg_item_factory import SvgItemFactory
 
 from .entity_pairing_manager import EntityPairingManager
 from .enums import (
@@ -117,12 +116,12 @@ class EntityManager(Singleton):
         with transaction.atomic():
 
             # Need to make sure it has some visible representation in the view if none exists.
-            svg_item_type = SvgItemFactory().get_svg_item_type( entity )
-            if svg_item_type.is_path:
+            entity_type = entity.entity_type
+            if entity_type.requires_path():
                 self.add_entity_path_if_needed(
                     entity = entity,
                     location_view = location_view,
-                    is_path_closed = svg_item_type.is_path_closed,
+                    is_path_closed = entity_type.requires_closed_path(),
                 )
             else:
                 self.add_entity_position_if_needed(
@@ -237,11 +236,31 @@ class EntityManager(Singleton):
         except EntityPath.DoesNotExist:
             pass
 
-        svg_path = SvgItemFactory().get_default_entity_svg_path_str(
-            entity = entity,
-            location_view = location_view,
-            is_path_closed = is_path_closed,
-        )        
+        # Create default path geometry in middle of current view
+        radius_percent = 5.0  # Match SvgItemFactory.NEW_PATH_RADIUS_PERCENT
+        center_x = location_view.svg_view_box.x + (location_view.svg_view_box.width / 2.0)
+        center_y = location_view.svg_view_box.y + (location_view.svg_view_box.height / 2.0)
+        radius_x = location_view.svg_view_box.width * (radius_percent / 50.0)
+        radius_y = location_view.svg_view_box.height * (radius_percent / 50.0)
+
+        if is_path_closed:
+            # Rectangle for closed paths
+            top_left_x = center_x - radius_x
+            top_left_y = center_y - radius_y
+            top_right_x = center_x + radius_x
+            top_right_y = center_y - radius_y
+            bottom_right_x = center_x + radius_x
+            bottom_right_y = center_y + radius_y
+            bottom_left_x = center_x - radius_x
+            bottom_left_y = center_y + radius_y
+            svg_path = f'M {top_left_x},{top_left_y} L {top_right_x},{top_right_y} L {bottom_right_x},{bottom_right_y} L {bottom_left_x},{bottom_left_y} Z'
+        else:
+            # Line for open paths
+            start_x = center_x - radius_x
+            start_y = center_y
+            end_x = start_x + radius_x
+            end_y = start_y
+            svg_path = f'M {start_x},{start_y} L {end_x},{end_y}'        
         entity_path = EntityPath.objects.create(
             entity = entity,
             location = location_view.location,
@@ -260,8 +279,8 @@ class EntityManager(Singleton):
             # If no location view provided, we can't handle position/path transitions
             return False, "no_location_view"
             
-        svg_item_factory = SvgItemFactory()
-        new_svg_item_type = svg_item_factory.get_svg_item_type( entity )
+        # Use EntityType structural methods instead of SvgItemFactory
+        entity_type = entity.entity_type
         
         # Check current state in database
         entity_position = EntityPosition.objects.filter(
@@ -275,15 +294,15 @@ class EntityManager(Singleton):
         
         has_position = bool(entity_position)
         has_path = bool(entity_path)
-        needs_icon = new_svg_item_type.is_icon
-        needs_path = new_svg_item_type.is_path
+        needs_position = entity_type.requires_position()
+        needs_path = entity_type.requires_path()
         
         with transaction.atomic():
             # Handle all cases including when both position and path exist
             # With preservation strategy, both can coexist
             
-            if needs_icon:
-                # Entity type needs icon representation
+            if needs_position:
+                # Entity type needs position representation
                 if not has_position:
                     # Need to create position (from path center if path exists)
                     if has_path:
@@ -312,14 +331,14 @@ class EntityManager(Singleton):
                             entity = entity,
                             location_view = location_view,
                             entity_position = entity_position,
-                            is_path_closed = new_svg_item_type.is_path_closed,
+                            is_path_closed = entity_type.requires_closed_path(),
                         )
                     else:
                         # No existing representation, create new path
                         self.add_entity_path_if_needed(
                             entity = entity,
                             location_view = location_view,
-                            is_path_closed = new_svg_item_type.is_path_closed,
+                            is_path_closed = entity_type.requires_closed_path(),
                         )
                         return True, "created_path"
                 else:
@@ -340,9 +359,9 @@ class EntityManager(Singleton):
         center_y = float(entity_position.svg_y)
         
         # Create a reasonably sized path centered at the icon position
-        svg_item_factory = SvgItemFactory()
         # Use larger radius for better UX - control points need to be visible
-        radius = svg_item_factory.NEW_PATH_RADIUS_PERCENT / 100.0 * 2  # Double the original size
+        radius_percent = 5.0  # Match SvgItemFactory.NEW_PATH_RADIUS_PERCENT
+        radius = radius_percent / 100.0 * 2  # Double the original size
         
         if is_path_closed:
             # Create reasonably sized rectangle centered at icon position

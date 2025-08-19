@@ -95,10 +95,10 @@ class SvgItemFactory( Singleton ):
         if isinstance( obj, Entity ):
             entity_type = obj.entity_type
 
-            if entity_type in EntityStyle.EntityTypeOpenPaths:
+            if entity_type.requires_open_path():
                 return SvgItemType.OPEN_PATH
 
-            if entity_type in EntityStyle.EntityTypeClosedPaths:
+            if entity_type.requires_closed_path():
                 return SvgItemType.CLOSED_PATH
                 
             return SvgItemType.ICON
