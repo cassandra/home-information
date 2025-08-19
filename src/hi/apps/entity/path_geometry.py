@@ -3,6 +3,7 @@ from typing import Optional, Tuple
 
 from hi.apps.common.svg_models import SvgRadius, SvgViewBox
 from hi.apps.entity.enums import EntityType
+from hi.apps.location.models import LocationView
 
 
 class PathGeometry:
@@ -33,7 +34,7 @@ class PathGeometry:
     
     @classmethod
     def create_default_path_string(cls,
-                                   location_view: 'LocationView',
+                                   location_view: LocationView,
                                    is_path_closed: bool,
                                    center_x: Optional[float] = None,
                                    center_y: Optional[float] = None,
