@@ -378,6 +378,25 @@ gh auth login
 3. Auth w/GitHub Credentials
 4. Paste token from 1Password
 
+####  Prepare for Use
+
+Create helper script.  Environment must be initialized before starting claude!
+```
+cat > ~/start.sh << 'EOF'
+#!/bin/bash
+cd proj/hi
+. init-env-dev.sh
+claude
+EOF
+
+chmod 755 ~/start.sh
+```
+
+Usage
+```
+su - aipagent
+./start.sh
+```
 
 ## Option to Avoid: GitHub App Setup (Aborted)
 
