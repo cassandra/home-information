@@ -168,9 +168,9 @@ class TestEntityTypeTransitions(TransactionTestCase):
             location_view = self.location_view,
         )
         
-        # Should just be a visual update since position already exists
+        # Should be path to icon since both representations now exist 
         self.assertTrue(transition_occurred)
-        self.assertEqual(transition_type, "icon_to_icon")
+        self.assertEqual(transition_type, "path_to_icon")
         
         # Verify original position is preserved
         entity_position = EntityPosition.objects.get(
@@ -204,9 +204,9 @@ class TestEntityTypeTransitions(TransactionTestCase):
             location_view = self.location_view,
         )
         
-        # Should recognize position already exists
+        # Should recognize transition from preserved path to icon
         self.assertTrue(transition_occurred)
-        self.assertEqual(transition_type, "icon_to_icon")
+        self.assertEqual(transition_type, "path_to_icon")
         
         # Transition to path type  
         self.entity.entity_type_str = str(EntityType.WALL)
@@ -216,9 +216,9 @@ class TestEntityTypeTransitions(TransactionTestCase):
             location_view = self.location_view,
         )
         
-        # Should recognize path already exists
+        # Should recognize transition to path when both exist (icon_to_path)
         self.assertTrue(transition_occurred)
-        self.assertEqual(transition_type, "path_to_path")
+        self.assertEqual(transition_type, "icon_to_path")
         
         # Both should still exist
         self.assertEqual(EntityPosition.objects.filter(entity=self.entity).count(), 1)

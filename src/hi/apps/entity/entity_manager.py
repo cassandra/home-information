@@ -279,10 +279,44 @@ class EntityManager(Singleton):
         needs_position = entity_type.requires_position()
         needs_path = entity_type.requires_path()
         
+        # Determine the previous state based on what exists in the database
+        # This is needed to correctly classify transitions with preserved data
+        had_position_based_type = has_position and not has_path  # Only position exists
+        had_path_based_type = has_path and not has_position      # Only path exists
+        had_both = has_position and has_path                     # Both exist (from preservation)
+        
+        # For entities with both, we need to determine the transition type
+        # based on the actual EntityType change, not just database state
+        if had_both:
+            # With preservation strategy, both representations exist
+            # Determine transition type based on what the NEW EntityType needs
+            if needs_position:
+                # Transitioning to position-based type, classify as path->icon
+                # since the entity had both but will now primarily use position
+                transition_type = "path_to_icon"
+            else:
+                # Transitioning to path-based type, classify as icon->path  
+                # since the entity had both but will now primarily use path
+                transition_type = "icon_to_path"
+                
+            # Execute the appropriate transition
+            with transaction.atomic():
+                if needs_position:
+                    return self._transition_path_to_icon(
+                        entity = entity,
+                        location_view = location_view,
+                        entity_path = entity_path,
+                    )
+                else:
+                    return self._transition_icon_to_path(
+                        entity = entity,
+                        location_view = location_view,
+                        entity_position = entity_position,
+                        is_path_closed = entity_type.requires_closed_path(),
+                    )
+        
         with transaction.atomic():
-            # Handle all cases including when both position and path exist
-            # With preservation strategy, both can coexist
-            
+            # Handle cases where entity doesn't have both representations
             if needs_position:
                 # Entity type needs position representation
                 if not has_position:
