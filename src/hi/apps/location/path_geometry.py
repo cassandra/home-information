@@ -3,6 +3,7 @@ from typing import Optional, Tuple
 
 from hi.apps.common.svg_models import SvgRadius, SvgViewBox
 from hi.apps.entity.enums import EntityType
+from hi.apps.collection.enums import CollectionType
 from hi.apps.location.models import LocationView
 
 
@@ -33,12 +34,27 @@ class PathGeometry:
         return entity_radius_configs.get(entity_type, SvgRadius(x=None, y=None))
     
     @classmethod
+    def get_collection_radius(cls, collection_type: CollectionType) -> SvgRadius:
+        """Get collection-specific radius configuration for path generation.
+        
+        This preserves the existing collection-specific sizing configurations
+        from hi_styles.py CollectionTypePathInitialRadius for future extensibility.
+        """
+        collection_radius_configs = {
+            # Currently empty but preserved for future collection types
+            # Example: CollectionType.SOME_TYPE: SvgRadius(x=40, y=20),
+        }
+        
+        return collection_radius_configs.get(collection_type, SvgRadius(x=None, y=None))
+    
+    @classmethod
     def create_default_path_string(cls,
                                    location_view: LocationView,
                                    is_path_closed: bool,
                                    center_x: Optional[float] = None,
                                    center_y: Optional[float] = None,
                                    entity_type: Optional[EntityType] = None,
+                                   collection_type: Optional[CollectionType] = None,
                                    radius_multiplier: float = 1.0) -> str:
         """Create a default SVG path string with configurable positioning and sizing.
         
@@ -48,6 +64,7 @@ class PathGeometry:
             center_x: X position for path center (defaults to view center)
             center_y: Y position for path center (defaults to view center)  
             entity_type: EntityType for entity-specific radius (optional)
+            collection_type: CollectionType for collection-specific radius (optional)
             radius_multiplier: Multiplier for radius size (e.g., 2.0 for double size)
             
         Returns:
@@ -59,14 +76,18 @@ class PathGeometry:
         if center_y is None:
             center_y = location_view.svg_view_box.y + (location_view.svg_view_box.height / 2.0)
         
-        # Get entity-specific radius if provided, otherwise use default calculation
+        # Get type-specific radius if provided, otherwise use default calculation
+        radius_x = None
+        radius_y = None
+        
         if entity_type:
             entity_radius = cls.get_entity_radius(entity_type)
             radius_x = entity_radius.x
             radius_y = entity_radius.y
-        else:
-            radius_x = None
-            radius_y = None
+        elif collection_type:
+            collection_radius = cls.get_collection_radius(collection_type)
+            radius_x = collection_radius.x
+            radius_y = collection_radius.y
         
         # Apply default calculation for None values
         if radius_x is None:

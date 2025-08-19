@@ -8,7 +8,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 from hi.apps.common.singleton import Singleton
-from hi.apps.entity.path_geometry import PathGeometry
+from hi.apps.location.path_geometry import PathGeometry
 from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.location.models import Location, LocationView
 

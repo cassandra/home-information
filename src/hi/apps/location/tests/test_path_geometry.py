@@ -2,8 +2,9 @@ from decimal import Decimal
 from django.test import TestCase
 
 from hi.apps.entity.enums import EntityType
+from hi.apps.collection.enums import CollectionType
 from hi.apps.location.models import Location, LocationView
-from hi.apps.entity.path_geometry import PathGeometry
+from hi.apps.location.path_geometry import PathGeometry
 
 
 class TestPathGeometry(TestCase):
@@ -193,3 +194,52 @@ class TestPathGeometry(TestCase):
         self.assertEqual(PathGeometry.DEFAULT_RADIUS_PERCENT, 5.0)
         self.assertGreater(PathGeometry.DEFAULT_RADIUS_PERCENT, 0)
         self.assertLess(PathGeometry.DEFAULT_RADIUS_PERCENT, 50)
+
+    def test_get_collection_radius_default(self):
+        """Test collection radius for types without specific configurations."""
+        # Test default behavior for collection types
+        appliances_radius = PathGeometry.get_collection_radius(CollectionType.APPLIANCES)
+        self.assertIsNone(appliances_radius.x)
+        self.assertIsNone(appliances_radius.y)
+        
+        devices_radius = PathGeometry.get_collection_radius(CollectionType.DEVICES)
+        self.assertIsNone(devices_radius.x)
+        self.assertIsNone(devices_radius.y)
+
+    def test_create_default_path_with_collection_type(self):
+        """Test path creation with collection type uses default behavior."""
+        svg_path = PathGeometry.create_default_path_string(
+            location_view=self.location_view,
+            is_path_closed=True,
+            collection_type=CollectionType.APPLIANCES
+        )
+        
+        # Should be a rectangle path with default sizing
+        self.assertIn('M ', svg_path)  # Move command
+        self.assertIn(' L ', svg_path)  # Line commands  
+        self.assertTrue(svg_path.endswith(' Z'))  # Close command
+        
+        # Should use default radius since CollectionTypePathInitialRadius is empty
+        # Default radius: width=200*5%/50*100 = 20, height=100*5%/50*100 = 10
+        expected_coords = [
+            '80.0,40.0',   # top-left (100-20, 50-10)
+            '120.0,40.0',  # top-right (100+20, 50-10)
+            '120.0,60.0',  # bottom-right (100+20, 50+10)
+            '80.0,60.0'    # bottom-left (100-20, 50+10)
+        ]
+        
+        for coord in expected_coords:
+            self.assertIn(coord, svg_path)
+
+    def test_entity_type_and_collection_type_mutual_exclusion(self):
+        """Test that entity_type takes precedence over collection_type if both provided."""
+        svg_path = PathGeometry.create_default_path_string(
+            location_view=self.location_view,
+            is_path_closed=True,
+            entity_type=EntityType.DOOR,  # Has y=16 radius
+            collection_type=CollectionType.APPLIANCES  # Should be ignored
+        )
+        
+        # Should use entity-specific radius (DOOR has y=16), not collection defaults
+        self.assertIn('34.0', svg_path)  # Should have y=50-16=34 (entity radius)
+        self.assertIn('66.0', svg_path)  # Should have y=50+16=66 (entity radius)

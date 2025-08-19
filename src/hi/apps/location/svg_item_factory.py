@@ -1,5 +1,5 @@
 from hi.apps.common.singleton import Singleton
-from hi.apps.entity.path_geometry import PathGeometry
+from hi.apps.location.path_geometry import PathGeometry
 from hi.apps.common.svg_models import SvgIconItem, SvgPathItem, SvgStatusStyle, SvgViewBox
 from hi.apps.collection.models import Collection
 from hi.apps.entity.models import Entity
@@ -125,40 +125,11 @@ class SvgItemFactory( Singleton ):
                                              collection      : Collection,
                                              location_view   : LocationView,
                                              is_path_closed  : bool           ) -> str:
-        # Collections don't have entity-specific radius configs, so we use the general approach
-        radius = CollectionStyle.get_svg_path_initial_radius( collection_type = collection.collection_type )
-        
-        # Use PathGeometry with manual radius if configured, otherwise defaults
-        if radius.x is not None or radius.y is not None:
-            # For collections with specific radius config, we need to calculate manually
-            # since PathGeometry doesn't handle collection-specific configurations yet
-            center_x = location_view.svg_view_box.x + (location_view.svg_view_box.width / 2.0)
-            center_y = location_view.svg_view_box.y + (location_view.svg_view_box.height / 2.0)
-            
-            radius_x = radius.x if radius.x is not None else location_view.svg_view_box.width * (PathGeometry.DEFAULT_RADIUS_PERCENT / 50.0)
-            radius_y = radius.y if radius.y is not None else location_view.svg_view_box.height * (PathGeometry.DEFAULT_RADIUS_PERCENT / 50.0)
-            
-            if is_path_closed:
-                top_left_x = center_x - radius_x
-                top_left_y = center_y - radius_y
-                top_right_x = center_x + radius_x
-                top_right_y = center_y - radius_y
-                bottom_right_x = center_x + radius_x
-                bottom_right_y = center_y + radius_y
-                bottom_left_x = center_x - radius_x
-                bottom_left_y = center_y + radius_y
-                return f'M {top_left_x},{top_left_y} L {top_right_x},{top_right_y} L {bottom_right_x},{bottom_right_y} L {bottom_left_x},{bottom_left_y} Z'
-            else:
-                start_x = center_x - radius_x
-                start_y = center_y
-                end_x = center_x + radius_x
-                end_y = center_y
-                return f'M {start_x},{start_y} L {end_x},{end_y}'
-        else:
-            # Use PathGeometry for default behavior
-            return PathGeometry.create_default_path_string(
-                location_view=location_view,
-                is_path_closed=is_path_closed,
-            )
+        # Use unified PathGeometry approach for collections
+        return PathGeometry.create_default_path_string(
+            location_view=location_view,
+            is_path_closed=is_path_closed,
+            collection_type=collection.collection_type,
+        )
 
     
