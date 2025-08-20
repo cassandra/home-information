@@ -648,3 +648,29 @@ g[hover] {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
 }
+
+/* Camera button status styling */
+.btn-camera[status="active"] {
+    color: var(--on-error-color) !important;
+    background-color: var(--error-color) !important;
+    border-color: var(--error-color) !important;
+    box-shadow: 0 0 5px var(--error-color);
+}
+
+.btn-camera[status="recent"] {
+    color: var(--on-warning-color) !important;
+    background-color: var(--warning-color) !important;
+    border-color: var(--warning-color) !important;
+    box-shadow: 0 0 3px var(--warning-color);
+}
+
+.btn-camera[status="past"] {
+    color: var(--black) !important;
+    background-color: var(--warning-color) !important;
+    border-color: var(--warning-color) !important;
+    opacity: 0.7;
+}
+
+.btn-camera[status="idle"] {
+    /* Default button styling - no changes needed */
+}
