@@ -16,6 +16,18 @@ A given Entity (SVG icon or SVG path) can alter its screen appearance based on t
 
 For some entity state types (and sensors), we not only want to display the current sensor value, but also visually represent the recent past values.  For example, when motion is detected in an area, we want to highlight that, but after the motion event is over, we will want to visually show that it was "active" in the recent past.  e.g., Active motion is shown as red, but over time decays to oranges then yellows when the motion is over.
 
+### Implementation Approach
+
+The decaying logic creates synthetic visual states ("recent" and "past") that are not actual EntityState values, but are derived from the history and timing of sensor readings. The system examines both current and previous sensor values along with their timestamps to determine the appropriate visual representation.
+
+**Key Concept**: The system uses configurable time thresholds to transition between visual states. For example, an entity that was recently active but is now idle will show as "recent" (orange) for a period, then transition to "past" (yellow), and finally to "idle" (green).
+
+**Supported State Types**: Currently implemented for movement sensors, presence sensors, and open/close sensors - entity types where showing recent activity history provides valuable context to users.
+
+**Color Progression**: The typical color flow is: Active (red) → Recent (orange) → Past (yellow) → Idle (green/gray). This creates an intuitive visual "cooling off" effect.
+
+**Architecture**: The logic is centralized in the status display system (`StatusDisplayData` and `StatusDisplayManager` classes) and integrates with the existing client-server polling mechanism for real-time updates.
+
 ## Multiple Sensors
 
 The visual representation provided is always for an Entity, but an entity can have multiple states and multiple sensors.  Trying to reason about and support visual distinctions across the cross-product of values for multiple sensors would be more complicated than anyone could understand as well and complicated to implement.  Thus, the design decision is that at most one entity state will determine the visual view of the SVG.
