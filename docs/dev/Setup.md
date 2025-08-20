@@ -2,6 +2,36 @@
 
 # Development Setup (one-time setup, external dev)
 
+## Quick Setup (Recommended)
+
+For a streamlined setup experience, we provide an automated setup script that handles most of the configuration for you.
+
+### Prerequisites
+1. Fork the repository on GitHub (see manual steps below for details)
+2. Clone your fork locally
+3. Ensure Python 3.11 is installed
+
+### Automated Setup
+After cloning your fork, run the setup script from the project root:
+```bash
+cd home-information
+./deploy/dev-setup.sh
+```
+
+This script will:
+- Configure git settings and remotes
+- Generate environment variables
+- Create and activate a Python virtual environment
+- Install all required packages
+- Initialize the database
+- Run validation tests
+
+The script is interactive and will prompt you for necessary information. It's safe to run multiple times if needed.
+
+## Manual Setup (Alternative)
+
+If you prefer to set up manually or need more control over the process, follow these detailed steps:
+
 ## Fork the Repository
 
 - Sign into your GitHub account (required).
