@@ -4,7 +4,8 @@
     {% for video_stream_entity in video_stream_entity_list %}
     <div class="w-50 pl-1 pb-1">
       <a href="{% url 'console_sensor_video_stream' sensor_id=video_stream_entity.sensor.id %}"
-	 class="btn btn-primary btn-control btn-camera {% if video_stream_entity.motion_detection_state %}{{ video_stream_entity.motion_detection_state.css_class }}{% endif %}">
+	 class="btn btn-primary btn-control btn-camera {% if video_stream_entity.motion_detection_state %}{{ video_stream_entity.motion_detection_state.css_class }}{% endif %}"
+	 {% if video_stream_entity.motion_detection_state %}status=""{% endif %}>
 	{{ video_stream_entity.name }}
       </a>
     </div>
