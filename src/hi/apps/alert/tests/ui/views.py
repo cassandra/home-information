@@ -86,7 +86,7 @@ class TestUiAlertDetailsView( AlertDetailsView, AlertMixin ):
                     image_url = image_url,
                 ),
             ],
-            security_level = SecurityLevel.NORMAL,
+            security_level = SecurityLevel.LOW,
             alarm_lifetime_secs = 300,
             timestamp = datetimeproxy.now(),
         )
@@ -118,7 +118,7 @@ class TestUiAlertDetailsView( AlertDetailsView, AlertMixin ):
                     image_url = image_url,
                 ),
             ],
-            security_level = SecurityLevel.NORMAL,
+            security_level = SecurityLevel.LOW,
             alarm_lifetime_secs = 600,
             timestamp = datetimeproxy.now() - timedelta(minutes=5),
         )
@@ -142,7 +142,7 @@ class TestUiAlertDetailsView( AlertDetailsView, AlertMixin ):
                         image_url = image_url if i == 2 else None,  # Only second alarm has image
                     ),
                 ],
-                security_level = SecurityLevel.NORMAL,
+                security_level = SecurityLevel.LOW,
                 alarm_lifetime_secs = 600,
                 timestamp = datetimeproxy.now() - timedelta(minutes=5 - i),
             )
@@ -175,7 +175,7 @@ class TestUiAlertDetailsView( AlertDetailsView, AlertMixin ):
                     image_url = image_url,
                 ),
             ],
-            security_level = SecurityLevel.NORMAL,
+            security_level = SecurityLevel.LOW,
             alarm_lifetime_secs = 180,
             timestamp = datetimeproxy.now(),
         )
