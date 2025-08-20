@@ -2,10 +2,8 @@ from django.core.exceptions import BadRequest
 from django.shortcuts import render
 from django.views.generic import View
 
-from hi.apps.alert.alert_mixins import AlertMixin
 from hi.apps.alert.enums import AlarmLevel
 from hi.apps.alert.tests.synthetic_data import AlertSyntheticData
-from hi.apps.alert.views import AlertDetailsView
 
 
 class TestUiAlertHomeView( View ):
@@ -16,10 +14,11 @@ class TestUiAlertHomeView( View ):
         return render(request, "alert/tests/ui/home.html", context )
 
     
-class TestUiAlertDetailsView( AlertDetailsView, AlertMixin ):
+class TestUiAlertDetailsView( View ):
     """
     View for testing alert details dialogs with various synthetic data scenarios.
     Uses the centralized AlertSyntheticData class for consistent test data generation.
+    Renders the template directly without modifying system state.
     """
 
     def get( self, request, *args, **kwargs ):
@@ -28,13 +27,30 @@ class TestUiAlertDetailsView( AlertDetailsView, AlertMixin ):
         # Create synthetic alert based on type using centralized synthetic data
         alert = self._create_synthetic_alert( alert_type )
         
-        # Store alert in alert manager for retrieval 
-        alert_manager = self.alert_manager()
-        alert_manager._alert_queue._alert_list.append(alert)
+        # Prepare visual content data for template (same logic as AlertDetailsView)
+        visual_content = self._get_first_visual_content( alert )
         
-        # Use parent class logic with synthetic alert
-        kwargs['alert_id'] = alert.id
-        return super().get( request, *args, **kwargs )
+        # Render template directly with synthetic data
+        context = {
+            'alert': alert,
+            'alert_visual_content': visual_content,
+        }
+        return render( request, 'alert/modals/alert_details.html', context )
+    
+    def _get_first_visual_content( self, alert ):
+        """
+        Find the first image/video content from any alarm in the alert.
+        Returns dict with image info or None if no visual content found.
+        """
+        for alarm in alert.alarm_list:
+            for source_details in alarm.source_details_list:
+                if source_details.image_url:
+                    return {
+                        'image_url': source_details.image_url,
+                        'alarm': alarm,
+                        'is_from_latest': alarm == alert.alarm_list[0] if alert.alarm_list else False,
+                    }
+        return None
 
     def _create_synthetic_alert( self, alert_type ):
         """Create different types of synthetic alerts for testing using AlertSyntheticData."""
