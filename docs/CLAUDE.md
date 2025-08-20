@@ -2,6 +2,46 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Quick Reference - Common Process Checkpoints
+
+**Before Starting Development:**
+- [ ] On staging branch with latest changes (`git status`, `git pull origin staging`)
+- [ ] Use TodoWrite tool to plan tasks (mandatory for complex work)
+- [ ] Create properly named feature branch
+
+**Before Any Commit:**
+- [ ] Use concise commit messages WITHOUT Claude attribution
+- [ ] Examples: "Fix UI testing framework system state issue" ✅
+- [ ] Avoid: "🤖 Generated with Claude Code" ❌
+
+**Before Creating Pull Request:**
+- [ ] `src/manage.py test` (must show "OK")
+- [ ] `flake8 --config=src/.flake8-ci src/hi/` (must show no output)
+- [ ] Both MUST pass before PR creation
+
+**Process Verification Pattern:**
+Before major actions, ask yourself:
+1. "Did I use TodoWrite to plan this work?"
+2. "Have I run all required tests?"
+3. "Is my commit message following guidelines?"
+4. "Am I on the correct branch with latest staging changes?"
+
+## Task Management (TodoWrite Tool)
+
+**MANDATORY for complex tasks**: Use TodoWrite tool extensively for:
+- Planning multi-step implementations
+- Breaking down complex issues into phases
+- Tracking progress during development
+- Including testing and validation steps in todos
+- Ensuring no steps are forgotten
+
+**Use immediately when starting work on:**
+- GitHub issues with multiple requirements
+- Refactoring tasks
+- Any work involving multiple files or components
+
+IMPORTANT: Always use the TodoWrite tool to plan and track tasks throughout the conversation.
+
 ## Development Workflow for GitHub Issues
 
 When working on GitHub issues, follow this development workflow:
@@ -9,30 +49,91 @@ When working on GitHub issues, follow this development workflow:
 1. **Read the GitHub issue and all its comments** - Understand the requirements, context, and any discussion
 
 2. **Ensure you're on the latest staging branch** - MANDATORY step before any work:
-   - If coming from a merged PR, run Post-PR Cleanup first (see step 10)
+   - If coming from a merged PR, run Post-PR Cleanup first (see step 11)
    - Switch to staging branch: `git checkout staging`
    - Pull latest changes: `git pull origin staging`
    - Verify you're on the correct branch: `git status`
 
-3. **Investigate and plan the implementation** - MANDATORY step for all issues:
+3. **Create a feature branch immediately** - MANDATORY before any investigation or changes:
+   - Use proper naming convention based on issue type:
+     - **Bug fixes**: `bugfix/##-description` (e.g., `bugfix/31-controller-modal-fix`)
+     - **New features**: `feature/##-description` (e.g., `feature/45-weather-alerts`)
+     - **Documentation**: `docs/##-description` (e.g., `docs/22-api-documentation`)
+     - **Operations**: `ops/##-description` (e.g., `ops/18-docker-improvements`)
+     - **Refactoring**: `refactor/##-description` (e.g., `refactor/33-cleanup-views`)
+   - **Why create immediately**: Investigation may involve temporary file changes, and it's safer to work on a branch
+   - **If no changes needed**: Simply delete the unused branch with `git branch -d branch-name`
+   - See `docs/dev/Workflow.md` for complete conventions including test-only and tweak branches
+
+4. **Use TodoWrite tool to plan the work** - MANDATORY for complex tasks:
+   - Break down the issue into specific, actionable tasks
+   - Include investigation, implementation, testing, and validation steps
+   - Mark tasks as in_progress/completed as you work
+
+5. **Investigate and plan the implementation** - MANDATORY step for all issues:
    - Assign the issue to yourself: `gh issue edit <issue-number> --add-assignee @me`
    - Research the codebase to understand current implementation  
    - Identify files, functions, and components that need changes
    - Consider edge cases, dependencies, and potential impacts
+   - **Check for design-heavy issues** - If issue involves both design/UX work AND implementation, consider splitting (see Design-Heavy Issue Detection below)
    - Plan the implementation approach and sequence of changes
    - **Post a comment on the GitHub issue** documenting:
      - Summary of investigation findings
      - Proposed implementation approach
      - Key files/components that will be modified
      - Any questions or concerns identified
+     - Issue splitting recommendation if applicable
    - **Wait for confirmation only if**:
      - You have critical questions that could affect the implementation
      - Important information is missing or unclear from the issue
      - Multiple solution approaches exist with no clear best choice
      - The proposed changes have significant architectural implications
+     - **You recommend splitting a design-heavy issue**
    - Otherwise, proceed directly to implementation
 
-3.5. **For Complex Issues - Apply Multi-Phase Strategy** (when applicable):
+#### Design-Heavy Issue Detection and Splitting
+
+During investigation, if an issue involves **both** design/UX work **and** implementation:
+
+**Indicators of design-heavy issues:**
+- Requests for "better styling", "improved layout", "enhanced UI"
+- Mentions of wireframes, mockups, or visual design
+- Ambiguous visual requirements needing clarification
+- Multiple UI components or significant template changes
+- User experience improvements without specific implementation details
+
+**Recommended approach:**
+1. **Suggest issue splitting** in your GitHub comment:
+   ```
+   Based on investigation, this issue involves both design and implementation work. 
+   I recommend splitting this into:
+   
+   - Issue A: "[Original Title] - Design & Wireframes" 
+     - Create wireframes/mockups
+     - Define visual approach and information architecture
+     - Get stakeholder approval on design direction
+   
+   - Issue B: "[Original Title] - Implementation"
+     - Implement approved design
+     - Code templates and styling
+     - Add tests and validation
+   
+   This approach allows design iteration without blocking implementation and 
+   enables focused review of each phase.
+   ```
+
+2. **Wait for confirmation** before proceeding (this falls under the "significant architectural implications" case)
+
+3. **If splitting approved**: Complete design work in current issue, create implementation issue upon design approval
+
+4. **If splitting declined**: Proceed but use multi-phase strategy with design as Phase 1
+
+**Design Phase Deliverables:**
+- Always include wireframes/mockups as GitHub issue comments with images
+- Get explicit "approved for implementation" comment before coding begins
+- Use GitHub issue linking (`Closes #123`) to maintain traceability between design and implementation issues
+
+5.5. **For Complex Issues - Apply Multi-Phase Strategy** (when applicable):
    - If issue involves multiple aspects, significant trade-offs, or substantial complexity, apply the multi-phase methodology from [Guidelines.md](dev/Guidelines.md#complex-issue-implementation-strategy)
    - Post phase breakdown to GitHub issue before starting implementation
    - Complete Phase 1 fully, commit and push (but don't create PR yet)
@@ -41,20 +142,17 @@ When working on GitHub issues, follow this development workflow:
    - Wait for human feedback before proceeding to subsequent phases
    - Only create PR when all phases complete or explicitly requested
 
-4. **Development environment check** - The virtual environment and necessary environment variables should be set before starting claude. If there is no virtual environment, this is an indication that the environment has not been properly set up. That means the unit test cannot run and code changes cannot be validated.  We shoudl stop the process and fix it.  There is no need to check ever time since this shoudl be rare, but if running tests is failing, that is a good thing to look for.
+6. **Development environment check** - The virtual environment and necessary environment variables should be set before starting claude. If there is no virtual environment, this is an indication that the environment has not been properly set up. That means the unit test cannot run and code changes cannot be validated.  We shoudl stop the process and fix it.  There is no need to check ever time since this shoudl be rare, but if running tests is failing, that is a good thing to look for.
 
-5. **Create a dev branch off the staging branch** - Use proper naming convention:
-   - **Bug fixes**: `bugfix/##-description` (e.g., `bugfix/31-controller-modal-fix`)
-   - **New features**: `feature/##-description` (e.g., `feature/45-weather-alerts`)
-   - **Documentation**: `docs/##-description` (e.g., `docs/22-api-documentation`)
-   - **Operations**: `ops/##-description` (e.g., `ops/18-docker-improvements`)
-   - **Refactoring**: `refactor/##-description` (e.g., `refactor/33-cleanup-views`)
-   - See `docs/dev/Workflow.md` for complete conventions including test-only and tweak branches
-6. **Do development changes** - Commit to git at logical checkpoints during development
-7. **After first commit, push the branch to GitHub** - Use the same branch name as the local one
-8. **Once issue is complete and all changes pushed** - Create a pull request using the template
-9. **Before creating the pull request** - Run full test validation (see Testing Workflow below)
-10. **After pull request is merged** - Clean up and prepare for next work (see Post-PR Cleanup below)
+7. **Do development changes** - Commit to git at logical checkpoints during development
+
+8. **After first commit, push the branch to GitHub** - Use the same branch name as the local one
+
+9. **Run Testing Workflow** - MANDATORY before creating PR (see below)
+
+10. **Create a pull request** - Using the template, only after all tests pass
+
+11. **After pull request is merged** - Clean up and prepare for next work (see Post-PR Cleanup below)
 
 ### Testing Workflow (Required Before Pull Requests)
 
@@ -70,10 +168,6 @@ src/manage.py test
 # 2. Run code quality check (only if source code was modified)
 flake8 --config=src/.flake8-ci src/hi/
 # Must show: no output (clean)
-
-# 3. Verify Django configuration
-src/manage.py check
-# Must show: "System check identified no issues"
 ```
 
 **Important**: Do not create pull requests if any of these checks fail. Fix all issues first.
@@ -84,12 +178,31 @@ Before any pull request can be merged, the following requirements must be met:
 
 1. **Unit Tests**: All unit tests must pass (`src/manage.py test`)
 2. **Code Quality**: flake8 linting with `.flake8-ci` configuration must pass with no violations (if source code modified) (`flake8 --config=src/.flake8-ci src/hi/`)
-3. **Django Check**: Django system check must pass with no issues (`src/manage.py check`)
-4. **GitHub CI**: GitHub Actions will automatically verify these requirements and will block PR merging if they fail
+3. **GitHub CI**: GitHub Actions will automatically verify these requirements and will block PR merging if they fail
 
 These requirements are enforced by GitHub branch protection rules and cannot be bypassed.
 
 For detailed branching conventions and additional workflow information, see `docs/dev/Workflow.md`.
+
+## Commit Message Guidelines (Claude-Specific)
+
+- Use concise, descriptive commit messages without attribution text
+- Focus on **what** was changed and **why**, not implementation details
+- Keep messages professional and project-focused
+- **Do NOT include** Claude Code attribution, co-author tags, or generated-by comments
+
+**Good examples:**
+```
+Fix weather module unit test failures and improve WMO units handling
+Add support for temperature offset unit arithmetic in Pint
+Remove invalid AlertUrgency.PAST enum value for weather alerts
+```
+
+**Avoid:**
+```
+🤖 Generated with Claude Code
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
 
 ### Post-PR Cleanup (After Pull Request Merged)
 
@@ -246,24 +359,4 @@ context = {
     {% endif %}
   {% endfor %}
 {% endfor %}
-```
-
-## Commit Message Guidelines (Claude-Specific)
-
-- Use concise, descriptive commit messages without attribution text
-- Focus on **what** was changed and **why**, not implementation details
-- Keep messages professional and project-focused
-- **Do NOT include** Claude Code attribution, co-author tags, or generated-by comments
-
-**Good examples:**
-```
-Fix weather module unit test failures and improve WMO units handling
-Add support for temperature offset unit arithmetic in Pint
-Remove invalid AlertUrgency.PAST enum value for weather alerts
-```
-
-**Avoid:**
-```
-🤖 Generated with Claude Code
-Co-Authored-By: Claude <noreply@anthropic.com>
 ```
