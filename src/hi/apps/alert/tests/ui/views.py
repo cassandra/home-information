@@ -28,7 +28,7 @@ class TestUiAlertDetailsView( AlertDetailsView, AlertMixin ):
         
         # Store alert in alert manager for retrieval 
         alert_manager = self.alert_manager()
-        alert_manager._alerts[alert.id] = alert
+        alert_manager._alert_queue._alert_list.append(alert)
         
         # Use parent class logic with synthetic alert
         kwargs['alert_id'] = alert.id
