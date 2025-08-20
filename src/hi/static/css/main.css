@@ -665,7 +665,7 @@ g[hover] {
 }
 
 .btn-camera[status="past"] {
-    color: var(--black) !important;
+    color: var(--on-warning-color) !important;
     background-color: var(--warning-color) !important;
     border-color: var(--warning-color) !important;
     opacity: 0.7;
