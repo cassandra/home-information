@@ -40,15 +40,15 @@
   --on-status-on-color: black;
   
   /* These should match those in hi.apps.monitor.StatusStyle */
-  --status-active-color: red;
-  --status-recent-color: orange;
-  --status-past-color: yellow;
+  --status-active-color: #DC3545;
+  --status-recent-color: #FD7E14;
+  --status-past-color: #FFD700;
   --status-ok-color: green;
   --status-bad-color: red;
   --status-idle-color: #aaaaaa;
 
   --on-status-active-color: white;
-  --on-status-recent-color: black;
+  --on-status-recent-color: white;
   --on-status-past-color: black;
   --on-status-ok-color: white;
   --on-status-bad-color: white;
@@ -647,4 +647,29 @@ g[hover] {
   width: 100%;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
+}
+
+/* Camera button status styling */
+.btn-camera[status="active"] {
+    color: var(--on-status-active-color) !important;
+    background-color: var(--status-active-color) !important;
+    border-color: var(--status-active-color) !important;
+    box-shadow: 0 0 5px var(--status-active-color);
+}
+
+.btn-camera[status="recent"] {
+    color: var(--on-status-recent-color) !important;
+    background-color: var(--status-recent-color) !important;
+    border-color: var(--status-recent-color) !important;
+    box-shadow: 0 0 3px var(--status-recent-color);
+}
+
+.btn-camera[status="past"] {
+    color: var(--on-status-past-color) !important;
+    background-color: var(--status-past-color) !important;
+    border-color: var(--status-past-color) !important;
+}
+
+.btn-camera[status="idle"] {
+    /* Default button styling - no changes needed */
 }
