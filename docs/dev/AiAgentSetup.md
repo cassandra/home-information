@@ -43,15 +43,7 @@ Create home directory with proper permissions
 sudo createhomedir -c -u ai-agent
 sudo chown ai-agent:dev-shared /Users/ai-agent
 sudo chmod 770 /Users/ai-agent  # ai-agent: rwx, dev-shared: r-x, others: none
-```
-
-Ensure unified environment on login
-```
-cat >> ~/.bash_profile << 'EOF'
-if [ -r ~/.bashrc ] ; then
-  . ~/.bashrc
-fi
-EOF
+sudo chmod g+s /Users/ai-agent
 ```
 
 Set password for ai-agent
@@ -69,6 +61,20 @@ ls -la                    # Check home directory permissions
 ```
 
 **Gotcha**: The keychain password warning for macOS can be ignored - it's only relevant for GUI logins.
+
+Ensure unified environment on login
+```
+cat >> ~/.bash_profile << 'EOF'
+if [ -r ~/.bashrc ] ; then
+  . ~/.bashrc
+fi
+EOF
+```
+
+Ensure groups math parent directory
+```
+echo "umask 002" >> ~/.bashrc
+```
 
 ### Ubuntu (GNU/Linux)
 
@@ -108,6 +114,41 @@ groups                    # Should show: dev-shared (and other groups)
 ls -la                    # Check home directory permissions
 ```
 
+## Workspace Setup
+
+Create workspace structure
+```
+mkdir ~/proj
+cd ~/proj
+```
+
+Clone the repository
+```
+git clone https://github.com/cassandra/home-information.git
+mv home-information hi
+ln -s hi home-information
+cd hi
+```
+
+Configure git identity for ai-agent
+```
+git config user.name "AI Agent"
+git config user.email "ai-agent@cassandra.org"
+```
+
+Also set global git config for consistency:
+```
+git config --global user.name "AI Agent"
+git config --global user.email "ai-agent@cassandra.org"
+```
+
+Verify the setup
+```
+git remote -v
+git status
+pwd
+```
+
 ## Setup SSH Keys
 
  Generate SSH key pair (use same email on both machines for consistency)
@@ -126,50 +167,21 @@ chmod 600 ~/.ssh/id_ed25519
 chmod 644 ~/.ssh/id_ed25519.pub
 ```
 
-## Workspace Setup
-
-Create workspace structure
-```
-mkdir -p ~/proj
-cd ~/proj
-```
-
-Clone the repository
-```
-git clone git@github.com:cassandra/home-information.git
-mv home-information hi
-ln -s hi home-information
-cd hi
-```
-
-Configure git identity for ai-agent
-```
-git config user.name "AI Agent"
-git config user.email "ai-agent@cassandra.org"
-```
-
-Verify the setup
-```
-git remote -v
-git status
-pwd
-```
-
-Also set global git config for consistency:
-```
-git config --global user.name "AI Agent"
-git config --global user.email "ai-agent@cassandra.org"
-```
-
 ## App Development Setup
+
+You can eiher use the `./deploy/dev-setup.sh script`, or manually set up by continueing to follow sections below. If using `./deploy/dev-setup.sh script`, then skip to section "Redis Tweaks".
+
 
 ### Environment Variables
 
 **Note**: This is mostly duplicative to [Setup.md](Setup.md) though slightly customized for the AI agent setup.  Check there if you run into issues in case this file gets outdated.
 
 Create environment variables for secrets (never commit these!)
+
+#### Option 1: Copy existing
+
 ```
-# Copy your development.sh file
+# Copy an existing development.sh file
 
 cd ~/proj/hi
 mkdir -p .private/env
@@ -178,22 +190,11 @@ cat > .private/env/development.sh << 'EOF'
 EOF
 ```
 
-### Redis Tweaks
+#### Option 2: Env Variable Generaton Script
 
-If you also are presonally also doing development on the same machine, then you should be running Redis and that can also be used by the agent with no extra Redis server needed, but with an environment variable tweak needed (see below). 
-
-If Redis is not running on the machine, you'll need to install and/or start redis as shown in [Dependencies.md](Dependencies.md).
-
-When sharing the same Redis server, we will need to avoid collisions on the key space between development environments.  There is a Redis key prefix environment variable that can be used to do that. For the ai-agent user, chnage this:
-
-export HI_REDIS_KEY_PREFIX="dev-ai"
+Use interactive script to genrate needed development.sh.
 ```
-grep -q "HI_REDIS_KEY_PREFIX" .private/env/development.sh && sed -i '' '/HI_REDIS_KEY_PREFIX/c\
-export HI_REDIS_KEY_PREFIX="dev-ai"
-' .private/env/development.sh
-
-# Then verify value change
-grep HI_REDIS_KEY_PREFIX .private/env/development.sh
+make env-build-dev
 ```
 
 ### Virtual Environment
@@ -227,6 +228,24 @@ cd ~/proj/hi
 make check
 ```
 
+### Redis Tweaks
+
+If you also are presonally also doing development on the same machine, then you should be running Redis and that can also be used by the agent with no extra Redis server needed, but with an environment variable tweak needed (see below). 
+
+If Redis is not running on the machine, you'll need to install and/or start redis as shown in [Dependencies.md](Dependencies.md).
+
+When sharing the same Redis server, we will need to avoid collisions on the key space between development environments.  There is a Redis key prefix environment variable that can be used to do that. For the ai-agent user, chnage this:
+
+export HI_REDIS_KEY_PREFIX="dev-ai"
+```
+grep -q "HI_REDIS_KEY_PREFIX" .private/env/development.sh && sed -i '' '/HI_REDIS_KEY_PREFIX/c\
+export HI_REDIS_KEY_PREFIX="dev-ai"
+' .private/env/development.sh
+
+# Then verify value change
+grep HI_REDIS_KEY_PREFIX .private/env/development.sh
+```
+
 ## Claude Code
 
 Install Claude Code using the official installer
@@ -243,7 +262,7 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 
 After installation, verify:
 ```
-claude-code --version
+claude --version
 ```
 
 
@@ -276,11 +295,11 @@ security set-keychain-settings -t 3600 ~/Library/Keychains/login.keychain-db
 Create convenience script
 
 ```
+cd ~
 cat > ~/start-claude.sh << 'EOF'
 #!/bin/bash
-cd ~/workspace/repos/home-information
-security unlock-keychain ~/Library/Keychains/login.keychain-db
-security set-keychain-settings -t 3600 ~/Library/Keychains/login.keychain-db
+cd ~/proj/hi
+. init-env-dev.sh
 claude
 EOF
 
@@ -330,6 +349,16 @@ For GitHub setup:
 Test SSH connection (run on both machines as ai-agent):
 ```
 ssh -T git@github.com
+```
+
+Update git origin for SSH access
+```
+git remote set-url origin git@github.com:cassandra/home-information.git
+```
+
+Verify the change
+```
+git remote -v
 ```
 
 #### Add as collaborator:
