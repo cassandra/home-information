@@ -796,6 +796,73 @@ urlpatterns = [
 ]
 ```
 
+### UI Testing Framework Guidelines
+
+The visual testing framework at `/tests/ui` is designed for viewing UI styling and layout during development. These are **read-only** views that should never modify system state.
+
+#### Critical UI Testing Principle: System State Isolation
+
+**NEVER modify real system state in UI test views**:
+- Do not add data to real managers (AlertManager, WeatherManager, etc.)
+- Do not modify database records 
+- Do not modify in-memory caches or singletons
+- Do not persist test data that appears in production views
+
+**Correct Approach - Render Templates Directly:**
+```python
+class TestUiAlertDetailsView(View):
+    def get(self, request, *args, **kwargs):
+        # Create synthetic data
+        alert = AlertSyntheticData.create_single_alarm_alert(
+            alarm_level=AlarmLevel.WARNING,
+            has_image=True
+        )
+        
+        # Prepare context data using domain object methods
+        visual_content = alert.get_first_visual_content()
+        
+        # Render template directly with synthetic data
+        context = {
+            'alert': alert,
+            'alert_visual_content': visual_content,
+        }
+        return render(request, 'alert/modals/alert_details.html', context)
+```
+
+**Incorrect Approach - Modifying System State:**
+```python
+# BAD - This modifies real AlertManager state
+class TestUiAlertDetailsView(AlertDetailsView, AlertMixin):
+    def get(self, request, *args, **kwargs):
+        alert = self._create_synthetic_alert(alert_type)
+        
+        # WRONG - Adding to real system manager
+        alert_manager = self.alert_manager()
+        alert_manager._alert_queue._alert_list.append(alert)
+        
+        return super().get(request, *args, **kwargs)
+```
+
+#### UI Testing Architecture Patterns
+
+**When to Inherit vs. Render Directly:**
+
+1. **Render Templates Directly (Preferred):**
+   - For testing UI styling and layout
+   - When you need specific synthetic data scenarios
+   - When testing requires system state isolation
+   - Follows pattern used by weather, notify modules
+
+2. **Inherit from Production Views (Avoid):**
+   - Only when testing actual view logic, not just UI styling
+   - Requires careful state management to avoid system pollution
+   - Must ensure test data doesn't persist
+
+**Code Duplication Prevention:**
+- Move shared logic to domain object methods (e.g., `Alert.get_first_visual_content()`)
+- Use centralized synthetic data classes
+- Create utility functions for common data preparation patterns
+
 ### Email Testing
 
 There are some helper base classes to test viewing email formatting and sending emails.
