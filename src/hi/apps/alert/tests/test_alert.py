@@ -3,7 +3,7 @@ from datetime import timedelta
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.alert.alert import Alert
-from hi.apps.alert.alarm import Alarm
+from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.security.enums import SecurityLevel
 from hi.tests.base_test_case import BaseTestCase
@@ -246,4 +246,143 @@ class TestAlert(BaseTestCase):
         
         alert.add_alarm(second_alarm)
         self.assertFalse(alert.has_single_alarm)
+        return
+
+    def test_get_first_visual_content_with_image(self):
+        """Test get_first_visual_content returns correct data when image exists."""
+        alarm_with_image = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='motion_detection',
+            alarm_level=AlarmLevel.WARNING,
+            title='Motion Detected',
+            source_details_list=[
+                AlarmSourceDetails(
+                    detail_attrs={'Location': 'Kitchen'},
+                    image_url='/static/img/test-image.png',
+                )
+            ],
+            security_level=SecurityLevel.LOW,
+            alarm_lifetime_secs=300,
+            timestamp=datetimeproxy.now(),
+        )
+        
+        alert = Alert(alarm_with_image)
+        visual_content = alert.get_first_visual_content()
+        
+        self.assertIsNotNone(visual_content)
+        self.assertEqual(visual_content['image_url'], '/static/img/test-image.png')
+        self.assertEqual(visual_content['alarm'], alarm_with_image)
+        self.assertTrue(visual_content['is_from_latest'])
+        return
+
+    def test_get_first_visual_content_without_image(self):
+        """Test get_first_visual_content returns None when no image exists."""
+        alarm_no_image = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='door_open',
+            alarm_level=AlarmLevel.INFO,
+            title='Door Opened',
+            source_details_list=[
+                AlarmSourceDetails(
+                    detail_attrs={'Location': 'Front Door'},
+                    image_url=None,
+                )
+            ],
+            security_level=SecurityLevel.LOW,
+            alarm_lifetime_secs=300,
+            timestamp=datetimeproxy.now(),
+        )
+        
+        alert = Alert(alarm_no_image)
+        visual_content = alert.get_first_visual_content()
+        
+        self.assertIsNone(visual_content)
+        return
+
+    def test_get_first_visual_content_multiple_alarms_first_has_image(self):
+        """Test get_first_visual_content finds image in first alarm when multiple alarms exist."""
+        first_alarm_with_image = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='motion_detection',
+            alarm_level=AlarmLevel.WARNING,
+            title='First Motion',
+            source_details_list=[
+                AlarmSourceDetails(
+                    detail_attrs={'Location': 'Kitchen'},
+                    image_url='/static/img/first-image.png',
+                )
+            ],
+            security_level=SecurityLevel.LOW,
+            alarm_lifetime_secs=300,
+            timestamp=datetimeproxy.now(),
+        )
+        
+        second_alarm_no_image = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='motion_detection',
+            alarm_level=AlarmLevel.WARNING,
+            title='Second Motion',
+            source_details_list=[
+                AlarmSourceDetails(
+                    detail_attrs={'Location': 'Kitchen'},
+                    image_url=None,
+                )
+            ],
+            security_level=SecurityLevel.LOW,
+            alarm_lifetime_secs=300,
+            timestamp=datetimeproxy.now(),
+        )
+        
+        alert = Alert(first_alarm_with_image)
+        alert.add_alarm(second_alarm_no_image)
+        visual_content = alert.get_first_visual_content()
+        
+        self.assertIsNotNone(visual_content)
+        self.assertEqual(visual_content['image_url'], '/static/img/first-image.png')
+        self.assertEqual(visual_content['alarm'], first_alarm_with_image)
+        self.assertFalse(visual_content['is_from_latest'])  # first_alarm_with_image is not at index 0 after adding second alarm
+        return
+
+    def test_get_first_visual_content_multiple_alarms_second_has_image(self):
+        """Test get_first_visual_content finds image in second alarm when first has none."""
+        first_alarm_no_image = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='motion_detection',
+            alarm_level=AlarmLevel.WARNING,
+            title='First Motion',
+            source_details_list=[
+                AlarmSourceDetails(
+                    detail_attrs={'Location': 'Kitchen'},
+                    image_url=None,
+                )
+            ],
+            security_level=SecurityLevel.LOW,
+            alarm_lifetime_secs=300,
+            timestamp=datetimeproxy.now(),
+        )
+        
+        second_alarm_with_image = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='motion_detection',
+            alarm_level=AlarmLevel.WARNING,
+            title='Second Motion',
+            source_details_list=[
+                AlarmSourceDetails(
+                    detail_attrs={'Location': 'Kitchen'},
+                    image_url='/static/img/second-image.png',
+                )
+            ],
+            security_level=SecurityLevel.LOW,
+            alarm_lifetime_secs=300,
+            timestamp=datetimeproxy.now(),
+        )
+        
+        alert = Alert(first_alarm_no_image)
+        alert.add_alarm(second_alarm_with_image)
+        visual_content = alert.get_first_visual_content()
+        
+        self.assertIsNotNone(visual_content)
+        self.assertEqual(visual_content['image_url'], '/static/img/second-image.png')
+        self.assertEqual(visual_content['alarm'], second_alarm_with_image)
+        self.assertTrue(visual_content['is_from_latest'])  # second_alarm_with_image is at index 0 after being added
         return

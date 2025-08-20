@@ -44,8 +44,12 @@ class AlertDetailsView( HiModalView, AlertMixin ):
         except KeyError:
             raise Http404( 'Unknown alert.' )
 
+        # Prepare visual content data for template
+        visual_content = alert.get_first_visual_content()
+
         context = {
             'alert': alert,
+            'alert_visual_content': visual_content,
         }
         return self.modal_response( request, context )
         

@@ -1,0 +1,54 @@
+{% extends "pages/base.html" %}
+{% block head_title %}HI: Visual Testing!{% endblock %}
+
+{% block content %}
+<div class="container-fluid m-4">
+
+  <h2 class="text-info">Alerts: UI Tests</h2>
+
+  <div class="row">
+    <div class="col-xl-4 col-lg-4 col-md-6 col-12">
+      <div class="panel panel-default">
+	<div class="panel-heading">
+	  <h3 class="panel-title text-primary">Alert Details</h3>
+	</div>
+	<div class="panel-body">
+	  <ul>
+	    <li>
+	      <a href="{% url 'alert_tests_ui_alert_details' alert_type='single_info' %}" data-async="modal">
+		Single Alarm (INFO, no image)
+	      </a>
+	    </li>
+	    <li>
+	      <a href="{% url 'alert_tests_ui_alert_details' alert_type='single_warning_image' %}" data-async="modal">
+		Single Alarm (WARNING, with image)
+	      </a>
+	    </li>
+	    <li>
+	      <a href="{% url 'alert_tests_ui_alert_details' alert_type='single_critical_video' %}" data-async="modal">
+		Single Alarm (CRITICAL, with video)
+	      </a>
+	    </li>
+	    <li>
+	      <a href="{% url 'alert_tests_ui_alert_details' alert_type='multiple_alarms' %}" data-async="modal">
+		Multiple Alarms (3 alarms, with images)
+	      </a>
+	    </li>
+	    <li>
+	      <a href="{% url 'alert_tests_ui_alert_details' alert_type='event_based' %}" data-async="modal">
+		Event-Based Alert (door sensor)
+	      </a>
+	    </li>
+	    <li>
+	      <a href="{% url 'alert_tests_ui_alert_details' alert_type='weather_alert' %}" data-async="modal">
+		Weather Alert (tornado warning)
+	      </a>
+	    </li>
+	  </ul>
+	</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

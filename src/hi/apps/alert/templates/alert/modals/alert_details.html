@@ -8,26 +8,114 @@
 
 {% block body %}
 {% timezone USER_TIMEZONE %}
-<div>
-  Alert Source: {{ alert.alarm_source.label }}
-</div>
-<div>
-  Alert Level: {{ alert.alarm_level.label }}
-</div>
-<div>
-  Alert Type: {{ alert.alarm_type }}
-</div>
-<div>
-  When: {{ alert.start_datetime|localtime|naturaltime }}
+
+<!-- Alert Summary Header -->
+<div class="row mb-3">
+  <div class="col-12">
+    <div class="card border-0 bg-light">
+      <div class="card-body py-2">
+        <div class="row">
+          <div class="col-6">
+            <small class="text-muted">Alert Level</small><br>
+            <span class="badge badge-{% if alert.alarm_level.priority <= 2 %}danger{% elif alert.alarm_level.priority <= 4 %}warning{% else %}secondary{% endif %}">
+              {{ alert.alarm_level.label }}
+            </span>
+          </div>
+          <div class="col-6">
+            <small class="text-muted">Alert Source</small><br>
+            <strong>{{ alert.alarm_source.label }}</strong>
+          </div>
+        </div>
+        <div class="row mt-2">
+          <div class="col-6">
+            <small class="text-muted">Alert Type</small><br>
+            <strong>{{ alert.alarm_type }}</strong>
+          </div>
+          <div class="col-6">
+            <small class="text-muted">Started</small><br>
+            <strong>{{ alert.start_datetime|localtime|naturaltime }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div>
-  {% for alarm in alert.alarm_list %}
-  {% if alert.alarm_count > 1 %}
-  <h5>Alarm {{ forloop.counter }}: {{ alarm.title }}</h5>
-  {% endif %}
-  {% include "alert/panes/alarm_details.html" %}
-  {% endfor %}
+<!-- Visual Content (if available) -->
+{% if alert_visual_content %}
+<div class="row mb-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h6 class="mb-0">
+          <i class="fas fa-camera mr-2"></i>Visual Content
+        </h6>
+      </div>
+      <div class="card-body p-2">
+        <img class="img-fluid" src="{{ alert_visual_content.image_url }}" alt="{{ alert_visual_content.alarm.title }}">
+        {% if not alert_visual_content.is_from_latest %}
+          <small class="text-muted d-block mt-1">From: {{ alert_visual_content.alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 </div>
+{% endif %}
+
+<!-- Recent Alarm Details -->
+<div class="row mb-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="mb-0">
+          Recent Activity
+          {% if alert.alarm_count > 1 %}
+            <span class="badge badge-secondary ml-2">{{ alert.alarm_count }} alarm{{ alert.alarm_count|pluralize }}</span>
+          {% endif %}
+        </h6>
+      </div>
+      <div class="card-body">
+        {% with alarm=alert.alarm_list.0 %}
+          <div class="mb-2">
+            <small class="text-muted">{{ alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
+          </div>
+          {% include "alert/panes/alarm_details.html" %}
+        {% endwith %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Additional Alarms (Collapsible) -->
+{% if alert.alarm_count > 1 %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="mb-0">
+          <a class="text-decoration-none" data-toggle="collapse" href="#additionalAlarms" 
+             role="button" aria-expanded="false" aria-controls="additionalAlarms">
+            <i class="fas fa-chevron-right mr-2"></i>Previous Alarms ({{ alert.alarm_count|add:"-1" }})
+          </a>
+        </h6>
+      </div>
+      <div class="collapse" id="additionalAlarms">
+        <div class="card-body">
+          {% for alarm in alert.alarm_list %}
+            {% if not forloop.first %}
+              <div class="border-bottom mb-3 pb-3">
+                <h6>Alarm {{ forloop.counter }}: {{ alarm.title }}</h6>
+                <small class="text-muted">{{ alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
+                {% include "alert/panes/alarm_details.html" %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% endtimezone %}
 {% endblock %}
