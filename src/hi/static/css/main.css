@@ -651,23 +651,23 @@ g[hover] {
 
 /* Camera button status styling */
 .btn-camera[status="active"] {
-    color: var(--on-status-active-color) !important;
-    background-color: var(--status-active-color) !important;
-    border-color: var(--status-active-color) !important;
-    box-shadow: 0 0 5px var(--status-active-color);
+    color: var(--on-error-color) !important;
+    background-color: var(--error-color) !important;
+    border-color: var(--error-color) !important;
+    box-shadow: 0 0 5px var(--error-color);
 }
 
 .btn-camera[status="recent"] {
-    color: var(--on-status-recent-color) !important;
-    background-color: var(--status-recent-color) !important;
-    border-color: var(--status-recent-color) !important;
-    box-shadow: 0 0 3px var(--status-recent-color);
+    color: var(--on-warning-color) !important;
+    background-color: var(--warning-color) !important;
+    border-color: var(--warning-color) !important;
+    box-shadow: 0 0 3px var(--warning-color);
 }
 
 .btn-camera[status="past"] {
-    color: var(--on-status-past-color) !important;
-    background-color: var(--status-past-color) !important;
-    border-color: var(--status-past-color) !important;
+    color: var(--black) !important;
+    background-color: #FFD700 !important;
+    border-color: #FFD700 !important;
 }
 
 .btn-camera[status="idle"] {
