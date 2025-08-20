@@ -27,8 +27,8 @@ class TestUiAlertDetailsView( View ):
         # Create synthetic alert based on type using centralized synthetic data
         alert = self._create_synthetic_alert( alert_type )
         
-        # Prepare visual content data for template (same logic as AlertDetailsView)
-        visual_content = self._get_first_visual_content( alert )
+        # Prepare visual content data for template using Alert's method
+        visual_content = alert.get_first_visual_content()
         
         # Render template directly with synthetic data
         context = {
@@ -36,21 +36,6 @@ class TestUiAlertDetailsView( View ):
             'alert_visual_content': visual_content,
         }
         return render( request, 'alert/modals/alert_details.html', context )
-    
-    def _get_first_visual_content( self, alert ):
-        """
-        Find the first image/video content from any alarm in the alert.
-        Returns dict with image info or None if no visual content found.
-        """
-        for alarm in alert.alarm_list:
-            for source_details in alarm.source_details_list:
-                if source_details.image_url:
-                    return {
-                        'image_url': source_details.image_url,
-                        'alarm': alarm,
-                        'is_from_latest': alarm == alert.alarm_list[0] if alert.alarm_list else False,
-                    }
-        return None
 
     def _create_synthetic_alert( self, alert_type ):
         """Create different types of synthetic alerts for testing using AlertSyntheticData."""

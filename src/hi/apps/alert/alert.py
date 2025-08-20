@@ -115,6 +115,21 @@ class Alert:
             return self._latest_alarms[0]
         return None
     
+    def get_first_visual_content(self):
+        """
+        Find the first image/video content from any alarm in the alert.
+        Returns dict with image info or None if no visual content found.
+        """
+        for alarm in self.alarm_list:
+            for source_details in alarm.source_details_list:
+                if source_details.image_url:
+                    return {
+                        'image_url': source_details.image_url,
+                        'alarm': alarm,
+                        'is_from_latest': alarm == self.alarm_list[0] if self.alarm_list else False,
+                    }
+        return None
+    
     def to_notification_item(self):
         return NotificationItem(
             signature = self.signature,
