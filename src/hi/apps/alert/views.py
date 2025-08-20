@@ -44,9 +44,28 @@ class AlertDetailsView( HiModalView, AlertMixin ):
         except KeyError:
             raise Http404( 'Unknown alert.' )
 
+        # Prepare visual content data for template
+        visual_content = self._get_first_visual_content( alert )
+
         context = {
             'alert': alert,
+            'alert_visual_content': visual_content,
         }
         return self.modal_response( request, context )
+
+    def _get_first_visual_content( self, alert ):
+        """
+        Find the first image/video content from any alarm in the alert.
+        Returns dict with image info or None if no visual content found.
+        """
+        for alarm in alert.alarm_list:
+            for source_details in alarm.source_details_list:
+                if source_details.image_url:
+                    return {
+                        'image_url': source_details.image_url,
+                        'alarm': alarm,
+                        'is_from_latest': alarm == alert.alarm_list[0] if alert.alarm_list else False,
+                    }
+        return None
         
 

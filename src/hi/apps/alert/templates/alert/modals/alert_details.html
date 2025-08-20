@@ -41,11 +41,8 @@
   </div>
 </div>
 
-<!-- Check ALL alarms for visual content -->
-{% for alarm in alert.alarm_list %}
-  {% for source_details in alarm.source_details_list %}
-    {% if source_details.image_url %}
-<!-- Visual Content (Prominent Display) -->
+<!-- Visual Content (if available) -->
+{% if alert_visual_content %}
 <div class="row mb-3">
   <div class="col-12">
     <div class="card">
@@ -55,19 +52,15 @@
         </h6>
       </div>
       <div class="card-body p-2">
-        <img class="img-fluid" src="{{ source_details.image_url }}" alt="{{ alarm.title }}">
-        {% if alarm != alert.alarm_list.0 %}
-          <small class="text-muted d-block mt-1">From: {{ alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
+        <img class="img-fluid" src="{{ alert_visual_content.image_url }}" alt="{{ alert_visual_content.alarm.title }}">
+        {% if not alert_visual_content.is_from_latest %}
+          <small class="text-muted d-block mt-1">From: {{ alert_visual_content.alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
         {% endif %}
       </div>
     </div>
   </div>
 </div>
-      {% break %}
-    {% endif %}
-  {% endfor %}
-  {% if source_details.image_url %}{% break %}{% endif %}
-{% endfor %}
+{% endif %}
 
 <!-- Recent Alarm Details -->
 <div class="row mb-3">

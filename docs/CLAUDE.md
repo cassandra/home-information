@@ -216,6 +216,38 @@ All generated code must comply with the `.flake8-ci` configuration rules. Common
 
 Before submitting code, always run: `flake8 --config=src/.flake8-ci src/hi/` to verify compliance.
 
+## Django Template Guidelines (Claude-Specific)
+
+Follow Django best practices for template design:
+
+1. **Minimal Business Logic**: Keep business logic out of templates. Complex loops, conditionals, and data processing belong in views or custom template tags/filters.
+2. **View Preparation**: Views should prepare all data that templates need. Templates should primarily display pre-processed data.
+3. **Simple Conditionals**: Use only simple `{% if %}` statements for display logic. Avoid complex nested loops or data manipulation.
+4. **Custom Template Tags**: Create custom template tags or filters for reusable template logic instead of embedding it directly.
+5. **Data Structure**: Structure context data in views to match template needs rather than making templates adapt to raw data.
+
+**Good examples:**
+```python
+# In view
+context = {
+    'alert': alert,
+    'alert_has_visual_content': bool(alert.get_first_image_url()),
+    'alert_first_image': alert.get_first_image_url(),
+}
+```
+
+**Avoid:**
+```django
+<!-- Complex business logic in template -->
+{% for alarm in alert.alarm_list %}
+  {% for source_details in alarm.source_details_list %}
+    {% if source_details.image_url %}
+      <!-- Complex nested logic -->
+    {% endif %}
+  {% endfor %}
+{% endfor %}
+```
+
 ## Commit Message Guidelines (Claude-Specific)
 
 - Use concise, descriptive commit messages without attribution text
