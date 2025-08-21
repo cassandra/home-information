@@ -13,6 +13,7 @@ class AlarmSourceDetails:
 
     detail_attrs         : Dict[ str, str ]
     image_url            : str               = None
+    sensor_id            : str               = None  # ID of the sensor that generated this alarm
 
     
 @dataclass
@@ -36,3 +37,15 @@ class Alarm:
     @property
     def signature(self):
         return f'{self.alarm_source}.{self.alarm_type}.{self.alarm_level}'
+    
+    def get_view_url(self) -> str:
+        """
+        Extract a view URL from this alarm's source details.
+        
+        Delegates to ViewUrlUtils for the actual URL generation logic.
+        
+        Returns:
+            A Django view URL string, or None if no view can be determined.
+        """
+        from hi.apps.console.view_url_utils import ViewUrlUtils
+        return ViewUrlUtils.get_view_url_for_alarm(self)

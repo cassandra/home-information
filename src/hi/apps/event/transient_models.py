@@ -46,6 +46,7 @@ class Event:
             source_details = AlarmSourceDetails(
                 detail_attrs = sensor_response.detail_attrs,
                 image_url = sensor_response.image_url,
+                sensor_id = str(sensor_response.sensor.id) if sensor_response.sensor else None,
             )
             source_details_list.append( source_details )
             continue

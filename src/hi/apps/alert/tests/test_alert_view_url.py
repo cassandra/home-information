@@ -19,8 +19,9 @@ class TestAlertViewUrl(BaseTestCase):
         """Test EVENT alarms with sensor_id generate proper camera URLs - core functionality."""
         # Create alarm with sensor details
         source_details = AlarmSourceDetails(
-            detail_attrs={'sensor_id': 'cam_123', 'location': 'Front Door'},
-            image_url=None
+            detail_attrs={'location': 'Front Door'},
+            image_url=None,
+            sensor_id='cam_123'
         )
         
         event_alarm = Alarm(
@@ -101,8 +102,9 @@ class TestAlertViewUrl(BaseTestCase):
     def test_url_generation_exception_handling(self):
         """Test graceful handling of URL generation failures - error resilience."""
         source_details = AlarmSourceDetails(
-            detail_attrs={'sensor_id': 'invalid_sensor'},
-            image_url=None
+            detail_attrs={},
+            image_url=None,
+            sensor_id='invalid_sensor'
         )
         
         event_alarm = Alarm(
@@ -135,8 +137,9 @@ class TestAlertViewUrl(BaseTestCase):
             image_url=None
         )
         source_details_2 = AlarmSourceDetails(
-            detail_attrs={'sensor_id': 'cam_456', 'location': 'Area B'},
-            image_url=None
+            detail_attrs={'location': 'Area B'},
+            image_url=None,
+            sensor_id='cam_456'
         )
         
         event_alarm = Alarm(
