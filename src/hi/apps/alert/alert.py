@@ -177,9 +177,6 @@ class Alert:
         This method knows how to navigate the alarm's data structure
         to find relevant view information based on the alarm source type.
         """
-        import logging
-        logger = logging.getLogger(__name__)
-        
         if alarm.alarm_source == AlarmSource.EVENT:
             return self._extract_event_view_url(alarm)
         # Future: Add handlers for other alarm sources

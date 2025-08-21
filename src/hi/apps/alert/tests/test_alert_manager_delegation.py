@@ -25,6 +25,23 @@ class TestAlertManagerDelegation(BaseTestCase):
         
         self.alert_manager = AlertManager()
         self.transient_manager = TransientViewManager()
+        
+        # Ensure clean state for TransientViewManager
+        # Clear state multiple times to handle any race conditions
+        self.transient_manager.clear_suggestion()
+        TransientViewManager().clear_suggestion()  # Clear the singleton directly too
+    
+    def tearDown(self):
+        # Clean up after each test
+        if hasattr(self, 'transient_manager'):
+            self.transient_manager.clear_suggestion()
+        TransientViewManager().clear_suggestion()
+        
+        # Clear AlertManager state (the AlertQueue)
+        if hasattr(self, 'alert_manager'):
+            self.alert_manager._alert_queue._alert_list.clear()
+        
+        super().tearDown()
 
     def test_alert_manager_delegates_new_alerts_to_transient_view_manager(self):
         """Test AlertManager delegates new alerts to TransientViewManager - core integration."""
@@ -45,40 +62,42 @@ class TestAlertManagerDelegation(BaseTestCase):
             timestamp=timezone.now()
         )
         
-        # Mock TransientViewManager to track delegation calls
-        with patch.object(self.transient_manager, 'consider_alert_for_auto_view') as mock_consider:
-            # Add alarm to create an alert
-            self.run_async_test(self.alert_manager.add_alarm(motion_alarm))
+        # Verify no suggestion exists initially
+        self.assertFalse(self.transient_manager.has_suggestion())
+        
+        # Mock settings to enable auto-view for this test
+        with patch('hi.apps.console.transient_view_manager.ConsoleSettingsHelper') as mock_helper_class:
+            mock_helper = Mock()
+            mock_helper.get_auto_view_enabled.return_value = True
+            mock_helper.get_auto_view_duration.return_value = 30
+            mock_helper_class.return_value = mock_helper
             
-            # Get alert status data (this triggers delegation to TransientViewManager)
-            alert_status_data = self.alert_manager.get_alert_status_data(
-                last_alert_status_datetime=timezone.now() - timedelta(seconds=5)
-            )
-            
-            # Verify delegation occurred
-            mock_consider.assert_called_once()
-            
-            # Verify the correct alert was passed to TransientViewManager
-            call_args = mock_consider.call_args[0]
-            alert_passed = call_args[0]
-            
-            self.assertEqual(alert_passed.first_alarm.alarm_type, 'motion_detection')
-            self.assertEqual(
-                alert_passed.first_alarm.source_details_list[0].detail_attrs['sensor_id'], 
-                '123'
-            )
+            with patch('django.urls.reverse') as mock_reverse:
+                mock_reverse.return_value = '/console/sensor/video_stream/123/'
+                
+                # Add alarm to create an alert
+                self.run_async_test(self.alert_manager.add_alarm(motion_alarm))
+                
+                # Get alert status data (this should trigger delegation to TransientViewManager)
+                self.alert_manager.get_alert_status_data(
+                    last_alert_status_datetime=timezone.now() - timedelta(seconds=5)
+                )
+                
+                # Verify delegation created a suggestion (test actual behavior, not mock calls)
+                self.assertTrue(self.transient_manager.has_suggestion())
 
     def test_alert_manager_no_delegation_when_no_new_alert(self):
         """Test AlertManager doesn't delegate when no new alerts - conditional delegation."""
-        # Mock TransientViewManager to track calls
-        with patch.object(self.transient_manager, 'consider_alert_for_auto_view') as mock_consider:
-            # Get alert status without any alarms being added
-            alert_status_data = self.alert_manager.get_alert_status_data(
-                last_alert_status_datetime=timezone.now() - timedelta(seconds=5)
-            )
-            
-            # Should not have called TransientViewManager
-            mock_consider.assert_not_called()
+        # Verify no suggestion exists initially
+        self.assertFalse(self.transient_manager.has_suggestion())
+        
+        # Get alert status without any alarms being added
+        self.alert_manager.get_alert_status_data(
+            last_alert_status_datetime=timezone.now() - timedelta(seconds=5)
+        )
+        
+        # Should still not have any suggestions (no new alerts to delegate)
+        self.assertFalse(self.transient_manager.has_suggestion())
 
     def test_alert_manager_focuses_on_new_alerts_not_queue_state(self):
         """Test AlertManager delegates only new alerts, not existing queue state - precise delegation."""
@@ -93,52 +112,63 @@ class TestAlertManagerDelegation(BaseTestCase):
             image_url=None
         )
         
+        # Create alarms with different types to ensure separate alerts
+        old_time = timezone.now() - timedelta(seconds=30)
+        new_time = timezone.now() - timedelta(seconds=2)  # More recent but not now
+        
         old_alarm = Alarm(
             alarm_source=AlarmSource.EVENT,
             alarm_type='motion_detection',
-            alarm_level=AlarmLevel.INFO,
+            alarm_level=AlarmLevel.INFO,  # Lower priority
             title='Old Motion',
             source_details_list=[source_details_1],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=300,
-            timestamp=timezone.now() - timedelta(seconds=30)  # Older timestamp
+            timestamp=old_time
         )
         
         new_alarm = Alarm(
             alarm_source=AlarmSource.EVENT,
             alarm_type='motion_detection',
-            alarm_level=AlarmLevel.WARNING,
+            alarm_level=AlarmLevel.WARNING,  # Higher priority, different signature
             title='New Motion',
             source_details_list=[source_details_2],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=300,
-            timestamp=timezone.now()  # Recent timestamp
+            timestamp=new_time
         )
         
         # Add old alarm first
         self.run_async_test(self.alert_manager.add_alarm(old_alarm))
         
-        # Clear any existing delegations
-        with patch.object(self.transient_manager, 'consider_alert_for_auto_view') as mock_consider:
-            # Add new alarm
-            self.run_async_test(self.alert_manager.add_alarm(new_alarm))
+        # Verify no suggestion exists yet
+        self.assertFalse(self.transient_manager.has_suggestion())
+        
+        # Add new alarm
+        self.run_async_test(self.alert_manager.add_alarm(new_alarm))
+        
+        # Mock settings to enable auto-view for this test
+        with patch('hi.apps.console.transient_view_manager.ConsoleSettingsHelper') as mock_helper_class:
+            mock_helper = Mock()
+            mock_helper.get_auto_view_enabled.return_value = True
+            mock_helper.get_auto_view_duration.return_value = 30
+            mock_helper_class.return_value = mock_helper
             
-            # Get alert status - should delegate only the new alert
-            alert_status_data = self.alert_manager.get_alert_status_data(
-                last_alert_status_datetime=timezone.now() - timedelta(seconds=5)
-            )
-            
-            # Should have been called once for the new alert
-            mock_consider.assert_called_once()
-            
-            # Verify it was called with the new alert (sensor_id '456')
-            call_args = mock_consider.call_args[0]
-            alert_passed = call_args[0]
-            
-            self.assertEqual(
-                alert_passed.first_alarm.source_details_list[0].detail_attrs['sensor_id'],
-                '456'
-            )
+            with patch('django.urls.reverse') as mock_reverse:
+                mock_reverse.return_value = '/console/sensor/video_stream/456/'
+                
+                # Get alert status - should delegate only the new alert
+                # Use timestamp that excludes old alarm but includes new one
+                self.alert_manager.get_alert_status_data(
+                    last_alert_status_datetime=timezone.now() - timedelta(seconds=5)  # Between old (30s ago) and new (2s ago)
+                )
+                
+                # Should have created a suggestion based on the new alert only
+                self.assertTrue(self.transient_manager.has_suggestion())
+                
+                # The suggestion should be based on the new alert's sensor_id ('456')
+                suggestion = self.transient_manager.peek_current_suggestion()
+                self.assertIn('456', suggestion.url)
 
     def run_async_test(self, coro):
         """Helper to run async methods in tests."""

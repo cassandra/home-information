@@ -148,7 +148,6 @@ class TestTransientViewManager(BaseTestCase):
         alert = Alert(motion_alarm)
         
         # Mock settings to enable auto-view
-        from unittest.mock import Mock, patch
         with patch('hi.apps.console.transient_view_manager.ConsoleSettingsHelper') as mock_helper_class:
             mock_helper = Mock()
             mock_helper.get_auto_view_enabled.return_value = True
@@ -201,7 +200,6 @@ class TestTransientViewManager(BaseTestCase):
         alert = Alert(motion_alarm)
         
         # Mock settings to disable auto-view
-        from unittest.mock import Mock, patch
         with patch('hi.apps.console.transient_view_manager.ConsoleSettingsHelper') as mock_helper_class:
             mock_helper = Mock()
             mock_helper.get_auto_view_enabled.return_value = False
@@ -241,7 +239,6 @@ class TestTransientViewManager(BaseTestCase):
         alert = Alert(status_alarm)
         
         # Mock settings to enable auto-view
-        from unittest.mock import Mock, patch
         with patch('hi.apps.console.transient_view_manager.ConsoleSettingsHelper') as mock_helper_class:
             mock_helper = Mock()
             mock_helper.get_auto_view_enabled.return_value = True
@@ -281,7 +278,6 @@ class TestTransientViewManager(BaseTestCase):
         alert = Alert(motion_alarm)
         
         # Mock settings to enable auto-view
-        from unittest.mock import Mock, patch
         with patch('hi.apps.console.transient_view_manager.ConsoleSettingsHelper') as mock_helper_class:
             mock_helper = Mock()
             mock_helper.get_auto_view_enabled.return_value = True
