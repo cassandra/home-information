@@ -64,9 +64,6 @@ class ConsoleSettingsHelper( Singleton, SettingsMixin ):
     def get_auto_view_enabled( self ) -> bool:
         return self.settings_manager().get_setting_value( ConsoleSetting.AUTO_VIEW_ENABLED ) == 'true'
 
-    def get_auto_view_idle_timeout( self ) -> int:
-        return int( self.settings_manager().get_setting_value( ConsoleSetting.AUTO_VIEW_IDLE_TIMEOUT ) )
-
     def get_auto_view_duration( self ) -> int:
         return int( self.settings_manager().get_setting_value( ConsoleSetting.AUTO_VIEW_DURATION ) )
     

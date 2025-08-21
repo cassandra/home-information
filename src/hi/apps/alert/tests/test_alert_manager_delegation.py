@@ -20,16 +20,14 @@ class TestAlertManagerDelegation(BaseTestCase):
     def setUp(self):
         super().setUp()
         # Reset singletons for test isolation
-        AlertManager._instances = {}
-        TransientViewManager._instances = {}
+        AlertManager._instance = None
+        TransientViewManager._instance = None
         
         self.alert_manager = AlertManager()
         self.transient_manager = TransientViewManager()
         
         # Ensure clean state for TransientViewManager
-        # Clear state multiple times to handle any race conditions
         self.transient_manager.clear_suggestion()
-        TransientViewManager().clear_suggestion()  # Clear the singleton directly too
     
     def tearDown(self):
         # Clean up after each test

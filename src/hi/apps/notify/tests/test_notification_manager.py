@@ -18,7 +18,7 @@ class TestNotificationManager(AsyncManagerTestCase):
     def setUp(self):
         super().setUp()
         # Reset singleton state for each test
-        NotificationManager._instances = {}
+        NotificationManager._instance = None
         self.manager = NotificationManager()
 
     def test_singleton_pattern_behavior(self):

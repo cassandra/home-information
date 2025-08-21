@@ -22,10 +22,18 @@
         attachInteractionListeners: function() {
             // Note: excludes mousemove for performance reasons
             const events = ['mousedown', 'keydown', 'touchstart', 'click'];
+            
+            // Throttle interaction recording to prevent excessive calls
+            const throttledRecordInteraction = this.throttle(() => {
+                this.recordInteraction();
+            }, 100); // Max once per 100ms
+            
             events.forEach(event => {
-                document.addEventListener(event, () => {
-                    this.recordInteraction();
-                });
+                // Use passive listeners where possible for better performance
+                const options = this.isPassiveEventSupported() && 
+                              (event === 'touchstart') ? { passive: true } : false;
+                              
+                document.addEventListener(event, throttledRecordInteraction, options);
             });
         },
 
@@ -36,6 +44,50 @@
             if (this.isTransientView) {
                 this.makeTransientViewPermanent();
             }
+        },
+
+        // Helper method to check if passive events are supported
+        isPassiveEventSupported: function() {
+            if (this._passiveSupported !== undefined) {
+                return this._passiveSupported;
+            }
+            
+            this._passiveSupported = false;
+            try {
+                const options = {
+                    get passive() {
+                        this._passiveSupported = true;
+                        return false;
+                    }
+                };
+                window.addEventListener('test', null, options);
+                window.removeEventListener('test', null, options);
+            } catch (err) {
+                this._passiveSupported = false;
+            }
+            
+            return this._passiveSupported;
+        },
+
+        // Throttle function to limit how often a function can be called
+        throttle: function(func, delay) {
+            let timeoutId;
+            let lastExecTime = 0;
+            
+            return function(...args) {
+                const currentTime = Date.now();
+                
+                if (currentTime - lastExecTime > delay) {
+                    func.apply(this, args);
+                    lastExecTime = currentTime;
+                } else {
+                    clearTimeout(timeoutId);
+                    timeoutId = setTimeout(() => {
+                        func.apply(this, args);
+                        lastExecTime = Date.now();
+                    }, delay - (currentTime - lastExecTime));
+                }
+            };
         },
 
         // Auto-view decision logic

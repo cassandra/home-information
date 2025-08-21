@@ -77,15 +77,6 @@ class ConsoleSetting( SettingEnum ):
         is_required = True,
         initial_value = 'true',
     )
-    AUTO_VIEW_IDLE_TIMEOUT = SettingDefinition(
-        label = 'Idle Timeout (seconds)',
-        description = 'Time of inactivity before allowing auto-switch',
-        value_type = AttributeValueType.INTEGER,
-        value_range_str = '',
-        is_editable = True,
-        is_required = True,
-        initial_value = '60',
-    )
     AUTO_VIEW_DURATION = SettingDefinition(
         label = 'Auto View Duration (seconds)',
         description = 'How long to show auto-switched view before reverting',
