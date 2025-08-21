@@ -186,8 +186,9 @@ class TestAlertManagerAutoViewIntegration(BaseTestCase):
         ]
         
         for alarm_level, expected_priority in alarm_levels:
-            # Reset transient manager for each test
-            self.transient_manager.clear_suggestion()
+            # Reset singleton instances for each iteration
+            TransientViewManager._instances = {}
+            self.transient_manager = TransientViewManager()
             
             source_details = AlarmSourceDetails(
                 detail_attrs={'sensor_id': f'sensor_{alarm_level.name}'},
