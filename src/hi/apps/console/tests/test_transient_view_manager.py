@@ -212,7 +212,7 @@ class TestTransientViewManager(BaseTestCase):
             self.assertFalse(self.manager.has_suggestion())
 
     def test_consider_non_motion_alert_ignored(self):
-        """Test TransientViewManager ignores non-motion EVENT alarms - business logic filtering."""
+        """Test TransientViewManager handles alerts without camera view URLs - integration test."""
         from django.utils import timezone
         from hi.apps.alert.alert import Alert
         from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
