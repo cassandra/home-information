@@ -20,6 +20,7 @@ class Alert:
         self._id = uuid.uuid4().hex
         self._start_datetime = first_alarm.timestamp
         self._end_datetime = self._start_datetime + timedelta( seconds = first_alarm.alarm_lifetime_secs )
+        self._queue_insertion_datetime = None
 
         # Prevent unbounded growth and kept in reverse order of arrival, so
         # most recent alarm is on the left side of list (popleft)
@@ -41,6 +42,14 @@ class Alert:
     @property
     def end_datetime(self) -> datetime:
         return self._end_datetime
+    
+    @property
+    def queue_insertion_datetime(self) -> datetime:
+        return self._queue_insertion_datetime
+    
+    @queue_insertion_datetime.setter
+    def queue_insertion_datetime(self, value: datetime):
+        self._queue_insertion_datetime = value
     
     @property
     def audio_signal(self) -> AudioSignal:
