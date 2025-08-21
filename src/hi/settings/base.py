@@ -356,3 +356,11 @@ SUPPRESS_SELECT_REQUEST_ENPOINTS_LOGGING = True
 # to turn them off with one setting.
 #
 SUPPRESS_MONITORS = False
+
+# ====================
+# Development Testing Injection Points
+# (enabled/disabled in environment-specific settings)
+
+# When enabled in DEBUG mode, allows injecting test data into API responses
+# for frontend testing without changing backend state. Never enabled in production.
+DEBUG_FORCE_TRANSIENT_VIEW_OVERRIDE = False

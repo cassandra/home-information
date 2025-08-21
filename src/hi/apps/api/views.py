@@ -3,6 +3,7 @@ import hashlib
 import json
 import logging
 
+from django.conf import settings
 from django.core.exceptions import BadRequest
 from django.http import HttpResponse
 from django.views.generic import View
@@ -14,6 +15,7 @@ from hi.apps.console.transient_view_manager import TransientViewManager
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.apps.security.security_mixins import SecurityMixin
 from hi.apps.weather.weather_mixins import WeatherMixin
+from hi.tests.dev_injection import DevInjectionManager
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +93,11 @@ class StatusView( View, AlertMixin, SecurityMixin, SettingsMixin, WeatherMixin )
                 self.TransientViewPriorityAttr: suggestion.priority,
                 self.TransientViewTriggerReasonAttr: suggestion.trigger_reason
             }
+        
+        # Development testing injection point
+        if settings.DEBUG and getattr(settings, 'DEBUG_FORCE_TRANSIENT_VIEW_OVERRIDE', False):
+            DevInjectionManager.inject_override_if_available('transient_view', data, self.TransientViewSuggestionAttr)
+        
         return HttpResponse(
             json.dumps(data),
             content_type='application/json',

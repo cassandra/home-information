@@ -141,3 +141,10 @@ BASE_URL_FOR_EMAIL_LINKS = 'http:/127.0.0.1:8411/'
 
 SUPPRESS_SELECT_REQUEST_ENPOINTS_LOGGING = True
 SUPPRESS_MONITORS = False
+
+# ====================
+# Development Testing Injection Points
+# Enable/disable these here for frontend testing
+
+# Allows injecting transient view data for testing auto-view functionality
+DEBUG_FORCE_TRANSIENT_VIEW_OVERRIDE = False  # Set to True to enable
