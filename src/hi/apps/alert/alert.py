@@ -136,3 +136,89 @@ class Alert:
             title = self.title,
             source_obj = self,
         )
+    
+    def get_view_url(self) -> str:
+        """
+        Get a view URL associated with this alert if one can be determined.
+        
+        This method extracts a relevant view URL from the alert's alarms,
+        typically for auto-view switching to show relevant camera feeds or
+        other contextual views when alerts occur.
+        
+        IMPORTANT: HiGridView Constraint
+        ===============================
+        The returned URL MUST point to a Django view that subclasses HiGridView.
+        This constraint exists because:
+        
+        1. Auto-view switching uses asynchronous content loading via antinode.js
+        2. The antinode.js system expects HiGridView response format and structure  
+        3. HiGridView provides proper HTML templates and response handling
+        4. Other view types will not work with the auto-view switching mechanism
+        
+        Currently implemented URLs:
+        - SensorVideoStreamView: /console/sensor/{sensor_id}/video_stream/
+        
+        Future URLs must also point to HiGridView subclasses to be compatible.
+        
+        Returns:
+            A Django view URL string, or None if no view can be determined.
+        """
+        # For now, we'll use the first alarm's view URL
+        # In the future, we might have more sophisticated logic for
+        # choosing between multiple alarms' views
+        if self._first_alarm:
+            return self._extract_view_url_from_alarm(self._first_alarm)
+        return None
+    
+    def _extract_view_url_from_alarm(self, alarm: Alarm) -> str:
+        """
+        Extract a view URL from an alarm's source details.
+        
+        This method knows how to navigate the alarm's data structure
+        to find relevant view information based on the alarm source type.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        if alarm.alarm_source == AlarmSource.EVENT:
+            return self._extract_event_view_url(alarm)
+        # Future: Add handlers for other alarm sources
+        # elif alarm.alarm_source == AlarmSource.WEATHER:
+        #     return self._extract_weather_view_url(alarm)
+        
+        return None
+    
+    def _extract_event_view_url(self, alarm: Alarm) -> str:
+        """
+        Extract view URL for EVENT alarms (e.g., motion detection).
+        
+        For EVENT alarms, we look for sensor_id in the source details
+        and generate a URL to the sensor's video stream view.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Look through source_details_list for sensor/entity information
+        for source_details in alarm.source_details_list:
+            detail_attrs = source_details.detail_attrs
+            
+            # Try to find sensor_id in the detail attributes
+            sensor_id = detail_attrs.get('sensor_id')
+            if sensor_id:
+                try:
+                    # Construct camera URL using the sensor video stream view
+                    # SensorVideoStreamView subclasses HiGridView as required
+                    from django.urls import reverse
+                    return reverse('console_sensor_video_stream', kwargs={'sensor_id': sensor_id})
+                except Exception as e:
+                    logger.warning(f"Could not construct camera URL for sensor_id {sensor_id}: {e}")
+            
+            # Try other possible keys that might contain sensor/entity information
+            entity_id = detail_attrs.get('entity_id')
+            if entity_id:
+                # TODO: Implement entity_id → sensor_id mapping if needed
+                # This would require looking up the entity and find associated sensors
+                logger.debug(f"Found entity_id {entity_id} but no direct mapping to view URL yet")
+        
+        logger.debug(f"No view URL found for EVENT alarm: {alarm.alarm_type}")
+        return None

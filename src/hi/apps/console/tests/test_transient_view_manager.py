@@ -14,6 +14,11 @@ class TestTransientViewManager(BaseTestCase):
         # Reset singleton state for each test
         TransientViewManager._instances = {}
         self.manager = TransientViewManager()
+        
+    def tearDown(self):
+        # Clear any suggestions between tests
+        self.manager.clear_suggestion()
+        super().tearDown()
 
     def test_transient_view_manager_singleton_behavior(self):
         """Test TransientViewManager singleton pattern - critical for system consistency."""
@@ -114,3 +119,176 @@ class TestTransientViewManager(BaseTestCase):
         # This prevents the same suggestion from being sent multiple times
         self.assertFalse(self.manager.has_suggestion())
         return
+
+    def test_consider_alert_with_auto_view_enabled(self):
+        """Test TransientViewManager considers alerts when auto-view enabled - core business logic."""
+        from django.utils import timezone
+        from hi.apps.alert.alert import Alert
+        from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+        from hi.apps.alert.enums import AlarmLevel, AlarmSource
+        from hi.apps.security.enums import SecurityLevel
+        
+        # Create motion detection alert with camera
+        source_details = AlarmSourceDetails(
+            detail_attrs={'sensor_id': 'cam_123', 'location': 'Front Door'},
+            image_url=None
+        )
+        
+        motion_alarm = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='motion_detection',
+            alarm_level=AlarmLevel.WARNING,
+            title='Motion detected at Front Door',
+            source_details_list=[source_details],
+            security_level=SecurityLevel.OFF,
+            alarm_lifetime_secs=300,
+            timestamp=timezone.now()
+        )
+        
+        alert = Alert(motion_alarm)
+        
+        # Mock settings to enable auto-view
+        from unittest.mock import Mock, patch
+        with patch('hi.apps.console.transient_view_manager.ConsoleSettingsHelper') as mock_helper_class:
+            mock_helper = Mock()
+            mock_helper.get_auto_view_enabled.return_value = True
+            mock_helper.get_auto_view_duration.return_value = 30
+            mock_helper_class.return_value = mock_helper
+            
+            # Mock URL generation at system boundary
+            with patch('django.urls.reverse') as mock_reverse:
+                mock_reverse.return_value = '/console/sensor/video_stream/cam_123/'
+                
+                # Initially no suggestion
+                self.assertFalse(self.manager.has_suggestion())
+                
+                # Consider alert for auto-view
+                self.manager.consider_alert_for_auto_view(alert)
+                
+                # Should create suggestion
+                self.assertTrue(self.manager.has_suggestion())
+                suggestion = self.manager.peek_current_suggestion()
+                self.assertEqual(suggestion.url, '/console/sensor/video_stream/cam_123/')
+                self.assertEqual(suggestion.duration_seconds, 30)
+                self.assertEqual(suggestion.priority, motion_alarm.alarm_level.priority)
+                self.assertEqual(suggestion.trigger_reason, 'event_alert')
+
+    def test_consider_alert_with_auto_view_disabled(self):
+        """Test TransientViewManager ignores alerts when auto-view disabled - settings integration."""
+        from django.utils import timezone
+        from hi.apps.alert.alert import Alert
+        from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+        from hi.apps.alert.enums import AlarmLevel, AlarmSource
+        from hi.apps.security.enums import SecurityLevel
+        
+        # Create motion detection alert
+        source_details = AlarmSourceDetails(
+            detail_attrs={'sensor_id': 'cam_123'},
+            image_url=None
+        )
+        
+        motion_alarm = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='motion_detection',
+            alarm_level=AlarmLevel.WARNING,
+            title='Motion detected',
+            source_details_list=[source_details],
+            security_level=SecurityLevel.OFF,
+            alarm_lifetime_secs=300,
+            timestamp=timezone.now()
+        )
+        
+        alert = Alert(motion_alarm)
+        
+        # Mock settings to disable auto-view
+        from unittest.mock import Mock, patch
+        with patch('hi.apps.console.transient_view_manager.ConsoleSettingsHelper') as mock_helper_class:
+            mock_helper = Mock()
+            mock_helper.get_auto_view_enabled.return_value = False
+            mock_helper_class.return_value = mock_helper
+            
+            # Consider alert for auto-view
+            self.manager.consider_alert_for_auto_view(alert)
+            
+            # Should not create suggestion when disabled
+            self.assertFalse(self.manager.has_suggestion())
+
+    def test_consider_non_motion_alert_ignored(self):
+        """Test TransientViewManager ignores non-motion EVENT alarms - business logic filtering."""
+        from django.utils import timezone
+        from hi.apps.alert.alert import Alert
+        from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+        from hi.apps.alert.enums import AlarmLevel, AlarmSource
+        from hi.apps.security.enums import SecurityLevel
+        
+        # Create non-motion EVENT alarm
+        source_details = AlarmSourceDetails(
+            detail_attrs={'sensor_id': 'cam_123'},
+            image_url=None
+        )
+        
+        status_alarm = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='device_status',  # Not motion-related
+            alarm_level=AlarmLevel.INFO,
+            title='Device status update',
+            source_details_list=[source_details],
+            security_level=SecurityLevel.OFF,
+            alarm_lifetime_secs=300,
+            timestamp=timezone.now()
+        )
+        
+        alert = Alert(status_alarm)
+        
+        # Mock settings to enable auto-view
+        from unittest.mock import Mock, patch
+        with patch('hi.apps.console.transient_view_manager.ConsoleSettingsHelper') as mock_helper_class:
+            mock_helper = Mock()
+            mock_helper.get_auto_view_enabled.return_value = True
+            mock_helper_class.return_value = mock_helper
+            
+            # Consider alert for auto-view
+            self.manager.consider_alert_for_auto_view(alert)
+            
+            # Should not create suggestion for non-motion events
+            self.assertFalse(self.manager.has_suggestion())
+
+    def test_consider_alert_without_view_url_ignored(self):
+        """Test TransientViewManager ignores alerts without view URLs - integration with Alert model."""
+        from django.utils import timezone
+        from hi.apps.alert.alert import Alert
+        from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+        from hi.apps.alert.enums import AlarmLevel, AlarmSource
+        from hi.apps.security.enums import SecurityLevel
+        
+        # Create motion alarm but without sensor_id (no view URL)
+        source_details = AlarmSourceDetails(
+            detail_attrs={'location': 'Front Door'},  # No sensor_id
+            image_url=None
+        )
+        
+        motion_alarm = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='motion_detection',
+            alarm_level=AlarmLevel.WARNING,
+            title='Motion detected',
+            source_details_list=[source_details],
+            security_level=SecurityLevel.OFF,
+            alarm_lifetime_secs=300,
+            timestamp=timezone.now()
+        )
+        
+        alert = Alert(motion_alarm)
+        
+        # Mock settings to enable auto-view
+        from unittest.mock import Mock, patch
+        with patch('hi.apps.console.transient_view_manager.ConsoleSettingsHelper') as mock_helper_class:
+            mock_helper = Mock()
+            mock_helper.get_auto_view_enabled.return_value = True
+            mock_helper_class.return_value = mock_helper
+            
+            # Consider alert for auto-view
+            self.manager.consider_alert_for_auto_view(alert)
+            
+            # Should not create suggestion when no view URL available
+            self.assertFalse(self.manager.has_suggestion())

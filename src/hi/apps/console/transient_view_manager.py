@@ -4,6 +4,7 @@ from typing import Optional
 from hi.apps.common.singleton import Singleton
 
 from .transient_models import TransientViewSuggestion
+from .console_helper import ConsoleSettingsHelper
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ class TransientViewManager(Singleton):
         Register a suggestion for transient view change.
         
         Args:
-            url: The URL to navigate to
+            url: The URL to navigate to (must point to a view that subclasses HiGridView)
             duration_seconds: How long to show the view before reverting
             priority: Priority level (higher numbers = higher priority)
             trigger_reason: Description of what triggered this suggestion
@@ -80,3 +81,88 @@ class TransientViewManager(Singleton):
             The suggestion is NOT cleared.
         """
         return self._current_suggestion
+    
+    def consider_alert_for_auto_view(self, alert):
+        """
+        Evaluate whether the given alert should trigger an auto-view suggestion.
+        
+        This is the main entry point for auto-view decision making.
+        It encapsulates all the business logic about when and how to suggest
+        view changes based on alerts.
+        
+        Args:
+            alert: The Alert object to evaluate
+        """
+        # Check if auto-view is enabled in user settings
+        if not self._is_auto_view_enabled():
+            logger.debug("Auto-view is disabled in settings")
+            return
+            
+        # Check if this alert should trigger auto-view
+        if not self._should_alert_trigger_auto_view(alert):
+            logger.debug(f"Alert {alert.signature} should not trigger auto-view")
+            return
+            
+        # Try to get a view URL for this alert
+        view_url = alert.get_view_url()
+        if not view_url:
+            logger.debug(f"No view URL available for alert {alert.signature}")
+            return
+            
+        # Create the suggestion
+        console_helper = ConsoleSettingsHelper()
+        duration_seconds = console_helper.get_auto_view_duration()
+        priority = alert.alert_priority  # Use the alert's priority
+        
+        self.suggest_view_change(
+            url=view_url,
+            duration_seconds=duration_seconds,
+            priority=priority,
+            trigger_reason=f"{alert.alarm_source.name.lower()}_alert"
+        )
+        
+        logger.info(f"Created auto-view suggestion for alert {alert.signature}")
+    
+    def _is_auto_view_enabled(self) -> bool:
+        """Check if auto-view switching is enabled in console settings."""
+        console_helper = ConsoleSettingsHelper()
+        return console_helper.get_auto_view_enabled()
+    
+    def _should_alert_trigger_auto_view(self, alert) -> bool:
+        """
+        Determine if an alert should trigger auto-view suggestion.
+        
+        This method encapsulates the business rules about which types of
+        alerts are candidates for auto-view switching.
+        
+        Args:
+            alert: The Alert object to evaluate
+            
+        Returns:
+            True if this alert should trigger auto-view, False otherwise
+        """
+        from hi.apps.alert.enums import AlarmSource
+        
+        # Get the first alarm to check its properties
+        first_alarm = alert.first_alarm
+        if not first_alarm:
+            return False
+            
+        # Currently only handle EVENT alarms (motion detection, etc.)
+        # Future: Add WEATHER alarm handling (tornado warnings → weather radar)
+        if first_alarm.alarm_source != AlarmSource.EVENT:
+            logger.debug(f"Skipping non-EVENT alarm source: {first_alarm.alarm_source}")
+            return False
+        
+        # For EVENT alarms, check if it's a type we can handle
+        motion_related_types = ['motion', 'movement', 'detection']
+        alarm_type_lower = first_alarm.alarm_type.lower()
+        
+        should_trigger = any(motion_type in alarm_type_lower for motion_type in motion_related_types)
+        
+        if should_trigger:
+            logger.debug(f"Alert {alert.signature} matches auto-view criteria")
+        else:
+            logger.debug(f"Alert type '{first_alarm.alarm_type}' does not match auto-view criteria")
+            
+        return should_trigger
