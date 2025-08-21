@@ -98,8 +98,8 @@ class ViewUrlUtils:
         entity = sensor.entity_state.entity
         
         # Look for other sensors on the same entity that provide video streams
-        video_stream_sensors = entity.entity_states.filter(
-            entity_state_type=EntityStateType.VIDEO_STREAM
+        video_stream_sensors = entity.states.filter(
+            entity_state_type_str=str(EntityStateType.VIDEO_STREAM)
         ).exists()
         
         return video_stream_sensors
