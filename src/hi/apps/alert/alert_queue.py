@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 class AlertQueue:
 
     MAX_ALERT_LIST_SIZE = 50
+
+    TRACE = False  # for debugging
     
     def __init__(self):
         self._alert_list = list()
@@ -121,6 +123,7 @@ class AlertQueue:
         return
 
     def acknowledge_alert( self, alert_id : str ):
+        logger.debug( f'Acknoweldging alert id: {alert_id}' )
         with self._active_alerts_lock:
             for alert in self._alert_list:
                 if alert.id != alert_id:
@@ -133,7 +136,8 @@ class AlertQueue:
 
     def remove_expired_or_acknowledged_alerts(self):
         with self._active_alerts_lock:
-            logger.debug( f'Alert Check: List size = {len(self._alert_list)}')
+            if self.TRACE:
+                logger.debug( f'Alert Check: List size = {len(self._alert_list)}')
             if len( self._alert_list ) < 1:
                 return
         

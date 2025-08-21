@@ -67,12 +67,17 @@ LOGGING = {
         },
         'hi.apps.alert': {
             'handlers': ['console' ],
-            'level': 'INFO',
+            'level': 'DEBUG',
             'propagate': False,
         },
         'hi.apps.control': {
             'handlers': ['console' ],
             'level': 'INFO',
+            'propagate': False,
+        },
+        'hi.apps.console': {
+            'handlers': ['console' ],
+            'level': 'DEBUG',
             'propagate': False,
         },
         'hi.apps.notify': {
@@ -107,7 +112,7 @@ LOGGING = {
         },
         'hi.services.hass': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
         'hi.services.zoneminder': {

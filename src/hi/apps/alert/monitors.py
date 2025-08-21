@@ -11,6 +11,8 @@ class AlertMonitor( PeriodicMonitor, AlertMixin ):
 
     ALERT_POLLING_INTERVAL_SECS = 3
 
+    TRACE = False  # for debugging
+    
     def __init__( self ):
         super().__init__(
             id = 'alert-monitor',
@@ -19,7 +21,8 @@ class AlertMonitor( PeriodicMonitor, AlertMixin ):
         return
 
     async def do_work(self):
-        logger.debug( 'Checking for alert maintenance work.' )
+        if self.TRACE:
+            logger.debug( 'Checking for alert maintenance work.' )
         alert_manager = await self.alert_manager_async()
         if not alert_manager:
             return

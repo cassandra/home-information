@@ -31,6 +31,9 @@ class Alert:
         self._is_acknowledged = False
         return
 
+    def __str__(self):
+        return f'{self.alarm_source} : {self.alarm_level} : {self.alarm_type} [{self.start_datetime}, {self._end_datetime}]'
+    
     @property
     def id(self) -> str:
         return self._id

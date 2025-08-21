@@ -58,15 +58,14 @@ class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
         new_alert = self._alert_queue.get_most_important_unacknowledged_alert(
             since_datetime = last_alert_status_datetime,
         )
-        logger.debug(f"🔍 new_alert from queue: {new_alert}")
-        
         if new_alert:
             max_alert = new_alert
         else:
             max_alert = self._alert_queue.get_most_important_unacknowledged_alert()
         
-        logger.debug(f"🔍 max_alert from queue: {max_alert}")
-
+        if new_alert:
+            logger.debug(f'New Alert = {new_alert}')
+            
         # Delegate auto-view decisions to TransientViewManager
         # If there's a new alert, consider it for auto-view switching
         if new_alert:
