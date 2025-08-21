@@ -132,8 +132,10 @@ class TransientViewManager(Singleton):
         """
         Determine if an alert should trigger auto-view suggestion.
         
-        This method encapsulates the business rules about which types of
-        alerts are candidates for auto-view switching.
+        By design, any alert that reaches this point has already been filtered
+        by the event subsystem according to user-defined rules. Therefore, we 
+        consider all alerts as candidates for auto-view switching, subject only
+        to configuration settings and having a valid view URL.
         
         Args:
             alert: The Alert object to evaluate
@@ -141,28 +143,16 @@ class TransientViewManager(Singleton):
         Returns:
             True if this alert should trigger auto-view, False otherwise
         """
-        from hi.apps.alert.enums import AlarmSource
+        # All alerts that reach this point are considered valid for auto-view
+        # The event subsystem has already done the filtering based on user rules
+        # We just need to verify the alert has the necessary data
         
-        # Get the first alarm to check its properties
         first_alarm = alert.first_alarm
         if not first_alarm:
+            logger.debug("Alert has no first_alarm, cannot trigger auto-view")
             return False
             
-        # Currently only handle EVENT alarms (motion detection, etc.)
-        # Future: Add WEATHER alarm handling (tornado warnings → weather radar)
-        if first_alarm.alarm_source != AlarmSource.EVENT:
-            logger.debug(f"Skipping non-EVENT alarm source: {first_alarm.alarm_source}")
-            return False
-        
-        # For EVENT alarms, check if it's a type we can handle
-        motion_related_types = ['motion', 'movement', 'detection']
-        alarm_type_lower = first_alarm.alarm_type.lower()
-        
-        should_trigger = any(motion_type in alarm_type_lower for motion_type in motion_related_types)
-        
-        if should_trigger:
-            logger.debug(f"Alert {alert.signature} matches auto-view criteria")
-        else:
-            logger.debug(f"Alert type '{first_alarm.alarm_type}' does not match auto-view criteria")
-            
-        return should_trigger
+        # Any alert with proper alarm data can trigger auto-view
+        # The actual view URL availability will be checked separately
+        logger.debug(f"Alert {alert.signature} is eligible for auto-view")
+        return True
