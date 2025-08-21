@@ -10,7 +10,7 @@ TEMPLATES[0]['OPTIONS'].update({
     #'string_if_invalid': 'INVALID_VARIABLE_%s',
 })
 
-INSTALLED_APPS += [ 'hi.tests' ]
+INSTALLED_APPS += [ 'hi.tests', 'hi.testing' ]
 
 STATIC_ROOT = '/tmp/hi/static'
 

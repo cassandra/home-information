@@ -15,7 +15,7 @@ from hi.apps.console.transient_view_manager import TransientViewManager
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.apps.security.security_mixins import SecurityMixin
 from hi.apps.weather.weather_mixins import WeatherMixin
-from hi.tests.dev_injection import DevInjectionManager
+from hi.testing.dev_injection import DevInjectionManager
 
 logger = logging.getLogger(__name__)
 

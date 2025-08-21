@@ -1,6 +1,6 @@
 import json
 from django.core.management.base import BaseCommand, CommandError
-from hi.tests.dev_injection import DevInjectionManager
+from hi.testing.dev_injection import DevInjectionManager
 
 
 class Command(BaseCommand):
