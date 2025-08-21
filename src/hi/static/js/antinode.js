@@ -1,7 +1,7 @@
 // Anti-Node - Less Javascript is Better
 //             Server-side rendering for asynchronous interactions 
 //
-// Copyright 2020 by POMDP, Inc. - All rights reserved
+// Copyright 2020-2025 by POMDP, Inc. - All rights reserved
 
 // ====================
 // OVERVIEW
@@ -135,144 +135,144 @@
 (function() {
 
     const AN = {
-	get: function( url ) {
-	    $.ajax({
-		type: 'GET',
-		url: url,
+        get: function( url ) {
+            $.ajax({
+                type: 'GET',
+                url: url,
         
-		success: function(data, status, xhr) {
-		    asyncUpdateData( null, null, data, xhr );
-		    return false;
-		},
-		error: function (xhr, ajaxOptions, thrownError) {
-		    let http_code = xhr.status;
-		    let error_msg = thrownError;
-		    asyncUpdateData( null, null, xhr.responseText, xhr );
-		    return false;
-		} 
-	    });
-	},
+                success: function(data, status, xhr) {
+                    asyncUpdateData( null, null, data, xhr );
+                    return false;
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    let http_code = xhr.status;
+                    let error_msg = thrownError;
+                    asyncUpdateData( null, null, xhr.responseText, xhr );
+                    return false;
+                } 
+            });
+        },
 
-	post: function( url, data ) {
-	    $.ajax({
-		type: 'POST',
-		url: url,
-		data: data,
-		async: true,
-		cache: false,
-		contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
-		processData: true,
-		
-		success: function(data, status, xhr) {
-		    asyncUpdateData( null, null, data, xhr );
-		    return false;
-		},
-		error: function (xhr, ajaxOptions, thrownError) {
-		    let http_code = xhr.status;
-		    let error_msg = thrownError;
-		    asyncUpdateData( null, null, xhr.responseText, xhr );
-		    return false;
-		} 
-	    });
-	},
+        post: function( url, data ) {
+            $.ajax({
+                type: 'POST',
+                url: url,
+                data: data,
+                async: true,
+                cache: false,
+                contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+                processData: true,
+                
+                success: function(data, status, xhr) {
+                    asyncUpdateData( null, null, data, xhr );
+                    return false;
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    let http_code = xhr.status;
+                    let error_msg = thrownError;
+                    asyncUpdateData( null, null, xhr.responseText, xhr );
+                    return false;
+                } 
+            });
+        },
 
-	// New public API for programmatically loading content into a target element
-	// This is designed for JavaScript-initiated DOM replacement requests where
-	// both the URL and target are specified by the caller.
-	//
-	// Usage:
-	//   AN.loadAsyncContent({
-	//       url: '/some/path',
-	//       target: '#element-id',  // or jQuery object
-	//       mode: 'insert',         // optional: 'insert' (default) or 'replace'
-	//       method: 'GET',          // optional: 'GET' (default) or 'POST'
-	//       data: {...},            // optional: data for POST requests
-	//       beforeSend: function(jqXHR, settings) {...},  // optional callback
-	//       success: function(data, status, xhr) {...},   // optional callback
-	//       error: function(xhr, ajaxOptions, thrownError) {...}  // optional callback
-	//   });
-	//
-	loadAsyncContent: function( config ) {
-	    // Validate required parameters
-	    if ( !config || !config.url || !config.target ) {
-		console.error('AN.loadAsyncContent requires config object with url and target');
-		return;
-	    }
-	    
-	    // Get target element - support both selector strings and jQuery objects
-	    let $target = (typeof config.target === 'string') 
-		? $(config.target) 
-		: config.target;
-	    
-	    // Validate target exists
-	    if ( !$target || $target.length === 0 ) {
-		console.error('AN.loadAsyncContent: target element not found:', config.target);
-		return;
-	    }
-	    
-	    // Set defaults for optional parameters
-	    let mode = config.mode || 'insert';
-	    let method = (config.method || 'GET').toUpperCase();
-	    let data = config.data || null;
-	    let async = config.async !== false;  // default true
-	    let cache = config.cache !== false;  // default true for GET
-	    
-	    // For POST requests, handle data serialization
-	    let processData = true;
-	    let contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
-	    
-	    if ( method === 'POST' && data ) {
-		// If data is already FormData, don't process it
-		if ( data instanceof FormData ) {
-		    processData = false;
-		    contentType = false;
-		    cache = false;
-		}
-	    }
-	    
-	    // Make the AJAX request
-	    $.ajax({
-		type: method,
-		url: config.url,
-		data: data,
-		async: async,
-		cache: cache,
-		contentType: contentType,
-		processData: processData,
-		
-		beforeSend: function(jqXHR, ajaxSettings) {
-		    // Add version header if available
-		    if ( typeof AN_VERSION !== 'undefined' ) {
-			jqXHR.setRequestHeader('X-AN-Version', AN_VERSION);
-		    }
-		    
-		    // Call custom beforeSend if provided
-		    if ( config.beforeSend && typeof config.beforeSend === 'function' ) {
-			config.beforeSend(jqXHR, ajaxSettings);
-		    }
-		},
-		
-		success: function(data, status, xhr) {
-		    // Use existing response handler with specified target and mode
-		    asyncUpdateData($target, mode, data, xhr);
-		    
-		    // Call custom success callback if provided
-		    if ( config.success && typeof config.success === 'function' ) {
-			config.success(data, status, xhr);
-		    }
-		},
-		
-		error: function(xhr, ajaxOptions, thrownError) {
-		    // Use existing error handler - still processes the response
-		    asyncUpdateData($target, mode, xhr.responseText, xhr);
-		    
-		    // Call custom error callback if provided
-		    if ( config.error && typeof config.error === 'function' ) {
-			config.error(xhr, ajaxOptions, thrownError);
-		    }
-		}
-	    });
-	}
+        // New public API for programmatically loading content into a target element
+        // This is designed for JavaScript-initiated DOM replacement requests where
+        // both the URL and target are specified by the caller.
+        //
+        // Usage:
+        //   AN.loadAsyncContent({
+        //       url: '/some/path',
+        //       target: '#element-id',  // or jQuery object
+        //       mode: 'insert',         // optional: 'insert' (default) or 'replace'
+        //       method: 'GET',          // optional: 'GET' (default) or 'POST'
+        //       data: {...},            // optional: data for POST requests
+        //       beforeSend: function(jqXHR, settings) {...},  // optional callback
+        //       success: function(data, status, xhr) {...},   // optional callback
+        //       error: function(xhr, ajaxOptions, thrownError) {...}  // optional callback
+        //   });
+        //
+        loadAsyncContent: function( config ) {
+            // Validate required parameters
+            if ( !config || !config.url || !config.target ) {
+                console.error('AN.loadAsyncContent requires config object with url and target');
+                return;
+            }
+            
+            // Get target element - support both selector strings and jQuery objects
+            let $target = (typeof config.target === 'string') 
+                ? $(config.target) 
+                : config.target;
+            
+            // Validate target exists
+            if ( !$target || $target.length === 0 ) {
+                console.error('AN.loadAsyncContent: target element not found:', config.target);
+                return;
+            }
+            
+            // Set defaults for optional parameters
+            let mode = config.mode || 'insert';
+            let method = (config.method || 'GET').toUpperCase();
+            let data = config.data || null;
+            let async = config.async !== false;  // default true
+            let cache = config.cache !== false;  // default true for GET
+            
+            // For POST requests, handle data serialization
+            let processData = true;
+            let contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
+            
+            if ( method === 'POST' && data ) {
+                // If data is already FormData, don't process it
+                if ( data instanceof FormData ) {
+                    processData = false;
+                    contentType = false;
+                    cache = false;
+                }
+            }
+            
+            // Make the AJAX request
+            $.ajax({
+                type: method,
+                url: config.url,
+                data: data,
+                async: async,
+                cache: cache,
+                contentType: contentType,
+                processData: processData,
+                
+                beforeSend: function(jqXHR, ajaxSettings) {
+                    // Add version header if available
+                    if ( typeof AN_VERSION !== 'undefined' ) {
+                        jqXHR.setRequestHeader('X-AN-Version', AN_VERSION);
+                    }
+                    
+                    // Call custom beforeSend if provided
+                    if ( config.beforeSend && typeof config.beforeSend === 'function' ) {
+                        config.beforeSend(jqXHR, ajaxSettings);
+                    }
+                },
+                
+                success: function(data, status, xhr) {
+                    // Use existing response handler with specified target and mode
+                    asyncUpdateData($target, mode, data, xhr);
+                    
+                    // Call custom success callback if provided
+                    if ( config.success && typeof config.success === 'function' ) {
+                        config.success(data, status, xhr);
+                    }
+                },
+                
+                error: function(xhr, ajaxOptions, thrownError) {
+                    // Use existing error handler - still processes the response
+                    asyncUpdateData($target, mode, xhr.responseText, xhr);
+                    
+                    // Call custom error callback if provided
+                    if ( config.error && typeof config.error === 'function' ) {
+                        config.error(xhr, ajaxOptions, thrownError);
+                    }
+                }
+            });
+        }
     }
     
     window.AN = AN;
@@ -292,7 +292,7 @@ function asyncSubmitHandler(event) {
 function asyncSubmitHandlerHelper( $form ) {
 
     if ( $form.attr('debounce') ) {
-	$form.find('button').prop('disabled', true);
+        $form.find('button').prop('disabled', true);
     }
 
     handleHideShowIfNeeded( $form );
@@ -361,12 +361,12 @@ function asyncSubmitHandlerHelper( $form ) {
         contentType: contentType,
         processData: processData,
 
-	beforeSend: function (jqXHR, settings) {
-	    if ( typeof AN_VERSION !== 'undefined' ) {
-		jqXHR.setRequestHeader('X-AN-Version', AN_VERSION );
-	    }
-	},
-	
+        beforeSend: function (jqXHR, settings) {
+            if ( typeof AN_VERSION !== 'undefined' ) {
+                jqXHR.setRequestHeader('X-AN-Version', AN_VERSION );
+            }
+        },
+        
         success: function(data, status, xhr) {
             asyncUpdateData( $target, $mode, data, xhr );
             return false;
@@ -426,12 +426,12 @@ function asyncClickHandler(event) {
         type: 'GET',
         url: url,
         
-	beforeSend: function (jqXHR, settings) {
-	    if ( typeof AN_VERSION !== 'undefined' ) {
-		jqXHR.setRequestHeader('X-AN-Version', AN_VERSION );
-	    }
-	},
-	
+        beforeSend: function (jqXHR, settings) {
+            if ( typeof AN_VERSION !== 'undefined' ) {
+                jqXHR.setRequestHeader('X-AN-Version', AN_VERSION );
+            }
+        },
+        
         success: function(data, status, xhr) {
             asyncUpdateData( $target, $mode, data, xhr );
             return false;
@@ -468,12 +468,12 @@ function handleHideShowIfNeeded( $anchor ) {
 
     let hide_selector = $anchor.attr('data-hide');
     if ( hide_selector ) {
-	$(hide_selector).hide();
+        $(hide_selector).hide();
     }
 
     let show_selector = $anchor.attr('data-show');
     if ( show_selector ) {
-	$(show_selector).show();
+        $(show_selector).show();
     }
 
 };
@@ -571,18 +571,18 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     // If they were different, we would have to check for both here.
     //
     if ( 'location' in json ) {
-	let url = json['location'];
-	this.document.location.href = url;
-	return;
+        let url = json['location'];
+        this.document.location.href = url;
+        return;
     }
     
     // To allow the server to decide to refresh the page rather than
     // render async content.
     //
     if ( 'refresh' in json ) {
-	location.reload();
-	window.scrollTo(0, 0);
-	return;
+        location.reload();
+        window.scrollTo(0, 0);
+        return;
     }
     
     // In a JSON response, the 'html' contains the "main" content that
@@ -596,7 +596,7 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
              $target.replaceWith( json['html'] );
          }
          else {
-	     $target.empty();
+             $target.empty();
              $target.html( json['html'] );
          }
          handleNewContentAdded( $target );
@@ -620,7 +620,7 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     if ( 'insert' in json ) {
         for ( let htmlId in json['insert'] ) {
             let targetObj = $("#"+htmlId);
-	    targetObj.empty();
+            targetObj.empty();
             targetObj.html( json['insert'][htmlId] ).show();
             handleNewContentAdded( targetObj );
         }
@@ -642,13 +642,13 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     //
     if ( 'setAttributes' in json ) {
         for ( let htmlId in json['setAttributes'] ) {
-	    let targetObj = $("#"+htmlId);
-	    let attrMap = json['setAttributes'][htmlId];
+            let targetObj = $("#"+htmlId);
+            let attrMap = json['setAttributes'][htmlId];
             for ( let attrName in attrMap ) {
-		let attrValue = attrMap[attrName];
-		targetObj.attr( attrName, attrValue );
-		handleNewContentAdded( targetObj );
-	    }
+                let attrValue = attrMap[attrName];
+                targetObj.attr( attrName, attrValue );
+                handleNewContentAdded( targetObj );
+            }
         }
     }
     
@@ -668,11 +668,11 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     }
 
     if ( 'resetScrollbar' in json ) {
-	window.scrollTo(0, 0);
+        window.scrollTo(0, 0);
     }
     
     if ( typeof handlePostAsyncUpdate === "function") {
-	handlePostAsyncUpdate();
+        handlePostAsyncUpdate();
     }
 };
         
@@ -857,11 +857,11 @@ function asyncRedirect( $target, $mode, url ) {
         type: 'GET',
         url: url,
         
-	beforeSend: function (jqXHR, settings) {
-	    if ( typeof AN_VERSION !== 'undefined' ) {
-		jqXHR.setRequestHeader('X-AN-Version', AN_VERSION );
-	    }
-	},
+        beforeSend: function (jqXHR, settings) {
+            if ( typeof AN_VERSION !== 'undefined' ) {
+                jqXHR.setRequestHeader('X-AN-Version', AN_VERSION );
+            }
+        },
         success: function(data, status, xhr) {
             asyncUpdateData( $target, $mode, data, xhr );
         },
@@ -965,7 +965,7 @@ jQuery(function($) {
 
     let initial_modal_content = $('#antinode-initial-modal');
     if ( initial_modal_content.length > 0 ) {
-	let targetObj = getNewModal();
+        let targetObj = getNewModal();
         targetObj.append( initial_modal_content )
         showModal( targetObj );
     }
@@ -976,13 +976,13 @@ jQuery(function($) {
 $.ajaxSuppressLoader = false;
 
 $(document)
-	.ajaxStart(function () {
-	    if ( ! $.ajaxSuppressLoader ) {
-		$('#antinode-loader').show();
-	    }
-	})
-	.ajaxStop(function () {
+        .ajaxStart(function () {
+            if ( ! $.ajaxSuppressLoader ) {
+                $('#antinode-loader').show();
+            }
+        })
+        .ajaxStop(function () {
             $('#antinode-loader').hide();
-	});
+        });
     
 })();
