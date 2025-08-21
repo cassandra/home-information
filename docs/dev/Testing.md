@@ -730,6 +730,19 @@ def test_form_validation_errors(self):
 
 _TBD_
 
+## Development Data Injection
+
+The development data injection system provides a runtime mechanism to modify application behavior without code changes or Django restarts. This is useful for testing scenarios that would otherwise require complex backend state setup.
+
+**Example use case:** Injecting pre-formatted status responses for UI testing - you can override the `/api/status` endpoint to return specific transient view suggestions, allowing you to test auto-view switching behavior without manipulating the actual backend systems.
+
+**General concept:** Any code location can become an injection point by adding a `DEBUG_FORCE_*` setting and a conditional check. The system supports both one-time and persistent overrides via management commands.
+
+For complete usage details, implementation instructions, and extending to new injection points, see:
+```
+hi.testing.dev_injection.DevInjectionManager
+```
+
 ## Visual Testing Page
 
 Visit: [http://127.0.0.1:8411/tests/ui](http://127.0.0.1:8411/tests/ui).
