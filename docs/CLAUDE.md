@@ -15,8 +15,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [ ] Avoid: "🤖 Generated with Claude Code" ❌
 
 **Before Creating Pull Request:**
-- [ ] `src/manage.py test` (must show "OK")
-- [ ] `flake8 --config=src/.flake8-ci src/hi/` (must show no output)
+- [ ] `make test` (must show "OK")
+- [ ] `make lint` (must show no output)
 - [ ] Both MUST pass before PR creation
 
 **Process Verification Pattern:**
@@ -162,11 +162,11 @@ During investigation, if an issue involves **both** design/UX work **and** imple
 
 ```bash
 # 1. Run full unit test suite
-src/manage.py test
+make test
 # Must show: "OK" with all tests passing
 
 # 2. Run code quality check (only if source code was modified)
-flake8 --config=src/.flake8-ci src/hi/
+make lint
 # Must show: no output (clean)
 ```
 
@@ -176,8 +176,8 @@ flake8 --config=src/.flake8-ci src/hi/
 
 Before any pull request can be merged, the following requirements must be met:
 
-1. **Unit Tests**: All unit tests must pass (`src/manage.py test`)
-2. **Code Quality**: flake8 linting with `.flake8-ci` configuration must pass with no violations (if source code modified) (`flake8 --config=src/.flake8-ci src/hi/`)
+1. **Unit Tests**: All unit tests must pass (`make test`)
+2. **Code Quality**: flake8 linting with `.flake8-ci` configuration must pass with no violations (if source code modified) (`make lint`)
 3. **GitHub CI**: GitHub Actions will automatically verify these requirements and will block PR merging if they fail
 
 These requirements are enforced by GitHub branch protection rules and cannot be bypassed.
@@ -296,8 +296,8 @@ For detailed setup and daily commands, see [Development Setup](dev/Setup.md).
 
 ```bash
 # Common commands (all run from PROJECT ROOT)
-src/manage.py test
-flake8 --config=src/.flake8-ci src/hi/
+make test                # Run unit tests
+make lint               # Run code quality checks
 src/manage.py runserver  # http://127.0.0.1:8411
 ```
 
@@ -350,7 +350,7 @@ All generated code must comply with the `.flake8-ci` configuration rules. Common
 4. **Line Continuation**: Proper indentation for multi-line statements following PEP 8
 5. **Line Length**: Respect maximum line length limits defined in `.flake8-ci`
 
-Before submitting code, always run: `flake8 --config=src/.flake8-ci src/hi/` to verify compliance.
+Before submitting code, always run: `make lint` to verify compliance.
 
 ## Django Template Guidelines (Claude-Specific)
 
