@@ -96,25 +96,17 @@
         },
 
         loadContentAsync: function(url) {
-            // Use jQuery AJAX to fetch content and process it with antinode's asyncUpdateData
-            $.ajax({
-                type: 'GET',
+            // Use the new public API from antinode.js for loading async content
+            // This feature requires antinode.js to be loaded
+            if (!window.AN || !window.AN.loadAsyncContent) {
+                console.error('Auto-view requires antinode.js with loadAsyncContent method');
+                return;
+            }
+            
+            window.AN.loadAsyncContent({
                 url: url,
-                success: (data, status, xhr) => {
-                    const $target = $(Hi.MAIN_AREA_SELECTOR);
-                    
-                    // Use antinode's asyncUpdateData to handle content insertion properly
-                    if (window.asyncUpdateData) {
-                        window.asyncUpdateData($target, null, data, xhr);
-                    } else {
-                        // Fallback: html() replaces content inside target element
-                        $target.html(data);
-                        // Call handleNewContentAdded to ensure event handlers are attached
-                        if (window.handleNewContentAdded) {
-                            window.handleNewContentAdded($target);
-                        }
-                    }
-                },
+                target: Hi.MAIN_AREA_SELECTOR,
+                mode: 'insert',  // Replace inner content, not the element itself
                 error: (xhr, ajaxOptions, thrownError) => {
                     console.error(`Auto-view content loading error [${xhr.status}]: ${thrownError}`);
                     // Revert on error
@@ -135,14 +127,14 @@
             this.clearRevertTimer();
             this.isTransientView = false;
             
-            // Restore original content
+            // Restore original content directly
+            // Note: We can't use AN.loadAsyncContent here since we have HTML content, not a URL
+            // We just do direct DOM manipulation since this is reverting to cached content
             const $target = $(Hi.MAIN_AREA_SELECTOR);
             $target.html(this.originalContent);
             
-            // Call handleNewContentAdded to reattach event handlers
-            if (window.handleNewContentAdded) {
-                window.handleNewContentAdded($target);
-            }
+            // Note: antinode's handleNewContentAdded is internal and handles autofocus/modals
+            // Since we're restoring previous content, those behaviors aren't needed here
             
             this.hideTransientViewIndicator();
             this.originalContent = null;
