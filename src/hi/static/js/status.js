@@ -33,6 +33,11 @@
     const CssClassUpdateMapAttr = 'cssClassUpdateMap';
     const IdReplaceUpdateMapAttr = 'idReplaceUpdateMap';
     const IdReplaceHashMapAttr = 'idReplaceHashMap';
+    const TransientViewSuggestionAttr = 'transientViewSuggestion';
+    const TransientViewUrlAttr = 'url';
+    const TransientViewDurationSecondsAttr = 'durationSeconds';
+    const TransientViewPriorityAttr = 'priority';
+    const TransientViewTriggerReasonAttr = 'triggerReason';
 
     const AlertStatusDataAttr = 'alertData';
     const AlertBannerContainerSelector = '#hi-alert-banner-container';
@@ -136,6 +141,9 @@
         }
         if ( CssClassUpdateMapAttr in respObj ) {
             handleCssClassUpdates( respObj[CssClassUpdateMapAttr] );
+        }
+        if ( TransientViewSuggestionAttr in respObj ) {
+            handleTransientViewSuggestion( respObj[TransientViewSuggestionAttr] );
         }
     }
 
@@ -273,6 +281,29 @@
         $(ServerErrorMessageSelector).hide();
         gIsServerErrorShowing = false;
         Hi.audio.startAudibleSignal( Hi.audio.INFO_SIGNAL_NAME );
+    }
+
+    function handleTransientViewSuggestion( suggestionData ) {
+        if ( Hi.DEBUG ) { console.log('Transient View Suggestion: ', JSON.stringify(suggestionData) ); }
+
+        if ( ! suggestionData ) {
+            return;
+        }
+
+        // Build suggestion object using constants
+        const suggestion = {
+            url: suggestionData[TransientViewUrlAttr],
+            durationSeconds: suggestionData[TransientViewDurationSecondsAttr],
+            priority: suggestionData[TransientViewPriorityAttr],
+            triggerReason: suggestionData[TransientViewTriggerReasonAttr]
+        };
+
+        // Delegate to the auto-view module
+        if ( Hi.autoView && Hi.autoView.handleTransientViewSuggestion ) {
+            Hi.autoView.handleTransientViewSuggestion( suggestion );
+        } else {
+            console.warn('Auto-view module not available');
+        }
     }
 
 })();
