@@ -262,6 +262,7 @@ PIPELINE = {
                 'js/svg-utils.js',
                 'js/watchdog.js',
                 'js/status.js',
+                'js/auto-view.js',
                 'js/edit.js',
                 'js/edit-dragdrop.js',
                 'js/svg-icon.js',
