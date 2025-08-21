@@ -8,7 +8,7 @@ from hi.apps.console.constants import ConsoleConstants
 from hi.apps.sense.models import Sensor
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
 from hi.enums import ViewType
-from hi.tests.view_test_base import DualModeViewTestCase, SyncViewTestCase
+from hi.testing.view_test_base import DualModeViewTestCase, SyncViewTestCase
 
 logging.disable(logging.CRITICAL)
 

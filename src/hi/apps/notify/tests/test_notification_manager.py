@@ -1,6 +1,6 @@
 import logging
 from unittest.mock import AsyncMock, Mock, patch
-from hi.tests.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskTestCase
 
 from hi.apps.notify.notification_manager import NotificationManager
 from hi.apps.notify.settings import NotifySetting

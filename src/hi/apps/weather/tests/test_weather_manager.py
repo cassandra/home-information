@@ -28,7 +28,7 @@ from hi.apps.weather.enums import (
 )
 from hi.units import UnitQuantity
 
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 from hi.apps.weather.tests.synthetic_data import WeatherSyntheticData
 
 logging.disable(logging.CRITICAL)

@@ -10,8 +10,8 @@ from hi.apps.entity.models import Entity, EntityState
 from hi.apps.security.enums import SecurityLevel
 from hi.apps.sense.transient_models import SensorResponse
 from hi.integrations.transient_models import IntegrationKey
-from hi.tests.base_test_case import BaseTestCase
-from hi.tests.async_task_utils import AsyncTaskTestCase
+from hi.testing.base_test_case import BaseTestCase
+from hi.testing.async_task_utils import AsyncTaskTestCase
 
 from hi.apps.event.enums import EventType
 from hi.apps.event.event_manager import EventManager

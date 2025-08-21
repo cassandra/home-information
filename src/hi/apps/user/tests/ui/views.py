@@ -9,7 +9,7 @@ from hi.apps.notify.email_sender import EmailSender
 from hi.apps.user.signin_manager import SigninManager
 from hi.apps.user.transient_models import UserAuthenticationData
 
-from hi.tests.ui.email_test_views import EmailTestViewView
+from hi.testing.ui.email_test_views import EmailTestViewView
 
 
 class TestUiUserHomeView( View ):

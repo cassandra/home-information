@@ -10,7 +10,7 @@ TEMPLATES[0]['OPTIONS'].update({
     #'string_if_invalid': 'INVALID_VARIABLE_%s',
 })
 
-INSTALLED_APPS += [ 'hi.tests', 'hi.testing' ]
+INSTALLED_APPS += [ 'hi.testing' ]
 
 STATIC_ROOT = '/tmp/hi/static'
 
@@ -24,7 +24,7 @@ LOGGING = {
     #
     'filters': {
         'suppress_select_request_endpoints': {
-            '()': 'hi.tests.utils.log_filters.SuppressSelectRequestEndpointsFilter',
+            '()': 'hi.testing.utils.log_filters.SuppressSelectRequestEndpointsFilter',
         },
         'suppress_pipeline_template_vars': {
             '()': 'hi.apps.common.log_filters.SuppressPipelineTemplateVarsFilter',

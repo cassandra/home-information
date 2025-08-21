@@ -8,7 +8,7 @@ from django.test import RequestFactory, override_settings
 from django.urls import ResolverMatch
 
 from hi.apps.user.middleware import AuthenticationMiddleware
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

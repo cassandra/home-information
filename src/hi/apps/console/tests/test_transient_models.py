@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 from hi.apps.console.transient_models import VideoStreamEntity
 from hi.apps.entity.enums import EntityStateType
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

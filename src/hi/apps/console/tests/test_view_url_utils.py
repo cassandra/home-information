@@ -11,7 +11,7 @@ from hi.apps.entity.enums import EntityStateType
 from hi.apps.security.enums import SecurityLevel
 from hi.apps.sense.models import Sensor
 from hi.apps.sense.enums import SensorType
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

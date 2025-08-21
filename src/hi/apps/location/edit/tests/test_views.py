@@ -12,7 +12,7 @@ from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
 from hi.enums import ItemType, ViewMode
-from hi.tests.view_test_base import SyncViewTestCase, DualModeViewTestCase
+from hi.testing.view_test_base import SyncViewTestCase, DualModeViewTestCase
 
 logging.disable(logging.CRITICAL)
 

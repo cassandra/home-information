@@ -5,7 +5,7 @@ from django.urls import reverse
 
 from hi.apps.location.models import Location, LocationView
 from hi.enums import ViewMode, ViewType
-from hi.tests.view_test_base import SyncViewTestCase
+from hi.testing.view_test_base import SyncViewTestCase
 
 logging.disable(logging.CRITICAL)
 

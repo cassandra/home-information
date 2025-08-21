@@ -33,7 +33,7 @@ from hi.apps.weather.enums import (
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
 
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

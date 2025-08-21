@@ -27,7 +27,7 @@ from hi.apps.weather.weather_sources.nws import NationalWeatherService
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
 
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 
 logging.disable(logging.CRITICAL)

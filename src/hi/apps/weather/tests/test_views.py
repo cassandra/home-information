@@ -3,7 +3,7 @@ import logging
 from django.urls import reverse
 
 from hi.apps.weather.weather_manager import WeatherManager
-from hi.tests.view_test_base import DualModeViewTestCase
+from hi.testing.view_test_base import DualModeViewTestCase
 
 logging.disable(logging.CRITICAL)
 

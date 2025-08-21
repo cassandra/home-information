@@ -6,7 +6,7 @@ from django.urls import reverse
 from hi.apps.config.enums import ConfigPageType
 from hi.apps.config.models import Subsystem, SubsystemAttribute
 from hi.enums import ViewType, ViewMode
-from hi.tests.view_test_base import DualModeViewTestCase, SyncViewTestCase
+from hi.testing.view_test_base import DualModeViewTestCase, SyncViewTestCase
 
 logging.disable(logging.CRITICAL)
 

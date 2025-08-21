@@ -11,7 +11,7 @@ from hi.apps.notify.notify_mixins import NotificationMixin
 from hi.apps.notify.tests.synthetic_data import NotifySyntheticData
 from hi.apps.notify.settings import NotifySetting
 
-from hi.tests.ui.email_test_views import EmailTestViewView
+from hi.testing.ui.email_test_views import EmailTestViewView
 
 
 class TestUiNotifyHomeView( View ):

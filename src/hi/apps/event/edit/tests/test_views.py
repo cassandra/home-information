@@ -6,7 +6,7 @@ from django.urls import reverse
 from hi.apps.event.models import EventDefinition
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.control.models import Controller
-from hi.tests.view_test_base import DualModeViewTestCase
+from hi.testing.view_test_base import DualModeViewTestCase
 
 logging.disable(logging.CRITICAL)
 

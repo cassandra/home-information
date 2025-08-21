@@ -6,7 +6,7 @@ from django.test import RequestFactory
 
 from hi.apps.notify.email_sender import EmailData
 from hi.apps.user.signin_manager import SigninManager
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

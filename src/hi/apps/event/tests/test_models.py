@@ -6,7 +6,7 @@ from hi.apps.alert.enums import AlarmLevel
 from hi.apps.security.enums import SecurityLevel
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.control.models import Controller
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

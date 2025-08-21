@@ -2,7 +2,7 @@ import logging
 from unittest.mock import Mock, patch
 
 from hi.apps.console.transient_view_manager import TransientViewManager
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

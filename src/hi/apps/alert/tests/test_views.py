@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from hi.apps.alert.alert_manager import AlertManager
 from hi.apps.alert.alert import Alert
-from hi.tests.view_test_base import SyncViewTestCase, DualModeViewTestCase
+from hi.testing.view_test_base import SyncViewTestCase, DualModeViewTestCase
 
 logging.disable(logging.CRITICAL)
 

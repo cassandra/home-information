@@ -5,7 +5,7 @@ from unittest.mock import Mock
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity, EntityPath, EntityPosition
 from hi.apps.entity.enums import EntityGroupType
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

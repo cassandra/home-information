@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from asgiref.sync import sync_to_async
 from django.utils import timezone
-from hi.tests.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskTestCase
 
 from hi.apps.entity.models import Entity, EntityState, EntityStateDelegation
 from hi.apps.sense.models import Sensor, SensorHistory

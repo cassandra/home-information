@@ -6,7 +6,7 @@ from hi.apps.sense.models import Sensor
 from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.control.models import Controller
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

@@ -6,7 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from hi.apps.attribute.models import AttributeModel
 from hi.apps.attribute.enums import AttributeValueType, AttributeType
 from hi.integrations.transient_models import IntegrationKey
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

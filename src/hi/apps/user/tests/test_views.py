@@ -8,7 +8,7 @@ from django.urls import reverse
 from hi.apps.notify.email_sender import EmailSender
 from hi.apps.user.magic_code_generator import MagicCodeStatus, MagicCodeGenerator
 from hi.apps.user.signin_manager import SigninManager
-from hi.tests.view_test_base import SyncViewTestCase
+from hi.testing.view_test_base import SyncViewTestCase
 
 logging.disable(logging.CRITICAL)
 

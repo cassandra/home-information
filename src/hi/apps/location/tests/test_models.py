@@ -5,7 +5,7 @@ from hi.apps.location.models import Location, LocationAttribute, LocationView
 from hi.apps.common.svg_models import SvgViewBox, SvgItemPositionBounds
 from hi.apps.attribute.enums import AttributeValueType
 from hi.enums import ItemType
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

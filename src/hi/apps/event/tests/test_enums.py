@@ -1,7 +1,7 @@
 import logging
 
 from hi.apps.event.enums import EventType
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 
