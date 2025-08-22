@@ -10,6 +10,7 @@
         isTransientView: false,
         revertTimer: null,
         originalContent: null,
+        originalUrl: null,
 
         init: function() {
             this.attachInteractionListeners();
@@ -128,9 +129,10 @@
                 console.log(`Auto-switching to: ${url} for ${durationSeconds}s (reason: ${suggestion.triggerReason})`);
             }
             
-            // Store current content for potential revert
+            // Store current content and URL for potential revert
             if (!this.isTransientView) {
                 this.originalContent = $(Hi.MAIN_AREA_SELECTOR).html();
+                this.originalUrl = window.location.href;
             }
             
             this.isTransientView = true;
@@ -173,7 +175,7 @@
             }
             
             if (Hi.DEBUG) {
-                console.log('Reverting to original view');
+                console.log(`Reverting to original view and URL: ${this.originalUrl}`);
             }
             
             this.clearRevertTimer();
@@ -185,11 +187,70 @@
             const $target = $(Hi.MAIN_AREA_SELECTOR);
             $target.html(this.originalContent);
             
+            // Restore original URL using proper history semantics
+            // Since antinode.js pushed the transient URL, we should pop it back off the stack
+            this.restoreOriginalUrl();
+            
             // Note: antinode's handleNewContentAdded is internal and handles autofocus/modals
             // Since we're restoring previous content, those behaviors aren't needed here
             
             this.hideTransientViewIndicator();
             this.originalContent = null;
+            this.originalUrl = null;
+        },
+
+        restoreOriginalUrl: function() {
+            if (!this.originalUrl) {
+                return;
+            }
+            
+            const currentUrl = window.location.href;
+            
+            // Sanity check: only attempt to pop if we're not already on the original URL
+            if (currentUrl === this.originalUrl) {
+                if (Hi.DEBUG) {
+                    console.log('Already on original URL, no history manipulation needed');
+                }
+                return;
+            }
+            
+            // For proper history semantics, we should go back one step since antinode.js
+            // pushed the transient URL onto the history stack
+            if (Hi.DEBUG) {
+                console.log(`Popping transient URL from history. Current: ${currentUrl}, Expected original: ${this.originalUrl}`);
+            }
+            
+            // Listen for the popstate event to verify we landed on the correct URL
+            const popstateHandler = (event) => {
+                window.removeEventListener('popstate', popstateHandler);
+                
+                const newUrl = window.location.href;
+                if (newUrl === this.originalUrl) {
+                    if (Hi.DEBUG) {
+                        console.log(`Successfully restored original URL: ${newUrl}`);
+                    }
+                } else {
+                    // Fallback: if history.back() didn't get us to the right place,
+                    // use replaceState as a safety net
+                    if (Hi.DEBUG) {
+                        console.warn(`History.back() didn't restore expected URL. Got: ${newUrl}, Expected: ${this.originalUrl}. Using replaceState fallback.`);
+                    }
+                    window.history.replaceState({}, '', this.originalUrl);
+                }
+            };
+            
+            // Add the listener before calling history.back()
+            window.addEventListener('popstate', popstateHandler);
+            
+            // Attempt to go back to the previous URL in history
+            try {
+                window.history.back();
+            } catch (error) {
+                // Fallback if history.back() fails
+                window.removeEventListener('popstate', popstateHandler);
+                console.warn('history.back() failed, using replaceState fallback:', error);
+                window.history.replaceState({}, '', this.originalUrl);
+            }
         },
 
         makeTransientViewPermanent: function() {
@@ -201,6 +262,7 @@
             this.isTransientView = false;
             this.hideTransientViewIndicator();
             this.originalContent = null;
+            this.originalUrl = null;
         },
 
         // Visual indicators
