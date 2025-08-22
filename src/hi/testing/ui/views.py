@@ -31,4 +31,4 @@ class TestingHomeView( View ):
         context = {
             'app_url_list': app_url_list,
         }
-        return render(request, 'tests/ui/home.html', context )
+        return render(request, 'testing/ui/pages/testing_ui_home.html', context )

@@ -22,7 +22,7 @@ def get_tests_ui_urls():
 urlpatterns = [
     re_path( r'^$',
              views.TestingHomeView.as_view(), 
-             name='testing_home'),
+             name='testing_ui_home'),
 ]
 
 urlpatterns += get_tests_ui_urls()
