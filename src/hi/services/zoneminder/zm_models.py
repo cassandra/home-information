@@ -1,6 +1,9 @@
-from typing import Dict
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Dict, List
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.entity.enums import EntityStateValue
 
 from pyzm.helpers.Event import Event as ZmApiEvent
 
@@ -110,3 +113,26 @@ class ZmEvent:
             'Total Frames': self.total_frame_count,
             'Notes': self.notes,
         }
+
+
+@dataclass
+class AggregatedMonitorState:
+    """
+    Represents the current aggregated state of a ZoneMinder monitor,
+    derived from analyzing all events for that monitor.
+    """
+    monitor_id: int
+    current_state: EntityStateValue
+    effective_timestamp: datetime
+    canonical_event: ZmEvent
+    all_events: List[ZmEvent]
+    
+    @property
+    def is_active(self) -> bool:
+        """True if monitor is currently in ACTIVE state."""
+        return self.current_state == EntityStateValue.ACTIVE
+    
+    @property
+    def is_idle(self) -> bool:
+        """True if monitor is currently in IDLE state."""
+        return self.current_state == EntityStateValue.IDLE

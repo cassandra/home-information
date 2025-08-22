@@ -10,7 +10,7 @@ from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
 
-from .zm_models import ZmEvent
+from .zm_models import ZmEvent, AggregatedMonitorState
 from .zm_manager import ZoneMinderManager
 from .zm_mixins import ZoneMinderMixin
 
@@ -128,24 +128,10 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
                 closed_zm_event_list.append( zm_event )
             continue
 
-        sensor_response_map = dict()
-
-        for zm_event in open_zm_event_list:
-            if zm_event.event_id not in self._start_processed_event_ids:
-                active_sensor_response = self._create_movement_active_sensor_response( zm_event )
-                sensor_response_map[active_sensor_response.integration_key] = active_sensor_response
-                self._start_processed_event_ids[zm_event.event_id] = True
-            continue
-        
-        for zm_event in closed_zm_event_list:
-            if zm_event.event_id not in self._start_processed_event_ids:
-                active_sensor_response = self._create_movement_active_sensor_response( zm_event )
-                sensor_response_map[active_sensor_response.integration_key] = active_sensor_response
-                
-            idle_sensor_response = self._create_movement_idle_sensor_response( zm_event )
-            sensor_response_map[idle_sensor_response.integration_key] = idle_sensor_response
-            self._fully_processed_event_ids[zm_event.event_id] = True
-            continue
+        # NEW: Use two-phase approach to aggregate monitor states from event history
+        # This fixes the core bug where multiple events per monitor would overwrite each other
+        aggregated_states = self._aggregate_monitor_states(open_zm_event_list, closed_zm_event_list)
+        sensor_response_map = self._generate_sensor_responses_from_states(aggregated_states)
 
         # If there are no events for monitors/states, we still want to emit the
         # sensor response of it being idle.
@@ -183,6 +169,91 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             # started in less than that chosen increment.
             #
             pass
+        
+        return sensor_response_map
+
+    def _aggregate_monitor_states(self, open_zm_event_list, closed_zm_event_list):
+        """
+        Aggregate all events by monitor to determine the current state of each monitor.
+        
+        Returns dict mapping monitor_id -> AggregatedMonitorState
+        """
+        from collections import defaultdict
+        
+        # Group all events by monitor ID
+        monitor_events = defaultdict(lambda: {'open_events': [], 'closed_events': []})
+        
+        for zm_event in open_zm_event_list:
+            monitor_events[zm_event.monitor_id]['open_events'].append(zm_event)
+        
+        for zm_event in closed_zm_event_list:
+            monitor_events[zm_event.monitor_id]['closed_events'].append(zm_event)
+        
+        aggregated_states = {}
+        
+        for monitor_id, events in monitor_events.items():
+            open_events = events['open_events']
+            closed_events = events['closed_events']
+            all_events = open_events + closed_events
+            
+            # Sort all events chronologically for proper processing
+            all_events.sort(key=lambda e: e.start_datetime)
+            
+            if open_events:
+                # Monitor is currently ACTIVE - any open event means active
+                # Use earliest open event start time as the effective timestamp
+                open_events.sort(key=lambda e: e.start_datetime)
+                earliest_open_event = open_events[0]
+                
+                aggregated_states[monitor_id] = AggregatedMonitorState(
+                    monitor_id=monitor_id,
+                    current_state=EntityStateValue.ACTIVE,
+                    effective_timestamp=earliest_open_event.start_datetime,
+                    canonical_event=earliest_open_event,
+                    all_events=all_events
+                )
+            else:
+                # Monitor is currently IDLE - all events are closed
+                # Use latest closed event end time as the effective timestamp
+                closed_events.sort(key=lambda e: e.end_datetime)
+                latest_closed_event = closed_events[-1]
+                
+                aggregated_states[monitor_id] = AggregatedMonitorState(
+                    monitor_id=monitor_id,
+                    current_state=EntityStateValue.IDLE,
+                    effective_timestamp=latest_closed_event.end_datetime,
+                    canonical_event=latest_closed_event,
+                    all_events=all_events
+                )
+        
+        return aggregated_states
+    
+    def _generate_sensor_responses_from_states(self, aggregated_states):
+        """
+        Generate single SensorResponse per monitor based on aggregated state.
+        Always emit current state - downstream components handle change detection.
+        """
+        sensor_response_map = {}
+        
+        for monitor_id, state in aggregated_states.items():
+            # Create sensor response for this monitor's current state
+            if state.is_active:
+                sensor_response = self._create_movement_active_sensor_response(state.canonical_event)
+            else:  # state.is_idle
+                sensor_response = self._create_movement_idle_sensor_response(state.canonical_event)
+                
+            # Use our calculated effective timestamp
+            sensor_response.timestamp = state.effective_timestamp
+            
+            sensor_response_map[sensor_response.integration_key] = sensor_response
+            
+            # Update event processing caches to avoid reprocessing from ZM API
+            for zm_event in state.all_events:
+                if zm_event.is_open:
+                    self._start_processed_event_ids[zm_event.event_id] = True
+                else:
+                    self._start_processed_event_ids[zm_event.event_id] = True
+                    self._fully_processed_event_ids[zm_event.event_id] = True
         
         return sensor_response_map
 
