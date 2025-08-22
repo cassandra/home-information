@@ -752,20 +752,20 @@ g[hover] {
 }
 
 /* Dirty form styling - submit button enhancement */
-form[data-dirty] button[type="submit"] {
-    background-color: var(--warning-color);
-    border-color: var(--warning-color);
-    color: var(--on-warning-color);
+form[data-dirty] .btn-primary[type="submit"] {
+    background-color: var(--warning-color) !important;
+    border-color: var(--warning-color) !important;
+    color: var(--on-warning-color) !important;
 }
 
 form[data-dirty] button[type="submit"]:hover {
-    background-color: #d39e00; /* Darker shade of warning color */
-    border-color: #d39e00;
+    background-color: #d39e00 !important; /* Darker shade of warning color */
+    border-color: #d39e00 !important;
 }
 
 /* Dirty form styling - subtle form background */
 form[data-dirty] {
-    background-color: rgba(236, 165, 0, 0.03);
+    background-color: rgba(236, 165, 0, 0.2) !important;
     border-radius: 4px;
     transition: background-color 0.2s ease-in-out;
 }
