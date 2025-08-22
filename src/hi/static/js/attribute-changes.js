@@ -11,7 +11,6 @@
         config: {
             modifiedClass: 'attribute-modified',
             indicatorClass: 'attribute-modified-indicator',
-            bannerClass: 'unsaved-changes-banner',
             debounceDelay: 300
         },
 
@@ -19,7 +18,6 @@
         state: {
             originalValues: new Map(),
             modifiedFields: new Set(),
-            hasUnsavedChanges: false,
             debounceTimers: new Map()
         },
 
@@ -117,9 +115,8 @@
 
             // Handle successful async form submission (using antinode.js pattern)
             $(document).on('an:success', function(e) {
-                // More conservative approach - only clear if we actually have unsaved changes
-                // This prevents clearing indicators from unrelated Ajax success events
-                if (self.state.hasUnsavedChanges) {
+                // Clear indicators if there are any modified fields
+                if (self.state.modifiedFields.size > 0) {
                     self.clearAllIndicators();
                 }
             });
@@ -178,57 +175,13 @@
             $container.find('.' + this.config.indicatorClass).remove();
         },
 
-        // Update page-level state (banner, title, warnings)
+        // Update page-level state (now just tracks field changes)
         updatePageState: function() {
-            const hasChanges = this.state.modifiedFields.size > 0;
-            
-            if (hasChanges !== this.state.hasUnsavedChanges) {
-                this.state.hasUnsavedChanges = hasChanges;
-                
-                if (hasChanges) {
-                    this.showUnsavedChangesBanner();
-                    this.updatePageTitle(true);
-                } else {
-                    this.hideUnsavedChangesBanner();
-                    this.updatePageTitle(false);
-                }
-            }
+            // This method is kept for potential future enhancements
+            // Currently, all visual feedback is handled at the field level
         },
 
-        // Show unsaved changes banner
-        showUnsavedChangesBanner: function() {
-            const changeCount = this.state.modifiedFields.size;
-            const message = `You have ${changeCount} unsaved change${changeCount !== 1 ? 's' : ''}`;
-            
-            // Remove existing banner to avoid duplicates
-            this.hideUnsavedChangesBanner();
-            
-            // Create new banner (removed dismissible to prevent state sync issues)
-            const $banner = $(`
-                <div class="${this.config.bannerClass} alert alert-warning fade show" role="alert">
-                    <strong>Unsaved Changes:</strong> ${message}
-                </div>
-            `);
-            
-            // Insert at the top of the first attribute form
-            $('.hi-attribute-list').first().before($banner);
-        },
 
-        // Hide unsaved changes banner
-        hideUnsavedChangesBanner: function() {
-            $('.' + this.config.bannerClass).remove();
-        },
-
-        // Update page title with unsaved indicator
-        updatePageTitle: function(hasUnsaved) {
-            const title = document.title;
-            
-            if (hasUnsaved && !title.startsWith('* ')) {
-                document.title = '* ' + title;
-            } else if (!hasUnsaved && title.startsWith('* ')) {
-                document.title = title.substring(2);
-            }
-        },
 
         // Clear all indicators and reset state
         clearAllIndicators: function() {
@@ -240,11 +193,6 @@
             
             // Clear state
             this.state.modifiedFields.clear();
-            this.state.hasUnsavedChanges = false;
-            
-            // Clear page-level indicators
-            this.hideUnsavedChangesBanner();
-            this.updatePageTitle(false);
             
             // Clear debounce timers
             this.state.debounceTimers.forEach(function(timer) {

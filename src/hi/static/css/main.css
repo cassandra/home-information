@@ -744,18 +744,6 @@ g[hover] {
     margin-left: 4px;
 }
 
-/* Banner for unsaved changes notification */
-.unsaved-changes-banner {
-    position: sticky;
-    top: 0;
-    z-index: 1040;
-    margin-bottom: 1rem;
-    border-left: 4px solid var(--warning-color);
-}
-
-.unsaved-changes-banner .alert {
-    margin-bottom: 0;
-}
 
 /* Focus states for modified fields */
 .attribute-modified:focus {
