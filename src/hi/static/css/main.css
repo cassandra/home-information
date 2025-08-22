@@ -750,3 +750,22 @@ g[hover] {
     border-color: var(--warning-color);
     box-shadow: 0 0 0 0.2rem rgba(236, 165, 0, 0.25);
 }
+
+/* Dirty form styling - submit button enhancement */
+form[data-dirty] button[type="submit"] {
+    background-color: var(--warning-color);
+    border-color: var(--warning-color);
+    color: var(--on-warning-color);
+}
+
+form[data-dirty] button[type="submit"]:hover {
+    background-color: #d39e00; /* Darker shade of warning color */
+    border-color: #d39e00;
+}
+
+/* Dirty form styling - subtle form background */
+form[data-dirty] {
+    background-color: rgba(236, 165, 0, 0.03);
+    border-radius: 4px;
+    transition: background-color 0.2s ease-in-out;
+}

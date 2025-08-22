@@ -175,10 +175,21 @@
             $container.find('.' + this.config.indicatorClass).remove();
         },
 
-        // Update page-level state (now just tracks field changes)
+        // Update form-level dirty state for submit button and form styling
         updatePageState: function() {
-            // This method is kept for potential future enhancements
-            // Currently, all visual feedback is handled at the field level
+            const hasChanges = this.state.modifiedFields.size > 0;
+            
+            // Add/remove dirty attribute on forms containing attribute lists
+            $('form').each(function() {
+                const $form = $(this);
+                if ($form.find('.hi-attribute-list').length > 0) {
+                    if (hasChanges) {
+                        $form.attr('data-dirty', 'true');
+                    } else {
+                        $form.removeAttr('data-dirty');
+                    }
+                }
+            });
         },
 
 
@@ -190,6 +201,9 @@
             // Clear all visual indicators
             $('.' + this.config.modifiedClass).removeClass(this.config.modifiedClass);
             $('.' + this.config.indicatorClass).remove();
+            
+            // Clear form dirty attributes
+            $('form[data-dirty]').removeAttr('data-dirty');
             
             // Clear state
             this.state.modifiedFields.clear();
