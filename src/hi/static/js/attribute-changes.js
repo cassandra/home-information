@@ -20,7 +20,6 @@
             originalValues: new Map(),
             modifiedFields: new Set(),
             hasUnsavedChanges: false,
-            beforeUnloadWarning: false,
             debounceTimers: new Map()
         },
 
@@ -28,7 +27,6 @@
         init: function() {
             this.captureOriginalValues();
             this.bindEvents();
-            this.setupNavigationWarning();
         },
 
         // Capture original values for all attribute fields
@@ -119,7 +117,10 @@
 
             // Handle successful async form submission (using antinode.js pattern)
             $(document).on('an:success', function() {
-                self.clearAllIndicators();
+                // Only clear indicators if the success event is related to attribute forms
+                if ($('.hi-attribute-list').length > 0) {
+                    self.clearAllIndicators();
+                }
             });
         },
 
@@ -185,11 +186,9 @@
                 
                 if (hasChanges) {
                     this.showUnsavedChangesBanner();
-                    this.enableNavigationWarning();
                     this.updatePageTitle(true);
                 } else {
                     this.hideUnsavedChangesBanner();
-                    this.disableNavigationWarning();
                     this.updatePageTitle(false);
                 }
             }
@@ -231,29 +230,6 @@
             }
         },
 
-        // Setup beforeunload warning
-        setupNavigationWarning: function() {
-            const self = this;
-            
-            $(window).on('beforeunload', function(e) {
-                if (self.state.beforeUnloadWarning && self.state.hasUnsavedChanges) {
-                    const message = 'You have unsaved changes. Are you sure you want to leave?';
-                    e.originalEvent.returnValue = message;
-                    return message;
-                }
-            });
-        },
-
-        // Enable navigation warning
-        enableNavigationWarning: function() {
-            this.state.beforeUnloadWarning = true;
-        },
-
-        // Disable navigation warning
-        disableNavigationWarning: function() {
-            this.state.beforeUnloadWarning = false;
-        },
-
         // Clear all indicators and reset state
         clearAllIndicators: function() {
             const self = this;
@@ -268,7 +244,6 @@
             
             // Clear page-level indicators
             this.hideUnsavedChangesBanner();
-            this.disableNavigationWarning();
             this.updatePageTitle(false);
             
             // Clear debounce timers
@@ -300,8 +275,10 @@
 
     // Hook into antinode async content loading to handle dynamic forms
     $(document).on('an:success', function() {
-        // Reinitialize for any newly loaded attribute forms
-        AttributeChanges.initializeNewForms();
+        // Only reinitialize if there are attribute forms present
+        if ($('.hi-attribute-list').length > 0) {
+            AttributeChanges.initializeNewForms();
+        }
     });
 
     // Add to Hi namespace for potential external access
