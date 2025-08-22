@@ -250,18 +250,43 @@
             // Remove any existing indicator
             this.hideTransientViewIndicator();
             
-            // Create visual indicator using CSS classes
+            // Add border/frame effect to main content area
+            const $mainContent = $(Hi.MAIN_AREA_SELECTOR);
+            $mainContent.addClass('auto-view-active');
+            
+            // Create corner badge with reason and subtle animation
             const indicator = $(`
-                <div id="auto-view-indicator" class="auto-view-indicator">
-                    Auto-switched view: ${reason}
+                <div id="auto-view-indicator" class="auto-view-corner-badge">
+                    <div class="auto-view-badge-icon">🔄</div>
+                    <div class="auto-view-badge-text">Auto-view: ${this.formatReason(reason)}</div>
                 </div>
             `);
             
-            $('body').prepend(indicator);
+            // Position relative to main content area
+            $mainContent.css('position', 'relative').append(indicator);
+            
+            // Add pulse animation initially to draw attention
+            indicator.addClass('auto-view-pulse');
+            setTimeout(() => {
+                indicator.removeClass('auto-view-pulse');
+            }, 3000); // Remove pulse after 3 seconds
         },
 
         hideTransientViewIndicator: function() {
             $('#auto-view-indicator').remove();
+            $(Hi.MAIN_AREA_SELECTOR).removeClass('auto-view-active');
+        },
+        
+        formatReason: function(reason) {
+            // Convert technical reasons to user-friendly text
+            const reasonMap = {
+                'motion_alert': 'Motion Detected',
+                'security_alert': 'Security Alert',
+                'camera_alert': 'Camera Alert',
+                'sensor_alert': 'Sensor Alert'
+            };
+            
+            return reasonMap[reason] || reason.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         },
 
         // ===== HELPER METHODS =====
