@@ -262,19 +262,45 @@
                 </div>
             `);
             
-            // Position relative to main content area
-            $mainContent.css('position', 'relative').append(indicator);
+            // Portal approach: append to body and calculate position
+            $('body').append(indicator);
+            this.positionCornerBadge();
             
             // Add pulse animation initially to draw attention
             indicator.addClass('auto-view-pulse');
             setTimeout(() => {
                 indicator.removeClass('auto-view-pulse');
             }, 3000); // Remove pulse after 3 seconds
+            
+            // Reposition on window resize
+            $(window).on('resize.auto-view', () => {
+                this.positionCornerBadge();
+            });
         },
 
         hideTransientViewIndicator: function() {
             $('#auto-view-indicator').remove();
             $(Hi.MAIN_AREA_SELECTOR).removeClass('auto-view-active');
+            $(window).off('resize.auto-view');
+        },
+        
+        positionCornerBadge: function() {
+            const $indicator = $('#auto-view-indicator');
+            const $mainContent = $(Hi.MAIN_AREA_SELECTOR);
+            
+            if ($indicator.length && $mainContent.length) {
+                const mainRect = $mainContent[0].getBoundingClientRect();
+                const scrollTop = $(window).scrollTop();
+                const scrollLeft = $(window).scrollLeft();
+                
+                // Position in top-right corner of main content area
+                $indicator.css({
+                    position: 'fixed',
+                    top: mainRect.top + 8,
+                    right: $(window).width() - mainRect.right + 8,
+                    zIndex: 9999
+                });
+            }
         },
         
         formatReason: function(reason) {
