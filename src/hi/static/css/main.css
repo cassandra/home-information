@@ -726,3 +726,46 @@ g[hover] {
         font-size: 12px;
     }
 }
+
+/* ===== ATTRIBUTE CHANGE INDICATORS ===== */
+
+/* Visual indicator for modified attribute fields */
+.attribute-modified {
+    border: 2px solid var(--warning-color) !important;
+    background-color: rgba(236, 165, 0, 0.05);
+    transition: border-color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+/* Asterisk indicator for modified fields */
+.attribute-modified-indicator {
+    color: var(--warning-color);
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-left: 4px;
+}
+
+
+/* Focus states for modified fields */
+.attribute-modified:focus {
+    border-color: var(--warning-color);
+    box-shadow: 0 0 0 0.2rem rgba(236, 165, 0, 0.25);
+}
+
+/* Dirty form styling - submit button enhancement */
+form[data-dirty] .btn-primary[type="submit"] {
+    background-color: var(--warning-color) !important;
+    border-color: var(--warning-color) !important;
+    color: var(--on-warning-color) !important;
+}
+
+form[data-dirty] button[type="submit"]:hover {
+    background-color: #d39e00 !important; /* Darker shade of warning color */
+    border-color: #d39e00 !important;
+}
+
+/* Dirty form styling - subtle form background */
+form[data-dirty] {
+    background-color: rgba(236, 165, 0, 0.2) !important;
+    border-radius: 4px;
+    transition: background-color 0.2s ease-in-out;
+}

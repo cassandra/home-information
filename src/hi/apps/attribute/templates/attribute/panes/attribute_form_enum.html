@@ -10,7 +10,8 @@
   <select 
       id="{{ attribute_form.value.id_for_label }}"
       {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %}
-      name="{{ attribute_form.value.html_name }}" >
+      name="{{ attribute_form.value.html_name }}"
+      data-original-value="{{ attribute_form.value.value|default_if_none:'' }}" >
     {% for value, label in choices_list %}
     <option value="{{ value }}" {% if attribute_form.value.value == value %}selected="true"{% endif %}>
       {{ label }}
