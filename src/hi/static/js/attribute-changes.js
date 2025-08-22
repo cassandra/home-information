@@ -116,9 +116,10 @@
             });
 
             // Handle successful async form submission (using antinode.js pattern)
-            $(document).on('an:success', function() {
-                // Only clear indicators if the success event is related to attribute forms
-                if ($('.hi-attribute-list').length > 0) {
+            $(document).on('an:success', function(e) {
+                // More conservative approach - only clear if we actually have unsaved changes
+                // This prevents clearing indicators from unrelated Ajax success events
+                if (self.state.hasUnsavedChanges) {
                     self.clearAllIndicators();
                 }
             });
@@ -196,22 +197,21 @@
 
         // Show unsaved changes banner
         showUnsavedChangesBanner: function() {
-            if ($('.' + this.config.bannerClass).length === 0) {
-                const changeCount = this.state.modifiedFields.size;
-                const message = `You have ${changeCount} unsaved change${changeCount !== 1 ? 's' : ''}`;
-                
-                const $banner = $(`
-                    <div class="${this.config.bannerClass} alert alert-warning alert-dismissible fade show" role="alert">
-                        <strong>Unsaved Changes:</strong> ${message}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                `);
-                
-                // Insert at the top of the form
-                $('.hi-attribute-list').before($banner);
-            }
+            const changeCount = this.state.modifiedFields.size;
+            const message = `You have ${changeCount} unsaved change${changeCount !== 1 ? 's' : ''}`;
+            
+            // Remove existing banner to avoid duplicates
+            this.hideUnsavedChangesBanner();
+            
+            // Create new banner (removed dismissible to prevent state sync issues)
+            const $banner = $(`
+                <div class="${this.config.bannerClass} alert alert-warning fade show" role="alert">
+                    <strong>Unsaved Changes:</strong> ${message}
+                </div>
+            `);
+            
+            // Insert at the top of the first attribute form
+            $('.hi-attribute-list').first().before($banner);
         },
 
         // Hide unsaved changes banner
@@ -275,10 +275,8 @@
 
     // Hook into antinode async content loading to handle dynamic forms
     $(document).on('an:success', function() {
-        // Only reinitialize if there are attribute forms present
-        if ($('.hi-attribute-list').length > 0) {
-            AttributeChanges.initializeNewForms();
-        }
+        // Reinitialize to capture original values for any newly loaded forms
+        AttributeChanges.initializeNewForms();
     });
 
     // Add to Hi namespace for potential external access
