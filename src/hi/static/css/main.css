@@ -687,16 +687,19 @@ g[hover] {
     background-color: var(--warning-color);
     color: var(--on-warning-color);
     padding: 6px 12px;
-    border-radius: 20px;
+    border-radius: 0;
     font-size: 12px;
     font-weight: 500;
     display: flex;
     align-items: center;
     gap: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(236, 165, 0, 0.2);
-    max-width: 200px;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.15);
+    width: auto;
+    min-width: fit-content;
     backdrop-filter: blur(5px);
     pointer-events: none;
+    border-top: 1px solid rgba(236, 165, 0, 0.3);
+    border-left: 1px solid rgba(236, 165, 0, 0.3);
 }
 
 .auto-view-badge-icon {
@@ -710,34 +713,13 @@ g[hover] {
     text-overflow: ellipsis;
 }
 
-/* Pulse animation for initial attention */
-.auto-view-pulse {
-    animation: auto-view-pulse-animation 1.5s ease-in-out infinite;
-}
-
-@keyframes auto-view-pulse-animation {
-    0% {
-        transform: scale(1);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    }
-    50% {
-        transform: scale(1.05);
-        box-shadow: 0 4px 12px rgba(236, 165, 0, 0.4), 0 0 0 1px rgba(236, 165, 0, 0.3);
-    }
-    100% {
-        transform: scale(1);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    }
-}
+/* Removed pulse animation as requested */
 
 /* Responsive adjustments for smaller screens */
 @media (max-width: 768px) {
     .auto-view-corner-badge {
-        top: 4px;
-        right: 4px;
         font-size: 11px;
         padding: 4px 8px;
-        max-width: 150px;
     }
     
     .auto-view-badge-icon {

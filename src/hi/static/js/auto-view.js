@@ -266,12 +266,6 @@
             $('body').append(indicator);
             this.positionCornerBadge();
             
-            // Add pulse animation initially to draw attention
-            indicator.addClass('auto-view-pulse');
-            setTimeout(() => {
-                indicator.removeClass('auto-view-pulse');
-            }, 3000); // Remove pulse after 3 seconds
-            
             // Reposition on window resize
             $(window).on('resize.auto-view', () => {
                 this.positionCornerBadge();
@@ -290,14 +284,13 @@
             
             if ($indicator.length && $mainContent.length) {
                 const mainRect = $mainContent[0].getBoundingClientRect();
-                const scrollTop = $(window).scrollTop();
-                const scrollLeft = $(window).scrollLeft();
                 
-                // Position in top-right corner of main content area
+                // Position in bottom-right corner of main content area, flush to boundary
                 $indicator.css({
                     position: 'fixed',
-                    top: mainRect.top + 8,
-                    right: $(window).width() - mainRect.right + 8,
+                    bottom: $(window).height() - mainRect.bottom,
+                    right: $(window).width() - mainRect.right,
+                    maxWidth: mainRect.width,
                     zIndex: 9999
                 });
             }
