@@ -11,6 +11,7 @@
         revertTimer: null,
         originalContent: null,
         originalUrl: null,
+        transientUrls: [],
 
         init: function() {
             this.attachInteractionListeners();
@@ -133,7 +134,11 @@
             if (!this.isTransientView) {
                 this.originalContent = $(Hi.MAIN_AREA_SELECTOR).html();
                 this.originalUrl = window.location.href;
+                this.transientUrls = []; // Reset the list for new transient session
             }
+            
+            // Track this URL as it will be pushed by antinode.js
+            this.transientUrls.push(url);
             
             this.isTransientView = true;
             
@@ -201,56 +206,57 @@
 
         restoreOriginalUrl: function() {
             if (!this.originalUrl) {
-                return;
-            }
-            
-            const currentUrl = window.location.href;
-            
-            // Sanity check: only attempt to pop if we're not already on the original URL
-            if (currentUrl === this.originalUrl) {
                 if (Hi.DEBUG) {
-                    console.log('Already on original URL, no history manipulation needed');
+                    console.log('No original URL stored, skipping URL restoration');
                 }
                 return;
             }
             
-            // For proper history semantics, we should go back one step since antinode.js
-            // pushed the transient URL onto the history stack
             if (Hi.DEBUG) {
-                console.log(`Popping transient URL from history. Current: ${currentUrl}, Expected original: ${this.originalUrl}`);
+                console.log(`Restoring original URL: ${this.originalUrl}, Transient URLs to pop: [${this.transientUrls.join(', ')}]`);
             }
             
-            // Listen for the popstate event to verify we landed on the correct URL
-            const popstateHandler = (event) => {
-                window.removeEventListener('popstate', popstateHandler);
+            // Pop all transient URLs with sanity checking
+            while (this.transientUrls.length > 0) {
+                const expectedUrl = this.transientUrls.pop();
+                const currentUrl = window.location.href;
                 
-                const newUrl = window.location.href;
-                if (newUrl === this.originalUrl) {
+                if (currentUrl === expectedUrl) {
+                    // URL matches expectation, safe to pop
                     if (Hi.DEBUG) {
-                        console.log(`Successfully restored original URL: ${newUrl}`);
+                        console.log(`Popping expected transient URL: ${expectedUrl}`);
+                    }
+                    try {
+                        window.history.back();
+                    } catch (error) {
+                        console.warn(`Failed to pop URL ${expectedUrl}:`, error);
+                        break; // Stop popping and use fallback
                     }
                 } else {
-                    // Fallback: if history.back() didn't get us to the right place,
-                    // use replaceState as a safety net
+                    // URL mismatch - history stack not as expected
                     if (Hi.DEBUG) {
-                        console.warn(`History.back() didn't restore expected URL. Got: ${newUrl}, Expected: ${this.originalUrl}. Using replaceState fallback.`);
+                        console.warn(`URL mismatch. Expected: ${expectedUrl}, Current: ${currentUrl}. Stopping history manipulation.`);
                     }
-                    window.history.replaceState({}, '', this.originalUrl);
+                    break; // Stop popping and use fallback
                 }
-            };
-            
-            // Add the listener before calling history.back()
-            window.addEventListener('popstate', popstateHandler);
-            
-            // Attempt to go back to the previous URL in history
-            try {
-                window.history.back();
-            } catch (error) {
-                // Fallback if history.back() fails
-                window.removeEventListener('popstate', popstateHandler);
-                console.warn('history.back() failed, using replaceState fallback:', error);
-                window.history.replaceState({}, '', this.originalUrl);
             }
+            
+            // Final verification: ensure we're on the original URL
+            const finalUrl = window.location.href;
+            if (finalUrl !== this.originalUrl) {
+                if (Hi.DEBUG) {
+                    console.warn(`Final URL ${finalUrl} doesn't match original ${this.originalUrl}. Using replaceState to enforce invariant.`);
+                }
+                // Enforce the invariant: original URL must be on top when done
+                window.history.replaceState({}, '', this.originalUrl);
+            } else {
+                if (Hi.DEBUG) {
+                    console.log(`Successfully restored original URL: ${finalUrl}`);
+                }
+            }
+            
+            // Clear the transient URL list
+            this.transientUrls = [];
         },
 
         makeTransientViewPermanent: function() {
@@ -263,6 +269,7 @@
             this.hideTransientViewIndicator();
             this.originalContent = null;
             this.originalUrl = null;
+            this.transientUrls = [];
         },
 
         // Visual indicators
