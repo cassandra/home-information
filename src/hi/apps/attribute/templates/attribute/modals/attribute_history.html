@@ -1,0 +1,73 @@
+{% extends "modals/action_ok.html" %}
+{% load humanize %}
+
+{% block title_text %}
+Attribute History: {{ attribute.name }}
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <p class="text-muted mb-2">
+                <strong>Current Value:</strong> 
+                <span class="badge badge-primary">{{ attribute.value|default:"(empty)" }}</span>
+            </p>
+        </div>
+    </div>
+    
+    {% if history_records %}
+    <div class="row">
+        <div class="col-12">
+            <div class="table-responsive">
+                <table class="table table-sm table-striped">
+                    <thead class="thead-light">
+                        <tr>
+                            <th scope="col">When</th>
+                            <th scope="col">Value</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in history_records %}
+                        <tr>
+                            <td class="text-nowrap">
+                                <small>{{ record.changed_datetime|naturaltime }}</small>
+                            </td>
+                            <td>
+                                <span class="badge badge-light">{{ record.value|default:"(empty)" }}</span>
+                            </td>
+                            <td>
+                                {% if record.value != attribute.value %}
+                                <form method="POST" 
+                                      action="{% url 'attribute_restore' attribute.pk %}"
+                                      data-async="true"
+                                      style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="history_id" value="{{ record.pk }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                                        Restore
+                                    </button>
+                                </form>
+                                {% else %}
+                                <span class="text-muted">
+                                    <small>Current</small>
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12 text-center text-muted">
+            <p>No history available for this attribute.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
