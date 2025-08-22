@@ -92,7 +92,7 @@
             };
         },
 
-        // Auto-view decision logic
+        // ===== AUTO-VIEW DECISION LOGIC =====
         handleTransientViewSuggestion: function(suggestion) {
             if (!this.shouldAutoSwitch(suggestion)) {
                 return;
@@ -121,7 +121,7 @@
             return true;
         },
 
-        // View management
+        // ===== VIEW MANAGEMENT =====
         navigateToTransientView: function(suggestion) {
             const url = suggestion.url;
             const durationSeconds = suggestion.durationSeconds;
@@ -183,9 +183,6 @@
                 console.log(`Reverting to original view and URL: ${this.originalUrl}`);
             }
             
-            this.clearRevertTimer();
-            this.isTransientView = false;
-            
             // Restore original content directly
             // Note: We can't use AN.loadAsyncContent here since we have HTML content, not a URL
             // We just do direct DOM manipulation since this is reverting to cached content
@@ -199,9 +196,7 @@
             // Note: antinode's handleNewContentAdded is internal and handles autofocus/modals
             // Since we're restoring previous content, those behaviors aren't needed here
             
-            this.hideTransientViewIndicator();
-            this.originalContent = null;
-            this.originalUrl = null;
+            this.resetTransientState();
         },
 
         restoreOriginalUrl: function() {
@@ -219,24 +214,7 @@
             // Pop all transient URLs with sanity checking
             while (this.transientUrls.length > 0) {
                 const expectedUrl = this.transientUrls.pop();
-                const currentUrl = window.location.href;
-                
-                if (currentUrl === expectedUrl) {
-                    // URL matches expectation, safe to pop
-                    if (Hi.DEBUG) {
-                        console.log(`Popping expected transient URL: ${expectedUrl}`);
-                    }
-                    try {
-                        window.history.back();
-                    } catch (error) {
-                        console.warn(`Failed to pop URL ${expectedUrl}:`, error);
-                        break; // Stop popping and use fallback
-                    }
-                } else {
-                    // URL mismatch - history stack not as expected
-                    if (Hi.DEBUG) {
-                        console.warn(`URL mismatch. Expected: ${expectedUrl}, Current: ${currentUrl}. Stopping history manipulation.`);
-                    }
+                if (!this.popTransientUrlIfMatches(expectedUrl)) {
                     break; // Stop popping and use fallback
                 }
             }
@@ -264,15 +242,10 @@
                 console.log('Making transient view permanent due to user interaction');
             }
             
-            this.clearRevertTimer();
-            this.isTransientView = false;
-            this.hideTransientViewIndicator();
-            this.originalContent = null;
-            this.originalUrl = null;
-            this.transientUrls = [];
+            this.resetTransientState();
         },
 
-        // Visual indicators
+        // ===== VISUAL INDICATORS =====
         showTransientViewIndicator: function(reason) {
             // Remove any existing indicator
             this.hideTransientViewIndicator();
@@ -291,11 +264,42 @@
             $('#auto-view-indicator').remove();
         },
 
-        // Helper methods
+        // ===== HELPER METHODS =====
         clearRevertTimer: function() {
             if (this.revertTimer) {
                 clearTimeout(this.revertTimer);
                 this.revertTimer = null;
+            }
+        },
+
+        resetTransientState: function() {
+            this.clearRevertTimer();
+            this.isTransientView = false;
+            this.hideTransientViewIndicator();
+            this.originalContent = null;
+            this.originalUrl = null;
+            this.transientUrls = [];
+        },
+
+        popTransientUrlIfMatches: function(expectedUrl) {
+            const currentUrl = window.location.href;
+            
+            if (currentUrl === expectedUrl) {
+                if (Hi.DEBUG) {
+                    console.log(`Popping expected transient URL: ${expectedUrl}`);
+                }
+                try {
+                    window.history.back();
+                    return true;
+                } catch (error) {
+                    console.warn(`Failed to pop URL ${expectedUrl}:`, error);
+                    return false;
+                }
+            } else {
+                if (Hi.DEBUG) {
+                    console.warn(`URL mismatch. Expected: ${expectedUrl}, Current: ${currentUrl}. Stopping history manipulation.`);
+                }
+                return false;
             }
         }
     };
