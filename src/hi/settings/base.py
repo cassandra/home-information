@@ -247,6 +247,7 @@ PIPELINE = {
                 'js/main.js',
                 'js/settings.js',
                 'js/audio.js',
+                'js/attribute-changes.js',
             ),
             'output_filename': 'js/js_before_content.js',
         },

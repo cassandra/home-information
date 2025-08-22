@@ -1,6 +1,5 @@
 // Attribute Changes Tracker
 // Provides visual indicators for unsaved attribute changes
-// Copyright 2024 by POMDP, Inc. - All rights reserved
 
 (function($) {
     'use strict';
@@ -42,11 +41,14 @@
                 const fieldId = $field.attr('id');
                 
                 if (fieldId && !fieldId.endsWith('-show')) { // Skip password show/hide checkboxes
-                    let originalValue = self.getFieldValue($field);
-                    self.state.originalValues.set(fieldId, originalValue);
-                    
-                    // Add data attribute for reference
-                    $field.attr('data-original-value', originalValue);
+                    // Only capture if we don't already have this field tracked
+                    if (!self.state.originalValues.has(fieldId)) {
+                        let originalValue = self.getFieldValue($field);
+                        self.state.originalValues.set(fieldId, originalValue);
+                        
+                        // Add data attribute for reference
+                        $field.attr('data-original-value', originalValue);
+                    }
                 }
             });
         },
@@ -75,14 +77,18 @@
             return originalValue !== currentValue;
         },
 
-        // Bind event listeners
+        // Bind event listeners using document-level delegation
         bindEvents: function() {
             const self = this;
             
             // Handle input changes with debouncing for text fields
-            $('.hi-attribute-list').on('input keyup', 'input[type="text"], input[type="password"], textarea', function() {
+            // Use document-level delegation to handle dynamically loaded forms
+            $(document).on('input keyup', '.hi-attribute-list input[type="text"], .hi-attribute-list input[type="password"], .hi-attribute-list textarea', function() {
                 const $field = $(this);
                 const fieldId = $field.attr('id');
+                
+                // Skip if no ID (shouldn't happen for attribute fields)
+                if (!fieldId) return;
                 
                 // Clear existing debounce timer
                 if (self.state.debounceTimers.has(fieldId)) {
@@ -99,13 +105,16 @@
             });
 
             // Handle immediate changes for select and checkbox
-            $('.hi-attribute-list').on('change', 'select, input[type="checkbox"]', function() {
+            $(document).on('change', '.hi-attribute-list select, .hi-attribute-list input[type="checkbox"]', function() {
                 self.handleFieldChange($(this));
             });
 
             // Handle form submission to clear indicators
-            $('form').on('submit', function() {
-                self.clearAllIndicators();
+            $(document).on('submit', 'form', function() {
+                // Only clear if this form contains attributes
+                if ($(this).find('.hi-attribute-list').length > 0) {
+                    self.clearAllIndicators();
+                }
             });
 
             // Handle successful async form submission (using antinode.js pattern)
@@ -274,15 +283,25 @@
             this.clearAllIndicators();
             this.state.originalValues.clear();
             this.captureOriginalValues();
+        },
+
+        // Initialize tracking for newly loaded attribute forms
+        initializeNewForms: function() {
+            // Capture original values for any new forms
+            this.captureOriginalValues();
         }
     };
 
     // Initialize when DOM is ready
     $(document).ready(function() {
-        // Only initialize if we're on a page with attributes
-        if ($('.hi-attribute-list').length > 0) {
-            AttributeChanges.init();
-        }
+        // Always initialize - event delegation works without existing elements
+        AttributeChanges.init();
+    });
+
+    // Hook into antinode async content loading to handle dynamic forms
+    $(document).on('an:success', function() {
+        // Reinitialize for any newly loaded attribute forms
+        AttributeChanges.initializeNewForms();
     });
 
     // Add to Hi namespace for potential external access
