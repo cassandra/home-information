@@ -11,6 +11,14 @@ class EntityAttributeInLine(admin.TabularInline):
     extra = 0
     show_change_link = True
 
+
+class EntityAttributeHistoryInLine(admin.TabularInline):
+    model = models.EntityAttributeHistory
+    extra = 0
+    show_change_link = True
+    readonly_fields = ('value', 'changed_datetime')
+    can_delete = False
+
     
 class StateInLine(admin.TabularInline):
     model = models.EntityState
@@ -114,4 +122,23 @@ class EntityStateDelegationAdmin(admin.ModelAdmin):
 
     search_fields = ['entity__name']
     readonly_fields = ( 'entity_state', 'delegate_entity', )
+
+
+@admin.register(models.EntityAttribute)
+class EntityAttributeAdmin(admin.ModelAdmin):
+
+    show_full_result_count = False
+    
+    list_display = (
+        'entity',
+        'name',
+        'value',
+        'value_type_str',
+        'attribute_type_str',
+        'created_datetime',
+    )
+
+    search_fields = ['name', 'entity__name']
+    readonly_fields = ('entity', 'created_datetime')
+    inlines = [EntityAttributeHistoryInLine]
     

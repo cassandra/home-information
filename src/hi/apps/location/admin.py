@@ -8,6 +8,20 @@ class LocationViewInLine(admin.TabularInline):
     extra = 0
     show_change_link = True
 
+
+class LocationAttributeInLine(admin.TabularInline):
+    model = models.LocationAttribute
+    extra = 0
+    show_change_link = True
+
+
+class LocationAttributeHistoryInLine(admin.TabularInline):
+    model = models.LocationAttributeHistory
+    extra = 0
+    show_change_link = True
+    readonly_fields = ('value', 'changed_datetime')
+    can_delete = False
+
     
 @admin.register(models.Location)
 class LocationAdmin(admin.ModelAdmin):
@@ -25,7 +39,7 @@ class LocationAdmin(admin.ModelAdmin):
     search_fields = ['name']
     ordering = ( 'order_id', )
 
-    inlines = [ LocationViewInLine, ]
+    inlines = [ LocationViewInLine, LocationAttributeInLine, ]
 
     
 @admin.register(models.LocationView)
@@ -46,3 +60,22 @@ class LocationViewAdmin(admin.ModelAdmin):
 
     search_fields = ['name']
     ordering = ( 'order_id', )
+
+
+@admin.register(models.LocationAttribute)
+class LocationAttributeAdmin(admin.ModelAdmin):
+
+    show_full_result_count = False
+    
+    list_display = (
+        'location',
+        'name',
+        'value',
+        'value_type_str',
+        'attribute_type_str',
+        'created_datetime',
+    )
+
+    search_fields = ['name', 'location__name']
+    readonly_fields = ('location', 'created_datetime')
+    inlines = [LocationAttributeHistoryInLine]

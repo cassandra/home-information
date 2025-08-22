@@ -10,7 +10,7 @@ from hi.apps.location.models import (
     LocationItemPathModel,
     LocationView,
 )
-from hi.apps.attribute.models import AttributeModel
+from hi.apps.attribute.models import AttributeModel, AttributeValueHistoryModel
 from hi.integrations.models import IntegrationDetailsModel
 from hi.enums import ItemType
 
@@ -115,7 +115,11 @@ class EntityAttribute( AttributeModel ):
 
     def get_upload_to(self):
         return 'entity/attributes/'
-        
+    
+    def _get_history_model_class(self):
+        """Return the history model class for EntityAttribute."""
+        return EntityAttributeHistory
+
     
 class EntityState( models.Model ):
     """
@@ -398,5 +402,23 @@ class EntityView(models.Model):
             models.UniqueConstraint(
                 fields = [ 'entity', 'location_view' ],
                 name = 'entity_view_entity_location_view', ),
+        ]
+
+
+class EntityAttributeHistory(AttributeValueHistoryModel):
+    """History tracking for EntityAttribute changes."""
+    
+    attribute = models.ForeignKey(
+        EntityAttribute,
+        related_name='history',
+        verbose_name='Entity Attribute',
+        on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        verbose_name = 'Entity Attribute History'
+        verbose_name_plural = 'Entity Attribute History'
+        indexes = [
+            models.Index(fields=['attribute', '-changed_datetime']),
         ]
 

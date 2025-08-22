@@ -2,7 +2,7 @@ from typing import Dict
 
 from django.db import models
 
-from hi.apps.attribute.models import AttributeModel
+from hi.apps.attribute.models import AttributeModel, AttributeValueHistoryModel
 
 from .transient_models import IntegrationKey, IntegrationDetails
 from .managers import IntegrationDetailsManager
@@ -62,6 +62,10 @@ class IntegrationAttribute( AttributeModel ):
 
     def get_upload_to(self):
         return 'integration/attributes/'
+    
+    def _get_history_model_class(self):
+        """Return the history model class for IntegrationAttribute."""
+        return IntegrationAttributeHistory
         
         
 class IntegrationDetailsModel( models.Model ):
@@ -133,3 +137,21 @@ class IntegrationDetailsModel( models.Model ):
         self.save()
         
         return changed_fields
+
+
+class IntegrationAttributeHistory(AttributeValueHistoryModel):
+    """History tracking for IntegrationAttribute changes."""
+    
+    attribute = models.ForeignKey(
+        IntegrationAttribute,
+        related_name='history',
+        verbose_name='Integration Attribute',
+        on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        verbose_name = 'Integration Attribute History'
+        verbose_name_plural = 'Integration Attribute History'
+        indexes = [
+            models.Index(fields=['attribute', '-changed_datetime']),
+        ]

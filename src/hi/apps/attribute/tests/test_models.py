@@ -258,3 +258,4 @@ class TestAttributeModel(BaseTestCase):
         # __repr__ should equal __str__
         self.assertEqual(repr(attr), str(attr))
         return
+

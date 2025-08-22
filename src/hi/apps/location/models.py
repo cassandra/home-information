@@ -4,7 +4,7 @@ from django.core.files.storage import default_storage
 from django.db import models
 
 from hi.apps.common.svg_models import SvgDecimalField, SvgItemPositionBounds, SvgViewBox
-from hi.apps.attribute.models import AttributeModel
+from hi.apps.attribute.models import AttributeModel, AttributeValueHistoryModel
 from hi.enums import ItemType
 from hi.models import ItemTypeModelMixin
 
@@ -125,6 +125,10 @@ class LocationAttribute( AttributeModel ):
     def get_upload_to(self):
         return 'location/attributes/'
     
+    def _get_history_model_class(self):
+        """Return the history model class for LocationAttribute."""
+        return LocationAttributeHistory
+
     
 class LocationView( models.Model, ItemTypeModelMixin ):
 
@@ -277,3 +281,21 @@ class LocationItemPathModel( models.Model ):
     @property
     def location_item(self) -> LocationItemModelMixin:
         raise NotImplementedError('Subclasses must implement this method.')
+
+
+class LocationAttributeHistory(AttributeValueHistoryModel):
+    """History tracking for LocationAttribute changes."""
+    
+    attribute = models.ForeignKey(
+        LocationAttribute,
+        related_name='history',
+        verbose_name='Location Attribute',
+        on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        verbose_name = 'Location Attribute History'
+        verbose_name_plural = 'Location Attribute History'
+        indexes = [
+            models.Index(fields=['attribute', '-changed_datetime']),
+        ]

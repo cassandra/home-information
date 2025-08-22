@@ -17,6 +17,34 @@ from .enums import (
 logger = logging.getLogger(__name__)
 
 
+class AttributeValueHistoryModel(models.Model):
+    """
+    Abstract base class for tracking attribute value changes.
+    Each concrete attribute subclass should have its own history model
+    that defines the foreign key to its specific attribute type.
+    
+    Only tracks value-based attributes (Text, Boolean, Integer, Float, etc.).
+    File attributes are excluded and will be handled separately.
+    """
+    
+    class Meta:
+        abstract = True
+        ordering = ['-changed_datetime']
+    
+    value = models.TextField(
+        'Value',
+        blank=True, null=True,
+    )
+    changed_datetime = models.DateTimeField(
+        'Changed',
+        auto_now_add=True,
+        db_index=True,
+    )
+
+    def __str__(self):
+        return f'Changed at {self.changed_datetime}'
+
+
 class AttributeModel(models.Model):
 
     class Meta:
@@ -136,6 +164,8 @@ class AttributeModel(models.Model):
         return dict()
 
     def save(self, *args, **kwargs):
+        # Skip history tracking for kwargs that disable it
+        track_history = kwargs.pop('track_history', True)
         
         if self.file_value and self.file_value.name:
             self.file_value.field.upload_to = self.get_upload_to()
@@ -143,9 +173,34 @@ class AttributeModel(models.Model):
                 self.value = self.file_value.name
             if not self.pk or not self.__class__.objects.filter( pk = self.pk ).exists():
                 self.file_value.name = generate_unique_filename( self.file_value.name )
-                
+        
+        # Save the attribute first
         super().save(*args, **kwargs)
+        
+        # Track history for value-based attributes only AFTER saving
+        if track_history and not self.value_type.is_file:
+            self._create_history_record()
+        
         return
+    
+    def _create_history_record(self):
+        """Create a history record for this attribute's value change."""
+        # Get the history model class for this concrete attribute type
+        history_model_class = self._get_history_model_class()
+        if not history_model_class:
+            return
+        
+        # Create history record
+        history_model_class.objects.create(
+            attribute=self,
+            value=self.value
+        )
+    
+    def _get_history_model_class(self):
+        """Get the corresponding history model class for this attribute type."""
+        # This will be implemented by each concrete subclass or use introspection
+        # For now, return None to avoid errors - will be implemented with concrete models
+        return None
     
     def delete( self, *args, **kwargs ):
         """ Deleting file from MEDIA_ROOT on best effort basis.  Ignore if fails. """
