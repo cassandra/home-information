@@ -4,7 +4,7 @@ from types import ModuleType
 from hi.apps.config.app_settings import AppSettings, AppSettingDefinitions
 from hi.apps.config.setting_enums import SettingEnum, SettingDefinition
 from hi.apps.attribute.enums import AttributeValueType
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

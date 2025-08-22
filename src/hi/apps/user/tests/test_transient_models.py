@@ -5,7 +5,7 @@ from custom.models import CustomUser
 from django.test import RequestFactory
 
 from hi.apps.user.transient_models import UserAuthenticationData
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

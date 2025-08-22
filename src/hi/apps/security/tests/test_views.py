@@ -3,7 +3,7 @@ import logging
 from django.urls import reverse
 
 from hi.apps.security.security_manager import SecurityManager
-from hi.tests.view_test_base import SyncViewTestCase
+from hi.testing.view_test_base import SyncViewTestCase
 
 logging.disable(logging.CRITICAL)
 

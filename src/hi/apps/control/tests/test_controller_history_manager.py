@@ -3,7 +3,7 @@ import logging
 from hi.apps.control.controller_history_manager import ControllerHistoryManager
 from hi.apps.control.models import Controller, ControllerHistory
 from hi.apps.entity.models import Entity, EntityState, EntityStateDelegation
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

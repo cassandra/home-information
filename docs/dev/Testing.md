@@ -730,9 +730,22 @@ def test_form_validation_errors(self):
 
 _TBD_
 
+## Development Data Injection
+
+The development data injection system provides a runtime mechanism to modify application behavior without code changes or Django restarts. This is useful for testing scenarios that would otherwise require complex backend state setup.
+
+**Example use case:** Injecting pre-formatted status responses for UI testing - you can override the `/api/status` endpoint to return specific transient view suggestions, allowing you to test auto-view switching behavior without manipulating the actual backend systems.
+
+**General concept:** Any code location can become an injection point by adding a `DEBUG_FORCE_*` setting and a conditional check. The system supports both one-time and persistent overrides via management commands.
+
+For complete usage details, implementation instructions, and extending to new injection points, see:
+```
+hi.testing.dev_injection.DevInjectionManager
+```
+
 ## Visual Testing Page
 
-Visit: [http://127.0.0.1:8411/tests/ui](http://127.0.0.1:8411/tests/ui).
+Visit: [http://127.0.0.1:8411/testing/ui](http://127.0.0.1:8411/testing/ui).
 
 These tests/ui views are only available in the development environment when `DEBUG=True`. (They are conditionally loaded in the root `urls.py`.)
 
@@ -752,7 +765,7 @@ Then:
 - Create `tests/ui/views.py`
 - Create `tests/ui/urls.py` (This gets auto-discovered. Esnure some default home page rule.)
 
-The templates for these tests, by convention, would be put in the app templates directory as `templates/${APPNAME}/tests/ui`. At a minimum, you will probably want a home page `templates/${APPNAME}/tests/ui/home.html` like this:
+The templates for these tests, by convention, would be put in the app templates directory as `templates/${APPNAME}/testing/ui`. At a minimum, you will probably want a home page `templates/${APPNAME}/testing/ui/home.html` like this:
 
 ``` html
 {% extends "pages/base.html" %}
@@ -777,7 +790,7 @@ class Test${APPNAMNE}HomeView( View ):
     def get(self, request, *args, **kwargs):
         context = {
         }
-        return render(request, "${APPNAME}/tests/ui/home.html", context )
+        return render(request, "${APPNAME}/testing/ui/home.html", context )
 ```
 
 And in `tests/ui/urls.py`:
@@ -798,7 +811,7 @@ urlpatterns = [
 
 ### UI Testing Framework Guidelines
 
-The visual testing framework at `/tests/ui` is designed for viewing UI styling and layout during development. These are **read-only** views that should never modify system state.
+The visual testing framework at `/testing/ui` is designed for viewing UI styling and layout during development. These are **read-only** views that should never modify system state.
 
 #### Critical UI Testing Principle: System State Isolation
 

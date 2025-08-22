@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from hi.tests.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskTestCase
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 logging.disable(logging.CRITICAL)

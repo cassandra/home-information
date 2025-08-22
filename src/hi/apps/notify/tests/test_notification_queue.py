@@ -6,7 +6,7 @@ from datetime import datetime
 
 from hi.apps.notify.notification_queue import NotificationQueue
 from hi.apps.notify.transient_models import Notification, NotificationItem
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

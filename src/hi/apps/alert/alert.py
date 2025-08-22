@@ -20,6 +20,7 @@ class Alert:
         self._id = uuid.uuid4().hex
         self._start_datetime = first_alarm.timestamp
         self._end_datetime = self._start_datetime + timedelta( seconds = first_alarm.alarm_lifetime_secs )
+        self._queue_insertion_datetime = None
 
         # Prevent unbounded growth and kept in reverse order of arrival, so
         # most recent alarm is on the left side of list (popleft)
@@ -30,6 +31,9 @@ class Alert:
         self._is_acknowledged = False
         return
 
+    def __str__(self):
+        return f'{self.alarm_source} : {self.alarm_level} : {self.alarm_type} [{self.start_datetime}, {self._end_datetime}]'
+    
     @property
     def id(self) -> str:
         return self._id
@@ -41,6 +45,14 @@ class Alert:
     @property
     def end_datetime(self) -> datetime:
         return self._end_datetime
+    
+    @property
+    def queue_insertion_datetime(self) -> datetime:
+        return self._queue_insertion_datetime
+    
+    @queue_insertion_datetime.setter
+    def queue_insertion_datetime(self, value: datetime):
+        self._queue_insertion_datetime = value
     
     @property
     def audio_signal(self) -> AudioSignal:
@@ -136,3 +148,22 @@ class Alert:
             title = self.title,
             source_obj = self,
         )
+    
+    def get_view_url(self) -> str:
+        """
+        Get a view URL associated with this alert if one can be determined.
+        
+        This method extracts a relevant view URL from the alert's alarms,
+        typically for auto-view switching to show relevant camera feeds or
+        other contextual views when alerts occur.
+        
+        Returns:
+            A Django view URL string, or None if no view can be determined.
+        """
+        # For now, we'll use the first alarm's view URL
+        # In the future, we might have more sophisticated logic for
+        # choosing between multiple alarms' views
+        if self._first_alarm:
+            return self._first_alarm.get_view_url()
+        return None
+    

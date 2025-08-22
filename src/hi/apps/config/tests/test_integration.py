@@ -6,7 +6,7 @@ from hi.apps.config.settings_manager import SettingsManager
 from hi.apps.config.app_settings import AppSettings
 from hi.apps.config.setting_enums import SettingEnum, SettingDefinition
 from hi.apps.attribute.enums import AttributeValueType
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

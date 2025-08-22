@@ -4,7 +4,7 @@ from django.db import IntegrityError
 from django.contrib.auth import get_user_model
 
 from hi.apps.notify.models import UnsubscribedEmail
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 User = get_user_model()
 

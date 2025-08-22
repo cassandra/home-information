@@ -6,7 +6,7 @@ from hi.apps.control.controller_manager import ControllerManager
 from hi.apps.control.models import Controller
 from hi.apps.entity.models import Entity, EntityState
 from hi.integrations.transient_models import IntegrationControlResult
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

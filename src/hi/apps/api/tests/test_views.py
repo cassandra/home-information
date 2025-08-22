@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from django.urls import reverse
 
-from hi.tests.view_test_base import AsyncViewTestCase
+from hi.testing.view_test_base import AsyncViewTestCase
 
 logging.disable(logging.CRITICAL)
 

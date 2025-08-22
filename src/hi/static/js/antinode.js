@@ -1,144 +1,278 @@
 // Anti-Node - Less Javascript is Better
-//             For Server-side rendering for asynchronous interactions 
+//             Server-side rendering for asynchronous interactions 
 //
-// Copyright 2020 by POMDP, Inc. - All rights reserved
+// Copyright 2020-2025 by POMDP, Inc. - All rights reserved
 
-// --------------
-// (Django) HOWTO
-// --------------
-//
-// 1. Include jQuery and Bootstrap and cookie.js
-// 2. Add this to bottom page JS loading items:
+// ====================
+// OVERVIEW
+// ====================
+// Anti-Node (AN) provides a comprehensive framework for handling asynchronous
+// content loading and DOM manipulation without full page refreshes. It supports
+// both declarative (HTML attributes) and programmatic (JavaScript API) usage.
+
+// ====================
+// PREREQUISITES
+// ====================
+// 1. jQuery (for AJAX and DOM manipulation)
+// 2. Bootstrap (optional, for modal support)
+// 3. js-cookie library (for CSRF token handling)
+// 4. Include antinode.js after the above libraries:
 //    <script src="{% static 'js/antinode.js' %}"></script>
+// 5. (Optional) Set AN_VERSION variable before loading for version compatibility
 
-//========================================
-// jQuery asynchronous form submission
+// ====================
+// DECLARATIVE USAGE (HTML Attributes)
+// ====================
+// 
+// Basic async loading:
+//   <a href="/path" data-async="#target-id">Load Content</a>
+//   <form action="/submit" data-async="#result-area">...</form>
+//
+// Attributes:
+//   data-async="{selector}"  - jQuery selector for target element, or "modal" for new modal
+//   data-mode="insert"       - (default) Replace inner HTML of target
+//   data-mode="replace"      - Replace entire target element
+//   data-hide="{selector}"   - Hide elements when triggered
+//   data-show="{selector}"   - Show elements when triggered
+//   data-stay-in-modal       - Don't auto-close modal on submission
+//   debounce                 - Prevent double form submission
+//   onchange-async="true"    - Auto-submit form on select/checkbox change
 
-// For any anchor tag (<a>) or form tag (<form>), you can turn them into an
-// asynchonous (aka, AJAX) request by adding the attribute:
-//  
-//      data-async="mnemonic-or-jquery-selector"
+// ====================
+// PROGRAMMATIC API
+// ====================
 //
-// Where the predefined, reserved mnemonics are:
+// AN.loadAsyncContent(config) - Load content into specific target
+//   config.url              - URL to fetch
+//   config.target           - Target selector or jQuery object (required)
+//   config.mode             - 'insert' or 'replace' (default: 'insert')
+//   config.method           - 'GET' or 'POST' (default: 'GET')
+//   config.data             - Data for POST requests
+//   config.beforeSend       - Callback: function(jqXHR, settings)
+//   config.success          - Callback: function(data, status, xhr)
+//   config.error            - Callback: function(xhr, ajaxOptions, thrownError)
 //
-//    "modal" - render as a modal dialog
-//
-// Can also define data-mode with values:
-//
-//    "replace" - to replace the target instead of inserting into it
-//
-// This javascript code will add events to those items to send them through
-// then jQuery ajax requests and ensure that the returned content get
-// rendered inside the DOM element matching then target id or selector.
-//
-// By default, the async content will be "inserted" into the matching
-// selected and overwriting and of its existing contained HTML content
-// (but it does not replace the matching node itself). If you want to
-// completely replace the target node, then also add the attribute
-// data-mode="replace" .
-//
-// This has special logic to handle Bootstrap modal dialogs as well so that
-// if the target points to a (initially hidden) Bootstrap modal, it will
-// also ensure that the modal gets shown.
-//
-// An extra feature is to handle page redirects in the case where the
-// anchor or form might render async content or may need to redirect.  In
-// this case, if the returntin content is a JSON document with the attribute
-// "location", it will assume this is a URL and will redirect the page
-// (instead of inserting the content into the DOM).
-//
-// Another feature it provides is restoring scroll bar positions for
-// content that is asynchronously refreshed.  Use the 'preserve-scroll-bar'
-// class on the scrollable element to be preserved.
-//
-// For form submissions with submit buttons, you can help prevent double
-// submissions by adding the form property "debounce". Set this on the form
-// HTML element, not the buttons.
-//
-// To support "onchange" submission for Select or checkbox elements, add
-// the following attribute to the SELECT (and also add the
-// data-async/data-mode attributes to the form)
-//
-//     onchange-async="true"
-//
-// If you define the javascript function "handlePostAsyncUpdate()", this
-// will be called after each async content update after all updated are
-// handled.
-//
-// You can use the following attributes on a form/link with the data-async
-// attribute. These allow you to show or hide content when the async
-// submission/click is triggered.
-//
-//     data-hide="{selector}"   - jQuery selector for content to be hidden on submit/click
-//     data-show="{selector}"   - jQuery selector for content to be shown on submit/click
-//
-// You will probably want an initial CSS rules of "display: none;" on the
-// data-show elements.
-//
-// If you want a synchronously loaded page to display an initial modal afer
-// page load, put the modal content in a DIV with the id
-// "antinode-initial-modal".
+// AN.get(url)               - GET request, target determined by response
+// AN.post(url, data)        - POST request, target determined by response
 
-// Version Support
+// ====================
+// SERVER RESPONSE FORMATS
+// ====================
 //
+// 1. HTML Response:
+//    - Inserted directly into target element
+//
+// 2. JSON Response - supports multiple operations:
+//    {
+//      "location": "/redirect/url",        // Redirect browser
+//      "refresh": true,                     // Refresh entire page
+//      "html": "<div>...</div>",          // Content for main target
+//      "insert": {"id1": "...", ...},     // Replace inner HTML by ID
+//      "replace": {"id1": "...", ...},    // Replace entire elements by ID
+//      "append": {"id1": "...", ...},     // Append to elements by ID
+//      "setAttributes": {"id1": {...}},   // Set element attributes
+//      "modal": "<div>...</div>",         // Create and show modal
+//      "pushUrl": "/new/url",             // Update browser URL without reload
+//      "resetScrollbar": true              // Reset to top of page
+//    }
+
+// ====================
+// SPECIAL FEATURES
+// ====================
+//
+// Scroll Preservation:
+//   Add class "preserve-scroll-bar" to elements to maintain scroll position
+//
+// Loading Indicator:
+//   Automatic loading spinner overlay during async requests
+//
+// Modal Support:
+//   - Auto-display: Place content in #antinode-initial-modal
+//   - Dynamic modals: Use data-async="modal"
+//   - Handles overlapping show/hide transitions
+//
+// Version Compatibility:
+//   Adds X-AN-Version header to detect version mismatches (see VERSION SUPPORT below)
+//
+// Post-Update Hook:
+//   Define global function handlePostAsyncUpdate() to run after updates
+//
+// Extension Point:
+//   Call addAfterAsyncRenderFunction(func) to add custom post-render logic
+
+// ====================
+// ERROR HANDLING
+// ====================
+// - HTTP errors still process response content (useful for form validation)
+// - Console errors logged for debugging
+// - Malformed JSON falls back to HTML insertion
+
+// ====================
+// CSRF PROTECTION
+// ====================
+// Automatically adds Django CSRF token to POST requests using js-cookie
+
+// ====================
+// VERSION SUPPORT
+// ====================
 // Asynchronous pages are susceptible to problems when the server-side
-// software is updated.  If the synchronously loaded CSS or JS files from
+// software is updated. If the synchronously loaded CSS or JS files from
 // the previous version are used to try to render the asynchronously loaded
-// HTML content from a newer version, there can be a mismatch.  To help the
-// server-side deal with this, this module will add a custom HTTP header to
-// every asynchronous call with the version number.  To enable this
+// HTML content from a newer version, there can be a mismatch. 
+//
+// To help the server-side deal with this, this module will add a custom HTTP 
+// header to every asynchronous call with the version number. To enable this
 // feature, you need to ensure that the javascript variable AN_VERSION is
-// set to the current version somewhere before this module loads.  When
+// set to the current version somewhere before this module loads. When
 // that variable exists, this module will add the header "X-AN-Version"
-// with the value of that variable. The server can use this to detect if
-// that matches the currently running server version and take action if
-// needed.  A typical action is to render a dialog to force a
-// synchronous refresh and ensure the latest version of the CSS and JS
-// assets are loaded.
+// with the value of that variable. 
+//
+// The server can use this to detect if that matches the currently running 
+// server version and take action if needed. A typical action is to render 
+// a dialog to force a synchronous refresh and ensure the latest version 
+// of the CSS and JS assets are loaded.
 
 (function() {
 
     const AN = {
-	get: function( url ) {
-	    $.ajax({
-		type: 'GET',
-		url: url,
+        get: function( url ) {
+            $.ajax({
+                type: 'GET',
+                url: url,
         
-		success: function(data, status, xhr) {
-		    asyncUpdateData( null, null, data, xhr );
-		    return false;
-		},
-		error: function (xhr, ajaxOptions, thrownError) {
-		    let http_code = xhr.status;
-		    let error_msg = thrownError;
-		    asyncUpdateData( null, null, xhr.responseText, xhr );
-		    return false;
-		} 
-	    });
-	},
+                success: function(data, status, xhr) {
+                    asyncUpdateData( null, null, data, xhr );
+                    return false;
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    let http_code = xhr.status;
+                    let error_msg = thrownError;
+                    asyncUpdateData( null, null, xhr.responseText, xhr );
+                    return false;
+                } 
+            });
+        },
 
-	post: function( url, data ) {
-	    $.ajax({
-		type: 'POST',
-		url: url,
-		data: data,
-		async: true,
-		cache: false,
-		contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
-		processData: true,
-		
-		success: function(data, status, xhr) {
-		    asyncUpdateData( null, null, data, xhr );
-		    return false;
-		},
-		error: function (xhr, ajaxOptions, thrownError) {
-		    let http_code = xhr.status;
-		    let error_msg = thrownError;
-		    asyncUpdateData( null, null, xhr.responseText, xhr );
-		    return false;
-		} 
-	    });
-	}
+        post: function( url, data ) {
+            $.ajax({
+                type: 'POST',
+                url: url,
+                data: data,
+                async: true,
+                cache: false,
+                contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+                processData: true,
+                
+                success: function(data, status, xhr) {
+                    asyncUpdateData( null, null, data, xhr );
+                    return false;
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    let http_code = xhr.status;
+                    let error_msg = thrownError;
+                    asyncUpdateData( null, null, xhr.responseText, xhr );
+                    return false;
+                } 
+            });
+        },
+
+        // New public API for programmatically loading content into a target element
+        // This is designed for JavaScript-initiated DOM replacement requests where
+        // both the URL and target are specified by the caller.
+        //
+        // Usage:
+        //   AN.loadAsyncContent({
+        //       url: '/some/path',
+        //       target: '#element-id',  // or jQuery object
+        //       mode: 'insert',         // optional: 'insert' (default) or 'replace'
+        //       method: 'GET',          // optional: 'GET' (default) or 'POST'
+        //       data: {...},            // optional: data for POST requests
+        //       beforeSend: function(jqXHR, settings) {...},  // optional callback
+        //       success: function(data, status, xhr) {...},   // optional callback
+        //       error: function(xhr, ajaxOptions, thrownError) {...}  // optional callback
+        //   });
+        //
+        loadAsyncContent: function( config ) {
+            // Validate required parameters
+            if ( !config || !config.url || !config.target ) {
+                console.error('AN.loadAsyncContent requires config object with url and target');
+                return;
+            }
+            
+            // Get target element - support both selector strings and jQuery objects
+            let $target = (typeof config.target === 'string') 
+                ? $(config.target) 
+                : config.target;
+            
+            // Validate target exists
+            if ( !$target || $target.length === 0 ) {
+                console.error('AN.loadAsyncContent: target element not found:', config.target);
+                return;
+            }
+            
+            // Set defaults for optional parameters
+            let mode = config.mode || 'insert';
+            let method = (config.method || 'GET').toUpperCase();
+            let data = config.data || null;
+            let async = config.async !== false;  // default true
+            let cache = config.cache !== false;  // default true for GET
+            
+            // For POST requests, handle data serialization
+            let processData = true;
+            let contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
+            
+            if ( method === 'POST' && data ) {
+                // If data is already FormData, don't process it
+                if ( data instanceof FormData ) {
+                    processData = false;
+                    contentType = false;
+                    cache = false;
+                }
+            }
+            
+            // Make the AJAX request
+            $.ajax({
+                type: method,
+                url: config.url,
+                data: data,
+                async: async,
+                cache: cache,
+                contentType: contentType,
+                processData: processData,
+                
+                beforeSend: function(jqXHR, ajaxSettings) {
+                    // Add version header if available
+                    if ( typeof AN_VERSION !== 'undefined' ) {
+                        jqXHR.setRequestHeader('X-AN-Version', AN_VERSION);
+                    }
+                    
+                    // Call custom beforeSend if provided
+                    if ( config.beforeSend && typeof config.beforeSend === 'function' ) {
+                        config.beforeSend(jqXHR, ajaxSettings);
+                    }
+                },
+                
+                success: function(data, status, xhr) {
+                    // Use existing response handler with specified target and mode
+                    asyncUpdateData($target, mode, data, xhr);
+                    
+                    // Call custom success callback if provided
+                    if ( config.success && typeof config.success === 'function' ) {
+                        config.success(data, status, xhr);
+                    }
+                },
+                
+                error: function(xhr, ajaxOptions, thrownError) {
+                    // Use existing error handler - still processes the response
+                    asyncUpdateData($target, mode, xhr.responseText, xhr);
+                    
+                    // Call custom error callback if provided
+                    if ( config.error && typeof config.error === 'function' ) {
+                        config.error(xhr, ajaxOptions, thrownError);
+                    }
+                }
+            });
+        }
     }
     
     window.AN = AN;
@@ -158,7 +292,7 @@ function asyncSubmitHandler(event) {
 function asyncSubmitHandlerHelper( $form ) {
 
     if ( $form.attr('debounce') ) {
-	$form.find('button').prop('disabled', true);
+        $form.find('button').prop('disabled', true);
     }
 
     handleHideShowIfNeeded( $form );
@@ -227,12 +361,12 @@ function asyncSubmitHandlerHelper( $form ) {
         contentType: contentType,
         processData: processData,
 
-	beforeSend: function (jqXHR, settings) {
-	    if ( typeof AN_VERSION !== 'undefined' ) {
-		jqXHR.setRequestHeader('X-AN-Version', AN_VERSION );
-	    }
-	},
-	
+        beforeSend: function (jqXHR, settings) {
+            if ( typeof AN_VERSION !== 'undefined' ) {
+                jqXHR.setRequestHeader('X-AN-Version', AN_VERSION );
+            }
+        },
+        
         success: function(data, status, xhr) {
             asyncUpdateData( $target, $mode, data, xhr );
             return false;
@@ -292,12 +426,12 @@ function asyncClickHandler(event) {
         type: 'GET',
         url: url,
         
-	beforeSend: function (jqXHR, settings) {
-	    if ( typeof AN_VERSION !== 'undefined' ) {
-		jqXHR.setRequestHeader('X-AN-Version', AN_VERSION );
-	    }
-	},
-	
+        beforeSend: function (jqXHR, settings) {
+            if ( typeof AN_VERSION !== 'undefined' ) {
+                jqXHR.setRequestHeader('X-AN-Version', AN_VERSION );
+            }
+        },
+        
         success: function(data, status, xhr) {
             asyncUpdateData( $target, $mode, data, xhr );
             return false;
@@ -334,12 +468,12 @@ function handleHideShowIfNeeded( $anchor ) {
 
     let hide_selector = $anchor.attr('data-hide');
     if ( hide_selector ) {
-	$(hide_selector).hide();
+        $(hide_selector).hide();
     }
 
     let show_selector = $anchor.attr('data-show');
     if ( show_selector ) {
-	$(show_selector).show();
+        $(show_selector).show();
     }
 
 };
@@ -437,18 +571,18 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     // If they were different, we would have to check for both here.
     //
     if ( 'location' in json ) {
-	let url = json['location'];
-	this.document.location.href = url;
-	return;
+        let url = json['location'];
+        this.document.location.href = url;
+        return;
     }
     
     // To allow the server to decide to refresh the page rather than
     // render async content.
     //
     if ( 'refresh' in json ) {
-	location.reload();
-	window.scrollTo(0, 0);
-	return;
+        location.reload();
+        window.scrollTo(0, 0);
+        return;
     }
     
     // In a JSON response, the 'html' contains the "main" content that
@@ -462,7 +596,7 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
              $target.replaceWith( json['html'] );
          }
          else {
-	     $target.empty();
+             $target.empty();
              $target.html( json['html'] );
          }
          handleNewContentAdded( $target );
@@ -486,7 +620,7 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     if ( 'insert' in json ) {
         for ( let htmlId in json['insert'] ) {
             let targetObj = $("#"+htmlId);
-	    targetObj.empty();
+            targetObj.empty();
             targetObj.html( json['insert'][htmlId] ).show();
             handleNewContentAdded( targetObj );
         }
@@ -508,13 +642,13 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     //
     if ( 'setAttributes' in json ) {
         for ( let htmlId in json['setAttributes'] ) {
-	    let targetObj = $("#"+htmlId);
-	    let attrMap = json['setAttributes'][htmlId];
+            let targetObj = $("#"+htmlId);
+            let attrMap = json['setAttributes'][htmlId];
             for ( let attrName in attrMap ) {
-		let attrValue = attrMap[attrName];
-		targetObj.attr( attrName, attrValue );
-		handleNewContentAdded( targetObj );
-	    }
+                let attrValue = attrMap[attrName];
+                targetObj.attr( attrName, attrValue );
+                handleNewContentAdded( targetObj );
+            }
         }
     }
     
@@ -534,11 +668,11 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     }
 
     if ( 'resetScrollbar' in json ) {
-	window.scrollTo(0, 0);
+        window.scrollTo(0, 0);
     }
     
     if ( typeof handlePostAsyncUpdate === "function") {
-	handlePostAsyncUpdate();
+        handlePostAsyncUpdate();
     }
 };
         
@@ -723,11 +857,11 @@ function asyncRedirect( $target, $mode, url ) {
         type: 'GET',
         url: url,
         
-	beforeSend: function (jqXHR, settings) {
-	    if ( typeof AN_VERSION !== 'undefined' ) {
-		jqXHR.setRequestHeader('X-AN-Version', AN_VERSION );
-	    }
-	},
+        beforeSend: function (jqXHR, settings) {
+            if ( typeof AN_VERSION !== 'undefined' ) {
+                jqXHR.setRequestHeader('X-AN-Version', AN_VERSION );
+            }
+        },
         success: function(data, status, xhr) {
             asyncUpdateData( $target, $mode, data, xhr );
         },
@@ -831,7 +965,7 @@ jQuery(function($) {
 
     let initial_modal_content = $('#antinode-initial-modal');
     if ( initial_modal_content.length > 0 ) {
-	let targetObj = getNewModal();
+        let targetObj = getNewModal();
         targetObj.append( initial_modal_content )
         showModal( targetObj );
     }
@@ -842,13 +976,13 @@ jQuery(function($) {
 $.ajaxSuppressLoader = false;
 
 $(document)
-	.ajaxStart(function () {
-	    if ( ! $.ajaxSuppressLoader ) {
-		$('#antinode-loader').show();
-	    }
-	})
-	.ajaxStop(function () {
+        .ajaxStart(function () {
+            if ( ! $.ajaxSuppressLoader ) {
+                $('#antinode-loader').show();
+            }
+        })
+        .ajaxStop(function () {
             $('#antinode-loader').hide();
-	});
+        });
     
 })();

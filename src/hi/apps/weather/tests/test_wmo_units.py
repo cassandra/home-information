@@ -3,7 +3,7 @@ import logging
 from hi.apps.weather.wmo_units import WmoUnits
 from hi.units import UnitQuantity
 
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

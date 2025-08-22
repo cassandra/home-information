@@ -1,7 +1,7 @@
 from datetime import datetime
 from unittest.mock import Mock, patch
 from django.utils import timezone
-from hi.tests.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskTestCase
 
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor, SensorHistory

@@ -2,7 +2,7 @@ import logging
 
 from hi.apps.location.enums import LocationViewType, SvgItemType, SvgStyleName
 from hi.apps.entity.enums import EntityStateType
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

@@ -2,7 +2,7 @@ import logging
 
 from django.urls import reverse
 
-from hi.tests.view_test_base import DualModeViewTestCase
+from hi.testing.view_test_base import DualModeViewTestCase
 
 logging.disable(logging.CRITICAL)
 

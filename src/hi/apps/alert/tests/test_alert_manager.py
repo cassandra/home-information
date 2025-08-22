@@ -5,7 +5,7 @@ from hi.apps.alert.alert_manager import AlertManager
 from hi.apps.alert.alarm import Alarm
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.security.enums import SecurityLevel
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

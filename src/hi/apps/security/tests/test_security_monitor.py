@@ -1,7 +1,7 @@
 import logging
 from unittest.mock import Mock, patch, AsyncMock
 
-from hi.tests.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskTestCase
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.security.enums import SecurityState

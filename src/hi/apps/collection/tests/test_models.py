@@ -6,7 +6,7 @@ from hi.apps.collection.enums import CollectionType, CollectionViewType
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location, LocationView
 from hi.enums import ItemType
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

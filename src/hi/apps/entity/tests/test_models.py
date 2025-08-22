@@ -5,7 +5,7 @@ from django.db import IntegrityError
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.entity.enums import EntityType, EntityStateType
 from hi.apps.attribute.enums import AttributeValueType
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

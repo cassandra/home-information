@@ -10,7 +10,7 @@ from hi.apps.security.enums import SecurityLevel, SecurityState, SecurityStateAc
 from hi.apps.security.security_manager import SecurityManager
 from hi.apps.security.transient_models import SecurityStatusData
 from hi.constants import DIVID
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

@@ -56,4 +56,4 @@ class EmailTestViewView( View ):
             'body_html_template': body_html_template,
             'body_html': escaped_email_html, 
         })
-        return render( request, 'tests/ui/email_preview.html', context )
+        return render( request, 'testing/ui/modals/email_preview.html', context )

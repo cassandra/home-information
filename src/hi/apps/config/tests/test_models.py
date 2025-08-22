@@ -3,7 +3,7 @@ from django.db import IntegrityError
 
 from hi.apps.config.models import Subsystem, SubsystemAttribute
 from hi.apps.attribute.enums import AttributeValueType
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

@@ -4,7 +4,7 @@ from unittest.mock import patch
 from django.urls import reverse
 
 from hi.apps.notify.models import UnsubscribedEmail
-from hi.tests.view_test_base import SyncViewTestCase
+from hi.testing.view_test_base import SyncViewTestCase
 
 logging.disable(logging.CRITICAL)
 

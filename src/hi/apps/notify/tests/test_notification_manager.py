@@ -1,6 +1,6 @@
 import logging
 from unittest.mock import AsyncMock, Mock, patch
-from hi.tests.async_task_utils import AsyncTaskTestCase
+from hi.testing.async_task_utils import AsyncTaskTestCase
 
 from hi.apps.notify.notification_manager import NotificationManager
 from hi.apps.notify.settings import NotifySetting
@@ -18,7 +18,7 @@ class TestNotificationManager(AsyncManagerTestCase):
     def setUp(self):
         super().setUp()
         # Reset singleton state for each test
-        NotificationManager._instances = {}
+        NotificationManager._instance = None
         self.manager = NotificationManager()
 
     def test_singleton_pattern_behavior(self):

@@ -2,6 +2,7 @@ from datetime import datetime
 import logging
 
 from hi.apps.common.singleton import Singleton
+from hi.apps.console.transient_view_manager import TransientViewManager
 from hi.apps.security.security_mixins import SecurityMixin
 from hi.apps.notify.notify_mixins import NotificationMixin
 
@@ -57,24 +58,18 @@ class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
         new_alert = self._alert_queue.get_most_important_unacknowledged_alert(
             since_datetime = last_alert_status_datetime,
         )
-        logger.debug(f"🔍 new_alert from queue: {new_alert}")
-        
         if new_alert:
             max_alert = new_alert
         else:
             max_alert = self._alert_queue.get_most_important_unacknowledged_alert()
         
-        logger.debug(f"🔍 max_alert from queue: {max_alert}")
-
-        # TODO: Use this latest new alarm for providing auto-switching to
-        # show something related to the latest event, e.g., camera feed.
-        # This would be a suggestion to the console as it would decide
-        # whether to show it based on the console settings and user
-        # interaction context.
-        #
-        _ = self._alert_queue.get_most_recent_alarm(
-            since_datetime = last_alert_status_datetime,
-        )
+        if new_alert:
+            logger.debug(f'New Alert = {new_alert}')
+            
+        # Delegate auto-view decisions to TransientViewManager
+        # If there's a new alert, consider it for auto-view switching
+        if new_alert:
+            TransientViewManager().consider_alert_for_auto_view(new_alert)
         
         return AlertStatusData(
             alert_list = self._alert_queue.unacknowledged_alert_list,
@@ -110,3 +105,4 @@ class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
         except Exception as e:
             logger.exception( 'Problem doing periodic alert maintenance.', e )
         return
+

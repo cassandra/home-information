@@ -61,3 +61,9 @@ class ConsoleSettingsHelper( Singleton, SettingsMixin ):
         display_units_str = self.settings_manager().get_setting_value( ConsoleSetting.DISPLAY_UNITS )
         return DisplayUnits.from_name_safe( display_units_str )
     
+    def get_auto_view_enabled( self ) -> bool:
+        return self.settings_manager().get_setting_value( ConsoleSetting.AUTO_VIEW_ENABLED ) == 'true'
+
+    def get_auto_view_duration( self ) -> int:
+        return int( self.settings_manager().get_setting_value( ConsoleSetting.AUTO_VIEW_DURATION ) )
+    

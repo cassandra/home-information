@@ -9,7 +9,7 @@ from hi.apps.control.models import Controller, ControllerHistory
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.entity.enums import EntityStateType, EntityStateValue
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
-from hi.tests.view_test_base import SyncViewTestCase, DualModeViewTestCase
+from hi.testing.view_test_base import SyncViewTestCase, DualModeViewTestCase
 
 logging.disable(logging.CRITICAL)
 

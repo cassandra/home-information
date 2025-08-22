@@ -8,7 +8,7 @@ from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.monitor.status_display_data import StatusDisplayData
 from hi.apps.monitor.transient_models import EntityStateStatusData
 from hi.hi_styles import StatusStyle
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

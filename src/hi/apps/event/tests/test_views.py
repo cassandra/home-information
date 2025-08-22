@@ -4,7 +4,7 @@ from django.urls import reverse
 
 from hi.apps.config.enums import ConfigPageType
 from hi.apps.event.models import EventDefinition, EventHistory
-from hi.tests.view_test_base import SyncViewTestCase, DualModeViewTestCase
+from hi.testing.view_test_base import SyncViewTestCase, DualModeViewTestCase
 
 logging.disable(logging.CRITICAL)
 

@@ -2,7 +2,7 @@ import logging
 from unittest.mock import patch
 
 from hi.apps.attribute.value_ranges import PredefinedValueRanges
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

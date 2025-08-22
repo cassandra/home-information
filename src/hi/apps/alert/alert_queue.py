@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 class AlertQueue:
 
     MAX_ALERT_LIST_SIZE = 50
+
+    TRACE = False  # for debugging
     
     def __init__(self):
         self._alert_list = list()
@@ -41,7 +43,7 @@ class AlertQueue:
     def get_most_important_unacknowledged_alert( self, since_datetime : datetime = None ):
         """
         Returns the active alert that has the highest priority and which was
-        created since the "since_datetime" passed (if any).  If there are
+        added to the queue since the "since_datetime" passed (if any).  If there are
         multiple events of the same priority, then an arbitrary one is
         returned. Returns None if there are no active alerts in the
         specified time frame.
@@ -57,7 +59,8 @@ class AlertQueue:
             for alert in self._alert_list:
                 if alert.is_acknowledged:
                     continue
-                if alert.start_datetime <= since_datetime:
+                # Use queue_insertion_datetime instead of start_datetime for "new alert" detection
+                if alert.queue_insertion_datetime is None or alert.queue_insertion_datetime <= since_datetime:
                     continue
                 if max_alert is None:
                     max_alert = alert
@@ -111,6 +114,7 @@ class AlertQueue:
                 return alert
             
             new_alert = Alert( first_alarm = alarm )
+            new_alert.queue_insertion_datetime = datetimeproxy.now()
             self._alert_list.append( new_alert )
             self._last_changed_datetime = datetimeproxy.now()
             logger.debug( f'Added new alert: {new_alert}' )
@@ -119,6 +123,7 @@ class AlertQueue:
         return
 
     def acknowledge_alert( self, alert_id : str ):
+        logger.debug( f'Acknoweldging alert id: {alert_id}' )
         with self._active_alerts_lock:
             for alert in self._alert_list:
                 if alert.id != alert_id:
@@ -131,7 +136,8 @@ class AlertQueue:
 
     def remove_expired_or_acknowledged_alerts(self):
         with self._active_alerts_lock:
-            logger.debug( f'Alert Check: List size = {len(self._alert_list)}')
+            if self.TRACE:
+                logger.debug( f'Alert Check: List size = {len(self._alert_list)}')
             if len( self._alert_list ) < 1:
                 return
         

@@ -10,7 +10,7 @@ TEMPLATES[0]['OPTIONS'].update({
     #'string_if_invalid': 'INVALID_VARIABLE_%s',
 })
 
-INSTALLED_APPS += [ 'hi.tests' ]
+INSTALLED_APPS += [ 'hi.testing' ]
 
 STATIC_ROOT = '/tmp/hi/static'
 
@@ -24,7 +24,7 @@ LOGGING = {
     #
     'filters': {
         'suppress_select_request_endpoints': {
-            '()': 'hi.tests.utils.log_filters.SuppressSelectRequestEndpointsFilter',
+            '()': 'hi.testing.utils.log_filters.SuppressSelectRequestEndpointsFilter',
         },
         'suppress_pipeline_template_vars': {
             '()': 'hi.apps.common.log_filters.SuppressPipelineTemplateVarsFilter',
@@ -67,12 +67,17 @@ LOGGING = {
         },
         'hi.apps.alert': {
             'handlers': ['console' ],
-            'level': 'INFO',
+            'level': 'DEBUG',
             'propagate': False,
         },
         'hi.apps.control': {
             'handlers': ['console' ],
             'level': 'INFO',
+            'propagate': False,
+        },
+        'hi.apps.console': {
+            'handlers': ['console' ],
+            'level': 'DEBUG',
             'propagate': False,
         },
         'hi.apps.notify': {
@@ -107,7 +112,7 @@ LOGGING = {
         },
         'hi.services.hass': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
         'hi.services.zoneminder': {
@@ -136,3 +141,10 @@ BASE_URL_FOR_EMAIL_LINKS = 'http:/127.0.0.1:8411/'
 
 SUPPRESS_SELECT_REQUEST_ENPOINTS_LOGGING = True
 SUPPRESS_MONITORS = False
+
+# ====================
+# Development Testing Injection Points
+# Enable/disable these here for frontend testing
+
+# Allows injecting transient view data for testing auto-view functionality
+DEBUG_FORCE_TRANSIENT_VIEW_OVERRIDE = False  # Set to True to enable

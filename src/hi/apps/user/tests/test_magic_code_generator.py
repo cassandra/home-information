@@ -2,7 +2,7 @@ import logging
 from unittest.mock import Mock, patch
 
 from hi.apps.user.magic_code_generator import MagicCodeGenerator, MagicCodeStatus
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

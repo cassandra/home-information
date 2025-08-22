@@ -7,7 +7,7 @@ from hi.apps.collection.models import Collection, CollectionEntity, CollectionPo
 from hi.apps.entity.models import Entity
 from hi.apps.entity.enums import EntityGroupType
 from hi.apps.location.models import Location, LocationView
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

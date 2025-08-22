@@ -3,7 +3,7 @@ import logging
 from hi.apps.audio.audio_manager import AudioManager
 from hi.apps.audio.audio_signal import AudioSignal
 from hi.apps.audio.settings import AudioSetting
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.test import Client
 
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 from hi.enums import ViewType, ViewMode
 from hi.apps.location.models import LocationView
 from hi.apps.collection.models import Collection

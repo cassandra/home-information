@@ -6,7 +6,7 @@ from hi.apps.entity.enums import (
     EntityStateValue,
     EntityGroupType,
 )
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 

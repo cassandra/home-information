@@ -673,3 +673,56 @@ g[hover] {
 .btn-camera[status="idle"] {
     /* Default button styling - no changes needed */
 }
+
+/* Auto-view indicator styling */
+/* Auto-view transient state styling */
+.auto-view-active {
+    border: 3px solid var(--warning-color) !important;
+    border-radius: 4px;
+    box-shadow: 0 0 0 1px rgba(236, 165, 0, 0.3);
+    transition: all 0.3s ease-in-out;
+}
+
+.auto-view-corner-badge {
+    background-color: var(--warning-color);
+    color: var(--on-warning-color);
+    padding: 6px 12px;
+    border-radius: 0;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.15);
+    width: auto;
+    min-width: fit-content;
+    backdrop-filter: blur(5px);
+    pointer-events: none;
+    border-top: 1px solid rgba(236, 165, 0, 0.3);
+    border-left: 1px solid rgba(236, 165, 0, 0.3);
+}
+
+.auto-view-badge-icon {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.auto-view-badge-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Removed pulse animation as requested */
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+    .auto-view-corner-badge {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+    
+    .auto-view-badge-icon {
+        font-size: 12px;
+    }
+}

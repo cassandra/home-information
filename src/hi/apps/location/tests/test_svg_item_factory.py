@@ -9,7 +9,7 @@ from hi.apps.entity.enums import EntityType
 from hi.apps.collection.models import Collection
 from hi.apps.collection.enums import CollectionType
 from hi.apps.common.svg_models import SvgIconItem, SvgPathItem
-from hi.tests.base_test_case import BaseTestCase
+from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 
