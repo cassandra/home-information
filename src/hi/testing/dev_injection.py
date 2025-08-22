@@ -53,8 +53,8 @@ class DevInjectionManager:
         Get transient view override data if force flag is enabled.
         Returns None if not enabled or no data available.
         """
-        if not (settings.DEBUG and 
-                getattr(settings, 'DEBUG_FORCE_TRANSIENT_VIEW_OVERRIDE', False)):
+        if not (settings.DEBUG
+                and getattr(settings, 'DEBUG_FORCE_TRANSIENT_VIEW_OVERRIDE', False)):
             return None
         
         # Check cache first (for one-time use)

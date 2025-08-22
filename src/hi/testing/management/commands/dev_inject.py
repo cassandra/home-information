@@ -71,7 +71,6 @@ class Command(BaseCommand):
         if injection_type == 'transient_view':
             # Validate transient view data structure
             required_keys = ['url']
-            optional_keys = ['durationSeconds', 'priority', 'triggerReason']
             
             for key in required_keys:
                 if key not in data:
