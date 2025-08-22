@@ -128,6 +128,14 @@ class LocationAttribute( AttributeModel ):
     def _get_history_model_class(self):
         """Return the history model class for LocationAttribute."""
         return LocationAttributeHistory
+    
+    def get_history_url_name(self):
+        """Return the URL name for LocationAttribute history view."""
+        return 'location_attribute_history'
+    
+    def get_restore_url_name(self):
+        """Return the URL name for LocationAttribute restore view."""
+        return 'location_attribute_restore'
 
     
 class LocationView( models.Model, ItemTypeModelMixin ):

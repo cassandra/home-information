@@ -769,3 +769,10 @@ form[data-dirty] {
     border-radius: 4px;
     transition: background-color 0.2s ease-in-out;
 }
+
+/* History icon styling - matches plus-icon pattern */
+.history-icon {
+    font-size: 1rem;
+    color: var(--primary-color);
+    padding: 0 0.25rem;
+}

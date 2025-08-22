@@ -1,20 +1,53 @@
-from django.shortcuts import render
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
 from hi.views import page_not_found_response
-from .models import AttributeModel
+from hi.hi_async_view import HiModalView
 
 
-class AttributeHistoryView(View):
-    """View for displaying attribute history in a modal."""
+class BaseAttributeHistoryView(HiModalView):
+    """
+    Abstract base view for displaying attribute history in a modal.
+    Subclasses must implement get_attribute_model_class(), get_history_url_name(), and get_restore_url_name().
+    """
+    
+    def get_template_name(self):
+        return 'attribute/modals/attribute_history.html'
+    
+    def get_attribute_model_class(self):
+        """
+        Return the concrete attribute model class for this view.
+        Must be implemented by subclasses.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement get_attribute_model_class()"
+        )
+    
+    def get_history_url_name(self):
+        """
+        Return the URL name for the history view.
+        Must be implemented by subclasses.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement get_history_url_name()"
+        )
+    
+    def get_restore_url_name(self):
+        """
+        Return the URL name for the restore view.
+        Must be implemented by subclasses.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement get_restore_url_name()"
+        )
     
     def get(self, request, attribute_id, *args, **kwargs):
+        model_class = self.get_attribute_model_class()
+        
         try:
-            # Get the specific attribute - this works for all attribute subclasses
-            # since they all inherit from AttributeModel
-            attribute = AttributeModel.objects.select_subclasses().get(pk=attribute_id)
-        except AttributeModel.DoesNotExist:
+            # Get the specific attribute using the concrete model class
+            attribute = model_class.objects.get(pk=attribute_id)
+        except model_class.DoesNotExist:
             return page_not_found_response(request, "Attribute not found.")
         
         # Get history records for this attribute
@@ -22,25 +55,41 @@ class AttributeHistoryView(View):
         if history_model_class:
             history_records = history_model_class.objects.filter(
                 attribute=attribute
-            ).order_by('-changed_datetime')[:20]  # Limit to recent 20 records
+            ).order_by('-changed_datetime')[:500]  # High limit for safety, pagination TBD
         else:
             history_records = []
         
         context = {
             'attribute': attribute,
             'history_records': history_records,
+            'history_url_name': self.get_history_url_name(),
+            'restore_url_name': self.get_restore_url_name(),
         }
         
-        return render(request, 'attribute/modals/attribute_history.html', context)
+        return self.modal_response(request, context)
 
 
-class AttributeRestoreView(View):
-    """View for restoring attribute values from history."""
+class BaseAttributeRestoreView(View):
+    """
+    Abstract base view for restoring attribute values from history.
+    Subclasses must implement get_attribute_model_class().
+    """
+    
+    def get_attribute_model_class(self):
+        """
+        Return the concrete attribute model class for this view.
+        Must be implemented by subclasses.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement get_attribute_model_class()"
+        )
     
     def post(self, request, attribute_id, *args, **kwargs):
+        model_class = self.get_attribute_model_class()
+        
         try:
-            attribute = AttributeModel.objects.select_subclasses().get(pk=attribute_id)
-        except AttributeModel.DoesNotExist:
+            attribute = model_class.objects.get(pk=attribute_id)
+        except model_class.DoesNotExist:
             return page_not_found_response(request, "Attribute not found.")
         
         history_id = request.POST.get('history_id')
@@ -51,7 +100,7 @@ class AttributeRestoreView(View):
         history_model_class = attribute._get_history_model_class()
         if not history_model_class:
             return page_not_found_response(request, "No history available for this attribute type.")
-            
+        
         try:
             history_record = history_model_class.objects.get(pk=history_id, attribute=attribute)
         except history_model_class.DoesNotExist:
@@ -62,4 +111,4 @@ class AttributeRestoreView(View):
         attribute.save()  # This will create a new history record
         
         # Return success response that triggers page reload
-        return antinode.refresh_response(request)
+        return antinode.refresh_response()

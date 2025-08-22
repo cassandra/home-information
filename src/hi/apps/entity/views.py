@@ -10,6 +10,7 @@ from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.apps.sense.sensor_history_manager import SensorHistoryMixin
 
 from hi.hi_async_view import HiModalView, HiSideView
+from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
 
 from .entity_manager import EntityManager
 from . import forms
@@ -210,3 +211,23 @@ class EntityDetailsView( HiSideView, EntityViewMixin ):
             is_editing = request.view_parameters.is_editing,
         )
         return entity_details_data.to_template_context()
+
+
+class EntityAttributeHistoryView(BaseAttributeHistoryView):
+    """View for displaying EntityAttribute history in a modal."""
+    
+    def get_attribute_model_class(self):
+        return EntityAttribute
+    
+    def get_history_url_name(self):
+        return 'entity_attribute_history'
+    
+    def get_restore_url_name(self):
+        return 'entity_attribute_restore'
+
+
+class EntityAttributeRestoreView(BaseAttributeRestoreView):
+    """View for restoring EntityAttribute values from history."""
+    
+    def get_attribute_model_class(self):
+        return EntityAttribute

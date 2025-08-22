@@ -11,9 +11,10 @@ from hi.enums import ItemType, ViewType
 from hi.exceptions import ForceSynchronousException
 from hi.hi_async_view import HiSideView
 from hi.hi_grid_view import HiGridView
+from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
 
 from .location_manager import LocationManager
-from .models import LocationView
+from .models import LocationView, LocationAttribute
 from .transient_models import LocationEditData, LocationViewEditData
 from .view_mixins import LocationViewMixin
 
@@ -162,4 +163,23 @@ class LocationItemDetailsView( View ):
             return HttpResponseRedirect( redirect_url )
 
         raise BadRequest( f'Unknown item type "{item_type}".' )
+
+
+class LocationAttributeHistoryView(BaseAttributeHistoryView):
+    """View for displaying LocationAttribute history in a modal."""
     
+    def get_attribute_model_class(self):
+        return LocationAttribute
+    
+    def get_history_url_name(self):
+        return 'location_attribute_history'
+    
+    def get_restore_url_name(self):
+        return 'location_attribute_restore'
+
+
+class LocationAttributeRestoreView(BaseAttributeRestoreView):
+    """View for restoring LocationAttribute values from history."""
+    
+    def get_attribute_model_class(self):
+        return LocationAttribute

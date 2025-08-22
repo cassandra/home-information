@@ -1,5 +1,6 @@
 {% extends "modals/action_ok.html" %}
 {% load humanize %}
+{% load attribute_helpers %}
 
 {% block title_text %}
 Attribute History: {{ attribute.name }}
@@ -39,8 +40,10 @@ Attribute History: {{ attribute.name }}
                             </td>
                             <td>
                                 {% if record.value != attribute.value %}
+                                {% get_attribute_restore_url attribute as restore_url %}
+                                {% if restore_url %}
                                 <form method="POST" 
-                                      action="{% url 'attribute_restore' attribute.pk %}"
+                                      action="{% url restore_url attribute.pk %}"
                                       data-async="true"
                                       style="display: inline;">
                                     {% csrf_token %}
@@ -49,6 +52,7 @@ Attribute History: {{ attribute.name }}
                                         Restore
                                     </button>
                                 </form>
+                                {% endif %}
                                 {% else %}
                                 <span class="text-muted">
                                     <small>Current</small>

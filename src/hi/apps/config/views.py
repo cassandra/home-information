@@ -11,9 +11,11 @@ import hi.apps.common.antinode as antinode
 
 from hi.enums import ViewMode, ViewType
 from hi.hi_grid_view import HiGridView
+from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
 
 from .enums import ConfigPageType
 from .forms import SubsystemAttributeFormSet
+from .models import SubsystemAttribute
 from .settings_mixins import SettingsMixin
 
 logger = logging.getLogger('__name__')
@@ -167,3 +169,23 @@ class ConfigInternalView( View ):
     def get(self, request, *args, **kwargs):
         data = self.get_config_data()
         return JsonResponse( data, safe = False )
+
+
+class SubsystemAttributeHistoryView(BaseAttributeHistoryView):
+    """View for displaying SubsystemAttribute history in a modal."""
+    
+    def get_attribute_model_class(self):
+        return SubsystemAttribute
+    
+    def get_history_url_name(self):
+        return 'config_attribute_history'
+    
+    def get_restore_url_name(self):
+        return 'config_attribute_restore'
+
+
+class SubsystemAttributeRestoreView(BaseAttributeRestoreView):
+    """View for restoring SubsystemAttribute values from history."""
+    
+    def get_attribute_model_class(self):
+        return SubsystemAttribute

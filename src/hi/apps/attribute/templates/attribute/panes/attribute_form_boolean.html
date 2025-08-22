@@ -1,4 +1,5 @@
 {% load common_template_helpers %}
+{% load attribute_helpers %}
 <input type="hidden" id="{{ attribute_form.name.id_for_label }}"
        name="{{ attribute_form.name.html_name }}"
        value="{{ attribute_form.instance.name }}" />
@@ -10,12 +11,15 @@
          data-original-value="{% if attribute_form.value.value %}true{% else %}false{% endif %}" >
   <label for="{{ attribute_form.value.id_for_label }}" class="pl-2 mb-0">{{ attribute_form.name.value }}</label>
   <div class="input-group-append ml-auto">
-    <a href="{% url 'attribute_history' attribute_form.instance.pk %}" 
+    {% get_attribute_history_url attribute_form.instance as history_url %}
+    {% if history_url %}
+    <a href="{% url history_url attribute_form.instance.pk %}" 
        class="btn btn-outline-secondary btn-sm attribute-history-btn" 
        data-async="modal"
        title="View attribute history">
-      <i class="fas fa-history"></i>
+      <span class="history-icon">&#9201;</span>
     </a>
+    {% endif %}
   </div>
 </div>
 

@@ -197,10 +197,34 @@ class AttributeModel(models.Model):
         )
     
     def _get_history_model_class(self):
-        """Get the corresponding history model class for this attribute type."""
-        # This will be implemented by each concrete subclass or use introspection
-        # For now, return None to avoid errors - will be implemented with concrete models
-        return None
+        """
+        Get the corresponding history model class for this attribute type.
+        Must be implemented by all concrete subclasses.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement _get_history_model_class() "
+            "to provide history tracking support."
+        )
+    
+    def get_history_url_name(self):
+        """
+        Get the URL name for the attribute history view.
+        Must be implemented by all concrete subclasses.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement get_history_url_name() "
+            "to provide history view URL name."
+        )
+    
+    def get_restore_url_name(self):
+        """
+        Get the URL name for the attribute restore view.
+        Must be implemented by all concrete subclasses.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement get_restore_url_name() "
+            "to provide restore view URL name."
+        )
     
     def delete( self, *args, **kwargs ):
         """ Deleting file from MEDIA_ROOT on best effort basis.  Ignore if fails. """

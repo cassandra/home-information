@@ -66,6 +66,14 @@ class IntegrationAttribute( AttributeModel ):
     def _get_history_model_class(self):
         """Return the history model class for IntegrationAttribute."""
         return IntegrationAttributeHistory
+    
+    def get_history_url_name(self):
+        """Return the URL name for IntegrationAttribute history view."""
+        return 'integration_attribute_history'
+    
+    def get_restore_url_name(self):
+        """Return the URL name for IntegrationAttribute restore view."""
+        return 'integration_attribute_restore'
         
         
 class IntegrationDetailsModel( models.Model ):
