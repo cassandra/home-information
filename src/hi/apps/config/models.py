@@ -1,6 +1,6 @@
 from django.db import models
 
-from hi.apps.attribute.models import AttributeModel
+from hi.apps.attribute.models import AttributeModel, AttributeValueHistoryModel
 
 
 class Subsystem( models.Model ):
@@ -50,3 +50,25 @@ class SubsystemAttribute( AttributeModel ):
 
     def get_upload_to(self):
         return 'settings/'
+    
+    def _get_history_model_class(self):
+        """Return the history model class for SubsystemAttribute."""
+        return SubsystemAttributeHistory
+
+
+class SubsystemAttributeHistory(AttributeValueHistoryModel):
+    """History tracking for SubsystemAttribute changes."""
+    
+    attribute = models.ForeignKey(
+        SubsystemAttribute,
+        related_name='history',
+        verbose_name='Subsystem Attribute',
+        on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        verbose_name = 'Subsystem Attribute History'
+        verbose_name_plural = 'Subsystem Attribute History'
+        indexes = [
+            models.Index(fields=['attribute', '-changed_datetime']),
+        ]
