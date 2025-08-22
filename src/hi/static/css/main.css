@@ -726,3 +726,39 @@ g[hover] {
         font-size: 12px;
     }
 }
+
+/* ===== ATTRIBUTE CHANGE INDICATORS ===== */
+
+/* Visual indicator for modified attribute fields */
+.attribute-modified {
+    border: 2px solid var(--warning-color) !important;
+    background-color: rgba(236, 165, 0, 0.05);
+    transition: border-color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+/* Asterisk indicator for modified fields */
+.attribute-modified-indicator {
+    color: var(--warning-color);
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-left: 4px;
+}
+
+/* Banner for unsaved changes notification */
+.unsaved-changes-banner {
+    position: sticky;
+    top: 0;
+    z-index: 1040;
+    margin-bottom: 1rem;
+    border-left: 4px solid var(--warning-color);
+}
+
+.unsaved-changes-banner .alert {
+    margin-bottom: 0;
+}
+
+/* Focus states for modified fields */
+.attribute-modified:focus {
+    border-color: var(--warning-color);
+    box-shadow: 0 0 0 0.2rem rgba(236, 165, 0, 0.25);
+}

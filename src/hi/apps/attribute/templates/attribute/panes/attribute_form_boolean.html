@@ -6,7 +6,8 @@
 <div class="input-group align-items-center" >
   <input type="checkbox" name="{{ attribute_form.value.html_name }}"
          id="{{ attribute_form.value.id_for_label }}"
-         {% if attribute_form.value.value %}checked="on"{% endif %} >
+         {% if attribute_form.value.value %}checked="on"{% endif %}
+         data-original-value="{% if attribute_form.value.value %}true{% else %}false{% endif %}" >
   <label for="{{ attribute_form.value.id_for_label }}" class="pl-2 mb-0">{{ attribute_form.name.value }}</label>
 </div>
 

@@ -2,7 +2,8 @@
   <textarea rows="1" cols="40"
 	    id="{{ attribute_form.value.id_for_label }}"
 	    {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %}
-	    name="{{ attribute_form.value.html_name }}">{{ attribute_form.value.value|default_if_none:'' }}</textarea>
+	    name="{{ attribute_form.value.html_name }}"
+	    data-original-value="{{ attribute_form.value.value|default_if_none:'' }}">{{ attribute_form.value.value|default_if_none:'' }}</textarea>
 </div>
 <div class="form-error text-danger" >{{ attribute_form.value.errors }}</div>
 <script type="text/javascript">
