@@ -18,6 +18,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [ ] `make test` (must show "OK")
 - [ ] `make lint` (must show no output)
 - [ ] Both MUST pass before PR creation
+- [ ] Consult PR guidelines and `.github/PULL_REQUEST_TEMPLATE.md`
+
+**Before Creating Unit Tests:**
+- [ ] Consult Testing guidelines and `docs/dev/Testing.md`
 
 **Process Verification Pattern:**
 Before major actions, ask yourself:
