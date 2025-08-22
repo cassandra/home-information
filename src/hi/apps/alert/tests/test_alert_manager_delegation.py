@@ -39,14 +39,57 @@ class TestAlertManagerDelegation(BaseTestCase):
         if hasattr(self, 'alert_manager'):
             self.alert_manager._alert_queue._alert_list.clear()
         
+        # Reset singletons for next test
+        AlertManager._instance = None
+        TransientViewManager._instance = None
+        
         super().tearDown()
 
     def test_alert_manager_delegates_new_alerts_to_transient_view_manager(self):
         """Test AlertManager delegates new alerts to TransientViewManager - core integration."""
+        from hi.apps.entity.models import Entity, EntityState
+        from hi.apps.entity.enums import EntityStateType
+        from hi.apps.sense.models import Sensor
+        
+        # Create test data - entity with both motion and video stream sensors
+        entity = Entity.objects.create(
+            integration_id='test.camera.front_door',
+            integration_name='test_integration',
+            name='Front Door Camera',
+            entity_type_str='camera'
+        )
+        
+        # Create motion sensor state
+        motion_state = EntityState.objects.create(
+            entity=entity,
+            entity_state_type_str=str(EntityStateType.MOVEMENT),
+            name='motion'
+        )
+        motion_sensor = Sensor.objects.create(
+            entity_state=motion_state,
+            integration_id='test.motion.front_door',
+            integration_name='test_integration',
+            name='Motion Sensor'
+        )
+        
+        # Create video stream sensor state on same entity
+        video_state = EntityState.objects.create(
+            entity=entity,
+            entity_state_type_str=str(EntityStateType.VIDEO_STREAM),
+            name='video_stream'
+        )
+        video_sensor = Sensor.objects.create(
+            entity_state=video_state,
+            integration_id='test.video.front_door',
+            integration_name='test_integration',
+            name='Video Stream'
+        )
+        
         # Create realistic motion detection alarm with sensor details
         source_details = AlarmSourceDetails(
-            detail_attrs={'sensor_id': '123', 'location': 'Front Door'},
-            image_url=None
+            detail_attrs={'location': 'Front Door'},
+            image_url=None,
+            sensor_id=motion_sensor.id  # Motion sensor that triggered the alarm
         )
         
         motion_alarm = Alarm(
@@ -70,19 +113,21 @@ class TestAlertManagerDelegation(BaseTestCase):
             mock_helper.get_auto_view_duration.return_value = 30
             mock_helper_class.return_value = mock_helper
             
-            with patch('django.urls.reverse') as mock_reverse:
-                mock_reverse.return_value = '/console/sensor/video_stream/123/'
-                
-                # Add alarm to create an alert
-                self.run_async_test(self.alert_manager.add_alarm(motion_alarm))
-                
-                # Get alert status data (this should trigger delegation to TransientViewManager)
-                self.alert_manager.get_alert_status_data(
-                    last_alert_status_datetime=timezone.now() - timedelta(seconds=5)
-                )
-                
-                # Verify delegation created a suggestion (test actual behavior, not mock calls)
-                self.assertTrue(self.transient_manager.has_suggestion())
+            # Add alarm to create an alert
+            self.run_async_test(self.alert_manager.add_alarm(motion_alarm))
+            
+            # Get alert status data (this should trigger delegation to TransientViewManager)
+            self.alert_manager.get_alert_status_data(
+                last_alert_status_datetime=timezone.now() - timedelta(seconds=5)
+            )
+            
+            # Verify delegation created a suggestion (test actual behavior, not mock calls)
+            self.assertTrue(self.transient_manager.has_suggestion())
+            
+            # Verify the video sensor ID is used in the URL
+            suggestion = self.transient_manager.peek_current_suggestion()
+            expected_url = f'/console/sensor/video-stream/{video_sensor.id}'
+            self.assertEqual(suggestion.url, expected_url)
 
     def test_alert_manager_no_delegation_when_no_new_alert(self):
         """Test AlertManager doesn't delegate when no new alerts - conditional delegation."""
@@ -99,15 +144,72 @@ class TestAlertManagerDelegation(BaseTestCase):
 
     def test_alert_manager_focuses_on_new_alerts_not_queue_state(self):
         """Test AlertManager delegates only new alerts, not existing queue state - precise delegation."""
+        from hi.apps.entity.models import Entity, EntityState
+        from hi.apps.entity.enums import EntityStateType
+        from hi.apps.sense.models import Sensor
+        
+        # Create test data for two different cameras
+        # First camera entity
+        entity1 = Entity.objects.create(
+            integration_id='test.camera.one',
+            integration_name='test_integration',
+            name='Camera One',
+            entity_type_str='camera'
+        )
+        motion_state1 = EntityState.objects.create(
+            entity=entity1,
+            entity_state_type_str=str(EntityStateType.MOVEMENT),
+            name='motion'
+        )
+        motion_sensor1 = Sensor.objects.create(
+            entity_state=motion_state1,
+            integration_id='test.motion.one',
+            integration_name='test_integration',
+            name='Motion Sensor 1'
+        )
+        # video_state1 and video_sensor1 not needed for this test since we only check video_sensor2
+        
+        # Second camera entity
+        entity2 = Entity.objects.create(
+            integration_id='test.camera.two',
+            integration_name='test_integration',
+            name='Camera Two',
+            entity_type_str='camera'
+        )
+        motion_state2 = EntityState.objects.create(
+            entity=entity2,
+            entity_state_type_str=str(EntityStateType.MOVEMENT),
+            name='motion'
+        )
+        motion_sensor2 = Sensor.objects.create(
+            entity_state=motion_state2,
+            integration_id='test.motion.two',
+            integration_name='test_integration',
+            name='Motion Sensor 2'
+        )
+        video_state2 = EntityState.objects.create(
+            entity=entity2,
+            entity_state_type_str=str(EntityStateType.VIDEO_STREAM),
+            name='video_stream'
+        )
+        video_sensor2 = Sensor.objects.create(
+            entity_state=video_state2,
+            integration_id='test.video.two',
+            integration_name='test_integration',
+            name='Video Stream 2'
+        )
+        
         # Create two different alarms
         source_details_1 = AlarmSourceDetails(
-            detail_attrs={'sensor_id': '123'},
-            image_url=None
+            detail_attrs={},
+            image_url=None,
+            sensor_id=motion_sensor1.id  # First motion sensor
         )
         
         source_details_2 = AlarmSourceDetails(
-            detail_attrs={'sensor_id': '456'},
-            image_url=None
+            detail_attrs={},
+            image_url=None,
+            sensor_id=motion_sensor2.id  # Second motion sensor
         )
         
         # Create alarms with different types to ensure separate alerts
@@ -152,21 +254,19 @@ class TestAlertManagerDelegation(BaseTestCase):
             mock_helper.get_auto_view_duration.return_value = 30
             mock_helper_class.return_value = mock_helper
             
-            with patch('django.urls.reverse') as mock_reverse:
-                mock_reverse.return_value = '/console/sensor/video_stream/456/'
-                
-                # Get alert status - should delegate only the new alert
-                # Use timestamp that excludes old alarm but includes new one
-                self.alert_manager.get_alert_status_data(
-                    last_alert_status_datetime=timezone.now() - timedelta(seconds=5)  # Between old (30s ago) and new (2s ago)
-                )
-                
-                # Should have created a suggestion based on the new alert only
-                self.assertTrue(self.transient_manager.has_suggestion())
-                
-                # The suggestion should be based on the new alert's sensor_id ('456')
-                suggestion = self.transient_manager.peek_current_suggestion()
-                self.assertIn('456', suggestion.url)
+            # Get alert status - should delegate only the new alert
+            # Use timestamp that excludes old alarm but includes new one
+            self.alert_manager.get_alert_status_data(
+                last_alert_status_datetime=timezone.now() - timedelta(seconds=5)  # Between old (30s ago) and new (2s ago)
+            )
+            
+            # Should have created a suggestion based on the new alert only
+            self.assertTrue(self.transient_manager.has_suggestion())
+            
+            # The suggestion should be based on the new alert's video sensor_id
+            suggestion = self.transient_manager.peek_current_suggestion()
+            expected_url = f'/console/sensor/video-stream/{video_sensor2.id}'
+            self.assertEqual(suggestion.url, expected_url)
 
     def run_async_test(self, coro):
         """Helper to run async methods in tests."""

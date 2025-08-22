@@ -61,16 +61,18 @@ class ViewUrlUtils:
             # Look up the sensor
             sensor = Sensor.objects.select_related('entity_state').get(id=sensor_id)
             
-            # Check if this sensor's entity has a video stream
-            if ViewUrlUtils._sensor_has_video_stream(sensor):
-                return reverse('console_sensor_video_stream', kwargs={'sensor_id': sensor_id})
+            # Find the video stream sensor for this entity
+            video_stream_sensor = ViewUrlUtils._get_video_stream_sensor(sensor)
+            if video_stream_sensor:
+                # Use the video stream sensor's ID, not the original sensor's ID
+                return reverse('console_sensor_video_stream', kwargs={'sensor_id': video_stream_sensor.id})
             
             # Future: Add other view types based on entity state type
             # elif sensor.entity_state.entity_state_type == EntityStateType.WEATHER:
             #     return reverse('console_weather_view', kwargs={'sensor_id': sensor_id})
             
             logger.debug(f"Sensor {sensor_id} ({sensor.entity_state.entity_state_type}) "
-                        f"does not have an associated view")
+                         f"does not have an associated view")
             return None
             
         except Sensor.DoesNotExist:
@@ -81,25 +83,32 @@ class ViewUrlUtils:
             return None
     
     @staticmethod
-    def _sensor_has_video_stream(sensor: Sensor) -> bool:
+    def _get_video_stream_sensor(sensor: Sensor) -> Optional[Sensor]:
         """
-        Determine if the given sensor is associated with a video stream.
+        Get the video stream sensor associated with the given sensor's entity.
         
-        This checks if the sensor's entity has other sensors that provide
-        video stream functionality.
+        This finds the video stream sensor that belongs to the same entity
+        as the given sensor (e.g., finding the video stream sensor when
+        given a motion detection sensor from the same camera entity).
         
         Args:
             sensor: The Sensor object to check
             
         Returns:
-            True if the sensor's entity has video stream capability
+            The video stream Sensor if one exists, None otherwise
         """
-        # Check if the same entity has a video stream sensor
+        # Get the entity this sensor belongs to
         entity = sensor.entity_state.entity
         
-        # Look for other sensors on the same entity that provide video streams
-        video_stream_sensors = entity.states.filter(
+        # Look for video stream entity states on the same entity
+        video_stream_states = entity.states.filter(
             entity_state_type_str=str(EntityStateType.VIDEO_STREAM)
-        ).exists()
+        ).prefetch_related('sensors')
         
-        return video_stream_sensors
+        # Return the first video stream sensor found
+        for state in video_stream_states:
+            sensors = state.sensors.all()
+            if sensors:
+                return sensors.first()
+        
+        return None

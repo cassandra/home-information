@@ -12,12 +12,14 @@ class TestTransientViewManager(BaseTestCase):
     def setUp(self):
         super().setUp()
         # Reset singleton state for each test
-        TransientViewManager._instances = {}
+        TransientViewManager._instance = None
         self.manager = TransientViewManager()
         
     def tearDown(self):
         # Clear any suggestions between tests
         self.manager.clear_suggestion()
+        # Reset singleton for next test
+        TransientViewManager._instance = None
         super().tearDown()
 
     def test_transient_view_manager_singleton_behavior(self):
@@ -127,11 +129,49 @@ class TestTransientViewManager(BaseTestCase):
         from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
         from hi.apps.alert.enums import AlarmLevel, AlarmSource
         from hi.apps.security.enums import SecurityLevel
+        from hi.apps.entity.models import Entity, EntityState
+        from hi.apps.entity.enums import EntityStateType
+        from hi.apps.sense.models import Sensor
         
-        # Create motion detection alert with camera
+        # Create test data - entity with both motion and video stream sensors
+        entity = Entity.objects.create(
+            integration_id='test.camera.front_door',
+            integration_name='test_integration',
+            name='Front Door Camera',
+            entity_type_str='camera'
+        )
+        
+        # Create motion sensor state
+        motion_state = EntityState.objects.create(
+            entity=entity,
+            entity_state_type_str=str(EntityStateType.MOVEMENT),
+            name='motion'
+        )
+        motion_sensor = Sensor.objects.create(
+            entity_state=motion_state,
+            integration_id='test.motion.front_door',
+            integration_name='test_integration',
+            name='Motion Sensor'
+        )
+        
+        # Create video stream sensor state on same entity
+        video_state = EntityState.objects.create(
+            entity=entity,
+            entity_state_type_str=str(EntityStateType.VIDEO_STREAM),
+            name='video_stream'
+        )
+        video_sensor = Sensor.objects.create(
+            entity_state=video_state,
+            integration_id='test.video.front_door',
+            integration_name='test_integration',
+            name='Video Stream'
+        )
+        
+        # Create motion detection alert with motion sensor
         source_details = AlarmSourceDetails(
-            detail_attrs={'sensor_id': 'cam_123', 'location': 'Front Door'},
-            image_url=None
+            detail_attrs={'location': 'Front Door'},
+            image_url=None,
+            sensor_id=motion_sensor.id  # Motion sensor that triggered the alarm
         )
         
         motion_alarm = Alarm(
@@ -155,22 +195,20 @@ class TestTransientViewManager(BaseTestCase):
             mock_helper_class.return_value = mock_helper
             
             # Mock URL generation at system boundary
-            with patch('django.urls.reverse') as mock_reverse:
-                mock_reverse.return_value = '/console/sensor/video_stream/cam_123/'
-                
-                # Initially no suggestion
-                self.assertFalse(self.manager.has_suggestion())
-                
-                # Consider alert for auto-view
-                self.manager.consider_alert_for_auto_view(alert)
-                
-                # Should create suggestion
-                self.assertTrue(self.manager.has_suggestion())
-                suggestion = self.manager.peek_current_suggestion()
-                self.assertEqual(suggestion.url, '/console/sensor/video_stream/cam_123/')
-                self.assertEqual(suggestion.duration_seconds, 30)
-                self.assertEqual(suggestion.priority, motion_alarm.alarm_level.priority)
-                self.assertEqual(suggestion.trigger_reason, 'event_alert')
+            # Initially no suggestion
+            self.assertFalse(self.manager.has_suggestion())
+            
+            # Consider alert for auto-view
+            self.manager.consider_alert_for_auto_view(alert)
+            
+            # Should create suggestion with video sensor URL (not motion sensor)
+            self.assertTrue(self.manager.has_suggestion())
+            suggestion = self.manager.peek_current_suggestion()
+            expected_url = f'/console/sensor/video-stream/{video_sensor.id}'
+            self.assertEqual(suggestion.url, expected_url)
+            self.assertEqual(suggestion.duration_seconds, 30)
+            self.assertEqual(suggestion.priority, motion_alarm.alarm_level.priority)
+            self.assertEqual(suggestion.trigger_reason, 'event_alert')
 
     def test_consider_alert_with_auto_view_disabled(self):
         """Test TransientViewManager ignores alerts when auto-view disabled - settings integration."""
@@ -182,8 +220,9 @@ class TestTransientViewManager(BaseTestCase):
         
         # Create motion detection alert
         source_details = AlarmSourceDetails(
-            detail_attrs={'sensor_id': 'cam_123'},
-            image_url=None
+            detail_attrs={},
+            image_url=None,
+            sensor_id='cam_123'
         )
         
         motion_alarm = Alarm(
@@ -221,8 +260,9 @@ class TestTransientViewManager(BaseTestCase):
         
         # Create non-motion EVENT alarm
         source_details = AlarmSourceDetails(
-            detail_attrs={'sensor_id': 'cam_123'},
-            image_url=None
+            detail_attrs={},
+            image_url=None,
+            sensor_id='cam_123'
         )
         
         status_alarm = Alarm(

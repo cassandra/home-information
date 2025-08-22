@@ -13,7 +13,7 @@ class AlarmSourceDetails:
 
     detail_attrs         : Dict[ str, str ]
     image_url            : str               = None
-    sensor_id            : str               = None  # ID of the sensor that generated this alarm
+    sensor_id            : int               = None  # ID of the sensor that generated this alarm
 
     
 @dataclass
