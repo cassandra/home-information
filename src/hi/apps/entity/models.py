@@ -77,6 +77,16 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
         return self.__str__()
     
     @property
+    def motion_detection_state(self):
+        """
+        Returns the motion detection (MOVEMENT) EntityState for this entity if it exists.
+        Used by camera entities for motion detection status display.
+        TODO: Refactor to avoid circular dependency between Entity and EntityStateType
+        """
+        from .enums import EntityStateType
+        return self.states.filter(entity_state_type_str=str(EntityStateType.MOVEMENT)).first()
+    
+    @property
     def item_type(self) -> ItemType:
         return ItemType.ENTITY
     

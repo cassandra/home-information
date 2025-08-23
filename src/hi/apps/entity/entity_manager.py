@@ -495,9 +495,8 @@ class EntityManager(Singleton):
     
     def get_view_stream_entities(self) -> List[ Entity ]:
         """ Return all entities that have a video stream capability """
-        # TODO: Phase 4 - This method will be updated to return Entity.objects.filter(has_video_stream=True)
-        # For now, return empty list since VIDEO_STREAM EntityState has been removed
-        return []
+        # Phase 4: Use has_video_stream flag instead of VIDEO_STREAM EntityState
+        return list(Entity.objects.filter(has_video_stream=True))
 
     
 _thread_local = local()

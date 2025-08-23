@@ -4,10 +4,9 @@ from typing import List
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.entity.entity_manager import EntityManager
+from hi.apps.entity.models import Entity
 
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
-
-from .transient_models import VideoStreamEntity
 
 logger = logging.getLogger(__name__)
 
@@ -29,18 +28,17 @@ class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin ):
         self._was_initialized = True
         return
 
-    def get_video_stream_entity_list( self ) -> List[ VideoStreamEntity ]:
+    def get_video_stream_entity_list( self ) -> List[ Entity ]:
+        """Phase 4: Return entities with video stream capability directly."""
         return self._video_stream_entity_list
 
     def _reload_video_stream_entity_list(self):
         self._video_stream_entity_list = self._build_video_stream_entity_list()
         return
 
-    def _build_video_stream_entity_list(self) -> List[ VideoStreamEntity ]:
-        # TODO: Phase 4 - Rebuild this method to use has_video_stream=True entities
-        # and the new VideoStream infrastructure instead of VIDEO_STREAM EntityStates.
-        # VideoStreamEntity dataclass will likely be replaced with direct Entity + VideoStream approach.
-        # For now, returning empty list since VIDEO_STREAM EntityState has been removed.
-        
-        return []
+    def _build_video_stream_entity_list(self) -> List[ Entity ]:
+        """Phase 4: Build list using has_video_stream=True entities directly."""
+        entity_list = EntityManager().get_view_stream_entities()
+        entity_list.sort(key=lambda entity: entity.name)
+        return entity_list
     

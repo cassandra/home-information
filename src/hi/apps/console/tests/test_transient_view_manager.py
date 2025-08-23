@@ -193,9 +193,19 @@ class TestTransientViewManager(BaseTestCase):
             # Consider alert for auto-view
             self.manager.consider_alert_for_auto_view(alert)
             
-            # Phase 3: TransientViewManager no longer creates suggestions since VIDEO_STREAM sensors were removed
-            # Phase 4: Will update TransientViewManager to use VideoStream objects and create suggestions again
-            # TODO: Phase 4 - Update this test to expect suggestions using VideoStream infrastructure
+            # Phase 4: TransientViewManager creates suggestions using VideoStream infrastructure
+            self.assertTrue(self.manager.has_suggestion())
+            
+            # Verify suggestion content
+            suggestion = self.manager.get_current_suggestion()
+            self.assertIsNotNone(suggestion)
+            self.assertIn('/console/entity/video-stream/', suggestion.url)
+            self.assertIn(str(entity.id), suggestion.url)
+            self.assertEqual(suggestion.duration_seconds, 30)
+            self.assertEqual(suggestion.priority, motion_alarm.alarm_level.priority)
+            self.assertEqual(suggestion.trigger_reason, 'event_alert')
+            
+            # Verify suggestion is consumed (cleared after retrieval)
             self.assertFalse(self.manager.has_suggestion())
 
     def test_consider_alert_with_auto_view_disabled(self):

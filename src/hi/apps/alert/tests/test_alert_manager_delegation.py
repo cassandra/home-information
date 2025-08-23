@@ -112,9 +112,20 @@ class TestAlertManagerDelegation(BaseTestCase):
                 last_alert_status_datetime=timezone.now() - timedelta(seconds=5)
             )
             
-            # Phase 3: TransientViewManager no longer creates suggestions since VIDEO_STREAM sensors were removed
-            # Phase 4: Will update TransientViewManager to use VideoStream objects and create suggestions again
-            # TODO: Phase 4 - Update this test to expect suggestions using VideoStream infrastructure
+            # Phase 4: TransientViewManager creates suggestions using VideoStream infrastructure
+            self.assertTrue(self.transient_manager.has_suggestion())
+            
+            # Verify suggestion was created with correct content
+            suggestion = self.transient_manager.get_current_suggestion()
+            self.assertIsNotNone(suggestion)
+            self.assertIn('/console/entity/video-stream/', suggestion.url)
+            self.assertIn(str(entity.id), suggestion.url)
+            self.assertEqual(suggestion.duration_seconds, 30)
+            self.assertEqual(suggestion.priority, motion_alarm.alarm_level.priority)
+            self.assertEqual(suggestion.trigger_reason, 'event_alert')
+            
+            # Verify AlertManager properly delegated to TransientViewManager
+            # The suggestion should be consumed after retrieval
             self.assertFalse(self.transient_manager.has_suggestion())
 
     def test_alert_manager_no_delegation_when_no_new_alert(self):

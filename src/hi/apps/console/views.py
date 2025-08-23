@@ -2,8 +2,8 @@ from django.core.exceptions import BadRequest
 from django.http import Http404
 from django.views.generic import View
 
-from hi.apps.sense.models import Sensor
-from hi.apps.sense.sensor_response_manager import SensorResponseMixin
+from hi.apps.entity.models import Entity
+from hi.integrations.integration_manager import IntegrationManager
 
 from hi.enums import ViewType
 from hi.hi_async_view import HiModalView
@@ -13,29 +13,38 @@ from .constants import ConsoleConstants
 from .console_helper import ConsoleSettingsHelper
 
 
-class SensorVideoStreamView( HiGridView, SensorResponseMixin ):
+class EntityVideoStreamView( HiGridView ):
+    """Phase 4: New view for entity-based video streams using VideoStream objects."""
 
     def get_main_template_name( self ) -> str:
-        return 'console/panes/sensor_video_stream.html'
+        return 'console/panes/entity_video_stream.html'
 
     def get_main_template_context( self, request, *args, **kwargs ):
-        sensor_id = kwargs.get('sensor_id')
+        entity_id = kwargs.get('entity_id')
         try:
-            sensor = Sensor.objects.get( id = sensor_id )
-        except Sensor.DoesNotExist:
-            raise Http404('Sensor not found.')
+            entity = Entity.objects.get( id = entity_id )
+        except Entity.DoesNotExist:
+            raise Http404('Entity not found.')
 
-        sensor_response_map = self.sensor_response_manager().get_latest_sensor_responses(
-            sensor_list = [ sensor ],
-        )
-        if not sensor_response_map or not sensor_response_map[sensor]:
+        # Check if entity has video stream capability
+        if not entity.has_video_stream:
+            raise BadRequest( 'Entity does not have video stream capability.' )
+
+        # Get the integration gateway for this entity
+        integration_gateway = IntegrationManager().get_integration_gateway( entity.integration_id )
+        if not integration_gateway:
+            raise BadRequest( 'Integration not available for video stream.' )
+
+        # Get the video stream using the integration gateway
+        video_stream = integration_gateway.get_entity_video_stream( entity )
+        if not video_stream:
             raise BadRequest( 'Video stream is not currently available.' )
 
         request.view_parameters.view_type = ViewType.VIDEO_STREAM
         request.view_parameters.to_session( request )
         return {
-            'sensor': sensor,
-            'sensor_response': sensor_response_map[sensor][0],
+            'entity': entity,
+            'video_stream': video_stream,
         }
 
         
