@@ -178,7 +178,6 @@ class EntityStateType(LabeledEnum):
     PRESENCE         = ( 'Presence'         , '' )
     SOUND_LEVEL      = ( 'Sound Level'      , '' )
     TEMPERATURE      = ( 'Temperature'      , '' )
-    VIDEO_STREAM     = ( 'Video Stream'     , '' )
     WATER_FLOW       = ( 'Water Flow'       , '' )
     WIND_SPEED       = ( 'Wind Speed'       , '' )
 
@@ -202,11 +201,11 @@ class EntityStateType(LabeledEnum):
 
     @property
     def suppress_display_name(self):
-        return bool( self in { EntityStateType.VIDEO_STREAM })
+        return False
 
     @property
     def suppress_history(self):
-        return bool( self in { EntityStateType.VIDEO_STREAM })
+        return False
     
 
 class EntityStateValue(LabeledEnum):

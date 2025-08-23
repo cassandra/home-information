@@ -35,19 +35,15 @@ class TestEntityStateType(BaseTestCase):
         self.assertNotEqual(temperature_template, controller_template)
         
         # Complex state types should work correctly
-        video_template = EntityStateType.VIDEO_STREAM.value_template_name()
-        self.assertTrue(video_template.startswith('sense/panes/sensor_value_'))
-        self.assertIn('video_stream', video_template)
+        multivalued_template = EntityStateType.MULTVALUED.value_template_name()
+        self.assertTrue(multivalued_template.startswith('sense/panes/sensor_value_'))
+        self.assertIn('multvalued', multivalued_template)
         
         return
 
     def test_suppression_rules_optimize_ui_for_different_state_types(self):
         """Test suppress display/history logic - optimizes UI based on state characteristics."""
-        # Video streams should suppress certain UI elements for performance
-        video_state = EntityStateType.VIDEO_STREAM
-        self.assertTrue(video_state.suppress_display_name)
-        self.assertTrue(video_state.suppress_history)
-        
+        # After removing VIDEO_STREAM, all state types now show full UI
         # Standard state types should show full UI
         standard_states = [
             EntityStateType.ON_OFF,
@@ -63,12 +59,11 @@ class TestEntityStateType(BaseTestCase):
             self.assertFalse(state_type.suppress_history,
                              f"{state_type} should maintain history")
         
-        # Test that suppression is consistent for same state type
-        another_video_check = EntityStateType.VIDEO_STREAM
-        self.assertEqual(video_state.suppress_display_name,
-                         another_video_check.suppress_display_name)
-        self.assertEqual(video_state.suppress_history,
-                         another_video_check.suppress_history)
+        # Test that suppression is consistent across state types
+        # After removing VIDEO_STREAM, all state types have consistent suppression behavior
+        for state_type in [EntityStateType.MOVEMENT, EntityStateType.ON_OFF]:
+            self.assertFalse(state_type.suppress_display_name)
+            self.assertFalse(state_type.suppress_history)
         
         return
 

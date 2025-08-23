@@ -154,18 +154,10 @@ class TestTransientViewManager(BaseTestCase):
             name='Motion Sensor'
         )
         
-        # Create video stream sensor state on same entity
-        video_state = EntityState.objects.create(
-            entity=entity,
-            entity_state_type_str=str(EntityStateType.VIDEO_STREAM),
-            name='video_stream'
-        )
-        video_sensor = Sensor.objects.create(
-            entity_state=video_state,
-            integration_id='test.video.front_door',
-            integration_name='test_integration',
-            name='Video Stream'
-        )
+        # Phase 3: VIDEO_STREAM EntityState removed - video capability now indicated by has_video_stream=True
+        # Phase 4: Will use VideoStream objects and integration gateway methods
+        entity.has_video_stream = True
+        entity.save()
         
         # Create motion detection alert with motion sensor
         source_details = AlarmSourceDetails(
@@ -201,14 +193,10 @@ class TestTransientViewManager(BaseTestCase):
             # Consider alert for auto-view
             self.manager.consider_alert_for_auto_view(alert)
             
-            # Should create suggestion with video sensor URL (not motion sensor)
-            self.assertTrue(self.manager.has_suggestion())
-            suggestion = self.manager.peek_current_suggestion()
-            expected_url = f'/console/sensor/video-stream/{video_sensor.id}'
-            self.assertEqual(suggestion.url, expected_url)
-            self.assertEqual(suggestion.duration_seconds, 30)
-            self.assertEqual(suggestion.priority, motion_alarm.alarm_level.priority)
-            self.assertEqual(suggestion.trigger_reason, 'event_alert')
+            # Phase 3: TransientViewManager no longer creates suggestions since VIDEO_STREAM sensors were removed
+            # Phase 4: Will update TransientViewManager to use VideoStream objects and create suggestions again
+            # TODO: Phase 4 - Update this test to expect suggestions using VideoStream infrastructure
+            self.assertFalse(self.manager.has_suggestion())
 
     def test_consider_alert_with_auto_view_disabled(self):
         """Test TransientViewManager ignores alerts when auto-view disabled - settings integration."""

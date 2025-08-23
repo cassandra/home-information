@@ -31,7 +31,6 @@ class ZoneMinderManager( Singleton ):
     ZM_ENTITY_NAME = 'ZoneMinder'
     ZM_SYSTEM_INTEGRATION_NAME = 'system'
     ZM_MONITOR_INTEGRATION_NAME_PREFIX = 'monitor'
-    VIDEO_STREAM_SENSOR_PREFIX = 'monitor.video_stream'
     MOVEMENT_SENSOR_PREFIX = 'monitor.motion'
     MOVEMENT_EVENT_PREFIX = 'monitor.motion'
     MONITOR_FUNCTION_SENSOR_PREFIX = 'monitor.function'

@@ -25,7 +25,6 @@ class EntityPairingManager(Singleton):
         enums.EntityStateType.MOVEMENT: enums.EntityType.AREA,
         enums.EntityStateType.PRESENCE: enums.EntityType.AREA,
         enums.EntityStateType.SOUND_LEVEL: enums.EntityType.AREA,
-        enums.EntityStateType.VIDEO_STREAM: enums.EntityType.AREA,
     }
     
     def __init_singleton__(self):

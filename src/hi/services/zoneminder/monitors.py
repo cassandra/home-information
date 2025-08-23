@@ -265,12 +265,6 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             force_load = self.CACHING_DISABLED,
         )
         for zm_monitor in zm_monitors:
-            video_stream_sensor_response = self._create_video_stream_sensor_response(
-                zm_monitor = zm_monitor,
-                timestamp = current_poll_datetime,
-            )
-            sensor_response_map[video_stream_sensor_response.integration_key] = video_stream_sensor_response
-            
             function_sensor_response = self._create_monitor_function_sensor_response(
                 zm_monitor = zm_monitor,
                 timestamp = current_poll_datetime,
@@ -332,16 +326,6 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
                 zm_monitor_id = zm_monitor.id(),
             ),
             value = str(EntityStateValue.IDLE),
-            timestamp = timestamp,
-        )
-
-    def _create_video_stream_sensor_response( self, zm_monitor : ZmMonitor, timestamp : datetime ):
-        return SensorResponse(
-            integration_key = self.zm_manager()._to_integration_key(
-                prefix = ZoneMinderManager.VIDEO_STREAM_SENSOR_PREFIX,
-                zm_monitor_id = zm_monitor.id(),
-            ),
-            value = self.zm_manager().get_video_stream_url( monitor_id = zm_monitor.id() ),
             timestamp = timestamp,
         )
 

@@ -26,7 +26,6 @@ class HiModelHelper:
 
     EXCLUDE_FROM_SENSOR_HISTORY = {
         EntityStateType.DATETIME,
-        EntityStateType.VIDEO_STREAM,
         EntityStateType.BLOB,
         EntityStateType.MULTVALUED,
     }
@@ -207,20 +206,6 @@ class HiModelHelper:
             name = name,
             integration_key = integration_key,
             provides_video_stream = provides_video_stream,
-        )
-
-    @classmethod
-    def create_video_stream_sensor( cls,
-                                    entity           : Entity,
-                                    integration_key  : IntegrationKey  = None,
-                                    name             : str             = None ) -> Sensor:
-        if not name:
-            name = f'{entity.name} Stream'
-        return cls.create_sensor(
-            entity = entity,
-            entity_state_type = EntityStateType.VIDEO_STREAM,
-            name = name,
-            integration_key = integration_key,
         )
 
     @classmethod

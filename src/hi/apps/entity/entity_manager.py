@@ -15,7 +15,6 @@ from hi.apps.location.models import Location, LocationView
 from .entity_pairing_manager import EntityPairingManager
 from .enums import (
     EntityGroupType,
-    EntityStateType,
 )
 from .models import (
     Entity,
@@ -495,12 +494,10 @@ class EntityManager(Singleton):
         return entity_view_group_list
     
     def get_view_stream_entities(self) -> List[ Entity ]:
-        """ Return all entities that have a video stream state """
-
-        entity_state_queryset = EntityState.objects.select_related( 'entity' ).filter(
-            entity_state_type_str = str(EntityStateType.VIDEO_STREAM),
-        )
-        return [ x.entity for x in entity_state_queryset ]
+        """ Return all entities that have a video stream capability """
+        # TODO: Phase 4 - This method will be updated to return Entity.objects.filter(has_video_stream=True)
+        # For now, return empty list since VIDEO_STREAM EntityState has been removed
+        return []
 
     
 _thread_local = local()

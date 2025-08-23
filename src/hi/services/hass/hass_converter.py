@@ -216,7 +216,7 @@ class HassConverter:
         (HassApi.SENSOR_DOMAIN, None, None): EntityStateType.BLOB,  # Generic sensor
         
         # Other domains (read-only)
-        (HassApi.CAMERA_DOMAIN, None, None): EntityStateType.VIDEO_STREAM,
+        # Note: CAMERA_DOMAIN entities should have has_video_stream=True but no VIDEO_STREAM EntityState
         (HassApi.SUN_DOMAIN, None, None): EntityStateType.MULTVALUED,
         (HassApi.WEATHER_DOMAIN, None, None): EntityStateType.MULTVALUED,
     }
@@ -856,12 +856,6 @@ class HassConverter:
                 integration_key = integration_key,
                 name = name,
             )
-        elif entity_state_type == EntityStateType.VIDEO_STREAM:
-            sensor = HiModelHelper.create_video_stream_sensor(
-                entity = entity,
-                integration_key = integration_key,
-                name = name,
-            )
         elif entity_state_type == EntityStateType.CONNECTIVITY:
             sensor = HiModelHelper.create_connectivity_sensor(
                 entity = entity,
@@ -999,12 +993,6 @@ class HassConverter:
             )
         elif entity_state_type == EntityStateType.MULTVALUED:
             sensor = HiModelHelper.create_multivalued_sensor(
-                entity = entity,
-                integration_key = integration_key,
-                name = name,
-            )
-        elif entity_state_type == EntityStateType.VIDEO_STREAM:
-            sensor = HiModelHelper.create_video_stream_sensor(
                 entity = entity,
                 integration_key = integration_key,
                 name = name,

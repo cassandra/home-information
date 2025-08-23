@@ -268,7 +268,6 @@ class TestHassConverterMapping(TestCase):
             (HassApi.BINARY_SENSOR_DOMAIN, EntityStateType.MOVEMENT),
             (HassApi.BINARY_SENSOR_DOMAIN, EntityStateType.CONNECTIVITY),
             (HassApi.BINARY_SENSOR_DOMAIN, EntityStateType.ON_OFF),
-            (HassApi.CAMERA_DOMAIN, EntityStateType.VIDEO_STREAM),
             (HassApi.SUN_DOMAIN, EntityStateType.MULTVALUED),
             (HassApi.WEATHER_DOMAIN, EntityStateType.MULTVALUED),
         ]
