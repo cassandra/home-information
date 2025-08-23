@@ -47,7 +47,9 @@ class TestLocationEditData(BaseTestCase):
             'location',
             'location_edit_form',
             'location_attribute_formset',
-            'location_attribute_upload_form'
+            'location_attribute_upload_form',
+            'history_url_name',
+            'restore_url_name'
         }
         self.assertEqual(set(context.keys()), expected_keys)
         self.assertEqual(context['location'], location)

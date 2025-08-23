@@ -100,6 +100,8 @@ class ConfigSettingsView( ConfigPageView, SettingsMixin ):
         
         return {
             'subsystem_attribute_formset_list': subsystem_attribute_formset_list,
+            'history_url_name': 'config_attribute_history',
+            'restore_url_name': 'config_attribute_restore',
         }
 
     def post( self, request, *args, **kwargs ):
@@ -123,6 +125,8 @@ class ConfigSettingsView( ConfigPageView, SettingsMixin ):
         if not all_valid:
             context = {
                 'subsystem_attribute_formset_list': subsystem_attribute_formset_list,
+                'history_url_name': 'config_attribute_history',
+                'restore_url_name': 'config_attribute_restore',
             }
             return render( request, 'config/panes/settings_form.html', context )
 

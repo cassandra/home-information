@@ -54,14 +54,6 @@ class SubsystemAttribute( AttributeModel ):
     def _get_history_model_class(self):
         """Return the history model class for SubsystemAttribute."""
         return SubsystemAttributeHistory
-    
-    def get_history_url_name(self):
-        """Return the URL name for SubsystemAttribute history view."""
-        return 'config_attribute_history'
-    
-    def get_restore_url_name(self):
-        """Return the URL name for SubsystemAttribute restore view."""
-        return 'config_attribute_restore'
 
 
 class SubsystemAttributeHistory(AttributeValueHistoryModel):

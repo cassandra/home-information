@@ -119,16 +119,8 @@ class EntityAttribute( AttributeModel ):
     def _get_history_model_class(self):
         """Return the history model class for EntityAttribute."""
         return EntityAttributeHistory
-    
-    def get_history_url_name(self):
-        """Return the URL name for EntityAttribute history view."""
-        return 'entity_attribute_history'
-    
-    def get_restore_url_name(self):
-        """Return the URL name for EntityAttribute restore view."""
-        return 'entity_attribute_restore'
 
-    
+
 class EntityState( models.Model ):
     """
     - The (hidden) state of an entity that can be controlled and/or sensed.
