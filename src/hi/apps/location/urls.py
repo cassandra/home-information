@@ -33,11 +33,11 @@ urlpatterns = [
              views.LocationItemDetailsView.as_view(), 
              name='location_item_details' ),
     
-    re_path( r'^location/attribute/history/(?P<attribute_id>\d+)$', 
+    re_path( r'^attribute/history/(?P<attribute_id>\d+)$', 
              views.LocationAttributeHistoryView.as_view(), 
              name='location_attribute_history'),
     
-    re_path( r'^location/attribute/restore/(?P<attribute_id>\d+)$', 
+    re_path( r'^attribute/restore/(?P<attribute_id>\d+)$', 
              views.LocationAttributeRestoreView.as_view(), 
              name='location_attribute_restore'),
     

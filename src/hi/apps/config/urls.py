@@ -13,12 +13,12 @@ urlpatterns = [
              views.ConfigInternalView.as_view(), 
              name='config_internal' ),
     
-    re_path( r'^subsystem/attribute/history/(?P<attribute_id>\d+)$', 
-             views.SubsystemAttributeHistoryView.as_view(), 
+    re_path( r'^attribute/history/(?P<attribute_id>\d+)$', 
+             views.ConfigAttributeHistoryView.as_view(), 
              name='config_attribute_history'),
     
-    re_path( r'^subsystem/attribute/restore/(?P<attribute_id>\d+)$', 
-             views.SubsystemAttributeRestoreView.as_view(), 
+    re_path( r'^attribute/restore/(?P<attribute_id>\d+)$', 
+             views.ConfigAttributeRestoreView.as_view(), 
              name='config_attribute_restore'),
 
 ]

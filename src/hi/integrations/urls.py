@@ -27,11 +27,11 @@ urlpatterns = [
              views.IntegrationManageView.as_view(), 
              name='integrations_manage' ),
     
-    re_path( r'^integration/attribute/history/(?P<attribute_id>\d+)$', 
+    re_path( r'^attribute/history/(?P<attribute_id>\d+)$', 
              views.IntegrationAttributeHistoryView.as_view(), 
              name='integration_attribute_history'),
     
-    re_path( r'^integration/attribute/restore/(?P<attribute_id>\d+)$', 
+    re_path( r'^attribute/restore/(?P<attribute_id>\d+)$', 
              views.IntegrationAttributeRestoreView.as_view(), 
              name='integration_attribute_restore'),
 ]
