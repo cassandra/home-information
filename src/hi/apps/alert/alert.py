@@ -133,25 +133,23 @@ class Alert:
         Returns dict with image info and sensor response or None if no visual content found.
         """
         for alarm in self.alarm_list:
-            for source_details in alarm.source_details_list:
+            for sensor_response in alarm.source_details_list:
                 # Check for video stream capability first (preferred over static source_image_url)
-                if (hasattr(source_details, 'sensor_response') and 
-                    source_details.sensor_response and 
-                    source_details.sensor_response.has_video_stream):
+                if sensor_response.has_video_stream:
                     return {
-                        'source_image_url': source_details.source_image_url,
+                        'source_image_url': sensor_response.source_image_url,
                         'alarm': alarm,
-                        'source_details': source_details,
-                        'sensor_response': source_details.sensor_response,
+                        'source_details': sensor_response,  # Keep for backward compatibility
+                        'sensor_response': sensor_response,
                         'is_from_latest': alarm == self.alarm_list[0] if self.alarm_list else False,
                     }
                 # Fallback to static source_image_url if no video stream
-                elif source_details.source_image_url:
+                elif sensor_response.source_image_url:
                     return {
-                        'source_image_url': source_details.source_image_url,
+                        'source_image_url': sensor_response.source_image_url,
                         'alarm': alarm,
-                        'source_details': source_details,
-                        'sensor_response': getattr(source_details, 'sensor_response', None),
+                        'source_details': sensor_response,  # Keep for backward compatibility
+                        'sensor_response': sensor_response,
                         'is_from_latest': alarm == self.alarm_list[0] if self.alarm_list else False,
                     }
         return None

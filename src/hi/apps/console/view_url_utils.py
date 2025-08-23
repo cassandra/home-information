@@ -32,10 +32,10 @@ class ViewUrlUtils:
         Returns:
             A Django view URL string, or None if no appropriate view can be determined
         """
-        # Look through all source details for sensor information
-        for source_details in alarm.source_details_list:
-            if source_details.sensor_id:
-                view_url = ViewUrlUtils._get_view_url_for_sensor_id(source_details.sensor_id)
+        # Look through all source details (SensorResponse objects) for sensor information
+        for sensor_response in alarm.source_details_list:
+            if sensor_response.sensor and sensor_response.sensor.id:
+                view_url = ViewUrlUtils._get_view_url_for_sensor_id(sensor_response.sensor.id)
                 if view_url:
                     return view_url
         

@@ -3,7 +3,7 @@ from datetime import timedelta
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.alert.alert import Alert
-from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+from hi.apps.alert.alarm import Alarm
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.security.enums import SecurityLevel
 from hi.testing.base_test_case import BaseTestCase

@@ -1,32 +1,21 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, TYPE_CHECKING
+from typing import List
 
 from hi.apps.audio.audio_signal import AudioSignal
 from hi.apps.security.enums import SecurityLevel
+from hi.apps.sense.transient_models import SensorResponse
 
 from .enums import AlarmLevel, AlarmSource
 
-if TYPE_CHECKING:
-    from hi.apps.sense.transient_models import SensorResponse
 
-
-@dataclass
-class AlarmSourceDetails:
-
-    detail_attrs         : Dict[ str, str ]
-    source_image_url     : str               = None
-    sensor_id            : int               = None  # ID of the sensor that generated this alarm
-    sensor_response      : 'SensorResponse' = None  # SensorResponse object for video URL generation
-
-    
 @dataclass
 class Alarm:
     alarm_source         : AlarmSource
     alarm_type           : str
     alarm_level          : AlarmLevel
     title                : str
-    source_details_list  : List[ AlarmSourceDetails ]
+    source_details_list  : List[ SensorResponse ]
     security_level       : SecurityLevel
     alarm_lifetime_secs  : int
     timestamp            : datetime

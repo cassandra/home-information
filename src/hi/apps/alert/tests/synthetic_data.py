@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import random
 from typing import List
 
-from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+from hi.apps.alert.alarm import Alarm
 from hi.apps.alert.alert import Alert
 from hi.apps.alert.alert_status import AlertStatusData
 from hi.apps.alert.enums import AlarmLevel, AlarmSource

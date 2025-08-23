@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 from django.utils import timezone
 
 from hi.apps.alert.alert_manager import AlertManager
-from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+from hi.apps.alert.alarm import Alarm
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.console.transient_view_manager import TransientViewManager
 from hi.apps.security.enums import SecurityLevel

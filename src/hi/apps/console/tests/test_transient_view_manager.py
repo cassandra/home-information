@@ -126,10 +126,12 @@ class TestTransientViewManager(BaseTestCase):
         """Test TransientViewManager considers alerts when auto-view enabled - core business logic."""
         from django.utils import timezone
         from hi.apps.alert.alert import Alert
-        from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+        from hi.apps.alert.alarm import Alarm
         from hi.apps.alert.enums import AlarmLevel, AlarmSource
         from hi.apps.security.enums import SecurityLevel
         from hi.apps.entity.models import Entity, EntityState
+        from hi.apps.sense.transient_models import SensorResponse
+        from hi.integrations.transient_models import IntegrationKey
         from hi.apps.entity.enums import EntityStateType
         from hi.apps.sense.models import Sensor
         
@@ -160,10 +162,14 @@ class TestTransientViewManager(BaseTestCase):
         entity.save()
         
         # Create motion detection alert with motion sensor
-        source_details = AlarmSourceDetails(
+        source_details = SensorResponse(
+            integration_key=IntegrationKey("test", "test.sensor"),
+            value="active",
+            timestamp=timezone.now(),
+            sensor=motion_sensor,  # Motion sensor that triggered the alarm
             detail_attrs={'location': 'Front Door'},
             source_image_url=None,
-            sensor_id=motion_sensor.id  # Motion sensor that triggered the alarm
+            has_video_stream=False
         )
         
         motion_alarm = Alarm(
@@ -212,15 +218,21 @@ class TestTransientViewManager(BaseTestCase):
         """Test TransientViewManager ignores alerts when auto-view disabled - settings integration."""
         from django.utils import timezone
         from hi.apps.alert.alert import Alert
-        from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+        from hi.apps.alert.alarm import Alarm
         from hi.apps.alert.enums import AlarmLevel, AlarmSource
         from hi.apps.security.enums import SecurityLevel
+        from hi.apps.sense.transient_models import SensorResponse
+        from hi.integrations.transient_models import IntegrationKey
         
         # Create motion detection alert
-        source_details = AlarmSourceDetails(
+        source_details = SensorResponse(
+            integration_key=IntegrationKey("test", "test.sensor"),
+            value="active",
+            timestamp=timezone.now(),
+            sensor=None,  # TODO: fix sensor reference
             detail_attrs={},
             source_image_url=None,
-            sensor_id='cam_123'
+            has_video_stream=False
         )
         
         motion_alarm = Alarm(
@@ -252,15 +264,21 @@ class TestTransientViewManager(BaseTestCase):
         """Test TransientViewManager handles alerts without camera view URLs - integration test."""
         from django.utils import timezone
         from hi.apps.alert.alert import Alert
-        from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+        from hi.apps.alert.alarm import Alarm
         from hi.apps.alert.enums import AlarmLevel, AlarmSource
         from hi.apps.security.enums import SecurityLevel
+        from hi.apps.sense.transient_models import SensorResponse
+        from hi.integrations.transient_models import IntegrationKey
         
         # Create non-motion EVENT alarm
-        source_details = AlarmSourceDetails(
+        source_details = SensorResponse(
+            integration_key=IntegrationKey("test", "test.sensor"),
+            value="active",
+            timestamp=timezone.now(),
+            sensor=None,  # TODO: fix sensor reference
             detail_attrs={},
             source_image_url=None,
-            sensor_id='cam_123'
+            has_video_stream=False
         )
         
         status_alarm = Alarm(
@@ -292,14 +310,21 @@ class TestTransientViewManager(BaseTestCase):
         """Test TransientViewManager ignores alerts without view URLs - integration with Alert model."""
         from django.utils import timezone
         from hi.apps.alert.alert import Alert
-        from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+        from hi.apps.alert.alarm import Alarm
         from hi.apps.alert.enums import AlarmLevel, AlarmSource
         from hi.apps.security.enums import SecurityLevel
+        from hi.apps.sense.transient_models import SensorResponse
+        from hi.integrations.transient_models import IntegrationKey
         
         # Create motion alarm but without sensor_id (no view URL)
-        source_details = AlarmSourceDetails(
-            detail_attrs={'location': 'Front Door'},  # No sensor_id
-            source_image_url=None
+        source_details = SensorResponse(
+            integration_key=IntegrationKey("test", "test.no_sensor"),
+            value="active",
+            timestamp=timezone.now(),
+            sensor=None,
+            detail_attrs={'location': 'Front Door'},
+            source_image_url=None,
+            has_video_stream=False
         )
         
         motion_alarm = Alarm(
