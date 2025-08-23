@@ -362,6 +362,28 @@ All generated code must comply with the `.flake8-ci` configuration rules. Common
 
 Before submitting code, always run: `make lint` to verify compliance.
 
+## GitHub PR Creation (Claude-Specific)
+
+**CRITICAL**: Use HEREDOC syntax to prevent quoting failures:
+
+```bash
+gh pr create --title "Brief Title" --body "$(cat <<'EOF'
+[Follow the structure from .github/PULL_REQUEST_TEMPLATE.md]
+## Pull Request: [Short Title]
+
+### Issue Link
+Closes #123
+
+[Rest of template content]
+EOF
+)"
+```
+
+**Key points:**
+- Always use `cat <<'EOF'` with single quotes around EOF
+- This prevents variable expansion and special character issues
+- Follow the exact structure from `.github/PULL_REQUEST_TEMPLATE.md`
+
 ## Django Template Guidelines (Claude-Specific)
 
 Follow Django best practices for template design:
