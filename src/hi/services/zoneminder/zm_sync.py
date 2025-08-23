@@ -200,23 +200,18 @@ class ZoneMinderSynchronizer( ZoneMinderMixin, IntegrationSyncMixin ):
                 name = zm_monitor.name(),
                 entity_type_str = str(EntityType.CAMERA),
                 can_user_delete = ZmMetaData.allow_entity_deletion,
+                has_video_stream = True,
             )
             entity.integration_key = entity_integration_key
             entity.save()
 
-            HiModelHelper.create_video_stream_sensor(
-                entity = entity,
-                integration_key = zm_manager._to_integration_key(
-                    prefix = zm_manager.VIDEO_STREAM_SENSOR_PREFIX,
-                    zm_monitor_id = zm_monitor.id(),
-                ),
-            )
             movement_sensor = HiModelHelper.create_movement_sensor(
                 entity = entity,
                 integration_key = zm_manager._to_integration_key(
                     prefix = zm_manager.MOVEMENT_SENSOR_PREFIX,
                     zm_monitor_id = zm_monitor.id(),
                 ),
+                provides_video_stream = True,
             )
             HiModelHelper.create_discrete_controller(
                 entity = entity,
