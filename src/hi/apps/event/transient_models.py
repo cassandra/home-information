@@ -46,7 +46,7 @@ class Event:
             alarm_type = self.event_definition.event_type.label,
             alarm_level = alarm_action.alarm_level,
             title = self.event_definition.name,
-            source_details_list = self.sensor_response_list,
+            sensor_response_list = self.sensor_response_list,
             security_level = alarm_action.security_level,
             alarm_lifetime_secs = alarm_action.alarm_lifetime_secs,
             timestamp = self.timestamp,

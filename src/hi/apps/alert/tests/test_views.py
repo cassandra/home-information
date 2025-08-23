@@ -109,7 +109,7 @@ class TestAlertDetailsView(DualModeViewTestCase):
         mock_alarm = Mock()
         mock_alarm.title = 'Test Alarm'
         mock_alarm.timestamp = timezone.now()  # Use real datetime for template filtering
-        mock_alarm.source_details_list = []  # Empty list to avoid further iteration issues
+        mock_alarm.sensor_response_list = []  # Empty list to avoid further iteration issues
         self.mock_alert.alarm_list = [mock_alarm]
 
     def test_get_alert_details_sync(self):

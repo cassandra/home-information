@@ -41,31 +41,6 @@ class TestEntityStateType(BaseTestCase):
         
         return
 
-    def test_suppression_rules_optimize_ui_for_different_state_types(self):
-        """Test suppress display/history logic - optimizes UI based on state characteristics."""
-        # After removing VIDEO_STREAM, all state types now show full UI
-        # Standard state types should show full UI
-        standard_states = [
-            EntityStateType.ON_OFF,
-            EntityStateType.TEMPERATURE,
-            EntityStateType.CONNECTIVITY,
-            EntityStateType.MOVEMENT
-        ]
-        
-        for state_type in standard_states:
-            # These states should display names and maintain history
-            self.assertFalse(state_type.suppress_display_name,
-                             f"{state_type} should show display name")
-            self.assertFalse(state_type.suppress_history,
-                             f"{state_type} should maintain history")
-        
-        # Test that suppression is consistent across state types
-        # After removing VIDEO_STREAM, all state types have consistent suppression behavior
-        for state_type in [EntityStateType.MOVEMENT, EntityStateType.ON_OFF]:
-            self.assertFalse(state_type.suppress_display_name)
-            self.assertFalse(state_type.suppress_history)
-        
-        return
 
 
 class TestEntityStateValue(BaseTestCase):

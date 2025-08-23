@@ -85,8 +85,8 @@ class TestWeatherAlertIntegration(BaseTestCase):
         self.assertEqual(alarm.security_level.name, 'OFF')  # Applies to all security levels
         
         # Verify alarm details contain weather info
-        self.assertEqual(len(alarm.source_details_list), 1)
-        details = alarm.source_details_list[0]
+        self.assertEqual(len(alarm.sensor_response_list), 1)
+        details = alarm.sensor_response_list[0]
         self.assertEqual(details.detail_attrs['Event Type'], WeatherEventType.TORNADO.label)
         self.assertEqual(details.detail_attrs['Severity'], AlertSeverity.EXTREME.label)
         self.assertEqual(details.detail_attrs['Affected Areas'], "Travis County")

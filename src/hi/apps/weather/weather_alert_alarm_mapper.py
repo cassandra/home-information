@@ -300,12 +300,12 @@ class WeatherAlertAlarmMapper:
         # This ensures consistent grouping across different weather sources
         return weather_alert.event_type.name
     
-    def create_alarm_source_details(self, weather_alert: WeatherAlert) -> List[SensorResponse]:
+    def create_sensor_responses(self, weather_alert: WeatherAlert) -> List[SensorResponse]:
         """
-        Create alarm source details from weather alert information.
+        Create sensor responses from weather alert information.
         
         Args:
-            weather_alert: The weather alert to create details for
+            weather_alert: The weather alert to create sensor responses for
             
         Returns:
             List of SensorResponse for this weather alert
@@ -391,7 +391,7 @@ class WeatherAlertAlarmMapper:
             alarm_type=self.get_alarm_type(weather_alert),
             alarm_level=alarm_level,
             title=title,
-            source_details_list=self.create_alarm_source_details(weather_alert),
+            sensor_response_list=self.create_sensor_responses(weather_alert),
             security_level=SecurityLevel.OFF,  # Weather alarms apply to all security levels
             alarm_lifetime_secs=self.get_alarm_lifetime(weather_alert),
             timestamp=datetimeproxy.now(),

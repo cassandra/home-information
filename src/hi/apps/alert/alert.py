@@ -133,7 +133,7 @@ class Alert:
         Returns dict with image info and sensor response or None if no visual content found.
         """
         for alarm in self.alarm_list:
-            for sensor_response in alarm.source_details_list:
+            for sensor_response in alarm.sensor_response_list:
                 # Check for video stream capability first (preferred over static source_image_url)
                 if sensor_response.has_video_stream:
                     return {

@@ -22,7 +22,7 @@ class TestAlarm(BaseTestCase):
             alarm_type='test_alarm',
             alarm_level=AlarmLevel.WARNING,
             title='Test Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetime.now(),
@@ -37,7 +37,7 @@ class TestAlarm(BaseTestCase):
             alarm_type='critical_test',
             alarm_level=AlarmLevel.CRITICAL,
             title='Critical Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetime.now(),
@@ -58,7 +58,7 @@ class TestAlarm(BaseTestCase):
             alarm_type='info_test',
             alarm_level=AlarmLevel.INFO,
             title='Info Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetime.now(),
@@ -69,7 +69,7 @@ class TestAlarm(BaseTestCase):
             alarm_type='warning_test',
             alarm_level=AlarmLevel.WARNING,
             title='Warning Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetime.now(),
@@ -80,7 +80,7 @@ class TestAlarm(BaseTestCase):
             alarm_type='critical_test',
             alarm_level=AlarmLevel.CRITICAL,
             title='Critical Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetime.now(),
@@ -126,15 +126,15 @@ class TestAlarmWithSensorResponse(BaseTestCase):
             alarm_type='test_alarm',
             alarm_level=AlarmLevel.WARNING,
             title='Test Alarm',
-            source_details_list=[sensor_response],
+            sensor_response_list=[sensor_response],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetime.now(),
         )
         
-        self.assertEqual(len(alarm.source_details_list), 1)
-        self.assertEqual(alarm.source_details_list[0].detail_attrs, detail_attrs)
-        self.assertEqual(alarm.source_details_list[0].source_image_url, 'https://example.com/sensor.jpg')
+        self.assertEqual(len(alarm.sensor_response_list), 1)
+        self.assertEqual(alarm.sensor_response_list[0].detail_attrs, detail_attrs)
+        self.assertEqual(alarm.sensor_response_list[0].source_image_url, 'https://example.com/sensor.jpg')
         return
 
     def test_alarm_with_weather_sensor_response(self):
@@ -160,13 +160,13 @@ class TestAlarmWithSensorResponse(BaseTestCase):
             alarm_type='severe_thunderstorm',
             alarm_level=AlarmLevel.WARNING,
             title='Severe Thunderstorm Warning',
-            source_details_list=[sensor_response],
+            sensor_response_list=[sensor_response],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=1800,
             timestamp=datetime.now(),
         )
         
-        self.assertEqual(alarm.source_details_list[0].detail_attrs, detail_attrs)
-        self.assertIsNone(alarm.source_details_list[0].source_image_url)
-        self.assertIsNone(alarm.source_details_list[0].sensor)
+        self.assertEqual(alarm.sensor_response_list[0].detail_attrs, detail_attrs)
+        self.assertIsNone(alarm.sensor_response_list[0].source_image_url)
+        self.assertIsNone(alarm.sensor_response_list[0].sensor)
         return

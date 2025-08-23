@@ -94,7 +94,7 @@ class TestAlertManagerDelegation(BaseTestCase):
             alarm_type='motion_detection',
             alarm_level=AlarmLevel.WARNING,
             title='Motion detected at Front Door',
-            source_details_list=[source_details],
+            sensor_response_list=[source_details],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=300,
             timestamp=timezone.now()
@@ -236,7 +236,7 @@ class TestAlertManagerDelegation(BaseTestCase):
             alarm_type='motion_detection',
             alarm_level=AlarmLevel.INFO,  # Lower priority
             title='Old Motion',
-            source_details_list=[source_details_1],
+            sensor_response_list=[source_details_1],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=300,
             timestamp=old_time
@@ -247,7 +247,7 @@ class TestAlertManagerDelegation(BaseTestCase):
             alarm_type='motion_detection',
             alarm_level=AlarmLevel.WARNING,  # Higher priority, different signature
             title='New Motion',
-            source_details_list=[source_details_2],
+            sensor_response_list=[source_details_2],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=300,
             timestamp=new_time

@@ -177,7 +177,7 @@ class TestTransientViewManager(BaseTestCase):
             alarm_type='motion_detection',
             alarm_level=AlarmLevel.WARNING,
             title='Motion detected at Front Door',
-            source_details_list=[source_details],
+            sensor_response_list=[source_details],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=300,
             timestamp=timezone.now()
@@ -240,7 +240,7 @@ class TestTransientViewManager(BaseTestCase):
             alarm_type='motion_detection',
             alarm_level=AlarmLevel.WARNING,
             title='Motion detected',
-            source_details_list=[source_details],
+            sensor_response_list=[source_details],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=300,
             timestamp=timezone.now()
@@ -286,7 +286,7 @@ class TestTransientViewManager(BaseTestCase):
             alarm_type='device_status',  # Not motion-related
             alarm_level=AlarmLevel.INFO,
             title='Device status update',
-            source_details_list=[source_details],
+            sensor_response_list=[source_details],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=300,
             timestamp=timezone.now()
@@ -332,7 +332,7 @@ class TestTransientViewManager(BaseTestCase):
             alarm_type='motion_detection',
             alarm_level=AlarmLevel.WARNING,
             title='Motion detected',
-            source_details_list=[source_details],
+            sensor_response_list=[source_details],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=300,
             timestamp=timezone.now()

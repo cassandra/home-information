@@ -15,7 +15,7 @@ class Alarm:
     alarm_type           : str
     alarm_level          : AlarmLevel
     title                : str
-    source_details_list  : List[ SensorResponse ]
+    sensor_response_list : List[ SensorResponse ]
     security_level       : SecurityLevel
     alarm_lifetime_secs  : int
     timestamp            : datetime

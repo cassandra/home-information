@@ -199,14 +199,6 @@ class EntityStateType(LabeledEnum):
         """
         return f'control/panes/controller_{self.name.lower()}.html'
 
-    @property
-    def suppress_display_name(self):
-        return False
-
-    @property
-    def suppress_history(self):
-        return False
-    
 
 class EntityStateValue(LabeledEnum):
 

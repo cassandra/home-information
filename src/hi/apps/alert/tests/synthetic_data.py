@@ -41,7 +41,7 @@ class AlertSyntheticData:
             alarm_type = alarm_type,
             alarm_level = alarm_level,
             title = title,
-            source_details_list = [
+            sensor_response_list = [
                 SensorResponse(
                     integration_key=IntegrationKey("test", "synthetic"),
                     value="active",
@@ -89,7 +89,7 @@ class AlertSyntheticData:
             alarm_type = alarm_type,
             alarm_level = alarm_level,
             title = f'{alarm_level.label}: {base_title}',
-            source_details_list = [
+            sensor_response_list = [
                 SensorResponse(
                     integration_key=IntegrationKey("test", "synthetic"),
                     value="active",
@@ -117,7 +117,7 @@ class AlertSyntheticData:
                 alarm_type = alarm_type,
                 alarm_level = alarm_level,
                 title = f'{alarm_level.label}: {base_title} ({i})',
-                source_details_list = [
+                sensor_response_list = [
                     SensorResponse(
                         integration_key=IntegrationKey("test", "synthetic"),
                         value="active", 
@@ -161,7 +161,7 @@ class AlertSyntheticData:
             alarm_type = event_name,
             alarm_level = alarm_level,
             title = f'{alarm_level.label}: {location} {event_name.lower()}',
-            source_details_list = [
+            sensor_response_list = [
                 SensorResponse(
                     integration_key=IntegrationKey("test", "synthetic"),
                     value="active",
@@ -205,7 +205,7 @@ class AlertSyntheticData:
             alarm_type = 'Severe Weather',
             alarm_level = AlarmLevel.CRITICAL,
             title = f'CRITICAL: {alert_type} issued',
-            source_details_list = [
+            sensor_response_list = [
                 SensorResponse(
                     integration_key=IntegrationKey("test", "synthetic"),
                     value="active",
@@ -281,7 +281,7 @@ class AlertSyntheticData:
                 alarm_type = alarm_type,
                 alarm_level= alarm_level,
                 title = alarm_title,
-                source_details_list = [
+                sensor_response_list = [
                     SensorResponse(integration_key=IntegrationKey("test", "synthetic"), value="active", timestamp=alarm_timestamp, sensor=None, 
                                    detail_attrs={'Notes': f'Details for {alarm_title}. Seed = {seed} '},
                                    source_image_url='/static/img/hi-icon-196x196.png',
@@ -304,7 +304,7 @@ class AlertSyntheticData:
                     alarm_type = alarm_type,
                     alarm_level= alarm_level,
                     title = alarm_title,
-                    source_details_list = [
+                    sensor_response_list = [
                         SensorResponse(integration_key=IntegrationKey("test", "synthetic"), value="active", timestamp=alarm_timestamp, sensor=None, 
                                        detail_attrs={'Notes': f'Details for {alarm_title}. Seed = {seed} '},
                                        source_image_url='/static/img/hi-icon-196x196.png',
