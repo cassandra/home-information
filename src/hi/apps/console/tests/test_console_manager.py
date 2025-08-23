@@ -51,14 +51,14 @@ class TestConsoleManager(BaseTestCase):
         
         # Call ensure_initialized multiple times
         manager.ensure_initialized()
-        first_list = manager._video_stream_entity_list
+        first_list = manager.get_camera_control_display_list()
         
         manager.ensure_initialized()
-        second_list = manager._video_stream_entity_list
+        second_list = manager.get_camera_control_display_list()
         
         # Should maintain initialization state
         self.assertTrue(manager._was_initialized)
         
-        # List reference should remain the same (no unnecessary rebuilds)
+        # List reference should remain the same due to TTL caching (no unnecessary rebuilds)
         self.assertIs(first_list, second_list)
         return
