@@ -21,6 +21,8 @@ class HassManageViewPane( IntegrationManageViewPane ):
         )
         return {
             'integration_attribute_formset': integration_attribute_formset,
+            'history_url_name': 'integration_attribute_history',
+            'restore_url_name': 'integration_attribute_restore',
         }
 
 

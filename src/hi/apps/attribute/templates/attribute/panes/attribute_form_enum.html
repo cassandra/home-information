@@ -19,6 +19,16 @@
     {% endfor %}
   </select>
   {% endwith %}
+  <div class="input-group-append">
+    {% if history_url_name %}
+    <a href="{% url history_url_name attribute_form.instance.pk %}" 
+       class="btn btn-outline-secondary btn-sm attribute-history-btn" 
+       data-async="modal"
+       title="View attribute history">
+      <span class="history-icon">&#9201;</span>
+    </a>
+    {% endif %}
+  </div>
 </div>
 
 {% if attribute_form.show_as_editable and attribute_form.instance.is_editable and attribute_form.instance.attribute_type.can_delete %}

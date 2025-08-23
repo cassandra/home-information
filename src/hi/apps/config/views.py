@@ -11,9 +11,11 @@ import hi.apps.common.antinode as antinode
 
 from hi.enums import ViewMode, ViewType
 from hi.hi_grid_view import HiGridView
+from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
 
 from .enums import ConfigPageType
 from .forms import SubsystemAttributeFormSet
+from .models import SubsystemAttribute
 from .settings_mixins import SettingsMixin
 
 logger = logging.getLogger('__name__')
@@ -98,6 +100,8 @@ class ConfigSettingsView( ConfigPageView, SettingsMixin ):
         
         return {
             'subsystem_attribute_formset_list': subsystem_attribute_formset_list,
+            'history_url_name': 'config_attribute_history',
+            'restore_url_name': 'config_attribute_restore',
         }
 
     def post( self, request, *args, **kwargs ):
@@ -121,6 +125,8 @@ class ConfigSettingsView( ConfigPageView, SettingsMixin ):
         if not all_valid:
             context = {
                 'subsystem_attribute_formset_list': subsystem_attribute_formset_list,
+                'history_url_name': 'config_attribute_history',
+                'restore_url_name': 'config_attribute_restore',
             }
             return render( request, 'config/panes/settings_form.html', context )
 
@@ -167,3 +173,23 @@ class ConfigInternalView( View ):
     def get(self, request, *args, **kwargs):
         data = self.get_config_data()
         return JsonResponse( data, safe = False )
+
+
+class ConfigAttributeHistoryView(BaseAttributeHistoryView):
+    """View for displaying SubsystemAttribute history in a modal."""
+    
+    def get_attribute_model_class(self):
+        return SubsystemAttribute
+    
+    def get_history_url_name(self):
+        return 'config_attribute_history'
+    
+    def get_restore_url_name(self):
+        return 'config_attribute_restore'
+
+
+class ConfigAttributeRestoreView(BaseAttributeRestoreView):
+    """View for restoring SubsystemAttribute values from history."""
+    
+    def get_attribute_model_class(self):
+        return SubsystemAttribute

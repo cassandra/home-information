@@ -120,7 +120,7 @@ class EntityAttribute( AttributeModel ):
         """Return the history model class for EntityAttribute."""
         return EntityAttributeHistory
 
-    
+
 class EntityState( models.Model ):
     """
     - The (hidden) state of an entity that can be controlled and/or sensed.

@@ -66,8 +66,8 @@ class IntegrationAttribute( AttributeModel ):
     def _get_history_model_class(self):
         """Return the history model class for IntegrationAttribute."""
         return IntegrationAttributeHistory
-        
-        
+
+
 class IntegrationDetailsModel( models.Model ):
     """
     For use in DB objects that need to be associated with an integration

@@ -129,7 +129,7 @@ class LocationAttribute( AttributeModel ):
         """Return the history model class for LocationAttribute."""
         return LocationAttributeHistory
 
-    
+
 class LocationView( models.Model, ItemTypeModelMixin ):
 
     location = models.ForeignKey(

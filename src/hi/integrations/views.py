@@ -8,9 +8,11 @@ from hi.apps.config.views import ConfigPageView
 
 from hi.exceptions import ForceRedirectException
 from hi.hi_async_view import HiModalView
+from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
 
 from .forms import IntegrationAttributeFormSet
 from .integration_manager import IntegrationManager
+from .models import IntegrationAttribute
 
 logger = logging.getLogger(__name__)
 
@@ -182,4 +184,23 @@ class IntegrationManageView( ConfigPageView ):
             },
         })
         return template_context
+
+
+class IntegrationAttributeHistoryView(BaseAttributeHistoryView):
+    """View for displaying IntegrationAttribute history in a modal."""
     
+    def get_attribute_model_class(self):
+        return IntegrationAttribute
+    
+    def get_history_url_name(self):
+        return 'integration_attribute_history'
+    
+    def get_restore_url_name(self):
+        return 'integration_attribute_restore'
+
+
+class IntegrationAttributeRestoreView(BaseAttributeRestoreView):
+    """View for restoring IntegrationAttribute values from history."""
+    
+    def get_attribute_model_class(self):
+        return IntegrationAttribute

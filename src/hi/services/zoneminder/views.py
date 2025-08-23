@@ -36,6 +36,8 @@ class ZmSettingsView( View, ZoneMinderMixin ):
                 
         context = {
             'integration_attribute_formset': integration_attribute_formset,
+            'history_url_name': 'integration_attribute_history',
+            'restore_url_name': 'integration_attribute_restore',
         }
         return render( request, 'zoneminder/panes/zm_settings.html', context )
     

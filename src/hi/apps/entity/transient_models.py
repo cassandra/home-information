@@ -79,6 +79,8 @@ class EntityEditData:
             'entity_form': self.entity_form,
             'entity_attribute_formset': self.entity_attribute_formset,
             'entity_attribute_upload_form': self.entity_attribute_upload_form,
+            'history_url_name': 'entity_attribute_history',
+            'restore_url_name': 'entity_attribute_restore',
         }
 
     

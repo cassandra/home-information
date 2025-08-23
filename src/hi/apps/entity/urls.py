@@ -21,9 +21,17 @@ urlpatterns = [
              views.EntityDetailsView.as_view(), 
              name='entity_details' ),
 
-    re_path( r'^entity/attribute/upload/(?P<entity_id>\d+)$', 
+    re_path( r'^attribute/upload/(?P<entity_id>\d+)$', 
              views.EntityAttributeUploadView.as_view(), 
              name='entity_attribute_upload'),
+    
+    re_path( r'^attribute/history/(?P<attribute_id>\d+)$', 
+             views.EntityAttributeHistoryView.as_view(), 
+             name='entity_attribute_history'),
+    
+    re_path( r'^attribute/restore/(?P<attribute_id>\d+)$', 
+             views.EntityAttributeRestoreView.as_view(), 
+             name='entity_attribute_restore'),
 
     re_path( r'^edit/', include('hi.apps.entity.edit.urls' )),
 
