@@ -51,6 +51,10 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
         'User Delete?',
         default = True,
     )
+    has_video_stream = models.BooleanField(
+        'Has Video Stream',
+        default = False,
+    )
     created_datetime = models.DateTimeField(
         'Created',
         auto_now_add = True,

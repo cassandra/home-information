@@ -35,6 +35,10 @@ class Sensor( IntegrationDetailsModel ):
         'Persist History',
         default = True,
     )
+    provides_video_stream = models.BooleanField(
+        'Provides Video Stream',
+        default = False,
+    )
     
     class Meta:
         verbose_name = 'Sensor'

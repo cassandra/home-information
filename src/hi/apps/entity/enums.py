@@ -266,6 +266,17 @@ class EntityPairingType(LabeledEnum):
     DELEGATE   = ( 'Delegate', '' )
     
 
+class VideoStreamType(LabeledEnum):
+    """Types of video streams that can be provided by entities or sensor responses."""
+    
+    URL = ('URL', 'Direct video stream URL')
+    OTHER = ('Other', 'Other video stream type for future extensibility')
+    
+    @classmethod
+    def default(cls):
+        return cls.OTHER
+
+
 class EntityGroupType(LabeledEnum):
 
     APPLIANCES = ( 'Appliances', '', {
