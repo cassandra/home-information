@@ -8,6 +8,8 @@ from hi.apps.alert.alert_status import AlertStatusData
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.security.enums import SecurityLevel
+from hi.apps.sense.transient_models import SensorResponse
+from hi.integrations.transient_models import IntegrationKey
 
 
 class AlertSyntheticData:
@@ -32,7 +34,7 @@ class AlertSyntheticData:
         if not detail_attrs:
             detail_attrs = {'Location': 'Kitchen', 'Sensor': 'Motion-01'}
 
-        image_url = '/static/img/hi-icon-196x196.png' if has_image else None
+        source_image_url = '/static/img/hi-icon-196x196.png' if has_image else None
         
         alarm = Alarm(
             alarm_source = alarm_source,
@@ -40,10 +42,15 @@ class AlertSyntheticData:
             alarm_level = alarm_level,
             title = title,
             source_details_list = [
-                AlarmSourceDetails(
-                    detail_attrs = detail_attrs,
-                    image_url = image_url,
-                ),
+                SensorResponse(
+                    integration_key=IntegrationKey("test", "synthetic"),
+                    value="active",
+                    timestamp=timestamp,
+                    sensor=None,
+                    detail_attrs=detail_attrs,
+                    source_image_url=source_image_url,
+                    has_video_stream=False
+                )
             ],
             security_level = security_level,
             alarm_lifetime_secs = alarm_lifetime_secs,
@@ -73,7 +80,7 @@ class AlertSyntheticData:
             base_detail_attrs = {'Location': 'Living Room', 'Sensor': 'Motion-02'}
 
         # Create first alarm
-        image_url = '/static/img/hi-icon-196x196.png' if has_image else None
+        source_image_url = '/static/img/hi-icon-196x196.png' if has_image else None
         detail_attrs = dict(base_detail_attrs)
         detail_attrs.update({'Count': f'1 of {alarm_count}'})
         
@@ -83,10 +90,15 @@ class AlertSyntheticData:
             alarm_level = alarm_level,
             title = f'{alarm_level.label}: {base_title}',
             source_details_list = [
-                AlarmSourceDetails(
-                    detail_attrs = detail_attrs,
-                    image_url = image_url,
-                ),
+                SensorResponse(
+                    integration_key=IntegrationKey("test", "synthetic"),
+                    value="active",
+                    timestamp=reference_datetime,
+                    sensor=None,
+                    detail_attrs=detail_attrs,
+                    source_image_url=source_image_url,
+                    has_video_stream=False
+                )
             ],
             security_level = security_level,
             alarm_lifetime_secs = alarm_lifetime_secs,
@@ -106,9 +118,14 @@ class AlertSyntheticData:
                 alarm_level = alarm_level,
                 title = f'{alarm_level.label}: {base_title} ({i})',
                 source_details_list = [
-                    AlarmSourceDetails(
-                        detail_attrs = detail_attrs,
-                        image_url = image_url if i == 2 else None,  # Only second alarm has image
+                    SensorResponse(
+                        integration_key=IntegrationKey("test", "synthetic"),
+                        value="active", 
+                        timestamp=reference_datetime,
+                        sensor=None,
+                        detail_attrs=detail_attrs,
+                        source_image_url=source_image_url if i == 2 else None,  # Only second alarm has image
+                        has_video_stream=False
                     ),
                 ],
                 security_level = security_level,
@@ -130,7 +147,7 @@ class AlertSyntheticData:
                                   alarm_level    : AlarmLevel = AlarmLevel.INFO ) -> Alert:
         """Create an event-based alert for testing."""
         
-        image_url = '/static/img/hi-icon-196x196.png' if has_image else None
+        source_image_url = '/static/img/hi-icon-196x196.png' if has_image else None
         detail_attrs = {
             'Event': event_name,
             'Location': location,
@@ -145,10 +162,15 @@ class AlertSyntheticData:
             alarm_level = alarm_level,
             title = f'{alarm_level.label}: {location} {event_name.lower()}',
             source_details_list = [
-                AlarmSourceDetails(
-                    detail_attrs = detail_attrs,
-                    image_url = image_url,
-                ),
+                SensorResponse(
+                    integration_key=IntegrationKey("test", "synthetic"),
+                    value="active",
+                    timestamp=datetimeproxy.now(),
+                    sensor=None,
+                    detail_attrs=detail_attrs,
+                    source_image_url=source_image_url,
+                    has_video_stream=False
+                )
             ],
             security_level = SecurityLevel.LOW,
             alarm_lifetime_secs = 180,
@@ -167,7 +189,7 @@ class AlertSyntheticData:
                               has_image        : bool = False ) -> Alert:
         """Create a weather-based alert for testing."""
         
-        image_url = '/static/img/hi-icon-196x196.png' if has_image else None
+        source_image_url = '/static/img/hi-icon-196x196.png' if has_image else None
         detail_attrs = {
             'Alert Type': alert_type,
             'Location': location,
@@ -184,10 +206,15 @@ class AlertSyntheticData:
             alarm_level = AlarmLevel.CRITICAL,
             title = f'CRITICAL: {alert_type} issued',
             source_details_list = [
-                AlarmSourceDetails(
-                    detail_attrs = detail_attrs,
-                    image_url = image_url,
-                ),
+                SensorResponse(
+                    integration_key=IntegrationKey("test", "synthetic"),
+                    value="active",
+                    timestamp=datetimeproxy.now(),
+                    sensor=None,
+                    detail_attrs=detail_attrs,
+                    source_image_url=source_image_url,
+                    has_video_stream=False
+                )
             ],
             security_level = SecurityLevel.HIGH,
             alarm_lifetime_secs = expires_in_mins * 60,
@@ -255,10 +282,11 @@ class AlertSyntheticData:
                 alarm_level= alarm_level,
                 title = alarm_title,
                 source_details_list = [
-                    AlarmSourceDetails(
-                        detail_attrs = { 'Notes': f'Details for {alarm_title}. Seed = {seed} ' },
-                        image_url = '/static/img/hi-icon-196x196.png',
-                    ),
+                    SensorResponse(integration_key=IntegrationKey("test", "synthetic"), value="active", timestamp=alarm_timestamp, sensor=None, 
+                                   detail_attrs={'Notes': f'Details for {alarm_title}. Seed = {seed} '},
+                                   source_image_url='/static/img/hi-icon-196x196.png',
+                                   has_video_stream=False
+                                   ),
                 ],
                 security_level = security_level,
                 alarm_lifetime_secs = alarm_lifetime_secs,
@@ -277,10 +305,11 @@ class AlertSyntheticData:
                     alarm_level= alarm_level,
                     title = alarm_title,
                     source_details_list = [
-                        AlarmSourceDetails(
-                            detail_attrs = { 'Notes': f'Details for {alarm_title}. Seed = {seed} ' },
-                            image_url = '/static/img/hi-icon-196x196.png',
-                        ),
+                        SensorResponse(integration_key=IntegrationKey("test", "synthetic"), value="active", timestamp=alarm_timestamp, sensor=None, 
+                                       detail_attrs={'Notes': f'Details for {alarm_title}. Seed = {seed} '},
+                                       source_image_url='/static/img/hi-icon-196x196.png',
+                                       has_video_stream=False
+                                       ),
                     ],
                     security_level = security_level,
                     alarm_lifetime_secs = alarm_lifetime_secs,

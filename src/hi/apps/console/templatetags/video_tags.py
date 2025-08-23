@@ -43,7 +43,7 @@ def sensor_response_video_stream(sensor_response):
         if video_stream and video_stream.source_url:
             return video_stream.source_url
             
-        logger.debug(f"No video stream available for sensor response")
+        logger.debug("No video stream available for sensor response")
         return ""
         
     except Exception as e:
