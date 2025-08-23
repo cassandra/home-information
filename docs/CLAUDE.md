@@ -9,6 +9,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [ ] Use TodoWrite tool to plan tasks (mandatory for complex work)
 - [ ] Create properly named feature branch
 
+**During All Code Changes:**
+- [ ] **All new files MUST end with newline** (prevents W391 linting failures)
+- [ ] **All imports MUST be at file top** (never inside functions/methods)
+- [ ] **Use `/bin/rm` instead of `rm`** (avoid interactive prompts)
+
 **Before Any Commit:**
 - [ ] Use concise commit messages WITHOUT Claude attribution
 - [ ] Examples: "Fix UI testing framework system state issue" ✅
@@ -18,7 +23,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [ ] `make test` (must show "OK")
 - [ ] `make lint` (must show no output)
 - [ ] Both MUST pass before PR creation
-- [ ] Consult PR guidelines and `.github/PULL_REQUEST_TEMPLATE.md`
+- [ ] **Use HEREDOC syntax for PR body** (prevents quoting failures)
+- [ ] Follow `.github/PULL_REQUEST_TEMPLATE.md` structure
 
 **Before Creating Unit Tests:**
 - [ ] Consult Testing guidelines and `docs/dev/Testing.md`
