@@ -1,6 +1,7 @@
 {% extends "modals/action_done.html" %}
 {% load humanize %}
 {% load tz %}
+{% load video_tags %}
 
 {% block title_text %}
 {{ alert.title }}
@@ -52,7 +53,12 @@
         </h6>
       </div>
       <div class="card-body p-2">
-        <img class="img-fluid" src="{{ alert_visual_content.image_url }}" alt="{{ alert_visual_content.alarm.title }}">
+        {% if alert_visual_content.sensor_response %}
+          {% sensor_response_video_stream alert_visual_content.sensor_response as video_url %}
+          {% if video_url %}
+            <img class="img-fluid" src="{{ video_url }}" alt="{{ alert_visual_content.alarm.title }}">
+          {% endif %}
+        {% endif %}
         {% if not alert_visual_content.is_from_latest %}
           <small class="text-muted d-block mt-1">From: {{ alert_visual_content.alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
         {% endif %}

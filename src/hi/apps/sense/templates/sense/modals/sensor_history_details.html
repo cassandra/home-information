@@ -1,4 +1,5 @@
 {% extends "modals/action_ok.html" %}
+{% load video_tags %}
 
 {% block title_text %}
 Sensor Response Details
@@ -7,10 +8,13 @@ Sensor Response Details
 {% block body %}
 <div>
   <div class="h4">{{ sensor_history.sensor.name }}</div>
-  {% if sensor_history.image_url %}
-  <div>
-    <img class="img-fluid" src="{{ sensor_history.image_url }}" alt="{{ alarm.title }}">
-  </div>
+  {% if sensor_response and sensor_response.has_video_stream %}
+    {% sensor_response_video_stream sensor_response as video_url %}
+    {% if video_url %}
+    <div>
+      <img class="img-fluid" src="{{ video_url }}" alt="Sensor History">
+    </div>
+    {% endif %}
   {% endif %}
   <div class="table-responsive">
     <table class="table table-striped">

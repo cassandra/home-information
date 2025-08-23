@@ -47,7 +47,17 @@ class SensorHistoryDetailsView( HiModalView, SenseViewMixin ):
     
     def get(self, request, *args, **kwargs):
         sensor_history = self.get_sensor_history( request, *args, **kwargs )
+        
+        # Create SensorResponse from sensor_history for video URL generation
+        sensor_response = None
+        try:
+            from .transient_models import SensorResponse
+            sensor_response = SensorResponse.from_sensor_history(sensor_history)
+        except Exception as e:
+            logger.error(f"Error creating SensorResponse from sensor_history: {e}")
+        
         context = {
             'sensor_history': sensor_history,
+            'sensor_response': sensor_response,
         }
         return self.modal_response( request, context )
