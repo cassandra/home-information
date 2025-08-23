@@ -79,7 +79,7 @@ class TestAlertManagerDelegation(BaseTestCase):
         # Create realistic motion detection alarm with sensor details
         source_details = AlarmSourceDetails(
             detail_attrs={'location': 'Front Door'},
-            image_url=None,
+            source_image_url=None,
             sensor_id=motion_sensor.id  # Motion sensor that triggered the alarm
         )
         
@@ -203,13 +203,13 @@ class TestAlertManagerDelegation(BaseTestCase):
         # Create two different alarms
         source_details_1 = AlarmSourceDetails(
             detail_attrs={},
-            image_url=None,
+            source_image_url=None,
             sensor_id=motion_sensor1.id  # First motion sensor
         )
         
         source_details_2 = AlarmSourceDetails(
             detail_attrs={},
-            image_url=None,
+            source_image_url=None,
             sensor_id=motion_sensor2.id  # Second motion sensor
         )
         

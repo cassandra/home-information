@@ -86,7 +86,7 @@ class SensorHistory(models.Model):
         'Details',
         blank = True, null = True,
     )
-    image_url = models.TextField(
+    source_image_url = models.TextField(
         'Image URL',
         blank = True, null = True,
     )

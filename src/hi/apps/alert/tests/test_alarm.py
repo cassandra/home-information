@@ -110,11 +110,11 @@ class TestAlarmSourceDetails(BaseTestCase):
         
         details = AlarmSourceDetails(
             detail_attrs=detail_attrs,
-            image_url='https://example.com/sensor.jpg'
+            source_image_url='https://example.com/sensor.jpg'
         )
         
         self.assertEqual(details.detail_attrs, detail_attrs)
-        self.assertEqual(details.image_url, 'https://example.com/sensor.jpg')
+        self.assertEqual(details.source_image_url, 'https://example.com/sensor.jpg')
         return
 
     def test_alarm_source_details_optional_image_url(self):
@@ -127,5 +127,5 @@ class TestAlarmSourceDetails(BaseTestCase):
         details = AlarmSourceDetails(detail_attrs=detail_attrs)
         
         self.assertEqual(details.detail_attrs, detail_attrs)
-        self.assertIsNone(details.image_url)
+        self.assertIsNone(details.source_image_url)
         return

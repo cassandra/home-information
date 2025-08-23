@@ -17,7 +17,7 @@ class SensorResponse:
     timestamp           : datetime
     sensor              : Sensor            = None
     detail_attrs        : Dict[ str, str ]  = None
-    image_url           : str               = None
+    source_image_url    : str               = None
     has_video_stream    : bool              = False
     
     def __str__(self):
@@ -39,7 +39,7 @@ class SensorResponse:
             'timestamp': self.timestamp.isoformat(),
             'sensor_id': self.sensor.id if self.sensor else None,
             'detail_attrs': self.detail_attrs,
-            'image_url': self.image_url,
+            'source_image_url': self.source_image_url,
             'has_video_stream': self.has_video_stream,
         }
 
@@ -53,7 +53,7 @@ class SensorResponse:
             value = self.value[0:255],
             response_datetime = self.timestamp,
             details = details,
-            image_url = self.image_url,
+            source_image_url = self.source_image_url,
         )
         
     @classmethod
@@ -64,7 +64,7 @@ class SensorResponse:
             timestamp = sensor_history.response_datetime,
             sensor = sensor_history.sensor,
             detail_attrs = sensor_history.detail_attrs,
-            image_url = sensor_history.image_url,
+            source_image_url = sensor_history.source_image_url,
             has_video_stream = sensor_history.sensor.provides_video_stream if sensor_history.sensor else False,
         )
         
@@ -76,6 +76,6 @@ class SensorResponse:
             value = sensor_response_dict.get('value'),
             timestamp = datetime.fromisoformat( sensor_response_dict.get('timestamp') ),
             detail_attrs = sensor_response_dict.get('detail_attrs'),
-            image_url = sensor_response_dict.get('image_url'),
+            source_image_url = sensor_response_dict.get('source_image_url') or sensor_response_dict.get('image_url'),
             has_video_stream = sensor_response_dict.get('has_video_stream', False),
         )

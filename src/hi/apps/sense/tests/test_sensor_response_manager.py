@@ -207,7 +207,7 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskTestCase):
             value='test_value',
             timestamp=timezone.make_aware(datetime(2023, 1, 1, 12, 0, 0)),
             detail_attrs={'key': 'value'},
-            image_url='http://example.com/image.jpg'
+            source_image_url='http://example.com/image.jpg'
         )
         
         # Serialize to string
@@ -221,7 +221,7 @@ class AsyncSensorResponseManagerTestCase(AsyncTaskTestCase):
         self.assertEqual(deserialized.value, original_response.value)
         self.assertEqual(deserialized.timestamp, original_response.timestamp)
         self.assertEqual(deserialized.detail_attrs, original_response.detail_attrs)
-        self.assertEqual(deserialized.image_url, original_response.image_url)
+        self.assertEqual(deserialized.source_image_url, original_response.source_image_url)
 
     def test_get_latest_sensor_responses_for_specific_sensors(self):
         """Test retrieval of responses for specific sensor list."""

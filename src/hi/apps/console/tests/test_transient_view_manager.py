@@ -162,7 +162,7 @@ class TestTransientViewManager(BaseTestCase):
         # Create motion detection alert with motion sensor
         source_details = AlarmSourceDetails(
             detail_attrs={'location': 'Front Door'},
-            image_url=None,
+            source_image_url=None,
             sensor_id=motion_sensor.id  # Motion sensor that triggered the alarm
         )
         
@@ -219,7 +219,7 @@ class TestTransientViewManager(BaseTestCase):
         # Create motion detection alert
         source_details = AlarmSourceDetails(
             detail_attrs={},
-            image_url=None,
+            source_image_url=None,
             sensor_id='cam_123'
         )
         
@@ -259,7 +259,7 @@ class TestTransientViewManager(BaseTestCase):
         # Create non-motion EVENT alarm
         source_details = AlarmSourceDetails(
             detail_attrs={},
-            image_url=None,
+            source_image_url=None,
             sensor_id='cam_123'
         )
         
@@ -299,7 +299,7 @@ class TestTransientViewManager(BaseTestCase):
         # Create motion alarm but without sensor_id (no view URL)
         source_details = AlarmSourceDetails(
             detail_attrs={'location': 'Front Door'},  # No sensor_id
-            image_url=None
+            source_image_url=None
         )
         
         motion_alarm = Alarm(

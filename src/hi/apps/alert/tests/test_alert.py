@@ -258,7 +258,7 @@ class TestAlert(BaseTestCase):
             source_details_list=[
                 AlarmSourceDetails(
                     detail_attrs={'Location': 'Kitchen'},
-                    image_url='/static/img/test-image.png',
+                    source_image_url='/static/img/test-image.png',
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -270,7 +270,7 @@ class TestAlert(BaseTestCase):
         visual_content = alert.get_first_visual_content()
         
         self.assertIsNotNone(visual_content)
-        self.assertEqual(visual_content['image_url'], '/static/img/test-image.png')
+        self.assertEqual(visual_content['source_image_url'], '/static/img/test-image.png')
         self.assertEqual(visual_content['alarm'], alarm_with_image)
         self.assertTrue(visual_content['is_from_latest'])
         return
@@ -285,7 +285,7 @@ class TestAlert(BaseTestCase):
             source_details_list=[
                 AlarmSourceDetails(
                     detail_attrs={'Location': 'Front Door'},
-                    image_url=None,
+                    source_image_url=None,
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -309,7 +309,7 @@ class TestAlert(BaseTestCase):
             source_details_list=[
                 AlarmSourceDetails(
                     detail_attrs={'Location': 'Kitchen'},
-                    image_url='/static/img/first-image.png',
+                    source_image_url='/static/img/first-image.png',
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -325,7 +325,7 @@ class TestAlert(BaseTestCase):
             source_details_list=[
                 AlarmSourceDetails(
                     detail_attrs={'Location': 'Kitchen'},
-                    image_url=None,
+                    source_image_url=None,
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -338,7 +338,7 @@ class TestAlert(BaseTestCase):
         visual_content = alert.get_first_visual_content()
         
         self.assertIsNotNone(visual_content)
-        self.assertEqual(visual_content['image_url'], '/static/img/first-image.png')
+        self.assertEqual(visual_content['source_image_url'], '/static/img/first-image.png')
         self.assertEqual(visual_content['alarm'], first_alarm_with_image)
         self.assertFalse(visual_content['is_from_latest'])  # first_alarm_with_image is not at index 0 after adding second alarm
         return
@@ -353,7 +353,7 @@ class TestAlert(BaseTestCase):
             source_details_list=[
                 AlarmSourceDetails(
                     detail_attrs={'Location': 'Kitchen'},
-                    image_url=None,
+                    source_image_url=None,
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -369,7 +369,7 @@ class TestAlert(BaseTestCase):
             source_details_list=[
                 AlarmSourceDetails(
                     detail_attrs={'Location': 'Kitchen'},
-                    image_url='/static/img/second-image.png',
+                    source_image_url='/static/img/second-image.png',
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -382,7 +382,7 @@ class TestAlert(BaseTestCase):
         visual_content = alert.get_first_visual_content()
         
         self.assertIsNotNone(visual_content)
-        self.assertEqual(visual_content['image_url'], '/static/img/second-image.png')
+        self.assertEqual(visual_content['source_image_url'], '/static/img/second-image.png')
         self.assertEqual(visual_content['alarm'], second_alarm_with_image)
         self.assertTrue(visual_content['is_from_latest'])  # second_alarm_with_image is at index 0 after being added
         return

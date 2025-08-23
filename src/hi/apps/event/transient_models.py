@@ -45,7 +45,7 @@ class Event:
         for sensor_response in self.sensor_response_list:
             source_details = AlarmSourceDetails(
                 detail_attrs = sensor_response.detail_attrs,
-                image_url = sensor_response.image_url,
+                source_image_url = sensor_response.source_image_url,
                 sensor_id = sensor_response.sensor.id if sensor_response.sensor else None,
                 sensor_response = sensor_response,
             )

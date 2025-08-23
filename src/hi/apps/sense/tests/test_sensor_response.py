@@ -50,7 +50,7 @@ class TestSensorResponse(BaseTestCase):
         self.assertEqual(response.timestamp, timestamp)
         self.assertIsNone(response.sensor)
         self.assertIsNone(response.detail_attrs)
-        self.assertIsNone(response.image_url)
+        self.assertIsNone(response.source_image_url)
 
     def test_sensor_response_initialization_with_all_fields(self):
         """Test SensorResponse initializes correctly with all optional fields."""
@@ -63,7 +63,7 @@ class TestSensorResponse(BaseTestCase):
             timestamp=timestamp,
             sensor=self.sensor,
             detail_attrs=detail_attrs,
-            image_url='http://example.com/image.jpg'
+            source_image_url='http://example.com/image.jpg'
         )
         
         self.assertEqual(response.integration_key, self.integration_key)
@@ -71,7 +71,7 @@ class TestSensorResponse(BaseTestCase):
         self.assertEqual(response.timestamp, timestamp)
         self.assertEqual(response.sensor, self.sensor)
         self.assertEqual(response.detail_attrs, detail_attrs)
-        self.assertEqual(response.image_url, 'http://example.com/image.jpg')
+        self.assertEqual(response.source_image_url, 'http://example.com/image.jpg')
 
     def test_sensor_response_is_on_method_with_on_value(self):
         """Test is_on method returns True for ON entity state value."""
@@ -133,7 +133,7 @@ class TestSensorResponse(BaseTestCase):
             timestamp=timestamp,
             sensor=self.sensor,
             detail_attrs=detail_attrs,
-            image_url='http://example.com/image.jpg'
+            source_image_url='http://example.com/image.jpg'
         )
         
         result_dict = response.to_dict()
@@ -143,7 +143,7 @@ class TestSensorResponse(BaseTestCase):
         self.assertEqual(result_dict['timestamp'], timestamp.isoformat())
         self.assertEqual(result_dict['sensor_id'], self.sensor.id)
         self.assertEqual(result_dict['detail_attrs'], detail_attrs)
-        self.assertEqual(result_dict['image_url'], 'http://example.com/image.jpg')
+        self.assertEqual(result_dict['source_image_url'], 'http://example.com/image.jpg')
 
     def test_sensor_response_to_dict_conversion_with_none_fields(self):
         """Test to_dict method handles None fields correctly."""
@@ -162,7 +162,7 @@ class TestSensorResponse(BaseTestCase):
         self.assertEqual(result_dict['timestamp'], timestamp.isoformat())
         self.assertIsNone(result_dict['sensor_id'])
         self.assertIsNone(result_dict['detail_attrs'])
-        self.assertIsNone(result_dict['image_url'])
+        self.assertIsNone(result_dict['source_image_url'])
 
     def test_sensor_response_str_representation_returns_json(self):
         """Test __str__ method returns JSON representation."""
@@ -194,7 +194,7 @@ class TestSensorResponse(BaseTestCase):
             timestamp=timestamp,
             sensor=self.sensor,
             detail_attrs=detail_attrs,
-            image_url='http://example.com/image.jpg'
+            source_image_url='http://example.com/image.jpg'
         )
         
         history = response.to_sensor_history()
@@ -204,7 +204,7 @@ class TestSensorResponse(BaseTestCase):
         self.assertEqual(history.value, 'test_value')
         self.assertEqual(history.response_datetime, timestamp)
         self.assertEqual(history.details, json.dumps(detail_attrs))
-        self.assertEqual(history.image_url, 'http://example.com/image.jpg')
+        self.assertEqual(history.source_image_url, 'http://example.com/image.jpg')
 
     def test_sensor_response_to_sensor_history_value_truncation(self):
         """Test to_sensor_history truncates value to 255 characters."""
@@ -248,7 +248,7 @@ class TestSensorResponse(BaseTestCase):
             value='test_value',
             response_datetime=timestamp,
             details=json.dumps(detail_attrs),
-            image_url='http://example.com/image.jpg'
+            source_image_url='http://example.com/image.jpg'
         )
         
         response = SensorResponse.from_sensor_history(history)
@@ -258,7 +258,7 @@ class TestSensorResponse(BaseTestCase):
         self.assertEqual(response.timestamp, timestamp)
         self.assertEqual(response.sensor, self.sensor)
         self.assertEqual(response.detail_attrs, detail_attrs)
-        self.assertEqual(response.image_url, 'http://example.com/image.jpg')
+        self.assertEqual(response.source_image_url, 'http://example.com/image.jpg')
 
     def test_sensor_response_from_string_deserialization(self):
         """Test from_string class method correctly deserializes JSON string."""
@@ -271,7 +271,7 @@ class TestSensorResponse(BaseTestCase):
             value='test_value',
             timestamp=timestamp,
             detail_attrs=detail_attrs,
-            image_url='http://example.com/image.jpg'
+            source_image_url='http://example.com/image.jpg'
         )
         
         # Serialize to string
@@ -284,7 +284,7 @@ class TestSensorResponse(BaseTestCase):
         self.assertEqual(deserialized_response.value, 'test_value')
         self.assertEqual(deserialized_response.timestamp, timestamp)
         self.assertEqual(deserialized_response.detail_attrs, detail_attrs)
-        self.assertEqual(deserialized_response.image_url, 'http://example.com/image.jpg')
+        self.assertEqual(deserialized_response.source_image_url, 'http://example.com/image.jpg')
         # Note: sensor is not included in serialization
 
     def test_sensor_response_serialization_roundtrip_integrity(self):
@@ -297,7 +297,7 @@ class TestSensorResponse(BaseTestCase):
             value='complex_value',
             timestamp=timestamp,
             detail_attrs=detail_attrs,
-            image_url='http://example.com/complex/path.jpg'
+            source_image_url='http://example.com/complex/path.jpg'
         )
         
         # Full roundtrip: to_dict -> JSON -> from_string
@@ -310,14 +310,14 @@ class TestSensorResponse(BaseTestCase):
             value=parsed_dict['value'],
             timestamp=datetime.fromisoformat(parsed_dict['timestamp']),
             detail_attrs=parsed_dict['detail_attrs'],
-            image_url=parsed_dict['image_url']
+            source_image_url=parsed_dict['source_image_url']
         )
         
         self.assertEqual(reconstructed_response.integration_key, original_response.integration_key)
         self.assertEqual(reconstructed_response.value, original_response.value)
         self.assertEqual(reconstructed_response.timestamp, original_response.timestamp)
         self.assertEqual(reconstructed_response.detail_attrs, original_response.detail_attrs)
-        self.assertEqual(reconstructed_response.image_url, original_response.image_url)
+        self.assertEqual(reconstructed_response.source_image_url, original_response.source_image_url)
 
     def test_sensor_response_handles_special_characters_in_value(self):
         """Test SensorResponse correctly handles special characters and unicode."""
@@ -362,7 +362,7 @@ class TestSensorResponse(BaseTestCase):
             value=history.value,
             response_datetime=history.response_datetime,
             details=history.details,
-            image_url=history.image_url
+            source_image_url=history.source_image_url
         )
         
         recreated_response = SensorResponse.from_sensor_history(saved_history)

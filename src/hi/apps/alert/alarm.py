@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class AlarmSourceDetails:
 
     detail_attrs         : Dict[ str, str ]
-    image_url            : str               = None
+    source_image_url     : str               = None
     sensor_id            : int               = None  # ID of the sensor that generated this alarm
     sensor_response      : 'SensorResponse' = None  # SensorResponse object for video URL generation
 

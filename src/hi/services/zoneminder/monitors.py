@@ -306,7 +306,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             value = str(EntityStateValue.ACTIVE),
             timestamp = zm_event.start_datetime,
             detail_attrs = zm_event.to_detail_attrs(),
-            image_url = self.zm_manager().get_event_video_stream_url( event_id = zm_event.event_id ),
+            source_image_url = self.zm_manager().get_event_video_stream_url( event_id = zm_event.event_id ),
         )
 
     def _create_movement_idle_sensor_response( self, zm_event : ZmEvent ):
