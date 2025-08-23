@@ -9,6 +9,8 @@ from hi.apps.alert.alarm import Alarm
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.console.transient_view_manager import TransientViewManager
 from hi.apps.security.enums import SecurityLevel
+from hi.apps.sense.transient_models import SensorResponse
+from hi.integrations.transient_models import IntegrationKey
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
@@ -77,10 +79,14 @@ class TestAlertManagerDelegation(BaseTestCase):
         entity.save()
         
         # Create realistic motion detection alarm with sensor details
-        source_details = AlarmSourceDetails(
+        source_details = SensorResponse(
+            integration_key=IntegrationKey('test', 'motion.front_door'),
+            value='active',
+            timestamp=timezone.now(),
+            sensor=motion_sensor,  # Motion sensor that triggered the alarm
             detail_attrs={'location': 'Front Door'},
             source_image_url=None,
-            sensor_id=motion_sensor.id  # Motion sensor that triggered the alarm
+            has_video_stream=False
         )
         
         motion_alarm = Alarm(
@@ -201,16 +207,24 @@ class TestAlertManagerDelegation(BaseTestCase):
         )
         
         # Create two different alarms
-        source_details_1 = AlarmSourceDetails(
+        source_details_1 = SensorResponse(
+            integration_key=IntegrationKey('test', 'motion1'),
+            value='active',
+            timestamp=timezone.now(),
+            sensor=motion_sensor1,  # First motion sensor
             detail_attrs={},
             source_image_url=None,
-            sensor_id=motion_sensor1.id  # First motion sensor
+            has_video_stream=False
         )
         
-        source_details_2 = AlarmSourceDetails(
+        source_details_2 = SensorResponse(
+            integration_key=IntegrationKey('test', 'motion2'),
+            value='active',
+            timestamp=timezone.now(),
+            sensor=motion_sensor2,  # Second motion sensor
             detail_attrs={},
             source_image_url=None,
-            sensor_id=motion_sensor2.id  # Second motion sensor
+            has_video_stream=False
         )
         
         # Create alarms with different types to ensure separate alerts

@@ -6,6 +6,8 @@ from hi.apps.alert.alert import Alert
 from hi.apps.alert.alarm import Alarm
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.security.enums import SecurityLevel
+from hi.apps.sense.transient_models import SensorResponse
+from hi.integrations.transient_models import IntegrationKey
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
@@ -256,9 +258,14 @@ class TestAlert(BaseTestCase):
             alarm_level=AlarmLevel.WARNING,
             title='Motion Detected',
             source_details_list=[
-                AlarmSourceDetails(
+                SensorResponse(
+                    integration_key=IntegrationKey('test', 'test.visual_content'),
+                    value='active',
+                    timestamp=datetimeproxy.now(),
+                    sensor=None,
                     detail_attrs={'Location': 'Kitchen'},
                     source_image_url='/static/img/test-image.png',
+                    has_video_stream=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -283,9 +290,14 @@ class TestAlert(BaseTestCase):
             alarm_level=AlarmLevel.INFO,
             title='Door Opened',
             source_details_list=[
-                AlarmSourceDetails(
+                SensorResponse(
+                    integration_key=IntegrationKey('test', 'test.no_image'),
+                    value='active',
+                    timestamp=datetimeproxy.now(),
+                    sensor=None,
                     detail_attrs={'Location': 'Front Door'},
                     source_image_url=None,
+                    has_video_stream=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -307,9 +319,14 @@ class TestAlert(BaseTestCase):
             alarm_level=AlarmLevel.WARNING,
             title='First Motion',
             source_details_list=[
-                AlarmSourceDetails(
+                SensorResponse(
+                    integration_key=IntegrationKey('test', 'test.first_image'),
+                    value='active',
+                    timestamp=datetimeproxy.now(),
+                    sensor=None,
                     detail_attrs={'Location': 'Kitchen'},
                     source_image_url='/static/img/first-image.png',
+                    has_video_stream=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -323,9 +340,14 @@ class TestAlert(BaseTestCase):
             alarm_level=AlarmLevel.WARNING,
             title='Second Motion',
             source_details_list=[
-                AlarmSourceDetails(
+                SensorResponse(
+                    integration_key=IntegrationKey('test', 'test.no_image2'),
+                    value='active',
+                    timestamp=datetimeproxy.now(),
+                    sensor=None,
                     detail_attrs={'Location': 'Kitchen'},
                     source_image_url=None,
+                    has_video_stream=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -351,9 +373,14 @@ class TestAlert(BaseTestCase):
             alarm_level=AlarmLevel.WARNING,
             title='First Motion',
             source_details_list=[
-                AlarmSourceDetails(
+                SensorResponse(
+                    integration_key=IntegrationKey('test', 'test.no_image2'),
+                    value='active',
+                    timestamp=datetimeproxy.now(),
+                    sensor=None,
                     detail_attrs={'Location': 'Kitchen'},
                     source_image_url=None,
+                    has_video_stream=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -367,9 +394,14 @@ class TestAlert(BaseTestCase):
             alarm_level=AlarmLevel.WARNING,
             title='Second Motion',
             source_details_list=[
-                AlarmSourceDetails(
+                SensorResponse(
+                    integration_key=IntegrationKey('test', 'test.second_image'),
+                    value='active',
+                    timestamp=datetimeproxy.now(),
+                    sensor=None,
                     detail_attrs={'Location': 'Kitchen'},
                     source_image_url='/static/img/second-image.png',
+                    has_video_stream=False
                 )
             ],
             security_level=SecurityLevel.LOW,
