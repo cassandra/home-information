@@ -61,7 +61,7 @@ class ViewUrlUtils:
             sensor = Sensor.objects.select_related('entity_state__entity').get(id=sensor_id)
             entity = sensor.entity_state.entity
             
-            # Check if entity has video stream capability (Phase 4 approach)
+            # Check if entity has video stream capability
             if entity.has_video_stream:
                 # Generate entity-based video stream URL for live video feed
                 return reverse('console_entity_video_stream', kwargs={'entity_id': entity.id})

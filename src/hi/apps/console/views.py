@@ -14,7 +14,7 @@ from .console_helper import ConsoleSettingsHelper
 
 
 class EntityVideoStreamView( HiGridView ):
-    """Phase 4: New view for entity-based video streams using VideoStream objects."""
+    """View for displaying entity-based video streams."""
 
     def get_main_template_name( self ) -> str:
         return 'console/panes/entity_video_stream.html'

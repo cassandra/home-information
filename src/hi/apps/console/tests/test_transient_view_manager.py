@@ -156,8 +156,7 @@ class TestTransientViewManager(BaseTestCase):
             name='Motion Sensor'
         )
         
-        # Phase 3: VIDEO_STREAM EntityState removed - video capability now indicated by has_video_stream=True
-        # Phase 4: Will use VideoStream objects and integration gateway methods
+        # Enable video stream capability for this entity
         entity.has_video_stream = True
         entity.save()
         
@@ -199,7 +198,7 @@ class TestTransientViewManager(BaseTestCase):
             # Consider alert for auto-view
             self.manager.consider_alert_for_auto_view(alert)
             
-            # Phase 4: TransientViewManager creates suggestions using VideoStream infrastructure
+            # TransientViewManager should create suggestions for video-enabled entities
             self.assertTrue(self.manager.has_suggestion())
             
             # Verify suggestion content
