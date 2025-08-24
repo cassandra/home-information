@@ -72,14 +72,14 @@
                     {% if video_url %}
                     <img class="img-fluid" src="{{ video_url }}" alt="Sensor Response Video Stream">
                     {% else %}
-                    <!-- Fallback for Phase 1 demonstration -->
+                    <!-- Fallback when no video stream is available -->
                     <div class="bg-secondary text-white d-flex align-items-center justify-content-center" 
                          style="height: 400px;">
                         <div class="text-center">
                             <h4>Video Stream Placeholder</h4>
                             <p>Sensor History ID: {{ sensor_history_data.current_sensor_response.detail_attrs.sensor_history_id }}</p>
                             <p>Duration: {{ sensor_history_data.current_sensor_response.detail_attrs.duration_seconds }} seconds</p>
-                            <small>Phase 2 will load SensorHistory record and convert to SensorResponse</small>
+                            <small>Video stream data will be displayed when available</small>
                         </div>
                     </div>
                     {% endif %}

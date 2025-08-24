@@ -62,7 +62,7 @@ class SensorHistorySyntheticData:
             )
             
             # Create additional attributes for detail_attrs
-            mock_sensor_history_id = 1000 + i  # Mock SensorHistory ID for Phase 1
+            mock_sensor_history_id = 1000 + i  # Mock SensorHistory ID for testing
             detail_attrs = {
                 'sensor_history_id': str(mock_sensor_history_id),  # Mock SensorHistory ID
                 'duration_seconds': str(60 + (i * 15)),  # Varying durations
