@@ -17,7 +17,7 @@ class EntityVideoStreamView( HiGridView ):
     """View for displaying entity-based video streams."""
 
     def get_main_template_name( self ) -> str:
-        return 'console/panes/entity_video_stream.html'
+        return 'console/panes/entity_video_pane.html'
 
     def get_main_template_context( self, request, *args, **kwargs ):
         entity_id = kwargs.get('entity_id')
@@ -36,15 +36,13 @@ class EntityVideoStreamView( HiGridView ):
             raise BadRequest( 'Integration not available for video stream.' )
 
         # Get the video stream using the integration gateway
-        video_stream = integration_gateway.get_entity_video_stream( entity )
-        if not video_stream:
+        if not entity.has_video_stream:
             raise BadRequest( 'Video stream is not currently available.' )
 
         request.view_parameters.view_type = ViewType.VIDEO_STREAM
         request.view_parameters.to_session( request )
         return {
             'entity': entity,
-            'video_stream': video_stream,
         }
 
         

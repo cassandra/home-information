@@ -1,11 +1,7 @@
-<div class="h6">{{ entity.name }}</div>
-
-{% if video_stream.source_url %}
-    <img id="hi-entity-video-stream-{{ entity.id }}" class="img-fluid"
-         src="{{ video_stream.source_url }}"
-         alt="Live video stream for {{ entity.name }}">
-{% else %}
-    <div class="alert alert-warning">
-        Video stream URL not available
-    </div>
+{% load video_tags %}
+{% entity_video_stream entity as video_url %}
+{% if video_url %}
+<div>
+  <img class="img-fluid" src="{{ video_url }}" alt="{{ entity.name }} Live Video">
+</div>
 {% endif %}

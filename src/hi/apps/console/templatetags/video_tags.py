@@ -52,24 +52,20 @@ def sensor_response_video_stream(sensor_response):
 
 
 @register.simple_tag
-def event_video_stream_for_sensor_id(sensor_id):
+def entity_video_stream(entity):
     """
-    Get entity live video stream URL for a sensor ID.
+    Get entity live video stream URL for a entity object.
     
     Args:
-        sensor_id: ID of the sensor
+        entity: Entity object
         
     Returns:
         Video stream URL string or empty string if no video available
     """
-    if not sensor_id:
+    if not entity:
         return ""
         
     try:
-        from hi.apps.sense.models import Sensor
-        sensor = Sensor.objects.select_related('entity_state__entity').get(id=sensor_id)
-        entity = sensor.entity_state.entity
-        
         # Check if entity has video stream capability
         if not entity.has_video_stream:
             logger.debug(f"Entity {entity.id} does not have video stream capability")
@@ -94,50 +90,5 @@ def event_video_stream_for_sensor_id(sensor_id):
         return ""
         
     except Exception as e:
-        logger.error(f"Error getting video URL for sensor {sensor_id}: {e}")
-        return ""
-
-
-@register.simple_tag
-def event_video_stream_for_sensor(sensor):
-    """
-    Get entity live video stream URL for a sensor object.
-    
-    Args:
-        sensor: Sensor object
-        
-    Returns:
-        Video stream URL string or empty string if no video available
-    """
-    if not sensor:
-        return ""
-        
-    try:
-        entity = sensor.entity_state.entity
-        
-        # Check if entity has video stream capability
-        if not entity.has_video_stream:
-            logger.debug(f"Entity {entity.id} does not have video stream capability")
-            return ""
-            
-        # Get integration gateway for this entity
-        from hi.integrations.integration_manager import IntegrationManager
-        integration_manager = IntegrationManager()
-        gateway = integration_manager.get_integration_gateway(entity.integration_id)
-        
-        if not gateway:
-            logger.warning(f"No integration gateway found for {entity.integration_id}")
-            return ""
-            
-        # Get live video stream
-        video_stream = gateway.get_entity_video_stream(entity)
-        
-        if video_stream and video_stream.source_url:
-            return video_stream.source_url
-            
-        logger.debug(f"No video stream available for entity {entity.id}")
-        return ""
-        
-    except Exception as e:
-        logger.error(f"Error getting video URL for sensor {sensor.id}: {e}")
+        logger.error(f"Error getting video URL for entity {entity.id}: {e}")
         return ""

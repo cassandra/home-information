@@ -24,12 +24,19 @@ class EntityStateStatusData:
 class EntityStatusData:
     entity                         : Entity
     entity_state_status_data_list  : List[ EntityStateStatusData ]
+    entity_for_video               : Entity                        = None
     display_only_svg_icon_item     : SvgIconItem                   = None
 
+    def __post_init__(self):
+        if not self.entity_for_video:
+            self.entity_for_video = self.entity
+        return
+    
     def to_template_context(self):
         context = {
             'entity': self.entity,
             'entity_state_status_data_list': self.entity_state_status_data_list,
+            'entity_for_video': self.entity_for_video,
         }
         return context
     

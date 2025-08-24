@@ -6,11 +6,11 @@
     {{ alarm.sensor_response_list|length }}
   </div>
   <div>
-    {% for source_details in alarm.sensor_response_list %}
+    {% for sensor_response in alarm.sensor_response_list %}
     {% if alarm.sensor_response_list|length > 1 %}
     <h6>Source {{ forloop.counter }} Details</h6>
     {% endif %}
-    {% include "alert/panes/alarm_source_details.html" %}
+    {% include "alert/panes/alarm_sensor_response.html" %}
     {% endfor %}
   </div>
 </div>

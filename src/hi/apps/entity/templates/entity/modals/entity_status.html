@@ -1,10 +1,15 @@
 {% extends "modals/action_3.html" %}
+{% load video_tags %}
 
 {% block title_text %}
 {{ entity.name }}: Status
 {% endblock %}
 
 {% block body %}
+{% if entity_for_video %}
+{% include "console/panes/entity_video_stream.html" with entity=entity_for_video %}
+{% endif %} 
+
 {% include "entity/panes/entity_state_status_card.html" with entity_state_status_data_list=entity_state_status_data_list %}
 {% endblock %}
 

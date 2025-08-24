@@ -1,14 +1,13 @@
 {% load video_tags %}
 <div>
-  {% comment %}source_details is now a SensorResponse object directly{% endcomment %}
-  {% sensor_response_video_stream source_details as video_url %}
+  {% sensor_response_video_stream sensor_response as video_url %}
   {% if video_url %}
   <div>
     <img class="img-fluid" src="{{ video_url }}" alt="{{ alarm.title }}">
   </div>
   {% endif %}
   <div>
-    {% for label, value in source_details.detail_attrs.items %}
+    {% for label, value in sensor_response.detail_attrs.items %}
     <div class="row">
       <div class="col-3 text-right">{{ label }}</div>
       <div class="col-9-">{{ value }}</div>

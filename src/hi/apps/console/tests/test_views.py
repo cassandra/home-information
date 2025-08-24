@@ -40,7 +40,7 @@ class TestEntityVideoStreamView(BaseTestCase):
         view = EntityVideoStreamView()
         template_name = view.get_main_template_name()
         
-        self.assertEqual(template_name, 'console/panes/entity_video_stream.html')
+        self.assertEqual(template_name, 'console/panes/entity_video_pane.html')
         
     def test_view_integration_with_url_routing(self):
         """Test that the view integrates correctly with URL routing."""
