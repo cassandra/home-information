@@ -1,5 +1,4 @@
 import logging
-from unittest.mock import Mock
 
 from hi.apps.console.view_url_utils import ViewUrlUtils
 from hi.apps.entity.models import Entity, EntityState  

@@ -1,5 +1,4 @@
 import logging
-from dataclasses import FrozenInstanceError
 
 from hi.apps.console.transient_models import TransientViewSuggestion
 from hi.apps.entity.enums import VideoStreamType

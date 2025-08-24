@@ -1,8 +1,6 @@
 import logging
 
 from django.urls import reverse
-from django.test import RequestFactory
-from django.http import Http404
 
 from hi.apps.console.views import EntityVideoStreamView
 from hi.apps.entity.models import Entity

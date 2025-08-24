@@ -42,7 +42,6 @@ class TestEntityStateType(BaseTestCase):
         return
 
 
-
 class TestEntityStateValue(BaseTestCase):
 
     def test_entity_state_value_choices_provide_ui_options(self):
