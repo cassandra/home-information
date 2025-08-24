@@ -62,8 +62,8 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
         
     def get_sensor_response_video_stream(self, sensor_response: SensorResponse) -> Optional[VideoStream]:
         """Get video stream from sensor response (recorded events)"""
-        #if not sensor_response.has_video_stream:
-        #    return None
+        # if not sensor_response.has_video_stream:
+        #     return None
 
         event_id_fieldname = ZmDetailKeys.EVENT_ID_ATTR_NAME
         
