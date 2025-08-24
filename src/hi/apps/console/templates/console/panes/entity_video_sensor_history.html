@@ -18,7 +18,7 @@
             <div class="timeline-container">
                 <h6>Activity Timeline</h6>
                 
-                {% for group in timeline_groups %}
+                {% for group in sensor_history_data.timeline_groups %}
                 <div class="timeline-group mb-3">
                     <div class="timeline-group-label font-weight-bold">
                         {{ group.label }}
@@ -26,7 +26,7 @@
                     
                     <div class="timeline-items">
                         {% for response in group.items %}
-                        <div class="timeline-item {% if response.detail_attrs.sensor_history_id == current_sensor_response.detail_attrs.sensor_history_id %}active{% endif %}">
+                        <div class="timeline-item {% if response.detail_attrs.sensor_history_id == sensor_history_data.current_sensor_response.detail_attrs.sensor_history_id %}active{% endif %}">
                             <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id response.detail_attrs.sensor_history_id %}"
                                data-async="#main-content"
                                class="text-decoration-none">
@@ -36,7 +36,7 @@
                                         {{ response.value }}
                                     </span>
                                 </div>
-                                {% if response.detail_attrs.sensor_history_id == current_sensor_response.detail_attrs.sensor_history_id %}
+                                {% if response.detail_attrs.sensor_history_id == sensor_history_data.current_sensor_response.detail_attrs.sensor_history_id %}
                                 <small class="text-muted">→ Currently viewing</small>
                                 {% endif %}
                             </a>
@@ -52,19 +52,19 @@
 
         <!-- Video and details area -->
         <div class="col-md-9">
-            {% if current_sensor_response %}
+            {% if sensor_history_data.current_sensor_response %}
             <div class="video-detail-container">
                 <!-- Response header -->
                 <div class="response-header mb-3">
-                    <h6>{{ current_sensor_response.detail_attrs.details }}</h6>
+                    <h6>{{ sensor_history_data.current_sensor_response.detail_attrs.details }}</h6>
                     <div class="text-muted">
-                        {{ current_sensor_response.timestamp|date:"F j, Y g:i A" }}
+                        {{ sensor_history_data.current_sensor_response.timestamp|date:"F j, Y g:i A" }}
                     </div>
                 </div>
 
                 <!-- Video display area -->
                 <div class="video-container mb-3">
-                    {% sensor_response_video_stream current_sensor_response as video_url %}
+                    {% sensor_response_video_stream sensor_history_data.current_sensor_response as video_url %}
                     {% if video_url %}
                     <img class="img-fluid" src="{{ video_url }}" alt="Sensor Response Video Stream">
                     {% else %}
@@ -73,8 +73,8 @@
                          style="height: 400px;">
                         <div class="text-center">
                             <h4>Video Stream Placeholder</h4>
-                            <p>Sensor History ID: {{ current_sensor_response.detail_attrs.sensor_history_id }}</p>
-                            <p>Duration: {{ current_sensor_response.detail_attrs.duration_seconds }} seconds</p>
+                            <p>Sensor History ID: {{ sensor_history_data.current_sensor_response.detail_attrs.sensor_history_id }}</p>
+                            <p>Duration: {{ sensor_history_data.current_sensor_response.detail_attrs.duration_seconds }} seconds</p>
                             <small>Phase 2 will load SensorHistory record and convert to SensorResponse</small>
                         </div>
                     </div>
@@ -87,20 +87,20 @@
                         <div class="col-sm-6">
                             <strong>Sensor:</strong> {{ sensor.name }}<br>
                             <strong>State Type:</strong> {{ sensor.entity_state.entity_state_type }}<br>
-                            <strong>Value:</strong> {{ current_sensor_response.value }}
+                            <strong>Value:</strong> {{ sensor_history_data.current_sensor_response.value }}
                         </div>
                         <div class="col-sm-6">
-                            <strong>Duration:</strong> {{ current_sensor_response.detail_attrs.duration_seconds }} seconds<br>
+                            <strong>Duration:</strong> {{ sensor_history_data.current_sensor_response.detail_attrs.duration_seconds }} seconds<br>
                             <strong>Entity Type:</strong> {{ entity.entity_type }}<br>
-                            <strong>Has Video:</strong> {{ current_sensor_response.has_video_stream|yesno:"Yes,No" }}
+                            <strong>Has Video:</strong> {{ sensor_history_data.current_sensor_response.has_video_stream|yesno:"Yes,No" }}
                         </div>
                     </div>
                 </div>
 
                 <!-- Navigation buttons -->
                 <div class="navigation-buttons mt-3 d-flex justify-content-between">
-                    {% if prev_sensor_response %}
-                    <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id prev_sensor_response.detail_attrs.sensor_history_id %}"
+                    {% if sensor_history_data.prev_sensor_response %}
+                    <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id sensor_history_data.prev_sensor_response.detail_attrs.sensor_history_id %}"
                        class="btn btn-outline-secondary"
                        data-async="#main-content">
                         ← Previous Response
@@ -109,8 +109,8 @@
                     <button class="btn btn-outline-secondary" disabled>← Previous Response</button>
                     {% endif %}
 
-                    {% if next_sensor_response %}
-                    <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id next_sensor_response.detail_attrs.sensor_history_id %}"
+                    {% if sensor_history_data.next_sensor_response %}
+                    <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id sensor_history_data.next_sensor_response.detail_attrs.sensor_history_id %}"
                        class="btn btn-outline-secondary"
                        data-async="#main-content">
                         Next Response →

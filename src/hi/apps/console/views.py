@@ -80,7 +80,7 @@ class EntityVideoSensorHistoryView( HiGridView ):
             raise Http404('Sensor not found for this entity.')
         
         # Get all view data using helper class (encapsulates business logic)
-        view_data = VideoStreamBrowsingHelper.get_sensor_history_view_data(
+        sensor_history_data = VideoStreamBrowsingHelper.build_sensor_history_data(
             sensor=sensor,
             sensor_history_id=sensor_history_id
         )
@@ -91,7 +91,7 @@ class EntityVideoSensorHistoryView( HiGridView ):
         return {
             'entity': entity,
             'sensor': sensor,
-            **view_data  # Spread all view data from helper
+            'sensor_history_data': sensor_history_data,
         }
 
 

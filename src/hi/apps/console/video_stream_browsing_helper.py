@@ -12,6 +12,7 @@ from hi.apps.sense.models import Sensor, SensorHistory
 from hi.apps.sense.transient_models import SensorResponse
 
 from .console_manager import ConsoleManager
+from .transient_models import EntitySensorHistoryData
 
 
 class VideoStreamBrowsingHelper:
@@ -222,7 +223,10 @@ class VideoStreamBrowsingHelper:
         return groups
     
     @classmethod
-    def find_navigation_items(cls, sensor_responses: List[SensorResponse], current_sensor_history_id: int) -> tuple:
+    def find_navigation_items(
+            cls, sensor_responses: List[SensorResponse], 
+            current_sensor_history_id: int
+    ) -> tuple:
         """
         Find previous and next sensor responses for navigation.
         
@@ -238,7 +242,8 @@ class VideoStreamBrowsingHelper:
         
         current_response = next(
             (r for r in sensor_responses 
-             if r.detail_attrs and r.detail_attrs.get('sensor_history_id') == str(current_sensor_history_id)), 
+             if (r.detail_attrs 
+                 and r.detail_attrs.get('sensor_history_id') == str(current_sensor_history_id))), 
             None
         )
         if not current_response:
@@ -247,7 +252,10 @@ class VideoStreamBrowsingHelper:
         try:
             current_idx = sensor_responses.index(current_response)
             prev_response = sensor_responses[current_idx - 1] if current_idx > 0 else None
-            next_response = sensor_responses[current_idx + 1] if current_idx < len(sensor_responses) - 1 else None
+            next_response = (
+                sensor_responses[current_idx + 1] 
+                if current_idx < len(sensor_responses) - 1 else None
+            )
             return (prev_response, next_response)
         except (ValueError, IndexError):
             return (None, None)
@@ -302,9 +310,11 @@ class VideoStreamBrowsingHelper:
         return (prev_sensor_response, next_sensor_response)
     
     @classmethod
-    def get_sensor_history_view_data(cls, sensor: Sensor, sensor_history_id: int = None):
+    def build_sensor_history_data(
+            cls, sensor: Sensor, sensor_history_id: int = None
+    ) -> EntitySensorHistoryData:
         """
-        Get all data needed for the sensor history view.
+        Build all data needed for the sensor history view.
         High-level method that encapsulates the business logic.
         
         Args:
@@ -312,8 +322,7 @@ class VideoStreamBrowsingHelper:
             sensor_history_id: Optional specific record ID to display
             
         Returns:
-            Dict with sensor_responses, current_sensor_response, timeline_groups, 
-            pagination_metadata, prev/next responses
+            EntitySensorHistoryData containing all view data
         """
         # Smart query strategy: get timeline window based on whether we have a specific record
         if sensor_history_id:
@@ -352,11 +361,11 @@ class VideoStreamBrowsingHelper:
             sensor, current_history_id
         )
         
-        return {
-            'sensor_responses': sensor_responses,
-            'current_sensor_response': current_sensor_response,
-            'timeline_groups': timeline_groups,
-            'pagination_metadata': pagination_metadata,
-            'prev_sensor_response': prev_sensor_response,
-            'next_sensor_response': next_sensor_response,
-        }
+        return EntitySensorHistoryData(
+            sensor_responses=sensor_responses,
+            current_sensor_response=current_sensor_response,
+            timeline_groups=timeline_groups,
+            pagination_metadata=pagination_metadata,
+            prev_sensor_response=prev_sensor_response,
+            next_sensor_response=next_sensor_response,
+        )
