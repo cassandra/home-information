@@ -3,8 +3,7 @@ from django.http import Http404
 from django.views.generic import View
 
 from hi.apps.entity.models import Entity
-from hi.apps.sense.models import Sensor
-from hi.apps.sense.tests.synthetic_data import SensorHistorySyntheticData
+from hi.apps.sense.models import Sensor, SensorHistory
 from hi.integrations.integration_manager import IntegrationManager
 
 from hi.enums import ViewType
@@ -80,35 +79,42 @@ class EntityVideoSensorHistoryView( HiGridView ):
         except Sensor.DoesNotExist:
             raise Http404('Sensor not found for this entity.')
         
-        # For Phase 1: Create mock sensor response data using synthetic data generator
-        mock_sensor_responses = SensorHistorySyntheticData.create_mock_sensor_responses(
+        # Phase 2: Query real SensorHistory records with video streams
+        sensor_history_records = SensorHistory.objects.filter(
             sensor=sensor,
-            current_id=sensor_history_id
-        )
+            has_video_stream=True
+        ).order_by('-response_datetime')[:50]  # Limit to last 50 for performance
+        
+        # Convert SensorHistory records to SensorResponse objects with history IDs
+        sensor_responses = []
+        for history_record in sensor_history_records:
+            sensor_response = VideoStreamBrowsingHelper.create_sensor_response_with_history_id(history_record)
+            sensor_responses.append(sensor_response)
         
         # Determine the current sensor response to display
         if sensor_history_id:
-            current_sensor_response = next(
-                (r for r in mock_sensor_responses 
-                 if r.detail_attrs and r.detail_attrs.get('sensor_history_id') == str(sensor_history_id)), 
-                None
-            )
-            if not current_sensor_response:
-                current_sensor_response = mock_sensor_responses[0] if mock_sensor_responses else None
+            # Find the specific SensorHistory record and convert it
+            try:
+                current_history_record = SensorHistory.objects.get(
+                    id=sensor_history_id,
+                    sensor=sensor,
+                    has_video_stream=True
+                )
+                current_sensor_response = VideoStreamBrowsingHelper.create_sensor_response_with_history_id(current_history_record)
+            except SensorHistory.DoesNotExist:
+                # Fall back to most recent if specific record not found
+                current_sensor_response = sensor_responses[0] if sensor_responses else None
         else:
             # Default to most recent
-            current_sensor_response = mock_sensor_responses[0] if mock_sensor_responses else None
+            current_sensor_response = sensor_responses[0] if sensor_responses else None
         
         # Group sensor responses by time period using helper
-        timeline_groups = VideoStreamBrowsingHelper.group_responses_by_time(mock_sensor_responses)
+        timeline_groups = VideoStreamBrowsingHelper.group_responses_by_time(sensor_responses)
         
         # Find previous and next responses for navigation using helper
-        current_history_id = None
-        if current_sensor_response and current_sensor_response.detail_attrs:
-            current_history_id = int(current_sensor_response.detail_attrs.get('sensor_history_id', 0))
-        prev_sensor_response, next_sensor_response = VideoStreamBrowsingHelper.find_navigation_items(
-            mock_sensor_responses, 
-            current_history_id
+        current_history_id = sensor_history_id if sensor_history_id else None
+        prev_sensor_response, next_sensor_response = self._find_adjacent_records(
+            sensor, current_history_id
         )
         
         request.view_parameters.view_type = ViewType.ENTITY_VIDEO_STREAM
@@ -121,8 +127,56 @@ class EntityVideoSensorHistoryView( HiGridView ):
             'timeline_groups': timeline_groups,
             'prev_sensor_response': prev_sensor_response,
             'next_sensor_response': next_sensor_response,
-            'sensor_responses': mock_sensor_responses,
+            'sensor_responses': sensor_responses,
         }
+    
+    def _find_adjacent_records(self, sensor: Sensor, current_history_id: int) -> tuple:
+        """
+        Find previous and next SensorHistory records for navigation.
+        Uses database queries for efficient navigation.
+        
+        Args:
+            sensor: Sensor to find records for
+            current_history_id: ID of current SensorHistory record
+            
+        Returns:
+            Tuple of (prev_sensor_response, next_sensor_response), either can be None
+        """
+        if not current_history_id:
+            return (None, None)
+        
+        try:
+            current_record = SensorHistory.objects.get(
+                id=current_history_id,
+                sensor=sensor,
+                has_video_stream=True
+            )
+        except SensorHistory.DoesNotExist:
+            return (None, None)
+        
+        # Find previous record (older timestamp)
+        prev_record = SensorHistory.objects.filter(
+            sensor=sensor,
+            has_video_stream=True,
+            response_datetime__lt=current_record.response_datetime
+        ).order_by('-response_datetime').first()
+        
+        prev_sensor_response = None
+        if prev_record:
+            prev_sensor_response = VideoStreamBrowsingHelper.create_sensor_response_with_history_id(prev_record)
+        
+        # Find next record (newer timestamp)
+        next_record = SensorHistory.objects.filter(
+            sensor=sensor,
+            has_video_stream=True,
+            response_datetime__gt=current_record.response_datetime
+        ).order_by('response_datetime').first()
+        
+        next_sensor_response = None
+        if next_record:
+            next_sensor_response = VideoStreamBrowsingHelper.create_sensor_response_with_history_id(next_record)
+        
+        return (prev_sensor_response, next_sensor_response)
 
 
 class ConsoleLockView( View ):

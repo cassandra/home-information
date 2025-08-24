@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from hi.apps.entity.models import Entity, EntityState
-from hi.apps.sense.models import Sensor
+from hi.apps.sense.models import Sensor, SensorHistory
 from hi.apps.sense.transient_models import SensorResponse
 
 from .console_manager import ConsoleManager
@@ -69,6 +69,26 @@ class VideoStreamBrowsingHelper:
                 return sensors[0]
         
         return None
+    
+    @classmethod
+    def create_sensor_response_with_history_id(cls, sensor_history: SensorHistory) -> SensorResponse:
+        """
+        Create SensorResponse from SensorHistory and add the history ID for template access.
+        
+        Args:
+            sensor_history: SensorHistory record to convert
+            
+        Returns:
+            SensorResponse object with sensor_history_id added to detail_attrs
+        """
+        sensor_response = SensorResponse.from_sensor_history(sensor_history)
+        
+        # Add the sensor_history_id to detail_attrs for template access
+        if sensor_response.detail_attrs is None:
+            sensor_response.detail_attrs = {}
+        sensor_response.detail_attrs['sensor_history_id'] = str(sensor_history.id)
+        
+        return sensor_response
     
     @classmethod
     def group_responses_by_time(cls, sensor_responses: List[SensorResponse]) -> List[Dict]:
