@@ -26,7 +26,6 @@ class HiModelHelper:
 
     EXCLUDE_FROM_SENSOR_HISTORY = {
         EntityStateType.DATETIME,
-        EntityStateType.VIDEO_STREAM,
         EntityStateType.BLOB,
         EntityStateType.MULTVALUED,
     }
@@ -195,9 +194,10 @@ class HiModelHelper:
     
     @classmethod
     def create_movement_sensor( cls,
-                                entity           : Entity,
-                                integration_key  : IntegrationKey  = None,
-                                name             : str             = None ) -> Sensor:
+                                entity              : Entity,
+                                integration_key     : IntegrationKey  = None,
+                                name                : str             = None,
+                                provides_video_stream : bool          = False ) -> Sensor:
         if not name:
             name = f'{entity.name} Motion'
         return cls.create_sensor(
@@ -205,20 +205,7 @@ class HiModelHelper:
             entity_state_type = EntityStateType.MOVEMENT,
             name = name,
             integration_key = integration_key,
-        )
-
-    @classmethod
-    def create_video_stream_sensor( cls,
-                                    entity           : Entity,
-                                    integration_key  : IntegrationKey  = None,
-                                    name             : str             = None ) -> Sensor:
-        if not name:
-            name = f'{entity.name} Stream'
-        return cls.create_sensor(
-            entity = entity,
-            entity_state_type = EntityStateType.VIDEO_STREAM,
-            name = name,
-            integration_key = integration_key,
+            provides_video_stream = provides_video_stream,
         )
 
     @classmethod
@@ -299,7 +286,8 @@ class HiModelHelper:
                        sensor_type        : SensorType        = SensorType.DEFAULT,
                        integration_key    : IntegrationKey    = None,
                        value_range_str    : str               = '',
-                       units              : str               = None ) -> Sensor:
+                       units              : str               = None,
+                       provides_video_stream : bool           = False ) -> Sensor:
         if not name:
             name = f'{entity.name}'
 
@@ -315,6 +303,7 @@ class HiModelHelper:
             name = name,
             sensor_type_str = str( sensor_type ),
             persist_history = bool( entity_state_type not in cls.EXCLUDE_FROM_SENSOR_HISTORY ),
+            provides_video_stream = provides_video_stream,
         )
         sensor.integration_key = integration_key
         sensor.save()

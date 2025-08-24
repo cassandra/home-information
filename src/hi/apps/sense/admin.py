@@ -40,7 +40,7 @@ class SensorHistoryAdmin(admin.ModelAdmin):
         'value',
         'response_datetime',
         'details',
-        'image_url',
+        'source_image_url',
     )
 
     search_fields = ['sensor__name']

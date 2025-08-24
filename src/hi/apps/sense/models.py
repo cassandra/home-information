@@ -35,6 +35,10 @@ class Sensor( IntegrationDetailsModel ):
         'Persist History',
         default = True,
     )
+    provides_video_stream = models.BooleanField(
+        'Provides Video Stream',
+        default = False,
+    )
     
     class Meta:
         verbose_name = 'Sensor'
@@ -82,9 +86,13 @@ class SensorHistory(models.Model):
         'Details',
         blank = True, null = True,
     )
-    image_url = models.TextField(
+    source_image_url = models.TextField(
         'Image URL',
         blank = True, null = True,
+    )
+    has_video_stream = models.BooleanField(
+        'Has Video Stream',
+        default = False,
     )
     response_datetime = models.DateTimeField(
         'Timestamp',

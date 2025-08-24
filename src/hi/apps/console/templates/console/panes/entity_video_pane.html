@@ -1,0 +1,7 @@
+{% load video_tags %}
+<div class="h6">{{ entity.name }}</div>
+{% if entity.has_video_stream %}
+{% include "console/panes/entity_video_stream.html" with entity=entity %}
+{% else %}
+<div class="text-muted">Video stream not available.</div>
+{% endif %}

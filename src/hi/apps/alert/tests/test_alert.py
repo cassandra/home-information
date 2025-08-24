@@ -3,9 +3,11 @@ from datetime import timedelta
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.alert.alert import Alert
-from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+from hi.apps.alert.alarm import Alarm
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.security.enums import SecurityLevel
+from hi.apps.sense.transient_models import SensorResponse
+from hi.integrations.transient_models import IntegrationKey
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
@@ -20,7 +22,7 @@ class TestAlert(BaseTestCase):
             alarm_type='test_alarm',
             alarm_level=AlarmLevel.WARNING,
             title='Test Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetimeproxy.now(),
@@ -53,7 +55,7 @@ class TestAlert(BaseTestCase):
             alarm_type='test_alarm',  # Same type
             alarm_level=AlarmLevel.WARNING,  # Same level
             title='Another Test Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetimeproxy.now(),
@@ -65,7 +67,7 @@ class TestAlert(BaseTestCase):
             alarm_type='different_alarm',  # Different type
             alarm_level=AlarmLevel.WARNING,
             title='Different Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetimeproxy.now(),
@@ -86,7 +88,7 @@ class TestAlert(BaseTestCase):
             alarm_type='test_alarm',
             alarm_level=AlarmLevel.WARNING,
             title='Second Test Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=600,  # Different lifetime
             timestamp=datetimeproxy.now(),
@@ -116,7 +118,7 @@ class TestAlert(BaseTestCase):
             alarm_type='different_alarm',  # Different type
             alarm_level=AlarmLevel.WARNING,
             title='Different Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetimeproxy.now(),
@@ -141,7 +143,7 @@ class TestAlert(BaseTestCase):
             alarm_type='test_alarm',
             alarm_level=AlarmLevel.WARNING,
             title='Second Test Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetimeproxy.now(),
@@ -163,7 +165,7 @@ class TestAlert(BaseTestCase):
                 alarm_type='test_alarm',
                 alarm_level=AlarmLevel.WARNING,
                 title=f'Alarm {i}',
-                source_details_list=[],
+                sensor_response_list=[],
                 security_level=SecurityLevel.LOW,
                 alarm_lifetime_secs=300,
                 timestamp=datetimeproxy.now(),
@@ -183,7 +185,7 @@ class TestAlert(BaseTestCase):
             alarm_type='critical_test',
             alarm_level=AlarmLevel.CRITICAL,
             title='Critical Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetimeproxy.now(),
@@ -194,7 +196,7 @@ class TestAlert(BaseTestCase):
             alarm_type='info_test',
             alarm_level=AlarmLevel.INFO,
             title='Info Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetimeproxy.now(),
@@ -238,7 +240,7 @@ class TestAlert(BaseTestCase):
             alarm_type='test_alarm',
             alarm_level=AlarmLevel.WARNING,
             title='Second Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetimeproxy.now(),
@@ -255,10 +257,15 @@ class TestAlert(BaseTestCase):
             alarm_type='motion_detection',
             alarm_level=AlarmLevel.WARNING,
             title='Motion Detected',
-            source_details_list=[
-                AlarmSourceDetails(
+            sensor_response_list=[
+                SensorResponse(
+                    integration_key=IntegrationKey('test', 'test.visual_content'),
+                    value='active',
+                    timestamp=datetimeproxy.now(),
+                    sensor=None,
                     detail_attrs={'Location': 'Kitchen'},
-                    image_url='/static/img/test-image.png',
+                    source_image_url='/static/img/test-image.png',
+                    has_video_stream=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -270,7 +277,7 @@ class TestAlert(BaseTestCase):
         visual_content = alert.get_first_visual_content()
         
         self.assertIsNotNone(visual_content)
-        self.assertEqual(visual_content['image_url'], '/static/img/test-image.png')
+        self.assertEqual(visual_content['source_image_url'], '/static/img/test-image.png')
         self.assertEqual(visual_content['alarm'], alarm_with_image)
         self.assertTrue(visual_content['is_from_latest'])
         return
@@ -282,10 +289,15 @@ class TestAlert(BaseTestCase):
             alarm_type='door_open',
             alarm_level=AlarmLevel.INFO,
             title='Door Opened',
-            source_details_list=[
-                AlarmSourceDetails(
+            sensor_response_list=[
+                SensorResponse(
+                    integration_key=IntegrationKey('test', 'test.no_image'),
+                    value='active',
+                    timestamp=datetimeproxy.now(),
+                    sensor=None,
                     detail_attrs={'Location': 'Front Door'},
-                    image_url=None,
+                    source_image_url=None,
+                    has_video_stream=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -306,10 +318,15 @@ class TestAlert(BaseTestCase):
             alarm_type='motion_detection',
             alarm_level=AlarmLevel.WARNING,
             title='First Motion',
-            source_details_list=[
-                AlarmSourceDetails(
+            sensor_response_list=[
+                SensorResponse(
+                    integration_key=IntegrationKey('test', 'test.first_image'),
+                    value='active',
+                    timestamp=datetimeproxy.now(),
+                    sensor=None,
                     detail_attrs={'Location': 'Kitchen'},
-                    image_url='/static/img/first-image.png',
+                    source_image_url='/static/img/first-image.png',
+                    has_video_stream=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -322,10 +339,15 @@ class TestAlert(BaseTestCase):
             alarm_type='motion_detection',
             alarm_level=AlarmLevel.WARNING,
             title='Second Motion',
-            source_details_list=[
-                AlarmSourceDetails(
+            sensor_response_list=[
+                SensorResponse(
+                    integration_key=IntegrationKey('test', 'test.no_image2'),
+                    value='active',
+                    timestamp=datetimeproxy.now(),
+                    sensor=None,
                     detail_attrs={'Location': 'Kitchen'},
-                    image_url=None,
+                    source_image_url=None,
+                    has_video_stream=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -338,7 +360,7 @@ class TestAlert(BaseTestCase):
         visual_content = alert.get_first_visual_content()
         
         self.assertIsNotNone(visual_content)
-        self.assertEqual(visual_content['image_url'], '/static/img/first-image.png')
+        self.assertEqual(visual_content['source_image_url'], '/static/img/first-image.png')
         self.assertEqual(visual_content['alarm'], first_alarm_with_image)
         self.assertFalse(visual_content['is_from_latest'])  # first_alarm_with_image is not at index 0 after adding second alarm
         return
@@ -350,10 +372,15 @@ class TestAlert(BaseTestCase):
             alarm_type='motion_detection',
             alarm_level=AlarmLevel.WARNING,
             title='First Motion',
-            source_details_list=[
-                AlarmSourceDetails(
+            sensor_response_list=[
+                SensorResponse(
+                    integration_key=IntegrationKey('test', 'test.no_image2'),
+                    value='active',
+                    timestamp=datetimeproxy.now(),
+                    sensor=None,
                     detail_attrs={'Location': 'Kitchen'},
-                    image_url=None,
+                    source_image_url=None,
+                    has_video_stream=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -366,10 +393,15 @@ class TestAlert(BaseTestCase):
             alarm_type='motion_detection',
             alarm_level=AlarmLevel.WARNING,
             title='Second Motion',
-            source_details_list=[
-                AlarmSourceDetails(
+            sensor_response_list=[
+                SensorResponse(
+                    integration_key=IntegrationKey('test', 'test.second_image'),
+                    value='active',
+                    timestamp=datetimeproxy.now(),
+                    sensor=None,
                     detail_attrs={'Location': 'Kitchen'},
-                    image_url='/static/img/second-image.png',
+                    source_image_url='/static/img/second-image.png',
+                    has_video_stream=False
                 )
             ],
             security_level=SecurityLevel.LOW,
@@ -382,7 +414,7 @@ class TestAlert(BaseTestCase):
         visual_content = alert.get_first_visual_content()
         
         self.assertIsNotNone(visual_content)
-        self.assertEqual(visual_content['image_url'], '/static/img/second-image.png')
+        self.assertEqual(visual_content['source_image_url'], '/static/img/second-image.png')
         self.assertEqual(visual_content['alarm'], second_alarm_with_image)
         self.assertTrue(visual_content['is_from_latest'])  # second_alarm_with_image is at index 0 after being added
         return

@@ -1,17 +1,30 @@
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from hi.apps.control.models import Controller, ControllerHistory
 from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.sense.models import Sensor, SensorHistory
 
-from .enums import EntityGroupType, EntityPairingType
+from .enums import EntityGroupType, EntityPairingType, VideoStreamType
 from .forms import (
     EntityAttributeFormSet,
     EntityForm,
     EntityAttributeUploadForm,
 )
 from .models import Entity
+
+
+@dataclass
+class VideoStream:
+    """Represents a video stream from any source"""
+    stream_type: VideoStreamType
+    source_url: str = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    
+    # Future extensibility:
+    # webrtc_config: WebRTCConfig = None
+    # hls_manifest_url: str = None
+    # thumbnail_url: str = None
 
 
 @dataclass

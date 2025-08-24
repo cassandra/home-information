@@ -97,9 +97,16 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         # The set of entity states used to define the state includes the
         # principals when the entity is a delegate.
         #
+        entity_for_video = None
+        if entity.has_video_stream:
+            entity_for_video = entity
+            
         entity_state_set = set( entity.states.all() )
         for entity_state_delegation in entity.entity_state_delegations.all():
             entity_state_set.add( entity_state_delegation.entity_state )
+            if ( not entity_for_video
+                 and entity_state_delegation.entity_state.entity.has_video_stream ):
+                entity_for_video = entity_state_delegation.entity_state.entity
             continue
 
         entity_state_to_status_data = self._get_entity_state_to_entity_state_status_data(
@@ -108,6 +115,7 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         return EntityStatusData(
             entity = entity,
             entity_state_status_data_list = list( entity_state_to_status_data.values() ),
+            entity_for_video = entity_for_video,
         )
 
     def get_entity_status_data_list(

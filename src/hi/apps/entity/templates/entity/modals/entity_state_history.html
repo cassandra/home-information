@@ -10,12 +10,10 @@
 {% if sensor_history_list_map %}
 <div>
   {% for sensor, sensor_history_list in sensor_history_list_map.items %}
-  {% if not sensor.entity_state.entity_state_type.suppress_history %}
   <div>
     <div class="h5">{{ sensor.name }} <small class="text-muted">[sensor]</small></div>
     {% include "sense/panes/sensor_history_list.html" with sensor_history_list=sensor_history_list show_all_link=True %}
   </div>
-  {% endif %}
   {% endfor %}
 </div>
 {% endif %}
@@ -23,12 +21,10 @@
 {% if controller_history_list_map %}
 <div>
   {% for controller, controller_history_list in controller_history_list_map.items %}
-  {% if not controller.entity_state.entity_state_type.suppress_history %}
   <div>
     <div class="h5">{{ controller.name }} <small class="text-muted">[controller]</small></div>
     {% include "control/panes/controller_history_list.html" with controller_history_list=controller_history_list show_all_link=True %}
   </div>
-  {% endif %}
   {% endfor %}
 </div>
 {% endif %}

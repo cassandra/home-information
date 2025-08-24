@@ -130,17 +130,49 @@ class Alert:
     def get_first_visual_content(self):
         """
         Find the first image/video content from any alarm in the alert.
-        Returns dict with image info or None if no visual content found.
+        Returns dict with image info and sensor response or None if no visual content found.
         """
         for alarm in self.alarm_list:
-            for source_details in alarm.source_details_list:
-                if source_details.image_url:
+            for sensor_response in alarm.sensor_response_list:
+                # Check for video stream capability first (preferred over static source_image_url)
+                if sensor_response.has_video_stream:
                     return {
-                        'image_url': source_details.image_url,
+                        'source_image_url': sensor_response.source_image_url,
                         'alarm': alarm,
+                        'source_details': sensor_response,  # Keep for backward compatibility
+                        'sensor_response': sensor_response,
+                        'is_from_latest': alarm == self.alarm_list[0] if self.alarm_list else False,
+                    }
+                # Fallback to static source_image_url if no video stream
+                elif sensor_response.source_image_url:
+                    return {
+                        'source_image_url': sensor_response.source_image_url,
+                        'alarm': alarm,
+                        'source_details': sensor_response,  # Keep for backward compatibility
+                        'sensor_response': sensor_response,
                         'is_from_latest': alarm == self.alarm_list[0] if self.alarm_list else False,
                     }
         return None
+    
+    def get_all_video_sources(self):
+        """
+        Get all sensor responses with video streams from all alarms in the alert.
+        Returns list of dicts with sensor_response, alarm, and index info.
+        """
+        video_sources = []
+        for alarm in self.alarm_list:
+            for sensor_response in alarm.sensor_response_list:
+                if sensor_response.has_video_stream:
+                    video_sources.append({
+                        'sensor_response': sensor_response,
+                        'alarm': alarm,
+                        'index': len(video_sources) + 1,  # 1-based for UI
+                    })
+        return video_sources
+    
+    def get_video_source_count(self):
+        """Get total count of video sources across all alarms in the alert."""
+        return len(self.get_all_video_sources())
     
     def to_notification_item(self):
         return NotificationItem(

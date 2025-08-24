@@ -29,7 +29,7 @@ def create_test_sensor_response(value, timestamp, detail_attrs=None):
         value=value,
         timestamp=timestamp,
         detail_attrs=detail_attrs or {},
-        image_url=None
+        source_image_url=None
     )
 
 

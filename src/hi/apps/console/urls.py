@@ -5,9 +5,10 @@ from . import views
 
 urlpatterns = [
 
-    re_path( r'^sensor/video-stream/(?P<sensor_id>\d+)$', 
-             views.SensorVideoStreamView.as_view(), 
-             name='console_sensor_video_stream'),
+
+    re_path( r'^entity/video-stream/(?P<entity_id>\d+)$', 
+             views.EntityVideoStreamView.as_view(), 
+             name='console_entity_video_stream'),
 
     re_path( r'^lock$', 
              views.ConsoleLockView.as_view(), 

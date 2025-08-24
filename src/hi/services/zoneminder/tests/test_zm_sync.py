@@ -568,14 +568,13 @@ class TestZoneMinderSynchronizerEntityCreation(TestCase):
         mock_create_controller.assert_called_once()
     
     @patch('hi.services.zoneminder.zm_sync.transaction.atomic')
-    @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_video_stream_sensor')
     @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_movement_sensor')
     @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_discrete_controller')
     @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_movement_event_definition')
     @patch.object(Entity, 'save')
     def test_create_monitor_entity_creates_all_components(self, mock_save, mock_create_event,
                                                           mock_create_controller, mock_create_movement,
-                                                          mock_create_video, mock_atomic):
+                                                          mock_atomic):
         """Test _create_monitor_entity creates all required sensors and controllers"""
         # Mock monitor
         mock_monitor = Mock()
@@ -584,13 +583,12 @@ class TestZoneMinderSynchronizerEntityCreation(TestCase):
         
         # Mock integration key generation
         entity_key = IntegrationKey(integration_id='zm', integration_name='monitor.123')
-        video_key = IntegrationKey(integration_id='zm', integration_name='monitor.video_stream.123')
         movement_key = IntegrationKey(integration_id='zm', integration_name='monitor.motion.123')
         function_key = IntegrationKey(integration_id='zm', integration_name='monitor.function.123')
         event_key = IntegrationKey(integration_id='zm', integration_name='monitor.motion.123')
         
         self.mock_manager._to_integration_key.side_effect = [
-            entity_key, video_key, movement_key, function_key, event_key
+            entity_key, movement_key, function_key, event_key
         ]
         
         # Mock movement sensor for event creation
@@ -603,7 +601,6 @@ class TestZoneMinderSynchronizerEntityCreation(TestCase):
         self.synchronizer._create_monitor_entity(mock_monitor, result)
         
         # Should create all components
-        mock_create_video.assert_called_once()
         mock_create_movement.assert_called_once()
         mock_create_controller.assert_called_once()
         mock_create_event.assert_called_once()
@@ -613,14 +610,13 @@ class TestZoneMinderSynchronizerEntityCreation(TestCase):
         mock_save.assert_called_once()
     
     @patch('hi.services.zoneminder.zm_sync.transaction.atomic')
-    @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_video_stream_sensor')
     @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_movement_sensor')
     @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_discrete_controller')
     @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_movement_event_definition')
     @patch.object(Entity, 'save')
     def test_create_monitor_entity_skips_events_when_disabled(self, mock_save, mock_create_event,
                                                               mock_create_controller, mock_create_movement,
-                                                              mock_create_video, mock_atomic):
+                                                              mock_atomic):
         """Test _create_monitor_entity skips event creation when alarm events disabled"""
         self.mock_manager.should_add_alarm_events = False
         
@@ -643,7 +639,6 @@ class TestZoneMinderSynchronizerEntityCreation(TestCase):
         mock_create_event.assert_not_called()
         
         # Should still create other components
-        mock_create_video.assert_called_once()
         mock_create_movement.assert_called_once()
         mock_create_controller.assert_called_once()
 
@@ -977,7 +972,6 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
             # Verify IsActive is boolean-like string
             self.assertIn(state['IsActive'], ['0', '1'])
     
-    @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_video_stream_sensor')
     @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_movement_sensor')
     @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_discrete_controller')
     @patch('hi.services.zoneminder.zm_sync.HiModelHelper.create_movement_event_definition')
@@ -985,7 +979,7 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
     @patch.object(Entity, 'save')
     def test_create_monitor_entity_with_real_monitor_variations(self, mock_save, mock_atomic,
                                                                 mock_create_event, mock_create_controller,
-                                                                mock_create_movement, mock_create_video):
+                                                                mock_create_movement):
         """Test monitor entity creation with real monitor data variations"""
         # Test each real monitor configuration
         real_monitors = self.create_mock_monitors_from_real_data()
@@ -1008,7 +1002,6 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
         for monitor in real_monitors:
             with self.subTest(monitor_name=monitor.name.return_value):
                 mock_save.reset_mock()
-                mock_create_video.reset_mock()
                 mock_create_movement.reset_mock()
                 mock_create_controller.reset_mock()
                 mock_create_event.reset_mock()
@@ -1017,7 +1010,6 @@ class TestZoneMinderSynchronizerWithRealData(TestCase):
                 self.synchronizer._create_monitor_entity(monitor, result)
                 
                 # Should create all components for each monitor
-                mock_create_video.assert_called_once()
                 mock_create_movement.assert_called_once() 
                 mock_create_controller.assert_called_once()
                 mock_create_event.assert_called_once()

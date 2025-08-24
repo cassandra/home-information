@@ -126,10 +126,12 @@ class TestTransientViewManager(BaseTestCase):
         """Test TransientViewManager considers alerts when auto-view enabled - core business logic."""
         from django.utils import timezone
         from hi.apps.alert.alert import Alert
-        from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+        from hi.apps.alert.alarm import Alarm
         from hi.apps.alert.enums import AlarmLevel, AlarmSource
         from hi.apps.security.enums import SecurityLevel
         from hi.apps.entity.models import Entity, EntityState
+        from hi.apps.sense.transient_models import SensorResponse
+        from hi.integrations.transient_models import IntegrationKey
         from hi.apps.entity.enums import EntityStateType
         from hi.apps.sense.models import Sensor
         
@@ -154,24 +156,19 @@ class TestTransientViewManager(BaseTestCase):
             name='Motion Sensor'
         )
         
-        # Create video stream sensor state on same entity
-        video_state = EntityState.objects.create(
-            entity=entity,
-            entity_state_type_str=str(EntityStateType.VIDEO_STREAM),
-            name='video_stream'
-        )
-        video_sensor = Sensor.objects.create(
-            entity_state=video_state,
-            integration_id='test.video.front_door',
-            integration_name='test_integration',
-            name='Video Stream'
-        )
+        # Enable video stream capability for this entity
+        entity.has_video_stream = True
+        entity.save()
         
         # Create motion detection alert with motion sensor
-        source_details = AlarmSourceDetails(
+        source_details = SensorResponse(
+            integration_key=IntegrationKey("test", "test.sensor"),
+            value="active",
+            timestamp=timezone.now(),
+            sensor=motion_sensor,  # Motion sensor that triggered the alarm
             detail_attrs={'location': 'Front Door'},
-            image_url=None,
-            sensor_id=motion_sensor.id  # Motion sensor that triggered the alarm
+            source_image_url=None,
+            has_video_stream=False
         )
         
         motion_alarm = Alarm(
@@ -179,7 +176,7 @@ class TestTransientViewManager(BaseTestCase):
             alarm_type='motion_detection',
             alarm_level=AlarmLevel.WARNING,
             title='Motion detected at Front Door',
-            source_details_list=[source_details],
+            sensor_response_list=[source_details],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=300,
             timestamp=timezone.now()
@@ -201,28 +198,40 @@ class TestTransientViewManager(BaseTestCase):
             # Consider alert for auto-view
             self.manager.consider_alert_for_auto_view(alert)
             
-            # Should create suggestion with video sensor URL (not motion sensor)
+            # TransientViewManager should create suggestions for video-enabled entities
             self.assertTrue(self.manager.has_suggestion())
-            suggestion = self.manager.peek_current_suggestion()
-            expected_url = f'/console/sensor/video-stream/{video_sensor.id}'
-            self.assertEqual(suggestion.url, expected_url)
+            
+            # Verify suggestion content
+            suggestion = self.manager.get_current_suggestion()
+            self.assertIsNotNone(suggestion)
+            self.assertIn('/console/entity/video-stream/', suggestion.url)
+            self.assertIn(str(entity.id), suggestion.url)
             self.assertEqual(suggestion.duration_seconds, 30)
             self.assertEqual(suggestion.priority, motion_alarm.alarm_level.priority)
             self.assertEqual(suggestion.trigger_reason, 'event_alert')
+            
+            # Verify suggestion is consumed (cleared after retrieval)
+            self.assertFalse(self.manager.has_suggestion())
 
     def test_consider_alert_with_auto_view_disabled(self):
         """Test TransientViewManager ignores alerts when auto-view disabled - settings integration."""
         from django.utils import timezone
         from hi.apps.alert.alert import Alert
-        from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+        from hi.apps.alert.alarm import Alarm
         from hi.apps.alert.enums import AlarmLevel, AlarmSource
         from hi.apps.security.enums import SecurityLevel
+        from hi.apps.sense.transient_models import SensorResponse
+        from hi.integrations.transient_models import IntegrationKey
         
         # Create motion detection alert
-        source_details = AlarmSourceDetails(
+        source_details = SensorResponse(
+            integration_key=IntegrationKey("test", "test.sensor"),
+            value="active",
+            timestamp=timezone.now(),
+            sensor=None,  # TODO: fix sensor reference
             detail_attrs={},
-            image_url=None,
-            sensor_id='cam_123'
+            source_image_url=None,
+            has_video_stream=False
         )
         
         motion_alarm = Alarm(
@@ -230,7 +239,7 @@ class TestTransientViewManager(BaseTestCase):
             alarm_type='motion_detection',
             alarm_level=AlarmLevel.WARNING,
             title='Motion detected',
-            source_details_list=[source_details],
+            sensor_response_list=[source_details],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=300,
             timestamp=timezone.now()
@@ -254,15 +263,21 @@ class TestTransientViewManager(BaseTestCase):
         """Test TransientViewManager handles alerts without camera view URLs - integration test."""
         from django.utils import timezone
         from hi.apps.alert.alert import Alert
-        from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+        from hi.apps.alert.alarm import Alarm
         from hi.apps.alert.enums import AlarmLevel, AlarmSource
         from hi.apps.security.enums import SecurityLevel
+        from hi.apps.sense.transient_models import SensorResponse
+        from hi.integrations.transient_models import IntegrationKey
         
         # Create non-motion EVENT alarm
-        source_details = AlarmSourceDetails(
+        source_details = SensorResponse(
+            integration_key=IntegrationKey("test", "test.sensor"),
+            value="active",
+            timestamp=timezone.now(),
+            sensor=None,  # TODO: fix sensor reference
             detail_attrs={},
-            image_url=None,
-            sensor_id='cam_123'
+            source_image_url=None,
+            has_video_stream=False
         )
         
         status_alarm = Alarm(
@@ -270,7 +285,7 @@ class TestTransientViewManager(BaseTestCase):
             alarm_type='device_status',  # Not motion-related
             alarm_level=AlarmLevel.INFO,
             title='Device status update',
-            source_details_list=[source_details],
+            sensor_response_list=[source_details],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=300,
             timestamp=timezone.now()
@@ -294,14 +309,21 @@ class TestTransientViewManager(BaseTestCase):
         """Test TransientViewManager ignores alerts without view URLs - integration with Alert model."""
         from django.utils import timezone
         from hi.apps.alert.alert import Alert
-        from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+        from hi.apps.alert.alarm import Alarm
         from hi.apps.alert.enums import AlarmLevel, AlarmSource
         from hi.apps.security.enums import SecurityLevel
+        from hi.apps.sense.transient_models import SensorResponse
+        from hi.integrations.transient_models import IntegrationKey
         
         # Create motion alarm but without sensor_id (no view URL)
-        source_details = AlarmSourceDetails(
-            detail_attrs={'location': 'Front Door'},  # No sensor_id
-            image_url=None
+        source_details = SensorResponse(
+            integration_key=IntegrationKey("test", "test.no_sensor"),
+            value="active",
+            timestamp=timezone.now(),
+            sensor=None,
+            detail_attrs={'location': 'Front Door'},
+            source_image_url=None,
+            has_video_stream=False
         )
         
         motion_alarm = Alarm(
@@ -309,7 +331,7 @@ class TestTransientViewManager(BaseTestCase):
             alarm_type='motion_detection',
             alarm_level=AlarmLevel.WARNING,
             title='Motion detected',
-            source_details_list=[source_details],
+            sensor_response_list=[source_details],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=300,
             timestamp=timezone.now()

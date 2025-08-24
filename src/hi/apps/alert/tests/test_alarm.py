@@ -1,11 +1,14 @@
 import logging
 from datetime import datetime
 
-from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+from hi.apps.alert.alarm import Alarm
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.audio.audio_signal import AudioSignal
 from hi.apps.security.enums import SecurityLevel
+from hi.apps.sense.transient_models import SensorResponse
+from hi.integrations.transient_models import IntegrationKey
 from hi.testing.base_test_case import BaseTestCase
+import hi.apps.common.datetimeproxy as datetimeproxy
 
 logging.disable(logging.CRITICAL)
 
@@ -19,7 +22,7 @@ class TestAlarm(BaseTestCase):
             alarm_type='test_alarm',
             alarm_level=AlarmLevel.WARNING,
             title='Test Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetime.now(),
@@ -34,7 +37,7 @@ class TestAlarm(BaseTestCase):
             alarm_type='critical_test',
             alarm_level=AlarmLevel.CRITICAL,
             title='Critical Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetime.now(),
@@ -55,7 +58,7 @@ class TestAlarm(BaseTestCase):
             alarm_type='info_test',
             alarm_level=AlarmLevel.INFO,
             title='Info Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetime.now(),
@@ -66,7 +69,7 @@ class TestAlarm(BaseTestCase):
             alarm_type='warning_test',
             alarm_level=AlarmLevel.WARNING,
             title='Warning Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetime.now(),
@@ -77,7 +80,7 @@ class TestAlarm(BaseTestCase):
             alarm_type='critical_test',
             alarm_level=AlarmLevel.CRITICAL,
             title='Critical Alarm',
-            source_details_list=[],
+            sensor_response_list=[],
             security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
             timestamp=datetime.now(),
@@ -98,34 +101,72 @@ class TestAlarm(BaseTestCase):
         return
 
 
-class TestAlarmSourceDetails(BaseTestCase):
+class TestAlarmWithSensorResponse(BaseTestCase):
 
-    def test_alarm_source_details_creation(self):
-        """Test AlarmSourceDetails dataclass - business logic for alarm context."""
+    def test_alarm_with_sensor_response_details(self):
+        """Test Alarm with SensorResponse as source details."""
         detail_attrs = {
             'entity_name': 'Test Sensor',
             'location': 'Kitchen',
             'value': '75.2°F'
         }
         
-        details = AlarmSourceDetails(
+        sensor_response = SensorResponse(
+            integration_key=IntegrationKey('test_integration', 'test_sensor'),
+            value='active',
+            timestamp=datetimeproxy.now(),
+            sensor=None,
             detail_attrs=detail_attrs,
-            image_url='https://example.com/sensor.jpg'
+            source_image_url='https://example.com/sensor.jpg',
+            has_video_stream=False
         )
         
-        self.assertEqual(details.detail_attrs, detail_attrs)
-        self.assertEqual(details.image_url, 'https://example.com/sensor.jpg')
+        alarm = Alarm(
+            alarm_source=AlarmSource.EVENT,
+            alarm_type='test_alarm',
+            alarm_level=AlarmLevel.WARNING,
+            title='Test Alarm',
+            sensor_response_list=[sensor_response],
+            security_level=SecurityLevel.LOW,
+            alarm_lifetime_secs=300,
+            timestamp=datetime.now(),
+        )
+        
+        self.assertEqual(len(alarm.sensor_response_list), 1)
+        self.assertEqual(alarm.sensor_response_list[0].detail_attrs, detail_attrs)
+        self.assertEqual(alarm.sensor_response_list[0].source_image_url, 'https://example.com/sensor.jpg')
         return
 
-    def test_alarm_source_details_optional_image_url(self):
-        """Test AlarmSourceDetails with optional image_url - default value handling."""
+    def test_alarm_with_weather_sensor_response(self):
+        """Test Alarm with weather-style SensorResponse (no sensor)."""
         detail_attrs = {
-            'entity_name': 'Test Sensor',
-            'location': 'Kitchen'
+            'Event Type': 'Severe Thunderstorm',
+            'Location': 'Austin, TX'
         }
         
-        details = AlarmSourceDetails(detail_attrs=detail_attrs)
+        # Weather alerts create SensorResponse without sensor
+        sensor_response = SensorResponse(
+            integration_key=IntegrationKey('weather', 'alert.123'),
+            value='active',
+            timestamp=datetimeproxy.now(),
+            sensor=None,
+            detail_attrs=detail_attrs,
+            source_image_url=None,
+            has_video_stream=False
+        )
         
-        self.assertEqual(details.detail_attrs, detail_attrs)
-        self.assertIsNone(details.image_url)
+        alarm = Alarm(
+            alarm_source=AlarmSource.WEATHER,
+            alarm_type='severe_thunderstorm',
+            alarm_level=AlarmLevel.WARNING,
+            title='Severe Thunderstorm Warning',
+            sensor_response_list=[sensor_response],
+            security_level=SecurityLevel.OFF,
+            alarm_lifetime_secs=1800,
+            timestamp=datetime.now(),
+        )
+        
+        self.assertEqual(alarm.sensor_response_list[0].detail_attrs, detail_attrs)
+        self.assertIsNone(alarm.sensor_response_list[0].source_image_url)
+        self.assertIsNone(alarm.sensor_response_list[0].sensor)
         return

@@ -260,8 +260,8 @@ class TestWeatherAlertAlarmMapper(BaseTestCase):
         self.assertEqual(alarm.security_level, SecurityLevel.OFF)  # Applies to all security levels
         
         # Verify source details
-        self.assertEqual(len(alarm.source_details_list), 1)
-        details = alarm.source_details_list[0]
+        self.assertEqual(len(alarm.sensor_response_list), 1)
+        details = alarm.sensor_response_list[0]
         self.assertIn('Event Type', details.detail_attrs)
         self.assertIn('Severity', details.detail_attrs)
         self.assertIn('Affected Areas', details.detail_attrs)

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List
 
 from hi.apps.alert.enums import AlarmSource
-from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+from hi.apps.alert.alarm import Alarm
 from hi.apps.entity.models import EntityState
 from hi.apps.sense.transient_models import SensorResponse
 
@@ -40,23 +40,13 @@ class Event:
         )
     
     def to_alarm( self, alarm_action : AlarmAction ) -> Alarm:
-
-        source_details_list = list()
-        for sensor_response in self.sensor_response_list:
-            source_details = AlarmSourceDetails(
-                detail_attrs = sensor_response.detail_attrs,
-                image_url = sensor_response.image_url,
-                sensor_id = sensor_response.sensor.id if sensor_response.sensor else None,
-            )
-            source_details_list.append( source_details )
-            continue
             
         return Alarm(
             alarm_source = AlarmSource.EVENT,
             alarm_type = self.event_definition.event_type.label,
             alarm_level = alarm_action.alarm_level,
             title = self.event_definition.name,
-            source_details_list = source_details_list,
+            sensor_response_list = self.sensor_response_list,
             security_level = alarm_action.security_level,
             alarm_lifetime_secs = alarm_action.alarm_lifetime_secs,
             timestamp = self.timestamp,

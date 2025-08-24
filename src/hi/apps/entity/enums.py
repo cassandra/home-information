@@ -178,7 +178,6 @@ class EntityStateType(LabeledEnum):
     PRESENCE         = ( 'Presence'         , '' )
     SOUND_LEVEL      = ( 'Sound Level'      , '' )
     TEMPERATURE      = ( 'Temperature'      , '' )
-    VIDEO_STREAM     = ( 'Video Stream'     , '' )
     WATER_FLOW       = ( 'Water Flow'       , '' )
     WIND_SPEED       = ( 'Wind Speed'       , '' )
 
@@ -200,14 +199,6 @@ class EntityStateType(LabeledEnum):
         """
         return f'control/panes/controller_{self.name.lower()}.html'
 
-    @property
-    def suppress_display_name(self):
-        return bool( self in { EntityStateType.VIDEO_STREAM })
-
-    @property
-    def suppress_history(self):
-        return bool( self in { EntityStateType.VIDEO_STREAM })
-    
 
 class EntityStateValue(LabeledEnum):
 
@@ -265,6 +256,17 @@ class EntityPairingType(LabeledEnum):
     PRINCIPAL  = ( 'Principal', '' )
     DELEGATE   = ( 'Delegate', '' )
     
+
+class VideoStreamType(LabeledEnum):
+    """Types of video streams that can be provided by entities or sensor responses."""
+    
+    URL = ('URL', 'Direct video stream URL')
+    OTHER = ('Other', 'Other video stream type for future extensibility')
+    
+    @classmethod
+    def default(cls):
+        return cls.OTHER
+
 
 class EntityGroupType(LabeledEnum):
 

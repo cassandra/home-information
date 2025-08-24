@@ -1,227 +1,200 @@
 import logging
-from unittest.mock import Mock
 
-from hi.apps.console.transient_models import VideoStreamEntity
-from hi.apps.entity.enums import EntityStateType
+from hi.apps.console.transient_models import TransientViewSuggestion
+from hi.apps.entity.enums import VideoStreamType
+from hi.apps.entity.transient_models import VideoStream
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 
 
-class TestVideoStreamEntity(BaseTestCase):
+class TestTransientViewSuggestion(BaseTestCase):
+    """Test TransientViewSuggestion model for auto-view functionality."""
 
-    def test_video_stream_entity_name_camera_suffix_removal(self):
-        """Test name property camera suffix removal logic - complex string processing."""
-        # Create mock entity
-        mock_entity = Mock()
-        mock_entity_state = Mock()
-        mock_sensor = Mock()
-        
-        # Test name ending with 'camera' gets suffix removed
-        mock_entity.name = 'Kitchen Camera'
-        
-        video_stream_entity = VideoStreamEntity(
-            entity=mock_entity,
-            entity_state=mock_entity_state,
-            sensor=mock_sensor
+    def test_transient_view_suggestion_creation(self):
+        """Test creating a TransientViewSuggestion with basic parameters."""
+        suggestion = TransientViewSuggestion(
+            url='/console/entity/video-stream/123/',
+            duration_seconds=30,
+            priority=5,
+            trigger_reason='motion_detected'
         )
         
-        self.assertEqual(video_stream_entity.name, 'Kitchen')
-        return
+        self.assertEqual(suggestion.url, '/console/entity/video-stream/123/')
+        self.assertEqual(suggestion.duration_seconds, 30)
+        self.assertEqual(suggestion.priority, 5)
+        self.assertEqual(suggestion.trigger_reason, 'motion_detected')
 
-    def test_video_stream_entity_name_camera_suffix_case_insensitive(self):
-        """Test name property handles case-insensitive camera suffix - edge case handling."""
-        mock_entity = Mock()
-        mock_entity_state = Mock()
-        mock_sensor = Mock()
+    def test_transient_view_suggestion_is_dataclass(self):
+        """Test that TransientViewSuggestion behaves as a proper dataclass."""
+        suggestion = TransientViewSuggestion(
+            url='/test/url/',
+            duration_seconds=60,
+            priority=3,
+            trigger_reason='test'
+        )
         
-        # Test different cases of 'camera'
-        test_cases = [
-            ('Front Door camera', 'Front Door'),
-            ('Garage CAMERA', 'Garage'),
-            ('Backyard Camera', 'Backyard'),
+        # Should be able to access fields
+        self.assertTrue(hasattr(suggestion, 'url'))
+        self.assertTrue(hasattr(suggestion, 'duration_seconds'))
+        self.assertTrue(hasattr(suggestion, 'priority'))
+        self.assertTrue(hasattr(suggestion, 'trigger_reason'))
+        
+        # Should have string representation
+        suggestion_str = str(suggestion)
+        self.assertIn('TransientViewSuggestion', suggestion_str)
+        self.assertIn('/test/url/', suggestion_str)
+
+    def test_transient_view_suggestion_with_different_priorities(self):
+        """Test TransientViewSuggestion with different priority values."""
+        high_priority = TransientViewSuggestion(
+            url='/high/priority/url/',
+            duration_seconds=45,
+            priority=10,
+            trigger_reason='critical_alert'
+        )
+        
+        low_priority = TransientViewSuggestion(
+            url='/low/priority/url/',
+            duration_seconds=15,
+            priority=1, 
+            trigger_reason='info_update'
+        )
+        
+        self.assertEqual(high_priority.priority, 10)
+        self.assertEqual(low_priority.priority, 1)
+        self.assertGreater(high_priority.priority, low_priority.priority)
+
+    def test_transient_view_suggestion_with_various_trigger_reasons(self):
+        """Test TransientViewSuggestion with different trigger reasons."""
+        reasons = [
+            'motion_detected',
+            'door_opened', 
+            'alarm_triggered',
+            'weather_alert',
+            'security_breach'
         ]
         
-        for original_name, expected_name in test_cases:
-            with self.subTest(original_name=original_name):
-                mock_entity.name = original_name
-                
-                video_stream_entity = VideoStreamEntity(
-                    entity=mock_entity,
-                    entity_state=mock_entity_state,
-                    sensor=mock_sensor
-                )
-                
-                self.assertEqual(video_stream_entity.name, expected_name)
-        return
+        for reason in reasons:
+            suggestion = TransientViewSuggestion(
+                url=f'/console/view/{reason}/',
+                duration_seconds=30,
+                priority=5,
+                trigger_reason=reason
+            )
+            self.assertEqual(suggestion.trigger_reason, reason)
 
-    def test_video_stream_entity_name_no_camera_suffix(self):
-        """Test name property when entity name doesn't end with camera - preserves original name."""
-        mock_entity = Mock()
-        mock_entity_state = Mock()
-        mock_sensor = Mock()
-        
-        # Test names that don't end with 'camera'
-        test_cases = [
-            'Security Monitor',
-            'Video Stream',
-            'Front Door',
-            'Camera Setup Tool',  # 'camera' in middle shouldn't be removed
-            'cameras',  # plural shouldn't be removed
-        ]
-        
-        for name in test_cases:
-            with self.subTest(name=name):
-                mock_entity.name = name
-                
-                video_stream_entity = VideoStreamEntity(
-                    entity=mock_entity,
-                    entity_state=mock_entity_state,
-                    sensor=mock_sensor
-                )
-                
-                self.assertEqual(video_stream_entity.name, name)
-        return
 
-    def test_video_stream_entity_name_edge_cases(self):
-        """Test name property edge cases - boundary condition handling."""
-        mock_entity = Mock()
-        mock_entity_state = Mock()
-        mock_sensor = Mock()
-        
-        # Test edge cases - the implementation only processes names ending with 'camera' (not spaces)
-        edge_cases = [
-            ('Camera', 'Camera'),  # Just 'Camera' shouldn't be removed entirely
-            ('camera', 'camera'),  # Just 'camera' lowercase shouldn't be removed entirely  
-            ('Front  Camera', 'Front'),  # Multiple spaces should be stripped after removal
-            ('   Patio Camera', 'Patio'),  # Leading spaces preserved, trailing 'camera' removed and stripped
-        ]
-        
-        for original_name, expected_name in edge_cases:
-            with self.subTest(original_name=original_name):
-                mock_entity.name = original_name
-                
-                video_stream_entity = VideoStreamEntity(
-                    entity=mock_entity,
-                    entity_state=mock_entity_state,
-                    sensor=mock_sensor
-                )
-                
-                self.assertEqual(video_stream_entity.name, expected_name)
-        return
+class TestVideoStream(BaseTestCase):
+    """Test VideoStream model for video streaming functionality."""
 
-    def test_video_stream_entity_dataclass_properties(self):
-        """Test VideoStreamEntity dataclass properties - proper object composition."""
-        mock_entity = Mock()
-        mock_entity_state = Mock()
-        mock_sensor = Mock()
-        
-        video_stream_entity = VideoStreamEntity(
-            entity=mock_entity,
-            entity_state=mock_entity_state,
-            sensor=mock_sensor
+    def test_video_stream_creation_with_minimal_fields(self):
+        """Test creating a VideoStream with minimal required fields."""
+        video_stream = VideoStream(
+            stream_type=VideoStreamType.URL
         )
         
-        # Should maintain references to all components
-        self.assertEqual(video_stream_entity.entity, mock_entity)
-        self.assertEqual(video_stream_entity.entity_state, mock_entity_state)
-        self.assertEqual(video_stream_entity.sensor, mock_sensor)
-        return
+        self.assertEqual(video_stream.stream_type, VideoStreamType.URL)
+        self.assertIsNone(video_stream.source_url)
+        self.assertEqual(video_stream.metadata, {})
 
-    def test_motion_detection_state_with_movement_state(self):
-        """Test motion_detection_state property returns MOVEMENT state when it exists."""
-        mock_entity = Mock()
-        mock_entity_state = Mock()
-        mock_sensor = Mock()
+    def test_video_stream_creation_with_all_fields(self):
+        """Test creating a VideoStream with all fields populated."""
+        metadata = {
+            'width': 1920,
+            'height': 1080,
+            'fps': 30,
+            'codec': 'h264'
+        }
         
-        # Create mock movement state
-        mock_movement_state = Mock()
-        mock_movement_state.entity_state_type = EntityStateType.MOVEMENT
-        
-        # Create mock non-movement state
-        mock_video_state = Mock()
-        mock_video_state.entity_state_type = EntityStateType.VIDEO_STREAM
-        
-        # Setup entity.states.all() to return both states
-        mock_entity.states.all.return_value = [mock_video_state, mock_movement_state]
-        
-        video_stream_entity = VideoStreamEntity(
-            entity=mock_entity,
-            entity_state=mock_entity_state,
-            sensor=mock_sensor
+        video_stream = VideoStream(
+            stream_type=VideoStreamType.URL,
+            source_url='https://example.com/stream.m3u8',
+            metadata=metadata
         )
         
-        # Should return the movement state
-        self.assertEqual(video_stream_entity.motion_detection_state, mock_movement_state)
-        return
+        self.assertEqual(video_stream.stream_type, VideoStreamType.URL)
+        self.assertEqual(video_stream.source_url, 'https://example.com/stream.m3u8')
+        self.assertEqual(video_stream.metadata, metadata)
+        self.assertEqual(video_stream.metadata['width'], 1920)
+        self.assertEqual(video_stream.metadata['fps'], 30)
 
-    def test_motion_detection_state_without_movement_state(self):
-        """Test motion_detection_state property returns None when no MOVEMENT state exists."""
-        mock_entity = Mock()
-        mock_entity_state = Mock()
-        mock_sensor = Mock()
+    def test_video_stream_with_different_stream_types(self):
+        """Test VideoStream creation with different stream types."""
+        # Test URL stream
+        url_stream = VideoStream(
+            stream_type=VideoStreamType.URL,
+            source_url='http://camera.local/mjpeg'
+        )
+        self.assertEqual(url_stream.stream_type, VideoStreamType.URL)
         
-        # Create only non-movement states
-        mock_video_state = Mock()
-        mock_video_state.entity_state_type = EntityStateType.VIDEO_STREAM
-        
-        mock_on_off_state = Mock()
-        mock_on_off_state.entity_state_type = EntityStateType.ON_OFF
-        
-        # Setup entity.states.all() to return only non-movement states
-        mock_entity.states.all.return_value = [mock_video_state, mock_on_off_state]
-        
-        video_stream_entity = VideoStreamEntity(
-            entity=mock_entity,
-            entity_state=mock_entity_state,
-            sensor=mock_sensor
+        # Test OTHER stream  
+        other_stream = VideoStream(
+            stream_type=VideoStreamType.OTHER,
+            source_url='https://stream.example.com/playlist.m3u8'
+        )
+        self.assertEqual(other_stream.stream_type, VideoStreamType.OTHER)
+
+    def test_video_stream_metadata_defaults_to_empty_dict(self):
+        """Test that VideoStream metadata defaults to empty dictionary."""
+        video_stream = VideoStream(
+            stream_type=VideoStreamType.URL,
+            source_url='http://test.local/stream'
         )
         
-        # Should return None when no movement state exists
-        self.assertIsNone(video_stream_entity.motion_detection_state)
-        return
+        self.assertIsInstance(video_stream.metadata, dict)
+        self.assertEqual(len(video_stream.metadata), 0)
 
-    def test_motion_detection_state_with_multiple_movement_states(self):
-        """Test motion_detection_state property returns first MOVEMENT state when multiple exist."""
-        mock_entity = Mock()
-        mock_entity_state = Mock()
-        mock_sensor = Mock()
+    def test_video_stream_metadata_can_store_various_types(self):
+        """Test that VideoStream metadata can store different data types."""
+        metadata = {
+            'resolution': '1920x1080',
+            'fps': 30,
+            'bitrate': 5000.5,
+            'has_audio': True,
+            'supported_formats': ['h264', 'mjpeg'],
+            'camera_info': {
+                'manufacturer': 'TestCam',
+                'model': 'TC-1000'
+            }
+        }
         
-        # Create multiple movement states
-        mock_movement_state1 = Mock()
-        mock_movement_state1.entity_state_type = EntityStateType.MOVEMENT
-        
-        mock_movement_state2 = Mock()
-        mock_movement_state2.entity_state_type = EntityStateType.MOVEMENT
-        
-        # Setup entity.states.all() to return multiple movement states
-        mock_entity.states.all.return_value = [mock_movement_state1, mock_movement_state2]
-        
-        video_stream_entity = VideoStreamEntity(
-            entity=mock_entity,
-            entity_state=mock_entity_state,
-            sensor=mock_sensor
+        video_stream = VideoStream(
+            stream_type=VideoStreamType.URL,
+            source_url='https://test.local/stream.m3u8',
+            metadata=metadata
         )
         
-        # Should return the first movement state
-        self.assertEqual(video_stream_entity.motion_detection_state, mock_movement_state1)
-        return
+        self.assertIsInstance(video_stream.metadata['resolution'], str)
+        self.assertIsInstance(video_stream.metadata['fps'], int)
+        self.assertIsInstance(video_stream.metadata['bitrate'], float)
+        self.assertIsInstance(video_stream.metadata['has_audio'], bool)
+        self.assertIsInstance(video_stream.metadata['supported_formats'], list)
+        self.assertIsInstance(video_stream.metadata['camera_info'], dict)
 
-    def test_motion_detection_state_with_no_states(self):
-        """Test motion_detection_state property returns None when entity has no states."""
-        mock_entity = Mock()
-        mock_entity_state = Mock()
-        mock_sensor = Mock()
-        
-        # Setup entity.states.all() to return empty list
-        mock_entity.states.all.return_value = []
-        
-        video_stream_entity = VideoStreamEntity(
-            entity=mock_entity,
-            entity_state=mock_entity_state,
-            sensor=mock_sensor
+    def test_video_stream_is_dataclass(self):
+        """Test that VideoStream behaves as a proper dataclass."""
+        video_stream = VideoStream(
+            stream_type=VideoStreamType.URL,
+            source_url='http://test.local/mjpeg',
+            metadata={'test': 'value'}
         )
         
-        # Should return None when no states exist
-        self.assertIsNone(video_stream_entity.motion_detection_state)
-        return
+        # Should have string representation
+        stream_str = str(video_stream)
+        self.assertIn('VideoStream', stream_str)
+        
+        # Should be able to access all fields
+        self.assertTrue(hasattr(video_stream, 'stream_type'))
+        self.assertTrue(hasattr(video_stream, 'source_url'))
+        self.assertTrue(hasattr(video_stream, 'metadata'))
+
+    def test_video_stream_with_none_source_url(self):
+        """Test VideoStream with None source_url (valid use case)."""
+        video_stream = VideoStream(
+            stream_type=VideoStreamType.URL,
+            source_url=None
+        )
+        
+        self.assertEqual(video_stream.stream_type, VideoStreamType.URL)
+        self.assertIsNone(video_stream.source_url)

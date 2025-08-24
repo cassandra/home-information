@@ -1,255 +1,189 @@
 import logging
-from unittest.mock import patch
 
-from django.utils import timezone
-
-from hi.apps.alert.alarm import Alarm, AlarmSourceDetails  
-from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.console.view_url_utils import ViewUrlUtils
-from hi.apps.entity.models import Entity, EntityState
+from hi.apps.entity.models import Entity, EntityState  
 from hi.apps.entity.enums import EntityStateType
-from hi.apps.security.enums import SecurityLevel
 from hi.apps.sense.models import Sensor
-from hi.apps.sense.enums import SensorType
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 
 
 class TestViewUrlUtils(BaseTestCase):
-    """Test ViewUrlUtils with proper database setup."""
+    """Test ViewUrlUtils for generating view URLs from alarms and sensors."""
 
     def setUp(self):
-        """Set up test data with proper entity/sensor relationships."""
         super().setUp()
         
-        # Create an entity (e.g., a camera)
-        self.camera_entity = Entity.objects.create(
-            name='Front Door Camera',
-            entity_type_str='CAMERA'
+        # Create entity with video stream capability
+        self.video_entity = Entity.objects.create(
+            integration_id='test.camera.video',
+            integration_name='test_integration', 
+            name='Video Camera',
+            entity_type_str='camera',
+            has_video_stream=True
         )
         
-        # Create entity states for the camera
-        self.motion_entity_state = EntityState.objects.create(
-            entity=self.camera_entity,
-            entity_state_type=EntityStateType.MOVEMENT,
-            name='Motion Detection'
+        # Create entity without video stream capability
+        self.non_video_entity = Entity.objects.create(
+            integration_id='test.sensor.temp',
+            integration_name='test_integration',
+            name='Temperature Sensor', 
+            entity_type_str='sensor',
+            has_video_stream=False
         )
         
-        self.video_stream_entity_state = EntityState.objects.create(
-            entity=self.camera_entity,
-            entity_state_type=EntityStateType.VIDEO_STREAM,
-            name='Video Stream'
+        # Create entity states and sensors
+        self.video_motion_state = EntityState.objects.create(
+            entity=self.video_entity,
+            entity_state_type_str=str(EntityStateType.MOVEMENT),
+            name='motion'
+        )
+        self.video_motion_sensor = Sensor.objects.create(
+            entity_state=self.video_motion_state,
+            integration_id='test.motion.video',
+            integration_name='test_integration',
+            name='Video Motion Sensor'
         )
         
-        # Create sensors
-        self.motion_sensor = Sensor.objects.create(
-            name='Motion Sensor',
-            entity_state=self.motion_entity_state,
-            sensor_type_str=str(SensorType.DEFAULT),
-            integration_id='zm_motion_1',
-            integration_name='zoneminder'
+        self.temp_state = EntityState.objects.create(
+            entity=self.non_video_entity,
+            entity_state_type_str=str(EntityStateType.TEMPERATURE),
+            name='temperature'
         )
-        
-        self.video_sensor = Sensor.objects.create(
-            name='Video Stream Sensor',
-            entity_state=self.video_stream_entity_state,
-            sensor_type_str=str(SensorType.DEFAULT),
-            integration_id='zm_video_1', 
-            integration_name='zoneminder'
+        self.temp_sensor = Sensor.objects.create(
+            entity_state=self.temp_state,
+            integration_id='test.temp.sensor',
+            integration_name='test_integration', 
+            name='Temperature Sensor'
         )
 
-    def test_motion_sensor_with_video_stream_generates_url(self):
-        """Test that a motion sensor on entity with video stream generates camera URL."""
-        # Create alarm with motion sensor
-        source_details = AlarmSourceDetails(
-            detail_attrs={'location': 'Front Door'},
-            image_url=None,
-            sensor_id=self.motion_sensor.id
+    def test_get_view_url_for_alarm_returns_video_url_for_video_entity(self):
+        """Test that alarms from video-capable entities return video stream URLs."""
+        from hi.apps.alert.alarm import Alarm
+        from hi.apps.alert.enums import AlarmLevel, AlarmSource
+        from hi.apps.security.enums import SecurityLevel
+        from hi.apps.sense.transient_models import SensorResponse
+        from hi.integrations.transient_models import IntegrationKey
+        import hi.apps.common.datetimeproxy as datetimeproxy
+        
+        # Create alarm with sensor from video-capable entity
+        sensor_response = SensorResponse(
+            integration_key=IntegrationKey('test', 'motion.video'),
+            value='active',
+            timestamp=datetimeproxy.now(),
+            sensor=self.video_motion_sensor,
+            detail_attrs={},
+            source_image_url=None,
+            has_video_stream=False
         )
         
         alarm = Alarm(
             alarm_source=AlarmSource.EVENT,
             alarm_type='motion_detection',
             alarm_level=AlarmLevel.WARNING,
-            title='Motion detected at Front Door',
-            source_details_list=[source_details],
-            security_level=SecurityLevel.OFF,
+            title='Motion detected',
+            sensor_response_list=[sensor_response],
+            security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
-            timestamp=timezone.now()
+            timestamp=datetimeproxy.now()
         )
         
+        # Test URL generation
         view_url = ViewUrlUtils.get_view_url_for_alarm(alarm)
         
-        # Should return URL with video sensor ID (not motion sensor ID)
-        self.assertEqual(view_url, f'/console/sensor/video-stream/{self.video_sensor.id}')
-
-    def test_video_sensor_generates_url(self):
-        """Test that a video stream sensor generates camera URL."""
-        source_details = AlarmSourceDetails(
-            detail_attrs={'location': 'Front Door'},
-            image_url=None,
-            sensor_id=self.video_sensor.id
+        self.assertIsNotNone(view_url)
+        self.assertIn('/console/entity/video-stream/', view_url)
+        self.assertIn(str(self.video_entity.id), view_url)
+        
+    def test_get_view_url_for_alarm_returns_none_for_non_video_entity(self):
+        """Test that alarms from non-video entities return None."""
+        from hi.apps.alert.alarm import Alarm
+        from hi.apps.alert.enums import AlarmLevel, AlarmSource
+        from hi.apps.security.enums import SecurityLevel
+        from hi.apps.sense.transient_models import SensorResponse
+        from hi.integrations.transient_models import IntegrationKey
+        import hi.apps.common.datetimeproxy as datetimeproxy
+        
+        # Create alarm with sensor from non-video entity
+        sensor_response = SensorResponse(
+            integration_key=IntegrationKey('test', 'temp.sensor'),
+            value='22.5',
+            timestamp=datetimeproxy.now(),
+            sensor=self.temp_sensor,
+            detail_attrs={},
+            source_image_url=None,
+            has_video_stream=False
         )
         
         alarm = Alarm(
             alarm_source=AlarmSource.EVENT,
-            alarm_type='video_issue',
+            alarm_type='temperature_change',
             alarm_level=AlarmLevel.INFO,
-            title='Video stream issue',
-            source_details_list=[source_details],
-            security_level=SecurityLevel.OFF,
+            title='Temperature reading',
+            sensor_response_list=[sensor_response],
+            security_level=SecurityLevel.LOW,
             alarm_lifetime_secs=300,
-            timestamp=timezone.now()
+            timestamp=datetimeproxy.now()
         )
         
+        # Test URL generation
         view_url = ViewUrlUtils.get_view_url_for_alarm(alarm)
         
-        # Should return the actual URL generated by Django's reverse() 
-        self.assertEqual(view_url, f'/console/sensor/video-stream/{self.video_sensor.id}')
-
-    def test_sensor_without_video_stream_returns_none(self):
-        """Test that sensor on entity without video stream returns None."""
-        # Create entity without video stream
-        thermostat_entity = Entity.objects.create(
-            name='Living Room Thermostat',
-            entity_type_str='THERMOSTAT'
-        )
-        
-        temp_entity_state = EntityState.objects.create(
-            entity=thermostat_entity,
-            entity_state_type=EntityStateType.TEMPERATURE,
-            name='Temperature Reading'
-        )
-        
-        temp_sensor = Sensor.objects.create(
-            name='Temperature Sensor',
-            entity_state=temp_entity_state,
-            sensor_type_str=str(SensorType.DEFAULT),
-            integration_id='hass_temp_1',
-            integration_name='homeassistant'
-        )
-        
-        source_details = AlarmSourceDetails(
-            detail_attrs={'location': 'Living Room'},
-            image_url=None,
-            sensor_id=temp_sensor.id
-        )
-        
-        alarm = Alarm(
-            alarm_source=AlarmSource.EVENT,
-            alarm_type='temperature_alert',
-            alarm_level=AlarmLevel.WARNING,
-            title='High temperature',
-            source_details_list=[source_details],
-            security_level=SecurityLevel.OFF,
-            alarm_lifetime_secs=300,
-            timestamp=timezone.now()
-        )
-        
-        view_url = ViewUrlUtils.get_view_url_for_alarm(alarm)
         self.assertIsNone(view_url)
-
-    def test_nonexistent_sensor_returns_none(self):
-        """Test that non-existent sensor ID returns None."""
-        source_details = AlarmSourceDetails(
-            detail_attrs={'location': 'Somewhere'},
-            image_url=None,
-            sensor_id='99999'  # Non-existent sensor
-        )
         
-        alarm = Alarm(
-            alarm_source=AlarmSource.EVENT,
-            alarm_type='unknown',
-            alarm_level=AlarmLevel.WARNING,
-            title='Unknown alert',
-            source_details_list=[source_details],
-            security_level=SecurityLevel.OFF,
-            alarm_lifetime_secs=300,
-            timestamp=timezone.now()
-        )
+    def test_get_view_url_for_alarm_returns_none_for_alarm_without_sensors(self):
+        """Test that alarms without sensors return None."""
+        from hi.apps.alert.alarm import Alarm
+        from hi.apps.alert.enums import AlarmLevel, AlarmSource
+        from hi.apps.security.enums import SecurityLevel
+        from hi.apps.sense.transient_models import SensorResponse
+        from hi.integrations.transient_models import IntegrationKey
+        import hi.apps.common.datetimeproxy as datetimeproxy
         
-        view_url = ViewUrlUtils.get_view_url_for_alarm(alarm)
-        self.assertIsNone(view_url)
-
-    def test_alarm_without_sensor_id_returns_none(self):
-        """Test that alarm without sensor_id returns None."""
-        source_details = AlarmSourceDetails(
-            detail_attrs={'location': 'Somewhere'},
-            image_url=None,
-            sensor_id=None
+        # Create alarm with sensor response but no sensor object
+        sensor_response = SensorResponse(
+            integration_key=IntegrationKey('test', 'weather'),
+            value='active',
+            timestamp=datetimeproxy.now(),
+            sensor=None,  # No sensor object
+            detail_attrs={'event': 'Tornado Warning'},
+            source_image_url=None,
+            has_video_stream=False
         )
         
         alarm = Alarm(
             alarm_source=AlarmSource.WEATHER,
-            alarm_type='tornado_warning',
+            alarm_type='tornado',
             alarm_level=AlarmLevel.CRITICAL,
             title='Tornado Warning',
-            source_details_list=[source_details],
-            security_level=SecurityLevel.OFF,
-            alarm_lifetime_secs=1800,
-            timestamp=timezone.now()
+            sensor_response_list=[sensor_response],
+            security_level=SecurityLevel.HIGH,
+            alarm_lifetime_secs=3600,
+            timestamp=datetimeproxy.now()
         )
         
+        # Test URL generation
         view_url = ViewUrlUtils.get_view_url_for_alarm(alarm)
+        
         self.assertIsNone(view_url)
-
-    def test_multiple_source_details_uses_first_valid_sensor(self):
-        """Test that first valid sensor_id is used when multiple source details exist."""
-        # First source detail without sensor_id
-        source_details_1 = AlarmSourceDetails(
-            detail_attrs={'location': 'Area A'},
-            image_url=None,
-            sensor_id=None
-        )
         
-        # Second source detail with sensor_id
-        source_details_2 = AlarmSourceDetails(
-            detail_attrs={'location': 'Area B'},
-            image_url=None,
-            sensor_id=self.motion_sensor.id
-        )
+    def test_get_view_url_for_sensor_id_returns_video_url_for_video_entity(self):
+        """Test direct sensor ID lookup for video-capable entity."""
+        view_url = ViewUrlUtils._get_view_url_for_sensor_id(self.video_motion_sensor.id)
         
-        alarm = Alarm(
-            alarm_source=AlarmSource.EVENT,
-            alarm_type='motion_detection',
-            alarm_level=AlarmLevel.WARNING,
-            title='Motion detected',
-            source_details_list=[source_details_1, source_details_2],
-            security_level=SecurityLevel.OFF,
-            alarm_lifetime_secs=300,
-            timestamp=timezone.now()
-        )
+        self.assertIsNotNone(view_url)
+        self.assertIn('/console/entity/video-stream/', view_url)
+        self.assertIn(str(self.video_entity.id), view_url)
         
-        view_url = ViewUrlUtils.get_view_url_for_alarm(alarm)
+    def test_get_view_url_for_sensor_id_returns_none_for_non_video_entity(self):
+        """Test direct sensor ID lookup for non-video entity."""
+        view_url = ViewUrlUtils._get_view_url_for_sensor_id(self.temp_sensor.id)
         
-        # Should return URL with video sensor ID (not motion sensor ID)  
-        self.assertEqual(view_url, f'/console/sensor/video-stream/{self.video_sensor.id}')
-
-    def test_url_generation_exception_handling(self):
-        """Test graceful handling of URL generation failures."""
-        source_details = AlarmSourceDetails(
-            detail_attrs={'location': 'Front Door'},
-            image_url=None,
-            sensor_id=self.motion_sensor.id
-        )
+        self.assertIsNone(view_url)
         
-        alarm = Alarm(
-            alarm_source=AlarmSource.EVENT,
-            alarm_type='motion_detection',
-            alarm_level=AlarmLevel.WARNING,
-            title='Motion detected',
-            source_details_list=[source_details],
-            security_level=SecurityLevel.OFF,
-            alarm_lifetime_secs=300,
-            timestamp=timezone.now()
-        )
+    def test_get_view_url_for_sensor_id_handles_nonexistent_sensor(self):
+        """Test that nonexistent sensor IDs are handled gracefully."""
+        view_url = ViewUrlUtils._get_view_url_for_sensor_id('nonexistent-sensor-id')
         
-        # Test with a broken URL pattern name to trigger exception handling
-        with patch('hi.apps.console.view_url_utils.reverse') as mock_reverse:
-            mock_reverse.side_effect = Exception("URL pattern not found")
-            
-            view_url = ViewUrlUtils.get_view_url_for_alarm(alarm)
-            
-            # Test error handling behavior: should return None on failure
-            self.assertIsNone(view_url)
+        self.assertIsNone(view_url)

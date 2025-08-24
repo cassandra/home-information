@@ -14,11 +14,13 @@ import logging
 from typing import List, Optional
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+from hi.apps.alert.alarm import Alarm
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.security.enums import SecurityLevel
+from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.weather.enums import AlertSeverity, AlertStatus, AlertUrgency, WeatherEventType
 from hi.apps.weather.transient_models import WeatherAlert
+from hi.integrations.transient_models import IntegrationKey
 
 logger = logging.getLogger(__name__)
 
@@ -298,15 +300,15 @@ class WeatherAlertAlarmMapper:
         # This ensures consistent grouping across different weather sources
         return weather_alert.event_type.name
     
-    def create_alarm_source_details(self, weather_alert: WeatherAlert) -> List[AlarmSourceDetails]:
+    def create_sensor_responses(self, weather_alert: WeatherAlert) -> List[SensorResponse]:
         """
-        Create alarm source details from weather alert information.
+        Create sensor responses from weather alert information.
         
         Args:
-            weather_alert: The weather alert to create details for
+            weather_alert: The weather alert to create sensor responses for
             
         Returns:
-            List of AlarmSourceDetails for this weather alert
+            List of SensorResponse for this weather alert
         """
         detail_attrs = {
             'Event Type': weather_alert.event_type.label,
@@ -338,7 +340,24 @@ class WeatherAlertAlarmMapper:
                 description = description[:300] + '...'
             detail_attrs['Description'] = description
         
-        return [AlarmSourceDetails(detail_attrs=detail_attrs)]
+        # Create a SensorResponse for weather alerts
+        # Weather alerts don't have sensors, so we use a synthetic integration key
+        # Use event type and timestamp to create a unique identifier
+        alert_id = f'{weather_alert.event_type.name}.{weather_alert.effective.timestamp() if weather_alert.effective else "unknown"}'
+        integration_key = IntegrationKey(
+            integration_id='weather',
+            integration_name=f'alert.{alert_id}'
+        )
+        
+        return [SensorResponse(
+            integration_key=integration_key,
+            value='active',  # Weather alerts are active when they exist
+            timestamp=weather_alert.effective or datetimeproxy.now(),
+            sensor=None,  # No sensor for weather alerts
+            detail_attrs=detail_attrs,
+            source_image_url=None,  # Weather alerts don't have images
+            has_video_stream=False
+        )]
     
     def create_alarm(self, weather_alert: WeatherAlert) -> Optional[Alarm]:
         """
@@ -372,7 +391,7 @@ class WeatherAlertAlarmMapper:
             alarm_type=self.get_alarm_type(weather_alert),
             alarm_level=alarm_level,
             title=title,
-            source_details_list=self.create_alarm_source_details(weather_alert),
+            sensor_response_list=self.create_sensor_responses(weather_alert),
             security_level=SecurityLevel.OFF,  # Weather alarms apply to all security levels
             alarm_lifetime_secs=self.get_alarm_lifetime(weather_alert),
             timestamp=datetimeproxy.now(),

@@ -4,7 +4,6 @@ from typing import Optional
 from django.urls import reverse
 
 from hi.apps.sense.models import Sensor
-from hi.apps.entity.enums import EntityStateType
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +32,10 @@ class ViewUrlUtils:
         Returns:
             A Django view URL string, or None if no appropriate view can be determined
         """
-        # Look through all source details for sensor information
-        for source_details in alarm.source_details_list:
-            if source_details.sensor_id:
-                view_url = ViewUrlUtils._get_view_url_for_sensor_id(source_details.sensor_id)
+        # Look through all source details (SensorResponse objects) for sensor information
+        for sensor_response in alarm.sensor_response_list:
+            if sensor_response.sensor and sensor_response.sensor.id:
+                view_url = ViewUrlUtils._get_view_url_for_sensor_id(sensor_response.sensor.id)
                 if view_url:
                     return view_url
         
@@ -58,21 +57,20 @@ class ViewUrlUtils:
             A Django view URL string, or None if no appropriate view found
         """
         try:
-            # Look up the sensor
-            sensor = Sensor.objects.select_related('entity_state').get(id=sensor_id)
+            # Look up the sensor and its entity
+            sensor = Sensor.objects.select_related('entity_state__entity').get(id=sensor_id)
+            entity = sensor.entity_state.entity
             
-            # Find the video stream sensor for this entity
-            video_stream_sensor = ViewUrlUtils._get_video_stream_sensor(sensor)
-            if video_stream_sensor:
-                # Use the video stream sensor's ID, not the original sensor's ID
-                return reverse('console_sensor_video_stream', kwargs={'sensor_id': video_stream_sensor.id})
+            # Check if entity has video stream capability
+            if entity.has_video_stream:
+                # Generate entity-based video stream URL for live video feed
+                return reverse('console_entity_video_stream', kwargs={'entity_id': entity.id})
             
             # Future: Add other view types based on entity state type
             # elif sensor.entity_state.entity_state_type == EntityStateType.WEATHER:
             #     return reverse('console_weather_view', kwargs={'sensor_id': sensor_id})
             
-            logger.debug(f"Sensor {sensor_id} ({sensor.entity_state.entity_state_type}) "
-                         f"does not have an associated view")
+            logger.debug(f"Entity {entity.id} for sensor {sensor_id} does not have video stream capability")
             return None
             
         except Sensor.DoesNotExist:
@@ -82,33 +80,3 @@ class ViewUrlUtils:
             logger.warning(f"Could not generate view URL for sensor {sensor_id}: {e}")
             return None
     
-    @staticmethod
-    def _get_video_stream_sensor(sensor: Sensor) -> Optional[Sensor]:
-        """
-        Get the video stream sensor associated with the given sensor's entity.
-        
-        This finds the video stream sensor that belongs to the same entity
-        as the given sensor (e.g., finding the video stream sensor when
-        given a motion detection sensor from the same camera entity).
-        
-        Args:
-            sensor: The Sensor object to check
-            
-        Returns:
-            The video stream Sensor if one exists, None otherwise
-        """
-        # Get the entity this sensor belongs to
-        entity = sensor.entity_state.entity
-        
-        # Look for video stream entity states on the same entity
-        video_stream_states = entity.states.filter(
-            entity_state_type_str=str(EntityStateType.VIDEO_STREAM)
-        ).prefetch_related('sensors')
-        
-        # Return the first video stream sensor found
-        for state in video_stream_states:
-            sensors = state.sensors.all()
-            if sensors:
-                return sensors.first()
-        
-        return None

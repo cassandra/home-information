@@ -7,6 +7,7 @@ from hi.apps.entity.enums import EntityStateValue
 
 from pyzm.helpers.Event import Event as ZmApiEvent
 
+from .constants import ZmDetailKeys
 from .zm_manager import ZoneMinderManager
 
 
@@ -105,7 +106,7 @@ class ZmEvent:
     
     def to_detail_attrs( self ) -> Dict[ str, str ]:
         return {
-            'Event Id': self.event_id,
+            ZmDetailKeys.EVENT_ID_ATTR_NAME: self.event_id,
             'Start Time': self.start_datetime.isoformat(),
             'Score': self.score,
             'Duration (secs)': self.duration_secs,

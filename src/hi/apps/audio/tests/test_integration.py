@@ -1,9 +1,11 @@
 import logging
 
-from hi.apps.alert.alarm import Alarm, AlarmSourceDetails
+from hi.apps.alert.alarm import Alarm
 from hi.apps.alert.enums import AlarmLevel, AlarmSource
 from hi.apps.audio.audio_signal import AudioSignal
 from hi.apps.security.enums import SecurityLevel
+from hi.apps.sense.transient_models import SensorResponse
+from hi.integrations.transient_models import IntegrationKey
 from hi.testing.base_test_case import BaseTestCase
 
 import hi.apps.common.datetimeproxy as datetimeproxy
@@ -22,7 +24,7 @@ class TestAudioIntegration(BaseTestCase):
             alarm_type='SEVERE_THUNDERSTORM',
             alarm_level=AlarmLevel.CRITICAL,
             title='Severe Thunderstorm Warning',
-            source_details_list=[AlarmSourceDetails(detail_attrs={'location': 'Austin, TX'})],
+            sensor_response_list=[SensorResponse(integration_key=IntegrationKey("test", "audio_test"), value="active", timestamp=datetimeproxy.now(), sensor=None, detail_attrs={'location': 'Austin, TX'}, source_image_url=None, has_video_stream=False)],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=1800,
             timestamp=datetimeproxy.now(),
@@ -42,7 +44,7 @@ class TestAudioIntegration(BaseTestCase):
             alarm_type='TORNADO',
             alarm_level=AlarmLevel.CRITICAL,
             title='Tornado Warning',
-            source_details_list=[AlarmSourceDetails(detail_attrs={'location': 'Austin, TX'})],
+            sensor_response_list=[SensorResponse(integration_key=IntegrationKey("test", "audio_test"), value="active", timestamp=datetimeproxy.now(), sensor=None, detail_attrs={'location': 'Austin, TX'}, source_image_url=None, has_video_stream=False)],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=1800,
             timestamp=datetimeproxy.now(),
@@ -62,7 +64,7 @@ class TestAudioIntegration(BaseTestCase):
             alarm_type='DEVICE_FAILURE',
             alarm_level=AlarmLevel.CRITICAL,
             title='Device Failure',
-            source_details_list=[AlarmSourceDetails(detail_attrs={'device': 'Sensor-01'})],
+            sensor_response_list=[SensorResponse(integration_key=IntegrationKey("test", "audio_test"), value="active", timestamp=datetimeproxy.now(), sensor=None, detail_attrs={'device': 'Sensor-01'}, source_image_url=None, has_video_stream=False)],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=3600,
             timestamp=datetimeproxy.now(),
@@ -82,7 +84,7 @@ class TestAudioIntegration(BaseTestCase):
             alarm_type='SEVERE_THUNDERSTORM',
             alarm_level=AlarmLevel.WARNING,
             title='Severe Thunderstorm Warning',
-            source_details_list=[AlarmSourceDetails(detail_attrs={'location': 'Austin, TX'})],
+            sensor_response_list=[SensorResponse(integration_key=IntegrationKey("test", "audio_test"), value="active", timestamp=datetimeproxy.now(), sensor=None, detail_attrs={'location': 'Austin, TX'}, source_image_url=None, has_video_stream=False)],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=1800,
             timestamp=datetimeproxy.now(),
@@ -93,7 +95,7 @@ class TestAudioIntegration(BaseTestCase):
             alarm_type='HIGH_TEMP',
             alarm_level=AlarmLevel.WARNING,
             title='High Temperature Alert',
-            source_details_list=[AlarmSourceDetails(detail_attrs={'sensor': 'Temp-01'})],
+            sensor_response_list=[SensorResponse(integration_key=IntegrationKey("test", "audio_test"), value="active", timestamp=datetimeproxy.now(), sensor=None, detail_attrs={'sensor': 'Temp-01'}, source_image_url=None, has_video_stream=False)],
             security_level=SecurityLevel.OFF,
             alarm_lifetime_secs=3600,
             timestamp=datetimeproxy.now(),
@@ -127,7 +129,7 @@ class TestAudioIntegration(BaseTestCase):
                     alarm_type='TEST',
                     alarm_level=alarm_level,
                     title='Test Alarm',
-                    source_details_list=[AlarmSourceDetails(detail_attrs={'test': 'data'})],
+                    sensor_response_list=[SensorResponse(integration_key=IntegrationKey("test", "audio_test"), value="active", timestamp=datetimeproxy.now(), sensor=None, detail_attrs={'test': 'data'}, source_image_url=None, has_video_stream=False)],
                     security_level=SecurityLevel.OFF,
                     alarm_lifetime_secs=3600,
                     timestamp=datetimeproxy.now(),
