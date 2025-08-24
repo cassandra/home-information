@@ -39,7 +39,7 @@ class EntityVideoStreamView( HiGridView ):
         if not entity.has_video_stream:
             raise BadRequest( 'Video stream is not currently available.' )
 
-        request.view_parameters.view_type = ViewType.VIDEO_STREAM
+        request.view_parameters.view_type = ViewType.ENTITY_VIDEO_STREAM
         request.view_parameters.to_session( request )
         return {
             'entity': entity,

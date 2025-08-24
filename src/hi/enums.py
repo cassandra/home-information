@@ -10,7 +10,7 @@ class ViewType(LabeledEnum):
     LOCATION_VIEW  = ('Location View', '' )
     COLLECTION     = ('Collection', '' )
     CONFIGURATION  = ('Configuration', '' )
-    VIDEO_STREAM  = ('Video Stream', '' )
+    ENTITY_VIDEO_STREAM  = ('Entity Video Stream', '' )
 
     @property
     def is_location_view(self):
@@ -26,7 +26,7 @@ class ViewType(LabeledEnum):
 
     @property
     def is_video_stream(self):
-        return bool( self == ViewType.VIDEO_STREAM )
+        return bool( self == ViewType.ENTITY_VIDEO_STREAM )
 
     @property
     def allows_edit_mode(self):
