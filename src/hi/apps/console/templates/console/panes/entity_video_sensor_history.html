@@ -26,8 +26,8 @@
                     
                     <div class="timeline-items">
                         {% for response in group.items %}
-                        <div class="timeline-item {% if response.integration_key == current_sensor_response.integration_key %}active{% endif %}">
-                            <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id response.integration_key %}"
+                        <div class="timeline-item {% if response.detail_attrs.sensor_history_id == current_sensor_response.detail_attrs.sensor_history_id %}active{% endif %}">
+                            <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id response.detail_attrs.sensor_history_id %}"
                                data-async="#main-content"
                                class="text-decoration-none">
                                 <div class="d-flex justify-content-between">
@@ -36,7 +36,7 @@
                                         {{ response.value }}
                                     </span>
                                 </div>
-                                {% if response.integration_key == current_sensor_response.integration_key %}
+                                {% if response.detail_attrs.sensor_history_id == current_sensor_response.detail_attrs.sensor_history_id %}
                                 <small class="text-muted">→ Currently viewing</small>
                                 {% endif %}
                             </a>
@@ -73,9 +73,9 @@
                          style="height: 400px;">
                         <div class="text-center">
                             <h4>Video Stream Placeholder</h4>
-                            <p>Integration Key: {{ current_sensor_response.integration_key }}</p>
+                            <p>Sensor History ID: {{ current_sensor_response.detail_attrs.sensor_history_id }}</p>
                             <p>Duration: {{ current_sensor_response.detail_attrs.duration_seconds }} seconds</p>
-                            <small>Phase 2 will integrate with video stream gateway</small>
+                            <small>Phase 2 will load SensorHistory record and convert to SensorResponse</small>
                         </div>
                     </div>
                     {% endif %}
@@ -100,7 +100,7 @@
                 <!-- Navigation buttons -->
                 <div class="navigation-buttons mt-3 d-flex justify-content-between">
                     {% if prev_sensor_response %}
-                    <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id prev_sensor_response.integration_key %}"
+                    <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id prev_sensor_response.detail_attrs.sensor_history_id %}"
                        class="btn btn-outline-secondary"
                        data-async="#main-content">
                         ← Previous Response
@@ -110,7 +110,7 @@
                     {% endif %}
 
                     {% if next_sensor_response %}
-                    <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id next_sensor_response.integration_key %}"
+                    <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id next_sensor_response.detail_attrs.sensor_history_id %}"
                        class="btn btn-outline-secondary"
                        data-async="#main-content">
                         Next Response →

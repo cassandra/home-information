@@ -136,22 +136,23 @@ class VideoStreamBrowsingHelper:
         return groups
     
     @classmethod
-    def find_navigation_items(cls, sensor_responses: List[SensorResponse], current_integration_key: str) -> tuple:
+    def find_navigation_items(cls, sensor_responses: List[SensorResponse], current_sensor_history_id: int) -> tuple:
         """
         Find previous and next sensor responses for navigation.
         
         Args:
-            sensor_responses: List of SensorResponse objects
-            current_integration_key: Integration key string of current response
+            sensor_responses: List of SensorResponse objects (with sensor_history_id in detail_attrs)
+            current_sensor_history_id: SensorHistory ID of current response
             
         Returns:
             Tuple of (previous_response, next_response), either can be None
         """
-        if not sensor_responses or not current_integration_key:
+        if not sensor_responses or not current_sensor_history_id:
             return (None, None)
         
         current_response = next(
-            (r for r in sensor_responses if str(r.integration_key) == current_integration_key), 
+            (r for r in sensor_responses 
+             if r.detail_attrs and r.detail_attrs.get('sensor_history_id') == str(current_sensor_history_id)), 
             None
         )
         if not current_response:

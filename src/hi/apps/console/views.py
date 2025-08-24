@@ -62,7 +62,7 @@ class EntityVideoSensorHistoryView( HiGridView ):
     def get_main_template_context( self, request, *args, **kwargs ):
         entity_id = kwargs.get('entity_id')
         sensor_id = kwargs.get('sensor_id')
-        integration_key = kwargs.get('integration_key')
+        sensor_history_id = kwargs.get('sensor_history_id')
         
         # Get the entity
         try:
@@ -83,13 +83,14 @@ class EntityVideoSensorHistoryView( HiGridView ):
         # For Phase 1: Create mock sensor response data using synthetic data generator
         mock_sensor_responses = SensorHistorySyntheticData.create_mock_sensor_responses(
             sensor=sensor,
-            current_id=integration_key
+            current_id=sensor_history_id
         )
         
         # Determine the current sensor response to display
-        if integration_key:
+        if sensor_history_id:
             current_sensor_response = next(
-                (r for r in mock_sensor_responses if str(r.integration_key) == integration_key), 
+                (r for r in mock_sensor_responses 
+                 if r.detail_attrs and r.detail_attrs.get('sensor_history_id') == str(sensor_history_id)), 
                 None
             )
             if not current_sensor_response:
@@ -102,10 +103,12 @@ class EntityVideoSensorHistoryView( HiGridView ):
         timeline_groups = VideoStreamBrowsingHelper.group_responses_by_time(mock_sensor_responses)
         
         # Find previous and next responses for navigation using helper
-        current_key = str(current_sensor_response.integration_key) if current_sensor_response else None
+        current_history_id = None
+        if current_sensor_response and current_sensor_response.detail_attrs:
+            current_history_id = int(current_sensor_response.detail_attrs.get('sensor_history_id', 0))
         prev_sensor_response, next_sensor_response = VideoStreamBrowsingHelper.find_navigation_items(
             mock_sensor_responses, 
-            current_key
+            current_history_id
         )
         
         request.view_parameters.view_type = ViewType.ENTITY_VIDEO_STREAM
