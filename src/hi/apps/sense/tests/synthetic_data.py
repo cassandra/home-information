@@ -5,9 +5,11 @@ tests and development scenarios.
 """
 
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
-from hi.apps.sense.models import Sensor
+from django.utils import timezone
+
+from hi.apps.sense.models import Sensor, SensorHistory
 from hi.apps.sense.transient_models import SensorResponse
 from hi.integrations.transient_models import IntegrationKey
 
@@ -172,3 +174,160 @@ class SensorHistorySyntheticData:
         mock_items.sort(key=lambda x: x['timestamp'], reverse=True)
         
         return mock_items
+    
+    @staticmethod
+    def create_timeline_preservation_test_data(sensor: Sensor) -> Tuple[List[SensorHistory], datetime, datetime]:
+        """
+        Create comprehensive test data for timeline preservation testing.
+        Returns actual SensorHistory records with defined window boundaries.
+        
+        Args:
+            sensor: The sensor to create test data for
+            
+        Returns:
+            Tuple of (sensor_history_records, window_start, window_end)
+        """
+        # Create timezone-aware base time
+        base_time = timezone.now().replace(minute=0, second=0, microsecond=0)
+        records = []
+        
+        # Create 10 records spanning 10 hours (1 per hour)
+        for hours_ago in range(10):
+            timestamp = base_time - timezone.timedelta(hours=hours_ago)
+            record = SensorHistory.objects.create(
+                sensor=sensor,
+                value='active' if hours_ago % 3 == 0 else 'idle',
+                response_datetime=timestamp,
+                has_video_stream=True,
+                details=f'{{"event_id": "{hours_ago}", "duration_seconds": "{60 + hours_ago * 15}"}}'
+            )
+            records.append(record)
+        
+        # Define window boundaries (hours 2-6 ago)
+        window_start = base_time - timezone.timedelta(hours=6)
+        window_end = base_time - timezone.timedelta(hours=2)
+        
+        return records, window_start, window_end
+    
+    @staticmethod
+    def create_timezone_aware_sensor_responses(
+        sensor: Sensor,
+        num_responses: int = 5,
+        start_time: Optional[datetime] = None,
+        time_interval_hours: int = 1
+    ) -> List[SensorResponse]:
+        """
+        Create timezone-aware sensor responses for testing datetime operations.
+        
+        Args:
+            sensor: The sensor to create responses for
+            num_responses: Number of responses to create
+            start_time: Starting timestamp (defaults to now)
+            time_interval_hours: Hours between each response
+            
+        Returns:
+            List of timezone-aware SensorResponse objects
+        """
+        if start_time is None:
+            start_time = timezone.now()
+        
+        # Ensure start_time is timezone-aware
+        if start_time.tzinfo is None:
+            start_time = timezone.make_aware(start_time)
+        
+        responses = []
+        for i in range(num_responses):
+            timestamp = start_time - timezone.timedelta(hours=i * time_interval_hours)
+            integration_key = IntegrationKey(
+                integration_id='test_integration',
+                integration_name=f'sensor_{sensor.id}_response_{i}'
+            )
+            
+            response = SensorResponse(
+                integration_key=integration_key,
+                value='active' if i % 2 == 0 else 'idle',
+                timestamp=timestamp,
+                sensor=sensor,
+                detail_attrs={
+                    'sensor_history_id': str(1000 + i),
+                    'duration_seconds': str(90 + i * 30),
+                    'details': f'Test event {i} - {timestamp.strftime("%Y-%m-%d %H:%M:%S %Z")}'
+                },
+                has_video_stream=True
+            )
+            responses.append(response)
+        
+        return responses
+    
+    @staticmethod
+    def create_window_boundary_test_scenario(
+        sensor: Sensor
+    ) -> Tuple[List[SensorHistory], SensorHistory, SensorHistory, datetime, datetime]:
+        """
+        Create a specific test scenario for window boundary testing.
+        Returns records inside window, outside window, and window boundaries.
+        
+        Args:
+            sensor: The sensor to create test data for
+            
+        Returns:
+            Tuple of (all_records, record_inside_window, record_outside_window, window_start, window_end)
+        """
+        base_time = timezone.now().replace(minute=0, second=0, microsecond=0)
+        all_records = []
+        
+        # Create records spanning 8 hours
+        for hours_ago in range(8):
+            timestamp = base_time - timezone.timedelta(hours=hours_ago)
+            record = SensorHistory.objects.create(
+                sensor=sensor,
+                value=f'event_{hours_ago}',
+                response_datetime=timestamp,
+                has_video_stream=True,
+                details=f'{{"hours_ago": "{hours_ago}"}}'
+            )
+            all_records.append(record)
+        
+        # Define window boundaries (3-5 hours ago)
+        window_start = base_time - timezone.timedelta(hours=5)
+        window_end = base_time - timezone.timedelta(hours=3)
+        
+        # Identify specific records for testing
+        record_inside_window = all_records[4]   # 4 hours ago - inside window
+        record_outside_window = all_records[1]  # 1 hour ago - outside window
+        
+        return all_records, record_inside_window, record_outside_window, window_start, window_end
+    
+    @staticmethod
+    def create_pagination_test_data(
+        sensor: Sensor,
+        total_records: int = 20,
+        window_size: int = 5
+    ) -> Tuple[List[SensorHistory], int]:
+        """
+        Create test data for pagination and window size testing.
+        
+        Args:
+            sensor: The sensor to create test data for
+            total_records: Total number of records to create
+            window_size: Expected window size for pagination tests
+            
+        Returns:
+            Tuple of (all_records, middle_record_index)
+        """
+        base_time = timezone.now().replace(minute=0, second=0, microsecond=0)
+        records = []
+        
+        for i in range(total_records):
+            timestamp = base_time - timezone.timedelta(hours=i)
+            record = SensorHistory.objects.create(
+                sensor=sensor,
+                value=f'record_{i}',
+                response_datetime=timestamp,
+                has_video_stream=True,
+                details=f'{{"record_index": "{i}"}}'
+            )
+            records.append(record)
+        
+        middle_index = total_records // 2
+        return records, middle_index
