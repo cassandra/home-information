@@ -3,7 +3,7 @@
 <div class="entity-video-sensor-history">
     <!-- Header with entity name and mode switch -->
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5>{{ entity.name }} - Sensor History</h5>
+        <h5>{{ entity.name }} - Sensor Response History</h5>
         <a href="{% url 'console_entity_video_stream' entity.id %}" 
            class="btn btn-sm btn-outline-primary"
            data-async="#main-content">
@@ -25,18 +25,18 @@
                     </div>
                     
                     <div class="timeline-items">
-                        {% for item in group.items %}
-                        <div class="timeline-item {% if item.id == current_history.id %}active{% endif %}">
-                            <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id item.id %}"
+                        {% for response in group.items %}
+                        <div class="timeline-item {% if response.integration_key == current_sensor_response.integration_key %}active{% endif %}">
+                            <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id response.integration_key %}"
                                data-async="#main-content"
                                class="text-decoration-none">
                                 <div class="d-flex justify-content-between">
-                                    <span class="time">{{ item.timestamp|date:"g:i A" }}</span>
-                                    <span class="badge {% if item.value == 'active' %}badge-warning{% else %}badge-secondary{% endif %}">
-                                        {{ item.value }}
+                                    <span class="time">{{ response.timestamp|date:"g:i A" }}</span>
+                                    <span class="badge {% if response.value == 'active' %}badge-warning{% else %}badge-secondary{% endif %}">
+                                        {{ response.value }}
                                     </span>
                                 </div>
-                                {% if item.id == current_history.id %}
+                                {% if response.integration_key == current_sensor_response.integration_key %}
                                 <small class="text-muted">→ Currently viewing</small>
                                 {% endif %}
                             </a>
@@ -45,78 +45,84 @@
                     </div>
                 </div>
                 {% empty %}
-                <p class="text-muted">No sensor history available</p>
+                <p class="text-muted">No sensor responses available</p>
                 {% endfor %}
             </div>
         </div>
 
         <!-- Video and details area -->
         <div class="col-md-9">
-            {% if current_history %}
+            {% if current_sensor_response %}
             <div class="video-detail-container">
-                <!-- Event header -->
-                <div class="event-header mb-3">
-                    <h6>{{ current_history.details }}</h6>
+                <!-- Response header -->
+                <div class="response-header mb-3">
+                    <h6>{{ current_sensor_response.detail_attrs.details }}</h6>
                     <div class="text-muted">
-                        {{ current_history.timestamp|date:"F j, Y g:i A" }}
+                        {{ current_sensor_response.timestamp|date:"F j, Y g:i A" }}
                     </div>
                 </div>
 
                 <!-- Video display area -->
                 <div class="video-container mb-3">
-                    <!-- In Phase 1, using placeholder -->
+                    {% sensor_response_video_stream current_sensor_response as video_url %}
+                    {% if video_url %}
+                    <img class="img-fluid" src="{{ video_url }}" alt="Sensor Response Video Stream">
+                    {% else %}
+                    <!-- Fallback for Phase 1 demonstration -->
                     <div class="bg-secondary text-white d-flex align-items-center justify-content-center" 
                          style="height: 400px;">
                         <div class="text-center">
                             <h4>Video Stream Placeholder</h4>
-                            <p>Sensor History ID: {{ current_history.id }}</p>
-                            <p>Duration: {{ current_history.duration_seconds }} seconds</p>
-                            <small>Phase 2 will display: {{ current_history.mock_video_url }}</small>
+                            <p>Integration Key: {{ current_sensor_response.integration_key }}</p>
+                            <p>Duration: {{ current_sensor_response.detail_attrs.duration_seconds }} seconds</p>
+                            <small>Phase 2 will integrate with video stream gateway</small>
                         </div>
                     </div>
+                    {% endif %}
                 </div>
 
-                <!-- Event details -->
-                <div class="event-details">
+                <!-- Response details -->
+                <div class="response-details">
                     <div class="row">
                         <div class="col-sm-6">
                             <strong>Sensor:</strong> {{ sensor.name }}<br>
                             <strong>State Type:</strong> {{ sensor.entity_state.entity_state_type }}<br>
-                            <strong>Value:</strong> {{ current_history.value }}
+                            <strong>Value:</strong> {{ current_sensor_response.value }}
                         </div>
                         <div class="col-sm-6">
-                            <strong>Duration:</strong> {{ current_history.duration_seconds }} seconds<br>
+                            <strong>Duration:</strong> {{ current_sensor_response.detail_attrs.duration_seconds }} seconds<br>
                             <strong>Entity Type:</strong> {{ entity.entity_type }}<br>
+                            <strong>Has Video:</strong> {{ current_sensor_response.has_video_stream|yesno:"Yes,No" }}
                         </div>
                     </div>
                 </div>
 
                 <!-- Navigation buttons -->
                 <div class="navigation-buttons mt-3 d-flex justify-content-between">
-                    {% if prev_history %}
-                    <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id prev_history.id %}"
+                    {% if prev_sensor_response %}
+                    <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id prev_sensor_response.integration_key %}"
                        class="btn btn-outline-secondary"
                        data-async="#main-content">
-                        ← Previous Event
+                        ← Previous Response
                     </a>
                     {% else %}
-                    <button class="btn btn-outline-secondary" disabled>← Previous Event</button>
+                    <button class="btn btn-outline-secondary" disabled>← Previous Response</button>
                     {% endif %}
 
-                    {% if next_history %}
-                    <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id next_history.id %}"
+                    {% if next_sensor_response %}
+                    <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id next_sensor_response.integration_key %}"
                        class="btn btn-outline-secondary"
                        data-async="#main-content">
-                        Next Event →
+                        Next Response →
                     </a>
                     {% else %}
-                    <button class="btn btn-outline-secondary" disabled>Next Event →</button>
+                    <button class="btn btn-outline-secondary" disabled>Next Response →</button>
                     {% endif %}
                 </div>
             </div>
             {% else %}
             <div class="alert alert-info">
-                No sensor history available for this sensor.
+                No sensor responses available for this sensor.
             </div>
             {% endif %}
         </div>

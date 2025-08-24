@@ -62,7 +62,7 @@ class EntityVideoSensorHistoryView( HiGridView ):
     def get_main_template_context( self, request, *args, **kwargs ):
         entity_id = kwargs.get('entity_id')
         sensor_id = kwargs.get('sensor_id')
-        sensor_history_id = kwargs.get('sensor_history_id')
+        integration_key = kwargs.get('integration_key')
         
         # Get the entity
         try:
@@ -80,29 +80,32 @@ class EntityVideoSensorHistoryView( HiGridView ):
         except Sensor.DoesNotExist:
             raise Http404('Sensor not found for this entity.')
         
-        # For Phase 1: Create mock sensor history data using synthetic data generator
-        mock_history_items = SensorHistorySyntheticData.create_mock_sensor_history(
+        # For Phase 1: Create mock sensor response data using synthetic data generator
+        mock_sensor_responses = SensorHistorySyntheticData.create_mock_sensor_responses(
             sensor=sensor,
-            current_id=sensor_history_id
+            current_id=integration_key
         )
         
-        # Determine the current sensor history item to display
-        if sensor_history_id:
-            current_history = next((h for h in mock_history_items if h['id'] == int(sensor_history_id)), None)
-            if not current_history:
-                current_history = mock_history_items[0] if mock_history_items else None
+        # Determine the current sensor response to display
+        if integration_key:
+            current_sensor_response = next(
+                (r for r in mock_sensor_responses if str(r.integration_key) == integration_key), 
+                None
+            )
+            if not current_sensor_response:
+                current_sensor_response = mock_sensor_responses[0] if mock_sensor_responses else None
         else:
             # Default to most recent
-            current_history = mock_history_items[0] if mock_history_items else None
+            current_sensor_response = mock_sensor_responses[0] if mock_sensor_responses else None
         
-        # Group history items by time period using helper
-        timeline_groups = VideoStreamBrowsingHelper.group_history_by_time(mock_history_items)
+        # Group sensor responses by time period using helper
+        timeline_groups = VideoStreamBrowsingHelper.group_responses_by_time(mock_sensor_responses)
         
-        # Find previous and next items for navigation using helper
-        current_id = current_history['id'] if current_history else None
-        prev_history, next_history = VideoStreamBrowsingHelper.find_navigation_items(
-            mock_history_items, 
-            current_id
+        # Find previous and next responses for navigation using helper
+        current_key = str(current_sensor_response.integration_key) if current_sensor_response else None
+        prev_sensor_response, next_sensor_response = VideoStreamBrowsingHelper.find_navigation_items(
+            mock_sensor_responses, 
+            current_key
         )
         
         request.view_parameters.view_type = ViewType.ENTITY_VIDEO_STREAM
@@ -111,11 +114,11 @@ class EntityVideoSensorHistoryView( HiGridView ):
         return {
             'entity': entity,
             'sensor': sensor,
-            'current_history': current_history,
+            'current_sensor_response': current_sensor_response,
             'timeline_groups': timeline_groups,
-            'prev_history': prev_history,
-            'next_history': next_history,
-            'sensor_history_items': mock_history_items,
+            'prev_sensor_response': prev_sensor_response,
+            'next_sensor_response': next_sensor_response,
+            'sensor_responses': mock_sensor_responses,
         }
 
 

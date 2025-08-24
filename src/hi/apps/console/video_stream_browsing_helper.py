@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor
+from hi.apps.sense.transient_models import SensorResponse
 
 from .console_manager import ConsoleManager
 
@@ -70,18 +71,18 @@ class VideoStreamBrowsingHelper:
         return None
     
     @classmethod
-    def group_history_by_time(cls, history_items: List[Dict]) -> List[Dict]:
+    def group_responses_by_time(cls, sensor_responses: List[SensorResponse]) -> List[Dict]:
         """
-        Group history items by time period for timeline display.
+        Group sensor responses by time period for timeline display.
         Uses adaptive grouping - hourly if many events in a day, otherwise daily.
         
         Args:
-            history_items: List of history item dictionaries with 'timestamp' field
+            sensor_responses: List of SensorResponse objects
             
         Returns:
             List of grouped timeline items
         """
-        if not history_items:
+        if not sensor_responses:
             return []
         
         groups = []
@@ -91,72 +92,75 @@ class VideoStreamBrowsingHelper:
         
         # Determine if we should group by hour (if many events in current day)
         today = datetime.now().date()
-        today_count = sum(1 for h in history_items if h['timestamp'].date() == today)
+        today_count = sum(1 for response in sensor_responses if response.timestamp.date() == today)
         use_hourly = today_count > 10
         
-        for item in history_items:
-            item_date = item['timestamp'].date()
-            item_hour = item['timestamp'].hour
+        for response in sensor_responses:
+            response_date = response.timestamp.date()
+            response_hour = response.timestamp.hour
             
             # Create new group if needed
-            if use_hourly and item_date == today:
+            if use_hourly and response_date == today:
                 # Group by hour for today if many events
-                if current_date != item_date or current_hour != item_hour:
-                    current_date = item_date
-                    current_hour = item_hour
+                if current_date != response_date or current_hour != response_hour:
+                    current_date = response_date
+                    current_hour = response_hour
                     current_group = {
-                        'label': f"{item['timestamp'].strftime('%I:00 %p')}",
-                        'date': item_date,
+                        'label': f"{response.timestamp.strftime('%I:00 %p')}",
+                        'date': response_date,
                         'items': []
                     }
                     groups.append(current_group)
             else:
                 # Group by day
-                if current_date != item_date:
-                    current_date = item_date
+                if current_date != response_date:
+                    current_date = response_date
                     current_hour = None
-                    if item_date == today:
+                    if response_date == today:
                         label = "Today"
-                    elif item_date == today - timedelta(days=1):
+                    elif response_date == today - timedelta(days=1):
                         label = "Yesterday"
                     else:
-                        label = item['timestamp'].strftime('%B %d')
+                        label = response.timestamp.strftime('%B %d')
                     
                     current_group = {
                         'label': label,
-                        'date': item_date,
+                        'date': response_date,
                         'items': []
                     }
                     groups.append(current_group)
             
             if current_group:
-                current_group['items'].append(item)
+                current_group['items'].append(response)
         
         return groups
     
     @classmethod
-    def find_navigation_items(cls, history_items: List[Dict], current_id: int) -> tuple:
+    def find_navigation_items(cls, sensor_responses: List[SensorResponse], current_integration_key: str) -> tuple:
         """
-        Find previous and next history items for navigation.
+        Find previous and next sensor responses for navigation.
         
         Args:
-            history_items: List of history items
-            current_id: ID of current item
+            sensor_responses: List of SensorResponse objects
+            current_integration_key: Integration key string of current response
             
         Returns:
-            Tuple of (previous_item, next_item), either can be None
+            Tuple of (previous_response, next_response), either can be None
         """
-        if not history_items or not current_id:
+        if not sensor_responses or not current_integration_key:
             return (None, None)
         
-        current_item = next((h for h in history_items if h.get('id') == current_id), None)
-        if not current_item:
+        current_response = next(
+            (r for r in sensor_responses if str(r.integration_key) == current_integration_key), 
+            None
+        )
+        if not current_response:
             return (None, None)
         
         try:
-            current_idx = history_items.index(current_item)
-            prev_item = history_items[current_idx - 1] if current_idx > 0 else None
-            next_item = history_items[current_idx + 1] if current_idx < len(history_items) - 1 else None
-            return (prev_item, next_item)
+            current_idx = sensor_responses.index(current_response)
+            prev_response = sensor_responses[current_idx - 1] if current_idx > 0 else None
+            next_response = sensor_responses[current_idx + 1] if current_idx < len(sensor_responses) - 1 else None
+            return (prev_response, next_response)
         except (ValueError, IndexError):
             return (None, None)

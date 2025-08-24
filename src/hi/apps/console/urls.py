@@ -14,7 +14,7 @@ urlpatterns = [
              views.EntityVideoSensorHistoryView.as_view(), 
              name='console_entity_video_sensor_history'),
 
-    re_path( r'^entity/video-sensor-history/(?P<entity_id>\d+)/(?P<sensor_id>\d+)/(?P<sensor_history_id>\d+)/$', 
+    re_path( r'^entity/video-sensor-history/(?P<entity_id>\d+)/(?P<sensor_id>\d+)/(?P<integration_key>.+)/$', 
              views.EntityVideoSensorHistoryView.as_view(), 
              name='console_entity_video_sensor_history_detail'),
 

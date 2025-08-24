@@ -8,32 +8,34 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from hi.apps.sense.models import Sensor
+from hi.apps.sense.transient_models import SensorResponse
+from hi.integrations.transient_models import IntegrationKey
 
 
 class SensorHistorySyntheticData:
-    """Generate synthetic sensor history data for testing and development."""
+    """Generate synthetic sensor response data for testing and development."""
     
     @staticmethod
-    def create_mock_sensor_history(
+    def create_mock_sensor_responses(
         sensor: Sensor,
         num_items: int = 15,
         days_span: int = 3,
         current_id: Optional[int] = None
-    ) -> List[Dict]:
+    ) -> List[SensorResponse]:
         """
-        Create mock sensor history data for demonstration and testing.
+        Create mock sensor response data for demonstration and testing.
         
         Args:
-            sensor: The sensor to create history for
-            num_items: Number of history items to create
-            days_span: Number of days to span the history over
+            sensor: The sensor to create responses for
+            num_items: Number of response items to create
+            days_span: Number of days to span the responses over
             current_id: Optional ID to include in the generated items
             
         Returns:
-            List of mock sensor history dictionaries
+            List of SensorResponse objects
         """
         now = datetime.now()
-        mock_items = []
+        mock_responses = []
         
         for i in range(num_items):
             # Create timestamps with varying intervals to simulate realistic data
@@ -51,19 +53,32 @@ class SensorHistorySyntheticData:
             # Simulate different activity patterns
             is_active = i % 3 == 0  # Every third item is "active"
             
-            mock_items.append({
-                'id': 1000 + i,  # Mock IDs starting from 1000
-                'sensor': sensor,
-                'value': 'active' if is_active else 'idle',
-                'timestamp': timestamp,
-                'duration_seconds': 60 + (i * 15),  # Varying durations
-                'has_video_stream': True,
-                'mock_video_url': f'/static/mock/video_{i}.mp4',  # Placeholder URL
+            # Create mock integration key
+            integration_key = IntegrationKey(
+                integration_id='mock_integration',
+                integration_name=f'sensor_{sensor.id}_response_{i}'
+            )
+            
+            # Create additional attributes for detail_attrs
+            detail_attrs = {
+                'mock_id': str(1000 + i),  # Mock ID for compatibility
+                'duration_seconds': str(60 + (i * 15)),  # Varying durations
                 'details': f'Motion detected in {sensor.entity_state.entity.name}' if is_active else 'No activity',
-                'response_datetime': timestamp,  # For compatibility with SensorHistory model
-            })
+            }
+            
+            sensor_response = SensorResponse(
+                integration_key=integration_key,
+                value='active' if is_active else 'idle',
+                timestamp=timestamp,
+                sensor=sensor,
+                detail_attrs=detail_attrs,
+                source_image_url=f'/static/mock/video_{i}.mp4' if is_active else None,
+                has_video_stream=True,
+            )
+            
+            mock_responses.append(sensor_response)
         
-        return mock_items
+        return mock_responses
     
     @staticmethod
     def create_mock_sensor_response(
