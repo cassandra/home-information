@@ -1,7 +1,42 @@
 {% load video_tags %}
-<div class="h6">{{ entity.name }}</div>
-{% if entity.has_video_stream %}
-{% include "console/panes/entity_video_stream.html" with entity=entity %}
-{% else %}
-<div class="text-muted">Video stream not available.</div>
-{% endif %}
+<div class="entity-video-pane">
+    <!-- Header with entity name and mode switching -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6>{{ entity.name }}</h6>
+        <div class="btn-group btn-group-sm" role="group">
+            <span class="btn btn-primary">Current Stream</span>
+            {% if video_sensor %}
+            <a href="{% url 'console_entity_video_sensor_history' entity.id video_sensor.id %}" 
+               class="btn btn-outline-primary"
+               data-async="#main-content">
+                Browse History
+            </a>
+            {% else %}
+            <button class="btn btn-outline-secondary" disabled title="No video sensors available">
+                Browse History
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Show last activity info if available (mock for Phase 1) -->
+    {% if video_sensor %}
+    <div class="alert alert-info d-flex justify-content-between align-items-center">
+        <div>
+            <strong>Last Activity:</strong> Motion detected - 15 minutes ago
+        </div>
+        <a href="{% url 'console_entity_video_sensor_history' entity.id video_sensor.id %}" 
+           class="btn btn-sm btn-outline-info"
+           data-async="#main-content">
+            View Last Event
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Current video stream -->
+    {% if entity.has_video_stream %}
+    {% include "console/panes/entity_video_stream.html" with entity=entity %}
+    {% else %}
+    <div class="text-muted">Video stream not available.</div>
+    {% endif %}
+</div>

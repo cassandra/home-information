@@ -10,6 +10,14 @@ urlpatterns = [
              views.EntityVideoStreamView.as_view(), 
              name='console_entity_video_stream'),
 
+    re_path( r'^entity/video-sensor-history/(?P<entity_id>\d+)/(?P<sensor_id>\d+)/$', 
+             views.EntityVideoSensorHistoryView.as_view(), 
+             name='console_entity_video_sensor_history'),
+
+    re_path( r'^entity/video-sensor-history/(?P<entity_id>\d+)/(?P<sensor_id>\d+)/(?P<sensor_history_id>\d+)/$', 
+             views.EntityVideoSensorHistoryView.as_view(), 
+             name='console_entity_video_sensor_history_detail'),
+
     re_path( r'^lock$', 
              views.ConsoleLockView.as_view(), 
              name='console_lock'),

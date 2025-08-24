@@ -1,0 +1,167 @@
+{% load video_tags %}
+
+<div class="entity-video-sensor-history">
+    <!-- Header with entity name and mode switch -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5>{{ entity.name }} - Sensor History</h5>
+        <a href="{% url 'console_entity_video_stream' entity.id %}" 
+           class="btn btn-sm btn-outline-primary"
+           data-async="#main-content">
+            Back to Current Stream
+        </a>
+    </div>
+
+    <!-- Main content area split into timeline and video -->
+    <div class="row">
+        <!-- Timeline sidebar -->
+        <div class="col-md-3">
+            <div class="timeline-container">
+                <h6>Activity Timeline</h6>
+                
+                {% for group in timeline_groups %}
+                <div class="timeline-group mb-3">
+                    <div class="timeline-group-label font-weight-bold">
+                        {{ group.label }}
+                    </div>
+                    
+                    <div class="timeline-items">
+                        {% for item in group.items %}
+                        <div class="timeline-item {% if item.id == current_history.id %}active{% endif %}">
+                            <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id item.id %}"
+                               data-async="#main-content"
+                               class="text-decoration-none">
+                                <div class="d-flex justify-content-between">
+                                    <span class="time">{{ item.timestamp|date:"g:i A" }}</span>
+                                    <span class="badge {% if item.value == 'active' %}badge-warning{% else %}badge-secondary{% endif %}">
+                                        {{ item.value }}
+                                    </span>
+                                </div>
+                                {% if item.id == current_history.id %}
+                                <small class="text-muted">→ Currently viewing</small>
+                                {% endif %}
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted">No sensor history available</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Video and details area -->
+        <div class="col-md-9">
+            {% if current_history %}
+            <div class="video-detail-container">
+                <!-- Event header -->
+                <div class="event-header mb-3">
+                    <h6>{{ current_history.details }}</h6>
+                    <div class="text-muted">
+                        {{ current_history.timestamp|date:"F j, Y g:i A" }}
+                    </div>
+                </div>
+
+                <!-- Video display area -->
+                <div class="video-container mb-3">
+                    <!-- In Phase 1, using placeholder -->
+                    <div class="bg-secondary text-white d-flex align-items-center justify-content-center" 
+                         style="height: 400px;">
+                        <div class="text-center">
+                            <h4>Video Stream Placeholder</h4>
+                            <p>Sensor History ID: {{ current_history.id }}</p>
+                            <p>Duration: {{ current_history.duration_seconds }} seconds</p>
+                            <small>Phase 2 will display: {{ current_history.mock_video_url }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event details -->
+                <div class="event-details">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <strong>Sensor:</strong> {{ sensor.name }}<br>
+                            <strong>State Type:</strong> {{ sensor.entity_state.entity_state_type }}<br>
+                            <strong>Value:</strong> {{ current_history.value }}
+                        </div>
+                        <div class="col-sm-6">
+                            <strong>Duration:</strong> {{ current_history.duration_seconds }} seconds<br>
+                            <strong>Entity Type:</strong> {{ entity.entity_type }}<br>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation buttons -->
+                <div class="navigation-buttons mt-3 d-flex justify-content-between">
+                    {% if prev_history %}
+                    <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id prev_history.id %}"
+                       class="btn btn-outline-secondary"
+                       data-async="#main-content">
+                        ← Previous Event
+                    </a>
+                    {% else %}
+                    <button class="btn btn-outline-secondary" disabled>← Previous Event</button>
+                    {% endif %}
+
+                    {% if next_history %}
+                    <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id next_history.id %}"
+                       class="btn btn-outline-secondary"
+                       data-async="#main-content">
+                        Next Event →
+                    </a>
+                    {% else %}
+                    <button class="btn btn-outline-secondary" disabled>Next Event →</button>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                No sensor history available for this sensor.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* Basic styling for the sensor history view */
+.timeline-container {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.timeline-item {
+    padding: 8px;
+    margin-bottom: 4px;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+}
+
+.timeline-item:hover {
+    background-color: #f8f9fa;
+}
+
+.timeline-item.active {
+    background-color: #e9ecef;
+    border-left-color: #007bff;
+}
+
+.timeline-group-label {
+    color: #495057;
+    padding: 4px 0;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 8px;
+}
+
+.video-container {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.event-details {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+}
+</style>
