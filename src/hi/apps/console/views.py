@@ -1,11 +1,10 @@
-from datetime import datetime, timedelta
 from django.core.exceptions import BadRequest
 from django.http import Http404
 from django.views.generic import View
 
 from hi.apps.entity.models import Entity
-from hi.apps.entity.enums import EntityStateType
 from hi.apps.sense.models import Sensor
+from hi.apps.sense.tests.synthetic_data import SensorHistorySyntheticData
 from hi.integrations.integration_manager import IntegrationManager
 
 from hi.enums import ViewType
@@ -14,6 +13,7 @@ from hi.hi_grid_view import HiGridView
 
 from .constants import ConsoleConstants
 from .console_helper import ConsoleSettingsHelper
+from .video_stream_browsing_helper import VideoStreamBrowsingHelper
 
 
 class EntityVideoStreamView( HiGridView ):
@@ -43,24 +43,7 @@ class EntityVideoStreamView( HiGridView ):
             raise BadRequest( 'Video stream is not currently available.' )
 
         # Find the first sensor with video capability for history browsing
-        # Using priority order to select the best sensor
-        video_sensor = None
-        for state_type in EntityVideoSensorHistoryView.SENSOR_STATE_TYPE_PRIORITY:
-            for state in entity.states.filter(entity_state_type_str=str(state_type)):
-                sensor = state.sensors.filter(provides_video_stream=True).first()
-                if sensor:
-                    video_sensor = sensor
-                    break
-            if video_sensor:
-                break
-        
-        # If no prioritized sensor found, just get any video-capable sensor
-        if not video_sensor:
-            for state in entity.states.all():
-                sensor = state.sensors.filter(provides_video_stream=True).first()
-                if sensor:
-                    video_sensor = sensor
-                    break
+        video_sensor = VideoStreamBrowsingHelper.find_video_sensor_for_entity(entity)
         
         request.view_parameters.view_type = ViewType.ENTITY_VIDEO_STREAM
         request.view_parameters.to_session( request )
@@ -72,14 +55,6 @@ class EntityVideoStreamView( HiGridView ):
 
 class EntityVideoSensorHistoryView( HiGridView ):
     """View for browsing sensor history records with video streams."""
-    
-    # Priority order for selecting default sensor with video capability
-    SENSOR_STATE_TYPE_PRIORITY = [
-        EntityStateType.MOVEMENT,
-        EntityStateType.PRESENCE,
-        EntityStateType.OPEN_CLOSE,
-        EntityStateType.ON_OFF,
-    ]
     
     def get_main_template_name( self ) -> str:
         return 'console/panes/entity_video_sensor_history.html'
@@ -105,8 +80,11 @@ class EntityVideoSensorHistoryView( HiGridView ):
         except Sensor.DoesNotExist:
             raise Http404('Sensor not found for this entity.')
         
-        # For Phase 1: Create mock sensor history data
-        mock_history_items = self._create_mock_sensor_history( sensor, sensor_history_id )
+        # For Phase 1: Create mock sensor history data using synthetic data generator
+        mock_history_items = SensorHistorySyntheticData.create_mock_sensor_history(
+            sensor=sensor,
+            current_id=sensor_history_id
+        )
         
         # Determine the current sensor history item to display
         if sensor_history_id:
@@ -117,18 +95,15 @@ class EntityVideoSensorHistoryView( HiGridView ):
             # Default to most recent
             current_history = mock_history_items[0] if mock_history_items else None
         
-        # Group history items by time period (hourly if >10 in a day, otherwise daily)
-        timeline_groups = self._group_history_by_time( mock_history_items )
+        # Group history items by time period using helper
+        timeline_groups = VideoStreamBrowsingHelper.group_history_by_time(mock_history_items)
         
-        # Find previous and next items for navigation
-        prev_history = None
-        next_history = None
-        if current_history:
-            current_idx = mock_history_items.index(current_history)
-            if current_idx > 0:
-                prev_history = mock_history_items[current_idx - 1]
-            if current_idx < len(mock_history_items) - 1:
-                next_history = mock_history_items[current_idx + 1]
+        # Find previous and next items for navigation using helper
+        current_id = current_history['id'] if current_history else None
+        prev_history, next_history = VideoStreamBrowsingHelper.find_navigation_items(
+            mock_history_items, 
+            current_id
+        )
         
         request.view_parameters.view_type = ViewType.ENTITY_VIDEO_STREAM
         request.view_parameters.to_session( request )
@@ -142,94 +117,8 @@ class EntityVideoSensorHistoryView( HiGridView ):
             'next_history': next_history,
             'sensor_history_items': mock_history_items,
         }
-    
-    def _create_mock_sensor_history( self, sensor, current_id=None ):
-        """Create mock sensor history data for Phase 1 demonstration."""
-        now = datetime.now()
-        mock_items = []
-        
-        # Create 15 mock history items over the past 3 days
-        for i in range(15):
-            # Create timestamps with varying intervals
-            if i < 5:
-                # Recent items within last few hours
-                timestamp = now - timedelta(hours=i * 2, minutes=i * 15)
-            elif i < 10:
-                # Yesterday's items
-                timestamp = now - timedelta(days=1, hours=i - 5, minutes=i * 10)
-            else:
-                # Older items
-                timestamp = now - timedelta(days=2 + (i - 10) * 0.5, hours=(i - 10) * 3)
-            
-            mock_items.append({
-                'id': 1000 + i,  # Mock IDs
-                'sensor': sensor,
-                'value': 'active' if i % 3 == 0 else 'idle',
-                'timestamp': timestamp,
-                'duration_seconds': 60 + (i * 15),  # Mock duration
-                'has_video_stream': True,
-                'mock_video_url': f'/static/mock/video_{i}.mp4',  # Placeholder URL
-                'details': f'Motion detected in {sensor.entity_state.entity.name}' if i % 3 == 0 else 'No activity'
-            })
-        
-        return mock_items
-    
-    def _group_history_by_time( self, history_items ):
-        """Group history items by time period for timeline display."""
-        if not history_items:
-            return []
-        
-        groups = []
-        current_date = None
-        current_hour = None
-        current_group = None
-        
-        # Determine if we should group by hour (if many events) or by day
-        today = datetime.now().date()
-        today_count = sum(1 for h in history_items if h['timestamp'].date() == today)
-        use_hourly = today_count > 10
-        
-        for item in history_items:
-            item_date = item['timestamp'].date()
-            item_hour = item['timestamp'].hour
-            
-            # Create new group if needed
-            if use_hourly and item_date == today:
-                # Group by hour for today if many events
-                if current_date != item_date or current_hour != item_hour:
-                    current_date = item_date
-                    current_hour = item_hour
-                    current_group = {
-                        'label': f"{item['timestamp'].strftime('%I:00 %p')}",
-                        'date': item_date,
-                        'items': []
-                    }
-                    groups.append(current_group)
-            else:
-                # Group by day
-                if current_date != item_date:
-                    current_date = item_date
-                    current_hour = None
-                    if item_date == today:
-                        label = "Today"
-                    elif item_date == today - timedelta(days=1):
-                        label = "Yesterday"
-                    else:
-                        label = item['timestamp'].strftime('%B %d')
-                    
-                    current_group = {
-                        'label': label,
-                        'date': item_date,
-                        'items': []
-                    }
-                    groups.append(current_group)
-            
-            if current_group:
-                current_group['items'].append(item)
-        
-        return groups
 
-        
+
 class ConsoleLockView( View ):
 
     def post( self, request, *args, **kwargs ):
