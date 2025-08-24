@@ -1,10 +1,12 @@
 {% load video_tags %}
 <div>
-  {% sensor_response_video_stream sensor_response as video_url %}
-  {% if video_url %}
-  <div>
-    <img class="img-fluid" src="{{ video_url }}" alt="{{ alarm.title }}">
-  </div>
+  {% if show_video_inline %}
+    {% sensor_response_video_stream sensor_response as video_url %}
+    {% if video_url %}
+    <div class="mb-2">
+      <img class="img-fluid" src="{{ video_url }}" alt="{{ alarm.title }}">
+    </div>
+    {% endif %}
   {% endif %}
   <div>
     {% for label, value in sensor_response.detail_attrs.items %}

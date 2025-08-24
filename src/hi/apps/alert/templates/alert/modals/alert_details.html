@@ -42,8 +42,9 @@
   </div>
 </div>
 
-<!-- Visual Content (if available) -->
-{% if alert_visual_content and alert_visual_content.sensor_response %}
+<!-- Visual Content (Smart Rendering) -->
+{% if video_source_count == 1 and alert_visual_content and alert_visual_content.sensor_response %}
+<!-- Show single video at alert level to avoid duplication -->
 {% sensor_response_video_stream alert_visual_content.sensor_response as video_url %}
 {% if video_url %}
 <div class="row mb-3">
@@ -64,7 +65,46 @@
   </div>
 </div>
 {% endif %}
+{% elif video_source_count >= 4 %}
+<!-- Show collapsible video list for many videos -->
+<div class="row mb-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h6 class="mb-0">
+          <a class="text-white text-decoration-none" data-toggle="collapse" href="#videoSources" 
+             role="button" aria-expanded="false" aria-controls="videoSources">
+            <span class="mr-2">&#128247;</span>Visual Content ({{ video_source_count }} sources)
+            <span class="ml-2">&#9654;</span>
+          </a>
+        </h6>
+      </div>
+      <div class="collapse" id="videoSources">
+        <div class="card-body">
+          <div class="row">
+            {% for video_source in all_video_sources %}
+            <div class="col-md-6 mb-3">
+              {% sensor_response_video_stream video_source.sensor_response as video_url %}
+              {% if video_url %}
+              <div class="card">
+                <div class="card-header py-1">
+                  <small class="text-muted">Source {{ video_source.index }} - {{ video_source.alarm.timestamp|localtime|date:"M j H:i" }}</small>
+                </div>
+                <div class="card-body p-2">
+                  <img class="img-fluid" src="{{ video_url }}" alt="Source {{ video_source.index }}">
+                </div>
+              </div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endif %}
+<!-- For 2-3 video sources, they will be shown inline at sensor response level -->
 
 <!-- Recent Alarm Details -->
 <div class="row mb-3">

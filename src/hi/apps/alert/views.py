@@ -46,10 +46,18 @@ class AlertDetailsView( HiModalView, AlertMixin ):
 
         # Prepare visual content data for template
         visual_content = alert.get_first_visual_content()
+        all_video_sources = alert.get_all_video_sources()
+        video_count = alert.get_video_source_count()
 
+        # Determine video rendering strategy
+        show_video_inline = video_count >= 2 and video_count <= 3
+        
         context = {
             'alert': alert,
             'alert_visual_content': visual_content,
+            'all_video_sources': all_video_sources,
+            'video_source_count': video_count,
+            'show_video_inline': show_video_inline,
         }
         return self.modal_response( request, context )
         
