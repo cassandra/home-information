@@ -27,7 +27,11 @@
                     <div class="timeline-items">
                         {% for response in group.items %}
                         <div class="timeline-item {% if response.detail_attrs.sensor_history_id == sensor_history_data.current_sensor_response.detail_attrs.sensor_history_id %}active{% endif %}">
+                            {% if sensor_history_data.window_start_timestamp and sensor_history_data.window_end_timestamp %}
+                            <a href="{% url 'console_entity_video_sensor_history_detail_with_context' entity.id sensor.id response.detail_attrs.sensor_history_id sensor_history_data.window_start_timestamp|date:'U' sensor_history_data.window_end_timestamp|date:'U' %}"
+                            {% else %}
                             <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id response.detail_attrs.sensor_history_id %}"
+                            {% endif %}
                                data-async="#main-content"
                                class="text-decoration-none">
                                 <div class="d-flex justify-content-between">
@@ -100,7 +104,11 @@
                 <!-- Navigation buttons -->
                 <div class="navigation-buttons mt-3 d-flex justify-content-between">
                     {% if sensor_history_data.prev_sensor_response %}
+                    {% if sensor_history_data.window_start_timestamp and sensor_history_data.window_end_timestamp %}
+                    <a href="{% url 'console_entity_video_sensor_history_detail_with_context' entity.id sensor.id sensor_history_data.prev_sensor_response.detail_attrs.sensor_history_id sensor_history_data.window_start_timestamp|date:'U' sensor_history_data.window_end_timestamp|date:'U' %}"
+                    {% else %}
                     <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id sensor_history_data.prev_sensor_response.detail_attrs.sensor_history_id %}"
+                    {% endif %}
                        class="btn btn-outline-secondary"
                        data-async="#main-content">
                         ← Previous Response
@@ -110,7 +118,11 @@
                     {% endif %}
 
                     {% if sensor_history_data.next_sensor_response %}
+                    {% if sensor_history_data.window_start_timestamp and sensor_history_data.window_end_timestamp %}
+                    <a href="{% url 'console_entity_video_sensor_history_detail_with_context' entity.id sensor.id sensor_history_data.next_sensor_response.detail_attrs.sensor_history_id sensor_history_data.window_start_timestamp|date:'U' sensor_history_data.window_end_timestamp|date:'U' %}"
+                    {% else %}
                     <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id sensor_history_data.next_sensor_response.detail_attrs.sensor_history_id %}"
+                    {% endif %}
                        class="btn btn-outline-secondary"
                        data-async="#main-content">
                         Next Response →

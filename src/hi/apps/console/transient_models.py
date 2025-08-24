@@ -45,3 +45,5 @@ class EntitySensorHistoryData:
     pagination_metadata: Dict
     prev_sensor_response: Optional[SensorResponse]
     next_sensor_response: Optional[SensorResponse]
+    window_start_timestamp: Optional[datetime] = None
+    window_end_timestamp: Optional[datetime] = None

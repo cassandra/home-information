@@ -6,6 +6,7 @@ and sensor selection for video streams.
 
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
+from django.utils import timezone
 
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor, SensorHistory
@@ -92,7 +93,10 @@ class VideoStreamBrowsingHelper:
         return sensor_response
     
     @classmethod
-    def get_timeline_window(cls, sensor: Sensor, center_record: SensorHistory = None, window_size: int = 50):
+    def get_timeline_window(
+            cls, sensor: Sensor, center_record: SensorHistory = None, window_size: int = 50,
+            preserve_window_bounds: tuple = None
+    ):
         """
         Get a timeline window of SensorHistory records around a center record.
         Designed to support future pagination functionality.
@@ -101,11 +105,34 @@ class VideoStreamBrowsingHelper:
             sensor: Sensor to get records for
             center_record: Record to center the window around (None for most recent)
             window_size: Total number of records to include
+            preserve_window_bounds: Tuple of (start_datetime, end_datetime) for timeline preservation
             
         Returns:
             Tuple of (sensor_responses_list, pagination_metadata)
         """
-        if center_record is None:
+        if preserve_window_bounds:
+            # Preserve existing timeline window - query records within bounds
+            start_time, end_time = preserve_window_bounds
+            history_records = list(SensorHistory.objects.filter(
+                sensor=sensor,
+                has_video_stream=True,
+                response_datetime__gte=start_time,
+                response_datetime__lte=end_time
+            ).order_by('-response_datetime'))
+            
+            # Check for records outside the preserved window for pagination
+            has_older_records = SensorHistory.objects.filter(
+                sensor=sensor,
+                has_video_stream=True,
+                response_datetime__lt=start_time
+            ).exists()
+            has_newer_records = SensorHistory.objects.filter(
+                sensor=sensor,
+                has_video_stream=True,
+                response_datetime__gt=end_time
+            ).exists()
+            window_center_timestamp = start_time if history_records else None
+        elif center_record is None:
             # No center record - get most recent records (default behavior)
             history_records = SensorHistory.objects.filter(
                 sensor=sensor,
@@ -147,12 +174,25 @@ class VideoStreamBrowsingHelper:
             sensor_response = cls.create_sensor_response_with_history_id(record)
             sensor_responses.append(sensor_response)
         
+        # Calculate actual window bounds for timeline preservation
+        window_start_timestamp = None
+        window_end_timestamp = None
+        if history_records:
+            if preserve_window_bounds:
+                window_start_timestamp, window_end_timestamp = preserve_window_bounds
+            else:
+                # Use actual bounds of returned records
+                window_start_timestamp = min(record.response_datetime for record in history_records)
+                window_end_timestamp = max(record.response_datetime for record in history_records)
+        
         # Pagination metadata for future pagination feature
         pagination_metadata = {
             'has_older_records': has_older_records,
             'has_newer_records': has_newer_records,
             'window_center_timestamp': window_center_timestamp,
             'window_size': window_size,
+            'window_start_timestamp': window_start_timestamp,
+            'window_end_timestamp': window_end_timestamp,
         }
         
         return sensor_responses, pagination_metadata
@@ -178,7 +218,7 @@ class VideoStreamBrowsingHelper:
         current_group = None
         
         # Determine if we should group by hour (if many events in current day)
-        today = datetime.now().date()
+        today = timezone.now().date()
         today_count = sum(1 for response in sensor_responses if response.timestamp.date() == today)
         use_hourly = today_count > 10
         
@@ -311,7 +351,8 @@ class VideoStreamBrowsingHelper:
     
     @classmethod
     def build_sensor_history_data(
-            cls, sensor: Sensor, sensor_history_id: int = None
+            cls, sensor: Sensor, sensor_history_id: int = None,
+            preserve_window_start: datetime = None, preserve_window_end: datetime = None
     ) -> EntitySensorHistoryData:
         """
         Build all data needed for the sensor history view.
@@ -320,24 +361,47 @@ class VideoStreamBrowsingHelper:
         Args:
             sensor: Sensor to get data for
             sensor_history_id: Optional specific record ID to display
+            preserve_window_start: Start timestamp for timeline preservation
+            preserve_window_end: End timestamp for timeline preservation
             
         Returns:
             EntitySensorHistoryData containing all view data
         """
-        # Smart query strategy: get timeline window based on whether we have a specific record
+        # Determine window strategy: preserve existing timeline or create new one
+        preserve_window_bounds = None
+        if preserve_window_start and preserve_window_end:
+            preserve_window_bounds = (preserve_window_start, preserve_window_end)
+        
+        # Smart query strategy based on context and record availability
         if sensor_history_id:
-            # Specific record requested - get timeline window centered around it
+            # Specific record requested
             try:
                 current_history_record = SensorHistory.objects.get(
                     id=sensor_history_id,
                     sensor=sensor,
                     has_video_stream=True
                 )
-                # Get timeline window centered around this record
-                sensor_responses, pagination_metadata = cls.get_timeline_window(
-                    sensor, current_history_record
-                )
-                # Current record is guaranteed to be in the timeline
+                
+                # Check if we should preserve timeline (record is within preserve window)
+                if preserve_window_bounds:
+                    start_time, end_time = preserve_window_bounds
+                    if start_time <= current_history_record.response_datetime <= end_time:
+                        # Record is within preserve window - use preserved timeline
+                        sensor_responses, pagination_metadata = cls.get_timeline_window(
+                            sensor, preserve_window_bounds=preserve_window_bounds
+                        )
+                    else:
+                        # Record is outside preserve window - center around it
+                        sensor_responses, pagination_metadata = cls.get_timeline_window(
+                            sensor, current_history_record
+                        )
+                else:
+                    # No preserve context - center around the record
+                    sensor_responses, pagination_metadata = cls.get_timeline_window(
+                        sensor, current_history_record
+                    )
+                
+                # Find current record in the timeline
                 current_sensor_response = next(
                     (r for r in sensor_responses 
                      if r.detail_attrs and r.detail_attrs.get('sensor_history_id') == str(sensor_history_id)),
@@ -368,4 +432,6 @@ class VideoStreamBrowsingHelper:
             pagination_metadata=pagination_metadata,
             prev_sensor_response=prev_sensor_response,
             next_sensor_response=next_sensor_response,
+            window_start_timestamp=pagination_metadata.get('window_start_timestamp'),
+            window_end_timestamp=pagination_metadata.get('window_end_timestamp'),
         )

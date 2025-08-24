@@ -1,6 +1,8 @@
 from django.core.exceptions import BadRequest
 from django.http import Http404
 from django.views.generic import View
+from datetime import datetime
+from django.utils import timezone
 
 from hi.apps.entity.models import Entity
 from hi.apps.sense.models import Sensor
@@ -62,6 +64,8 @@ class EntityVideoSensorHistoryView( HiGridView ):
         entity_id = kwargs.get('entity_id')
         sensor_id = kwargs.get('sensor_id')
         sensor_history_id = kwargs.get('sensor_history_id')
+        window_start = kwargs.get('window_start')
+        window_end = kwargs.get('window_end')
         
         # Get the entity
         try:
@@ -79,10 +83,28 @@ class EntityVideoSensorHistoryView( HiGridView ):
         except Sensor.DoesNotExist:
             raise Http404('Sensor not found for this entity.')
         
+        # Parse window context parameters if provided
+        preserve_window_start = None
+        preserve_window_end = None
+        if window_start and window_end:
+            try:
+                # Create timezone-aware datetime objects
+                preserve_window_start = timezone.make_aware(
+                    datetime.fromtimestamp(int(window_start))
+                )
+                preserve_window_end = timezone.make_aware(
+                    datetime.fromtimestamp(int(window_end))
+                )
+            except (ValueError, OSError):
+                # Invalid timestamp format - ignore and use default behavior
+                pass
+        
         # Get all view data using helper class (encapsulates business logic)
         sensor_history_data = VideoStreamBrowsingHelper.build_sensor_history_data(
             sensor=sensor,
-            sensor_history_id=sensor_history_id
+            sensor_history_id=sensor_history_id,
+            preserve_window_start=preserve_window_start,
+            preserve_window_end=preserve_window_end
         )
         
         request.view_parameters.view_type = ViewType.ENTITY_VIDEO_STREAM
