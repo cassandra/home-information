@@ -23,7 +23,6 @@ class SimStateType(LabeledEnum):
     PRESENCE         = ( 'Presence'         , '' )
     SOUND_LEVEL      = ( 'Sound Level'      , '' )
     TEMPERATURE      = ( 'Temperature'      , '' )
-    VIDEO_STREAM     = ( 'Video Stream'     , '' )
     WATER_FLOW       = ( 'Water Flow'       , '' )
     WIND_SPEED       = ( 'Wind Speed'       , '' )
     
