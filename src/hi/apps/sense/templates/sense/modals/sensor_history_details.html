@@ -19,12 +19,12 @@ Sensor Response Details
   <div class="table-responsive">
     <table class="table table-striped">
       <tbody>
-	{% for label, value in sensor_history.detail_attrs.items %}
-	<tr>
-	  <th class="text-right">{{ label }}</th>
-	  <td>{{ value }}</td>
-	</tr>
-	{% endfor %}
+        {% for label, value in sensor_history.detail_attrs.items %}
+        <tr>
+          <th class="text-right">{{ label }}</th>
+          <td>{{ value }}</td>
+        </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>  

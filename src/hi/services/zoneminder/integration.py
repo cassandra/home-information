@@ -11,6 +11,7 @@ from hi.integrations.integration_manage_view_pane import IntegrationManageViewPa
 from hi.integrations.transient_models import IntegrationMetaData
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
+from .constants import ZmDetailKeys
 from .zm_controller import ZoneMinderController
 from .zm_manage_view_pane import ZmManageViewPane
 from .zm_metadata import ZmMetaData
@@ -61,21 +62,23 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
         
     def get_sensor_response_video_stream(self, sensor_response: SensorResponse) -> Optional[VideoStream]:
         """Get video stream from sensor response (recorded events)"""
-        if not sensor_response.has_video_stream:
-            return None
-            
+        #if not sensor_response.has_video_stream:
+        #    return None
+
+        event_id_fieldname = ZmDetailKeys.EVENT_ID_ATTR_NAME
+        
         # Check if this sensor response has an event ID in its detail_attrs
         if (sensor_response.detail_attrs
-                and 'event_id' in sensor_response.detail_attrs):
+                and event_id_fieldname in sensor_response.detail_attrs):
             
             try:
-                event_id = int(sensor_response.detail_attrs['event_id'])
+                event_id = int(sensor_response.detail_attrs[event_id_fieldname])
                 video_url = self.zm_manager().get_event_video_stream_url(event_id)
                 
                 return VideoStream(
                     stream_type=VideoStreamType.URL,
                     source_url=video_url,
-                    metadata={'event_id': event_id, 'stream_type': 'recorded'}
+                    metadata={event_id_fieldname: event_id, 'stream_type': 'recorded'}
                 )
             except (ValueError, TypeError):
                 logger.warning(f"Could not parse event ID from sensor response: {sensor_response.detail_attrs}")

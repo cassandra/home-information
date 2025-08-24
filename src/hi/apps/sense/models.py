@@ -90,6 +90,10 @@ class SensorHistory(models.Model):
         'Image URL',
         blank = True, null = True,
     )
+    has_video_stream = models.BooleanField(
+        'Has Video Stream',
+        default = False,
+    )
     response_datetime = models.DateTimeField(
         'Timestamp',
         db_index = True,

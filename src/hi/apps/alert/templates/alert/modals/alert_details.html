@@ -43,7 +43,9 @@
 </div>
 
 <!-- Visual Content (if available) -->
-{% if alert_visual_content %}
+{% if alert_visual_content and alert_visual_content.sensor_response %}
+{% sensor_response_video_stream alert_visual_content.sensor_response as video_url %}
+{% if video_url %}
 <div class="row mb-3">
   <div class="col-12">
     <div class="card">
@@ -53,19 +55,15 @@
         </h6>
       </div>
       <div class="card-body p-2">
-        {% if alert_visual_content.sensor_response %}
-          {% sensor_response_video_stream alert_visual_content.sensor_response as video_url %}
-          {% if video_url %}
-            <img class="img-fluid" src="{{ video_url }}" alt="{{ alert_visual_content.alarm.title }}">
-          {% endif %}
-        {% endif %}
+        <img class="img-fluid" src="{{ video_url }}" alt="{{ alert_visual_content.alarm.title }}">
         {% if not alert_visual_content.is_from_latest %}
-          <small class="text-muted d-block mt-1">From: {{ alert_visual_content.alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
+        <small class="text-muted d-block mt-1">From: {{ alert_visual_content.alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
         {% endif %}
       </div>
     </div>
   </div>
 </div>
+{% endif %}
 {% endif %}
 
 <!-- Recent Alarm Details -->

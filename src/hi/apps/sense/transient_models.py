@@ -54,6 +54,7 @@ class SensorResponse:
             response_datetime = self.timestamp,
             details = details,
             source_image_url = self.source_image_url,
+            has_video_stream = self.has_video_stream,
         )
         
     @classmethod
@@ -65,7 +66,7 @@ class SensorResponse:
             sensor = sensor_history.sensor,
             detail_attrs = sensor_history.detail_attrs,
             source_image_url = sensor_history.source_image_url,
-            has_video_stream = sensor_history.sensor.provides_video_stream if sensor_history.sensor else False,
+            has_video_stream = sensor_history.has_video_stream,
         )
         
     @classmethod
