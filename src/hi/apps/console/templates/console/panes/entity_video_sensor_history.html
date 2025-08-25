@@ -1,5 +1,7 @@
 {% load video_tags %}
+{% load tz %}
 
+{% timezone USER_TIMEZONE %}
 <div class="entity-video-sensor-history">
     <!-- Header with entity name and mode switch -->
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -38,9 +40,9 @@
                             {% endif %}
                                data-async="#main-content"
                                class="text-decoration-none"
-                               aria-label="View event from {{ response.timestamp|date:'g:i A' }}{% if response.detail_attrs.sensor_history_id == sensor_history_data.current_sensor_response.detail_attrs.sensor_history_id %} - Currently viewing{% endif %}">
+                               aria-label="View event from {{ response.timestamp|localtime|date:'g:i A' }}{% if response.detail_attrs.sensor_history_id == sensor_history_data.current_sensor_response.detail_attrs.sensor_history_id %} - Currently viewing{% endif %}">
                                 <div>
-                                    <span class="time">{{ response.timestamp|date:"g:i A" }}</span>
+                                    <span class="time">{{ response.timestamp|localtime|date:"g:i A" }}</span>
                                     {% if response.detail_attrs.sensor_history_id == sensor_history_data.current_sensor_response.detail_attrs.sensor_history_id %}
                                     <small class="text-muted d-block" aria-current="page">→ Currently viewing</small>
                                     {% endif %}
@@ -64,7 +66,7 @@
                 <div class="response-header mb-3">
                     <h6>{{ sensor_history_data.current_sensor_response.detail_attrs.details }}</h6>
                     <div class="text-muted">
-                        {{ sensor_history_data.current_sensor_response.timestamp|date:"F j, Y g:i A" }}
+                        {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:"F j, Y g:i A" }}
                     </div>
                 </div>
 
@@ -72,7 +74,7 @@
                 <div class="video-container mb-3" role="img" aria-label="Event video playback">
                     {% sensor_response_video_stream sensor_history_data.current_sensor_response as video_url %}
                     {% if video_url %}
-                    <img class="img-fluid" src="{{ video_url }}" alt="Video recording from {{ sensor_history_data.current_sensor_response.timestamp|date:'F j, Y g:i A' }}">
+                    <img class="img-fluid" src="{{ video_url }}" alt="Video recording from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}">
                     {% else %}
                     <!-- Fallback when no video stream is available -->
                     <div class="video-placeholder d-flex align-items-center justify-content-center">
@@ -149,3 +151,4 @@
         </div>
     </div>
 </div>
+{% endtimezone %}
