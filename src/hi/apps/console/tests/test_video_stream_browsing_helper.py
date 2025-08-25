@@ -474,3 +474,129 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
         
         # Should select most recent record as current
         self.assertEqual(result.current_sensor_response.value, 'value_0')
+
+    def test_find_video_sensor_handles_corrupted_entity_states(self):
+        """Test error boundary: find_video_sensor with corrupted entity state relationships."""
+        # Create entity with corrupted state (no sensors)
+        corrupted_entity = Entity.objects.create(
+            integration_id='test.corrupted',
+            integration_name='test_integration', 
+            name='Corrupted Entity',
+            has_video_stream=True  # Claims to have video but has no sensors
+        )
+        
+        # Should handle gracefully when entity claims video capability but has no sensors
+        result = VideoStreamBrowsingHelper.find_video_sensor_for_entity(corrupted_entity)
+        self.assertIsNone(result)
+
+    def test_get_timeline_window_handles_invalid_preserve_bounds(self):
+        """Test error boundary: timeline window with invalid preservation bounds."""
+        # Create test data
+        base_time = timezone.now()
+        SensorHistory.objects.create(
+            sensor=self.video_sensor,
+            value='test_value',
+            response_datetime=base_time,
+            has_video_stream=True
+        )
+        
+        # Test with invalid window bounds (end before start)
+        invalid_start = base_time
+        invalid_end = base_time - timezone.timedelta(hours=1)  # End before start
+        invalid_bounds = (invalid_start, invalid_end)
+        
+        # Should handle invalid bounds gracefully
+        sensor_responses, metadata = VideoStreamBrowsingHelper.get_timeline_window(
+            self.video_sensor, preserve_window_bounds=invalid_bounds
+        )
+        
+        # Should return empty results or handle gracefully
+        self.assertIsInstance(sensor_responses, list)
+        self.assertIsInstance(metadata, dict)
+
+    def test_group_responses_by_time_handles_same_timestamp_records(self):
+        """Test performance boundary: grouping with many records at same timestamp."""
+        base_time = timezone.now()
+        same_timestamp = base_time.replace(hour=12, minute=0, second=0, microsecond=0)
+        
+        # Create multiple sensor responses at exactly the same timestamp
+        sensor_responses = []
+        for i in range(10):
+            integration_key = IntegrationKey(
+                integration_id='test_integration',
+                integration_name=f'same_time_response_{i}'
+            )
+            
+            response = SensorResponse(
+                integration_key=integration_key,
+                value=f'same_time_value_{i}',
+                timestamp=same_timestamp,  # Same timestamp for all
+                sensor=self.video_sensor,
+                detail_attrs={'sensor_history_id': str(1000 + i)},
+                has_video_stream=True
+            )
+            sensor_responses.append(response)
+        
+        # Should group all same-timestamp records correctly
+        timeline_groups = VideoStreamBrowsingHelper.group_responses_by_time(sensor_responses)
+        
+        self.assertIsInstance(timeline_groups, list)
+        self.assertEqual(len(timeline_groups), 1)  # All in same time group
+        
+        # All responses should be in the single group
+        single_group = timeline_groups[0]
+        self.assertEqual(len(single_group['items']), 10)
+
+    def test_build_sensor_history_data_handles_extreme_timestamp_ranges(self):
+        """Test error boundary: extreme timestamp ranges and edge cases."""
+        # Create records with extreme timestamp ranges
+        base_time = timezone.now()
+        
+        SensorHistory.objects.create(
+            sensor=self.video_sensor,
+            value='extreme_past',
+            response_datetime=timezone.datetime(1970, 1, 1, tzinfo=timezone.utc),
+            has_video_stream=True
+        )
+        
+        SensorHistory.objects.create(
+            sensor=self.video_sensor,
+            value='recent',
+            response_datetime=base_time,
+            has_video_stream=True
+        )
+        
+        # Should handle extreme timestamp ranges
+        result = VideoStreamBrowsingHelper.build_sensor_history_data_default(self.video_sensor)
+        
+        self.assertIsNotNone(result)
+        self.assertGreater(len(result.sensor_responses), 0)
+        
+        # Should handle timeline grouping with extreme ranges
+        self.assertIsInstance(result.timeline_groups, list)
+
+    def test_pagination_methods_handle_edge_case_timestamps(self):
+        """Test performance boundary: pagination with edge case timestamp values."""
+        # Test with Unix epoch timestamp (edge case)
+        epoch_timestamp = 0  # January 1, 1970
+        
+        # Should handle epoch timestamp without errors
+        result = VideoStreamBrowsingHelper.build_sensor_history_data_earlier(
+            self.video_sensor, epoch_timestamp
+        )
+        
+        # Should return valid empty result for epoch (no records before 1970)
+        self.assertIsNotNone(result)
+        self.assertEqual(len(result.sensor_responses), 0)
+        self.assertFalse(result.pagination_metadata['has_older_records'])
+        
+        # Test with very large timestamp (far future)
+        future_timestamp = 2147483647  # 32-bit max timestamp (2038)
+        
+        result = VideoStreamBrowsingHelper.build_sensor_history_data_later(
+            self.video_sensor, future_timestamp
+        )
+        
+        # Should handle far future timestamp
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result.sensor_responses, list)
