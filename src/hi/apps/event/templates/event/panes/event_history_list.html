@@ -1,10 +1,9 @@
 {% load tz %}
 {% load humanize %}
 {% timezone USER_TIMEZONE %}
-<div class="timeline-container">
-  {% if event_history_list %}
-    <div class="timeline-items">
-      {% for event_history in event_history_list %}
+{% if event_history_list %}
+  <div class="timeline-items">
+    {% for event_history in event_history_list %}
       <div class="timeline-item mb-2">
         <div class="card border-left-primary">
           <div class="card-body py-2 px-3">
@@ -26,32 +25,31 @@
                 <div>
                   <strong class="d-block mb-1">{{ event_history.event_definition.name }}</strong>
                   <span class="badge badge-info mr-2">{{ event_history.event_definition.event_type.label }}</span>
-                  <span class="badge badge-secondary">{{ event_history.entity_count }} entities</span>
+                  {% if event_history.entity_count == 1 %}
+                  <span class="badge badge-secondary">{{ event_history.entity_count }} item</span>
+                  {% else %}
+                  <span class="badge badge-secondary">{{ event_history.entity_count }} items</span>
+                  {% endif %}
                 </div>
               </div>
               <div class="col-md-4 col-12">
-                {% if event_history.entity_names %}
+                {% if event_history.entity_display_list %}
                 <div class="mt-1 mt-md-0">
-                  <small class="text-muted d-block">Involved Entities:</small>
-                  <small class="text-info">
-                    {% for name in event_history.entity_names %}
-                      {{ name }}{% if not forloop.last %}, {% endif %}
+                  <small class="text-muted d-block">Involved Items:</small>
+                  <div class="mt-1">
+                    {% for entity_display in event_history.entity_display_list %}
+                      {% if entity_display.has_video %}
+                        <a href="{% url 'console_entity_video_sensor_history_earlier' entity_display.entity.id entity_display.video_sensor.id event_history.video_url_timestamp %}"
+                           class="btn btn-sm btn-outline-primary mr-1 mb-1"
+                           data-async="#main-content"
+                           title="View video from {{ entity_display.entity.name }} around this event">
+                          <i class="fas fa-video"></i> {{ entity_display.entity.name }}
+                        </a>
+                      {% else %}
+                        <span class="text-info mr-2">{{ entity_display.entity.name }}</span>{% if not forloop.last %}, {% endif %}
+                      {% endif %}
                     {% endfor %}
-                  </small>
-                </div>
-                {% endif %}
-                
-                {% if event_history.video_entities %}
-                <div class="video-links mt-2">
-                  <small class="text-muted d-block">Video Available:</small>
-                  {% for video_entity in event_history.video_entities %}
-                    <a href="{% url 'console_entity_video_sensor_history_earlier' video_entity.entity.id video_entity.sensors.0.id event_history.video_url_timestamp %}"
-                       class="btn btn-sm btn-outline-primary mr-1 mb-1"
-                       data-async="#main-content"
-                       title="View video from {{ video_entity.entity.name }} around this event">
-                      <i class="fas fa-video"></i> {{ video_entity.entity.name }}
-                    </a>
-                  {% endfor %}
+                  </div>
                 </div>
                 {% endif %}
               </div>
@@ -59,16 +57,15 @@
           </div>
         </div>
       </div>
-      {% endfor %}
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card border-0 bg-light">
+    <div class="card-body text-center py-4">
+      <i class="fas fa-clock text-muted fa-2x mb-3"></i>
+      <h6 class="text-muted">No Event History</h6>
+      <p class="text-muted mb-0">No trigger events have been recorded yet.</p>
     </div>
-  {% else %}
-    <div class="card border-0 bg-light">
-      <div class="card-body text-center py-4">
-        <i class="fas fa-clock text-muted fa-2x mb-3"></i>
-        <h6 class="text-muted">No Event History</h6>
-        <p class="text-muted mb-0">No trigger events have been recorded yet.</p>
-      </div>
-    </div>
-  {% endif %}
-</div>
+  </div>
+{% endif %}
 {% endtimezone %}

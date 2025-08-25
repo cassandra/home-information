@@ -181,6 +181,41 @@ a.clickable-card:active {
     background-color: var(--muted-color) !important;
 }
 
+/* Outline Button Overrides */
+.btn-outline-primary {
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    background-color: transparent !important;
+}
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-outline-primary:active,
+.btn-outline-primary.active {
+    color: var(--on-primary-color) !important;
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-highlight-color) !important;
+}
+.btn-outline-primary:focus {
+    box-shadow: 0 0 0 0.2rem rgba(23, 112, 114, 0.25) !important;
+}
+
+.btn-outline-secondary {
+    color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+    background-color: transparent !important;
+}
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus,
+.btn-outline-secondary:active,
+.btn-outline-secondary.active {
+    color: var(--on-secondary-color) !important;
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-highlight-color) !important;
+}
+.btn-outline-secondary:focus {
+    box-shadow: 0 0 0 0.2rem rgba(244, 95, 54, 0.25) !important;
+}
+
 .interstitial-page {
     display: flex;
     flex-wrap: wrap;

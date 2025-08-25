@@ -78,6 +78,30 @@ class EventHistoryView( HiModalView ):
             
             event_history.video_entities = list(video_entities.values())
             
+            # Create unified entity display list that combines regular entities and video entities
+            entity_display_list = []
+            for clause in event_history.event_definition.event_clauses.all():
+                entity = clause.entity_state.entity
+                
+                # Check if this entity has video capability
+                video_info = video_entities.get(entity.id)
+                if video_info:
+                    # Entity has video - create display object with video info
+                    entity_display_list.append({
+                        'entity': entity,
+                        'has_video': True,
+                        'video_sensor': video_info['sensors'][0]  # Use first available video sensor
+                    })
+                else:
+                    # Entity has no video - create display object for text display
+                    entity_display_list.append({
+                        'entity': entity,
+                        'has_video': False,
+                        'video_sensor': None
+                    })
+            
+            event_history.entity_display_list = entity_display_list
+            
             # Add 2 minutes to event timestamp for inclusive video browser results
             # This ensures we capture the triggering response + surrounding context
             adjusted_timestamp = event_history.event_datetime + timezone.timedelta(minutes=2)
