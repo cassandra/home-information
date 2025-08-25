@@ -115,26 +115,32 @@ class SensorHistorySyntheticData:
         }
     
     @staticmethod
-    def create_timeline_test_data(sensor: Sensor) -> List[Dict]:
+    def create_timeline_test_data(sensor: Sensor, dense_events: bool = True) -> List[Dict]:
         """
         Create test data specifically for timeline grouping scenarios.
-        Includes edge cases like many events in one day, sparse events, etc.
+        Supports both dense (many events) and sparse (few events) patterns.
         
         Args:
             sensor: The sensor to create test data for
+            dense_events: If True, creates many events today; if False, creates sparse events
             
         Returns:
             List of mock sensor history items for timeline testing
         """
         now = datetime.now()
         mock_items = []
+        item_counter = 1000
         
-        # Create a burst of events today (to test hourly grouping)
-        for hour in range(12):
-            for minute_offset in [0, 20, 40]:
+        if dense_events:
+            # Create dense events today (3 events per hour for 12 hours = 36 events)
+            # Simplified from nested loops to single loop with calculation
+            for event_num in range(36):
+                hour = event_num // 3  # 0-11 hours
+                minute_offset = (event_num % 3) * 20  # 0, 20, 40 minutes
+                
                 timestamp = now.replace(hour=hour, minute=minute_offset, second=0, microsecond=0)
                 mock_items.append({
-                    'id': len(mock_items) + 1000,
+                    'id': item_counter + event_num,
                     'sensor': sensor,
                     'value': 'active' if minute_offset == 0 else 'idle',
                     'timestamp': timestamp,
@@ -142,13 +148,15 @@ class SensorHistorySyntheticData:
                     'has_video_stream': True,
                     'details': f'Event at {timestamp.strftime("%H:%M")}',
                 })
+            item_counter += 36
         
-        # Add some events yesterday (sparse, to test daily grouping)
+        # Add yesterday's events (always sparse for contrast)
         yesterday = now - timedelta(days=1)
-        for hour in [8, 14, 20]:
+        yesterday_hours = [8, 14, 20]
+        for i, hour in enumerate(yesterday_hours):
             timestamp = yesterday.replace(hour=hour, minute=0, second=0, microsecond=0)
             mock_items.append({
-                'id': len(mock_items) + 1000,
+                'id': item_counter + i,
                 'sensor': sensor,
                 'value': 'active',
                 'timestamp': timestamp,
@@ -156,12 +164,14 @@ class SensorHistorySyntheticData:
                 'has_video_stream': True,
                 'details': f'Yesterday event at {hour}:00',
             })
+        item_counter += len(yesterday_hours)
         
-        # Add a few older events
-        for days_ago in [3, 5, 7]:
+        # Add older events
+        older_days = [3, 5, 7]
+        for i, days_ago in enumerate(older_days):
             timestamp = now - timedelta(days=days_ago, hours=12)
             mock_items.append({
-                'id': len(mock_items) + 1000,
+                'id': item_counter + i,
                 'sensor': sensor,
                 'value': 'idle',
                 'timestamp': timestamp,
@@ -176,38 +186,103 @@ class SensorHistorySyntheticData:
         return mock_items
     
     @staticmethod
-    def create_timeline_preservation_test_data(sensor: Sensor) -> Tuple[List[SensorHistory], datetime, datetime]:
+    def create_timeline_test_scenario(
+        sensor: Sensor,
+        scenario_type: str = 'preservation',
+        total_records: int = None,
+        window_size: int = None,
+        **kwargs
+    ):
         """
-        Create comprehensive test data for timeline preservation testing.
-        Returns actual SensorHistory records with defined window boundaries.
+        Unified method for creating timeline test scenarios.
         
         Args:
             sensor: The sensor to create test data for
+            scenario_type: Type of scenario - 'preservation', 'boundary', or 'pagination'
+            total_records: Override default record count for scenario
+            window_size: Override default window size for scenario
+            **kwargs: Additional scenario-specific parameters
             
         Returns:
-            Tuple of (sensor_history_records, window_start, window_end)
+            Scenario-specific tuple of test data and metadata
+            
+        Scenario Types:
+        - 'preservation': Returns (records, window_start, window_end)
+        - 'boundary': Returns (all_records, inside_record, outside_record, window_start, window_end)
+        - 'pagination': Returns (records, middle_record_index)
         """
-        # Create timezone-aware base time
         base_time = timezone.now().replace(minute=0, second=0, microsecond=0)
-        records = []
         
-        # Create 10 records spanning 10 hours (1 per hour)
-        for hours_ago in range(10):
-            timestamp = base_time - timezone.timedelta(hours=hours_ago)
-            record = SensorHistory.objects.create(
-                sensor=sensor,
-                value='active' if hours_ago % 3 == 0 else 'idle',
-                response_datetime=timestamp,
-                has_video_stream=True,
-                details=f'{{"event_id": "{hours_ago}", "duration_seconds": "{60 + hours_ago * 15}"}}'
-            )
-            records.append(record)
-        
-        # Define window boundaries (hours 2-6 ago)
-        window_start = base_time - timezone.timedelta(hours=6)
-        window_end = base_time - timezone.timedelta(hours=2)
-        
-        return records, window_start, window_end
+        if scenario_type == 'preservation':
+            # Timeline preservation scenario
+            record_count = total_records or 10
+            records = []
+            
+            for hours_ago in range(record_count):
+                timestamp = base_time - timezone.timedelta(hours=hours_ago)
+                record = SensorHistory.objects.create(
+                    sensor=sensor,
+                    value='active' if hours_ago % 3 == 0 else 'idle',
+                    response_datetime=timestamp,
+                    has_video_stream=True,
+                    details=f'{{"event_id": "{hours_ago}", "duration_seconds": "{60 + hours_ago * 15}"}}'
+                )
+                records.append(record)
+            
+            # Define window boundaries (hours 2-6 ago)
+            window_start = base_time - timezone.timedelta(hours=6)
+            window_end = base_time - timezone.timedelta(hours=2)
+            
+            return records, window_start, window_end
+            
+        elif scenario_type == 'boundary':
+            # Window boundary testing scenario
+            record_count = total_records or 8
+            all_records = []
+            
+            for hours_ago in range(record_count):
+                timestamp = base_time - timezone.timedelta(hours=hours_ago)
+                record = SensorHistory.objects.create(
+                    sensor=sensor,
+                    value=f'event_{hours_ago}',
+                    response_datetime=timestamp,
+                    has_video_stream=True,
+                    details=f'{{"hours_ago": "{hours_ago}"}}'
+                )
+                all_records.append(record)
+            
+            # Define window boundaries (3-5 hours ago)
+            window_start = base_time - timezone.timedelta(hours=5)
+            window_end = base_time - timezone.timedelta(hours=3)
+            
+            # Identify specific records for testing
+            record_inside_window = all_records[4]   # 4 hours ago - inside window
+            record_outside_window = all_records[1]  # 1 hour ago - outside window
+            
+            return all_records, record_inside_window, record_outside_window, window_start, window_end
+            
+        elif scenario_type == 'pagination':
+            # Pagination testing scenario
+            record_count = total_records or 20
+            window = window_size or 5  # Default window size
+            records = []
+            
+            for i in range(record_count):
+                timestamp = base_time - timezone.timedelta(hours=i)
+                record = SensorHistory.objects.create(
+                    sensor=sensor,
+                    value=f'record_{i}',
+                    response_datetime=timestamp,
+                    has_video_stream=True,
+                    details=f'{{"record_index": "{i}", "window_size": "{window}"}}'
+                )
+                records.append(record)
+            
+            middle_index = record_count // 2
+            return records, middle_index
+            
+        else:
+            raise ValueError(f"Unknown scenario_type: {scenario_type}. Must be 'preservation', 'boundary', or 'pagination'.")
     
     @staticmethod
     def create_timezone_aware_sensor_responses(
@@ -259,44 +334,18 @@ class SensorHistorySyntheticData:
         
         return responses
     
+    # Legacy methods for backward compatibility - use create_timeline_test_scenario instead
+    @staticmethod
+    def create_timeline_preservation_test_data(sensor: Sensor) -> Tuple[List[SensorHistory], datetime, datetime]:
+        """Legacy method - use create_timeline_test_scenario(scenario_type='preservation') instead."""
+        return SensorHistorySyntheticData.create_timeline_test_scenario(sensor, 'preservation')
+    
     @staticmethod
     def create_window_boundary_test_scenario(
         sensor: Sensor
     ) -> Tuple[List[SensorHistory], SensorHistory, SensorHistory, datetime, datetime]:
-        """
-        Create a specific test scenario for window boundary testing.
-        Returns records inside window, outside window, and window boundaries.
-        
-        Args:
-            sensor: The sensor to create test data for
-            
-        Returns:
-            Tuple of (all_records, record_inside_window, record_outside_window, window_start, window_end)
-        """
-        base_time = timezone.now().replace(minute=0, second=0, microsecond=0)
-        all_records = []
-        
-        # Create records spanning 8 hours
-        for hours_ago in range(8):
-            timestamp = base_time - timezone.timedelta(hours=hours_ago)
-            record = SensorHistory.objects.create(
-                sensor=sensor,
-                value=f'event_{hours_ago}',
-                response_datetime=timestamp,
-                has_video_stream=True,
-                details=f'{{"hours_ago": "{hours_ago}"}}'
-            )
-            all_records.append(record)
-        
-        # Define window boundaries (3-5 hours ago)
-        window_start = base_time - timezone.timedelta(hours=5)
-        window_end = base_time - timezone.timedelta(hours=3)
-        
-        # Identify specific records for testing
-        record_inside_window = all_records[4]   # 4 hours ago - inside window
-        record_outside_window = all_records[1]  # 1 hour ago - outside window
-        
-        return all_records, record_inside_window, record_outside_window, window_start, window_end
+        """Legacy method - use create_timeline_test_scenario(scenario_type='boundary') instead."""
+        return SensorHistorySyntheticData.create_timeline_test_scenario(sensor, 'boundary')
     
     @staticmethod
     def create_pagination_test_data(
@@ -304,30 +353,7 @@ class SensorHistorySyntheticData:
         total_records: int = 20,
         window_size: int = 5
     ) -> Tuple[List[SensorHistory], int]:
-        """
-        Create test data for pagination and window size testing.
-        
-        Args:
-            sensor: The sensor to create test data for
-            total_records: Total number of records to create
-            window_size: Expected window size for pagination tests
-            
-        Returns:
-            Tuple of (all_records, middle_record_index)
-        """
-        base_time = timezone.now().replace(minute=0, second=0, microsecond=0)
-        records = []
-        
-        for i in range(total_records):
-            timestamp = base_time - timezone.timedelta(hours=i)
-            record = SensorHistory.objects.create(
-                sensor=sensor,
-                value=f'record_{i}',
-                response_datetime=timestamp,
-                has_video_stream=True,
-                details=f'{{"record_index": "{i}"}}'
-            )
-            records.append(record)
-        
-        middle_index = total_records // 2
-        return records, middle_index
+        """Legacy method - use create_timeline_test_scenario(scenario_type='pagination') instead."""
+        return SensorHistorySyntheticData.create_timeline_test_scenario(
+            sensor, 'pagination', total_records=total_records, window_size=window_size
+        )
