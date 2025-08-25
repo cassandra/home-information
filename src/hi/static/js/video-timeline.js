@@ -103,8 +103,6 @@
             // Handle initial page loads - scroll to active item if needed
             this.handleInitialLoad();
             
-            // Set up button navigation handlers
-            this.setupButtonHandlers();
         },
         
         handleInitialLoad: function() {
@@ -124,16 +122,6 @@
             }
         },
         
-        setupButtonHandlers: function() {
-            // Add custom handlers for navigation buttons only
-            const buttons = document.querySelectorAll('.navigation-buttons a');
-            buttons.forEach(button => {
-                button.addEventListener('click', () => {
-                    // Mark that we're using button navigation
-                    sessionStorage.setItem('videoTimelineButtonNav', 'true');
-                });
-            });
-        },
         
         scrollToItem: function(item, context) {
             if (!item) return;
@@ -194,25 +182,8 @@
         },
         
         handleAsyncUpdate: function() {
-            // Check if this was button navigation
-            const buttonNav = sessionStorage.getItem('videoTimelineButtonNav');
-            if (buttonNav) {
-                sessionStorage.removeItem('videoTimelineButtonNav');
-                
-                // Wait for DOM to settle, then scroll to active item
-                setTimeout(() => {
-                    const activeItem = this.timeline?.querySelector('.timeline-item.active');
-                    if (activeItem) {
-                        this.scrollToItem(activeItem, 'button');
-                    }
-                }, 100);
-            }
-            
             // Register the new video element with connection manager
             this.registerCurrentVideo();
-            
-            // Re-setup button handlers for new content
-            this.setupButtonHandlers();
         },
         
         registerCurrentVideo: function() {

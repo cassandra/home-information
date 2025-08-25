@@ -873,28 +873,6 @@ form[data-dirty] {
     font-weight: 600;
 }
 
-/* Navigation Buttons */
-.navigation-buttons {
-    margin-top: 1.5rem;
-}
-
-.navigation-buttons .btn-outline-secondary {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
-    transition: all 0.2s ease;
-}
-
-.navigation-buttons .btn-outline-secondary:hover:not(:disabled) {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    color: var(--on-primary-color);
-    transform: translateY(-1px);
-}
-
-.navigation-buttons .btn-outline-secondary:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
 
 /* ==========================================
    Loading States & Error Handling
@@ -985,12 +963,6 @@ form[data-dirty] {
     border-radius: 4px;
 }
 
-.navigation-buttons a:focus,
-.navigation-buttons button:focus {
-    outline: 2px solid var(--secondary-color);
-    outline-offset: 2px;
-    box-shadow: 0 0 0 3px rgba(244, 95, 54, 0.2);
-}
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
@@ -1007,7 +979,6 @@ form[data-dirty] {
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
     .timeline-item,
-    .navigation-buttons .btn-outline-secondary,
     .video-container.loading::before {
         transition: none;
         animation: none;
@@ -1095,10 +1066,6 @@ form[data-dirty] {
         margin-bottom: 8px;
     }
     
-    /* Optimize button placement in landscape */
-    .navigation-buttons {
-        margin-top: 1rem;
-    }
     
     /* Compact event details in landscape */
     .response-details {

@@ -128,40 +128,6 @@
                     {% endif %}
                 </div>
 
-                <!-- Navigation buttons -->
-                <nav class="navigation-buttons mt-3 d-flex justify-content-between" 
-                     role="navigation" 
-                     aria-label="Event navigation controls">
-                    {% if sensor_history_data.prev_sensor_response %}
-                    {% if sensor_history_data.window_start_timestamp and sensor_history_data.window_end_timestamp %}
-                    <a href="{% url 'console_entity_video_sensor_history_detail_with_context' entity.id sensor.id sensor_history_data.prev_sensor_response.sensor_history_id sensor_history_data.window_start_timestamp|date:'U' sensor_history_data.window_end_timestamp|date:'U' %}"
-                    {% else %}
-                    <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id sensor_history_data.prev_sensor_response.sensor_history_id %}"
-                    {% endif %}
-                       class="btn btn-outline-secondary"
-                       data-async="#main-content"
-                       aria-label="Navigate to earlier event">
-                        ← Earlier Event
-                    </a>
-                    {% else %}
-                    <button class="btn btn-outline-secondary" disabled aria-label="No earlier events available">← Earlier Event</button>
-                    {% endif %}
-
-                    {% if sensor_history_data.next_sensor_response %}
-                    {% if sensor_history_data.window_start_timestamp and sensor_history_data.window_end_timestamp %}
-                    <a href="{% url 'console_entity_video_sensor_history_detail_with_context' entity.id sensor.id sensor_history_data.next_sensor_response.sensor_history_id sensor_history_data.window_start_timestamp|date:'U' sensor_history_data.window_end_timestamp|date:'U' %}"
-                    {% else %}
-                    <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id sensor_history_data.next_sensor_response.sensor_history_id %}"
-                    {% endif %}
-                       class="btn btn-outline-secondary"
-                       data-async="#main-content"
-                       aria-label="Navigate to later event">
-                        Later Event →
-                    </a>
-                    {% else %}
-                    <button class="btn btn-outline-secondary" disabled aria-label="No later events available">Later Event →</button>
-                    {% endif %}
-                </nav>
             </div>
             {% else %}
             <div class="alert alert-info">
