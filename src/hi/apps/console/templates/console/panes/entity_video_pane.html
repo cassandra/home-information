@@ -8,7 +8,8 @@
             {% if video_sensor %}
             <a href="{% url 'console_entity_video_sensor_history' entity.id video_sensor.id %}" 
                class="btn btn-outline-primary"
-               data-async="#main-content">
+               data-async="#main-content"
+               onclick="sessionStorage.setItem('navigatingFromLiveStream', 'true');">
                 Browse History
             </a>
             {% else %}
@@ -27,7 +28,8 @@
         </div>
         <a href="{% url 'console_entity_video_sensor_history' entity.id video_sensor.id %}" 
            class="btn btn-sm btn-outline-info"
-           data-async="#main-content">
+           data-async="#main-content"
+           onclick="sessionStorage.setItem('navigatingFromLiveStream', 'true');">
             View Last Event
         </a>
     </div>
