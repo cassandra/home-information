@@ -17,7 +17,7 @@ class EventDefinition( IntegrationDetailsModel ):
         max_length = 64,
     )
     event_type_str = models.CharField(
-        'Event Type',
+        'Trigger Type',
         max_length = 32,
         null = False, blank = False,
     )
@@ -26,7 +26,7 @@ class EventDefinition( IntegrationDetailsModel ):
     # need to satisfied.
     #
     event_window_secs = models.PositiveIntegerField(
-        'Event Window Secs',
+        'Trigger Window Secs',
     )
 
     # Rate limits how many events will be generated for this
@@ -52,8 +52,8 @@ class EventDefinition( IntegrationDetailsModel ):
     )
     
     class Meta:
-        verbose_name = 'Event Definition'
-        verbose_name_plural = 'Event Definitions'
+        verbose_name = 'Trigger Definition'
+        verbose_name_plural = 'Trigger Definitions'
 
     @property
     def event_type(self):
@@ -70,7 +70,7 @@ class EventClause( models.Model ):
     event_definition = models.ForeignKey(
         EventDefinition,
         related_name = 'event_clauses',
-        verbose_name = 'Event Definition',
+        verbose_name = 'Trigger Definition',
         on_delete = models.CASCADE,
     )
     entity_state = models.ForeignKey(
@@ -95,8 +95,8 @@ class EventClause( models.Model ):
     )
     
     class Meta:
-        verbose_name = 'Event Clause'
-        verbose_name_plural = 'Event Clauses'
+        verbose_name = 'Trigger Clause'
+        verbose_name_plural = 'Trigger Clauses'
 
 
 class AlarmAction( models.Model ):
@@ -104,7 +104,7 @@ class AlarmAction( models.Model ):
     event_definition = models.ForeignKey(
         EventDefinition,
         related_name = 'alarm_actions',
-        verbose_name = 'Event Definition',
+        verbose_name = 'Trigger Definition',
         on_delete = models.CASCADE,
     )
     security_level_str = models.CharField(
@@ -165,7 +165,7 @@ class ControlAction( models.Model ):
     event_definition = models.ForeignKey(
         EventDefinition,
         related_name = 'control_actions',
-        verbose_name = 'Event Definition',
+        verbose_name = 'Trigger Definition',
         on_delete = models.CASCADE,
     )
     controller = models.ForeignKey(
@@ -199,7 +199,7 @@ class EventHistory( models.Model ):
     event_definition = models.ForeignKey(
         EventDefinition,
         related_name = 'history',
-        verbose_name = 'Event Definition',
+        verbose_name = 'Trigger Definition',
         on_delete = models.CASCADE,
     )
     event_datetime = models.DateTimeField(
@@ -208,6 +208,6 @@ class EventHistory( models.Model ):
     )
     
     class Meta:
-        verbose_name = 'Event History'
-        verbose_name_plural = 'Event History'
+        verbose_name = 'Trigger History'
+        verbose_name_plural = 'Trigger History'
         ordering = [ '-event_datetime' ]
