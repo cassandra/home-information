@@ -19,6 +19,7 @@ class SensorResponse:
     detail_attrs        : Dict[ str, str ]  = None
     source_image_url    : str               = None
     has_video_stream    : bool              = False
+    sensor_history_id   : int               = None  # Core Django SensorHistory primary key
     
     def __str__(self):
         return json.dumps( self.to_dict() )
@@ -41,6 +42,7 @@ class SensorResponse:
             'detail_attrs': self.detail_attrs,
             'source_image_url': self.source_image_url,
             'has_video_stream': self.has_video_stream,
+            'sensor_history_id': self.sensor_history_id,
         }
 
     def to_sensor_history(self):

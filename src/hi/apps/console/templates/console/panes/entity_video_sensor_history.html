@@ -1,0 +1,173 @@
+{% load video_tags %}
+{% load tz %}
+
+{% timezone USER_TIMEZONE %}
+<div class="entity-video-sensor-history">
+    <!-- Unified Tab-Style Header -->
+    <div class="video-interface-header event-history mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <h5 class="entity-title mb-0 mr-3">{{ entity.name }}</h5>
+            </div>
+            <div class="video-nav-tabs" role="tablist">
+                <a href="{% url 'console_entity_video_stream' entity.id %}" 
+                   class="video-nav-tab"
+                   data-async="#main-content"
+                   aria-label="Return to live camera stream"
+                   role="tab">
+                    <i class="fas fa-video mr-1"></i>Current Stream
+                </a>
+                <span class="video-nav-tab active" role="tab">
+                    <i class="fas fa-history mr-1"></i>Event History
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content area split into timeline and video -->
+    <div class="row">
+        <!-- Timeline sidebar -->
+        <div class="col-md-3">
+            <nav class="timeline-container preserve-scroll-bar" id="event-timeline" 
+                 role="navigation" 
+                 aria-label="Event timeline navigation">
+                <h6 id="timeline-heading">Event Timeline</h6>
+                
+                <!-- Pagination: Load Later Events -->
+                {% if sensor_history_data.pagination_metadata.has_newer_records %}
+                <div class="timeline-pagination-top mb-2">
+                    <a href="{% url 'console_entity_video_sensor_history_later' entity.id sensor.id sensor_history_data.window_end_timestamp|date:'U' %}"
+                       class="btn btn-sm btn-outline-primary w-100"
+                       data-async="#main-content">
+                        Later ↑
+                    </a>
+                </div>
+                {% endif %}
+                
+                {% for group in sensor_history_data.timeline_groups %}
+                <div class="timeline-group mb-3">
+                    <div class="timeline-group-label font-weight-bold">
+                        {{ group.label }}
+                    </div>
+                    
+                    <div class="timeline-items" role="list">
+                        {% for response in group.items %}
+                        <div class="timeline-item {% if response.sensor_history_id == sensor_history_data.current_sensor_response.sensor_history_id %}active{% endif %}"
+                             role="listitem">
+                            {% if sensor_history_data.window_start_timestamp and sensor_history_data.window_end_timestamp %}
+                            <a href="{% url 'console_entity_video_sensor_history_detail_with_context' entity.id sensor.id response.sensor_history_id sensor_history_data.window_start_timestamp|date:'U' sensor_history_data.window_end_timestamp|date:'U' %}"
+                            {% else %}
+                            <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id response.sensor_history_id %}"
+                            {% endif %}
+                               data-async="#main-content"
+                               class="text-decoration-none"
+                               aria-label="View event from {{ response.timestamp|localtime|date:'g:i A' }}{% if response.sensor_history_id == sensor_history_data.current_sensor_response.sensor_history_id %} - Currently viewing{% endif %}">
+                                <div>
+                                    <span class="time">{{ response.timestamp|localtime|date:"g:i A" }}</span>
+                                    {% if response.sensor_history_id == sensor_history_data.current_sensor_response.sensor_history_id %}
+                                    <small class="text-muted d-block" aria-current="page">→ Currently viewing</small>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted">No events available</p>
+                {% endfor %}
+                
+                <!-- Pagination: Load Earlier Events -->
+                {% if sensor_history_data.pagination_metadata.has_older_records %}
+                <div class="timeline-pagination-bottom mt-2">
+                    <a href="{% url 'console_entity_video_sensor_history_earlier' entity.id sensor.id sensor_history_data.window_start_timestamp|date:'U' %}"
+                       class="btn btn-sm btn-outline-primary w-100"
+                       data-async="#main-content"
+                       onclick="sessionStorage.setItem('scrollTimelineToTop', 'true');">
+                        Earlier ↓
+                    </a>
+                </div>
+                {% endif %}
+            </nav>
+        </div>
+
+        <!-- Video and details area -->
+        <div class="col-md-9" role="main" aria-labelledby="event-history-title">
+            {% if sensor_history_data.current_sensor_response %}
+            <div class="video-detail-container">
+                <!-- Event header -->
+                <div class="response-header mb-3">
+                    <h6>{{ sensor.entity_state.entity_state_type.label }} Event</h6>
+                    <div class="text-muted">
+                        {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:"F j, Y g:i A" }}
+                    </div>
+                </div>
+
+                <!-- Video display area -->
+                <div class="video-container mb-3" role="img" aria-label="Event video playback">
+                    {% sensor_response_video_stream sensor_history_data.current_sensor_response as video_url %}
+                    {% if video_url %}
+                    <img class="img-fluid" src="{{ video_url }}" alt="Video recording from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}" data-event-id="{{ sensor_history_data.current_sensor_response.sensor_history_id }}" onerror="this.style.display='none'; this.outerHTML='<div class=\'alert alert-warning text-center d-flex align-items-center justify-content-center\' style=\'min-height: 240px;\'><div><div class=\'mb-2\'>📹</div><h6>Video No Longer Available</h6></div></div>'">
+                    {% else %}
+                    <!-- Fallback when no video stream is available -->
+                    <div class="video-placeholder d-flex align-items-center justify-content-center">
+                        <div class="text-center">
+                            <div class="video-placeholder-icon mb-3">
+                                <svg width="64" height="64" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+                                    <path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z"/>
+                                </svg>
+                            </div>
+                            <h5 class="mb-2">Video Stream Unavailable</h5>
+                            <small class="text-muted">Video recording may not be available for this event</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Integration-specific details (collapsible) -->
+                {% if sensor_history_data.current_sensor_response.detail_attrs %}
+                <div class="response-details-bar">
+                    <a class="details-expander" data-toggle="collapse" href="#eventDetails" 
+                       role="button" aria-expanded="false" aria-controls="eventDetails">
+                        <span class="details-label">Integration Details</span>
+                        <span class="details-chevron">▼</span>
+                    </a>
+                    <div class="collapse" id="eventDetails">
+                        <div class="details-content">
+                            {% for key, value in sensor_history_data.current_sensor_response.detail_attrs.items %}
+                                {% if key != "sensor_history_id" %}
+                                <div class="detail-row">
+                                    <div class="detail-label">{{ key|title|cut:"_" }}:</div>
+                                    <div class="detail-value">{{ value }}</div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                No events available for this item.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Handle scroll to top for Earlier button
+$(document).ready(function() {
+    if (sessionStorage.getItem('scrollTimelineToTop') === 'true') {
+        // Clear the flag
+        sessionStorage.removeItem('scrollTimelineToTop');
+        // Scroll the timeline container to top
+        $('#event-timeline').scrollTop(0);
+    }
+});
+</script>
+
+{% endtimezone %}

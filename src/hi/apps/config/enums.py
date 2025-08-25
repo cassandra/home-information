@@ -17,7 +17,7 @@ class ConfigPageType(LabeledEnum):
         return
 
     SETTINGS      = ('Settings'     , ''   , 'config_settings' )
-    EVENTS        = ('Events'       , ''   , 'event_definitions' )
+    EVENTS        = ('Triggers'     , ''   , 'event_definitions' )
     INTEGRATIONS  = ('Integrations' , ''   , 'integrations_home' )
 
     def default(self):
