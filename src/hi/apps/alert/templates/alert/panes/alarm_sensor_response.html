@@ -12,8 +12,20 @@
     {% for label, value in sensor_response.detail_attrs.items %}
     <div class="row">
       <div class="col-3 text-right">{{ label }}</div>
-      <div class="col-9-">{{ value }}</div>
+      <div class="col-9">{{ value }}</div>
     </div>
     {% endfor %}
+    {% if sensor_response.has_video_stream %}
+    <div class="row mt-2">
+      <div class="col-12">
+        <small>
+          <a href="{% url 'console_entity_video_sensor_history' entity_id=sensor_response.sensor.entity_state.entity.id sensor_id=sensor_response.sensor.id %}"
+             data-async="true" class="text-muted">
+            📹 Browse Video Timeline
+          </a>
+        </small>
+      </div>
+    </div>
+    {% endif %}
   </div>  
 </div>
