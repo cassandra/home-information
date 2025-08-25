@@ -153,14 +153,16 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
             )
         self.assertEqual(str(context.exception), 'Entity not found.')
 
-    def test_view_requires_entity_with_video_capability(self):
-        """Test that view raises BadRequest for entity without video streams."""
-        non_video_entity = Entity.objects.create(
+    def test_view_requires_sensor_with_video_capability(self):
+        """Test that view raises BadRequest for sensor without video stream capability."""
+        # Create a sensor that doesn't provide video streams
+        non_video_sensor = Sensor.objects.create(
             integration_id='test.sensor.temp',
             integration_name='test_integration',
             name='Temperature Sensor',
-            entity_type_str='sensor',
-            has_video_stream=False
+            entity_state=self.entity_state,
+            sensor_type_str='sensor',
+            provides_video_stream=False
         )
         
         view = EntityVideoSensorHistoryView()
@@ -171,10 +173,10 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
         with self.assertRaises(BadRequest) as context:
             view.get_main_template_context(
                 request,
-                entity_id=non_video_entity.id,
-                sensor_id=self.video_sensor.id
+                entity_id=self.video_entity.id,
+                sensor_id=non_video_sensor.id
             )
-        self.assertEqual(str(context.exception), 'Entity does not have video stream capability.')
+        self.assertEqual(str(context.exception), 'Sensor does not provide video stream capability.')
 
     def test_view_requires_valid_sensor_id(self):
         """Test that view raises Http404 for invalid sensor ID."""

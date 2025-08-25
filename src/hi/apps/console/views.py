@@ -74,15 +74,15 @@ class EntityVideoSensorHistoryView( HiGridView ):
         except Entity.DoesNotExist:
             raise Http404('Entity not found.')
         
-        # Check if entity has video stream capability
-        if not entity.has_video_stream:
-            raise BadRequest( 'Entity does not have video stream capability.' )
-        
         # Get the sensor
         try:
             sensor = Sensor.objects.get( id = sensor_id, entity_state__entity = entity )
         except Sensor.DoesNotExist:
             raise Http404('Sensor not found for this entity.')
+        
+        # Check if sensor provides video stream capability
+        if not sensor.provides_video_stream:
+            raise BadRequest( 'Sensor does not provide video stream capability.' )
         
         # Determine which helper method to use based on URL pattern and parameters
         if timestamp:
