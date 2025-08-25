@@ -1,29 +1,63 @@
 {% load tz %}
+{% load humanize %}
 {% timezone USER_TIMEZONE %}
-<div>
-  <div class="table-responsive">
-    <table class="table table-striped">
-      <thead>
-	<tr>
-	  <th>Timestamp</th>
-	  <th>Trigger Name</th>
-	</tr>
-      </thead>
-      <tbody>
-	{% for event_history in event_history_list %}
-	<tr>
-	  <td>
-	    {{ event_history.event_datetime|localtime }}
-	  </td>
-	  <td>
-	    {{ event_history.event_definition.name }}
-	  </td>
-	</tr>
-	{% empty %}
-	<tr><td colspan="6"><div><em>No event history</em></div></td></tr>
-	{% endfor %}
-      </tbody>
-    </table>
-  </div>
+<div class="timeline-container">
+  {% if grouped_events %}
+    {% for group in grouped_events %}
+    <div class="timeline-group mb-4">
+      <div class="timeline-group-label font-weight-bold mb-3">
+        {{ group.date_label }}
+      </div>
+      
+      <div class="timeline-items">
+        {% for event_history in group.events %}
+        <div class="timeline-item mb-3">
+          <div class="card border-left-primary">
+            <div class="card-body p-3">
+              <div class="row align-items-center">
+                <div class="col-md-2 col-sm-3">
+                  <div class="text-center">
+                    <strong class="text-primary d-block">{{ event_history.event_datetime|localtime|date:"g:i A" }}</strong>
+                    <small class="text-muted">{{ event_history.event_datetime|localtime|naturaltime }}</small>
+                  </div>
+                </div>
+                <div class="col-md-5 col-sm-9">
+                  <div>
+                    <strong class="d-block">{{ event_history.event_definition.name }}</strong>
+                    <span class="badge badge-info mr-2">{{ event_history.event_definition.event_type.label }}</span>
+                    <span class="badge badge-secondary">{{ event_history.entity_count }} entities</span>
+                  </div>
+                </div>
+                <div class="col-md-5 col-12">
+                  {% if event_history.entity_names %}
+                  <div class="mt-2 mt-md-0">
+                    <small class="text-muted d-block">Involved Entities:</small>
+                    <small class="text-info">
+                      {% for name in event_history.entity_names %}
+                        {{ name }}{% if not forloop.last %}, {% endif %}
+                      {% endfor %}
+                    </small>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="timeline-group">
+      <div class="card border-0 bg-light">
+        <div class="card-body text-center py-4">
+          <i class="fas fa-clock text-muted fa-2x mb-3"></i>
+          <h6 class="text-muted">No Event History</h6>
+          <p class="text-muted mb-0">No trigger events have been recorded yet.</p>
+        </div>
+      </div>
+    </div>
+  {% endif %}
 </div>
 {% endtimezone %}
