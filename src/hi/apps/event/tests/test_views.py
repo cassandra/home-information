@@ -148,13 +148,12 @@ class TestEventHistoryView(DualModeViewTestCase):
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
-        self.assertIn('grouped_events', response.context)
+        self.assertIn('event_history_list', response.context)
         self.assertIn('pagination', response.context)
         
-        # Should have our test entries grouped by date
-        grouped_events = response.context['grouped_events']
-        total_events = sum(len(group['events']) for group in grouped_events)
-        self.assertEqual(total_events, 5)
+        # Should have our test entries
+        history_list = response.context['event_history_list']
+        self.assertEqual(len(history_list), 5)
 
     def test_pagination_configuration(self):
         """Test that pagination is properly configured."""
@@ -180,11 +179,10 @@ class TestEventHistoryView(DualModeViewTestCase):
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
-        grouped_events = response.context['grouped_events']
-        total_events = sum(len(group['events']) for group in grouped_events)
+        history_list = response.context['event_history_list']
         
         # Should be limited by page size (25)
-        self.assertLessEqual(total_events, 25)
+        self.assertLessEqual(len(history_list), 25)
 
     def test_pagination_page_size_constant(self):
         """Test that the page size constant is used correctly."""
@@ -200,8 +198,8 @@ class TestEventHistoryView(DualModeViewTestCase):
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
-        grouped_events = response.context['grouped_events']
-        self.assertEqual(len(grouped_events), 0)
+        history_list = response.context['event_history_list']
+        self.assertEqual(len(history_list), 0)
 
     def test_pagination_with_page_parameter(self):
         """Test pagination with specific page parameter."""
@@ -217,7 +215,7 @@ class TestEventHistoryView(DualModeViewTestCase):
 
         self.assertSuccessResponse(response)
         # Should still return valid response for page 2
-        self.assertIn('grouped_events', response.context)
+        self.assertIn('event_history_list', response.context)
 
     def test_post_not_allowed(self):
         """Test that POST requests are not allowed."""

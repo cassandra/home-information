@@ -1,5 +1,7 @@
 {% extends "modals/action_done.html" %}
 
+{% block modal_dialog_class %}hi-modal-dialog-800{% endblock %}
+
 {% block title_text %}
 Trigger History
 {% endblock %}
@@ -18,7 +20,7 @@ Trigger History
   
   <div class="row">
     <div class="col-12">
-      {% include "event/panes/event_history_list.html" with grouped_events=grouped_events %}
+      {% include "event/panes/event_history_list.html" with event_history_list=event_history_list today=today yesterday=yesterday %}
     </div>
   </div>
   

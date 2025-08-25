@@ -1,5 +1,5 @@
 from django.urls import reverse
-from datetime import date, timedelta
+from django.utils import timezone
 
 from hi.apps.common.pagination import compute_pagination_from_queryset
 from hi.apps.config.enums import ConfigPageType
@@ -63,31 +63,15 @@ class EventHistoryView( HiModalView ):
                 for clause in event_history.event_definition.event_clauses.all()
             ]
 
-        grouped_events = self._group_events_by_date(event_history_list)
+        # Add timezone-aware date context for template
+        now = timezone.now()
+        today = now.date()
+        yesterday = today - timezone.timedelta(days=1)
 
         context = {
-            'grouped_events': grouped_events,
+            'event_history_list': event_history_list,
             'pagination': pagination,
+            'today': today,
+            'yesterday': yesterday,
         }
         return self.modal_response( request, context )
-
-    def _group_events_by_date(self, event_history_list):
-        today = date.today()
-        yesterday = today - timedelta(days=1)
-        groups = {}
-
-        for event_history in event_history_list:
-            event_date = event_history.event_datetime.date()
-            
-            if event_date == today:
-                date_label = "Today"
-            elif event_date == yesterday:
-                date_label = "Yesterday"
-            else:
-                date_label = event_date.strftime("%B %d, %Y")
-            
-            if date_label not in groups:
-                groups[date_label] = []
-            groups[date_label].append(event_history)
-
-        return [{'date_label': label, 'events': events} for label, events in groups.items()]
