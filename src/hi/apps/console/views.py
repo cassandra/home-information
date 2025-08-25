@@ -1,8 +1,11 @@
 from django.core.exceptions import BadRequest
 from django.http import Http404
 from django.views.generic import View
+from datetime import datetime
+from django.utils import timezone
 
 from hi.apps.entity.models import Entity
+from hi.apps.sense.models import Sensor
 from hi.integrations.integration_manager import IntegrationManager
 
 from hi.enums import ViewType
@@ -11,6 +14,7 @@ from hi.hi_grid_view import HiGridView
 
 from .constants import ConsoleConstants
 from .console_helper import ConsoleSettingsHelper
+from .video_stream_browsing_helper import VideoStreamBrowsingHelper
 
 
 class EntityVideoStreamView( HiGridView ):
@@ -39,13 +43,125 @@ class EntityVideoStreamView( HiGridView ):
         if not entity.has_video_stream:
             raise BadRequest( 'Video stream is not currently available.' )
 
+        # Find the first sensor with video capability for history browsing
+        video_sensor = VideoStreamBrowsingHelper.find_video_sensor_for_entity(entity)
+        
         request.view_parameters.view_type = ViewType.ENTITY_VIDEO_STREAM
         request.view_parameters.to_session( request )
         return {
             'entity': entity,
+            'video_sensor': video_sensor,  # May be None if no video sensors
         }
 
+
+class BaseEntityVideoSensorHistoryView( HiGridView ):
+    """Base view for browsing sensor history records with video streams."""
+    
+    def get_main_template_name( self ) -> str:
+        return 'console/panes/entity_video_sensor_history.html'
+    
+    def get_main_template_context( self, request, *args, **kwargs ):
+        """Common context building logic shared by all sensor history views."""
+        entity_id = kwargs.get('entity_id')
+        sensor_id = kwargs.get('sensor_id')
         
+        # Get the entity
+        try:
+            entity = Entity.objects.get( id = entity_id )
+        except Entity.DoesNotExist:
+            raise Http404('Entity not found.')
+        
+        # Get the sensor
+        try:
+            sensor = Sensor.objects.get( id = sensor_id, entity_state__entity = entity )
+        except Sensor.DoesNotExist:
+            raise Http404('Sensor not found for this entity.')
+        
+        # Check if sensor provides video stream capability
+        if not sensor.provides_video_stream:
+            raise BadRequest( 'Sensor does not provide video stream capability.' )
+        
+        # Build sensor history data using subclass-specific method
+        sensor_history_data = self.get_sensor_history_data(sensor, request, **kwargs)
+        
+        request.view_parameters.view_type = ViewType.ENTITY_VIDEO_STREAM
+        request.view_parameters.to_session( request )
+        
+        return {
+            'entity': entity,
+            'sensor': sensor,
+            'sensor_history_data': sensor_history_data,
+        }
+    
+    def get_sensor_history_data(self, sensor, request, **kwargs):
+        """Override in subclasses to provide specific sensor history data building logic."""
+        raise NotImplementedError("Subclasses must implement get_sensor_history_data")
+
+
+class EntityVideoSensorHistoryView( BaseEntityVideoSensorHistoryView ):
+    """Default view for browsing sensor history records with video streams."""
+    
+    def get_sensor_history_data(self, sensor, request, **kwargs):
+        """Get default sensor history data or handle window context."""
+        sensor_history_id = kwargs.get('sensor_history_id')
+        window_start = kwargs.get('window_start')
+        window_end = kwargs.get('window_end')
+        
+        if window_start and window_end:
+            try:
+                preserve_window_start = timezone.make_aware(
+                    datetime.fromtimestamp(int(window_start))
+                )
+                preserve_window_end = timezone.make_aware(
+                    datetime.fromtimestamp(int(window_end))
+                )
+                return VideoStreamBrowsingHelper.build_sensor_history_data_with_window(
+                    sensor, sensor_history_id, preserve_window_start, preserve_window_end
+                )
+            except (ValueError, OSError):
+                # Invalid timestamp format - fall back to default
+                pass
+        
+        # Default behavior
+        return VideoStreamBrowsingHelper.build_sensor_history_data_default(
+            sensor, sensor_history_id
+        )
+
+
+class EntityVideoSensorHistoryEarlierView( BaseEntityVideoSensorHistoryView ):
+    """View for browsing earlier sensor history records (pagination)."""
+    
+    def get_sensor_history_data(self, sensor, request, **kwargs):
+        """Get earlier sensor history data based on timestamp."""
+        timestamp = kwargs.get('timestamp')
+        if not timestamp:
+            raise BadRequest('Timestamp parameter is required for earlier pagination.')
+        
+        try:
+            return VideoStreamBrowsingHelper.build_sensor_history_data_earlier(
+                sensor, int(timestamp)
+            )
+        except (ValueError, TypeError):
+            raise BadRequest('Invalid timestamp format.')
+
+
+class EntityVideoSensorHistoryLaterView( BaseEntityVideoSensorHistoryView ):
+    """View for browsing later sensor history records (pagination)."""
+    
+    def get_sensor_history_data(self, sensor, request, **kwargs):
+        """Get later sensor history data based on timestamp."""
+        timestamp = kwargs.get('timestamp')
+        if not timestamp:
+            raise BadRequest('Timestamp parameter is required for later pagination.')
+        
+        try:
+            return VideoStreamBrowsingHelper.build_sensor_history_data_later(
+                sensor, int(timestamp)
+            )
+        except (ValueError, TypeError):
+            raise BadRequest('Invalid timestamp format.')
+
+
 class ConsoleLockView( View ):
 
     def post( self, request, *args, **kwargs ):

@@ -249,4 +249,7 @@ class ZoneMinderManager( Singleton ):
         return f'{self.zm_client.portal_url}/cgi-bin/nph-zms?mode=jpeg&scale=100&rate=5&maxfps=5&monitor={monitor_id}'
 
     def get_event_video_stream_url( self, event_id : int ):
-        return f'{self.zm_client.portal_url}/cgi-bin/nph-zms?mode=jpeg&scale=100&rate=5&maxfps=5&replay=single&source=event&event={event_id}'
+        # Add timestamp for cache busting to help with connection management
+        import time
+        timestamp = int(time.time())
+        return f'{self.zm_client.portal_url}/cgi-bin/nph-zms?mode=jpeg&scale=100&rate=5&maxfps=5&replay=single&source=event&event={event_id}&_t={timestamp}'

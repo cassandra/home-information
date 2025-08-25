@@ -248,6 +248,7 @@ PIPELINE = {
                 'js/settings.js',
                 'js/audio.js',
                 'js/attribute-changes.js',
+                'js/video-timeline.js',
             ),
             'output_filename': 'js/js_before_content.js',
         },

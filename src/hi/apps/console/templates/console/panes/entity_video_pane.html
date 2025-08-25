@@ -1,7 +1,36 @@
 {% load video_tags %}
-<div class="h6">{{ entity.name }}</div>
-{% if entity.has_video_stream %}
-{% include "console/panes/entity_video_stream.html" with entity=entity %}
-{% else %}
-<div class="text-muted">Video stream not available.</div>
-{% endif %}
+<div class="entity-video-pane">
+    <!-- Unified Tab-Style Header -->
+    <div class="video-interface-header current-stream mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <h5 class="entity-title mb-0 mr-3">{{ entity.name }}</h5>
+            </div>
+            <div class="video-nav-tabs" role="tablist">
+                <span class="video-nav-tab active" role="tab">
+                    <i class="fas fa-video mr-1"></i>Current Stream
+                </span>
+                {% if video_sensor %}
+                <a href="{% url 'console_entity_video_sensor_history' entity.id video_sensor.id %}" 
+                   class="video-nav-tab"
+                   data-async="#main-content"
+                   onclick="sessionStorage.setItem('navigatingFromLiveStream', 'true');"
+                   role="tab">
+                    <i class="fas fa-history mr-1"></i>Event History
+                </a>
+                {% else %}
+                <span class="video-nav-tab disabled" title="No video sensors available" role="tab">
+                    <i class="fas fa-history mr-1"></i>Event History
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Current video stream -->
+    {% if entity.has_video_stream %}
+    {% include "console/panes/entity_video_stream.html" with entity=entity %}
+    {% else %}
+    <div class="text-muted">Video stream not available.</div>
+    {% endif %}
+</div>
