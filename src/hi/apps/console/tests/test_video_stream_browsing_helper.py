@@ -205,7 +205,15 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
         # Create a few responses for today, yesterday, and older
         for days_ago in [0, 1, 3]:
             for hour_offset in [8, 14]:
-                timestamp = base_time - timezone.timedelta(days=days_ago, hours=hour_offset)
+                if days_ago == 0:
+                    # For today, use a fixed time to ensure it's always today
+                    # regardless of when the test runs
+                    timestamp = base_time.replace(hour=hour_offset, minute=0, second=0, microsecond=0)
+                else:
+                    # For other days, subtract full days then set specific hour
+                    date_base = base_time - timezone.timedelta(days=days_ago)
+                    timestamp = date_base.replace(hour=hour_offset, minute=0, second=0, microsecond=0)
+                    
                 integration_key = IntegrationKey(
                     integration_id='test',
                     integration_name=f'response_{days_ago}_{hour_offset}'
@@ -225,10 +233,19 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
         # Should create groups for Today, Yesterday, and older date
         self.assertEqual(len(timeline_groups), 3)
         
-        # Verify group labels
+        # Verify group labels (now include day abbreviations)
         group_labels = [group['label'] for group in timeline_groups]
-        self.assertIn('Today', group_labels)
-        self.assertIn('Yesterday', group_labels)
+        
+        # Check that Today and Yesterday labels contain the expected base text
+        today_label = next((label for label in group_labels if label.startswith('Today')), None)
+        yesterday_label = next((label for label in group_labels if label.startswith('Yesterday')), None)
+        
+        self.assertIsNotNone(today_label, f"Expected a label starting with 'Today', got: {group_labels}")
+        self.assertIsNotNone(yesterday_label, f"Expected a label starting with 'Yesterday', got: {group_labels}")
+        
+        # Verify the day abbreviation is included (3 characters for day)
+        self.assertTrue(today_label.split()[-1], "Today label should include day abbreviation")
+        self.assertTrue(yesterday_label.split()[-1], "Yesterday label should include day abbreviation")
 
     def test_group_responses_by_time_uses_hourly_grouping_for_busy_day(self):
         """Test that group_responses_by_time uses hourly grouping when many events today."""

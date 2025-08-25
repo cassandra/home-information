@@ -244,11 +244,11 @@ class VideoStreamBrowsingHelper:
                     current_date = response_date
                     current_hour = None
                     if response_date == today:
-                        label = "Today"
+                        label = f"Today {response.timestamp.strftime('%a')}"
                     elif response_date == today - timedelta(days=1):
-                        label = "Yesterday"
+                        label = f"Yesterday {response.timestamp.strftime('%a')}"
                     else:
-                        label = response.timestamp.strftime('%B %d')
+                        label = f"{response.timestamp.strftime('%B %d %a')}"
                     
                     current_group = {
                         'label': label,
