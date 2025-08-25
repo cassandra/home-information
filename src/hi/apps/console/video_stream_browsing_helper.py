@@ -75,20 +75,18 @@ class VideoStreamBrowsingHelper:
     @classmethod
     def create_sensor_response_with_history_id(cls, sensor_history: SensorHistory) -> SensorResponse:
         """
-        Create SensorResponse from SensorHistory and add the history ID for template access.
+        Create SensorResponse from SensorHistory and set the core history ID property.
         
         Args:
             sensor_history: SensorHistory record to convert
             
         Returns:
-            SensorResponse object with sensor_history_id added to detail_attrs
+            SensorResponse object with sensor_history_id property set
         """
         sensor_response = SensorResponse.from_sensor_history(sensor_history)
         
-        # Add the sensor_history_id to detail_attrs for template access
-        if sensor_response.detail_attrs is None:
-            sensor_response.detail_attrs = {}
-        sensor_response.detail_attrs['sensor_history_id'] = str(sensor_history.id)
+        # Set the core Django primary key as a proper property
+        sensor_response.sensor_history_id = sensor_history.id
         
         return sensor_response
     
@@ -282,8 +280,7 @@ class VideoStreamBrowsingHelper:
         
         current_response = next(
             (r for r in sensor_responses 
-             if (r.detail_attrs 
-                 and r.detail_attrs.get('sensor_history_id') == str(current_sensor_history_id))), 
+             if r.sensor_history_id == current_sensor_history_id), 
             None
         )
         if not current_response:
@@ -372,6 +369,11 @@ class VideoStreamBrowsingHelper:
         if preserve_window_start and preserve_window_end:
             preserve_window_bounds = (preserve_window_start, preserve_window_end)
         
+        # Convert sensor_history_id to int if it's a string (from URL kwargs)
+        if sensor_history_id:
+            if isinstance(sensor_history_id, str):
+                sensor_history_id = int(sensor_history_id)
+        
         # Smart query strategy based on context and record availability
         if sensor_history_id:
             # Specific record requested
@@ -404,7 +406,7 @@ class VideoStreamBrowsingHelper:
                 # Find current record in the timeline
                 current_sensor_response = next(
                     (r for r in sensor_responses 
-                     if r.detail_attrs and r.detail_attrs.get('sensor_history_id') == str(sensor_history_id)),
+                     if r.sensor_history_id == sensor_history_id),
                     None
                 )
             except SensorHistory.DoesNotExist:
@@ -425,10 +427,7 @@ class VideoStreamBrowsingHelper:
         # If no specific sensor_history_id, try to get it from current_sensor_response
         if not current_history_id and current_sensor_response:
             # Extract sensor_history_id from the current response
-            if hasattr(current_sensor_response, 'detail_attrs') and current_sensor_response.detail_attrs:
-                current_history_id = current_sensor_response.detail_attrs.get('sensor_history_id')
-                if current_history_id:
-                    current_history_id = int(current_history_id)
+            current_history_id = current_sensor_response.sensor_history_id
         
         prev_sensor_response, next_sensor_response = cls.find_adjacent_records(
             sensor, current_history_id
