@@ -6,7 +6,10 @@ from django.utils import timezone
 from django.http import Http404
 from django.core.exceptions import BadRequest
 
-from hi.apps.console.views import EntityVideoStreamView, EntityVideoSensorHistoryView
+from hi.apps.console.views import (
+    EntityVideoStreamView, EntityVideoSensorHistoryView,
+    EntityVideoSensorHistoryEarlierView, EntityVideoSensorHistoryLaterView
+)
 from hi.apps.console.transient_models import EntitySensorHistoryData
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor, SensorHistory
@@ -283,12 +286,10 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
         pivot_time = base_time - timezone.timedelta(hours=2)
         pivot_timestamp = str(int(pivot_time.timestamp()))
         
-        view = EntityVideoSensorHistoryView()
+        view = EntityVideoSensorHistoryEarlierView()
         request = Mock()
         request.view_parameters = Mock()
         request.view_parameters.to_session = Mock()
-        request.resolver_match = Mock()
-        request.resolver_match.url_name = 'console_entity_video_sensor_history_earlier'
         
         context = view.get_main_template_context(
             request,
@@ -350,12 +351,10 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
         pivot_time = base_time - timezone.timedelta(hours=4)
         pivot_timestamp = str(int(pivot_time.timestamp()))
         
-        view = EntityVideoSensorHistoryView()
+        view = EntityVideoSensorHistoryLaterView()
         request = Mock()
         request.view_parameters = Mock()
         request.view_parameters.to_session = Mock()
-        request.resolver_match = Mock()
-        request.resolver_match.url_name = 'console_entity_video_sensor_history_later'
         
         context = view.get_main_template_context(
             request,
@@ -538,12 +537,10 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
 
     def test_view_handles_timezone_conversion_edge_cases(self):
         """Test error boundary: timezone conversion with various timestamp formats."""
-        view = EntityVideoSensorHistoryView()
+        view = EntityVideoSensorHistoryEarlierView()
         request = Mock()
         request.view_parameters = Mock() 
         request.view_parameters.to_session = Mock()
-        request.resolver_match = Mock()
-        request.resolver_match.url_name = 'console_entity_video_sensor_history_earlier'
         
         # Test edge case timestamps
         edge_case_timestamps = [
