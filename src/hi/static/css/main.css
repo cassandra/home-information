@@ -776,3 +776,353 @@ form[data-dirty] {
     color: var(--primary-color);
     padding: 0 0.25rem;
 }
+
+/* ==========================================
+   Video Interface - Camera Event History
+   ========================================== */
+
+/* Timeline Container */
+.timeline-container {
+    max-height: 600px;
+    overflow-y: auto;
+    background-color: var(--white);
+    border-right: 1px solid var(--line-color);
+    padding-right: 1rem;
+}
+
+/* Timeline Groups */
+.timeline-group-label {
+    color: var(--primary-color);
+    padding: 8px 0;
+    border-bottom: 2px solid var(--primary-color);
+    margin-bottom: 12px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Timeline Items */
+.timeline-item {
+    padding: 10px;
+    margin-bottom: 6px;
+    border-left: 3px solid var(--line-color);
+    transition: all 0.2s ease;
+    border-radius: 0 4px 4px 0;
+}
+
+.timeline-item:hover {
+    background-color: var(--edit-primary-bg-color);
+    border-left-color: var(--primary-highlight-color);
+    transform: translateX(2px);
+}
+
+.timeline-item.active {
+    background-color: var(--edit-primary-bg-color);
+    border-left-color: var(--secondary-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-item .time {
+    font-weight: 500;
+    color: var(--black);
+}
+
+.timeline-item.active .time {
+    color: var(--primary-color);
+}
+
+/* Video Container */
+.video-container {
+    border: 2px solid var(--line-color);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: var(--black);
+}
+
+.video-container img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* Event Header */
+.response-header {
+    border-bottom: 1px solid var(--line-color);
+    padding-bottom: 0.75rem;
+}
+
+.response-header h6 {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+/* Event Details Section */
+.response-details {
+    background-color: var(--edit-tertiary-bg-color);
+    padding: 1rem;
+    border-radius: 6px;
+    margin-top: 1rem;
+    border: 1px solid var(--line-color);
+}
+
+.response-details strong {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Navigation Buttons */
+.navigation-buttons {
+    margin-top: 1.5rem;
+}
+
+.navigation-buttons .btn-outline-secondary {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transition: all 0.2s ease;
+}
+
+.navigation-buttons .btn-outline-secondary:hover:not(:disabled) {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--on-primary-color);
+    transform: translateY(-1px);
+}
+
+.navigation-buttons .btn-outline-secondary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ==========================================
+   Loading States & Error Handling
+   ========================================== */
+
+/* Video Placeholder/Error State */
+.video-placeholder {
+    min-height: 400px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 8px;
+    position: relative;
+}
+
+.video-placeholder-icon {
+    color: var(--primary-color);
+    opacity: 0.5;
+}
+
+.video-placeholder h5 {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.video-placeholder p {
+    color: var(--black);
+    opacity: 0.8;
+}
+
+/* Loading Animation for Video */
+.video-container.loading {
+    position: relative;
+    min-height: 400px;
+}
+
+.video-container.loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 8px;
+}
+
+.video-container.loading::after {
+    content: 'Loading video stream...';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Error State for Timeline */
+.timeline-container.error {
+    background-color: var(--edit-secondary-bg-color);
+    padding: 1rem;
+    text-align: center;
+}
+
+.timeline-container.error::before {
+    content: '⚠ Unable to load event history';
+    color: var(--error-color);
+    font-weight: 600;
+}
+
+/* ==========================================
+   Accessibility & Keyboard Navigation
+   ========================================== */
+
+/* Focus indicators for keyboard navigation */
+.timeline-item a:focus {
+    outline: 2px solid var(--secondary-color);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.navigation-buttons a:focus,
+.navigation-buttons button:focus {
+    outline: 2px solid var(--secondary-color);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(244, 95, 54, 0.2);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .timeline-item.active {
+        border-left-width: 4px;
+        font-weight: bold;
+    }
+    
+    .timeline-group-label {
+        border-bottom-width: 3px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .timeline-item,
+    .navigation-buttons .btn-outline-secondary,
+    .video-container.loading::before {
+        transition: none;
+        animation: none;
+    }
+}
+
+/* Screen reader only content */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ==========================================
+   Responsive Design - Landscape Optimized
+   ========================================== */
+
+/* Small landscape devices (landscape phones, 568px and up) */
+@media (min-width: 568px) and (orientation: landscape) {
+    .timeline-container {
+        max-height: 400px;  /* Reduce height for smaller landscape screens */
+    }
+}
+
+/* Medium landscape devices (tablets, 768px and up) */
+@media (min-width: 768px) and (orientation: landscape) {
+    .timeline-container {
+        max-height: 500px;
+    }
+    
+    /* Optimize column widths for landscape tablets */
+    .entity-video-sensor-history .col-md-3 {
+        flex: 0 0 25%;
+        max-width: 25%;
+    }
+    
+    .entity-video-sensor-history .col-md-9 {
+        flex: 0 0 75%;
+        max-width: 75%;
+    }
+}
+
+/* Large landscape devices (laptops/desktops, 992px and up) */
+@media (min-width: 992px) and (orientation: landscape) {
+    .timeline-container {
+        max-height: 600px;
+    }
+    
+    /* Wider timeline on larger screens */
+    .entity-video-sensor-history .col-md-3 {
+        flex: 0 0 20%;
+        max-width: 20%;
+    }
+    
+    .entity-video-sensor-history .col-md-9 {
+        flex: 0 0 80%;
+        max-width: 80%;
+    }
+}
+
+/* Extra large landscape devices (large desktops, 1200px and up) */
+@media (min-width: 1200px) {
+    .video-container {
+        max-width: 1000px;  /* Limit video size on very large screens */
+        margin: 0 auto;
+    }
+}
+
+/* Landscape-specific optimizations */
+@media (orientation: landscape) {
+    /* Compact timeline items for landscape */
+    .timeline-item {
+        padding: 8px;
+        margin-bottom: 4px;
+    }
+    
+    .timeline-group-label {
+        padding: 6px 0;
+        margin-bottom: 8px;
+    }
+    
+    /* Optimize button placement in landscape */
+    .navigation-buttons {
+        margin-top: 1rem;
+    }
+    
+    /* Compact event details in landscape */
+    .response-details {
+        padding: 0.75rem;
+    }
+}
+
+/* Handle small screens that don't meet minimum requirements */
+@media (max-width: 767px) {
+    /* Stack layout vertically on very small screens */
+    .entity-video-sensor-history .row {
+        flex-direction: column;
+    }
+    
+    .entity-video-sensor-history .col-md-3,
+    .entity-video-sensor-history .col-md-9 {
+        max-width: 100%;
+        width: 100%;
+    }
+    
+    .timeline-container {
+        max-height: 200px;
+        margin-bottom: 1rem;
+        border-right: none;
+        border-bottom: 1px solid var(--line-color);
+    }
+}

@@ -3,10 +3,11 @@
 <div class="entity-video-sensor-history">
     <!-- Header with entity name and mode switch -->
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5>{{ entity.name }} - Sensor Response History</h5>
+        <h5 id="event-history-title">{{ entity.name }} - Event History</h5>
         <a href="{% url 'console_entity_video_stream' entity.id %}" 
            class="btn btn-sm btn-outline-primary"
-           data-async="#main-content">
+           data-async="#main-content"
+           aria-label="Return to live camera stream">
             Back to Current Stream
         </a>
     </div>
@@ -15,8 +16,10 @@
     <div class="row">
         <!-- Timeline sidebar -->
         <div class="col-md-3">
-            <div class="timeline-container">
-                <h6>Activity Timeline</h6>
+            <nav class="timeline-container preserve-scroll-bar" id="event-timeline" 
+                 role="navigation" 
+                 aria-label="Event timeline navigation">
+                <h6 id="timeline-heading">Activity Timeline</h6>
                 
                 {% for group in sensor_history_data.timeline_groups %}
                 <div class="timeline-group mb-3">
@@ -24,41 +27,40 @@
                         {{ group.label }}
                     </div>
                     
-                    <div class="timeline-items">
+                    <div class="timeline-items" role="list">
                         {% for response in group.items %}
-                        <div class="timeline-item {% if response.detail_attrs.sensor_history_id == sensor_history_data.current_sensor_response.detail_attrs.sensor_history_id %}active{% endif %}">
+                        <div class="timeline-item {% if response.detail_attrs.sensor_history_id == sensor_history_data.current_sensor_response.detail_attrs.sensor_history_id %}active{% endif %}"
+                             role="listitem">
                             {% if sensor_history_data.window_start_timestamp and sensor_history_data.window_end_timestamp %}
                             <a href="{% url 'console_entity_video_sensor_history_detail_with_context' entity.id sensor.id response.detail_attrs.sensor_history_id sensor_history_data.window_start_timestamp|date:'U' sensor_history_data.window_end_timestamp|date:'U' %}"
                             {% else %}
                             <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id response.detail_attrs.sensor_history_id %}"
                             {% endif %}
                                data-async="#main-content"
-                               class="text-decoration-none">
-                                <div class="d-flex justify-content-between">
+                               class="text-decoration-none"
+                               aria-label="View event from {{ response.timestamp|date:'g:i A' }}{% if response.detail_attrs.sensor_history_id == sensor_history_data.current_sensor_response.detail_attrs.sensor_history_id %} - Currently viewing{% endif %}">
+                                <div>
                                     <span class="time">{{ response.timestamp|date:"g:i A" }}</span>
-                                    <span class="badge {% if response.value == 'active' %}badge-warning{% else %}badge-secondary{% endif %}">
-                                        {{ response.value }}
-                                    </span>
+                                    {% if response.detail_attrs.sensor_history_id == sensor_history_data.current_sensor_response.detail_attrs.sensor_history_id %}
+                                    <small class="text-muted d-block" aria-current="page">→ Currently viewing</small>
+                                    {% endif %}
                                 </div>
-                                {% if response.detail_attrs.sensor_history_id == sensor_history_data.current_sensor_response.detail_attrs.sensor_history_id %}
-                                <small class="text-muted">→ Currently viewing</small>
-                                {% endif %}
                             </a>
                         </div>
                         {% endfor %}
                     </div>
                 </div>
                 {% empty %}
-                <p class="text-muted">No sensor responses available</p>
+                <p class="text-muted">No events available</p>
                 {% endfor %}
-            </div>
+            </nav>
         </div>
 
         <!-- Video and details area -->
-        <div class="col-md-9">
+        <div class="col-md-9" role="main" aria-labelledby="event-history-title">
             {% if sensor_history_data.current_sensor_response %}
             <div class="video-detail-container">
-                <!-- Response header -->
+                <!-- Event header -->
                 <div class="response-header mb-3">
                     <h6>{{ sensor_history_data.current_sensor_response.detail_attrs.details }}</h6>
                     <div class="text-muted">
@@ -67,42 +69,47 @@
                 </div>
 
                 <!-- Video display area -->
-                <div class="video-container mb-3">
+                <div class="video-container mb-3" role="img" aria-label="Event video playback">
                     {% sensor_response_video_stream sensor_history_data.current_sensor_response as video_url %}
                     {% if video_url %}
-                    <img class="img-fluid" src="{{ video_url }}" alt="Sensor Response Video Stream">
+                    <img class="img-fluid" src="{{ video_url }}" alt="Video recording from {{ sensor_history_data.current_sensor_response.timestamp|date:'F j, Y g:i A' }}">
                     {% else %}
                     <!-- Fallback when no video stream is available -->
-                    <div class="bg-secondary text-white d-flex align-items-center justify-content-center" 
-                         style="height: 400px;">
+                    <div class="video-placeholder d-flex align-items-center justify-content-center">
                         <div class="text-center">
-                            <h4>Video Stream Placeholder</h4>
-                            <p>Sensor History ID: {{ sensor_history_data.current_sensor_response.detail_attrs.sensor_history_id }}</p>
-                            <p>Duration: {{ sensor_history_data.current_sensor_response.detail_attrs.duration_seconds }} seconds</p>
-                            <small>Video stream data will be displayed when available</small>
+                            <div class="video-placeholder-icon mb-3">
+                                <svg width="64" height="64" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+                                    <path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z"/>
+                                </svg>
+                            </div>
+                            <h5 class="mb-2">Video Stream Unavailable</h5>
+                            <p class="mb-1">Event Duration: {{ sensor_history_data.current_sensor_response.detail_attrs.duration_seconds }} seconds</p>
+                            <small class="text-muted">Video recording may not be available for this event</small>
                         </div>
                     </div>
                     {% endif %}
                 </div>
 
-                <!-- Response details -->
+                <!-- Event details -->
                 <div class="response-details">
                     <div class="row">
                         <div class="col-sm-6">
-                            <strong>Sensor:</strong> {{ sensor.name }}<br>
-                            <strong>State Type:</strong> {{ sensor.entity_state.entity_state_type }}<br>
-                            <strong>Value:</strong> {{ sensor_history_data.current_sensor_response.value }}
+                            <strong>Detection:</strong> {{ sensor.name }}<br>
+                            <strong>Type:</strong> {{ sensor.entity_state.entity_state_type }}
                         </div>
                         <div class="col-sm-6">
                             <strong>Duration:</strong> {{ sensor_history_data.current_sensor_response.detail_attrs.duration_seconds }} seconds<br>
-                            <strong>Entity Type:</strong> {{ entity.entity_type }}<br>
+                            <strong>Item Type:</strong> {{ entity.entity_type }}<br>
                             <strong>Has Video:</strong> {{ sensor_history_data.current_sensor_response.has_video_stream|yesno:"Yes,No" }}
                         </div>
                     </div>
                 </div>
 
                 <!-- Navigation buttons -->
-                <div class="navigation-buttons mt-3 d-flex justify-content-between">
+                <nav class="navigation-buttons mt-3 d-flex justify-content-between" 
+                     role="navigation" 
+                     aria-label="Event navigation controls">
                     {% if sensor_history_data.prev_sensor_response %}
                     {% if sensor_history_data.window_start_timestamp and sensor_history_data.window_end_timestamp %}
                     <a href="{% url 'console_entity_video_sensor_history_detail_with_context' entity.id sensor.id sensor_history_data.prev_sensor_response.detail_attrs.sensor_history_id sensor_history_data.window_start_timestamp|date:'U' sensor_history_data.window_end_timestamp|date:'U' %}"
@@ -110,11 +117,12 @@
                     <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id sensor_history_data.prev_sensor_response.detail_attrs.sensor_history_id %}"
                     {% endif %}
                        class="btn btn-outline-secondary"
-                       data-async="#main-content">
-                        ← Previous Response
+                       data-async="#main-content"
+                       aria-label="Navigate to earlier event">
+                        ← Earlier Event
                     </a>
                     {% else %}
-                    <button class="btn btn-outline-secondary" disabled>← Previous Response</button>
+                    <button class="btn btn-outline-secondary" disabled aria-label="No earlier events available">← Earlier Event</button>
                     {% endif %}
 
                     {% if sensor_history_data.next_sensor_response %}
@@ -124,62 +132,20 @@
                     <a href="{% url 'console_entity_video_sensor_history_detail' entity.id sensor.id sensor_history_data.next_sensor_response.detail_attrs.sensor_history_id %}"
                     {% endif %}
                        class="btn btn-outline-secondary"
-                       data-async="#main-content">
-                        Next Response →
+                       data-async="#main-content"
+                       aria-label="Navigate to later event">
+                        Later Event →
                     </a>
                     {% else %}
-                    <button class="btn btn-outline-secondary" disabled>Next Response →</button>
+                    <button class="btn btn-outline-secondary" disabled aria-label="No later events available">Later Event →</button>
                     {% endif %}
-                </div>
+                </nav>
             </div>
             {% else %}
             <div class="alert alert-info">
-                No sensor responses available for this sensor.
+                No events available for this item.
             </div>
             {% endif %}
         </div>
     </div>
 </div>
-
-<style>
-/* Basic styling for the sensor history view */
-.timeline-container {
-    max-height: 600px;
-    overflow-y: auto;
-}
-
-.timeline-item {
-    padding: 8px;
-    margin-bottom: 4px;
-    border-left: 3px solid transparent;
-    transition: all 0.2s;
-}
-
-.timeline-item:hover {
-    background-color: #f8f9fa;
-}
-
-.timeline-item.active {
-    background-color: #e9ecef;
-    border-left-color: #007bff;
-}
-
-.timeline-group-label {
-    color: #495057;
-    padding: 4px 0;
-    border-bottom: 1px solid #dee2e6;
-    margin-bottom: 8px;
-}
-
-.video-container {
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.event-details {
-    background-color: #f8f9fa;
-    padding: 15px;
-    border-radius: 4px;
-}
-</style>
