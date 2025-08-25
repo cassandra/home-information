@@ -192,99 +192,9 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
             )
         self.assertEqual(str(context.exception), 'Sensor not found for this entity.')
 
-    @patch('hi.apps.console.views.VideoStreamBrowsingHelper.build_sensor_history_data')
-    def test_view_calls_helper_with_correct_parameters_no_window_context(self, mock_build_data):
-        """Test that view calls helper with correct parameters when no window context provided."""
-        mock_build_data.return_value = Mock(spec=EntitySensorHistoryData)
-        
-        view = EntityVideoSensorHistoryView()
-        request = Mock()
-        request.view_parameters = Mock()
-        request.view_parameters.to_session = Mock()
-        
-        view.get_main_template_context(
-            request,
-            entity_id=self.video_entity.id,
-            sensor_id=self.video_sensor.id,
-            sensor_history_id=123
-        )
-        
-        mock_build_data.assert_called_once_with(
-            sensor=self.video_sensor,
-            sensor_history_id=123,
-            preserve_window_start=None,
-            preserve_window_end=None
-        )
-
-    @patch('hi.apps.console.views.VideoStreamBrowsingHelper.build_sensor_history_data')
-    def test_view_parses_window_context_parameters(self, mock_build_data):
-        """Test that view correctly parses window context parameters."""
-        mock_build_data.return_value = Mock(spec=EntitySensorHistoryData)
-        
-        # Create timezone-aware test timestamps
-        window_start = timezone.now() - timezone.timedelta(hours=2)
-        window_end = timezone.now()
-        window_start_timestamp = int(window_start.timestamp())
-        window_end_timestamp = int(window_end.timestamp())
-        
-        view = EntityVideoSensorHistoryView()
-        request = Mock()
-        request.view_parameters = Mock()
-        request.view_parameters.to_session = Mock()
-        
-        view.get_main_template_context(
-            request,
-            entity_id=self.video_entity.id,
-            sensor_id=self.video_sensor.id,
-            sensor_history_id=123,
-            window_start=str(window_start_timestamp),
-            window_end=str(window_end_timestamp)
-        )
-        
-        # Verify helper was called with timezone-aware datetime objects
-        call_args = mock_build_data.call_args
-        self.assertEqual(call_args[1]['sensor'], self.video_sensor)
-        self.assertEqual(call_args[1]['sensor_history_id'], 123)
-        
-        # Check that timestamps were converted to timezone-aware datetimes
-        preserve_start = call_args[1]['preserve_window_start']
-        preserve_end = call_args[1]['preserve_window_end']
-        self.assertIsInstance(preserve_start, datetime)
-        self.assertIsInstance(preserve_end, datetime)
-        self.assertIsNotNone(preserve_start.tzinfo)
-        self.assertIsNotNone(preserve_end.tzinfo)
-
-    @patch('hi.apps.console.views.VideoStreamBrowsingHelper.build_sensor_history_data')
-    def test_view_handles_invalid_timestamp_parameters(self, mock_build_data):
-        """Test that view handles invalid timestamp parameters gracefully."""
-        mock_build_data.return_value = Mock(spec=EntitySensorHistoryData)
-        
-        view = EntityVideoSensorHistoryView()
-        request = Mock()
-        request.view_parameters = Mock()
-        request.view_parameters.to_session = Mock()
-        
-        # Test with invalid timestamp values
-        view.get_main_template_context(
-            request,
-            entity_id=self.video_entity.id,
-            sensor_id=self.video_sensor.id,
-            sensor_history_id=123,
-            window_start='invalid_timestamp',
-            window_end='also_invalid'
-        )
-        
-        # Should fall back to None values when timestamps are invalid
-        mock_build_data.assert_called_once_with(
-            sensor=self.video_sensor,
-            sensor_history_id=123,
-            preserve_window_start=None,
-            preserve_window_end=None
-        )
-
-    @patch('hi.apps.console.views.VideoStreamBrowsingHelper.build_sensor_history_data')
+    @patch('hi.apps.console.views.VideoStreamBrowsingHelper.build_sensor_history_data_default')
     def test_view_returns_correct_context_structure(self, mock_build_data):
-        """Test that view returns expected context structure."""
+        """Test that view returns expected context structure for default case."""
         mock_sensor_history_data = Mock(spec=EntitySensorHistoryData)
         mock_build_data.return_value = mock_sensor_history_data
         
@@ -306,6 +216,89 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
         
         # Verify view parameters were set
         request.view_parameters.to_session.assert_called_once_with(request)
+
+    @patch('hi.apps.console.views.VideoStreamBrowsingHelper.build_sensor_history_data_earlier')
+    def test_view_handles_earlier_pagination(self, mock_build_data):
+        """Test that view handles 'earlier' pagination URL pattern correctly."""
+        mock_sensor_history_data = Mock(spec=EntitySensorHistoryData)
+        mock_build_data.return_value = mock_sensor_history_data
+        
+        view = EntityVideoSensorHistoryView()
+        request = Mock()
+        request.view_parameters = Mock()
+        request.view_parameters.to_session = Mock()
+        request.resolver_match = Mock()
+        request.resolver_match.url_name = 'console_entity_video_sensor_history_earlier'
+        
+        context = view.get_main_template_context(
+            request,
+            entity_id=self.video_entity.id,
+            sensor_id=self.video_sensor.id,
+            timestamp='1234567890'
+        )
+        
+        # Verify earlier pagination method was called with timestamp
+        mock_build_data.assert_called_once_with(self.video_sensor, 1234567890)
+        self.assertEqual(context['sensor_history_data'], mock_sensor_history_data)
+
+    @patch('hi.apps.console.views.VideoStreamBrowsingHelper.build_sensor_history_data_later')
+    def test_view_handles_later_pagination(self, mock_build_data):
+        """Test that view handles 'later' pagination URL pattern correctly."""
+        mock_sensor_history_data = Mock(spec=EntitySensorHistoryData)
+        mock_build_data.return_value = mock_sensor_history_data
+        
+        view = EntityVideoSensorHistoryView()
+        request = Mock()
+        request.view_parameters = Mock()
+        request.view_parameters.to_session = Mock()
+        request.resolver_match = Mock()
+        request.resolver_match.url_name = 'console_entity_video_sensor_history_later'
+        
+        context = view.get_main_template_context(
+            request,
+            entity_id=self.video_entity.id,
+            sensor_id=self.video_sensor.id,
+            timestamp='1234567890'
+        )
+        
+        # Verify later pagination method was called with timestamp
+        mock_build_data.assert_called_once_with(self.video_sensor, 1234567890)
+        self.assertEqual(context['sensor_history_data'], mock_sensor_history_data)
+
+    @patch('hi.apps.console.views.VideoStreamBrowsingHelper.build_sensor_history_data_with_window')
+    def test_view_handles_window_context_parameters(self, mock_build_data):
+        """Test that view handles window context parameters correctly."""
+        mock_sensor_history_data = Mock(spec=EntitySensorHistoryData)
+        mock_build_data.return_value = mock_sensor_history_data
+        
+        # Create test timestamps
+        window_start_timestamp = int(timezone.now().timestamp()) - 7200  # 2 hours ago
+        window_end_timestamp = int(timezone.now().timestamp())
+        
+        view = EntityVideoSensorHistoryView()
+        request = Mock()
+        request.view_parameters = Mock()
+        request.view_parameters.to_session = Mock()
+        
+        context = view.get_main_template_context(
+            request,
+            entity_id=self.video_entity.id,
+            sensor_id=self.video_sensor.id,
+            sensor_history_id=123,
+            window_start=str(window_start_timestamp),
+            window_end=str(window_end_timestamp)
+        )
+        
+        # Verify window method was called and timestamps were converted
+        self.assertTrue(mock_build_data.called)
+        call_args = mock_build_data.call_args
+        self.assertEqual(call_args[0][0], self.video_sensor)  # sensor
+        self.assertEqual(call_args[0][1], 123)  # sensor_history_id
+        # Verify datetime objects were passed (not raw timestamps)
+        self.assertIsInstance(call_args[0][2], datetime)  # preserve_window_start
+        self.assertIsInstance(call_args[0][3], datetime)  # preserve_window_end
+        
+        self.assertEqual(context['sensor_history_data'], mock_sensor_history_data)
 
     def test_view_integration_with_url_routing_basic(self):
         """Test basic URL routing integration."""

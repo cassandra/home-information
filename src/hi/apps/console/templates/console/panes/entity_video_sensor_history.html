@@ -82,7 +82,8 @@
                 <div class="timeline-pagination-bottom mt-2">
                     <a href="{% url 'console_entity_video_sensor_history_earlier' entity.id sensor.id sensor_history_data.window_start_timestamp|date:'U' %}"
                        class="btn btn-sm btn-outline-primary w-100"
-                       data-async="#main-content">
+                       data-async="#main-content"
+                       onclick="sessionStorage.setItem('scrollTimelineToTop', 'true');">
                         Earlier ↓
                     </a>
                 </div>
@@ -156,4 +157,17 @@
         </div>
     </div>
 </div>
+
+<script>
+// Handle scroll to top for Earlier button
+$(document).ready(function() {
+    if (sessionStorage.getItem('scrollTimelineToTop') === 'true') {
+        // Clear the flag
+        sessionStorage.removeItem('scrollTimelineToTop');
+        // Scroll the timeline container to top
+        $('#event-timeline').scrollTop(0);
+    }
+});
+</script>
+
 {% endtimezone %}
