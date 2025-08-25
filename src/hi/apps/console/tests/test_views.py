@@ -1,6 +1,5 @@
 import logging
-from datetime import datetime
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from django.urls import reverse
 from django.utils import timezone
@@ -192,11 +191,23 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
             )
         self.assertEqual(str(context.exception), 'Sensor not found for this entity.')
 
-    @patch('hi.apps.console.views.VideoStreamBrowsingHelper.build_sensor_history_data_default')
-    def test_view_returns_correct_context_structure(self, mock_build_data):
-        """Test that view returns expected context structure for default case."""
-        mock_sensor_history_data = Mock(spec=EntitySensorHistoryData)
-        mock_build_data.return_value = mock_sensor_history_data
+    def test_view_returns_correct_context_structure_with_real_data(self):
+        """Test that view returns expected context structure with real sensor history data."""
+        # Clear any existing sensor history from setUp
+        SensorHistory.objects.filter(sensor=self.video_sensor).delete()
+        
+        # Create real sensor history records for testing
+        base_time = timezone.now()
+        test_records = []
+        for i in range(3):
+            record = SensorHistory.objects.create(
+                sensor=self.video_sensor,
+                value=f'motion_detected_{i}',
+                response_datetime=base_time - timezone.timedelta(hours=i),
+                has_video_stream=True,
+                details=f'{{"event": "test_{i}", "confidence": 0.9}}'
+            )
+            test_records.append(record)
         
         view = EntityVideoSensorHistoryView()
         request = Mock()
@@ -209,19 +220,66 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
             sensor_id=self.video_sensor.id
         )
         
-        # Verify context structure
+        # Verify context structure with real data
         self.assertEqual(context['entity'], self.video_entity)
         self.assertEqual(context['sensor'], self.video_sensor)
-        self.assertEqual(context['sensor_history_data'], mock_sensor_history_data)
+        
+        # Test actual EntitySensorHistoryData content
+        sensor_history_data = context['sensor_history_data']
+        self.assertIsInstance(sensor_history_data, EntitySensorHistoryData)
+        self.assertEqual(len(sensor_history_data.sensor_responses), 3)
+        
+        # Verify sensor responses contain real data
+        first_response = sensor_history_data.sensor_responses[0]
+        self.assertTrue(hasattr(first_response, 'sensor_history_id'))
+        self.assertIn('motion_detected', first_response.value)
+        
+        # Verify timeline groups are created
+        self.assertIsInstance(sensor_history_data.timeline_groups, list)
+        
+        # Verify pagination metadata is present
+        self.assertIsInstance(sensor_history_data.pagination_metadata, dict)
+        self.assertIn('has_older_records', sensor_history_data.pagination_metadata)
+        self.assertIn('has_newer_records', sensor_history_data.pagination_metadata)
         
         # Verify view parameters were set
         request.view_parameters.to_session.assert_called_once_with(request)
 
-    @patch('hi.apps.console.views.VideoStreamBrowsingHelper.build_sensor_history_data_earlier')
-    def test_view_handles_earlier_pagination(self, mock_build_data):
-        """Test that view handles 'earlier' pagination URL pattern correctly."""
-        mock_sensor_history_data = Mock(spec=EntitySensorHistoryData)
-        mock_build_data.return_value = mock_sensor_history_data
+    def test_view_handles_earlier_pagination_with_real_data(self):
+        """Test that view handles 'earlier' pagination with actual sensor history data."""
+        # Clear any existing sensor history
+        SensorHistory.objects.filter(sensor=self.video_sensor).delete()
+        
+        # Create real sensor history records across a time range
+        base_time = timezone.now()
+        older_records = []
+        newer_records = []
+        
+        # Create 10 older records (more than 2 hours ago)
+        for i in range(10):
+            record = SensorHistory.objects.create(
+                sensor=self.video_sensor,
+                value=f'older_motion_{i}',
+                response_datetime=base_time - timezone.timedelta(hours=3 + i),
+                has_video_stream=True,
+                details=f'{{"event": "older_{i}", "confidence": 0.8}}'
+            )
+            older_records.append(record)
+        
+        # Create 5 newer records (within last 2 hours)
+        for i in range(5):
+            record = SensorHistory.objects.create(
+                sensor=self.video_sensor,
+                value=f'newer_motion_{i}',
+                response_datetime=base_time - timezone.timedelta(minutes=30 * i),
+                has_video_stream=True,
+                details=f'{{"event": "newer_{i}", "confidence": 0.9}}'
+            )
+            newer_records.append(record)
+        
+        # Test pagination to earlier records using timestamp from 2 hours ago
+        pivot_time = base_time - timezone.timedelta(hours=2)
+        pivot_timestamp = str(int(pivot_time.timestamp()))
         
         view = EntityVideoSensorHistoryView()
         request = Mock()
@@ -234,18 +292,61 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
             request,
             entity_id=self.video_entity.id,
             sensor_id=self.video_sensor.id,
-            timestamp='1234567890'
+            timestamp=pivot_timestamp
         )
         
-        # Verify earlier pagination method was called with timestamp
-        mock_build_data.assert_called_once_with(self.video_sensor, 1234567890)
-        self.assertEqual(context['sensor_history_data'], mock_sensor_history_data)
+        # Test actual pagination behavior
+        sensor_history_data = context['sensor_history_data']
+        self.assertIsInstance(sensor_history_data, EntitySensorHistoryData)
+        
+        # Should return earlier records (from older_records)
+        self.assertGreater(len(sensor_history_data.sensor_responses), 0)
+        
+        # All returned records should be older than pivot time
+        for response in sensor_history_data.sensor_responses:
+            self.assertLess(response.timestamp, pivot_time)
+        
+        # Verify pagination metadata indicates more records available
+        pagination_meta = sensor_history_data.pagination_metadata
+        self.assertIn('has_older_records', pagination_meta)
+        self.assertIn('has_newer_records', pagination_meta)
+        self.assertTrue(pagination_meta['has_newer_records'])  # Should have newer records available
 
-    @patch('hi.apps.console.views.VideoStreamBrowsingHelper.build_sensor_history_data_later')
-    def test_view_handles_later_pagination(self, mock_build_data):
-        """Test that view handles 'later' pagination URL pattern correctly."""
-        mock_sensor_history_data = Mock(spec=EntitySensorHistoryData)
-        mock_build_data.return_value = mock_sensor_history_data
+    def test_view_handles_later_pagination_with_real_data(self):
+        """Test that view handles 'later' pagination with actual sensor history data."""
+        # Clear any existing sensor history
+        SensorHistory.objects.filter(sensor=self.video_sensor).delete()
+        
+        # Create real sensor history records across a time range
+        base_time = timezone.now()
+        older_records = []
+        newer_records = []
+        
+        # Create 8 older records (more than 4 hours ago)
+        for i in range(8):
+            record = SensorHistory.objects.create(
+                sensor=self.video_sensor,
+                value=f'older_motion_{i}',
+                response_datetime=base_time - timezone.timedelta(hours=5 + i),
+                has_video_stream=True,
+                details=f'{{"event": "older_{i}", "confidence": 0.7}}'
+            )
+            older_records.append(record)
+        
+        # Create 6 newer records (within last 3 hours) with more spacing
+        for i in range(6):
+            record = SensorHistory.objects.create(
+                sensor=self.video_sensor,
+                value=f'newer_motion_{i}',
+                response_datetime=base_time - timezone.timedelta(hours=2.5) + timezone.timedelta(minutes=15 * i),
+                has_video_stream=True,
+                details=f'{{"event": "newer_{i}", "confidence": 0.95}}'
+            )
+            newer_records.append(record)
+        
+        # Test pagination to later records using timestamp from 4 hours ago
+        pivot_time = base_time - timezone.timedelta(hours=4)
+        pivot_timestamp = str(int(pivot_time.timestamp()))
         
         view = EntityVideoSensorHistoryView()
         request = Mock()
@@ -258,22 +359,73 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
             request,
             entity_id=self.video_entity.id,
             sensor_id=self.video_sensor.id,
-            timestamp='1234567890'
+            timestamp=pivot_timestamp
         )
         
-        # Verify later pagination method was called with timestamp
-        mock_build_data.assert_called_once_with(self.video_sensor, 1234567890)
-        self.assertEqual(context['sensor_history_data'], mock_sensor_history_data)
-
-    @patch('hi.apps.console.views.VideoStreamBrowsingHelper.build_sensor_history_data_with_window')
-    def test_view_handles_window_context_parameters(self, mock_build_data):
-        """Test that view handles window context parameters correctly."""
-        mock_sensor_history_data = Mock(spec=EntitySensorHistoryData)
-        mock_build_data.return_value = mock_sensor_history_data
+        # Test actual pagination behavior
+        sensor_history_data = context['sensor_history_data']
+        self.assertIsInstance(sensor_history_data, EntitySensorHistoryData)
         
-        # Create test timestamps
-        window_start_timestamp = int(timezone.now().timestamp()) - 7200  # 2 hours ago
-        window_end_timestamp = int(timezone.now().timestamp())
+        # Should return later records (from newer_records)
+        self.assertGreater(len(sensor_history_data.sensor_responses), 0)
+        
+        # All returned records should be newer than pivot time
+        for response in sensor_history_data.sensor_responses:
+            self.assertGreater(response.timestamp, pivot_time)
+        
+        # Verify pagination metadata indicates more records available
+        pagination_meta = sensor_history_data.pagination_metadata
+        self.assertIn('has_older_records', pagination_meta)
+        self.assertIn('has_newer_records', pagination_meta)
+        self.assertTrue(pagination_meta['has_older_records'])  # Should have older records available
+        
+        # Test that responses contain expected newer data
+        response_values = [r.value for r in sensor_history_data.sensor_responses]
+        self.assertTrue(any('newer_motion' in value for value in response_values))
+
+    def test_view_handles_window_context_parameters_with_real_data(self):
+        """Test that view handles window context parameters with actual sensor history data."""
+        # Clear any existing sensor history
+        SensorHistory.objects.filter(sensor=self.video_sensor).delete()
+        
+        # Create real sensor history records within specific time windows
+        base_time = timezone.now()
+        
+        # Records outside the window (should not appear in results)
+        SensorHistory.objects.create(
+            sensor=self.video_sensor,
+            value='outside_before_window',
+            response_datetime=base_time - timezone.timedelta(hours=4),
+            has_video_stream=True
+        )
+        
+        SensorHistory.objects.create(
+            sensor=self.video_sensor,
+            value='outside_after_window',
+            response_datetime=base_time,
+            has_video_stream=True
+        )
+        
+        # Records inside the window (should appear in results)
+        window_records = []
+        for i in range(3):
+            record = SensorHistory.objects.create(
+                sensor=self.video_sensor,
+                value=f'inside_window_{i}',
+                response_datetime=base_time - timezone.timedelta(hours=2) + timezone.timedelta(minutes=20 * i),
+                has_video_stream=True,
+                details=f'{{"window_test": "record_{i}"}}'
+            )
+            window_records.append(record)
+        
+        # Define window boundaries (2.5 hours ago to 1.5 hours ago)
+        window_start_time = base_time - timezone.timedelta(hours=2.5)
+        window_end_time = base_time - timezone.timedelta(hours=1.5)
+        window_start_timestamp = str(int(window_start_time.timestamp()))
+        window_end_timestamp = str(int(window_end_time.timestamp()))
+        
+        # Use the middle record as the target
+        target_record = window_records[1]
         
         view = EntityVideoSensorHistoryView()
         request = Mock()
@@ -284,21 +436,30 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
             request,
             entity_id=self.video_entity.id,
             sensor_id=self.video_sensor.id,
-            sensor_history_id=123,
-            window_start=str(window_start_timestamp),
-            window_end=str(window_end_timestamp)
+            sensor_history_id=target_record.id,
+            window_start=window_start_timestamp,
+            window_end=window_end_timestamp
         )
         
-        # Verify window method was called and timestamps were converted
-        self.assertTrue(mock_build_data.called)
-        call_args = mock_build_data.call_args
-        self.assertEqual(call_args[0][0], self.video_sensor)  # sensor
-        self.assertEqual(call_args[0][1], 123)  # sensor_history_id
-        # Verify datetime objects were passed (not raw timestamps)
-        self.assertIsInstance(call_args[0][2], datetime)  # preserve_window_start
-        self.assertIsInstance(call_args[0][3], datetime)  # preserve_window_end
+        # Test actual window preservation behavior
+        sensor_history_data = context['sensor_history_data']
+        self.assertIsInstance(sensor_history_data, EntitySensorHistoryData)
         
-        self.assertEqual(context['sensor_history_data'], mock_sensor_history_data)
+        # Should only return records within the window
+        response_values = [r.value for r in sensor_history_data.sensor_responses]
+        
+        # Verify only window records are included
+        self.assertTrue(any('inside_window' in value for value in response_values))
+        self.assertNotIn('outside_before_window', response_values)
+        self.assertNotIn('outside_after_window', response_values)
+        
+        # Verify window timestamps are preserved
+        self.assertIsNotNone(sensor_history_data.window_start_timestamp)
+        self.assertIsNotNone(sensor_history_data.window_end_timestamp)
+        
+        # Verify current sensor response corresponds to target record
+        if sensor_history_data.current_sensor_response:
+            self.assertEqual(sensor_history_data.current_sensor_response.sensor_history_id, target_record.id)
 
     def test_view_integration_with_url_routing_basic(self):
         """Test basic URL routing integration."""

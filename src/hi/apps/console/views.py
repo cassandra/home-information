@@ -1,11 +1,11 @@
 from django.core.exceptions import BadRequest
 from django.http import Http404
 from django.views.generic import View
-from datetime import datetime, timedelta
+from datetime import datetime
 from django.utils import timezone
 
 from hi.apps.entity.models import Entity
-from hi.apps.sense.models import Sensor, SensorHistory
+from hi.apps.sense.models import Sensor
 from hi.integrations.integration_manager import IntegrationManager
 
 from hi.enums import ViewType
