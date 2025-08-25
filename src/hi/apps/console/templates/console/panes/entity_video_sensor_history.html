@@ -3,15 +3,25 @@
 
 {% timezone USER_TIMEZONE %}
 <div class="entity-video-sensor-history">
-    <!-- Header with entity name and mode switch -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 id="event-history-title">{{ entity.name }} - Event History</h5>
-        <a href="{% url 'console_entity_video_stream' entity.id %}" 
-           class="btn btn-sm btn-outline-primary"
-           data-async="#main-content"
-           aria-label="Return to live camera stream">
-            Back to Current Stream
-        </a>
+    <!-- Unified Tab-Style Header -->
+    <div class="video-interface-header event-history mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <h5 class="entity-title mb-0 mr-3">{{ entity.name }}</h5>
+            </div>
+            <div class="video-nav-tabs" role="tablist">
+                <a href="{% url 'console_entity_video_stream' entity.id %}" 
+                   class="video-nav-tab"
+                   data-async="#main-content"
+                   aria-label="Return to live camera stream"
+                   role="tab">
+                    <i class="fas fa-video mr-1"></i>Current Stream
+                </a>
+                <span class="video-nav-tab active" role="tab">
+                    <i class="fas fa-history mr-1"></i>Event History
+                </span>
+            </div>
+        </div>
     </div>
 
     <!-- Main content area split into timeline and video -->
@@ -21,7 +31,7 @@
             <nav class="timeline-container preserve-scroll-bar" id="event-timeline" 
                  role="navigation" 
                  aria-label="Event timeline navigation">
-                <h6 id="timeline-heading">Activity Timeline</h6>
+                <h6 id="timeline-heading">Event Timeline</h6>
                 
                 {% for group in sensor_history_data.timeline_groups %}
                 <div class="timeline-group mb-3">
@@ -64,7 +74,7 @@
             <div class="video-detail-container">
                 <!-- Event header -->
                 <div class="response-header mb-3">
-                    <h6>{{ sensor.entity_state.entity_state_type|title }} Event</h6>
+                    <h6>{{ sensor.entity_state.entity_state_type.label }} Event</h6>
                     <div class="text-muted">
                         {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:"F j, Y g:i A" }}
                     </div>
@@ -94,16 +104,6 @@
 
                 <!-- Event details -->
                 <div class="response-details">
-                    <div class="row">
-                        <div class="col-sm-6">
-                            <strong>Detection:</strong> {{ sensor.name }}<br>
-                            <strong>Type:</strong> {{ sensor.entity_state.entity_state_type }}
-                        </div>
-                        <div class="col-sm-6">
-                            <strong>Item Type:</strong> {{ entity.entity_type }}<br>
-                            <strong>Has Video:</strong> {{ sensor_history_data.current_sensor_response.has_video_stream|yesno:"Yes,No" }}
-                        </div>
-                    </div>
                     
                     <!-- Integration-specific details (collapsible) -->
                     {% if sensor_history_data.current_sensor_response.detail_attrs %}

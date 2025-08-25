@@ -1126,3 +1126,177 @@ form[data-dirty] {
         border-bottom: 1px solid var(--line-color);
     }
 }
+
+/* Video Interface Header Styles */
+.video-interface-header {
+    border-bottom: 2px solid #e9ecef;
+    padding: 0.75rem;
+    margin: -0.75rem -0.75rem 0.75rem -0.75rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+/* Page-specific header backgrounds */
+.video-interface-header.current-stream {
+    background-color: var(--secondary-color);
+    color: var(--on-secondary-color);
+    border-bottom-color: var(--secondary-color);
+}
+
+.video-interface-header.event-history {
+    background-color: var(--tertiary-color);
+    color: var(--on-tertiary-color);
+    border-bottom-color: var(--tertiary-color);
+}
+
+.entity-title {
+    color: #343a40;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.video-interface-header.current-stream .entity-title,
+.video-interface-header.event-history .entity-title {
+    color: inherit;
+}
+
+.last-activity-badge {
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+}
+
+.video-interface-header.current-stream .last-activity-badge {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: inherit;
+}
+
+.video-interface-header.event-history .last-activity-badge {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: inherit;
+}
+
+.video-nav-tabs {
+    display: flex;
+    gap: 0;
+}
+
+.video-nav-tab {
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    transition: all 0.15s ease-in-out;
+    position: relative;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.video-nav-tab:first-child {
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+}
+
+.video-nav-tab:last-child {
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+    border-left: none;
+}
+
+.video-nav-tab:not(:first-child):not(:last-child) {
+    border-left: none;
+}
+
+.video-nav-tab:hover:not(.disabled):not(.active) {
+    color: #495057;
+    background-color: #e9ecef;
+    text-decoration: none;
+}
+
+.video-nav-tab.active {
+    color: #fff;
+    background-color: #007bff;
+    border-color: #007bff;
+    z-index: 1;
+}
+
+/* Active tab styling for colored headers */
+.video-interface-header.current-stream .video-nav-tab.active {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: var(--secondary-color);
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
+.video-interface-header.event-history .video-nav-tab.active {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: var(--tertiary-color);
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
+/* Inactive tab styling for colored headers */
+.video-interface-header.current-stream .video-nav-tab:not(.active):not(.disabled),
+.video-interface-header.event-history .video-nav-tab:not(.active):not(.disabled) {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.video-interface-header.current-stream .video-nav-tab:hover:not(.disabled):not(.active),
+.video-interface-header.event-history .video-nav-tab:hover:not(.disabled):not(.active) {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 1);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.video-nav-tab.disabled {
+    color: #6c757d;
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .video-interface-header .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.75rem;
+    }
+    
+    .video-nav-tabs {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .video-nav-tab {
+        flex: 1;
+        text-align: center;
+        font-size: 0.85rem;
+        padding: 0.4rem 0.6rem;
+    }
+    
+    .entity-title {
+        font-size: 1rem;
+    }
+    
+    .last-activity-badge {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .video-nav-tab i {
+        display: none; /* Hide icons on very small screens */
+    }
+    
+    .video-nav-tab {
+        padding: 0.4rem 0.5rem;
+        font-size: 0.8rem;
+    }
+}
