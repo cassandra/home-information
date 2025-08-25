@@ -40,6 +40,20 @@
                   </small>
                 </div>
                 {% endif %}
+                
+                {% if event_history.video_entities %}
+                <div class="video-links mt-2">
+                  <small class="text-muted d-block">Video Available:</small>
+                  {% for video_entity in event_history.video_entities %}
+                    <a href="{% url 'console_entity_video_sensor_history_earlier' video_entity.entity.id video_entity.sensors.0.id event_history.video_url_timestamp %}"
+                       class="btn btn-sm btn-outline-primary mr-1 mb-1"
+                       data-async="#main-content"
+                       title="View video from {{ video_entity.entity.name }} around this event">
+                      <i class="fas fa-video"></i> {{ video_entity.entity.name }}
+                    </a>
+                  {% endfor %}
+                </div>
+                {% endif %}
               </div>
             </div>
           </div>

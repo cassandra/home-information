@@ -62,6 +62,26 @@ class EventHistoryView( HiModalView ):
                 clause.entity_state.entity.name 
                 for clause in event_history.event_definition.event_clauses.all()
             ]
+            
+            # Group video-capable sensors by entity for video browser integration
+            video_entities = {}
+            for clause in event_history.event_definition.event_clauses.all():
+                entity = clause.entity_state.entity
+                for sensor in clause.entity_state.sensors.all():
+                    if sensor.provides_video_stream:
+                        if entity.id not in video_entities:
+                            video_entities[entity.id] = {
+                                'entity': entity,
+                                'sensors': []
+                            }
+                        video_entities[entity.id]['sensors'].append(sensor)
+            
+            event_history.video_entities = list(video_entities.values())
+            
+            # Add 2 minutes to event timestamp for inclusive video browser results
+            # This ensures we capture the triggering response + surrounding context
+            adjusted_timestamp = event_history.event_datetime + timezone.timedelta(minutes=2)
+            event_history.video_url_timestamp = int(adjusted_timestamp.timestamp())
 
         # Add timezone-aware date context for template
         now = timezone.now()
