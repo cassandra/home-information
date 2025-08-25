@@ -1,4 +1,5 @@
 from django.urls import reverse
+from django.utils import timezone
 
 from hi.apps.common.pagination import compute_pagination_from_queryset
 from hi.apps.config.enums import ConfigPageType
@@ -7,6 +8,7 @@ from hi.apps.config.views import ConfigPageView
 from hi.hi_async_view import HiModalView
 
 from .models import EventDefinition, EventHistory
+from .view_helpers import EventHistoryViewHelper
 
 
 class EventDefinitionsView( ConfigPageView ):
@@ -43,16 +45,30 @@ class EventHistoryView( HiModalView ):
 
         base_url = reverse( 'event_history' )
 
-        queryset = EventHistory.objects.all()
+        queryset = EventHistory.objects.select_related(
+            'event_definition'
+        ).prefetch_related(
+            'event_definition__event_clauses__entity_state__entity'
+        ).all()
         pagination = compute_pagination_from_queryset( request = request,
                                                        queryset = queryset,
                                                        base_url = base_url,
                                                        page_size = self.EVENT_HISTORY_PAGE_SIZE,
                                                        async_urls = True )
-        event_history_list = queryset[pagination.start_offset:pagination.end_offset + 1]
+        event_history_list = list(queryset[pagination.start_offset:pagination.end_offset + 1])
+
+        # Enhance event history objects with computed fields for display and video integration
+        EventHistoryViewHelper.enhance_event_history_list(event_history_list)
+
+        # Add timezone-aware date context for template
+        now = timezone.now()
+        today = now.date()
+        yesterday = today - timezone.timedelta(days=1)
 
         context = {
             'event_history_list': event_history_list,
             'pagination': pagination,
+            'today': today,
+            'yesterday': yesterday,
         }
         return self.modal_response( request, context )
