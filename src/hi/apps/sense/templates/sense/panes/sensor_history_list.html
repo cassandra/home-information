@@ -4,10 +4,19 @@
   {% for sensor_history in sensor_history_list %}
   <li>
     {% if sensor_history.details %}
-    <a href="{% url 'sense_sensor_history_details' sensor_history_id=sensor_history.id %}"
-       data-async="true">
-      {{ sensor_history.response_datetime|localtime }} : {{ sensor_history.value }}
-    </a>
+      {% if sensor.provides_video_stream and sensor_history.has_video_stream %}
+        {# Redirect video streams to enhanced video browser #}
+        <a href="{% url 'console_entity_video_sensor_history_detail' entity_id=sensor.entity_state.entity.id sensor_id=sensor.id sensor_history_id=sensor_history.id %}"
+           data-async="true">
+          {{ sensor_history.response_datetime|localtime }} : {{ sensor_history.value }}
+        </a>
+      {% else %}
+        {# Use existing sensor history details modal for non-video sensors #}
+        <a href="{% url 'sense_sensor_history_details' sensor_history_id=sensor_history.id %}"
+           data-async="true">
+          {{ sensor_history.response_datetime|localtime }} : {{ sensor_history.value }}
+        </a>
+      {% endif %}
     {% else %}
     {{ sensor_history.response_datetime|localtime }} : {{ sensor_history.value }}
     {% endif %}
@@ -16,8 +25,15 @@
   <div><em>No history.</em></div>
   {% endfor %}
   {% if show_all_link and sensor_history_list %}
-  <a href="{% url 'sense_sensor_history' sensor_id=sensor.id %}"
-     data-async="true">&gt;&gt; See All</a>
+    {% if sensor.provides_video_stream %}
+      {# Redirect to enhanced video browser for video sensors #}
+      <a href="{% url 'console_entity_video_sensor_history' entity_id=sensor.entity_state.entity.id sensor_id=sensor.id %}"
+         data-async="true">&gt;&gt; See All</a>
+    {% else %}
+      {# Use existing sensor history modal for non-video sensors #}
+      <a href="{% url 'sense_sensor_history' sensor_id=sensor.id %}"
+         data-async="true">&gt;&gt; See All</a>
+    {% endif %}
   {% endif %}
 </ul>
 {% endtimezone %}
