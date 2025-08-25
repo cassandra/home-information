@@ -24,6 +24,18 @@
     <div class="align-self-center">
       {{ entity_state_status_data.entity_state.name }}
     </div>
+    <div class="align-self-center ml-auto">
+      {% with sensor_response=entity_state_status_data.latest_sensor_response %}
+      {% if sensor_response and sensor_response.sensor.provides_video_stream %}
+        <small>
+          <a href="{% url 'console_entity_video_sensor_history' entity_id=sensor_response.sensor.entity_state.entity.id sensor_id=sensor_response.sensor.id %}"
+             data-async="true" class="text-muted">
+            📹 Browse Video
+          </a>
+        </small>
+      {% endif %}
+      {% endwith %}
+    </div>
   </div>
   
   {% empty %}
