@@ -102,31 +102,28 @@
                     {% endif %}
                 </div>
 
-                <!-- Event details -->
-                <div class="response-details">
-                    
-                    <!-- Integration-specific details (collapsible) -->
-                    {% if sensor_history_data.current_sensor_response.detail_attrs %}
-                    <div class="mt-3">
-                        <a class="btn btn-sm btn-outline-secondary" data-toggle="collapse" href="#eventDetails" 
-                           role="button" aria-expanded="false" aria-controls="eventDetails">
-                            <small>📋 Event Details</small>
-                        </a>
-                        <div class="collapse mt-2" id="eventDetails">
-                            <div class="card card-body py-2">
-                                {% for key, value in sensor_history_data.current_sensor_response.detail_attrs.items %}
-                                    {% if key != "sensor_history_id" %}
-                                    <div class="row">
-                                        <div class="col-sm-4"><small class="text-muted">{{ key|title|cut:"_" }}:</small></div>
-                                        <div class="col-sm-8"><small>{{ value }}</small></div>
-                                    </div>
-                                    {% endif %}
-                                {% endfor %}
-                            </div>
+                <!-- Integration-specific details (collapsible) -->
+                {% if sensor_history_data.current_sensor_response.detail_attrs %}
+                <div class="response-details-bar">
+                    <a class="details-expander" data-toggle="collapse" href="#eventDetails" 
+                       role="button" aria-expanded="false" aria-controls="eventDetails">
+                        <span class="details-label">Integration Details</span>
+                        <span class="details-chevron">▼</span>
+                    </a>
+                    <div class="collapse" id="eventDetails">
+                        <div class="details-content">
+                            {% for key, value in sensor_history_data.current_sensor_response.detail_attrs.items %}
+                                {% if key != "sensor_history_id" %}
+                                <div class="detail-row">
+                                    <div class="detail-label">{{ key|title|cut:"_" }}:</div>
+                                    <div class="detail-value">{{ value }}</div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
                         </div>
                     </div>
-                    {% endif %}
                 </div>
+                {% endif %}
 
             </div>
             {% else %}

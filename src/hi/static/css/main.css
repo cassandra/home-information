@@ -859,18 +859,80 @@ form[data-dirty] {
     margin-bottom: 0.25rem;
 }
 
-/* Event Details Section */
-.response-details {
-    background-color: var(--edit-tertiary-bg-color);
-    padding: 1rem;
-    border-radius: 6px;
-    margin-top: 1rem;
-    border: 1px solid var(--line-color);
+/* Event Details Expansion Bar */
+.response-details-bar {
+    border-top: 1px solid var(--line-color);
+    margin-top: 1.5rem;
 }
 
-.response-details strong {
-    color: var(--primary-color);
-    font-weight: 600;
+.details-expander {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(to bottom, #f8f9fa, #f1f3f5);
+    text-decoration: none;
+    color: #6c757d;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.details-expander:hover {
+    background: #e9ecef;
+    text-decoration: none;
+    color: #495057;
+}
+
+.details-expander:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+    text-decoration: none;
+}
+
+.details-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.details-chevron {
+    font-size: 0.8rem;
+    transition: transform 0.2s ease;
+}
+
+.details-expander[aria-expanded="true"] .details-chevron {
+    transform: rotate(180deg);
+}
+
+.details-content {
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+
+.detail-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) 2fr;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.detail-value {
+    font-size: 0.85rem;
+    color: #212529;
+    word-break: break-word;
 }
 
 
@@ -1067,14 +1129,36 @@ form[data-dirty] {
     }
     
     
-    /* Compact event details in landscape */
-    .response-details {
+    /* Compact details bar in landscape */
+    .details-expander {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .details-content {
         padding: 0.75rem;
     }
 }
 
 /* Handle small screens that don't meet minimum requirements */
 @media (max-width: 767px) {
+    /* Stack detail rows on mobile */
+    .detail-row {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .details-expander {
+        padding: 0.6rem 0.75rem;
+    }
+    
+    .details-label {
+        font-size: 0.85rem;
+    }
     /* Stack layout vertically on very small screens */
     .entity-video-sensor-history .row {
         flex-direction: column;
