@@ -578,11 +578,17 @@ class TestZoneMinderManagerUrlGeneration(TestCase):
     def test_get_event_video_stream_url(self):
         """Test event video stream URL generation"""
         event_id = 456
-        expected_url = 'https://test.com/zm/cgi-bin/nph-zms?mode=jpeg&scale=100&rate=5&maxfps=5&replay=single&source=event&event=456'
+        expected_base_url = 'https://test.com/zm/cgi-bin/nph-zms?mode=jpeg&scale=100&rate=5&maxfps=5&replay=single&source=event&event=456&_t='
         
         result = self.manager.get_event_video_stream_url(event_id)
         
-        self.assertEqual(result, expected_url)
+        # Check that URL starts with expected base and includes timestamp
+        self.assertTrue(result.startswith(expected_base_url))
+        
+        # Extract and validate timestamp parameter
+        timestamp_part = result[len(expected_base_url):]
+        self.assertTrue(timestamp_part.isdigit())
+        self.assertGreater(int(timestamp_part), 0)
 
 
 class TestZoneMinderManagerBooleanConversion(TestCase):

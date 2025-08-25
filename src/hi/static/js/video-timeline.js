@@ -1,8 +1,98 @@
 // Video Timeline Scrollbar Management
 // Handles scroll behavior for the dual-mode camera interface timeline
+// Also manages video stream connections to prevent browser connection limit issues
 
 (function() {
     'use strict';
+    
+    // Video Connection Management
+    const VideoConnectionManager = {
+        currentVideo: null,
+        previousVideos: [],
+        maxCachedVideos: 3, // Keep a few previous videos cached for back navigation
+        
+        registerVideo: function(videoElement) {
+            if (!videoElement) return;
+            
+            // Clean up old videos before registering new one
+            this.cleanupOldVideos();
+            
+            // Store reference to current video
+            this.currentVideo = videoElement;
+            
+            // Add error handling and load event listeners
+            videoElement.addEventListener('error', this.handleVideoError.bind(this));
+            videoElement.addEventListener('loadstart', this.handleVideoLoadStart.bind(this));
+        },
+        
+        cleanupOldVideos: function() {
+            // If we have a current video, move it to the previous videos cache
+            if (this.currentVideo && this.currentVideo.src) {
+                this.previousVideos.unshift(this.currentVideo);
+                
+                // Keep only the most recent N videos cached
+                if (this.previousVideos.length > this.maxCachedVideos) {
+                    const videosToCleanup = this.previousVideos.splice(this.maxCachedVideos);
+                    videosToCleanup.forEach(video => this.forceCloseVideo(video));
+                }
+            }
+        },
+        
+        forceCloseVideo: function(videoElement) {
+            if (!videoElement || !videoElement.src) return;
+            
+            try {
+                // Create a 1x1 pixel transparent GIF data URL to replace the stream
+                const transparentGif = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                
+                // Replace the streaming URL with the data URL to close the connection
+                videoElement.src = transparentGif;
+                
+                // Also set srcset if present
+                if (videoElement.srcset) {
+                    videoElement.srcset = '';
+                }
+                
+                console.debug('Video connection closed:', videoElement.getAttribute('data-event-id') || 'unknown');
+            } catch (e) {
+                console.warn('Error closing video connection:', e);
+            }
+        },
+        
+        handleVideoError: function(event) {
+            const video = event.target;
+            console.warn('Video error for event:', video.getAttribute('data-event-id'), event);
+            
+            // If we've hit connection limits, try to free up connections
+            if (this.previousVideos.length > 0) {
+                console.info('Video error detected, cleaning up old connections...');
+                const oldVideo = this.previousVideos.pop();
+                this.forceCloseVideo(oldVideo);
+                
+                // Try to reload the current video after a brief delay
+                setTimeout(() => {
+                    if (video.src && !video.src.startsWith('data:')) {
+                        video.load();
+                    }
+                }, 500);
+            }
+        },
+        
+        handleVideoLoadStart: function(event) {
+            const video = event.target;
+            console.debug('Video loading started for event:', video.getAttribute('data-event-id'));
+        },
+        
+        // Force cleanup all connections (for page unload)
+        cleanup: function() {
+            if (this.currentVideo) {
+                this.forceCloseVideo(this.currentVideo);
+            }
+            this.previousVideos.forEach(video => this.forceCloseVideo(video));
+            this.previousVideos = [];
+            this.currentVideo = null;
+        }
+    };
     
     // Video Timeline Scrollbar Management
     const VideoTimelineScrollManager = {
@@ -118,16 +208,43 @@
                 }, 100);
             }
             
+            // Register the new video element with connection manager
+            this.registerCurrentVideo();
+            
             // Re-setup button handlers for new content
             this.setupButtonHandlers();
+        },
+        
+        registerCurrentVideo: function() {
+            // Find the main video element in the video detail container
+            const videoElement = document.querySelector('.video-container img');
+            if (videoElement && videoElement.src && !videoElement.src.startsWith('data:')) {
+                // Set event ID for debugging if available
+                const eventId = this.extractEventIdFromUrl(videoElement.src);
+                if (eventId) {
+                    videoElement.setAttribute('data-event-id', eventId);
+                }
+                
+                VideoConnectionManager.registerVideo(videoElement);
+            }
+        },
+        
+        extractEventIdFromUrl: function(url) {
+            // Extract event ID from ZoneMinder URL pattern: ...&event=12345
+            const match = url.match(/[&?]event=(\d+)/);
+            return match ? match[1] : null;
         }
     };
     
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => VideoTimelineScrollManager.init());
+        document.addEventListener('DOMContentLoaded', () => {
+            VideoTimelineScrollManager.init();
+            VideoTimelineScrollManager.registerCurrentVideo();
+        });
     } else {
         VideoTimelineScrollManager.init();
+        VideoTimelineScrollManager.registerCurrentVideo();
     }
     
     // Hook into antinode.js updates
@@ -141,6 +258,17 @@
         };
     }
     
-    // Expose for potential external use
+    // Cleanup on page unload to free connections
+    window.addEventListener('beforeunload', () => {
+        VideoConnectionManager.cleanup();
+    });
+    
+    // Also cleanup on navigation away from video pages
+    window.addEventListener('pagehide', () => {
+        VideoConnectionManager.cleanup();
+    });
+    
+    // Expose for potential external use and debugging
     window.VideoTimelineScrollManager = VideoTimelineScrollManager;
+    window.VideoConnectionManager = VideoConnectionManager;
 })();

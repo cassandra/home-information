@@ -74,7 +74,7 @@
                 <div class="video-container mb-3" role="img" aria-label="Event video playback">
                     {% sensor_response_video_stream sensor_history_data.current_sensor_response as video_url %}
                     {% if video_url %}
-                    <img class="img-fluid" src="{{ video_url }}" alt="Video recording from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}">
+                    <img class="img-fluid" src="{{ video_url }}" alt="Video recording from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}" data-event-id="{{ sensor_history_data.current_sensor_response.detail_attrs.sensor_history_id }}">
                     {% else %}
                     <!-- Fallback when no video stream is available -->
                     <div class="video-placeholder d-flex align-items-center justify-content-center">
