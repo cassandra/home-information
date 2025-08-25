@@ -66,24 +66,24 @@ class TestTimelinePreservationLogic(TransactionTestCase):
         
         # Current response should be the target record
         self.assertEqual(
-            result.current_sensor_response.detail_attrs['sensor_history_id'],
-            str(target_record.id)
+            result.current_sensor_response.sensor_history_id,
+            target_record.id
         )
         
         # Should include only records within the preserve window (records 2-6)
         sensor_response_ids = [
-            r.detail_attrs['sensor_history_id'] for r in result.sensor_responses
+            r.sensor_history_id for r in result.sensor_responses
         ]
         
         # Records 2, 3, 4, 5, 6 should be included (within 2-6 hours ago)
         expected_records = [records[i] for i in range(2, 7)]
         for expected_record in expected_records:
-            self.assertIn(str(expected_record.id), sensor_response_ids)
+            self.assertIn(expected_record.id, sensor_response_ids)
         
         # Records 0, 1 (too recent) and 7, 8, 9 (too old) should not be included
         excluded_records = [records[i] for i in [0, 1, 7, 8, 9]]
         for excluded_record in excluded_records:
-            self.assertNotIn(str(excluded_record.id), sensor_response_ids)
+            self.assertNotIn(excluded_record.id, sensor_response_ids)
 
     def test_timeline_recenters_when_target_record_outside_window(self):
         """Test that timeline re-centers when target record falls outside preserve window."""
@@ -104,8 +104,8 @@ class TestTimelinePreservationLogic(TransactionTestCase):
         
         # Current response should be the outside record
         self.assertEqual(
-            result.current_sensor_response.detail_attrs['sensor_history_id'],
-            str(record_outside.id)
+            result.current_sensor_response.sensor_history_id,
+            record_outside.id
         )
         
         # Window boundaries should be recalculated based on actual returned records
@@ -118,9 +118,9 @@ class TestTimelinePreservationLogic(TransactionTestCase):
         
         # Should include the target record in results
         sensor_response_ids = [
-            r.detail_attrs['sensor_history_id'] for r in result.sensor_responses
+            r.sensor_history_id for r in result.sensor_responses
         ]
-        self.assertIn(str(record_outside.id), sensor_response_ids)
+        self.assertIn(record_outside.id, sensor_response_ids)
 
     def test_pagination_metadata_reflects_preserve_window_boundaries(self):
         """Test that pagination metadata correctly reflects preserve window boundaries."""
@@ -214,14 +214,14 @@ class TestTimelinePreservationLogic(TransactionTestCase):
         
         # Verify that only today's records are represented
         response_ids = [
-            r.detail_attrs['sensor_history_id'] for r in result.sensor_responses
+            r.sensor_history_id for r in result.sensor_responses
         ]
         for today_record in today_records:
-            self.assertIn(str(today_record.id), response_ids)
+            self.assertIn(today_record.id, response_ids)
         
         # Yesterday and old records should not be included
-        self.assertNotIn(str(yesterday_record.id), response_ids)
-        self.assertNotIn(str(old_record.id), response_ids)
+        self.assertNotIn(yesterday_record.id, response_ids)
+        self.assertNotIn(old_record.id, response_ids)
 
     def test_adjacent_records_navigation_respects_database_ordering(self):
         """Test that prev/next navigation uses actual database timestamp ordering."""

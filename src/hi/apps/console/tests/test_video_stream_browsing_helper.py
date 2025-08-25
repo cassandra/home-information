@@ -82,8 +82,8 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
         self.assertIsInstance(sensor_response, SensorResponse)
         self.assertEqual(sensor_response.sensor, self.video_sensor)
         self.assertEqual(sensor_response.value, 'active')
-        self.assertIn('sensor_history_id', sensor_response.detail_attrs)
-        self.assertEqual(sensor_response.detail_attrs['sensor_history_id'], str(sensor_history.id))
+        self.assertIsNotNone(sensor_response.sensor_history_id)
+        self.assertEqual(sensor_response.sensor_history_id, sensor_history.id)
 
     def test_create_sensor_response_with_history_id_preserves_existing_detail_attrs(self):
         """Test that existing detail_attrs are preserved when adding history ID."""
@@ -100,8 +100,9 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
         # Verify existing attributes are preserved
         self.assertEqual(sensor_response.detail_attrs['existing'], 'value')
         self.assertEqual(sensor_response.detail_attrs['duration'], '120')
-        # Verify new attribute was added
-        self.assertEqual(sensor_response.detail_attrs['sensor_history_id'], str(sensor_history.id))
+        # Verify sensor_history_id is set as property, not in detail_attrs
+        self.assertEqual(sensor_response.sensor_history_id, sensor_history.id)
+        self.assertNotIn('sensor_history_id', sensor_response.detail_attrs)
 
     def test_get_timeline_window_returns_recent_records_when_no_center(self):
         """Test that get_timeline_window returns most recent records when no center provided."""
@@ -192,7 +193,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
         # Find center record in results
         center_in_results = next(
             r for r in sensor_responses 
-            if r.detail_attrs['sensor_history_id'] == str(center_record.id)
+            if r.sensor_history_id == center_record.id
         )
         self.assertEqual(center_in_results.value, 'value_2')
 
@@ -223,8 +224,9 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
                     value='active',
                     timestamp=timestamp,
                     sensor=self.video_sensor,
-                    detail_attrs={'sensor_history_id': f'{days_ago}_{hour_offset}'},
-                    has_video_stream=True
+                    detail_attrs={'duration_seconds': '120', 'details': f'Motion event {days_ago}_{hour_offset}'},
+                    has_video_stream=True,
+                    sensor_history_id=int(f'{days_ago}{hour_offset}')  # Use unique ID for test
                 )
                 sensor_responses.append(response)
         
@@ -264,8 +266,9 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
                 value='active',
                 timestamp=timestamp,
                 sensor=self.video_sensor,
-                detail_attrs={'sensor_history_id': str(hour)},
-                has_video_stream=True
+                detail_attrs={'duration_seconds': '90', 'details': f'Motion event hour {hour}'},
+                has_video_stream=True,
+                sensor_history_id=hour
             )
             sensor_responses.append(response)
         
@@ -399,8 +402,8 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
         
         # Current response should be the target record
         self.assertEqual(
-            result.current_sensor_response.detail_attrs['sensor_history_id'],
-            str(target_record.id)
+            result.current_sensor_response.sensor_history_id,
+            target_record.id
         )
         
         # Should include records within preserve window
@@ -439,8 +442,8 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
         
         # Current response should be the target record
         self.assertEqual(
-            result.current_sensor_response.detail_attrs['sensor_history_id'],
-            str(target_record.id)
+            result.current_sensor_response.sensor_history_id,
+            target_record.id
         )
         
         # Should include records around the target (centered timeline)
