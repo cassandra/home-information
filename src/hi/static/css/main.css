@@ -935,6 +935,28 @@ form[data-dirty] {
     word-break: break-word;
 }
 
+/* Timeline Pagination */
+.timeline-pagination-top,
+.timeline-pagination-bottom {
+    padding: 0.25rem;
+}
+
+.timeline-pagination-top .btn,
+.timeline-pagination-bottom .btn {
+    font-size: 0.8rem;
+    padding: 0.4rem;
+    transition: all 0.2s ease;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.timeline-pagination-top .btn:hover,
+.timeline-pagination-bottom .btn:hover {
+    transform: translateY(-1px);
+    background-color: var(--primary-color);
+    color: var(--on-primary-color);
+}
+
 
 /* ==========================================
    Loading States & Error Handling

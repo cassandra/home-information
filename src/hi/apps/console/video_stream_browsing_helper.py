@@ -347,7 +347,191 @@ class VideoStreamBrowsingHelper:
         return (prev_sensor_response, next_sensor_response)
     
     @classmethod
+    def build_sensor_history_data_default(cls, sensor: Sensor, sensor_history_id: int = None) -> EntitySensorHistoryData:
+        """Build data for default view (most recent events or centered on specific record)."""
+        return cls._build_sensor_history_data_internal(
+            sensor, sensor_history_id, None, None
+        )
+    
+    @classmethod 
+    def build_sensor_history_data_with_window(
+            cls, sensor: Sensor, sensor_history_id: int = None,
+            preserve_window_start: datetime = None, preserve_window_end: datetime = None
+    ) -> EntitySensorHistoryData:
+        """Build data for specific window preservation."""
+        return cls._build_sensor_history_data_internal(
+            sensor, sensor_history_id, preserve_window_start, preserve_window_end
+        )
+    
+    @classmethod
+    def build_sensor_history_data_earlier(cls, sensor: Sensor, pivot_timestamp: int) -> EntitySensorHistoryData:
+        """Build data for pagination to earlier events."""
+        pivot_time = timezone.make_aware(datetime.fromtimestamp(pivot_timestamp))
+        
+        # Get 50 events before the pivot time
+        history_records = list(SensorHistory.objects.filter(
+            sensor=sensor,
+            has_video_stream=True,
+            response_datetime__lt=pivot_time
+        ).order_by('-response_datetime')[:50])
+        
+        if not history_records:
+            # No earlier records found - return empty data
+            return EntitySensorHistoryData(
+                sensor_responses=[],
+                current_sensor_response=None,
+                timeline_groups=[],
+                pagination_metadata={'has_older_records': False, 'has_newer_records': True},
+                prev_sensor_response=None,
+                next_sensor_response=None
+            )
+        
+        # Convert to SensorResponse objects
+        sensor_responses = []
+        for record in history_records:
+            sensor_response = cls.create_sensor_response_with_history_id(record)
+            sensor_responses.append(sensor_response)
+        
+        # Use the most recent record as current (first in the list due to DESC ordering)
+        current_sensor_response = sensor_responses[0] if sensor_responses else None
+        
+        # Group sensor responses by time period
+        timeline_groups = cls.group_responses_by_time(sensor_responses)
+        
+        # Calculate pagination metadata
+        timestamps = [record.response_datetime for record in history_records]
+        window_start = min(timestamps)
+        window_end = max(timestamps)
+        
+        # Check for more records beyond this window
+        has_older_records = SensorHistory.objects.filter(
+            sensor=sensor,
+            has_video_stream=True,
+            response_datetime__lt=window_start
+        ).exists()
+        
+        has_newer_records = SensorHistory.objects.filter(
+            sensor=sensor,
+            has_video_stream=True,
+            response_datetime__gt=window_end
+        ).exists()
+        
+        pagination_metadata = {
+            'has_older_records': has_older_records,
+            'has_newer_records': has_newer_records,
+            'window_start_timestamp': window_start,
+            'window_end_timestamp': window_end,
+        }
+        
+        # Find navigation items
+        current_history_id = current_sensor_response.sensor_history_id if current_sensor_response else None
+        prev_sensor_response, next_sensor_response = cls.find_adjacent_records(
+            sensor, current_history_id
+        )
+        
+        return EntitySensorHistoryData(
+            sensor_responses=sensor_responses,
+            current_sensor_response=current_sensor_response,
+            timeline_groups=timeline_groups,
+            pagination_metadata=pagination_metadata,
+            prev_sensor_response=prev_sensor_response,
+            next_sensor_response=next_sensor_response,
+            window_start_timestamp=window_start,
+            window_end_timestamp=window_end,
+        )
+    
+    @classmethod
+    def build_sensor_history_data_later(cls, sensor: Sensor, pivot_timestamp: int) -> EntitySensorHistoryData:
+        """Build data for pagination to later events.""" 
+        pivot_time = timezone.make_aware(datetime.fromtimestamp(pivot_timestamp))
+        
+        # Get 50 events after the pivot time (ordered chronologically, oldest first)
+        history_records = list(SensorHistory.objects.filter(
+            sensor=sensor,
+            has_video_stream=True,
+            response_datetime__gt=pivot_time
+        ).order_by('response_datetime')[:50])
+        
+        if not history_records:
+            # No later records found - return empty data
+            return EntitySensorHistoryData(
+                sensor_responses=[],
+                current_sensor_response=None,
+                timeline_groups=[],
+                pagination_metadata={'has_older_records': True, 'has_newer_records': False},
+                prev_sensor_response=None,
+                next_sensor_response=None
+            )
+        
+        # Reverse to newest first for display (matching our standard ordering)
+        history_records.reverse()
+        
+        # Convert to SensorResponse objects
+        sensor_responses = []
+        for record in history_records:
+            sensor_response = cls.create_sensor_response_with_history_id(record)
+            sensor_responses.append(sensor_response)
+        
+        # Use the most recent record as current (first in the list after reversal)
+        current_sensor_response = sensor_responses[0] if sensor_responses else None
+        
+        # Group sensor responses by time period
+        timeline_groups = cls.group_responses_by_time(sensor_responses)
+        
+        # Calculate pagination metadata
+        timestamps = [record.response_datetime for record in history_records]
+        window_start = min(timestamps)
+        window_end = max(timestamps)
+        
+        # Check for more records beyond this window
+        has_older_records = SensorHistory.objects.filter(
+            sensor=sensor,
+            has_video_stream=True,
+            response_datetime__lt=window_start
+        ).exists()
+        
+        has_newer_records = SensorHistory.objects.filter(
+            sensor=sensor,
+            has_video_stream=True,
+            response_datetime__gt=window_end
+        ).exists()
+        
+        pagination_metadata = {
+            'has_older_records': has_older_records,
+            'has_newer_records': has_newer_records,
+            'window_start_timestamp': window_start,
+            'window_end_timestamp': window_end,
+        }
+        
+        # Find navigation items
+        current_history_id = current_sensor_response.sensor_history_id if current_sensor_response else None
+        prev_sensor_response, next_sensor_response = cls.find_adjacent_records(
+            sensor, current_history_id
+        )
+        
+        return EntitySensorHistoryData(
+            sensor_responses=sensor_responses,
+            current_sensor_response=current_sensor_response,
+            timeline_groups=timeline_groups,
+            pagination_metadata=pagination_metadata,
+            prev_sensor_response=prev_sensor_response,
+            next_sensor_response=next_sensor_response,
+            window_start_timestamp=window_start,
+            window_end_timestamp=window_end,
+        )
+    
+    @classmethod
     def build_sensor_history_data(
+            cls, sensor: Sensor, sensor_history_id: int = None,
+            preserve_window_start: datetime = None, preserve_window_end: datetime = None
+    ) -> EntitySensorHistoryData:
+        """Legacy method - delegates to window preservation method."""
+        return cls.build_sensor_history_data_with_window(
+            sensor, sensor_history_id, preserve_window_start, preserve_window_end
+        )
+    
+    @classmethod
+    def _build_sensor_history_data_internal(
             cls, sensor: Sensor, sensor_history_id: int = None,
             preserve_window_start: datetime = None, preserve_window_end: datetime = None
     ) -> EntitySensorHistoryData:

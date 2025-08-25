@@ -1,11 +1,11 @@
 from django.core.exceptions import BadRequest
 from django.http import Http404
 from django.views.generic import View
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.utils import timezone
 
 from hi.apps.entity.models import Entity
-from hi.apps.sense.models import Sensor
+from hi.apps.sense.models import Sensor, SensorHistory
 from hi.integrations.integration_manager import IntegrationManager
 
 from hi.enums import ViewType
@@ -66,6 +66,7 @@ class EntityVideoSensorHistoryView( HiGridView ):
         sensor_history_id = kwargs.get('sensor_history_id')
         window_start = kwargs.get('window_start')
         window_end = kwargs.get('window_end')
+        timestamp = kwargs.get('timestamp')
         
         # Get the entity
         try:
@@ -83,29 +84,44 @@ class EntityVideoSensorHistoryView( HiGridView ):
         except Sensor.DoesNotExist:
             raise Http404('Sensor not found for this entity.')
         
-        # Parse window context parameters if provided
-        preserve_window_start = None
-        preserve_window_end = None
-        if window_start and window_end:
+        # Determine which helper method to use based on URL pattern and parameters
+        if timestamp:
+            url_name = request.resolver_match.url_name
+            if 'earlier' in url_name:
+                # For pagination, don't pass sensor_history_id - we want pure time-based pagination
+                sensor_history_data = VideoStreamBrowsingHelper.build_sensor_history_data_earlier(
+                    sensor, int(timestamp)
+                )
+            elif 'later' in url_name:
+                # For pagination, don't pass sensor_history_id - we want pure time-based pagination
+                sensor_history_data = VideoStreamBrowsingHelper.build_sensor_history_data_later(
+                    sensor, int(timestamp)
+                )
+            else:
+                sensor_history_data = VideoStreamBrowsingHelper.build_sensor_history_data_default(
+                    sensor, sensor_history_id
+                )
+        elif window_start and window_end:
             try:
-                # Create timezone-aware datetime objects
                 preserve_window_start = timezone.make_aware(
                     datetime.fromtimestamp(int(window_start))
                 )
                 preserve_window_end = timezone.make_aware(
                     datetime.fromtimestamp(int(window_end))
                 )
+                sensor_history_data = VideoStreamBrowsingHelper.build_sensor_history_data_with_window(
+                    sensor, sensor_history_id, preserve_window_start, preserve_window_end
+                )
             except (ValueError, OSError):
-                # Invalid timestamp format - ignore and use default behavior
-                pass
-        
-        # Get all view data using helper class (encapsulates business logic)
-        sensor_history_data = VideoStreamBrowsingHelper.build_sensor_history_data(
-            sensor=sensor,
-            sensor_history_id=sensor_history_id,
-            preserve_window_start=preserve_window_start,
-            preserve_window_end=preserve_window_end
-        )
+                # Invalid timestamp format - fall back to default
+                sensor_history_data = VideoStreamBrowsingHelper.build_sensor_history_data_default(
+                    sensor, sensor_history_id
+                )
+        else:
+            # Default view
+            sensor_history_data = VideoStreamBrowsingHelper.build_sensor_history_data_default(
+                sensor, sensor_history_id
+            )
         
         request.view_parameters.view_type = ViewType.ENTITY_VIDEO_STREAM
         request.view_parameters.to_session( request )
