@@ -421,6 +421,15 @@ class VideoStreamBrowsingHelper:
         
         # Find previous and next responses for navigation
         current_history_id = sensor_history_id if sensor_history_id else None
+        
+        # If no specific sensor_history_id, try to get it from current_sensor_response
+        if not current_history_id and current_sensor_response:
+            # Extract sensor_history_id from the current response
+            if hasattr(current_sensor_response, 'detail_attrs') and current_sensor_response.detail_attrs:
+                current_history_id = current_sensor_response.detail_attrs.get('sensor_history_id')
+                if current_history_id:
+                    current_history_id = int(current_history_id)
+        
         prev_sensor_response, next_sensor_response = cls.find_adjacent_records(
             sensor, current_history_id
         )
