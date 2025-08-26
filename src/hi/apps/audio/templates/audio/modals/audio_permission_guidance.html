@@ -1,4 +1,5 @@
 {% extends "modals/action_2_with_cancel.html" %}
+{% load icons %}
 
 {% block modal_dialog_id %}audio-guidance-modal{% endblock %}
 
@@ -19,11 +20,11 @@
   <!-- Firefox Instructions -->
   <div class="card mb-3">
     <div class="card-header">
-      <strong>🦊 Firefox</strong>
+      <strong>Firefox</strong>
     </div>
     <div class="card-body">
       <ol class="mb-2">
-        <li>Click the <strong>🔒 lock icon</strong> or <strong>🛡️ shield icon</strong> in the address bar</li>
+        <li>Click the <strong>{% icon "lock" size="sm" %} lock icon</strong> or <strong>{% icon "shield" size="sm" %} shield icon</strong> in the address bar</li>
         <li>Find <strong>"Autoplay"</strong> setting</li>
         <li>Change from <strong>"Block Audio"</strong> to <strong>"Allow Audio and Video"</strong></li>
         <li>Refresh this page</li>
@@ -34,11 +35,11 @@
   <!-- Chrome Instructions -->
   <div class="card mb-3">
     <div class="card-header">
-      <strong>🎯 Chrome</strong>
+      <strong>Chrome</strong>
     </div>
     <div class="card-body">
       <ol class="mb-2">
-        <li>Click the <strong>🔒 lock icon</strong> in the address bar</li>
+        <li>Click the <strong>{% icon "lock" size="sm" %} lock icon</strong> in the address bar</li>
         <li>Find <strong>"Sound"</strong> setting</li>
         <li>Change from <strong>"Block"</strong> to <strong>"Allow"</strong></li>
         <li>Chrome will prompt you to refresh - click <strong>"Reload"</strong></li>
@@ -49,7 +50,7 @@
   <!-- Safari Instructions -->
   <div class="card mb-3">
     <div class="card-header">
-      <strong>🧭 Safari</strong>
+      <strong>Safari</strong>
     </div>
     <div class="card-body">
       <ol class="mb-2">
@@ -63,7 +64,7 @@
 </div>
 
 <div class="alert alert-info mt-3">
-  <strong>💡 Why is this needed?</strong> Modern browsers block background audio by default to prevent annoying ads. Since this is a monitoring application that you actively want to receive alerts from, enabling audio is safe and recommended.
+  <strong>{% icon "lightbulb" size="sm" css_class="hi-icon-left" %}Why is this needed?</strong> Modern browsers block background audio by default to prevent annoying ads. Since this is a monitoring application that you actively want to receive alerts from, enabling audio is safe and recommended.
 </div>
 {% endblock %}
 

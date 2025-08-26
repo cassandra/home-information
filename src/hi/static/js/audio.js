@@ -400,7 +400,7 @@
     }
 
     async function _setInitialBaselineState() {
-        if (Hi.DEBUG) { console.log('🎯 Setting initial baseline audio state (clean page load)'); }
+        if (Hi.DEBUG) { console.log('[AUDIO] Setting initial baseline audio state (clean page load)'); }
         
         try {
             const state = await _getAudioPermissionState();
@@ -432,7 +432,7 @@
             currentAudioState = state;
             
             if (hasBaselineStateChanged()) {
-                if (Hi.DEBUG) { console.log(`📊 Baseline state changed: ${baselineAudioState} → ${currentAudioState}`); }
+                if (Hi.DEBUG) { console.log(`[AUDIO] Baseline state changed: ${baselineAudioState} → ${currentAudioState}`); }
                 
                 // Update button display
                 await _updateAudioButtonState();
@@ -469,19 +469,19 @@
 
 
     async function _startBaselineMonitoring() {
-        if (Hi.DEBUG) { console.log('🎯 Starting baseline audio monitoring system'); }
+        if (Hi.DEBUG) { console.log('[AUDIO] Starting baseline audio monitoring system'); }
         
         // Set initial baseline immediately on page load (cleanest state)
         await _setInitialBaselineState();
         
         // Only start baseline monitoring if baseline state is blocked
         if (baselineAudioState === AudioPermissionState.BLOCKED) {
-            if (Hi.DEBUG) { console.log('🔄 Starting baseline state monitoring (baseline is blocked)'); }
+            if (Hi.DEBUG) { console.log('[AUDIO] Starting baseline state monitoring (baseline is blocked)'); }
             baselineRecheckTimer = setInterval(async () => {
                 await _checkForBaselineStateChange();
             }, BASELINE_STATE_MONITOR_INTERVAL_MS );
         } else {
-            if (Hi.DEBUG) { console.log('✅ Baseline state is allowed - no monitoring needed'); }
+            if (Hi.DEBUG) { console.log('[AUDIO] Baseline state is allowed - no monitoring needed'); }
         }
     }
 
@@ -542,7 +542,7 @@
                 if (Hi.DEBUG) { console.log('📋 Showing guidance dialog (baseline blocked + audio enabled)'); }
                 await _showAudioPermissionGuidanceDialog();
             } else {
-                if (Hi.DEBUG) { console.log('🔄 No guidance needed - normal button toggle'); }
+                if (Hi.DEBUG) { console.log('[AUDIO] No guidance needed - normal button toggle'); }
                 // Normal case: just toggle audio setting and update button
                 if (Hi.settings.isAudioEnabled()) {
                     if (Hi.DEBUG) { console.log('🔇 Disabling audio'); }
@@ -554,24 +554,24 @@
                 await _updateAudioButtonState();
             }
         } catch (error) {
-            if (Hi.DEBUG) { console.error('❌ Error handling audio button click:', error); }
+            if (Hi.DEBUG) { console.error('[AUDIO ERROR] Error handling audio button click:', error); }
         }
     }
     
     async function _showAudioPermissionGuidanceDialog() {
         try {
-            if (Hi.DEBUG) { console.log('🔄 Fetching and showing audio permission guidance dialog...'); }
+            if (Hi.DEBUG) { console.log('[AUDIO] Fetching and showing audio permission guidance dialog...'); }
             
             // Use antinode's direct API instead of triggering events
             if (typeof window.AN !== 'undefined') {
                 if (Hi.DEBUG) { console.log('📡 Using antinode AN.get() to fetch modal content'); }
                 window.AN.get('/audio/permission-guidance');
             } else {
-                if (Hi.DEBUG) { console.log('⚠️  Antinode not available, using fallback approach'); }
+                if (Hi.DEBUG) { console.log('[AUDIO WARNING] Antinode not available, using fallback approach'); }
                 // Fallback: manual AJAX call
                 $.get('/audio/permission-guidance')
                  .done(function(html) {
-                     if (Hi.DEBUG) { console.log('✅ Got guidance HTML, creating modal'); }
+                     if (Hi.DEBUG) { console.log('[AUDIO] Got guidance HTML, creating modal'); }
                      // Create modal manually
                      let modalId = 'audio-guidance-modal-' + Date.now();
                      let modalHtml = `<div id="${modalId}" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">${html}</div>`;
@@ -579,14 +579,14 @@
                      $(`#${modalId}`).modal('show');
                  })
                  .fail(function(xhr, status, error) {
-                     if (Hi.DEBUG) { console.error('❌ Failed to fetch guidance dialog:', error); }
+                     if (Hi.DEBUG) { console.error('[AUDIO ERROR] Failed to fetch guidance dialog:', error); }
                      alert('Audio is blocked by your browser. Please check your browser\'s autoplay settings.');
                  });
             }
             
             if (Hi.DEBUG) { console.log('🚀 Audio guidance dialog request initiated'); }
         } catch (error) {
-            if (Hi.DEBUG) { console.error('❌ Error showing audio guidance dialog:', error); }
+            if (Hi.DEBUG) { console.error('[AUDIO ERROR] Error showing audio guidance dialog:', error); }
             // Fallback: show simple alert
             alert('Audio is blocked by your browser. Please check your browser\'s autoplay settings.');
         }
@@ -611,14 +611,14 @@
         diagnosticAudioTimer = setInterval(() => {
             diagnosticCounter++;
             
-            if (Hi.DEBUG) { console.log(`🔔 Diagnostic background audio #${diagnosticCounter}`); }
+            if (Hi.DEBUG) { console.log(`[AUDIO] Diagnostic background audio #${diagnosticCounter}`); }
             
             try {
                 // Use the same method as real weather alerts (no user activation)
                 _startAudibleSignal('ConsoleInfo');
-                if (Hi.DEBUG) { console.log(`✅ Diagnostic audio #${diagnosticCounter} triggered`); }
+                if (Hi.DEBUG) { console.log(`[AUDIO] Diagnostic audio #${diagnosticCounter} triggered`); }
             } catch (error) {
-                if (Hi.DEBUG) { console.log(`❌ Diagnostic audio #${diagnosticCounter} failed:`, error); }
+                if (Hi.DEBUG) { console.log(`[AUDIO ERROR] Diagnostic audio #${diagnosticCounter} failed:`, error); }
             }
         }, 10000);
     }

@@ -18,9 +18,12 @@
         </div>
         <div class="col-md-1 col-1 align-self-center m-0 pl-1 text-right">
           {% block dismiss_button %}
+          {% load icons %}
           <button id="modal_dismiss_x"
                   type="button" class=" w-100 text-center text-white close"
-                  data-dismiss="modal" aria-hidden="true">X</button>
+                  data-dismiss="modal" aria-label="Close modal">
+            {% icon "close" size="sm" %}
+          </button>
           {% endblock %}
         </div>
       </div>

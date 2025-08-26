@@ -1,3 +1,4 @@
+{% load icons %}
 <div id="hi-hass-settings">
   <form action="{% url 'hass_settings' %}" method="post"
 	class="form" data-async="#hi-hass-settings" data-mode="replace">
@@ -11,7 +12,7 @@
 
     <button id="hi-hass-setting-button" type="submit" class="btn btn-primary"
 	    name="action" value="update">
-      UPDATE
+      {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
     </button>
   </form>
 </div>

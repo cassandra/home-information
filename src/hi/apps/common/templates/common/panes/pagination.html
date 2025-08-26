@@ -1,5 +1,6 @@
 {% load humanize %}
 {% load common_template_helpers %}
+{% load icons %}
 {% if pagination.required or show_total_items %}
 <div class="my-4">
   {% if pagination and show_total_items %}
@@ -11,18 +12,18 @@
     <ul class="pagination pagination-lg justify-content-center">
       {% if pagination.has_previous_page %}
       <li class="page-item"><a class="page-link" href="{{ pagination.base_url }}?page={{ pagination.previous_page_number }}" {% if pagination.async_urls %}data-async="true"{%endif %} >
-	<span class="d-none d-sm-block" >&lt; Previous</span>
-	<span class="d-xs d-sm-none" >&lt;</span>
+	{% icon "chevron-left" size="sm" css_class="hi-icon-right" %}
+	<span class="d-none d-sm-block">Previous</span>
       </a></li>
       {% else %}
       <li class="page-item disabled"><span class="page-link text-muted">
-	<span class="d-none d-sm-block" >&lt; Previous</span>
-	<span class="d-xs d-sm-none" >&lt;</span>
+	{% icon "chevron-left" size="sm" css_class="hi-icon-right" %}
+	<span class="d-none d-sm-block">Previous</span>
       </span></li>
       {% endif %}
       
       {% if pagination.has_pages_before %}
-      <li class="page-item"><a class="page-link" href="{{ pagination.base_url }}?page=1" {% if pagination.async_urls %}data-async="true"{%endif %} >&laquo;</a></li>
+      <li class="page-item"><a class="page-link" href="{{ pagination.base_url }}?page=1" {% if pagination.async_urls %}data-async="true"{%endif %} >{% icon "chevron-double-left" size="sm" aria_label="First page" %}</a></li>
       {% endif %}
       
       {% for page_number in pagination.page_number_list %}
@@ -34,18 +35,18 @@
       {% endfor %}
       
       {% if pagination.has_pages_after %}
-      <li class="page-item"><a class="page-link" href="{{ pagination.base_url }}?page={{ pagination.page_count }}" {% if pagination.async_urls %}data-async="true"{%endif %} >&raquo;</a></li>
+      <li class="page-item"><a class="page-link" href="{{ pagination.base_url }}?page={{ pagination.page_count }}" {% if pagination.async_urls %}data-async="true"{%endif %} >{% icon "chevron-double-right" size="sm" aria_label="Last page" %}</a></li>
       {% endif %}
       
       {% if pagination.has_next_page %}
       <li class="page-item"><a class="page-link" href="{{ pagination.base_url }}?page={{ pagination.next_page_number }}" {% if pagination.async_urls %}data-async="true"{%endif %} >
-	<span class="d-none d-sm-block" >Next &gt;</span>
-	<span class="d-xs d-sm-none" >&gt;</span>
+	<span class="d-none d-sm-block">Next</span>
+	{% icon "chevron-right" size="sm" css_class="hi-icon-left" %}
       </a></li>
       {% else %}
       <li class="page-item disabled"><span class="page-link text-muted">
-	<span class="d-none d-sm-block" >Next &gt;</span>
-	<span class="d-xs d-sm-none" >&gt;</span>
+	<span class="d-none d-sm-block">Next</span>
+	{% icon "chevron-right" size="sm" css_class="hi-icon-left" %}
       </span></li>
       {% endif %}
     </ul>

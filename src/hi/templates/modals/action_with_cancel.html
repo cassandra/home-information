@@ -1,6 +1,9 @@
 {% extends "modals/action_2.html" %}
+{% load icons %}
 
 {% block action_left %}
 <a id="hi-modal-cancel" role="button" {% if autofocus %}autofocus="autofocus"{% endif %}
-   class="btn btn-lg btn-tertiary" href="#" data-dismiss="modal">CANCEL</a>
+   class="btn btn-lg btn-tertiary" href="#" data-dismiss="modal">
+  {% icon "cancel" size="sm" css_class="hi-icon-left" %}CANCEL
+</a>
 {% endblock %}

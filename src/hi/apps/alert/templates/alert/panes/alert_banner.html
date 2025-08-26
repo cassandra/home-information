@@ -1,19 +1,30 @@
+{% load icons %}
 <div id="{{ DIVID.ALERT_BANNER_CONTAINER }}" class="fixed-top"
      style="z-index: 1045; display: none;">
   <div id="{{ DIVID.ALERT_BANNER_CONTENT }}"></div>
   <button id="hi-alert-banner-toggle" class="btn btn-sm btn-secondary position-absolute"
 	  style="left: 50%; transform: translateX(-50%);"
-	  onclick="Hi_alert_toggleAlertBanner();">&#9650;&#9650;&#9650;&#9650;</button>
+	  onclick="Hi_alert_toggleAlertBanner();" aria-label="Toggle alert banner">
+    {% icon "chevron-up" size="sm" css_class="hi-icon-left" %}
+    {% icon "chevron-up" size="sm" css_class="hi-icon-left" %}
+    {% icon "chevron-up" size="sm" css_class="hi-icon-left" %}
+    {% icon "chevron-up" size="sm" %}
+  </button>
 </div>
 <script type="text/javascript" charset="utf-8">
+ // Pre-rendered icon HTML for JavaScript use
+ const ALERT_BANNER_ICONS = {
+   showState: '{% filter escapejs %}{% icon "chevron-up" size="sm" css_class="hi-icon-left" %}{% icon "chevron-up" size="sm" css_class="hi-icon-left" %}{% icon "chevron-up" size="sm" css_class="hi-icon-left" %}{% icon "chevron-up" size="sm" %}{% endfilter %}',
+   hideState: '{% filter escapejs %}{% icon "chevron-down" size="sm" css_class="hi-icon-left" %}{% icon "chevron-down" size="sm" css_class="hi-icon-left" %}Alerts{% icon "chevron-down" size="sm" css_class="hi-icon-right" %}{% icon "chevron-down" size="sm" css_class="hi-icon-right" %}{% endfilter %}'
+ };
+
  function Hi_alert_toggleAlertBanner() {
    if ( $('#{{ DIVID.ALERT_BANNER_CONTENT }}').is(':visible') ) {
      $('#{{ DIVID.ALERT_BANNER_CONTENT }}').hide();
-     $('#hi-alert-banner-toggle').html( '&#9660;&#9660;Alerts&#9660;&#9660;' );
-
+     $('#hi-alert-banner-toggle').html( ALERT_BANNER_ICONS.hideState );
    } else {
      $('#{{ DIVID.ALERT_BANNER_CONTENT }}').show()
-     $('#hi-alert-banner-toggle').html( '&#9650;&#9650;&#9650;&#9650;' );
+     $('#hi-alert-banner-toggle').html( ALERT_BANNER_ICONS.showState );
    }
  }
 </script>

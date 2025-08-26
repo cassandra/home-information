@@ -63,5 +63,5 @@ handler404 = 'hi.views.custom_404_handler'
 
 if settings.DEBUG:
     urlpatterns += [
-        re_path( r'^testing', include('hi.testing.urls' )),
+        re_path( r'^testing/', include('hi.testing.urls' )),
     ]

@@ -1,5 +1,6 @@
 {% load tz %}
 {% load humanize %}
+{% load icons %}
 {% timezone USER_TIMEZONE %}
 {% if event_history_list %}
   <div class="timeline-items">
@@ -43,7 +44,7 @@
                            class="btn btn-sm btn-outline-primary mr-1 mb-1"
                            data-async="#main-content"
                            title="View video from {{ entity_display.entity.name }} around this event">
-                          <i class="fas fa-video"></i> {{ entity_display.entity.name }}
+                          {% icon "video" size="sm" css_class="hi-icon-left" %}{{ entity_display.entity.name }}
                         </a>
                       {% else %}
                         <span class="text-info mr-2">{{ entity_display.entity.name }}</span>{% if not forloop.last %}, {% endif %}
@@ -62,7 +63,7 @@
 {% else %}
   <div class="card border-0 bg-light">
     <div class="card-body text-center py-4">
-      <i class="fas fa-clock text-muted fa-2x mb-3"></i>
+      {% icon "clock" size="xl" color="muted" css_class="mb-3" %}
       <h6 class="text-muted">No Event History</h6>
       <p class="text-muted mb-0">No trigger events have been recorded yet.</p>
     </div>

@@ -1408,3 +1408,146 @@ form[data-dirty] {
         font-size: 0.8rem;
     }
 }
+
+/* ===== ICON SYSTEM ===== */
+
+/* Base icon class */
+.hi-icon {
+    display: inline-block;
+    vertical-align: middle;
+    fill: currentColor;
+    stroke: currentColor;
+    flex-shrink: 0;
+}
+
+/* Icon sizes */
+.hi-icon-sm {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+.hi-icon-md {
+    width: 1rem;
+    height: 1rem;
+}
+
+.hi-icon-lg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.hi-icon-xl {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+/* Semantic icon colors using existing CSS variables */
+.hi-icon-primary {
+    color: var(--primary-color);
+}
+
+.hi-icon-secondary {
+    color: var(--secondary-color);
+}
+
+.hi-icon-success {
+    color: var(--success-color);
+}
+
+.hi-icon-warning {
+    color: var(--warning-color);
+}
+
+.hi-icon-error {
+    color: var(--error-color);
+}
+
+.hi-icon-muted {
+    color: var(--muted-color);
+}
+
+/* Icon spacing utilities */
+.hi-icon-left {
+    margin-right: 0.25rem;
+}
+
+.hi-icon-right {
+    margin-left: 0.25rem;
+}
+
+/* Icon button integration */
+.btn .hi-icon {
+    vertical-align: text-top;
+}
+
+/* Ensure icons work well in different contexts */
+.card-header .hi-icon,
+.card-title .hi-icon {
+    margin-right: 0.375rem;
+}
+
+.alert .hi-icon {
+    margin-right: 0.5rem;
+}
+
+/* Legacy icon class deprecation helpers */
+.plus-icon,
+.history-icon {
+    /* These classes are deprecated. Use {% icon %} template tag instead */
+    opacity: 0.7;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .hi-icon {
+        stroke-width: 2;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .hi-icon {
+        transition: none;
+    }
+}
+
+/* Pagination styling overrides for app theming */
+.pagination-lg .page-link {
+    color: var(--primary-color) !important;
+    border-color: #dee2e6 !important;
+    /* Force consistent height for all pagination buttons */
+    height: 3rem !important;
+    min-height: 3rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.5rem 0.75rem !important;
+    box-sizing: border-box !important;
+    line-height: 1.2 !important;
+}
+
+/* Ensure spans inside page-links don't affect height and are properly centered */
+.pagination-lg .page-link span {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 100% !important;
+}
+
+.pagination-lg .page-link:hover {
+    color: var(--primary-highlight-color) !important;
+    background-color: #e9ecef !important;
+    border-color: #dee2e6 !important;
+}
+
+.pagination-lg .page-item.active .page-link {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--on-primary-color) !important;
+}
+
+.pagination-lg .page-item.disabled .page-link {
+    color: #6c757d !important;
+    background-color: #fff !important;
+    border-color: #dee2e6 !important;
+}

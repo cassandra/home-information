@@ -1,3 +1,4 @@
+{% load icons %}
 <div class="d-flex justify-content-start draggable-container">
   {% for location_view in location_view_list %}
   <div id="{{ location_view.html_id }}-button" 
@@ -16,7 +17,7 @@
     <a href="{% url 'location_edit_location_view_add' %}"
        class="btn btn-success btn-control" role="button"
        data-async="modal" >
-      ADD
+      {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD
     </a>
   </div>
   {% endif %}

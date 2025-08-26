@@ -1,3 +1,4 @@
+{% load icons %}
 <input type="hidden" id="{{ attribute_form.name.id_for_label }}"
        name="{{ attribute_form.name.html_name }}"
        value="{{ attribute_form.instance.name }}" />
@@ -27,7 +28,7 @@
        class="btn btn-outline-secondary btn-sm attribute-history-btn" 
        data-async="modal"
        title="View attribute history">
-      <span class="history-icon">&#9201;</span>
+      {% icon "history" size="sm" aria_label="View history" %}
     </a>
     {% endif %}
   </div>

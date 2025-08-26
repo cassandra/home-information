@@ -257,7 +257,7 @@
             // Create corner badge with reason and subtle animation
             const indicator = $(`
                 <div id="auto-view-indicator" class="auto-view-corner-badge">
-                    <div class="auto-view-badge-icon">🔄</div>
+                    <div class="auto-view-badge-icon">↻</div>
                     <div class="auto-view-badge-text">Auto-view: ${this.formatReason(reason)}</div>
                 </div>
             `);

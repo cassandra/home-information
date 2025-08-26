@@ -1,4 +1,5 @@
 {% extends "modals/action_with_cancel.html" %}
+{% load icons %}
 
 {% block preamble %}
 <form action="{% url 'simulator_profile_create' %}" method="post"
@@ -17,7 +18,7 @@ Create Simulator Profile
 {% block action_right %}
 <button id="hi-simulator-profile-create-submit" type="submit" class="btn btn-lg btn-success"
 	name="action" value="create">
-  CREATE
+  {% icon "plus" size="sm" css_class="hi-icon-left" %}CREATE
 </button>
 {% endblock %}
 
