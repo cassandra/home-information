@@ -1,4 +1,5 @@
 {% load video_tags %}
+{% load icons %}
 <div class="entity-video-pane">
     <!-- Unified Tab-Style Header -->
     <div class="video-interface-header current-stream mb-3">
@@ -8,7 +9,7 @@
             </div>
             <div class="video-nav-tabs" role="tablist">
                 <span class="video-nav-tab active" role="tab">
-                    <i class="fas fa-video mr-1"></i>Current Stream
+                    {% icon "video" size="sm" css_class="hi-icon-left" %}Current Stream
                 </span>
                 {% if video_sensor %}
                 <a href="{% url 'console_entity_video_sensor_history' entity.id video_sensor.id %}" 
@@ -16,11 +17,11 @@
                    data-async="#main-content"
                    onclick="sessionStorage.setItem('navigatingFromLiveStream', 'true');"
                    role="tab">
-                    <i class="fas fa-history mr-1"></i>Event History
+                    {% icon "history" size="sm" css_class="hi-icon-left" %}Event History
                 </a>
                 {% else %}
                 <span class="video-nav-tab disabled" title="No video sensors available" role="tab">
-                    <i class="fas fa-history mr-1"></i>Event History
+                    {% icon "history" size="sm" css_class="hi-icon-left" %}Event History
                 </span>
                 {% endif %}
             </div>

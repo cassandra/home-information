@@ -1,5 +1,6 @@
 {% load video_tags %}
 {% load tz %}
+{% load icons %}
 
 {% timezone USER_TIMEZONE %}
 <div class="entity-video-sensor-history">
@@ -15,10 +16,10 @@
                    data-async="#main-content"
                    aria-label="Return to live camera stream"
                    role="tab">
-                    <i class="fas fa-video mr-1"></i>Current Stream
+                    {% icon "video" size="sm" css_class="hi-icon-left" %}Current Stream
                 </a>
                 <span class="video-nav-tab active" role="tab">
-                    <i class="fas fa-history mr-1"></i>Event History
+                    {% icon "history" size="sm" css_class="hi-icon-left" %}Event History
                 </span>
             </div>
         </div>
