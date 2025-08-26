@@ -1510,3 +1510,44 @@ form[data-dirty] {
         transition: none;
     }
 }
+
+/* Pagination styling overrides for app theming */
+.pagination-lg .page-link {
+    color: var(--primary-color) !important;
+    border-color: #dee2e6 !important;
+    /* Force consistent height for all pagination buttons */
+    height: 3rem !important;
+    min-height: 3rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0.5rem 0.75rem !important;
+    box-sizing: border-box !important;
+    line-height: 1.2 !important;
+}
+
+/* Ensure spans inside page-links don't affect height and are properly centered */
+.pagination-lg .page-link span {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 100% !important;
+}
+
+.pagination-lg .page-link:hover {
+    color: var(--primary-highlight-color) !important;
+    background-color: #e9ecef !important;
+    border-color: #dee2e6 !important;
+}
+
+.pagination-lg .page-item.active .page-link {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--on-primary-color) !important;
+}
+
+.pagination-lg .page-item.disabled .page-link {
+    color: #6c757d !important;
+    background-color: #fff !important;
+    border-color: #dee2e6 !important;
+}
