@@ -1,3 +1,4 @@
+{% load icons %}
 <form action="{% url 'location_edit_location_view_edit' location_view_id=location_view.id %}"
       method="post"
       class="form" data-async="true">
@@ -9,7 +10,7 @@
   <div class="text-center" >
     <button id="hi-add-location-view-button" type="submit" class="btn btn-primary"
 	    name="action" value="update">
-      UPDATE
+      {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
     </button>
   </div>
 </form>
@@ -18,7 +19,7 @@
   <a href="{% url 'location_edit_location_view_delete' location_view_id=location_view.id %}"
      id="hi-delete-location-view-link" class="btn btn-danger btn-control" role="button"
      data-async="true">
-    DELETE THIS VIEW
+    {% icon "delete" size="sm" css_class="hi-icon-left" %}DELETE THIS VIEW
   </a>
 </div>
 

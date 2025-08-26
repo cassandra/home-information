@@ -1,3 +1,4 @@
+{% load icons %}
 <div>
   {% if location_list %}
   <div class="dropdown">
@@ -30,7 +31,7 @@
       <a role="menuitem" class="dropdown-item plain"
 	 href="{% url 'location_edit_location_add' %}"
 	 data-async="modal">
-	ADD NEW LOCATION
+	{% icon "plus" size="sm" css_class="hi-icon-left" %}ADD NEW LOCATION
       </a>
       {% endif %}
     </div>

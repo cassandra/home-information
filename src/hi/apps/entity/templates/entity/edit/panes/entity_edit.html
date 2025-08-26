@@ -1,3 +1,4 @@
+{% load icons %}
 <form action="{% url 'entity_edit' entity_id=entity.id %}"
       method="post"
       class="form" data-async="true">
@@ -13,7 +14,7 @@
   <div class="text-center" >
     <button id="hi-add-entity-edit-button" type="submit" class="btn btn-primary"
 	    name="action" value="update">
-      UPDATE
+      {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
     </button>
   </div>
 </form>

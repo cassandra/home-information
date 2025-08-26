@@ -1,3 +1,4 @@
+{% load icons %}
 <div class="row">
   <div class="col-3">
     {{ sim_entity.name }}
@@ -11,7 +12,9 @@
   </div>
   <div class="col-2">
     <a href="{% url 'simulator_entity_edit' sim_entity_id=sim_entity.id %}"
-       class="btn btn-primary" data-async="modal">EDIT</a>
+       class="btn btn-primary" data-async="modal">
+      {% icon "edit" size="sm" css_class="hi-icon-left" %}EDIT
+    </a>
     <a href="{% url 'simulator_entity_delete' sim_entity_id=sim_entity.id %}"
        class="btn btn-danger" data-async="modal">X</a>
   </div>  

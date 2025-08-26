@@ -1,3 +1,4 @@
+{% load icons %}
 <div>
   {% if request.view_parameters.is_editing %}
   {% include "edit/panes/side_header.html" %}
@@ -10,7 +11,7 @@
     <a href="{% url 'entity_edit_entity_add' %}"
        class="btn btn-success btn-control" role="button"
        data-async="modal" >
-      ADD NEW ITEM
+      {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD NEW ITEM
     </a>
   </div>
   

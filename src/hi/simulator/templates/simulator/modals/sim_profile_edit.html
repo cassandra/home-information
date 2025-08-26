@@ -1,4 +1,5 @@
 {% extends "modals/action_with_cancel.html" %}
+{% load icons %}
 
 {% block preamble %}
 <form action="{% url 'simulator_profile_edit' profile_id=sim_profile_form.instance.id %}" method="post"
@@ -17,7 +18,7 @@ Edit Simulator Profile
 {% block action_right %}
 <button id="hi-simulator-profile-edit-submit" type="submit" class="btn btn-lg btn-success"
 	name="action" value="edit">
-  UPDATE
+  {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
 </button>
 {% endblock %}
 

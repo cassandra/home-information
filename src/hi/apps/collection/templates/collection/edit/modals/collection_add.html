@@ -1,4 +1,5 @@
 {% extends "modals/action_with_cancel.html" %}
+{% load icons %}
 
 {% block preamble %}
 <form action="{% url 'collection_add' %}" method="post"
@@ -26,7 +27,7 @@ New Collection
 {% block action_right %}
 <button id="hi-add-collection-button" type="submit" class="btn btn-lg btn-success"
 	name="action" value="add">
-  ADD
+  {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD
 </button>
 {% endblock %}
 

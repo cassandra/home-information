@@ -1,4 +1,5 @@
 {% extends "modals/action_with_cancel.html" %}
+{% load icons %}
 
 {% block preamble %}
 <form action="{% url 'location_edit_location_view_add' %}" method="post"
@@ -19,7 +20,7 @@ New View for {{ location.name }}
 {% block action_right %}
 <button id="hi-add-location-view-button" type="submit" class="btn btn-lg btn-success"
 	name="action" value="add">
-  ADD
+  {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD
 </button>
 {% endblock %}
 

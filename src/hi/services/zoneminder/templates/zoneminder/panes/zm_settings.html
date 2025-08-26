@@ -1,3 +1,4 @@
+{% load icons %}
 <div id="hi-zm-settings">
   <form action="{% url 'zm_settings' %}" method="post"
 	class="form" data-async="#hi-zm-settings" data-mode="replace">
@@ -11,7 +12,7 @@
 
     <button id="hi-zm-setting-button" type="submit" class="btn btn-primary"
 	    name="action" value="update">
-      UPDATE SETTINGS
+      {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE SETTINGS
     </button>
   </form>
 </div>
