@@ -195,6 +195,6 @@ make docker-stop
 If you want to familiarize yourself with how to use the app before diving into the code, see the [Getting Started Page](../GettingStarted.md).
 
 A look through these docs might also be a good starting point:
-- [Data Model](DataModel.md)
-- [Architecture](Architecture.md)
+- [Data Model](shared/data-model-concepts.md)
+- [Architecture](shared/architecture-overview.md)
 

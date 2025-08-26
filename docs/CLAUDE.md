@@ -27,7 +27,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [ ] Follow `.github/PULL_REQUEST_TEMPLATE.md` structure
 
 **Before Creating Unit Tests:**
-- [ ] Consult Testing guidelines and `docs/dev/Testing.md`
+- [ ] Consult Testing guidelines and `docs/dev/testing/testing-guidelines.md`
 
 **Process Verification Pattern:**
 Before major actions, ask yourself:
@@ -73,7 +73,7 @@ When working on GitHub issues, follow this development workflow:
      - **Refactoring**: `refactor/##-description` (e.g., `refactor/33-cleanup-views`)
    - **Why create immediately**: Investigation may involve temporary file changes, and it's safer to work on a branch
    - **If no changes needed**: Simply delete the unused branch with `git branch -d branch-name`
-   - See `docs/dev/Workflow.md` for complete conventions including test-only and tweak branches
+   - See `docs/dev/workflow/workflow-guidelines.md` for complete conventions including test-only and tweak branches
 
 4. **Use TodoWrite tool to plan the work** - MANDATORY for complex tasks:
    - Break down the issue into specific, actionable tasks
@@ -144,7 +144,7 @@ During investigation, if an issue involves **both** design/UX work **and** imple
 - Use GitHub issue linking (`Closes #123`) to maintain traceability between design and implementation issues
 
 5.5. **For Complex Issues - Apply Multi-Phase Strategy** (when applicable):
-   - If issue involves multiple aspects, significant trade-offs, or substantial complexity, apply the multi-phase methodology from [Guidelines.md](dev/Guidelines.md#complex-issue-implementation-strategy)
+   - If issue involves multiple aspects, significant trade-offs, or substantial complexity, apply the multi-phase methodology from [Domain Guidelines](dev/domain/domain-guidelines.md#complex-issue-implementation-strategy)
    - Post phase breakdown to GitHub issue before starting implementation
    - Complete Phase 1 fully, commit and push (but don't create PR yet)
    - Update TodoWrite tool with phase completion status
@@ -192,7 +192,7 @@ Before any pull request can be merged, the following requirements must be met:
 
 These requirements are enforced by GitHub branch protection rules and cannot be bypassed.
 
-For detailed branching conventions and additional workflow information, see `docs/dev/Workflow.md`.
+For detailed branching conventions and additional workflow information, see `docs/dev/workflow/workflow-guidelines.md`.
 
 ## Commit Message Guidelines (Claude-Specific)
 
@@ -315,15 +315,15 @@ src/manage.py runserver  # http://127.0.0.1:8411
 
 For comprehensive project information, see:
 
-- **Architecture**: [dev/Architecture.md](dev/Architecture.md) - System design, patterns, and component overview
-- **Development Guidelines**: [dev/Guidelines.md](dev/Guidelines.md) - Coding standards, style guide, and conventions
-- **Testing**: [dev/Testing.md](dev/Testing.md) - Testing patterns, best practices, and anti-patterns
+- **Architecture**: [dev/shared/architecture-overview.md](dev/shared/architecture-overview.md) - System design, patterns, and component overview
+- **Development Guidelines**: [dev/shared/coding-standards.md](dev/shared/coding-standards.md) - Coding standards, style guide, and conventions
+- **Testing**: [dev/testing/testing-guidelines.md](dev/testing/testing-guidelines.md) - Testing patterns, best practices, and anti-patterns
 - **Setup**: [dev/Setup.md](dev/Setup.md) - Environment setup and daily development commands
-- **Workflow**: [dev/Workflow.md](dev/Workflow.md) - Branching, commits, and pull request process
+- **Workflow**: [dev/workflow/workflow-guidelines.md](dev/workflow/workflow-guidelines.md) - Branching, commits, and pull request process
 
 ## Release Process (Claude-Specific)
 
-When executing the release process documented in `docs/dev/ReleaseProcesses.md`, use these AI-specific commands and considerations:
+When executing the release process documented in `docs/dev/workflow/release-process.md`, use these AI-specific commands and considerations:
 
 ### Release Execution Commands
 ```bash
@@ -348,7 +348,7 @@ gh release create vX.X.X --title "vX.X.X" --generate-notes --latest
 - **Documentation Changes**: Commit any documentation updates to staging before switching branches
 - **GitHub CLI**: Prefer `gh` command for release creation over manual UI steps
 
-See `docs/dev/ReleaseProcesses.md` for the complete process documentation.
+See `docs/dev/workflow/release-process.md` for the complete process documentation.
 
 ## Generated Code Standards (Claude-Specific)
 

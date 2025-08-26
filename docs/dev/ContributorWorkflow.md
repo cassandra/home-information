@@ -3,8 +3,7 @@
 # Development Workflow
 
 - See the [Contributing Page](../../CONTRIBUTING.md) for general information about contributing.
-- See the [Development Page](Setup.md) for how to set up your development environment.
-- See the [Development Guidelines Page](Guidelines.md) for the projects best practices for development.
+- See the [Development Setup Page](Setup.md) for how to set up your development environment.
 
 ## Branching Strategy
 
