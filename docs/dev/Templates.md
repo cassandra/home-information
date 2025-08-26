@@ -69,11 +69,29 @@ Use the standardized `{% icon %}` template tag. See `hi/apps/common/templatetags
   Edit
 </a>
 
-<!-- Delete action (always with text) -->
-<button class="btn btn-danger">
-  {% icon "delete" size="sm" css_class="hi-icon-left" %}
-  Delete Item
+<!-- Save/Submit action -->
+<button class="btn btn-success" type="submit">
+  {% icon "save" size="sm" css_class="hi-icon-left" %}
+  Save Changes
+</button>
+
+<!-- Cancel action -->
+<a class="btn btn-tertiary" href="#" data-dismiss="modal">
+  {% icon "cancel" size="sm" css_class="hi-icon-left" %}
+  Cancel
+</a>
+
+<!-- Delete action - icon-only for space constraints -->
+<button class="btn btn-danger" aria-label="Delete item">
+  {% icon "delete" size="sm" %}
+</button>
+
+<!-- Modal close - icon-only (universal convention) -->
+<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+  {% icon "close" size="sm" %}
 </button>
 ```
+
+**Available Icons**: See `hi/apps/common/templatetags/icons.py` for the complete list of available icons.
 
 See existing templates for more examples.
