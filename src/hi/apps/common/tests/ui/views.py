@@ -31,3 +31,4 @@ class TestUiIconBrowserView(View):
             'total_icons': len(available_icons)
         }
         return render(request, "common/tests/ui/icon_browser.html", context)
+    
