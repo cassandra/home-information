@@ -34,7 +34,12 @@ AVAILABLE_ICONS = {
     'shield',
     'lightbulb',
     'sync',
-    'clock'
+    'clock',
+    'edit',
+    'delete',
+    'save',
+    'cancel',
+    'close'
 }
 
 # Define available sizes
