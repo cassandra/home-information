@@ -1,0 +1,155 @@
+{% extends "pages/base.html" %}
+{% load icons %}
+{% block head_title %}HI: Icon Browser{% endblock %}
+
+{% block content %}
+<div class="container-fluid m-4">
+
+  <h2 class="text-info">Icon Browser</h2>
+  <p class="text-muted">Auto-discovery: {{ total_icons }} icons available</p>
+
+  <div class="row mb-4">
+    <div class="col-12">
+      <h3 class="text-primary">All Available Icons</h3>
+      <p>Icons displayed with default size (md) and no color override:</p>
+      
+      <div class="row">
+        {% for icon_name in available_icons %}
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12 mb-3">
+          <div class="card">
+            <div class="card-body text-center">
+              <div class="mb-2">
+                {% icon icon_name %}
+              </div>
+              <small class="text-muted">{{ icon_name }}</small>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-12">
+      <h3 class="text-primary">Size Variations</h3>
+      <p>Same icon (plus) in all available sizes:</p>
+      
+      <div class="row">
+        {% for size in available_sizes %}
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12 mb-3">
+          <div class="card">
+            <div class="card-body text-center">
+              <div class="mb-2">
+                {% icon "plus" size=size %}
+              </div>
+              <small class="text-muted">{{ size }}</small>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-12">
+      <h3 class="text-primary">Color Variations</h3>
+      <p>Same icon (save) in all available colors:</p>
+      
+      <div class="row">
+        {% for color in available_colors %}
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12 mb-3">
+          <div class="card">
+            <div class="card-body text-center">
+              <div class="mb-2">
+                {% icon "save" color=color %}
+              </div>
+              <small class="text-muted">{{ color }}</small>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-12">
+      <h3 class="text-primary">Usage Examples</h3>
+      <p>Common icon usage patterns from the UX guidelines:</p>
+      
+      <div class="row">
+        <div class="col-12">
+          <h4>Buttons with Icons</h4>
+          <div class="mb-3">
+            <button class="btn btn-primary">
+              {% icon "plus" size="sm" css_class="hi-icon-left" %}
+              Add New Item
+            </button>
+            
+            <button class="btn btn-secondary">
+              {% icon "edit" size="sm" css_class="hi-icon-left" %}
+              Edit
+            </button>
+            
+            <button class="btn btn-success">
+              {% icon "save" size="sm" css_class="hi-icon-left" %}
+              Save Changes
+            </button>
+            
+            <button class="btn btn-danger">
+              {% icon "delete" size="sm" %}
+            </button>
+          </div>
+          
+          <h4>Media Controls</h4>
+          <div class="mb-3">
+            <button class="btn btn-outline-primary">
+              {% icon "play" size="sm" css_class="hi-icon-left" %}
+              Play
+            </button>
+            
+            <button class="btn btn-outline-secondary">
+              {% icon "camera" size="sm" css_class="hi-icon-left" %}
+              Camera
+            </button>
+            
+            <button class="btn btn-outline-info">
+              {% icon "video" size="sm" css_class="hi-icon-left" %}
+              Video
+            </button>
+            
+            <button class="btn btn-outline-dark">
+              {% icon "history" size="sm" css_class="hi-icon-left" %}
+              History
+            </button>
+          </div>
+
+          <h4>Navigation Controls</h4>
+          <div class="mb-3">
+            <button class="btn btn-outline-secondary">
+              {% icon "chevron-left" size="sm" css_class="hi-icon-left" %}
+              Previous
+            </button>
+            
+            <button class="btn btn-outline-secondary">
+              Next
+              {% icon "chevron-right" size="sm" css_class="hi-icon-right" %}
+            </button>
+            
+            <button class="btn btn-outline-secondary">
+              {% icon "chevron-double-left" size="sm" %}
+            </button>
+            
+            <button class="btn btn-outline-secondary">
+              {% icon "chevron-double-right" size="sm" %}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
