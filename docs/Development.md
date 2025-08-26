@@ -1,14 +1,12 @@
 <img src="../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
-# Development
+# Development Guide for Contributors
 
 ## Requirements and Dependencies
 
 - Python 3.11 (or higher) - installed.
 - Redis - installed and running.
 - A GitHub account.
-
-See the [Dependencies Page](dev/Dependencies.md) if you want help installing those.
 
 ## Tech Stack
 
@@ -18,18 +16,29 @@ See the [Dependencies Page](dev/Dependencies.md) if you want help installing tho
 - SQLite (database)
 - Redis (caching)
 
-## Development Setup
+## Getting Started
 
-See the [Development Setup Page](dev/Setup.md).
+Follow these steps in order to begin contributing:
 
-## Development Workflow
+1. **[Environment Setup](dev/Setup.md)** - Install and configure your development environment
+2. **[Contributor Workflow](dev/ContributorWorkflow.md)** - Git workflow and pull request process
 
-See the [Development Workflow Page](dev/Workflow.md).
+## Core Guidelines (Essential Reading)
 
-## Development Guidelines
+These documents contain fundamental concepts that apply across all development areas:
 
-See the [Development Guidelines Page](dev/Guidelines.md).
+- **[Architecture Overview](dev/shared/architecture-overview.md)** - High-level system design and key patterns
+- **[Coding Standards](dev/shared/coding-standards.md)** - Code organization, style, and conventions
+- **[Data Model Concepts](dev/shared/data-model-concepts.md)** - Core domain models and relationships
+- **[Testing Guidelines](dev/testing/testing-guidelines.md)** - Testing philosophy, best practices, and anti-patterns
 
-## Developer Documentation
+## Development Areas
 
-See the [Developer Documentation Page](dev/README.md).
+Choose the area that matches your contribution focus and browse the relevant documentation:
+
+- **[Backend Development](dev/backend/)** - Django models, views, and business logic
+- **[Frontend Development](dev/frontend/)** - Templates, styling, and user interface
+- **[Testing](dev/testing/)** - Testing standards and patterns
+- **[Integration Development](dev/integrations/)** - External service integration and API patterns
+- **[Domain & Data Modeling](dev/domain/)** - Domain modeling and business logic
+- **[Shared Reference](dev/shared/)** - Common concepts used across all areas

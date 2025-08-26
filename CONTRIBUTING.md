@@ -36,7 +36,7 @@ The following pages are for those wanting to contribute to the code base:
 
 - [Development Page](docs/Development.md)
 - [Development Setup Page](docs/dev/Setup.md)
-- [Development Workflow Page](docs/dev/Workflow.md)
+- [Development Workflow Page](docs/dev/ContributorWorkflow.md)
 - [Developer Documentation](docs/dev/README.md)
 
 ### Graphic and UX Design Contributions

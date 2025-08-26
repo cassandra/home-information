@@ -1,24 +1,20 @@
-<img src="../../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
+# Event Alert Systems
 
-# Events, Alarms and Alerts
+## Event System Overview
 
-`SensorResponses` can create events for a user-defined set of rules.
+`SensorResponses` can create events for a user-defined set of rules. `EventDefinitions` define rules and get triggered off changes in one or more `EntityStates`. Events may result in zero or more `Alarms` (can also trigger control actions).
 
-`EventDefinitions` define rules and get triggered off changes in one or more `EntityStates`.
+- **EventDefinition**: Multi-clause triggers with time windows
+- **EventClause**: Individual conditions for event triggering  
+- **EventAction**: Automated responses when events fire
 
-Events may result in zero or more `Alarms` (can also trigger a control action).
+## Alert Management System
 
-An `Alarm` defines which `SecurityLevel` it is applicable to and the importance via the `AlarmLevel`.
+An `Alarm` defines which `SecurityLevel` it is applicable to and the importance via the `AlarmLevel`. If the `Alarm` matches the current system security level, it becomes an `Alert` with the defined `AlarmLevel` and unique `Alarm` signature.
 
-If the `Alarm` matches the current system security level, it becomes an `Alert` with the defined `AlarmLevel` and an unique `Alarm` signature.
+Alerts are those `Alarms` that we want to get the user's attention for. An `Alert` may contain one or more `Alarm` instances since there is only ever one `Alert` active for a given alarm signature. A WeatherAlert can also create an alarm and system alert.
 
-Alerts are those `Alarms` that we want to get the user's attention for.
-
-An `Alert` may contain one or more `Alarm` instances since there is only ever one `Alert` active for a given alarm signature.
-
-A WeatherAlert can also create an alarm and (system) alert.
-
-## Alarm Signature System
+### Alarm Signature System
 
 Each alarm has a unique signature format: `{alarm_source}.{alarm_type}.{alarm_level}`
 
@@ -28,22 +24,22 @@ Each alarm has a unique signature format: `{alarm_source}.{alarm_type}.{alarm_le
 
 Multiple alarms with the same signature are grouped into a single Alert, preventing duplicate notifications for the same condition.
 
-## Alert Lifecycle Management
+### Alert Lifecycle Management
 
-### Creation
+#### Creation
 - Alarms are added to the system and become Alerts if they match the current SecurityLevel
 - Each Alert starts with a `start_datetime` and calculates an `end_datetime` based on `alarm_lifetime_secs`
 
-### Grouping
+#### Grouping
 - When a new alarm arrives with the same signature as an existing Alert, it gets added to that Alert
 - The Alert's `end_datetime` is extended based on the new alarm's lifetime
 - Alert titles show the count when multiple alarms are grouped: "Critical: Motion Detected (3)"
 
-### Acknowledgment
+#### Acknowledgment
 - Users can acknowledge Alerts to stop active notifications
 - Acknowledged Alerts remain visible but don't trigger new notifications
 
-### Expiration and Removal
+#### Expiration and Removal
 - Alerts are automatically removed when they expire (`end_datetime` passes)
 - Acknowledged Alerts are also automatically removed during periodic maintenance
 - Maximum of 50 Alerts are kept in memory at any time
@@ -93,3 +89,34 @@ Weather alerts from external sources (e.g., NWS) can be converted to system Alar
 - **Severity Mapping**: Weather alert severity levels map to system `AlarmLevel`
 - **Appropriate Lifetimes**: Weather alerts have different duration characteristics than sensor-based events
 - **Security Level Application**: Weather alarms typically apply to all security levels
+
+## Alert Processing Implementation
+
+Queue-based system using `deque` with maxlen for memory efficiency:
+
+```python
+class AlertManager(Singleton):
+    def __init_singleton__(self):
+        self._alert_queue = deque(maxlen=50)
+        self._lock = threading.Lock()
+    
+    def add_alarm(self, alarm):
+        """Add alarm and create/update alert"""
+        with self._lock:
+            signature = self._generate_signature(alarm)
+            existing_alert = self._find_alert_by_signature(signature)
+            
+            if existing_alert:
+                self._group_alarm_to_alert(existing_alert, alarm)
+            else:
+                self._create_new_alert(alarm, signature)
+    
+    def _generate_signature(self, alarm):
+        """Generate unique signature for alarm grouping"""
+        return f"{alarm.source}.{alarm.type}.{alarm.level}"
+```
+
+## Related Documentation  
+- Domain guidelines: [Domain Guidelines](domain-guidelines.md)
+- Business logic: [Business Logic](business-logic.md)
+- Integration patterns: [Integration Guidelines](../integrations/integration-guidelines.md)
