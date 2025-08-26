@@ -32,34 +32,47 @@ This are gathered in `src/hi/constants.py:DIV_IDS`:
 
 Use the standardized `{% icon %}` template tag. See `hi/apps/common/templatetags/icons.py` for implementation details and parameters.
 
-### When to Use Icons
+### UX Principles for Icon Usage
 
-**Use icons for:**
-- Navigation actions (arrows, expand/collapse)
-- Common operations (add, edit, delete, save)
-- Media controls (play, video, camera)
-- Status indicators
+**Primary Value**: Icons provide faster recognition, universal language, space efficiency, and visual hierarchy.
 
-**Avoid icons for:**
-- Complex or abstract concepts
-- Text that is already descriptive
-- Application-specific terminology
+**ALWAYS Add Icons When:**
+- **Universal Actions**: Add (+), Delete (trash), Edit (pencil), Save (checkmark), Cancel (×)
+- **Navigation**: Back/Forward arrows, Up/Down, Expand/Collapse
+- **Media Controls**: Play, Pause, Video, Camera
+- **Status/Feedback**: Success, Warning, Error, Info
 
-### Requirements
+**Key Principle**: Focus on **ACTION TYPE** (add, delete, edit), not object specificity. "Add Item" and "Add Rule" both get the same + icon because they're both "add" actions.
+
+### Implementation Requirements
 
 - Always include `{% load icons %}` at top of templates
-- Icons must supplement text, not replace it
+- Icons should supplement text, not replace it for important actions
 - Use semantic size and color parameters when available
 - Include appropriate ARIA labels for accessibility
+- Maintain consistency: same action = same icon across the application
 
-### Example
+### Examples
 
 ```django
 {% load icons %}
 
+<!-- Primary action with icon -->
 <button class="btn btn-primary">
   {% icon "plus" size="sm" css_class="hi-icon-left" %}
-  Add Item
+  Add New Rule
+</button>
+
+<!-- Edit action -->
+<a class="btn btn-secondary" href="/edit/">
+  {% icon "edit" size="sm" css_class="hi-icon-left" %}
+  Edit
+</a>
+
+<!-- Delete action (always with text) -->
+<button class="btn btn-danger">
+  {% icon "delete" size="sm" css_class="hi-icon-left" %}
+  Delete Item
 </button>
 ```
 
