@@ -32,12 +32,9 @@ Any and all feedback and ideas are welcome, such as:
 
 ### Software Development Contributions
 
-The following pages are for those wanting to contribute to the code base:
+The following page is for those wanting to contribute to the code base:
 
 - [Development Page](docs/Development.md)
-- [Development Setup Page](docs/dev/Setup.md)
-- [Development Workflow Page](docs/dev/ContributorWorkflow.md)
-- [Developer Documentation](docs/dev/README.md)
 
 ### Graphic and UX Design Contributions
 

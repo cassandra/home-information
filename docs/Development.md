@@ -20,8 +20,8 @@
 
 Follow these steps in order to begin contributing:
 
-1. **[Environment Setup](dev/Setup.md)** - Install and configure your development environment
-2. **[Contributor Workflow](dev/ContributorWorkflow.md)** - Git workflow and pull request process
+- **[Environment Setup](dev/Setup.md)** - Install and configure your development environment
+- **[Contributor Workflow](dev/ContributorWorkflow.md)** - Git workflow and pull request process
 
 ## Core Guidelines (Essential Reading)
 
