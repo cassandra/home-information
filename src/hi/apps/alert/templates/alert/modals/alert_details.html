@@ -2,6 +2,7 @@
 {% load humanize %}
 {% load tz %}
 {% load video_tags %}
+{% load icons %}
 
 {% block title_text %}
 {{ alert.title }}
@@ -52,7 +53,7 @@
     <div class="card">
       <div class="card-header bg-primary text-white">
         <h6 class="mb-0">
-          <span class="mr-2">&#128247;</span>Visual Content
+          {% icon "camera" size="sm" css_class="hi-icon-left" %}Visual Content
         </h6>
       </div>
       <div class="card-body p-2">
@@ -74,8 +75,8 @@
         <h6 class="mb-0">
           <a class="text-white text-decoration-none" data-toggle="collapse" href="#videoSources" 
              role="button" aria-expanded="false" aria-controls="videoSources">
-            <span class="mr-2">&#128247;</span>Visual Content ({{ video_source_count }} sources)
-            <span class="ml-2">&#9654;</span>
+            {% icon "camera" size="sm" css_class="hi-icon-left" %}Visual Content ({{ video_source_count }} sources)
+            {% icon "play" size="sm" css_class="hi-icon-right" %}
           </a>
         </h6>
       </div>
@@ -139,7 +140,7 @@
         <h6 class="mb-0">
           <a class="text-decoration-none" data-toggle="collapse" href="#additionalAlarms" 
              role="button" aria-expanded="false" aria-controls="additionalAlarms">
-            <span class="mr-2">&#9654;</span>Previous Alarms ({{ alert.alarm_count|add:"-1" }})
+            {% icon "play" size="sm" css_class="hi-icon-left" %}Previous Alarms ({{ alert.alarm_count|add:"-1" }})
           </a>
         </h6>
       </div>
