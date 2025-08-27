@@ -38,8 +38,8 @@ class TestEntityEditView(SyncViewTestCase):
         self.assertSuccessResponse(response)
         self.assertJsonResponse(response)
 
-    def test_post_valid_entity_edit(self):
-        """Test successful entity edit with valid form data."""
+    def test_post_valid_entity_edit_with_formset(self):
+        """Test successful entity edit with formset data (full editing)."""
         url = reverse('entity_edit', kwargs={'entity_id': self.entity.id})
         
         # Prepare valid form data including required formset management forms
@@ -63,6 +63,28 @@ class TestEntityEditView(SyncViewTestCase):
         self.assertEqual(self.entity.name, 'Updated Entity Name')
         self.assertEqual(self.entity.entity_type_str, 'wall_switch')
 
+    def test_post_valid_entity_properties_only(self):
+        """Test successful entity properties edit via EntityPropertiesEditView."""
+        
+        url = reverse('entity_properties_edit', kwargs={'entity_id': self.entity.id})
+        
+        # Prepare valid form data for properties-only editing
+        # This simulates the entity_properties_edit.html form submission
+        form_data = {
+            'name': 'Properties Only Update',
+            'entity_type_str': 'motion_sensor',  # Use valid EntityType choice (lowercase enum name)
+        }
+        
+        response = self.client.post(url, form_data)
+        
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        # Verify entity was actually updated
+        self.entity.refresh_from_db()
+        self.assertEqual(self.entity.name, 'Properties Only Update')
+        self.assertEqual(self.entity.entity_type_str, 'motion_sensor')
+
     # Tests for form validation errors removed - Django's form validation
     # is already thoroughly tested by Django itself. These tests were testing
     # Django internals rather than application-specific behavior.
@@ -77,6 +99,56 @@ class TestEntityEditView(SyncViewTestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 404)
+
+
+class TestEntityPropertiesEditView(SyncViewTestCase):
+    """
+    Tests for EntityPropertiesEditView - handles entity properties (name, type) editing only.
+    This view is used by the sidebar in edit mode and only accepts POST requests.
+    """
+
+    def setUp(self):
+        super().setUp()
+        # Create test entity
+        self.entity = Entity.objects.create(
+            integration_id='test.entity.props',
+            integration_name='test_integration',
+            name='Test Properties Entity',
+            entity_type_str='LIGHT'
+        )
+
+    def test_post_valid_properties_edit(self):
+        """Test successful entity properties edit."""
+        url = reverse('entity_properties_edit', kwargs={'entity_id': self.entity.id})
+        
+        form_data = {
+            'name': 'Updated Properties Name',
+            'entity_type_str': 'wall_switch',
+        }
+        
+        response = self.client.post(url, form_data)
+        
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        # Verify entity was actually updated
+        self.entity.refresh_from_db()
+        self.assertEqual(self.entity.name, 'Updated Properties Name')
+        self.assertEqual(self.entity.entity_type_str, 'wall_switch')
+
+    def test_nonexistent_entity_returns_404(self):
+        """Test that editing nonexistent entity returns 404."""
+        url = reverse('entity_properties_edit', kwargs={'entity_id': 99999})
+        response = self.client.post(url, {'name': 'Test', 'entity_type_str': 'light'})
+        
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_not_allowed(self):
+        """Test that GET requests are not allowed (only POST)."""
+        url = reverse('entity_properties_edit', kwargs={'entity_id': self.entity.id})
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, 405)
 
 
 class TestEntityAttributeUploadView(SyncViewTestCase):

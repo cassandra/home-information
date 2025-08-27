@@ -46,8 +46,8 @@ DIVID = {
 
     'LOCATION_EDIT_PANE': 'hi-location-edit',
     'LOCATION_VIEW_EDIT_PANE': 'hi-location-view-edit',
-    'ENTITY_EDIT_PANE': 'hi-entity-edit',
     'COLLECTION_EDIT_PANE': 'hi-collection-edit',
+    'ENTITY_PROPERTIES_PANE': 'hi-entity-properties',
     'ENTITY_POSITION_EDIT_PANE': 'hi-entity-position-edit',
     'COLLECTION_POSITION_EDIT_PANE': 'hi-collection-position-edit',
 

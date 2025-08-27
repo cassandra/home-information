@@ -9,6 +9,10 @@ urlpatterns = [
              views.EntityEditView.as_view(), 
              name='entity_edit'),
 
+    re_path( r'^entity/properties/edit/(?P<entity_id>\d+)$', 
+             views.EntityPropertiesEditView.as_view(), 
+             name='entity_properties_edit'),
+
     re_path( r'^status/(?P<entity_id>\d+)$', 
              views.EntityStatusView.as_view(), 
              name='entity_status' ),

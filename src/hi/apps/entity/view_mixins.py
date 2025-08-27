@@ -22,22 +22,29 @@ class EntityViewMixin:
         except Entity.DoesNotExist:
             raise Http404( request )
 
-    def entity_edit_response( self,
-                              request           : HttpRequest,
-                              entity_edit_data  : EntityEditData,
-                              status_code       : int             = 200 ):
+    def entity_modal_response( self,
+                               request           : HttpRequest,
+                               entity_edit_data  : EntityEditData,
+                               status_code       : int             = 200 ):
+        """Return modal response for full entity editing (properties + attributes)"""
         context = entity_edit_data.to_template_context()
-        if request.view_parameters.is_editing:
-            template = get_template( 'entity/edit/panes/entity_edit.html' )
-            content = template.render( context, request = request )
-            return antinode.response(
-                insert_map = {
-                    DIVID['ENTITY_EDIT_PANE']: content,
-                },
-                status = status_code,
-            )
         return antinode.modal_from_template(
             request = request,
             template_name = 'entity/modals/entity_edit.html',
             context = context,
+        )
+
+    def entity_properties_response( self,
+                                    request           : HttpRequest,
+                                    entity_edit_data  : EntityEditData,
+                                    status_code       : int             = 200 ):
+        """Return sidebar response for entity properties editing only (name, type)"""
+        context = entity_edit_data.to_template_context()
+        template = get_template( 'entity/edit/panes/entity_properties_edit.html' )
+        content = template.render( context, request = request )
+        return antinode.response(
+            insert_map = {
+                DIVID['ENTITY_PROPERTIES_PANE']: content,
+            },
+            status = status_code,
         )

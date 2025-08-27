@@ -1,5 +1,5 @@
 <div class="d-flex justify-content-between mt-2">
-  <div class="h4">Item</div>
+  <div class="h4">Item Properties</div>
   <div class="">
     <a href="{% url 'edit_item_details_close' %}"
        class="btn btn-tertiary" role="button" data-async="true">
@@ -8,9 +8,15 @@
   </div>
 </div>
 
-<div id="{{ DIVID.ENTITY_EDIT_PANE }}">
-  {% include "entity/edit/panes/entity_edit.html" %}
+<div id="{{ DIVID.ENTITY_PROPERTIES_PANE }}">
+  {% include "entity/edit/panes/entity_properties_edit.html" %}
 </div>
+
+{% if entity.integration_id %}
+<div class="my-2">
+  <div class="h6">Integration: <strong>{{ entity.integration_id }}</strong></div>
+</div>
+{% endif %}
 
 {% if entity.can_user_delete %}
 <div class="">
@@ -19,8 +25,6 @@
     DELETE ITEM
   </a>
 </div>
-{% else %}
-<div class="h6 text-center">Integration Source: {{ entity.integration_id }}</div>
 {% endif %}
 
 {% if entity_position_form %}
