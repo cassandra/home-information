@@ -44,7 +44,7 @@ DIVID = {
     'MAIN': 'hi-main-content',
     'SIDE': 'hi-side-content',
 
-    'LOCATION_EDIT_PANE': 'hi-location-edit',
+    'LOCATION_PROPERTIES_PANE': 'hi-location-properties',
     'LOCATION_VIEW_EDIT_PANE': 'hi-location-view-edit',
     'COLLECTION_EDIT_PANE': 'hi-collection-edit',
     'ENTITY_PROPERTIES_PANE': 'hi-entity-properties',

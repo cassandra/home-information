@@ -319,7 +319,7 @@ class TestLocationDetailsView(AsyncViewTestCase):
 
         self.assertSuccessResponse(response)
         self.assertJsonResponse(response)
-        self.assertTemplateRendered(response, 'location/panes/location_details.html')
+        self.assertTemplateRendered(response, 'location/panes/location_edit_mode_panel.html')
 
     def test_location_details_should_push_url(self):
         """Test that LocationDetailsView should push URL."""
