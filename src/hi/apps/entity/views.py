@@ -193,7 +193,7 @@ class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin )
 class EntityDetailsView( HiSideView, EntityViewMixin ):
 
     def get_template_name( self ) -> str:
-        return 'entity/edit/panes/entity_details.html'
+        return 'entity/edit/panes/entity_edit_mode_panel.html'
 
     def should_push_url( self ):
         return True
