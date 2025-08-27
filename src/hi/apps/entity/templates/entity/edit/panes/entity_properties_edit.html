@@ -1,5 +1,5 @@
 {% load icons %}
-<form action="{% url 'entity_edit' entity_id=entity.id %}"
+<form action="{% url 'entity_properties_edit' entity_id=entity.id %}"
       method="post"
       class="form" data-async="true">
   {% csrf_token %}

@@ -21,79 +21,33 @@ from .view_mixins import EntityViewMixin
 logger = logging.getLogger(__name__)
 
 
-class EntityEditView( View, EntityViewMixin ):
-
-    def get( self, request, *args, **kwargs ):
-        entity = self.get_entity( request, *args, **kwargs )
-        entity_edit_data = EntityEditData( entity = entity )
-        return self.entity_edit_response(
-            request = request,
-            entity_edit_data = entity_edit_data,
-        )
+class BaseEntityEditMixin:
+    """Shared logic for entity editing operations"""
     
-    def post( self, request, *args, **kwargs ):
-        entity = self.get_entity( request, *args, **kwargs )
-
-        # Store original entity_type_str to detect changes
-        original_entity_type_str = entity.entity_type_str
-
-        entity_form = forms.EntityForm( request.POST, instance = entity )
+    def _handle_entity_form_save(self, request, entity, entity_form, entity_attribute_formset=None, original_entity_type_str=None):
+        """Handle saving entity form and optional formset with transition logic"""
+        if original_entity_type_str is None:
+            original_entity_type_str = entity.entity_type_str
         
-        # Check if formset management form data is present in POST data
-        formset_prefix = f'entity-{entity.id}'
-        has_formset_data = f'{formset_prefix}-TOTAL_FORMS' in request.POST
+        transition_response = None
         
-        if has_formset_data:
-            # Full editing including attributes
-            entity_attribute_formset = forms.EntityAttributeFormSet(
-                request.POST,
-                request.FILES,
-                instance = entity,
-                prefix = formset_prefix,
-            )
-            form_valid = entity_form.is_valid() and entity_attribute_formset.is_valid()
-        else:
-            # Only entity properties, no attributes
-            entity_attribute_formset = None
-            form_valid = entity_form.is_valid()
-        
-        if form_valid:
-            # Track EntityType change and response needed after transaction
+        with transaction.atomic():
+            entity_form.save()
+            if entity_attribute_formset:
+                entity_attribute_formset.save()
+            
+            # Handle transitions within same transaction but defer response
             entity_type_changed = original_entity_type_str != entity.entity_type_str
-            transition_response = None
-            
-            with transaction.atomic():
-                entity_form.save()
-                if entity_attribute_formset:
-                    entity_attribute_formset.save()
-                
-                # Handle transitions within same transaction but defer response
-                if entity_type_changed:
-                    transition_response = self._handle_entity_type_change(request, entity)
-                
-            # Now that transaction is committed, handle any transition response
-            if transition_response is not None:
-                return transition_response
-                
-            # Recreate formset to preserve "max" to show new form (only when formset was used)
-            if has_formset_data:
-                entity_attribute_formset = forms.EntityAttributeFormSet(
-                    instance = entity,
-                    prefix = formset_prefix,
-                )
-            status_code = 200
-        else:
-            status_code = 400
-            
-        entity_edit_data = EntityEditData(
-            entity = entity,
-            entity_form = entity_form,
-            entity_attribute_formset = entity_attribute_formset,
-        )
-        return self.entity_edit_response(
-            request = request,
-            entity_edit_data = entity_edit_data,
-            status_code = status_code,
+            if entity_type_changed:
+                transition_response = self._handle_entity_type_change(request, entity)
+        
+        return transition_response
+    
+    def _recreate_fresh_formset(self, entity):
+        """Recreate formset to preserve 'max' to show new form"""
+        return forms.EntityAttributeFormSet(
+            instance = entity,
+            prefix = f'entity-{entity.id}',
         )
     
     def _handle_entity_type_change(self, request, entity):
@@ -132,6 +86,98 @@ class EntityEditView( View, EntityViewMixin ):
         # - icon_to_path: Database structure changed
         # - path_to_icon: Database structure changed
         return True
+
+
+class EntityEditView( BaseEntityEditMixin, View, EntityViewMixin ):
+    """Handle full entity editing including attributes - used by modal"""
+
+    def get( self, request, *args, **kwargs ):
+        entity = self.get_entity( request, *args, **kwargs )
+        entity_edit_data = EntityEditData( entity = entity )
+        return self.entity_edit_response(
+            request = request,
+            entity_edit_data = entity_edit_data,
+        )
+    
+    def post( self, request, *args, **kwargs ):
+        entity = self.get_entity( request, *args, **kwargs )
+        
+        # Store original entity_type_str to detect changes
+        original_entity_type_str = entity.entity_type_str
+
+        entity_form = forms.EntityForm( request.POST, instance = entity )
+        entity_attribute_formset = forms.EntityAttributeFormSet(
+            request.POST,
+            request.FILES,
+            instance = entity,
+            prefix = f'entity-{entity.id}',
+        )
+        
+        form_valid = entity_form.is_valid() and entity_attribute_formset.is_valid()
+        
+        if form_valid:
+            transition_response = self._handle_entity_form_save(
+                request, entity, entity_form, entity_attribute_formset, original_entity_type_str
+            )
+            
+            # Now that transaction is committed, handle any transition response
+            if transition_response is not None:
+                return transition_response
+                
+            # Recreate formset to preserve "max" to show new form
+            entity_attribute_formset = self._recreate_fresh_formset(entity)
+            status_code = 200
+        else:
+            status_code = 400
+            
+        entity_edit_data = EntityEditData(
+            entity = entity,
+            entity_form = entity_form,
+            entity_attribute_formset = entity_attribute_formset,
+        )
+        return self.entity_edit_response(
+            request = request,
+            entity_edit_data = entity_edit_data,
+            status_code = status_code,
+        )
+
+
+class EntityPropertiesEditView( BaseEntityEditMixin, View, EntityViewMixin ):
+    """Handle entity properties editing (name, type) only - used by sidebar"""
+
+    def post( self, request, *args, **kwargs ):
+        entity = self.get_entity( request, *args, **kwargs )
+        
+        # Store original entity_type_str to detect changes
+        original_entity_type_str = entity.entity_type_str
+
+        entity_form = forms.EntityForm( request.POST, instance = entity )
+        form_valid = entity_form.is_valid()
+        
+        if form_valid:
+            transition_response = self._handle_entity_form_save(
+                request, entity, entity_form, None, original_entity_type_str
+            )
+            
+            # Now that transaction is committed, handle any transition response
+            if transition_response is not None:
+                return transition_response
+            
+            status_code = 200
+        else:
+            status_code = 400
+            
+        # For properties editing, we create EntityEditData without formset
+        entity_edit_data = EntityEditData(
+            entity = entity,
+            entity_form = entity_form,
+            entity_attribute_formset = None,
+        )
+        return self.entity_edit_response(
+            request = request,
+            entity_edit_data = entity_edit_data,
+            status_code = status_code,
+        )
 
         
 class EntityAttributeUploadView( View, EntityViewMixin ):
