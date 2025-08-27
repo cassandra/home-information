@@ -38,20 +38,34 @@ class EntityEditView( View, EntityViewMixin ):
         original_entity_type_str = entity.entity_type_str
 
         entity_form = forms.EntityForm( request.POST, instance = entity )
-        entity_attribute_formset = forms.EntityAttributeFormSet(
-            request.POST,
-            request.FILES,
-            instance = entity,
-            prefix = f'entity-{entity.id}',
-        )
-        if entity_form.is_valid() and entity_attribute_formset.is_valid():
+        
+        # Check if formset management form data is present in POST data
+        formset_prefix = f'entity-{entity.id}'
+        has_formset_data = f'{formset_prefix}-TOTAL_FORMS' in request.POST
+        
+        if has_formset_data:
+            # Full editing including attributes
+            entity_attribute_formset = forms.EntityAttributeFormSet(
+                request.POST,
+                request.FILES,
+                instance = entity,
+                prefix = formset_prefix,
+            )
+            form_valid = entity_form.is_valid() and entity_attribute_formset.is_valid()
+        else:
+            # Only entity properties, no attributes
+            entity_attribute_formset = None
+            form_valid = entity_form.is_valid()
+        
+        if form_valid:
             # Track EntityType change and response needed after transaction
             entity_type_changed = original_entity_type_str != entity.entity_type_str
             transition_response = None
             
             with transaction.atomic():
-                entity_form.save()   
-                entity_attribute_formset.save()
+                entity_form.save()
+                if entity_attribute_formset:
+                    entity_attribute_formset.save()
                 
                 # Handle transitions within same transaction but defer response
                 if entity_type_changed:
@@ -61,11 +75,12 @@ class EntityEditView( View, EntityViewMixin ):
             if transition_response is not None:
                 return transition_response
                 
-            # Recreate to preserve "max" to show new form
-            entity_attribute_formset = forms.EntityAttributeFormSet(
-                instance = entity,
-                prefix = f'entity-{entity.id}',
-            )
+            # Recreate formset to preserve "max" to show new form (only when formset was used)
+            if has_formset_data:
+                entity_attribute_formset = forms.EntityAttributeFormSet(
+                    instance = entity,
+                    prefix = formset_prefix,
+                )
             status_code = 200
         else:
             status_code = 400

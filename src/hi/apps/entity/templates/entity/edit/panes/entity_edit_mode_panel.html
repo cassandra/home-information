@@ -8,13 +8,15 @@
   </div>
 </div>
 
-<div class="my-3">
-  <div class="h6">Name: <strong>{{ entity.name }}</strong></div>
-  <div class="h6">Type: <strong>{{ entity.entity_type_str }}</strong></div>
-  {% if entity.integration_id %}
-  <div class="h6">Integration: <strong>{{ entity.integration_id }}</strong></div>
-  {% endif %}
+<div id="{{ DIVID.ENTITY_PROPERTIES_PANE }}">
+  {% include "entity/edit/panes/entity_properties_edit.html" %}
 </div>
+
+{% if entity.integration_id %}
+<div class="my-2">
+  <div class="h6">Integration: <strong>{{ entity.integration_id }}</strong></div>
+</div>
+{% endif %}
 
 {% if entity.can_user_delete %}
 <div class="">

@@ -38,8 +38,8 @@ class TestEntityEditView(SyncViewTestCase):
         self.assertSuccessResponse(response)
         self.assertJsonResponse(response)
 
-    def test_post_valid_entity_edit(self):
-        """Test successful entity edit with valid form data."""
+    def test_post_valid_entity_edit_with_formset(self):
+        """Test successful entity edit with formset data (full editing)."""
         url = reverse('entity_edit', kwargs={'entity_id': self.entity.id})
         
         # Prepare valid form data including required formset management forms
@@ -62,6 +62,29 @@ class TestEntityEditView(SyncViewTestCase):
         self.entity.refresh_from_db()
         self.assertEqual(self.entity.name, 'Updated Entity Name')
         self.assertEqual(self.entity.entity_type_str, 'wall_switch')
+
+    def test_post_valid_entity_properties_only(self):
+        """Test successful entity properties edit without formset data (properties only)."""
+        
+        url = reverse('entity_edit', kwargs={'entity_id': self.entity.id})
+        
+        # Prepare valid form data WITHOUT formset management forms
+        # This simulates the entity_properties_edit.html form submission
+        form_data = {
+            'name': 'Properties Only Update',
+            'entity_type_str': 'motion_sensor',  # Use valid EntityType choice (lowercase enum name)
+            # No formset data - this should trigger the "properties only" path
+        }
+        
+        response = self.client.post(url, form_data)
+        
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        # Verify entity was actually updated
+        self.entity.refresh_from_db()
+        self.assertEqual(self.entity.name, 'Properties Only Update')
+        self.assertEqual(self.entity.entity_type_str, 'motion_sensor')
 
     # Tests for form validation errors removed - Django's form validation
     # is already thoroughly tested by Django itself. These tests were testing
