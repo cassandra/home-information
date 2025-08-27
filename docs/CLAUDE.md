@@ -52,6 +52,36 @@ Before major actions, ask yourself:
 
 IMPORTANT: Always use the TodoWrite tool to plan and track tasks throughout the conversation.
 
+## Sub-Agent Usage Patterns
+
+Claude Code has access to specialized sub-agents with specific expertise areas defined in their YAML configurations. Use them proactively rather than as a fallback - they often provide more thorough, expert-level analysis than attempting work directly.
+
+### Best Practices for Sub-Agent Usage
+
+**Be Specific About Scope**: Instead of "help debug tests", use "debug why EntityForm validation is failing when entity_type_str='sensor' but passing for 'wall_switch'"
+
+**Provide Context**: Give sub-agents the specific issue, relevant code snippets, and what you've already tried
+
+**Request Actionable Output**: Ask for specific deliverables like "return the exact test code to add" or "provide the minimal fix for the payload detection logic"
+
+**Chain Sub-Agents**: Use results from one sub-agent as input to another (e.g., investigation findings from general-purpose → specific implementation from domain expert)
+
+### Example Usage
+
+```
+# Good: Specific scope and clear deliverable request
+Task(subagent_type="test-engineer", 
+     prompt="Debug why EntityEditView POST test fails with 500 error when submitting properties-only form. 
+     Focus on form validation - I suspect EntityForm.is_valid() is failing but need to identify the specific field causing issues.
+     Return the exact cause and minimal fix needed.")
+
+# Less effective: Too broad and vague
+Task(subagent_type="general-purpose", 
+     prompt="Help with entity editing")
+```
+
+**Key Insight**: Sub-agents often provide more thorough, expert-level analysis than attempting the work directly. Use them proactively rather than as a fallback.
+
 ## Development Workflow for GitHub Issues
 
 When working on GitHub issues, follow this development workflow:
