@@ -1,5 +1,5 @@
 <div class="d-flex justify-content-between my-2">
-  <div class="align-self-center h4">Location</div>
+  <div class="align-self-center h4">Location Properties</div>
   <div class="align-self-center">
     <a href="{% url 'edit_item_details_close' %}"
        class="btn btn-tertiary" role="button" data-async="true">
@@ -7,6 +7,6 @@
     </a>
   </div>
 </div>
-<div id="{{ DIVID.LOCATION_EDIT_PANE }}">
-  {% include "location/edit/panes/location_edit.html" %}
+<div id="{{ DIVID.LOCATION_PROPERTIES_PANE }}">
+  {% include "location/edit/panes/location_properties_edit.html" %}
 </div>

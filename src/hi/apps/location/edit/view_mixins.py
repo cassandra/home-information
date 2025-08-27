@@ -9,26 +9,33 @@ from hi.constants import DIVID
 
 class LocationEditViewMixin:
 
-    def location_edit_response(
+    def location_modal_response(
             self,
             request                         : HttpRequest,
             location_edit_data              : LocationEditData,
             status_code                     : int                                = 200 ):
-
+        """Return modal response for full location editing (properties + attributes)"""
         context = location_edit_data.to_template_context()
-        if request.view_parameters.is_editing:
-            template = get_template( 'location/edit/panes/location_edit.html' )
-            content = template.render( context, request = request )
-            return antinode.response(
-                insert_map = {
-                    DIVID['LOCATION_EDIT_PANE']: content,
-                },
-                status = status_code,
-            )
         return antinode.modal_from_template(
             request = request,
             template_name = 'location/modals/location_edit.html',
             context = context,
+        )
+
+    def location_properties_response(
+            self,
+            request                         : HttpRequest,
+            location_edit_data              : LocationEditData,
+            status_code                     : int                                = 200 ):
+        """Return sidebar response for location properties editing only (name, order_id, svg_view_box_str)"""
+        context = location_edit_data.to_template_context()
+        template = get_template( 'location/edit/panes/location_properties_edit.html' )
+        content = template.render( context, request = request )
+        return antinode.response(
+            insert_map = {
+                DIVID['LOCATION_PROPERTIES_PANE']: content,
+            },
+            status = status_code,
         )
         
     def location_view_edit_response(

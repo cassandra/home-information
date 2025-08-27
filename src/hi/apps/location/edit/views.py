@@ -135,7 +135,7 @@ class LocationEditView( View, LocationViewMixin, LocationEditViewMixin ):
         location_edit_data = LocationEditData(
             location = location,
         )
-        return self.location_edit_response(
+        return self.location_modal_response(
             request = request,
             location_edit_data = location_edit_data,
             status_code = 200,
@@ -182,7 +182,36 @@ class LocationEditView( View, LocationViewMixin, LocationEditViewMixin ):
             location_edit_form = location_edit_form,
             location_attribute_formset = location_attribute_formset,
         )
-        return self.location_edit_response(
+        return self.location_modal_response(
+            request = request,
+            location_edit_data = location_edit_data,
+            status_code = status_code,
+        )
+
+
+class LocationPropertiesEditView( View, LocationViewMixin, LocationEditViewMixin ):
+    """Handle location properties editing (name, order_id, svg_view_box_str) only - used by sidebar"""
+
+    def post( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+
+        location_edit_form = forms.LocationEditForm( request.POST, instance = location )
+        form_valid = location_edit_form.is_valid()
+        
+        if form_valid:
+            with transaction.atomic():
+                location_edit_form.save()
+            status_code = 200
+        else:
+            status_code = 400
+            
+        # For properties editing, we create LocationEditData without formset
+        location_edit_data = LocationEditData(
+            location = location,
+            location_edit_form = location_edit_form,
+            location_attribute_formset = None,
+        )
+        return self.location_properties_response(
             request = request,
             location_edit_data = location_edit_data,
             status_code = status_code,
@@ -211,7 +240,7 @@ class LocationAttributeUploadView( View, LocationViewMixin, LocationEditViewMixi
             location = location,
             location_attribute_upload_form = location_attribute_upload_form,
         )
-        return self.location_edit_response(
+        return self.location_modal_response(
             request = request,
             location_edit_data = location_edit_data,
             status_code = status_code,

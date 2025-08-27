@@ -92,7 +92,7 @@ class LocationSwitchView( View, LocationViewMixin ):
 class LocationDetailsView( HiSideView, LocationViewMixin ):
 
     def get_template_name( self ) -> str:
-        return 'location/panes/location_details.html'
+        return 'location/panes/location_edit_mode_panel.html'
 
     def should_push_url( self ):
         return True

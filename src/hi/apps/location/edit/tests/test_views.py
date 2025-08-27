@@ -358,6 +358,57 @@ class TestLocationEditView(SyncViewTestCase):
         self.assertEqual(response.status_code, 404)
 
 
+class TestLocationPropertiesEditView(SyncViewTestCase):
+    """
+    Tests for LocationPropertiesEditView - handles location properties (name, order_id, svg_view_box_str) editing only.
+    This view is used by the sidebar in edit mode and only accepts POST requests.
+    """
+
+    def setUp(self):
+        super().setUp()
+        # Create test location
+        self.location = Location.objects.create(
+            name='Test Properties Location',
+            svg_fragment_filename='test_props.svg',
+            svg_view_box_str='0 0 100 100'
+        )
+
+    def test_post_valid_properties_edit(self):
+        """Test successful location properties edit."""
+        url = reverse('location_properties_edit', kwargs={'location_id': self.location.id})
+        
+        form_data = {
+            'name': 'Updated Properties Name',
+            'order_id': 5,
+            'svg_view_box_str': '0 0 200 200',
+        }
+        
+        response = self.client.post(url, form_data)
+        
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        # Verify location was actually updated
+        self.location.refresh_from_db()
+        self.assertEqual(self.location.name, 'Updated Properties Name')
+        self.assertEqual(self.location.order_id, 5)
+        self.assertEqual(self.location.svg_view_box_str, '0 0 200 200')
+
+    def test_nonexistent_location_returns_404(self):
+        """Test that editing nonexistent location returns 404."""
+        url = reverse('location_properties_edit', kwargs={'location_id': 99999})
+        response = self.client.post(url, {'name': 'Test', 'order_id': 1})
+        
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_not_allowed(self):
+        """Test that GET requests are not allowed (only POST)."""
+        url = reverse('location_properties_edit', kwargs={'location_id': self.location.id})
+        response = self.client.get(url)
+        
+        self.assertEqual(response.status_code, 405)
+
+
 class TestLocationAttributeUploadView(SyncViewTestCase):
     """
     Tests for LocationAttributeUploadView - demonstrates location attribute upload testing.
