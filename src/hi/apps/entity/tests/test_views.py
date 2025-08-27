@@ -136,7 +136,6 @@ class TestEntityPropertiesEditView(SyncViewTestCase):
         self.assertEqual(self.entity.name, 'Updated Properties Name')
         self.assertEqual(self.entity.entity_type_str, 'wall_switch')
 
-
     def test_nonexistent_entity_returns_404(self):
         """Test that editing nonexistent entity returns 404."""
         url = reverse('entity_properties_edit', kwargs={'entity_id': 99999})
