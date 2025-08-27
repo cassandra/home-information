@@ -64,7 +64,7 @@ class BaseEntityEditMixin:
                 return antinode.refresh_response()
             
             # Simple transitions can continue with sidebar-only refresh
-            # (will fall through to normal entity_edit_response)
+            # (will fall through to normal response method)
             return None
             
         except Exception as e:
@@ -94,7 +94,7 @@ class EntityEditView( BaseEntityEditMixin, View, EntityViewMixin ):
     def get( self, request, *args, **kwargs ):
         entity = self.get_entity( request, *args, **kwargs )
         entity_edit_data = EntityEditData( entity = entity )
-        return self.entity_edit_response(
+        return self.entity_modal_response(
             request = request,
             entity_edit_data = entity_edit_data,
         )
@@ -135,7 +135,7 @@ class EntityEditView( BaseEntityEditMixin, View, EntityViewMixin ):
             entity_form = entity_form,
             entity_attribute_formset = entity_attribute_formset,
         )
-        return self.entity_edit_response(
+        return self.entity_modal_response(
             request = request,
             entity_edit_data = entity_edit_data,
             status_code = status_code,
@@ -173,7 +173,7 @@ class EntityPropertiesEditView( BaseEntityEditMixin, View, EntityViewMixin ):
             entity_form = entity_form,
             entity_attribute_formset = None,
         )
-        return self.entity_edit_response(
+        return self.entity_properties_response(
             request = request,
             entity_edit_data = entity_edit_data,
             status_code = status_code,
@@ -202,7 +202,7 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
             entity = entity,
             entity_attribute_upload_form = entity_attribute_upload_form,
         )            
-        return self.entity_edit_response(
+        return self.entity_modal_response(
             request = request,
             entity_edit_data = entity_edit_data,
             status_code = status_code,
