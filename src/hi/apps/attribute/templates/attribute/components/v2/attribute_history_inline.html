@@ -1,0 +1,77 @@
+{% load humanize %}
+{% load icons %}
+{% load attribute_extras %}
+{% comment %}
+Inline Attribute History Component
+Compact history display that loads into property cards
+{% endcomment %}
+
+<div class="attr-v2-history-inline-content">
+  <!-- History Header -->
+  <div class="attr-v2-history-header">
+    <small class="text-muted">
+      <strong>History for "{{ attribute.name }}"</strong>
+    </small>
+    <button type="button" 
+            class="btn btn-sm btn-link p-0 attr-v2-history-close"
+            onclick="$('#hi-entity-attr-history-{{ entity.id }}-{{ attribute.id }}').empty();"
+            title="Close history">
+      {% icon "close" size="sm" %}
+    </button>
+  </div>
+  
+  <!-- Current Value -->
+  <div class="attr-v2-history-current mb-2">
+    <small class="text-muted">Current:</small>
+    <span class="badge badge-primary ml-1">{{ attribute.value|attribute_preview }}</span>
+  </div>
+  
+  {% if history_records %}
+  <!-- History Records -->
+  <div class="attr-v2-history-records">
+    {% for record in history_records %}
+    <div class="attr-v2-history-record {% if forloop.counter > 3 %}collapse{% endif %}" 
+         {% if forloop.counter > 3 %}id="history-extra-{{ entity.id }}-{{ attribute.id }}"{% endif %}>
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <small class="text-muted">{{ record.changed_datetime|naturaltime }}</small>
+          <span class="badge badge-light ml-2">{{ record.value|attribute_preview }}</span>
+        </div>
+        <div>
+          {% if record.value != attribute.value %}
+            <a href="{% url restore_url_name entity_id=entity.id attribute_id=attribute.id history_id=record.pk %}"
+               data-async="true"
+               data-stay-in-modal="true"
+               class="btn btn-xs btn-outline-primary"
+               title="Restore this value">
+              Restore
+            </a>
+          {% else %}
+            <small class="text-muted">Current</small>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    
+    <!-- Show More/Less Toggle -->
+    {% if history_records|length > 3 %}
+    <div class="attr-v2-history-toggle mt-2">
+      <button type="button" 
+              class="btn btn-sm btn-link p-0"
+              data-toggle="collapse"
+              data-target="#history-extra-{{ entity.id }}-{{ attribute.id }}"
+              onclick="$(this).find('.show-more-text, .show-less-text').toggle();">
+        <small class="show-more-text">Show {{ history_records|length|add:'-3' }} more...</small>
+        <small class="show-less-text" style="display: none;">Show less</small>
+      </button>
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <!-- No History -->
+  <div class="attr-v2-history-empty">
+    <small class="text-muted">No previous values recorded.</small>
+  </div>
+  {% endif %}
+</div>

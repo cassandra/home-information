@@ -2611,6 +2611,106 @@ form[data-dirty] {
 
 
 /* ====================================================================== */
+/* INLINE HISTORY STYLING                                                */
+/* ====================================================================== */
+
+.attr-v2-inline-history {
+    margin-top: 0.75rem;
+}
+
+.attr-v2-history-inline-content {
+    background: var(--highlight-background-color);
+    border: 1px solid var(--line-color);
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.attr-v2-history-header {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--line-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.attr-v2-history-close {
+    color: var(--danger-color);
+    text-decoration: none;
+}
+
+.attr-v2-history-close:hover {
+    color: var(--danger-color);
+    text-decoration: none;
+}
+
+.attr-v2-history-current {
+    font-size: 0.8125rem;
+}
+
+.attr-v2-history-current .badge-primary {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.attr-v2-history-toggle .btn-link {
+    color: var(--text-color);
+    text-decoration: none;
+}
+
+.attr-v2-history-toggle .btn-link:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+.attr-v2-history-record {
+    padding: 0.375rem 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.attr-v2-history-record:last-child {
+    border-bottom: none;
+}
+
+.attr-v2-history-record .badge {
+    font-size: 0.75rem;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: top;
+}
+
+.attr-v2-history-current .badge {
+    font-size: 0.75rem;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: top;
+}
+
+.attr-v2-history-record .btn-xs {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    line-height: 1.2;
+}
+
+.attr-v2-history-toggle {
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+.attr-v2-history-empty {
+    text-align: center;
+    padding: 1rem 0;
+    color: var(--muted-color);
+}
+
+/* ====================================================================== */
 /* DELETION STATES                                                       */
 /* ====================================================================== */
 

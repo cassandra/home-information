@@ -287,28 +287,8 @@
         }
     };
     
-    window.showPropertyHistory = function(attributeId) {
-        showOverlayModal('Property History', 'Loading property history...');
-        
-        // TODO: Fetch actual history data in future implementation
-        setTimeout(() => {
-            const historyContent = `
-                <div class="attr-v2-history-list">
-                    <div class="attr-v2-history-item">
-                        <div class="attr-v2-history-timestamp">5 minutes ago</div>
-                        <div class="attr-v2-history-action">Value changed</div>
-                        <div class="attr-v2-history-details">Updated property value</div>
-                    </div>
-                    <div class="attr-v2-history-item">
-                        <div class="attr-v2-history-timestamp">2 hours ago</div>
-                        <div class="attr-v2-history-action">Property created</div>
-                        <div class="attr-v2-history-details">Initial property setup</div>
-                    </div>
-                </div>
-            `;
-            updateOverlayModal('Property History', historyContent);
-        }, 500);
-    };
+    // History functionality now handled by antinode async pattern
+    // History button uses data-async to load content, no JavaScript needed
     
     window.markPropertyForDeletion = function(attributeId) {
         const $propertyCard = $(`[data-attribute-id="${attributeId}"]`);

@@ -312,6 +312,102 @@ class EntityAttributeRestoreView(BaseAttributeRestoreView):
         return EntityAttribute
 
 
+class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
+    """View for displaying EntityAttribute history inline within the edit modal."""
+    
+    def get_template_name(self):
+        return 'attribute/components/v2/attribute_history_inline.html'
+    
+    def get_attribute_model_class(self):
+        return EntityAttribute
+    
+    def get_history_url_name(self):
+        return 'entity_attribute_history_inline'
+    
+    def get_restore_url_name(self):
+        return 'entity_attribute_restore_inline'
+    
+    def get(self, request, entity_id, attribute_id, *args, **kwargs):
+        # Validate that the attribute belongs to this entity for security
+        try:
+            attribute = EntityAttribute.objects.get(pk=attribute_id, entity_id=entity_id)
+        except EntityAttribute.DoesNotExist:
+            from hi.views import page_not_found_response
+            return page_not_found_response(request, "Attribute not found.")
+        
+        # Get history records for this attribute
+        history_model_class = attribute._get_history_model_class()
+        if history_model_class:
+            history_records = history_model_class.objects.filter(
+                attribute=attribute
+            ).order_by('-changed_datetime')[:20]  # Limit for inline display
+        else:
+            history_records = []
+        
+        context = {
+            'entity': attribute.entity,
+            'attribute': attribute,
+            'history_records': history_records,
+            'history_url_name': self.get_history_url_name(),
+            'restore_url_name': self.get_restore_url_name(),
+        }
+        
+        # Use Django render shortcut
+        from django.shortcuts import render
+        return render(request, self.get_template_name(), context)
+
+
+class EntityAttributeRestoreInlineView(BaseAttributeRestoreView):
+    """View for restoring EntityAttribute values from history within the edit modal."""
+    
+    def get_attribute_model_class(self):
+        return EntityAttribute
+    
+    def get(self, request, entity_id, attribute_id, history_id, *args, **kwargs):
+        # Validate that the attribute belongs to this entity for security  
+        try:
+            attribute = EntityAttribute.objects.get(pk=attribute_id, entity_id=entity_id)
+        except EntityAttribute.DoesNotExist:
+            from hi.views import page_not_found_response
+            return page_not_found_response(request, "Attribute not found.")
+        
+        # Get the history record to restore from
+        history_model_class = attribute._get_history_model_class()
+        if not history_model_class:
+            from hi.views import page_not_found_response
+            return page_not_found_response(request, "No history available for this attribute type.")
+        
+        try:
+            history_record = history_model_class.objects.get(pk=history_id, attribute=attribute)
+        except history_model_class.DoesNotExist:
+            from hi.views import page_not_found_response
+            return page_not_found_response(request, "History record not found.")
+        
+        # Restore the value from the history record
+        attribute.value = history_record.value
+        attribute.save()  # This will create a new history record
+        
+        # Delegate to EntityEditV2View logic to return updated modal content
+        entity = attribute.entity
+        
+        # Gather fresh form data like EntityEditV2View.get() does
+        from hi.apps.entity.forms import EntityForm, EntityAttributeRegularFormSet
+        from hi.apps.attribute.enums import AttributeValueType
+        
+        entity_form = EntityForm(instance=entity)
+        file_attributes = entity.attributes.filter(
+            value_type_str=str(AttributeValueType.FILE)
+        ).order_by('id')
+        property_attributes_formset = EntityAttributeRegularFormSet(
+            instance=entity,
+            prefix=f'entity-{entity.id}'
+        )
+        
+        # Use EntityEditV2View's _render_success_response logic
+        entity_edit_view = EntityEditV2View()
+        return entity_edit_view._render_success_response(entity)
+
+
 class EntityEditV2View(HiModalView, EntityViewMixin):
     """V2 Entity attribute editing modal with redesigned interface."""
     

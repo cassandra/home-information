@@ -41,6 +41,14 @@ urlpatterns = [
              views.EntityAttributeRestoreView.as_view(), 
              name='entity_attribute_restore'),
 
+    re_path( r'^entity/(?P<entity_id>\d+)/attribute/(?P<attribute_id>\d+)/history/inline/$', 
+             views.EntityAttributeHistoryInlineView.as_view(), 
+             name='entity_attribute_history_inline'),
+    
+    re_path( r'^entity/(?P<entity_id>\d+)/attribute/(?P<attribute_id>\d+)/restore/inline/(?P<history_id>\d+)/$', 
+             views.EntityAttributeRestoreInlineView.as_view(), 
+             name='entity_attribute_restore_inline'),
+
     re_path( r'^edit/', include('hi.apps.entity.edit.urls' )),
 
 ]
