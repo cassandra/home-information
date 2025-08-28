@@ -27,9 +27,14 @@
 <div class="attr-v2-basic-info">
   <div class="row">
     <div class="col-md-8">
-      <div class="form-group">
-        {{ entity_form.name.label_tag }}
-        {{ entity_form.name }}
+      <div class="form-group mb-0">
+        <small class="text-muted">Name</small>
+        <input type="text" 
+               id="{{ entity_form.name.id_for_label }}"
+               name="{{ entity_form.name.html_name }}"
+               value="{{ entity_form.name.value|default:entity.name }}"
+               class="form-control form-control-sm"
+               {% if entity_form.name.field.required %}required{% endif %}>
         {% if entity_form.name.errors %}
           <div class="invalid-feedback d-block">
             {{ entity_form.name.errors }}
@@ -38,9 +43,18 @@
       </div>
     </div>
     <div class="col-md-4">
-      <div class="form-group">
-        {{ entity_form.entity_type_str.label_tag }}
-        {{ entity_form.entity_type_str }}
+      <div class="form-group mb-0">
+        <small class="text-muted">Type</small>
+        <select id="{{ entity_form.entity_type_str.id_for_label }}"
+                name="{{ entity_form.entity_type_str.html_name }}"
+                class="form-control form-control-sm">
+          {% for value, label in entity_form.entity_type_str.field.choices %}
+            <option value="{{ value }}" 
+                    {% if value == entity_form.entity_type_str.value|default:entity.entity_type_str %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
         {% if entity_form.entity_type_str.errors %}
           <div class="invalid-feedback d-block">
             {{ entity_form.entity_type_str.errors }}

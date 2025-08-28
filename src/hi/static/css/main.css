@@ -774,26 +774,6 @@ a.clickable-card:active {
     gap: 0.25rem;
 }
 
-/* Deletion State (marked for deletion) */
-.attr-v2-file-card.marked-for-deletion,
-.attr-v2-property-card.marked-for-deletion {
-    opacity: 0.6;
-    background-color: rgba(108, 117, 125, 0.1);
-    border-left: 3px solid var(--secondary-color);
-    position: relative;
-}
-
-.attr-v2-file-card.marked-for-deletion::after,
-.attr-v2-property-card.marked-for-deletion::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: var(--secondary-color);
-    transform: translateY(-50%);
-}
 
 .attr-v2-undo-delete {
     margin-top: 0.5rem;
@@ -2611,6 +2591,88 @@ form[data-dirty] {
 
 
 /* ====================================================================== */
+/* COMPACT BASIC INFO HEADER                                              */
+/* ====================================================================== */
+
+.attr-v2-basic-info {
+    background: var(--white);
+    border: 1px solid var(--line-color);
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.attr-v2-basic-info .row {
+    margin-left: -0.375rem;
+    margin-right: -0.375rem;
+}
+
+.attr-v2-basic-info [class*="col-"] {
+    padding-left: 0.375rem;
+    padding-right: 0.375rem;
+}
+
+/* Force block layout for labels - very specific selector */
+.attr-v2-basic-info .form-group small,
+.attr-v2-basic-info .form-group .text-muted,
+.attr-v2-basic-info small,
+.attr-v2-basic-info .text-muted {
+    display: block !important;
+    font-size: 0.75rem !important;
+    color: var(--muted-color) !important;
+    margin-bottom: 0.25rem !important;
+    font-weight: 500 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    width: 100% !important;
+    line-height: 1 !important;
+    clear: both !important;
+}
+
+.attr-v2-basic-info .form-control-sm {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.5rem;
+    height: calc(1.5em + 0.75rem + 2px);
+    width: 100%; /* Ensure full width */
+}
+
+.attr-v2-basic-info .form-control {
+    width: 100%; /* Ensure full width for all form controls */
+}
+
+.attr-v2-basic-info select.form-control-sm {
+    padding-right: 1.75rem;
+    background-position: right 0.375rem center;
+    background-size: 16px 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Ensure columns don't break layout */
+.attr-v2-basic-info .col-md-8,
+.attr-v2-basic-info .col-md-4,
+.attr-v2-basic-info .col-sm-6 {
+    min-width: 0; /* Allow flex shrinking */
+}
+
+/* Remove bottom margin from form groups in header */
+.attr-v2-basic-info .form-group {
+    margin-bottom: 0;
+}
+
+/* Error state styling */
+.attr-v2-basic-info .form-control.is-invalid,
+.attr-v2-basic-info .form-control:invalid {
+    border-color: var(--danger-color);
+}
+
+.attr-v2-basic-info .invalid-feedback {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+/* ====================================================================== */
 /* INLINE HISTORY STYLING                                                */
 /* ====================================================================== */
 
@@ -2711,23 +2773,87 @@ form[data-dirty] {
 }
 
 /* ====================================================================== */
-/* DELETION STATES                                                       */
+/* DELETION STATES WITH WATERMARKS                                       */
 /* ====================================================================== */
 
-.attr-v2-property-card.marked-for-deletion,
+/* File Card Deletion Styling */
 .attr-v2-file-card.marked-for-deletion {
-    border-left: 3px solid var(--danger-color);
-    background-color: rgba(220, 53, 69, 0.1);
-    opacity: 0.7;
+    opacity: 0.9;
+    transition: all 0.3s ease;
 }
 
-.attr-v2-property-card.marked-for-deletion .attr-v2-property-name::after,
-.attr-v2-file-card.marked-for-deletion .attr-v2-file-name::after {
-    content: " (Marked for deletion)";
-    font-size: 0.8rem;
-    color: var(--danger-color);
-    font-style: italic;
+.attr-v2-file-card.marked-for-deletion .attr-v2-file-thumbnail {
+    position: relative;
+    background: linear-gradient(rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.1)), 
+                repeating-linear-gradient(45deg, #f8f9fa, #f8f9fa 10px, #e9ecef 10px, #e9ecef 20px);
 }
+
+.attr-v2-file-card.marked-for-deletion .attr-v2-file-thumbnail::after {
+    content: "PENDING DELETION";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--danger-color);
+    opacity: 0.3;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 10;
+}
+
+.attr-v2-file-card.marked-for-deletion .attr-v2-file-info {
+    border-color: var(--danger-color);
+    background: rgba(220, 53, 69, 0.05);
+}
+
+/* Property Card Deletion Styling */
+.attr-v2-property-card.marked-for-deletion {
+    position: relative;
+    background: rgba(220, 53, 69, 0.05);
+    border-left: 4px solid var(--danger-color);
+    overflow: hidden;
+    opacity: 0.9;
+    transition: all 0.3s ease;
+}
+
+.attr-v2-property-card.marked-for-deletion::after {
+    content: "PENDING DELETION";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--danger-color);
+    opacity: 0.1;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    pointer-events: none;
+    z-index: 10;
+    white-space: nowrap;
+}
+
+/* Keep inputs interactive but let watermark show through */
+.attr-v2-property-card.marked-for-deletion .form-control,
+.attr-v2-property-card.marked-for-deletion textarea,
+.attr-v2-property-card.marked-for-deletion input {
+    position: relative;
+    background-color: rgba(255, 255, 255, 0.9);
+}
+
+/* Undo button visibility when marked for deletion */
+.marked-for-deletion .attr-v2-delete-btn {
+    display: none !important;
+}
+
+.marked-for-deletion .attr-v2-undo-btn {
+    display: inline-flex !important;
+}
+
 
 /* Touch device optimizations */
 @media (max-width: 768px) {

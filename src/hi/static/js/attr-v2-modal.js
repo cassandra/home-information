@@ -236,8 +236,8 @@
             return;
         }
         
-        // Visual feedback
-        $fileCard.addClass('marked-for-deletion').css('opacity', '0.5');
+        // Visual feedback - CSS handles all styling
+        $fileCard.addClass('marked-for-deletion');
         
         // Hide delete button and show undo button (both server-rendered)
         $fileCard.find('.attr-v2-delete-btn').hide();
@@ -268,8 +268,8 @@
             console.log(`Unmarked file attribute ${attributeId} for deletion`);
         }
         
-        // Remove visual feedback
-        $fileCard.removeClass('marked-for-deletion').css('opacity', '1');
+        // Remove visual feedback - CSS handles all styling
+        $fileCard.removeClass('marked-for-deletion');
         
         // Show delete button and hide undo button (both server-rendered)
         $fileCard.find('.attr-v2-delete-btn').show();
@@ -307,8 +307,8 @@
             return;
         }
         
-        // Visual feedback
-        $propertyCard.addClass('marked-for-deletion').css('opacity', '0.5');
+        // Visual feedback - CSS handles all styling
+        $propertyCard.addClass('marked-for-deletion');
         
         // Hide delete button and show undo button (both server-rendered)
         $propertyCard.find('.attr-v2-delete-btn').hide();
@@ -339,8 +339,8 @@
             console.log(`Unmarked ${$deleteField.attr('name')} for deletion`);
         }
         
-        // Remove visual feedback
-        $propertyCard.removeClass('marked-for-deletion').css('opacity', '1');
+        // Remove visual feedback - CSS handles all styling
+        $propertyCard.removeClass('marked-for-deletion');
         
         // Show delete button and hide undo button (both server-rendered)
         $propertyCard.find('.attr-v2-delete-btn').show();
