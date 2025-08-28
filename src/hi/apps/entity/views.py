@@ -325,22 +325,17 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
         from hi.apps.entity.forms import EntityForm
         entity_form = EntityForm(instance=entity)
         
-        # Get file and property attributes  
+        # Get file attributes for display (not a formset, just for template rendering)
         from hi.apps.attribute.enums import AttributeValueType
         file_attributes = entity.attributes.filter(
             value_type_str=str(AttributeValueType.FILE)
         ).order_by('id')
         
-        # Property attributes formset
-        property_attributes = entity.attributes.exclude(
-            value_type_str=str(AttributeValueType.FILE)
-        ).order_by('id')
-        
-        from hi.apps.entity.forms import EntityAttributeFormSet
-        property_attributes_formset = EntityAttributeFormSet(
+        # Regular attributes formset (automatically excludes FILE attributes)
+        from hi.apps.entity.forms import EntityAttributeRegularFormSet
+        property_attributes_formset = EntityAttributeRegularFormSet(
             instance=entity,
-            prefix=f'entity-{entity.id}',
-            queryset=property_attributes
+            prefix=f'entity-{entity.id}'
         )
         
         context = {
@@ -355,21 +350,16 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
     def post(self, request, *args, **kwargs):
         entity = self.get_entity(request, *args, **kwargs)
         
-        from hi.apps.entity.forms import EntityForm, EntityAttributeFormSet
+        from hi.apps.entity.forms import EntityForm, EntityAttributeRegularFormSet
         
         # Handle form submission
         entity_form = EntityForm(request.POST, instance=entity)
         
-        from hi.apps.attribute.enums import AttributeValueType
-        property_attributes = entity.attributes.exclude(
-            value_type_str=str(AttributeValueType.FILE)
-        ).order_by('id')
-        
-        property_attributes_formset = EntityAttributeFormSet(
+        # Regular attributes formset (automatically excludes FILE attributes)
+        property_attributes_formset = EntityAttributeRegularFormSet(
             request.POST,
             instance=entity,
-            prefix=f'entity-{entity.id}',
-            queryset=property_attributes
+            prefix=f'entity-{entity.id}'
         )
         
         # Log form data for debugging
@@ -461,18 +451,33 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
             entity_form = EntityForm(instance=entity)
             
         if property_attributes_formset is None:
-            from hi.apps.entity.forms import EntityAttributeFormSet
-            from hi.apps.attribute.enums import AttributeValueType
-            property_attributes = entity.attributes.exclude(value_type_str=str(AttributeValueType.FILE)).order_by('id')
-            property_attributes_formset = EntityAttributeFormSet(
+            from hi.apps.entity.forms import EntityAttributeRegularFormSet
+            property_attributes_formset = EntityAttributeRegularFormSet(
                 instance=entity,
-                prefix=f'entity-{entity.id}',
-                queryset=property_attributes
+                prefix=f'entity-{entity.id}'
             )
         
         # Get file attributes
         from hi.apps.attribute.enums import AttributeValueType
         file_attributes = entity.attributes.filter(value_type_str=str(AttributeValueType.FILE)).order_by('id')
+        
+        # Collect non-field errors for enhanced error messaging
+        non_field_errors = []
+        
+        # Entity form non-field errors
+        if entity_form and hasattr(entity_form, 'non_field_errors') and entity_form.non_field_errors():
+            non_field_errors.extend([f"Entity: {error}" for error in entity_form.non_field_errors()])
+        
+        # Property formset non-field errors
+        if property_attributes_formset and hasattr(property_attributes_formset, 'non_field_errors') and property_attributes_formset.non_field_errors():
+            non_field_errors.extend([f"Properties: {error}" for error in property_attributes_formset.non_field_errors()])
+        
+        # Individual property form non-field errors
+        if property_attributes_formset:
+            for i, form in enumerate(property_attributes_formset.forms):
+                if hasattr(form, 'non_field_errors') and form.non_field_errors():
+                    property_name = form.instance.name if form.instance.pk else f"New Property #{i+1}"
+                    non_field_errors.extend([f"{property_name}: {error}" for error in form.non_field_errors()])
         
         # Debug logging
         logger.info(f'Rendering fragments for entity {entity.id}')
@@ -481,6 +486,8 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
             logger.info(f'Property formset total forms: {property_attributes_formset.total_form_count()}')
             logger.info(f'Property formset is bound: {property_attributes_formset.is_bound}')
             logger.info(f'Property formset is valid: {property_attributes_formset.is_valid()}')
+        if non_field_errors:
+            logger.info(f'Non-field errors collected: {non_field_errors}')
         
         # Context for both fragments
         context = {
@@ -491,6 +498,7 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
             'success_message': success_message,
             'error_message': error_message,
             'has_errors': has_errors,
+            'non_field_errors': non_field_errors,
         }
         
         # Render both fragments

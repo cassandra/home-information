@@ -57,6 +57,11 @@ Includes: entity info (when provided), action bar, and scrollable content
             <span class="text-success">{{ success_message }}</span>
           {% elif error_message %}
             <span class="text-danger">{{ error_message }}</span>
+            {% if non_field_errors %}
+              {% for error in non_field_errors %}
+                <br><small class="text-danger">{{ error }}</small>
+              {% endfor %}
+            {% endif %}
           {% endif %}
         </span>
       </div>

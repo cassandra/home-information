@@ -8,6 +8,7 @@ from hi.apps.sense.models import Sensor, SensorHistory
 from .enums import EntityGroupType, EntityPairingType, VideoStreamType
 from .forms import (
     EntityAttributeFormSet,
+    EntityAttributeRegularFormSet,
     EntityForm,
     EntityAttributeUploadForm,
 )
