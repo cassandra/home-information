@@ -12,7 +12,7 @@ Individual property attribute card with value editing and actions
      data-value-type="{{ attribute_form.instance.value_type.name|default:'text' }}"
      data-is-secret="{{ attribute_form.instance.value_type.is_secret|yesno:'true,false' }}"
      data-can-delete="{{ attribute_form.instance.attribute_type.can_delete|yesno:'true,false' }}"
-     {% if not attribute_form.instance.pk %}style="display: none;"{% endif %}>
+     {% if not attribute_form.instance.pk and not attribute_form.is_bound %}style="display: none;"{% endif %}>
   
   <!-- Hidden form fields -->
   {{ attribute_form.id }}
@@ -87,6 +87,11 @@ Individual property attribute card with value editing and actions
       <div class="mb-2">
         {{ attribute_form.name.label_tag }}
         {{ attribute_form.name }}
+        {% if attribute_form.name.errors %}
+          <div class="invalid-feedback d-block">
+            {{ attribute_form.name.errors }}
+          </div>
+        {% endif %}
       </div>
       
       <!-- Secret checkbox for new properties -->
@@ -96,6 +101,11 @@ Individual property attribute card with value editing and actions
           <label class="form-check-label" for="{{ attribute_form.secret.id_for_label }}">
             {{ attribute_form.secret.label }}
           </label>
+          {% if attribute_form.secret.errors %}
+            <div class="invalid-feedback d-block">
+              {{ attribute_form.secret.errors }}
+            </div>
+          {% endif %}
         </div>
       {% endif %}
     {% endif %}
@@ -107,6 +117,11 @@ Individual property attribute card with value editing and actions
         <label class="custom-control-label" for="{{ attribute_form.value.id_for_label }}">
           {{ attribute_form.value.label|default:"Toggle value" }}
         </label>
+        {% if attribute_form.value.errors %}
+          <div class="invalid-feedback d-block">
+            {{ attribute_form.value.errors }}
+          </div>
+        {% endif %}
       </div>
     {% else %}
       <!-- Text/Textarea (default) -->
@@ -121,6 +136,11 @@ Individual property attribute card with value editing and actions
                      class="form-control attr-v2-secret-input"
                      value="{{ attribute_form.value.value|default_if_none:'' }}"
                      {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %} />
+              {% if attribute_form.value.errors %}
+                <div class="invalid-feedback d-block">
+                  {{ attribute_form.value.errors }}
+                </div>
+              {% endif %}
               <button type="button" 
                       class="btn btn-sm btn-outline-secondary attr-v2-secret-toggle"
                       onclick="attrV2.toggleSecretField(this)"
@@ -152,6 +172,11 @@ Individual property attribute card with value editing and actions
                       data-hidden-field="hidden-{{ attribute_form.value.id_for_label }}"
                       {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %}
                       data-original-value="{{ attribute_form.value.value|default_if_none:'' }}">{{ attribute_form.value.value|default_if_none:'' }}</textarea>
+            {% if attribute_form.value.errors %}
+              <div class="invalid-feedback d-block">
+                {{ attribute_form.value.errors }}
+              </div>
+            {% endif %}
             {% if overflows > 0 %}
             <div class="attr-v2-expand-controls" style="display: block;">
               <button type="button" class="btn btn-sm btn-link" onclick="attrV2.toggleExpandedView(this)">
