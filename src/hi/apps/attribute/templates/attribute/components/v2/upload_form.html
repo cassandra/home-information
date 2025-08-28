@@ -1,0 +1,20 @@
+{% comment %}
+V2 Upload Form Fragment
+Separate file upload form to avoid nested forms issue
+Used by both initial load and antinode updates
+{% endcomment %}
+
+<!-- File Upload Form (following existing pattern) -->
+<form action="{% if file_upload_url %}{{ file_upload_url }}{% else %}{% url 'entity_attribute_upload' entity_id=entity.id %}{% endif %}" 
+      method="post" 
+      enctype="multipart/form-data"
+      class="form" 
+      data-async="true"
+      data-stay-in-modal="true"
+      style="display: none;">
+  {% csrf_token %}
+  <input type="file" 
+         id="attr-v2-file-input" 
+         name="file_value" 
+         onchange="Hi.submitForm(this);">
+</form>

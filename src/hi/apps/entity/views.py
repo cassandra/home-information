@@ -421,20 +421,21 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
         return 'entity_edit_v2'
     
     def _render_success_response(self, entity):
-        """Render success response using antinode helpers - full content replacement"""
-        # Re-render the complete content area with success message
-        full_content = self._render_full_content(entity, success_message="Changes saved successfully")
+        """Render success response using antinode helpers - multiple target replacement"""
+        # Re-render both content body and upload form
+        content_body, upload_form = self._render_fragments(entity, success_message="Changes saved successfully")
         
         return antinode.response(
             insert_map={
-                'attr-v2-content': full_content
+                'attr-v2-content': content_body,
+                'attr-v2-upload-form-container': upload_form
             }
         )
     
     def _render_error_response(self, entity, entity_form, property_attributes_formset):
-        """Render error response using antinode helpers - full content replacement"""
-        # Re-render complete content area with form errors
-        full_content = self._render_full_content(
+        """Render error response using antinode helpers - multiple target replacement"""
+        # Re-render both content body and upload form with form errors
+        content_body, upload_form = self._render_fragments(
             entity, 
             entity_form=entity_form, 
             property_attributes_formset=property_attributes_formset, 
@@ -444,13 +445,14 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
         
         return antinode.response(
             insert_map={
-                'attr-v2-content': full_content
+                'attr-v2-content': content_body,
+                'attr-v2-upload-form-container': upload_form
             },
             status=400
         )
     
-    def _render_full_content(self, entity, entity_form=None, property_attributes_formset=None, success_message=None, error_message=None, has_errors=False):
-        """Render the complete content area (everything inside attr-v2-content div)"""
+    def _render_fragments(self, entity, entity_form=None, property_attributes_formset=None, success_message=None, error_message=None, has_errors=False):
+        """Render both content body and upload form fragments"""
         from django.template.loader import render_to_string
         
         # If forms not provided, create fresh ones (for success case)
@@ -473,23 +475,31 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
         file_attributes = entity.attributes.filter(value_type_str=str(AttributeValueType.FILE)).order_by('id')
         
         # Debug logging
-        logger.info(f'Rendering full content for entity {entity.id}')
+        logger.info(f'Rendering fragments for entity {entity.id}')
         logger.info(f'File attributes count: {file_attributes.count()}')
         if property_attributes_formset:
             logger.info(f'Property formset total forms: {property_attributes_formset.total_form_count()}')
             logger.info(f'Property formset is bound: {property_attributes_formset.is_bound}')
             logger.info(f'Property formset is valid: {property_attributes_formset.is_valid()}')
         
-        # Render the complete content template
-        return render_to_string(
-            'attribute/components/v2/full_content.html',
-            {
-                'entity': entity,
-                'entity_form': entity_form,
-                'file_attributes': file_attributes,
-                'property_attributes_formset': property_attributes_formset,
-                'success_message': success_message,
-                'error_message': error_message,
-                'has_errors': has_errors,
-            }
+        # Context for both fragments
+        context = {
+            'entity': entity,
+            'entity_form': entity_form,
+            'file_attributes': file_attributes,
+            'property_attributes_formset': property_attributes_formset,
+            'success_message': success_message,
+            'error_message': error_message,
+            'has_errors': has_errors,
+        }
+        
+        # Render both fragments
+        content_body = render_to_string('attribute/components/v2/content_body.html', context)
+        
+        # Upload form needs to be specific to entity
+        upload_form = render_to_string(
+            'attribute/components/v2/upload_form.html',
+            {'entity': entity}
         )
+        
+        return content_body, upload_form

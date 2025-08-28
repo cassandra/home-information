@@ -4,8 +4,24 @@
 {% block modal_title %}{{ entity.name }}: Edit{% endblock %}
 
 {% block form_action %}{% url 'entity_edit_v2' entity_id=entity.id %}{% endblock %}
-{% block file_upload_url %}{% url 'entity_attribute_upload' entity_id=entity.id %}{% endblock %}
-{% block file_delete_url %}#{% endblock %}
+
+{% block file_upload_form %}
+  {% with file_upload_url='entity_attribute_upload' entity_id=entity.id %}
+    <form action="{% url 'entity_attribute_upload' entity_id=entity.id %}" 
+          method="post" 
+          enctype="multipart/form-data"
+          class="form" 
+          data-async="true"
+          data-stay-in-modal="true"
+          style="display: none;">
+      {% csrf_token %}
+      <input type="file" 
+             id="attr-v2-file-input" 
+             name="file_value" 
+             onchange="Hi.submitForm(this);">
+    </form>
+  {% endwith %}
+{% endblock %}
 
 {% block basic_info %}
 <div class="attr-v2-basic-info">

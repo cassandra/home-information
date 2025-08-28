@@ -513,16 +513,17 @@
             }
         });
         
-        // THEN: Apply autosize to non-truncated textareas only
-        const nonTruncatedTextareas = textareas.not('.truncated');
-        console.log('Reinitialization: Applying autosize to', nonTruncatedTextareas.length, 'non-truncated textareas');
-        if (nonTruncatedTextareas.length > 0) {
-            autosize(nonTruncatedTextareas);
+        // THEN: Apply autosize only to editable, non-truncated textareas 
+        // (readonly textareas don't need dynamic resizing)
+        const editableTextareas = $('.attr-v2-textarea').not('.truncated').not('[readonly]');
+        console.log('Reinitialization: Applying autosize to', editableTextareas.length, 'editable, non-truncated textareas');
+        if (editableTextareas.length > 0) {
+            autosize(editableTextareas);
         }
         
-        // Trigger autosize update for non-truncated textareas only
-        if (nonTruncatedTextareas.length > 0) {
-            autosize.update(nonTruncatedTextareas);
+        // Trigger autosize update for editable textareas only
+        if (editableTextareas.length > 0) {
+            autosize.update(editableTextareas);
         }
         
         console.log('Textarea reinitialization complete');
@@ -547,6 +548,12 @@
         const value = textarea.val() || '';
         console.log('Original value:', value.substring(0, 100) + (value.length > 100 ? '...' : ''));
         
+        // Destroy autosize first to prevent height override
+        if (window.autosize && textarea[0]._autosize) {
+            console.log('Destroying autosize before truncation');
+            autosize.destroy(textarea);
+        }
+        
         const lines = value.split('\n');
         const truncatedValue = lines.slice(0, 4).join('\n');
         console.log('Truncated to:', truncatedValue.substring(0, 100) + (truncatedValue.length > 100 ? '...' : ''));
@@ -555,6 +562,8 @@
         textarea.data('full-value', value);
         textarea.data('truncated-value', truncatedValue);
         textarea.val(truncatedValue + '...');
+        // Clear any explicit height style that might override rows
+        textarea.css('height', '');
         textarea.attr('rows', 4);
         textarea.attr('readonly', 'readonly');
         textarea.prop('readonly', true);
@@ -618,8 +627,9 @@
             showMoreText.hide();
             showLessText.show();
             
-            // Update autosize
+            // Apply autosize now that textarea is editable
             if (window.autosize) {
+                autosize(textarea);
                 autosize.update(textarea);
             }
             
@@ -641,7 +651,7 @@
                 // Update wrapper state
                 wrapper.attr('data-overflow', 'false');
             } else {
-                // Still overflows - apply truncation
+                // Still overflows - apply truncation (autosize destruction handled inside)
                 applyTruncation(textarea);
                 
                 showMoreText.show();

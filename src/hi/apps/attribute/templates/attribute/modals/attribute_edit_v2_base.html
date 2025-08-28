@@ -20,86 +20,17 @@
   
 <!-- Main content wrapper for antinode updates -->
 <div id="attr-v2-content">
-  <!-- Sticky Panel: Entity Info + Action Bar (always visible) -->
-  <div class="attr-v2-sticky-panel">
-    <!-- Basic Entity Information (minimal) -->
-    <div class="attr-v2-entity-info">
-      {% block basic_info %}
-      {% endblock %}
-    </div>
-    
-    <!-- Action Bar -->
-    <div class="attr-v2-action-bar">
-      <div class="attr-v2-action-bar-content">
-        <div>
-          <button id="attr-v2-update-btn" 
-                  type="submit" 
-                  class="btn btn-primary"
-                  name="action" 
-                  value="update">
-            {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
-          </button>
-          <span id="attr-v2-status-msg" class="attr-v2-status-message ml-2">{% block status_message %}{% endblock %}</span>
-        </div>
-        
-        <div class="attr-v2-action-buttons">
-          {% block additional_actions %}{% endblock %}
-          
-          <label for="attr-v2-file-input" 
-                 class="btn btn-sm btn-outline-primary mb-0">
-            {% icon "upload" size="sm" css_class="hi-icon-left" %}Add File
-          </label>
-          
-          <button id="attr-v2-add-property-btn" 
-                  type="button" 
-                  class="btn btn-sm btn-outline-primary"
-                  onclick="showAddProperty();">
-            {% icon "plus" size="sm" css_class="hi-icon-left" %}Add Property
-          </button>
-        </div>
-      </div>
-      
-    </div>
-  </div>
-  
-  <!-- Scrollable Content Area (below sticky panel) -->
-  <div id="attr-v2-scrollable-content" class="attr-v2-scrollable-content">
-    
-    <!-- Files Section -->
-    {% block files_section %}
-      {% include "attribute/components/v2/file_grid.html" with file_attributes=file_attributes %}
-    {% endblock %}
-    
-    <!-- Properties Section -->
-    {% block properties_section %}
-      {% if property_attributes_formset %}
-        {{ property_attributes_formset.management_form }}
-        {% include "attribute/components/v2/property_list.html" with property_attributes_formset=property_attributes_formset %}
-      {% endif %}
-    {% endblock %}
-    
-    <!-- Additional Sections -->
-    {% block additional_sections %}
-    {% endblock %}
-    
-  </div>
+  {% include "attribute/components/v2/content_body.html" %}
 </div>
 </form>
 
-<!-- File Upload Form (following existing pattern) -->
-<form action="{% block file_upload_url %}#{% endblock %}" 
-      method="post" 
-      enctype="multipart/form-data"
-      class="form" 
-      data-async="true"
-      data-stay-in-modal="true"
-      style="display: none;">
-  {% csrf_token %}
-  <input type="file" 
-         id="attr-v2-file-input" 
-         name="file_value" 
-         onchange="Hi.submitForm(this);">
-</form>
+<!-- File Upload Form Container (separate from main form to avoid nesting) -->
+<div id="attr-v2-upload-form-container">
+  {% block file_upload_form %}
+    <!-- Default form using entity context -->
+    {% include "attribute/components/v2/upload_form.html" %}
+  {% endblock %}
+</div>
 
 <!-- Success/Error Messages -->
 {% if messages %}

@@ -1,14 +1,16 @@
 {% load icons %}
 {% comment %}
-V2 Full Content Fragment
-Template fragment for rendering the complete attr-v2-content area - used by antinode updates
-Includes: entity info, action bar, and scrollable content
+V2 Content Body Fragment
+Contains the main content area - used by both initial load and antinode updates
+Includes: entity info (when provided), action bar, and scrollable content
 {% endcomment %}
 
 <!-- Sticky Panel: Entity Info + Action Bar (always visible) -->
 <div class="attr-v2-sticky-panel">
-  <!-- Basic Entity Information (minimal) -->
+  <!-- Basic Entity Information (minimal) - only if entity_form provided -->
+  {% if entity_form %}
   <div class="attr-v2-entity-info">
+    {% block basic_info %}
     <div class="attr-v2-basic-info">
       <div class="row">
         <div class="col-md-8">
@@ -35,7 +37,9 @@ Includes: entity info, action bar, and scrollable content
         </div>
       </div>
     </div>
+    {% endblock %}
   </div>
+  {% endif %}
   
   <!-- Action Bar -->
   <div class="attr-v2-action-bar">
@@ -58,18 +62,20 @@ Includes: entity info, action bar, and scrollable content
       </div>
       
       <div class="attr-v2-action-buttons">
+        {% block additional_actions %}
+        {% if entity %}
         <a href="{% url 'entity_status' entity_id=entity.id %}" 
            class="btn btn-sm btn-outline-secondary"
            data-async="modal">
           Status
         </a>
+        {% endif %}
+        {% endblock %}
         
-        <button id="attr-v2-add-file-btn" 
-                type="button" 
-                class="btn btn-sm btn-outline-primary"
-                onclick="document.getElementById('attr-v2-file-input').click();">
+        <label for="attr-v2-file-input" 
+               class="btn btn-sm btn-outline-primary mb-0">
           {% icon "upload" size="sm" css_class="hi-icon-left" %}Add File
-        </button>
+        </label>
         
         <button id="attr-v2-add-property-btn" 
                 type="button" 
@@ -79,13 +85,6 @@ Includes: entity info, action bar, and scrollable content
         </button>
       </div>
     </div>
-    
-    <!-- Hidden file input for file uploads -->
-    <input type="file" 
-           id="attr-v2-file-input" 
-           name="file_upload" 
-           style="display: none;" 
-           onchange="handleFileUpload(this);">
   </div>
 </div>
 
@@ -93,14 +92,20 @@ Includes: entity info, action bar, and scrollable content
 <div id="attr-v2-scrollable-content" class="attr-v2-scrollable-content">
   
   <!-- Files Section -->
-  {% if file_attributes %}
+  {% block files_section %}
     {% include "attribute/components/v2/file_grid.html" with file_attributes=file_attributes %}
-  {% endif %}
+  {% endblock %}
   
   <!-- Properties Section -->
-  {% if property_attributes_formset %}
-    {{ property_attributes_formset.management_form }}
-    {% include "attribute/components/v2/property_list.html" with property_attributes_formset=property_attributes_formset %}
-  {% endif %}
+  {% block properties_section %}
+    {% if property_attributes_formset %}
+      {{ property_attributes_formset.management_form }}
+      {% include "attribute/components/v2/property_list.html" with property_attributes_formset=property_attributes_formset %}
+    {% endif %}
+  {% endblock %}
+  
+  <!-- Additional Sections -->
+  {% block additional_sections %}
+  {% endblock %}
   
 </div>

@@ -146,7 +146,7 @@ Individual property attribute card with value editing and actions
                       data-original-value="{{ attribute_form.value.value|default_if_none:'' }}"
                       data-full-value="{{ attribute_form.value.value|default_if_none:'' }}">{{ attribute_form.value.value|default_if_none:'' }}</textarea>
             {% if overflows > 0 %}
-            <div class="attr-v2-expand-controls">
+            <div class="attr-v2-expand-controls" style="display: block;">
               <button type="button" class="btn btn-sm btn-link" onclick="attrV2.toggleExpandedView(this)">
                 <span class="show-more-text">Show more...</span>
                 <span class="show-less-text" style="display: none;">Show less</span>
