@@ -506,10 +506,18 @@
             const wrapper = textarea.closest('.attr-v2-text-value-wrapper');
             const isOverflowing = wrapper.attr('data-overflow') === 'true';
             
+            // Check if this is a display field (new pattern) or legacy textarea
+            const hiddenFieldId = textarea.attr('data-hidden-field');
+            const hiddenField = hiddenFieldId ? $('#' + hiddenFieldId) : null;
+            
             if (isOverflowing) {
-                console.log('Reinitialization: Applying truncation to overflowing textarea');
-                // Apply truncation for overflowing content
-                applyTruncation(textarea);
+                if (hiddenField && hiddenField.length > 0) {
+                    console.log('Reinitialization: Applying truncation to overflowing display field (new pattern)');
+                    applyTruncationFromHidden(textarea, hiddenField);
+                } else {
+                    console.log('Reinitialization: Applying truncation to overflowing textarea (legacy pattern)');
+                    applyTruncation(textarea);
+                }
             }
         });
         
@@ -542,11 +550,46 @@
         return { lineCount, overflows };
     }
     
-    // Apply truncation to textarea
+    // Apply truncation using hidden field as source (new pattern)
+    function applyTruncationFromHidden(displayField, hiddenField) {
+        console.log('applyTruncationFromHidden: Starting');
+        const fullValue = hiddenField.val() || '';
+        console.log('Full value from hidden field:', fullValue.substring(0, 100) + (fullValue.length > 100 ? '...' : ''));
+        
+        // Destroy autosize first to prevent height override
+        if (window.autosize && displayField[0]._autosize) {
+            console.log('Destroying autosize before truncation');
+            autosize.destroy(displayField);
+        }
+        
+        const lines = fullValue.split('\n');
+        const truncatedValue = lines.slice(0, 4).join('\n');
+        console.log('Truncated to:', truncatedValue.substring(0, 100) + (truncatedValue.length > 100 ? '...' : ''));
+        
+        // Apply truncated display
+        displayField.val(truncatedValue + '...');
+        // Clear any explicit height style that might override rows
+        displayField.css('height', '');
+        displayField.attr('rows', 4);
+        displayField.attr('readonly', 'readonly');
+        displayField.prop('readonly', true);
+        displayField.addClass('truncated');
+        
+        console.log('Set display field to readonly and rows=4');
+        
+        // Show expand controls
+        const wrapper = displayField.closest('.attr-v2-text-value-wrapper');
+        const expandControls = wrapper.find('.attr-v2-expand-controls');
+        console.log('Found expand controls:', expandControls.length);
+        expandControls.show();
+        
+        console.log('applyTruncationFromHidden: Complete');
+    }
+    
+    // Legacy function - kept for compatibility with reinitializeTextareas
     function applyTruncation(textarea) {
-        console.log('applyTruncation: Starting for textarea');
+        console.log('applyTruncation: Starting (legacy path)');
         const value = textarea.val() || '';
-        console.log('Original value:', value.substring(0, 100) + (value.length > 100 ? '...' : ''));
         
         // Destroy autosize first to prevent height override
         if (window.autosize && textarea[0]._autosize) {
@@ -556,7 +599,6 @@
         
         const lines = value.split('\n');
         const truncatedValue = lines.slice(0, 4).join('\n');
-        console.log('Truncated to:', truncatedValue.substring(0, 100) + (truncatedValue.length > 100 ? '...' : ''));
         
         // Store full value and show truncated
         textarea.data('full-value', value);
@@ -569,12 +611,9 @@
         textarea.prop('readonly', true);
         textarea.addClass('truncated');
         
-        console.log('Set readonly and rows=4');
-        
         // Show expand controls
         const wrapper = textarea.closest('.attr-v2-text-value-wrapper');
         const expandControls = wrapper.find('.attr-v2-expand-controls');
-        console.log('Found expand controls:', expandControls.length);
         expandControls.show();
         
         console.log('applyTruncation: Complete');
@@ -582,106 +621,159 @@
     
     function initializeExpandableTextareas() {
         console.log('initializeExpandableTextareas: Starting');
-        // Initialize based on server-rendered overflow state
-        const textareas = $('.attr-v2-textarea');
-        console.log('Found ' + textareas.length + ' textareas to initialize');
+        // Initialize based on server-rendered overflow state using hidden field pattern
+        const displayTextareas = $('.display-field');
+        console.log('Found ' + displayTextareas.length + ' display textareas to initialize');
         
-        textareas.each(function() {
-            const textarea = $(this);
-            const wrapper = textarea.closest('.attr-v2-text-value-wrapper');
-            const isOverflowing = wrapper.attr('data-overflow') === 'true';
-            const lineCount = wrapper.attr('data-line-count');
+        displayTextareas.each(function() {
+            const displayField = $(this);
+            const isOverflowing = displayField.attr('data-overflow') === 'true';
+            const hiddenFieldId = displayField.attr('data-hidden-field');
+            const hiddenField = $('#' + hiddenFieldId);
             
-            console.log('Textarea - overflow:', isOverflowing, 'lines:', lineCount, 'value length:', textarea.val().length);
+            console.log('Display field - overflow:', isOverflowing, 'hidden field ID:', hiddenFieldId);
             
-            if (isOverflowing) {
-                console.log('Applying truncation to textarea with', lineCount, 'lines');
-                // Apply truncation for overflowing content
-                applyTruncation(textarea);
+            if (isOverflowing && hiddenField.length > 0) {
+                console.log('Applying truncation to overflowing display field');
+                // Apply truncation using hidden field as source
+                applyTruncationFromHidden(displayField, hiddenField);
             }
-            // For non-overflowing content, server has already set correct rows
+            // For non-overflowing content, display field already has correct content from server
         });
         
         console.log('initializeExpandableTextareas: Complete');
     }
     
-    // Global function for expand/collapse button (namespaced)
+    // Global function for expand/collapse button (namespaced) - enhanced for hidden field pattern
     window.attrV2.toggleExpandedView = function(button) {
         const $button = $(button);
         const wrapper = $button.closest('.attr-v2-text-value-wrapper');
-        const textarea = wrapper.find('.attr-v2-textarea');
+        const displayField = wrapper.find('.display-field, .attr-v2-textarea'); // Support both new and legacy
         const showMoreText = $button.find('.show-more-text');
         const showLessText = $button.find('.show-less-text');
         
-        if (textarea.prop('readonly')) {
-            // Currently collapsed - expand it
-            const fullValue = textarea.data('full-value');
+        // Get hidden field if using new pattern
+        const hiddenFieldId = displayField.attr('data-hidden-field');
+        const hiddenField = hiddenFieldId ? $('#' + hiddenFieldId) : null;
+        
+        if (displayField.prop('readonly')) {
+            // Currently collapsed - expand it (Show More)
+            let fullValue;
+            if (hiddenField && hiddenField.length > 0) {
+                // New pattern: Get from hidden field
+                fullValue = hiddenField.val() || '';
+                console.log('Show More: Using hidden field value');
+            } else {
+                // Legacy pattern: Get from stored data
+                fullValue = displayField.data('full-value') || '';
+                console.log('Show More: Using legacy stored value');
+            }
+            
             const lineCount = (fullValue.match(/\n/g) || []).length + 1;
             
-            textarea.val(fullValue);
-            textarea.attr('rows', Math.max(lineCount, 5));
-            textarea.prop('readonly', false);
-            textarea.attr('readonly', false); // Remove readonly attribute
-            textarea.removeClass('truncated');
+            displayField.val(fullValue);
+            displayField.attr('rows', Math.max(lineCount, 5));
+            displayField.prop('readonly', false);
+            displayField.attr('readonly', false); // Remove readonly attribute
+            displayField.removeClass('truncated');
             
             showMoreText.hide();
             showLessText.show();
             
-            // Apply autosize now that textarea is editable
+            // Apply autosize now that display field is editable
             if (window.autosize) {
-                autosize(textarea);
-                autosize.update(textarea);
+                autosize(displayField);
+                autosize.update(displayField);
             }
             
             // Set up listener to track content changes
-            textarea.off('input.overflow').on('input.overflow', function() {
+            displayField.off('input.overflow').on('input.overflow', function() {
                 updateOverflowState($(this));
             });
         } else {
-            // Currently expanded - check if we should collapse
-            const { lineCount, overflows } = updateOverflowState(textarea);
+            // Currently expanded - check if we should collapse (Show Less)
+            const { lineCount, overflows } = updateOverflowState(displayField);
             
             if (!overflows) {
                 // Content now fits in 4 lines - remove truncation UI
-                textarea.attr('rows', lineCount);
-                textarea.prop('readonly', false);
-                textarea.removeClass('truncated');
+                displayField.attr('rows', lineCount);
+                displayField.prop('readonly', false);
+                displayField.removeClass('truncated');
                 wrapper.find('.attr-v2-expand-controls').hide();
                 
                 // Update wrapper state
                 wrapper.attr('data-overflow', 'false');
+                
+                // Sync to hidden field if using new pattern
+                if (hiddenField && hiddenField.length > 0) {
+                    hiddenField.val(displayField.val());
+                    console.log('Show Less (no overflow): Synced to hidden field');
+                }
             } else {
-                // Still overflows - apply truncation (autosize destruction handled inside)
-                applyTruncation(textarea);
+                // Still overflows - apply truncation with hidden field sync
+                const currentValue = displayField.val();
+                
+                // Sync current content to hidden field before truncating display
+                if (hiddenField && hiddenField.length > 0) {
+                    hiddenField.val(currentValue);
+                    console.log('Show Less (overflow): Synced to hidden field before truncation');
+                    
+                    // Apply truncation using hidden field
+                    applyTruncationFromHidden(displayField, hiddenField);
+                } else {
+                    // Legacy pattern
+                    applyTruncation(displayField);
+                }
                 
                 showMoreText.show();
                 showLessText.hide();
             }
             
             // Remove the input listener
-            textarea.off('input.overflow');
+            displayField.off('input.overflow');
         }
     }
     
-    // Ensure form submission uses full values, not truncated or placeholder ones
+    // Pre-save handler with truncation protection for hidden field pattern
     function setupFormSubmissionHandler() {
         const form = document.getElementById('attr-v2-form');
         if (!form) return;
         
         form.addEventListener('submit', function(e) {
-            console.log('Form submission event detected - restoring real values');
+            console.log('Form submission event detected - syncing display to hidden fields');
             
-            // Before submission, restore full values to any truncated textareas
-            $('.attr-v2-textarea.truncated').each(function() {
+            // Process all display fields using the new hidden field pattern
+            $('.display-field').each(function() {
+                const displayField = $(this);
+                const hiddenFieldId = displayField.attr('data-hidden-field');
+                const hiddenField = hiddenFieldId ? $('#' + hiddenFieldId) : null;
+                
+                if (hiddenField && hiddenField.length > 0) {
+                    // Only sync if display field is NOT showing truncated data
+                    if (!displayField.prop('readonly') && !displayField.hasClass('truncated')) {
+                        // Display field contains user's edits - copy to hidden field
+                        const displayValue = displayField.val();
+                        hiddenField.val(displayValue);
+                        console.log('Pre-save: Synced editable display field to hidden field');
+                    } else {
+                        // Display field is readonly/truncated - hidden field already has correct full content
+                        console.log('Pre-save: Skipped truncated display field (hidden field preserved)');
+                    }
+                }
+            });
+            
+            // Legacy support: restore full values to any remaining old-pattern truncated textareas
+            $('.attr-v2-textarea.truncated').not('.display-field').each(function() {
                 const textarea = $(this);
                 const fullValue = textarea.data('full-value');
                 if (fullValue !== undefined) {
-                    console.log('Restoring truncated textarea value');
+                    console.log('Pre-save: Restoring legacy truncated textarea value');
                     textarea.val(fullValue);
                     textarea.prop('readonly', false);
                 }
             });
             
+            console.log('Pre-save sync complete');
         }, true); // Use capture phase to ensure this runs early
     }
     
