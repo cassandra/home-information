@@ -218,28 +218,6 @@
         console.log('File upload - to be implemented');
     };
     
-    window.showFileHistory = function(attributeId) {
-        showOverlayModal('File History', 'Loading file history...');
-        
-        // TODO: Fetch actual history data in future implementation
-        setTimeout(() => {
-            const historyContent = `
-                <div class="attr-v2-history-list">
-                    <div class="attr-v2-history-item">
-                        <div class="attr-v2-history-timestamp">2 hours ago</div>
-                        <div class="attr-v2-history-action">File uploaded</div>
-                        <div class="attr-v2-history-details">Original filename: document.pdf</div>
-                    </div>
-                    <div class="attr-v2-history-item">
-                        <div class="attr-v2-history-timestamp">1 day ago</div>
-                        <div class="attr-v2-history-action">Property name changed</div>
-                        <div class="attr-v2-history-details">From "Doc" to "Important Document"</div>
-                    </div>
-                </div>
-            `;
-            updateOverlayModal('File History', historyContent);
-        }, 500);
-    };
     
     window.markFileForDeletion = function(attributeId) {
         const $fileCard = $(`.attr-v2-file-card[data-attribute-id="${attributeId}"]`);

@@ -68,15 +68,7 @@ Includes: entity info (when provided), action bar, and scrollable content
       
       <div class="attr-v2-action-buttons">
         {% block additional_actions %}
-        {% if entity %}
-        <a href="{% url 'entity_status' entity_id=entity.id %}" 
-           class="btn btn-sm btn-outline-secondary"
-           data-async="modal">
-          Status
-        </a>
-        {% endif %}
         {% endblock %}
-        
         <label for="attr-v2-file-input" 
                class="btn btn-sm btn-outline-primary mb-0">
           {% icon "upload" size="sm" css_class="hi-icon-left" %}Add File

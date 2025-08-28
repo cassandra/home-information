@@ -19,7 +19,9 @@ Individual file attribute card with preview, actions, and metadata
          data-attribute-id="{{ attribute.id }}">
   
   <!-- File Preview/Thumbnail Area -->
-  <div class="attr-v2-file-thumbnail">
+  <div class="attr-v2-file-thumbnail" 
+       onclick="window.open('{{ attribute.file_value.url }}', '_blank');" 
+       title="Click to view file">
     {% comment %}Content-type specific placeholder icons{% endcomment %}
     {% if attribute.file_mime_type|slice:':5' == "image" %}
       {% icon "camera" size="lg" %}
@@ -37,48 +39,43 @@ Individual file attribute card with preview, actions, and metadata
       {% icon "upload" size="lg" %}
       <div class="attr-v2-file-type-label">FILE</div>
     {% endif %}
+    
+    <!-- Reorder Controls (overlay in upper right) -->
+    <div class="attr-v2-reorder-controls" 
+         onclick="event.stopPropagation();"
+         onmouseenter="this.parentElement.classList.add('reorder-hover');"
+         onmouseleave="this.parentElement.classList.remove('reorder-hover');">
+      <button type="button" 
+              class="btn btn-sm btn-outline-secondary"
+              disabled
+              title="Reordering available in future update"
+              data-reorder-action="left">
+        {% icon "chevron-left" size="sm" %}
+      </button>
+      <button type="button" 
+              class="btn btn-sm btn-outline-secondary"
+              disabled
+              title="Reordering available in future update"
+              data-reorder-action="right">
+        {% icon "chevron-right" size="sm" %}
+      </button>
+    </div>
   </div>
   
-  <!-- File Info with Reorder Controls -->
+  <!-- File Info -->
   <div class="attr-v2-file-info">
     <div class="attr-v2-file-name">{{ attribute.name }}</div>
     {% if attribute.file_value.name %}
       <div class="attr-v2-file-filename">{{ attribute.file_value.name }}</div>
     {% endif %}
     
-    <!-- Reorder Controls (disabled until Issue #80) -->
-    <div class="attr-v2-reorder-controls">
-      <button type="button" 
-              class="btn btn-sm btn-outline-secondary"
-              disabled
-              title="Reordering available in future update"
-              data-reorder-action="up">
-        {% icon "chevron-up" size="sm" %}
-      </button>
-      <button type="button" 
-              class="btn btn-sm btn-outline-secondary"
-              disabled
-              title="Reordering available in future update"
-              data-reorder-action="down">
-        {% icon "chevron-down" size="sm" %}
-      </button>
-    </div>
-  </div>
-  
-  <!-- File Actions -->
+    <!-- File Actions -->
   <div class="attr-v2-file-actions">
     <button type="button" 
             class="btn btn-sm btn-outline-primary"
             onclick="window.open('{{ attribute.file_value.url }}', '_blank');"
             title="View file">
-      {% icon "play" size="sm" %}
-    </button>
-    
-    <button type="button" 
-            class="btn btn-sm btn-outline-secondary"
-            onclick="showFileHistory('{{ attribute.id }}')"
-            title="View history">
-      {% icon "history" size="sm" %}
+      {% icon "eye" size="sm" %}
     </button>
     
     {% if attribute.attribute_type.can_delete %}
@@ -96,5 +93,6 @@ Individual file attribute card with preview, actions, and metadata
         Undo
       </button>
     {% endif %}
+    </div>
   </div>
 </div>
