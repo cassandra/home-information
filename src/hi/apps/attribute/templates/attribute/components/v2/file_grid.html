@@ -1,0 +1,14 @@
+{% comment %}
+V2 File Grid Component
+Displays file attributes in a grid layout with proper spacing
+Always renders container for dynamic file additions via antinode.js
+{% endcomment %}
+
+<div class="attr-v2-file-section">
+  <h6 class="attr-v2-section-title">Files</h6>
+  <div id="attr-v2-file-grid" class="attr-v2-file-grid">
+    {% for attribute in file_attributes %}
+      {% include "attribute/components/v2/file_card.html" with attribute=attribute %}
+    {% endfor %}
+  </div>
+</div>

@@ -1,0 +1,19 @@
+{% comment %}
+V2 Status Message Component
+Displays success, error, or warning messages in the status area
+{% endcomment %}
+
+{% if error_message %}
+<span class="text-danger">{{ error_message }}</span>
+{% if form_errors %}
+  {% for field, errors in form_errors.items %}
+    {% for error in errors %}
+      <br><small class="text-danger">{{ field }}: {{ error }}</small>
+    {% endfor %}
+  {% endfor %}
+{% endif %}
+{% elif success_message %}
+<span class="text-success">{{ success_message }}</span>
+{% elif warning_message %}
+<span class="text-warning">{{ warning_message }}</span>
+{% endif %}

@@ -1,0 +1,142 @@
+{% extends "modals/base.html" %}
+{% load icons %}
+
+{% block modal_dialog_class %}hi-modal-dialog-700{% endblock %}
+
+{% block title_text %}
+{% block modal_title %}Item: Edit{% endblock %}
+{% endblock %}
+
+{% block body %}
+<form id="attr-v2-form" 
+      action="{% block form_action %}#{% endblock %}" 
+      method="post" 
+      class="form attr-v2-modal" 
+      data-async="true"
+      data-stay-in-modal="true"
+      enctype="multipart/form-data"
+      data-file-delete-url="{% block file_delete_url %}#{% endblock %}">
+  {% csrf_token %}
+  
+<!-- Main content wrapper for antinode updates -->
+<div id="attr-v2-content">
+  <!-- Sticky Panel: Entity Info + Action Bar (always visible) -->
+  <div class="attr-v2-sticky-panel">
+    <!-- Basic Entity Information (minimal) -->
+    <div class="attr-v2-entity-info">
+      {% block basic_info %}
+      {% endblock %}
+    </div>
+    
+    <!-- Action Bar -->
+    <div class="attr-v2-action-bar">
+      <div class="attr-v2-action-bar-content">
+        <div>
+          <button id="attr-v2-update-btn" 
+                  type="submit" 
+                  class="btn btn-primary"
+                  name="action" 
+                  value="update">
+            {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
+          </button>
+          <span id="attr-v2-status-msg" class="attr-v2-status-message ml-2">{% block status_message %}{% endblock %}</span>
+        </div>
+        
+        <div class="attr-v2-action-buttons">
+          {% block additional_actions %}{% endblock %}
+          
+          <label for="attr-v2-file-input" 
+                 class="btn btn-sm btn-outline-primary mb-0">
+            {% icon "upload" size="sm" css_class="hi-icon-left" %}Add File
+          </label>
+          
+          <button id="attr-v2-add-property-btn" 
+                  type="button" 
+                  class="btn btn-sm btn-outline-primary"
+                  onclick="showAddProperty();">
+            {% icon "plus" size="sm" css_class="hi-icon-left" %}Add Property
+          </button>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+  
+  <!-- Scrollable Content Area (below sticky panel) -->
+  <div id="attr-v2-scrollable-content" class="attr-v2-scrollable-content">
+    
+    <!-- Files Section -->
+    {% block files_section %}
+      {% include "attribute/components/v2/file_grid.html" with file_attributes=file_attributes %}
+    {% endblock %}
+    
+    <!-- Properties Section -->
+    {% block properties_section %}
+      {% if property_attributes_formset %}
+        {{ property_attributes_formset.management_form }}
+        {% include "attribute/components/v2/property_list.html" with property_attributes_formset=property_attributes_formset %}
+      {% endif %}
+    {% endblock %}
+    
+    <!-- Additional Sections -->
+    {% block additional_sections %}
+    {% endblock %}
+    
+  </div>
+</div>
+</form>
+
+<!-- File Upload Form (following existing pattern) -->
+<form action="{% block file_upload_url %}#{% endblock %}" 
+      method="post" 
+      enctype="multipart/form-data"
+      class="form" 
+      data-async="true"
+      data-stay-in-modal="true"
+      style="display: none;">
+  {% csrf_token %}
+  <input type="file" 
+         id="attr-v2-file-input" 
+         name="file_value" 
+         onchange="Hi.submitForm(this);">
+</form>
+
+<!-- Success/Error Messages -->
+{% if messages %}
+  <div class="attr-v2-messages" id="attr-v2-messages">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<!-- Modal-over-Modal Container for History and Other Overlays -->
+<div id="attr-v2-overlay-modal" class="attr-v2-modal-overlay" style="display: none;">
+  <div class="attr-v2-overlay-content">
+    <div class="attr-v2-overlay-header">
+      <h6 id="attr-v2-overlay-title"><!-- Dynamic title --></h6>
+      <button type="button" 
+              class="btn btn-sm btn-outline-secondary"
+              onclick="closeOverlayModal()"
+              title="Close overlay">
+        {% icon "close" size="sm" %}
+      </button>
+    </div>
+    <div class="attr-v2-overlay-body" id="attr-v2-overlay-body">
+      <!-- Dynamic content loaded here -->
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript for V2 functionality loaded via Django Pipeline js_before_content bundle -->
+
+{% endblock %}
+
+{% block footer %}
+<!-- No footer - sticky panel contains all actions -->
+{% endblock %}

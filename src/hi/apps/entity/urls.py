@@ -6,8 +6,12 @@ from . import views
 urlpatterns = [
 
     re_path( r'^entity/edit/(?P<entity_id>\d+)$', 
-             views.EntityEditView.as_view(), 
+             views.EntityEditV2View.as_view(), 
              name='entity_edit'),
+
+    re_path( r'^entity/edit/v2/(?P<entity_id>\d+)$', 
+             views.EntityEditV2View.as_view(), 
+             name='entity_edit_v2'),
 
     re_path( r'^entity/properties/edit/(?P<entity_id>\d+)$', 
              views.EntityPropertiesEditView.as_view(), 

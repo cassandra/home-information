@@ -272,7 +272,9 @@
                     }
                 }
             });
-        }
+        },
+        
+        addAfterAsyncRenderFunction: addAfterAsyncRenderFunction
     }
     
     window.AN = AN;

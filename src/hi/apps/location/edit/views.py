@@ -232,19 +232,36 @@ class LocationAttributeUploadView( View, LocationViewMixin, LocationEditViewMixi
         if location_attribute_upload_form.is_valid():
             with transaction.atomic():
                 location_attribute_upload_form.save()   
-            status_code = 200
+            
+            # Render new file card HTML to append to file grid
+            from django.template.loader import render_to_string
+            file_card_html = render_to_string(
+                'attribute/components/v2/file_card.html',
+                {'attribute': location_attribute}
+            )
+            
+            return antinode.response(
+                append_map={
+                    'attr-v2-file-grid': file_card_html
+                }
+            )
         else:
-            status_code = 400
-
-        location_edit_data = LocationEditData(
-            location = location,
-            location_attribute_upload_form = location_attribute_upload_form,
-        )
-        return self.location_modal_response(
-            request = request,
-            location_edit_data = location_edit_data,
-            status_code = status_code,
-        )
+            # Render error message to status area
+            from django.template.loader import render_to_string
+            error_html = render_to_string(
+                'attribute/components/v2/status_message.html',
+                {
+                    'error_message': 'File upload failed. Please check the file and try again.',
+                    'form_errors': location_attribute_upload_form.errors
+                }
+            )
+            
+            return antinode.response(
+                insert_map={
+                    'attr-v2-status-msg': error_html
+                },
+                status=400
+            )
 
     
 @method_decorator( edit_required, name='dispatch' )
@@ -616,4 +633,82 @@ class LocationItemPathView( View ):
         return antinode.response(
             main_content = 'OK',
         )
+
+
+@method_decorator(edit_required, name='dispatch')
+class LocationEditV2View(HiModalView, LocationViewMixin):
+    """V2 Modal for location attribute editing - following Phase 1 architecture"""
+    
+    def get_template_name(self) -> str:
+        return 'location/modals/location_edit_v2.html'
+    
+    def get(self, request, *args, **kwargs):
+        location = self.get_location(request, *args, **kwargs)
+        
+        # Location form
+        location_form = forms.LocationEditForm(instance=location)
+        
+        # File attributes (read-only for now)
+        file_attributes = location.locationattribute_set.filter(
+            value_type__is_file=True
+        ).order_by('id')
+        
+        # Property attributes formset
+        property_attributes = location.locationattribute_set.filter(
+            value_type__is_file=False
+        ).order_by('id')
+        
+        property_attributes_formset = forms.LocationAttributeFormSet(
+            instance=location,
+            queryset=property_attributes
+        )
+        
+        context = {
+            'location': location,
+            'location_form': location_form,
+            'file_attributes': file_attributes,
+            'property_attributes_formset': property_attributes_formset,
+        }
+        
+        return self.modal_response(request, context)
+    
+    def post(self, request, *args, **kwargs):
+        location = self.get_location(request, *args, **kwargs)
+        
+        # Handle form submission
+        location_form = forms.LocationEditForm(request.POST, instance=location)
+        
+        property_attributes = location.locationattribute_set.filter(
+            value_type__is_file=False
+        ).order_by('id')
+        
+        property_attributes_formset = forms.LocationAttributeFormSet(
+            request.POST,
+            instance=location,
+            queryset=property_attributes
+        )
+        
+        if location_form.is_valid() and property_attributes_formset.is_valid():
+            with transaction.atomic():
+                location_form.save()
+                property_attributes_formset.save()
+            
+            # Return JSON response for AJAX handling
+            return self.json_response({
+                'success': True,
+                'message': 'Location updated successfully'
+            })
+        else:
+            # Return validation errors
+            errors = {}
+            if not location_form.is_valid():
+                errors.update(location_form.errors)
+            if not property_attributes_formset.is_valid():
+                errors.update(property_attributes_formset.errors)
+            
+            return self.json_response({
+                'success': False,
+                'error': 'Please correct the errors below',
+                'field_errors': errors
+            })
 

@@ -120,8 +120,9 @@ For complete implementation details of the polling system, CSS class application
 ### JavaScript Conventions
 
 1. **Module Pattern**: Use revealing module pattern for organization
-2. **jQuery Usage**: Use `$` prefix for jQuery objects
-3. **Event Delegation**: Use delegated events for dynamic content
+2. **jQuery Usage**: Prefix jQuery over native DOM query/manipulation
+3. **jQuery Usage**: Use `$` prefix for jQuery objects
+4. **Event Delegation**: Use delegated events for dynamic content
 
 Example:
 ```javascript

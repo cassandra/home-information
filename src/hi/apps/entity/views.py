@@ -11,6 +11,7 @@ from hi.apps.sense.sensor_history_manager import SensorHistoryMixin
 
 from hi.hi_async_view import HiModalView, HiSideView
 from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
+from hi.apps.attribute.enums import AttributeValueType
 
 from .entity_manager import EntityManager
 from . import forms
@@ -194,19 +195,36 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
         if entity_attribute_upload_form.is_valid():
             with transaction.atomic():
                 entity_attribute_upload_form.save()   
-            status_code = 200
+            
+            # Render new file card HTML to append to file grid
+            from django.template.loader import render_to_string
+            file_card_html = render_to_string(
+                'attribute/components/v2/file_card.html',
+                {'attribute': entity_attribute}
+            )
+            
+            return antinode.response(
+                append_map={
+                    'attr-v2-file-grid': file_card_html
+                }
+            )
         else:
-            status_code = 400
-
-        entity_edit_data = EntityEditData(
-            entity = entity,
-            entity_attribute_upload_form = entity_attribute_upload_form,
-        )            
-        return self.entity_modal_response(
-            request = request,
-            entity_edit_data = entity_edit_data,
-            status_code = status_code,
-        )
+            # Render error message to status area
+            from django.template.loader import render_to_string
+            error_html = render_to_string(
+                'attribute/components/v2/status_message.html',
+                {
+                    'error_message': 'File upload failed. Please check the file and try again.',
+                    'form_errors': entity_attribute_upload_form.errors
+                }
+            )
+            
+            return antinode.response(
+                insert_map={
+                    'attr-v2-status-msg': error_html
+                },
+                status=400
+            )
 
     
 class EntityStatusView( HiModalView, EntityViewMixin ):
@@ -219,7 +237,7 @@ class EntityStatusView( HiModalView, EntityViewMixin ):
 
         entity_status_data = StatusDisplayManager().get_entity_status_data( entity = entity )
         if not entity_status_data.entity_state_status_data_list:
-            return EntityEditView().get( request, *args, **kwargs )
+            return EntityEditV2View().get( request, *args, **kwargs )
         
         context = entity_status_data.to_template_context()
         return self.modal_response( request, context )
@@ -292,3 +310,186 @@ class EntityAttributeRestoreView(BaseAttributeRestoreView):
     
     def get_attribute_model_class(self):
         return EntityAttribute
+
+
+class EntityEditV2View(HiModalView, EntityViewMixin):
+    """V2 Entity attribute editing modal with redesigned interface."""
+    
+    def get_template_name(self) -> str:
+        return 'entity/modals/entity_edit_v2.html'
+    
+    def get(self, request, *args, **kwargs):
+        entity = self.get_entity(request, *args, **kwargs)
+        
+        # Get entity form
+        from hi.apps.entity.forms import EntityForm
+        entity_form = EntityForm(instance=entity)
+        
+        # Get file and property attributes  
+        from hi.apps.attribute.enums import AttributeValueType
+        file_attributes = entity.attributes.filter(
+            value_type_str=str(AttributeValueType.FILE)
+        ).order_by('id')
+        
+        # Property attributes formset
+        property_attributes = entity.attributes.exclude(
+            value_type_str=str(AttributeValueType.FILE)
+        ).order_by('id')
+        
+        from hi.apps.entity.forms import EntityAttributeFormSet
+        property_attributes_formset = EntityAttributeFormSet(
+            instance=entity,
+            prefix=f'entity-{entity.id}',
+            queryset=property_attributes
+        )
+        
+        context = {
+            'entity': entity,
+            'entity_form': entity_form,
+            'file_attributes': file_attributes,
+            'property_attributes_formset': property_attributes_formset,
+        }
+        
+        return self.modal_response(request, context)
+    
+    def post(self, request, *args, **kwargs):
+        entity = self.get_entity(request, *args, **kwargs)
+        
+        from hi.apps.entity.forms import EntityForm, EntityAttributeFormSet
+        
+        # Handle form submission
+        entity_form = EntityForm(request.POST, instance=entity)
+        
+        from hi.apps.attribute.enums import AttributeValueType
+        property_attributes = entity.attributes.exclude(
+            value_type_str=str(AttributeValueType.FILE)
+        ).order_by('id')
+        
+        property_attributes_formset = EntityAttributeFormSet(
+            request.POST,
+            instance=entity,
+            prefix=f'entity-{entity.id}',
+            queryset=property_attributes
+        )
+        
+        # Log form data for debugging
+        logger.info(f'POST data received: {dict(request.POST)}')
+        logger.info(f'Entity form is_valid: {entity_form.is_valid()}')
+        logger.info(f'Formset is_valid: {property_attributes_formset.is_valid()}')
+        
+        if entity_form.is_valid() and property_attributes_formset.is_valid():
+            with transaction.atomic():
+                entity_form.save()
+                property_attributes_formset.save()
+                
+                # Process file deletions
+                file_deletes = request.POST.getlist('delete_file_attribute')
+                if file_deletes:
+                    logger.info(f'Processing file deletions: {file_deletes}')
+                    for attr_id in file_deletes:
+                        if attr_id:  # Skip empty values
+                            try:
+                                file_attribute = EntityAttribute.objects.get(
+                                    id=attr_id, 
+                                    entity=entity,
+                                    value_type_str=str(AttributeValueType.FILE)
+                                )
+                                # Verify permission to delete
+                                if file_attribute.attribute_type.can_delete:
+                                    logger.info(f'Deleting file attribute {attr_id}: {file_attribute.name}')
+                                    file_attribute.delete()
+                                else:
+                                    logger.warning(f'File attribute {attr_id} cannot be deleted - permission denied')
+                            except EntityAttribute.DoesNotExist:
+                                logger.warning(f'File attribute {attr_id} not found or not owned by entity {entity.id}')
+            
+            # Return success response using antinode helpers
+            return self._render_success_response(entity)
+        else:
+            # Debug logging for validation errors
+            if not entity_form.is_valid():
+                logger.warning(f'Entity form validation failed: {entity_form.errors}')
+                logger.warning(f'Entity form cleaned_data: {getattr(entity_form, "cleaned_data", "N/A")}')
+            if not property_attributes_formset.is_valid():
+                logger.warning(f'Formset validation failed: {property_attributes_formset.errors}')
+                logger.warning(f'Formset non-form errors: {property_attributes_formset.non_form_errors()}')
+            
+            # Return validation errors using antinode helpers
+            return self._render_error_response(entity, entity_form, property_attributes_formset)
+    
+    def get_success_url_name(self) -> str:
+        return 'entity_edit_v2'
+    
+    def _render_success_response(self, entity):
+        """Render success response using antinode helpers - full content replacement"""
+        # Re-render the complete content area with success message
+        full_content = self._render_full_content(entity, success_message="Changes saved successfully")
+        
+        return antinode.response(
+            insert_map={
+                'attr-v2-content': full_content
+            }
+        )
+    
+    def _render_error_response(self, entity, entity_form, property_attributes_formset):
+        """Render error response using antinode helpers - full content replacement"""
+        # Re-render complete content area with form errors
+        full_content = self._render_full_content(
+            entity, 
+            entity_form=entity_form, 
+            property_attributes_formset=property_attributes_formset, 
+            error_message="Please correct the errors below",
+            has_errors=True
+        )
+        
+        return antinode.response(
+            insert_map={
+                'attr-v2-content': full_content
+            },
+            status=400
+        )
+    
+    def _render_full_content(self, entity, entity_form=None, property_attributes_formset=None, success_message=None, error_message=None, has_errors=False):
+        """Render the complete content area (everything inside attr-v2-content div)"""
+        from django.template.loader import render_to_string
+        
+        # If forms not provided, create fresh ones (for success case)
+        if entity_form is None:
+            from hi.apps.entity.forms import EntityForm
+            entity_form = EntityForm(instance=entity)
+            
+        if property_attributes_formset is None:
+            from hi.apps.entity.forms import EntityAttributeFormSet
+            from hi.apps.attribute.enums import AttributeValueType
+            property_attributes = entity.attributes.exclude(value_type_str=str(AttributeValueType.FILE)).order_by('id')
+            property_attributes_formset = EntityAttributeFormSet(
+                instance=entity,
+                prefix=f'entity-{entity.id}',
+                queryset=property_attributes
+            )
+        
+        # Get file attributes
+        from hi.apps.attribute.enums import AttributeValueType
+        file_attributes = entity.attributes.filter(value_type_str=str(AttributeValueType.FILE)).order_by('id')
+        
+        # Debug logging
+        logger.info(f'Rendering full content for entity {entity.id}')
+        logger.info(f'File attributes count: {file_attributes.count()}')
+        if property_attributes_formset:
+            logger.info(f'Property formset total forms: {property_attributes_formset.total_form_count()}')
+            logger.info(f'Property formset is bound: {property_attributes_formset.is_bound}')
+            logger.info(f'Property formset is valid: {property_attributes_formset.is_valid()}')
+        
+        # Render the complete content template
+        return render_to_string(
+            'attribute/components/v2/full_content.html',
+            {
+                'entity': entity,
+                'entity_form': entity_form,
+                'file_attributes': file_attributes,
+                'property_attributes_formset': property_attributes_formset,
+                'success_message': success_message,
+                'error_message': error_message,
+                'has_errors': has_errors,
+            }
+        )

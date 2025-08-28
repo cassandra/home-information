@@ -1,0 +1,15 @@
+{% comment %}
+V2 Property List Component  
+Displays property attributes in a list layout
+{% endcomment %}
+
+{% if property_attributes_formset %}
+<div class="attr-v2-property-section">
+  <h6 class="attr-v2-section-title">Properties</h6>
+  <div class="attr-v2-property-list hi-attribute-list">
+    {% for property_form in property_attributes_formset %}
+      {% include "attribute/components/v2/property_card.html" with attribute_form=property_form %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

@@ -17,6 +17,10 @@ urlpatterns = [
              views.LocationEditView.as_view(), 
              name='location_edit_location_edit'),
 
+    re_path( r'^location/edit/v2/(?P<location_id>\d+)$', 
+             views.LocationEditV2View.as_view(), 
+             name='location_edit_v2'),
+
     re_path( r'^location/properties/edit/(?P<location_id>\d+)$', 
              views.LocationPropertiesEditView.as_view(), 
              name='location_properties_edit'),

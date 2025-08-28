@@ -95,9 +95,11 @@ You know the project's testing patterns:
 
 ## Project-Specific Knowledge
 
+You are the expert on:
+- All the markdown content in `docs/dev/frontend`
+
 You are familiar with:
 - The "Hi Grid" template structure and important DIV IDs
-- Template conventions from `docs/dev/frontend/frontend-guidelines.md`
 - Icon system and SVG coordinate operations
 - The polling system for real-time sensor value updates
 - Django Pipeline for minified, cache-busting assets

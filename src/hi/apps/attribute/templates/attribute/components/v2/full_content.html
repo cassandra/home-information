@@ -1,0 +1,106 @@
+{% load icons %}
+{% comment %}
+V2 Full Content Fragment
+Template fragment for rendering the complete attr-v2-content area - used by antinode updates
+Includes: entity info, action bar, and scrollable content
+{% endcomment %}
+
+<!-- Sticky Panel: Entity Info + Action Bar (always visible) -->
+<div class="attr-v2-sticky-panel">
+  <!-- Basic Entity Information (minimal) -->
+  <div class="attr-v2-entity-info">
+    <div class="attr-v2-basic-info">
+      <div class="row">
+        <div class="col-md-8">
+          <div class="form-group">
+            {{ entity_form.name.label_tag }}
+            {{ entity_form.name }}
+            {% if entity_form.name.errors %}
+              <div class="invalid-feedback d-block">
+                {{ entity_form.name.errors }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-group">
+            {{ entity_form.entity_type_str.label_tag }}
+            {{ entity_form.entity_type_str }}
+            {% if entity_form.entity_type_str.errors %}
+              <div class="invalid-feedback d-block">
+                {{ entity_form.entity_type_str.errors }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Action Bar -->
+  <div class="attr-v2-action-bar">
+    <div class="attr-v2-action-bar-content">
+      <div>
+        <button id="attr-v2-update-btn" 
+                type="submit" 
+                class="btn btn-primary"
+                name="action" 
+                value="update">
+          {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
+        </button>
+        <span id="attr-v2-status-msg" class="attr-v2-status-message ml-2">
+          {% if success_message %}
+            <span class="text-success">{{ success_message }}</span>
+          {% elif error_message %}
+            <span class="text-danger">{{ error_message }}</span>
+          {% endif %}
+        </span>
+      </div>
+      
+      <div class="attr-v2-action-buttons">
+        <a href="{% url 'entity_status' entity_id=entity.id %}" 
+           class="btn btn-sm btn-outline-secondary"
+           data-async="modal">
+          Status
+        </a>
+        
+        <button id="attr-v2-add-file-btn" 
+                type="button" 
+                class="btn btn-sm btn-outline-primary"
+                onclick="document.getElementById('attr-v2-file-input').click();">
+          {% icon "upload" size="sm" css_class="hi-icon-left" %}Add File
+        </button>
+        
+        <button id="attr-v2-add-property-btn" 
+                type="button" 
+                class="btn btn-sm btn-outline-primary"
+                onclick="showAddProperty();">
+          {% icon "plus" size="sm" css_class="hi-icon-left" %}Add Property
+        </button>
+      </div>
+    </div>
+    
+    <!-- Hidden file input for file uploads -->
+    <input type="file" 
+           id="attr-v2-file-input" 
+           name="file_upload" 
+           style="display: none;" 
+           onchange="handleFileUpload(this);">
+  </div>
+</div>
+
+<!-- Scrollable Content Area (below sticky panel) -->
+<div id="attr-v2-scrollable-content" class="attr-v2-scrollable-content">
+  
+  <!-- Files Section -->
+  {% if file_attributes %}
+    {% include "attribute/components/v2/file_grid.html" with file_attributes=file_attributes %}
+  {% endif %}
+  
+  <!-- Properties Section -->
+  {% if property_attributes_formset %}
+    {{ property_attributes_formset.management_form }}
+    {% include "attribute/components/v2/property_list.html" with property_attributes_formset=property_attributes_formset %}
+  {% endif %}
+  
+</div>

@@ -1,0 +1,165 @@
+{% load icons %}
+{% load common_template_helpers %}
+{% comment %}
+V2 Property Card Component
+Individual property attribute card with value editing and actions
+{% endcomment %}
+
+<div class="attr-v2-property-card{% if not attribute_form.instance.pk %} attr-v2-new-property{% endif %}" 
+     data-attribute-id="{{ attribute_form.instance.pk }}" 
+     data-url-detect="true"
+     data-order-index="{{ forloop.counter }}"
+     data-value-type="{{ attribute_form.instance.value_type.name|default:'text' }}"
+     data-is-secret="{{ attribute_form.instance.value_type.is_secret|yesno:'true,false' }}"
+     data-can-delete="{{ attribute_form.instance.attribute_type.can_delete|yesno:'true,false' }}"
+     {% if not attribute_form.instance.pk %}style="display: none;"{% endif %}>
+  
+  <!-- Hidden form fields -->
+  {{ attribute_form.id }}
+  {% if attribute_form.DELETE %}
+    {{ attribute_form.DELETE.as_hidden }}
+  {% endif %}
+  
+  <!-- Property Header -->
+  <div class="attr-v2-property-header">
+    <h6 class="attr-v2-property-name">
+      {% if attribute_form.instance.pk %}
+        {{ attribute_form.instance.name }}
+      {% else %}
+        Add New Property
+      {% endif %}
+      <span class="attr-v2-dirty-indicator" style="display: none;"></span>
+    </h6>
+    
+    <div class="attr-v2-property-actions">
+      <!-- Reorder Controls (disabled until Issue #80) -->
+      <button type="button" 
+              class="btn btn-sm btn-outline-secondary"
+              disabled
+              title="Reordering available in future update"
+              data-reorder-action="up">
+        {% icon "chevron-up" size="sm" %}
+      </button>
+      <button type="button" 
+              class="btn btn-sm btn-outline-secondary"
+              disabled
+              title="Reordering available in future update"
+              data-reorder-action="down">
+        {% icon "chevron-down" size="sm" %}
+      </button>
+      
+      {% if attribute_form.instance.pk %}
+        <button type="button" 
+                title="View history"
+                onclick="showPropertyHistory('{{ attribute_form.instance.pk }}')">
+          {% icon "history" size="sm" %}
+        </button>
+      {% endif %}
+      
+      {% if attribute_form.instance.pk and attribute_form.instance.attribute_type.can_delete %}
+        <button type="button" 
+                class="attr-v2-delete-btn"
+                title="Delete property"
+                onclick="markPropertyForDeletion('{{ attribute_form.instance.pk }}')">
+          {% icon "delete" size="sm" %}
+        </button>
+        <button type="button" 
+                class="btn btn-sm btn-outline-warning attr-v2-undo-btn"
+                title="Undo delete"
+                onclick="undoPropertyDeletion('{{ attribute_form.instance.pk }}')"
+                style="display: none;">
+          ↶ Undo
+        </button>
+      {% endif %}
+    </div>
+  </div>
+  
+  <!-- Property Value -->
+  <div class="attr-v2-property-value">
+    {% if attribute_form.instance.pk %}
+      <!-- Existing property - include hidden name field -->
+      <input type="hidden" 
+             id="{{ attribute_form.name.id_for_label }}"
+             name="{{ attribute_form.name.html_name }}"
+             value="{{ attribute_form.instance.name }}" />
+    {% else %}
+      <!-- New property form -->
+      <div class="mb-2">
+        {{ attribute_form.name.label_tag }}
+        {{ attribute_form.name }}
+      </div>
+      
+      <!-- Secret checkbox for new properties -->
+      {% if attribute_form.secret %}
+        <div class="form-check mb-2">
+          {{ attribute_form.secret }}
+          <label class="form-check-label" for="{{ attribute_form.secret.id_for_label }}">
+            {{ attribute_form.secret.label }}
+          </label>
+        </div>
+      {% endif %}
+    {% endif %}
+    
+    {% if attribute_form.instance.pk and attribute_form.instance.value_type.is_boolean %}
+      <!-- Boolean/Switch -->
+      <div class="custom-control custom-switch">
+        {{ attribute_form.value }}
+        <label class="custom-control-label" for="{{ attribute_form.value.id_for_label }}">
+          {{ attribute_form.value.label|default:"Toggle value" }}
+        </label>
+      </div>
+    {% else %}
+      <!-- Text/Textarea (default) -->
+      <div class="attr-v2-text-value">
+        {% if attribute_form.instance.pk and attribute_form.instance.value_type.is_secret %}
+          <div class="attr-v2-secret-field">
+            <div class="attr-v2-secret-input-wrapper">
+              <!-- Secret field as password input -->
+              <input type="password" 
+                     id="{{ attribute_form.value.id_for_label }}"
+                     name="{{ attribute_form.value.html_name }}"
+                     class="form-control attr-v2-secret-input"
+                     value="{{ attribute_form.value.value|default_if_none:'' }}"
+                     {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %} />
+              <button type="button" 
+                      class="btn btn-sm btn-outline-secondary attr-v2-secret-toggle"
+                      onclick="attrV2.toggleSecretField(this)"
+                      title="Show value">
+                <span class="attr-v2-icon-show">{% icon "eye" size="sm" %}</span>
+                <span class="attr-v2-icon-hide" style="display: none;">{% icon "eye-off" size="sm" %}</span>
+              </button>
+            </div>
+          </div>
+        {% else %}
+          <!-- Dynamic textarea based on line count -->
+          {% with value_text=attribute_form.value.value|default_if_none:'' %}
+          {% with line_count=value_text|linecount %}
+          {% with display_rows=line_count|min_value:4 %}
+          {% with overflows=line_count|add:"-4" %}
+          <div class="attr-v2-text-value-wrapper" data-overflow="{% if overflows > 0 %}true{% else %}false{% endif %}" data-line-count="{{ line_count }}">
+            <!-- Always use textarea for value fields, never input -->
+            <textarea rows="{{ display_rows }}" 
+                      id="{{ attribute_form.value.id_for_label }}"
+                      name="{{ attribute_form.value.html_name }}"
+                      class="form-control attr-v2-textarea"
+                      {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %}
+                      data-original-value="{{ attribute_form.value.value|default_if_none:'' }}"
+                      data-full-value="{{ attribute_form.value.value|default_if_none:'' }}">{{ attribute_form.value.value|default_if_none:'' }}</textarea>
+            {% if overflows > 0 %}
+            <div class="attr-v2-expand-controls">
+              <button type="button" class="btn btn-sm btn-link" onclick="attrV2.toggleExpandedView(this)">
+                <span class="show-more-text">Show more...</span>
+                <span class="show-less-text" style="display: none;">Show less</span>
+              </button>
+            </div>
+            {% endif %}
+          </div>
+          {% endwith %}
+          {% endwith %}
+          {% endwith %}
+          {% endwith %}
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>

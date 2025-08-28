@@ -1,0 +1,15 @@
+{% comment %}
+V2 Scrollable Content Fragment
+Template fragment for rendering the scrollable content area - used by antinode updates
+{% endcomment %}
+
+<!-- Files Section -->
+{% if file_attributes %}
+  {% include "attribute/components/v2/file_grid.html" with file_attributes=file_attributes %}
+{% endif %}
+
+<!-- Properties Section -->
+{% if property_attributes_formset %}
+  {% include "attribute/components/v2/property_list.html" with property_attributes_formset=property_attributes_formset %}
+{% endif %}
+{% include "attribute/components/v2/add_property_form.html" %}

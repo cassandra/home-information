@@ -40,7 +40,9 @@ AVAILABLE_ICONS = {
     'save',
     'cancel',
     'close',
-    'upload'
+    'upload',
+    'eye',
+    'eye-off'
 }
 
 # Define available sizes

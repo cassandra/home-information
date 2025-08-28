@@ -1,0 +1,45 @@
+{% extends "attribute/modals/attribute_edit_v2_base.html" %}
+{% load icons %}
+
+{% block modal_title %}{{ entity.name }}: Edit{% endblock %}
+
+{% block form_action %}{% url 'entity_edit_v2' entity_id=entity.id %}{% endblock %}
+{% block file_upload_url %}{% url 'entity_attribute_upload' entity_id=entity.id %}{% endblock %}
+{% block file_delete_url %}#{% endblock %}
+
+{% block basic_info %}
+<div class="attr-v2-basic-info">
+  <div class="row">
+    <div class="col-md-8">
+      <div class="form-group">
+        {{ entity_form.name.label_tag }}
+        {{ entity_form.name }}
+        {% if entity_form.name.errors %}
+          <div class="invalid-feedback d-block">
+            {{ entity_form.name.errors }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="form-group">
+        {{ entity_form.entity_type_str.label_tag }}
+        {{ entity_form.entity_type_str }}
+        {% if entity_form.entity_type_str.errors %}
+          <div class="invalid-feedback d-block">
+            {{ entity_form.entity_type_str.errors }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block additional_actions %}
+<a href="{% url 'entity_status' entity_id=entity.id %}" 
+   class="btn btn-sm btn-outline-secondary"
+   data-async="modal">
+  Status
+</a>
+{% endblock %}

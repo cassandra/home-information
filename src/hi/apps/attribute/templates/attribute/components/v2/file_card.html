@@ -1,0 +1,100 @@
+{% load icons %}
+{% comment %}
+V2 File Card Component
+Individual file attribute card with preview, actions, and metadata
+{% endcomment %}
+
+<div class="attr-v2-file-card" 
+     data-attribute-id="{{ attribute.id }}" 
+     data-url-detect="true"
+     data-order-index="{{ forloop.counter }}"
+     data-thumbnail-ready="true"
+     data-mime-type="{{ attribute.file_mime_type|default:'unknown' }}"
+     data-file-size="{{ attribute.file_value.size|default:0 }}">
+  
+  <!-- Hidden field for deletion marking -->
+  <input type="hidden" 
+         name="delete_file_attribute" 
+         value="" 
+         data-attribute-id="{{ attribute.id }}">
+  
+  <!-- File Preview/Thumbnail Area -->
+  <div class="attr-v2-file-thumbnail">
+    {% comment %}Content-type specific placeholder icons{% endcomment %}
+    {% if attribute.file_mime_type|slice:':5' == "image" %}
+      {% icon "camera" size="lg" %}
+      <div class="attr-v2-file-type-label">IMAGE</div>
+    {% elif attribute.file_mime_type == "application/pdf" %}
+      {% icon "upload" size="lg" %}
+      <div class="attr-v2-file-type-label">PDF</div>
+    {% elif attribute.file_mime_type|slice:':4' == "text" %}
+      {% icon "edit" size="lg" %}
+      <div class="attr-v2-file-type-label">TEXT</div>
+    {% elif attribute.file_mime_type|slice:':5' == "video" %}
+      {% icon "video" size="lg" %}
+      <div class="attr-v2-file-type-label">VIDEO</div>
+    {% else %}
+      {% icon "upload" size="lg" %}
+      <div class="attr-v2-file-type-label">FILE</div>
+    {% endif %}
+  </div>
+  
+  <!-- File Info with Reorder Controls -->
+  <div class="attr-v2-file-info">
+    <div class="attr-v2-file-name">{{ attribute.name }}</div>
+    {% if attribute.file_value.name %}
+      <div class="attr-v2-file-filename">{{ attribute.file_value.name }}</div>
+    {% endif %}
+    
+    <!-- Reorder Controls (disabled until Issue #80) -->
+    <div class="attr-v2-reorder-controls">
+      <button type="button" 
+              class="btn btn-sm btn-outline-secondary"
+              disabled
+              title="Reordering available in future update"
+              data-reorder-action="up">
+        {% icon "chevron-up" size="sm" %}
+      </button>
+      <button type="button" 
+              class="btn btn-sm btn-outline-secondary"
+              disabled
+              title="Reordering available in future update"
+              data-reorder-action="down">
+        {% icon "chevron-down" size="sm" %}
+      </button>
+    </div>
+  </div>
+  
+  <!-- File Actions -->
+  <div class="attr-v2-file-actions">
+    <button type="button" 
+            class="btn btn-sm btn-outline-primary"
+            onclick="window.open('{{ attribute.file_value.url }}', '_blank');"
+            title="View file">
+      {% icon "play" size="sm" %}
+    </button>
+    
+    <button type="button" 
+            class="btn btn-sm btn-outline-secondary"
+            onclick="showFileHistory('{{ attribute.id }}')"
+            title="View history">
+      {% icon "history" size="sm" %}
+    </button>
+    
+    {% if attribute.attribute_type.can_delete %}
+      <button type="button" 
+              class="btn btn-sm btn-outline-danger attr-v2-delete-btn"
+              onclick="markFileForDeletion('{{ attribute.id }}')"
+              title="Delete file">
+        {% icon "delete" size="sm" %}
+      </button>
+      <button type="button" 
+              class="btn btn-sm btn-outline-secondary attr-v2-undo-btn"
+              onclick="undoFileDeletion('{{ attribute.id }}')"
+              title="Undo deletion"
+              style="display: none;">
+        Undo
+      </button>
+    {% endif %}
+  </div>
+</div>
