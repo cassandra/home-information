@@ -364,17 +364,34 @@
         const $hideIcon = $button.find('.attr-v2-icon-hide');
         const isPassword = $input.attr('type') === 'password';
         
+        // Check if field is disabled (non-editable attributes should stay disabled)
+        const isDisabled = $input.prop('disabled');
+        
         if (isPassword) {
-            // Currently hidden - show as text
+            // Currently hidden - show as text and make editable
             $input.attr('type', 'text');
             $button.attr('title', 'Hide value');
+            
+            // Remove readonly to allow editing, but only if not disabled
+            if (!isDisabled) {
+                $input.prop('readonly', false);
+                $input.removeAttr('readonly');
+            }
+            
             // Show hide icon, hide show icon
             $showIcon.hide();
             $hideIcon.show();
         } else {
-            // Currently showing - hide as password
+            // Currently showing - hide as password and make readonly
             $input.attr('type', 'password');
             $button.attr('title', 'Show value');
+            
+            // Set readonly to prevent editing obfuscated text
+            if (!isDisabled) {
+                $input.prop('readonly', true);
+                $input.attr('readonly', 'readonly');
+            }
+            
             // Show show icon, hide hide icon
             $showIcon.show();
             $hideIcon.hide();

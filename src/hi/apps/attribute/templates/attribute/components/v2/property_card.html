@@ -123,6 +123,7 @@ Individual property attribute card with value editing and actions
                      name="{{ attribute_form.value.html_name }}"
                      class="form-control attr-v2-secret-input"
                      value="{{ attribute_form.value.value|default_if_none:'' }}"
+                     readonly="readonly"
                      {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %} />
               {% if attribute_form.value.errors %}
                 <div class="invalid-feedback d-block">

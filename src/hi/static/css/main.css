@@ -2467,6 +2467,30 @@ g[hover] {
     }
 }
 
+/* Secret field readonly visual indicators */
+.attr-v2-secret-input[readonly] {
+    background-color: #f8f9fa;
+    cursor: default;
+    border-color: #dee2e6;
+}
+
+.attr-v2-secret-input[readonly]:focus {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    box-shadow: none;
+}
+
+/* When secret field is editable (shown), give it normal input styling */
+.attr-v2-secret-input[type="text"]:not([readonly]) {
+    background-color: #ffffff;
+    cursor: text;
+}
+
+.attr-v2-secret-input[type="text"]:not([readonly]):focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(23, 112, 114, 0.25);
+}
+
 /* Secret checkbox positioning and alignment */
 .attr-v2-secret-checkbox {
     margin-top: 0.75rem;
