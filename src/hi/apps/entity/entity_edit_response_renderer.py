@@ -11,6 +11,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 
 import hi.apps.common.antinode as antinode
+from hi.constants import DIVID
 from .entity_edit_form_handler import EntityEditFormHandler
 from .models import Entity, EntityAttribute
 from .forms import EntityForm, EntityAttributeRegularFormSet
@@ -127,7 +128,7 @@ class EntityEditResponseRenderer:
             tuple: (content_body_html, upload_form_html)
         """
         # Render both fragments
-        content_body: str = render_to_string('entity/panes/entity_edit_content_body.html', context)
+        content_body: str = render_to_string('entity/panes/entity_edit_content_body.html', context, request=request)
 
         # Upload form needs to be specific to entity
         file_upload_url: str = reverse('entity_attribute_upload',
@@ -135,7 +136,7 @@ class EntityEditResponseRenderer:
         upload_form: str = render_to_string(
             'attribute/components/v2/upload_form.html',
             {'file_upload_url': file_upload_url},
-            request=request,  # Needed for csrf token
+            request=request,  # Needed for context processors (CSRF, DIVID, etc.)
         )
         
         return content_body, upload_form
@@ -161,8 +162,8 @@ class EntityEditResponseRenderer:
         
         return antinode.response(
             insert_map={
-                'attr-v2-content': content_body,
-                'attr-v2-upload-form-container': upload_form
+                DIVID['ATTR_V2_CONTENT']: content_body,
+                DIVID['ATTR_V2_UPLOAD_FORM_CONTAINER']: upload_form
             }
         )
 
@@ -195,8 +196,8 @@ class EntityEditResponseRenderer:
         
         return antinode.response(
             insert_map={
-                'attr-v2-content': content_body,
-                'attr-v2-upload-form-container': upload_form
+                DIVID['ATTR_V2_CONTENT']: content_body,
+                DIVID['ATTR_V2_UPLOAD_FORM_CONTAINER']: upload_form
             },
             status=400
         )

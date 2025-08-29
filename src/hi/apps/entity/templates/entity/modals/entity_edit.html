@@ -5,30 +5,30 @@
 {% block title_text %}{{ entity.name }}{% endblock %}
 
 {% block body %}
-<form id="attr-v2-form" 
+<form id="{{ DIVID.ATTR_V2_FORM }}" 
       action="{% url 'entity_edit' entity_id=entity.id %}" 
       method="post" 
-      class="form attr-v2-modal" 
+      class="form {{ DIVID.ATTR_V2_MODAL_CLASS }}" 
       data-async="true"
       data-stay-in-modal="true"
       enctype="multipart/form-data">
   {% csrf_token %}
   
 <!-- Main content wrapper for antinode updates -->
-<div id="attr-v2-content">
+<div id="{{ DIVID.ATTR_V2_CONTENT }}">
   {% include "entity/panes/entity_edit_content_body.html" %}
 </div>
 </form>
 
 <!-- File Upload Form Container (separate from main form to avoid nesting) -->
-<div id="attr-v2-upload-form-container">
+<div id="{{ DIVID.ATTR_V2_UPLOAD_FORM_CONTAINER }}">
   {% url 'entity_attribute_upload' entity_id=entity.id as file_upload_url %}  
   {% include "attribute/components/v2/upload_form.html" with file_upload_url=file_upload_url %}
 </div>
 
 <!-- Success/Error Messages -->
 {% if messages %}
-  <div class="attr-v2-messages" id="attr-v2-messages">
+  <div class="{{ DIVID.ATTR_V2_MESSAGES }}" id="{{ DIVID.ATTR_V2_MESSAGES }}">
     {% for message in messages %}
       <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
         {{ message }}

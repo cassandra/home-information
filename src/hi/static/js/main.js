@@ -62,7 +62,72 @@
         },
         displayElementInfo: function( label, element ) {
             return _displayElementInfo( label, element );
-        }
+        },
+        
+        // Entity Attribute Editing V2 - IDs and Classes
+        ATTR_V2_FORM_ID: 'attr-v2-form',
+        ATTR_V2_CONTENT_ID: 'attr-v2-content',
+        ATTR_V2_UPLOAD_FORM_CONTAINER_ID: 'attr-v2-upload-form-container',
+        ATTR_V2_FILE_GRID_ID: 'attr-v2-file-grid',
+        ATTR_V2_STATUS_MSG_ID: 'attr-v2-status-msg',
+        ATTR_V2_DIRTY_MESSAGE_ID: 'attr-v2-dirty-message',
+        ATTR_V2_UPDATE_BTN_ID: 'attr-v2-update-btn',
+        ATTR_V2_MESSAGES_ID: 'attr-v2-messages',
+        ATTR_V2_FILE_INPUT_ID: 'attr-v2-file-input',
+        ATTR_V2_ADD_PROPERTY_BTN_ID: 'attr-v2-add-property-btn',
+        ATTR_V2_SCROLLABLE_CONTENT_ID: 'attr-v2-scrollable-content',
+        ATTR_V2_MODAL_CLASS: 'attr-v2-modal',
+        ATTR_V2_PROPERTY_CARD_CLASS: 'attr-v2-property-card',
+        ATTR_V2_NEW_PROPERTY_CLASS: 'attr-v2-new-property',
+        ATTR_V2_FILE_TITLE_INPUT_CLASS: 'attr-v2-file-title-input',
+        ATTR_V2_FILE_INFO_CLASS: 'attr-v2-file-info',
+        ATTR_V2_FIELD_DIRTY_CLASS: 'attr-v2-field-dirty',
+        ATTR_V2_DIRTY_INDICATOR_CLASS: 'attr-v2-dirty-indicator',
+        ATTR_V2_DIRTY_MESSAGE_CLASS: 'attr-v2-dirty-message',
+        ATTR_V2_PROPERTY_NAME_CLASS: 'attr-v2-property-name',
+        ATTR_V2_DELETE_BTN_CLASS: 'attr-v2-delete-btn',
+        ATTR_V2_UNDO_BTN_CLASS: 'attr-v2-undo-btn',
+        ATTR_V2_FILE_CARD_CLASS: 'attr-v2-file-card',
+        ATTR_V2_FILE_NAME_CLASS: 'attr-v2-file-filename',
+        ATTR_V2_SECRET_INPUT_WRAPPER_CLASS: 'attr-v2-secret-input-wrapper',
+        ATTR_V2_SECRET_INPUT_CLASS: 'attr-v2-secret-input',
+        ATTR_V2_ICON_SHOW_CLASS: 'attr-v2-icon-show',
+        ATTR_V2_ICON_HIDE_CLASS: 'attr-v2-icon-hide',
+        ATTR_V2_TEXTAREA_CLASS: 'attr-v2-textarea',
+        ATTR_V2_TEXT_VALUE_WRAPPER_CLASS: 'attr-v2-text-value-wrapper',
+        ATTR_V2_EXPAND_CONTROLS_CLASS: 'attr-v2-expand-controls',
+        
+        // Ready-to-use jQuery selectors
+        ATTR_V2_FORM_SELECTOR: '#attr-v2-form',
+        ATTR_V2_CONTENT_SELECTOR: '#attr-v2-content',
+        ATTR_V2_UPLOAD_FORM_CONTAINER_SELECTOR: '#attr-v2-upload-form-container',
+        ATTR_V2_FILE_GRID_SELECTOR: '#attr-v2-file-grid',
+        ATTR_V2_STATUS_MSG_SELECTOR: '#attr-v2-status-msg',
+        ATTR_V2_DIRTY_MESSAGE_SELECTOR: '#attr-v2-dirty-message',
+        ATTR_V2_UPDATE_BTN_SELECTOR: '#attr-v2-update-btn',
+        ATTR_V2_MESSAGES_SELECTOR: '#attr-v2-messages',
+        ATTR_V2_FILE_INPUT_SELECTOR: '#attr-v2-file-input',
+        ATTR_V2_ADD_PROPERTY_BTN_SELECTOR: '#attr-v2-add-property-btn',
+        ATTR_V2_SCROLLABLE_CONTENT_SELECTOR: '#attr-v2-scrollable-content',
+        ATTR_V2_MODAL_SELECTOR: '.attr-v2-modal',
+        ATTR_V2_PROPERTY_CARD_SELECTOR: '.attr-v2-property-card',
+        ATTR_V2_NEW_PROPERTY_SELECTOR: '.attr-v2-new-property',
+        ATTR_V2_FILE_TITLE_INPUT_SELECTOR: '.attr-v2-file-title-input',
+        ATTR_V2_FILE_INFO_SELECTOR: '.attr-v2-file-info',
+        ATTR_V2_FIELD_DIRTY_SELECTOR: '.attr-v2-field-dirty',
+        ATTR_V2_DIRTY_INDICATOR_SELECTOR: '.attr-v2-dirty-indicator',
+        ATTR_V2_PROPERTY_NAME_SELECTOR: '.attr-v2-property-name',
+        ATTR_V2_DELETE_BTN_SELECTOR: '.attr-v2-delete-btn',
+        ATTR_V2_UNDO_BTN_SELECTOR: '.attr-v2-undo-btn',
+        ATTR_V2_FILE_CARD_SELECTOR: '.attr-v2-file-card',
+        ATTR_V2_FILE_NAME_SELECTOR: '.attr-v2-file-filename',
+        ATTR_V2_SECRET_INPUT_WRAPPER_SELECTOR: '.attr-v2-secret-input-wrapper',
+        ATTR_V2_SECRET_INPUT_SELECTOR: '.attr-v2-secret-input',
+        ATTR_V2_ICON_SHOW_SELECTOR: '.attr-v2-icon-show',
+        ATTR_V2_ICON_HIDE_SELECTOR: '.attr-v2-icon-hide',
+        ATTR_V2_TEXTAREA_SELECTOR: '.attr-v2-textarea',
+        ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR: '.attr-v2-text-value-wrapper',
+        ATTR_V2_EXPAND_CONTROLS_SELECTOR: '.attr-v2-expand-controls'
         
     };
     
@@ -111,8 +176,16 @@
     }
 
     function _toggleDetails( elementId ) {
+        if (!elementId || elementId.trim() === '') {
+            console.warn('_toggleDetails called with empty elementId');
+            return;
+        }
         const el = document.getElementById(elementId);
-        $(el).toggle();
+        if (el) {
+            $(el).toggle();
+        } else {
+            console.warn('_toggleDetails: Element not found with ID:', elementId);
+        }
     }
     
     function _setEntityStateValueSelect( valueFieldId, instanceName, instanceId ) {

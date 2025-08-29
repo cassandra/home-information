@@ -104,14 +104,15 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
             # Render new file card HTML to append to file grid
             file_card_html: str = render_to_string(
                 'attribute/components/v2/file_card.html',
-                {'attribute': entity_attribute}
+                {'attribute': entity_attribute, 'entity': entity},
+                request=request
             )
             
             return antinode.response(
                 append_map={
-                    'attr-v2-file-grid': file_card_html
+                    DIVID['ATTR_V2_FILE_GRID']: file_card_html
                 },
-                scroll_to='attr-v2-file-grid'
+                scroll_to=DIVID['ATTR_V2_FILE_GRID']
             )
         else:
             # Render error message to status area
@@ -125,7 +126,7 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
             
             return antinode.response(
                 insert_map={
-                    'attr-v2-status-msg': error_html
+                    DIVID['ATTR_V2_STATUS_MSG']: error_html
                 },
                 status=400
             )

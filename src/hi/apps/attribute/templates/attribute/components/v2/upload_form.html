@@ -7,7 +7,7 @@
       style="display: none;">
   {% csrf_token %}
   <input type="file" 
-         id="attr-v2-file-input" 
+         id="{{ DIVID.ATTR_V2_FILE_INPUT }}" 
          name="file_value" 
          onchange="Hi.submitForm(this);">
 </form>

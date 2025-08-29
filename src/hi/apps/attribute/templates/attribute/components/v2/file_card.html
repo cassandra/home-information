@@ -4,7 +4,7 @@ V2 File Card Component
 Individual file attribute card with preview, actions, and metadata
 {% endcomment %}
 
-<div class="attr-v2-file-card" 
+<div class="{{ DIVID.ATTR_V2_FILE_CARD_CLASS }}" 
      data-attribute-id="{{ attribute.id }}" 
      data-url-detect="true"
      data-order-index="{{ forloop.counter }}"
@@ -63,15 +63,15 @@ Individual file attribute card with preview, actions, and metadata
   </div>
   
   <!-- File Info -->
-  <div class="attr-v2-file-info">
+  <div class="{{ DIVID.ATTR_V2_FILE_INFO_CLASS }}">
     <input type="text" 
            id="file_title_{{ entity.id }}_{{ attribute.id }}"
            name="file_title_{{ entity.id }}_{{ attribute.id }}" 
            value="{{ attribute.value }}" 
-           class="attr-v2-file-title-input"
+           class="{{ DIVID.ATTR_V2_FILE_TITLE_INPUT_CLASS }}"
            placeholder="Enter file title"
            maxlength="255">
-    <div class="attr-v2-file-filename">{{ attribute.name }}</div>
+    <div class="{{ DIVID.ATTR_V2_FILE_NAME_CLASS }}">{{ attribute.name }}</div>
     
     <!-- File Actions -->
   <div class="attr-v2-file-actions">
@@ -84,13 +84,13 @@ Individual file attribute card with preview, actions, and metadata
     
     {% if attribute.attribute_type.can_delete %}
       <button type="button" 
-              class="btn btn-sm btn-outline-danger attr-v2-delete-btn"
+              class="btn btn-sm btn-outline-danger {{ DIVID.ATTR_V2_DELETE_BTN_CLASS }}"
               onclick="markFileForDeletion('{{ attribute.id }}')"
               title="Delete file">
         {% icon "delete" size="sm" %}
       </button>
       <button type="button" 
-              class="btn btn-sm btn-outline-secondary attr-v2-undo-btn"
+              class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_UNDO_BTN_CLASS }}"
               onclick="undoFileDeletion('{{ attribute.id }}')"
               title="Undo deletion"
               style="display: none;">

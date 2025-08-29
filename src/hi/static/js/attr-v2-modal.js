@@ -13,7 +13,7 @@
     // Initialize the V2 modal when DOM is ready
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOMContentLoaded event fired');
-        if (document.getElementById('attr-v2-form')) {
+        if ($(Hi.ATTR_V2_FORM_SELECTOR).length) {
             console.log('Found attr-v2-form on initial page load');
             initializeAttrV2();
         } else {
@@ -25,12 +25,12 @@
     if (window.AN && typeof window.AN.addAfterAsyncRenderFunction === 'function') {
         window.AN.addAfterAsyncRenderFunction(function() {
             console.log('antinode afterAsyncRender hook called');
-            if (document.getElementById('attr-v2-form')) {
-                console.log('V2 form found after async render, reinitializing textareas');
-                reinitializeTextareas();
+            if ($(Hi.ATTR_V2_FORM_SELECTOR).length) {
+                console.log('V2 form found after async render, reinitializing for AJAX');
+                reinitializeAttrV2ForAjax();
             }
         });
-        console.log('Registered V2 textarea reinitialization with AN.addAfterAsyncRenderFunction');
+        console.log('Registered V2 full modal reinitialization with AN.addAfterAsyncRenderFunction');
     } else {
         console.error('AN.addAfterAsyncRenderFunction not available - this is a bug in antinode.js');
     }
@@ -38,7 +38,7 @@
     // Listen for any modal shown events and check if it contains a V2 form
     $(document).on('shown.bs.modal', '.modal', function(e) {
         console.log('Modal shown event detected');
-        if (document.getElementById('attr-v2-form')) {
+        if ($(Hi.ATTR_V2_FORM_SELECTOR).length) {
             console.log('Found attr-v2-form after modal shown, initializing');
             initializeAttrV2();
             e.stopPropagation(); // Prevent bubbling to other handlers
@@ -64,28 +64,46 @@
         console.log('=== V2 Modal initialization complete ===');
     }
     
+    // Safe reinitialization for AJAX updates - handles both textareas and full setup
+    function reinitializeAttrV2ForAjax() {
+        console.log('=== V2 Modal AJAX reinitialization ===');
+        
+        // Reinitialize textareas (existing functionality)
+        reinitializeTextareas();
+        
+        // Reinitialize dirty tracking if available  
+        if (window.attrV2 && window.attrV2.DirtyTracking) {
+            window.attrV2.DirtyTracking.reinitialize();
+        }
+        
+        // Note: Form event handlers should persist through DOM updates
+        // since the form element itself is not replaced, only its content
+        
+        console.log('=== V2 Modal AJAX reinitialization complete ===');
+    }
+    
 
     function setupBasicEventListeners() {
         // Debug: Check what forms exist
-        const allForms = document.querySelectorAll('form');
+        const allForms = $('form');
         console.log('All forms on page:', allForms);
-        allForms.forEach((form, index) => {
+        allForms.each((index, form) => {
             console.log(`Form ${index}:`, 'id=' + form.id, 'class=' + form.className);
         });
         
         // Try multiple approaches to find the form
-        let form = document.getElementById('attr-v2-form');
-        console.log('getElementById result:', form);
+        let form = $(Hi.ATTR_V2_FORM_SELECTOR)[0];
+        console.log('jQuery selector result:', form);
         
-        // Also try querySelector
-        let formAlt = document.querySelector('#attr-v2-form, .attr-v2-modal, form[data-async]');
-        console.log('querySelector result:', formAlt);
+        // Also try multiple selectors
+        let formAlt = $(`${Hi.ATTR_V2_FORM_SELECTOR}, ${Hi.ATTR_V2_MODAL_CLASS_SELECTOR}, form[data-async]`)[0];
+        console.log('Multiple selector result:', formAlt);
         
         if (!form && !formAlt) {
             setTimeout(() => {
-                form = document.getElementById('attr-v2-form');
-                formAlt = document.querySelector('#attr-v2-form, .attr-v2-modal, form[data-async]');
-                console.log('After timeout - getElementById:', form, 'querySelector:', formAlt);
+                form = $(Hi.ATTR_V2_FORM_SELECTOR)[0];
+                formAlt = $(`${Hi.ATTR_V2_FORM_SELECTOR}, ${Hi.ATTR_V2_MODAL_CLASS_SELECTOR}, form[data-async]`)[0];
+                console.log('After timeout - jQuery selector:', form, 'multiple selector:', formAlt);
                 
                 const finalForm = form || formAlt;
                 if (finalForm) {
@@ -109,7 +127,7 @@
         // Handle ENTER key behavior ONLY for V2 form inputs and textareas
         form.addEventListener('keydown', function(event) {
             // IMPORTANT: Only handle events from elements within the V2 form
-            if (!event.target.closest('#attr-v2-form')) {
+            if (!event.target.closest(Hi.ATTR_V2_FORM_SELECTOR)) {
                 return; // Not our form, don't interfere
             }
             
@@ -180,20 +198,21 @@
     // Simple add property - just show the last (empty) formset form
     window.showAddProperty = function() {
         // Find the last property card (should be the empty extra form)
-        const propertyCards = document.querySelectorAll('.attr-v2-property-card');
+        const propertyCards = $(Hi.ATTR_V2_PROPERTY_CARD_SELECTOR);
         console.log('showAddProperty: Found', propertyCards.length, 'property cards');
         
         if (propertyCards.length > 0) {
             const lastCard = propertyCards[propertyCards.length - 1];
+            const $lastCard = $(lastCard);
             console.log('showAddProperty: Last card:', lastCard);
             console.log('showAddProperty: Last card display:', lastCard.style.display);
             console.log('showAddProperty: Last card data-attribute-id:', lastCard.getAttribute('data-attribute-id'));
             
             // Show the card if hidden
-            lastCard.style.display = 'block';
+            $lastCard.show();
             
             // Focus on the name field
-            const nameField = lastCard.querySelector('input[name$="-name"]');
+            const nameField = $lastCard.find('input[name$="-name"]')[0];
             if (nameField) {
                 console.log('showAddProperty: Found name field:', nameField.name);
                 nameField.focus();
@@ -202,7 +221,7 @@
             }
             
             // Initialize autosize on any textarea in the new card
-            const textarea = lastCard.querySelector('textarea');
+            const textarea = $lastCard.find('textarea')[0];
             if (textarea && !textarea.hasAttribute('data-autosize-initialized')) {
                 autosize($(textarea));
                 textarea.setAttribute('data-autosize-initialized', 'true');
@@ -219,10 +238,10 @@
     
     
     window.markFileForDeletion = function(attributeId) {
-        const $fileCard = $(`.attr-v2-file-card[data-attribute-id="${attributeId}"]`);
+        const $fileCard = $(`${Hi.ATTR_V2_FILE_CARD_SELECTOR}[data-attribute-id="${attributeId}"]`);
         if ($fileCard.length === 0) return;
         
-        const fileName = $fileCard.find('.attr-v2-file-name').text().trim();
+        const fileName = $fileCard.find(Hi.ATTR_V2_FILE_NAME_SELECTOR).text().trim();
         
         // Find and mark the server-rendered DELETE field for deletion
         const $deleteField = $fileCard.find('input[name="delete_file_attribute"]');
@@ -239,11 +258,11 @@
         $fileCard.addClass('marked-for-deletion');
         
         // Hide delete button and show undo button (both server-rendered)
-        $fileCard.find('.attr-v2-delete-btn').hide();
-        $fileCard.find('.attr-v2-undo-btn').show();
+        $fileCard.find(Hi.ATTR_V2_DELETE_BTN_SELECTOR).hide();
+        $fileCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).show();
         
         // Show status message
-        const $statusMsg = $('#attr-v2-status-msg');
+        const $statusMsg = $(Hi.ATTR_V2_STATUS_MSG_SELECTOR);
         if ($statusMsg.length > 0) {
             $statusMsg.text(`"${fileName}" will be deleted when you save`)
                     .attr('class', 'attr-v2-status-message ml-2 text-warning');
@@ -255,10 +274,10 @@
     };
     
     window.undoFileDeletion = function(attributeId) {
-        const $fileCard = $(`.attr-v2-file-card[data-attribute-id="${attributeId}"]`);
+        const $fileCard = $(`${Hi.ATTR_V2_FILE_CARD_SELECTOR}[data-attribute-id="${attributeId}"]`);
         if ($fileCard.length === 0) return;
         
-        const fileName = $fileCard.find('.attr-v2-file-name').text().trim();
+        const fileName = $fileCard.find(Hi.ATTR_V2_FILE_NAME_SELECTOR).text().trim();
         
         // Unmark the DELETE field
         const $deleteField = $fileCard.find('input[name="delete_file_attribute"]');
@@ -271,11 +290,11 @@
         $fileCard.removeClass('marked-for-deletion');
         
         // Show delete button and hide undo button (both server-rendered)
-        $fileCard.find('.attr-v2-delete-btn').show();
-        $fileCard.find('.attr-v2-undo-btn').hide();
+        $fileCard.find(Hi.ATTR_V2_DELETE_BTN_SELECTOR).show();
+        $fileCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).hide();
         
         // Show status message
-        const $statusMsg = $('#attr-v2-status-msg');
+        const $statusMsg = $(Hi.ATTR_V2_STATUS_MSG_SELECTOR);
         if ($statusMsg.length > 0) {
             $statusMsg.text(`Deletion of "${fileName}" cancelled`)
                     .attr('class', 'attr-v2-status-message ml-2 text-success');
@@ -293,7 +312,7 @@
         const $propertyCard = $(`[data-attribute-id="${attributeId}"]`);
         if ($propertyCard.length === 0) return;
         
-        const propertyName = $propertyCard.find('.attr-v2-property-name').text().trim().replace('•', '').trim();
+        const propertyName = $propertyCard.find(Hi.ATTR_V2_PROPERTY_NAME_SELECTOR).text().trim().replace('•', '').trim();
         
         // Find and mark the server-rendered DELETE field for deletion
         const $deleteField = $propertyCard.find('input[name$="-DELETE"]');
@@ -310,11 +329,11 @@
         $propertyCard.addClass('marked-for-deletion');
         
         // Hide delete button and show undo button (both server-rendered)
-        $propertyCard.find('.attr-v2-delete-btn').hide();
-        $propertyCard.find('.attr-v2-undo-btn').show();
+        $propertyCard.find(Hi.ATTR_V2_DELETE_BTN_SELECTOR).hide();
+        $propertyCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).show();
         
         // Show status message
-        const $statusMsg = $('#attr-v2-status-msg');
+        const $statusMsg = $(Hi.ATTR_V2_STATUS_MSG_SELECTOR);
         if ($statusMsg.length > 0) {
             $statusMsg.text(`"${propertyName}" will be deleted when you save`)
                     .attr('class', 'attr-v2-status-message ml-2 text-warning');
@@ -329,7 +348,7 @@
         const $propertyCard = $(`[data-attribute-id="${attributeId}"]`);
         if ($propertyCard.length === 0) return;
         
-        const propertyName = $propertyCard.find('.attr-v2-property-name').text().trim().replace('•', '').trim();
+        const propertyName = $propertyCard.find(Hi.ATTR_V2_PROPERTY_NAME_SELECTOR).text().trim().replace('•', '').trim();
         
         // Unmark the DELETE field
         const $deleteField = $propertyCard.find('input[name$="-DELETE"]');
@@ -342,11 +361,11 @@
         $propertyCard.removeClass('marked-for-deletion');
         
         // Show delete button and hide undo button (both server-rendered)
-        $propertyCard.find('.attr-v2-delete-btn').show();
-        $propertyCard.find('.attr-v2-undo-btn').hide();
+        $propertyCard.find(Hi.ATTR_V2_DELETE_BTN_SELECTOR).show();
+        $propertyCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).hide();
         
         // Show status message
-        const $statusMsg = $('#attr-v2-status-msg');
+        const $statusMsg = $(Hi.ATTR_V2_STATUS_MSG_SELECTOR);
         if ($statusMsg.length > 0) {
             $statusMsg.text(`Deletion of "${propertyName}" cancelled`)
                     .attr('class', 'attr-v2-status-message ml-2 text-success');
@@ -359,9 +378,9 @@
 
     window.attrV2.toggleSecretField = function(button) {
         const $button = $(button);
-        const $input = $button.closest('.attr-v2-secret-input-wrapper').find('.attr-v2-secret-input');
-        const $showIcon = $button.find('.attr-v2-icon-show');
-        const $hideIcon = $button.find('.attr-v2-icon-hide');
+        const $input = $button.closest(Hi.ATTR_V2_SECRET_INPUT_WRAPPER_SELECTOR).find(Hi.ATTR_V2_SECRET_INPUT_SELECTOR);
+        const $showIcon = $button.find(Hi.ATTR_V2_ICON_SHOW_SELECTOR);
+        const $hideIcon = $button.find(Hi.ATTR_V2_ICON_HIDE_SELECTOR);
         const isPassword = $input.attr('type') === 'password';
         
         // Check if field is disabled (non-editable attributes should stay disabled)
@@ -406,7 +425,7 @@
     // Initialize autosize for all textareas in the modal
     function initializeAutosizeTextareas() {
         // Initialize autosize for existing textareas, but exclude truncated ones
-        const textareas = $('.attr-v2-textarea').not('.truncated');
+        const textareas = $(Hi.ATTR_V2_TEXTAREA_SELECTOR).not('.truncated');
         if (textareas.length > 0) {
             autosize(textareas);
             
@@ -422,7 +441,7 @@
         console.log('Reinitializing textareas after ajax update');
         
         // Find all textareas that need initialization
-        const textareas = $('.attr-v2-textarea');
+        const textareas = $(Hi.ATTR_V2_TEXTAREA_SELECTOR);
         console.log('Found ' + textareas.length + ' textareas to reinitialize');
         
         // Remove any previous autosize instances to avoid duplicates
@@ -435,7 +454,7 @@
         // Initialize overflow state based on server-rendered attributes
         textareas.each(function() {
             const textarea = $(this);
-            const wrapper = textarea.closest('.attr-v2-text-value-wrapper');
+            const wrapper = textarea.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
             const isOverflowing = wrapper.attr('data-overflow') === 'true';
             
             // Check if this is a display field (new pattern) or legacy textarea
@@ -455,7 +474,7 @@
         
         // THEN: Apply autosize only to editable, non-truncated textareas 
         // (readonly textareas don't need dynamic resizing)
-        const editableTextareas = $('.attr-v2-textarea').not('.truncated').not('[readonly]');
+        const editableTextareas = $(Hi.ATTR_V2_TEXTAREA_SELECTOR).not('.truncated').not('[readonly]');
         console.log('Reinitialization: Applying autosize to', editableTextareas.length, 'editable, non-truncated textareas');
         if (editableTextareas.length > 0) {
             autosize(editableTextareas);
@@ -475,7 +494,7 @@
         const lineCount = (content.match(/\n/g) || []).length + 1;
         const overflows = lineCount > 4;
         
-        const wrapper = textarea.closest('.attr-v2-text-value-wrapper');
+        const wrapper = textarea.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
         wrapper.attr('data-overflow', overflows ? 'true' : 'false');
         wrapper.attr('data-line-count', lineCount);
         
@@ -510,8 +529,8 @@
         console.log('Set display field to readonly and rows=4');
         
         // Show expand controls
-        const wrapper = displayField.closest('.attr-v2-text-value-wrapper');
-        const expandControls = wrapper.find('.attr-v2-expand-controls');
+        const wrapper = displayField.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
+        const expandControls = wrapper.find(Hi.ATTR_V2_EXPAND_CONTROLS_SELECTOR);
         console.log('Found expand controls:', expandControls.length);
         expandControls.show();
         
@@ -544,8 +563,8 @@
         textarea.addClass('truncated');
         
         // Show expand controls
-        const wrapper = textarea.closest('.attr-v2-text-value-wrapper');
-        const expandControls = wrapper.find('.attr-v2-expand-controls');
+        const wrapper = textarea.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
+        const expandControls = wrapper.find(Hi.ATTR_V2_EXPAND_CONTROLS_SELECTOR);
         expandControls.show();
         
         console.log('applyTruncation: Complete');
@@ -579,8 +598,8 @@
     // Global function for expand/collapse button (namespaced) - enhanced for hidden field pattern
     window.attrV2.toggleExpandedView = function(button) {
         const $button = $(button);
-        const wrapper = $button.closest('.attr-v2-text-value-wrapper');
-        const displayField = wrapper.find('.display-field, .attr-v2-textarea'); // Support both new and legacy
+        const wrapper = $button.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
+        const displayField = wrapper.find('.display-field, ' + Hi.ATTR_V2_TEXTAREA_SELECTOR); // Support both new and legacy
         const showMoreText = $button.find('.show-more-text');
         const showLessText = $button.find('.show-less-text');
         
@@ -668,7 +687,7 @@
     
     // Pre-save handler with truncation protection for hidden field pattern
     function setupFormSubmissionHandler() {
-        const form = document.getElementById('attr-v2-form');
+        const form = $(Hi.ATTR_V2_FORM_SELECTOR)[0];
         if (!form) return;
         
         form.addEventListener('submit', function(e) {
@@ -695,7 +714,7 @@
             });
             
             // Legacy support: restore full values to any remaining old-pattern truncated textareas
-            $('.attr-v2-textarea.truncated').not('.display-field').each(function() {
+            $(Hi.ATTR_V2_TEXTAREA_SELECTOR + '.truncated').not('.display-field').each(function() {
                 const textarea = $(this);
                 const fullValue = textarea.data('full-value');
                 if (fullValue !== undefined) {
@@ -719,7 +738,7 @@
             rows: 1,
             id: $input.attr('id'),
             name: $input.attr('name'),
-            class: $input.attr('class') + ' attr-v2-textarea',
+            class: $input.attr('class') + ' ' + Hi.ATTR_V2_TEXTAREA_CLASS,
             'data-original-value': $input.attr('data-original-value')
         });
         

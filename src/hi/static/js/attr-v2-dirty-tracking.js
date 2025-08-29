@@ -13,11 +13,11 @@
         
         // Configuration
         config: {
-            formSelector: '#attr-v2-form',
-            messageContainerSelector: '#attr-v2-dirty-message',
+            formSelector: Hi.ATTR_V2_FORM_SELECTOR,
+            messageContainerSelector: Hi.ATTR_V2_DIRTY_MESSAGE_SELECTOR,
             debounceDelay: 300,
-            dirtyFieldClass: 'attr-v2-field-dirty',
-            dirtyIndicatorClass: 'attr-v2-dirty-indicator'
+            dirtyFieldClass: Hi.ATTR_V2_FIELD_DIRTY_CLASS,
+            dirtyIndicatorClass: Hi.ATTR_V2_DIRTY_INDICATOR_CLASS
         },
         
         // State
@@ -63,7 +63,7 @@
             }
             
             // Property form fields
-            const propertyFields = form.querySelectorAll('.attr-v2-property-card input, .attr-v2-property-card textarea, .attr-v2-property-card select');
+            const propertyFields = form.querySelectorAll(`${Hi.ATTR_V2_PROPERTY_CARD_SELECTOR} input, ${Hi.ATTR_V2_PROPERTY_CARD_SELECTOR} textarea, ${Hi.ATTR_V2_PROPERTY_CARD_SELECTOR} select`);
             propertyFields.forEach(field => {
                 // Skip hidden management form fields
                 if (field.type === 'hidden' && field.name.includes('_')) return;
@@ -71,7 +71,7 @@
             });
             
             // File title input fields
-            const fileTitleFields = form.querySelectorAll('.attr-v2-file-title-input');
+            const fileTitleFields = form.querySelectorAll(Hi.ATTR_V2_FILE_TITLE_INPUT_SELECTOR);
             fileTitleFields.forEach(field => {
                 this.captureFieldValue(field);
             });
@@ -105,7 +105,7 @@
             const currentValue = this.getFieldValue(field);
             
             // Special handling for new property forms - consider them dirty if they have content
-            const isNewPropertyField = field.closest('.attr-v2-new-property');
+            const isNewPropertyField = field.closest(Hi.ATTR_V2_NEW_PROPERTY_SELECTOR);
             if (isNewPropertyField && field.name.includes('-name') && currentValue.length > 0) {
                 return true;
             }
@@ -130,7 +130,7 @@
             
             // Handle file title input activation (persistent styling on first interaction)
             form.addEventListener('focus', (e) => {
-                if (e.target.classList.contains('attr-v2-file-title-input')) {
+                if (e.target.classList.contains(Hi.ATTR_V2_FILE_TITLE_INPUT_CLASS)) {
                     e.target.classList.add('activated');
                 }
             }, true); // Use capture phase to ensure we catch the event
@@ -192,7 +192,7 @@
             field.classList.add(this.config.dirtyFieldClass);
             
             // For file title inputs, add activated class for persistent styling
-            if (field.classList.contains('attr-v2-file-title-input')) {
+            if (field.classList.contains(Hi.ATTR_V2_FILE_TITLE_INPUT_CLASS)) {
                 field.classList.add('activated');
             }
             
@@ -227,17 +227,17 @@
         // Get appropriate container for field indicator
         getFieldContainer: function(field) {
             // For file title inputs, use the file info container
-            if (field.classList.contains('attr-v2-file-title-input')) {
-                const fileInfo = field.closest('.attr-v2-file-info');
+            if (field.classList.contains(Hi.ATTR_V2_FILE_TITLE_INPUT_CLASS)) {
+                const fileInfo = field.closest(Hi.ATTR_V2_FILE_INFO_SELECTOR);
                 if (fileInfo) {
                     return field; // Use the input itself as container for positioning
                 }
             }
             
             // For property cards, use the property header
-            const propertyCard = field.closest('.attr-v2-property-card');
+            const propertyCard = field.closest(Hi.ATTR_V2_PROPERTY_CARD_SELECTOR);
             if (propertyCard) {
-                return propertyCard.querySelector('.attr-v2-property-name');
+                return propertyCard.querySelector(Hi.ATTR_V2_PROPERTY_NAME_SELECTOR);
             }
             
             // For entity name, use the form group
@@ -261,7 +261,7 @@
         // Insert dirty indicator in appropriate position
         insertDirtyIndicator: function(container, indicator) {
             // For property names, append to the end
-            if (container.classList.contains('attr-v2-property-name')) {
+            if (container.classList.contains(Hi.ATTR_V2_PROPERTY_NAME_CLASS)) {
                 container.appendChild(indicator);
             } else {
                 // For other containers, insert at the end
@@ -272,7 +272,7 @@
         // Add fallback CSS classes for browsers without :has() support
         addFallbackClasses: function(container, field) {
             // For property names
-            if (container.classList.contains('attr-v2-property-name')) {
+            if (container.classList.contains(Hi.ATTR_V2_PROPERTY_NAME_CLASS)) {
                 container.classList.add('has-dirty-indicator');
             }
             
@@ -286,7 +286,7 @@
         // Remove fallback CSS classes
         removeFallbackClasses: function(container, field) {
             // For property names
-            if (container.classList.contains('attr-v2-property-name')) {
+            if (container.classList.contains(Hi.ATTR_V2_PROPERTY_NAME_CLASS)) {
                 container.classList.remove('has-dirty-indicator');
             }
             
@@ -306,13 +306,13 @@
             
             if (dirtyCount === 0) {
                 messageContainer.textContent = '';
-                messageContainer.className = 'attr-v2-dirty-message';
+                messageContainer.className = Hi.ATTR_V2_DIRTY_MESSAGE_CLASS;
             } else {
                 const message = dirtyCount === 1 
                     ? '1 field modified' 
                     : `${dirtyCount} fields modified`;
                 messageContainer.textContent = message;
-                messageContainer.className = 'attr-v2-dirty-message active';
+                messageContainer.className = Hi.ATTR_V2_DIRTY_MESSAGE_CLASS + ' active';
             }
         },
         
@@ -398,14 +398,14 @@
     
     // Initialize after modal shown
     document.addEventListener('shown.bs.modal', function(e) {
-        if (document.querySelector('#attr-v2-form')) {
+        if (document.querySelector(Hi.ATTR_V2_FORM_SELECTOR)) {
             window.attrV2.DirtyTracking.reinitialize();
         }
     });
     
     // Hook into antinode success to reinitialize
     document.addEventListener('an:success', function(e) {
-        if (document.querySelector('#attr-v2-form')) {
+        if (document.querySelector(Hi.ATTR_V2_FORM_SELECTOR)) {
             // Delay to allow DOM updates
             setTimeout(() => {
                 window.attrV2.DirtyTracking.reinitialize();

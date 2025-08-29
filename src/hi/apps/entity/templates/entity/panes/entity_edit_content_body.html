@@ -59,15 +59,15 @@ Includes: entity info (when provided), action bar, and scrollable content
   <div class="attr-v2-action-bar">
     <div class="attr-v2-action-bar-content">
       <div>
-        <button id="attr-v2-update-btn" 
+        <button id="{{ DIVID.ATTR_V2_UPDATE_BTN }}" 
                 type="submit" 
                 class="btn btn-primary"
                 name="action" 
                 value="update">
           {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
         </button>
-        <span id="attr-v2-dirty-message" class="attr-v2-dirty-message ml-3"></span>
-        <span id="attr-v2-status-msg" class="attr-v2-status-message ml-2">
+        <span id="{{ DIVID.ATTR_V2_DIRTY_MESSAGE }}" class="attr-v2-dirty-message ml-3"></span>
+        <span id="{{ DIVID.ATTR_V2_STATUS_MSG }}" class="attr-v2-status-message ml-2">
           {% if success_message %}
             <span class="text-success">{{ success_message }}</span>
           {% elif error_message %}
@@ -84,12 +84,12 @@ Includes: entity info (when provided), action bar, and scrollable content
       <div class="attr-v2-action-buttons">
         {% block additional_actions %}
         {% endblock %}
-        <label for="attr-v2-file-input" 
+        <label for="{{ DIVID.ATTR_V2_FILE_INPUT }}" 
                class="btn btn-sm btn-outline-primary mb-0">
           {% icon "upload" size="sm" css_class="hi-icon-left" %}Add File
         </label>
         
-        <button id="attr-v2-add-property-btn" 
+        <button id="{{ DIVID.ATTR_V2_ADD_PROPERTY_BTN }}" 
                 type="button" 
                 class="btn btn-sm btn-outline-primary"
                 onclick="showAddProperty();">
@@ -101,7 +101,7 @@ Includes: entity info (when provided), action bar, and scrollable content
 </div>
 
 <!-- Scrollable Content Area (below sticky panel) -->
-<div id="attr-v2-scrollable-content" class="attr-v2-scrollable-content">
+<div id="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT }}" class="attr-v2-scrollable-content">
   
   <!-- Files Section -->
   {% block files_section %}
