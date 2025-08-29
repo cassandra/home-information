@@ -1,42 +1,49 @@
 {% extends "modals/base.html" %}
-{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+{% load icons %}
 
-{% block title_text %}
-{{ entity.name }}: Edit
-{% endblock %}
+{% block modal_dialog_class %}hi-modal-dialog-700{% endblock %}
+{% block title_text %}{{ entity.name }}{% endblock %}
 
 {% block body %}
-
-<div>
-  {% include "entity/edit/panes/entity_edit.html" %}
+<form id="attr-v2-form" 
+      action="{% url 'entity_edit' entity_id=entity.id %}" 
+      method="post" 
+      class="form attr-v2-modal" 
+      data-async="true"
+      data-stay-in-modal="true"
+      enctype="multipart/form-data">
+  {% csrf_token %}
+  
+<!-- Main content wrapper for antinode updates -->
+<div id="attr-v2-content">
+  {% include "entity/panes/entity_edit_content_body.html" %}
 </div>
+</form>
+
+<!-- File Upload Form Container (separate from main form to avoid nesting) -->
+<div id="attr-v2-upload-form-container">
+  {% url 'entity_attribute_upload' entity_id=entity.id as file_upload_url %}  
+  {% include "attribute/components/v2/upload_form.html" with file_upload_url=file_upload_url %}
+</div>
+
+<!-- Success/Error Messages -->
+{% if messages %}
+  <div class="attr-v2-messages" id="attr-v2-messages">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<!-- JavaScript for V2 functionality loaded via Django Pipeline js_before_content bundle -->
 
 {% endblock %}
 
 {% block footer %}
-
-{% if entity.states.exists %}
-<div class="align-self-center">
-  <a class="btn btn-primary"
-     href="{% url 'entity_status' entity_id=entity.id %}"
-     data-async="modal">
-    STATUS
-  </a>
-</div>
-{% endif %}
-
-{% if entity.states.exists %}
-<div class="align-self-center">
-  <a class="btn btn-primary"
-     href="{% url 'entity_state_history' entity_id=entity.id %}"
-     data-async="modal">
-    HISTORY
-  </a>
-</div>
-{% endif %}
-
-<div class="align-self-center">
-  <a id="hi-modal-done" role="button" {% if autofocus %}autofocus="autofocus"{% endif %}
-     class="btn btn-lg btn-secondary" href="#" data-dismiss="modal">DONE</a>
-</div>
+<!-- No footer - sticky panel contains all actions -->
 {% endblock %}

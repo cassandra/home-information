@@ -1,6 +1,7 @@
 import logging
 
 from django.db import transaction
+from django.template.loader import get_template
 from django.urls import reverse
 from django.views.generic import View
 
@@ -14,17 +15,19 @@ from hi.hi_async_view import HiModalView, HiSideView
 from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
 from hi.apps.attribute.enums import AttributeValueType
 
+from hi.constants import DIVID
+
 from .entity_manager import EntityManager
 from . import forms
 from .models import EntityAttribute
-from .transient_models import EntityEditData, EntityStateHistoryData
+from .transient_models import EntityStateHistoryData
 from .view_mixins import EntityViewMixin
 
 logger = logging.getLogger(__name__)
 
 
-class BaseEntityEditMixin:
-    """Shared logic for entity editing operations"""
+class EntityPropertiesEditView( View, EntityViewMixin ):
+    """Handle entity properties editing (name, type) only - used by sidebar"""
     
     def _handle_entity_form_save( self,
                                   request,
@@ -49,13 +52,6 @@ class BaseEntityEditMixin:
                 transition_response = self._handle_entity_type_change(request, entity)
         
         return transition_response
-    
-    def _recreate_fresh_formset(self, entity):
-        """Recreate formset to preserve 'max' to show new form"""
-        return forms.EntityAttributeFormSet(
-            instance = entity,
-            prefix = f'entity-{entity.id}',
-        )
     
     def _handle_entity_type_change(self, request, entity):
         """Handle EntityType changes with appropriate transition logic"""
@@ -94,64 +90,6 @@ class BaseEntityEditMixin:
         # - path_to_icon: Database structure changed
         return True
 
-
-class EntityEditView( BaseEntityEditMixin, View, EntityViewMixin ):
-    """Handle full entity editing including attributes - used by modal"""
-
-    def get( self, request, *args, **kwargs ):
-        entity = self.get_entity( request, *args, **kwargs )
-        entity_edit_data = EntityEditData( entity = entity )
-        return self.entity_modal_response(
-            request = request,
-            entity_edit_data = entity_edit_data,
-        )
-    
-    def post( self, request, *args, **kwargs ):
-        entity = self.get_entity( request, *args, **kwargs )
-        
-        # Store original entity_type_str to detect changes
-        original_entity_type_str = entity.entity_type_str
-
-        entity_form = forms.EntityForm( request.POST, instance = entity )
-        entity_attribute_formset = forms.EntityAttributeFormSet(
-            request.POST,
-            request.FILES,
-            instance = entity,
-            prefix = f'entity-{entity.id}',
-        )
-        
-        form_valid = entity_form.is_valid() and entity_attribute_formset.is_valid()
-        
-        if form_valid:
-            transition_response = self._handle_entity_form_save(
-                request, entity, entity_form, entity_attribute_formset, original_entity_type_str
-            )
-            
-            # Now that transaction is committed, handle any transition response
-            if transition_response is not None:
-                return transition_response
-                
-            # Recreate formset to preserve "max" to show new form
-            entity_attribute_formset = self._recreate_fresh_formset(entity)
-            status_code = 200
-        else:
-            status_code = 400
-            
-        entity_edit_data = EntityEditData(
-            entity = entity,
-            entity_form = entity_form,
-            entity_attribute_formset = entity_attribute_formset,
-        )
-        return self.entity_modal_response(
-            request = request,
-            entity_edit_data = entity_edit_data,
-            status_code = status_code,
-        )
-
-
-class EntityPropertiesEditView( BaseEntityEditMixin, View, EntityViewMixin ):
-    """Handle entity properties editing (name, type) only - used by sidebar"""
-
     def post( self, request, *args, **kwargs ):
         entity = self.get_entity( request, *args, **kwargs )
         
@@ -173,19 +111,20 @@ class EntityPropertiesEditView( BaseEntityEditMixin, View, EntityViewMixin ):
             status_code = 200
         else:
             status_code = 400
-            
-        # For properties editing, we create EntityEditData without formset
-        entity_edit_data = EntityEditData(
-            entity = entity,
-            entity_form = entity_form,
-            entity_attribute_formset = None,
-        )
-        return self.entity_properties_response(
-            request = request,
-            entity_edit_data = entity_edit_data,
-            status_code = status_code,
-        )
 
+        context = {
+            'entity': entity,
+            'entity_form': entity_form,
+        }
+        template = get_template( 'entity/edit/panes/entity_properties_edit.html' )
+        content = template.render( context, request = request )
+        return antinode.response(
+            insert_map = {
+                DIVID['ENTITY_PROPERTIES_PANE']: content,
+            },
+            status = status_code,
+        )
+    
         
 class EntityAttributeUploadView( View, EntityViewMixin ):
 
@@ -244,7 +183,7 @@ class EntityStatusView( HiModalView, EntityViewMixin ):
 
         entity_status_data = StatusDisplayManager().get_entity_status_data( entity = entity )
         if not entity_status_data.entity_state_status_data_list:
-            return EntityEditV2View().get( request, *args, **kwargs )
+            return EntityEditView().get( request, *args, **kwargs )
         
         context = entity_status_data.to_template_context()
         return self.modal_response( request, context )
@@ -394,31 +333,18 @@ class EntityAttributeRestoreInlineView(BaseAttributeRestoreView):
         attribute.value = history_record.value
         attribute.save()  # This will create a new history record
         
-        # Delegate to EntityEditV2View logic to return updated modal content
+        # Delegate to EntityEditView logic to return updated modal content
         entity = attribute.entity
         
-        # Gather fresh form data like EntityEditV2View.get() does
-        from hi.apps.entity.forms import EntityForm, EntityAttributeRegularFormSet
-        from hi.apps.attribute.enums import AttributeValueType
-        
-        entity_form = EntityForm(instance=entity)
-        file_attributes = entity.attributes.filter(
-            value_type_str=str(AttributeValueType.FILE)
-        ).order_by('id')
-        property_attributes_formset = EntityAttributeRegularFormSet(
-            instance=entity,
-            prefix=f'entity-{entity.id}'
-        )
-        
-        # Use EntityEditV2View's _render_success_response logic
-        entity_edit_view = EntityEditV2View()
+        # Use EntityEditView's _render_success_response logic
+        entity_edit_view = EntityEditView()
         return entity_edit_view._render_success_response(
             request = request,
             entity = entity,
         )
 
 
-class EntityEditV2View(HiModalView, EntityViewMixin):
+class EntityEditView(HiModalView, EntityViewMixin):
     """V2 Entity attribute editing modal with redesigned interface.
     
     This view uses a dual response pattern:
@@ -427,7 +353,7 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
     """
     
     def get_template_name(self) -> str:
-        return 'entity/modals/entity_edit_v2.html'
+        return 'entity/modals/entity_edit.html'
     
     def _create_entity_forms(self, entity, form_data=None):
         """Create entity forms used by both initial rendering and fragment updates.
@@ -478,7 +404,10 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
         entity = self.get_entity(request, *args, **kwargs)
         
         # Use shared form creation method with POST data
-        entity_form, file_attributes, property_attributes_formset = self._create_entity_forms(entity, request.POST)
+        entity_form, file_attributes, property_attributes_formset = self._create_entity_forms(
+            entity,
+            request.POST,
+        )
         
         # Log form data for debugging
         logger.info(f'POST data received: {dict(request.POST)}')
@@ -507,9 +436,11 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
                                     logger.info(f'Deleting file attribute {attr_id}: {file_attribute.name}')
                                     file_attribute.delete()
                                 else:
-                                    logger.warning(f'File attribute {attr_id} cannot be deleted - permission denied')
+                                    logger.warning(
+                                        f'File attribute {attr_id} cannot be deleted - permission denied')
                             except EntityAttribute.DoesNotExist:
-                                logger.warning(f'File attribute {attr_id} not found or not owned by entity {entity.id}')
+                                logger.warning(
+                                    f'File attribute {attr_id} not found or not owned by entity {entity.id}')
                 
                 # Process file title updates
                 self._process_file_title_updates(request, entity)
@@ -537,7 +468,7 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
             )
     
     def get_success_url_name(self) -> str:
-        return 'entity_edit_v2'
+        return 'entity_edit'
     
     def _render_success_response( self, request, entity ):
         """Render success response using antinode helpers - multiple target replacement"""
@@ -751,7 +682,8 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
                 
                 # Check if title actually changed
                 if attribute.value != new_title:
-                    logger.info(f'Updating file attribute {attribute_id} title from "{attribute.value}" to "{new_title}"')
+                    logger.info(f'Updating file attribute {attribute_id} title'
+                                f' from "{attribute.value}" to "{new_title}"')
                     attribute.value = new_title
                     attribute.save()  # This will create a history record
                     
