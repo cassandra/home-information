@@ -26,7 +26,7 @@ Individual property attribute card with value editing and actions
       {% if attribute_form.instance.pk %}
         {{ attribute_form.instance.name }}
       {% else %}
-        Add New Property
+        {% icon "plus" size="sm" css_class="hi-icon-left" %}Add New Property
       {% endif %}
       <span class="attr-v2-dirty-indicator" style="display: none;"></span>
     </h6>

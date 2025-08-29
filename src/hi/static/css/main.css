@@ -2854,6 +2854,57 @@ form[data-dirty] {
     display: inline-flex !important;
 }
 
+/* ====================================================================== */
+/* ENTITY EDIT MODAL V2 STYLING IMPROVEMENTS                           */
+/* ====================================================================== */
+
+/* Task 1: Standardize delete icon colors to red */
+.attr-v2-property-actions .attr-v2-delete-btn {
+    color: #dc3545 !important;
+    border-color: #dc3545 !important;
+}
+
+.attr-v2-property-actions .attr-v2-delete-btn:hover {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+/* Task 2: Style "Add New Property" form for visual distinction */
+.attr-v2-new-property {
+    background-color: rgba(23, 112, 114, 0.05) !important;
+    border: 2px dashed rgba(23, 112, 114, 0.3) !important;
+    border-radius: 8px;
+}
+
+.attr-v2-new-property .attr-v2-property-header h6 {
+    color: var(--primary-color);
+    font-weight: 600;
+    font-style: italic;
+}
+
+
+/* Task 3: Make Add File and Add Property buttons consistent size */
+.attr-v2-action-buttons label.btn {
+    min-height: 44px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+/* Task 4: Make property name/labels more prominent than values */
+.attr-v2-property-name {
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    color: var(--primary-text-color) !important;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
 
 /* Touch device optimizations */
 @media (max-width: 768px) {
