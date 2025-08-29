@@ -155,7 +155,7 @@ class LocationItemDetailsView( View ):
             raise BadRequest( 'Bad item id.' )
         
         if item_type == ItemType.ENTITY:
-            redirect_url = reverse( 'entity_details', kwargs = { 'entity_id': item_id } )
+            redirect_url = reverse( 'entity_edit_mode', kwargs = { 'entity_id': item_id } )
             return HttpResponseRedirect( redirect_url )
     
         if item_type == ItemType.COLLECTION:

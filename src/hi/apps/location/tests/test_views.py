@@ -502,15 +502,15 @@ class TestLocationItemDetailsView(SyncViewTestCase):
             collection_view_type_str='MAIN'
         )
 
-    def test_entity_details_redirect(self):
-        """Test redirecting to entity details for entity items."""
+    def test_entity_edit_mode_redirect(self):
+        """Test redirecting to entity edit mode for entity items."""
         from hi.enums import ItemType
         html_id = ItemType.ENTITY.html_id(self.entity.id)
         url = reverse('location_item_details', kwargs={'html_id': html_id})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 302)
-        expected_url = reverse('entity_details', kwargs={'entity_id': self.entity.id})
+        expected_url = reverse('entity_edit_mode', kwargs={'entity_id': self.entity.id})
         self.assertEqual(response.url, expected_url)
 
     def test_collection_details_redirect(self):

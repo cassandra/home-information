@@ -325,9 +325,9 @@ class TestEntityStateHistoryView(DualModeViewTestCase):
         self.assertEqual(response.status_code, 405)
 
 
-class TestEntityDetailsView(SyncViewTestCase):
+class TestEntityEditModeView(SyncViewTestCase):
     """
-    Tests for EntityDetailsView - demonstrates HiSideView testing.
+    Tests for EntityEditModeView - demonstrates HiSideView testing.
     This view displays entity details in a side panel with location context.
     """
 
@@ -360,7 +360,7 @@ class TestEntityDetailsView(SyncViewTestCase):
         # This tests actual view functionality without complex mocking
         self.setSessionViewType(ViewType.LOCATION_VIEW)
         
-        url = reverse('entity_details', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_mode', kwargs={'entity_id': self.entity.id})
         response = self.client.get(url)
 
         # The view should either succeed or fail gracefully
@@ -373,17 +373,17 @@ class TestEntityDetailsView(SyncViewTestCase):
         # Test with non-location view context
         self.setSessionViewType(ViewType.CONFIGURATION)
         
-        url = reverse('entity_details', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_mode', kwargs={'entity_id': self.entity.id})
         response = self.client.get(url)
 
         # The view should handle this case appropriately
         self.assertIn(response.status_code, [200, 500])  # Accept either for now
 
     def test_details_should_push_url(self):
-        """Test that EntityDetailsView should push URL."""
+        """Test that EntityEditModeView should push URL."""
         # Test that the view responds to URL requests appropriately
         # This tests the basic URL routing and view instantiation
-        url = reverse('entity_details', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_mode', kwargs={'entity_id': self.entity.id})
         response = self.client.get(url)
 
         # View should respond (may be 500 due to manager initialization issues)
@@ -391,14 +391,14 @@ class TestEntityDetailsView(SyncViewTestCase):
 
     def test_nonexistent_entity_returns_404(self):
         """Test that accessing nonexistent entity returns 404."""
-        url = reverse('entity_details', kwargs={'entity_id': 99999})
+        url = reverse('entity_edit_mode', kwargs={'entity_id': 99999})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 404)
 
     def test_post_not_allowed(self):
         """Test that POST requests are not allowed."""
-        url = reverse('entity_details', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_mode', kwargs={'entity_id': self.entity.id})
         response = self.client.post(url)
 
         # May return 500 due to view processing issues before method check

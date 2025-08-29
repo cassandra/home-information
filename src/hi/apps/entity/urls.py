@@ -21,9 +21,9 @@ urlpatterns = [
              views.EntityStateHistoryView.as_view(), 
              name='entity_state_history' ),
 
-    re_path( r'^details/(?P<entity_id>\d+)$', 
-             views.EntityDetailsView.as_view(), 
-             name='entity_details' ),
+    re_path( r'^edit_mode/(?P<entity_id>\d+)$', 
+             views.EntityEditModeView.as_view(), 
+             name='entity_edit_mode' ),
 
     re_path( r'^attribute/upload/(?P<entity_id>\d+)$', 
              views.EntityAttributeUploadView.as_view(), 

@@ -215,7 +215,7 @@ class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin )
         return self.modal_response( request, context )
 
 
-class EntityDetailsView( HiSideView, EntityViewMixin ):
+class EntityEditModeView( HiSideView, EntityViewMixin ):
 
     def get_template_name( self ) -> str:
         return 'entity/edit/panes/entity_edit_mode_panel.html'
