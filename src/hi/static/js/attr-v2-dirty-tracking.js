@@ -70,6 +70,12 @@
                 this.captureFieldValue(field);
             });
             
+            // File title input fields
+            const fileTitleFields = form.querySelectorAll('.attr-v2-file-title-input');
+            fileTitleFields.forEach(field => {
+                this.captureFieldValue(field);
+            });
+            
             console.log('V2 Dirty Tracking: Captured', this.state.originalValues.size, 'original values');
         },
         
@@ -121,6 +127,13 @@
             
             // Form submission handling
             form.addEventListener('submit', this.handleFormSubmission.bind(this));
+            
+            // Handle file title input activation (persistent styling on first interaction)
+            form.addEventListener('focus', (e) => {
+                if (e.target.classList.contains('attr-v2-file-title-input')) {
+                    e.target.classList.add('activated');
+                }
+            }, true); // Use capture phase to ensure we catch the event
             
             // Handle successful form submission (antinode.js pattern)
             document.addEventListener('an:success', this.handleFormSuccess.bind(this));
@@ -178,6 +191,11 @@
         markFieldDirty: function(field) {
             field.classList.add(this.config.dirtyFieldClass);
             
+            // For file title inputs, add activated class for persistent styling
+            if (field.classList.contains('attr-v2-file-title-input')) {
+                field.classList.add('activated');
+            }
+            
             // Add indicator to field container
             const container = this.getFieldContainer(field);
             if (container && !container.querySelector('.' + this.config.dirtyIndicatorClass)) {
@@ -208,6 +226,14 @@
         
         // Get appropriate container for field indicator
         getFieldContainer: function(field) {
+            // For file title inputs, use the file info container
+            if (field.classList.contains('attr-v2-file-title-input')) {
+                const fileInfo = field.closest('.attr-v2-file-info');
+                if (fileInfo) {
+                    return field; // Use the input itself as container for positioning
+                }
+            }
+            
             // For property cards, use the property header
             const propertyCard = field.closest('.attr-v2-property-card');
             if (propertyCard) {

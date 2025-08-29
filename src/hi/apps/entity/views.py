@@ -510,6 +510,9 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
                                     logger.warning(f'File attribute {attr_id} cannot be deleted - permission denied')
                             except EntityAttribute.DoesNotExist:
                                 logger.warning(f'File attribute {attr_id} not found or not owned by entity {entity.id}')
+                
+                # Process file title updates
+                self._process_file_title_updates(request, entity)
             
             # Return success response using antinode helpers
             return self._render_success_response(
@@ -712,3 +715,45 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
         )
         
         return content_body, upload_form
+    
+    def _process_file_title_updates(self, request, entity):
+        """Process file_title_* fields from POST data to update file attribute values"""
+        import re
+        
+        # Pattern to match file_title_{entity_id}_{attribute_id}
+        file_title_pattern = re.compile(r'^file_title_(\d+)_(\d+)$')
+        
+        for field_name, new_title in request.POST.items():
+            match = file_title_pattern.match(field_name)
+            if not match:
+                continue
+                
+            entity_id_str, attribute_id_str = match.groups()
+            
+            # Validate entity_id matches current entity
+            if int(entity_id_str) != entity.id:
+                logger.warning(f'File title field {field_name} has mismatched entity ID')
+                continue
+            
+            try:
+                attribute_id = int(attribute_id_str)
+                attribute = EntityAttribute.objects.get(
+                    pk=attribute_id,
+                    entity=entity,
+                    value_type_str=str(AttributeValueType.FILE)
+                )
+                
+                # Clean and validate the new title
+                new_title = new_title.strip()
+                if not new_title:
+                    logger.warning(f'Empty title provided for file attribute {attribute_id}')
+                    continue
+                
+                # Check if title actually changed
+                if attribute.value != new_title:
+                    logger.info(f'Updating file attribute {attribute_id} title from "{attribute.value}" to "{new_title}"')
+                    attribute.value = new_title
+                    attribute.save()  # This will create a history record
+                    
+            except (ValueError, EntityAttribute.DoesNotExist) as e:
+                logger.warning(f'Invalid file title field {field_name}: {e}')

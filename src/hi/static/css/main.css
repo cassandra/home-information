@@ -545,6 +545,42 @@ a.clickable-card:active {
     word-break: break-word;
 }
 
+/* File title input - styled to appear like text initially */
+.attr-v2-file-title-input {
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    word-break: break-word;
+    
+    /* Minimal styling - appears like text */
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 2px 4px;
+    border-radius: 3px;
+    width: 100%;
+    transition: all 0.2s ease;
+    
+    /* Inherit text color and font */
+    color: inherit;
+    font-family: inherit;
+    line-height: inherit;
+}
+
+/* Focused and activated state - stronger input appearance */
+.attr-v2-file-title-input:focus,
+.attr-v2-file-title-input.activated {
+    border-color: var(--primary-color, #007bff);
+    background: var(--white, #ffffff);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: none;
+}
+
+/* Hover state - subtle indication it's interactive */
+.attr-v2-file-title-input:hover:not(:focus) {
+    border-color: var(--line-color, #dee2e6);
+    background: rgba(0, 0, 0, 0.02);
+}
+
 .attr-v2-file-filename {
     font-size: 0.75rem;
     color: var(--muted-color);

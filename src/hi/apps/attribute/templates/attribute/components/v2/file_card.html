@@ -64,7 +64,13 @@ Individual file attribute card with preview, actions, and metadata
   
   <!-- File Info -->
   <div class="attr-v2-file-info">
-    <div class="attr-v2-file-name">{{ attribute.value }}</div>
+    <input type="text" 
+           id="file_title_{{ entity.id }}_{{ attribute.id }}"
+           name="file_title_{{ entity.id }}_{{ attribute.id }}" 
+           value="{{ attribute.value }}" 
+           class="attr-v2-file-title-input"
+           placeholder="Enter file title"
+           maxlength="255">
     <div class="attr-v2-file-filename">{{ attribute.name }}</div>
     
     <!-- File Actions -->
