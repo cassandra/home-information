@@ -12,44 +12,31 @@
     
     // Initialize the V2 modal when DOM is ready
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOMContentLoaded event fired');
         if ($(Hi.ATTR_V2_FORM_SELECTOR).length) {
-            console.log('Found attr-v2-form on initial page load');
             initializeAttrV2();
-        } else {
-            console.log('No attr-v2-form found on initial page load');
         }
     });
     
     // Register with antinode.js to run after any async content is rendered
     if (window.AN && typeof window.AN.addAfterAsyncRenderFunction === 'function') {
         window.AN.addAfterAsyncRenderFunction(function() {
-            console.log('antinode afterAsyncRender hook called');
             if ($(Hi.ATTR_V2_FORM_SELECTOR).length) {
-                console.log('V2 form found after async render, reinitializing for AJAX');
                 reinitializeAttrV2ForAjax();
             }
         });
-        console.log('Registered V2 full modal reinitialization with AN.addAfterAsyncRenderFunction');
     } else {
         console.error('AN.addAfterAsyncRenderFunction not available - this is a bug in antinode.js');
     }
     
     // Listen for any modal shown events and check if it contains a V2 form
     $(document).on('shown.bs.modal', '.modal', function(e) {
-        console.log('Modal shown event detected');
         if ($(Hi.ATTR_V2_FORM_SELECTOR).length) {
-            console.log('Found attr-v2-form after modal shown, initializing');
             initializeAttrV2();
             e.stopPropagation(); // Prevent bubbling to other handlers
         }
     });
 
     function initializeAttrV2() {
-        console.log('=== V2 Modal initialized ===');
-        console.log('Current URL:', window.location.href);
-        console.log('Document ready state:', document.readyState);
-        
         // Basic initialization - more functionality will be added in later phases
         setupBasicEventListeners();
         initializeExpandableTextareas(); // Must come BEFORE autosize
@@ -60,14 +47,10 @@
         if (window.attrV2 && window.attrV2.DirtyTracking) {
             window.attrV2.DirtyTracking.reinitialize();
         }
-        
-        console.log('=== V2 Modal initialization complete ===');
     }
     
     // Safe reinitialization for AJAX updates - handles both textareas and full setup
     function reinitializeAttrV2ForAjax() {
-        console.log('=== V2 Modal AJAX reinitialization ===');
-        
         // Reinitialize textareas (existing functionality)
         reinitializeTextareas();
         
@@ -78,36 +61,23 @@
         
         // Note: Form event handlers should persist through DOM updates
         // since the form element itself is not replaced, only its content
-        
-        console.log('=== V2 Modal AJAX reinitialization complete ===');
     }
     
 
     function setupBasicEventListeners() {
-        // Debug: Check what forms exist
-        const allForms = $('form');
-        console.log('All forms on page:', allForms);
-        allForms.each((index, form) => {
-            console.log(`Form ${index}:`, 'id=' + form.id, 'class=' + form.className);
-        });
-        
         // Try multiple approaches to find the form
         let form = $(Hi.ATTR_V2_FORM_SELECTOR)[0];
-        console.log('jQuery selector result:', form);
         
         // Also try multiple selectors
         let formAlt = $(`${Hi.ATTR_V2_FORM_SELECTOR}, ${Hi.ATTR_V2_MODAL_CLASS_SELECTOR}, form[data-async]`)[0];
-        console.log('Multiple selector result:', formAlt);
         
         if (!form && !formAlt) {
             setTimeout(() => {
                 form = $(Hi.ATTR_V2_FORM_SELECTOR)[0];
                 formAlt = $(`${Hi.ATTR_V2_FORM_SELECTOR}, ${Hi.ATTR_V2_MODAL_CLASS_SELECTOR}, form[data-async]`)[0];
-                console.log('After timeout - jQuery selector:', form, 'multiple selector:', formAlt);
                 
                 const finalForm = form || formAlt;
                 if (finalForm) {
-                    console.log('setupBasicEventListeners: Form found after timeout');
                     attachKeyHandler(finalForm);
                 } else {
                     console.error('setupBasicEventListeners: No form found after timeout');
@@ -117,13 +87,10 @@
         }
         
         const finalForm = form || formAlt;
-        console.log('setupBasicEventListeners: Form found immediately:', finalForm);
         attachKeyHandler(finalForm);
     }
     
     function attachKeyHandler(form) {
-        console.log('attachKeyHandler: Adding ENTER key handler to form');
-        
         // Handle ENTER key behavior ONLY for V2 form inputs and textareas
         form.addEventListener('keydown', function(event) {
             // IMPORTANT: Only handle events from elements within the V2 form
@@ -131,12 +98,8 @@
                 return; // Not our form, don't interfere
             }
             
-            console.log('V2 Form keydown event:', event.key, 'Target:', event.target.tagName, event.target.type);
             if (event.key === 'Enter' || event.keyCode === 13) {
-                console.log('ENTER key detected in V2 form');
-                
                 if (event.target.tagName === 'TEXTAREA') {
-                    console.log('Handling ENTER in textarea - allowing newline');
                     // For textareas, prevent form submission but allow newline
                     event.preventDefault();
                     
@@ -164,13 +127,11 @@
                     
                     // Only convert value fields to textarea, never name fields
                     if (fieldName.includes('-name') || fieldName.includes('_name')) {
-                        console.log('ENTER in name field - preventing form submission but not converting to textarea');
                         return false; // Just prevent form submission, don't convert
                     }
                     
                     // Convert value fields to textarea
                     if (fieldName.includes('-value') || fieldName.includes('_value')) {
-                        console.log('Converting value input to textarea');
                         const $textarea = convertToTextarea(event.target);
                         const currentValue = $textarea.val();
                         $textarea.val(currentValue + '\n');
@@ -182,11 +143,9 @@
                     }
                     
                     // For other text inputs, just prevent form submission
-                    console.log('ENTER in other text input - preventing form submission');
                     return false;
                 }
                 
-                console.log('Preventing form submission for other elements');
                 // For all other elements, just prevent form submission (already done above)
                 return false;
             }
@@ -199,14 +158,10 @@
     window.showAddProperty = function() {
         // Find the last property card (should be the empty extra form)
         const propertyCards = $(Hi.ATTR_V2_PROPERTY_CARD_SELECTOR);
-        console.log('showAddProperty: Found', propertyCards.length, 'property cards');
         
         if (propertyCards.length > 0) {
             const lastCard = propertyCards[propertyCards.length - 1];
             const $lastCard = $(lastCard);
-            console.log('showAddProperty: Last card:', lastCard);
-            console.log('showAddProperty: Last card display:', lastCard.style.display);
-            console.log('showAddProperty: Last card data-attribute-id:', lastCard.getAttribute('data-attribute-id'));
             
             // Show the card if hidden
             $lastCard.show();
@@ -214,10 +169,7 @@
             // Focus on the name field
             const nameField = $lastCard.find('input[name$="-name"]')[0];
             if (nameField) {
-                console.log('showAddProperty: Found name field:', nameField.name);
                 nameField.focus();
-            } else {
-                console.log('showAddProperty: No name field found');
             }
             
             // Initialize autosize on any textarea in the new card
@@ -229,8 +181,6 @@
             
             // Scroll into view
             lastCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        } else {
-            console.log('showAddProperty: No property cards found');
         }
     };
     
@@ -248,7 +198,6 @@
         if ($deleteField.length > 0) {
             // Set value to the attribute ID to mark for deletion
             $deleteField.val(attributeId);
-            console.log(`Marked file attribute ${attributeId} for deletion`);
         } else {
             console.warn(`DELETE field not found for file attribute ${attributeId}`);
             return;
@@ -283,7 +232,6 @@
         const $deleteField = $fileCard.find('input[name="delete_file_attribute"]');
         if ($deleteField.length > 0) {
             $deleteField.val("");
-            console.log(`Unmarked file attribute ${attributeId} for deletion`);
         }
         
         // Remove visual feedback - CSS handles all styling
@@ -319,7 +267,6 @@
         if ($deleteField.length > 0) {
             // For hidden fields, set value to "on" (what browsers send for checked checkboxes)
             $deleteField.val("on");
-            console.log(`Marked ${$deleteField.attr('name')} for deletion`);
         } else {
             console.warn(`DELETE field not found for attribute ${attributeId}`);
             return;
@@ -354,7 +301,6 @@
         const $deleteField = $propertyCard.find('input[name$="-DELETE"]');
         if ($deleteField.length > 0) {
             $deleteField.val("");
-            console.log(`Unmarked ${$deleteField.attr('name')} for deletion`);
         }
         
         // Remove visual feedback - CSS handles all styling
@@ -438,11 +384,8 @@
     
     // Lightweight reinitialization for ajax content updates
     function reinitializeTextareas() {
-        console.log('Reinitializing textareas after ajax update');
-        
         // Find all textareas that need initialization
         const textareas = $(Hi.ATTR_V2_TEXTAREA_SELECTOR);
-        console.log('Found ' + textareas.length + ' textareas to reinitialize');
         
         // Remove any previous autosize instances to avoid duplicates
         textareas.each(function() {
@@ -463,10 +406,8 @@
             
             if (isOverflowing) {
                 if (hiddenField && hiddenField.length > 0) {
-                    console.log('Reinitialization: Applying truncation to overflowing display field (new pattern)');
                     applyTruncationFromHidden(textarea, hiddenField);
                 } else {
-                    console.log('Reinitialization: Applying truncation to overflowing textarea (legacy pattern)');
                     applyTruncation(textarea);
                 }
             }
@@ -475,7 +416,6 @@
         // THEN: Apply autosize only to editable, non-truncated textareas 
         // (readonly textareas don't need dynamic resizing)
         const editableTextareas = $(Hi.ATTR_V2_TEXTAREA_SELECTOR).not('.truncated').not('[readonly]');
-        console.log('Reinitialization: Applying autosize to', editableTextareas.length, 'editable, non-truncated textareas');
         if (editableTextareas.length > 0) {
             autosize(editableTextareas);
         }
@@ -484,8 +424,6 @@
         if (editableTextareas.length > 0) {
             autosize.update(editableTextareas);
         }
-        
-        console.log('Textarea reinitialization complete');
     }
     
     // Update overflow state based on current content
@@ -503,19 +441,15 @@
     
     // Apply truncation using hidden field as source (new pattern)
     function applyTruncationFromHidden(displayField, hiddenField) {
-        console.log('applyTruncationFromHidden: Starting');
         const fullValue = hiddenField.val() || '';
-        console.log('Full value from hidden field:', fullValue.substring(0, 100) + (fullValue.length > 100 ? '...' : ''));
         
         // Destroy autosize first to prevent height override
         if (window.autosize && displayField[0]._autosize) {
-            console.log('Destroying autosize before truncation');
             autosize.destroy(displayField);
         }
         
         const lines = fullValue.split('\n');
         const truncatedValue = lines.slice(0, 4).join('\n');
-        console.log('Truncated to:', truncatedValue.substring(0, 100) + (truncatedValue.length > 100 ? '...' : ''));
         
         // Apply truncated display
         displayField.val(truncatedValue + '...');
@@ -526,25 +460,18 @@
         displayField.prop('readonly', true);
         displayField.addClass('truncated');
         
-        console.log('Set display field to readonly and rows=4');
-        
         // Show expand controls
         const wrapper = displayField.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
         const expandControls = wrapper.find(Hi.ATTR_V2_EXPAND_CONTROLS_SELECTOR);
-        console.log('Found expand controls:', expandControls.length);
         expandControls.show();
-        
-        console.log('applyTruncationFromHidden: Complete');
     }
     
     // Legacy function - kept for compatibility with reinitializeTextareas
     function applyTruncation(textarea) {
-        console.log('applyTruncation: Starting (legacy path)');
         const value = textarea.val() || '';
         
         // Destroy autosize first to prevent height override
         if (window.autosize && textarea[0]._autosize) {
-            console.log('Destroying autosize before truncation');
             autosize.destroy(textarea);
         }
         
@@ -566,15 +493,11 @@
         const wrapper = textarea.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
         const expandControls = wrapper.find(Hi.ATTR_V2_EXPAND_CONTROLS_SELECTOR);
         expandControls.show();
-        
-        console.log('applyTruncation: Complete');
     }
     
     function initializeExpandableTextareas() {
-        console.log('initializeExpandableTextareas: Starting');
         // Initialize based on server-rendered overflow state using hidden field pattern
         const displayTextareas = $('.display-field');
-        console.log('Found ' + displayTextareas.length + ' display textareas to initialize');
         
         displayTextareas.each(function() {
             const displayField = $(this);
@@ -582,17 +505,12 @@
             const hiddenFieldId = displayField.attr('data-hidden-field');
             const hiddenField = $('#' + hiddenFieldId);
             
-            console.log('Display field - overflow:', isOverflowing, 'hidden field ID:', hiddenFieldId);
-            
             if (isOverflowing && hiddenField.length > 0) {
-                console.log('Applying truncation to overflowing display field');
                 // Apply truncation using hidden field as source
                 applyTruncationFromHidden(displayField, hiddenField);
             }
             // For non-overflowing content, display field already has correct content from server
         });
-        
-        console.log('initializeExpandableTextareas: Complete');
     }
     
     // Global function for expand/collapse button (namespaced) - enhanced for hidden field pattern
@@ -613,11 +531,9 @@
             if (hiddenField && hiddenField.length > 0) {
                 // New pattern: Get from hidden field
                 fullValue = hiddenField.val() || '';
-                console.log('Show More: Using hidden field value');
             } else {
                 // Legacy pattern: Get from stored data
                 fullValue = displayField.data('full-value') || '';
-                console.log('Show More: Using legacy stored value');
             }
             
             const lineCount = (fullValue.match(/\n/g) || []).length + 1;
@@ -658,7 +574,6 @@
                 // Sync to hidden field if using new pattern
                 if (hiddenField && hiddenField.length > 0) {
                     hiddenField.val(displayField.val());
-                    console.log('Show Less (no overflow): Synced to hidden field');
                 }
             } else {
                 // Still overflows - apply truncation with hidden field sync
@@ -667,7 +582,6 @@
                 // Sync current content to hidden field before truncating display
                 if (hiddenField && hiddenField.length > 0) {
                     hiddenField.val(currentValue);
-                    console.log('Show Less (overflow): Synced to hidden field before truncation');
                     
                     // Apply truncation using hidden field
                     applyTruncationFromHidden(displayField, hiddenField);
@@ -691,8 +605,6 @@
         if (!form) return;
         
         form.addEventListener('submit', function(e) {
-            console.log('Form submission event detected - syncing display to hidden fields');
-            
             // Process all display fields using the new hidden field pattern
             $('.display-field').each(function() {
                 const displayField = $(this);
@@ -705,11 +617,8 @@
                         // Display field contains user's edits - copy to hidden field
                         const displayValue = displayField.val();
                         hiddenField.val(displayValue);
-                        console.log('Pre-save: Synced editable display field to hidden field');
-                    } else {
-                        // Display field is readonly/truncated - hidden field already has correct full content
-                        console.log('Pre-save: Skipped truncated display field (hidden field preserved)');
                     }
+                    // Display field is readonly/truncated - hidden field already has correct full content
                 }
             });
             
@@ -718,13 +627,10 @@
                 const textarea = $(this);
                 const fullValue = textarea.data('full-value');
                 if (fullValue !== undefined) {
-                    console.log('Pre-save: Restoring legacy truncated textarea value');
                     textarea.val(fullValue);
                     textarea.prop('readonly', false);
                 }
             });
-            
-            console.log('Pre-save sync complete');
         }, true); // Use capture phase to ensure this runs early
     }
     

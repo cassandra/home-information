@@ -236,7 +236,7 @@ class LocationAttributeUploadView( View, LocationViewMixin, LocationEditViewMixi
             # Render new file card HTML to append to file grid
             from django.template.loader import render_to_string
             file_card_html = render_to_string(
-                'attribute/components/v2/file_card.html',
+                'attribute/components/file_card.html',
                 {'attribute': location_attribute}
             )
             
@@ -249,7 +249,7 @@ class LocationAttributeUploadView( View, LocationViewMixin, LocationEditViewMixi
             # Render error message to status area
             from django.template.loader import render_to_string
             error_html = render_to_string(
-                'attribute/components/v2/status_message.html',
+                'attribute/components/status_message.html',
                 {
                     'error_message': 'File upload failed. Please check the file and try again.',
                     'form_errors': location_attribute_upload_form.errors

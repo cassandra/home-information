@@ -134,7 +134,7 @@ class EntityEditResponseRenderer:
         file_upload_url: str = reverse('entity_attribute_upload',
                                        kwargs={'entity_id': entity.id})
         upload_form: str = render_to_string(
-            'attribute/components/v2/upload_form.html',
+            'attribute/components/upload_form.html',
             {'file_upload_url': file_upload_url},
             request=request,  # Needed for context processors (CSRF, DIVID, etc.)
         )

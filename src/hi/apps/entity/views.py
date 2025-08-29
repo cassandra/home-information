@@ -34,6 +34,106 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class EntityStatusView( HiModalView, EntityViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'entity/modals/entity_status.html'
+
+    def get( self,
+             request : HttpRequest,
+             *args   : Any,
+             **kwargs: Any          ) -> HttpResponse:
+        entity: Entity = self.get_entity( request, *args, **kwargs )
+
+        entity_status_data = StatusDisplayManager().get_entity_status_data( entity = entity )
+        if not entity_status_data.entity_state_status_data_list:
+            return EntityEditView().get( request, *args, **kwargs )
+        
+        context: Dict[str, Any] = entity_status_data.to_template_context()
+        return self.modal_response( request, context )
+
+
+class EntityEditView(HiModalView, EntityViewMixin):
+    """Entity attribute editing modal with redesigned interface.
+    
+    This view uses a dual response pattern:
+    - get(): Returns full modal using standard modal_response()
+    - post(): Returns antinode fragments for async DOM updates
+    
+    Business logic is delegated to specialized handler classes following
+    the "keep views simple" design philosophy.
+    """
+    
+    def get_template_name(self) -> str:
+        return 'entity/modals/entity_edit.html'
+    
+    def get( self,
+             request : HttpRequest,
+             *args   : Any,
+             **kwargs: Any          ) -> HttpResponse:
+        entity: Entity = self.get_entity(request, *args, **kwargs)
+        
+        # Delegate form creation and context building to handler
+        form_handler: EntityEditFormHandler = EntityEditFormHandler()
+        context: Dict[str, Any] = form_handler.create_initial_context(entity)
+        
+        return self.modal_response(request, context)
+    
+    def post( self,
+              request : HttpRequest,
+              *args   : Any,
+              **kwargs: Any          ) -> HttpResponse:
+        entity: Entity = self.get_entity(request, *args, **kwargs)
+        
+        # Delegate form handling to specialized handlers
+        form_handler: EntityEditFormHandler = EntityEditFormHandler()
+        renderer: EntityEditResponseRenderer = EntityEditResponseRenderer()
+        
+        # Create forms with POST data
+        entity_form, file_attributes, regular_attributes_formset = form_handler.create_entity_forms(
+            entity, request.POST
+        )
+        
+        if form_handler.validate_forms(entity_form, regular_attributes_formset):
+            # Save forms and process files
+            form_handler.save_forms(entity_form, regular_attributes_formset, request, entity)
+            
+            # Return success response
+            return renderer.render_success_response(request, entity)
+        else:
+            # Return error response
+            return renderer.render_error_response(request, entity, entity_form, regular_attributes_formset)
+    
+    def get_success_url_name(self) -> str:
+        return 'entity_edit'
+
+    
+class EntityEditModeView( HiSideView, EntityViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'entity/edit/panes/entity_edit_mode_panel.html'
+
+    def should_push_url( self ) -> bool:
+        return True
+    
+    def get_template_context( self,
+                              request : HttpRequest,
+                              *args   : Any,
+                              **kwargs: Any          ) -> Dict[str, Any]:
+        entity: Entity = self.get_entity( request, *args, **kwargs )
+
+        current_location_view: Optional['LocationView'] = None
+        if request.view_parameters.view_type.is_location_view:
+            current_location_view = LocationManager().get_default_location_view( request = request )
+
+        entity_edit_mode_data = EntityManager().get_entity_edit_mode_data(
+            entity = entity,
+            location_view = current_location_view,
+            is_editing = request.view_parameters.is_editing,
+        )
+        return entity_edit_mode_data.to_template_context()
+
+    
 class EntityPropertiesEditView( View, EntityViewMixin ):
     """Handle entity properties editing (name, type) only - used by sidebar.
     
@@ -83,74 +183,6 @@ class EntityPropertiesEditView( View, EntityViewMixin ):
         )
     
         
-class EntityAttributeUploadView( View, EntityViewMixin ):
-
-    def post( self,
-              request : HttpRequest,
-              *args   : Any,
-              **kwargs: Any          ) -> HttpResponse:
-        entity: Entity = self.get_entity( request, *args, **kwargs )
-        entity_attribute: EntityAttribute = EntityAttribute( entity = entity )
-        entity_attribute_upload_form: forms.EntityAttributeUploadForm = forms.EntityAttributeUploadForm(
-            request.POST,
-            request.FILES,
-            instance = entity_attribute,
-        )
-
-        if entity_attribute_upload_form.is_valid():
-            with transaction.atomic():
-                entity_attribute_upload_form.save()   
-            
-            # Render new file card HTML to append to file grid
-            file_card_html: str = render_to_string(
-                'attribute/components/v2/file_card.html',
-                {'attribute': entity_attribute, 'entity': entity},
-                request=request
-            )
-            
-            return antinode.response(
-                append_map={
-                    DIVID['ATTR_V2_FILE_GRID']: file_card_html
-                },
-                scroll_to=DIVID['ATTR_V2_FILE_GRID']
-            )
-        else:
-            # Render error message to status area
-            error_html: str = render_to_string(
-                'attribute/components/v2/status_message.html',
-                {
-                    'error_message': 'File upload failed. Please check the file and try again.',
-                    'form_errors': entity_attribute_upload_form.errors
-                }
-            )
-            
-            return antinode.response(
-                insert_map={
-                    DIVID['ATTR_V2_STATUS_MSG']: error_html
-                },
-                status=400
-            )
-
-    
-class EntityStatusView( HiModalView, EntityViewMixin ):
-
-    def get_template_name( self ) -> str:
-        return 'entity/modals/entity_status.html'
-
-    def get( self,
-             request : HttpRequest,
-             *args   : Any,
-             **kwargs: Any          ) -> HttpResponse:
-        entity: Entity = self.get_entity( request, *args, **kwargs )
-
-        entity_status_data = StatusDisplayManager().get_entity_status_data( entity = entity )
-        if not entity_status_data.entity_state_status_data_list:
-            return EntityEditView().get( request, *args, **kwargs )
-        
-        context: Dict[str, Any] = entity_status_data.to_template_context()
-        return self.modal_response( request, context )
-
-    
 class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin ):
 
     ENTITY_STATE_HISTORY_ITEM_MAX = 5
@@ -180,32 +212,55 @@ class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin )
         return self.modal_response( request, context )
 
 
-class EntityEditModeView( HiSideView, EntityViewMixin ):
+class EntityAttributeUploadView( View, EntityViewMixin ):
 
-    def get_template_name( self ) -> str:
-        return 'entity/edit/panes/entity_edit_mode_panel.html'
-
-    def should_push_url( self ) -> bool:
-        return True
-    
-    def get_template_context( self,
-                              request : HttpRequest,
-                              *args   : Any,
-                              **kwargs: Any          ) -> Dict[str, Any]:
+    def post( self,
+              request : HttpRequest,
+              *args   : Any,
+              **kwargs: Any          ) -> HttpResponse:
         entity: Entity = self.get_entity( request, *args, **kwargs )
-
-        current_location_view: Optional['LocationView'] = None
-        if request.view_parameters.view_type.is_location_view:
-            current_location_view = LocationManager().get_default_location_view( request = request )
-
-        entity_edit_mode_data = EntityManager().get_entity_edit_mode_data(
-            entity = entity,
-            location_view = current_location_view,
-            is_editing = request.view_parameters.is_editing,
+        entity_attribute: EntityAttribute = EntityAttribute( entity = entity )
+        entity_attribute_upload_form: forms.EntityAttributeUploadForm = forms.EntityAttributeUploadForm(
+            request.POST,
+            request.FILES,
+            instance = entity_attribute,
         )
-        return entity_edit_mode_data.to_template_context()
 
+        if entity_attribute_upload_form.is_valid():
+            with transaction.atomic():
+                entity_attribute_upload_form.save()   
+            
+            # Render new file card HTML to append to file grid
+            file_card_html: str = render_to_string(
+                'attribute/components/file_card.html',
+                {'attribute': entity_attribute, 'entity': entity},
+                request=request
+            )
+            
+            return antinode.response(
+                append_map={
+                    DIVID['ATTR_V2_FILE_GRID']: file_card_html
+                },
+                scroll_to=DIVID['ATTR_V2_FILE_GRID']
+            )
+        else:
+            # Render error message to status area
+            error_html: str = render_to_string(
+                'attribute/components/status_message.html',
+                {
+                    'error_message': 'File upload failed. Please check the file and try again.',
+                    'form_errors': entity_attribute_upload_form.errors
+                }
+            )
+            
+            return antinode.response(
+                insert_map={
+                    DIVID['ATTR_V2_STATUS_MSG']: error_html
+                },
+                status=400
+            )
 
+    
 class EntityAttributeHistoryView(BaseAttributeHistoryView):
     """View for displaying EntityAttribute history in a modal."""
     
@@ -232,7 +287,7 @@ class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
     ATTRIBUTE_HISTORY_VIEW_LIMIT = 50
     
     def get_template_name(self):
-        return 'attribute/components/v2/attribute_history_inline.html'
+        return 'attribute/components/attribute_history_inline.html'
     
     def get_attribute_model_class(self):
         return EntityAttribute
@@ -318,58 +373,3 @@ class EntityAttributeRestoreInlineView(BaseAttributeRestoreView):
             request = request,
             entity = entity,
         )
-
-
-class EntityEditView(HiModalView, EntityViewMixin):
-    """Entity attribute editing modal with redesigned interface.
-    
-    This view uses a dual response pattern:
-    - get(): Returns full modal using standard modal_response()
-    - post(): Returns antinode fragments for async DOM updates
-    
-    Business logic is delegated to specialized handler classes following
-    the "keep views simple" design philosophy.
-    """
-    
-    def get_template_name(self) -> str:
-        return 'entity/modals/entity_edit.html'
-    
-    def get( self,
-             request : HttpRequest,
-             *args   : Any,
-             **kwargs: Any          ) -> HttpResponse:
-        entity: Entity = self.get_entity(request, *args, **kwargs)
-        
-        # Delegate form creation and context building to handler
-        form_handler: EntityEditFormHandler = EntityEditFormHandler()
-        context: Dict[str, Any] = form_handler.create_initial_context(entity)
-        
-        return self.modal_response(request, context)
-    
-    def post( self,
-              request : HttpRequest,
-              *args   : Any,
-              **kwargs: Any          ) -> HttpResponse:
-        entity: Entity = self.get_entity(request, *args, **kwargs)
-        
-        # Delegate form handling to specialized handlers
-        form_handler: EntityEditFormHandler = EntityEditFormHandler()
-        renderer: EntityEditResponseRenderer = EntityEditResponseRenderer()
-        
-        # Create forms with POST data
-        entity_form, file_attributes, regular_attributes_formset = form_handler.create_entity_forms(
-            entity, request.POST
-        )
-        
-        if form_handler.validate_forms(entity_form, regular_attributes_formset):
-            # Save forms and process files
-            form_handler.save_forms(entity_form, regular_attributes_formset, request, entity)
-            
-            # Return success response
-            return renderer.render_success_response(request, entity)
-        else:
-            # Return error response
-            return renderer.render_error_response(request, entity, entity_form, regular_attributes_formset)
-    
-    def get_success_url_name(self) -> str:
-        return 'entity_edit'

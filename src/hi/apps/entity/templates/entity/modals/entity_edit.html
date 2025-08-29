@@ -23,7 +23,7 @@
 <!-- File Upload Form Container (separate from main form to avoid nesting) -->
 <div id="{{ DIVID.ATTR_V2_UPLOAD_FORM_CONTAINER }}">
   {% url 'entity_attribute_upload' entity_id=entity.id as file_upload_url %}  
-  {% include "attribute/components/v2/upload_form.html" with file_upload_url=file_upload_url %}
+  {% include "attribute/components/upload_form.html" with file_upload_url=file_upload_url %}
 </div>
 
 <!-- Success/Error Messages -->

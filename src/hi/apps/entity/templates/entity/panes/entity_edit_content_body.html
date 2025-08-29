@@ -105,14 +105,14 @@ Includes: entity info (when provided), action bar, and scrollable content
   
   <!-- Files Section -->
   {% block files_section %}
-    {% include "attribute/components/v2/file_grid.html" with file_attributes=file_attributes %}
+    {% include "attribute/components/file_grid.html" with file_attributes=file_attributes %}
   {% endblock %}
   
   <!-- Properties Section -->
   {% block properties_section %}
     {% if regular_attributes_formset %}
       {{ regular_attributes_formset.management_form }}
-      {% include "attribute/components/v2/property_list.html" with regular_attributes_formset=regular_attributes_formset %}
+      {% include "attribute/components/regular_attribute_list.html" with regular_attributes_formset=regular_attributes_formset %}
     {% endif %}
   {% endblock %}
   

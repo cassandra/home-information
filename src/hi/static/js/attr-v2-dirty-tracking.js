@@ -30,29 +30,22 @@
         
         // Initialize the dirty tracking system
         init: function() {
-            console.log('V2 Dirty Tracking: Initializing');
-            
             if (this.state.isInitialized) {
-                console.log('V2 Dirty Tracking: Already initialized, skipping');
                 return;
             }
             
             const form = document.querySelector(this.config.formSelector);
             if (!form) {
-                console.log('V2 Dirty Tracking: No V2 form found, skipping initialization');
                 return;
             }
             
             this.captureOriginalValues();
             this.bindEvents();
             this.state.isInitialized = true;
-            
-            console.log('V2 Dirty Tracking: Initialization complete');
         },
         
         // Capture original values for all form fields
         captureOriginalValues: function() {
-            console.log('V2 Dirty Tracking: Capturing original values');
             const form = document.querySelector(this.config.formSelector);
             if (!form) return;
             
@@ -75,8 +68,6 @@
             fileTitleFields.forEach(field => {
                 this.captureFieldValue(field);
             });
-            
-            console.log('V2 Dirty Tracking: Captured', this.state.originalValues.size, 'original values');
         },
         
         // Capture individual field value
@@ -115,7 +106,6 @@
         
         // Bind event listeners
         bindEvents: function() {
-            console.log('V2 Dirty Tracking: Binding events');
             const form = document.querySelector(this.config.formSelector);
             if (!form) return;
             
@@ -318,8 +308,6 @@
         
         // Handle form submission
         handleFormSubmission: function(e) {
-            console.log('V2 Dirty Tracking: Form submission detected');
-            
             // Handle textarea sync for truncated/hidden field pattern
             this.syncDisplayToHiddenFields();
         },
@@ -336,14 +324,12 @@
                 
                 if (hiddenField && !displayField.readOnly && !displayField.classList.contains('truncated')) {
                     hiddenField.value = displayField.value;
-                    console.log('V2 Dirty Tracking: Synced display to hidden field');
                 }
             });
         },
         
         // Handle successful form submission
         handleFormSuccess: function(e) {
-            console.log('V2 Dirty Tracking: Form success detected, clearing dirty state');
             this.clearAllDirtyState();
         },
         
@@ -383,7 +369,6 @@
         
         // Reinitialize for dynamic content (called by modal system)
         reinitialize: function() {
-            console.log('V2 Dirty Tracking: Reinitializing for dynamic content');
             this.clearAllDirtyState();
             this.state.originalValues.clear();
             this.state.isInitialized = false;
