@@ -369,13 +369,12 @@ a.clickable-card:active {
 
 /* Entity Info Section (Minimal - Name/Type) */
 .attr-v2-entity-info {
-    padding: 1rem 0 0.5rem 0;
+    padding: 0.5rem 0 0.25rem 0;
 }
 
 /* Action Bar */
 .attr-v2-action-bar {
-    padding: 0.75rem 0;
-    border-top: 1px solid var(--line-color);
+    padding: 0.25rem 0;
     background-color: var(--white);
 }
 
@@ -2599,7 +2598,7 @@ form[data-dirty] {
     border: 1px solid var(--line-color);
     border-radius: 0.375rem;
     padding: 0.5rem 0.75rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
 .attr-v2-basic-info .row {
