@@ -159,8 +159,8 @@ class TestEntityManager(BaseTestCase):
             self.skipTest("Required models not available for testing")
         return
 
-    def test_get_entity_details_data_returns_complete_data_structure(self):
-        """Test get_entity_details_data business logic - complex method integrating multiple systems."""
+    def test_get_entity_edit_mode_data_returns_complete_data_structure(self):
+        """Test get_entity_edit_mode_data business logic - complex method integrating multiple systems."""
         manager = EntityManager()
         
         # Create test entity
@@ -172,28 +172,28 @@ class TestEntityManager(BaseTestCase):
         )
         
         # Test with no location_view (basic case)
-        details_data = manager.get_entity_details_data(
+        edit_mode_data = manager.get_entity_edit_mode_data(
             entity=entity,
             location_view=None,
             is_editing=False
         )
         
         # Verify complete data structure is returned
-        self.assertIsNotNone(details_data)
-        self.assertIsNotNone(details_data.entity_edit_data)
-        self.assertEqual(details_data.entity_edit_data.entity, entity)
-        self.assertIsNotNone(details_data.entity_pairing_list)
+        self.assertIsNotNone(edit_mode_data)
+        self.assertEqual(edit_mode_data.entity, entity)
+        self.assertIsNotNone(edit_mode_data.entity_form)
+        self.assertIsNotNone(edit_mode_data.entity_pairing_list)
         
         # Without location_view, position form should be None
-        self.assertIsNone(details_data.entity_position_form)
+        self.assertIsNone(edit_mode_data.entity_position_form)
         
         # Test non-editing mode doesn't create position form
-        details_data_non_edit = manager.get_entity_details_data(
+        edit_mode_data_non_edit = manager.get_entity_edit_mode_data(
             entity=entity,
             location_view=None,
             is_editing=True  # Even with editing=True, no location_view means no form
         )
-        self.assertIsNone(details_data_non_edit.entity_position_form)
+        self.assertIsNone(edit_mode_data_non_edit.entity_position_form)
         return
 
     def test_create_entity_view_group_list_business_logic(self):

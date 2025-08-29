@@ -55,7 +55,7 @@ class EntityPairing:
     
 
 @dataclass
-class EntityDetailsData:
+class EntityEditModeData:
     """
     All the data needed about an entity to display in side bar during edit
     mode.

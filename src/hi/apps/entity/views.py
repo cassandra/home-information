@@ -230,12 +230,12 @@ class EntityDetailsView( HiSideView, EntityViewMixin ):
         if request.view_parameters.view_type.is_location_view:
             current_location_view = LocationManager().get_default_location_view( request = request )
 
-        entity_details_data = EntityManager().get_entity_details_data(
+        entity_edit_mode_data = EntityManager().get_entity_edit_mode_data(
             entity = entity,
             location_view = current_location_view,
             is_editing = request.view_parameters.is_editing,
         )
-        return entity_details_data.to_template_context()
+        return entity_edit_mode_data.to_template_context()
 
 
 class EntityAttributeHistoryView(BaseAttributeHistoryView):

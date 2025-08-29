@@ -26,7 +26,7 @@ from .models import (
     EntityView,
 )
 from .transient_models import (
-    EntityDetailsData,
+    EntityEditModeData,
     EntityViewGroup,
     EntityViewItem,
 )
@@ -59,10 +59,10 @@ class EntityManager(Singleton):
             continue
         return
 
-    def get_entity_details_data( self,
-                                 entity         : Entity,
-                                 location_view  : LocationView,
-                                 is_editing     : bool )        -> EntityDetailsData:
+    def get_entity_edit_mode_data( self,
+                                   entity         : Entity,
+                                   location_view  : LocationView,
+                                   is_editing     : bool )        -> EntityEditModeData:
 
         entity_position_form = None
         if is_editing and location_view:
@@ -78,7 +78,7 @@ class EntityManager(Singleton):
 
         entity_pairing_list = EntityPairingManager().get_entity_pairing_list( entity = entity )
         
-        return EntityDetailsData(
+        return EntityEditModeData(
             entity = entity,
             entity_position_form = entity_position_form,
             entity_pairing_list = entity_pairing_list,
