@@ -32,7 +32,7 @@ class AttributeForm( forms.ModelForm ):
     secret = forms.BooleanField(
         required = False,
         label = 'Mark as Secret',
-        widget = forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        widget = forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
     )
 
     @property

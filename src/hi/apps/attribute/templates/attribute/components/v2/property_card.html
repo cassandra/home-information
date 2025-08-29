@@ -28,7 +28,6 @@ Individual property attribute card with value editing and actions
       {% else %}
         {% icon "plus" size="sm" css_class="hi-icon-left" %}Add New Property
       {% endif %}
-      <span class="attr-v2-dirty-indicator" style="display: none;"></span>
     </h6>
     
     <div class="attr-v2-property-actions">
@@ -187,8 +186,8 @@ Individual property attribute card with value editing and actions
     {% if not attribute_form.instance.pk %}
       <div class="attr-v2-secret-checkbox">
         <div class="custom-control custom-checkbox">
-          {{ attribute_form.is_secret }}
-          <label class="custom-control-label" for="{{ attribute_form.is_secret.id_for_label }}">
+          {{ attribute_form.secret }}
+          <label class="custom-control-label" for="{{ attribute_form.secret.id_for_label }}">
             Mark as Secret
           </label>
         </div>

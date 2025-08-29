@@ -66,6 +66,7 @@ Includes: entity info (when provided), action bar, and scrollable content
                 value="update">
           {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
         </button>
+        <span id="attr-v2-dirty-message" class="attr-v2-dirty-message ml-3"></span>
         <span id="attr-v2-status-msg" class="attr-v2-status-message ml-2">
           {% if success_message %}
             <span class="text-success">{{ success_message }}</span>

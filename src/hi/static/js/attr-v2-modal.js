@@ -56,6 +56,11 @@
         initializeAutosizeTextareas(); // Now only applies to non-truncated
         setupFormSubmissionHandler();
         
+        // Initialize dirty tracking if available
+        if (window.attrV2 && window.attrV2.DirtyTracking) {
+            window.attrV2.DirtyTracking.reinitialize();
+        }
+        
         console.log('=== V2 Modal initialization complete ===');
     }
     

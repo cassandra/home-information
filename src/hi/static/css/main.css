@@ -703,22 +703,6 @@ a.clickable-card:active {
 
 /* Comprehensive Visual State System */
 
-/* Dirty State (modified but not saved) */
-.attr-v2-dirty-indicator {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    background-color: var(--warning-color);
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-}
-
-.attr-v2-file-card.dirty,
-.attr-v2-property-card.dirty {
-    border-left: 3px solid var(--warning-color);
-    background-color: rgba(255, 193, 7, 0.1);
-    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.1);
-}
 
 /* Error State (validation failures) */
 .attr-v2-file-card.error,
@@ -1107,11 +1091,6 @@ a.clickable-card:active {
         transition: none;
     }
     
-    /* Keep essential animations but make them instant */
-    .attr-v2-dirty-indicator {
-        animation: none;
-        opacity: 1;
-    }
     
     .attr-v2-loading-spinner {
         animation: spin 0.1s linear infinite;
@@ -1658,24 +1637,6 @@ g[hover] {
     box-shadow: 0 0 0 0.2rem rgba(236, 165, 0, 0.25);
 }
 
-/* Dirty form styling - submit button enhancement */
-form[data-dirty] .btn-primary[type="submit"] {
-    background-color: var(--warning-color) !important;
-    border-color: var(--warning-color) !important;
-    color: var(--on-warning-color) !important;
-}
-
-form[data-dirty] button[type="submit"]:hover {
-    background-color: #d39e00 !important; /* Darker shade of warning color */
-    border-color: #d39e00 !important;
-}
-
-/* Dirty form styling - subtle form background */
-form[data-dirty] {
-    background-color: rgba(236, 165, 0, 0.2) !important;
-    border-radius: 4px;
-    transition: background-color 0.2s ease-in-out;
-}
 
 /* History icon styling - matches plus-icon pattern */
 .history-icon {
@@ -2522,6 +2483,102 @@ form[data-dirty] {
     padding-top: 0;
     margin-bottom: 0;
     font-size: 0.875rem;
+}
+
+/* ====================================================================== */
+/* V2 DIRTY STATE TRACKING STYLING                                       */
+/* ====================================================================== */
+
+/* Dirty message area in sticky panel */
+.attr-v2-dirty-message {
+    font-size: 0.875rem;
+    color: transparent;
+    transition: color 0.2s ease-in-out;
+    min-width: 120px;
+}
+
+.attr-v2-dirty-message.active {
+    color: var(--warning-color);
+    font-weight: 500;
+}
+
+/* Field-level dirty indicators */
+.attr-v2-field-dirty {
+    border-left: 3px solid var(--warning-color) !important;
+    background-color: rgba(255, 193, 7, 0.05) !important;
+    transition: border-color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+.attr-v2-field-dirty:focus {
+    border-left-color: var(--primary-color) !important;
+    box-shadow: -3px 0 0 0 var(--primary-color), 0 0 0 0.2rem rgba(23, 112, 114, 0.25);
+}
+
+/* Dirty indicator dot */
+.attr-v2-dirty-indicator {
+    display: inline-block;
+    margin-left: 0.5rem;
+    color: var(--warning-color);
+    font-size: 0.75rem;
+    font-weight: bold;
+    opacity: 0.8;
+    animation: pulse 2s infinite;
+}
+
+/* Property name dirty styling - fallback approach for broader browser support */
+.attr-v2-property-name.has-dirty-indicator {
+    font-weight: 600;
+    color: var(--warning-color);
+}
+
+/* Entity name dirty styling - fallback approach */
+.form-group.has-dirty-field small {
+    color: var(--warning-color);
+    font-weight: 500;
+}
+
+/* Modern browser support with :has() */
+@supports selector(:has(*)) {
+    .attr-v2-property-name:has(.attr-v2-dirty-indicator) {
+        font-weight: 600;
+        color: var(--warning-color);
+    }
+    
+    .form-group:has(.attr-v2-field-dirty) small {
+        color: var(--warning-color);
+        font-weight: 500;
+    }
+    
+    .attr-v2-new-property .attr-v2-property-name:has(.attr-v2-dirty-indicator) {
+        color: var(--primary-color);
+    }
+}
+
+/* New property form dirty state - different styling */
+.attr-v2-new-property .attr-v2-field-dirty {
+    border-left-color: var(--primary-color) !important;
+    background-color: rgba(23, 112, 114, 0.08) !important;
+}
+
+.attr-v2-new-property .attr-v2-dirty-indicator {
+    color: var(--primary-color);
+}
+
+.attr-v2-new-property .attr-v2-property-name.has-dirty-indicator {
+    color: var(--primary-color);
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .attr-v2-dirty-indicator {
+        animation: none;
+        opacity: 1;
+    }
+    
+    .attr-v2-field-dirty,
+    .attr-v2-dirty-message {
+        transition: none;
+    }
 }
 
 /* ====================================================================== */
