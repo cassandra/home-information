@@ -27,7 +27,6 @@ from .models import (
 )
 from .transient_models import (
     EntityDetailsData,
-    EntityEditData,
     EntityViewGroup,
     EntityViewItem,
 )
@@ -79,9 +78,8 @@ class EntityManager(Singleton):
 
         entity_pairing_list = EntityPairingManager().get_entity_pairing_list( entity = entity )
         
-        entity_edit_data = EntityEditData( entity = entity )
         return EntityDetailsData(
-            entity_edit_data = entity_edit_data,
+            entity = entity,
             entity_position_form = entity_position_form,
             entity_pairing_list = entity_pairing_list,
         )
