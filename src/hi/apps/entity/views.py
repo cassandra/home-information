@@ -409,11 +409,6 @@ class EntityEditView(HiModalView, EntityViewMixin):
             request.POST,
         )
         
-        # Log form data for debugging
-        logger.info(f'POST data received: {dict(request.POST)}')
-        logger.info(f'Entity form is_valid: {entity_form.is_valid()}')
-        logger.info(f'Formset is_valid: {property_attributes_formset.is_valid()}')
-        
         if entity_form.is_valid() and property_attributes_formset.is_valid():
             with transaction.atomic():
                 entity_form.save()
@@ -422,7 +417,6 @@ class EntityEditView(HiModalView, EntityViewMixin):
                 # Process file deletions
                 file_deletes = request.POST.getlist('delete_file_attribute')
                 if file_deletes:
-                    logger.info(f'Processing file deletions: {file_deletes}')
                     for attr_id in file_deletes:
                         if attr_id:  # Skip empty values
                             try:
@@ -433,14 +427,9 @@ class EntityEditView(HiModalView, EntityViewMixin):
                                 )
                                 # Verify permission to delete
                                 if file_attribute.attribute_type.can_delete:
-                                    logger.info(f'Deleting file attribute {attr_id}: {file_attribute.name}')
                                     file_attribute.delete()
-                                else:
-                                    logger.warning(
-                                        f'File attribute {attr_id} cannot be deleted - permission denied')
                             except EntityAttribute.DoesNotExist:
-                                logger.warning(
-                                    f'File attribute {attr_id} not found or not owned by entity {entity.id}')
+                                pass
                 
                 # Process file title updates
                 self._process_file_title_updates(request, entity)
@@ -451,14 +440,6 @@ class EntityEditView(HiModalView, EntityViewMixin):
                 entity = entity,
             )
         else:
-            # Debug logging for validation errors
-            if not entity_form.is_valid():
-                logger.warning(f'Entity form validation failed: {entity_form.errors}')
-                logger.warning(f'Entity form cleaned_data: {getattr(entity_form, "cleaned_data", "N/A")}')
-            if not property_attributes_formset.is_valid():
-                logger.warning(f'Formset validation failed: {property_attributes_formset.errors}')
-                logger.warning(f'Formset non-form errors: {property_attributes_formset.non_form_errors()}')
-            
             # Return validation errors using antinode helpers
             return self._render_error_response(
                 request = request,
@@ -556,16 +537,6 @@ class EntityEditView(HiModalView, EntityViewMixin):
             dict: Template context with all required variables
         """
         non_field_errors = self._collect_form_errors(entity_form, property_attributes_formset)
-        
-        # Debug logging
-        logger.info(f'Rendering fragments for entity {entity.id}')
-        logger.info(f'File attributes count: {file_attributes.count()}')
-        if property_attributes_formset:
-            logger.info(f'Property formset total forms: {property_attributes_formset.total_form_count()}')
-            logger.info(f'Property formset is bound: {property_attributes_formset.is_bound}')
-            logger.info(f'Property formset is valid: {property_attributes_formset.is_valid()}')
-        if non_field_errors:
-            logger.info(f'Non-field errors collected: {non_field_errors}')
         
         return {
             'entity': entity,
@@ -682,8 +653,6 @@ class EntityEditView(HiModalView, EntityViewMixin):
                 
                 # Check if title actually changed
                 if attribute.value != new_title:
-                    logger.info(f'Updating file attribute {attribute_id} title'
-                                f' from "{attribute.value}" to "{new_title}"')
                     attribute.value = new_title
                     attribute.save()  # This will create a history record
                     
