@@ -52,7 +52,6 @@
         
         // Basic initialization - more functionality will be added in later phases
         setupBasicEventListeners();
-        setupDirtyTracking();
         initializeExpandableTextareas(); // Must come BEFORE autosize
         initializeAutosizeTextareas(); // Now only applies to non-truncated
         setupFormSubmissionHandler();
@@ -214,11 +213,6 @@
     // Removed dedicated add property form functions - using Django formset approach only
     
     
-    window.handleFileUpload = function(input) {
-        console.log('File upload - to be implemented');
-    };
-    
-    
     window.markFileForDeletion = function(attributeId) {
         const $fileCard = $(`.attr-v2-file-card[data-attribute-id="${attributeId}"]`);
         if ($fileCard.length === 0) return;
@@ -358,40 +352,6 @@
         }
     };
 
-    // Form submission now handled by antinode.js - no custom handling needed
-    
-    
-    function showFileUploadProgress(fileName) {
-        const statusMsg = document.getElementById('attr-v2-status-msg');
-        if (statusMsg) {
-            statusMsg.textContent = `Uploading ${fileName}...`;
-            statusMsg.className = 'attr-v2-status-message ml-2 text-info';
-        }
-    }
-    
-    function hideFileUploadProgress() {
-        const statusMsg = document.getElementById('attr-v2-status-msg');
-        if (statusMsg) {
-            statusMsg.textContent = '';
-            statusMsg.className = 'attr-v2-status-message ml-2';
-        }
-    }
-    
-    function showFileUploadError(errorMessage) {
-        const statusMsg = document.getElementById('attr-v2-status-msg');
-        if (statusMsg) {
-            statusMsg.textContent = errorMessage;
-            statusMsg.className = 'attr-v2-status-message ml-2 text-danger';
-            
-            setTimeout(() => {
-                statusMsg.textContent = '';
-                statusMsg.className = 'attr-v2-status-message ml-2';
-            }, 5000);
-        }
-    }
-    
-    
-    
     window.attrV2.toggleSecretField = function(button) {
         const $button = $(button);
         const $input = $button.closest('.attr-v2-secret-input-wrapper').find('.attr-v2-secret-input');
@@ -420,14 +380,6 @@
     
     
     
-    
-    // Simple dirty tracking setup - leverages existing Hi.AttributeChanges system
-    function setupDirtyTracking() {
-        // The existing attribute-changes.js system handles dirty tracking automatically
-        // for any elements within .hi-attribute-list containers using document delegation
-        // No additional setup needed since V2 property list now uses hi-attribute-list class
-        console.log('Dirty tracking delegated to existing AttributeChanges system');
-    }
     
     // Initialize autosize for all textareas in the modal
     function initializeAutosizeTextareas() {
@@ -765,34 +717,5 @@
         return $textarea;
     }
     
-    // Overlay modal functions for history views
-    function showOverlayModal(title, content) {
-        const overlay = document.getElementById('attr-v2-overlay-modal');
-        const titleElement = document.getElementById('attr-v2-overlay-title');
-        const bodyElement = document.getElementById('attr-v2-overlay-body');
-        
-        if (overlay && titleElement && bodyElement) {
-            titleElement.textContent = title;
-            bodyElement.innerHTML = content;
-            overlay.style.display = 'flex';
-        }
-    }
     
-    function updateOverlayModal(title, content) {
-        const titleElement = document.getElementById('attr-v2-overlay-title');
-        const bodyElement = document.getElementById('attr-v2-overlay-body');
-        
-        if (titleElement && bodyElement) {
-            titleElement.textContent = title;
-            bodyElement.innerHTML = content;
-        }
-    }
-    
-    window.closeOverlayModal = function() {
-        const overlay = document.getElementById('attr-v2-overlay-modal');
-        if (overlay) {
-            overlay.style.display = 'none';
-        }
-    };
-
 })();

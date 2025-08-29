@@ -349,6 +349,17 @@ a.clickable-card:active {
     max-width: 800px;
 }
 
+.modal-title-image img {
+    max-height: 48px;
+}
+.modal-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
+
 /* Attribute V2 System Styles - Fresh Start */
 
 /* Modal Structure */
@@ -536,7 +547,7 @@ a.clickable-card:active {
 
 .attr-v2-file-filename {
     font-size: 0.75rem;
-    color: var(--secondary-text-color);
+    color: var(--muted-color);
     word-break: break-word;
 }
 

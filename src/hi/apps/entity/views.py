@@ -1,6 +1,7 @@
 import logging
 
 from django.db import transaction
+from django.urls import reverse
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
@@ -25,7 +26,12 @@ logger = logging.getLogger(__name__)
 class BaseEntityEditMixin:
     """Shared logic for entity editing operations"""
     
-    def _handle_entity_form_save(self, request, entity, entity_form, entity_attribute_formset=None, original_entity_type_str=None):
+    def _handle_entity_form_save( self,
+                                  request,
+                                  entity,
+                                  entity_form,
+                                  entity_attribute_formset=None,
+                                  original_entity_type_str=None):
         """Handle saving entity form and optional formset with transition logic"""
         if original_entity_type_str is None:
             original_entity_type_str = entity.entity_type_str
@@ -405,7 +411,10 @@ class EntityAttributeRestoreInlineView(BaseAttributeRestoreView):
         
         # Use EntityEditV2View's _render_success_response logic
         entity_edit_view = EntityEditV2View()
-        return entity_edit_view._render_success_response(entity)
+        return entity_edit_view._render_success_response(
+            request = request,
+            entity = entity,
+        )
 
 
 class EntityEditV2View(HiModalView, EntityViewMixin):
@@ -502,7 +511,10 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
                                 logger.warning(f'File attribute {attr_id} not found or not owned by entity {entity.id}')
             
             # Return success response using antinode helpers
-            return self._render_success_response(entity)
+            return self._render_success_response(
+                request = request,
+                entity = entity,
+            )
         else:
             # Debug logging for validation errors
             if not entity_form.is_valid():
@@ -513,17 +525,23 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
                 logger.warning(f'Formset non-form errors: {property_attributes_formset.non_form_errors()}')
             
             # Return validation errors using antinode helpers
-            return self._render_error_response(entity, entity_form, property_attributes_formset)
+            return self._render_error_response(
+                request = request,
+                entity = entity,
+                entity_form = entity_form,
+                property_attributes_formset = property_attributes_formset,
+            )
     
     def get_success_url_name(self) -> str:
         return 'entity_edit_v2'
     
-    def _render_success_response(self, entity):
+    def _render_success_response( self, request, entity ):
         """Render success response using antinode helpers - multiple target replacement"""
         # Re-render both content body and upload form with fresh forms
         content_body, upload_form = self._render_update_fragments(
-            entity, 
-            success_message="Changes saved successfully"
+            request = request,
+            entity = entity, 
+            success_message = "Changes saved successfully"
         )
         
         return antinode.response(
@@ -533,15 +551,20 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
             }
         )
     
-    def _render_error_response(self, entity, entity_form, property_attributes_formset):
+    def _render_error_response( self,
+                                request,
+                                entity,
+                                entity_form,
+                                property_attributes_formset ):
         """Render error response using antinode helpers - multiple target replacement"""
         # Re-render both content body and upload form with form errors
         content_body, upload_form = self._render_update_fragments(
-            entity, 
-            entity_form=entity_form, 
-            property_attributes_formset=property_attributes_formset, 
-            error_message="Please correct the errors below",
-            has_errors=True
+            request = request,
+            entity = entity, 
+            entity_form = entity_form, 
+            property_attributes_formset = property_attributes_formset, 
+            error_message = "Please correct the errors below",
+            has_errors = True,
         )
         
         return antinode.response(
@@ -561,23 +584,37 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
         non_field_errors = []
         
         # Entity form non-field errors
-        if entity_form and hasattr(entity_form, 'non_field_errors') and entity_form.non_field_errors():
-            non_field_errors.extend([f"Entity: {error}" for error in entity_form.non_field_errors()])
+        if ( entity_form
+             and hasattr(entity_form, 'non_field_errors')
+             and entity_form.non_field_errors() ):
+            non_field_errors.extend([f"Entity: {error}"
+                                     for error in entity_form.non_field_errors()])
         
         # Property formset non-field errors
-        if property_attributes_formset and hasattr(property_attributes_formset, 'non_field_errors') and property_attributes_formset.non_field_errors():
-            non_field_errors.extend([f"Properties: {error}" for error in property_attributes_formset.non_field_errors()])
+        if ( property_attributes_formset
+             and hasattr(property_attributes_formset, 'non_field_errors')
+             and property_attributes_formset.non_field_errors() ):
+            non_field_errors.extend( [f"Properties: {error}"
+                                      for error in property_attributes_formset.non_field_errors()])
         
         # Individual property form non-field errors
         if property_attributes_formset:
             for i, form in enumerate(property_attributes_formset.forms):
                 if hasattr(form, 'non_field_errors') and form.non_field_errors():
                     property_name = form.instance.name if form.instance.pk else f"New Property #{i+1}"
-                    non_field_errors.extend([f"{property_name}: {error}" for error in form.non_field_errors()])
+                    non_field_errors.extend([f"{property_name}: {error}"
+                                             for error in form.non_field_errors()])
         
         return non_field_errors
     
-    def _build_template_context(self, entity, entity_form, file_attributes, property_attributes_formset, success_message=None, error_message=None, has_errors=False):
+    def _build_template_context( self,
+                                 entity,
+                                 entity_form,
+                                 file_attributes,
+                                 property_attributes_formset,
+                                 success_message=None,
+                                 error_message=None,
+                                 has_errors=False ):
         """Build context dictionary for template rendering.
         
         Returns:
@@ -606,26 +643,14 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
             'non_field_errors': non_field_errors,
         }
     
-    def _render_content_fragments(self, context, entity):
-        """Render both content body and upload form fragments.
-        
-        Returns:
-            tuple: (content_body_html, upload_form_html)
-        """
-        from django.template.loader import render_to_string
-        
-        # Render both fragments
-        content_body = render_to_string('attribute/components/v2/content_body.html', context)
-        
-        # Upload form needs to be specific to entity
-        upload_form = render_to_string(
-            'attribute/components/v2/upload_form.html',
-            {'entity': entity}
-        )
-        
-        return content_body, upload_form
-    
-    def _render_update_fragments(self, entity, entity_form=None, property_attributes_formset=None, success_message=None, error_message=None, has_errors=False):
+    def _render_update_fragments( self,
+                                  request,
+                                  entity,
+                                  entity_form=None,
+                                  property_attributes_formset=None,
+                                  success_message=None,
+                                  error_message=None,
+                                  has_errors=False):
         """Render both content body and upload form fragments for antinode updates.
         
         This is the main method for generating fragment updates after form submissions.
@@ -659,4 +684,30 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
         )
         
         # Render and return fragments
-        return self._render_content_fragments(context, entity)
+        return self._render_content_fragments(
+            request = request,
+            context = context,
+            entity = entity,
+        )
+    
+    def _render_content_fragments( self, request, context, entity ):
+        """Render both content body and upload form fragments.
+        
+        Returns:
+            tuple: (content_body_html, upload_form_html)
+        """
+        from django.template.loader import render_to_string
+        
+        # Render both fragments
+        content_body = render_to_string('entity/panes/entity_edit_content_body.html', context)
+
+        # Upload form needs to be specific to entity
+        file_upload_url = reverse( 'entity_attribute_upload',
+                                   kwargs={ 'entity_id': entity.id} )
+        upload_form = render_to_string(
+            'attribute/components/v2/upload_form.html',
+            { 'file_upload_url': file_upload_url },
+            request = request,  # Needed for csrf token
+        )
+        
+        return content_body, upload_form

@@ -5,14 +5,14 @@
   <div class="modal-content">
     <div class="modal-title">
       <div class="row {% block header_class %}bg-secondary{% endblock %} m-0 py-2">
-        <div class="col-md-2 col-3 align-self-center text-center">
+        <div class="col-md-2 col-3 align-self-center text-center modal-title-image">
           {% block title_image %}
           <img class="img-fluid"
                src="{% static 'img/hi-icon-196x196.png' %}"
                alt="HI Logo" \>
           {% endblock %}
         </div>
-        <div class="col-md-9 col-8 align-self-center h4 m-0 px-1">
+        <div class="col-md-9 col-8 align-self-center h4 m-0 px-1 modal-title">
           {% block title_text %}
           {% endblock %}
         </div>

@@ -33,6 +33,7 @@ Individual property attribute card with value editing and actions
     
     <div class="attr-v2-property-actions">
       <!-- Reorder Controls (disabled until Issue #80) -->
+      {% if attribute_form.instance.pk %}
       <button type="button" 
               class="btn btn-sm btn-outline-secondary"
               disabled
@@ -47,6 +48,7 @@ Individual property attribute card with value editing and actions
               data-reorder-action="down">
         {% icon "chevron-down" size="sm" %}
       </button>
+      {% endif %}
       
       {% if attribute_form.instance.pk %}
         <a href="{% url 'entity_attribute_history_inline' entity_id=entity.id attribute_id=attribute_form.instance.pk %}"

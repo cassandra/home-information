@@ -64,10 +64,8 @@ Individual file attribute card with preview, actions, and metadata
   
   <!-- File Info -->
   <div class="attr-v2-file-info">
-    <div class="attr-v2-file-name">{{ attribute.name }}</div>
-    {% if attribute.file_value.name %}
-      <div class="attr-v2-file-filename">{{ attribute.file_value.name }}</div>
-    {% endif %}
+    <div class="attr-v2-file-name">{{ attribute.value }}</div>
+    <div class="attr-v2-file-filename">{{ attribute.name }}</div>
     
     <!-- File Actions -->
   <div class="attr-v2-file-actions">
