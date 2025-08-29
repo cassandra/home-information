@@ -2,6 +2,7 @@ import logging
 from unittest.mock import Mock, patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import transaction
 from django.urls import reverse
 
 from hi.apps.control.controller_history_manager import ControllerHistoryManager
@@ -80,14 +81,8 @@ class TestEntityAttributeUploadView(SyncViewTestCase):
             entity_type_str='CAMERA'
         )
 
-    @patch('hi.apps.entity.views.forms.EntityAttributeUploadForm')
-    def test_post_valid_file_upload(self, mock_form_class):
-        """Test successful file upload."""
-        # Mock valid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = True
-        mock_form_class.return_value = mock_form
-
+    def test_post_valid_file_upload(self):
+        """Test successful file upload using real form."""
         # Create test file
         test_file = SimpleUploadedFile(
             "test_image.jpg",
@@ -97,12 +92,12 @@ class TestEntityAttributeUploadView(SyncViewTestCase):
 
         url = reverse('entity_attribute_upload', kwargs={'entity_id': self.entity.id})
         response = self.client.post(url, {
-            'name': 'Profile Image',
-            'file': test_file
+            'file_value': test_file
         })
 
         self.assertSuccessResponse(response)
-        mock_form.save.assert_called_once()
+        # Verify that an EntityAttribute was created
+        self.assertTrue(self.entity.attributes.filter(file_value__isnull=False).exists())
 
     def test_post_invalid_file_upload(self):
         """Test file upload with invalid form data."""
@@ -118,14 +113,11 @@ class TestEntityAttributeUploadView(SyncViewTestCase):
         self.assertIn(response.status_code, [200, 400])  # Accept either valid response
 
     @patch('hi.apps.entity.views.transaction.atomic')
-    @patch('hi.apps.entity.views.forms.EntityAttributeUploadForm')
-    def test_upload_uses_transaction(self, mock_form_class, mock_atomic):
+    def test_upload_uses_transaction(self, mock_atomic):
         """Test that file upload uses database transaction."""
-        # Mock valid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = True
-        mock_form_class.return_value = mock_form
-
+        # Configure the mock to return the real transaction atomic context manager
+        mock_atomic.return_value = transaction.atomic()
+        
         test_file = SimpleUploadedFile(
             "test.txt",
             b"test content",
@@ -134,12 +126,14 @@ class TestEntityAttributeUploadView(SyncViewTestCase):
 
         url = reverse('entity_attribute_upload', kwargs={'entity_id': self.entity.id})
         response = self.client.post(url, {
-            'name': 'Test File',
-            'file': test_file
+            'file_value': test_file
         })
 
         self.assertSuccessResponse(response)
-        mock_atomic.assert_called_once()
+        # Verify that transaction.atomic was called (may be called multiple times due to nested transactions)
+        self.assertGreaterEqual(mock_atomic.call_count, 1)
+        # Verify that an EntityAttribute was created
+        self.assertTrue(self.entity.attributes.filter(file_value__isnull=False).exists())
 
     def test_nonexistent_entity_returns_404(self):
         """Test that uploading to nonexistent entity returns 404."""

@@ -9,7 +9,7 @@ Template fragment for rendering the scrollable content area - used by antinode u
 {% endif %}
 
 <!-- Properties Section -->
-{% if property_attributes_formset %}
-  {% include "attribute/components/v2/property_list.html" with property_attributes_formset=property_attributes_formset %}
+{% if regular_attributes_formset %}
+  {% include "attribute/components/v2/property_list.html" with regular_attributes_formset=regular_attributes_formset %}
 {% endif %}
 {% include "attribute/components/v2/add_property_form.html" %}

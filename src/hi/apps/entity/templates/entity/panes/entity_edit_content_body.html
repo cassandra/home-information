@@ -110,9 +110,9 @@ Includes: entity info (when provided), action bar, and scrollable content
   
   <!-- Properties Section -->
   {% block properties_section %}
-    {% if property_attributes_formset %}
-      {{ property_attributes_formset.management_form }}
-      {% include "attribute/components/v2/property_list.html" with property_attributes_formset=property_attributes_formset %}
+    {% if regular_attributes_formset %}
+      {{ regular_attributes_formset.management_form }}
+      {% include "attribute/components/v2/property_list.html" with regular_attributes_formset=regular_attributes_formset %}
     {% endif %}
   {% endblock %}
   

@@ -5,7 +5,7 @@ This class encapsulates the complex entity type transition logic that was previo
 embedded in EntityPropertiesEditView, following the "keep views simple" design philosophy.
 """
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 
@@ -125,3 +125,4 @@ class EntityTypeTransitionHandler:
         # - icon_to_path: Database structure changed
         # - path_to_icon: Database structure changed
         return True
+    

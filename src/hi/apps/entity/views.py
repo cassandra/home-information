@@ -1,25 +1,28 @@
 import logging
-from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
-from django.template.loader import get_template
-from django.urls import reverse
+from django.shortcuts import render
+from django.template.loader import get_template, render_to_string
 from django.views.generic import View
 
+from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
 import hi.apps.common.antinode as antinode
 from hi.apps.control.controller_history_manager import ControllerHistoryManager
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.apps.sense.sensor_history_manager import SensorHistoryMixin
 
+from hi.views import page_not_found_response
 from hi.hi_async_view import HiModalView, HiSideView
-from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
-from hi.apps.attribute.enums import AttributeValueType
 
 from hi.constants import DIVID
 
+from .entity_edit_form_handler import EntityEditFormHandler
+from .entity_edit_response_renderer import EntityEditResponseRenderer
 from .entity_manager import EntityManager
+from .entity_type_transition_handler import EntityTypeTransitionHandler
 from . import forms
 from .models import Entity, EntityAttribute
 from .transient_models import EntityStateHistoryData
@@ -52,7 +55,6 @@ class EntityPropertiesEditView( View, EntityViewMixin ):
         
         if form_valid:
             # Delegate transition handling to specialized handler
-            from .entity_type_transition_handler import EntityTypeTransitionHandler
             transition_handler = EntityTypeTransitionHandler()
             
             transition_response: Optional[HttpResponse] = transition_handler.handle_entity_form_save(
@@ -100,7 +102,6 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
                 entity_attribute_upload_form.save()   
             
             # Render new file card HTML to append to file grid
-            from django.template.loader import render_to_string
             file_card_html: str = render_to_string(
                 'attribute/components/v2/file_card.html',
                 {'attribute': entity_attribute}
@@ -114,7 +115,6 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
             )
         else:
             # Render error message to status area
-            from django.template.loader import render_to_string
             error_html: str = render_to_string(
                 'attribute/components/v2/status_message.html',
                 {
@@ -227,6 +227,8 @@ class EntityAttributeRestoreView(BaseAttributeRestoreView):
 
 class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
     """View for displaying EntityAttribute history inline within the edit modal."""
+
+    ATTRIBUTE_HISTORY_VIEW_LIMIT = 50
     
     def get_template_name(self):
         return 'attribute/components/v2/attribute_history_inline.html'
@@ -250,7 +252,6 @@ class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
         try:
             attribute: EntityAttribute = EntityAttribute.objects.get(pk=attribute_id, entity_id=entity_id)
         except EntityAttribute.DoesNotExist:
-            from hi.views import page_not_found_response
             return page_not_found_response(request, "Attribute not found.")
         
         # Get history records for this attribute
@@ -258,7 +259,7 @@ class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
         if history_model_class:
             history_records = history_model_class.objects.filter(
                 attribute=attribute
-            ).order_by('-changed_datetime')[:20]  # Limit for inline display
+            ).order_by('-changed_datetime')[:self.ATTRIBUTE_HISTORY_VIEW_LIMIT]  # Limit for inline display
         else:
             history_records = []
         
@@ -271,7 +272,6 @@ class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
         }
         
         # Use Django render shortcut
-        from django.shortcuts import render
         return render(request, self.get_template_name(), context)
 
 
@@ -292,19 +292,16 @@ class EntityAttributeRestoreInlineView(BaseAttributeRestoreView):
         try:
             attribute: EntityAttribute = EntityAttribute.objects.get(pk=attribute_id, entity_id=entity_id)
         except EntityAttribute.DoesNotExist:
-            from hi.views import page_not_found_response
             return page_not_found_response(request, "Attribute not found.")
         
         # Get the history record to restore from
         history_model_class = attribute._get_history_model_class()
         if not history_model_class:
-            from hi.views import page_not_found_response
             return page_not_found_response(request, "No history available for this attribute type.")
         
         try:
             history_record = history_model_class.objects.get(pk=history_id, attribute=attribute)
         except history_model_class.DoesNotExist:
-            from hi.views import page_not_found_response
             return page_not_found_response(request, "History record not found.")
         
         # Restore the value from the history record
@@ -343,7 +340,6 @@ class EntityEditView(HiModalView, EntityViewMixin):
         entity: Entity = self.get_entity(request, *args, **kwargs)
         
         # Delegate form creation and context building to handler
-        from .entity_edit_form_handler import EntityEditFormHandler
         form_handler: EntityEditFormHandler = EntityEditFormHandler()
         context: Dict[str, Any] = form_handler.create_initial_context(entity)
         
@@ -356,26 +352,23 @@ class EntityEditView(HiModalView, EntityViewMixin):
         entity: Entity = self.get_entity(request, *args, **kwargs)
         
         # Delegate form handling to specialized handlers
-        from .entity_edit_form_handler import EntityEditFormHandler
-        from .entity_edit_response_renderer import EntityEditResponseRenderer
-        
         form_handler: EntityEditFormHandler = EntityEditFormHandler()
         renderer: EntityEditResponseRenderer = EntityEditResponseRenderer()
         
         # Create forms with POST data
-        entity_form, file_attributes, property_attributes_formset = form_handler.create_entity_forms(
+        entity_form, file_attributes, regular_attributes_formset = form_handler.create_entity_forms(
             entity, request.POST
         )
         
-        if form_handler.validate_forms(entity_form, property_attributes_formset):
+        if form_handler.validate_forms(entity_form, regular_attributes_formset):
             # Save forms and process files
-            form_handler.save_forms(entity_form, property_attributes_formset, request, entity)
+            form_handler.save_forms(entity_form, regular_attributes_formset, request, entity)
             
             # Return success response
             return renderer.render_success_response(request, entity)
         else:
             # Return error response
-            return renderer.render_error_response(request, entity, entity_form, property_attributes_formset)
+            return renderer.render_error_response(request, entity, entity_form, regular_attributes_formset)
     
     def get_success_url_name(self) -> str:
         return 'entity_edit'
