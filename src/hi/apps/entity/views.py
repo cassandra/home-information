@@ -212,7 +212,8 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
             return antinode.response(
                 append_map={
                     'attr-v2-file-grid': file_card_html
-                }
+                },
+                scroll_to='attr-v2-file-grid'
             )
         else:
             # Render error message to status area
