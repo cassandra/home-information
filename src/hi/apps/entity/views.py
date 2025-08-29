@@ -409,30 +409,51 @@ class EntityAttributeRestoreInlineView(BaseAttributeRestoreView):
 
 
 class EntityEditV2View(HiModalView, EntityViewMixin):
-    """V2 Entity attribute editing modal with redesigned interface."""
+    """V2 Entity attribute editing modal with redesigned interface.
+    
+    This view uses a dual response pattern:
+    - get(): Returns full modal using standard modal_response()
+    - post(): Returns antinode fragments for async DOM updates
+    """
     
     def get_template_name(self) -> str:
         return 'entity/modals/entity_edit_v2.html'
     
-    def get(self, request, *args, **kwargs):
-        entity = self.get_entity(request, *args, **kwargs)
+    def _create_entity_forms(self, entity, form_data=None):
+        """Create entity forms used by both initial rendering and fragment updates.
         
-        # Get entity form
-        from hi.apps.entity.forms import EntityForm
-        entity_form = EntityForm(instance=entity)
+        Args:
+            entity: Entity instance
+            form_data: POST data for bound forms, None for unbound forms
+            
+        Returns:
+            tuple: (entity_form, file_attributes, property_attributes_formset)
+        """
+        from hi.apps.entity.forms import EntityForm, EntityAttributeRegularFormSet
+        from hi.apps.attribute.enums import AttributeValueType
+        
+        # Create entity form
+        entity_form = EntityForm(form_data, instance=entity)
         
         # Get file attributes for display (not a formset, just for template rendering)
-        from hi.apps.attribute.enums import AttributeValueType
         file_attributes = entity.attributes.filter(
             value_type_str=str(AttributeValueType.FILE)
         ).order_by('id')
         
         # Regular attributes formset (automatically excludes FILE attributes)
-        from hi.apps.entity.forms import EntityAttributeRegularFormSet
         property_attributes_formset = EntityAttributeRegularFormSet(
+            form_data,
             instance=entity,
             prefix=f'entity-{entity.id}'
         )
+        
+        return entity_form, file_attributes, property_attributes_formset
+    
+    def get(self, request, *args, **kwargs):
+        entity = self.get_entity(request, *args, **kwargs)
+        
+        # Use shared form creation method
+        entity_form, file_attributes, property_attributes_formset = self._create_entity_forms(entity)
         
         context = {
             'entity': entity,
@@ -446,17 +467,8 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
     def post(self, request, *args, **kwargs):
         entity = self.get_entity(request, *args, **kwargs)
         
-        from hi.apps.entity.forms import EntityForm, EntityAttributeRegularFormSet
-        
-        # Handle form submission
-        entity_form = EntityForm(request.POST, instance=entity)
-        
-        # Regular attributes formset (automatically excludes FILE attributes)
-        property_attributes_formset = EntityAttributeRegularFormSet(
-            request.POST,
-            instance=entity,
-            prefix=f'entity-{entity.id}'
-        )
+        # Use shared form creation method with POST data
+        entity_form, file_attributes, property_attributes_formset = self._create_entity_forms(entity, request.POST)
         
         # Log form data for debugging
         logger.info(f'POST data received: {dict(request.POST)}')
@@ -508,8 +520,11 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
     
     def _render_success_response(self, entity):
         """Render success response using antinode helpers - multiple target replacement"""
-        # Re-render both content body and upload form
-        content_body, upload_form = self._render_fragments(entity, success_message="Changes saved successfully")
+        # Re-render both content body and upload form with fresh forms
+        content_body, upload_form = self._render_update_fragments(
+            entity, 
+            success_message="Changes saved successfully"
+        )
         
         return antinode.response(
             insert_map={
@@ -521,7 +536,7 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
     def _render_error_response(self, entity, entity_form, property_attributes_formset):
         """Render error response using antinode helpers - multiple target replacement"""
         # Re-render both content body and upload form with form errors
-        content_body, upload_form = self._render_fragments(
+        content_body, upload_form = self._render_update_fragments(
             entity, 
             entity_form=entity_form, 
             property_attributes_formset=property_attributes_formset, 
@@ -537,27 +552,12 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
             status=400
         )
     
-    def _render_fragments(self, entity, entity_form=None, property_attributes_formset=None, success_message=None, error_message=None, has_errors=False):
-        """Render both content body and upload form fragments"""
-        from django.template.loader import render_to_string
+    def _collect_form_errors(self, entity_form, property_attributes_formset):
+        """Collect non-field errors from forms for enhanced error messaging.
         
-        # If forms not provided, create fresh ones (for success case)
-        if entity_form is None:
-            from hi.apps.entity.forms import EntityForm
-            entity_form = EntityForm(instance=entity)
-            
-        if property_attributes_formset is None:
-            from hi.apps.entity.forms import EntityAttributeRegularFormSet
-            property_attributes_formset = EntityAttributeRegularFormSet(
-                instance=entity,
-                prefix=f'entity-{entity.id}'
-            )
-        
-        # Get file attributes
-        from hi.apps.attribute.enums import AttributeValueType
-        file_attributes = entity.attributes.filter(value_type_str=str(AttributeValueType.FILE)).order_by('id')
-        
-        # Collect non-field errors for enhanced error messaging
+        Returns:
+            list: Formatted error messages with context prefixes
+        """
         non_field_errors = []
         
         # Entity form non-field errors
@@ -575,6 +575,16 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
                     property_name = form.instance.name if form.instance.pk else f"New Property #{i+1}"
                     non_field_errors.extend([f"{property_name}: {error}" for error in form.non_field_errors()])
         
+        return non_field_errors
+    
+    def _build_template_context(self, entity, entity_form, file_attributes, property_attributes_formset, success_message=None, error_message=None, has_errors=False):
+        """Build context dictionary for template rendering.
+        
+        Returns:
+            dict: Template context with all required variables
+        """
+        non_field_errors = self._collect_form_errors(entity_form, property_attributes_formset)
+        
         # Debug logging
         logger.info(f'Rendering fragments for entity {entity.id}')
         logger.info(f'File attributes count: {file_attributes.count()}')
@@ -585,8 +595,7 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
         if non_field_errors:
             logger.info(f'Non-field errors collected: {non_field_errors}')
         
-        # Context for both fragments
-        context = {
+        return {
             'entity': entity,
             'entity_form': entity_form,
             'file_attributes': file_attributes,
@@ -596,6 +605,14 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
             'has_errors': has_errors,
             'non_field_errors': non_field_errors,
         }
+    
+    def _render_content_fragments(self, context, entity):
+        """Render both content body and upload form fragments.
+        
+        Returns:
+            tuple: (content_body_html, upload_form_html)
+        """
+        from django.template.loader import render_to_string
         
         # Render both fragments
         content_body = render_to_string('attribute/components/v2/content_body.html', context)
@@ -607,3 +624,39 @@ class EntityEditV2View(HiModalView, EntityViewMixin):
         )
         
         return content_body, upload_form
+    
+    def _render_update_fragments(self, entity, entity_form=None, property_attributes_formset=None, success_message=None, error_message=None, has_errors=False):
+        """Render both content body and upload form fragments for antinode updates.
+        
+        This is the main method for generating fragment updates after form submissions.
+        
+        Args:
+            entity: Entity instance
+            entity_form: Optional entity form (creates fresh if None)
+            property_attributes_formset: Optional formset (creates fresh if None)
+            success_message: Success message for display
+            error_message: Error message for display
+            has_errors: Boolean indicating if forms have errors
+            
+        Returns:
+            tuple: (content_body_html, upload_form_html)
+        """
+        # If forms not provided, create fresh ones (for success case)
+        if entity_form is None or property_attributes_formset is None:
+            fresh_entity_form, file_attributes, fresh_property_formset = self._create_entity_forms(entity)
+            if entity_form is None:
+                entity_form = fresh_entity_form
+            if property_attributes_formset is None:
+                property_attributes_formset = fresh_property_formset
+        else:
+            # Forms provided, we still need file_attributes
+            _, file_attributes, _ = self._create_entity_forms(entity)
+        
+        # Build template context
+        context = self._build_template_context(
+            entity, entity_form, file_attributes, property_attributes_formset,
+            success_message, error_message, has_errors
+        )
+        
+        # Render and return fragments
+        return self._render_content_fragments(context, entity)
