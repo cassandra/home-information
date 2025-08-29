@@ -1,6 +1,8 @@
 import logging
+from typing import Any, Dict, Optional, Tuple, TYPE_CHECKING
 
 from django.db import transaction
+from django.http import HttpRequest, HttpResponse
 from django.template.loader import get_template
 from django.urls import reverse
 from django.views.generic import View
@@ -19,88 +21,41 @@ from hi.constants import DIVID
 
 from .entity_manager import EntityManager
 from . import forms
-from .models import EntityAttribute
+from .models import Entity, EntityAttribute
 from .transient_models import EntityStateHistoryData
 from .view_mixins import EntityViewMixin
+
+if TYPE_CHECKING:
+    from hi.apps.location.models import LocationView
 
 logger = logging.getLogger(__name__)
 
 
 class EntityPropertiesEditView( View, EntityViewMixin ):
-    """Handle entity properties editing (name, type) only - used by sidebar"""
+    """Handle entity properties editing (name, type) only - used by sidebar.
     
-    def _handle_entity_form_save( self,
-                                  request,
-                                  entity,
-                                  entity_form,
-                                  entity_attribute_formset=None,
-                                  original_entity_type_str=None):
-        """Handle saving entity form and optional formset with transition logic"""
-        if original_entity_type_str is None:
-            original_entity_type_str = entity.entity_type_str
-        
-        transition_response = None
-        
-        with transaction.atomic():
-            entity_form.save()
-            if entity_attribute_formset:
-                entity_attribute_formset.save()
-            
-            # Handle transitions within same transaction but defer response
-            entity_type_changed = original_entity_type_str != entity.entity_type_str
-            if entity_type_changed:
-                transition_response = self._handle_entity_type_change(request, entity)
-        
-        return transition_response
-    
-    def _handle_entity_type_change(self, request, entity):
-        """Handle EntityType changes with appropriate transition logic"""
-        try:
-            # Always attempt advanced transition handling regardless of mode/view
-            current_location_view = LocationManager().get_default_location_view( request = request )
-            transition_occurred, transition_type = EntityManager().handle_entity_type_transition(
-                entity = entity,
-                location_view = current_location_view,
-            )
-            
-            if self._needs_full_page_refresh(transition_occurred, transition_type):
-                return antinode.refresh_response()
-            
-            # Simple transitions can continue with sidebar-only refresh
-            # (will fall through to normal response method)
-            return None
-            
-        except Exception as e:
-            logger.warning(f'EntityType transition failed: {e}, falling back to page refresh')
-            return antinode.refresh_response()
-    
-    def _needs_full_page_refresh(self, transition_occurred, transition_type):
-        """Determine if EntityType change requires full page refresh"""
-        if not transition_occurred:
-            # Transition failed, use page refresh for safety
-            return True
-            
-        if transition_type == "path_to_path":
-            # Path style changes only, sidebar refresh sufficient
-            return False
-            
-        # All other transitions need full refresh to show visual changes:
-        # - icon_to_icon: New icon type needs to be visible
-        # - icon_to_path: Database structure changed
-        # - path_to_icon: Database structure changed
-        return True
+    Business logic is delegated to EntityTypeTransitionHandler following
+    the "keep views simple" design philosophy.
+    """
 
-    def post( self, request, *args, **kwargs ):
-        entity = self.get_entity( request, *args, **kwargs )
+    def post( self,
+              request : HttpRequest,
+              *args   : Any,
+              **kwargs: Any          ) -> HttpResponse:
+        entity: Entity = self.get_entity( request, *args, **kwargs )
         
         # Store original entity_type_str to detect changes
-        original_entity_type_str = entity.entity_type_str
+        original_entity_type_str: str = entity.entity_type_str
 
-        entity_form = forms.EntityForm( request.POST, instance = entity )
-        form_valid = entity_form.is_valid()
+        entity_form: forms.EntityForm = forms.EntityForm( request.POST, instance = entity )
+        form_valid: bool = entity_form.is_valid()
         
         if form_valid:
-            transition_response = self._handle_entity_form_save(
+            # Delegate transition handling to specialized handler
+            from .entity_type_transition_handler import EntityTypeTransitionHandler
+            transition_handler = EntityTypeTransitionHandler()
+            
+            transition_response: Optional[HttpResponse] = transition_handler.handle_entity_form_save(
                 request, entity, entity_form, None, original_entity_type_str
             )
             
@@ -108,16 +63,16 @@ class EntityPropertiesEditView( View, EntityViewMixin ):
             if transition_response is not None:
                 return transition_response
             
-            status_code = 200
+            status_code: int = 200
         else:
-            status_code = 400
+            status_code: int = 400
 
-        context = {
+        context: Dict[str, Any] = {
             'entity': entity,
             'entity_form': entity_form,
         }
         template = get_template( 'entity/edit/panes/entity_properties_edit.html' )
-        content = template.render( context, request = request )
+        content: str = template.render( context, request = request )
         return antinode.response(
             insert_map = {
                 DIVID['ENTITY_PROPERTIES_PANE']: content,
@@ -128,10 +83,13 @@ class EntityPropertiesEditView( View, EntityViewMixin ):
         
 class EntityAttributeUploadView( View, EntityViewMixin ):
 
-    def post( self, request, *args, **kwargs ):
-        entity = self.get_entity( request, *args, **kwargs )
-        entity_attribute = EntityAttribute( entity = entity )
-        entity_attribute_upload_form = forms.EntityAttributeUploadForm(
+    def post( self,
+              request : HttpRequest,
+              *args   : Any,
+              **kwargs: Any          ) -> HttpResponse:
+        entity: Entity = self.get_entity( request, *args, **kwargs )
+        entity_attribute: EntityAttribute = EntityAttribute( entity = entity )
+        entity_attribute_upload_form: forms.EntityAttributeUploadForm = forms.EntityAttributeUploadForm(
             request.POST,
             request.FILES,
             instance = entity_attribute,
@@ -143,7 +101,7 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
             
             # Render new file card HTML to append to file grid
             from django.template.loader import render_to_string
-            file_card_html = render_to_string(
+            file_card_html: str = render_to_string(
                 'attribute/components/v2/file_card.html',
                 {'attribute': entity_attribute}
             )
@@ -157,7 +115,7 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
         else:
             # Render error message to status area
             from django.template.loader import render_to_string
-            error_html = render_to_string(
+            error_html: str = render_to_string(
                 'attribute/components/v2/status_message.html',
                 {
                     'error_message': 'File upload failed. Please check the file and try again.',
@@ -178,14 +136,17 @@ class EntityStatusView( HiModalView, EntityViewMixin ):
     def get_template_name( self ) -> str:
         return 'entity/modals/entity_status.html'
 
-    def get( self, request, *args, **kwargs ):
-        entity = self.get_entity( request, *args, **kwargs )
+    def get( self,
+             request : HttpRequest,
+             *args   : Any,
+             **kwargs: Any          ) -> HttpResponse:
+        entity: Entity = self.get_entity( request, *args, **kwargs )
 
         entity_status_data = StatusDisplayManager().get_entity_status_data( entity = entity )
         if not entity_status_data.entity_state_status_data_list:
             return EntityEditView().get( request, *args, **kwargs )
         
-        context = entity_status_data.to_template_context()
+        context: Dict[str, Any] = entity_status_data.to_template_context()
         return self.modal_response( request, context )
 
     
@@ -196,8 +157,11 @@ class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin )
     def get_template_name( self ) -> str:
         return 'entity/modals/entity_state_history.html'
 
-    def get( self, request, *args, **kwargs ):
-        entity = self.get_entity( request, *args, **kwargs )
+    def get( self,
+             request : HttpRequest,
+             *args   : Any,
+             **kwargs: Any          ) -> HttpResponse:
+        entity: Entity = self.get_entity( request, *args, **kwargs )
         sensor_history_list_map = self.sensor_history_manager().get_latest_entity_sensor_history(
             entity = entity,
             max_items = self.ENTITY_STATE_HISTORY_ITEM_MAX,
@@ -211,7 +175,7 @@ class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin )
             sensor_history_list_map = sensor_history_list_map,
             controller_history_list_map = controller_history_list_map,
         )
-        context = entity_state_history_data.to_template_context()
+        context: Dict[str, Any] = entity_state_history_data.to_template_context()
         return self.modal_response( request, context )
 
 
@@ -220,13 +184,16 @@ class EntityEditModeView( HiSideView, EntityViewMixin ):
     def get_template_name( self ) -> str:
         return 'entity/edit/panes/entity_edit_mode_panel.html'
 
-    def should_push_url( self ):
+    def should_push_url( self ) -> bool:
         return True
     
-    def get_template_context( self, request, *args, **kwargs ):
-        entity = self.get_entity( request, *args, **kwargs )
+    def get_template_context( self,
+                              request : HttpRequest,
+                              *args   : Any,
+                              **kwargs: Any          ) -> Dict[str, Any]:
+        entity: Entity = self.get_entity( request, *args, **kwargs )
 
-        current_location_view = None
+        current_location_view: Optional['LocationView'] = None
         if request.view_parameters.view_type.is_location_view:
             current_location_view = LocationManager().get_default_location_view( request = request )
 
@@ -273,10 +240,15 @@ class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
     def get_restore_url_name(self):
         return 'entity_attribute_restore_inline'
     
-    def get(self, request, entity_id, attribute_id, *args, **kwargs):
+    def get( self,
+             request      : HttpRequest,
+             entity_id    : int,
+             attribute_id : int,
+             *args        : Any,
+             **kwargs     : Any          ) -> HttpResponse:
         # Validate that the attribute belongs to this entity for security
         try:
-            attribute = EntityAttribute.objects.get(pk=attribute_id, entity_id=entity_id)
+            attribute: EntityAttribute = EntityAttribute.objects.get(pk=attribute_id, entity_id=entity_id)
         except EntityAttribute.DoesNotExist:
             from hi.views import page_not_found_response
             return page_not_found_response(request, "Attribute not found.")
@@ -290,7 +262,7 @@ class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
         else:
             history_records = []
         
-        context = {
+        context: Dict[str, Any] = {
             'entity': attribute.entity,
             'attribute': attribute,
             'history_records': history_records,
@@ -309,10 +281,16 @@ class EntityAttributeRestoreInlineView(BaseAttributeRestoreView):
     def get_attribute_model_class(self):
         return EntityAttribute
     
-    def get(self, request, entity_id, attribute_id, history_id, *args, **kwargs):
+    def get( self,
+             request      : HttpRequest,
+             entity_id    : int,
+             attribute_id : int,
+             history_id   : int,
+             *args        : Any,
+             **kwargs     : Any          ) -> HttpResponse:
         # Validate that the attribute belongs to this entity for security  
         try:
-            attribute = EntityAttribute.objects.get(pk=attribute_id, entity_id=entity_id)
+            attribute: EntityAttribute = EntityAttribute.objects.get(pk=attribute_id, entity_id=entity_id)
         except EntityAttribute.DoesNotExist:
             from hi.views import page_not_found_response
             return page_not_found_response(request, "Attribute not found.")
@@ -334,10 +312,10 @@ class EntityAttributeRestoreInlineView(BaseAttributeRestoreView):
         attribute.save()  # This will create a new history record
         
         # Delegate to EntityEditView logic to return updated modal content
-        entity = attribute.entity
+        entity: Entity = attribute.entity
         
         # Use EntityEditView's _render_success_response logic
-        entity_edit_view = EntityEditView()
+        entity_edit_view: EntityEditView = EntityEditView()
         return entity_edit_view._render_success_response(
             request = request,
             entity = entity,
@@ -345,316 +323,59 @@ class EntityAttributeRestoreInlineView(BaseAttributeRestoreView):
 
 
 class EntityEditView(HiModalView, EntityViewMixin):
-    """V2 Entity attribute editing modal with redesigned interface.
+    """Entity attribute editing modal with redesigned interface.
     
     This view uses a dual response pattern:
     - get(): Returns full modal using standard modal_response()
     - post(): Returns antinode fragments for async DOM updates
+    
+    Business logic is delegated to specialized handler classes following
+    the "keep views simple" design philosophy.
     """
     
     def get_template_name(self) -> str:
         return 'entity/modals/entity_edit.html'
     
-    def _create_entity_forms(self, entity, form_data=None):
-        """Create entity forms used by both initial rendering and fragment updates.
+    def get( self,
+             request : HttpRequest,
+             *args   : Any,
+             **kwargs: Any          ) -> HttpResponse:
+        entity: Entity = self.get_entity(request, *args, **kwargs)
         
-        Args:
-            entity: Entity instance
-            form_data: POST data for bound forms, None for unbound forms
-            
-        Returns:
-            tuple: (entity_form, file_attributes, property_attributes_formset)
-        """
-        from hi.apps.entity.forms import EntityForm, EntityAttributeRegularFormSet
-        from hi.apps.attribute.enums import AttributeValueType
-        
-        # Create entity form
-        entity_form = EntityForm(form_data, instance=entity)
-        
-        # Get file attributes for display (not a formset, just for template rendering)
-        file_attributes = entity.attributes.filter(
-            value_type_str=str(AttributeValueType.FILE)
-        ).order_by('id')
-        
-        # Regular attributes formset (automatically excludes FILE attributes)
-        property_attributes_formset = EntityAttributeRegularFormSet(
-            form_data,
-            instance=entity,
-            prefix=f'entity-{entity.id}'
-        )
-        
-        return entity_form, file_attributes, property_attributes_formset
-    
-    def get(self, request, *args, **kwargs):
-        entity = self.get_entity(request, *args, **kwargs)
-        
-        # Use shared form creation method
-        entity_form, file_attributes, property_attributes_formset = self._create_entity_forms(entity)
-        
-        context = {
-            'entity': entity,
-            'entity_form': entity_form,
-            'file_attributes': file_attributes,
-            'property_attributes_formset': property_attributes_formset,
-        }
+        # Delegate form creation and context building to handler
+        from .entity_edit_form_handler import EntityEditFormHandler
+        form_handler: EntityEditFormHandler = EntityEditFormHandler()
+        context: Dict[str, Any] = form_handler.create_initial_context(entity)
         
         return self.modal_response(request, context)
     
-    def post(self, request, *args, **kwargs):
-        entity = self.get_entity(request, *args, **kwargs)
+    def post( self,
+              request : HttpRequest,
+              *args   : Any,
+              **kwargs: Any          ) -> HttpResponse:
+        entity: Entity = self.get_entity(request, *args, **kwargs)
         
-        # Use shared form creation method with POST data
-        entity_form, file_attributes, property_attributes_formset = self._create_entity_forms(
-            entity,
-            request.POST,
+        # Delegate form handling to specialized handlers
+        from .entity_edit_form_handler import EntityEditFormHandler
+        from .entity_edit_response_renderer import EntityEditResponseRenderer
+        
+        form_handler: EntityEditFormHandler = EntityEditFormHandler()
+        renderer: EntityEditResponseRenderer = EntityEditResponseRenderer()
+        
+        # Create forms with POST data
+        entity_form, file_attributes, property_attributes_formset = form_handler.create_entity_forms(
+            entity, request.POST
         )
         
-        if entity_form.is_valid() and property_attributes_formset.is_valid():
-            with transaction.atomic():
-                entity_form.save()
-                property_attributes_formset.save()
-                
-                # Process file deletions
-                file_deletes = request.POST.getlist('delete_file_attribute')
-                if file_deletes:
-                    for attr_id in file_deletes:
-                        if attr_id:  # Skip empty values
-                            try:
-                                file_attribute = EntityAttribute.objects.get(
-                                    id=attr_id, 
-                                    entity=entity,
-                                    value_type_str=str(AttributeValueType.FILE)
-                                )
-                                # Verify permission to delete
-                                if file_attribute.attribute_type.can_delete:
-                                    file_attribute.delete()
-                            except EntityAttribute.DoesNotExist:
-                                pass
-                
-                # Process file title updates
-                self._process_file_title_updates(request, entity)
+        if form_handler.validate_forms(entity_form, property_attributes_formset):
+            # Save forms and process files
+            form_handler.save_forms(entity_form, property_attributes_formset, request, entity)
             
-            # Return success response using antinode helpers
-            return self._render_success_response(
-                request = request,
-                entity = entity,
-            )
+            # Return success response
+            return renderer.render_success_response(request, entity)
         else:
-            # Return validation errors using antinode helpers
-            return self._render_error_response(
-                request = request,
-                entity = entity,
-                entity_form = entity_form,
-                property_attributes_formset = property_attributes_formset,
-            )
+            # Return error response
+            return renderer.render_error_response(request, entity, entity_form, property_attributes_formset)
     
     def get_success_url_name(self) -> str:
         return 'entity_edit'
-    
-    def _render_success_response( self, request, entity ):
-        """Render success response using antinode helpers - multiple target replacement"""
-        # Re-render both content body and upload form with fresh forms
-        content_body, upload_form = self._render_update_fragments(
-            request = request,
-            entity = entity, 
-            success_message = "Changes saved successfully"
-        )
-        
-        return antinode.response(
-            insert_map={
-                'attr-v2-content': content_body,
-                'attr-v2-upload-form-container': upload_form
-            }
-        )
-    
-    def _render_error_response( self,
-                                request,
-                                entity,
-                                entity_form,
-                                property_attributes_formset ):
-        """Render error response using antinode helpers - multiple target replacement"""
-        # Re-render both content body and upload form with form errors
-        content_body, upload_form = self._render_update_fragments(
-            request = request,
-            entity = entity, 
-            entity_form = entity_form, 
-            property_attributes_formset = property_attributes_formset, 
-            error_message = "Please correct the errors below",
-            has_errors = True,
-        )
-        
-        return antinode.response(
-            insert_map={
-                'attr-v2-content': content_body,
-                'attr-v2-upload-form-container': upload_form
-            },
-            status=400
-        )
-    
-    def _collect_form_errors(self, entity_form, property_attributes_formset):
-        """Collect non-field errors from forms for enhanced error messaging.
-        
-        Returns:
-            list: Formatted error messages with context prefixes
-        """
-        non_field_errors = []
-        
-        # Entity form non-field errors
-        if ( entity_form
-             and hasattr(entity_form, 'non_field_errors')
-             and entity_form.non_field_errors() ):
-            non_field_errors.extend([f"Entity: {error}"
-                                     for error in entity_form.non_field_errors()])
-        
-        # Property formset non-field errors
-        if ( property_attributes_formset
-             and hasattr(property_attributes_formset, 'non_field_errors')
-             and property_attributes_formset.non_field_errors() ):
-            non_field_errors.extend( [f"Properties: {error}"
-                                      for error in property_attributes_formset.non_field_errors()])
-        
-        # Individual property form non-field errors
-        if property_attributes_formset:
-            for i, form in enumerate(property_attributes_formset.forms):
-                if hasattr(form, 'non_field_errors') and form.non_field_errors():
-                    property_name = form.instance.name if form.instance.pk else f"New Property #{i+1}"
-                    non_field_errors.extend([f"{property_name}: {error}"
-                                             for error in form.non_field_errors()])
-        
-        return non_field_errors
-    
-    def _build_template_context( self,
-                                 entity,
-                                 entity_form,
-                                 file_attributes,
-                                 property_attributes_formset,
-                                 success_message=None,
-                                 error_message=None,
-                                 has_errors=False ):
-        """Build context dictionary for template rendering.
-        
-        Returns:
-            dict: Template context with all required variables
-        """
-        non_field_errors = self._collect_form_errors(entity_form, property_attributes_formset)
-        
-        return {
-            'entity': entity,
-            'entity_form': entity_form,
-            'file_attributes': file_attributes,
-            'property_attributes_formset': property_attributes_formset,
-            'success_message': success_message,
-            'error_message': error_message,
-            'has_errors': has_errors,
-            'non_field_errors': non_field_errors,
-        }
-    
-    def _render_update_fragments( self,
-                                  request,
-                                  entity,
-                                  entity_form=None,
-                                  property_attributes_formset=None,
-                                  success_message=None,
-                                  error_message=None,
-                                  has_errors=False):
-        """Render both content body and upload form fragments for antinode updates.
-        
-        This is the main method for generating fragment updates after form submissions.
-        
-        Args:
-            entity: Entity instance
-            entity_form: Optional entity form (creates fresh if None)
-            property_attributes_formset: Optional formset (creates fresh if None)
-            success_message: Success message for display
-            error_message: Error message for display
-            has_errors: Boolean indicating if forms have errors
-            
-        Returns:
-            tuple: (content_body_html, upload_form_html)
-        """
-        # If forms not provided, create fresh ones (for success case)
-        if entity_form is None or property_attributes_formset is None:
-            fresh_entity_form, file_attributes, fresh_property_formset = self._create_entity_forms(entity)
-            if entity_form is None:
-                entity_form = fresh_entity_form
-            if property_attributes_formset is None:
-                property_attributes_formset = fresh_property_formset
-        else:
-            # Forms provided, we still need file_attributes
-            _, file_attributes, _ = self._create_entity_forms(entity)
-        
-        # Build template context
-        context = self._build_template_context(
-            entity, entity_form, file_attributes, property_attributes_formset,
-            success_message, error_message, has_errors
-        )
-        
-        # Render and return fragments
-        return self._render_content_fragments(
-            request = request,
-            context = context,
-            entity = entity,
-        )
-    
-    def _render_content_fragments( self, request, context, entity ):
-        """Render both content body and upload form fragments.
-        
-        Returns:
-            tuple: (content_body_html, upload_form_html)
-        """
-        from django.template.loader import render_to_string
-        
-        # Render both fragments
-        content_body = render_to_string('entity/panes/entity_edit_content_body.html', context)
-
-        # Upload form needs to be specific to entity
-        file_upload_url = reverse( 'entity_attribute_upload',
-                                   kwargs={ 'entity_id': entity.id} )
-        upload_form = render_to_string(
-            'attribute/components/v2/upload_form.html',
-            { 'file_upload_url': file_upload_url },
-            request = request,  # Needed for csrf token
-        )
-        
-        return content_body, upload_form
-    
-    def _process_file_title_updates(self, request, entity):
-        """Process file_title_* fields from POST data to update file attribute values"""
-        import re
-        
-        # Pattern to match file_title_{entity_id}_{attribute_id}
-        file_title_pattern = re.compile(r'^file_title_(\d+)_(\d+)$')
-        
-        for field_name, new_title in request.POST.items():
-            match = file_title_pattern.match(field_name)
-            if not match:
-                continue
-                
-            entity_id_str, attribute_id_str = match.groups()
-            
-            # Validate entity_id matches current entity
-            if int(entity_id_str) != entity.id:
-                logger.warning(f'File title field {field_name} has mismatched entity ID')
-                continue
-            
-            try:
-                attribute_id = int(attribute_id_str)
-                attribute = EntityAttribute.objects.get(
-                    pk=attribute_id,
-                    entity=entity,
-                    value_type_str=str(AttributeValueType.FILE)
-                )
-                
-                # Clean and validate the new title
-                new_title = new_title.strip()
-                if not new_title:
-                    logger.warning(f'Empty title provided for file attribute {attribute_id}')
-                    continue
-                
-                # Check if title actually changed
-                if attribute.value != new_title:
-                    attribute.value = new_title
-                    attribute.save()  # This will create a history record
-                    
-            except (ValueError, EntityAttribute.DoesNotExist) as e:
-                logger.warning(f'Invalid file title field {field_name}: {e}')
