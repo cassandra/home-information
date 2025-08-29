@@ -2506,6 +2506,24 @@ form[data-dirty] {
     }
 }
 
+/* Secret checkbox positioning and alignment */
+.attr-v2-secret-checkbox {
+    margin-top: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.attr-v2-secret-checkbox .custom-control {
+    display: flex;
+    align-items: center;
+}
+
+.attr-v2-secret-checkbox .custom-control-label {
+    line-height: 1;
+    padding-top: 0;
+    margin-bottom: 0;
+    font-size: 0.875rem;
+}
+
 /* ====================================================================== */
 /* ADD PROPERTY FORM STYLING                                             */
 /* ====================================================================== */

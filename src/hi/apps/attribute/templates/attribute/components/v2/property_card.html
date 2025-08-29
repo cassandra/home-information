@@ -97,21 +97,6 @@ Individual property attribute card with value editing and actions
           </div>
         {% endif %}
       </div>
-      
-      <!-- Secret checkbox for new properties -->
-      {% if attribute_form.secret %}
-        <div class="form-check mb-2">
-          {{ attribute_form.secret }}
-          <label class="form-check-label" for="{{ attribute_form.secret.id_for_label }}">
-            {{ attribute_form.secret.label }}
-          </label>
-          {% if attribute_form.secret.errors %}
-            <div class="invalid-feedback d-block">
-              {{ attribute_form.secret.errors }}
-            </div>
-          {% endif %}
-        </div>
-      {% endif %}
     {% endif %}
     
     {% if attribute_form.instance.pk and attribute_form.instance.value_type.is_boolean %}
@@ -195,6 +180,18 @@ Individual property attribute card with value editing and actions
           {% endwith %}
           {% endwith %}
         {% endif %}
+      </div>
+    {% endif %}
+    
+    <!-- Secret checkbox for new properties -->
+    {% if not attribute_form.instance.pk %}
+      <div class="attr-v2-secret-checkbox">
+        <div class="custom-control custom-checkbox">
+          {{ attribute_form.is_secret }}
+          <label class="custom-control-label" for="{{ attribute_form.is_secret.id_for_label }}">
+            Mark as Secret
+          </label>
+        </div>
       </div>
     {% endif %}
   </div>
