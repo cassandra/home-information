@@ -6,6 +6,7 @@ from django.urls import reverse
 
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection
+from hi.apps.entity.edit.views import ManagePairingsView
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.entity_pairing_manager import EntityPairingManager
 from hi.apps.entity.models import Entity, EntityPosition
@@ -475,7 +476,7 @@ class TestManagePairingsView(DualModeViewTestCase):
         mock_group_list = ['group1', 'group2']
         mock_create_groups.return_value = mock_group_list
 
-        url = reverse('entity_manage_pairings', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': self.entity.id})
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
@@ -484,7 +485,7 @@ class TestManagePairingsView(DualModeViewTestCase):
         
         self.assertEqual(response.context['entity'], self.entity)
         self.assertEqual(response.context['entity_view_group_list'], mock_group_list)
-        self.assertEqual(response.context['principal_entity_id_name_prefix'], 'entity-pair-id-')
+        self.assertEqual(response.context['principal_entity_id_name_prefix'], ManagePairingsView.ENTITY_PAIR_ID_NAME_PREFIX)
         
         # Should call managers with correct data
         mock_get_pairings.assert_called_once_with(entity=self.entity)
@@ -503,7 +504,7 @@ class TestManagePairingsView(DualModeViewTestCase):
         mock_get_candidates.return_value = []
         mock_create_groups.return_value = []
 
-        url = reverse('entity_manage_pairings', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': self.entity.id})
         response = self.async_get(url)
 
         self.assertSuccessResponse(response)
@@ -519,10 +520,10 @@ class TestManagePairingsView(DualModeViewTestCase):
         """Test POST request to update entity pairings successfully."""
         mock_refresh_response.return_value = 'refresh_response'
 
-        url = reverse('entity_manage_pairings', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': self.entity.id})
         _ = self.client.post(url, {
-            f'entity-pair-id-{self.paired_entity1.id}': 'on',
-            f'entity-pair-id-{self.candidate_entity.id}': 'on',
+            f'{ManagePairingsView.ENTITY_PAIR_ID_NAME_PREFIX}{self.paired_entity1.id}': 'on',
+            f'{ManagePairingsView.ENTITY_PAIR_ID_NAME_PREFIX}{self.candidate_entity.id}': 'on',
             'other-field': 'ignored'
         })
 
@@ -539,9 +540,9 @@ class TestManagePairingsView(DualModeViewTestCase):
         # Mock pairing manager raising error
         mock_adjust_pairings.side_effect = EntityPairingManager.EntityPairingError("Pairing error")
 
-        url = reverse('entity_manage_pairings', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': self.entity.id})
         response = self.client.post(url, {
-            f'entity-pair-id-{self.paired_entity1.id}': 'on'
+            f'{ManagePairingsView.ENTITY_PAIR_ID_NAME_PREFIX}{self.paired_entity1.id}': 'on'
         })
 
         self.assertEqual(response.status_code, 400)
@@ -552,7 +553,7 @@ class TestManagePairingsView(DualModeViewTestCase):
         """Test POST request with no paired entities selected."""
         mock_refresh_response.return_value = 'refresh_response'
 
-        url = reverse('entity_manage_pairings', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': self.entity.id})
         _ = self.client.post(url, {
             'other-field': 'value'
         })
@@ -569,10 +570,10 @@ class TestManagePairingsView(DualModeViewTestCase):
         """Test POST request field parsing for entity IDs."""
         mock_refresh_response.return_value = 'refresh_response'
 
-        url = reverse('entity_manage_pairings', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': self.entity.id})
         _ = self.client.post(url, {
-            f'entity-pair-id-{self.paired_entity1.id}': 'on',
-            f'entity-pair-id-{self.paired_entity2.id}': 'on',
+            f'{ManagePairingsView.ENTITY_PAIR_ID_NAME_PREFIX}{self.paired_entity1.id}': 'on',
+            f'{ManagePairingsView.ENTITY_PAIR_ID_NAME_PREFIX}{self.paired_entity2.id}': 'on',
             'entity-pair-id-invalid': 'on',  # Should be ignored (no number)
             'wrong-prefix-123': 'on',  # Should be ignored (wrong prefix)
             'no-numbers-here': 'on'  # Should be ignored (no match)
@@ -586,7 +587,7 @@ class TestManagePairingsView(DualModeViewTestCase):
 
     def test_nonexistent_entity_returns_404(self):
         """Test that accessing nonexistent entity returns 404."""
-        url = reverse('entity_manage_pairings', kwargs={'entity_id': 99999})
+        url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': 99999})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 404)
