@@ -191,8 +191,9 @@
         const $fileCard = $(`${Hi.ATTR_V2_FILE_CARD_SELECTOR}[data-attribute-id="${attributeId}"]`);
         if ($fileCard.length === 0) return;
         
-        const fileName = $fileCard.find(Hi.ATTR_V2_FILE_NAME_SELECTOR).text().trim();
-        
+        // The display "name" for a file is its attribute.value, *not* attribute.name
+        const fileValue = $fileCard.find(Hi.ATTR_V2_FILE_TITLE_INPUT_SELECTOR).val().trim();
+
         // Find and mark the server-rendered DELETE field for deletion
         const $deleteField = $fileCard.find('input[name="delete_file_attribute"]');
         if ($deleteField.length > 0) {
@@ -213,7 +214,7 @@
         // Show status message
         const $statusMsg = $(Hi.ATTR_V2_STATUS_MSG_SELECTOR);
         if ($statusMsg.length > 0) {
-            $statusMsg.text(`"${fileName}" will be deleted when you save`)
+            $statusMsg.text(`"${fileValue}" will be deleted when you save`)
                     .attr('class', 'attr-v2-status-message ml-2 text-warning');
             
             setTimeout(() => {
@@ -225,9 +226,10 @@
     window.undoFileDeletion = function(attributeId) {
         const $fileCard = $(`${Hi.ATTR_V2_FILE_CARD_SELECTOR}[data-attribute-id="${attributeId}"]`);
         if ($fileCard.length === 0) return;
-        
-        const fileName = $fileCard.find(Hi.ATTR_V2_FILE_NAME_SELECTOR).text().trim();
-        
+
+        // The display "name" for a file is its attribute.value, *not* attribute.name
+        const fileValue = $fileCard.find(Hi.ATTR_V2_FILE_TITLE_INPUT_SELECTOR).val().trim();
+
         // Unmark the DELETE field
         const $deleteField = $fileCard.find('input[name="delete_file_attribute"]');
         if ($deleteField.length > 0) {
@@ -244,7 +246,7 @@
         // Show status message
         const $statusMsg = $(Hi.ATTR_V2_STATUS_MSG_SELECTOR);
         if ($statusMsg.length > 0) {
-            $statusMsg.text(`Deletion of "${fileName}" cancelled`)
+            $statusMsg.text(`Deletion of "${fileValue}" cancelled`)
                     .attr('class', 'attr-v2-status-message ml-2 text-success');
             
             setTimeout(() => {
