@@ -25,6 +25,28 @@
 
 ## Coding Style
 
+### No "magic" strings
+
+We do not use "magic" or hard-coded strings when needing multiple references. Any string that need to be used in two or more places is a risk of them being mismatched. This includes, but is not limited to:
+
+- All references to urls *must* use the Django url name and reverse() to construct.
+- Use enum values or constants/class variables to act as coordination point and provide some amount of compiler help in identifying mismatches. Most needed strings will already have a LabeledEnum type defined, but we should add new ones as needed. See "Enums" in [Back End Guidelines](../backend/backend-guidelines.md).
+- All DOM ids and class strings that are shared between client and server must adhere to our `DIVID` pattern. See "Client-Server Namespace Sharing" in [Front End Guidelines](../frontend/frontend-guidelines.md).
+
+### Type Hints
+
+We add type hints to dataclass fields, method parameters and method return values.
+We do not add type hints to locally declared method variables.
+
+
+### Method parameter formatting
+
+zzz
+
+zzz wrapping bool()
+
+
+
 ### Flake8 Configurations
 
 The project uses two different flake8 configurations:
@@ -46,6 +68,8 @@ ignore = E129,D203,E201,E202,E203,E221,E231,E251,W293,W291,W391,W503
 **Before submitting any PR**, you must run: `flake8 --config=src/.flake8-ci src/` and ensure it passes with no violations.
 
 ### Generated Code Standards
+
+### Linting
 
 All generated code (including AI-generated code) must comply with `.flake8-ci` configuration:
 

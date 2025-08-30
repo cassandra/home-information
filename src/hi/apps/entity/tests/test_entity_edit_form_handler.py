@@ -87,7 +87,7 @@ class TestEntityEditFormHandlerFormCreation(BaseTestCase):
         entity_form, file_attributes, regular_attributes_formset = self.handler.create_entity_forms(self.entity)
         
         # Verify prefix includes entity ID
-        expected_prefix = f'entity-{self.entity.id}'
+        expected_prefix = EntityEditFormHandler.get_formset_prefix(self.entity)
         self.assertEqual(regular_attributes_formset.prefix, expected_prefix)
 
 
@@ -135,8 +135,9 @@ class TestEntityEditFormHandlerValidation(BaseTestCase):
         
         # Create valid entity data but invalid formset data
         entity_data = EntityAttributeSyntheticData.create_form_data_for_entity_edit(self.entity)
-        formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes([attr])
-        formset_data[f'entity-{self.entity.id}-0-name'] = ''  # Invalid: empty name
+        formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes([attr], self.entity)
+        prefix = EntityEditFormHandler.get_formset_prefix(self.entity)
+        formset_data[f'{prefix}-0-name'] = ''  # Invalid: empty name
         
         form_data = {**entity_data, **formset_data}
         
@@ -561,7 +562,7 @@ class TestEntityEditFormHandlerErrorCollection(BaseTestCase):
         attr = EntityAttributeSyntheticData.create_test_text_attribute(entity=self.entity)
         
         entity_data = EntityAttributeSyntheticData.create_form_data_for_entity_edit(self.entity)
-        formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes([attr])
+        formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes([attr], self.entity)
         
         form_data = {**entity_data, **formset_data}
         
@@ -589,7 +590,7 @@ class TestEntityEditFormHandlerErrorCollection(BaseTestCase):
         
         # Create valid data since we're testing non-field error formatting, not field validation
         entity_data = {'name': 'Valid Entity', 'entity_type_str': str(EntityType.LIGHT)}
-        formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes([attr])
+        formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes([attr], self.entity)
         
         form_data = {**entity_data, **formset_data}
         

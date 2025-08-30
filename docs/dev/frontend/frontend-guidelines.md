@@ -71,21 +71,16 @@ return {
         }
 ```
 
-## The "Hi Grid" Template Structure
+## Client-Server Namespace Sharing
 
-### Important DIV IDs
+- We do not use magic strings as they need to be referenced in multiple places.
+- We gathered strings that need to be shared between client and server in `src/hi/constants.py:DIVID`:
+- This `DIVID` dict are injected into the template context automatically. 
+- On the Javascript side, we gather all these same ids in a single place at the beginning of the main.css.
+- All other Javascript modules use the Hi.<NAME> namespacing to refer to these.
+- All DOM ids and classes that are shared between client and server must adhere to our `DIVID` pattern
 
-We gathered sides that need to be shared between client and server in `src/hi/constants.py:DIV_IDS`:
-
-- `#hi-main-content` - Main display area, excluding header buttons, footer buttons and side panel
-- `#hi-side-content` - Side panel content area
-- `#hi-top-buttons` - Top button toolbar area
-- `#hi-bottom-buttons` - Bottom button toolbar area
-- `#hi-config-integration-tab` - Integrations use this for configuration-related views
-
-These `DIV_IDS` are injected into the template context automatically. On the Javascript side, we gather all these same ids in a single place at the beginning of the main.css and expose them to all other Javascript modules with the Hi.<NAME> namespacing.  In this way, there is at most two places these ids are used as strings, and both client and server can referenced more safely.
-
-We do not use magic strings as they need to be referenced in multiple places.
+In this way, there is at most two places these ids are used as strings, and both client and server can referenced more safely.
 
 ## JavaScript Standards
 

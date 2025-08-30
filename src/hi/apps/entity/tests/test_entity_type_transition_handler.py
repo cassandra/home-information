@@ -8,6 +8,7 @@ import logging
 from unittest.mock import Mock, patch
 from django.http import HttpRequest, HttpResponse
 
+from hi.apps.entity.entity_edit_form_handler import EntityEditFormHandler
 from hi.apps.entity.entity_type_transition_handler import EntityTypeTransitionHandler
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.forms import EntityForm, EntityAttributeRegularFormSet
@@ -117,14 +118,15 @@ class TestEntityTypeTransitionHandlerFormSaving(BaseTestCase):
         entity_data = EntityAttributeSyntheticData.create_form_data_for_entity_edit(
             self.entity, name='Updated Name'
         )
-        formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes([attr])
-        formset_data[f'entity-{self.entity.id}-0-value'] = 'Updated Value'
+        formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes([attr], self.entity)
+        prefix = EntityEditFormHandler.get_formset_prefix(self.entity)
+        formset_data[f'{prefix}-0-value'] = 'Updated Value'
         
         form_data = {**entity_data, **formset_data}
         
         entity_form = EntityForm(entity_data, instance=self.entity)
         formset = EntityAttributeRegularFormSet(
-            form_data, instance=self.entity, prefix=f'entity-{self.entity.id}'
+            form_data, instance=self.entity, prefix=prefix
         )
         
         self.assertTrue(entity_form.is_valid())
@@ -385,14 +387,15 @@ class TestEntityTypeTransitionHandlerIntegration(BaseTestCase):
         entity_data = EntityAttributeSyntheticData.create_form_data_for_entity_edit(
             entity, entity_type_str=str(EntityType.WALL_SWITCH), name='Updated Light'
         )
-        formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes([attr])
-        formset_data[f'entity-{entity.id}-0-value'] = '75'
+        formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes([attr], entity)
+        prefix = EntityEditFormHandler.get_formset_prefix(entity)
+        formset_data[f'{prefix}-0-value'] = '75'
         
         form_data = {**entity_data, **formset_data}
         
         entity_form = EntityForm(entity_data, instance=entity)
         formset = EntityAttributeRegularFormSet(
-            form_data, instance=entity, prefix=f'entity-{entity.id}'
+            form_data, instance=entity, prefix=prefix
         )
         
         self.assertTrue(entity_form.is_valid())

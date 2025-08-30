@@ -90,7 +90,7 @@ class TestEntityEditView(DualModeViewTestCase):
         # Add formset data for existing attributes
         attributes = list(self.entity.attributes.all())
         formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes(
-            attributes, prefix=EntityEditFormHandler.get_formset_prefix(self.entity)
+            attributes, self.entity
         )
         form_data.update(formset_data)
         
@@ -115,7 +115,7 @@ class TestEntityEditView(DualModeViewTestCase):
         # Update attribute values in formset
         attributes = list(self.entity.attributes.all())
         formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes(
-            attributes, prefix=EntityEditFormHandler.get_formset_prefix(self.entity)
+            attributes, self.entity
         )
         
         # Modify attribute values
@@ -211,7 +211,7 @@ class TestEntityEditView(DualModeViewTestCase):
         
         attributes = list(self.entity.attributes.all())
         formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes(
-            attributes, prefix=EntityEditFormHandler.get_formset_prefix(self.entity)
+            attributes, self.entity
         )
         form_data.update(formset_data)
         
@@ -297,7 +297,7 @@ class TestEntityEditView(DualModeViewTestCase):
         
         attributes = list(complex_entity.attributes.exclude(value_type_str=str(AttributeValueType.FILE)))
         formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes(
-            attributes, prefix=EntityEditFormHandler.get_formset_prefix(self.entity)
+            attributes, self.entity
         )
         form_data.update(formset_data)
         
@@ -328,7 +328,7 @@ class TestEntityEditView(DualModeViewTestCase):
         
         attributes = list(self.entity.attributes.all())
         formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes(
-            attributes, prefix=EntityEditFormHandler.get_formset_prefix(self.entity)
+            attributes, self.entity
         )
         form_data.update(formset_data)
         

@@ -188,8 +188,9 @@ class EntityAttributeSyntheticData:
         return form_data
     
     @staticmethod
-    def create_formset_data_for_attributes(attributes: List[EntityAttribute], prefix: str = 'entity-1') -> Dict[str, Any]:
+    def create_formset_data_for_attributes(attributes: List[EntityAttribute], entity: Entity) -> Dict[str, Any]:
         """Create formset data dictionary for attribute formset submissions."""
+        prefix = EntityEditFormHandler.get_formset_prefix(entity)
         data = {
             f'{prefix}-TOTAL_FORMS': str(len(attributes) + 1),  # +1 for empty form
             f'{prefix}-INITIAL_FORMS': str(len(attributes)),
