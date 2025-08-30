@@ -28,6 +28,22 @@ class EntityEditFormHandler:
     - Collecting and formatting form validation errors
     """
 
+    @staticmethod
+    def get_formset_prefix(entity: Entity) -> str:
+        """
+        Get the formset prefix for regular attributes formset.
+        
+        This is the single source of truth for formset prefix logic.
+        Tests and other code should use this method to ensure consistency.
+        
+        Args:
+            entity: Entity instance
+            
+        Returns:
+            str: The prefix to use for the regular attributes formset
+        """
+        return f'entity-{entity.id}'
+
     def create_entity_forms(
             self,
             entity    : Entity,
@@ -54,7 +70,7 @@ class EntityEditFormHandler:
         regular_attributes_formset: EntityAttributeRegularFormSet = EntityAttributeRegularFormSet(
             form_data,
             instance=entity,
-            prefix=f'entity-{entity.id}'
+            prefix=self.get_formset_prefix(entity)
         )
         
         return entity_form, file_attributes, regular_attributes_formset

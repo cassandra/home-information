@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity, EntityPath, EntityPosition
-from hi.apps.entity.enums import EntityGroupType
+from hi.apps.entity.enums import EntityGroupType, EntityType
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
@@ -83,7 +83,7 @@ class TestEntityManager(BaseTestCase):
         # Create test entity
         entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='LIGHT',
+            entity_type_str=str(EntityType.LIGHT),
             integration_id='test_entity_001',
             integration_name='test_integration',
         )
@@ -122,7 +122,7 @@ class TestEntityManager(BaseTestCase):
             # Create test data
             entity = Entity.objects.create(
                 name='Test Entity',
-                entity_type_str='LIGHT',
+                entity_type_str=str(EntityType.LIGHT),
                 integration_id='test_entity_001',
                 integration_name='test_integration',
             )
@@ -166,7 +166,7 @@ class TestEntityManager(BaseTestCase):
         # Create test entity
         entity = Entity.objects.create(
             name='Test Camera',
-            entity_type_str='CAMERA',
+            entity_type_str=str(EntityType.CAMERA),
             integration_id='test_camera_001',
             integration_name='test_integration',
         )
@@ -203,21 +203,21 @@ class TestEntityManager(BaseTestCase):
         # Create test entities of different types
         light_entity = Entity.objects.create(
             name='Living Room Light',
-            entity_type_str='LIGHT',
+            entity_type_str=str(EntityType.LIGHT),
             integration_id='light_001',
             integration_name='test_integration',
         )
         
         camera_entity = Entity.objects.create(
             name='Front Door Camera',
-            entity_type_str='CAMERA',
+            entity_type_str=str(EntityType.CAMERA),
             integration_id='camera_001',
             integration_name='test_integration',
         )
         
         thermostat_entity = Entity.objects.create(
             name='Main Thermostat',
-            entity_type_str='THERMOSTAT',
+            entity_type_str=str(EntityType.THERMOSTAT),
             integration_id='thermo_001',
             integration_name='test_integration',
         )
@@ -287,7 +287,7 @@ class TestEntityManager(BaseTestCase):
             # Create test data
             entity = Entity.objects.create(
                 name='Wire Entity',
-                entity_type_str='ELECTRIC_WIRE',
+                entity_type_str=str(EntityType.ELECTRIC_WIRE),
                 integration_id='wire_001',
                 integration_name='test_integration',
             )
@@ -339,7 +339,7 @@ class TestEntityManager(BaseTestCase):
             # Create test data
             entity = Entity.objects.create(
                 name='Position Test Entity',
-                entity_type_str='CAMERA',
+                entity_type_str=str(EntityType.CAMERA),
                 integration_id='pos_test_001',
                 integration_name='test_integration',
             )

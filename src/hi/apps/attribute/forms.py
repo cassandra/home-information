@@ -61,7 +61,7 @@ class AttributeForm( forms.ModelForm ):
         cleaned_data = super().clean()
         name = cleaned_data.get('name')
         value = cleaned_data.get('value')
-
+        
         form_is_bound = bool( self.instance.pk )
         if form_is_bound:
             if not self.instance.is_editable and value:

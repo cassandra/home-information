@@ -225,7 +225,7 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
             request.FILES,
             instance = entity_attribute,
         )
-
+        
         if entity_attribute_upload_form.is_valid():
             with transaction.atomic():
                 entity_attribute_upload_form.save()   
