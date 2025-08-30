@@ -677,18 +677,18 @@ a.clickable-card:active {
     box-shadow: none;
 }
 
-/* Property List Layout */
-.attr-v2-property-section {
+/* Attribute List Layout */
+.attr-v2-attribute-section {
     margin-bottom: 2rem;
 }
 
-.attr-v2-property-list {
+.attr-v2-attribute-list {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
 }
 
-.attr-v2-property-card {
+.attr-v2-attribute-card {
     border: 1px solid var(--line-color);
     border-radius: 0.375rem;
     padding: 0.75rem;
@@ -696,14 +696,14 @@ a.clickable-card:active {
     transition: all 0.2s ease;
 }
 
-.attr-v2-property-header {
+.attr-v2-attribute-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 0.5rem;
 }
 
-.attr-v2-property-name {
+.attr-v2-attribute-name {
     font-size: 0.875rem;
     font-weight: 500;
     margin: 0;
@@ -712,12 +712,12 @@ a.clickable-card:active {
     gap: 0.5rem;
 }
 
-.attr-v2-property-actions {
+.attr-v2-attribute-actions {
     display: flex;
     gap: 0.25rem;
 }
 
-.attr-v2-property-actions button {
+.attr-v2-attribute-actions button {
     padding: 0.375rem;
     min-width: 44px; /* Touch-friendly minimum */
     min-height: 44px; /* Touch-friendly minimum */
@@ -728,12 +728,12 @@ a.clickable-card:active {
     font-size: 0.875rem;
 }
 
-.attr-v2-property-actions button:hover {
+.attr-v2-attribute-actions button:hover {
     background: var(--background-color);
     color: var(--text-color);
 }
 
-.attr-v2-property-value {
+.attr-v2-attribute-value {
     margin-top: 0.5rem;
 }
 
@@ -742,7 +742,7 @@ a.clickable-card:active {
 
 /* Error State (validation failures) */
 .attr-v2-file-card.error,
-.attr-v2-property-card.error {
+.attr-v2-attribute-card.error {
     border-left: 3px solid var(--danger-color);
     background-color: rgba(220, 53, 69, 0.1);
     box-shadow: 0 2px 4px rgba(220, 53, 69, 0.1);
@@ -759,7 +759,7 @@ a.clickable-card:active {
 
 /* Loading State (during operations) */
 .attr-v2-file-card.loading,
-.attr-v2-property-card.loading {
+.attr-v2-attribute-card.loading {
     opacity: 0.7;
     pointer-events: none;
     position: relative;
@@ -789,7 +789,7 @@ a.clickable-card:active {
 
 /* Success State (after successful operations) */
 .attr-v2-file-card.success,
-.attr-v2-property-card.success {
+.attr-v2-attribute-card.success {
     border-left: 3px solid var(--success-color);
     background-color: var(--success-bg-light);
     transition: all 0.3s ease;
@@ -844,12 +844,12 @@ a.clickable-card:active {
 
 /* Card State Transitions */
 .attr-v2-file-card,
-.attr-v2-property-card {
+.attr-v2-attribute-card {
     transition: all 0.2s ease-in-out;
 }
 
 .attr-v2-file-card:hover,
-.attr-v2-property-card:hover {
+.attr-v2-attribute-card:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
@@ -857,7 +857,7 @@ a.clickable-card:active {
 /* Button Transitions */
 .attr-v2-action-buttons button,
 .attr-v2-file-actions button,
-.attr-v2-property-actions button,
+.attr-v2-attribute-actions button,
 .attr-v2-reorder-controls button,
 #attr-v2-update-btn {
     transition: all 0.15s ease;
@@ -865,7 +865,7 @@ a.clickable-card:active {
 
 .attr-v2-action-buttons button:hover,
 .attr-v2-file-actions button:hover,
-.attr-v2-property-actions button:hover,
+.attr-v2-attribute-actions button:hover,
 .attr-v2-reorder-controls button:hover:not(:disabled),
 #attr-v2-update-btn:hover {
     transform: translateY(-1px);
@@ -890,7 +890,7 @@ a.clickable-card:active {
 /* Enhanced focus states for buttons and interactive elements */
 .attr-v2-action-buttons button:focus,
 .attr-v2-file-actions button:focus,
-.attr-v2-property-actions button:focus,
+.attr-v2-attribute-actions button:focus,
 .attr-v2-reorder-controls button:focus,
 #attr-v2-update-btn:focus {
     outline: 2px solid var(--primary-color);
@@ -905,7 +905,7 @@ a.clickable-card:active {
 
 /* Card focus states for keyboard navigation */
 .attr-v2-file-card:focus-within,
-.attr-v2-property-card:focus-within {
+.attr-v2-attribute-card:focus-within {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
 }
@@ -995,8 +995,8 @@ a.clickable-card:active {
         flex-wrap: wrap;
     }
     
-    /* Property actions stack vertically */
-    .attr-v2-property-actions {
+    /* Attrribute actions stack vertically */
+    .attr-v2-attribute-actions {
         flex-direction: column;
         gap: 0.25rem;
         align-items: flex-end;
@@ -1025,13 +1025,13 @@ a.clickable-card:active {
     
     /* Enhanced hover effects for mouse/trackpad */
     .attr-v2-file-card:hover,
-    .attr-v2-property-card:hover {
+    .attr-v2-attribute-card:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
     }
     
     /* Better button spacing */
-    .attr-v2-property-actions {
+    .attr-v2-attribute-actions {
         flex-direction: row;
         gap: 0.25rem;
     }
@@ -1050,20 +1050,20 @@ a.clickable-card:active {
         padding: 1.5rem 0;
     }
     
-    .attr-v2-property-list {
+    .attr-v2-attribute-list {
         gap: 1rem;
     }
     
     /* Enhanced hover effects */
     .attr-v2-file-card:hover,
-    .attr-v2-property-card:hover {
+    .attr-v2-attribute-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
     }
     
     /* Larger touch targets can be more refined */
     .attr-v2-reorder-controls button,
-    .attr-v2-property-actions button {
+    .attr-v2-attribute-actions button {
         min-width: 32px;
         min-height: 32px;
         padding: 8px;
@@ -1074,7 +1074,7 @@ a.clickable-card:active {
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
     /* Sharper borders and shadows */
     .attr-v2-file-card,
-    .attr-v2-property-card {
+    .attr-v2-attribute-card {
         border-width: 0.5px;
     }
     
@@ -1087,18 +1087,18 @@ a.clickable-card:active {
 @media (hover: none) and (pointer: coarse) {
     /* Touch-only devices: remove hover effects, ensure touch targets */
     .attr-v2-file-card:hover,
-    .attr-v2-property-card:hover,
+    .attr-v2-attribute-card:hover,
     .attr-v2-file-thumbnail:hover,
     .attr-v2-action-buttons button:hover,
     .attr-v2-file-actions button:hover,
-    .attr-v2-property-actions button:hover {
+    .attr-v2-attribute-actions button:hover {
         transform: none;
         box-shadow: none;
         background-color: initial;
     }
     
     /* Ensure all touch targets are adequate */
-    .attr-v2-property-actions button,
+    .attr-v2-attribute-actions button,
     .attr-v2-file-actions button,
     .attr-v2-reorder-controls button {
         min-height: 44px; /* Touch-friendly standard */
@@ -1111,10 +1111,10 @@ a.clickable-card:active {
 @media (prefers-reduced-motion: reduce) {
     /* Disable animations for users who prefer reduced motion */
     .attr-v2-file-card,
-    .attr-v2-property-card,
+    .attr-v2-attribute-card,
     .attr-v2-action-buttons button,
     .attr-v2-file-actions button,
-    .attr-v2-property-actions button,
+    .attr-v2-attribute-actions button,
     .attr-v2-reorder-controls button,
     .attr-v2-modal input,
     .attr-v2-modal select,
@@ -1133,7 +1133,7 @@ a.clickable-card:active {
     }
 }
 
-/* Add Property Form */
+/* Add Attrribute Form */
 .attr-v2-add-form {
     border: 1px solid var(--line-color);
     border-radius: 0.375rem;
@@ -2352,7 +2352,7 @@ g[hover] {
 /* Enhanced icon alignment for V2 components */
 .attr-v2-action-buttons .hi-icon-left,
 .attr-v2-file-actions .hi-icon,
-.attr-v2-property-actions .hi-icon {
+.attr-v2-attribute-actions .hi-icon {
     vertical-align: middle;
 }
 
@@ -2585,8 +2585,8 @@ g[hover] {
     animation: pulse 2s infinite;
 }
 
-/* Property name dirty styling - fallback approach for broader browser support */
-.attr-v2-property-name.has-dirty-indicator {
+/* Attrribute name dirty styling - fallback approach for broader browser support */
+.attr-v2-attribute-name.has-dirty-indicator {
     font-weight: 600;
     color: var(--warning-color);
 }
@@ -2599,7 +2599,7 @@ g[hover] {
 
 /* Modern browser support with :has() */
 @supports selector(:has(*)) {
-    .attr-v2-property-name:has(.attr-v2-dirty-indicator) {
+    .attr-v2-attribute-name:has(.attr-v2-dirty-indicator) {
         font-weight: 600;
         color: var(--warning-color);
     }
@@ -2609,22 +2609,22 @@ g[hover] {
         font-weight: 500;
     }
     
-    .attr-v2-new-property .attr-v2-property-name:has(.attr-v2-dirty-indicator) {
+    .attr-v2-new-attribute .attr-v2-attribute-name:has(.attr-v2-dirty-indicator) {
         color: var(--primary-color);
     }
 }
 
-/* New property form dirty state - different styling */
-.attr-v2-new-property .attr-v2-field-dirty {
+/* New attribute form dirty state - different styling */
+.attr-v2-new-attribute .attr-v2-field-dirty {
     border-left-color: var(--primary-color) !important;
     background-color: rgba(23, 112, 114, 0.08) !important;
 }
 
-.attr-v2-new-property .attr-v2-dirty-indicator {
+.attr-v2-new-attribute .attr-v2-dirty-indicator {
     color: var(--primary-color);
 }
 
-.attr-v2-new-property .attr-v2-property-name.has-dirty-indicator {
+.attr-v2-new-attribute .attr-v2-attribute-name.has-dirty-indicator {
     color: var(--primary-color);
 }
 
@@ -2642,7 +2642,7 @@ g[hover] {
 }
 
 /* ====================================================================== */
-/* ADD PROPERTY FORM STYLING                                             */
+/* ADD ATTRIBUTE FORM STYLING                                             */
 /* ====================================================================== */
 
 .attr-v2-add-form {
@@ -2955,8 +2955,8 @@ g[hover] {
     background: rgba(220, 53, 69, 0.05);
 }
 
-/* Property Card Deletion Styling */
-.attr-v2-property-card.marked-for-deletion {
+/* Attrribute Card Deletion Styling */
+.attr-v2-attribute-card.marked-for-deletion {
     position: relative;
     background: rgba(220, 53, 69, 0.05);
     border-left: 4px solid var(--danger-color);
@@ -2965,7 +2965,7 @@ g[hover] {
     transition: all 0.3s ease;
 }
 
-.attr-v2-property-card.marked-for-deletion::after {
+.attr-v2-attribute-card.marked-for-deletion::after {
     content: "PENDING DELETION";
     position: absolute;
     top: 50%;
@@ -2983,9 +2983,9 @@ g[hover] {
 }
 
 /* Keep inputs interactive but let watermark show through */
-.attr-v2-property-card.marked-for-deletion .form-control,
-.attr-v2-property-card.marked-for-deletion textarea,
-.attr-v2-property-card.marked-for-deletion input {
+.attr-v2-attribute-card.marked-for-deletion .form-control,
+.attr-v2-attribute-card.marked-for-deletion textarea,
+.attr-v2-attribute-card.marked-for-deletion input {
     position: relative;
     background-color: rgba(255, 255, 255, 0.9);
 }
@@ -3004,31 +3004,31 @@ g[hover] {
 /* ====================================================================== */
 
 /* Task 1: Standardize delete icon colors to red */
-.attr-v2-property-actions .attr-v2-delete-btn {
+.attr-v2-attribute-actions .attr-v2-delete-btn {
     color: #dc3545 !important;
     border-color: #dc3545 !important;
 }
 
-.attr-v2-property-actions .attr-v2-delete-btn:hover {
+.attr-v2-attribute-actions .attr-v2-delete-btn:hover {
     background-color: #dc3545 !important;
     color: white !important;
 }
 
-/* Task 2: Style "Add New Property" form for visual distinction */
-.attr-v2-new-property {
+/* Task 2: Style "Add New Attrribute" form for visual distinction */
+.attr-v2-new-attribute {
     background-color: rgba(23, 112, 114, 0.05) !important;
     border: 2px dashed rgba(23, 112, 114, 0.3) !important;
     border-radius: 8px;
 }
 
-.attr-v2-new-property .attr-v2-property-header h6 {
+.attr-v2-new-attribute .attr-v2-attribute-header h6 {
     color: var(--primary-color);
     font-weight: 600;
     font-style: italic;
 }
 
 
-/* Task 3: Make Add File and Add Property buttons consistent size */
+/* Task 3: Make Add File and Add Attrribute buttons consistent size */
 .attr-v2-action-buttons label.btn {
     min-height: 44px;
     padding: 0.375rem 0.75rem;
@@ -3041,8 +3041,8 @@ g[hover] {
     cursor: pointer;
 }
 
-/* Task 4: Make property name/labels more prominent than values */
-.attr-v2-property-name {
+/* Task 4: Make attribute name/labels more prominent than values */
+.attr-v2-attribute-name {
     font-size: 0.9rem !important;
     font-weight: 600 !important;
     color: var(--primary-text-color) !important;

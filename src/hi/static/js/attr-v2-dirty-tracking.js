@@ -55,9 +55,9 @@
                 this.captureFieldValue(entityNameField);
             }
             
-            // Property form fields
-            const propertyFields = form.querySelectorAll(`${Hi.ATTR_V2_PROPERTY_CARD_SELECTOR} input, ${Hi.ATTR_V2_PROPERTY_CARD_SELECTOR} textarea, ${Hi.ATTR_V2_PROPERTY_CARD_SELECTOR} select`);
-            propertyFields.forEach(field => {
+            // Attribute form fields
+            const attributeFields = form.querySelectorAll(`${Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR} input, ${Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR} textarea, ${Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR} select`);
+            attributeFields.forEach(field => {
                 // Skip hidden management form fields
                 if (field.type === 'hidden' && field.name.includes('_')) return;
                 this.captureFieldValue(field);
@@ -95,9 +95,9 @@
             const originalValue = this.state.originalValues.get(field.id);
             const currentValue = this.getFieldValue(field);
             
-            // Special handling for new property forms - consider them dirty if they have content
-            const isNewPropertyField = field.closest(Hi.ATTR_V2_NEW_PROPERTY_SELECTOR);
-            if (isNewPropertyField && field.name.includes('-name') && currentValue.length > 0) {
+            // Special handling for new attribute forms - consider them dirty if they have content
+            const isNewAttributeField = field.closest(Hi.ATTR_V2_NEW_ATTRIBUTE_SELECTOR);
+            if (isNewAttributeField && field.name.includes('-name') && currentValue.length > 0) {
                 return true;
             }
             
@@ -224,10 +224,10 @@
                 }
             }
             
-            // For property cards, use the property header
-            const propertyCard = field.closest(Hi.ATTR_V2_PROPERTY_CARD_SELECTOR);
-            if (propertyCard) {
-                return propertyCard.querySelector(Hi.ATTR_V2_PROPERTY_NAME_SELECTOR);
+            // For attribute cards, use the attribute header
+            const attributeCard = field.closest(Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR);
+            if (attributeCard) {
+                return attributeCard.querySelector(Hi.ATTR_V2_ATTRIBUTE_NAME_SELECTOR);
             }
             
             // For entity name, use the form group
@@ -250,8 +250,8 @@
         
         // Insert dirty indicator in appropriate position
         insertDirtyIndicator: function(container, indicator) {
-            // For property names, append to the end
-            if (container.classList.contains(Hi.ATTR_V2_PROPERTY_NAME_CLASS)) {
+            // For attribute names, append to the end
+            if (container.classList.contains(Hi.ATTR_V2_ATTRIBUTE_NAME_CLASS)) {
                 container.appendChild(indicator);
             } else {
                 // For other containers, insert at the end
@@ -261,8 +261,8 @@
         
         // Add fallback CSS classes for browsers without :has() support
         addFallbackClasses: function(container, field) {
-            // For property names
-            if (container.classList.contains(Hi.ATTR_V2_PROPERTY_NAME_CLASS)) {
+            // For attribute names
+            if (container.classList.contains(Hi.ATTR_V2_ATTRIBUTE_NAME_CLASS)) {
                 container.classList.add('has-dirty-indicator');
             }
             
@@ -275,8 +275,8 @@
         
         // Remove fallback CSS classes
         removeFallbackClasses: function(container, field) {
-            // For property names
-            if (container.classList.contains(Hi.ATTR_V2_PROPERTY_NAME_CLASS)) {
+            // For attribute names
+            if (container.classList.contains(Hi.ATTR_V2_ATTRIBUTE_NAME_CLASS)) {
                 container.classList.remove('has-dirty-indicator');
             }
             

@@ -154,13 +154,13 @@
         // Form submission now handled by antinode.js with data-async and data-stay-in-modal
     }
 
-    // Simple add property - just show the last (empty) formset form
-    window.showAddProperty = function() {
-        // Find the last property card (should be the empty extra form)
-        const propertyCards = $(Hi.ATTR_V2_PROPERTY_CARD_SELECTOR);
+    // Simple add attribute - just show the last (empty) formset form
+    window.showAddAttribute = function() {
+        // Find the last attribute card (should be the empty extra form)
+        const attributeCards = $(Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR);
         
-        if (propertyCards.length > 0) {
-            const lastCard = propertyCards[propertyCards.length - 1];
+        if (attributeCards.length > 0) {
+            const lastCard = attributeCards[attributeCards.length - 1];
             const $lastCard = $(lastCard);
             
             // Show the card if hidden
@@ -184,7 +184,7 @@
         }
     };
     
-    // Removed dedicated add property form functions - using Django formset approach only
+    // Removed dedicated add attribute form functions - using Django formset approach only
     
     
     window.markFileForDeletion = function(attributeId) {
@@ -256,14 +256,14 @@
     // History functionality now handled by antinode async pattern
     // History button uses data-async to load content, no JavaScript needed
     
-    window.markPropertyForDeletion = function(attributeId) {
-        const $propertyCard = $(`[data-attribute-id="${attributeId}"]`);
-        if ($propertyCard.length === 0) return;
+    window.markAttributeForDeletion = function(attributeId) {
+        const $attributeCard = $(`[data-attribute-id="${attributeId}"]`);
+        if ($attributeCard.length === 0) return;
         
-        const propertyName = $propertyCard.find(Hi.ATTR_V2_PROPERTY_NAME_SELECTOR).text().trim().replace('•', '').trim();
+        const attributeName = $attributeCard.find(Hi.ATTR_V2_ATTRIBUTE_NAME_SELECTOR).text().trim().replace('•', '').trim();
         
         // Find and mark the server-rendered DELETE field for deletion
-        const $deleteField = $propertyCard.find('input[name$="-DELETE"]');
+        const $deleteField = $attributeCard.find('input[name$="-DELETE"]');
         if ($deleteField.length > 0) {
             // For hidden fields, set value to "on" (what browsers send for checked checkboxes)
             $deleteField.val("on");
@@ -273,16 +273,16 @@
         }
         
         // Visual feedback - CSS handles all styling
-        $propertyCard.addClass('marked-for-deletion');
+        $attributeCard.addClass('marked-for-deletion');
         
         // Hide delete button and show undo button (both server-rendered)
-        $propertyCard.find(Hi.ATTR_V2_DELETE_BTN_SELECTOR).hide();
-        $propertyCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).show();
+        $attributeCard.find(Hi.ATTR_V2_DELETE_BTN_SELECTOR).hide();
+        $attributeCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).show();
         
         // Show status message
         const $statusMsg = $(Hi.ATTR_V2_STATUS_MSG_SELECTOR);
         if ($statusMsg.length > 0) {
-            $statusMsg.text(`"${propertyName}" will be deleted when you save`)
+            $statusMsg.text(`"${attributeName}" will be deleted when you save`)
                     .attr('class', 'attr-v2-status-message ml-2 text-warning');
             
             setTimeout(() => {
@@ -291,29 +291,29 @@
         }
     };
     
-    window.undoPropertyDeletion = function(attributeId) {
-        const $propertyCard = $(`[data-attribute-id="${attributeId}"]`);
-        if ($propertyCard.length === 0) return;
+    window.undoAttributeDeletion = function(attributeId) {
+        const $attributeCard = $(`[data-attribute-id="${attributeId}"]`);
+        if ($attributeCard.length === 0) return;
         
-        const propertyName = $propertyCard.find(Hi.ATTR_V2_PROPERTY_NAME_SELECTOR).text().trim().replace('•', '').trim();
+        const attributeName = $attributeCard.find(Hi.ATTR_V2_ATTRIBUTE_NAME_SELECTOR).text().trim().replace('•', '').trim();
         
         // Unmark the DELETE field
-        const $deleteField = $propertyCard.find('input[name$="-DELETE"]');
+        const $deleteField = $attributeCard.find('input[name$="-DELETE"]');
         if ($deleteField.length > 0) {
             $deleteField.val("");
         }
         
         // Remove visual feedback - CSS handles all styling
-        $propertyCard.removeClass('marked-for-deletion');
+        $attributeCard.removeClass('marked-for-deletion');
         
         // Show delete button and hide undo button (both server-rendered)
-        $propertyCard.find(Hi.ATTR_V2_DELETE_BTN_SELECTOR).show();
-        $propertyCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).hide();
+        $attributeCard.find(Hi.ATTR_V2_DELETE_BTN_SELECTOR).show();
+        $attributeCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).hide();
         
         // Show status message
         const $statusMsg = $(Hi.ATTR_V2_STATUS_MSG_SELECTOR);
         if ($statusMsg.length > 0) {
-            $statusMsg.text(`Deletion of "${propertyName}" cancelled`)
+            $statusMsg.text(`Deletion of "${attributeName}" cancelled`)
                     .attr('class', 'attr-v2-status-message ml-2 text-success');
             
             setTimeout(() => {

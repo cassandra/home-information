@@ -1,11 +1,11 @@
 {% load icons %}
 {% load common_template_helpers %}
 {% comment %}
-V2 Property Card Component
-Individual property attribute card with value editing and actions
+V2 Attribute Card Component
+Individual attribute attribute card with value editing and actions
 {% endcomment %}
 
-<div class="{{ DIVID.ATTR_V2_PROPERTY_CARD_CLASS }}{% if not attribute_form.instance.pk %} {{ DIVID.ATTR_V2_NEW_PROPERTY_CLASS }}{% endif %}" 
+<div class="{{ DIVID.ATTR_V2_ATTRIBUTE_CARD_CLASS }}{% if not attribute_form.instance.pk %} {{ DIVID.ATTR_V2_NEW_ATTRIBUTE_CLASS }}{% endif %}" 
      data-attribute-id="{{ attribute_form.instance.pk }}" 
      data-url-detect="true"
      data-order-index="{{ forloop.counter }}"
@@ -20,17 +20,17 @@ Individual property attribute card with value editing and actions
     {{ attribute_form.DELETE.as_hidden }}
   {% endif %}
   
-  <!-- Property Header -->
-  <div class="attr-v2-property-header">
-    <h6 class="{{ DIVID.ATTR_V2_PROPERTY_NAME_CLASS }}">
+  <!-- Attribute Header -->
+  <div class="attr-v2-attribute-header">
+    <h6 class="{{ DIVID.ATTR_V2_ATTRIBUTE_NAME_CLASS }}">
       {% if attribute_form.instance.pk %}
         {{ attribute_form.instance.name }}
       {% else %}
-        {% icon "plus" size="sm" css_class="hi-icon-left" %}Add New Property
+        {% icon "plus" size="sm" css_class="hi-icon-left" %}Add New
       {% endif %}
     </h6>
     
-    <div class="attr-v2-property-actions">
+    <div class="attr-v2-attribute-actions">
       <!-- Reorder Controls (disabled until Issue #80) -->
       {% if attribute_form.instance.pk %}
       <button type="button" 
@@ -62,14 +62,14 @@ Individual property attribute card with value editing and actions
       {% if attribute_form.instance.pk and attribute_form.instance.attribute_type.can_delete %}
         <button type="button" 
                 class="{{ DIVID.ATTR_V2_DELETE_BTN_CLASS }}"
-                title="Delete property"
-                onclick="markPropertyForDeletion('{{ attribute_form.instance.pk }}')">
+                title="Delete attribute"
+                onclick="markAttributeForDeletion('{{ attribute_form.instance.pk }}')">
           {% icon "delete" size="sm" %}
         </button>
         <button type="button" 
                 class="btn btn-sm btn-outline-warning {{ DIVID.ATTR_V2_UNDO_BTN_CLASS }}"
                 title="Undo delete"
-                onclick="undoPropertyDeletion('{{ attribute_form.instance.pk }}')"
+                onclick="undoAttributeDeletion('{{ attribute_form.instance.pk }}')"
                 style="display: none;">
           ↶ Undo
         </button>
@@ -77,16 +77,16 @@ Individual property attribute card with value editing and actions
     </div>
   </div>
   
-  <!-- Property Value -->
-  <div class="attr-v2-property-value">
+  <!-- Attribute Value -->
+  <div class="attr-v2-attribute-value">
     {% if attribute_form.instance.pk %}
-      <!-- Existing property - include hidden name field -->
+      <!-- Existing attribute - include hidden name field -->
       <input type="hidden" 
              id="{{ attribute_form.name.id_for_label }}"
              name="{{ attribute_form.name.html_name }}"
              value="{{ attribute_form.instance.name }}" />
     {% else %}
-      <!-- New property form -->
+      <!-- New attribute form -->
       <div class="mb-2">
         {{ attribute_form.name.label_tag }}
         {{ attribute_form.name }}
