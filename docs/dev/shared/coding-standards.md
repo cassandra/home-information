@@ -35,17 +35,89 @@ We do not use "magic" or hard-coded strings when needing multiple references. An
 
 ### Type Hints
 
-We add type hints to dataclass fields, method parameters and method return values.
-We do not add type hints to locally declared method variables.
+- We add type hints to dataclass fields, method parameters and method return values.
+- We do not add type hints to locally declared method variables.
+- Some allowed, but not required exceptions:
+  - The `request` parameter when appearing in a Django view class.
+  - Single parameter methods where the method name or parameter name makes its type unambiguous.
+  
 
+### Method Parameter Formatting
 
-### Method parameter formatting
+For readability, besides adding type hints to method parameters, we adhere to the following formatting conventions:
+- For methods with a single parameter, or parameters of native types, they can appear in one line with the method name.
+- If more than one parameter and app-defined types, then use a multiple line declaration.
+- For methods with three or more parameters, we use one line per parameter and align the type names.
 
-zzz
+**Good Examples**
 
-zzz wrapping bool()
+```
+    def set_entity( self, entity_id : int ) -> EntityPath:
 
+    def set_entity_order( self, entity_id : int, rank : int ) -> EntityPath:
 
+    def set_entity_path( self,
+                         entity_id     : int,
+                         location      : Location,
+                         svg_path_str  : str        ) -> EntityPath:
+```
+
+**Bad Examples**
+
+```
+    def set_entity_type( self, entity_id : int, entity_type : EntityType ) -> EntityPath:
+
+    def set_entity_path( self,
+                         entity_id : int,
+                         location : Location,
+                         svg_path_str: str ) -> EntityPath:
+
+    def set_entity_path( self, entity_id : int,
+                         location : Location, svg_path_str: str ) -> EntityPath:
+```
+
+### Explicit Booleans
+
+We prefer to wrap all expression that evaluate to a boolean in `bool()` to make it explicit what type we are expecting:
+
+**Good**
+```
+   my_variable = bool( len(my_list) > 4 )
+```
+
+**Bad***
+```
+   my_variable = len(my_list) == 4 
+```
+
+### Complex Boolean Expressions
+
+- For boolean clauses and conditionals where there are multiple clauses, we prefer to explicitly enclose each clause with parentheses in order to make the intention clear.
+- We do not rely on the user having a deep understanding of the compiler's ordeer of precedence.
+- We use one line per clause unless the combined clauses are very short and obvious.
+- Single boolean typed variables or methods that return a boolean do not need paretheses.
+
+**Good**
+```
+    if is_editing and location_view:
+        pass
+		
+    if (( hass_state.domain == HassApi.SWITCH_DOMAIN )
+          and ( HassApi.LIGHT_DOMAIN in prefixes_seen )):
+        pass
+		
+    if ( HassApi.BINARY_SENSOR_DOMAIN in domain_set
+         and device_class_set.intersection( HassApi.OPEN_CLOSE_DEVICE_CLASS_SET )):
+        pass
+
+   
+```
+
+**Bad***
+```
+    if hass_state.domain == HassApi.SWITCH_DOMAIN and HassApi.LIGHT_DOMAIN == 'foo':
+        pass
+```
 
 ### Flake8 Configurations
 

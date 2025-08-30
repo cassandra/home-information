@@ -15,6 +15,7 @@ from hi.apps.location.models import Location, LocationView
 from .entity_pairing_manager import EntityPairingManager
 from .enums import (
     EntityGroupType,
+    EntityTransitionType,
 )
 from .models import (
     Entity,
@@ -247,16 +248,17 @@ class EntityManager(Singleton):
         )
         return entity_path
 
-    def handle_entity_type_transition( self,
-                                       entity         : Entity,
-                                       location_view  : LocationView   = None ) -> Tuple[bool, str]:
+    def handle_entity_type_transition(
+            self,
+            entity         : Entity,
+            location_view  : LocationView   = None ) -> Tuple[bool, EntityTransitionType]:
         """
         Handle transitions between EntityType icon and path representations.
         Returns (transition_occurred, transition_type)
         """
         if not location_view:
             # If no location view provided, we can't handle position/path transitions
-            return False, "no_location_view"
+            return False, EntityTransitionType.NO_LOCATION_VIEW
             
         # Use EntityType structural methods instead of SvgItemFactory
         entity_type = entity.entity_type
@@ -327,10 +329,10 @@ class EntityManager(Singleton):
                             entity = entity,
                             location_view = location_view,
                         )
-                        return True, "created_position"
+                        return True, EntityTransitionType.CREATED_POSITION
                 else:
                     # Position already exists, just a visual update
-                    return True, "icon_to_icon"
+                    return True, EntityTransitionType.ICON_TO_ICON
                     
             elif needs_path:
                 # Entity type needs path representation
@@ -350,18 +352,18 @@ class EntityManager(Singleton):
                             location_view = location_view,
                             is_path_closed = entity_type.requires_closed_path(),
                         )
-                        return True, "created_path"
+                        return True, EntityTransitionType.CREATED_PATH
                 else:
                     # Path already exists, just a visual update
-                    return True, "path_to_path"
+                    return True, EntityTransitionType.PATH_TO_PATH
         
-        return False, "no_transition_needed"
+        return False, EntityTransitionType.NO_TRANSITION_NEEDED
 
     def _transition_icon_to_path( self,
                                   entity          : Entity,
                                   location_view   : LocationView,
                                   entity_position : EntityPosition,
-                                  is_path_closed  : bool          ) -> Tuple[bool, str]:
+                                  is_path_closed  : bool          ) -> Tuple[bool, EntityTransitionType]:
         """Create or update EntityPath based on EntityPosition location, preserving both"""
         
         # Get center point of the icon for path placement
@@ -390,12 +392,12 @@ class EntityManager(Singleton):
             # EntityPath already exists - preserve existing geometry
             pass  # Keep existing path geometry
         
-        return True, "icon_to_path"
+        return True, EntityTransitionType.ICON_TO_PATH
 
     def _transition_path_to_icon( self,
                                   entity        : Entity,
                                   location_view : LocationView,
-                                  entity_path   : EntityPath    ) -> Tuple[bool, str]:
+                                  entity_path   : EntityPath    ) -> Tuple[bool, EntityTransitionType]:
         """Create or update EntityPosition based on EntityPath center, preserving both"""
         
         # Calculate geometric center of the path
@@ -423,7 +425,7 @@ class EntityManager(Singleton):
             # EntityPosition already exists - preserve existing position
             pass  # Keep existing position
         
-        return True, "path_to_icon"
+        return True, EntityTransitionType.PATH_TO_ICON
 
     def _calculate_path_center( self, svg_path : str ) -> Tuple[float, float]:
         """Calculate the geometric center of an SVG path"""

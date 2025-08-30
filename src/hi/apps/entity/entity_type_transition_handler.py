@@ -12,6 +12,7 @@ from django.http import HttpRequest, HttpResponse
 import hi.apps.common.antinode as antinode
 from hi.apps.location.location_manager import LocationManager
 from .entity_manager import EntityManager
+from .enums import EntityTransitionType
 from .models import Entity
 from .forms import EntityForm, EntityAttributeRegularFormSet
 
@@ -83,7 +84,7 @@ class EntityTypeTransitionHandler:
             # Always attempt advanced transition handling regardless of mode/view
             current_location_view: Optional['LocationView'] = LocationManager().get_default_location_view(request=request)
             transition_occurred: bool
-            transition_type: str
+            transition_type: EntityTransitionType
             transition_occurred, transition_type = EntityManager().handle_entity_type_transition(
                 entity=entity,
                 location_view=current_location_view,
@@ -102,12 +103,12 @@ class EntityTypeTransitionHandler:
 
     def needs_full_page_refresh( self,
                                  transition_occurred : bool,
-                                 transition_type     : str  ) -> bool:
+                                 transition_type     : EntityTransitionType  ) -> bool:
         """Determine if EntityType change requires full page refresh.
         
         Args:
             transition_occurred: Boolean indicating if transition succeeded
-            transition_type: String indicating type of transition
+            transition_type: EntityTransitionType indicating type of transition
             
         Returns:
             bool: True if full page refresh needed, False for sidebar refresh only
@@ -116,7 +117,7 @@ class EntityTypeTransitionHandler:
             # Transition failed, use page refresh for safety
             return True
             
-        if transition_type == "path_to_path":
+        if transition_type == EntityTransitionType.PATH_TO_PATH:
             # Path style changes only, sidebar refresh sufficient
             return False
             

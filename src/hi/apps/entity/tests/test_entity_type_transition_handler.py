@@ -10,7 +10,7 @@ from django.http import HttpRequest, HttpResponse
 
 from hi.apps.entity.entity_edit_form_handler import EntityEditFormHandler
 from hi.apps.entity.entity_type_transition_handler import EntityTypeTransitionHandler
-from hi.apps.entity.enums import EntityType
+from hi.apps.entity.enums import EntityType, EntityTransitionType
 from hi.apps.entity.forms import EntityForm, EntityAttributeRegularFormSet
 from hi.testing.base_test_case import BaseTestCase
 from .synthetic_data import EntityAttributeSyntheticData
@@ -190,7 +190,7 @@ class TestEntityTypeTransitionHandlerTransitionLogic(BaseTestCase):
         mock_location_manager.return_value.get_default_location_view.return_value = mock_location_view
         
         # Mock entity manager transition
-        mock_entity_manager.return_value.handle_entity_type_transition.return_value = (True, 'icon_to_icon')
+        mock_entity_manager.return_value.handle_entity_type_transition.return_value = (True, EntityTransitionType.ICON_TO_ICON)
         
         result = self.handler.handle_entity_type_change(self.request, self.entity)
         
@@ -212,7 +212,7 @@ class TestEntityTypeTransitionHandlerTransitionLogic(BaseTestCase):
         mock_location_manager.return_value.get_default_location_view.return_value = mock_location_view
         
         # Mock failed transition
-        mock_entity_manager.return_value.handle_entity_type_transition.return_value = (False, 'failed')
+        mock_entity_manager.return_value.handle_entity_type_transition.return_value = (False, EntityTransitionType.NO_TRANSITION_NEEDED)
         
         with patch('hi.apps.entity.entity_type_transition_handler.antinode.refresh_response') as mock_refresh:
             mock_refresh.return_value = Mock(spec=HttpResponse)
@@ -247,7 +247,7 @@ class TestEntityTypeTransitionHandlerTransitionLogic(BaseTestCase):
         # Mock successful path_to_path transition
         mock_location_view = Mock()
         mock_location_manager.return_value.get_default_location_view.return_value = mock_location_view
-        mock_entity_manager.return_value.handle_entity_type_transition.return_value = (True, 'path_to_path')
+        mock_entity_manager.return_value.handle_entity_type_transition.return_value = (True, EntityTransitionType.PATH_TO_PATH)
         
         result = self.handler.handle_entity_type_change(self.request, self.entity)
         
@@ -266,7 +266,7 @@ class TestEntityTypeTransitionHandlerRefreshLogic(BaseTestCase):
         """Test that failed transitions require full page refresh."""
         result = self.handler.needs_full_page_refresh(
             transition_occurred=False,
-            transition_type='any_type'
+            transition_type=EntityTransitionType.NO_TRANSITION_NEEDED
         )
         
         self.assertTrue(result)
@@ -275,14 +275,14 @@ class TestEntityTypeTransitionHandlerRefreshLogic(BaseTestCase):
         """Test that path_to_path transitions don't require full page refresh."""
         result = self.handler.needs_full_page_refresh(
             transition_occurred=True,
-            transition_type='path_to_path'
+            transition_type=EntityTransitionType.PATH_TO_PATH
         )
         
         self.assertFalse(result)
 
     def test_needs_full_page_refresh_icon_transitions(self):
         """Test that icon transitions require full page refresh."""
-        icon_transitions = ['icon_to_icon', 'icon_to_path', 'path_to_icon']
+        icon_transitions = [EntityTransitionType.ICON_TO_ICON, EntityTransitionType.ICON_TO_PATH, EntityTransitionType.PATH_TO_ICON]
         
         for transition_type in icon_transitions:
             with self.subTest(transition_type=transition_type):
@@ -297,7 +297,7 @@ class TestEntityTypeTransitionHandlerRefreshLogic(BaseTestCase):
         """Test that unknown transition types default to full page refresh."""
         result = self.handler.needs_full_page_refresh(
             transition_occurred=True,
-            transition_type='unknown_type'
+            transition_type=EntityTransitionType.NO_TRANSITION_NEEDED
         )
         
         self.assertTrue(result)
@@ -306,13 +306,13 @@ class TestEntityTypeTransitionHandlerRefreshLogic(BaseTestCase):
         """Test comprehensive refresh logic scenarios."""
         test_cases = [
             # (transition_occurred, transition_type, expected_refresh)
-            (False, 'path_to_path', True),      # Failed transition
-            (False, 'icon_to_icon', True),     # Failed transition
-            (True, 'path_to_path', False),     # Success, style change only
-            (True, 'icon_to_icon', True),      # Success, visual change needed
-            (True, 'icon_to_path', True),      # Success, structure change
-            (True, 'path_to_icon', True),      # Success, structure change
-            (True, 'custom_type', True),       # Unknown type, safe default
+            (False, EntityTransitionType.PATH_TO_PATH, True),      # Failed transition
+            (False, EntityTransitionType.ICON_TO_ICON, True),     # Failed transition
+            (True, EntityTransitionType.PATH_TO_PATH, False),     # Success, style change only
+            (True, EntityTransitionType.ICON_TO_ICON, True),      # Success, visual change needed
+            (True, EntityTransitionType.ICON_TO_PATH, True),      # Success, structure change
+            (True, EntityTransitionType.PATH_TO_ICON, True),      # Success, structure change
+            (True, EntityTransitionType.NO_TRANSITION_NEEDED, True),       # Unknown type, safe default
         ]
         
         for transition_occurred, transition_type, expected_refresh in test_cases:
@@ -354,7 +354,7 @@ class TestEntityTypeTransitionHandlerIntegration(BaseTestCase):
             # Setup mocks
             mock_location_view = Mock()
             mock_loc_mgr.return_value.get_default_location_view.return_value = mock_location_view
-            mock_entity_mgr.return_value.handle_entity_type_transition.return_value = (True, 'icon_to_icon')
+            mock_entity_mgr.return_value.handle_entity_type_transition.return_value = (True, EntityTransitionType.ICON_TO_ICON)
             mock_refresh.return_value = Mock(spec=HttpResponse)
             
             # Execute the transition
@@ -407,7 +407,7 @@ class TestEntityTypeTransitionHandlerIntegration(BaseTestCase):
              patch('hi.apps.entity.entity_type_transition_handler.antinode.refresh_response') as mock_refresh:
             
             # Mock simple transition
-            mock_entity_mgr.return_value.handle_entity_type_transition.return_value = (True, 'path_to_path')
+            mock_entity_mgr.return_value.handle_entity_type_transition.return_value = (True, EntityTransitionType.PATH_TO_PATH)
             mock_refresh.return_value = Mock(spec=HttpResponse)
             
             result = self.handler.handle_entity_form_save(
