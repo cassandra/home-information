@@ -1,4 +1,6 @@
 #!/bin/bash
+
+export PATH="~/.local/bin:$PATH"
 cd ~/proj/hi
 . ./init-env-dev.sh
 
