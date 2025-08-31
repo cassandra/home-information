@@ -480,9 +480,15 @@ class TestLocationAttributeUploadView(SyncViewTestCase):
         
         response = self.client.post(url, data=test_data)
         
-        # Form should be invalid and return 400 with error message
-        self.assertEqual(response.status_code, 400)
+        # Form is invalid but view returns 200 with modal containing form errors
+        self.assertSuccessResponse(response)
         self.assertJsonResponse(response)
+        
+        # Verify response contains modal with form
+        data = response.json()
+        self.assertIn('modal', data)
+        modal_content = data['modal']
+        self.assertIn('file_value', modal_content)  # Form field should be present
         
         # Verify no attribute was created
         from hi.apps.location.models import LocationAttribute
