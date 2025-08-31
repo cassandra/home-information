@@ -5,8 +5,6 @@ This module contains Location-specific implementations of the AttributeEditConte
 pattern, encapsulating location-specific domain knowledge while maintaining
 the generic template interface.
 """
-from typing import Any
-
 from hi.apps.attribute.edit_context import AttributeEditContext
 from .models import Location
 
@@ -32,3 +30,4 @@ class LocationAttributeEditContext(AttributeEditContext):
     def location(self) -> Location:
         """Get the Location instance (typed accessor)."""
         return self.owner
+    

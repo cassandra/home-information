@@ -102,3 +102,4 @@ class AttributeEditContext:
             'owner': self.owner,
             self.owner_type: self.owner,  # e.g., 'entity': self.owner or 'location': self.owner
         }
+    

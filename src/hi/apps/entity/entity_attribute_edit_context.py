@@ -5,8 +5,6 @@ This module contains Entity-specific implementations of the AttributeEditContext
 pattern, encapsulating entity-specific domain knowledge while maintaining
 the generic template interface.
 """
-from typing import Any
-
 from hi.apps.attribute.edit_context import AttributeEditContext
 from .models import Entity
 
@@ -32,3 +30,4 @@ class EntityAttributeEditContext(AttributeEditContext):
     def entity(self) -> Entity:
         """Get the Entity instance (typed accessor)."""
         return self.owner
+    
