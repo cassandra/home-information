@@ -1,10 +1,11 @@
 import json
 import logging
+from typing import Any, Dict
 
 from django.core.exceptions import BadRequest
 from django.db import transaction
-from django.http import Http404
-from django.template.loader import get_template
+from django.http import Http404, HttpRequest, HttpResponse
+from django.template.loader import get_template, render_to_string
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.generic import View
@@ -20,6 +21,8 @@ from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationAttribute
 from hi.apps.location.transient_models import LocationEditData, LocationViewEditData
 from hi.apps.location.view_mixins import LocationViewMixin
+from hi.apps.location.location_edit_form_handler import LocationEditFormHandler
+from hi.apps.location.location_edit_response_renderer import LocationEditResponseRenderer
 
 from hi.constants import DIVID
 from hi.decorators import edit_required
@@ -128,65 +131,59 @@ class LocationSvgReplaceView( HiModalView, LocationViewMixin ):
         return antinode.redirect_response( redirect_url )
 
 
-class LocationEditView( View, LocationViewMixin, LocationEditViewMixin ):
-
-    def get( self, request, *args, **kwargs ):
-        location = self.get_location( request, *args, **kwargs )
-        location_edit_data = LocationEditData(
-            location = location,
-        )
-        return self.location_modal_response(
-            request = request,
-            location_edit_data = location_edit_data,
-            status_code = 200,
-        )
+class LocationEditView(HiModalView, LocationViewMixin):
+    """Location attribute editing modal with redesigned interface.
     
-    def post( self, request, *args, **kwargs ):
-        location = self.get_location( request, *args, **kwargs )
-
-        location_edit_form = forms.LocationEditForm(
-            request.POST,
-            instance = location,
-        )
-        location_attribute_formset = forms.LocationAttributeFormSet(
-            request.POST,
-            request.FILES,
-            instance = location,
-            prefix = f'location-{location.id}',
-            form_kwargs = {
-                'show_as_editable': True,
-            },
+    This view uses a dual response pattern:
+    - get(): Returns full modal using standard modal_response()
+    - post(): Returns antinode fragments for async DOM updates
+    
+    Business logic is delegated to specialized handler classes following
+    the "keep views simple" design philosophy.
+    """
+    
+    def get_template_name(self) -> str:
+        return 'location/modals/location_edit.html'
+    
+    def get( self,
+             request : HttpRequest,
+             *args   : Any,
+             **kwargs: Any          ) -> HttpResponse:
+        location: Location = self.get_location(request, *args, **kwargs)
+        
+        # Delegate form creation and context building to handler
+        form_handler = LocationEditFormHandler()
+        context: Dict[str, Any] = form_handler.create_initial_context(location)
+        
+        return self.modal_response(request, context)
+    
+    def post( self,
+              request : HttpRequest,
+              *args   : Any,
+              **kwargs: Any          ) -> HttpResponse:
+        location: Location = self.get_location(request, *args, **kwargs)
+        
+        # Delegate form handling to specialized handlers
+        form_handler = LocationEditFormHandler()
+        renderer = LocationEditResponseRenderer()
+        
+        # Create forms with POST data
+        location_form, file_attributes, regular_attributes_formset = form_handler.create_location_forms(
+            location, request.POST
         )
         
-        if ( location_edit_form.is_valid()
-             and location_attribute_formset.is_valid() ):
-            with transaction.atomic():
-                location_edit_form.save()
-                location_attribute_formset.save()
-
-            # Location name/order can impact many parts of UI. Full refresh is safest in this case.
-            if location_edit_form.has_changed():
-                return antinode.refresh_response()
-                
-            # Recreate to preserve "max" to show new form
-            location_attribute_formset = forms.LocationAttributeFormSet(
-                instance = location,
-                prefix = f'location-{location.id}',
-            )
-            status_code = 200
+        if form_handler.validate_forms(location_form, regular_attributes_formset):
+            # Save forms and process files
+            form_handler.save_forms(location_form, regular_attributes_formset, request, location)
+            
+            # Return success response
+            return renderer.render_success_response(request, location)
         else:
-            status_code = 400
-
-        location_edit_data = LocationEditData(
-            location = location,
-            location_edit_form = location_edit_form,
-            location_attribute_formset = location_attribute_formset,
-        )
-        return self.location_modal_response(
-            request = request,
-            location_edit_data = location_edit_data,
-            status_code = status_code,
-        )
+            # Return error response
+            return renderer.render_error_response(request, location, location_form, regular_attributes_formset)
+    
+    def get_success_url_name(self) -> str:
+        return 'location_edit'
 
 
 class LocationPropertiesEditView( View, LocationViewMixin, LocationEditViewMixin ):
@@ -218,33 +215,58 @@ class LocationPropertiesEditView( View, LocationViewMixin, LocationEditViewMixin
         )
             
     
-class LocationAttributeUploadView( View, LocationViewMixin, LocationEditViewMixin ):
+class LocationAttributeUploadView( View, LocationViewMixin ):
 
-    def post( self, request, *args, **kwargs ):
-        location = self.get_location( request, *args, **kwargs )
-        location_attribute = LocationAttribute( location = location )
-        location_attribute_upload_form = forms.LocationAttributeUploadForm(
+    def post( self,
+              request : HttpRequest,
+              *args   : Any,
+              **kwargs: Any          ) -> HttpResponse:
+        location: Location = self.get_location( request, *args, **kwargs )
+        location_attribute: LocationAttribute = LocationAttribute( location = location )
+        location_attribute_upload_form: forms.LocationAttributeUploadForm = forms.LocationAttributeUploadForm(
             request.POST,
             request.FILES,
             instance = location_attribute,
         )
-
+        
         if location_attribute_upload_form.is_valid():
             with transaction.atomic():
                 location_attribute_upload_form.save()   
-            status_code = 200
+            
+            # Render new file card HTML to append to file grid
+            from hi.apps.location.location_attribute_edit_context import LocationAttributeEditContext
+            attr_context = LocationAttributeEditContext(location)
+            context = {'attribute': location_attribute, 'location': location}
+            context.update(attr_context.to_template_context())
+            
+            file_card_html: str = render_to_string(
+                'attribute/components/file_card.html',
+                context,
+                request=request
+            )
+            
+            return antinode.response(
+                append_map={
+                    DIVID['ATTR_V2_FILE_GRID']: file_card_html
+                },
+                scroll_to=DIVID['ATTR_V2_FILE_GRID']
+            )
         else:
-            status_code = 400
-
-        location_edit_data = LocationEditData(
-            location = location,
-            location_attribute_upload_form = location_attribute_upload_form,
-        )
-        return self.location_modal_response(
-            request = request,
-            location_edit_data = location_edit_data,
-            status_code = status_code,
-        )
+            # Render error message to status area
+            error_html: str = render_to_string(
+                'attribute/components/status_message.html',
+                {
+                    'error_message': 'File upload failed. Please check the file and try again.',
+                    'form_errors': location_attribute_upload_form.errors
+                }
+            )
+            
+            return antinode.response(
+                insert_map={
+                    DIVID['ATTR_V2_STATUS_MSG']: error_html
+                },
+                status=400
+            )
 
     
 @method_decorator( edit_required, name='dispatch' )

@@ -1,0 +1,27 @@
+{% extends "attribute/components/edit_content_body.html" %}
+{% comment %}
+Location V2 Content Body Fragment
+Extends the generic attribute edit content body with location-specific field layout.
+{% endcomment %}
+
+{% block owner_fields %}
+<!-- Location-specific fields: Only name field for modal editing -->
+<div class="row">
+  <div class="col-md-12">
+    <div class="form-group mb-0">
+      <small class="text-muted">Name</small>
+      <input type="text" 
+             id="{{ owner_form.name.id_for_label }}"
+             name="{{ owner_form.name.html_name }}"
+             value="{{ owner_form.name.value|default:'' }}"
+             class="form-control form-control-sm"
+             {% if owner_form.name.field.required %}required{% endif %}>
+      {% if owner_form.name.errors %}
+        <div class="invalid-feedback d-block">
+          {{ owner_form.name.errors }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

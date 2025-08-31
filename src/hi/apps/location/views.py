@@ -1,8 +1,9 @@
 import logging
+from typing import Any, Dict
 
 from django.core.exceptions import BadRequest
-from django.http import HttpResponseRedirect, HttpResponseNotAllowed
-from django.urls import reverse
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect, HttpResponseNotAllowed
+from django.shortcuts import render, reverse
 from django.views.generic import View
 
 from hi.apps.common.utils import is_ajax
@@ -12,11 +13,13 @@ from hi.exceptions import ForceSynchronousException
 from hi.hi_async_view import HiSideView
 from hi.hi_grid_view import HiGridView
 from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
+from hi.views import page_not_found_response
 
 from .location_manager import LocationManager
-from .models import LocationView, LocationAttribute
+from .models import Location, LocationView, LocationAttribute
 from .transient_models import LocationEditData, LocationViewEditData
 from .view_mixins import LocationViewMixin
+from .location_attribute_edit_context import LocationAttributeEditContext
 
 logger = logging.getLogger(__name__)
 
@@ -183,3 +186,104 @@ class LocationAttributeRestoreView(BaseAttributeRestoreView):
     
     def get_attribute_model_class(self):
         return LocationAttribute
+
+
+class LocationAttributeHistoryInlineView(BaseAttributeHistoryView):
+    """View for displaying LocationAttribute history inline within the edit modal."""
+
+    ATTRIBUTE_HISTORY_VIEW_LIMIT = 50
+    
+    def get_template_name(self):
+        return 'attribute/components/attribute_history_inline.html'
+    
+    def get_attribute_model_class(self):
+        return LocationAttribute
+    
+    def get_history_url_name(self):
+        return 'location_attribute_history_inline'
+    
+    def get_restore_url_name(self):
+        return 'location_attribute_restore_inline'
+    
+    def get( self,
+             request       : HttpRequest,
+             location_id   : int,
+             attribute_id  : int,
+             *args         : Any,
+             **kwargs      : Any          ) -> HttpResponse:
+        # Validate that the attribute belongs to this location for security
+        try:
+            attribute: LocationAttribute = LocationAttribute.objects.get(pk=attribute_id, location_id=location_id)
+        except LocationAttribute.DoesNotExist:
+            return page_not_found_response(request, "Attribute not found.")
+        
+        # Get history records for this attribute
+        history_model_class = attribute._get_history_model_class()
+        if history_model_class:
+            history_records = history_model_class.objects.filter(
+                attribute=attribute
+            ).order_by('-changed_datetime')[:self.ATTRIBUTE_HISTORY_VIEW_LIMIT]  # Limit for inline display
+        else:
+            history_records = []
+        
+        # Create the attribute edit context for template generalization
+        attr_context = LocationAttributeEditContext(attribute.location)
+        
+        context: Dict[str, Any] = {
+            'location': attribute.location,
+            'attribute': attribute,
+            'history_records': history_records,
+            'history_url_name': self.get_history_url_name(),
+            'restore_url_name': self.get_restore_url_name(),
+        }
+        
+        # Merge in the context variables from AttributeEditContext
+        context.update(attr_context.to_template_context())
+        
+        # Use Django render shortcut
+        return render(request, self.get_template_name(), context)
+
+
+class LocationAttributeRestoreInlineView(BaseAttributeRestoreView):
+    """View for restoring LocationAttribute values from history within the edit modal."""
+    
+    def get_attribute_model_class(self):
+        return LocationAttribute
+    
+    def get( self,
+             request       : HttpRequest,
+             location_id   : int,
+             attribute_id  : int,
+             history_id    : int,
+             *args         : Any,
+             **kwargs      : Any          ) -> HttpResponse:
+        # Validate that the attribute belongs to this location for security  
+        try:
+            attribute: LocationAttribute = LocationAttribute.objects.get(pk=attribute_id, location_id=location_id)
+        except LocationAttribute.DoesNotExist:
+            return page_not_found_response(request, "Attribute not found.")
+        
+        # Get the history record to restore from
+        history_model_class = attribute._get_history_model_class()
+        if not history_model_class:
+            return page_not_found_response(request, "No history available for this attribute type.")
+        
+        try:
+            history_record = history_model_class.objects.get(pk=history_id, attribute=attribute)
+        except history_model_class.DoesNotExist:
+            return page_not_found_response(request, "History record not found.")
+        
+        # Restore the value from the history record
+        attribute.value = history_record.value
+        attribute.save()  # This will create a new history record
+        
+        # Delegate to LocationEditView logic to return updated modal content
+        location: Location = attribute.location
+        
+        # Use LocationEditView's render_success_response logic
+        from .location_edit_response_renderer import LocationEditResponseRenderer
+        renderer: LocationEditResponseRenderer = LocationEditResponseRenderer()
+        return renderer.render_success_response(
+            request = request,
+            location = location,
+        )

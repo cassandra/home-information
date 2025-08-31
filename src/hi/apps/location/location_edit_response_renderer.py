@@ -1,8 +1,9 @@
 """
-EntityEditResponseRenderer - Handles template rendering and response generation for entity editing.
+LocationEditResponseRenderer - Handles template rendering and response generation for location editing.
 
-This class encapsulates the complex rendering and response logic that was previously
-embedded in EntityEditView, following the "keep views simple" design philosophy.
+This class follows the same pattern as EntityEditResponseRenderer, encapsulating the complex 
+rendering and response logic that was previously embedded in LocationEditView, following 
+the "keep views simple" design philosophy.
 """
 from typing import Any, Dict, Optional, Tuple
 from django.db.models import QuerySet
@@ -12,15 +13,15 @@ from django.urls import reverse
 
 import hi.apps.common.antinode as antinode
 from hi.constants import DIVID
-from .entity_edit_form_handler import EntityEditFormHandler
-from .models import Entity, EntityAttribute
-from .forms import EntityForm, EntityAttributeRegularFormSet
-from .entity_attribute_edit_context import EntityAttributeEditContext
+from .location_edit_form_handler import LocationEditFormHandler
+from .models import Location, LocationAttribute
+from .edit.forms import LocationV2EditForm, LocationAttributeRegularFormSet
+from .location_attribute_edit_context import LocationAttributeEditContext
 
 
-class EntityEditResponseRenderer:
+class LocationEditResponseRenderer:
     """
-    Handles template rendering and response generation for entity editing.
+    Handles template rendering and response generation for location editing.
     
     This class encapsulates business logic for:
     - Building template contexts
@@ -29,23 +30,23 @@ class EntityEditResponseRenderer:
     """
 
     def __init__(self) -> None:
-        self.form_handler: EntityEditFormHandler = EntityEditFormHandler()
+        self.form_handler: LocationEditFormHandler = LocationEditFormHandler()
 
     def build_template_context( self,
-                                entity                       : Entity,
-                                entity_form                  : EntityForm,
-                                file_attributes              : QuerySet[EntityAttribute],
-                                regular_attributes_formset   : EntityAttributeRegularFormSet,
+                                location                     : Location,
+                                location_form                : LocationV2EditForm,
+                                file_attributes              : QuerySet[LocationAttribute],
+                                regular_attributes_formset   : LocationAttributeRegularFormSet,
                                 success_message              : Optional[str] = None,
                                 error_message                : Optional[str] = None,
                                 has_errors                   : bool = False ) -> Dict[str, Any]:
         """Build context dictionary for template rendering.
         
         Args:
-            entity: Entity instance
-            entity_form: EntityForm instance
+            location: Location instance
+            location_form: LocationV2EditForm instance
             file_attributes: QuerySet of file attributes
-            regular_attributes_formset: EntityAttributeRegularFormSet instance
+            regular_attributes_formset: LocationAttributeRegularFormSet instance
             success_message: Optional success message for display
             error_message: Optional error message for display
             has_errors: Boolean indicating if forms have errors
@@ -53,16 +54,16 @@ class EntityEditResponseRenderer:
         Returns:
             dict: Template context with all required variables
         """
-        non_field_errors = self.form_handler.collect_form_errors(entity_form, regular_attributes_formset)
+        non_field_errors = self.form_handler.collect_form_errors(location_form, regular_attributes_formset)
         
         # Create the attribute edit context for template generalization
-        attr_context = EntityAttributeEditContext(entity)
+        attr_context = LocationAttributeEditContext(location)
         
         # Build context with both old and new patterns for compatibility
         context = {
-            'entity': entity,
-            'entity_form': entity_form,
-            'owner_form': entity_form,  # Generic alias for templates
+            'location': location,
+            'location_form': location_form,
+            'owner_form': location_form,  # Generic alias for templates
             'file_attributes': file_attributes,
             'regular_attributes_formset': regular_attributes_formset,
             'success_message': success_message,
@@ -78,9 +79,9 @@ class EntityEditResponseRenderer:
 
     def render_update_fragments( self,
                                  request                     : HttpRequest,
-                                 entity                      : Entity,
-                                 entity_form                 : Optional[EntityForm] = None,
-                                 regular_attributes_formset  : Optional[EntityAttributeRegularFormSet] = None,
+                                 location                    : Location,
+                                 location_form               : Optional[LocationV2EditForm] = None,
+                                 regular_attributes_formset  : Optional[LocationAttributeRegularFormSet] = None,
                                  success_message             : Optional[str] = None,
                                  error_message               : Optional[str] = None,
                                  has_errors                  : bool = False ) -> Tuple[str, str]:
@@ -90,8 +91,8 @@ class EntityEditResponseRenderer:
         
         Args:
             request: HTTP request object
-            entity: Entity instance
-            entity_form: Optional entity form (creates fresh if None)
+            location: Location instance
+            location_form: Optional location form (creates fresh if None)
             regular_attributes_formset: Optional formset (creates fresh if None)
             success_message: Success message for display
             error_message: Error message for display
@@ -101,19 +102,19 @@ class EntityEditResponseRenderer:
             tuple: (content_body_html, upload_form_html)
         """
         # If forms not provided, create fresh ones (for success case)
-        if entity_form is None or regular_attributes_formset is None:
-            fresh_entity_form, file_attributes, fresh_property_formset = self.form_handler.create_entity_forms(entity)
-            if entity_form is None:
-                entity_form = fresh_entity_form
+        if location_form is None or regular_attributes_formset is None:
+            fresh_location_form, file_attributes, fresh_property_formset = self.form_handler.create_location_forms(location)
+            if location_form is None:
+                location_form = fresh_location_form
             if regular_attributes_formset is None:
                 regular_attributes_formset = fresh_property_formset
         else:
             # Forms provided, we still need file_attributes
-            _, file_attributes, _ = self.form_handler.create_entity_forms(entity)
+            _, file_attributes, _ = self.form_handler.create_location_forms(location)
         
         # Build template context
         context: Dict[str, Any] = self.build_template_context(
-            entity, entity_form, file_attributes, regular_attributes_formset,
+            location, location_form, file_attributes, regular_attributes_formset,
             success_message, error_message, has_errors
         )
         
@@ -121,29 +122,29 @@ class EntityEditResponseRenderer:
         return self.render_content_fragments(
             request=request,
             context=context,
-            entity=entity,
+            location=location,
         )
 
     def render_content_fragments( self,
-                                  request : HttpRequest,
-                                  context : Dict[str, Any],
-                                  entity  : Entity         ) -> Tuple[str, str]:
+                                  request  : HttpRequest,
+                                  context  : Dict[str, Any],
+                                  location : Location         ) -> Tuple[str, str]:
         """Render both content body and upload form fragments.
         
         Args:
             request: HTTP request object
             context: Template context dictionary
-            entity: Entity instance
+            location: Location instance
             
         Returns:
             tuple: (content_body_html, upload_form_html)
         """
         # Render both fragments
-        content_body: str = render_to_string('entity/panes/entity_edit_content_body.html', context, request=request)
+        content_body: str = render_to_string('location/panes/location_edit_content_body.html', context, request=request)
 
-        # Upload form needs to be specific to entity
-        file_upload_url: str = reverse('entity_attribute_upload',
-                                       kwargs={'entity_id': entity.id})
+        # Upload form needs to be specific to location
+        file_upload_url: str = reverse('location_attribute_upload',
+                                       kwargs={'location_id': location.id})
         upload_form: str = render_to_string(
             'attribute/components/upload_form.html',
             {'file_upload_url': file_upload_url},
@@ -153,13 +154,13 @@ class EntityEditResponseRenderer:
         return content_body, upload_form
 
     def render_success_response( self,
-                                 request : HttpRequest,
-                                 entity  : Entity      ) -> 'antinode.Response':
+                                 request  : HttpRequest,
+                                 location : Location      ) -> 'antinode.Response':
         """Render success response using antinode helpers - multiple target replacement.
         
         Args:
             request: HTTP request object
-            entity: Entity instance
+            location: Location instance
             
         Returns:
             antinode.Response: Success response for HTMX update
@@ -167,7 +168,7 @@ class EntityEditResponseRenderer:
         # Re-render both content body and upload form with fresh forms
         content_body, upload_form = self.render_update_fragments(
             request=request,
-            entity=entity, 
+            location=location, 
             success_message="Changes saved successfully"
         )
         
@@ -181,15 +182,15 @@ class EntityEditResponseRenderer:
     def render_error_response(
             self,
             request                     : HttpRequest,
-            entity                      : Entity,
-            entity_form                 : EntityForm,
-            regular_attributes_formset : EntityAttributeRegularFormSet ) -> 'antinode.Response':
+            location                    : Location,
+            location_form               : LocationV2EditForm,
+            regular_attributes_formset  : LocationAttributeRegularFormSet ) -> 'antinode.Response':
         """Render error response using antinode helpers - multiple target replacement.
         
         Args:
             request: HTTP request object
-            entity: Entity instance
-            entity_form: EntityForm instance with validation errors
+            location: Location instance
+            location_form: LocationV2EditForm instance with validation errors
             regular_attributes_formset: FormSet instance with validation errors
             
         Returns:
@@ -198,8 +199,8 @@ class EntityEditResponseRenderer:
         # Re-render both content body and upload form with form errors
         content_body, upload_form = self.render_update_fragments(
             request=request,
-            entity=entity, 
-            entity_form=entity_form, 
+            location=location, 
+            location_form=location_form, 
             regular_attributes_formset=regular_attributes_formset, 
             error_message="Please correct the errors below",
             has_errors=True,
@@ -212,4 +213,3 @@ class EntityEditResponseRenderer:
             },
             status=400
         )
-    

@@ -41,6 +41,14 @@ urlpatterns = [
              views.LocationAttributeRestoreView.as_view(), 
              name='location_attribute_restore'),
     
+    re_path( r'^(?P<location_id>\d+)/attribute/history/(?P<attribute_id>\d+)$', 
+             views.LocationAttributeHistoryInlineView.as_view(), 
+             name='location_attribute_history_inline'),
+    
+    re_path( r'^(?P<location_id>\d+)/attribute/restore/(?P<attribute_id>\d+)/(?P<history_id>\d+)$', 
+             views.LocationAttributeRestoreInlineView.as_view(), 
+             name='location_attribute_restore_inline'),
+    
     re_path( r'^edit/', include('hi.apps.location.edit.urls' )),
 
 ]

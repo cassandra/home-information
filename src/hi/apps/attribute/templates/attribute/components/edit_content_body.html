@@ -1,0 +1,109 @@
+{% load icons %}
+{% comment %}
+Generic V2 Content Body Fragment
+Contains the main content area - used by both initial load and antinode updates
+Includes: owner info (when provided), action bar, and scrollable content
+
+This template works generically for Entity, Location, and future attribute-owning models
+by using the AttributeEditContext pattern.
+{% endcomment %}
+
+<!-- Sticky Panel: Owner Info + Action Bar (always visible) -->
+<div class="attr-v2-sticky-panel">
+  <!-- Basic Owner Information (minimal) - only if owner_form provided -->
+  {% if owner_form %}
+  <div class="attr-v2-entity-info">
+    {% block basic_info %}
+    <div class="attr-v2-basic-info">
+      {% block owner_fields %}
+      <!-- Subclasses should override this block to provide owner-specific fields -->
+      <div class="row">
+        <div class="col-md-12">
+          <div class="form-group mb-0">
+            <small class="text-muted">Name</small>
+            <input type="text" 
+                   id="{{ owner_form.name.id_for_label }}"
+                   name="{{ owner_form.name.html_name }}"
+                   value="{{ owner_form.name.value|default:'' }}"
+                   class="form-control form-control-sm"
+                   {% if owner_form.name.field.required %}required{% endif %}>
+            {% if owner_form.name.errors %}
+              <div class="invalid-feedback d-block">
+                {{ owner_form.name.errors }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endblock %}
+    </div>
+    {% endblock %}
+  </div>
+  {% endif %}
+  
+  <!-- Action Bar -->
+  <div class="attr-v2-action-bar">
+    <div class="attr-v2-action-bar-content">
+      <div>
+        <button id="{{ DIVID.ATTR_V2_UPDATE_BTN }}" 
+                type="submit" 
+                class="btn btn-primary"
+                name="action" 
+                value="update">
+          {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
+        </button>
+        <span id="{{ DIVID.ATTR_V2_DIRTY_MESSAGE }}" class="attr-v2-dirty-message ml-3"></span>
+        <span id="{{ DIVID.ATTR_V2_STATUS_MSG }}" class="attr-v2-status-message ml-2">
+          {% if success_message %}
+            <span class="text-success">{{ success_message }}</span>
+          {% elif error_message %}
+            <span class="text-danger">{{ error_message }}</span>
+            {% if non_field_errors %}
+              {% for error in non_field_errors %}
+                <br><small class="text-danger">{{ error }}</small>
+              {% endfor %}
+            {% endif %}
+          {% endif %}
+        </span>
+      </div>
+      
+      <div class="attr-v2-action-buttons">
+        {% block additional_actions %}
+        {% endblock %}
+        <label for="{{ DIVID.ATTR_V2_FILE_INPUT }}" 
+               class="btn btn-sm btn-outline-primary mb-0">
+          {% icon "upload" size="sm" css_class="hi-icon-left" %}Add File
+        </label>
+        
+        <button id="{{ DIVID.ATTR_V2_ADD_ATTRIBUTE_BTN }}" 
+                type="button" 
+                class="btn btn-sm btn-outline-primary"
+                onclick="showAddAttribute();">
+          {% icon "plus" size="sm" css_class="hi-icon-left" %}Add Info
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scrollable Content Area (below sticky panel) -->
+<div id="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT }}" class="attr-v2-scrollable-content">
+  
+  <!-- Files Section -->
+  {% block files_section %}
+    {% include "attribute/components/file_grid.html" with file_attributes=file_attributes %}
+  {% endblock %}
+  
+  <!-- Properties Section -->
+  {% block properties_section %}
+    {% if regular_attributes_formset %}
+      {{ regular_attributes_formset.management_form }}
+      {% include "attribute/components/regular_attribute_list.html" with regular_attributes_formset=regular_attributes_formset %}
+    {% endif %}
+  {% endblock %}
+  
+  <!-- Additional Sections -->
+  {% block additional_sections %}
+  {% endblock %}
+  
+</div>

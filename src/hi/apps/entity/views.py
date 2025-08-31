@@ -27,6 +27,7 @@ from . import forms
 from .models import Entity, EntityAttribute
 from .transient_models import EntityStateHistoryData
 from .view_mixins import EntityViewMixin
+from .entity_attribute_edit_context import EntityAttributeEditContext
 
 if TYPE_CHECKING:
     from hi.apps.location.models import LocationView
@@ -231,9 +232,13 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
                 entity_attribute_upload_form.save()   
             
             # Render new file card HTML to append to file grid
+            attr_context = EntityAttributeEditContext(entity)
+            context = {'attribute': entity_attribute, 'entity': entity}
+            context.update(attr_context.to_template_context())
+            
             file_card_html: str = render_to_string(
                 'attribute/components/file_card.html',
-                {'attribute': entity_attribute, 'entity': entity},
+                context,
                 request=request
             )
             
@@ -319,6 +324,9 @@ class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
         else:
             history_records = []
         
+        # Create the attribute edit context for template generalization
+        attr_context = EntityAttributeEditContext(attribute.entity)
+        
         context: Dict[str, Any] = {
             'entity': attribute.entity,
             'attribute': attribute,
@@ -326,6 +334,9 @@ class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
             'history_url_name': self.get_history_url_name(),
             'restore_url_name': self.get_restore_url_name(),
         }
+        
+        # Merge in the context variables from AttributeEditContext
+        context.update(attr_context.to_template_context())
         
         # Use Django render shortcut
         return render(request, self.get_template_name(), context)
@@ -367,9 +378,10 @@ class EntityAttributeRestoreInlineView(BaseAttributeRestoreView):
         # Delegate to EntityEditView logic to return updated modal content
         entity: Entity = attribute.entity
         
-        # Use EntityEditView's _render_success_response logic
-        entity_edit_view: EntityEditView = EntityEditView()
-        return entity_edit_view._render_success_response(
+        # Use EntityEditResponseRenderer to return updated modal content
+        from .entity_edit_response_renderer import EntityEditResponseRenderer
+        renderer: EntityEditResponseRenderer = EntityEditResponseRenderer()
+        return renderer.render_success_response(
             request = request,
             entity = entity,
         )

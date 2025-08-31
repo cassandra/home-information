@@ -5,6 +5,7 @@ from django import forms
 from django.conf import settings
 
 from hi.apps.attribute.forms import AttributeForm, AttributeUploadForm
+from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.common.svg_forms import SvgDecimalFormField, SvgFileForm
 from hi.apps.common.svg_models import SvgItemPositionBounds
 
@@ -92,6 +93,42 @@ LocationAttributeFormSet = forms.inlineformset_factory(
 class LocationAttributeUploadForm( AttributeUploadForm ):
     class Meta( AttributeUploadForm.Meta ):
         model = LocationAttribute
+
+
+# V2 Modal Forms - only name field for modal editing
+class LocationV2EditForm( forms.ModelForm ):
+    """
+    Location edit form for V2 modal - only includes name field.
+    Geometry fields (svg_view_box_str, order_id) are edited separately.
+    """
+    
+    class Meta:
+        model = Location
+        fields = ('name',)
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'})
+        }
+
+
+class RegularAttributeBaseFormSet(forms.BaseInlineFormSet):
+    """Base formset that automatically excludes FILE attributes for regular attribute editing"""
+    
+    def get_queryset(self):
+        """Override to automatically filter out FILE attributes"""
+        queryset = super().get_queryset()
+        return queryset.exclude(value_type_str=str(AttributeValueType.FILE))
+
+
+LocationAttributeRegularFormSet = forms.inlineformset_factory(
+    Location,
+    LocationAttribute,
+    form = LocationAttributeForm,
+    formset = RegularAttributeBaseFormSet,
+    extra = 1,
+    max_num = 100,
+    absolute_max = 100,
+    can_delete = True,
+)
 
 
 class LocationViewAddForm(forms.Form):
