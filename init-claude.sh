@@ -15,4 +15,4 @@ else
     echo "✓ GitHub Authorization"
 fi
 
-##claude
+claude
