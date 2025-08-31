@@ -1,3 +1,7 @@
+class MethodNotAllowedError( Exception ):
+    pass
+
+
 class ForceRedirectException( Exception ):
 
     def __init__(self, url, message = 'Force redirect' ):

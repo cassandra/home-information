@@ -1,7 +1,5 @@
 import logging
-from unittest.mock import Mock, patch
 
-from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 
 from hi.apps.collection.collection_manager import CollectionManager
@@ -56,17 +54,14 @@ class TestEntityAddView(DualModeViewTestCase):
         """Clean up singletons when using real objects instead of mocks."""
         # Reset singleton managers to ensure clean state between tests
         try:
-            from hi.apps.collection.collection_manager import CollectionManager
             CollectionManager._instance = None
         except ImportError:
             pass
         try:
-            from hi.apps.entity.entity_manager import EntityManager
             EntityManager._instance = None
         except ImportError:
             pass
         try:
-            from hi.apps.location.location_manager import LocationManager
             LocationManager._instance = None
         except ImportError:
             pass
@@ -489,11 +484,11 @@ class TestManagePairingsView(DualModeViewTestCase):
         # Reset singleton managers to ensure clean state between tests
         try:
             EntityPairingManager._instance = None
-        except:
+        except Exception:
             pass
         try:
             EntityManager._instance = None
-        except:
+        except Exception:
             pass
         super().tearDown()
 
@@ -537,7 +532,8 @@ class TestManagePairingsView(DualModeViewTestCase):
         
         self.assertEqual(response.context['entity'], self.entity)
         self.assertIn('entity_view_group_list', response.context)
-        self.assertEqual(response.context['principal_entity_id_name_prefix'], ManagePairingsView.ENTITY_PAIR_ID_NAME_PREFIX)
+        self.assertEqual(response.context['principal_entity_id_name_prefix'],
+                         ManagePairingsView.ENTITY_PAIR_ID_NAME_PREFIX)
         
         # Verify the view groups were created (should be a list)
         entity_view_groups = response.context['entity_view_group_list']

@@ -51,7 +51,7 @@ class SvgItemFactory( Singleton ):
             viewbox = EntityStyle.get_svg_icon_viewbox( entity_type = item.entity_type )
         else:
             template_name = ItemStyle.get_default_svg_icon_template_name()
-            viewbox = ItemStyle.ItemStyle.get_default_svg_icon_viewbox()
+            viewbox = ItemStyle.get_default_svg_icon_viewbox()
 
         return SvgIconItem(
             html_id = item.html_id,

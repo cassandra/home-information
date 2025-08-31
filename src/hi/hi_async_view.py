@@ -10,6 +10,7 @@ import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
 
 from hi.constants import DIVID
+from hi.exceptions import MethodNotAllowedError
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class HiAsyncView( View ):
 
     def post_template_context( self, request, *args, **kwargs ) -> Dict[ str, str ]:
         """ Can raise exceptions like BadRequest, Http404, etc. """
-        raise NotImplementedError('Subclasses must override this method.')
+        raise MethodNotAllowedError()
 
     def post_content( self, request, *args, **kwargs ) -> str:
         template_name = self.get_template_name()

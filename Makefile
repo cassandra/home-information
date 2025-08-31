@@ -10,7 +10,7 @@ test:
 	cd src && ./manage.py test --keepdb
 
 test-fast:
-	cd src && ./manage.py test --keepdb --parallel 2
+	cd src && ./manage.py test --keepdb --parallel 4
 
 lint:
 	cd src && flake8 --config=.flake8-ci hi/ 2>/dev/null

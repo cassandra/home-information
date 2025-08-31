@@ -8,7 +8,6 @@ from hi.apps.collection.models import Collection
 from hi.apps.control.models import Controller
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity, EntityState
-from hi.apps.location.enums import LocationViewType
 from hi.apps.location.models import Location, LocationView
 from hi.enums import ViewMode, ViewType
 from hi.testing.view_test_base import SyncViewTestCase, DualModeViewTestCase

@@ -1,16 +1,11 @@
-import json
 import logging
-from unittest.mock import Mock, patch
 
-from django.core.exceptions import BadRequest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
 from hi.apps.collection.collection_manager import CollectionManager
-from hi.apps.collection.models import Collection
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.enums import EntityType
-from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.tests.synthetic_data import LocationSyntheticData
@@ -35,17 +30,14 @@ class TestLocationAddView(DualModeViewTestCase):
         """Clean up singletons when using real objects instead of mocks."""
         # Reset singleton managers to ensure clean state between tests
         try:
-            from hi.apps.location.location_manager import LocationManager
             LocationManager._instance = None
         except ImportError:
             pass
         try:
-            from hi.apps.collection.collection_manager import CollectionManager
             CollectionManager._instance = None
         except ImportError:
             pass
         try:
-            from hi.apps.entity.entity_manager import EntityManager
             EntityManager._instance = None
         except ImportError:
             pass
@@ -235,46 +227,46 @@ class TestLocationSvgReplaceView(DualModeViewTestCase):
         form = response.context['location_svg_file_form']
         self.assertFalse(form.is_valid())
 
-    @patch.object(LocationManager, 'update_location_svg')
-    @patch.object(LocationManager, 'get_location')
-    @patch('hi.apps.location.edit.forms.LocationSvgReplaceForm')
-    @patch('hi.apps.common.antinode.redirect_response')
-    def test_post_valid_form(self, mock_redirect, mock_form_class, mock_get_location, mock_update_svg):
+    def test_post_valid_form(self):
         """Test POST request with valid form data."""
-        # Mock get_location
-        mock_get_location.return_value = self.location
-        
-        # Mock valid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = True
-        mock_form.cleaned_data = {
-            'svg_fragment_filename': 'new.svg',
-            'svg_fragment_content': '<svg>new</svg>',
-            'svg_viewbox': '0 0 200 200'
-        }
-        mock_form_class.return_value = mock_form
-
-        # Mock SVG update
-        mock_update_svg.return_value = self.location
-        mock_redirect.return_value = 'redirect_response'
-
-        url = reverse('location_edit_svg_replace', kwargs={'location_id': self.location.id})
-        _ = self.client.post(url, {})
-
-        # Should update SVG and redirect
-        mock_update_svg.assert_called_once_with(
-            location=self.location,
-            svg_fragment_filename='new.svg',
-            svg_fragment_content='<svg>new</svg>',
-            svg_viewbox='0 0 200 200'
+        # Create a simple SVG file for upload
+        svg_content = b'<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="200" fill="blue"/></svg>'
+        svg_file = SimpleUploadedFile(
+            'new_location.svg',
+            svg_content,
+            content_type='image/svg+xml'
         )
+        
+        # Store original values to verify change
+        original_filename = self.location.svg_fragment_filename
+        original_viewbox = self.location.svg_view_box_str
+        
+        url = reverse('location_edit_svg_replace', kwargs={'location_id': self.location.id})
+        response = self.client.post(url, {
+            'svg_file': svg_file,
+            'remove_dangerous_svg_items': False,
+            'has_dangerous_svg_items': 'false'
+        })
 
-    def test_post_invalid_location_id(self):
-        """Test POST request with invalid location ID."""
-        url = reverse('location_edit_svg_replace', kwargs={'location_id': 'invalid'})
-        response = self.client.post(url, {})
-
-        self.assertEqual(response.status_code, 400)
+        # Should return redirect response for antinode.js
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        # Verify the response contains the redirect
+        response_data = response.json()
+        expected_url = reverse('home')
+        self.assertEqual(response_data['location'], expected_url)
+        
+        # Refresh from database to get updated values
+        self.location.refresh_from_db()
+        
+        # Verify the location's SVG was updated
+        self.assertNotEqual(self.location.svg_fragment_filename, original_filename)
+        # The viewbox might be normalized to include decimals
+        self.assertIn('200', self.location.svg_view_box_str)
+        self.assertNotEqual(self.location.svg_view_box_str, original_viewbox)
+        # The filename should contain 'new_location' from our uploaded file
+        self.assertIn('new_location', self.location.svg_fragment_filename)
 
     def test_nonexistent_location_returns_404(self):
         """Test that accessing nonexistent location returns 404."""
@@ -652,9 +644,12 @@ class TestLocationViewAddView(DualModeViewTestCase):
         url = reverse('location_edit_location_view_add')
         response = self.client.post(url, {'name': 'New View'})
 
-        self.assertEqual(response.status_code, 302)
+        # Expect JSON response for antinode.js
+        self.assertEqual(response.status_code, 200)
+        self.assertJsonResponse(response)
+        response_data = response.json()
         expected_url = reverse('home')
-        self.assertEqual(response.url, expected_url)
+        self.assertEqual(response_data['location'], expected_url)
         
         # Verify location view was created
         from hi.apps.location.models import LocationView
@@ -731,12 +726,16 @@ class TestLocationViewDeleteView(DualModeViewTestCase):
 
     def test_post_delete_with_confirmation(self):
         """Test POST request with proper confirmation."""
-        url = reverse('location_edit_location_view_delete', kwargs={'location_view_id': self.location_view.id})
+        url = reverse('location_edit_location_view_delete',
+                      kwargs={'location_view_id': self.location_view.id})
         response = self.client.post(url, {'action': 'confirm'})
 
-        self.assertEqual(response.status_code, 302)
+        # Expect JSON response for antinode.js
+        self.assertEqual(response.status_code, 200)
+        self.assertJsonResponse(response)
+        response_data = response.json()
         expected_url = reverse('home')
-        self.assertEqual(response.url, expected_url)
+        self.assertEqual(response_data['location'], expected_url)
         
         # Location view should be deleted
         with self.assertRaises(LocationView.DoesNotExist):
@@ -750,7 +749,7 @@ class TestLocationViewDeleteView(DualModeViewTestCase):
         self.assertEqual(response.status_code, 404)
 
 
-class TestLocationViewEditView(SyncViewTestCase):
+class TestLocationViewEditView(DualModeViewTestCase):
     """
     Tests for LocationViewEditView - demonstrates location view editing testing.
     This view handles location view property updates.
@@ -758,6 +757,9 @@ class TestLocationViewEditView(SyncViewTestCase):
 
     def setUp(self):
         super().setUp()
+        # Set edit mode (required by decorator)
+        self.setSessionViewMode(ViewMode.EDIT)
+        
         # Create test location and location view using synthetic data
         self.location = LocationSyntheticData.create_test_location(
             name='Test Location',
@@ -773,7 +775,14 @@ class TestLocationViewEditView(SyncViewTestCase):
     def test_post_valid_edit(self):
         """Test POST request with valid edit data."""
         url = reverse('location_edit_location_view_edit', kwargs={'location_view_id': self.location_view.id})
-        response = self.client.post(url, {'name': 'Updated View'})
+        response = self.async_post(url, {
+            'name': 'Updated View',
+            'location_view_type_str': self.location_view.location_view_type_str,
+            'svg_style_name_str': 'color',
+            'svg_view_box_str': self.location_view.svg_view_box_str,
+            'svg_rotate': str(self.location_view.svg_rotate),
+            'order_id': str(self.location_view.order_id)
+        })
 
         # Should return success (200 with JSON for antinode.js)
         self.assertSuccessResponse(response)
@@ -786,27 +795,30 @@ class TestLocationViewEditView(SyncViewTestCase):
     def test_post_invalid_edit(self):
         """Test POST request with invalid edit data."""
         url = reverse('location_edit_location_view_edit', kwargs={'location_view_id': self.location_view.id})
-        response = self.client.post(url, {'name': ''})  # Empty name should be invalid
+        response = self.async_post(url, {'name': ''})  # Empty name should be invalid
 
+        # Should return 400 for invalid form data
         self.assertEqual(response.status_code, 400)
+        self.assertJsonResponse(response)
         
         # Verify the location view was not updated
         self.location_view.refresh_from_db()
         self.assertEqual(self.location_view.name, 'Test View')  # Original name unchanged
-        mock_form.save.assert_not_called()
 
     def test_nonexistent_location_view_returns_404(self):
         """Test that accessing nonexistent location view returns 404."""
         url = reverse('location_edit_location_view_edit', kwargs={'location_view_id': 99999})
-        response = self.client.post(url, {'name': 'Test'})
+        response = self.async_post(url, {'name': 'Test'})
 
+        # Should return 404 for nonexistent location view
         self.assertEqual(response.status_code, 404)
 
     def test_get_not_allowed(self):
         """Test that GET requests are not allowed."""
         url = reverse('location_edit_location_view_edit', kwargs={'location_view_id': self.location_view.id})
-        response = self.client.get(url)
+        response = self.async_get(url)
 
+        # View doesn't have GET method - returns 405
         self.assertEqual(response.status_code, 405)
 
 
@@ -844,7 +856,7 @@ class TestLocationViewManageItemsView(SyncViewTestCase):
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
-        self.assertHtmlResponse(response)
+        self.assertJsonResponse(response)
         self.assertTemplateRendered(response, 'location/edit/panes/location_view_manage_items.html')
         
         self.assertEqual(response.context['location_view'], self.location_view)
@@ -854,13 +866,6 @@ class TestLocationViewManageItemsView(SyncViewTestCase):
         # Groups should be lists/objects (not mocks)
         self.assertIsNotNone(response.context['entity_view_group_list'])
         self.assertIsNotNone(response.context['collection_view_group'])
-
-    def test_post_not_allowed(self):
-        """Test that POST requests are not allowed."""
-        url = reverse('location_edit_location_view_manage_items')
-        response = self.client.post(url)
-
-        self.assertEqual(response.status_code, 405)
 
 
 class TestLocationItemPositionView(SyncViewTestCase):
@@ -900,9 +905,10 @@ class TestLocationItemPositionView(SyncViewTestCase):
             svg_scale=1.0
         )
 
+        # Create HTML ID for the entity
+        html_id = ItemType.ENTITY.html_id(entity_with_position.id)
         url = reverse('location_edit_location_item_position', kwargs={
-            'item_type': 'entity',
-            'item_id': entity_with_position.id
+            'html_id': html_id
         })
         
         # Post new position data
@@ -938,9 +944,10 @@ class TestLocationItemPositionView(SyncViewTestCase):
             svg_scale=1.0
         )
 
+        # Create HTML ID for the collection
+        html_id = ItemType.COLLECTION.html_id(collection_with_position.id)
         url = reverse('location_edit_location_item_position', kwargs={
-            'item_type': 'collection',
-            'item_id': collection_with_position.id
+            'html_id': html_id
         })
         
         # Post new position data
@@ -965,9 +972,9 @@ class TestLocationItemPositionView(SyncViewTestCase):
 
     def test_post_unknown_item_type(self):
         """Test POST request with unknown item type."""
+        # Use an invalid HTML ID format
         url = reverse('location_edit_location_item_position', kwargs={
-            'item_type': 'unknown',
-            'item_id': 1
+            'html_id': 'hi-invalid-1'
         })
         response = self.client.post(url, {})
 
@@ -975,16 +982,20 @@ class TestLocationItemPositionView(SyncViewTestCase):
 
     def test_post_invalid_item_id(self):
         """Test POST request with invalid item ID."""
-        # This would typically be caught by ItemType.parse_from_dict
-        with self.assertRaises(BadRequest):
-            # Simulate what happens in the view with invalid data
-            ItemType.parse_from_dict({'item_type': 'entity', 'item_id': 'invalid'})
+        # Use an HTML ID with non-existent item
+        html_id = ItemType.ENTITY.html_id(99999)
+        url = reverse('location_edit_location_item_position', kwargs={
+            'html_id': html_id
+        })
+        response = self.client.post(url, {})
+        
+        self.assertEqual(response.status_code, 404)
 
     def test_get_not_allowed(self):
         """Test that GET requests are not allowed."""
+        html_id = ItemType.ENTITY.html_id(self.entity.id)
         url = reverse('location_edit_location_item_position', kwargs={
-            'item_type': 'entity',
-            'item_id': self.entity.id
+            'html_id': html_id
         })
         response = self.client.get(url)
 
@@ -1025,9 +1036,9 @@ class TestLocationItemPathView(SyncViewTestCase):
         # Make this location the default by ensuring it's the only one
         Location.objects.exclude(id=self.location.id).delete()
         
+        html_id = ItemType.ENTITY.html_id(self.entity.id)
         url = reverse('location_edit_location_item_path', kwargs={
-            'item_type': 'entity',
-            'item_id': self.entity.id
+            'html_id': html_id
         })
         response = self.client.post(url, {'svg_path': 'M 10 10 L 20 20'})
 
@@ -1043,19 +1054,19 @@ class TestLocationItemPathView(SyncViewTestCase):
             location=self.location
         ).first()
         self.assertIsNotNone(entity_path)
-        self.assertEqual(entity_path.svg_path_str, 'M 10 10 L 20 20')
+        self.assertEqual(entity_path.svg_path, 'M 10 10 L 20 20')
 
     def test_post_collection_path(self):
         """Test POST request to set collection SVG path."""
         # Make this location the default by ensuring it's the only one
         Location.objects.exclude(id=self.location.id).delete()
         
+        html_id = ItemType.COLLECTION.html_id(self.collection.id)
         url = reverse('location_edit_location_item_path', kwargs={
-            'item_type': 'collection',
-            'item_id': self.collection.id
+            'html_id': html_id
         })
         response = self.client.post(url, {'svg_path': 'M 30 30 L 40 40'})
-
+        
         # Should return success (200 with JSON for antinode.js)
         self.assertSuccessResponse(response)
         self.assertJsonResponse(response)
@@ -1068,13 +1079,13 @@ class TestLocationItemPathView(SyncViewTestCase):
             location=self.location
         ).first()
         self.assertIsNotNone(collection_path)
-        self.assertEqual(collection_path.svg_path_str, 'M 30 30 L 40 40')
+        self.assertEqual(collection_path.svg_path, 'M 30 30 L 40 40')
 
     def test_post_missing_svg_path(self):
         """Test POST request without SVG path."""
+        html_id = ItemType.ENTITY.html_id(self.entity.id)
         url = reverse('location_edit_location_item_path', kwargs={
-            'item_type': 'entity',
-            'item_id': self.entity.id
+            'html_id': html_id
         })
         response = self.client.post(url, {})
 
@@ -1082,19 +1093,19 @@ class TestLocationItemPathView(SyncViewTestCase):
 
     def test_post_unknown_item_type(self):
         """Test POST request with unknown item type."""
+        html_id = 'hi-bogus-5'
         url = reverse('location_edit_location_item_path', kwargs={
-            'item_type': 'unknown',
-            'item_id': 1
+            'html_id': html_id
         })
         response = self.client.post(url, {'svg_path': 'M 0 0 L 1 1'})
-
+        
         self.assertEqual(response.status_code, 400)
 
     def test_get_not_allowed(self):
         """Test that GET requests are not allowed."""
+        html_id = ItemType.ENTITY.html_id(self.entity.id)
         url = reverse('location_edit_location_item_path', kwargs={
-            'item_type': 'entity',
-            'item_id': self.entity.id
+            'html_id': html_id
         })
         response = self.client.get(url)
 

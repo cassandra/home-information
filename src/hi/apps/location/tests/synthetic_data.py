@@ -5,13 +5,14 @@ Provides centralized, reusable test data creation following the project's
 synthetic data pattern documented in test-data-management.md.
 """
 import uuid
-from typing import Optional, Dict, Any
+from typing import Optional
 
 from hi.apps.location.models import Location, LocationView
 from hi.apps.entity.models import Entity, EntityPosition
 from hi.apps.collection.models import Collection, CollectionPosition
 from hi.apps.entity.enums import EntityType
 from hi.apps.collection.enums import CollectionType, CollectionViewType
+from hi.apps.location.enums import LocationViewType
 
 
 class LocationSyntheticData:
@@ -39,6 +40,7 @@ class LocationSyntheticData:
         defaults = {
             'location': location,
             'name': f'Test View {unique_id}',
+            'location_view_type_str': str(LocationViewType.DEFAULT),
             'svg_view_box_str': '0 0 800 600',
             'order_id': 0,
             'svg_rotate': 0.0,
@@ -86,8 +88,8 @@ class LocationSyntheticData:
         unique_id = str(uuid.uuid4())[:8]
         collection_defaults = {
             'name': f'Test Collection {unique_id}',
-            'collection_type_str': str(CollectionType.ROOM),
-            'collection_view_type_str': str(CollectionViewType.MAIN),
+            'collection_type_str': str(CollectionType.OTHER),
+            'collection_view_type_str': str(CollectionViewType.LIST),
         }
         # Extract position-specific kwargs
         position_kwargs = {
