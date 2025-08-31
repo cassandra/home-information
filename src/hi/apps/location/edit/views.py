@@ -232,36 +232,19 @@ class LocationAttributeUploadView( View, LocationViewMixin, LocationEditViewMixi
         if location_attribute_upload_form.is_valid():
             with transaction.atomic():
                 location_attribute_upload_form.save()   
-            
-            # Render new file card HTML to append to file grid
-            from django.template.loader import render_to_string
-            file_card_html = render_to_string(
-                'attribute/components/file_card.html',
-                {'attribute': location_attribute}
-            )
-            
-            return antinode.response(
-                append_map={
-                    'attr-v2-file-grid': file_card_html
-                }
-            )
+            status_code = 200
         else:
-            # Render error message to status area
-            from django.template.loader import render_to_string
-            error_html = render_to_string(
-                'attribute/components/status_message.html',
-                {
-                    'error_message': 'File upload failed. Please check the file and try again.',
-                    'form_errors': location_attribute_upload_form.errors
-                }
-            )
-            
-            return antinode.response(
-                insert_map={
-                    'attr-v2-status-msg': error_html
-                },
-                status=400
-            )
+            status_code = 400
+
+        location_edit_data = LocationEditData(
+            location = location,
+            location_attribute_upload_form = location_attribute_upload_form,
+        )
+        return self.location_modal_response(
+            request = request,
+            location_edit_data = location_edit_data,
+            status_code = status_code,
+        )
 
     
 @method_decorator( edit_required, name='dispatch' )
