@@ -5,11 +5,14 @@ from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 
 from hi.apps.collection.collection_manager import CollectionManager
-from hi.apps.collection.models import Collection
+from hi.apps.collection.enums import CollectionType, CollectionViewType
+from hi.apps.collection.models import Collection, CollectionEntity
 from hi.apps.entity.edit.views import ManagePairingsView
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.entity_pairing_manager import EntityPairingManager
-from hi.apps.entity.models import Entity, EntityPosition
+from hi.apps.entity.enums import EntityType
+from hi.apps.entity.models import Entity, EntityPosition, EntityStateDelegation
+from hi.apps.location.enums import LocationViewType
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
 from hi.enums import ViewMode, ViewType
@@ -38,16 +41,36 @@ class TestEntityAddView(DualModeViewTestCase):
         self.location_view = LocationView.objects.create(
             location=self.location,
             name='Test View',
-            location_view_type_str='MAIN',
+            location_view_type_str=str(LocationViewType.DEFAULT),
             svg_view_box_str='0 0 100 100',
             svg_rotate=0.0
         )
         # Create test collection
         self.collection = Collection.objects.create(
             name='Test Collection',
-            collection_type_str='ROOM',
-            collection_view_type_str='MAIN'
+            collection_type_str=str(CollectionType.OTHER),
+            collection_view_type_str=str(CollectionViewType.GRID)
         )
+
+    def tearDown(self):
+        """Clean up singletons when using real objects instead of mocks."""
+        # Reset singleton managers to ensure clean state between tests
+        try:
+            from hi.apps.collection.collection_manager import CollectionManager
+            CollectionManager._instance = None
+        except ImportError:
+            pass
+        try:
+            from hi.apps.entity.entity_manager import EntityManager
+            EntityManager._instance = None
+        except ImportError:
+            pass
+        try:
+            from hi.apps.location.location_manager import LocationManager
+            LocationManager._instance = None
+        except ImportError:
+            pass
+        super().tearDown()
 
     def test_get_entity_add_form(self):
         """Test getting entity add form."""
@@ -107,7 +130,7 @@ class TestEntityAddView(DualModeViewTestCase):
         # Create comprehensive form data for new entity
         form_data = {
             'name': 'Test Entity',
-            'entity_type_str': 'light'
+            'entity_type_str': str(EntityType.LIGHT)
         }
 
         # Count existing entities before
@@ -130,7 +153,7 @@ class TestEntityAddView(DualModeViewTestCase):
         
         # Get the newly created entity
         new_entity = Entity.objects.get(name='Test Entity')
-        self.assertEqual(new_entity.entity_type_str, 'light')
+        self.assertEqual(new_entity.entity_type_str, str(EntityType.LIGHT))
         
         # Test that entity was added to the location view (EntityPosition created)
         # The real managers should handle this integration
@@ -140,88 +163,91 @@ class TestEntityAddView(DualModeViewTestCase):
         entity_position = EntityPosition.objects.get(entity=new_entity)
         self.assertEqual(entity_position.location, self.location_view.location)
 
-    @patch.object(CollectionManager, 'add_entity_to_collection')
-    @patch.object(CollectionManager, 'get_default_collection')
-    @patch('hi.apps.entity.forms.EntityForm')
-    def test_post_valid_form_collection_view(self, mock_form_class, mock_get_collection,
-                                             mock_add_to_collection):
+    def test_post_valid_form_collection_view(self):
         """Test POST request with valid form data in collection view context."""
         # Set collection view context
         self.setSessionViewType(ViewType.COLLECTION)
         
-        # Mock valid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = True
-        mock_entity = Mock()
-        mock_form.save.return_value = mock_entity
-        mock_form_class.return_value = mock_form
-
-        # Mock collection manager
-        mock_get_collection.return_value = self.collection
-
         url = reverse('entity_edit_entity_add')
         response = self.client.post(url, {
-            'name': 'Test Entity',
-            'entity_type_str': 'SWITCH'
+            'name': 'Test Entity Collection',
+            'entity_type_str': str(EntityType.WALL_SWITCH)
         })
 
-        self.assertEqual(response.status_code, 302)
+        # Expect antinode.js response (200 with JSON redirect)
+        self.assertEqual(response.status_code, 200)
+        response_data = response.json()
         expected_url = reverse('home')
-        self.assertEqual(response.url, expected_url)
+        self.assertEqual(response_data['location'], expected_url)
         
-        # Should add entity to collection
-        mock_add_to_collection.assert_called_once_with(
-            entity=mock_entity,
-            collection=self.collection
+        # Verify entity was actually created
+        new_entity = Entity.objects.get(name='Test Entity Collection')
+        self.assertEqual(new_entity.entity_type_str, str(EntityType.WALL_SWITCH))
+        
+        # Verify entity was added to a collection (test real behavior)
+        # In collection view, entities should be added to the default collection
+        # Check if any CollectionEntity relationship exists for this entity
+        self.assertTrue(
+            CollectionEntity.objects.filter(entity=new_entity).exists(),
+            "Entity should be added to a collection in collection view"
         )
 
-    @patch('hi.apps.entity.forms.EntityForm')
-    def test_post_valid_form_other_view_type(self, mock_form_class):
+    def test_post_valid_form_other_view_type(self):
         """Test POST request with valid form data in other view type context."""
         # Set other view type context
         self.setSessionViewType(ViewType.CONFIGURATION)
         
-        # Mock valid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = True
-        mock_entity = Mock()
-        mock_form.save.return_value = mock_entity
-        mock_form_class.return_value = mock_form
-
         url = reverse('entity_edit_entity_add')
         response = self.client.post(url, {
-            'name': 'Test Entity',
-            'entity_type_str': 'SENSOR'
+            'name': 'Test Entity Configuration',
+            'entity_type_str': str(EntityType.MOTION_SENSOR)
         })
 
-        self.assertEqual(response.status_code, 302)
+        # Expect antinode.js response (200 with JSON redirect)
+        self.assertEqual(response.status_code, 200)
+        response_data = response.json()
         expected_url = reverse('home')
-        self.assertEqual(response.url, expected_url)
+        self.assertEqual(response_data['location'], expected_url)
         
-        # Should not add to any specific view
+        # Verify entity was actually created
+        new_entity = Entity.objects.get(name='Test Entity Configuration')
+        self.assertEqual(new_entity.entity_type_str, str(EntityType.MOTION_SENSOR))
+        
+        # Verify entity is NOT added to any collection in non-collection view type
+        self.assertFalse(
+            CollectionEntity.objects.filter(entity=new_entity).exists(),
+            "Entity should NOT be added to any collection in configuration view"
+        )
 
-    @patch.object(LocationManager, 'get_default_location_view')
-    @patch('hi.apps.entity.forms.EntityForm')
-    def test_post_no_location_view_available(self, mock_form_class, mock_get_location_view):
+    def test_post_no_location_view_available(self):
         """Test POST request when no location view is available."""
         # Set location view context
         self.setSessionViewType(ViewType.LOCATION_VIEW)
         
-        # Mock valid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = True
-        mock_entity = Mock()
-        mock_form.save.return_value = mock_entity
-        mock_form_class.return_value = mock_form
-
-        # Mock location manager raising exception
-        mock_get_location_view.side_effect = LocationView.DoesNotExist()
+        # Delete all location views to create the no-location-view scenario
+        LocationView.objects.all().delete()
 
         url = reverse('entity_edit_entity_add')
-        response = self.client.post(url, {'name': 'Test Entity'})
+        response = self.client.post(url, {
+            'name': 'Test Entity No Location',
+            'entity_type_str': str(EntityType.PRESENCE_SENSOR)
+        })
 
-        self.assertEqual(response.status_code, 302)
-        # Should handle gracefully and not crash
+        # Expect antinode.js response (200 with JSON redirect)
+        self.assertEqual(response.status_code, 200)
+        response_data = response.json()
+        expected_url = reverse('home')
+        self.assertEqual(response_data['location'], expected_url)
+        
+        # Verify entity was still created even without location view
+        new_entity = Entity.objects.get(name='Test Entity No Location')
+        self.assertEqual(new_entity.entity_type_str, str(EntityType.PRESENCE_SENSOR))
+        
+        # Verify no EntityPosition was created since no location view exists
+        self.assertFalse(
+            EntityPosition.objects.filter(entity=new_entity).exists(),
+            "No EntityPosition should be created when no location view available"
+        )
 
 
 class TestEntityDeleteView(DualModeViewTestCase):
@@ -238,7 +264,7 @@ class TestEntityDeleteView(DualModeViewTestCase):
         # Create test entity
         self.entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='LIGHT'
+            entity_type_str=str(EntityType.LIGHT)
         )
 
     def test_get_entity_delete_confirmation(self):
@@ -246,7 +272,7 @@ class TestEntityDeleteView(DualModeViewTestCase):
         # Mock entity permission
         self.entity.can_user_delete = True
 
-        url = reverse('entity_delete', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_entity_delete', kwargs={'entity_id': self.entity.id})
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
@@ -259,7 +285,7 @@ class TestEntityDeleteView(DualModeViewTestCase):
         # Mock entity permission
         self.entity.can_user_delete = True
 
-        url = reverse('entity_delete', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_entity_delete', kwargs={'entity_id': self.entity.id})
         response = self.async_get(url)
 
         self.assertSuccessResponse(response)
@@ -273,22 +299,25 @@ class TestEntityDeleteView(DualModeViewTestCase):
         """Test getting entity delete when not allowed."""
         # Mock entity permission
         self.entity.can_user_delete = False
+        self.entity.save()
 
-        url = reverse('entity_delete', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_entity_delete', kwargs={'entity_id': self.entity.id})
         
-        with self.assertRaises(PermissionDenied):
-            _ = self.client.get(url)
+        response = self.client.get(url)
+        self.assertEqual( response.status_code, 403)
+        entity = Entity.objects.get(id=self.entity.id)
+        self.assertIsNotNone( entity )
 
     def test_post_delete_without_confirmation(self):
         """Test POST request without confirmation."""
-        url = reverse('entity_delete', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_entity_delete', kwargs={'entity_id': self.entity.id})
         response = self.client.post(url, {})
 
         self.assertEqual(response.status_code, 400)
 
     def test_post_delete_with_wrong_confirmation(self):
         """Test POST request with wrong confirmation value."""
-        url = reverse('entity_delete', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_entity_delete', kwargs={'entity_id': self.entity.id})
         response = self.client.post(url, {'action': 'cancel'})
 
         self.assertEqual(response.status_code, 400)
@@ -297,23 +326,27 @@ class TestEntityDeleteView(DualModeViewTestCase):
         """Test POST request when deletion not allowed."""
         # Mock entity permission
         self.entity.can_user_delete = False
+        self.entity.save()
 
-        url = reverse('entity_delete', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_entity_delete', kwargs={'entity_id': self.entity.id})
+        response = self.client.post(url, {'action': 'confirm'})
+        self.assertEqual(response.status_code, 403)
+        entity = Entity.objects.get(id=self.entity.id)
+        self.assertIsNotNone( entity )
         
-        with self.assertRaises(PermissionDenied):
-            _ = self.client.post(url, {'action': 'confirm'})
-
     def test_post_delete_with_confirmation(self):
         """Test POST request with proper confirmation."""
         # Mock entity permission
         self.entity.can_user_delete = True
+        self.entity.save()
 
-        url = reverse('entity_delete', kwargs={'entity_id': self.entity.id})
+        url = reverse('entity_edit_entity_delete', kwargs={'entity_id': self.entity.id})
         response = self.client.post(url, {'action': 'confirm'})
 
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
+        response_data = response.json()
         expected_url = reverse('home')
-        self.assertEqual(response.url, expected_url)
+        self.assertEqual(response_data['location'], expected_url)
         
         # Entity should be deleted
         with self.assertRaises(Entity.DoesNotExist):
@@ -321,7 +354,7 @@ class TestEntityDeleteView(DualModeViewTestCase):
 
     def test_nonexistent_entity_returns_404(self):
         """Test that accessing nonexistent entity returns 404."""
-        url = reverse('entity_delete', kwargs={'entity_id': 99999})
+        url = reverse('entity_edit_entity_delete', kwargs={'entity_id': 99999})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 404)
@@ -346,68 +379,60 @@ class TestEntityPositionEditView(SyncViewTestCase):
         )
         self.entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='LIGHT'
+            entity_type_str=str(EntityType.LIGHT)
         )
         self.entity_position = EntityPosition.objects.create(
             entity=self.entity,
             location=self.location,
-            x=50.0,
-            y=50.0
+            svg_x=50.0,
+            svg_y=50.0,
+            svg_rotate=0.0,
+            svg_scale=1.0
         )
 
-    @patch.object(LocationManager, 'get_default_location')
-    @patch('hi.apps.entity.edit.forms.EntityPositionForm')
-    @patch('hi.apps.common.antinode.response')
-    def test_post_valid_position_edit(self, mock_antinode_response, mock_form_class, mock_get_location):
+    def test_post_valid_position_edit(self):
         """Test POST request with valid position data."""
-        mock_get_location.return_value = self.location
-        
-        # Mock valid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = True
-        mock_form_class.return_value = mock_form
-        
-        mock_antinode_response.return_value = 'success_response'
-
-        url = reverse('entity_position_edit', kwargs={'entity_id': self.entity.id})
-        _ = self.client.post(url, {
-            'x': '60.0',
-            'y': '70.0'
-        })
-
-        mock_form.save.assert_called_once()
-        mock_antinode_response.assert_called_once()
-
-    @patch.object(LocationManager, 'get_default_location')
-    @patch('hi.apps.entity.edit.forms.EntityPositionForm')
-    def test_post_invalid_position_edit(self, mock_form_class, mock_get_location):
-        """Test POST request with invalid position data."""
-        mock_get_location.return_value = self.location
-        
-        # Mock invalid form
-        mock_form = Mock()
-        mock_form.is_valid.return_value = False
-        mock_form_class.return_value = mock_form
-
         url = reverse('entity_position_edit', kwargs={'entity_id': self.entity.id})
         response = self.client.post(url, {
-            'x': 'invalid',
-            'y': 'invalid'
+            'svg_x': '60.0',
+            'svg_y': '70.0',
+            'svg_rotate': '0.0',
+            'svg_scale': '1.0'
         })
 
-        # Should still return success but log warning
-        self.assertSuccessResponse(response)
-        mock_form.save.assert_not_called()
-
-    @patch.object(LocationManager, 'get_default_location')
-    def test_post_nonexistent_position(self, mock_get_location):
-        """Test POST request for nonexistent entity position."""
-        mock_get_location.return_value = self.location
+        # Expect antinode.js response (200 with JSON)
+        self.assertEqual(response.status_code, 200)
         
+        # Verify the entity position was actually updated in the database
+        updated_position = EntityPosition.objects.get(entity=self.entity)
+        self.assertEqual(float(updated_position.svg_x), 60.0)
+        self.assertEqual(float(updated_position.svg_y), 70.0)
+
+    def test_post_invalid_position_edit(self):
+        """Test POST request with invalid position data."""
+        url = reverse('entity_position_edit', kwargs={'entity_id': self.entity.id})
+        response = self.client.post(url, {
+            'svg_x': 'invalid',
+            'svg_y': 'invalid',
+            'svg_rotate': 'invalid',
+            'svg_scale': 'invalid'
+        })
+
+        # Should still return success response (antinode.js pattern)
+        # The view likely handles form validation gracefully
+        self.assertEqual(response.status_code, 200)
+        
+        # Verify the entity position was NOT updated (should remain original values)
+        unchanged_position = EntityPosition.objects.get(entity=self.entity)
+        self.assertEqual(float(unchanged_position.svg_x), 50.0)  # Original value
+        self.assertEqual(float(unchanged_position.svg_y), 50.0)  # Original value
+
+    def test_post_nonexistent_position(self):
+        """Test POST request for nonexistent entity position."""
         # Create entity without position
         other_entity = Entity.objects.create(
             name='Other Entity',
-            entity_type_str='SWITCH'
+            entity_type_str=str(EntityType.ON_OFF_SWITCH)
         )
 
         url = reverse('entity_position_edit', kwargs={'entity_id': other_entity.id})
@@ -444,38 +469,65 @@ class TestManagePairingsView(DualModeViewTestCase):
         # Create test entities
         self.entity = Entity.objects.create(
             name='Primary Entity',
-            entity_type_str='THERMOSTAT'
+            entity_type_str=str(EntityType.THERMOSTAT)
         )
         self.paired_entity1 = Entity.objects.create(
             name='Paired Entity 1',
-            entity_type_str='TEMPERATURE_SENSOR'
+            entity_type_str=str(EntityType.THERMOMETER)
         )
         self.paired_entity2 = Entity.objects.create(
             name='Paired Entity 2',
-            entity_type_str='HUMIDITY_SENSOR'
+            entity_type_str=str(EntityType.HYGROMETER)
         )
         self.candidate_entity = Entity.objects.create(
             name='Candidate Entity',
-            entity_type_str='PRESSURE_SENSOR'
+            entity_type_str=str(EntityType.BAROMETER)
         )
+    
+    def tearDown(self):
+        """Clean up singletons when using real objects instead of mocks."""
+        # Reset singleton managers to ensure clean state between tests
+        try:
+            EntityPairingManager._instance = None
+        except:
+            pass
+        try:
+            EntityManager._instance = None
+        except:
+            pass
+        super().tearDown()
 
-    @patch.object(EntityManager, 'create_entity_view_group_list')
-    @patch.object(EntityPairingManager, 'get_candidate_entities')
-    @patch.object(EntityPairingManager, 'get_entity_pairing_list')
-    def test_get_manage_pairings(self, mock_get_pairings, mock_get_candidates, mock_create_groups):
+    def test_get_manage_pairings(self):
         """Test getting manage pairings view."""
-        # Mock pairing data
-        mock_pairing1 = Mock()
-        mock_pairing1.paired_entity = self.paired_entity1
-        mock_pairing2 = Mock()
-        mock_pairing2.paired_entity = self.paired_entity2
-        mock_get_pairings.return_value = [mock_pairing1, mock_pairing2]
+        # Create actual entity pairings in the database
+        # EntityPairingManager looks for entities with delegate relationships
+        # We'll set up the entities to have the proper relationships
         
-        mock_get_candidates.return_value = [self.paired_entity1, self.paired_entity2, self.candidate_entity]
+        # Create entity states to establish principal/delegate relationships
+        from hi.apps.entity.models import EntityState
+        from hi.apps.entity.enums import EntityStateType
         
-        mock_group_list = ['group1', 'group2']
-        mock_create_groups.return_value = mock_group_list
-
+        # Give the primary entity some states so it can be a principal
+        EntityState.objects.create(
+            entity=self.entity,
+            entity_state_type_str=str(EntityStateType.TEMPERATURE),
+            name='temperature'
+        )
+        
+        # Set up delegate relationships using EntityStateDelegation
+        from hi.apps.entity.models import EntityStateDelegation
+        
+        # Create delegations from the primary entity to paired entities
+        for entity_state in self.entity.states.all():
+            EntityStateDelegation.objects.create(
+                entity_state=entity_state,
+                delegate_entity=self.paired_entity1
+            )
+            EntityStateDelegation.objects.create(
+                entity_state=entity_state,
+                delegate_entity=self.paired_entity2
+            )
+        
         url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': self.entity.id})
         response = self.client.get(url)
 
@@ -484,26 +536,16 @@ class TestManagePairingsView(DualModeViewTestCase):
         self.assertTemplateRendered(response, 'entity/edit/modals/manage_pairings.html')
         
         self.assertEqual(response.context['entity'], self.entity)
-        self.assertEqual(response.context['entity_view_group_list'], mock_group_list)
+        self.assertIn('entity_view_group_list', response.context)
         self.assertEqual(response.context['principal_entity_id_name_prefix'], ManagePairingsView.ENTITY_PAIR_ID_NAME_PREFIX)
         
-        # Should call managers with correct data
-        mock_get_pairings.assert_called_once_with(entity=self.entity)
-        mock_get_candidates.assert_called_once_with(entity=self.entity)
-        mock_create_groups.assert_called_once_with(
-            existing_entities=[self.paired_entity1, self.paired_entity2],
-            all_entities=[self.paired_entity1, self.paired_entity2, self.candidate_entity]
-        )
+        # Verify the view groups were created (should be a list)
+        entity_view_groups = response.context['entity_view_group_list']
+        self.assertIsNotNone(entity_view_groups)
+        self.assertIsInstance(entity_view_groups, list)
 
-    @patch.object(EntityManager, 'create_entity_view_group_list')
-    @patch.object(EntityPairingManager, 'get_candidate_entities')
-    @patch.object(EntityPairingManager, 'get_entity_pairing_list')
-    def test_get_manage_pairings_async(self, mock_get_pairings, mock_get_candidates, mock_create_groups):
+    def test_get_manage_pairings_async(self):
         """Test getting manage pairings view with AJAX request."""
-        mock_get_pairings.return_value = []
-        mock_get_candidates.return_value = []
-        mock_create_groups.return_value = []
-
         url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': self.entity.id})
         response = self.async_get(url)
 
@@ -514,64 +556,135 @@ class TestManagePairingsView(DualModeViewTestCase):
         data = response.json()
         self.assertIn('modal', data)
 
-    @patch.object(EntityPairingManager, 'adjust_entity_pairings')
-    @patch('hi.apps.common.antinode.refresh_response')
-    def test_post_update_pairings_success(self, mock_refresh_response, mock_adjust_pairings):
+    def test_post_update_pairings_success(self):
         """Test POST request to update entity pairings successfully."""
-        mock_refresh_response.return_value = 'refresh_response'
-
+        # Set up initial pairings
+        from hi.apps.entity.models import EntityState
+        from hi.apps.entity.enums import EntityStateType
+        
+        # Give the primary entity some states so it can be a principal
+        EntityState.objects.create(
+            entity=self.entity,
+            entity_state_type_str=str(EntityStateType.TEMPERATURE),
+            name='temperature'
+        )
+        
+        # Initially pair entity1 with the primary entity using EntityStateDelegation
+        from hi.apps.entity.models import EntityStateDelegation
+        for entity_state in self.entity.states.all():
+            EntityStateDelegation.objects.create(
+                entity_state=entity_state,
+                delegate_entity=self.paired_entity1
+            )
+        
         url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': self.entity.id})
-        _ = self.client.post(url, {
+        response = self.client.post(url, {
             f'{ManagePairingsView.ENTITY_PAIR_ID_NAME_PREFIX}{self.paired_entity1.id}': 'on',
             f'{ManagePairingsView.ENTITY_PAIR_ID_NAME_PREFIX}{self.candidate_entity.id}': 'on',
             'other-field': 'ignored'
         })
 
-        # Should call adjust_entity_pairings with correct entity IDs
-        mock_adjust_pairings.assert_called_once_with(
-            entity=self.entity,
-            desired_paired_entity_ids={self.paired_entity1.id, self.candidate_entity.id}
-        )
-        mock_refresh_response.assert_called_once()
+        # Should return success (200 with JSON for antinode.js)
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        # Verify the pairings were updated in the database
+        # Check that delegations exist for both entities
+        paired_entity1_delegations = EntityStateDelegation.objects.filter(
+            delegate_entity=self.paired_entity1,
+            entity_state__entity=self.entity
+        ).count()
+        
+        candidate_entity_delegations = EntityStateDelegation.objects.filter(
+            delegate_entity=self.candidate_entity,
+            entity_state__entity=self.entity
+        ).count()
+        
+        # Both should have delegation relationships
+        self.assertGreater(paired_entity1_delegations, 0)
+        self.assertGreater(candidate_entity_delegations, 0)
 
-    @patch.object(EntityPairingManager, 'adjust_entity_pairings')
-    def test_post_update_pairings_error(self, mock_adjust_pairings):
+    def test_post_update_pairings_error(self):
         """Test POST request to update entity pairings with error."""
-        # Mock pairing manager raising error
-        mock_adjust_pairings.side_effect = EntityPairingManager.EntityPairingError("Pairing error")
+        # Try to create an invalid pairing scenario
+        # For example, trying to pair an entity with itself or with invalid entities
+        
+        url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': self.entity.id})
+        
+        # Try to pair with a non-existent entity ID
+        response = self.client.post(url, {
+            f'{ManagePairingsView.ENTITY_PAIR_ID_NAME_PREFIX}99999': 'on'
+        })
 
+        # Should handle the error gracefully
+        # The view should still return success but the pairing won't be created
+        self.assertSuccessResponse(response)
+
+    def test_post_update_pairings_empty_selection(self):
+        """Test POST request with no paired entities selected."""
+        # Set up initial pairings
+        from hi.apps.entity.models import EntityState
+        from hi.apps.entity.enums import EntityStateType
+        
+        # Give the primary entity some states
+        EntityState.objects.create(
+            entity=self.entity,
+            entity_state_type_str=str(EntityStateType.TEMPERATURE),
+            name='temperature'
+        )
+        
+        # Initially pair entities with the primary entity using EntityStateDelegation
+        from hi.apps.entity.models import EntityStateDelegation
+        for entity_state in self.entity.states.all():
+            EntityStateDelegation.objects.create(
+                entity_state=entity_state,
+                delegate_entity=self.paired_entity1
+            )
+            EntityStateDelegation.objects.create(
+                entity_state=entity_state,
+                delegate_entity=self.paired_entity2
+            )
+        
         url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': self.entity.id})
         response = self.client.post(url, {
-            f'{ManagePairingsView.ENTITY_PAIR_ID_NAME_PREFIX}{self.paired_entity1.id}': 'on'
-        })
-
-        self.assertEqual(response.status_code, 400)
-
-    @patch.object(EntityPairingManager, 'adjust_entity_pairings')
-    @patch('hi.apps.common.antinode.refresh_response')
-    def test_post_update_pairings_empty_selection(self, mock_refresh_response, mock_adjust_pairings):
-        """Test POST request with no paired entities selected."""
-        mock_refresh_response.return_value = 'refresh_response'
-
-        url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': self.entity.id})
-        _ = self.client.post(url, {
             'other-field': 'value'
+            # No entity pairing fields selected
         })
 
-        # Should call with empty set
-        mock_adjust_pairings.assert_called_once_with(
-            entity=self.entity,
-            desired_paired_entity_ids=set()
-        )
+        # Should succeed
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        # Verify all pairings were removed (empty selection means unpair all)
+        # Check that no delegations exist for these entities
+        paired_entity1_delegations = EntityStateDelegation.objects.filter(
+            delegate_entity=self.paired_entity1,
+            entity_state__entity=self.entity
+        ).count()
+        
+        paired_entity2_delegations = EntityStateDelegation.objects.filter(
+            delegate_entity=self.paired_entity2,
+            entity_state__entity=self.entity
+        ).count()
+        
+        # Both should have no delegation relationships
+        self.assertEqual(paired_entity1_delegations, 0)
+        self.assertEqual(paired_entity2_delegations, 0)
 
-    @patch.object(EntityPairingManager, 'adjust_entity_pairings')
-    @patch('hi.apps.common.antinode.refresh_response')
-    def test_post_update_pairings_field_parsing(self, mock_refresh_response, mock_adjust_pairings):
+    def test_post_update_pairings_field_parsing(self):
         """Test POST request field parsing for entity IDs."""
-        mock_refresh_response.return_value = 'refresh_response'
-
+        # Set up the entity to be able to have pairings
+        from hi.apps.entity.models import EntityState
+        from hi.apps.entity.enums import EntityStateType
+        
+        EntityState.objects.create(
+            entity=self.entity,
+            entity_state_type_str=str(EntityStateType.TEMPERATURE),
+            name='temperature'
+        )
+        
         url = reverse('entity_edit_manage_pairings', kwargs={'entity_id': self.entity.id})
-        _ = self.client.post(url, {
+        response = self.client.post(url, {
             f'{ManagePairingsView.ENTITY_PAIR_ID_NAME_PREFIX}{self.paired_entity1.id}': 'on',
             f'{ManagePairingsView.ENTITY_PAIR_ID_NAME_PREFIX}{self.paired_entity2.id}': 'on',
             'entity-pair-id-invalid': 'on',  # Should be ignored (no number)
@@ -579,11 +692,32 @@ class TestManagePairingsView(DualModeViewTestCase):
             'no-numbers-here': 'on'  # Should be ignored (no match)
         })
 
-        # Should only include valid entity IDs
-        mock_adjust_pairings.assert_called_once_with(
-            entity=self.entity,
-            desired_paired_entity_ids={self.paired_entity1.id, self.paired_entity2.id}
-        )
+        # Should succeed
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        # Verify only the valid entity IDs were processed
+        # Check delegation relationships
+        paired_entity1_delegations = EntityStateDelegation.objects.filter(
+            delegate_entity=self.paired_entity1,
+            entity_state__entity=self.entity
+        ).count()
+        
+        paired_entity2_delegations = EntityStateDelegation.objects.filter(
+            delegate_entity=self.paired_entity2,
+            entity_state__entity=self.entity
+        ).count()
+        
+        candidate_entity_delegations = EntityStateDelegation.objects.filter(
+            delegate_entity=self.candidate_entity,
+            entity_state__entity=self.entity
+        ).count()
+        
+        # Only entity1 and entity2 should be paired
+        self.assertGreater(paired_entity1_delegations, 0)
+        self.assertGreater(paired_entity2_delegations, 0)
+        # Candidate entity should not be paired (wasn't in the request)
+        self.assertEqual(candidate_entity_delegations, 0)
 
     def test_nonexistent_entity_returns_404(self):
         """Test that accessing nonexistent entity returns 404."""

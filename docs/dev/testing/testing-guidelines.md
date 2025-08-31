@@ -53,7 +53,7 @@ with patch.object(manager, 'fallback_handler', mock_fallback):
     self.assertIsNone(result)  # Verify expected failure behavior
 ```
 
-### Additional Testing Anti-Patterns
+### NEVER Use a mock of a class when the real class is available
 
 #### Mock-Centric Testing Instead of Behavior Testing
 
@@ -102,6 +102,8 @@ def test_fetch_and_parse_integration(self, mock_get):
     self.assertIsInstance(result, ExpectedDataType)
     self.assertEqual(result.parsed_field, "expected_value")
 ```
+
+### Additional Testing Anti-Patterns
 
 #### Testing Implementation Details Instead of Interface Contracts
 

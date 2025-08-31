@@ -102,7 +102,7 @@ class ReorderItemsView( View ):
     def post( self, request, *args, **kwargs ):
         try:
             item_type_id_list = ItemType.parse_list_from_dict( request.POST )
-        except ValueError as e:
+        except (TypeError, ValueError ) as e:
             raise BadRequest( str(e) )
 
         try:
@@ -172,6 +172,8 @@ class EntityStateValueChoicesView( View ):
             try:
                 controller = Controller.objects.select_related('entity_state').get( id = instance_id )
                 entity_state = controller.entity_state
+            except Controller.DoesNotExist:
+                raise Http404( 'Unknown controller.' )
             except EntityState.DoesNotExist:
                 raise Http404( 'Unknown entity state.' )
 

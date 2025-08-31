@@ -204,7 +204,7 @@ class TestCollectionDeleteView(DualModeViewTestCase):
 
     def test_get_collection_delete_confirmation(self):
         """Test getting collection delete confirmation."""
-        url = reverse('collection_delete', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_edit_collection_delete', kwargs={'collection_id': self.collection.id})
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
@@ -214,7 +214,7 @@ class TestCollectionDeleteView(DualModeViewTestCase):
 
     def test_get_collection_delete_async(self):
         """Test getting collection delete confirmation with AJAX request."""
-        url = reverse('collection_delete', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_edit_collection_delete', kwargs={'collection_id': self.collection.id})
         response = self.async_get(url)
 
         self.assertSuccessResponse(response)
@@ -226,21 +226,21 @@ class TestCollectionDeleteView(DualModeViewTestCase):
 
     def test_post_delete_without_confirmation(self):
         """Test POST request without confirmation."""
-        url = reverse('collection_delete', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_edit_collection_delete', kwargs={'collection_id': self.collection.id})
         response = self.client.post(url, {})
 
         self.assertEqual(response.status_code, 400)
 
     def test_post_delete_with_wrong_confirmation(self):
         """Test POST request with wrong confirmation value."""
-        url = reverse('collection_delete', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_edit_collection_delete', kwargs={'collection_id': self.collection.id})
         response = self.client.post(url, {'action': 'cancel'})
 
         self.assertEqual(response.status_code, 400)
 
     def test_post_delete_with_confirmation(self):
         """Test POST request with proper confirmation."""
-        url = reverse('collection_delete', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_edit_collection_delete', kwargs={'collection_id': self.collection.id})
         response = self.client.post(url, {'action': 'confirm'})
 
         # Should return success with JSON redirect response
@@ -260,7 +260,7 @@ class TestCollectionDeleteView(DualModeViewTestCase):
         # Set this collection as current in session
         self.setSessionCollection(self.collection)
         
-        url = reverse('collection_delete', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_edit_collection_delete', kwargs={'collection_id': self.collection.id})
         response = self.client.post(url, {'action': 'confirm'})
 
         self.assertEqual(response.status_code, 302)
@@ -268,7 +268,7 @@ class TestCollectionDeleteView(DualModeViewTestCase):
 
     def test_nonexistent_collection_returns_404(self):
         """Test that accessing nonexistent collection returns 404."""
-        url = reverse('collection_delete', kwargs={'collection_id': 99999})
+        url = reverse('collection_edit_collection_delete', kwargs={'collection_id': 99999})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 404)

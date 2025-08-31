@@ -226,12 +226,13 @@ class EntityPairingManager(Singleton):
                     continue
                 continue
 
-            for to_delete_entity in to_delete_entity_ids:
+            for to_delete_entity_id in to_delete_entity_ids:
+                to_delete_entity = models.Entity.objects.get(id=to_delete_entity_id)
                 if entity_has_states:
                     principle_entity = entity
-                    delegate_entity = to_add_entity
+                    delegate_entity = to_delete_entity
                 else:
-                    principle_entity = to_add_entity
+                    principle_entity = to_delete_entity
                     delegate_entity = entity
 
                 delegation_queryset = delegate_entity.entity_state_delegations.select_related(
