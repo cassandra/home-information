@@ -243,13 +243,19 @@ class TestReorderItemsView(SyncViewTestCase):
             collection_view_type_str=str(CollectionViewType.GRID)
         )
 
-    @patch('hi.apps.edit.views.CollectionReorderEntitiesView')
-    def test_reorder_entities_in_collection(self, mock_view_class):
+    def test_reorder_entities_in_collection(self):
         """Test reordering entities within a collection."""
-        # Mock the response to avoid execution
-        from django.http import JsonResponse
-        mock_view = mock_view_class.return_value
-        mock_view.post.return_value = JsonResponse({'status': 'ok'})
+        from hi.apps.collection.models import CollectionEntity
+        
+        # Create entities and add them to collection
+        entity1 = Entity.objects.create(name='Entity 1', entity_type_str=str(EntityType.LIGHT))
+        entity2 = Entity.objects.create(name='Entity 2', entity_type_str=str(EntityType.LIGHT)) 
+        entity3 = Entity.objects.create(name='Entity 3', entity_type_str=str(EntityType.LIGHT))
+        
+        # Add entities to collection with initial order
+        CollectionEntity.objects.create(collection=self.collection, entity=entity1, order_id=0)
+        CollectionEntity.objects.create(collection=self.collection, entity=entity2, order_id=1) 
+        CollectionEntity.objects.create(collection=self.collection, entity=entity3, order_id=2)
         
         # Set collection context
         self.setSessionViewType(ViewType.COLLECTION)
@@ -260,79 +266,107 @@ class TestReorderItemsView(SyncViewTestCase):
         import json
         post_data = {
             'html_id_list': json.dumps([
-                'hi-entity-1',
-                'hi-entity-2',
-                'hi-entity-3',
+                f'hi-entity-{entity3.id}',  # Move entity3 to first
+                f'hi-entity-{entity1.id}',  # Move entity1 to second
+                f'hi-entity-{entity2.id}',  # Move entity2 to third
             ])
         }
         response = self.client.post(url, post_data)
 
-        # Should delegate to CollectionReorderEntitiesView
-        mock_view.post.assert_called_once()
-        call_args = mock_view.post.call_args
-        # Check that collection_id and entity_id_list were passed
-        self.assertIn('collection_id', call_args[1])
-        self.assertIn('entity_id_list', call_args[1])
-        self.assertEqual(call_args[1]['collection_id'], self.collection.id)
-        # The entity_id_list should be a JSON string
-        entity_ids = json.loads(call_args[1]['entity_id_list'])
-        self.assertEqual(entity_ids, [1, 2, 3])
+        # Should return success
+        self.assertSuccessResponse(response)
+        
+        # Verify entities were reordered in the database
+        reordered_entities = list(CollectionEntity.objects.filter(collection=self.collection).order_by('order_id'))
+        self.assertEqual(reordered_entities[0].entity, entity3)
+        self.assertEqual(reordered_entities[1].entity, entity1) 
+        self.assertEqual(reordered_entities[2].entity, entity2)
 
-    @patch('hi.apps.edit.views.CollectionReorder')
-    def test_reorder_collections(self, mock_view_class):
+    def test_reorder_collections(self):
         """Test reordering collections."""
-        # Mock the response to avoid execution
-        from django.http import JsonResponse
-        mock_view = mock_view_class.return_value
-        mock_view.post.return_value = JsonResponse({'status': 'ok'})
+        # Create additional collections with different order_ids (self.collection already exists from setUp)
+        collection1 = Collection.objects.create(
+            name='Collection 1', 
+            collection_type_str=str(CollectionType.OTHER),
+            collection_view_type_str=str(CollectionViewType.GRID), 
+            order_id=0
+        )
+        collection2 = Collection.objects.create(
+            name='Collection 2', 
+            collection_type_str=str(CollectionType.OTHER),
+            collection_view_type_str=str(CollectionViewType.GRID),
+            order_id=1
+        )
         
         url = reverse('edit_reorder_items')
         # The view expects html_id_list as a JSON array with hi- prefix
         import json
         post_data = {
             'html_id_list': json.dumps([
-                'hi-collection-1',
-                'hi-collection-2',
+                f'hi-collection-{collection2.id}',  # Move collection2 to first
+                f'hi-collection-{collection1.id}',  # Move collection1 to second
+                f'hi-collection-{self.collection.id}',  # Move self.collection to third
             ])
         }
         response = self.client.post(url, post_data)
 
-        # Should delegate to CollectionReorder
-        mock_view.post.assert_called_once()
-        call_args = mock_view.post.call_args
-        # Check that collection_id_list was passed
-        self.assertIn('collection_id_list', call_args[1])
-        # The collection_id_list should be a JSON string
-        collection_ids = json.loads(call_args[1]['collection_id_list'])
-        self.assertEqual(collection_ids, [1, 2])
+        # Should return success
+        self.assertSuccessResponse(response)
+        
+        # Verify collections were reordered in the database
+        reordered_collections = list(Collection.objects.all().order_by('order_id'))
+        self.assertEqual(reordered_collections[0], collection2)
+        self.assertEqual(reordered_collections[1], collection1)
+        self.assertEqual(reordered_collections[2], self.collection)
 
-    @patch('hi.apps.edit.views.LocationViewReorder')
-    def test_reorder_location_views(self, mock_view_class):
+    def test_reorder_location_views(self):
         """Test reordering location views."""
-        # Mock the response to avoid execution
-        from django.http import JsonResponse
-        mock_view = mock_view_class.return_value
-        mock_view.post.return_value = JsonResponse({'status': 'ok'})
+        # Create location views with different order_ids
+        location_view1 = LocationView.objects.create(
+            location=self.location,
+            name='View 1', 
+            location_view_type_str='MAIN',
+            svg_view_box_str='0 0 100 100',
+            svg_rotate=0.0,
+            order_id=0
+        )
+        location_view2 = LocationView.objects.create(
+            location=self.location,
+            name='View 2',
+            location_view_type_str='MAIN', 
+            svg_view_box_str='0 0 100 100',
+            svg_rotate=0.0,
+            order_id=1
+        )
+        location_view3 = LocationView.objects.create(
+            location=self.location,
+            name='View 3',
+            location_view_type_str='MAIN',
+            svg_view_box_str='0 0 100 100', 
+            svg_rotate=0.0,
+            order_id=2
+        )
         
         url = reverse('edit_reorder_items')
         # The view expects html_id_list as a JSON array with hi- prefix
         import json
         post_data = {
             'html_id_list': json.dumps([
-                'hi-location_view-1',
-                'hi-location_view-2',
+                f'hi-location_view-{location_view3.id}',  # Move view3 to first
+                f'hi-location_view-{location_view1.id}',  # Move view1 to second
+                f'hi-location_view-{location_view2.id}',  # Move view2 to third
             ])
         }
         response = self.client.post(url, post_data)
 
-        # Should delegate to LocationViewReorder
-        mock_view.post.assert_called_once()
-        call_args = mock_view.post.call_args
-        # Check that location_view_id_list was passed
-        self.assertIn('location_view_id_list', call_args[1])
-        # The location_view_id_list should be a JSON string
-        location_view_ids = json.loads(call_args[1]['location_view_id_list'])
-        self.assertEqual(location_view_ids, [1, 2])
+        # Should return success
+        self.assertSuccessResponse(response)
+        
+        # Verify location views were reordered in the database
+        reordered_views = list(LocationView.objects.all().order_by('order_id'))
+        self.assertEqual(reordered_views[0], location_view3)
+        self.assertEqual(reordered_views[1], location_view1)
+        self.assertEqual(reordered_views[2], location_view2)
 
     def test_reorder_entity_outside_collection_context(self):
         """Test that entity reordering outside collection context fails."""
