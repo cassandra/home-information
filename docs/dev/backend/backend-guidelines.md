@@ -369,6 +369,7 @@ To add a new tab section to the Configuration UI:
 - Async/sync patterns: [Async Sync Patterns](async-sync-patterns.md)
 - Integration patterns: [Integration Guidelines](../integrations/integration-guidelines.md)
 - Testing: [Testing Guidelines](../testing/testing-guidelines.md)
+- Generic Attributes [Attribute Editing Integration Guide](./attribute-editing-integration-guide.md)
 
 ## Debugging
 
