@@ -1,10 +1,7 @@
-import json
 import logging
-from unittest.mock import Mock, patch
 
 from django.urls import reverse
 
-from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection, CollectionPosition
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location, LocationView
@@ -204,7 +201,7 @@ class TestCollectionDeleteView(DualModeViewTestCase):
 
     def test_get_collection_delete_confirmation(self):
         """Test getting collection delete confirmation."""
-        url = reverse('collection_delete', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_edit_collection_delete', kwargs={'collection_id': self.collection.id})
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
@@ -214,7 +211,7 @@ class TestCollectionDeleteView(DualModeViewTestCase):
 
     def test_get_collection_delete_async(self):
         """Test getting collection delete confirmation with AJAX request."""
-        url = reverse('collection_delete', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_edit_collection_delete', kwargs={'collection_id': self.collection.id})
         response = self.async_get(url)
 
         self.assertSuccessResponse(response)
@@ -226,21 +223,21 @@ class TestCollectionDeleteView(DualModeViewTestCase):
 
     def test_post_delete_without_confirmation(self):
         """Test POST request without confirmation."""
-        url = reverse('collection_delete', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_edit_collection_delete', kwargs={'collection_id': self.collection.id})
         response = self.client.post(url, {})
 
         self.assertEqual(response.status_code, 400)
 
     def test_post_delete_with_wrong_confirmation(self):
         """Test POST request with wrong confirmation value."""
-        url = reverse('collection_delete', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_edit_collection_delete', kwargs={'collection_id': self.collection.id})
         response = self.client.post(url, {'action': 'cancel'})
 
         self.assertEqual(response.status_code, 400)
 
     def test_post_delete_with_confirmation(self):
         """Test POST request with proper confirmation."""
-        url = reverse('collection_delete', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_edit_collection_delete', kwargs={'collection_id': self.collection.id})
         response = self.client.post(url, {'action': 'confirm'})
 
         # Should return success with JSON redirect response
@@ -260,15 +257,24 @@ class TestCollectionDeleteView(DualModeViewTestCase):
         # Set this collection as current in session
         self.setSessionCollection(self.collection)
         
-        url = reverse('collection_delete', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_edit_collection_delete', kwargs={'collection_id': self.collection.id})
         response = self.client.post(url, {'action': 'confirm'})
 
-        self.assertEqual(response.status_code, 302)
-        # Should clear collection from session
+        # Should return success with JSON redirect response
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        data = response.json()
+        expected_url = reverse('home')
+        self.assertEqual(data['location'], expected_url)
+        
+        # Collection should be deleted
+        with self.assertRaises(Collection.DoesNotExist):
+            Collection.objects.get(id=self.collection.id)
 
     def test_nonexistent_collection_returns_404(self):
         """Test that accessing nonexistent collection returns 404."""
-        url = reverse('collection_delete', kwargs={'collection_id': 99999})
+        url = reverse('collection_edit_collection_delete', kwargs={'collection_id': 99999})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 404)
@@ -339,72 +345,6 @@ class TestCollectionEditView(SyncViewTestCase):
         self.assertEqual(response.status_code, 405)
 
 
-class TestCollectionReorder(SyncViewTestCase):
-    """
-    Tests for CollectionReorder - demonstrates collection reordering testing.
-    This view handles reordering collections.
-    """
-
-    def setUp(self):
-        super().setUp()
-        # Set edit mode (required by decorator)
-        self.setSessionViewMode(ViewMode.EDIT)
-        
-        # Create test collections
-        self.collection1 = Collection.objects.create(
-            name='Collection 1',
-            collection_type_str='other',
-            collection_view_type_str='grid'
-        )
-        self.collection2 = Collection.objects.create(
-            name='Collection 2',
-            collection_type_str='electronics',
-            collection_view_type_str='grid'
-        )
-
-    @patch.object(CollectionManager, 'set_collection_order')
-    @patch('hi.apps.common.antinode.response')
-    def test_post_valid_reorder(self, mock_antinode_response, mock_set_order):
-        """Test POST request with valid reorder data."""
-        mock_antinode_response.return_value = 'success_response'
-        
-        collection_id_list = [self.collection2.id, self.collection1.id]
-        url = reverse('collection_reorder', kwargs={
-            'collection_id_list': json.dumps(collection_id_list)
-        })
-        _ = self.client.post(url)
-
-        mock_set_order.assert_called_once_with(collection_id_list=collection_id_list)
-        mock_antinode_response.assert_called_once_with(main_content='OK')
-
-    def test_post_invalid_json(self):
-        """Test POST request with invalid JSON data."""
-        url = reverse('collection_reorder', kwargs={
-            'collection_id_list': 'invalid-json'
-        })
-        response = self.client.post(url)
-
-        self.assertEqual(response.status_code, 400)
-
-    def test_post_empty_collection_list(self):
-        """Test POST request with empty collection list."""
-        url = reverse('collection_reorder', kwargs={
-            'collection_id_list': json.dumps([])
-        })
-        response = self.client.post(url)
-
-        self.assertEqual(response.status_code, 400)
-
-    def test_get_not_allowed(self):
-        """Test that GET requests are not allowed."""
-        url = reverse('collection_reorder', kwargs={
-            'collection_id_list': json.dumps([1, 2])
-        })
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 405)
-
-
 class TestCollectionPositionEditView(SyncViewTestCase):
     """
     Tests for CollectionPositionEditView - demonstrates collection position editing testing.
@@ -452,7 +392,9 @@ class TestCollectionPositionEditView(SyncViewTestCase):
         url = reverse('collection_position_edit', kwargs={'collection_id': self.collection.id})
         response = self.client.post(url, {
             'svg_x': '60.0',
-            'svg_y': '70.0'
+            'svg_y': '70.0',
+            'svg_scale': '1.0',
+            'svg_rotate': '0.0'
         })
 
         # Should return success with JSON response
@@ -527,118 +469,85 @@ class TestCollectionManageItemsView(SyncViewTestCase):
             collection_view_type_str='grid'
         )
 
-    @patch.object(CollectionManager, 'get_default_collection')
-    @patch.object(CollectionManager, 'create_entity_collection_group_list')
-    def test_get_manage_items_view(self, mock_create_group_list, mock_get_default):
+    def test_get_manage_items_view(self):
         """Test getting collection manage items view."""
-        mock_get_default.return_value = self.collection
-        mock_group_list = ['group1', 'group2']
-        mock_create_group_list.return_value = mock_group_list
-
-        url = reverse('collection_manage_items')
+        # Ensure this collection is the default by setting order_id=0
+        self.collection.order_id = 0
+        self.collection.save()
+        
+        # Create a location and location view for middleware to find
+        location = Location.objects.create(
+            name='Test Location',
+            svg_fragment_filename='test.svg',
+            svg_view_box_str='0 0 100 100',
+            order_id=1
+        )
+        
+        _ = LocationView.objects.create(
+            location=location,
+            name='Test View',
+            location_view_type_str='MAIN',
+            svg_view_box_str='0 0 100 100',
+            svg_rotate=0.0,
+            order_id=0
+        )
+        
+        # Create some entities to populate the collection groups  
+        _ = Entity.objects.create(
+            name='Test Entity 1',
+            entity_type_str='light'
+        )
+        _ = Entity.objects.create(
+            name='Test Entity 2',
+            entity_type_str='sensor'
+        )
+        
+        url = reverse('collection_edit_collection_manage_items')
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
-        self.assertHtmlResponse(response)
-        self.assertTemplateRendered(response, 'collection/edit/panes/collection_manage_items.html')
+        self.assertJsonResponse(response)  # HiSideView returns JSON
         
-        self.assertEqual(response.context['entity_collection_group_list'], mock_group_list)
-        mock_create_group_list.assert_called_once_with(collection=self.collection)
+        # Parse JSON response - HiSideView inserts content into hi-side-content
+        data = response.json()
+        self.assertIn('insert', data)
+        self.assertIn('hi-side-content', data['insert'])
+        
+        # Verify the manage items view rendered with entity groups
+        side_content = data['insert']['hi-side-content']
+        self.assertIn('Items in Collection', side_content)
+        self.assertIn('Test Entity 1', side_content)
+        self.assertIn('Test Entity 2', side_content)
 
     def test_post_not_allowed(self):
         """Test that POST requests are not allowed."""
-        url = reverse('collection_manage_items')
+        # Ensure this collection is the default by setting order_id=0
+        self.collection.order_id = 0
+        self.collection.save()
+        
+        # Create a location and location view for middleware to find
+        location = Location.objects.create(
+            name='Test Location',
+            svg_fragment_filename='test.svg',
+            svg_view_box_str='0 0 100 100',
+            order_id=1
+        )
+        
+        LocationView.objects.create(
+            location=location,
+            name='Test View',
+            location_view_type_str='MAIN',
+            svg_view_box_str='0 0 100 100',
+            svg_rotate=0.0,
+            order_id=0
+        )
+        
+        url = reverse('collection_edit_collection_manage_items')
         response = self.client.post(url)
 
         self.assertEqual(response.status_code, 405)
 
-
-class TestCollectionReorderEntitiesView(SyncViewTestCase):
-    """
-    Tests for CollectionReorderEntitiesView - demonstrates entity reordering testing.
-    This view handles reordering entities within a collection.
-    """
-
-    def setUp(self):
-        super().setUp()
-        # Set edit mode (required by decorator)
-        self.setSessionViewMode(ViewMode.EDIT)
         
-        # Create test collection and entities
-        self.collection = Collection.objects.create(
-            name='Test Collection',
-            collection_type_str='other',
-            collection_view_type_str='grid'
-        )
-        self.entity1 = Entity.objects.create(
-            name='Entity 1',
-            entity_type_str='light'
-        )
-        self.entity2 = Entity.objects.create(
-            name='Entity 2',
-            entity_type_str='on_off_switch'
-        )
-
-    @patch.object(CollectionManager, 'set_collection_entity_order')
-    @patch('hi.apps.common.antinode.response')
-    def test_post_valid_entity_reorder(self, mock_antinode_response, mock_set_order):
-        """Test POST request with valid entity reorder data."""
-        mock_antinode_response.return_value = 'success_response'
-        
-        entity_id_list = [self.entity2.id, self.entity1.id]
-        url = reverse('collection_reorder_entities', kwargs={
-            'collection_id': self.collection.id,
-            'entity_id_list': json.dumps(entity_id_list)
-        })
-        _ = self.client.post(url)
-
-        mock_set_order.assert_called_once_with(
-            collection=self.collection,
-            entity_id_list=entity_id_list
-        )
-        mock_antinode_response.assert_called_once_with(main_content='OK')
-
-    def test_post_invalid_json(self):
-        """Test POST request with invalid JSON data."""
-        url = reverse('collection_reorder_entities', kwargs={
-            'collection_id': self.collection.id,
-            'entity_id_list': 'invalid-json'
-        })
-        response = self.client.post(url)
-
-        self.assertEqual(response.status_code, 400)
-
-    def test_post_empty_entity_list(self):
-        """Test POST request with empty entity list."""
-        url = reverse('collection_reorder_entities', kwargs={
-            'collection_id': self.collection.id,
-            'entity_id_list': json.dumps([])
-        })
-        response = self.client.post(url)
-
-        self.assertEqual(response.status_code, 400)
-
-    def test_nonexistent_collection_returns_404(self):
-        """Test that accessing nonexistent collection returns 404."""
-        url = reverse('collection_reorder_entities', kwargs={
-            'collection_id': 99999,
-            'entity_id_list': json.dumps([1, 2])
-        })
-        response = self.client.post(url)
-
-        self.assertEqual(response.status_code, 404)
-
-    def test_get_not_allowed(self):
-        """Test that GET requests are not allowed."""
-        url = reverse('collection_reorder_entities', kwargs={
-            'collection_id': self.collection.id,
-            'entity_id_list': json.dumps([1, 2])
-        })
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 405)
-
-
 class TestCollectionEntityToggleView(SyncViewTestCase):
     """
     Tests for CollectionEntityToggleView - demonstrates entity toggle testing.
@@ -661,66 +570,54 @@ class TestCollectionEntityToggleView(SyncViewTestCase):
             entity_type_str='light'
         )
 
-    @patch.object(CollectionManager, 'get_collection_data')
-    @patch.object(CollectionManager, 'toggle_entity_in_collection')
-    @patch('hi.apps.common.antinode.response')
-    def test_post_toggle_entity_add(self, mock_antinode_response, mock_toggle, mock_get_data):
+    def test_post_toggle_entity_add(self):
         """Test POST request to add entity to collection."""
-        # Mock entity being added (returns True)
-        mock_toggle.return_value = True
+        from hi.apps.collection.models import CollectionEntity
         
-        # Mock collection data
-        mock_collection_data = Mock()
-        mock_collection_data.to_template_context.return_value = {'collection': self.collection}
-        mock_get_data.return_value = mock_collection_data
+        # Verify entity is not in collection initially
+        self.assertFalse(CollectionEntity.objects.filter(collection=self.collection,
+                                                         entity=self.entity).exists())
         
-        mock_antinode_response.return_value = 'success_response'
-
-        url = reverse('collection_entity_toggle', kwargs={
+        url = reverse('collection_edit_collection_entity_toggle', kwargs={
             'collection_id': self.collection.id,
             'entity_id': self.entity.id
         })
-        _ = self.client.post(url)
+        response = self.client.post(url)
+        
+        # Should return success with antinode response (JSON format)
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        # Verify entity was added to collection
+        self.assertTrue(CollectionEntity.objects.filter(collection=self.collection,
+                                                        entity=self.entity).exists())
 
-        mock_toggle.assert_called_once_with(
-            entity=self.entity,
-            collection=self.collection
-        )
-        mock_get_data.assert_called_once_with(
-            collection=self.collection,
-            is_editing=True
-        )
-        mock_antinode_response.assert_called_once()
-
-    @patch.object(CollectionManager, 'get_collection_data')
-    @patch.object(CollectionManager, 'toggle_entity_in_collection')
-    @patch('hi.apps.common.antinode.response')
-    def test_post_toggle_entity_remove(self, mock_antinode_response, mock_toggle, mock_get_data):
+    def test_post_toggle_entity_remove(self):
         """Test POST request to remove entity from collection."""
-        # Mock entity being removed (returns False)
-        mock_toggle.return_value = False
+        from hi.apps.collection.models import CollectionEntity
         
-        # Mock collection data
-        mock_collection_data = Mock()
-        mock_collection_data.to_template_context.return_value = {'collection': self.collection}
-        mock_get_data.return_value = mock_collection_data
+        # Add entity to collection first
+        CollectionEntity.objects.create(collection=self.collection, entity=self.entity)
+        self.assertTrue(CollectionEntity.objects.filter(collection=self.collection,
+                                                        entity=self.entity).exists())
         
-        mock_antinode_response.return_value = 'success_response'
-
-        url = reverse('collection_entity_toggle', kwargs={
+        url = reverse('collection_edit_collection_entity_toggle', kwargs={
             'collection_id': self.collection.id,
             'entity_id': self.entity.id
         })
-        _ = self.client.post(url)
-
-        mock_toggle.assert_called_once_with(
-            entity=self.entity,
-            collection=self.collection
-        )
+        response = self.client.post(url)
+        
+        # Should return success with antinode response (JSON format)
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        # Verify entity was removed from collection
+        self.assertFalse(CollectionEntity.objects.filter(collection=self.collection,
+                                                         entity=self.entity).exists())
 
     def test_nonexistent_collection_returns_404(self):
         """Test that accessing nonexistent collection returns 404."""
-        url = reverse('collection_entity_toggle', kwargs={
+        url = reverse('collection_edit_collection_entity_toggle', kwargs={
             'collection_id': 99999,
             'entity_id': self.entity.id
         })
@@ -730,7 +627,7 @@ class TestCollectionEntityToggleView(SyncViewTestCase):
 
     def test_nonexistent_entity_returns_404(self):
         """Test that accessing nonexistent entity returns 404."""
-        url = reverse('collection_entity_toggle', kwargs={
+        url = reverse('collection_edit_collection_entity_toggle', kwargs={
             'collection_id': self.collection.id,
             'entity_id': 99999
         })
@@ -740,7 +637,7 @@ class TestCollectionEntityToggleView(SyncViewTestCase):
 
     def test_get_not_allowed(self):
         """Test that GET requests are not allowed."""
-        url = reverse('collection_entity_toggle', kwargs={
+        url = reverse('collection_edit_collection_entity_toggle', kwargs={
             'collection_id': self.collection.id,
             'entity_id': self.entity.id
         })

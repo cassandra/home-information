@@ -8,7 +8,7 @@ from django.db import transaction
 from django.test import TransactionTestCase
 
 from hi.apps.entity.entity_manager import EntityManager
-from hi.apps.entity.enums import EntityType
+from hi.apps.entity.enums import EntityType, EntityTransitionType
 from hi.apps.entity.models import Entity, EntityPath, EntityPosition
 from hi.apps.location.models import Location, LocationView
 
@@ -67,7 +67,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         
         # Verify transition occurred
         self.assertTrue(transition_occurred)
-        self.assertEqual(transition_type, "icon_to_path")
+        self.assertEqual(transition_type, EntityTransitionType.ICON_TO_PATH)
         
         # Verify EntityPosition is preserved
         self.assertTrue(
@@ -115,7 +115,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         
         # Verify transition occurred
         self.assertTrue(transition_occurred)
-        self.assertEqual(transition_type, "path_to_icon")
+        self.assertEqual(transition_type, EntityTransitionType.PATH_TO_ICON)
         
         # Verify EntityPath is preserved
         self.assertTrue(
@@ -170,7 +170,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         
         # Should be path to icon since both representations now exist 
         self.assertTrue(transition_occurred)
-        self.assertEqual(transition_type, "path_to_icon")
+        self.assertEqual(transition_type, EntityTransitionType.PATH_TO_ICON)
         
         # Verify original position is preserved
         entity_position = EntityPosition.objects.get(
@@ -206,7 +206,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         
         # Should recognize transition from preserved path to icon
         self.assertTrue(transition_occurred)
-        self.assertEqual(transition_type, "path_to_icon")
+        self.assertEqual(transition_type, EntityTransitionType.PATH_TO_ICON)
         
         # Transition to path type  
         self.entity.entity_type_str = str(EntityType.WALL)
@@ -218,7 +218,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         
         # Should recognize transition to path when both exist (icon_to_path)
         self.assertTrue(transition_occurred)
-        self.assertEqual(transition_type, "icon_to_path")
+        self.assertEqual(transition_type, EntityTransitionType.ICON_TO_PATH)
         
         # Both should still exist
         self.assertEqual(EntityPosition.objects.filter(entity=self.entity).count(), 1)
@@ -247,7 +247,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         )
         
         self.assertTrue(transition_occurred)
-        self.assertEqual(transition_type, "icon_to_icon")
+        self.assertEqual(transition_type, EntityTransitionType.ICON_TO_ICON)
         
         # Only position should exist
         self.assertEqual(EntityPosition.objects.filter(entity=self.entity).count(), 1)
@@ -277,7 +277,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         )
         
         self.assertTrue(transition_occurred)
-        self.assertEqual(transition_type, "path_to_path")
+        self.assertEqual(transition_type, EntityTransitionType.PATH_TO_PATH)
         
         # Only path should exist
         self.assertEqual(EntityPosition.objects.filter(entity=self.entity).count(), 0)
@@ -292,7 +292,7 @@ class TestEntityTypeTransitions(TransactionTestCase):
         )
         
         self.assertFalse(transition_occurred)
-        self.assertEqual(transition_type, "no_location_view")
+        self.assertEqual(transition_type, EntityTransitionType.NO_LOCATION_VIEW)
         return
     
     def test_path_center_calculation(self):

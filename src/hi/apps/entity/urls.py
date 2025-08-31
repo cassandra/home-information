@@ -21,9 +21,9 @@ urlpatterns = [
              views.EntityStateHistoryView.as_view(), 
              name='entity_state_history' ),
 
-    re_path( r'^details/(?P<entity_id>\d+)$', 
-             views.EntityDetailsView.as_view(), 
-             name='entity_details' ),
+    re_path( r'^edit_mode/(?P<entity_id>\d+)$', 
+             views.EntityEditModeView.as_view(), 
+             name='entity_edit_mode' ),
 
     re_path( r'^attribute/upload/(?P<entity_id>\d+)$', 
              views.EntityAttributeUploadView.as_view(), 
@@ -36,6 +36,14 @@ urlpatterns = [
     re_path( r'^attribute/restore/(?P<attribute_id>\d+)$', 
              views.EntityAttributeRestoreView.as_view(), 
              name='entity_attribute_restore'),
+
+    re_path( r'^entity/(?P<entity_id>\d+)/attribute/(?P<attribute_id>\d+)/history/inline/$', 
+             views.EntityAttributeHistoryInlineView.as_view(), 
+             name='entity_attribute_history_inline'),
+    
+    re_path( r'^entity/(?P<entity_id>\d+)/attribute/(?P<attribute_id>\d+)/restore/inline/(?P<history_id>\d+)/$', 
+             views.EntityAttributeRestoreInlineView.as_view(), 
+             name='entity_attribute_restore_inline'),
 
     re_path( r'^edit/', include('hi.apps.entity.edit.urls' )),
 

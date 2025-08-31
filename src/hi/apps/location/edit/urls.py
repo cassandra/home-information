@@ -5,7 +5,7 @@ from . import views
 
 urlpatterns = [
 
-    re_path( r'^location/add$', 
+    re_path( r'^location/add/first$', 
              views.LocationAddFirstView.as_view(), 
              name='location_edit_location_add_first'),
 

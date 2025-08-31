@@ -197,7 +197,7 @@ class IntegrationManager(Singleton):
 
 ## Django Views
 
-**Simple Views**: Our design philophy is to keep the Django view classes in views.py somewhat simple. When where the viws need non-trivial computations, database queries or construction of intricate data structure, we use some helper class to encapsulate the business logic. For example, the method _group_history_by_time() should be moved to a helper class.  In this case, given the scope of video browsing, it makes sense for there to be a dedicated class for all the various helpers needed related to this feature.
+**Simple Views**: Our design philophy is to keep the Django view classes in views.py somewhat simple. When where the views need non-trivial computations, database queries or construction of intricate data structure, we use some helper class to encapsulate the business logic. For example, the method _group_history_by_time() should be moved to a helper class.  In this case, given the scope of video browsing, it makes sense for there to be a dedicated class for all the various helpers needed related to this feature.
 
 **URL Names**: Always leverage Django url names and never depend on details and strings of user-facing urls.
 

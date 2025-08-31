@@ -197,6 +197,13 @@ You are familiar with:
 - The project's BaseTestCase and ViewTestBase patterns
 - Development data injection system for runtime behavior modification
 
+If you are running into difficulties that hint there may be some missing project-specific context, search through this docs for informations that may help:
+- docs/dev/testing/testing-lessons-learned.md
+
+For examples of test cases, search through this doc to see if any match the test case you are working on:
+- docs/dev/testing/test-examples/README.md
+
+
 ## Your Testing Strategy
 
 ### Database vs Mock Testing Decisions

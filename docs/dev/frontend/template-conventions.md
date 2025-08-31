@@ -1,5 +1,17 @@
 # Template Conventions
 
+## The "Hi Grid" Template Structure
+
+### Important DIVIDs for Main Page Layout
+
+We gathered strings that need to be shared between client and server in `src/hi/constants.py:DIVID`. The important ones that define the top-level page layout of `src/hi/templates/pages/hi_grid.html` are:
+
+- `#hi-main-content` - Main display area, excluding header buttons, footer buttons and side panel
+- `#hi-side-content` - Side panel content area
+- `#hi-top-buttons` - Top button toolbar area
+- `#hi-bottom-buttons` - Bottom button toolbar area
+- `#hi-config-integration-tab` - Integrations use this for configuration-related views
+
 ## Template Directory Structure
 
 ### App Module Templates

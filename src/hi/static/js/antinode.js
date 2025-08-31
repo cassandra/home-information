@@ -73,7 +73,8 @@
 //      "setAttributes": {"id1": {...}},   // Set element attributes
 //      "modal": "<div>...</div>",         // Create and show modal
 //      "pushUrl": "/new/url",             // Update browser URL without reload
-//      "resetScrollbar": true              // Reset to top of page
+//      "resetScrollbar": true,            // Reset to top of page
+//      "scrollTo": "element-id"           // Scroll to specified element ID
 //    }
 
 // ====================
@@ -272,7 +273,9 @@
                     }
                 }
             });
-        }
+        },
+        
+        addAfterAsyncRenderFunction: addAfterAsyncRenderFunction
     }
     
     window.AN = AN;
@@ -669,6 +672,22 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
 
     if ( 'resetScrollbar' in json ) {
         window.scrollTo(0, 0);
+    }
+    
+    // Scroll to specified element after DOM updates are complete
+    if ( 'scrollTo' in json ) {
+        let targetId = json['scrollTo'];
+        let targetElement = $("#" + targetId);
+        if ( targetElement.length > 0 ) {
+            // Use smooth scrolling for better user experience
+            targetElement[0].scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'nearest',
+                inline: 'nearest'
+            });
+        } else {
+            console.warn('AntiNode scrollTo: Target element not found:', targetId);
+        }
     }
     
     if ( typeof handlePostAsyncUpdate === "function") {

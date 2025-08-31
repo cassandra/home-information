@@ -16,6 +16,7 @@ from django.http import (
     HttpResponseServerError,
 )
 
+from .exceptions import MethodNotAllowedError
 from .view_parameters import ViewParameters
 from . import views
 
@@ -67,6 +68,8 @@ class ExceptionMiddleware(object):
             return views.not_authorized_response(request, message=str(exception))
         if isinstance( exception, Http404 ):
             return views.page_not_found_response(request, message=str(exception))
+        if isinstance( exception, MethodNotAllowedError ):
+            return views.method_not_allowed_response(request, message=str(exception))
 
         logger.exception( f'Exception caught in middleware: {exception}' )
         return views.internal_error_response(request, message=str(exception) )

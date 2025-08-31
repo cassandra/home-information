@@ -5,7 +5,7 @@
   </div>
   <div>
     {% if request.view_parameters.is_editing %}
-    <a href="{% url 'entity_details' entity_id=entity.id %}"
+    <a href="{% url 'entity_edit_mode' entity_id=entity.id %}"
        data-async="true">
       {{ entity.name }}
     </a>

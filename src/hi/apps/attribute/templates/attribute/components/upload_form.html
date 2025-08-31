@@ -1,0 +1,13 @@
+<form action="{{ file_upload_url }}" 
+      method="post" 
+      enctype="multipart/form-data"
+      class="form" 
+      data-async="true"
+      data-stay-in-modal="true"
+      style="display: none;">
+  {% csrf_token %}
+  <input type="file" 
+         id="{{ DIVID.ATTR_V2_FILE_INPUT }}" 
+         name="file_value" 
+         onchange="Hi.submitForm(this);">
+</form>

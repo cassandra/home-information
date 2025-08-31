@@ -12,7 +12,7 @@ from django.views.generic import View
 from hi.apps.collection.collection_manager import CollectionManager
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.entity_manager import EntityManager
-from hi.apps.entity.entity_pairing_manager import EntityPairingManager
+from hi.apps.entity.entity_pairing_manager import EntityPairingManager, EntityPairingError
 from hi.apps.entity.forms import EntityForm
 from hi.apps.entity.models import Entity, EntityPosition
 from hi.apps.entity.view_mixins import EntityViewMixin
@@ -112,7 +112,7 @@ class EntityDeleteView( HiModalView, EntityViewMixin ):
             raise BadRequest( 'Missing confirmation value.' )
 
         if not entity.can_user_delete:
-            raise PermissionDenied( request, message = 'This entity cannot be deleted.' )
+            raise PermissionDenied( 'This entity cannot be deleted.' )
                 
         entity.delete()
 
@@ -126,6 +126,7 @@ class EntityPositionEditView( View, EntityViewMixin ):
     def post(self, request, *args, **kwargs):
         entity = self.get_entity( request, *args, **kwargs )
         location = LocationManager().get_default_location( request = request )
+
         try:
             entity_position = EntityPosition.objects.get(
                 entity = entity,
@@ -138,7 +139,7 @@ class EntityPositionEditView( View, EntityViewMixin ):
             location.svg_position_bounds,
             request.POST,
             instance = entity_position,
-        )
+        )        
         if entity_position_form.is_valid():
             entity_position_form.save()
         else:
@@ -216,5 +217,5 @@ class ManagePairingsView( HiModalView, EntityViewMixin ):
                 desired_paired_entity_ids = desired_paired_entity_ids,
             )
             return antinode.refresh_response()
-        except EntityPairingManager.EntityPairingError as epe:
+        except EntityPairingError as epe:
             raise BadRequest( str(epe) )

@@ -173,6 +173,56 @@ During investigation, if an issue involves **both** design/UX work **and** imple
 - Get explicit "approved for implementation" comment before coding begins
 - Use GitHub issue linking (`Closes #123`) to maintain traceability between design and implementation issues
 
+#### Design Work Documentation Workflow
+
+When working on design-focused issues (UX improvements, UI redesigns, mockups, wireframes):
+
+**Local Work Directory Structure:**
+```bash
+# All design work goes in data/design (git ignored)
+data/design/issue-{number}/
+├── mockup.html                    # Interactive HTML mockups
+├── architecture.md                # Technical architecture docs  
+├── interaction-patterns.md        # UX interaction specifications
+├── design-summary.md              # Executive summary
+└── other-design-artifacts.*       # Additional files as needed
+```
+
+**Design Workflow Process:**
+1. **Create issue subdirectory**: `mkdir -p data/design/issue-{number}`
+2. **Iterate locally**: Create, refine, and iterate on design documents locally
+3. **No repository commits**: Design work products stay local only (`data/` is in .gitignore)
+4. **Post to GitHub issue**: Share stable versions via GitHub issue comments/attachments
+
+**GitHub Issue Documentation Pattern:**
+```markdown
+## Phase X Design Complete - Ready for Review
+
+Brief summary of key decisions and deliverables:
+
+1. **Interactive Mockup** (attached) - HTML file for browser viewing
+2. **Architecture Document** (comment below) - Technical specifications
+3. **Interaction Patterns** (comment below) - UX behavior definitions
+
+[Key decisions summary...]
+
+Ready for stakeholder review and implementation planning.
+```
+
+**Content Organization:**
+- **Visual deliverables** (HTML mockups, images): Attach as GitHub issue attachments
+- **Textual content** (markdown docs): Post as regular GitHub issue comments
+- **Benefits**: Attachments can be downloaded/viewed directly, comments are searchable and linkable
+
+**Design Iteration Process:**
+1. Create design documents in `data/design/issue-{number}/`
+2. Iterate and refine locally based on feedback
+3. Post important checkpoints or final versions to GitHub issue
+4. Never commit design work products to repository
+5. Maintain audit trail in GitHub issue comments
+
+This workflow keeps the repository clean while providing comprehensive design documentation and stakeholder review capabilities.
+
 5.5. **For Complex Issues - Apply Multi-Phase Strategy** (when applicable):
    - If issue involves multiple aspects, significant trade-offs, or substantial complexity, apply the multi-phase methodology from [Domain Guidelines](dev/domain/domain-guidelines.md#complex-issue-implementation-strategy)
    - Post phase breakdown to GitHub issue before starting implementation

@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity, EntityPath, EntityPosition
-from hi.apps.entity.enums import EntityGroupType
+from hi.apps.entity.enums import EntityGroupType, EntityType
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
@@ -83,7 +83,7 @@ class TestEntityManager(BaseTestCase):
         # Create test entity
         entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='LIGHT',
+            entity_type_str=str(EntityType.LIGHT),
             integration_id='test_entity_001',
             integration_name='test_integration',
         )
@@ -122,7 +122,7 @@ class TestEntityManager(BaseTestCase):
             # Create test data
             entity = Entity.objects.create(
                 name='Test Entity',
-                entity_type_str='LIGHT',
+                entity_type_str=str(EntityType.LIGHT),
                 integration_id='test_entity_001',
                 integration_name='test_integration',
             )
@@ -159,41 +159,41 @@ class TestEntityManager(BaseTestCase):
             self.skipTest("Required models not available for testing")
         return
 
-    def test_get_entity_details_data_returns_complete_data_structure(self):
-        """Test get_entity_details_data business logic - complex method integrating multiple systems."""
+    def test_get_entity_edit_mode_data_returns_complete_data_structure(self):
+        """Test get_entity_edit_mode_data business logic - complex method integrating multiple systems."""
         manager = EntityManager()
         
         # Create test entity
         entity = Entity.objects.create(
             name='Test Camera',
-            entity_type_str='CAMERA',
+            entity_type_str=str(EntityType.CAMERA),
             integration_id='test_camera_001',
             integration_name='test_integration',
         )
         
         # Test with no location_view (basic case)
-        details_data = manager.get_entity_details_data(
+        edit_mode_data = manager.get_entity_edit_mode_data(
             entity=entity,
             location_view=None,
             is_editing=False
         )
         
         # Verify complete data structure is returned
-        self.assertIsNotNone(details_data)
-        self.assertIsNotNone(details_data.entity_edit_data)
-        self.assertEqual(details_data.entity_edit_data.entity, entity)
-        self.assertIsNotNone(details_data.entity_pairing_list)
+        self.assertIsNotNone(edit_mode_data)
+        self.assertEqual(edit_mode_data.entity, entity)
+        self.assertIsNotNone(edit_mode_data.entity_form)
+        self.assertIsNotNone(edit_mode_data.entity_pairing_list)
         
         # Without location_view, position form should be None
-        self.assertIsNone(details_data.entity_position_form)
+        self.assertIsNone(edit_mode_data.entity_position_form)
         
         # Test non-editing mode doesn't create position form
-        details_data_non_edit = manager.get_entity_details_data(
+        edit_mode_data_non_edit = manager.get_entity_edit_mode_data(
             entity=entity,
             location_view=None,
             is_editing=True  # Even with editing=True, no location_view means no form
         )
-        self.assertIsNone(details_data_non_edit.entity_position_form)
+        self.assertIsNone(edit_mode_data_non_edit.entity_position_form)
         return
 
     def test_create_entity_view_group_list_business_logic(self):
@@ -203,21 +203,21 @@ class TestEntityManager(BaseTestCase):
         # Create test entities of different types
         light_entity = Entity.objects.create(
             name='Living Room Light',
-            entity_type_str='LIGHT',
+            entity_type_str=str(EntityType.LIGHT),
             integration_id='light_001',
             integration_name='test_integration',
         )
         
         camera_entity = Entity.objects.create(
             name='Front Door Camera',
-            entity_type_str='CAMERA',
+            entity_type_str=str(EntityType.CAMERA),
             integration_id='camera_001',
             integration_name='test_integration',
         )
         
         thermostat_entity = Entity.objects.create(
             name='Main Thermostat',
-            entity_type_str='THERMOSTAT',
+            entity_type_str=str(EntityType.THERMOSTAT),
             integration_id='thermo_001',
             integration_name='test_integration',
         )
@@ -287,7 +287,7 @@ class TestEntityManager(BaseTestCase):
             # Create test data
             entity = Entity.objects.create(
                 name='Wire Entity',
-                entity_type_str='ELECTRIC_WIRE',
+                entity_type_str=str(EntityType.ELECTRIC_WIRE),
                 integration_id='wire_001',
                 integration_name='test_integration',
             )
@@ -339,7 +339,7 @@ class TestEntityManager(BaseTestCase):
             # Create test data
             entity = Entity.objects.create(
                 name='Position Test Entity',
-                entity_type_str='CAMERA',
+                entity_type_str=str(EntityType.CAMERA),
                 integration_id='pos_test_001',
                 integration_name='test_integration',
             )

@@ -1,0 +1,102 @@
+{% load icons %}
+{% comment %}
+V2 File Card Component
+Individual file attribute card with preview, actions, and metadata
+{% endcomment %}
+
+<div class="{{ DIVID.ATTR_V2_FILE_CARD_CLASS }}" 
+     data-attribute-id="{{ attribute.id }}" 
+     data-url-detect="true"
+     data-order-index="{{ forloop.counter }}"
+     data-thumbnail-ready="true"
+     data-mime-type="{{ attribute.file_mime_type|default:'unknown' }}"
+     data-file-size="{{ attribute.file_value.size|default:0 }}">
+  
+  <!-- Hidden field for deletion marking -->
+  <input type="hidden" 
+         name="delete_file_attribute" 
+         value="" 
+         data-attribute-id="{{ attribute.id }}">
+  
+  <!-- File Preview/Thumbnail Area -->
+  <div class="attr-v2-file-thumbnail" 
+       onclick="window.open('{{ attribute.file_value.url }}', '_blank');" 
+       title="Click to view file">
+    {% comment %}Content-type specific placeholder icons{% endcomment %}
+    {% if attribute.file_mime_type|slice:':5' == "image" %}
+      {% icon "camera" size="lg" %}
+      <div class="attr-v2-file-type-label">IMAGE</div>
+    {% elif attribute.file_mime_type == "application/pdf" %}
+      {% icon "upload" size="lg" %}
+      <div class="attr-v2-file-type-label">PDF</div>
+    {% elif attribute.file_mime_type|slice:':4' == "text" %}
+      {% icon "edit" size="lg" %}
+      <div class="attr-v2-file-type-label">TEXT</div>
+    {% elif attribute.file_mime_type|slice:':5' == "video" %}
+      {% icon "video" size="lg" %}
+      <div class="attr-v2-file-type-label">VIDEO</div>
+    {% else %}
+      {% icon "upload" size="lg" %}
+      <div class="attr-v2-file-type-label">FILE</div>
+    {% endif %}
+    
+    <!-- Reorder Controls (overlay in upper right) -->
+    <div class="attr-v2-reorder-controls" 
+         onclick="event.stopPropagation();"
+         onmouseenter="this.parentElement.classList.add('reorder-hover');"
+         onmouseleave="this.parentElement.classList.remove('reorder-hover');">
+      <button type="button" 
+              class="btn btn-sm btn-outline-secondary"
+              disabled
+              title="Reordering available in future update"
+              data-reorder-action="left">
+        {% icon "chevron-left" size="sm" %}
+      </button>
+      <button type="button" 
+              class="btn btn-sm btn-outline-secondary"
+              disabled
+              title="Reordering available in future update"
+              data-reorder-action="right">
+        {% icon "chevron-right" size="sm" %}
+      </button>
+    </div>
+  </div>
+  
+  <!-- File Info -->
+  <div class="{{ DIVID.ATTR_V2_FILE_INFO_CLASS }}">
+    <input type="text" 
+           id="file_title_{{ entity.id }}_{{ attribute.id }}"
+           name="file_title_{{ entity.id }}_{{ attribute.id }}" 
+           value="{{ attribute.value }}" 
+           class="{{ DIVID.ATTR_V2_FILE_TITLE_INPUT_CLASS }}"
+           placeholder="Enter file title"
+           maxlength="255">
+    <div class="{{ DIVID.ATTR_V2_FILE_NAME_CLASS }}">{{ attribute.name }}</div>
+    
+    <!-- File Actions -->
+  <div class="attr-v2-file-actions">
+    <button type="button" 
+            class="btn btn-sm btn-outline-primary"
+            onclick="window.open('{{ attribute.file_value.url }}', '_blank');"
+            title="View file">
+      {% icon "eye" size="sm" %}
+    </button>
+    
+    {% if attribute.attribute_type.can_delete %}
+      <button type="button" 
+              class="btn btn-sm btn-outline-danger {{ DIVID.ATTR_V2_DELETE_BTN_CLASS }}"
+              onclick="markFileForDeletion('{{ attribute.id }}')"
+              title="Delete file">
+        {% icon "delete" size="sm" %}
+      </button>
+      <button type="button" 
+              class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_UNDO_BTN_CLASS }}"
+              onclick="undoFileDeletion('{{ attribute.id }}')"
+              title="Undo deletion"
+              style="display: none;">
+        Undo
+      </button>
+    {% endif %}
+    </div>
+  </div>
+</div>

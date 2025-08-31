@@ -1,6 +1,8 @@
 import logging
 
 from hi.apps.entity.models import Entity, EntityAttribute, EntityAttributeHistory
+from hi.apps.entity.enums import EntityType
+from hi.apps.attribute.enums import AttributeType, AttributeValueType
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
@@ -14,7 +16,7 @@ class EntityAttributeHistoryTestCase(BaseTestCase):
         # Create entity and attribute
         entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='GENERAL',
+            entity_type_str=str(EntityType.OTHER),
             integration_id='test.entity',
             integration_name='test_integration'
         )
@@ -23,8 +25,8 @@ class EntityAttributeHistoryTestCase(BaseTestCase):
             entity=entity,
             name='test_attr',
             value='initial_value',
-            value_type_str='TEXT',
-            attribute_type_str='CUSTOM'
+            value_type_str=str(AttributeValueType.TEXT),
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         
         # Verify initial history record was created
@@ -49,7 +51,7 @@ class EntityAttributeHistoryTestCase(BaseTestCase):
         # Create entity
         entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='GENERAL',
+            entity_type_str=str(EntityType.OTHER),
             integration_id='test.entity',
             integration_name='test_integration'
         )
@@ -58,8 +60,8 @@ class EntityAttributeHistoryTestCase(BaseTestCase):
         attr = EntityAttribute.objects.create(
             entity=entity,
             name='test_file_attr',
-            value_type_str='FILE',
-            attribute_type_str='CUSTOM'
+            value_type_str=str(AttributeValueType.FILE),
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         
         # Verify no history records were created for file attribute
@@ -72,7 +74,7 @@ class EntityAttributeHistoryTestCase(BaseTestCase):
         # Create entity and attribute with history tracking disabled
         entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='GENERAL',
+            entity_type_str=str(EntityType.OTHER),
             integration_id='test.entity',
             integration_name='test_integration'
         )
@@ -81,8 +83,8 @@ class EntityAttributeHistoryTestCase(BaseTestCase):
             entity=entity,
             name='test_attr',
             value='initial_value',
-            value_type_str='TEXT',
-            attribute_type_str='CUSTOM'
+            value_type_str=str(AttributeValueType.TEXT),
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         attr.save(track_history=False)  # Disable history tracking
         
@@ -96,15 +98,15 @@ class EntityAttributeHistoryTestCase(BaseTestCase):
         # Test EntityAttribute mapping
         entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='GENERAL',
+            entity_type_str=str(EntityType.OTHER),
             integration_id='test.entity',
             integration_name='test_integration'
         )
         entity_attr = EntityAttribute(
             entity=entity,
             name='entity_attr',
-            value_type_str='TEXT',
-            attribute_type_str='CUSTOM'
+            value_type_str=str(AttributeValueType.TEXT),
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         self.assertEqual(entity_attr._get_history_model_class(), EntityAttributeHistory)
         return
@@ -114,7 +116,7 @@ class EntityAttributeHistoryTestCase(BaseTestCase):
         # Create entity and attribute with history
         entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='GENERAL',
+            entity_type_str=str(EntityType.OTHER),
             integration_id='test.entity',
             integration_name='test_integration'
         )
@@ -123,8 +125,8 @@ class EntityAttributeHistoryTestCase(BaseTestCase):
             entity=entity,
             name='test_attr',
             value='test_value',
-            value_type_str='TEXT',
-            attribute_type_str='CUSTOM'
+            value_type_str=str(AttributeValueType.TEXT),
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         
         # Update to create multiple history records
@@ -148,7 +150,7 @@ class EntityAttributeHistoryTestCase(BaseTestCase):
         # Create entity and attribute
         entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='GENERAL',
+            entity_type_str=str(EntityType.OTHER),
             integration_id='test.entity',
             integration_name='test_integration'
         )
@@ -157,8 +159,8 @@ class EntityAttributeHistoryTestCase(BaseTestCase):
             entity=entity,
             name='sequential_test',
             value='value_1',
-            value_type_str='TEXT',
-            attribute_type_str='CUSTOM'
+            value_type_str=str(AttributeValueType.TEXT),
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         
         # Perform multiple updates
@@ -181,7 +183,7 @@ class EntityAttributeHistoryTestCase(BaseTestCase):
         # Create entity and boolean attribute
         entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='GENERAL',
+            entity_type_str=str(EntityType.OTHER),
             integration_id='test.entity',
             integration_name='test_integration'
         )
@@ -190,8 +192,8 @@ class EntityAttributeHistoryTestCase(BaseTestCase):
             entity=entity,
             name='boolean_test',
             value='True',
-            value_type_str='BOOLEAN',
-            attribute_type_str='CUSTOM'
+            value_type_str=str(AttributeValueType.BOOLEAN),
+            attribute_type_str=str(AttributeType.CUSTOM)
         )
         
         # Update boolean value

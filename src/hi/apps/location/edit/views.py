@@ -372,7 +372,7 @@ class LocationViewEditView( View, LocationViewMixin, LocationEditViewMixin ):
     def post( self, request, *args, **kwargs ):
         location_view = self.get_location_view( request, *args, **kwargs )
         location_view_edit_form = forms.LocationViewEditForm( request.POST, instance = location_view )
-
+        
         if not location_view_edit_form.is_valid():
             location_view_edit_data = LocationViewEditData(
                 location_view = location_view,
@@ -425,7 +425,7 @@ class LocationViewManageItemsView( HiSideView ):
         return 'location/edit/panes/location_view_manage_items.html'
 
     def get_template_context( self, request, *args, **kwargs ):
-
+        
         location_view = LocationManager().get_default_location_view( request = request )
         entity_view_group_list = EntityManager().create_location_entity_view_group_list(
             location_view = location_view,
@@ -583,7 +583,6 @@ class LocationItemPositionView( View ):
 class LocationItemPathView( View ):
 
     def post(self, request, *args, **kwargs):
-        
         try:
             ( item_type, item_id ) = ItemType.parse_from_dict( kwargs )
         except ValueError:

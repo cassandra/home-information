@@ -25,6 +25,100 @@
 
 ## Coding Style
 
+### No "magic" strings
+
+We do not use "magic" or hard-coded strings when needing multiple references. Any string that need to be used in two or more places is a risk of them being mismatched. This includes, but is not limited to:
+
+- All references to urls *must* use the Django url name and reverse() to construct.
+- Use enum values or constants/class variables to act as coordination point and provide some amount of compiler help in identifying mismatches. Most needed strings will already have a LabeledEnum type defined, but we should add new ones as needed. See "Enums" in [Back End Guidelines](../backend/backend-guidelines.md).
+- All DOM ids and class strings that are shared between client and server must adhere to our `DIVID` pattern. See "Client-Server Namespace Sharing" in [Front End Guidelines](../frontend/frontend-guidelines.md).
+
+### Type Hints
+
+- We add type hints to dataclass fields, method parameters and method return values.
+- We do not add type hints to locally declared method variables.
+- Some allowed, but not required exceptions:
+  - The `request` parameter when appearing in a Django view class.
+  - Single parameter methods where the method name or parameter name makes its type unambiguous.
+  
+
+### Method Parameter Formatting
+
+For readability, besides adding type hints to method parameters, we adhere to the following formatting conventions:
+- For methods with a single parameter, or parameters of native types, they can appear in one line with the method name.
+- If more than one parameter and app-defined types, then use a multiple line declaration.
+- For methods with three or more parameters, we use one line per parameter and align the type names.
+
+**Good Examples**
+
+```
+    def set_entity( self, entity_id : int ) -> EntityPath:
+
+    def set_entity_order( self, entity_id : int, rank : int ) -> EntityPath:
+
+    def set_entity_path( self,
+                         entity_id     : int,
+                         location      : Location,
+                         svg_path_str  : str        ) -> EntityPath:
+```
+
+**Bad Examples**
+
+```
+    def set_entity_type( self, entity_id : int, entity_type : EntityType ) -> EntityPath:
+
+    def set_entity_path( self,
+                         entity_id : int,
+                         location : Location,
+                         svg_path_str: str ) -> EntityPath:
+
+    def set_entity_path( self, entity_id : int,
+                         location : Location, svg_path_str: str ) -> EntityPath:
+```
+
+### Explicit Booleans
+
+We prefer to wrap all expression that evaluate to a boolean in `bool()` to make it explicit what type we are expecting:
+
+**Good**
+```
+   my_variable = bool( len(my_list) > 4 )
+```
+
+**Bad***
+```
+   my_variable = len(my_list) == 4 
+```
+
+### Complex Boolean Expressions
+
+- For boolean clauses and conditionals where there are multiple clauses, we prefer to explicitly enclose each clause with parentheses in order to make the intention clear.
+- We do not rely on the user having a deep understanding of the compiler's ordeer of precedence.
+- We use one line per clause unless the combined clauses are very short and obvious.
+- Single boolean typed variables or methods that return a boolean do not need paretheses.
+
+**Good**
+```
+    if is_editing and location_view:
+        pass
+		
+    if (( hass_state.domain == HassApi.SWITCH_DOMAIN )
+          and ( HassApi.LIGHT_DOMAIN in prefixes_seen )):
+        pass
+		
+    if ( HassApi.BINARY_SENSOR_DOMAIN in domain_set
+         and device_class_set.intersection( HassApi.OPEN_CLOSE_DEVICE_CLASS_SET )):
+        pass
+
+   
+```
+
+**Bad***
+```
+    if hass_state.domain == HassApi.SWITCH_DOMAIN and HassApi.LIGHT_DOMAIN == 'foo':
+        pass
+```
+
 ### Flake8 Configurations
 
 The project uses two different flake8 configurations:
@@ -46,6 +140,8 @@ ignore = E129,D203,E201,E202,E203,E221,E231,E251,W293,W291,W391,W503
 **Before submitting any PR**, you must run: `flake8 --config=src/.flake8-ci src/` and ensure it passes with no violations.
 
 ### Generated Code Standards
+
+### Linting
 
 All generated code (including AI-generated code) must comply with `.flake8-ci` configuration:
 

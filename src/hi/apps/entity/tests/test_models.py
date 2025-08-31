@@ -17,7 +17,7 @@ class TestEntity(BaseTestCase):
         # Create first entity with unique integration key
         first_entity = Entity.objects.create(
             name='First Entity',
-            entity_type_str='LIGHT',
+            entity_type_str=str(EntityType.LIGHT),
             integration_id='unique_id_001',
             integration_name='home_assistant',
         )
@@ -25,7 +25,7 @@ class TestEntity(BaseTestCase):
         # Different integration_id should work fine
         second_entity = Entity.objects.create(
             name='Second Entity',
-            entity_type_str='CAMERA',
+            entity_type_str=str(EntityType.CAMERA),
             integration_id='unique_id_002',  # Different ID
             integration_name='home_assistant',  # Same integration
         )
@@ -33,7 +33,7 @@ class TestEntity(BaseTestCase):
         # Different integration_name should work fine
         third_entity = Entity.objects.create(
             name='Third Entity',
-            entity_type_str='THERMOSTAT',
+            entity_type_str=str(EntityType.THERMOSTAT),
             integration_id='unique_id_001',  # Same ID as first
             integration_name='nest_integration',  # Different integration
         )
@@ -47,7 +47,7 @@ class TestEntity(BaseTestCase):
         try:
             Entity.objects.create(
                 name='Duplicate Entity',
-                entity_type_str='MOTOR',
+                entity_type_str=str(EntityType.MOTOR),
                 integration_id='unique_id_001',  # Same as first
                 integration_name='home_assistant',  # Same as first
             )
@@ -61,7 +61,7 @@ class TestEntity(BaseTestCase):
         """Test entity_type property enum conversion logic - custom business logic."""
         entity = Entity.objects.create(
             name='Test Device',
-            entity_type_str='LIGHT',
+            entity_type_str=str(EntityType.LIGHT),
             integration_id='test_device_001',
             integration_name='test_integration',
         )
@@ -71,7 +71,7 @@ class TestEntity(BaseTestCase):
         
         # Test setter converts enum to string (lowercase)
         entity.entity_type = EntityType.CAMERA
-        self.assertEqual(entity.entity_type_str, 'camera')
+        self.assertEqual(entity.entity_type_str, str(EntityType.CAMERA).lower())
         self.assertEqual(entity.entity_type, EntityType.CAMERA)
         return
 
@@ -79,7 +79,7 @@ class TestEntity(BaseTestCase):
         """Test entity_type property with unknown type - should provide fallback behavior."""
         entity = Entity.objects.create(
             name='Future Device',
-            entity_type_str='FUTURE_DEVICE_TYPE',  # Unknown type
+            entity_type_str='FUTURE_DEVICE_TYPE',  # Keep as string - unknown type test
             integration_id='future_device_001',
             integration_name='test_integration',
         )
@@ -103,7 +103,7 @@ class TestEntity(BaseTestCase):
         """Test get_attribute_map business logic - custom method prone to bugs."""
         entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='OTHER',
+            entity_type_str=str(EntityType.OTHER),
             integration_id='test_entity_001',
             integration_name='test_integration',
         )
@@ -133,7 +133,7 @@ class TestEntity(BaseTestCase):
         # Test with no attributes
         empty_entity = Entity.objects.create(
             name='Empty Entity',
-            entity_type_str='OTHER',
+            entity_type_str=str(EntityType.OTHER),
             integration_id='empty_entity_001',
             integration_name='test_integration',
         )
@@ -146,7 +146,7 @@ class TestEntity(BaseTestCase):
         """Test cascade deletion - critical for data integrity."""
         entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='OTHER',
+            entity_type_str=str(EntityType.OTHER),
             integration_id='test_entity_001',
             integration_name='test_integration',
         )
@@ -161,7 +161,7 @@ class TestEntity(BaseTestCase):
         
         state = EntityState.objects.create(
             entity=entity,
-            entity_state_type_str='ON_OFF',
+            entity_state_type_str=str(EntityStateType.ON_OFF),
             name='Power State',
         )
         
@@ -182,7 +182,7 @@ class TestEntityState(BaseTestCase):
         super().setUp()
         self.entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='LIGHT',
+            entity_type_str=str(EntityType.LIGHT),
             integration_id='test_entity_001',
             integration_name='test_integration',
         )
@@ -192,7 +192,7 @@ class TestEntityState(BaseTestCase):
         """Test entity_state_type property enum conversion - custom business logic."""
         state = EntityState.objects.create(
             entity=self.entity,
-            entity_state_type_str='ON_OFF',
+            entity_state_type_str=str(EntityStateType.ON_OFF),
             name='Power State',
         )
         
@@ -201,7 +201,7 @@ class TestEntityState(BaseTestCase):
         
         # Test setter converts enum to string (lowercase)
         state.entity_state_type = EntityStateType.TEMPERATURE
-        self.assertEqual(state.entity_state_type_str, 'temperature')
+        self.assertEqual(state.entity_state_type_str, str(EntityStateType.TEMPERATURE).lower())
         self.assertEqual(state.entity_state_type, EntityStateType.TEMPERATURE)
         return
 
@@ -211,7 +211,7 @@ class TestEntityState(BaseTestCase):
         value_dict = {"ON": "Powered On", "OFF": "Powered Off"}
         state = EntityState.objects.create(
             entity=self.entity,
-            entity_state_type_str='ON_OFF',
+            entity_state_type_str=str(EntityStateType.ON_OFF),
             name='Power State',
             value_range_str=json.dumps(value_dict),
         )
@@ -253,7 +253,7 @@ class TestEntityState(BaseTestCase):
         # Create state with specific value mappings for UI
         state = EntityState.objects.create(
             entity=self.entity,
-            entity_state_type_str='ON_OFF',
+            entity_state_type_str=str(EntityStateType.ON_OFF),
             name='Power State',
             value_range_str='{"ON": "Device On", "OFF": "Device Off"}',
         )
@@ -269,7 +269,7 @@ class TestEntityState(BaseTestCase):
         # Test with temperature range (continuous values)
         temp_state = EntityState.objects.create(
             entity=self.entity,
-            entity_state_type_str='TEMPERATURE',
+            entity_state_type_str=str(EntityStateType.TEMPERATURE),
             name='Temperature Reading',
             units='°F',
             value_range_str='null'  # Continuous values don't need fixed choices
@@ -291,7 +291,7 @@ class TestEntityState(BaseTestCase):
         """Test entity attribute mapping - core functionality for configuration and metadata."""
         entity = Entity.objects.create(
             name='Smart Thermostat',
-            entity_type_str='THERMOSTAT',
+            entity_type_str=str(EntityType.THERMOSTAT),
             integration_id='thermostat_001',
             integration_name='nest_integration',
         )
@@ -300,21 +300,21 @@ class TestEntityState(BaseTestCase):
         config_attr = EntityAttribute.objects.create(
             entity=entity,
             name='temperature_offset',
-            value_type='TEXT',
+            value_type=AttributeValueType.TEXT,
             value='+2.5',
         )
         
         model_attr = EntityAttribute.objects.create(
             entity=entity,
             name='device_model',
-            value_type='TEXT',
+            value_type=AttributeValueType.TEXT,
             value='Nest Learning Thermostat v3',
         )
         
         firmware_attr = EntityAttribute.objects.create(
             entity=entity,
             name='firmware_version',
-            value_type='TEXT',
+            value_type=AttributeValueType.TEXT,
             value='6.2.1',
         )
         
@@ -334,7 +334,7 @@ class TestEntityState(BaseTestCase):
         # Test empty attribute map
         empty_entity = Entity.objects.create(
             name='Basic Switch',
-            entity_type_str='ON_OFF_SWITCH',
+            entity_type_str=str(EntityType.ON_OFF_SWITCH),
             integration_id='switch_001',
             integration_name='test_integration',
         )
@@ -349,7 +349,7 @@ class TestEntityState(BaseTestCase):
         """Test entity type enum conversion - critical for type safety and UI display."""
         entity = Entity.objects.create(
             name='Security Camera',
-            entity_type_str='CAMERA',
+            entity_type_str=str(EntityType.CAMERA),
             integration_id='camera_001',
             integration_name='security_system',
         )
@@ -359,7 +359,6 @@ class TestEntityState(BaseTestCase):
         self.assertEqual(str(entity_type_enum).lower(), 'camera')
         
         # Test enum to string conversion via setter
-        from hi.apps.entity.enums import EntityType
         entity.entity_type = EntityType.MOTION_SENSOR
         
         # Should update the string field
@@ -380,7 +379,7 @@ class TestEntityState(BaseTestCase):
         # Create entity with related objects
         entity = Entity.objects.create(
             name='Multi-State Device',
-            entity_type_str='HVAC_FURNACE',
+            entity_type_str=str(EntityType.HVAC_FURNACE),
             integration_id='furnace_001',
             integration_name='hvac_system',
         )
@@ -389,27 +388,27 @@ class TestEntityState(BaseTestCase):
         config_attribute = EntityAttribute.objects.create(
             entity=entity,
             name='max_temperature',
-            value_type='TEXT',
+            value_type=AttributeValueType.TEXT,
             value='85',
         )
         
         specs_attribute = EntityAttribute.objects.create(
             entity=entity,
             name='manufacturer',
-            value_type='TEXT',
+            value_type=AttributeValueType.TEXT,
             value='Carrier',
         )
         
         # Create related states
         power_state = EntityState.objects.create(
             entity=entity,
-            entity_state_type_str='ON_OFF',
+            entity_state_type_str=str(EntityStateType.ON_OFF),
             name='Power State',
         )
         
         temp_state = EntityState.objects.create(
             entity=entity,
-            entity_state_type_str='TEMPERATURE',
+            entity_state_type_str=str(EntityStateType.TEMPERATURE),
             name='Current Temperature',
             units='°F',
         )

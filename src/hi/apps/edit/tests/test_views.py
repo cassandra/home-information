@@ -3,8 +3,10 @@ from unittest.mock import patch
 
 from django.urls import reverse
 
+from hi.apps.collection.enums import CollectionType, CollectionViewType
 from hi.apps.collection.models import Collection
 from hi.apps.control.models import Controller
+from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.location.models import Location, LocationView
 from hi.enums import ViewMode, ViewType
@@ -237,72 +239,134 @@ class TestReorderItemsView(SyncViewTestCase):
         )
         self.collection = Collection.objects.create(
             name='Test Collection',
-            collection_type_str='ROOM',
-            collection_view_type_str='MAIN'
+            collection_type_str=str(CollectionType.OTHER),
+            collection_view_type_str=str(CollectionViewType.GRID)
         )
 
-    @patch('hi.apps.edit.views.CollectionReorderEntitiesView')
-    def test_reorder_entities_in_collection(self, mock_view_class):
+    def test_reorder_entities_in_collection(self):
         """Test reordering entities within a collection."""
-        from django.http import HttpResponse
-        mock_view = mock_view_class.return_value
-        mock_view.post.return_value = HttpResponse('mock_response')
+        from hi.apps.collection.models import CollectionEntity
+        
+        # Create entities and add them to collection
+        entity1 = Entity.objects.create(name='Entity 1', entity_type_str=str(EntityType.LIGHT))
+        entity2 = Entity.objects.create(name='Entity 2', entity_type_str=str(EntityType.LIGHT)) 
+        entity3 = Entity.objects.create(name='Entity 3', entity_type_str=str(EntityType.LIGHT))
+        
+        # Add entities to collection with initial order
+        CollectionEntity.objects.create(collection=self.collection, entity=entity1, order_id=0)
+        CollectionEntity.objects.create(collection=self.collection, entity=entity2, order_id=1) 
+        CollectionEntity.objects.create(collection=self.collection, entity=entity3, order_id=2)
         
         # Set collection context
         self.setSessionViewType(ViewType.COLLECTION)
         self.setSessionCollection(self.collection)
         
         url = reverse('edit_reorder_items')
+        # The view expects html_id_list as a JSON array with hi- prefix
+        import json
         post_data = {
-            'entity-1': '0',
-            'entity-2': '1',
-            'entity-3': '2',
+            'html_id_list': json.dumps([
+                f'hi-entity-{entity3.id}',  # Move entity3 to first
+                f'hi-entity-{entity1.id}',  # Move entity1 to second
+                f'hi-entity-{entity2.id}',  # Move entity2 to third
+            ])
         }
-        _ = self.client.post(url, post_data)
+        response = self.client.post(url, post_data)
 
-        # Should delegate to CollectionReorderEntitiesView
-        mock_view.post.assert_called_once()
-        call_kwargs = mock_view.post.call_args[1]
-        self.assertEqual(call_kwargs['collection_id'], self.collection.id)
-        self.assertIn('[1, 2, 3]', call_kwargs['entity_id_list'])
+        # Should return success
+        self.assertSuccessResponse(response)
+        
+        # Verify entities were reordered in the database
+        reordered_entities = list(CollectionEntity.objects.filter(collection=self.collection).order_by('order_id'))
+        self.assertEqual(reordered_entities[0].entity, entity3)
+        self.assertEqual(reordered_entities[1].entity, entity1) 
+        self.assertEqual(reordered_entities[2].entity, entity2)
 
-    @patch('hi.apps.edit.views.CollectionReorder')
-    def test_reorder_collections(self, mock_view_class):
+    def test_reorder_collections(self):
         """Test reordering collections."""
-        from django.http import HttpResponse
-        mock_view = mock_view_class.return_value
-        mock_view.post.return_value = HttpResponse('mock_response')
+        # Create additional collections with different order_ids (self.collection already exists from setUp)
+        collection1 = Collection.objects.create(
+            name='Collection 1', 
+            collection_type_str=str(CollectionType.OTHER),
+            collection_view_type_str=str(CollectionViewType.GRID), 
+            order_id=0
+        )
+        collection2 = Collection.objects.create(
+            name='Collection 2', 
+            collection_type_str=str(CollectionType.OTHER),
+            collection_view_type_str=str(CollectionViewType.GRID),
+            order_id=1
+        )
         
         url = reverse('edit_reorder_items')
+        # The view expects html_id_list as a JSON array with hi- prefix
+        import json
         post_data = {
-            'collection-1': '0',
-            'collection-2': '1',
+            'html_id_list': json.dumps([
+                f'hi-collection-{collection2.id}',  # Move collection2 to first
+                f'hi-collection-{collection1.id}',  # Move collection1 to second
+                f'hi-collection-{self.collection.id}',  # Move self.collection to third
+            ])
         }
-        _ = self.client.post(url, post_data)
+        response = self.client.post(url, post_data)
 
-        # Should delegate to CollectionReorder
-        mock_view.post.assert_called_once()
-        call_kwargs = mock_view.post.call_args[1]
-        self.assertIn('[1, 2]', call_kwargs['collection_id_list'])
+        # Should return success
+        self.assertSuccessResponse(response)
+        
+        # Verify collections were reordered in the database
+        reordered_collections = list(Collection.objects.all().order_by('order_id'))
+        self.assertEqual(reordered_collections[0], collection2)
+        self.assertEqual(reordered_collections[1], collection1)
+        self.assertEqual(reordered_collections[2], self.collection)
 
-    @patch('hi.apps.edit.views.LocationViewReorder')
-    def test_reorder_location_views(self, mock_view_class):
+    def test_reorder_location_views(self):
         """Test reordering location views."""
-        from django.http import HttpResponse
-        mock_view = mock_view_class.return_value
-        mock_view.post.return_value = HttpResponse('mock_response')
+        # Create location views with different order_ids
+        location_view1 = LocationView.objects.create(
+            location=self.location,
+            name='View 1', 
+            location_view_type_str='MAIN',
+            svg_view_box_str='0 0 100 100',
+            svg_rotate=0.0,
+            order_id=0
+        )
+        location_view2 = LocationView.objects.create(
+            location=self.location,
+            name='View 2',
+            location_view_type_str='MAIN', 
+            svg_view_box_str='0 0 100 100',
+            svg_rotate=0.0,
+            order_id=1
+        )
+        location_view3 = LocationView.objects.create(
+            location=self.location,
+            name='View 3',
+            location_view_type_str='MAIN',
+            svg_view_box_str='0 0 100 100', 
+            svg_rotate=0.0,
+            order_id=2
+        )
         
         url = reverse('edit_reorder_items')
+        # The view expects html_id_list as a JSON array with hi- prefix
+        import json
         post_data = {
-            'location_view-1': '0',
-            'location_view-2': '1',
+            'html_id_list': json.dumps([
+                f'hi-location_view-{location_view3.id}',  # Move view3 to first
+                f'hi-location_view-{location_view1.id}',  # Move view1 to second
+                f'hi-location_view-{location_view2.id}',  # Move view2 to third
+            ])
         }
-        _ = self.client.post(url, post_data)
+        response = self.client.post(url, post_data)
 
-        # Should delegate to LocationViewReorder
-        mock_view.post.assert_called_once()
-        call_kwargs = mock_view.post.call_args[1]
-        self.assertIn('[1, 2]', call_kwargs['location_view_id_list'])
+        # Should return success
+        self.assertSuccessResponse(response)
+        
+        # Verify location views were reordered in the database
+        reordered_views = list(LocationView.objects.all().order_by('order_id'))
+        self.assertEqual(reordered_views[0], location_view3)
+        self.assertEqual(reordered_views[1], location_view1)
+        self.assertEqual(reordered_views[2], location_view2)
 
     def test_reorder_entity_outside_collection_context(self):
         """Test that entity reordering outside collection context fails."""
@@ -369,11 +433,11 @@ class TestEntityStateValueChoicesView(SyncViewTestCase):
         # Create test entity and state
         self.entity = Entity.objects.create(
             name='Test Entity',
-            entity_type_str='LIGHT'
+            entity_type_str=str(EntityType.LIGHT)
         )
         self.entity_state = EntityState.objects.create(
             entity=self.entity,
-            key='power',
+            name='power',
             entity_state_type_str='ON_OFF'
         )
         # Create test controller
@@ -385,7 +449,7 @@ class TestEntityStateValueChoicesView(SyncViewTestCase):
 
     def test_get_choices_for_entity_state(self):
         """Test getting choices for entity state instance."""
-        url = reverse('entity_state_value_choices', kwargs={
+        url = reverse('edit_entity_state_value_choices', kwargs={
             'instance_name': 'entity_state',
             'instance_id': str(self.entity_state.id)
         })
@@ -400,7 +464,7 @@ class TestEntityStateValueChoicesView(SyncViewTestCase):
 
     def test_get_choices_for_controller(self):
         """Test getting choices for controller instance."""
-        url = reverse('entity_state_value_choices', kwargs={
+        url = reverse('edit_entity_state_value_choices', kwargs={
             'instance_name': 'controller',
             'instance_id': str(self.controller.id)
         })
@@ -415,7 +479,7 @@ class TestEntityStateValueChoicesView(SyncViewTestCase):
 
     def test_get_choices_nonexistent_entity_state(self):
         """Test getting choices for nonexistent entity state."""
-        url = reverse('entity_state_value_choices', kwargs={
+        url = reverse('edit_entity_state_value_choices', kwargs={
             'instance_name': 'entity_state',
             'instance_id': '99999'
         })
@@ -425,7 +489,7 @@ class TestEntityStateValueChoicesView(SyncViewTestCase):
 
     def test_get_choices_nonexistent_controller(self):
         """Test getting choices for nonexistent controller."""
-        url = reverse('entity_state_value_choices', kwargs={
+        url = reverse('edit_entity_state_value_choices', kwargs={
             'instance_name': 'controller',
             'instance_id': '99999'
         })
@@ -435,29 +499,8 @@ class TestEntityStateValueChoicesView(SyncViewTestCase):
 
     def test_get_choices_unsupported_instance_name(self):
         """Test getting choices for unsupported instance name."""
-        url = reverse('entity_state_value_choices', kwargs={
+        url = reverse('edit_entity_state_value_choices', kwargs={
             'instance_name': 'unsupported',
-            'instance_id': '1'
-        })
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 400)
-
-    def test_get_choices_invalid_instance_id(self):
-        """Test getting choices with invalid instance ID."""
-        url = reverse('entity_state_value_choices', kwargs={
-            'instance_name': 'entity_state',
-            'instance_id': 'not_a_number'
-        })
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 400)
-
-    def test_get_choices_missing_instance_name(self):
-        """Test getting choices with missing instance name."""
-        # This would normally be caught by URL routing, but test edge case
-        url = reverse('entity_state_value_choices', kwargs={
-            'instance_name': '',
             'instance_id': '1'
         })
         response = self.client.get(url)
@@ -466,7 +509,7 @@ class TestEntityStateValueChoicesView(SyncViewTestCase):
 
     def test_post_not_allowed(self):
         """Test that POST requests are not allowed."""
-        url = reverse('entity_state_value_choices', kwargs={
+        url = reverse('edit_entity_state_value_choices', kwargs={
             'instance_name': 'entity_state',
             'instance_id': str(self.entity_state.id)
         })

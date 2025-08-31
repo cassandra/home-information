@@ -61,7 +61,8 @@ def response_as_dict( main_content = None,
                       set_attributes_map = None,
                       modal_content = None,
                       push_url = None,
-                      reset_scrollbar = False ):
+                      reset_scrollbar = False,
+                      scroll_to = None ):
     """
     In concert with the Javascript handling of synchronous replies,
     this will allow returning multiple pieces of content in one reply
@@ -78,6 +79,9 @@ def response_as_dict( main_content = None,
 
     The 'append_map' is for content you want appended to the given id
     list of child content.
+    
+    The 'scroll_to' parameter can be used to automatically scroll to a 
+    specific element ID after all DOM updates are complete.
     """
     response_dict = {}
 
@@ -100,6 +104,8 @@ def response_as_dict( main_content = None,
         response_dict['pushUrl'] = push_url
     if reset_scrollbar:
         response_dict['resetScrollbar'] = 'true'
+    if scroll_to is not None:
+        response_dict['scrollTo'] = scroll_to
     return response_dict
 
 
@@ -111,6 +117,7 @@ def response( main_content = None,
               modal_content = None,
               push_url = None,
               reset_scrollbar = False,
+              scroll_to = None,
               status = 200 ):
     
     response_dict = response_as_dict(
@@ -122,6 +129,7 @@ def response( main_content = None,
         modal_content = modal_content,
         push_url = push_url,
         reset_scrollbar = reset_scrollbar,
+        scroll_to = scroll_to,
     )
     return http_response( response_dict, status=status )
 

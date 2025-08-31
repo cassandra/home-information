@@ -249,6 +249,8 @@ PIPELINE = {
                 'js/audio.js',
                 'js/attribute-changes.js',
                 'js/video-timeline.js',
+                'js/attr-v2-modal.js',
+                'js/attr-v2-dirty-tracking.js',
             ),
             'output_filename': 'js/js_before_content.js',
         },

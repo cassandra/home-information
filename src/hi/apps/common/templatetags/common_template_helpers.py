@@ -17,6 +17,24 @@ def get_item(dictionary, key):
     return dictionary.get(key)
 
 
+@register.filter
+def linecount(value):
+    """Count the number of lines in a text value"""
+    if not value:
+        return 1
+    # Count newlines and add 1 for the last line
+    return value.count('\n') + 1
+
+
+@register.filter
+def min_value(value, arg):
+    """Return the minimum of two values"""
+    try:
+        return min(int(value), int(arg))
+    except (ValueError, TypeError):
+        return value
+
+
 @register.simple_tag
 def generate_uuid():
     return str(uuid.uuid4())
