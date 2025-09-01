@@ -1,0 +1,19 @@
+{% comment %}
+Float Attribute Value Component
+Renders a number input for float attributes
+{% endcomment %}
+
+<div class="attr-v2-float-value">
+  <input type="number" 
+         id="{{ attribute_form.value.id_for_label }}"
+         name="{{ attribute_form.value.html_name }}"
+         class="form-control"
+         value="{{ attribute_form.value.value|default_if_none:'' }}"
+         step="any"
+         {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %} />
+  {% if attribute_form.value.errors %}
+    <div class="invalid-feedback d-block">
+      {{ attribute_form.value.errors }}
+    </div>
+  {% endif %}
+</div>

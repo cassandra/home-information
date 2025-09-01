@@ -1,0 +1,19 @@
+{% comment %}
+Integer Attribute Value Component
+Renders a number input for integer attributes
+{% endcomment %}
+
+<div class="attr-v2-integer-value">
+  <input type="number" 
+         id="{{ attribute_form.value.id_for_label }}"
+         name="{{ attribute_form.value.html_name }}"
+         class="form-control"
+         value="{{ attribute_form.value.value|default_if_none:'' }}"
+         step="1"
+         {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %} />
+  {% if attribute_form.value.errors %}
+    <div class="invalid-feedback d-block">
+      {{ attribute_form.value.errors }}
+    </div>
+  {% endif %}
+</div>

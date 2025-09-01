@@ -110,7 +110,7 @@
             if (!form) return;
             
             // Text input changes with debouncing
-            this.bindDebouncedEvents(form, 'input[type="text"], input[type="password"], textarea', 'input');
+            this.bindDebouncedEvents(form, 'input[type="text"], input[type="password"], input[type="number"], textarea', 'input');
             
             // Immediate changes for selects and checkboxes
             this.bindImmediateEvents(form, 'select, input[type="checkbox"]', 'change');

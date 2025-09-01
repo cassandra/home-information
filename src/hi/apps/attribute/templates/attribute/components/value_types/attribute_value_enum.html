@@ -1,0 +1,23 @@
+{% comment %}
+Enum Attribute Value Component
+Renders a select dropdown for enum attributes using the attribute's choices
+{% endcomment %}
+
+<div class="attr-v2-enum-value">
+  <select id="{{ attribute_form.value.id_for_label }}"
+          name="{{ attribute_form.value.html_name }}"
+          class="form-control"
+          {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %}>
+    {% for choice_value, choice_label in attribute_form.instance.choices %}
+      <option value="{{ choice_value }}" 
+              {% if choice_value == attribute_form.value.value %}selected{% endif %}>
+        {{ choice_label }}
+      </option>
+    {% endfor %}
+  </select>
+  {% if attribute_form.value.errors %}
+    <div class="invalid-feedback d-block">
+      {{ attribute_form.value.errors }}
+    </div>
+  {% endif %}
+</div>

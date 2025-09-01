@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
+import hi.apps.common.antinode as antinode
+from hi.constants import DIVID
 from .config_edit_form_handler import ConfigEditFormHandler
 from .forms import SubsystemAttributeFormSet
 from .subsystem_attribute_edit_context import SubsystemAttributeEditContext
@@ -52,7 +54,11 @@ class ConfigEditResponseRenderer:
             self,
             request: HttpRequest
     ) -> HttpResponse:
-        """Render success response with fresh form data and success message."""
+        """Render success response using antinode helpers for flexible DOM updates.
+        
+        Returns an antinode response that can update multiple DOM targets,
+        providing flexibility for future enhancements like file uploads.
+        """
         # Create fresh formsets to show updated state
         subsystem_formset_list = self.form_handler.create_config_forms()
         
@@ -61,7 +67,17 @@ class ConfigEditResponseRenderer:
             success_message="Settings saved successfully"
         )
         
-        return render(request, 'config/panes/system_settings_redesigned.html', context)
+        # Render the content body that gets replaced
+        content_html = render(request, 'config/panes/config_settings_content_body.html', context).content.decode('utf-8')
+        
+        # Use antinode response with proper DIVID key (not selector)
+        # This replaces the content inside the element with id="attr-v2-content"
+        return antinode.response(
+            insert_map={
+                DIVID['ATTR_V2_CONTENT']: content_html,
+                # Future: Can add DIVID['ATTR_V2_UPLOAD_FORM_CONTAINER'] for file uploads
+            }
+        )
 
     def render_error_response(
             self,
@@ -85,4 +101,12 @@ class ConfigEditResponseRenderer:
             has_errors=True
         )
         
-        return render(request, 'config/panes/system_settings_redesigned.html', context)
+        # Render the content body with error state
+        content_html = render(request, 'config/panes/config_settings_content_body.html', context).content.decode('utf-8')
+        
+        # Use antinode response for consistent behavior
+        return antinode.response(
+            insert_map={
+                DIVID['ATTR_V2_CONTENT']: content_html,
+            }
+        )

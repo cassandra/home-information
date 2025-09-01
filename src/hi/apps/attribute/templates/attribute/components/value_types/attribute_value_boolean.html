@@ -1,0 +1,24 @@
+{% comment %}
+Boolean Attribute Value Component
+Renders a checkbox input for boolean attributes
+{% endcomment %}
+
+<div class="attr-v2-boolean-value">
+  <div class="custom-control custom-checkbox">
+    <input type="checkbox" 
+           id="{{ attribute_form.value.id_for_label }}"
+           name="{{ attribute_form.value.html_name }}"
+           class="custom-control-input"
+           value="True"
+           {% if attribute_form.value.value == "True" or attribute_form.value.value == True %}checked{% endif %}
+           {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %} />
+    <label class="custom-control-label" for="{{ attribute_form.value.id_for_label }}">
+      {{ attribute_form.instance.name }}
+    </label>
+    {% if attribute_form.value.errors %}
+      <div class="invalid-feedback d-block">
+        {{ attribute_form.value.errors }}
+      </div>
+    {% endif %}
+  </div>
+</div>

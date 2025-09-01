@@ -1,0 +1,46 @@
+{% load common_template_helpers %}
+{% comment %}
+Text Attribute Value Component
+Renders textarea with special handling (hidden input + display textarea) for text attributes
+This component handles the auto-sizing and expand/collapse functionality
+{% endcomment %}
+
+<!-- Hidden field pattern for data integrity -->
+{% with value_text=attribute_form.value.value|default_if_none:'' %}
+{% with line_count=value_text|linecount %}
+{% with display_rows=line_count|min_value:4 %}
+{% with overflows=line_count|add:"-4" %}
+<div class="attr-v2-text-value-wrapper" data-overflow="{% if overflows > 0 %}true{% else %}false{% endif %}" data-line-count="{{ line_count }}">
+  
+  <!-- Real form field - contains actual data, never manipulated during editing -->
+  <input type="hidden" 
+         name="{{ attribute_form.value.html_name }}"
+         id="hidden-{{ attribute_form.value.id_for_label }}"
+         value="{{ attribute_form.value.value|default_if_none:'' }}">
+  
+  <!-- Display field - for UI only (no name = not submitted) -->
+  <textarea rows="{{ display_rows }}" 
+            id="{{ attribute_form.value.id_for_label }}"
+            class="form-control attr-v2-textarea display-field"
+            data-overflow="{% if overflows > 0 %}true{% else %}false{% endif %}"
+            data-hidden-field="hidden-{{ attribute_form.value.id_for_label }}"
+            {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %}
+            data-original-value="{{ attribute_form.value.value|default_if_none:'' }}">{{ attribute_form.value.value|default_if_none:'' }}</textarea>
+  {% if attribute_form.value.errors %}
+    <div class="invalid-feedback d-block">
+      {{ attribute_form.value.errors }}
+    </div>
+  {% endif %}
+  {% if overflows > 0 %}
+  <div class="attr-v2-expand-controls" style="display: block;">
+    <button type="button" class="btn btn-sm btn-link" onclick="attrV2.toggleExpandedView(this)">
+      <span class="show-more-text">Show more...</span>
+      <span class="show-less-text" style="display: none;">Show less</span>
+    </button>
+  </div>
+  {% endif %}
+</div>
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}

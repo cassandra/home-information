@@ -52,7 +52,7 @@ class AttributeForm( forms.ModelForm ):
         instance = kwargs.get('instance')
 
         if instance and instance.value_type.is_boolean:
-            self.initial['value'] = str_to_bool( instance.value )
+            self.initial['value'] = str(str_to_bool( instance.value ))
             
         for field in self.fields.values():
             if self._show_as_editable or ( instance and instance.is_editable ):
