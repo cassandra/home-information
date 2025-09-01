@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict
 
 from django.core.exceptions import BadRequest
-from django.http import HttpRequest, HttpResponse, HttpResponseRedirect, HttpResponseNotAllowed
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, reverse
 from django.views.generic import View
 
@@ -10,16 +10,17 @@ from hi.apps.common.utils import is_ajax
 
 from hi.enums import ItemType, ViewType
 from hi.exceptions import ForceSynchronousException
-from hi.hi_async_view import HiSideView
+from hi.hi_async_view import HiModalView
 from hi.hi_grid_view import HiGridView
 from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
 from hi.views import page_not_found_response
 
 from .location_manager import LocationManager
 from .models import Location, LocationView, LocationAttribute
-from .transient_models import LocationEditData, LocationViewEditData
 from .view_mixins import LocationViewMixin
 from .location_attribute_edit_context import LocationAttributeEditContext
+from .location_edit_form_handler import LocationEditFormHandler
+from .location_edit_response_renderer import LocationEditResponseRenderer
 
 logger = logging.getLogger(__name__)
 
@@ -92,45 +93,7 @@ class LocationSwitchView( View, LocationViewMixin ):
         return HttpResponseRedirect( redirect_url )
 
 
-class LocationDetailsView( HiSideView, LocationViewMixin ):
-
-    def get_template_name( self ) -> str:
-        return 'location/panes/location_edit_mode_panel.html'
-
-    def should_push_url( self ):
-        return True
-    
-    def get_template_context( self, request, *args, **kwargs ):
-        location = self.get_location( request, *args, **kwargs )
-        location_edit_data = LocationEditData(
-            location = location,
-        )
-        return location_edit_data.to_template_context()
-    
-    def post( self, request, *args, **kwargs ):
-        return HttpResponseNotAllowed(['GET'])
-
-
-class LocationViewDetailsView( HiSideView, LocationViewMixin ):
-
-    def get_template_name( self ) -> str:
-        return 'location/panes/location_view_details.html'
-
-    def should_push_url( self ):
-        return True
-    
-    def get_template_context( self, request, *args, **kwargs ):
-        location_view = self.get_location_view( request, *args, **kwargs )
-        location_view_edit_data = LocationViewEditData(
-            location_view = location_view,
-        )
-        return location_view_edit_data.to_template_context()
-    
-    def post( self, request, *args, **kwargs ):
-        return HttpResponseNotAllowed(['GET'])
-
-
-class LocationItemInfoView( View ):
+class LocationItemStatusView( View ):
 
     def get(self, request, *args, **kwargs):
         try:
@@ -147,45 +110,6 @@ class LocationItemInfoView( View ):
             return HttpResponseRedirect( redirect_url )
 
         raise BadRequest( f'Unknown item type "{item_type}".' )
-
-
-class LocationItemDetailsView( View ):
-
-    def get(self, request, *args, **kwargs):
-        try:
-            ( item_type, item_id ) = ItemType.parse_from_dict( kwargs )
-        except ValueError:
-            raise BadRequest( 'Bad item id.' )
-        
-        if item_type == ItemType.ENTITY:
-            redirect_url = reverse( 'entity_edit_mode', kwargs = { 'entity_id': item_id } )
-            return HttpResponseRedirect( redirect_url )
-    
-        if item_type == ItemType.COLLECTION:
-            redirect_url = reverse( 'collection_details', kwargs = { 'collection_id': item_id } )
-            return HttpResponseRedirect( redirect_url )
-
-        raise BadRequest( f'Unknown item type "{item_type}".' )
-
-
-class LocationAttributeHistoryView(BaseAttributeHistoryView):
-    """View for displaying LocationAttribute history in a modal."""
-    
-    def get_attribute_model_class(self):
-        return LocationAttribute
-    
-    def get_history_url_name(self):
-        return 'location_attribute_history'
-    
-    def get_restore_url_name(self):
-        return 'location_attribute_restore'
-
-
-class LocationAttributeRestoreView(BaseAttributeRestoreView):
-    """View for restoring LocationAttribute values from history."""
-    
-    def get_attribute_model_class(self):
-        return LocationAttribute
 
 
 class LocationAttributeHistoryInlineView(BaseAttributeHistoryView):
@@ -213,7 +137,9 @@ class LocationAttributeHistoryInlineView(BaseAttributeHistoryView):
              **kwargs      : Any          ) -> HttpResponse:
         # Validate that the attribute belongs to this location for security
         try:
-            attribute: LocationAttribute = LocationAttribute.objects.get(pk=attribute_id, location_id=location_id)
+            attribute: LocationAttribute = LocationAttribute.objects.get(
+                pk=attribute_id, location_id=location_id
+            )
         except LocationAttribute.DoesNotExist:
             return page_not_found_response(request, "Attribute not found.")
         
@@ -259,7 +185,9 @@ class LocationAttributeRestoreInlineView(BaseAttributeRestoreView):
              **kwargs      : Any          ) -> HttpResponse:
         # Validate that the attribute belongs to this location for security  
         try:
-            attribute: LocationAttribute = LocationAttribute.objects.get(pk=attribute_id, location_id=location_id)
+            attribute: LocationAttribute = LocationAttribute.objects.get(
+                pk=attribute_id, location_id=location_id
+            )
         except LocationAttribute.DoesNotExist:
             return page_not_found_response(request, "Attribute not found.")
         
@@ -269,7 +197,9 @@ class LocationAttributeRestoreInlineView(BaseAttributeRestoreView):
             return page_not_found_response(request, "No history available for this attribute type.")
         
         try:
-            history_record = history_model_class.objects.get(pk=history_id, attribute=attribute)
+            history_record = history_model_class.objects.get(
+                pk=history_id, attribute=attribute
+            )
         except history_model_class.DoesNotExist:
             return page_not_found_response(request, "History record not found.")
         
@@ -287,3 +217,64 @@ class LocationAttributeRestoreInlineView(BaseAttributeRestoreView):
             request = request,
             location = location,
         )
+
+
+class LocationEditView(HiModalView, LocationViewMixin):
+    """Location attribute editing modal with redesigned interface.
+    
+    This view uses a dual response pattern:
+    - get(): Returns full modal using standard modal_response()
+    - post(): Returns antinode fragments for async DOM updates
+    
+    Business logic is delegated to specialized handler classes following
+    the "keep views simple" design philosophy.
+    """
+    
+    def get_template_name(self) -> str:
+        return 'location/modals/location_edit.html'
+    
+    def get( self,
+             request : HttpRequest,
+             *args   : Any,
+             **kwargs: Any          ) -> HttpResponse:
+        location: Location = self.get_location(request, *args, **kwargs)
+        
+        # Delegate form creation and context building to handler
+        form_handler = LocationEditFormHandler()
+        context: Dict[str, Any] = form_handler.create_initial_context(location)
+        
+        return self.modal_response(request, context)
+    
+    def post( self,
+              request : HttpRequest,
+              *args   : Any,
+              **kwargs: Any          ) -> HttpResponse:
+        location: Location = self.get_location(request, *args, **kwargs)
+        
+        # Delegate form handling to specialized handlers
+        form_handler = LocationEditFormHandler()
+        renderer = LocationEditResponseRenderer()
+        
+        # Create forms with POST data
+        (
+            location_form,
+            file_attributes,
+            regular_attributes_formset,
+        ) = form_handler.create_location_forms(
+            location, request.POST
+        )
+        
+        if form_handler.validate_forms(location_form, regular_attributes_formset):
+            # Save forms and process files
+            form_handler.save_forms(location_form, regular_attributes_formset, request, location)
+            
+            # Return success response
+            return renderer.render_success_response(request, location)
+        else:
+            # Return error response
+            return renderer.render_error_response(
+                request, location, location_form, regular_attributes_formset
+            )
+    
+    def get_success_url_name(self) -> str:
+        return 'location_edit'

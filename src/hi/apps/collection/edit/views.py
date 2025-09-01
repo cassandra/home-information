@@ -118,7 +118,7 @@ class CollectionDeleteView( HiModalView, CollectionViewMixin ):
         return self.redirect_response( request, redirect_url )
     
 
-class CollectionEditView( View, CollectionViewMixin ):
+class CollectionPropertiesEditView( View, CollectionViewMixin ):
     
     def post( self, request, *args, **kwargs ):
         collection = self.get_collection( request, *args, **kwargs )
@@ -284,3 +284,25 @@ class CollectionEntityToggleView( View, CollectionViewMixin, EntityViewMixin ):
             },
         )
     
+
+class CollectionEditModeView( HiSideView, CollectionViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'collection/edit/panes/collection_edit_mode_panel.html'
+    
+    def should_push_url( self ):
+        return True
+    
+    def get_template_context( self, request, *args, **kwargs ):
+        collection = self.get_collection( request, *args, **kwargs )
+        
+        current_location_view = None
+        if request.view_parameters.view_type.is_location_view:
+            current_location_view = LocationManager().get_default_location_view( request = request )
+
+        collections_detail_data = CollectionManager().get_collection_details_data(
+            collection = collection,
+            location_view = current_location_view,
+            is_editing = request.view_parameters.is_editing,
+        )
+        return collections_detail_data.to_template_context()

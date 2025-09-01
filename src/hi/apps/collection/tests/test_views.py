@@ -197,9 +197,9 @@ class TestCollectionDetailsView(DualModeViewTestCase):
             collection_view_type_str='MAIN'
         )
 
-    def test_get_collection_details_sync(self):
-        """Test getting collection details with synchronous request."""
-        url = reverse('collection_details', kwargs={'collection_id': self.collection.id})
+    def test_get_collection_edit_mode_sync(self):
+        """Test getting collection edit mode with synchronous request."""
+        url = reverse('collection_edit_mode', kwargs={'collection_id': self.collection.id})
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
@@ -209,9 +209,9 @@ class TestCollectionDetailsView(DualModeViewTestCase):
         data = response.json()
         self.assertIn('insert', data)
 
-    def test_get_collection_details_async(self):
-        """Test getting collection details with AJAX request."""
-        url = reverse('collection_details', kwargs={'collection_id': self.collection.id})
+    def test_get_collection_edit_mode_async(self):
+        """Test getting collection edit mode with AJAX request."""
+        url = reverse('collection_edit_mode', kwargs={'collection_id': self.collection.id})
         response = self.async_get(url)
 
         self.assertSuccessResponse(response)
@@ -227,7 +227,7 @@ class TestCollectionDetailsView(DualModeViewTestCase):
         self.setSessionViewType(ViewType.LOCATION_VIEW)
         self.setSessionLocationView(self.location_view)
 
-        url = reverse('collection_details', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_edit_mode', kwargs={'collection_id': self.collection.id})
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
@@ -237,14 +237,14 @@ class TestCollectionDetailsView(DualModeViewTestCase):
         # Set session to collection view type
         self.setSessionViewType(ViewType.COLLECTION)
 
-        url = reverse('collection_details', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_edit_mode', kwargs={'collection_id': self.collection.id})
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
 
     def test_nonexistent_collection_returns_404(self):
         """Test that accessing nonexistent collection returns 404."""
-        url = reverse('collection_details', kwargs={'collection_id': 99999})
+        url = reverse('collection_edit_mode', kwargs={'collection_id': 99999})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 404)

@@ -10,8 +10,12 @@ urlpatterns = [
              name='collection_add' ),
 
     re_path( r'^collection/edit/(?P<collection_id>\d+)$', 
-             views.CollectionEditView.as_view(), 
-             name='collection_edit'),
+             views.CollectionPropertiesEditView.as_view(), 
+             name='collection_properties_edit'),
+
+    re_path( r'^collection/edit_mode/(?P<collection_id>\d+)$', 
+             views.CollectionEditModeView.as_view(), 
+             name='collection_edit_mode'),
 
     re_path( r'^collection/delete/(?P<collection_id>\d+)$', 
              views.CollectionDeleteView.as_view(), 

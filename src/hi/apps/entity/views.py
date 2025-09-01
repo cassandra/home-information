@@ -1,36 +1,31 @@
 import logging
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import Any, Dict
 
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
-from django.template.loader import get_template, render_to_string
+from django.template.loader import render_to_string
 from django.views.generic import View
 
 from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
 import hi.apps.common.antinode as antinode
 from hi.apps.control.controller_history_manager import ControllerHistoryManager
-from hi.apps.location.location_manager import LocationManager
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.apps.sense.sensor_history_manager import SensorHistoryMixin
 
 from hi.views import page_not_found_response
-from hi.hi_async_view import HiModalView, HiSideView
+from hi.hi_async_view import HiModalView
 
 from hi.constants import DIVID
 
 from .entity_edit_form_handler import EntityEditFormHandler
 from .entity_edit_response_renderer import EntityEditResponseRenderer
-from .entity_manager import EntityManager
-from .entity_type_transition_handler import EntityTypeTransitionHandler
 from . import forms
 from .models import Entity, EntityAttribute
 from .transient_models import EntityStateHistoryData
 from .view_mixins import EntityViewMixin
 from .entity_attribute_edit_context import EntityAttributeEditContext
 
-if TYPE_CHECKING:
-    from hi.apps.location.models import LocationView
 
 logger = logging.getLogger(__name__)
 
@@ -108,82 +103,7 @@ class EntityEditView(HiModalView, EntityViewMixin):
     def get_success_url_name(self) -> str:
         return 'entity_edit'
 
-    
-class EntityEditModeView( HiSideView, EntityViewMixin ):
 
-    def get_template_name( self ) -> str:
-        return 'entity/edit/panes/entity_edit_mode_panel.html'
-
-    def should_push_url( self ) -> bool:
-        return True
-    
-    def get_template_context( self,
-                              request : HttpRequest,
-                              *args   : Any,
-                              **kwargs: Any          ) -> Dict[str, Any]:
-        entity: Entity = self.get_entity( request, *args, **kwargs )
-
-        current_location_view: Optional['LocationView'] = None
-        if request.view_parameters.view_type.is_location_view:
-            current_location_view = LocationManager().get_default_location_view( request = request )
-
-        entity_edit_mode_data = EntityManager().get_entity_edit_mode_data(
-            entity = entity,
-            location_view = current_location_view,
-            is_editing = request.view_parameters.is_editing,
-        )
-        return entity_edit_mode_data.to_template_context()
-
-    
-class EntityPropertiesEditView( View, EntityViewMixin ):
-    """Handle entity properties editing (name, type) only - used by sidebar.
-    
-    Business logic is delegated to EntityTypeTransitionHandler following
-    the "keep views simple" design philosophy.
-    """
-
-    def post( self,
-              request : HttpRequest,
-              *args   : Any,
-              **kwargs: Any          ) -> HttpResponse:
-        entity: Entity = self.get_entity( request, *args, **kwargs )
-        
-        # Store original entity_type_str to detect changes
-        original_entity_type_str: str = entity.entity_type_str
-
-        entity_form: forms.EntityForm = forms.EntityForm( request.POST, instance = entity )
-        form_valid: bool = entity_form.is_valid()
-        
-        if form_valid:
-            # Delegate transition handling to specialized handler
-            transition_handler = EntityTypeTransitionHandler()
-            
-            transition_response: Optional[HttpResponse] = transition_handler.handle_entity_form_save(
-                request, entity, entity_form, None, original_entity_type_str
-            )
-            
-            # Now that transaction is committed, handle any transition response
-            if transition_response is not None:
-                return transition_response
-            
-            status_code: int = 200
-        else:
-            status_code: int = 400
-
-        context: Dict[str, Any] = {
-            'entity': entity,
-            'entity_form': entity_form,
-        }
-        template = get_template( 'entity/edit/panes/entity_properties_edit.html' )
-        content: str = template.render( context, request = request )
-        return antinode.response(
-            insert_map = {
-                DIVID['ENTITY_PROPERTIES_PANE']: content,
-            },
-            status = status_code,
-        )
-    
-        
 class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin ):
 
     ENTITY_STATE_HISTORY_ITEM_MAX = 5
@@ -264,26 +184,6 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
                 },
                 status=400
             )
-
-    
-class EntityAttributeHistoryView(BaseAttributeHistoryView):
-    """View for displaying EntityAttribute history in a modal."""
-    
-    def get_attribute_model_class(self):
-        return EntityAttribute
-    
-    def get_history_url_name(self):
-        return 'entity_attribute_history'
-    
-    def get_restore_url_name(self):
-        return 'entity_attribute_restore'
-
-
-class EntityAttributeRestoreView(BaseAttributeRestoreView):
-    """View for restoring EntityAttribute values from history."""
-    
-    def get_attribute_model_class(self):
-        return EntityAttribute
 
 
 class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):

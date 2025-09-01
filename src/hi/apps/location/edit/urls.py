@@ -13,10 +13,6 @@ urlpatterns = [
              views.LocationAddView.as_view(), 
              name='location_edit_location_add'),
 
-    re_path( r'^location/edit/(?P<location_id>\d+)$', 
-             views.LocationEditView.as_view(), 
-             name='location_edit_location_edit'),
-
     re_path( r'^location/properties/edit/(?P<location_id>\d+)$', 
              views.LocationPropertiesEditView.as_view(), 
              name='location_properties_edit'),
@@ -68,5 +64,17 @@ urlpatterns = [
     re_path( r'^location-item/path/(?P<html_id>[\w\-]+)$', 
              views.LocationItemPathView.as_view(), 
              name='location_edit_location_item_path' ),
+
+    re_path( r'^location/edit-mode/(?P<location_id>\d+)$', 
+             views.LocationEditModeView.as_view(), 
+             name='location_edit_mode' ),
+
+    re_path( r'^location-view/edit-mode/(?P<location_view_id>\d+)$', 
+             views.LocationViewEditModeView.as_view(), 
+             name='location_view_edit_mode' ),
+
+    re_path( r'^location-item/edit-mode/(?P<html_id>[\w\-]+)$', 
+             views.LocationItemEditModeView.as_view(), 
+             name='location_item_edit_mode' ),
     
 ]

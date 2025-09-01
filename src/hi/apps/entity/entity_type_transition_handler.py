@@ -5,19 +5,17 @@ This class encapsulates the complex entity type transition logic that was previo
 embedded in EntityPropertiesEditView, following the "keep views simple" design philosophy.
 """
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 
 import hi.apps.common.antinode as antinode
 from hi.apps.location.location_manager import LocationManager
+from hi.apps.location.models import LocationView
 from .entity_manager import EntityManager
 from .enums import EntityTransitionType
 from .models import Entity
 from .forms import EntityForm, EntityAttributeRegularFormSet
-
-if TYPE_CHECKING:
-    from hi.apps.location.models import LocationView
 
 logger = logging.getLogger(__name__)
 

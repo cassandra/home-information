@@ -1,10 +1,10 @@
 import json
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from django.core.exceptions import BadRequest
 from django.db import transaction
-from django.http import Http404, HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect
 from django.template.loader import get_template, render_to_string
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -21,8 +21,6 @@ from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationAttribute
 from hi.apps.location.transient_models import LocationEditData, LocationViewEditData
 from hi.apps.location.view_mixins import LocationViewMixin
-from hi.apps.location.location_edit_form_handler import LocationEditFormHandler
-from hi.apps.location.location_edit_response_renderer import LocationEditResponseRenderer
 
 from hi.constants import DIVID
 from hi.decorators import edit_required
@@ -129,61 +127,6 @@ class LocationSvgReplaceView( HiModalView, LocationViewMixin ):
 
         redirect_url = reverse('home')
         return antinode.redirect_response( redirect_url )
-
-
-class LocationEditView(HiModalView, LocationViewMixin):
-    """Location attribute editing modal with redesigned interface.
-    
-    This view uses a dual response pattern:
-    - get(): Returns full modal using standard modal_response()
-    - post(): Returns antinode fragments for async DOM updates
-    
-    Business logic is delegated to specialized handler classes following
-    the "keep views simple" design philosophy.
-    """
-    
-    def get_template_name(self) -> str:
-        return 'location/modals/location_edit.html'
-    
-    def get( self,
-             request : HttpRequest,
-             *args   : Any,
-             **kwargs: Any          ) -> HttpResponse:
-        location: Location = self.get_location(request, *args, **kwargs)
-        
-        # Delegate form creation and context building to handler
-        form_handler = LocationEditFormHandler()
-        context: Dict[str, Any] = form_handler.create_initial_context(location)
-        
-        return self.modal_response(request, context)
-    
-    def post( self,
-              request : HttpRequest,
-              *args   : Any,
-              **kwargs: Any          ) -> HttpResponse:
-        location: Location = self.get_location(request, *args, **kwargs)
-        
-        # Delegate form handling to specialized handlers
-        form_handler = LocationEditFormHandler()
-        renderer = LocationEditResponseRenderer()
-        
-        # Create forms with POST data
-        location_form, file_attributes, regular_attributes_formset = form_handler.create_location_forms(
-            location, request.POST
-        )
-        
-        if form_handler.validate_forms(location_form, regular_attributes_formset):
-            # Save forms and process files
-            form_handler.save_forms(location_form, regular_attributes_formset, request, location)
-            
-            # Return success response
-            return renderer.render_success_response(request, location)
-        else:
-            # Return error response
-            return renderer.render_error_response(request, location, location_form, regular_attributes_formset)
-    
-    def get_success_url_name(self) -> str:
-        return 'location_edit'
 
 
 class LocationPropertiesEditView( View, LocationViewMixin, LocationEditViewMixin ):
@@ -400,7 +343,7 @@ class LocationViewEditView( View, LocationViewMixin, LocationEditViewMixin ):
                 location_view = location_view,
                 location_view_edit_form = location_view_edit_form,
             )
-            return self.location_view_edit_response(
+            return self.location_view_edit_mode_response(
                 request = request,
                 location_view_edit_data = location_view_edit_data,
                 status_code = 400,
@@ -433,7 +376,7 @@ class LocationViewGeometryView( View, LocationViewMixin, LocationEditViewMixin )
         location_view_edit_data = LocationViewEditData(
             location_view = location_view,
         )       
-        return self.location_view_edit_response(
+        return self.location_view_edit_mode_response(
             request = request,
             location_view_edit_data = location_view_edit_data,
             status_code = status_code,
@@ -637,4 +580,63 @@ class LocationItemPathView( View ):
         return antinode.response(
             main_content = 'OK',
         )
+
+
+class LocationEditModeView( HiSideView, LocationViewMixin ):
+    """Location edit mode panel view - shows location properties editing interface."""
+
+    def get_template_name( self ) -> str:
+        return 'location/edit/panes/location_edit_mode_panel.html'
+
+    def should_push_url( self ):
+        return True
+    
+    def get_template_context( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+        location_edit_data = LocationEditData(
+            location = location,
+        )
+        return location_edit_data.to_template_context()
+    
+    def post( self, request, *args, **kwargs ):
+        return HttpResponseNotAllowed(['GET'])
+
+
+class LocationViewEditModeView( HiSideView, LocationViewMixin ):
+    """Location view edit mode panel view - shows location view properties editing interface."""
+
+    def get_template_name( self ) -> str:
+        return 'location/edit/panes/location_view_edit_mode_panel.html'
+
+    def should_push_url( self ):
+        return True
+    
+    def get_template_context( self, request, *args, **kwargs ):
+        location_view = self.get_location_view( request, *args, **kwargs )
+        location_view_edit_data = LocationViewEditData(
+            location_view = location_view,
+        )
+        return location_view_edit_data.to_template_context()
+    
+    def post( self, request, *args, **kwargs ):
+        return HttpResponseNotAllowed(['GET'])
+
+
+class LocationItemEditModeView( View ):
+
+    def get(self, request, *args, **kwargs):
+        try:
+            ( item_type, item_id ) = ItemType.parse_from_dict( kwargs )
+        except ValueError:
+            raise BadRequest( 'Bad item id.' )
+        
+        if item_type == ItemType.ENTITY:
+            redirect_url = reverse( 'entity_edit_mode', kwargs = { 'entity_id': item_id } )
+            return HttpResponseRedirect( redirect_url )
+    
+        if item_type == ItemType.COLLECTION:
+            redirect_url = reverse( 'collection_edit_mode', kwargs = { 'collection_id': item_id } )
+            return HttpResponseRedirect( redirect_url )
+
+        raise BadRequest( f'Unknown item type "{item_type}".' )
 

@@ -20,4 +20,12 @@ urlpatterns = [
     re_path( r'^entity/principal/manage/(?P<entity_id>\d+)$', 
              views.ManagePairingsView.as_view(), 
              name='entity_edit_manage_pairings' ),
+
+    re_path( r'^edit_mode/(?P<entity_id>\d+)$', 
+             views.EntityEditModeView.as_view(), 
+             name='entity_edit_mode' ),
+
+    re_path( r'^entity/properties/edit/(?P<entity_id>\d+)$', 
+             views.EntityPropertiesEditView.as_view(), 
+             name='entity_properties_edit'),
 ]

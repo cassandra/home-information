@@ -43,8 +43,8 @@ class LocationEditData:
             'location_edit_form': self.location_edit_form,
             'location_attribute_formset': self.location_attribute_formset,
             'location_attribute_upload_form': self.location_attribute_upload_form,
-            'history_url_name': 'location_attribute_history',
-            'restore_url_name': 'location_attribute_restore',
+            'history_url_name': 'location_attribute_history_inline',
+            'restore_url_name': 'location_attribute_restore_inline',
         }
 
     
