@@ -27,6 +27,29 @@ from hi.hi_async_view import HiModalView, HiSideView
 from . import forms
 
 logger = logging.getLogger(__name__)
+    
+
+class CollectionEditModeView( HiSideView, CollectionViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'collection/edit/panes/collection_edit_mode_panel.html'
+    
+    def should_push_url( self ):
+        return True
+    
+    def get_template_context( self, request, *args, **kwargs ):
+        collection = self.get_collection( request, *args, **kwargs )
+        
+        current_location_view = None
+        if request.view_parameters.view_type.is_location_view:
+            current_location_view = LocationManager().get_default_location_view( request = request )
+
+        collections_edit_data = CollectionManager().get_collection_edit_mode_data(
+            collection = collection,
+            location_view = current_location_view,
+            is_editing = request.view_parameters.is_editing,
+        )
+        return collections_edit_data.to_template_context()
 
 
 @method_decorator( edit_required, name='dispatch' )
@@ -283,26 +306,3 @@ class CollectionEntityToggleView( View, CollectionViewMixin, EntityViewMixin ):
                 DIVID['MAIN'] : collection_content,
             },
         )
-    
-
-class CollectionEditModeView( HiSideView, CollectionViewMixin ):
-
-    def get_template_name( self ) -> str:
-        return 'collection/edit/panes/collection_edit_mode_panel.html'
-    
-    def should_push_url( self ):
-        return True
-    
-    def get_template_context( self, request, *args, **kwargs ):
-        collection = self.get_collection( request, *args, **kwargs )
-        
-        current_location_view = None
-        if request.view_parameters.view_type.is_location_view:
-            current_location_view = LocationManager().get_default_location_view( request = request )
-
-        collections_edit_data = CollectionManager().get_collection_edit_mode_data(
-            collection = collection,
-            location_view = current_location_view,
-            is_editing = request.view_parameters.is_editing,
-        )
-        return collections_edit_data.to_template_context()

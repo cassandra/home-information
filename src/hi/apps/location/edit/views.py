@@ -32,6 +32,82 @@ from .view_mixins import LocationEditViewMixin
 logger = logging.getLogger(__name__)
 
 
+class LocationEditModeView( HiSideView, LocationViewMixin ):
+    """Location edit mode panel view - shows location properties editing interface."""
+
+    def get_template_name( self ) -> str:
+        return 'location/edit/panes/location_edit_mode_panel.html'
+
+    def should_push_url( self ):
+        return True
+    
+    def get_template_context( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+        location_edit_data = LocationEditModeData(
+            location = location,
+        )
+        return location_edit_data.to_template_context()
+    
+    def post( self, request, *args, **kwargs ):
+        return HttpResponseNotAllowed(['GET'])
+
+
+@method_decorator( edit_required, name='dispatch' )
+class LocationViewEditModeView( HiSideView, LocationViewMixin, LocationEditViewMixin ):
+    """Location view edit mode panel view - shows location view properties editing interface and handles form submission."""
+
+    def get_template_name( self ) -> str:
+        return 'location/edit/panes/location_view_edit_mode_panel.html'
+
+    def should_push_url( self ):
+        return True
+    
+    def get_template_context( self, request, *args, **kwargs ):
+        location_view = self.get_location_view( request, *args, **kwargs )
+        location_view_edit_data = LocationViewEditModeData(
+            location_view = location_view,
+        )
+        return location_view_edit_data.to_template_context()
+    
+    def post( self, request, *args, **kwargs ):
+        location_view = self.get_location_view( request, *args, **kwargs )
+        location_view_edit_form = forms.LocationViewEditForm( request.POST, instance = location_view )
+        
+        if not location_view_edit_form.is_valid():
+            location_view_edit_data = LocationViewEditModeData(
+                location_view = location_view,
+                location_view_edit_form = location_view_edit_form,
+            )
+            return self.location_view_edit_mode_response(
+                request = request,
+                location_view_edit_data = location_view_edit_data,
+                status_code = 400,
+            )
+        
+        # Location View name/order can impact many parts of UI. Full refresh is safest in this case.
+        location_view_edit_form.save()     
+        return antinode.refresh_response()
+
+
+class LocationItemEditModeView( View ):
+
+    def get(self, request, *args, **kwargs):
+        try:
+            ( item_type, item_id ) = ItemType.parse_from_dict( kwargs )
+        except ValueError:
+            raise BadRequest( 'Bad item id.' )
+        
+        if item_type == ItemType.ENTITY:
+            redirect_url = reverse( 'entity_edit_mode', kwargs = { 'entity_id': item_id } )
+            return HttpResponseRedirect( redirect_url )
+    
+        if item_type == ItemType.COLLECTION:
+            redirect_url = reverse( 'collection_edit_mode', kwargs = { 'collection_id': item_id } )
+            return HttpResponseRedirect( redirect_url )
+
+        raise BadRequest( f'Unknown item type "{item_type}".' )
+
+
 @method_decorator( edit_required, name='dispatch' )
 class LocationAddView( HiModalView ):
 
@@ -275,27 +351,6 @@ class LocationViewDeleteView( HiModalView, LocationViewMixin ):
         return self.redirect_response( request, redirect_url )
 
     
-@method_decorator( edit_required, name='dispatch' )
-class LocationViewEditView( View, LocationViewMixin, LocationEditViewMixin ):
-
-    def post( self, request, *args, **kwargs ):
-        location_view = self.get_location_view( request, *args, **kwargs )
-        location_view_edit_form = forms.LocationViewEditForm( request.POST, instance = location_view )
-        
-        if not location_view_edit_form.is_valid():
-            location_view_edit_data = LocationViewEditModeData(
-                location_view = location_view,
-                location_view_edit_form = location_view_edit_form,
-            )
-            return self.location_view_edit_mode_response(
-                request = request,
-                location_view_edit_data = location_view_edit_data,
-                status_code = 400,
-            )
-        
-        # Location View name/order can impact many parts of UI. Full refresh is safest in this case.
-        location_view_edit_form.save()     
-        return antinode.refresh_response()
 
     
 class LocationViewGeometryView( View, LocationViewMixin, LocationEditViewMixin ):
@@ -524,63 +579,3 @@ class LocationItemPathView( View ):
         return antinode.response(
             main_content = 'OK',
         )
-
-
-class LocationEditModeView( HiSideView, LocationViewMixin ):
-    """Location edit mode panel view - shows location properties editing interface."""
-
-    def get_template_name( self ) -> str:
-        return 'location/edit/panes/location_edit_mode_panel.html'
-
-    def should_push_url( self ):
-        return True
-    
-    def get_template_context( self, request, *args, **kwargs ):
-        location = self.get_location( request, *args, **kwargs )
-        location_edit_data = LocationEditModeData(
-            location = location,
-        )
-        return location_edit_data.to_template_context()
-    
-    def post( self, request, *args, **kwargs ):
-        return HttpResponseNotAllowed(['GET'])
-
-
-class LocationViewEditModeView( HiSideView, LocationViewMixin ):
-    """Location view edit mode panel view - shows location view properties editing interface."""
-
-    def get_template_name( self ) -> str:
-        return 'location/edit/panes/location_view_edit_mode_panel.html'
-
-    def should_push_url( self ):
-        return True
-    
-    def get_template_context( self, request, *args, **kwargs ):
-        location_view = self.get_location_view( request, *args, **kwargs )
-        location_view_edit_data = LocationViewEditModeData(
-            location_view = location_view,
-        )
-        return location_view_edit_data.to_template_context()
-    
-    def post( self, request, *args, **kwargs ):
-        return HttpResponseNotAllowed(['GET'])
-
-
-class LocationItemEditModeView( View ):
-
-    def get(self, request, *args, **kwargs):
-        try:
-            ( item_type, item_id ) = ItemType.parse_from_dict( kwargs )
-        except ValueError:
-            raise BadRequest( 'Bad item id.' )
-        
-        if item_type == ItemType.ENTITY:
-            redirect_url = reverse( 'entity_edit_mode', kwargs = { 'entity_id': item_id } )
-            return HttpResponseRedirect( redirect_url )
-    
-        if item_type == ItemType.COLLECTION:
-            redirect_url = reverse( 'collection_edit_mode', kwargs = { 'collection_id': item_id } )
-            return HttpResponseRedirect( redirect_url )
-
-        raise BadRequest( f'Unknown item type "{item_type}".' )
-

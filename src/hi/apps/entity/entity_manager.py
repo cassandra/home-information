@@ -13,11 +13,9 @@ from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.location.models import Location, LocationView
 
 from .entity_pairing_manager import EntityPairingManager
-from .edit.enums import (
-    EntityTransitionType,
-)
 from .enums import (
     EntityGroupType,
+    EntityTransitionType,
 )
 from .models import (
     Entity,

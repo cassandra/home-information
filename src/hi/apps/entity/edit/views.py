@@ -31,6 +31,32 @@ from . import forms
 logger = logging.getLogger(__name__)
 
 
+class EntityEditModeView( HiSideView, EntityViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'entity/edit/panes/entity_edit_mode_panel.html'
+
+    def should_push_url( self ) -> bool:
+        return True
+    
+    def get_template_context( self,
+                              request : HttpRequest,
+                              *args   : Any,
+                              **kwargs: Any          ) -> Dict[str, Any]:
+        entity: Entity = self.get_entity( request, *args, **kwargs )
+
+        current_location_view = None
+        if request.view_parameters.view_type.is_location_view:
+            current_location_view = LocationManager().get_default_location_view( request = request )
+
+        entity_edit_mode_data = EntityManager().get_entity_edit_mode_data(
+            entity = entity,
+            location_view = current_location_view,
+            is_editing = request.view_parameters.is_editing,
+        )
+        return entity_edit_mode_data.to_template_context()
+
+
 @method_decorator( edit_required, name='dispatch' )
 class EntityAddView( HiModalView ):
 
@@ -221,32 +247,6 @@ class ManagePairingsView( HiModalView, EntityViewMixin ):
             return antinode.refresh_response()
         except EntityPairingError as epe:
             raise BadRequest( str(epe) )
-
-
-class EntityEditModeView( HiSideView, EntityViewMixin ):
-
-    def get_template_name( self ) -> str:
-        return 'entity/edit/panes/entity_edit_mode_panel.html'
-
-    def should_push_url( self ) -> bool:
-        return True
-    
-    def get_template_context( self,
-                              request : HttpRequest,
-                              *args   : Any,
-                              **kwargs: Any          ) -> Dict[str, Any]:
-        entity: Entity = self.get_entity( request, *args, **kwargs )
-
-        current_location_view = None
-        if request.view_parameters.view_type.is_location_view:
-            current_location_view = LocationManager().get_default_location_view( request = request )
-
-        entity_edit_mode_data = EntityManager().get_entity_edit_mode_data(
-            entity = entity,
-            location_view = current_location_view,
-            is_editing = request.view_parameters.is_editing,
-        )
-        return entity_edit_mode_data.to_template_context()
 
 
 class EntityPropertiesEditView( View, EntityViewMixin ):

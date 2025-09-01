@@ -522,10 +522,10 @@ class TestLocationViewDeleteView(DualModeViewTestCase):
         self.assertEqual(response.status_code, 404)
 
 
-class TestLocationViewEditView(DualModeViewTestCase):
+class TestLocationViewEditModeView(DualModeViewTestCase):
     """
-    Tests for LocationViewEditView - demonstrates location view editing testing.
-    This view handles location view property updates.
+    Tests for LocationViewEditModeView - demonstrates location view editing testing.
+    This view handles both displaying the edit interface (GET) and processing form submissions (POST).
     """
 
     def setUp(self):
@@ -545,9 +545,21 @@ class TestLocationViewEditView(DualModeViewTestCase):
             svg_view_box_str='0 0 100 100'
         )
 
+    def test_get_edit_mode_panel(self):
+        """Test GET request returns the edit mode panel."""
+        url = reverse('location_view_edit_mode', kwargs={'location_view_id': self.location_view.id})
+        response = self.async_get(url)
+
+        # Should return success
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        # Should use the edit mode panel template
+        self.assertTemplateRendered(response, 'location/edit/panes/location_view_edit_mode_panel.html')
+
     def test_post_valid_edit(self):
         """Test POST request with valid edit data."""
-        url = reverse('location_edit_location_view_edit', kwargs={'location_view_id': self.location_view.id})
+        url = reverse('location_view_edit_mode', kwargs={'location_view_id': self.location_view.id})
         response = self.async_post(url, {
             'name': 'Updated View',
             'location_view_type_str': self.location_view.location_view_type_str,
@@ -567,7 +579,7 @@ class TestLocationViewEditView(DualModeViewTestCase):
 
     def test_post_invalid_edit(self):
         """Test POST request with invalid edit data."""
-        url = reverse('location_edit_location_view_edit', kwargs={'location_view_id': self.location_view.id})
+        url = reverse('location_view_edit_mode', kwargs={'location_view_id': self.location_view.id})
         response = self.async_post(url, {'name': ''})  # Empty name should be invalid
 
         # Should return 400 for invalid form data
@@ -580,19 +592,19 @@ class TestLocationViewEditView(DualModeViewTestCase):
 
     def test_nonexistent_location_view_returns_404(self):
         """Test that accessing nonexistent location view returns 404."""
-        url = reverse('location_edit_location_view_edit', kwargs={'location_view_id': 99999})
+        url = reverse('location_view_edit_mode', kwargs={'location_view_id': 99999})
         response = self.async_post(url, {'name': 'Test'})
 
         # Should return 404 for nonexistent location view
         self.assertEqual(response.status_code, 404)
 
-    def test_get_not_allowed(self):
-        """Test that GET requests are not allowed."""
-        url = reverse('location_edit_location_view_edit', kwargs={'location_view_id': self.location_view.id})
+    def test_get_nonexistent_location_view_returns_404(self):
+        """Test that GET request for nonexistent location view returns 404."""
+        url = reverse('location_view_edit_mode', kwargs={'location_view_id': 99999})
         response = self.async_get(url)
 
-        # View doesn't have GET method - returns 405
-        self.assertEqual(response.status_code, 405)
+        # Should return 404 for nonexistent location view
+        self.assertEqual(response.status_code, 404)
 
 
 class TestLocationViewManageItemsView(SyncViewTestCase):

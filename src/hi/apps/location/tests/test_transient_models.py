@@ -1,9 +1,8 @@
 import logging
 
 from hi.apps.location.transient_models import LocationEditModeData, LocationViewEditModeData
-from hi.apps.location.models import Location, LocationView, LocationAttribute
+from hi.apps.location.models import Location, LocationView
 from hi.apps.location.edit.forms import LocationEditForm, LocationViewEditForm
-from hi.apps.attribute.enums import AttributeValueType
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)

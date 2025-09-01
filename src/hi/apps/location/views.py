@@ -115,8 +115,69 @@ class LocationItemStatusView( View ):
             return HttpResponseRedirect( redirect_url )
 
         raise BadRequest( f'Unknown item type "{item_type}".' )
-            
 
+
+class LocationEditView(HiModalView, LocationViewMixin):
+    """Location attribute editing modal with redesigned interface.
+    
+    This view uses a dual response pattern:
+    - get(): Returns full modal using standard modal_response()
+    - post(): Returns antinode fragments for async DOM updates
+    
+    Business logic is delegated to specialized handler classes following
+    the "keep views simple" design philosophy.
+    """
+    
+    def get_template_name(self) -> str:
+        return 'location/modals/location_edit.html'
+    
+    def get( self,
+             request : HttpRequest,
+             *args   : Any,
+             **kwargs: Any          ) -> HttpResponse:
+        location: Location = self.get_location(request, *args, **kwargs)
+        
+        # Delegate form creation and context building to handler
+        form_handler = LocationEditFormHandler()
+        context: Dict[str, Any] = form_handler.create_initial_context(location)
+        
+        return self.modal_response(request, context)
+    
+    def post( self,
+              request : HttpRequest,
+              *args   : Any,
+              **kwargs: Any          ) -> HttpResponse:
+        location: Location = self.get_location(request, *args, **kwargs)
+        
+        # Delegate form handling to specialized handlers
+        form_handler = LocationEditFormHandler()
+        renderer = LocationEditResponseRenderer()
+        
+        # Create forms with POST data
+        (
+            location_form,
+            file_attributes,
+            regular_attributes_formset,
+        ) = form_handler.create_location_forms(
+            location, request.POST
+        )
+        
+        if form_handler.validate_forms(location_form, regular_attributes_formset):
+            # Save forms and process files
+            form_handler.save_forms(location_form, regular_attributes_formset, request, location)
+            
+            # Return success response
+            return renderer.render_success_response(request, location)
+        else:
+            # Return error response
+            return renderer.render_error_response(
+                request, location, location_form, regular_attributes_formset
+            )
+    
+    def get_success_url_name(self) -> str:
+        return 'location_edit'
+
+    
 class LocationAttributeUploadView( View, LocationViewMixin ):
 
     def post( self,
@@ -276,64 +337,3 @@ class LocationAttributeRestoreInlineView(BaseAttributeRestoreView):
             request = request,
             location = location,
         )
-
-
-class LocationEditView(HiModalView, LocationViewMixin):
-    """Location attribute editing modal with redesigned interface.
-    
-    This view uses a dual response pattern:
-    - get(): Returns full modal using standard modal_response()
-    - post(): Returns antinode fragments for async DOM updates
-    
-    Business logic is delegated to specialized handler classes following
-    the "keep views simple" design philosophy.
-    """
-    
-    def get_template_name(self) -> str:
-        return 'location/modals/location_edit.html'
-    
-    def get( self,
-             request : HttpRequest,
-             *args   : Any,
-             **kwargs: Any          ) -> HttpResponse:
-        location: Location = self.get_location(request, *args, **kwargs)
-        
-        # Delegate form creation and context building to handler
-        form_handler = LocationEditFormHandler()
-        context: Dict[str, Any] = form_handler.create_initial_context(location)
-        
-        return self.modal_response(request, context)
-    
-    def post( self,
-              request : HttpRequest,
-              *args   : Any,
-              **kwargs: Any          ) -> HttpResponse:
-        location: Location = self.get_location(request, *args, **kwargs)
-        
-        # Delegate form handling to specialized handlers
-        form_handler = LocationEditFormHandler()
-        renderer = LocationEditResponseRenderer()
-        
-        # Create forms with POST data
-        (
-            location_form,
-            file_attributes,
-            regular_attributes_formset,
-        ) = form_handler.create_location_forms(
-            location, request.POST
-        )
-        
-        if form_handler.validate_forms(location_form, regular_attributes_formset):
-            # Save forms and process files
-            form_handler.save_forms(location_form, regular_attributes_formset, request, location)
-            
-            # Return success response
-            return renderer.render_success_response(request, location)
-        else:
-            # Return error response
-            return renderer.render_error_response(
-                request, location, location_form, regular_attributes_formset
-            )
-    
-    def get_success_url_name(self) -> str:
-        return 'location_edit'

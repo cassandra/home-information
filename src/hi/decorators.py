@@ -8,7 +8,7 @@ logger = logging.getLogger( __name__ )
 
 def edit_required(func):
     """
-    Decorator used for views that require an autheticated user with an email.
+    Decorator used for views that require being in editing mode.
     """
     @wraps(func)
     def wrapper( request, *args, **kwargs):

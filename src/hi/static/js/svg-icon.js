@@ -78,7 +78,7 @@
     const KEYPRESS_ROTATE_DEGREES = 10.0;
     const POSITION_API_CALL_DEBOUNCE_MS = 400;
     
-    const API_EDIT_LOCATION_ITEM_POSITION_URL = '/location/edit/location-item/position';
+    const API_EDIT_LOCATION_ITEM_POSITION_URL = '/location/edit/item/position';
         
     const SvgActionStateType = {
         MOVE: 'move',

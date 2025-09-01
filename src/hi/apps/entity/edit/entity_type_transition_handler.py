@@ -13,10 +13,9 @@ import hi.apps.common.antinode as antinode
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import LocationView
 from hi.apps.entity.entity_manager import EntityManager
+from hi.apps.entity.enums import EntityTransitionType
 from hi.apps.entity.models import Entity
 from hi.apps.entity.forms import EntityForm, EntityAttributeRegularFormSet
-
-from .enums import EntityTransitionType
 
 logger = logging.getLogger(__name__)
 

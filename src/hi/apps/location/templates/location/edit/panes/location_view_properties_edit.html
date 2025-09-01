@@ -1,5 +1,5 @@
 {% load icons %}
-<form action="{% url 'location_edit_location_view_edit' location_view_id=location_view.id %}"
+<form action="{% url 'location_view_edit_mode' location_view_id=location_view.id %}"
       method="post"
       class="form" data-async="true">
   {% csrf_token %}

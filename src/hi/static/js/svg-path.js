@@ -89,7 +89,7 @@
     const PATH_EDIT_PROXY_LINE_COLOR = 'red';
     const PATH_EDIT_PROXY_POINT_COLOR = 'red';
 
-    const API_EDIT_SVG_PATH_URL = '/location/edit/location-item/path';
+    const API_EDIT_SVG_PATH_URL = '/location/edit/item/path';
     
     const ProxyPathType = {
         OPEN: 'open',

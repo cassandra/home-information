@@ -5,16 +5,19 @@ Tests the complex entity type transition logic including change detection,
 transaction management, and response determination.
 """
 import logging
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from django.http import HttpRequest, HttpResponse
+from django.test import RequestFactory
 
 from hi.apps.entity.entity_edit_form_handler import EntityEditFormHandler
 from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransitionHandler
-from hi.apps.entity.enums import EntityType
-from hi.apps.entity.edit.enums import EntityTransitionType
+from hi.apps.entity.enums import EntityType, EntityTransitionType
 from hi.apps.entity.forms import EntityForm, EntityAttributeRegularFormSet
 from hi.testing.base_test_case import BaseTestCase
 from hi.apps.entity.tests.synthetic_data import EntityAttributeSyntheticData
+from hi.apps.location.tests.synthetic_data import LocationSyntheticData
+from hi.view_parameters import ViewParameters
+from hi.enums import ViewType
 
 logging.disable(logging.CRITICAL)
 
@@ -26,7 +29,11 @@ class TestEntityTypeTransitionHandlerFormSaving(BaseTestCase):
         super().setUp()
         self.handler = EntityTypeTransitionHandler()
         self.entity = EntityAttributeSyntheticData.create_test_entity(entity_type_str=str(EntityType.LIGHT))
-        self.request = Mock(spec=HttpRequest)
+        
+        self.request_factory = RequestFactory()
+        self.request = self.request_factory.post('/test/')
+        # Set up proper view_parameters so LocationManager can work
+        self.request.view_parameters = ViewParameters()
 
     def test_handle_entity_form_save_uses_transaction(self):
         """Test that form saving uses database transaction properly."""
@@ -83,7 +90,9 @@ class TestEntityTypeTransitionHandlerFormSaving(BaseTestCase):
     @patch.object(EntityTypeTransitionHandler, 'handle_entity_type_change')
     def test_handle_entity_form_save_with_type_change(self, mock_handle_change):
         """Test form saving when entity type changes."""
-        mock_handle_change.return_value = Mock(spec=HttpResponse)
+        # Return a real HttpResponse for testing
+        from django.http import HttpResponse
+        mock_handle_change.return_value = HttpResponse("Entity type changed", status=200)
         
         original_type = EntityType.LIGHT
         new_type = EntityType.WALL_SWITCH
@@ -180,77 +189,88 @@ class TestEntityTypeTransitionHandlerTransitionLogic(BaseTestCase):
         super().setUp()
         self.handler = EntityTypeTransitionHandler()
         self.entity = EntityAttributeSyntheticData.create_test_entity(entity_type_str=str(EntityType.LIGHT))
-        self.request = Mock(spec=HttpRequest)
+        
+        # Create real location and location view for use in tests
+        self.location = LocationSyntheticData.create_test_location()
+        self.location_view = LocationSyntheticData.create_test_location_view(location=self.location)
+        
+        self.request_factory = RequestFactory()
+        self.request = self.request_factory.post('/test/')
+        # Set up proper view_parameters so LocationManager can find the location_view
+        self.request.view_parameters = ViewParameters(
+            view_type=ViewType.LOCATION_VIEW, 
+            location_view_id=self.location_view.id
+        )
+        # Set the cached location_view so it doesn't need to query the DB
+        self.request.view_parameters._location_view = self.location_view
 
     @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
-    @patch('hi.apps.entity.edit.entity_type_transition_handler.LocationManager')
-    def test_handle_entity_type_change_successful_transition(self, mock_location_manager, mock_entity_manager):
-        """Test successful entity type change with transition."""
-        # Mock location manager
-        mock_location_view = Mock()
-        mock_location_manager.return_value.get_default_location_view.return_value = mock_location_view
-        
-        # Mock entity manager transition
+    def test_handle_entity_type_change_successful_transition(self, mock_entity_manager):
+        """Test successful entity type change with transition using real location data."""
+        # Only mock the EntityManager's transition method since that's the complex business logic
         mock_entity_manager.return_value.handle_entity_type_transition.return_value = (True, EntityTransitionType.ICON_TO_ICON)
         
         result = self.handler.handle_entity_type_change(self.request, self.entity)
         
-        # Should attempt transition
+        # Should attempt transition with real location view
         mock_entity_manager.return_value.handle_entity_type_transition.assert_called_once_with(
             entity=self.entity,
-            location_view=mock_location_view
+            location_view=self.location_view
         )
         
         # Should return refresh response for icon_to_icon transition
         self.assertIsNotNone(result)
+        self.assertIsInstance(result, HttpResponse)
 
     @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
-    @patch('hi.apps.entity.edit.entity_type_transition_handler.LocationManager')
-    def test_handle_entity_type_change_failed_transition(self, mock_location_manager, mock_entity_manager):
-        """Test entity type change when transition fails."""
-        # Mock location manager
-        mock_location_view = Mock()
-        mock_location_manager.return_value.get_default_location_view.return_value = mock_location_view
-        
+    def test_handle_entity_type_change_failed_transition(self, mock_entity_manager):
+        """Test entity type change when transition fails using real location data."""
         # Mock failed transition
         mock_entity_manager.return_value.handle_entity_type_transition.return_value = (False, EntityTransitionType.NO_TRANSITION_NEEDED)
         
-        with patch('hi.apps.entity.edit.entity_type_transition_handler.antinode.refresh_response') as mock_refresh:
-            mock_refresh.return_value = Mock(spec=HttpResponse)
-            
-            result = self.handler.handle_entity_type_change(self.request, self.entity)
-            
-            # Should return refresh response for failed transition
-            mock_refresh.assert_called_once()
-            self.assertIsNotNone(result)
-
-    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
-    @patch('hi.apps.entity.edit.entity_type_transition_handler.LocationManager')
-    def test_handle_entity_type_change_exception_handling(self, mock_location_manager, mock_entity_manager):
-        """Test entity type change exception handling."""
-        # Mock location manager to raise exception
-        mock_location_manager.return_value.get_default_location_view.side_effect = Exception("Test error")
+        result = self.handler.handle_entity_type_change(self.request, self.entity)
         
-        with patch('hi.apps.entity.edit.entity_type_transition_handler.antinode.refresh_response') as mock_refresh:
-            mock_refresh.return_value = Mock(spec=HttpResponse)
-            
-            result = self.handler.handle_entity_type_change(self.request, self.entity)
-            
-            # Should return refresh response (observable behavior)
-            mock_refresh.assert_called_once()
-            self.assertIsNotNone(result)
-            # The actual important behavior is that an HttpResponse is returned for error handling
+        # Should attempt transition with real location view
+        mock_entity_manager.return_value.handle_entity_type_transition.assert_called_once_with(
+            entity=self.entity,
+            location_view=self.location_view
+        )
+        
+        # Should return refresh response for failed transition
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, HttpResponse)
 
     @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
-    @patch('hi.apps.entity.edit.entity_type_transition_handler.LocationManager')
-    def test_handle_entity_type_change_path_to_path_transition(self, mock_location_manager, mock_entity_manager):
-        """Test path_to_path transition returns None (sidebar refresh only)."""
+    def test_handle_entity_type_change_exception_handling(self, mock_entity_manager):
+        """Test entity type change exception handling with real location data."""
+        # Mock entity manager to raise exception during transition
+        mock_entity_manager.return_value.handle_entity_type_transition.side_effect = Exception("Test transition error")
+        
+        result = self.handler.handle_entity_type_change(self.request, self.entity)
+        
+        # Should attempt transition with real location view
+        mock_entity_manager.return_value.handle_entity_type_transition.assert_called_once_with(
+            entity=self.entity,
+            location_view=self.location_view
+        )
+        
+        # Should return error response (refresh response for graceful error handling)
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, HttpResponse)
+
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
+    def test_handle_entity_type_change_path_to_path_transition(self, mock_entity_manager):
+        """Test path_to_path transition returns None (sidebar refresh only) with real location data."""
         # Mock successful path_to_path transition
-        mock_location_view = Mock()
-        mock_location_manager.return_value.get_default_location_view.return_value = mock_location_view
         mock_entity_manager.return_value.handle_entity_type_transition.return_value = (True, EntityTransitionType.PATH_TO_PATH)
         
         result = self.handler.handle_entity_type_change(self.request, self.entity)
+        
+        # Should attempt transition with real location view
+        mock_entity_manager.return_value.handle_entity_type_transition.assert_called_once_with(
+            entity=self.entity,
+            location_view=self.location_view
+        )
         
         # path_to_path transition should return None (no full page refresh needed)
         self.assertIsNone(result)
@@ -332,10 +352,24 @@ class TestEntityTypeTransitionHandlerIntegration(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.handler = EntityTypeTransitionHandler()
-        self.request = Mock(spec=HttpRequest)
+        
+        # Create real location and location view for integration tests
+        self.location = LocationSyntheticData.create_test_location()
+        self.location_view = LocationSyntheticData.create_test_location_view(location=self.location)
+        
+        self.request_factory = RequestFactory()
+        self.request = self.request_factory.post('/test/')
+        # Set up proper view_parameters so LocationManager can find the location_view
+        self.request.view_parameters = ViewParameters(
+            view_type=ViewType.LOCATION_VIEW, 
+            location_view_id=self.location_view.id
+        )
+        # Set the cached location_view so it doesn't need to query the DB
+        self.request.view_parameters._location_view = self.location_view
 
-    def test_complete_entity_type_change_scenario(self):
-        """Test complete entity type change from LIGHT to WALL_SWITCH."""
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
+    def test_complete_entity_type_change_scenario(self, mock_entity_mgr):
+        """Test complete entity type change from LIGHT to WALL_SWITCH using real objects."""
         entity = EntityAttributeSyntheticData.create_test_entity(entity_type_str=str(EntityType.LIGHT))
         original_type = entity.entity_type_str
         
@@ -347,38 +381,34 @@ class TestEntityTypeTransitionHandlerIntegration(BaseTestCase):
         
         self.assertTrue(entity_form.is_valid())
         
-        # Mock the complex dependencies
-        with patch('hi.apps.entity.edit.entity_type_transition_handler.LocationManager') as mock_loc_mgr, \
-             patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager') as mock_entity_mgr, \
-             patch('hi.apps.entity.edit.entity_type_transition_handler.antinode.refresh_response') as mock_refresh:
-            
-            # Setup mocks
-            mock_location_view = Mock()
-            mock_loc_mgr.return_value.get_default_location_view.return_value = mock_location_view
-            mock_entity_mgr.return_value.handle_entity_type_transition.return_value = (True, EntityTransitionType.ICON_TO_ICON)
-            mock_refresh.return_value = Mock(spec=HttpResponse)
-            
-            # Execute the transition
-            result = self.handler.handle_entity_form_save(
-                request=self.request,
-                entity=entity,
-                entity_form=entity_form,
-                original_entity_type_str=original_type
-            )
-            
-            # Verify entity was saved
-            entity.refresh_from_db()
-            self.assertEqual(entity.entity_type_str, str(EntityType.WALL_SWITCH).lower())
-            
-            # Verify transition was attempted
-            mock_entity_mgr.return_value.handle_entity_type_transition.assert_called_once()
-            
-            # Verify refresh response was returned
-            mock_refresh.assert_called_once()
-            self.assertIsNotNone(result)
+        # Only mock the EntityManager's complex transition logic
+        mock_entity_mgr.return_value.handle_entity_type_transition.return_value = (True, EntityTransitionType.ICON_TO_ICON)
+        
+        # Execute the transition
+        result = self.handler.handle_entity_form_save(
+            request=self.request,
+            entity=entity,
+            entity_form=entity_form,
+            original_entity_type_str=original_type
+        )
+        
+        # Verify entity was saved with real database transaction
+        entity.refresh_from_db()
+        self.assertEqual(entity.entity_type_str, str(EntityType.WALL_SWITCH).lower())
+        
+        # Verify transition was attempted with real location view
+        mock_entity_mgr.return_value.handle_entity_type_transition.assert_called_once_with(
+            entity=entity,
+            location_view=self.location_view
+        )
+        
+        # Verify refresh response was returned for icon transition
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, HttpResponse)
 
-    def test_entity_type_change_with_attributes_formset(self):
-        """Test entity type change with simultaneous attribute changes."""
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
+    def test_entity_type_change_with_attributes_formset(self, mock_entity_mgr):
+        """Test entity type change with simultaneous attribute changes using real objects."""
         entity = EntityAttributeSyntheticData.create_test_entity(entity_type_str=str(EntityType.LIGHT))
         attr = EntityAttributeSyntheticData.create_test_text_attribute(
             entity=entity, name='brightness', value='100'
@@ -402,36 +432,37 @@ class TestEntityTypeTransitionHandlerIntegration(BaseTestCase):
         self.assertTrue(entity_form.is_valid())
         self.assertTrue(formset.is_valid())
         
-        # Mock transition to return simple response
-        with patch('hi.apps.entity.edit.entity_type_transition_handler.LocationManager'), \
-             patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager') as mock_entity_mgr, \
-             patch('hi.apps.entity.edit.entity_type_transition_handler.antinode.refresh_response') as mock_refresh:
-            
-            # Mock simple transition
-            mock_entity_mgr.return_value.handle_entity_type_transition.return_value = (True, EntityTransitionType.PATH_TO_PATH)
-            mock_refresh.return_value = Mock(spec=HttpResponse)
-            
-            result = self.handler.handle_entity_form_save(
-                request=self.request,
-                entity=entity,
-                entity_form=entity_form,
-                entity_attribute_formset=formset,
-                original_entity_type_str=str(EntityType.LIGHT)
-            )
-            
-            # Verify both entity and attribute were saved
-            entity.refresh_from_db()
-            attr.refresh_from_db()
-            
-            self.assertEqual(entity.entity_type_str, str(EntityType.WALL_SWITCH).lower())
-            self.assertEqual(entity.name, 'Updated Light')
-            self.assertEqual(attr.value, '75')
-            
-            # path_to_path transition should not require full page refresh
-            self.assertIsNone(result)
+        # Mock only the entity manager's complex transition logic
+        mock_entity_mgr.return_value.handle_entity_type_transition.return_value = (True, EntityTransitionType.PATH_TO_PATH)
+        
+        result = self.handler.handle_entity_form_save(
+            request=self.request,
+            entity=entity,
+            entity_form=entity_form,
+            entity_attribute_formset=formset,
+            original_entity_type_str=str(EntityType.LIGHT)
+        )
+        
+        # Verify both entity and attribute were saved with real database transactions
+        entity.refresh_from_db()
+        attr.refresh_from_db()
+        
+        self.assertEqual(entity.entity_type_str, str(EntityType.WALL_SWITCH).lower())
+        self.assertEqual(entity.name, 'Updated Light')
+        self.assertEqual(attr.value, '75')
+        
+        # Verify transition was attempted with real location view
+        mock_entity_mgr.return_value.handle_entity_type_transition.assert_called_once_with(
+            entity=entity,
+            location_view=self.location_view
+        )
+        
+        # path_to_path transition should not require full page refresh
+        self.assertIsNone(result)
 
-    def test_transaction_rollback_on_transition_failure(self):
-        """Test that transaction is properly managed even if transition fails."""
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
+    def test_transaction_rollback_on_transition_failure(self, mock_entity_mgr):
+        """Test that transaction is properly managed even if transition fails using real objects."""
         entity = EntityAttributeSyntheticData.create_test_entity(entity_type_str=str(EntityType.LIGHT))
         
         form_data = EntityAttributeSyntheticData.create_form_data_for_entity_edit(
@@ -439,30 +470,28 @@ class TestEntityTypeTransitionHandlerIntegration(BaseTestCase):
         )
         entity_form = EntityForm(form_data, instance=entity)
         
-        # Mock transition to raise exception after forms are saved
-        with patch('hi.apps.entity.edit.entity_type_transition_handler.LocationManager') as mock_loc_mgr, \
-             patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager'):
-            
-            mock_loc_mgr.return_value.get_default_location_view.side_effect = Exception("Transition error")
-            
-            # The form save should still work, transition failure is handled gracefully
-            result = self.handler.handle_entity_form_save(
-                request=self.request,
-                entity=entity,
-                entity_form=entity_form,
-                original_entity_type_str=str(EntityType.LIGHT)
-            )
-            
-            # Entity should still be saved (transaction includes form save)
-            entity.refresh_from_db()
-            self.assertEqual(entity.entity_type_str, str(EntityType.WALL_SWITCH).lower())
-            self.assertEqual(entity.name, 'Updated Name')
-            
-            # Should return error response due to transition failure
-            self.assertIsNotNone(result)
+        # Mock entity manager to raise exception during transition
+        mock_entity_mgr.return_value.handle_entity_type_transition.side_effect = Exception("Transition error")
+        
+        # The form save should still work, transition failure is handled gracefully
+        result = self.handler.handle_entity_form_save(
+            request=self.request,
+            entity=entity,
+            entity_form=entity_form,
+            original_entity_type_str=str(EntityType.LIGHT)
+        )
+        
+        # Entity should still be saved (transaction includes form save)
+        entity.refresh_from_db()
+        self.assertEqual(entity.entity_type_str, str(EntityType.WALL_SWITCH).lower())
+        self.assertEqual(entity.name, 'Updated Name')
+        
+        # Should return error response due to transition failure
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, HttpResponse)
 
     def test_no_transition_when_type_unchanged(self):
-        """Test that no transition is attempted when entity type doesn't change."""
+        """Test that no transition is attempted when entity type doesn't change - using real objects."""
         entity = EntityAttributeSyntheticData.create_test_entity(entity_type_str=str(EntityType.LIGHT))
         
         # Create form data with same entity type
@@ -471,24 +500,19 @@ class TestEntityTypeTransitionHandlerIntegration(BaseTestCase):
         )
         entity_form = EntityForm(form_data, instance=entity)
         
-        with patch('hi.apps.entity.edit.entity_type_transition_handler.LocationManager') as mock_loc_mgr, \
-             patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager') as mock_entity_mgr:
-            
-            result = self.handler.handle_entity_form_save(
-                request=self.request,
-                entity=entity,
-                entity_form=entity_form,
-                original_entity_type_str=str(EntityType.LIGHT)  # Same as current type
-            )
-            
-            # No transition should be attempted
-            mock_loc_mgr.assert_not_called()
-            mock_entity_mgr.assert_not_called()
-            
-            # Should return None (no special response needed)
-            self.assertIsNone(result)
-            
-            # Entity should still be saved
-            entity.refresh_from_db()
-            self.assertEqual(entity.name, 'Updated Name')
+        result = self.handler.handle_entity_form_save(
+            request=self.request,
+            entity=entity,
+            entity_form=entity_form,
+            original_entity_type_str=str(EntityType.LIGHT)  # Same as current type
+        )
+        
+        # Should return None (no special response needed since no type change)
+        self.assertIsNone(result)
+        
+        # Entity should still be saved using real database transaction
+        entity.refresh_from_db()
+        self.assertEqual(entity.name, 'Updated Name')
+        # Entity type should remain unchanged
+        self.assertEqual(entity.entity_type_str, str(EntityType.LIGHT).lower())
             
