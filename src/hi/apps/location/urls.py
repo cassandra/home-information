@@ -24,12 +24,16 @@ urlpatterns = [
     re_path( r'^item/status/(?P<html_id>[\w\-]+)$', 
              views.LocationItemStatusView.as_view(), 
              name='location_item_status' ),
+
+    re_path( r'^attribute/upload/(?P<location_id>\d+)$', 
+             views.LocationAttributeUploadView.as_view(), 
+             name='location_attribute_upload'),
     
-    re_path( r'^(?P<location_id>\d+)/attribute/history/(?P<attribute_id>\d+)$', 
+    re_path( r'^attribute/history/(?P<location_id>\d+)/(?P<attribute_id>\d+)$', 
              views.LocationAttributeHistoryInlineView.as_view(), 
              name='location_attribute_history_inline'),
     
-    re_path( r'^(?P<location_id>\d+)/attribute/restore/(?P<attribute_id>\d+)/(?P<history_id>\d+)$', 
+    re_path( r'^attribute/restore/(?P<location_id>\d+)/(?P<attribute_id>\d+)/(?P<history_id>\d+)$', 
              views.LocationAttributeRestoreInlineView.as_view(), 
              name='location_attribute_restore_inline'),
     

@@ -14,7 +14,7 @@ from django.db.models import QuerySet
 
 from hi.apps.attribute.enums import AttributeValueType
 from .models import Location, LocationAttribute
-from .edit.forms import LocationV2EditForm, LocationAttributeRegularFormSet
+from .forms import LocationAttributeRegularFormSet, LocationModalEditForm
 from .location_attribute_edit_context import LocationAttributeEditContext
 
 logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ class LocationEditFormHandler:
             self,
             location  : Location,
             form_data : Optional[Dict[str, Any]] = None
-    ) -> Tuple[LocationV2EditForm, QuerySet[LocationAttribute], LocationAttributeRegularFormSet]:
+    ) -> Tuple[LocationModalEditForm, QuerySet[LocationAttribute], LocationAttributeRegularFormSet]:
         """Create location forms used by both initial rendering and fragment updates.
         
         Args:
@@ -61,7 +61,7 @@ class LocationEditFormHandler:
             tuple: (location_form, file_attributes, regular_attributes_formset)
         """
         # Create location form (only name field for this modal)
-        location_form: LocationV2EditForm = LocationV2EditForm(form_data, instance=location)
+        location_form: LocationModalEditForm = LocationModalEditForm(form_data, instance=location)
         
         # Get file attributes for display (not a formset, just for template rendering)
         file_attributes: QuerySet[LocationAttribute] = location.attributes.filter(
@@ -81,13 +81,13 @@ class LocationEditFormHandler:
         return location_form, file_attributes, regular_attributes_formset
 
     def validate_forms( self,
-                        location_form              : LocationV2EditForm,
+                        location_form              : LocationModalEditForm,
                         regular_attributes_formset : LocationAttributeRegularFormSet ) -> bool:
         """
         Validate location form and property attributes formset.
         
         Args:
-            location_form: LocationV2EditForm instance
+            location_form: LocationModalEditForm instance
             regular_attributes_formset: LocationAttributeRegularFormSet instance
             
         Returns:
@@ -96,7 +96,7 @@ class LocationEditFormHandler:
         return location_form.is_valid() and regular_attributes_formset.is_valid()
 
     def save_forms( self,
-                    location_form               : LocationV2EditForm,
+                    location_form               : LocationModalEditForm,
                     regular_attributes_formset  : LocationAttributeRegularFormSet,
                     request                     : HttpRequest,
                     location                    : Location ) -> None:
@@ -104,7 +104,7 @@ class LocationEditFormHandler:
         Save forms and process file operations within a transaction.
         
         Args:
-            location_form: LocationV2EditForm instance
+            location_form: LocationModalEditForm instance
             regular_attributes_formset: LocationAttributeRegularFormSet instance
             request: HTTP request object
             location: Location instance
@@ -183,12 +183,12 @@ class LocationEditFormHandler:
                 logger.warning(f'Invalid file title field {field_name}: {e}')
 
     def collect_form_errors( self,
-                             location_form              : LocationV2EditForm,
+                             location_form              : LocationModalEditForm,
                              regular_attributes_formset : LocationAttributeRegularFormSet ) -> List[str]:
         """Collect non-field errors from forms for enhanced error messaging.
         
         Args:
-            location_form: LocationV2EditForm instance 
+            location_form: LocationModalEditForm instance 
             regular_attributes_formset: LocationAttributeRegularFormSet instance
             
         Returns:

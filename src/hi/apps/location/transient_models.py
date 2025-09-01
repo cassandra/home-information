@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 
-from hi.apps.location.edit.forms import (
+from hi.apps.location.forms import (
     LocationAttributeFormSet,
     LocationAttributeUploadForm,
+)
+from hi.apps.location.edit.forms import (
     LocationEditForm,
     LocationViewEditForm,
 )

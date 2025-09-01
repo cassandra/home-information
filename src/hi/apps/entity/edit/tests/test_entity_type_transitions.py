@@ -8,7 +8,8 @@ from django.db import transaction
 from django.test import TransactionTestCase
 
 from hi.apps.entity.entity_manager import EntityManager
-from hi.apps.entity.enums import EntityType, EntityTransitionType
+from hi.apps.entity.enums import EntityType
+from hi.apps.entity.edit.enums import EntityTransitionType
 from hi.apps.entity.models import Entity, EntityPath, EntityPosition
 from hi.apps.location.models import Location, LocationView
 

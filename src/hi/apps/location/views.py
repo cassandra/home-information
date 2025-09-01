@@ -1,13 +1,17 @@
 import logging
 from typing import Any, Dict
 
+from django.db import transaction
 from django.core.exceptions import BadRequest
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, reverse
+from django.template.loader import render_to_string
 from django.views.generic import View
 
+import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
 
+from hi.constants import DIVID
 from hi.enums import ItemType, ViewType
 from hi.exceptions import ForceSynchronousException
 from hi.hi_async_view import HiModalView
@@ -15,6 +19,7 @@ from hi.hi_grid_view import HiGridView
 from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
 from hi.views import page_not_found_response
 
+from .forms import LocationAttributeUploadForm
 from .location_manager import LocationManager
 from .models import Location, LocationView, LocationAttribute
 from .view_mixins import LocationViewMixin
@@ -110,6 +115,60 @@ class LocationItemStatusView( View ):
             return HttpResponseRedirect( redirect_url )
 
         raise BadRequest( f'Unknown item type "{item_type}".' )
+            
+
+class LocationAttributeUploadView( View, LocationViewMixin ):
+
+    def post( self,
+              request : HttpRequest,
+              *args   : Any,
+              **kwargs: Any          ) -> HttpResponse:
+        location = self.get_location( request, *args, **kwargs )
+        location_attribute = LocationAttribute( location = location )
+        location_attribute_upload_form = LocationAttributeUploadForm(
+            request.POST,
+            request.FILES,
+            instance = location_attribute,
+        )
+        
+        if location_attribute_upload_form.is_valid():
+            with transaction.atomic():
+                location_attribute_upload_form.save()   
+            
+            # Render new file card HTML to append to file grid
+            from hi.apps.location.location_attribute_edit_context import LocationAttributeEditContext
+            attr_context = LocationAttributeEditContext(location)
+            context = {'attribute': location_attribute, 'location': location}
+            context.update(attr_context.to_template_context())
+            
+            file_card_html: str = render_to_string(
+                'attribute/components/file_card.html',
+                context,
+                request=request
+            )
+            
+            return antinode.response(
+                append_map={
+                    DIVID['ATTR_V2_FILE_GRID']: file_card_html
+                },
+                scroll_to=DIVID['ATTR_V2_FILE_GRID']
+            )
+        else:
+            # Render error message to status area
+            error_html: str = render_to_string(
+                'attribute/components/status_message.html',
+                {
+                    'error_message': 'File upload failed. Please check the file and try again.',
+                    'form_errors': location_attribute_upload_form.errors
+                }
+            )
+            
+            return antinode.response(
+                insert_map={
+                    DIVID['ATTR_V2_STATUS_MSG']: error_html
+                },
+                status=400
+            )
 
 
 class LocationAttributeHistoryInlineView(BaseAttributeHistoryView):

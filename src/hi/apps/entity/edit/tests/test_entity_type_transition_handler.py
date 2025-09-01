@@ -9,11 +9,12 @@ from unittest.mock import Mock, patch
 from django.http import HttpRequest, HttpResponse
 
 from hi.apps.entity.entity_edit_form_handler import EntityEditFormHandler
-from hi.apps.entity.entity_type_transition_handler import EntityTypeTransitionHandler
-from hi.apps.entity.enums import EntityType, EntityTransitionType
+from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransitionHandler
+from hi.apps.entity.enums import EntityType
+from hi.apps.entity.edit.enums import EntityTransitionType
 from hi.apps.entity.forms import EntityForm, EntityAttributeRegularFormSet
 from hi.testing.base_test_case import BaseTestCase
-from .synthetic_data import EntityAttributeSyntheticData
+from hi.apps.entity.tests.synthetic_data import EntityAttributeSyntheticData
 
 logging.disable(logging.CRITICAL)
 
@@ -181,8 +182,8 @@ class TestEntityTypeTransitionHandlerTransitionLogic(BaseTestCase):
         self.entity = EntityAttributeSyntheticData.create_test_entity(entity_type_str=str(EntityType.LIGHT))
         self.request = Mock(spec=HttpRequest)
 
-    @patch('hi.apps.entity.entity_type_transition_handler.EntityManager')
-    @patch('hi.apps.entity.entity_type_transition_handler.LocationManager')
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.LocationManager')
     def test_handle_entity_type_change_successful_transition(self, mock_location_manager, mock_entity_manager):
         """Test successful entity type change with transition."""
         # Mock location manager
@@ -203,8 +204,8 @@ class TestEntityTypeTransitionHandlerTransitionLogic(BaseTestCase):
         # Should return refresh response for icon_to_icon transition
         self.assertIsNotNone(result)
 
-    @patch('hi.apps.entity.entity_type_transition_handler.EntityManager')
-    @patch('hi.apps.entity.entity_type_transition_handler.LocationManager')
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.LocationManager')
     def test_handle_entity_type_change_failed_transition(self, mock_location_manager, mock_entity_manager):
         """Test entity type change when transition fails."""
         # Mock location manager
@@ -214,7 +215,7 @@ class TestEntityTypeTransitionHandlerTransitionLogic(BaseTestCase):
         # Mock failed transition
         mock_entity_manager.return_value.handle_entity_type_transition.return_value = (False, EntityTransitionType.NO_TRANSITION_NEEDED)
         
-        with patch('hi.apps.entity.entity_type_transition_handler.antinode.refresh_response') as mock_refresh:
+        with patch('hi.apps.entity.edit.entity_type_transition_handler.antinode.refresh_response') as mock_refresh:
             mock_refresh.return_value = Mock(spec=HttpResponse)
             
             result = self.handler.handle_entity_type_change(self.request, self.entity)
@@ -223,14 +224,14 @@ class TestEntityTypeTransitionHandlerTransitionLogic(BaseTestCase):
             mock_refresh.assert_called_once()
             self.assertIsNotNone(result)
 
-    @patch('hi.apps.entity.entity_type_transition_handler.EntityManager')
-    @patch('hi.apps.entity.entity_type_transition_handler.LocationManager')
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.LocationManager')
     def test_handle_entity_type_change_exception_handling(self, mock_location_manager, mock_entity_manager):
         """Test entity type change exception handling."""
         # Mock location manager to raise exception
         mock_location_manager.return_value.get_default_location_view.side_effect = Exception("Test error")
         
-        with patch('hi.apps.entity.entity_type_transition_handler.antinode.refresh_response') as mock_refresh:
+        with patch('hi.apps.entity.edit.entity_type_transition_handler.antinode.refresh_response') as mock_refresh:
             mock_refresh.return_value = Mock(spec=HttpResponse)
             
             result = self.handler.handle_entity_type_change(self.request, self.entity)
@@ -240,8 +241,8 @@ class TestEntityTypeTransitionHandlerTransitionLogic(BaseTestCase):
             self.assertIsNotNone(result)
             # The actual important behavior is that an HttpResponse is returned for error handling
 
-    @patch('hi.apps.entity.entity_type_transition_handler.EntityManager')
-    @patch('hi.apps.entity.entity_type_transition_handler.LocationManager')
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
+    @patch('hi.apps.entity.edit.entity_type_transition_handler.LocationManager')
     def test_handle_entity_type_change_path_to_path_transition(self, mock_location_manager, mock_entity_manager):
         """Test path_to_path transition returns None (sidebar refresh only)."""
         # Mock successful path_to_path transition
@@ -347,9 +348,9 @@ class TestEntityTypeTransitionHandlerIntegration(BaseTestCase):
         self.assertTrue(entity_form.is_valid())
         
         # Mock the complex dependencies
-        with patch('hi.apps.entity.entity_type_transition_handler.LocationManager') as mock_loc_mgr, \
-             patch('hi.apps.entity.entity_type_transition_handler.EntityManager') as mock_entity_mgr, \
-             patch('hi.apps.entity.entity_type_transition_handler.antinode.refresh_response') as mock_refresh:
+        with patch('hi.apps.entity.edit.entity_type_transition_handler.LocationManager') as mock_loc_mgr, \
+             patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager') as mock_entity_mgr, \
+             patch('hi.apps.entity.edit.entity_type_transition_handler.antinode.refresh_response') as mock_refresh:
             
             # Setup mocks
             mock_location_view = Mock()
@@ -402,9 +403,9 @@ class TestEntityTypeTransitionHandlerIntegration(BaseTestCase):
         self.assertTrue(formset.is_valid())
         
         # Mock transition to return simple response
-        with patch('hi.apps.entity.entity_type_transition_handler.LocationManager'), \
-             patch('hi.apps.entity.entity_type_transition_handler.EntityManager') as mock_entity_mgr, \
-             patch('hi.apps.entity.entity_type_transition_handler.antinode.refresh_response') as mock_refresh:
+        with patch('hi.apps.entity.edit.entity_type_transition_handler.LocationManager'), \
+             patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager') as mock_entity_mgr, \
+             patch('hi.apps.entity.edit.entity_type_transition_handler.antinode.refresh_response') as mock_refresh:
             
             # Mock simple transition
             mock_entity_mgr.return_value.handle_entity_type_transition.return_value = (True, EntityTransitionType.PATH_TO_PATH)
@@ -439,8 +440,8 @@ class TestEntityTypeTransitionHandlerIntegration(BaseTestCase):
         entity_form = EntityForm(form_data, instance=entity)
         
         # Mock transition to raise exception after forms are saved
-        with patch('hi.apps.entity.entity_type_transition_handler.LocationManager') as mock_loc_mgr, \
-             patch('hi.apps.entity.entity_type_transition_handler.EntityManager'):
+        with patch('hi.apps.entity.edit.entity_type_transition_handler.LocationManager') as mock_loc_mgr, \
+             patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager'):
             
             mock_loc_mgr.return_value.get_default_location_view.side_effect = Exception("Transition error")
             
@@ -470,8 +471,8 @@ class TestEntityTypeTransitionHandlerIntegration(BaseTestCase):
         )
         entity_form = EntityForm(form_data, instance=entity)
         
-        with patch('hi.apps.entity.entity_type_transition_handler.LocationManager') as mock_loc_mgr, \
-             patch('hi.apps.entity.entity_type_transition_handler.EntityManager') as mock_entity_mgr:
+        with patch('hi.apps.entity.edit.entity_type_transition_handler.LocationManager') as mock_loc_mgr, \
+             patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager') as mock_entity_mgr:
             
             result = self.handler.handle_entity_form_save(
                 request=self.request,

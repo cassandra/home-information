@@ -14,7 +14,7 @@ from hi.apps.collection.collection_manager import CollectionManager
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.entity_pairing_manager import EntityPairingManager, EntityPairingError
-from hi.apps.entity.entity_type_transition_handler import EntityTypeTransitionHandler
+from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransitionHandler
 from hi.apps.entity.forms import EntityForm
 from hi.apps.entity.models import Entity, EntityPosition
 from hi.apps.entity.view_mixins import EntityViewMixin

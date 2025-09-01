@@ -1,11 +1,10 @@
 import json
 import logging
-from typing import Any
 
 from django.core.exceptions import BadRequest
 from django.db import transaction
-from django.http import Http404, HttpRequest, HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect
-from django.template.loader import get_template, render_to_string
+from django.http import Http404, HttpResponseNotAllowed, HttpResponseRedirect
+from django.template.loader import get_template
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.generic import View
@@ -18,7 +17,7 @@ from hi.apps.entity.edit.views import EntityPositionEditView
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
-from hi.apps.location.models import Location, LocationAttribute
+from hi.apps.location.models import Location
 from hi.apps.location.transient_models import LocationEditData, LocationViewEditData
 from hi.apps.location.view_mixins import LocationViewMixin
 
@@ -156,60 +155,6 @@ class LocationPropertiesEditView( View, LocationViewMixin, LocationEditViewMixin
             location_edit_data = location_edit_data,
             status_code = status_code,
         )
-            
-    
-class LocationAttributeUploadView( View, LocationViewMixin ):
-
-    def post( self,
-              request : HttpRequest,
-              *args   : Any,
-              **kwargs: Any          ) -> HttpResponse:
-        location: Location = self.get_location( request, *args, **kwargs )
-        location_attribute: LocationAttribute = LocationAttribute( location = location )
-        location_attribute_upload_form: forms.LocationAttributeUploadForm = forms.LocationAttributeUploadForm(
-            request.POST,
-            request.FILES,
-            instance = location_attribute,
-        )
-        
-        if location_attribute_upload_form.is_valid():
-            with transaction.atomic():
-                location_attribute_upload_form.save()   
-            
-            # Render new file card HTML to append to file grid
-            from hi.apps.location.location_attribute_edit_context import LocationAttributeEditContext
-            attr_context = LocationAttributeEditContext(location)
-            context = {'attribute': location_attribute, 'location': location}
-            context.update(attr_context.to_template_context())
-            
-            file_card_html: str = render_to_string(
-                'attribute/components/file_card.html',
-                context,
-                request=request
-            )
-            
-            return antinode.response(
-                append_map={
-                    DIVID['ATTR_V2_FILE_GRID']: file_card_html
-                },
-                scroll_to=DIVID['ATTR_V2_FILE_GRID']
-            )
-        else:
-            # Render error message to status area
-            error_html: str = render_to_string(
-                'attribute/components/status_message.html',
-                {
-                    'error_message': 'File upload failed. Please check the file and try again.',
-                    'form_errors': location_attribute_upload_form.errors
-                }
-            )
-            
-            return antinode.response(
-                insert_map={
-                    DIVID['ATTR_V2_STATUS_MSG']: error_html
-                },
-                status=400
-            )
 
     
 @method_decorator( edit_required, name='dispatch' )
