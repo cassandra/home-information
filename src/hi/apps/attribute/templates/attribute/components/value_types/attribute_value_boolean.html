@@ -4,14 +4,21 @@ Renders a checkbox input for boolean attributes
 {% endcomment %}
 
 <div class="attr-v2-boolean-value">
+  <!-- Hidden field with actual string value for form submission -->
+  <input type="hidden" 
+         name="{{ attribute_form.value.html_name }}"
+         id="hidden-{{ attribute_form.value.id_for_label }}"
+         value="{{ attribute_form.value.value|default_if_none:'False' }}">
+  
+  <!-- Checkbox for UI interaction (no name = not submitted) -->
   <div class="custom-control custom-checkbox">
     <input type="checkbox" 
            id="{{ attribute_form.value.id_for_label }}"
-           name="{{ attribute_form.value.html_name }}"
-           class="custom-control-input"
-           value="True"
+           class="custom-control-input attr-v2-boolean-checkbox"
+           data-hidden-field="hidden-{{ attribute_form.value.id_for_label }}"
            {% if attribute_form.value.value == "True" or attribute_form.value.value == True %}checked{% endif %}
-           {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %} />
+           {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %}
+           onchange="attrV2.updateBooleanHiddenField(this)" />
     <label class="custom-control-label" for="{{ attribute_form.value.id_for_label }}">
       {{ attribute_form.instance.name }}
     </label>

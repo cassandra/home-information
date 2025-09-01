@@ -365,10 +365,16 @@
         }
     };
     
-    
-    
-    
-    
+    // Update hidden field when boolean checkbox changes
+    window.attrV2.updateBooleanHiddenField = function(checkbox) {
+        const hiddenFieldId = checkbox.getAttribute('data-hidden-field');
+        const hiddenField = document.getElementById(hiddenFieldId);
+        
+        if (hiddenField) {
+            // Update hidden field value based on checkbox state
+            hiddenField.value = checkbox.checked ? 'True' : 'False';
+        }
+    };
     
     // Initialize autosize for all textareas in the modal
     function initializeAutosizeTextareas() {

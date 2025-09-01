@@ -46,13 +46,12 @@ class AttributeForm( forms.ModelForm ):
     def __init__(self, *args, **kwargs):
         self._show_as_editable = kwargs.pop( 'show_as_editable', True )
         self._allow_reordering = kwargs.pop( 'allow_reordering', True )
+        instance = kwargs.get('instance')
         super().__init__(*args, **kwargs)
 
-        # Access the instance's value_type field
-        instance = kwargs.get('instance')
-
+        # For boolean attributes, keep string field but set initial as string consistently  
         if instance and instance.value_type.is_boolean:
-            self.initial['value'] = str(str_to_bool( instance.value ))
+            self.initial['value'] = str(str_to_bool(instance.value))
             
         for field in self.fields.values():
             if self._show_as_editable or ( instance and instance.is_editable ):
