@@ -23,8 +23,8 @@
         DATA_TYPE_ICON_VALUE: 'svg-icon',
         DATA_TYPE_PATH_VALUE: 'svg-path',
         
-        API_LOCATION_ITEM_DETAILS_URL: '/location/item/details',
-        API_LOCATION_ITEM_INFO_URL: '/location/item/info',
+        API_LOCATION_ITEM_EDIT_MODE_URL: '/location/edit/item/edit-mode',
+        API_LOCATION_ITEM_STATUS_URL: '/location/item/status',
         ENTITY_STATE_VALUE_CHOICES_URL_PREFIX: '/edit/entity/state/values',
         
         generateUniqueId: function() {
