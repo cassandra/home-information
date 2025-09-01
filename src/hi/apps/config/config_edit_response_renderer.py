@@ -9,6 +9,8 @@ from django.shortcuts import render
 
 from .config_edit_form_handler import ConfigEditFormHandler
 from .forms import SubsystemAttributeFormSet
+from .subsystem_attribute_edit_context import SubsystemAttributeEditContext
+from .subsystem_attribute_edit_data import SubsystemAttributeEditData
 
 
 class ConfigEditResponseRenderer:
@@ -26,8 +28,17 @@ class ConfigEditResponseRenderer:
     ) -> Dict[str, Any]:
         """Build context dictionary for template rendering."""
         
+        # Create paired data objects with formsets and their contexts
+        subsystem_edit_data_list = [
+            SubsystemAttributeEditData(
+                formset=formset,
+                context=SubsystemAttributeEditContext(formset.instance)
+            )
+            for formset in subsystem_formset_list
+        ]
+        
         context = {
-            'subsystem_attribute_formset_list': subsystem_formset_list,
+            'subsystem_edit_data_list': subsystem_edit_data_list,
             'history_url_name': 'config_attribute_history',
             'restore_url_name': 'config_attribute_restore',
             'success_message': success_message,

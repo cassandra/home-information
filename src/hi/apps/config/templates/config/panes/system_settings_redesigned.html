@@ -48,16 +48,16 @@ Uses existing attr-v2-* components for consistency with Entity/Location editing.
       <div class="subsystem-tabs mt-3">
         <!-- Tab Navigation -->
         <ul class="nav nav-tabs" id="subsystemTabs" role="tablist">
-          {% for subsystem_formset in subsystem_attribute_formset_list %}
+          {% for subsystem_data in subsystem_edit_data_list %}
           <li class="nav-item" role="presentation">
             <a class="nav-link {% if forloop.first %}active{% endif %}" 
-               id="subsystem-{{ subsystem_formset.instance.id }}-tab" 
+               id="subsystem-{{ subsystem_data.subsystem.id }}-tab" 
                data-toggle="tab" 
-               href="#subsystem-{{ subsystem_formset.instance.id }}-panel" 
+               href="#subsystem-{{ subsystem_data.subsystem.id }}-panel" 
                role="tab" 
-               aria-controls="subsystem-{{ subsystem_formset.instance.id }}-panel" 
+               aria-controls="subsystem-{{ subsystem_data.subsystem.id }}-panel" 
                aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
-              {{ subsystem_formset.instance.name }}
+              {{ subsystem_data.subsystem.name }}
             </a>
           </li>
           {% endfor %}
@@ -65,27 +65,27 @@ Uses existing attr-v2-* components for consistency with Entity/Location editing.
 
         <!-- Tab Content -->
         <div class="tab-content" id="subsystemTabContent">
-          {% for subsystem_formset in subsystem_attribute_formset_list %}
+          {% for subsystem_data in subsystem_edit_data_list %}
           <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" 
-               id="subsystem-{{ subsystem_formset.instance.id }}-panel" 
+               id="subsystem-{{ subsystem_data.subsystem.id }}-panel" 
                role="tabpanel" 
-               aria-labelledby="subsystem-{{ subsystem_formset.instance.id }}-tab">
+               aria-labelledby="subsystem-{{ subsystem_data.subsystem.id }}-tab">
             
             <!-- Subsystem content using existing attribute editing components -->
             <div class="py-3">
               <!-- Management form for this formset -->
-              {{ subsystem_formset.management_form }}
+              {{ subsystem_data.formset.management_form }}
               
               <!-- File Attributes Section (if any) -->
               {% comment %}File attributes would be displayed here when file support is implemented{% endcomment %}
               
               <!-- Regular Attributes Section -->
-              {% if subsystem_formset %}
+              {% if subsystem_data.formset %}
                 <div class="attr-v2-attribute-section">
                   <h6 class="attr-v2-section-title">Properties</h6>
                   <div class="attr-v2-attribute-list">
-                    {% for attribute_form in subsystem_formset %}
-                      {% include "attribute/components/regular_attribute_card.html" with attribute_form=attribute_form %}
+                    {% for attribute_form in subsystem_data.formset %}
+                      {% include "attribute/components/regular_attribute_card.html" with attribute_form=attribute_form attr_context=subsystem_data.context %}
                     {% endfor %}
                   </div>
                 </div>

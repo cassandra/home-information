@@ -10,6 +10,8 @@ from django.http import HttpRequest
 
 from .forms import SubsystemAttributeFormSet
 from .settings_mixins import SettingsMixin
+from .subsystem_attribute_edit_context import SubsystemAttributeEditContext
+from .subsystem_attribute_edit_data import SubsystemAttributeEditData
 
 logger = logging.getLogger(__name__)
 
@@ -70,8 +72,17 @@ class ConfigEditFormHandler:
         """Create initial template context for config settings editing."""
         subsystem_formset_list = self.create_config_forms()
         
+        # Create paired data objects with formsets and their contexts
+        subsystem_edit_data_list = [
+            SubsystemAttributeEditData(
+                formset=formset,
+                context=SubsystemAttributeEditContext(formset.instance)
+            )
+            for formset in subsystem_formset_list
+        ]
+        
         return {
-            'subsystem_attribute_formset_list': subsystem_formset_list,
+            'subsystem_edit_data_list': subsystem_edit_data_list,
             'history_url_name': 'config_attribute_history',
             'restore_url_name': 'config_attribute_restore',
         }
