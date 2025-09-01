@@ -97,7 +97,7 @@ class ConfigSettingsView( ConfigPageView, SettingsMixin ):
         subsystem_formset_list = form_handler.create_config_forms(
             request.POST, request.FILES
         )
-        
+
         # Validate all formsets
         if form_handler.validate_all_formsets(subsystem_formset_list):
             # Save all formsets
@@ -173,6 +173,48 @@ class SubsystemAttributeHistoryInlineView(BaseAttributeHistoryView):
     
     def get_attribute_model_class(self):
         return SubsystemAttribute
+    
+    def get_history_url_name(self):
+        return 'subsystem_attribute_history_inline'
+    
+    def get_restore_url_name(self):
+        return 'subsystem_attribute_restore_inline'
+    
+    def get(self, request, subsystem_id, attribute_id, *args, **kwargs):
+        """Custom get implementation that creates the SubsystemAttributeEditContext."""
+        # Validate that the attribute belongs to this subsystem for security
+        try:
+            attribute = SubsystemAttribute.objects.get(pk=attribute_id, subsystem_id=subsystem_id)
+        except SubsystemAttribute.DoesNotExist:
+            from hi.views import page_not_found_response
+            return page_not_found_response(request, "Attribute not found.")
+        
+        # Get history records for this attribute
+        history_model_class = attribute._get_history_model_class()
+        if history_model_class:
+            history_records = history_model_class.objects.filter(
+                attribute=attribute
+            ).order_by('-changed_datetime')[:self.ATTRIBUTE_HISTORY_VIEW_LIMIT]
+        else:
+            history_records = []
+        
+        # Create the attribute edit context for template generalization
+        from .subsystem_attribute_edit_context import SubsystemAttributeEditContext
+        attr_context = SubsystemAttributeEditContext(attribute.subsystem)
+        
+        context = {
+            'subsystem': attribute.subsystem,
+            'attribute': attribute,
+            'history_records': history_records,
+            'history_url_name': self.get_history_url_name(),
+            'restore_url_name': self.get_restore_url_name(),
+        }
+        
+        # Merge in the context variables from AttributeEditContext
+        context.update(attr_context.to_template_context())
+        
+        from django.shortcuts import render
+        return render(request, self.get_template_name(), context)
 
 
 class SubsystemAttributeRestoreInlineView(BaseAttributeRestoreView):
@@ -180,3 +222,33 @@ class SubsystemAttributeRestoreInlineView(BaseAttributeRestoreView):
     
     def get_attribute_model_class(self):
         return SubsystemAttribute
+    
+    def get(self, request, subsystem_id, attribute_id, history_id, *args, **kwargs):
+        """Custom get implementation for restoring from history."""
+        # Validate that the attribute belongs to this subsystem for security
+        try:
+            attribute = SubsystemAttribute.objects.get(pk=attribute_id, subsystem_id=subsystem_id)
+        except SubsystemAttribute.DoesNotExist:
+            from hi.views import page_not_found_response
+            return page_not_found_response(request, "Attribute not found.")
+        
+        # Get the history record to restore from
+        history_model_class = attribute._get_history_model_class()
+        if not history_model_class:
+            from hi.views import page_not_found_response
+            return page_not_found_response(request, "No history available for this attribute type.")
+        
+        try:
+            history_record = history_model_class.objects.get(pk=history_id, attribute=attribute)
+        except history_model_class.DoesNotExist:
+            from hi.views import page_not_found_response
+            return page_not_found_response(request, "History record not found.")
+        
+        # Restore the value from the history record
+        attribute.value = history_record.value
+        attribute.save()  # This will create a new history record
+        
+        # Return updated content using ConfigEditResponseRenderer
+        from .config_edit_response_renderer import ConfigEditResponseRenderer
+        renderer = ConfigEditResponseRenderer()
+        return renderer.render_success_response(request)

@@ -7,7 +7,7 @@ Uses existing attr-v2-* components for consistency with Entity/Location editing.
 {% endcomment %}
 
 <div class="attr-v2-form">
-  <form action="{% url 'config_settings' %}" method="post" id="settingsForm" enctype="multipart/form-data">
+  <form action="{% url 'config_settings' %}" method="post" id="settingsForm" enctype="multipart/form-data" class="form" data-async="true">
     {% csrf_token %}
     
     <!-- Sticky Panel - matches existing attr-v2 structure -->
