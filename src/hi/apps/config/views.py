@@ -1,7 +1,5 @@
 import logging
 
-from django.db import transaction
-from django.shortcuts import render
 
 from django.conf import settings
 from django.http import JsonResponse
@@ -14,9 +12,10 @@ from hi.hi_grid_view import HiGridView
 from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
 
 from .enums import ConfigPageType
-from .forms import SubsystemAttributeFormSet
 from .models import SubsystemAttribute
 from .settings_mixins import SettingsMixin
+from .config_edit_form_handler import ConfigEditFormHandler
+from .config_edit_response_renderer import ConfigEditResponseRenderer
 
 logger = logging.getLogger('__name__')
 
@@ -83,62 +82,32 @@ class ConfigSettingsView( ConfigPageView, SettingsMixin ):
         return 'config/panes/settings.html'
 
     def get_main_template_context( self, request, *args, **kwargs ):
-        
-        subsystem_list = self.settings_manager().get_subsystems()
-
-        subsystem_attribute_formset_list = list()
-        for subsystem in subsystem_list:
-            subsystem_attribute_formset = SubsystemAttributeFormSet(
-                instance = subsystem,
-                prefix = f'subsystem-{subsystem.id}',
-                form_kwargs = {
-                    'show_as_editable': True,
-                },
-            )
-            subsystem_attribute_formset_list.append( subsystem_attribute_formset )
-            continue
-        
-        return {
-            'subsystem_attribute_formset_list': subsystem_attribute_formset_list,
-            'history_url_name': 'config_attribute_history',
-            'restore_url_name': 'config_attribute_restore',
-        }
+        """Delegate form creation and context building to handler."""
+        form_handler = ConfigEditFormHandler()
+        return form_handler.create_initial_context()
 
     def post( self, request, *args, **kwargs ):
-
-        subsystem_list = self.settings_manager().get_subsystems()
-
-        all_valid = True
-        subsystem_attribute_formset_list = list()
-        for subsystem in subsystem_list:
-            subsystem_attribute_formset = SubsystemAttributeFormSet(
-                request.POST,
-                request.FILES,
-                instance = subsystem,
-                prefix = f'subsystem-{subsystem.id}',
-            )
-            if not subsystem_attribute_formset.is_valid():
-                all_valid = False
-            subsystem_attribute_formset_list.append( subsystem_attribute_formset )           
-            continue
-
-        if not all_valid:
-            context = {
-                'subsystem_attribute_formset_list': subsystem_attribute_formset_list,
-                'history_url_name': 'config_attribute_history',
-                'restore_url_name': 'config_attribute_restore',
-            }
-            return render( request, 'config/panes/settings_form.html', context )
-
-        with transaction.atomic():
-            for subsystem_attribute_formset in subsystem_attribute_formset_list:
-                subsystem_attribute_formset.save()
-                continue
-
-        # Some settings (e.g., audio files) define what gets loaded into
-        # the initial HTML, so refresh the page to ensure they get updated.
-        #
-        return antinode.refresh_response()
+        """Handle unified form submission using helper classes."""
+        
+        # Delegate form handling to specialized handlers
+        form_handler = ConfigEditFormHandler()
+        renderer = ConfigEditResponseRenderer()
+        
+        # Create formsets with POST data
+        subsystem_formset_list = form_handler.create_config_forms(
+            request.POST, request.FILES
+        )
+        
+        # Validate all formsets
+        if form_handler.validate_all_formsets(subsystem_formset_list):
+            # Save all formsets
+            form_handler.save_all_formsets(subsystem_formset_list, request)
+            
+            # Return success response with fresh data
+            return renderer.render_success_response(request)
+        else:
+            # Return error response with validation errors
+            return renderer.render_error_response(request, subsystem_formset_list)
        
         
 class ConfigInternalView( View ):

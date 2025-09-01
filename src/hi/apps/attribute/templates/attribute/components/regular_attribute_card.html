@@ -32,8 +32,8 @@ Individual attribute attribute card with value editing and actions
     </h6>
     
     <div class="attr-v2-attribute-actions">
-      <!-- Reorder Controls (disabled until Issue #80) -->
-      {% if attribute_form.instance.pk %}
+      <!-- Reorder Controls (disabled until Issue #80, hidden if allow_reordering is False) -->
+      {% if attribute_form.instance.pk and attribute_form.allow_reordering %}
       <button type="button" 
               class="btn btn-sm btn-outline-secondary"
               disabled
