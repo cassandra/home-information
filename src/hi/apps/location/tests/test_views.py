@@ -297,9 +297,9 @@ class TestLocationSwitchView(SyncViewTestCase):
         self.assertEqual(response.status_code, 405)
 
 
-class TestLocationDetailsView(AsyncViewTestCase):
+class TestLocationEditModeView(AsyncViewTestCase):
     """
-    Tests for LocationDetailsView - demonstrates HiSideView testing.
+    Tests for LocationEditModeView - demonstrates HiSideView testing.
     This view displays location details in a side panel.
     """
 
@@ -322,7 +322,7 @@ class TestLocationDetailsView(AsyncViewTestCase):
         self.assertTemplateRendered(response, 'location/edit/panes/location_edit_mode_panel.html')
 
     def test_location_details_should_push_url(self):
-        """Test that LocationDetailsView should push URL."""
+        """Test that LocationEditModeView should push URL."""
         url = reverse('location_edit_mode', kwargs={'location_id': self.location.id})
         response = self.async_get(url)
 
@@ -353,9 +353,9 @@ class TestLocationDetailsView(AsyncViewTestCase):
         self.assertEqual(response.status_code, 405)
 
 
-class TestLocationViewDetailsView(AsyncViewTestCase):
+class TestLocationViewEditModeViewGet(AsyncViewTestCase):
     """
-    Tests for LocationViewDetailsView - demonstrates location view details testing.
+    Tests for LocationViewEditModeView.get() - demonstrates location view details testing.
     This view displays location view details in a side panel.
     """
 
@@ -385,7 +385,7 @@ class TestLocationViewDetailsView(AsyncViewTestCase):
         self.assertTemplateRendered(response, 'location/edit/panes/location_view_edit_mode_panel.html')
 
     def test_location_view_details_should_push_url(self):
-        """Test that LocationViewDetailsView should push URL."""
+        """Test that LocationViewEditModeView should push URL."""
         url = reverse('location_view_edit_mode', kwargs={'location_view_id': self.location_view.id})
         response = self.async_get(url)
 
@@ -407,13 +407,6 @@ class TestLocationViewDetailsView(AsyncViewTestCase):
         response = self.async_get(url)
 
         self.assertEqual(response.status_code, 404)
-
-    def test_post_not_allowed(self):
-        """Test that POST requests are not allowed."""
-        url = reverse('location_view_edit_mode', kwargs={'location_view_id': self.location_view.id})
-        response = self.async_post(url)
-
-        self.assertEqual(response.status_code, 405)
 
 
 class TestLocationItemStatusView(SyncViewTestCase):

@@ -52,7 +52,6 @@ class LocationEditModeView( HiSideView, LocationViewMixin ):
         return HttpResponseNotAllowed(['GET'])
 
 
-@method_decorator( edit_required, name='dispatch' )
 class LocationViewEditModeView( HiSideView, LocationViewMixin, LocationEditViewMixin ):
     """Location view edit mode panel view - shows location view properties editing interface and handles form submission."""
 
@@ -349,8 +348,6 @@ class LocationViewDeleteView( HiModalView, LocationViewMixin ):
         
         redirect_url = reverse('home')
         return self.redirect_response( request, redirect_url )
-
-    
 
     
 class LocationViewGeometryView( View, LocationViewMixin, LocationEditViewMixin ):

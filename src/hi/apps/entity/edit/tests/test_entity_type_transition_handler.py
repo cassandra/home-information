@@ -6,7 +6,7 @@ transaction management, and response determination.
 """
 import logging
 from unittest.mock import patch
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpResponse
 from django.test import RequestFactory
 
 from hi.apps.entity.entity_edit_form_handler import EntityEditFormHandler
