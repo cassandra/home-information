@@ -40,12 +40,12 @@ This is what gets replaced on form submission
 <!-- Scrollable Content Area - matches existing attr-v2 structure -->
 <div id="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT }}" class="attr-v2-scrollable-content">
   
-  <!-- Tabbed Subsystem Interface -->
-  <div class="subsystem-tabs mt-3">
-    <!-- Tab Navigation -->
-    <ul class="nav nav-tabs" id="subsystemTabs" role="tablist">
-      {% for subsystem_data in subsystem_edit_data_list %}
-      <li class="nav-item" role="presentation">
+  <!-- Vertical Tabbed Subsystem Interface -->
+  <div class="d-flex mt-3">
+    <!-- Left Column: Vertical Navigation -->
+    <div class="flex-column">
+      <nav class="nav flex-column" id="subsystemTabs" role="tablist">
+        {% for subsystem_data in subsystem_edit_data_list %}
         <a class="nav-link {% if forloop.first %}active{% endif %}" 
            id="subsystem-{{ subsystem_data.subsystem.id }}-tab" 
            data-toggle="tab" 
@@ -55,12 +55,13 @@ This is what gets replaced on form submission
            aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
           {{ subsystem_data.subsystem.name }}
         </a>
-      </li>
-      {% endfor %}
-    </ul>
-
-    <!-- Tab Content -->
-    <div class="tab-content" id="subsystemTabContent">
+        {% endfor %}
+      </nav>
+    </div>
+    
+    <!-- Right Column: Tab Content -->
+    <div class="flex-column flex-grow-1">
+      <div class="tab-content" id="subsystemTabContent">
       {% for subsystem_data in subsystem_edit_data_list %}
       <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" 
            id="subsystem-{{ subsystem_data.subsystem.id }}-panel" 
@@ -90,6 +91,7 @@ This is what gets replaced on form submission
         
       </div>
       {% endfor %}
+      </div>
     </div>
   </div>
   
