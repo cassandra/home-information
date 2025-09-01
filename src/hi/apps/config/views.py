@@ -162,3 +162,21 @@ class ConfigAttributeRestoreView(BaseAttributeRestoreView):
     
     def get_attribute_model_class(self):
         return SubsystemAttribute
+
+
+class SubsystemAttributeHistoryInlineView(BaseAttributeHistoryView):
+    """View for displaying SubsystemAttribute history inline within the edit interface."""
+    ATTRIBUTE_HISTORY_VIEW_LIMIT = 50
+    
+    def get_template_name(self):
+        return 'attribute/components/attribute_history_inline.html'
+    
+    def get_attribute_model_class(self):
+        return SubsystemAttribute
+
+
+class SubsystemAttributeRestoreInlineView(BaseAttributeRestoreView):
+    """View for restoring SubsystemAttribute values from history inline."""
+    
+    def get_attribute_model_class(self):
+        return SubsystemAttribute
