@@ -11,17 +11,6 @@ class LocationAttributeForm( AttributeForm ):
         model = LocationAttribute
         
         
-LocationAttributeFormSet = forms.inlineformset_factory(
-    Location,
-    LocationAttribute,
-    form = LocationAttributeForm,
-    extra = 1,
-    max_num = 100,
-    absolute_max = 100,
-    can_delete = True,
-)
-
-
 class RegularAttributeBaseFormSet(forms.BaseInlineFormSet):
     """Base formset that automatically excludes FILE attributes for regular attribute editing"""
     

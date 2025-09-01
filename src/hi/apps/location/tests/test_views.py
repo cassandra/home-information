@@ -336,7 +336,7 @@ class TestLocationDetailsView(AsyncViewTestCase):
 
         self.assertSuccessResponse(response)
         # Context should contain location edit data
-        # The actual structure depends on LocationEditData.to_template_context()
+        # The actual structure depends on LocationEditModeData.to_template_context()
 
     def test_nonexistent_location_returns_404(self):
         """Test that accessing nonexistent location returns 404."""
@@ -399,7 +399,7 @@ class TestLocationViewDetailsView(AsyncViewTestCase):
 
         self.assertSuccessResponse(response)
         # Context should contain location view edit data
-        # The actual structure depends on LocationViewEditData.to_template_context()
+        # The actual structure depends on LocationViewEditModeData.to_template_context()
 
     def test_nonexistent_location_view_returns_404(self):
         """Test that accessing nonexistent location view returns 404."""

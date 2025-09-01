@@ -51,37 +51,23 @@ class EntityCollectionGroup:
     
 
 @dataclass
-class CollectionEditData:
-    """ All the data needed to render the Collection edit pane (subset of all collection details). """
+class CollectionEditModeData:
+    """ All the data needed to render the Collection details pane. """
 
-    collection            : Collection
-    collection_edit_form  : CollectionEditForm  = None
+    collection                : Collection
+    collection_edit_form      : CollectionEditForm  = None
+    collection_position_form  : CollectionPositionForm  = None
 
     def __post_init__(self):
-
         if not self.collection_edit_form:
             self.collection_edit_form = CollectionEditForm(
                 instance = self.collection,
             )
         return
-    
+
     def to_template_context(self):
         return {
             'collection': self.collection,
             'collection_edit_form': self.collection_edit_form,
-        }
-    
-
-@dataclass
-class CollectionDetailsData:
-    """ All the data needed to render the Collection details pane. """
-
-    collection_edit_data      : CollectionEditData
-    collection_position_form  : CollectionPositionForm  = None
-    
-    def to_template_context(self):
-        context = {
             'collection_position_form': self.collection_position_form,
         }
-        context.update( self.collection_edit_data.to_template_context() )
-        return context

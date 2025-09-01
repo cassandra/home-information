@@ -28,17 +28,6 @@ class EntityAttributeForm( AttributeForm ):
     class Meta( AttributeForm.Meta ):
         model = EntityAttribute
 
-        
-EntityAttributeFormSet = forms.inlineformset_factory(
-    Entity,
-    EntityAttribute,
-    form = EntityAttributeForm,
-    extra = 1,
-    max_num = 100,
-    absolute_max = 100,
-    can_delete = True,
-)
-
 
 class RegularAttributeBaseFormSet(forms.BaseInlineFormSet):
     """Base formset that automatically excludes FILE attributes for regular attribute editing"""

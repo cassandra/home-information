@@ -18,7 +18,7 @@ from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location
-from hi.apps.location.transient_models import LocationEditData, LocationViewEditData
+from hi.apps.location.transient_models import LocationEditModeData, LocationViewEditModeData
 from hi.apps.location.view_mixins import LocationViewMixin
 
 from hi.constants import DIVID
@@ -144,11 +144,10 @@ class LocationPropertiesEditView( View, LocationViewMixin, LocationEditViewMixin
         else:
             status_code = 400
             
-        # For properties editing, we create LocationEditData without formset
-        location_edit_data = LocationEditData(
+        # For properties editing, we create LocationEditModeData without formset
+        location_edit_data = LocationEditModeData(
             location = location,
             location_edit_form = location_edit_form,
-            location_attribute_formset = None,
         )
         return self.location_properties_response(
             request = request,
@@ -284,7 +283,7 @@ class LocationViewEditView( View, LocationViewMixin, LocationEditViewMixin ):
         location_view_edit_form = forms.LocationViewEditForm( request.POST, instance = location_view )
         
         if not location_view_edit_form.is_valid():
-            location_view_edit_data = LocationViewEditData(
+            location_view_edit_data = LocationViewEditModeData(
                 location_view = location_view,
                 location_view_edit_form = location_view_edit_form,
             )
@@ -318,7 +317,7 @@ class LocationViewGeometryView( View, LocationViewMixin, LocationEditViewMixin )
             logger.warning( 'LocationView geometry form is invalid.' )
             status_code = 400
 
-        location_view_edit_data = LocationViewEditData(
+        location_view_edit_data = LocationViewEditModeData(
             location_view = location_view,
         )       
         return self.location_view_edit_mode_response(
@@ -538,7 +537,7 @@ class LocationEditModeView( HiSideView, LocationViewMixin ):
     
     def get_template_context( self, request, *args, **kwargs ):
         location = self.get_location( request, *args, **kwargs )
-        location_edit_data = LocationEditData(
+        location_edit_data = LocationEditModeData(
             location = location,
         )
         return location_edit_data.to_template_context()
@@ -558,7 +557,7 @@ class LocationViewEditModeView( HiSideView, LocationViewMixin ):
     
     def get_template_context( self, request, *args, **kwargs ):
         location_view = self.get_location_view( request, *args, **kwargs )
-        location_view_edit_data = LocationViewEditData(
+        location_view_edit_data = LocationViewEditModeData(
             location_view = location_view,
         )
         return location_view_edit_data.to_template_context()

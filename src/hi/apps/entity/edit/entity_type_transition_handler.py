@@ -44,7 +44,7 @@ class EntityTypeTransitionHandler:
             request: HTTP request object
             entity: Entity instance
             entity_form: EntityForm instance
-            entity_attribute_formset: Optional EntityAttributeFormSet instance
+            entity_attribute_formset: Optional EntityAttributeRegularFormSet instance
             original_entity_type_str: Original entity type string for change detection
             
         Returns:

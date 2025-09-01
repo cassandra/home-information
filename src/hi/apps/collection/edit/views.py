@@ -11,7 +11,7 @@ from django.views.generic import View
 
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection, CollectionPosition
-from hi.apps.collection.transient_models import CollectionEditData
+from hi.apps.collection.transient_models import CollectionEditModeData
 from hi.apps.collection.view_mixins import CollectionViewMixin
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.view_mixins import EntityViewMixin
@@ -130,11 +130,11 @@ class CollectionPropertiesEditView( View, CollectionViewMixin ):
             return antinode.refresh_response()
 
         # On error, show form errors        
-        collection_edit_data = CollectionEditData(
+        collection_edit_data = CollectionEditModeData(
             collection = collection,
             collection_edit_form = collection_edit_form,
         )
-        return self.collection_edit_response(
+        return self.collection_edit_mode_response(
             request = request,
             collection_edit_data = collection_edit_data,
             status_code = 400,
@@ -300,9 +300,9 @@ class CollectionEditModeView( HiSideView, CollectionViewMixin ):
         if request.view_parameters.view_type.is_location_view:
             current_location_view = LocationManager().get_default_location_view( request = request )
 
-        collections_detail_data = CollectionManager().get_collection_details_data(
+        collections_edit_data = CollectionManager().get_collection_edit_mode_data(
             collection = collection,
             location_view = current_location_view,
             is_editing = request.view_parameters.is_editing,
         )
-        return collections_detail_data.to_template_context()
+        return collections_edit_data.to_template_context()
