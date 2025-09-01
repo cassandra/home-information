@@ -21,8 +21,7 @@ from .models import (
 )
 from .transient_models import (
     CollectionData,
-    CollectionDetailsData,
-    CollectionEditData,
+    CollectionEditModeData,
     CollectionViewGroup,
     CollectionViewItem,
     EntityCollectionGroup,
@@ -245,10 +244,10 @@ class CollectionManager(Singleton):
         )
         return collection_path
         
-    def get_collection_details_data( self,
-                                     collection      : Collection,
-                                     location_view  : LocationView,
-                                     is_editing      : bool ) -> CollectionDetailsData:
+    def get_collection_edit_mode_data( self,
+                                       collection      : Collection,
+                                       location_view  : LocationView,
+                                       is_editing      : bool ) -> CollectionEditModeData:
         
         collection_position_form = None
         if is_editing and location_view:
@@ -262,9 +261,8 @@ class CollectionManager(Singleton):
                     instance = collection_position,
                 )
         
-        collection_edit_data = CollectionEditData( collection = collection )
-        return CollectionDetailsData(
-            collection_edit_data = collection_edit_data,
+        return CollectionEditModeData(
+            collection = collection,
             collection_position_form = collection_position_form,
         )
 

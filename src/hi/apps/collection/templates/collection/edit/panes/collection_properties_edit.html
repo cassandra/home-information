@@ -1,4 +1,4 @@
-<form action="{% url 'collection_edit' collection_id=collection.id %}"
+<form action="{% url 'collection_properties_edit' collection_id=collection.id %}"
       method="post"
       class="form" data-async="true">
   {% csrf_token %}

@@ -276,241 +276,8 @@ class TestLocationSvgReplaceView(DualModeViewTestCase):
         self.assertEqual(response.status_code, 404)
 
 
-class TestLocationEditView(SyncViewTestCase):
-    """
-    Tests for LocationEditView - demonstrates location editing testing.
-    This view handles location property updates and attribute management.
-    """
-
-    def setUp(self):
-        super().setUp()
-        # Create test location using synthetic data
-        self.location = LocationSyntheticData.create_test_location(
-            name='Test Location',
-            svg_fragment_filename='test.svg',
-            svg_view_box_str='0 0 100 100'
-        )
-
-    def test_get_location_edit(self):
-        """Test GET request for location edit."""
-        url = reverse('location_edit_location_edit', kwargs={'location_id': self.location.id})
-        response = self.client.get(url)
-
-        self.assertSuccessResponse(response)
-        self.assertJsonResponse(response)  # LocationEditView returns JSON modal
-
-    def test_post_valid_edit_with_changes(self):
-        """Test POST request with valid edit data that has changes."""
-        original_name = self.location.name
-        
-        url = reverse('location_edit_location_edit', kwargs={'location_id': self.location.id})
-        formset_prefix = f'location-{self.location.id}'
-        response = self.client.post(url, {
-            'name': 'Updated Location Name',
-            'order_id': '0',  # Required field
-            'svg_view_box_str': self.location.svg_view_box_str,  # Keep original
-            # Add formset management form fields with correct prefix
-            f'{formset_prefix}-TOTAL_FORMS': '0',
-            f'{formset_prefix}-INITIAL_FORMS': '0',
-            f'{formset_prefix}-MIN_NUM_FORMS': '0',
-            f'{formset_prefix}-MAX_NUM_FORMS': '1000',
-        })
-
-        # Expect antinode.js response (200 with JSON)
-        self.assertEqual(response.status_code, 200)
-        
-        # Verify the location was actually updated
-        updated_location = Location.objects.get(id=self.location.id)
-        self.assertEqual(updated_location.name, 'Updated Location Name')
-        self.assertNotEqual(updated_location.name, original_name)
-
-    def test_post_valid_edit_without_changes(self):
-        """Test POST request with valid edit data that has no changes."""
-        # Submit the same data that already exists (no changes)
-        url = reverse('location_edit_location_edit', kwargs={'location_id': self.location.id})
-        formset_prefix = f'location-{self.location.id}'
-        response = self.client.post(url, {
-            'name': self.location.name,  # Same name - no change
-            'order_id': '0',  # Required field
-            'svg_view_box_str': self.location.svg_view_box_str,  # Same viewbox
-            # Add formset management form fields with correct prefix
-            f'{formset_prefix}-TOTAL_FORMS': '0',
-            f'{formset_prefix}-INITIAL_FORMS': '0', 
-            f'{formset_prefix}-MIN_NUM_FORMS': '0',
-            f'{formset_prefix}-MAX_NUM_FORMS': '1000',
-        })
-
-        # Expect antinode.js response (200 with JSON)
-        self.assertEqual(response.status_code, 200)
-        
-        # Verify location was not changed (same name)
-        unchanged_location = Location.objects.get(id=self.location.id)
-        self.assertEqual(unchanged_location.name, self.location.name)
-
-    def test_post_invalid_edit(self):
-        """Test POST request with invalid edit data."""
-        url = reverse('location_edit_location_edit', kwargs={'location_id': self.location.id})
-        formset_prefix = f'location-{self.location.id}'
-        response = self.client.post(url, {
-            'name': '',  # Empty name should cause validation error
-            'order_id': '0',  # Required field
-            'svg_view_box_str': self.location.svg_view_box_str,
-            # Add formset management fields (even though the form has errors)
-            f'{formset_prefix}-TOTAL_FORMS': '0',
-            f'{formset_prefix}-INITIAL_FORMS': '0',
-            f'{formset_prefix}-MIN_NUM_FORMS': '0',
-            f'{formset_prefix}-MAX_NUM_FORMS': '1000',
-        })
-
-        # Should return 200 with form errors displayed
-        self.assertEqual(response.status_code, 200)
-        
-        # Verify location was not changed
-        unchanged_location = Location.objects.get(id=self.location.id)
-        self.assertEqual(unchanged_location.name, self.location.name)  # Should remain unchanged
-
-    def test_nonexistent_location_returns_404(self):
-        """Test that accessing nonexistent location returns 404."""
-        url = reverse('location_edit_location_edit', kwargs={'location_id': 99999})
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 404)
-
-
-class TestLocationPropertiesEditView(SyncViewTestCase):
-    """
-    Tests for LocationPropertiesEditView - handles location properties (name, order_id, svg_view_box_str) editing only.
-    This view is used by the sidebar in edit mode and only accepts POST requests.
-    """
-
-    def setUp(self):
-        super().setUp()
-        # Create test location
-        self.location = Location.objects.create(
-            name='Test Properties Location',
-            svg_fragment_filename='test_props.svg',
-            svg_view_box_str='0 0 100 100'
-        )
-
-    def test_post_valid_properties_edit(self):
-        """Test successful location properties edit."""
-        url = reverse('location_properties_edit', kwargs={'location_id': self.location.id})
-        
-        form_data = {
-            'name': 'Updated Properties Name',
-            'order_id': 5,
-            'svg_view_box_str': '0 0 200 200',
-        }
-        
-        response = self.client.post(url, form_data)
-        
-        self.assertSuccessResponse(response)
-        self.assertJsonResponse(response)
-        
-        # Verify location was actually updated
-        self.location.refresh_from_db()
-        self.assertEqual(self.location.name, 'Updated Properties Name')
-        self.assertEqual(self.location.order_id, 5)
-        self.assertEqual(self.location.svg_view_box_str, '0 0 200 200')
-
-    def test_nonexistent_location_returns_404(self):
-        """Test that editing nonexistent location returns 404."""
-        url = reverse('location_properties_edit', kwargs={'location_id': 99999})
-        response = self.client.post(url, {'name': 'Test', 'order_id': 1})
-        
-        self.assertEqual(response.status_code, 404)
-
-    def test_get_not_allowed(self):
-        """Test that GET requests are not allowed (only POST)."""
-        url = reverse('location_properties_edit', kwargs={'location_id': self.location.id})
-        response = self.client.get(url)
-        
-        self.assertEqual(response.status_code, 405)
-
-
-class TestLocationAttributeUploadView(SyncViewTestCase):
-    """
-    Tests for LocationAttributeUploadView - demonstrates location attribute upload testing.
-    This view handles uploading location attribute files.
-    """
-
-    def setUp(self):
-        super().setUp()
-        # Create test location using synthetic data
-        self.location = LocationSyntheticData.create_test_location(
-            name='Test Location',
-            svg_fragment_filename='test.svg',
-            svg_view_box_str='0 0 100 100'
-        )
-
-    def test_post_valid_upload(self):
-        """Test POST request with valid upload data."""
-        url = reverse('location_attribute_upload', kwargs={'location_id': self.location.id})
-        
-        # Create test file
-        test_file = SimpleUploadedFile(
-            'test_document.pdf',
-            b'fake pdf content for testing',
-            content_type='application/pdf'
-        )
-        
-        # Post with file_value field
-        response = self.client.post(url, {'file_value': test_file})
-        
-        self.assertSuccessResponse(response)
-        self.assertJsonResponse(response)
-        
-        # Verify the attribute was created with name from filename
-        from hi.apps.location.models import LocationAttribute
-        uploaded_attr = LocationAttribute.objects.filter(
-            location=self.location,
-            name='test_document.pdf'  # Full filename is used as name
-        ).first()
-        self.assertIsNotNone(uploaded_attr)
-        # File uploads don't have a text value, they have file_value
-        self.assertTrue(uploaded_attr.file_value)
-
-    def test_post_invalid_upload(self):
-        """Test POST request with invalid upload data."""
-        url = reverse('location_attribute_upload', kwargs={'location_id': self.location.id})
-        
-        # Send invalid data - missing required file_value
-        test_data = {}
-        # No files provided - file_value is required
-        
-        response = self.client.post(url, data=test_data)
-        
-        # Form is invalid but view returns 200 with modal containing form errors
-        self.assertSuccessResponse(response)
-        self.assertJsonResponse(response)
-        
-        # Verify response contains modal with form
-        data = response.json()
-        self.assertIn('modal', data)
-        modal_content = data['modal']
-        self.assertIn('file_value', modal_content)  # Form field should be present
-        
-        # Verify no attribute was created
-        from hi.apps.location.models import LocationAttribute
-        uploaded_attrs = LocationAttribute.objects.filter(
-            location=self.location,
-            name='test_document'
-        )
-        self.assertEqual(uploaded_attrs.count(), 0)
-
-    def test_nonexistent_location_returns_404(self):
-        """Test that accessing nonexistent location returns 404."""
-        url = reverse('location_attribute_upload', kwargs={'location_id': 99999})
-        response = self.client.post(url, {})
-
-        self.assertEqual(response.status_code, 404)
-
-    def test_get_not_allowed(self):
-        """Test that GET requests are not allowed."""
-        url = reverse('location_attribute_upload', kwargs={'location_id': self.location.id})
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 405)
+# TODO: Add tests for LocationEditView V2 modal implementation
+# Tests will be created following the Entity test patterns after V2 implementation is complete
 
 
 class TestLocationDeleteView(DualModeViewTestCase):
@@ -755,10 +522,10 @@ class TestLocationViewDeleteView(DualModeViewTestCase):
         self.assertEqual(response.status_code, 404)
 
 
-class TestLocationViewEditView(DualModeViewTestCase):
+class TestLocationViewEditModeView(DualModeViewTestCase):
     """
-    Tests for LocationViewEditView - demonstrates location view editing testing.
-    This view handles location view property updates.
+    Tests for LocationViewEditModeView - demonstrates location view editing testing.
+    This view handles both displaying the edit interface (GET) and processing form submissions (POST).
     """
 
     def setUp(self):
@@ -778,9 +545,21 @@ class TestLocationViewEditView(DualModeViewTestCase):
             svg_view_box_str='0 0 100 100'
         )
 
+    def test_get_edit_mode_panel(self):
+        """Test GET request returns the edit mode panel."""
+        url = reverse('location_view_edit_mode', kwargs={'location_view_id': self.location_view.id})
+        response = self.async_get(url)
+
+        # Should return success
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+        
+        # Should use the edit mode panel template
+        self.assertTemplateRendered(response, 'location/edit/panes/location_view_edit_mode_panel.html')
+
     def test_post_valid_edit(self):
         """Test POST request with valid edit data."""
-        url = reverse('location_edit_location_view_edit', kwargs={'location_view_id': self.location_view.id})
+        url = reverse('location_view_edit_mode', kwargs={'location_view_id': self.location_view.id})
         response = self.async_post(url, {
             'name': 'Updated View',
             'location_view_type_str': self.location_view.location_view_type_str,
@@ -800,7 +579,7 @@ class TestLocationViewEditView(DualModeViewTestCase):
 
     def test_post_invalid_edit(self):
         """Test POST request with invalid edit data."""
-        url = reverse('location_edit_location_view_edit', kwargs={'location_view_id': self.location_view.id})
+        url = reverse('location_view_edit_mode', kwargs={'location_view_id': self.location_view.id})
         response = self.async_post(url, {'name': ''})  # Empty name should be invalid
 
         # Should return 400 for invalid form data
@@ -813,19 +592,19 @@ class TestLocationViewEditView(DualModeViewTestCase):
 
     def test_nonexistent_location_view_returns_404(self):
         """Test that accessing nonexistent location view returns 404."""
-        url = reverse('location_edit_location_view_edit', kwargs={'location_view_id': 99999})
+        url = reverse('location_view_edit_mode', kwargs={'location_view_id': 99999})
         response = self.async_post(url, {'name': 'Test'})
 
         # Should return 404 for nonexistent location view
         self.assertEqual(response.status_code, 404)
 
-    def test_get_not_allowed(self):
-        """Test that GET requests are not allowed."""
-        url = reverse('location_edit_location_view_edit', kwargs={'location_view_id': self.location_view.id})
+    def test_get_nonexistent_location_view_returns_404(self):
+        """Test that GET request for nonexistent location view returns 404."""
+        url = reverse('location_view_edit_mode', kwargs={'location_view_id': 99999})
         response = self.async_get(url)
 
-        # View doesn't have GET method - returns 405
-        self.assertEqual(response.status_code, 405)
+        # Should return 404 for nonexistent location view
+        self.assertEqual(response.status_code, 404)
 
 
 class TestLocationViewManageItemsView(SyncViewTestCase):

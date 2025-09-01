@@ -280,9 +280,9 @@ class TestCollectionDeleteView(DualModeViewTestCase):
         self.assertEqual(response.status_code, 404)
 
 
-class TestCollectionEditView(SyncViewTestCase):
+class TestCollectionPropertiesEditView(SyncViewTestCase):
     """
-    Tests for CollectionEditView - demonstrates collection editing testing.
+    Tests for CollectionPropertiesEditView - demonstrates collection editing testing.
     This view handles collection property updates.
     """
 
@@ -297,7 +297,7 @@ class TestCollectionEditView(SyncViewTestCase):
 
     def test_post_valid_edit(self):
         """Test POST request with valid edit data."""
-        url = reverse('collection_edit', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_properties_edit', kwargs={'collection_id': self.collection.id})
         response = self.client.post(url, {
             'name': 'Updated Collection Name',
             'collection_type_str': 'electronics',
@@ -320,7 +320,7 @@ class TestCollectionEditView(SyncViewTestCase):
 
     def test_post_invalid_edit(self):
         """Test POST request with invalid edit data."""
-        url = reverse('collection_edit', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_properties_edit', kwargs={'collection_id': self.collection.id})
         # Post empty name to trigger validation error
         response = self.client.post(url, {'name': ''})
 
@@ -332,14 +332,14 @@ class TestCollectionEditView(SyncViewTestCase):
 
     def test_nonexistent_collection_returns_404(self):
         """Test that accessing nonexistent collection returns 404."""
-        url = reverse('collection_edit', kwargs={'collection_id': 99999})
+        url = reverse('collection_properties_edit', kwargs={'collection_id': 99999})
         response = self.client.post(url, {'name': 'Test'})
 
         self.assertEqual(response.status_code, 404)
 
     def test_get_not_allowed(self):
         """Test that GET requests are not allowed."""
-        url = reverse('collection_edit', kwargs={'collection_id': self.collection.id})
+        url = reverse('collection_properties_edit', kwargs={'collection_id': self.collection.id})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 405)

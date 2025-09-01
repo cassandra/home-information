@@ -1,8 +1,9 @@
 """
-EntityEditFormHandler - Handles form creation, validation, and file processing for entity editing.
+LocationEditFormHandler - Handles form creation, validation, and file processing for location editing.
 
-This class encapsulates the complex form-handling business logic that was previously
-embedded in EntityEditView, following the "keep views simple" design philosophy.
+This class follows the same pattern as EntityEditFormHandler, encapsulating the complex 
+form-handling business logic that was previously embedded in LocationEditView, following 
+the "keep views simple" design philosophy.
 """
 import logging
 import re
@@ -12,25 +13,25 @@ from django.http import HttpRequest
 from django.db.models import QuerySet
 
 from hi.apps.attribute.enums import AttributeValueType
-from .models import Entity, EntityAttribute
-from .forms import EntityForm, EntityAttributeRegularFormSet
-from .entity_attribute_edit_context import EntityAttributeEditContext
+from .models import Location, LocationAttribute
+from .forms import LocationAttributeRegularFormSet, LocationModalEditForm
+from .location_attribute_edit_context import LocationAttributeEditContext
 
 logger = logging.getLogger(__name__)
 
 
-class EntityEditFormHandler:
+class LocationEditFormHandler:
     """
-    Handles form creation, validation, and file processing for entity editing.
+    Handles form creation, validation, and file processing for location editing.
     
     This class encapsulates business logic for:
-    - Creating and managing entity forms and formsets
-    - Processing file deletions and title updates
+    - Creating and managing location forms and formsets
+    - Processing file deletions and title updates  
     - Collecting and formatting form validation errors
     """
 
     @staticmethod
-    def get_formset_prefix(entity: Entity) -> str:
+    def get_formset_prefix(location: Location) -> str:
         """
         Get the formset prefix for regular attributes formset.
         
@@ -38,108 +39,111 @@ class EntityEditFormHandler:
         Tests and other code should use this method to ensure consistency.
         
         Args:
-            entity: Entity instance
+            location: Location instance
             
         Returns:
             str: The prefix to use for the regular attributes formset
         """
-        return f'entity-{entity.id}'
+        return f'location-{location.id}'
 
-    def create_entity_forms(
+    def create_location_forms(
             self,
-            entity    : Entity,
+            location  : Location,
             form_data : Optional[Dict[str, Any]] = None
-    ) -> Tuple[EntityForm, QuerySet[EntityAttribute], EntityAttributeRegularFormSet]:
-        """Create entity forms used by both initial rendering and fragment updates.
+    ) -> Tuple[LocationModalEditForm, QuerySet[LocationAttribute], LocationAttributeRegularFormSet]:
+        """Create location forms used by both initial rendering and fragment updates.
         
         Args:
-            entity: Entity instance
+            location: Location instance
             form_data: POST data for bound forms, None for unbound forms
             
         Returns:
-            tuple: (entity_form, file_attributes, regular_attributes_formset)
+            tuple: (location_form, file_attributes, regular_attributes_formset)
         """
-        # Create entity form
-        entity_form: EntityForm = EntityForm(form_data, instance=entity)
+        # Create location form (only name field for this modal)
+        location_form: LocationModalEditForm = LocationModalEditForm(form_data, instance=location)
         
         # Get file attributes for display (not a formset, just for template rendering)
-        file_attributes: QuerySet[EntityAttribute] = entity.attributes.filter(
+        file_attributes: QuerySet[LocationAttribute] = location.attributes.filter(
             value_type_str=str(AttributeValueType.FILE)
         ).order_by('id')
         
         # Regular attributes formset (automatically excludes FILE attributes)
-        regular_attributes_formset: EntityAttributeRegularFormSet = EntityAttributeRegularFormSet(
+        regular_attributes_formset: LocationAttributeRegularFormSet = LocationAttributeRegularFormSet(
             form_data,
-            instance=entity,
-            prefix=self.get_formset_prefix(entity)
+            instance=location,
+            prefix=self.get_formset_prefix(location),
+            form_kwargs={
+                'show_as_editable': True,
+            }
         )
         
-        return entity_form, file_attributes, regular_attributes_formset
+        return location_form, file_attributes, regular_attributes_formset
 
     def validate_forms( self,
-                        entity_form                   : EntityForm,
-                        regular_attributes_formset    : EntityAttributeRegularFormSet ) -> bool:
+                        location_form              : LocationModalEditForm,
+                        regular_attributes_formset : LocationAttributeRegularFormSet ) -> bool:
         """
-        Validate entity form and property attributes formset.
+        Validate location form and property attributes formset.
         
         Args:
-            entity_form: EntityForm instance
-            regular_attributes_formset: EntityAttributeRegularFormSet instance
+            location_form: LocationModalEditForm instance
+            regular_attributes_formset: LocationAttributeRegularFormSet instance
             
         Returns:
             bool: True if both forms are valid, False otherwise
         """
-        return entity_form.is_valid() and regular_attributes_formset.is_valid()
+        return location_form.is_valid() and regular_attributes_formset.is_valid()
 
     def save_forms( self,
-                    entity_form                  : EntityForm,
-                    regular_attributes_formset   : EntityAttributeRegularFormSet,
-                    request                      : HttpRequest,
-                    entity                       : Entity ) -> None:
+                    location_form               : LocationModalEditForm,
+                    regular_attributes_formset  : LocationAttributeRegularFormSet,
+                    request                     : HttpRequest,
+                    location                    : Location ) -> None:
         """
         Save forms and process file operations within a transaction.
         
         Args:
-            entity_form: EntityForm instance
-            regular_attributes_formset: EntityAttributeRegularFormSet instance
+            location_form: LocationModalEditForm instance
+            regular_attributes_formset: LocationAttributeRegularFormSet instance
             request: HTTP request object
-            entity: Entity instance
+            location: Location instance
         """
         with transaction.atomic():
-            entity_form.save()
+            location_form.save()
             regular_attributes_formset.save()
             
             # Process file deletions
-            self.process_file_deletions(request, entity)
+            self.process_file_deletions(request, location)
             
             # Process file title updates
-            self.process_file_title_updates(request, entity)
+            self.process_file_title_updates(request, location)
 
     def process_file_deletions( self,
-                                request : HttpRequest,
-                                entity  : Entity      ) -> None:
+                                request  : HttpRequest,
+                                location : Location      ) -> None:
         """Process file deletion requests from POST data."""
         file_deletes: List[str] = request.POST.getlist('delete_file_attribute')
         if file_deletes:
             for attr_id in file_deletes:
                 if attr_id:  # Skip empty values
                     try:
-                        file_attribute: EntityAttribute = EntityAttribute.objects.get(
+                        file_attribute: LocationAttribute = LocationAttribute.objects.get(
                             id=attr_id, 
-                            entity=entity,
+                            location=location,
                             value_type_str=str(AttributeValueType.FILE)
                         )
                         # Verify permission to delete
                         if file_attribute.attribute_type.can_delete:
                             file_attribute.delete()
-                    except EntityAttribute.DoesNotExist:
+                    except LocationAttribute.DoesNotExist:
                         pass
 
     def process_file_title_updates( self,
-                                    request : HttpRequest,
-                                    entity  : Entity      ) -> None:
+                                    request  : HttpRequest,
+                                    location : Location      ) -> None:
         """Process file_title_* fields from POST data to update file attribute values."""
-        # Pattern to match file_title_{entity_id}_{attribute_id}
+        # Pattern to match file_title_{location_id}_{attribute_id}
         file_title_pattern = re.compile(r'^file_title_(\d+)_(\d+)$')
         
         for field_name, new_title in request.POST.items():
@@ -147,20 +151,20 @@ class EntityEditFormHandler:
             if not match:
                 continue
                 
-            entity_id_str: str
+            location_id_str: str
             attribute_id_str: str
-            entity_id_str, attribute_id_str = match.groups()
+            location_id_str, attribute_id_str = match.groups()
             
-            # Validate entity_id matches current entity
-            if int(entity_id_str) != entity.id:
-                logger.warning(f'File title field {field_name} has mismatched entity ID')
+            # Validate location_id matches current location
+            if int(location_id_str) != location.id:
+                logger.warning(f'File title field {field_name} has mismatched location ID')
                 continue
             
             try:
                 attribute_id: int = int(attribute_id_str)
-                attribute: EntityAttribute = EntityAttribute.objects.get(
+                attribute: LocationAttribute = LocationAttribute.objects.get(
                     pk=attribute_id,
-                    entity=entity,
+                    location=location,
                     value_type_str=str(AttributeValueType.FILE)
                 )
                 
@@ -175,29 +179,29 @@ class EntityEditFormHandler:
                     attribute.value = new_title
                     attribute.save()  # This will create a history record
                     
-            except (ValueError, EntityAttribute.DoesNotExist) as e:
+            except (ValueError, LocationAttribute.DoesNotExist) as e:
                 logger.warning(f'Invalid file title field {field_name}: {e}')
 
     def collect_form_errors( self,
-                             entity_form                  : EntityForm,
-                             regular_attributes_formset   : EntityAttributeRegularFormSet ) -> List[str]:
+                             location_form              : LocationModalEditForm,
+                             regular_attributes_formset : LocationAttributeRegularFormSet ) -> List[str]:
         """Collect non-field errors from forms for enhanced error messaging.
         
         Args:
-            entity_form: EntityForm instance 
-            regular_attributes_formset: EntityAttributeRegularFormSet instance
+            location_form: LocationModalEditForm instance 
+            regular_attributes_formset: LocationAttributeRegularFormSet instance
             
         Returns:
             list: Formatted error messages with context prefixes
         """
         non_field_errors: List[str] = []
         
-        # Entity form non-field errors
-        if ( entity_form
-             and hasattr(entity_form, 'non_field_errors')
-             and entity_form.non_field_errors() ):
-            non_field_errors.extend([f"Entity: {error}"
-                                     for error in entity_form.non_field_errors()])
+        # Location form non-field errors
+        if ( location_form
+             and hasattr(location_form, 'non_field_errors')
+             and location_form.non_field_errors() ):
+            non_field_errors.extend([f"Location: {error}"
+                                     for error in location_form.non_field_errors()])
         
         # Property formset non-field errors
         if ( regular_attributes_formset
@@ -217,25 +221,25 @@ class EntityEditFormHandler:
         return non_field_errors
 
     def create_initial_context( self,
-                                entity : Entity ) -> Dict[str, Any]:
-        """Create initial template context for entity editing form.
+                                location : Location ) -> Dict[str, Any]:
+        """Create initial template context for location editing form.
         
         Args:
-            entity: Entity instance
+            location: Location instance
             
         Returns:
             dict: Template context for initial form display
         """
-        entity_form, file_attributes, regular_attributes_formset = self.create_entity_forms(entity)
+        location_form, file_attributes, regular_attributes_formset = self.create_location_forms(location)
         
         # Create the attribute edit context for template generalization
-        attr_context = EntityAttributeEditContext(entity)
+        attr_context = LocationAttributeEditContext(location)
         
         # Build context with both old and new patterns for compatibility
         context = {
-            'entity': entity,
-            'entity_form': entity_form,
-            'owner_form': entity_form,  # Generic alias for templates
+            'location': location,
+            'location_form': location_form,
+            'owner_form': location_form,  # Generic alias for templates
             'file_attributes': file_attributes,
             'regular_attributes_formset': regular_attributes_formset,
         }

@@ -5,7 +5,7 @@ from django.template.loader import get_template
 import hi.apps.common.antinode as antinode
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection
-from hi.apps.collection.transient_models import CollectionEditData
+from hi.apps.collection.transient_models import CollectionEditModeData
 
 from hi.constants import DIVID
 
@@ -26,13 +26,13 @@ class CollectionViewMixin:
         except Collection.DoesNotExist:
             raise Http404( request )
  
-    def collection_edit_response( self,
-                                  request               : HttpRequest,
-                                  collection_edit_data  : CollectionEditData,
-                                  status_code           : int             = 200 ):
+    def collection_edit_mode_response( self,
+                                       request               : HttpRequest,
+                                       collection_edit_data  : CollectionEditModeData,
+                                       status_code           : int                    = 200 ):
 
         context = collection_edit_data.to_template_context()
-        template = get_template( 'collection/edit/panes/collection_edit.html' )
+        template = get_template( 'collection/edit/panes/collection_properties_edit.html' )
         content = template.render( context, request = request )
         return antinode.response(
             insert_map = {

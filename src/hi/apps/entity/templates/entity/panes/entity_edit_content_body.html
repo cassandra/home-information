@@ -1,123 +1,47 @@
-{% load icons %}
+{% extends "attribute/components/edit_content_body.html" %}
 {% comment %}
-V2 Content Body Fragment
-Contains the main content area - used by both initial load and antinode updates
-Includes: entity info (when provided), action bar, and scrollable content
+Entity V2 Content Body Fragment
+Extends the generic attribute edit content body with entity-specific field layout.
 {% endcomment %}
 
-<!-- Sticky Panel: Entity Info + Action Bar (always visible) -->
-<div class="attr-v2-sticky-panel">
-  <!-- Basic Entity Information (minimal) - only if entity_form provided -->
-  {% if entity_form %}
-  <div class="attr-v2-entity-info">
-    {% block basic_info %}
-    <div class="attr-v2-basic-info">
-      <div class="row">
-        <div class="col-md-8">
-          <div class="form-group mb-0">
-            <small class="text-muted">Name</small>
-            <input type="text" 
-                   id="{{ entity_form.name.id_for_label }}"
-                   name="{{ entity_form.name.html_name }}"
-                   value="{{ entity_form.name.value|default:'' }}"
-                   class="form-control form-control-sm"
-                   {% if entity_form.name.field.required %}required{% endif %}>
-            {% if entity_form.name.errors %}
-              <div class="invalid-feedback d-block">
-                {{ entity_form.name.errors }}
-              </div>
-            {% endif %}
-          </div>
+{% block owner_fields %}
+<!-- Entity-specific fields: Name and Type fields for modal editing -->
+<div class="row">
+  <div class="col-md-8">
+    <div class="form-group mb-0">
+      <small class="text-muted">Name</small>
+      <input type="text" 
+             id="{{ owner_form.name.id_for_label }}"
+             name="{{ owner_form.name.html_name }}"
+             value="{{ owner_form.name.value|default:'' }}"
+             class="form-control form-control-sm"
+             {% if owner_form.name.field.required %}required{% endif %}>
+      {% if owner_form.name.errors %}
+        <div class="invalid-feedback d-block">
+          {{ owner_form.name.errors }}
         </div>
-        <div class="col-md-4">
-          <div class="form-group mb-0">
-            <small class="text-muted">Type</small>
-            <select id="{{ entity_form.entity_type_str.id_for_label }}"
-                    name="{{ entity_form.entity_type_str.html_name }}"
-                    class="form-control form-control-sm">
-              {% for value, label in entity_form.entity_type_str.field.choices %}
-                <option value="{{ value }}" 
-                        {% if value == entity_form.entity_type_str.value %}selected{% endif %}>
-                  {{ label }}
-                </option>
-              {% endfor %}
-            </select>
-            {% if entity_form.entity_type_str.errors %}
-              <div class="invalid-feedback d-block">
-                {{ entity_form.entity_type_str.errors }}
-              </div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
+      {% endif %}
     </div>
-    {% endblock %}
   </div>
-  {% endif %}
-  
-  <!-- Action Bar -->
-  <div class="attr-v2-action-bar">
-    <div class="attr-v2-action-bar-content">
-      <div>
-        <button id="{{ DIVID.ATTR_V2_UPDATE_BTN }}" 
-                type="submit" 
-                class="btn btn-primary"
-                name="action" 
-                value="update">
-          {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
-        </button>
-        <span id="{{ DIVID.ATTR_V2_DIRTY_MESSAGE }}" class="attr-v2-dirty-message ml-3"></span>
-        <span id="{{ DIVID.ATTR_V2_STATUS_MSG }}" class="attr-v2-status-message ml-2">
-          {% if success_message %}
-            <span class="text-success">{{ success_message }}</span>
-          {% elif error_message %}
-            <span class="text-danger">{{ error_message }}</span>
-            {% if non_field_errors %}
-              {% for error in non_field_errors %}
-                <br><small class="text-danger">{{ error }}</small>
-              {% endfor %}
-            {% endif %}
-          {% endif %}
-        </span>
-      </div>
-      
-      <div class="attr-v2-action-buttons">
-        {% block additional_actions %}
-        {% endblock %}
-        <label for="{{ DIVID.ATTR_V2_FILE_INPUT }}" 
-               class="btn btn-sm btn-outline-primary mb-0">
-          {% icon "upload" size="sm" css_class="hi-icon-left" %}Add File
-        </label>
-        
-        <button id="{{ DIVID.ATTR_V2_ADD_ATTRIBUTE_BTN }}" 
-                type="button" 
-                class="btn btn-sm btn-outline-primary"
-                onclick="showAddAttribute();">
-          {% icon "plus" size="sm" css_class="hi-icon-left" %}Add Info
-        </button>
-      </div>
+  <div class="col-md-4">
+    <div class="form-group mb-0">
+      <small class="text-muted">Type</small>
+      <select id="{{ owner_form.entity_type_str.id_for_label }}"
+              name="{{ owner_form.entity_type_str.html_name }}"
+              class="form-control form-control-sm">
+        {% for value, label in owner_form.entity_type_str.field.choices %}
+          <option value="{{ value }}" 
+                  {% if value == owner_form.entity_type_str.value %}selected{% endif %}>
+            {{ label }}
+          </option>
+        {% endfor %}
+      </select>
+      {% if owner_form.entity_type_str.errors %}
+        <div class="invalid-feedback d-block">
+          {{ owner_form.entity_type_str.errors }}
+        </div>
+      {% endif %}
     </div>
   </div>
 </div>
-
-<!-- Scrollable Content Area (below sticky panel) -->
-<div id="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT }}" class="attr-v2-scrollable-content">
-  
-  <!-- Files Section -->
-  {% block files_section %}
-    {% include "attribute/components/file_grid.html" with file_attributes=file_attributes %}
-  {% endblock %}
-  
-  <!-- Properties Section -->
-  {% block properties_section %}
-    {% if regular_attributes_formset %}
-      {{ regular_attributes_formset.management_form }}
-      {% include "attribute/components/regular_attribute_list.html" with regular_attributes_formset=regular_attributes_formset %}
-    {% endif %}
-  {% endblock %}
-  
-  <!-- Additional Sections -->
-  {% block additional_sections %}
-  {% endblock %}
-  
-</div>
+{% endblock %}

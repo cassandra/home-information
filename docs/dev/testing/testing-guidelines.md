@@ -176,3 +176,4 @@ For complete usage details, see: `hi.testing.dev_injection.DevInjectionManager`
 - Simulator testing: [Test Simulator](test-simulator.md)
 - Coding standards: [Coding Standards](../shared/coding-standards.md)
 - View testing: [Frontend Guidelines](../frontend/frontend-guidelines.md#view-testing)
+- Examples: [Test Case Examples](./test-examples)

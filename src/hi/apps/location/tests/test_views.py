@@ -297,9 +297,9 @@ class TestLocationSwitchView(SyncViewTestCase):
         self.assertEqual(response.status_code, 405)
 
 
-class TestLocationDetailsView(AsyncViewTestCase):
+class TestLocationEditModeView(AsyncViewTestCase):
     """
-    Tests for LocationDetailsView - demonstrates HiSideView testing.
+    Tests for LocationEditModeView - demonstrates HiSideView testing.
     This view displays location details in a side panel.
     """
 
@@ -314,16 +314,16 @@ class TestLocationDetailsView(AsyncViewTestCase):
 
     def test_get_location_details(self):
         """Test getting location details."""
-        url = reverse('location_details', kwargs={'location_id': self.location.id})
+        url = reverse('location_edit_mode', kwargs={'location_id': self.location.id})
         response = self.async_get(url)
 
         self.assertSuccessResponse(response)
         self.assertJsonResponse(response)
-        self.assertTemplateRendered(response, 'location/panes/location_edit_mode_panel.html')
+        self.assertTemplateRendered(response, 'location/edit/panes/location_edit_mode_panel.html')
 
     def test_location_details_should_push_url(self):
-        """Test that LocationDetailsView should push URL."""
-        url = reverse('location_details', kwargs={'location_id': self.location.id})
+        """Test that LocationEditModeView should push URL."""
+        url = reverse('location_edit_mode', kwargs={'location_id': self.location.id})
         response = self.async_get(url)
 
         self.assertSuccessResponse(response)
@@ -331,31 +331,31 @@ class TestLocationDetailsView(AsyncViewTestCase):
 
     def test_location_edit_data_in_context(self):
         """Test that location edit data is passed to template context."""
-        url = reverse('location_details', kwargs={'location_id': self.location.id})
+        url = reverse('location_edit_mode', kwargs={'location_id': self.location.id})
         response = self.async_get(url)
 
         self.assertSuccessResponse(response)
         # Context should contain location edit data
-        # The actual structure depends on LocationEditData.to_template_context()
+        # The actual structure depends on LocationEditModeData.to_template_context()
 
     def test_nonexistent_location_returns_404(self):
         """Test that accessing nonexistent location returns 404."""
-        url = reverse('location_details', kwargs={'location_id': 99999})
+        url = reverse('location_edit_mode', kwargs={'location_id': 99999})
         response = self.async_get(url)
 
         self.assertEqual(response.status_code, 404)
 
     def test_post_not_allowed(self):
         """Test that POST requests are not allowed."""
-        url = reverse('location_details', kwargs={'location_id': self.location.id})
+        url = reverse('location_edit_mode', kwargs={'location_id': self.location.id})
         response = self.async_post(url)
 
         self.assertEqual(response.status_code, 405)
 
 
-class TestLocationViewDetailsView(AsyncViewTestCase):
+class TestLocationViewEditModeViewGet(AsyncViewTestCase):
     """
-    Tests for LocationViewDetailsView - demonstrates location view details testing.
+    Tests for LocationViewEditModeView.get() - demonstrates location view details testing.
     This view displays location view details in a side panel.
     """
 
@@ -377,16 +377,16 @@ class TestLocationViewDetailsView(AsyncViewTestCase):
 
     def test_get_location_view_details(self):
         """Test getting location view details."""
-        url = reverse('location_view_details', kwargs={'location_view_id': self.location_view.id})
+        url = reverse('location_view_edit_mode', kwargs={'location_view_id': self.location_view.id})
         response = self.async_get(url)
 
         self.assertSuccessResponse(response)
         self.assertJsonResponse(response)
-        self.assertTemplateRendered(response, 'location/panes/location_view_details.html')
+        self.assertTemplateRendered(response, 'location/edit/panes/location_view_edit_mode_panel.html')
 
     def test_location_view_details_should_push_url(self):
-        """Test that LocationViewDetailsView should push URL."""
-        url = reverse('location_view_details', kwargs={'location_view_id': self.location_view.id})
+        """Test that LocationViewEditModeView should push URL."""
+        url = reverse('location_view_edit_mode', kwargs={'location_view_id': self.location_view.id})
         response = self.async_get(url)
 
         self.assertSuccessResponse(response)
@@ -394,29 +394,22 @@ class TestLocationViewDetailsView(AsyncViewTestCase):
 
     def test_location_view_edit_data_in_context(self):
         """Test that location view edit data is passed to template context."""
-        url = reverse('location_view_details', kwargs={'location_view_id': self.location_view.id})
+        url = reverse('location_view_edit_mode', kwargs={'location_view_id': self.location_view.id})
         response = self.async_get(url)
 
         self.assertSuccessResponse(response)
         # Context should contain location view edit data
-        # The actual structure depends on LocationViewEditData.to_template_context()
+        # The actual structure depends on LocationViewEditModeData.to_template_context()
 
     def test_nonexistent_location_view_returns_404(self):
         """Test that accessing nonexistent location view returns 404."""
-        url = reverse('location_view_details', kwargs={'location_view_id': 99999})
+        url = reverse('location_view_edit_mode', kwargs={'location_view_id': 99999})
         response = self.async_get(url)
 
         self.assertEqual(response.status_code, 404)
 
-    def test_post_not_allowed(self):
-        """Test that POST requests are not allowed."""
-        url = reverse('location_view_details', kwargs={'location_view_id': self.location_view.id})
-        response = self.async_post(url)
 
-        self.assertEqual(response.status_code, 405)
-
-
-class TestLocationItemInfoView(SyncViewTestCase):
+class TestLocationItemStatusView(SyncViewTestCase):
     """
     Tests for LocationItemInfoView - demonstrates item type delegation testing.
     This view redirects to appropriate info views based on item type.
@@ -439,7 +432,7 @@ class TestLocationItemInfoView(SyncViewTestCase):
         """Test redirecting to entity status for entity items."""
         from hi.enums import ItemType
         html_id = ItemType.ENTITY.html_id(self.entity.id)
-        url = reverse('location_item_info', kwargs={'html_id': html_id})
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 302)
@@ -450,7 +443,7 @@ class TestLocationItemInfoView(SyncViewTestCase):
         """Test redirecting to collection view for collection items."""
         from hi.enums import ItemType
         html_id = ItemType.COLLECTION.html_id(self.collection.id)
-        url = reverse('location_item_info', kwargs={'html_id': html_id})
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 302)
@@ -460,7 +453,7 @@ class TestLocationItemInfoView(SyncViewTestCase):
     def test_unknown_item_type_returns_400(self):
         """Test that unknown item types return BadRequest."""
         # Use an invalid html_id format to trigger BadRequest
-        url = reverse('location_item_info', kwargs={'html_id': 'hi-unknown-1'})
+        url = reverse('location_item_status', kwargs={'html_id': 'hi-unknown-1'})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 400)
@@ -468,7 +461,7 @@ class TestLocationItemInfoView(SyncViewTestCase):
     def test_invalid_item_id_returns_400(self):
         """Test that invalid item IDs return BadRequest."""
         # Use an invalid html_id format to trigger BadRequest
-        url = reverse('location_item_info', kwargs={'html_id': 'invalid-format'})
+        url = reverse('location_item_status', kwargs={'html_id': 'invalid-format'})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 400)
@@ -477,13 +470,13 @@ class TestLocationItemInfoView(SyncViewTestCase):
         """Test that POST requests are not allowed."""
         from hi.enums import ItemType
         html_id = ItemType.ENTITY.html_id(self.entity.id)
-        url = reverse('location_item_info', kwargs={'html_id': html_id})
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
         response = self.client.post(url)
 
         self.assertEqual(response.status_code, 405)
 
 
-class TestLocationItemDetailsView(SyncViewTestCase):
+class TestLocationItemEditModeView(SyncViewTestCase):
     """
     Tests for LocationItemDetailsView - demonstrates item details delegation testing.
     This view redirects to appropriate details views based on item type.
@@ -506,28 +499,28 @@ class TestLocationItemDetailsView(SyncViewTestCase):
         """Test redirecting to entity edit mode for entity items."""
         from hi.enums import ItemType
         html_id = ItemType.ENTITY.html_id(self.entity.id)
-        url = reverse('location_item_details', kwargs={'html_id': html_id})
+        url = reverse('location_item_edit_mode', kwargs={'html_id': html_id})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 302)
         expected_url = reverse('entity_edit_mode', kwargs={'entity_id': self.entity.id})
         self.assertEqual(response.url, expected_url)
 
-    def test_collection_details_redirect(self):
-        """Test redirecting to collection details for collection items."""
+    def test_collection_edit_mode_redirect(self):
+        """Test redirecting to collection edit mode for collection items."""
         from hi.enums import ItemType
         html_id = ItemType.COLLECTION.html_id(self.collection.id)
-        url = reverse('location_item_details', kwargs={'html_id': html_id})
+        url = reverse('location_item_edit_mode', kwargs={'html_id': html_id})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 302)
-        expected_url = reverse('collection_details', kwargs={'collection_id': self.collection.id})
+        expected_url = reverse('collection_edit_mode', kwargs={'collection_id': self.collection.id})
         self.assertEqual(response.url, expected_url)
 
     def test_unknown_item_type_returns_400(self):
         """Test that unknown item types return BadRequest."""
         # Use an invalid html_id format to trigger BadRequest
-        url = reverse('location_item_details', kwargs={'html_id': 'hi-unknown-1'})
+        url = reverse('location_item_edit_mode', kwargs={'html_id': 'hi-unknown-1'})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 400)
@@ -535,7 +528,7 @@ class TestLocationItemDetailsView(SyncViewTestCase):
     def test_invalid_item_id_returns_400(self):
         """Test that invalid item IDs return BadRequest."""
         # Use an invalid html_id format to trigger BadRequest
-        url = reverse('location_item_details', kwargs={'html_id': 'invalid-format'})
+        url = reverse('location_item_edit_mode', kwargs={'html_id': 'invalid-format'})
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 400)
@@ -544,7 +537,7 @@ class TestLocationItemDetailsView(SyncViewTestCase):
         """Test that POST requests are not allowed."""
         from hi.enums import ItemType
         html_id = ItemType.ENTITY.html_id(self.entity.id)
-        url = reverse('location_item_details', kwargs={'html_id': html_id})
+        url = reverse('location_item_edit_mode', kwargs={'html_id': html_id})
         response = self.client.post(url)
 
         self.assertEqual(response.status_code, 405)

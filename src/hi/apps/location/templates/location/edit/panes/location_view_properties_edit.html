@@ -1,11 +1,11 @@
 {% load icons %}
-<form action="{% url 'location_edit_location_view_edit' location_view_id=location_view.id %}"
+<form action="{% url 'location_view_edit_mode' location_view_id=location_view.id %}"
       method="post"
       class="form" data-async="true">
   {% csrf_token %}
   
   <div>
-    {% include "location/edit/panes/location_view_edit_form.html" %}
+    {% include "location/edit/panes/location_view_edit_mode_form.html" %}
   </div>
   <div class="text-center" >
     <button id="hi-add-location-view-button" type="submit" class="btn btn-primary"

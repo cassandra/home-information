@@ -11,7 +11,7 @@ from django.views.generic import View
 
 from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.models import Collection, CollectionPosition
-from hi.apps.collection.transient_models import CollectionEditData
+from hi.apps.collection.transient_models import CollectionEditModeData
 from hi.apps.collection.view_mixins import CollectionViewMixin
 import hi.apps.common.antinode as antinode
 from hi.apps.entity.view_mixins import EntityViewMixin
@@ -27,6 +27,29 @@ from hi.hi_async_view import HiModalView, HiSideView
 from . import forms
 
 logger = logging.getLogger(__name__)
+    
+
+class CollectionEditModeView( HiSideView, CollectionViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'collection/edit/panes/collection_edit_mode_panel.html'
+    
+    def should_push_url( self ):
+        return True
+    
+    def get_template_context( self, request, *args, **kwargs ):
+        collection = self.get_collection( request, *args, **kwargs )
+        
+        current_location_view = None
+        if request.view_parameters.view_type.is_location_view:
+            current_location_view = LocationManager().get_default_location_view( request = request )
+
+        collections_edit_data = CollectionManager().get_collection_edit_mode_data(
+            collection = collection,
+            location_view = current_location_view,
+            is_editing = request.view_parameters.is_editing,
+        )
+        return collections_edit_data.to_template_context()
 
 
 @method_decorator( edit_required, name='dispatch' )
@@ -118,7 +141,7 @@ class CollectionDeleteView( HiModalView, CollectionViewMixin ):
         return self.redirect_response( request, redirect_url )
     
 
-class CollectionEditView( View, CollectionViewMixin ):
+class CollectionPropertiesEditView( View, CollectionViewMixin ):
     
     def post( self, request, *args, **kwargs ):
         collection = self.get_collection( request, *args, **kwargs )
@@ -130,11 +153,11 @@ class CollectionEditView( View, CollectionViewMixin ):
             return antinode.refresh_response()
 
         # On error, show form errors        
-        collection_edit_data = CollectionEditData(
+        collection_edit_data = CollectionEditModeData(
             collection = collection,
             collection_edit_form = collection_edit_form,
         )
-        return self.collection_edit_response(
+        return self.collection_edit_mode_response(
             request = request,
             collection_edit_data = collection_edit_data,
             status_code = 400,
@@ -283,4 +306,3 @@ class CollectionEntityToggleView( View, CollectionViewMixin, EntityViewMixin ):
                 DIVID['MAIN'] : collection_content,
             },
         )
-    

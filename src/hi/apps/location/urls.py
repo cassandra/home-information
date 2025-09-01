@@ -9,14 +9,10 @@ urlpatterns = [
              views.LocationSwitchView.as_view(), 
              name='location_switch'),
 
-    re_path( r'^details/(?P<location_id>\d+)$', 
-             views.LocationDetailsView.as_view(), 
-             name='location_details' ),
-    
-    re_path( r'^view/details/(?P<location_view_id>\d+)$', 
-             views.LocationViewDetailsView.as_view(), 
-             name='location_view_details' ),
-    
+    re_path( r'^edit/(?P<location_id>\d+)$', 
+             views.LocationEditView.as_view(), 
+             name='location_edit_location_edit'),
+        
     re_path( r'^view/(?P<location_view_id>\d+)$', 
              views.LocationViewView.as_view(), 
              name='location_view'),
@@ -25,21 +21,21 @@ urlpatterns = [
              views.LocationViewDefaultView.as_view(), 
              name='location_view_default'),
 
-    re_path( r'^item/info/(?P<html_id>[\w\-]+)$', 
-             views.LocationItemInfoView.as_view(), 
-             name='location_item_info' ),
+    re_path( r'^item/status/(?P<html_id>[\w\-]+)$', 
+             views.LocationItemStatusView.as_view(), 
+             name='location_item_status' ),
+
+    re_path( r'^attribute/upload/(?P<location_id>\d+)$', 
+             views.LocationAttributeUploadView.as_view(), 
+             name='location_attribute_upload'),
     
-    re_path( r'^item/details/(?P<html_id>[\w\-]+)$', 
-             views.LocationItemDetailsView.as_view(), 
-             name='location_item_details' ),
+    re_path( r'^attribute/history/(?P<location_id>\d+)/(?P<attribute_id>\d+)$', 
+             views.LocationAttributeHistoryInlineView.as_view(), 
+             name='location_attribute_history_inline'),
     
-    re_path( r'^attribute/history/(?P<attribute_id>\d+)$', 
-             views.LocationAttributeHistoryView.as_view(), 
-             name='location_attribute_history'),
-    
-    re_path( r'^attribute/restore/(?P<attribute_id>\d+)$', 
-             views.LocationAttributeRestoreView.as_view(), 
-             name='location_attribute_restore'),
+    re_path( r'^attribute/restore/(?P<location_id>\d+)/(?P<attribute_id>\d+)/(?P<history_id>\d+)$', 
+             views.LocationAttributeRestoreInlineView.as_view(), 
+             name='location_attribute_restore_inline'),
     
     re_path( r'^edit/', include('hi.apps.location.edit.urls' )),
 

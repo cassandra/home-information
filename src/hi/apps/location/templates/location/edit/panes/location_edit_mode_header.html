@@ -1,7 +1,7 @@
 <div class="d-flex justify-content-between">
   <div class="h5"><small>Location:</small> {{ request.view_parameters.location.name }}</div>
   <div>
-    <a href="{% url 'location_details' location_id=request.view_parameters.location.id %}"
+    <a href="{% url 'location_edit_mode' location_id=request.view_parameters.location.id %}"
        class="btn btn-sm btn-tertiary" role="button" data-async="true">
       EDIT
     </a>
