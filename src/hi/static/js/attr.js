@@ -545,94 +545,26 @@
     
     
 
-    function _setupBasicEventListeners() {
-        // Try multiple approaches to find the form
-        let form = $(Hi.ATTR_V2_FORM_SELECTOR)[0];
+    function _setupBasicEventListeners($container) {
+        // Simple ENTER key prevention for attribute forms - scoped to this container
+        const $forms = $container.find(`form${Hi.ATTR_V2_FORM_CLASS_SELECTOR}`);
         
-        // Also try multiple selectors
-        let formAlt = $(`${Hi.ATTR_V2_FORM_SELECTOR}, ${Hi.ATTR_V2_MODAL_CLASS_SELECTOR}, form[data-async]`)[0];
-        
-        if (!form && !formAlt) {
-            setTimeout(() => {
-                form = $(Hi.ATTR_V2_FORM_SELECTOR)[0];
-                formAlt = $(`${Hi.ATTR_V2_FORM_SELECTOR}, ${Hi.ATTR_V2_MODAL_CLASS_SELECTOR}, form[data-async]`)[0];
-                
-                const finalForm = form || formAlt;
-                if (finalForm) {
-                    _attachKeyHandler(finalForm);
-                } else {
-                    console.error('setupBasicEventListeners: No form found after timeout');
-                }
-            }, 100);
-            return;
-        }
-        
-        const finalForm = form || formAlt;
-        _attachKeyHandler(finalForm);
-    }
-    
-    function _attachKeyHandler(form) {
-        // Handle ENTER key behavior ONLY for V2 form inputs and textareas
-        form.addEventListener('keydown', function(event) {
-            // IMPORTANT: Only handle events from elements within the V2 form
-            if (!event.target.closest(Hi.ATTR_V2_FORM_SELECTOR)) {
-                return; // Not our form, don't interfere
-            }
+        $forms.each(function() {
+            const form = this;
             
-            if (event.key === 'Enter' || event.keyCode === 13) {
-                if (event.target.tagName === 'TEXTAREA') {
-                    // For textareas, prevent form submission but allow newline
+            // Remove any existing keydown handlers to avoid duplicates
+            $(form).off('keydown.attr-v2-enter');
+            
+            // Prevent ENTER from submitting forms (except textareas and submit buttons)
+            $(form).on('keydown.attr-v2-enter', function(event) {
+                if (event.key === 'Enter' && 
+                    event.target.tagName !== 'TEXTAREA' && 
+                    event.target.type !== 'submit') {
                     event.preventDefault();
-                    
-                    const textarea = event.target;
-                    const start = textarea.selectionStart;
-                    const end = textarea.selectionEnd;
-                    const value = textarea.value;
-                    
-                    // Insert newline at cursor position
-                    textarea.value = value.substring(0, start) + '\n' + value.substring(end);
-                    textarea.selectionStart = textarea.selectionEnd = start + 1;
-                    
-                    // Trigger autosize update
-                    if (window.autosize) {
-                        autosize.update(textarea);
-                    }
-                    event.stopPropagation(); // Don't let this bubble up
                     return false;
                 }
-                
-                // For text inputs, convert to textarea if they want to add newlines
-                // BUT only for value fields, not name fields
-                if (event.target.tagName === 'INPUT' && event.target.type === 'text') {
-                    const fieldName = event.target.name || event.target.id || '';
-                    
-                    // Only convert value fields to textarea, never name fields
-                    if (fieldName.includes('-name') || fieldName.includes('_name')) {
-                        return false; // Just prevent form submission, don't convert
-                    }
-                    
-                    // Convert value fields to textarea
-                    if (fieldName.includes('-value') || fieldName.includes('_value')) {
-                        const $textarea = convertToTextarea(event.target);
-                        const currentValue = $textarea.val();
-                        $textarea.val(currentValue + '\n');
-                        
-                        // Position cursor at end
-                        const textarea = $textarea[0];
-                        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-                        return false;
-                    }
-                    
-                    // For other text inputs, just prevent form submission
-                    return false;
-                }
-                
-                // For all other elements, just prevent form submission (already done above)
-                return false;
-            }
-        }, false); // Changed from capture phase to bubble phase to be less intrusive
-        
-        // Form submission now handled by antinode.js with data-async and data-stay-in-modal
+            });
+        });
     }
 
     // Simple add attribute - just show the last (empty) formset form
@@ -1120,34 +1052,5 @@
         });
     }
     
-    // Convert single-line input to textarea when user adds newlines
-    function _convertToTextarea(inputElement) {
-        const $input = $(inputElement);
-        const value = $input.val();
-        
-        // Create textarea element
-        const $textarea = $('<textarea>', {
-            rows: 1,
-            id: $input.attr('id'),
-            name: $input.attr('name'),
-            class: $input.attr('class') + ' ' + Hi.ATTR_V2_TEXTAREA_CLASS,
-            [Hi.DATA_ORIGINAL_VALUE_ATTR]: $input.attr(Hi.DATA_ORIGINAL_VALUE_ATTR)
-        });
-        
-        // Copy attributes
-        if ($input.is(':disabled')) {
-            $textarea.prop('disabled', true);
-        }
-        
-        // Set value and replace input
-        $textarea.val(value);
-        $input.replaceWith($textarea);
-        
-        // Initialize autosize
-        autosize($textarea);
-        $textarea.focus();
-        
-        return $textarea;
-    }
     
 })();
