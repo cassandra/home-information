@@ -289,4 +289,4 @@ class SubsystemAttributeRestoreInlineView(BaseAttributeRestoreView):
         # Return updated content using ConfigEditResponseRenderer
         from .config_edit_response_renderer import ConfigEditResponseRenderer
         renderer = ConfigEditResponseRenderer()
-        return renderer.render_success_response(request)
+        return renderer.render_success_response(request, selected_subsystem_id=str(subsystem_id))

@@ -257,7 +257,9 @@
     function initializeAttrV2Container($container) {
         // Check if this container is already initialized to prevent double-initialization
         if ($container.data('attr-v2-initialized')) {
-            console.log('DEBUG: Container already initialized, skipping:', $container[0]);
+            console.log('DEBUG: Container already initialized, but reprocessing AJAX handlers for new content:', $container[0]);
+            // Always reprocess AJAX handlers to handle newly loaded content
+            setupCustomAjaxHandlers($container);
             return;
         }
         
