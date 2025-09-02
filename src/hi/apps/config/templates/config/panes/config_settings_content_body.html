@@ -44,15 +44,17 @@ This is what gets replaced on form submission
   <div class="d-flex mt-3">
     <!-- Left Column: Vertical Navigation -->
     <div class="flex-column">
-      <nav class="nav flex-column" id="subsystemTabs" role="tablist">
+      <nav class="nav flex-column" id="{{ DIVID.SUBSYSTEM_TABS }}" role="tablist">
         {% for subsystem_data in subsystem_edit_data_list %}
-        <a class="nav-link {% if forloop.first %}active{% endif %}" 
+        <a class="nav-link {% if selected_subsystem_id == subsystem_data.subsystem.id|stringformat:'s' %}active{% endif %}" 
            id="subsystem-{{ subsystem_data.subsystem.id }}-tab" 
            data-toggle="tab" 
+           data-subsystem-id="{{ subsystem_data.subsystem.id }}"
+           data-config-settings-url="{% url 'config_settings' %}"
            href="#subsystem-{{ subsystem_data.subsystem.id }}-panel" 
            role="tab" 
            aria-controls="subsystem-{{ subsystem_data.subsystem.id }}-panel" 
-           aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+           aria-selected="{% if selected_subsystem_id == subsystem_data.subsystem.id|stringformat:'s' %}true{% else %}false{% endif %}">
           {{ subsystem_data.subsystem.name }}
         </a>
         {% endfor %}
@@ -63,7 +65,7 @@ This is what gets replaced on form submission
     <div class="flex-column flex-grow-1">
       <div class="tab-content" id="subsystemTabContent">
       {% for subsystem_data in subsystem_edit_data_list %}
-      <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" 
+      <div class="tab-pane fade {% if selected_subsystem_id == subsystem_data.subsystem.id|stringformat:'s' %}show active{% endif %}" 
            id="subsystem-{{ subsystem_data.subsystem.id }}-panel" 
            role="tabpanel" 
            aria-labelledby="subsystem-{{ subsystem_data.subsystem.id }}-tab">

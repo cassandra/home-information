@@ -76,6 +76,7 @@
         ATTR_V2_FILE_INPUT_ID: 'attr-v2-file-input',
         ATTR_V2_ADD_ATTRIBUTE_BTN_ID: 'attr-v2-add-attribute-btn',
         ATTR_V2_SCROLLABLE_CONTENT_ID: 'attr-v2-scrollable-content',
+        SUBSYSTEM_TABS_ID: 'subsystemTabs',
         ATTR_V2_MODAL_CLASS: 'attr-v2-modal',
         ATTR_V2_ATTRIBUTE_CARD_CLASS: 'attr-v2-attribute-card',
         ATTR_V2_NEW_ATTRIBUTE_CLASS: 'attr-v2-new-attribute',
@@ -127,7 +128,8 @@
         ATTR_V2_ICON_HIDE_SELECTOR: '.attr-v2-icon-hide',
         ATTR_V2_TEXTAREA_SELECTOR: '.attr-v2-textarea',
         ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR: '.attr-v2-text-value-wrapper',
-        ATTR_V2_EXPAND_CONTROLS_SELECTOR: '.attr-v2-expand-controls'
+        ATTR_V2_EXPAND_CONTROLS_SELECTOR: '.attr-v2-expand-controls',
+        SUBSYSTEM_TABS_SELECTOR: '#subsystemTabs'
         
     };
     

@@ -35,6 +35,20 @@
             e.stopPropagation(); // Prevent bubbling to other handlers
         }
     });
+    
+    // Handle tab URL updates for configuration settings using event delegation
+    $(document).on('shown.bs.tab', `${Hi.SUBSYSTEM_TABS_SELECTOR} a[data-toggle="tab"]`, function(e) {
+        const subsystemId = $(e.target).data('subsystem-id');
+        const baseUrl = $(e.target).data('config-settings-url');
+        
+        if (subsystemId && baseUrl) {
+            const newUrl = `${baseUrl}/${subsystemId}`;
+            // Update URL without page reload using pushState
+            history.pushState(null, '', newUrl);
+            // Update form action to match current tab
+            $(Hi.ATTR_V2_FORM_SELECTOR).attr('action', newUrl);
+        }
+    });
 
     function initializeAttrV2() {
         // Basic initialization - more functionality will be added in later phases
@@ -375,6 +389,7 @@
             hiddenField.value = checkbox.checked ? 'True' : 'False';
         }
     };
+    
     
     // Initialize autosize for all textareas in the modal
     function initializeAutosizeTextareas() {

@@ -84,7 +84,8 @@ class ConfigSettingsView( ConfigPageView, SettingsMixin ):
     def get_main_template_context( self, request, *args, **kwargs ):
         """Delegate form creation and context building to handler."""
         form_handler = ConfigEditFormHandler()
-        return form_handler.create_initial_context()
+        subsystem_id = kwargs.get('subsystem_id')
+        return form_handler.create_initial_context(selected_subsystem_id=subsystem_id)
 
     def post( self, request, *args, **kwargs ):
         """Handle unified form submission using helper classes."""
@@ -92,6 +93,7 @@ class ConfigSettingsView( ConfigPageView, SettingsMixin ):
         # Delegate form handling to specialized handlers
         form_handler = ConfigEditFormHandler()
         renderer = ConfigEditResponseRenderer()
+        subsystem_id = kwargs.get('subsystem_id')
         
         # Create formsets with POST data
         subsystem_formset_list = form_handler.create_config_forms(
@@ -104,10 +106,10 @@ class ConfigSettingsView( ConfigPageView, SettingsMixin ):
             form_handler.save_all_formsets(subsystem_formset_list, request)
             
             # Return success response with fresh data
-            return renderer.render_success_response(request)
+            return renderer.render_success_response(request, selected_subsystem_id=subsystem_id)
         else:
             # Return error response with validation errors
-            return renderer.render_error_response(request, subsystem_formset_list)
+            return renderer.render_error_response(request, subsystem_formset_list, selected_subsystem_id=subsystem_id)
        
         
 class ConfigInternalView( View ):

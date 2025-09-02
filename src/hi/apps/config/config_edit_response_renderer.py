@@ -26,7 +26,8 @@ class ConfigEditResponseRenderer:
             subsystem_formset_list: List[SubsystemAttributeFormSet],
             success_message: Optional[str] = None,
             error_message: Optional[str] = None,
-            has_errors: bool = False
+            has_errors: bool = False,
+            selected_subsystem_id: str = None
     ) -> Dict[str, Any]:
         """Build context dictionary for template rendering."""
         
@@ -39,8 +40,13 @@ class ConfigEditResponseRenderer:
             for formset in subsystem_formset_list
         ]
         
+        # Determine selected subsystem ID (default to first if none provided)
+        if selected_subsystem_id is None and subsystem_formset_list:
+            selected_subsystem_id = str(subsystem_formset_list[0].instance.id)
+        
         context = {
             'subsystem_edit_data_list': subsystem_edit_data_list,
+            'selected_subsystem_id': selected_subsystem_id,
             'history_url_name': 'config_attribute_history',
             'restore_url_name': 'config_attribute_restore',
             'success_message': success_message,
@@ -52,7 +58,8 @@ class ConfigEditResponseRenderer:
 
     def render_success_response(
             self,
-            request: HttpRequest
+            request: HttpRequest,
+            selected_subsystem_id: str = None
     ) -> HttpResponse:
         """Render success response using antinode helpers for flexible DOM updates.
         
@@ -64,7 +71,8 @@ class ConfigEditResponseRenderer:
         
         context = self.build_template_context(
             subsystem_formset_list,
-            success_message="Settings saved successfully"
+            success_message="Settings saved successfully",
+            selected_subsystem_id=selected_subsystem_id
         )
         
         # Render the content body that gets replaced
@@ -82,7 +90,8 @@ class ConfigEditResponseRenderer:
     def render_error_response(
             self,
             request: HttpRequest,
-            subsystem_formset_list: List[SubsystemAttributeFormSet]
+            subsystem_formset_list: List[SubsystemAttributeFormSet],
+            selected_subsystem_id: str = None
     ) -> HttpResponse:
         """Render error response with validation errors and user input preserved."""
         
@@ -98,7 +107,8 @@ class ConfigEditResponseRenderer:
         context = self.build_template_context(
             subsystem_formset_list,
             error_message=error_message,
-            has_errors=True
+            has_errors=True,
+            selected_subsystem_id=selected_subsystem_id
         )
         
         # Render the content body with error state

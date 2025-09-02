@@ -68,9 +68,13 @@ class ConfigEditFormHandler:
             for formset in subsystem_formset_list:
                 formset.save()
 
-    def create_initial_context(self) -> Dict[str, Any]:
+    def create_initial_context(self, selected_subsystem_id: str = None) -> Dict[str, Any]:
         """Create initial template context for config settings editing."""
         subsystem_formset_list = self.create_config_forms()
+        
+        # Determine selected subsystem ID (default to first if none provided)
+        if selected_subsystem_id is None and subsystem_formset_list:
+            selected_subsystem_id = str(subsystem_formset_list[0].instance.id)
         
         # Create paired data objects with formsets and their contexts
         subsystem_edit_data_list = [
@@ -83,6 +87,7 @@ class ConfigEditFormHandler:
         
         return {
             'subsystem_edit_data_list': subsystem_edit_data_list,
+            'selected_subsystem_id': selected_subsystem_id,
             'history_url_name': 'config_attribute_history',
             'restore_url_name': 'config_attribute_restore',
         }
