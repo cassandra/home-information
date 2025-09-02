@@ -14,6 +14,7 @@ class SubsystemAttributeEditData:
     
     formset: SubsystemAttributeFormSet
     context: SubsystemAttributeEditContext
+    error_count: int = 0
     
     @property
     def subsystem(self) -> Subsystem:

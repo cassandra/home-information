@@ -32,13 +32,21 @@ class ConfigEditResponseRenderer:
         """Build context dictionary for template rendering."""
         
         # Create paired data objects with formsets and their contexts
-        subsystem_edit_data_list = [
-            SubsystemAttributeEditData(
+        subsystem_edit_data_list = []
+        for formset in subsystem_formset_list:
+            # Count errors for this subsystem
+            error_count = 0
+            for form in formset:
+                if form.errors:
+                    error_count += len(form.errors)
+            
+            # Create data object with error count
+            subsystem_data = SubsystemAttributeEditData(
                 formset=formset,
-                context=SubsystemAttributeEditContext(formset.instance)
+                context=SubsystemAttributeEditContext(formset.instance),
+                error_count=error_count
             )
-            for formset in subsystem_formset_list
-        ]
+            subsystem_edit_data_list.append(subsystem_data)
         
         # Determine selected subsystem ID (default to first if none provided)
         if selected_subsystem_id is None and subsystem_formset_list:

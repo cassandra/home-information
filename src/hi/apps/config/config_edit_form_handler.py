@@ -80,7 +80,8 @@ class ConfigEditFormHandler:
         subsystem_edit_data_list = [
             SubsystemAttributeEditData(
                 formset=formset,
-                context=SubsystemAttributeEditContext(formset.instance)
+                context=SubsystemAttributeEditContext(formset.instance),
+                error_count=0  # No errors on initial load
             )
             for formset in subsystem_formset_list
         ]

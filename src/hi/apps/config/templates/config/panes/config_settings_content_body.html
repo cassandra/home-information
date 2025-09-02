@@ -56,6 +56,9 @@ This is what gets replaced on form submission
            aria-controls="subsystem-{{ subsystem_data.subsystem.id }}-panel" 
            aria-selected="{% if selected_subsystem_id == subsystem_data.subsystem.id|stringformat:'s' %}true{% else %}false{% endif %}">
           {{ subsystem_data.subsystem.name }}
+          {% if subsystem_data.error_count > 0 %}
+            <span class="badge badge-danger ml-1">{{ subsystem_data.error_count }}</span>
+          {% endif %}
         </a>
         {% endfor %}
       </nav>
