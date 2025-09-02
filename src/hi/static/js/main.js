@@ -67,6 +67,7 @@
         // Entity Attribute Editing V2 - IDs and Classes
         ATTR_V2_FORM_ID: 'attr-v2-form',
         ATTR_V2_CONTENT_ID: 'attr-v2-content',
+        ATTR_V2_CONTENT_CLASS: 'attr-v2-content',
         ATTR_V2_UPLOAD_FORM_CONTAINER_ID: 'attr-v2-upload-form-container',
         ATTR_V2_FILE_GRID_ID: 'attr-v2-file-grid',
         ATTR_V2_STATUS_MSG_ID: 'attr-v2-status-msg',
@@ -99,9 +100,12 @@
         ATTR_V2_EXPAND_CONTROLS_CLASS: 'attr-v2-expand-controls',
         
         // Ready-to-use jQuery selectors
-        ATTR_V2_FORM_SELECTOR: '#attr-v2-form',
-        ATTR_V2_FORM_CLASS_SELECTOR: '.attr-v2-form',
-        ATTR_V2_CONTENT_SELECTOR: '#attr-v2-content',
+        ATTR_V2_FORM_ID_SELECTOR: '#attr-v2-form',           // Specific form ID
+        ATTR_V2_FORM_CLASS_SELECTOR: '.attr-v2-form',        // Form class
+        ATTR_V2_CONTAINER_SELECTOR: '.attr-v2-container',
+        ATTR_V2_STATUS_MESSAGE_SELECTOR: '.attr-v2-status-message',
+        ATTR_V2_HISTORY_LINK_SELECTOR: '.attr-v2-history-link',
+        ATTR_V2_RESTORE_LINK_SELECTOR: '.attr-v2-restore-link',
         ATTR_V2_UPLOAD_FORM_CONTAINER_SELECTOR: '#attr-v2-upload-form-container',
         ATTR_V2_FILE_GRID_SELECTOR: '#attr-v2-file-grid',
         ATTR_V2_STATUS_MSG_SELECTOR: '#attr-v2-status-msg',
@@ -131,8 +135,14 @@
         ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR: '.attr-v2-text-value-wrapper',
         ATTR_V2_EXPAND_CONTROLS_SELECTOR: '.attr-v2-expand-controls',
         ATTR_V2_AUTO_DISMISS_SELECTOR: '.attr-v2-auto-dismiss',
-        SUBSYSTEM_TABS_SELECTOR: '#subsystemTabs'
         
+        // Data attributes set by server, read by JS
+        CONTEXT_SUFFIX_DATA_ATTR: 'data-context-suffix',
+        DATA_ATTRIBUTE_ID_ATTR: 'data-attribute-id',
+        DATA_HIDDEN_FIELD_ATTR: 'data-hidden-field',
+        DATA_OVERFLOW_ATTR: 'data-overflow',
+        DATA_LINE_COUNT_ATTR: 'data-line-count',
+        DATA_ORIGINAL_VALUE_ATTR: 'data-original-value',
     };
     
     window.Hi = Hi;

@@ -7,6 +7,22 @@
 (function() {
     'use strict';
     
+    // Internal constants - dirty tracking specific
+    const DIRTY_TRACKING_INTERNAL = {
+        // Configuration
+        DEBOUNCE_DELAY: 300,
+        
+        // Messages
+        SINGLE_FIELD_MESSAGE: '1 field modified',
+        MULTIPLE_FIELDS_MESSAGE_TEMPLATE: '{count} fields modified',
+        DIRTY_INDICATOR_CHAR: '●',
+        DIRTY_INDICATOR_TITLE: 'This field has been modified',
+        
+        // Form selectors (will be replaced with Hi.* constants)
+        FORM_SELECTOR: '.attr-v2-form',
+        MESSAGE_CONTAINER_SELECTOR: '.attr-v2-dirty-message'
+    };
+    
     // Create namespace
     window.attrV2 = window.attrV2 || {};
     
@@ -20,9 +36,9 @@
         
         // Instance-specific configuration
         this.config = {
-            formSelector: '.attr-v2-form',
-            messageContainerSelector: '.attr-v2-dirty-message',
-            debounceDelay: 300,
+            formSelector: Hi.ATTR_V2_FORM_CLASS_SELECTOR,
+            messageContainerSelector: Hi.ATTR_V2_DIRTY_MESSAGE_SELECTOR,
+            debounceDelay: DIRTY_TRACKING_INTERNAL.DEBOUNCE_DELAY,
             dirtyFieldClass: Hi.ATTR_V2_FIELD_DIRTY_CLASS || 'attr-v2-field-dirty',
             dirtyIndicatorClass: Hi.ATTR_V2_DIRTY_INDICATOR_CLASS || 'attr-v2-dirty-indicator'
         };
@@ -249,8 +265,8 @@
         createDirtyIndicator: function() {
             const indicator = document.createElement('span');
             indicator.className = this.config.dirtyIndicatorClass;
-            indicator.innerHTML = '●'; // Simple dot indicator
-            indicator.title = 'This field has been modified';
+            indicator.innerHTML = DIRTY_TRACKING_INTERNAL.DIRTY_INDICATOR_CHAR;
+            indicator.title = DIRTY_TRACKING_INTERNAL.DIRTY_INDICATOR_TITLE;
             return indicator;
         },
         
@@ -302,13 +318,13 @@
             
             if (dirtyCount === 0) {
                 messageContainer.textContent = '';
-                messageContainer.className = 'attr-v2-dirty-message';
+                messageContainer.className = Hi.ATTR_V2_DIRTY_MESSAGE_CLASS;
             } else {
                 const message = dirtyCount === 1 
-                    ? '1 field modified' 
-                    : `${dirtyCount} fields modified`;
+                    ? DIRTY_TRACKING_INTERNAL.SINGLE_FIELD_MESSAGE
+                    : DIRTY_TRACKING_INTERNAL.MULTIPLE_FIELDS_MESSAGE_TEMPLATE.replace('{count}', dirtyCount);
                 messageContainer.textContent = message;
-                messageContainer.className = 'attr-v2-dirty-message active';
+                messageContainer.className = `${Hi.ATTR_V2_DIRTY_MESSAGE_CLASS} active`;
             }
         },
         
@@ -416,7 +432,7 @@
         // Initialize all containers on page
         init: function() {
             // Find all attr-v2 containers
-            const containers = document.querySelectorAll('.attr-v2-container');
+            const containers = document.querySelectorAll(Hi.ATTR_V2_CONTAINER_SELECTOR);
             containers.forEach(container => {
                 if (container.id) {
                     const instance = this.getInstance(container.id);
@@ -429,9 +445,9 @@
         // Handle antinode success events
         handleAntiNodeSuccess: function(e) {
             // Find the container that triggered the event
-            const form = e.target.closest('.attr-v2-form');
+            const form = e.target.closest(Hi.ATTR_V2_FORM_CLASS_SELECTOR);
             if (form) {
-                const container = form.closest('.attr-v2-container');
+                const container = form.closest(Hi.ATTR_V2_CONTAINER_SELECTOR);
                 if (container && container.id) {
                     const instance = this.getInstance(container.id);
                     instance.handleFormSuccess(e);
@@ -449,7 +465,7 @@
     document.addEventListener('shown.bs.modal', function(e) {
         // Look for containers within the modal
         const modal = e.target;
-        const containers = modal.querySelectorAll('.attr-v2-container');
+        const containers = modal.querySelectorAll(Hi.ATTR_V2_CONTAINER_SELECTOR);
         containers.forEach(container => {
             if (container.id) {
                 window.attrV2.DirtyTracking.reinitializeContainer($(container));

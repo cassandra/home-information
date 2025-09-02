@@ -7,6 +7,46 @@
 (function() {
     'use strict';
     
+    // Internal constants - JS-only, no server dependency
+    const ATTR_V2_INTERNAL = {
+        // State management data keys (different granularity levels)
+        INITIALIZED_DATA_KEY: 'attr-v2-initialized',      // Container-level flag
+        PROCESSED_DATA_KEY: 'attr-v2-processed',          // Element-level flag
+        
+        // Event namespaces
+        AJAX_EVENT_NAMESPACE: 'attr-v2-ajax',
+        OVERFLOW_EVENT_NAMESPACE: 'input.overflow',
+        
+        // HTTP/AJAX constants
+        CSRF_TOKEN_NAME: 'csrfmiddlewaretoken',
+        XML_HTTP_REQUEST_HEADER: 'X-Requested-With',
+        AUTOSIZE_INITIALIZED_ATTR: 'data-autosize-initialized',
+        
+        // CSS state classes (JS-managed, not in templates)
+        TRUNCATED_CLASS: 'truncated',
+        MARKED_FOR_DELETION_CLASS: 'marked-for-deletion',
+        DISPLAY_FIELD_CLASS: 'display-field',
+        ACTIVATED_CLASS: 'activated',
+        HAS_DIRTY_INDICATOR_CLASS: 'has-dirty-indicator',
+        HAS_DIRTY_FIELD_CLASS: 'has-dirty-field',
+        ACTIVE_CLASS: 'active',
+        
+        // Form field name patterns
+        NAME_FIELD_SUFFIX: '-name',
+        VALUE_FIELD_SUFFIX: '-value',
+        DELETE_FIELD_SUFFIX: '-DELETE',
+        
+        // Status message CSS classes (Bootstrap)
+        STATUS_SUCCESS_CLASS: 'text-success',
+        STATUS_ERROR_CLASS: 'text-danger',
+        STATUS_INFO_CLASS: 'text-info',
+        STATUS_WARNING_CLASS: 'text-warning',
+        
+        // Bootstrap/generic classes
+        MODAL_SELECTOR: '.modal',
+        FORM_GROUP_SELECTOR: '.form-group'
+    };
+    
     // Create a namespace for V2 modal functions to avoid global pollution
     window.attrV2 = window.attrV2 || {};
     
@@ -26,7 +66,7 @@
             const $form = $(form);
             
             // Find the container and sync textarea values to hidden fields before submission
-            const $container = $form.closest('.attr-v2-container');
+            const $container = $form.closest(Hi.ATTR_V2_CONTAINER_SELECTOR);
             if ($container.length > 0) {
                 syncTextareaValuesToHiddenFields($container);
             }
@@ -38,10 +78,10 @@
             console.log('DEBUG: Form submission details:', { url, method, form: $form[0] });
             
             // Add CSRF token if not already present
-            if (!formData.has('csrfmiddlewaretoken')) {
-                const csrfToken = $('[name=csrfmiddlewaretoken]').val();
+            if (!formData.has(ATTR_V2_INTERNAL.CSRF_TOKEN_NAME)) {
+                const csrfToken = $(`[name=${ATTR_V2_INTERNAL.CSRF_TOKEN_NAME}]`).val();
                 if (csrfToken) {
-                    formData.append('csrfmiddlewaretoken', csrfToken);
+                    formData.append(ATTR_V2_INTERNAL.CSRF_TOKEN_NAME, csrfToken);
                 }
             }
             
@@ -52,7 +92,7 @@
                 processData: false,
                 contentType: false,
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    [ATTR_V2_INTERNAL.XML_HTTP_REQUEST_HEADER]: 'XMLHttpRequest'
                 }
             }).done((response) => {
                 this.handleFormSuccess(response, $form, options);
@@ -67,7 +107,7 @@
                 url: url,
                 method: 'GET',
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    [ATTR_V2_INTERNAL.XML_HTTP_REQUEST_HEADER]: 'XMLHttpRequest'
                 }
             }).done((response) => {
                 // Handle response for content loading
@@ -112,8 +152,8 @@
                 });
             } else if (data.html) {
                 // Single HTML update (legacy format)
-                const containerId = $form.closest('.attr-v2-container').attr('id');
-                const target = `#${containerId} .attr-v2-content`;
+                const containerId = $form.closest(Hi.ATTR_V2_CONTAINER_SELECTOR).attr('id');
+                const target = `#${containerId} .${Hi.ATTR_V2_CONTENT_CLASS}`;
                 this.updateDOMElement(target, data.html, 'replace');
             }
             
@@ -184,16 +224,16 @@
         
         // Show status message in appropriate container
         showStatusMessage: function(message, type = 'info', $form = null) {
-            const $container = $form ? $form.closest('.attr-v2-container') : $('.attr-v2-container').first();
-            const $statusMsg = $container.find('.attr-v2-status-message');
+            const $container = $form ? $form.closest(Hi.ATTR_V2_CONTAINER_SELECTOR) : $(Hi.ATTR_V2_CONTAINER_SELECTOR).first();
+            const $statusMsg = $container.find(Hi.ATTR_V2_STATUS_MESSAGE_SELECTOR);
             
             if ($statusMsg.length === 0) return;
             
-            const cssClass = type === 'success' ? 'text-success' : 
-                           type === 'error' ? 'text-danger' : 'text-info';
+            const cssClass = type === 'success' ? ATTR_V2_INTERNAL.STATUS_SUCCESS_CLASS : 
+                           type === 'error' ? ATTR_V2_INTERNAL.STATUS_ERROR_CLASS : ATTR_V2_INTERNAL.STATUS_INFO_CLASS;
             
             $statusMsg.text(message)
-                     .removeClass('text-success text-danger text-info')
+                     .removeClass(`${ATTR_V2_INTERNAL.STATUS_SUCCESS_CLASS} ${ATTR_V2_INTERNAL.STATUS_ERROR_CLASS} ${ATTR_V2_INTERNAL.STATUS_INFO_CLASS}`)
                      .addClass(cssClass)
                      .show();
             
@@ -212,7 +252,7 @@
     // No longer using antinode.js - initialization handled by custom Ajax callbacks
     
     // Listen for any modal shown events and initialize V2 containers
-    $(document).on('shown.bs.modal', '.modal', function(e) {
+    $(document).on('shown.bs.modal', ATTR_V2_INTERNAL.MODAL_SELECTOR, function(e) {
         initializeAllAttrV2Containers();
         e.stopPropagation(); // Prevent bubbling to other handlers
     });
@@ -249,14 +289,14 @@
     // Multi-instance container initialization
     function initializeAllAttrV2Containers() {
         // Initialize all attribute editing containers found on page
-        $('.attr-v2-container').each(function() {
+        $(Hi.ATTR_V2_CONTAINER_SELECTOR).each(function() {
             initializeAttrV2Container($(this));
         });
     }
     
     function initializeAttrV2Container($container) {
         // Check if this container is already initialized to prevent double-initialization
-        if ($container.data('attr-v2-initialized')) {
+        if ($container.data(ATTR_V2_INTERNAL.INITIALIZED_DATA_KEY)) {
             console.log('DEBUG: Container already initialized, but reprocessing AJAX handlers for new content:', $container[0]);
             // Always reprocess AJAX handlers to handle newly loaded content
             setupCustomAjaxHandlers($container);
@@ -264,8 +304,6 @@
         }
         
         console.log('DEBUG: Initializing container:', $container[0]);
-        
-        const contextSuffix = $container.data('context-suffix') || '';
         
         // Full container initialization - don't assume what persists across AJAX updates
         setupBasicEventListeners($container);
@@ -283,11 +321,11 @@
         handleAutoDismissMessages($container);
         
         // Mark this container as initialized
-        $container.data('attr-v2-initialized', true);
+        $container.data(ATTR_V2_INTERNAL.INITIALIZED_DATA_KEY, true);
     }
     
     function handleAutoDismissMessages($container) {
-        const $statusMsg = $container.find('.attr-v2-status-message');
+        const $statusMsg = $container.find(Hi.ATTR_V2_STATUS_MESSAGE_SELECTOR);
         const $dismissibleElements = $statusMsg.find(Hi.ATTR_V2_AUTO_DISMISS_SELECTOR);
         if ($dismissibleElements.length > 0) {
             setTimeout(() => {
@@ -303,7 +341,7 @@
     // Setup custom Ajax handlers for forms and links in this container
     function setupCustomAjaxHandlers($container) {
         // Handle main form submissions
-        const $forms = $container.find('form.attr-v2-form');
+        const $forms = $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR);
         console.log('DEBUG: setupCustomAjaxHandlers called for container:', $container[0], 'found forms:', $forms.length);
         
         $forms.each(function(index) {
@@ -313,10 +351,10 @@
             console.log('DEBUG: Setting up form handler for form', index, 'action:', $form.attr('action'), 'class:', $form.attr('class'));
             
             // Remove any existing handlers to avoid duplicates
-            $form.off('submit.attr-v2-ajax');
+            $form.off(`submit.${ATTR_V2_INTERNAL.AJAX_EVENT_NAMESPACE}`);
             
             // Add custom Ajax submission handler
-            $form.on('submit.attr-v2-ajax', function(e) {
+            $form.on(`submit.${ATTR_V2_INTERNAL.AJAX_EVENT_NAMESPACE}`, function(e) {
                 console.log('DEBUG: Form submit handler triggered!', e);
                 e.preventDefault();
                 
@@ -325,19 +363,19 @@
         });
         
         // Handle history links
-        const $historyLinks = $container.find('a.attr-v2-history-link');
+        const $historyLinks = $container.find(Hi.ATTR_V2_HISTORY_LINK_SELECTOR);
         $historyLinks.each(function() {
             const $link = $(this);
             
             // Skip if already processed
-            if ($link.data('attr-v2-processed')) {
+            if ($link.data(ATTR_V2_INTERNAL.PROCESSED_DATA_KEY)) {
                 return;
             }
             
-            $link.data('attr-v2-processed', true);
-            $link.off('click.attr-v2-ajax');
+            $link.data(ATTR_V2_INTERNAL.PROCESSED_DATA_KEY, true);
+            $link.off(`click.${ATTR_V2_INTERNAL.AJAX_EVENT_NAMESPACE}`);
             
-            $link.on('click.attr-v2-ajax', function(e) {
+            $link.on(`click.${ATTR_V2_INTERNAL.AJAX_EVENT_NAMESPACE}`, function(e) {
                 e.preventDefault();
                 
                 const url = $link.attr('href');
@@ -350,27 +388,27 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 }).done((response) => {
-                    window.attrV2.ajax.handleFormSuccess(response, $container.find('form.attr-v2-form'));
+                    window.attrV2.ajax.handleFormSuccess(response, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
                 }).fail((xhr) => {
-                    window.attrV2.ajax.handleFormError(xhr, $container.find('form.attr-v2-form'));
+                    window.attrV2.ajax.handleFormError(xhr, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
                 });
             });
         });
         
         // Handle value restore links  
-        const $restoreLinks = $container.find('a.attr-v2-restore-link');
+        const $restoreLinks = $container.find(Hi.ATTR_V2_RESTORE_LINK_SELECTOR);
         $restoreLinks.each(function() {
             const $link = $(this);
             
             // Skip if already processed
-            if ($link.data('attr-v2-processed')) {
+            if ($link.data(ATTR_V2_INTERNAL.PROCESSED_DATA_KEY)) {
                 return;
             }
             
-            $link.data('attr-v2-processed', true);
-            $link.off('click.attr-v2-ajax');
+            $link.data(ATTR_V2_INTERNAL.PROCESSED_DATA_KEY, true);
+            $link.off(`click.${ATTR_V2_INTERNAL.AJAX_EVENT_NAMESPACE}`);
             
-            $link.on('click.attr-v2-ajax', function(e) {
+            $link.on(`click.${ATTR_V2_INTERNAL.AJAX_EVENT_NAMESPACE}`, function(e) {
                 e.preventDefault();
                 
                 const url = $link.attr('href');
@@ -383,32 +421,32 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 }).done((response) => {
-                    window.attrV2.ajax.handleFormSuccess(response, $container.find('form.attr-v2-form'));
+                    window.attrV2.ajax.handleFormSuccess(response, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
                 }).fail((xhr) => {
-                    window.attrV2.ajax.handleFormError(xhr, $container.find('form.attr-v2-form'));
+                    window.attrV2.ajax.handleFormError(xhr, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
                 });
             });
         });
         
         // Handle file upload forms - find the context-specific file input
-        const contextSuffix = $container.data('context-suffix') || '';
-        const fileInputId = `attr-v2-file-input${contextSuffix}`;
-        const $fileInput = $container.find(`#${fileInputId}`);
+        const contextSuffix = $container.attr(Hi.CONTEXT_SUFFIX_DATA_ATTR) || '';
+        const fileInputId = `${Hi.ATTR_V2_FILE_INPUT_ID}${contextSuffix}`;
+        const uploadContainerId = `${Hi.ATTR_V2_UPLOAD_FORM_CONTAINER_ID}${contextSuffix}`;
+        const $fileInput = $(`#${uploadContainerId}`).find(`#${fileInputId}`);
         
-        console.log('DEBUG: Looking for file input with ID:', fileInputId, 'Found:', $fileInput.length);
         
         if ($fileInput.length > 0) {
             // Skip if already processed
-            if ($fileInput.data('attr-v2-processed')) {
+            if ($fileInput.data(ATTR_V2_INTERNAL.PROCESSED_DATA_KEY)) {
                 console.log('DEBUG: File input already processed, skipping');
                 return;
             }
             
             console.log('DEBUG: Setting up change handler for file input');
-            $fileInput.data('attr-v2-processed', true);
-            $fileInput.off('change.attr-v2-ajax');
+            $fileInput.data(ATTR_V2_INTERNAL.PROCESSED_DATA_KEY, true);
+            $fileInput.off(`change.${ATTR_V2_INTERNAL.AJAX_EVENT_NAMESPACE}`);
             
-            $fileInput.on('change.attr-v2-ajax', function(e) {
+            $fileInput.on(`change.${ATTR_V2_INTERNAL.AJAX_EVENT_NAMESPACE}`, function(e) {
                 console.log('DEBUG: File input change event fired!', e);
                 const fileInput = this;
                 const $uploadForm = $fileInput.closest('form');
@@ -565,7 +603,7 @@
     window.markFileForDeletion = function(attributeId, containerSelector = null) {
         // Find the file card, scoped to container if provided
         const scope = containerSelector ? $(containerSelector) : $(document);
-        const $fileCard = scope.find(`${Hi.ATTR_V2_FILE_CARD_SELECTOR}[data-attribute-id="${attributeId}"]`);
+        const $fileCard = scope.find(`${Hi.ATTR_V2_FILE_CARD_SELECTOR}[${Hi.DATA_ATTRIBUTE_ID_ATTR}="${attributeId}"]`);
         if ($fileCard.length === 0) return;
         
         // The display "name" for a file is its attribute.value, *not* attribute.name
@@ -589,13 +627,13 @@
         $fileCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).show();
         
         // Show status message (scoped to container)
-        const $statusMsg = scope.find('.attr-v2-status-message');
+        const $statusMsg = scope.find(Hi.ATTR_V2_STATUS_MESSAGE_SELECTOR);
         if ($statusMsg.length > 0) {
             $statusMsg.text(`"${fileValue}" will be deleted when you save`)
-                    .attr('class', 'attr-v2-status-message ml-2 text-warning');
+                    .attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2 text-warning`);
             
             setTimeout(() => {
-                $statusMsg.text('').attr('class', 'attr-v2-status-message ml-2');
+                $statusMsg.text('').attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2`);
             }, 5000);
         }
     };
@@ -603,7 +641,7 @@
     window.undoFileDeletion = function(attributeId, containerSelector = null) {
         // Find the file card, scoped to container if provided
         const scope = containerSelector ? $(containerSelector) : $(document);
-        const $fileCard = scope.find(`${Hi.ATTR_V2_FILE_CARD_SELECTOR}[data-attribute-id="${attributeId}"]`);
+        const $fileCard = scope.find(`${Hi.ATTR_V2_FILE_CARD_SELECTOR}[${Hi.DATA_ATTRIBUTE_ID_ATTR}="${attributeId}"]`);
         if ($fileCard.length === 0) return;
 
         // The display "name" for a file is its attribute.value, *not* attribute.name
@@ -623,13 +661,13 @@
         $fileCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).hide();
         
         // Show status message (scoped to container)
-        const $statusMsg = scope.find('.attr-v2-status-message');
+        const $statusMsg = scope.find(Hi.ATTR_V2_STATUS_MESSAGE_SELECTOR);
         if ($statusMsg.length > 0) {
             $statusMsg.text(`Deletion of "${fileValue}" cancelled`)
-                    .attr('class', 'attr-v2-status-message ml-2 text-success');
+                    .attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2 text-success`);
             
             setTimeout(() => {
-                $statusMsg.text('').attr('class', 'attr-v2-status-message ml-2');
+                $statusMsg.text('').attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2`);
             }, 3000);
         }
     };
@@ -640,7 +678,7 @@
     window.markAttributeForDeletion = function(attributeId, containerSelector = null) {
         // Find the attribute card, scoped to container if provided
         const scope = containerSelector ? $(containerSelector) : $(document);
-        const $attributeCard = scope.find(`[data-attribute-id="${attributeId}"]`);
+        const $attributeCard = scope.find(`[${Hi.DATA_ATTRIBUTE_ID_ATTR}="${attributeId}"]`);
         if ($attributeCard.length === 0) return;
         
         const attributeName = $attributeCard.find(Hi.ATTR_V2_ATTRIBUTE_NAME_SELECTOR).text().trim().replace('•', '').trim();
@@ -663,13 +701,13 @@
         $attributeCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).show();
         
         // Show status message (scoped to container)
-        const $statusMsg = scope.find('.attr-v2-status-message');
+        const $statusMsg = scope.find(Hi.ATTR_V2_STATUS_MESSAGE_SELECTOR);
         if ($statusMsg.length > 0) {
             $statusMsg.text(`"${attributeName}" will be deleted when you save`)
-                    .attr('class', 'attr-v2-status-message ml-2 text-warning');
+                    .attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2 text-warning`);
             
             setTimeout(() => {
-                $statusMsg.text('').attr('class', 'attr-v2-status-message ml-2');
+                $statusMsg.text('').attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2`);
             }, 5000);
         }
     };
@@ -677,7 +715,7 @@
     window.undoAttributeDeletion = function(attributeId, containerSelector = null) {
         // Find the attribute card, scoped to container if provided
         const scope = containerSelector ? $(containerSelector) : $(document);
-        const $attributeCard = scope.find(`[data-attribute-id="${attributeId}"]`);
+        const $attributeCard = scope.find(`[${Hi.DATA_ATTRIBUTE_ID_ATTR}="${attributeId}"]`);
         if ($attributeCard.length === 0) return;
         
         const attributeName = $attributeCard.find(Hi.ATTR_V2_ATTRIBUTE_NAME_SELECTOR).text().trim().replace('•', '').trim();
@@ -696,13 +734,13 @@
         $attributeCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).hide();
         
         // Show status message (scoped to container)
-        const $statusMsg = scope.find('.attr-v2-status-message');
+        const $statusMsg = scope.find(Hi.ATTR_V2_STATUS_MESSAGE_SELECTOR);
         if ($statusMsg.length > 0) {
             $statusMsg.text(`Deletion of "${attributeName}" cancelled`)
-                    .attr('class', 'attr-v2-status-message ml-2 text-success');
+                    .attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2 text-success`);
             
             setTimeout(() => {
-                $statusMsg.text('').attr('class', 'attr-v2-status-message ml-2');
+                $statusMsg.text('').attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2`);
             }, 3000);
         }
     };
@@ -750,7 +788,7 @@
     
     // Update hidden field when boolean checkbox changes
     window.attrV2.updateBooleanHiddenField = function(checkbox) {
-        const hiddenFieldId = checkbox.getAttribute('data-hidden-field');
+        const hiddenFieldId = checkbox.getAttribute(Hi.DATA_HIDDEN_FIELD_ATTR);
         const hiddenField = document.getElementById(hiddenFieldId);
         
         if (hiddenField) {
@@ -792,10 +830,10 @@
         textareas.each(function() {
             const textarea = $(this);
             const wrapper = textarea.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
-            const isOverflowing = wrapper.attr('data-overflow') === 'true';
+            const isOverflowing = wrapper.attr(Hi.DATA_OVERFLOW_ATTR) === 'true';
             
             // Check if this is a display field (new pattern) or legacy textarea
-            const hiddenFieldId = textarea.attr('data-hidden-field');
+            const hiddenFieldId = textarea.attr(Hi.DATA_HIDDEN_FIELD_ATTR);
             const hiddenField = hiddenFieldId ? $('#' + hiddenFieldId) : null;
             
             if (isOverflowing) {
@@ -827,8 +865,8 @@
         const overflows = lineCount > 4;
         
         const wrapper = textarea.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
-        wrapper.attr('data-overflow', overflows ? 'true' : 'false');
-        wrapper.attr('data-line-count', lineCount);
+        wrapper.attr(Hi.DATA_OVERFLOW_ATTR, overflows ? 'true' : 'false');
+        wrapper.attr(Hi.DATA_LINE_COUNT_ATTR, lineCount);
         
         return { lineCount, overflows };
     }
@@ -852,7 +890,7 @@
         displayField.attr('rows', 4);
         displayField.attr('readonly', 'readonly');
         displayField.prop('readonly', true);
-        displayField.addClass('truncated');
+        displayField.addClass(ATTR_V2_INTERNAL.TRUNCATED_CLASS);
         
         // Show expand controls
         const wrapper = displayField.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
@@ -881,7 +919,7 @@
         textarea.attr('rows', 4);
         textarea.attr('readonly', 'readonly');
         textarea.prop('readonly', true);
-        textarea.addClass('truncated');
+        textarea.addClass(ATTR_V2_INTERNAL.TRUNCATED_CLASS);
         
         // Show expand controls
         const wrapper = textarea.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
@@ -895,8 +933,8 @@
         
         displayTextareas.each(function() {
             const displayField = $(this);
-            const isOverflowing = displayField.attr('data-overflow') === 'true';
-            const hiddenFieldId = displayField.attr('data-hidden-field');
+            const isOverflowing = displayField.attr(Hi.DATA_OVERFLOW_ATTR) === 'true';
+            const hiddenFieldId = displayField.attr(Hi.DATA_HIDDEN_FIELD_ATTR);
             const hiddenField = $('#' + hiddenFieldId);
             
             if (isOverflowing && hiddenField.length > 0) {
@@ -916,7 +954,7 @@
         const showLessText = $button.find('.show-less-text');
         
         // Get hidden field if using new pattern
-        const hiddenFieldId = displayField.attr('data-hidden-field');
+        const hiddenFieldId = displayField.attr(Hi.DATA_HIDDEN_FIELD_ATTR);
         const hiddenField = hiddenFieldId ? $('#' + hiddenFieldId) : null;
         
         if (displayField.prop('readonly')) {
@@ -936,7 +974,7 @@
             displayField.attr('rows', Math.max(lineCount, 5));
             displayField.prop('readonly', false);
             displayField.attr('readonly', false); // Remove readonly attribute
-            displayField.removeClass('truncated');
+            displayField.removeClass(ATTR_V2_INTERNAL.TRUNCATED_CLASS);
             
             showMoreText.hide();
             showLessText.show();
@@ -959,11 +997,11 @@
                 // Content now fits in 4 lines - remove truncation UI
                 displayField.attr('rows', lineCount);
                 displayField.prop('readonly', false);
-                displayField.removeClass('truncated');
-                wrapper.find('.attr-v2-expand-controls').hide();
+                displayField.removeClass(ATTR_V2_INTERNAL.TRUNCATED_CLASS);
+                wrapper.find(Hi.ATTR_V2_EXPAND_CONTROLS_SELECTOR).hide();
                 
                 // Update wrapper state
-                wrapper.attr('data-overflow', 'false');
+                wrapper.attr(Hi.DATA_OVERFLOW_ATTR, 'false');
                 
                 // Sync to hidden field if using new pattern
                 if (hiddenField && hiddenField.length > 0) {
@@ -998,12 +1036,12 @@
         // Process all display fields within this container
         $container.find('.display-field').each(function() {
             const displayField = $(this);
-            const hiddenFieldId = displayField.attr('data-hidden-field');
+            const hiddenFieldId = displayField.attr(Hi.DATA_HIDDEN_FIELD_ATTR);
             const hiddenField = hiddenFieldId ? $container.find('#' + hiddenFieldId) : null;
             
             if (hiddenField && hiddenField.length > 0) {
                 // Only sync if display field is NOT showing truncated data
-                if (!displayField.prop('readonly') && !displayField.hasClass('truncated')) {
+                if (!displayField.prop('readonly') && !displayField.hasClass(ATTR_V2_INTERNAL.TRUNCATED_CLASS)) {
                     // Display field contains user's edits - copy to hidden field
                     const displayValue = displayField.val();
                     hiddenField.val(displayValue);
@@ -1024,7 +1062,7 @@
             id: $input.attr('id'),
             name: $input.attr('name'),
             class: $input.attr('class') + ' ' + Hi.ATTR_V2_TEXTAREA_CLASS,
-            'data-original-value': $input.attr('data-original-value')
+            [Hi.DATA_ORIGINAL_VALUE_ATTR]: $input.attr(Hi.DATA_ORIGINAL_VALUE_ATTR)
         });
         
         // Copy attributes
