@@ -12,15 +12,15 @@ This is what gets replaced on form submission
     <div class="attr-v2-action-bar-content">
       <!-- Left Side: UPDATE button and message area -->
       <div>
-        <button id="{{ DIVID.ATTR_V2_UPDATE_BTN }}" 
+        <button id="{{ DIVID.ATTR_V2_UPDATE_BTN }}{{ shared_editing_context.id_suffix }}" 
                 type="submit" 
-                class="btn btn-primary"
+                class="btn btn-primary attr-v2-update-btn"
                 name="action" 
                 value="update">
           {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
         </button>
-        <span id="{{ DIVID.ATTR_V2_DIRTY_MESSAGE }}" class="attr-v2-dirty-message ml-3"></span>
-        <span id="{{ DIVID.ATTR_V2_STATUS_MSG }}" class="attr-v2-status-message ml-2">
+        <span id="{{ shared_editing_context.dirty_msg_html_id }}" class="attr-v2-dirty-message ml-3"></span>
+        <span id="{{ shared_editing_context.status_msg_html_id }}" class="attr-v2-status-message ml-2">
           {% if success_message %}
             <span class="text-success {{ DIVID.ATTR_V2_AUTO_DISMISS_CLASS }}">{{ success_message }}</span>
           {% elif error_message %}
@@ -54,7 +54,8 @@ This is what gets replaced on form submission
            href="#subsystem-{{ subsystem_data.subsystem.id }}-panel" 
            role="tab" 
            aria-controls="subsystem-{{ subsystem_data.subsystem.id }}-panel" 
-           aria-selected="{% if selected_subsystem_id == subsystem_data.subsystem.id|stringformat:'s' %}true{% else %}false{% endif %}">
+           aria-selected="{% if selected_subsystem_id == subsystem_data.subsystem.id|stringformat:'s' %}true{% else %}false{% endif %}"
+           onclick="window.attrV2.updateFormAction('{% url 'config_settings' subsystem_id=subsystem_data.subsystem.id %}', '{{ shared_editing_context.container_html_id }}')">
           {{ subsystem_data.subsystem.name }}
           {% if subsystem_data.error_count > 0 %}
             <span class="badge badge-danger ml-1">{{ subsystem_data.error_count }}</span>

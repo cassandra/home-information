@@ -1,21 +1,34 @@
 {% comment %}
 System Settings Redesigned Interface
-Wrapper template with proper form structure for antinode updates.
+Container-based wrapper with unique IDs for multi-instance support.
 Uses existing attr-v2-* components for consistency with Entity/Location editing.
 {% endcomment %}
 
-<div class="attr-v2-form">
-  <form action="{% if selected_subsystem_id %}{% url 'config_settings' subsystem_id=selected_subsystem_id %}{% else %}{% url 'config_settings' %}{% endif %}" 
-        method="post" 
-        id="{{ DIVID.ATTR_V2_FORM }}" 
-        enctype="multipart/form-data" 
-        class="form" 
-        data-async="true">
-    {% csrf_token %}
-    
-    <!-- Main content wrapper for antinode updates -->
-    <div id="{{ DIVID.ATTR_V2_CONTENT }}">
-      {% include "config/panes/config_settings_content_body.html" %}
-    </div>
-  </form>
+<!-- Root container for this attribute editing context -->
+<div id="{{ shared_editing_context.container_html_id }}" 
+     class="attr-v2-container" 
+     data-context-suffix="{{ shared_editing_context.id_suffix }}">
+
+  <div class="attr-v2-form">
+    <form id="{{ shared_editing_context.form_html_id }}"
+          action="{% if selected_subsystem_id %}{% url 'config_settings' subsystem_id=selected_subsystem_id %}{% else %}{% url 'config_settings' %}{% endif %}" 
+          method="post" 
+          class="attr-v2-form form">
+      {% csrf_token %}
+      
+      <!-- Main content wrapper for antinode updates -->
+      <div id="{{ shared_editing_context.content_html_id }}" 
+           class="attr-v2-content">
+        {% include "config/panes/config_settings_content_body.html" %}
+      </div>
+    </form>
+  </div>
+  
 </div>
+
+<script>
+// Initialize this specific container (for async-loaded content)
+if (window.attrV2 && window.attrV2.initializeContainer) {
+    window.attrV2.initializeContainer('#{{ shared_editing_context.container_html_id }}');
+}
+</script>

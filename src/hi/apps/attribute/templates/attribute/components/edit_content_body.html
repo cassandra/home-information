@@ -45,15 +45,15 @@ by using the AttributeEditContext pattern.
   <div class="attr-v2-action-bar">
     <div class="attr-v2-action-bar-content">
       <div>
-        <button id="{{ DIVID.ATTR_V2_UPDATE_BTN }}" 
+        <button id="{{ DIVID.ATTR_V2_UPDATE_BTN }}{{ attr_context.id_suffix }}" 
                 type="submit" 
-                class="btn btn-primary"
+                class="btn btn-primary attr-v2-update-btn"
                 name="action" 
                 value="update">
           {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
         </button>
-        <span id="{{ DIVID.ATTR_V2_DIRTY_MESSAGE }}" class="attr-v2-dirty-message ml-3"></span>
-        <span id="{{ DIVID.ATTR_V2_STATUS_MSG }}" class="attr-v2-status-message ml-2">
+        <span id="{{ attr_context.dirty_msg_html_id }}" class="attr-v2-dirty-message ml-3"></span>
+        <span id="{{ attr_context.status_msg_html_id }}" class="attr-v2-status-message ml-2">
           {% if success_message %}
             <span class="text-success">{{ success_message }}</span>
           {% elif error_message %}
@@ -70,15 +70,15 @@ by using the AttributeEditContext pattern.
       <div class="attr-v2-action-buttons">
         {% block additional_actions %}
         {% endblock %}
-        <label for="{{ DIVID.ATTR_V2_FILE_INPUT }}" 
+        <label for="{{ attr_context.file_input_html_id }}" 
                class="btn btn-sm btn-outline-primary mb-0">
           {% icon "upload" size="sm" css_class="hi-icon-left" %}Add File
         </label>
         
-        <button id="{{ DIVID.ATTR_V2_ADD_ATTRIBUTE_BTN }}" 
+        <button id="{{ DIVID.ATTR_V2_ADD_ATTRIBUTE_BTN }}{{ attr_context.id_suffix }}" 
                 type="button" 
                 class="btn btn-sm btn-outline-primary"
-                onclick="showAddAttribute();">
+                onclick="showAddAttribute('#{{ attr_context.container_html_id }}');">
           {% icon "plus" size="sm" css_class="hi-icon-left" %}Add Info
         </button>
       </div>
@@ -87,7 +87,7 @@ by using the AttributeEditContext pattern.
 </div>
 
 <!-- Scrollable Content Area (below sticky panel) -->
-<div id="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT }}" class="attr-v2-scrollable-content">
+<div id="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT }}{{ attr_context.id_suffix }}" class="attr-v2-scrollable-content">
   
   <!-- Files Section -->
   {% block files_section %}

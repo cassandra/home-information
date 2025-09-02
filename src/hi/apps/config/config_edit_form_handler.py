@@ -86,9 +86,15 @@ class ConfigEditFormHandler:
             for formset in subsystem_formset_list
         ]
         
+        # Special case: Subsystem editing combines multiple Subsystem objects 
+        # into a single editing context (unlike Entity/Location's one-to-one relationship).
+        # Provide the shared context for container IDs and namespacing.
+        shared_context = subsystem_edit_data_list[0].context if subsystem_edit_data_list else None
+        
         return {
             'subsystem_edit_data_list': subsystem_edit_data_list,
             'selected_subsystem_id': selected_subsystem_id,
+            'shared_editing_context': shared_context,  # For container IDs and namespacing
             'history_url_name': 'config_attribute_history',
             'restore_url_name': 'config_attribute_restore',
         }

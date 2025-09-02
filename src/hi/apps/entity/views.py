@@ -4,6 +4,7 @@ from typing import Any, Dict
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
+import json
 from django.template.loader import render_to_string
 from django.views.generic import View
 
@@ -162,11 +163,22 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
                 request=request
             )
             
-            return antinode.response(
-                append_map={
-                    DIVID['ATTR_V2_FILE_GRID']: file_card_html
-                },
-                scroll_to=DIVID['ATTR_V2_FILE_GRID']
+            # Build JSON response for successful file upload
+            response_data = {
+                "success": True,
+                "updates": [
+                    {
+                        "target": f"#{DIVID['ATTR_V2_FILE_GRID']}",
+                        "html": file_card_html,
+                        "mode": "append"
+                    }
+                ],
+                "message": "File uploaded successfully"
+            }
+            
+            return HttpResponse(
+                json.dumps(response_data),
+                content_type='application/json'
             )
         else:
             # Render error message to status area
@@ -178,10 +190,22 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
                 }
             )
             
-            return antinode.response(
-                insert_map={
-                    DIVID['ATTR_V2_STATUS_MSG']: error_html
-                },
+            # Build JSON error response for failed file upload
+            response_data = {
+                "success": False,
+                "updates": [
+                    {
+                        "target": f"#{DIVID['ATTR_V2_STATUS_MSG']}",
+                        "html": error_html,
+                        "mode": "replace"
+                    }
+                ],
+                "message": "File upload failed. Please check the file and try again."
+            }
+            
+            return HttpResponse(
+                json.dumps(response_data),
+                content_type='application/json',
                 status=400
             )
 
@@ -238,8 +262,31 @@ class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
         # Merge in the context variables from AttributeEditContext
         context.update(attr_context.to_template_context())
         
-        # Use Django render shortcut
-        return render(request, self.get_template_name(), context)
+        # Check if this is an AJAX request and return JSON response
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # Render the template to HTML string
+            html_content = render_to_string(self.get_template_name(), context, request=request)
+            
+            # Build JSON response with target selector for history content
+            response_data = {
+                "success": True,
+                "updates": [
+                    {
+                        "target": f"#{attr_context.history_target_id(attribute.id)}",
+                        "html": html_content,
+                        "mode": "replace"
+                    }
+                ],
+                "message": f"History for {attribute.name}"
+            }
+            
+            return HttpResponse(
+                json.dumps(response_data),
+                content_type='application/json'
+            )
+        else:
+            # Use Django render shortcut for non-AJAX requests
+            return render(request, self.get_template_name(), context)
 
 
 class EntityAttributeRestoreInlineView(BaseAttributeRestoreView):

@@ -10,85 +10,430 @@
     // Create a namespace for V2 modal functions to avoid global pollution
     window.attrV2 = window.attrV2 || {};
     
-    // Initialize the V2 modal when DOM is ready
-    document.addEventListener('DOMContentLoaded', function() {
-        if ($(Hi.ATTR_V2_FORM_SELECTOR).length) {
-            initializeAttrV2();
+    // Make initialization function globally accessible for template-driven initialization
+    window.attrV2.initializeContainer = function(containerSelector) {
+        const $container = $(containerSelector);
+        if ($container.length > 0) {
+            initializeAttrV2Container($container);
         }
-    });
+    };
     
-    // Register with antinode.js to run after any async content is rendered
-    if (window.AN && typeof window.AN.addAfterAsyncRenderFunction === 'function') {
-        window.AN.addAfterAsyncRenderFunction(function() {
-            if ($(Hi.ATTR_V2_FORM_SELECTOR).length) {
-                reinitializeAttrV2ForAjax();
+    // Custom Ajax Infrastructure
+    window.attrV2.ajax = {
+        // Submit form with custom Ajax handling
+        submitFormWithAjax: function(form, options = {}) {
+            console.log('DEBUG: submitFormWithAjax called with form:', form);
+            const $form = $(form);
+            
+            // Find the container and sync textarea values to hidden fields before submission
+            const $container = $form.closest('.attr-v2-container');
+            if ($container.length > 0) {
+                syncTextareaValuesToHiddenFields($container);
             }
             
-            // Auto-dismiss messages marked as dismissible after 5 seconds
-            const $statusMsg = $(Hi.ATTR_V2_STATUS_MSG_SELECTOR);
-            const $dismissibleElements = $statusMsg.find(Hi.ATTR_V2_AUTO_DISMISS_SELECTOR);
-            if ($dismissibleElements.length > 0) {
-                setTimeout(() => {
-                    $dismissibleElements.remove();
-                    // Hide the entire status message container if it's now empty
-                    if ($statusMsg.text().trim() === '') {
-                        $statusMsg.hide();
-                    }
-                }, 5000);
+            const formData = new FormData(form);
+            const url = $form.attr('action');
+            const method = $form.attr('method') || 'POST';
+            
+            console.log('DEBUG: Form submission details:', { url, method, form: $form[0] });
+            
+            // Add CSRF token if not already present
+            if (!formData.has('csrfmiddlewaretoken')) {
+                const csrfToken = $('[name=csrfmiddlewaretoken]').val();
+                if (csrfToken) {
+                    formData.append('csrfmiddlewaretoken', csrfToken);
+                }
             }
-        });
-    } else {
-        console.error('AN.addAfterAsyncRenderFunction not available - this is a bug in antinode.js');
-    }
+            
+            return $.ajax({
+                url: url,
+                method: method,
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).done((response) => {
+                this.handleFormSuccess(response, $form, options);
+            }).fail((xhr) => {
+                this.handleFormError(xhr, $form);
+            });
+        },
+        
+        // Load content into target via GET request
+        loadContentIntoTarget: function(url, target, options = {}) {
+            return $.ajax({
+                url: url,
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).done((response) => {
+                // Handle response for content loading
+                if (typeof response === 'string') {
+                    this.updateDOMElement(target, response, options.mode || 'replace');
+                }
+            }).fail((xhr) => {
+                console.error('Failed to load content:', xhr);
+            });
+        },
+        
+        // Handle successful form submission
+        handleFormSuccess: function(response, $form, options = {}) {
+            // Try to parse as JSON first
+            let data;
+            try {
+                data = typeof response === 'string' ? JSON.parse(response) : response;
+            } catch (e) {
+                // Fallback to treating as HTML (legacy antinode format)
+                data = { html: response };
+            }
+            
+            // Track the last append target for scrolling decision
+            // When scrollToNewContent is requested and multiple updates occur,
+            // we scroll to the LAST appended content. This decision assumes that
+            // in most cases (like file uploads), the last append is the most
+            // relevant/newest content the user wants to see. If different behavior
+            // is needed, the caller should handle scrolling manually.
+            let lastAppendTarget = null;
+            
+            if (data.updates && Array.isArray(data.updates)) {
+                // New JSON format with multiple updates
+                data.updates.forEach(update => {
+                    if (update.target && update.html) {
+                        this.updateDOMElement(update.target, update.html, update.mode || 'replace');
+                        
+                        // Track append operations for potential scrolling
+                        if (update.mode === 'append') {
+                            lastAppendTarget = update.target;
+                        }
+                    }
+                });
+            } else if (data.html) {
+                // Single HTML update (legacy format)
+                const containerId = $form.closest('.attr-v2-container').attr('id');
+                const target = `#${containerId} .attr-v2-content`;
+                this.updateDOMElement(target, data.html, 'replace');
+            }
+            
+            // Handle scroll-to-new-content if requested by caller
+            if (options.scrollToNewContent && lastAppendTarget) {
+                const element = document.querySelector(lastAppendTarget);
+                if (element) {
+                    // Small delay to ensure DOM is fully updated before scrolling
+                    setTimeout(() => {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                }
+            }
+            
+            // Show success message if provided
+            if (data.message) {
+                this.showStatusMessage(data.message, 'success', $form);
+            }
+            
+            // Re-initialize containers after update
+            setTimeout(() => {
+                initializeAllAttrV2Containers();
+            }, 50);
+            
+            // Modal management is handled by antinode.js, not our responsibility
+        },
+        
+        // Handle form submission errors
+        handleFormError: function(xhr, $form) {
+            let errorMessage = 'An error occurred while saving.';
+            
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.message) {
+                    errorMessage = response.message;
+                } else if (response.errors) {
+                    errorMessage = Object.values(response.errors).flat().join('; ');
+                }
+            } catch (e) {
+                // Use default error message
+            }
+            
+            this.showStatusMessage(errorMessage, 'error', $form);
+        },
+        
+        // Update DOM element with new content
+        updateDOMElement: function(selector, html, mode = 'replace') {
+            const $target = $(selector);
+            if ($target.length === 0) {
+                console.warn('Target element not found:', selector);
+                return;
+            }
+            
+            switch (mode) {
+                case 'replace':
+                    $target.html(html);
+                    break;
+                case 'append':
+                    $target.append(html);
+                    break;
+                case 'prepend':
+                    $target.prepend(html);
+                    break;
+                default:
+                    $target.html(html);
+            }
+        },
+        
+        // Show status message in appropriate container
+        showStatusMessage: function(message, type = 'info', $form = null) {
+            const $container = $form ? $form.closest('.attr-v2-container') : $('.attr-v2-container').first();
+            const $statusMsg = $container.find('.attr-v2-status-message');
+            
+            if ($statusMsg.length === 0) return;
+            
+            const cssClass = type === 'success' ? 'text-success' : 
+                           type === 'error' ? 'text-danger' : 'text-info';
+            
+            $statusMsg.text(message)
+                     .removeClass('text-success text-danger text-info')
+                     .addClass(cssClass)
+                     .show();
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                $statusMsg.text('').removeClass(cssClass).hide();
+            }, 5000);
+        }
+    };
     
-    // Listen for any modal shown events and check if it contains a V2 form
+    // Initialize all V2 containers when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeAllAttrV2Containers();
+    });
+    
+    // No longer using antinode.js - initialization handled by custom Ajax callbacks
+    
+    // Listen for any modal shown events and initialize V2 containers
     $(document).on('shown.bs.modal', '.modal', function(e) {
-        if ($(Hi.ATTR_V2_FORM_SELECTOR).length) {
-            initializeAttrV2();
-            e.stopPropagation(); // Prevent bubbling to other handlers
-        }
+        initializeAllAttrV2Containers();
+        e.stopPropagation(); // Prevent bubbling to other handlers
     });
     
-    // Handle tab URL updates for configuration settings using event delegation
-    $(document).on('shown.bs.tab', `${Hi.SUBSYSTEM_TABS_SELECTOR} a[data-toggle="tab"]`, function(e) {
-        const subsystemId = $(e.target).data('subsystem-id');
-        const baseUrl = $(e.target).data('config-settings-url');
-        
-        if (subsystemId && baseUrl) {
-            const newUrl = `${baseUrl}/${subsystemId}`;
-            // Update URL without page reload using pushState
-            history.pushState(null, '', newUrl);
-            // Update form action to match current tab
-            $(Hi.ATTR_V2_FORM_SELECTOR).attr('action', newUrl);
+    // Container-aware utility function for updating form actions and browser history
+    // This is a generic helper that can be called from template onclick handlers
+    window.attrV2.updateFormAction = function(newUrl, containerId) {
+        if (!newUrl || !containerId) {
+            console.warn('attrV2.updateFormAction: newUrl and containerId are required');
+            return;
         }
-    });
-
-    function initializeAttrV2() {
-        // Basic initialization - more functionality will be added in later phases
-        setupBasicEventListeners();
-        initializeExpandableTextareas(); // Must come BEFORE autosize
-        initializeAutosizeTextareas(); // Now only applies to non-truncated
-        setupFormSubmissionHandler();
         
-        // Initialize dirty tracking if available
+        // Find the form within the specific container
+        const $container = $(`#${containerId}`);
+        if ($container.length === 0) {
+            console.warn('attrV2.updateFormAction: Container not found:', containerId);
+            return;
+        }
+        
+        const $form = $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR);
+        if ($form.length === 0) {
+            console.warn('attrV2.updateFormAction: No form found in container:', containerId);
+            return;
+        }
+        
+        // Update form action
+        $form.attr('action', newUrl);
+        
+        // Update browser history without page reload
+        history.pushState(null, '', newUrl);
+    };
+    
+    
+    // Multi-instance container initialization
+    function initializeAllAttrV2Containers() {
+        // Initialize all attribute editing containers found on page
+        $('.attr-v2-container').each(function() {
+            initializeAttrV2Container($(this));
+        });
+    }
+    
+    function initializeAttrV2Container($container) {
+        // Check if this container is already initialized to prevent double-initialization
+        if ($container.data('attr-v2-initialized')) {
+            console.log('DEBUG: Container already initialized, skipping:', $container[0]);
+            return;
+        }
+        
+        console.log('DEBUG: Initializing container:', $container[0]);
+        
+        const contextSuffix = $container.data('context-suffix') || '';
+        
+        // Full container initialization - don't assume what persists across AJAX updates
+        setupBasicEventListeners($container);
+        initializeExpandableTextareas($container); // Must come BEFORE autosize
+        initializeAutosizeTextareas($container); // Now only applies to non-truncated
+        // Note: Form submission handler removed - textarea sync now handled in Ajax submission
+        setupCustomAjaxHandlers($container); // NEW: Custom Ajax form handling
+        
+        // Reinitialize dirty tracking for this container
         if (window.attrV2 && window.attrV2.DirtyTracking) {
-            window.attrV2.DirtyTracking.reinitialize();
+            window.attrV2.DirtyTracking.reinitializeContainer($container);
+        }
+        
+        // Handle auto-dismiss messages for this container
+        handleAutoDismissMessages($container);
+        
+        // Mark this container as initialized
+        $container.data('attr-v2-initialized', true);
+    }
+    
+    function handleAutoDismissMessages($container) {
+        const $statusMsg = $container.find('.attr-v2-status-message');
+        const $dismissibleElements = $statusMsg.find(Hi.ATTR_V2_AUTO_DISMISS_SELECTOR);
+        if ($dismissibleElements.length > 0) {
+            setTimeout(() => {
+                $dismissibleElements.remove();
+                // Hide the entire status message container if it's now empty
+                if ($statusMsg.text().trim() === '') {
+                    $statusMsg.hide();
+                }
+            }, 5000);
         }
     }
     
-    // Safe reinitialization for AJAX updates - handles both textareas and full setup
-    function reinitializeAttrV2ForAjax() {
-        // Reinitialize textareas (existing functionality)
-        reinitializeTextareas();
+    // Setup custom Ajax handlers for forms and links in this container
+    function setupCustomAjaxHandlers($container) {
+        // Handle main form submissions
+        const $forms = $container.find('form.attr-v2-form');
+        console.log('DEBUG: setupCustomAjaxHandlers called for container:', $container[0], 'found forms:', $forms.length);
         
-        // Reinitialize dirty tracking if available  
-        if (window.attrV2 && window.attrV2.DirtyTracking) {
-            window.attrV2.DirtyTracking.reinitialize();
+        $forms.each(function(index) {
+            const form = this;
+            const $form = $(form);
+            
+            console.log('DEBUG: Setting up form handler for form', index, 'action:', $form.attr('action'), 'class:', $form.attr('class'));
+            
+            // Remove any existing handlers to avoid duplicates
+            $form.off('submit.attr-v2-ajax');
+            
+            // Add custom Ajax submission handler
+            $form.on('submit.attr-v2-ajax', function(e) {
+                console.log('DEBUG: Form submit handler triggered!', e);
+                e.preventDefault();
+                
+                window.attrV2.ajax.submitFormWithAjax(form);
+            });
+        });
+        
+        // Handle history links
+        const $historyLinks = $container.find('a.attr-v2-history-link');
+        $historyLinks.each(function() {
+            const $link = $(this);
+            
+            // Skip if already processed
+            if ($link.data('attr-v2-processed')) {
+                return;
+            }
+            
+            $link.data('attr-v2-processed', true);
+            $link.off('click.attr-v2-ajax');
+            
+            $link.on('click.attr-v2-ajax', function(e) {
+                e.preventDefault();
+                
+                const url = $link.attr('href');
+                
+                // Server will return JSON response with target selector and HTML
+                $.ajax({
+                    url: url,
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }).done((response) => {
+                    window.attrV2.ajax.handleFormSuccess(response, $container.find('form.attr-v2-form'));
+                }).fail((xhr) => {
+                    window.attrV2.ajax.handleFormError(xhr, $container.find('form.attr-v2-form'));
+                });
+            });
+        });
+        
+        // Handle value restore links  
+        const $restoreLinks = $container.find('a.attr-v2-restore-link');
+        $restoreLinks.each(function() {
+            const $link = $(this);
+            
+            // Skip if already processed
+            if ($link.data('attr-v2-processed')) {
+                return;
+            }
+            
+            $link.data('attr-v2-processed', true);
+            $link.off('click.attr-v2-ajax');
+            
+            $link.on('click.attr-v2-ajax', function(e) {
+                e.preventDefault();
+                
+                const url = $link.attr('href');
+                
+                // Server will return JSON response with target selector and HTML
+                $.ajax({
+                    url: url,
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }).done((response) => {
+                    window.attrV2.ajax.handleFormSuccess(response, $container.find('form.attr-v2-form'));
+                }).fail((xhr) => {
+                    window.attrV2.ajax.handleFormError(xhr, $container.find('form.attr-v2-form'));
+                });
+            });
+        });
+        
+        // Handle file upload forms - find the context-specific file input
+        const contextSuffix = $container.data('context-suffix') || '';
+        const fileInputId = `attr-v2-file-input${contextSuffix}`;
+        const $fileInput = $container.find(`#${fileInputId}`);
+        
+        console.log('DEBUG: Looking for file input with ID:', fileInputId, 'Found:', $fileInput.length);
+        
+        if ($fileInput.length > 0) {
+            // Skip if already processed
+            if ($fileInput.data('attr-v2-processed')) {
+                console.log('DEBUG: File input already processed, skipping');
+                return;
+            }
+            
+            console.log('DEBUG: Setting up change handler for file input');
+            $fileInput.data('attr-v2-processed', true);
+            $fileInput.off('change.attr-v2-ajax');
+            
+            $fileInput.on('change.attr-v2-ajax', function(e) {
+                console.log('DEBUG: File input change event fired!', e);
+                const fileInput = this;
+                const $uploadForm = $fileInput.closest('form');
+                
+                console.log('DEBUG: File input details:', {
+                    files: fileInput.files,
+                    fileCount: fileInput.files ? fileInput.files.length : 0,
+                    uploadForm: $uploadForm.length
+                });
+                
+                if (fileInput.files && fileInput.files[0] && $uploadForm.length) {
+                    console.log('DEBUG: Submitting form via Ajax');
+                    // Use our custom Ajax submission with scroll-to-new-content option
+                    // File uploads append new content that users want to see
+                    window.attrV2.ajax.submitFormWithAjax($uploadForm[0], {
+                        scrollToNewContent: true
+                    });
+                } else {
+                    console.log('DEBUG: Not submitting - missing files or form');
+                }
+            });
+        } else {
+            console.log('DEBUG: File input not found!');
         }
-        
-        // Note: Form event handlers should persist through DOM updates
-        // since the form element itself is not replaced, only its content
     }
+    
+    
     
 
     function setupBasicEventListeners() {
@@ -182,9 +527,10 @@
     }
 
     // Simple add attribute - just show the last (empty) formset form
-    window.showAddAttribute = function() {
+    window.showAddAttribute = function(containerSelector = null) {
         // Find the last attribute card (should be the empty extra form)
-        const attributeCards = $(Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR);
+        const scope = containerSelector ? $(containerSelector) : $(document);
+        const attributeCards = scope.find(Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR);
         
         if (attributeCards.length > 0) {
             const lastCard = attributeCards[attributeCards.length - 1];
@@ -214,8 +560,10 @@
     // Removed dedicated add attribute form functions - using Django formset approach only
     
     
-    window.markFileForDeletion = function(attributeId) {
-        const $fileCard = $(`${Hi.ATTR_V2_FILE_CARD_SELECTOR}[data-attribute-id="${attributeId}"]`);
+    window.markFileForDeletion = function(attributeId, containerSelector = null) {
+        // Find the file card, scoped to container if provided
+        const scope = containerSelector ? $(containerSelector) : $(document);
+        const $fileCard = scope.find(`${Hi.ATTR_V2_FILE_CARD_SELECTOR}[data-attribute-id="${attributeId}"]`);
         if ($fileCard.length === 0) return;
         
         // The display "name" for a file is its attribute.value, *not* attribute.name
@@ -238,8 +586,8 @@
         $fileCard.find(Hi.ATTR_V2_DELETE_BTN_SELECTOR).hide();
         $fileCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).show();
         
-        // Show status message
-        const $statusMsg = $(Hi.ATTR_V2_STATUS_MSG_SELECTOR);
+        // Show status message (scoped to container)
+        const $statusMsg = scope.find('.attr-v2-status-message');
         if ($statusMsg.length > 0) {
             $statusMsg.text(`"${fileValue}" will be deleted when you save`)
                     .attr('class', 'attr-v2-status-message ml-2 text-warning');
@@ -250,8 +598,10 @@
         }
     };
     
-    window.undoFileDeletion = function(attributeId) {
-        const $fileCard = $(`${Hi.ATTR_V2_FILE_CARD_SELECTOR}[data-attribute-id="${attributeId}"]`);
+    window.undoFileDeletion = function(attributeId, containerSelector = null) {
+        // Find the file card, scoped to container if provided
+        const scope = containerSelector ? $(containerSelector) : $(document);
+        const $fileCard = scope.find(`${Hi.ATTR_V2_FILE_CARD_SELECTOR}[data-attribute-id="${attributeId}"]`);
         if ($fileCard.length === 0) return;
 
         // The display "name" for a file is its attribute.value, *not* attribute.name
@@ -270,8 +620,8 @@
         $fileCard.find(Hi.ATTR_V2_DELETE_BTN_SELECTOR).show();
         $fileCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).hide();
         
-        // Show status message
-        const $statusMsg = $(Hi.ATTR_V2_STATUS_MSG_SELECTOR);
+        // Show status message (scoped to container)
+        const $statusMsg = scope.find('.attr-v2-status-message');
         if ($statusMsg.length > 0) {
             $statusMsg.text(`Deletion of "${fileValue}" cancelled`)
                     .attr('class', 'attr-v2-status-message ml-2 text-success');
@@ -285,8 +635,10 @@
     // History functionality now handled by antinode async pattern
     // History button uses data-async to load content, no JavaScript needed
     
-    window.markAttributeForDeletion = function(attributeId) {
-        const $attributeCard = $(`[data-attribute-id="${attributeId}"]`);
+    window.markAttributeForDeletion = function(attributeId, containerSelector = null) {
+        // Find the attribute card, scoped to container if provided
+        const scope = containerSelector ? $(containerSelector) : $(document);
+        const $attributeCard = scope.find(`[data-attribute-id="${attributeId}"]`);
         if ($attributeCard.length === 0) return;
         
         const attributeName = $attributeCard.find(Hi.ATTR_V2_ATTRIBUTE_NAME_SELECTOR).text().trim().replace('•', '').trim();
@@ -308,8 +660,8 @@
         $attributeCard.find(Hi.ATTR_V2_DELETE_BTN_SELECTOR).hide();
         $attributeCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).show();
         
-        // Show status message
-        const $statusMsg = $(Hi.ATTR_V2_STATUS_MSG_SELECTOR);
+        // Show status message (scoped to container)
+        const $statusMsg = scope.find('.attr-v2-status-message');
         if ($statusMsg.length > 0) {
             $statusMsg.text(`"${attributeName}" will be deleted when you save`)
                     .attr('class', 'attr-v2-status-message ml-2 text-warning');
@@ -320,8 +672,10 @@
         }
     };
     
-    window.undoAttributeDeletion = function(attributeId) {
-        const $attributeCard = $(`[data-attribute-id="${attributeId}"]`);
+    window.undoAttributeDeletion = function(attributeId, containerSelector = null) {
+        // Find the attribute card, scoped to container if provided
+        const scope = containerSelector ? $(containerSelector) : $(document);
+        const $attributeCard = scope.find(`[data-attribute-id="${attributeId}"]`);
         if ($attributeCard.length === 0) return;
         
         const attributeName = $attributeCard.find(Hi.ATTR_V2_ATTRIBUTE_NAME_SELECTOR).text().trim().replace('•', '').trim();
@@ -339,8 +693,8 @@
         $attributeCard.find(Hi.ATTR_V2_DELETE_BTN_SELECTOR).show();
         $attributeCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).hide();
         
-        // Show status message
-        const $statusMsg = $(Hi.ATTR_V2_STATUS_MSG_SELECTOR);
+        // Show status message (scoped to container)
+        const $statusMsg = scope.find('.attr-v2-status-message');
         if ($statusMsg.length > 0) {
             $statusMsg.text(`Deletion of "${attributeName}" cancelled`)
                     .attr('class', 'attr-v2-status-message ml-2 text-success');
@@ -419,9 +773,11 @@
     }
     
     // Lightweight reinitialization for ajax content updates
-    function reinitializeTextareas() {
-        // Find all textareas that need initialization
-        const textareas = $(Hi.ATTR_V2_TEXTAREA_SELECTOR);
+    function reinitializeTextareas($container = null) {
+        // Find textareas that need initialization (scoped to container if provided)
+        const textareas = $container ? 
+            $container.find(Hi.ATTR_V2_TEXTAREA_SELECTOR) : 
+            $(Hi.ATTR_V2_TEXTAREA_SELECTOR);
         
         // Remove any previous autosize instances to avoid duplicates
         textareas.each(function() {
@@ -635,39 +991,24 @@
         }
     }
     
-    // Pre-save handler with truncation protection for hidden field pattern
-    function setupFormSubmissionHandler() {
-        const form = $(Hi.ATTR_V2_FORM_SELECTOR)[0];
-        if (!form) return;
-        
-        form.addEventListener('submit', function(e) {
-            // Process all display fields using the new hidden field pattern
-            $('.display-field').each(function() {
-                const displayField = $(this);
-                const hiddenFieldId = displayField.attr('data-hidden-field');
-                const hiddenField = hiddenFieldId ? $('#' + hiddenFieldId) : null;
-                
-                if (hiddenField && hiddenField.length > 0) {
-                    // Only sync if display field is NOT showing truncated data
-                    if (!displayField.prop('readonly') && !displayField.hasClass('truncated')) {
-                        // Display field contains user's edits - copy to hidden field
-                        const displayValue = displayField.val();
-                        hiddenField.val(displayValue);
-                    }
-                    // Display field is readonly/truncated - hidden field already has correct full content
-                }
-            });
+    // Sync textarea values to hidden fields before form submission
+    function syncTextareaValuesToHiddenFields($container) {
+        // Process all display fields within this container
+        $container.find('.display-field').each(function() {
+            const displayField = $(this);
+            const hiddenFieldId = displayField.attr('data-hidden-field');
+            const hiddenField = hiddenFieldId ? $container.find('#' + hiddenFieldId) : null;
             
-            // Legacy support: restore full values to any remaining old-pattern truncated textareas
-            $(Hi.ATTR_V2_TEXTAREA_SELECTOR + '.truncated').not('.display-field').each(function() {
-                const textarea = $(this);
-                const fullValue = textarea.data('full-value');
-                if (fullValue !== undefined) {
-                    textarea.val(fullValue);
-                    textarea.prop('readonly', false);
+            if (hiddenField && hiddenField.length > 0) {
+                // Only sync if display field is NOT showing truncated data
+                if (!displayField.prop('readonly') && !displayField.hasClass('truncated')) {
+                    // Display field contains user's edits - copy to hidden field
+                    const displayValue = displayField.val();
+                    hiddenField.val(displayValue);
                 }
-            });
-        }, true); // Use capture phase to ensure this runs early
+                // Display field is readonly/truncated - hidden field already has correct full content
+            }
+        });
     }
     
     // Convert single-line input to textarea when user adds newlines

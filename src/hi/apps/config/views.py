@@ -223,8 +223,36 @@ class SubsystemAttributeHistoryInlineView(BaseAttributeHistoryView):
         # Merge in the context variables from AttributeEditContext
         context.update(attr_context.to_template_context())
         
-        from django.shortcuts import render
-        return render(request, self.get_template_name(), context)
+        # Check if this is an AJAX request and return JSON response
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            from django.template.loader import render_to_string
+            from django.http import HttpResponse
+            import json
+            
+            # Render the template to HTML string
+            html_content = render_to_string(self.get_template_name(), context, request=request)
+            
+            # Build JSON response with target selector for history content
+            response_data = {
+                "success": True,
+                "updates": [
+                    {
+                        "target": f"#{attr_context.history_target_id(attribute.id)}",
+                        "html": html_content,
+                        "mode": "replace"
+                    }
+                ],
+                "message": f"History for {attribute.name}"
+            }
+            
+            return HttpResponse(
+                json.dumps(response_data),
+                content_type='application/json'
+            )
+        else:
+            # Use Django render shortcut for non-AJAX requests
+            from django.shortcuts import render
+            return render(request, self.get_template_name(), context)
 
 
 class SubsystemAttributeRestoreInlineView(BaseAttributeRestoreView):

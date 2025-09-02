@@ -89,6 +89,50 @@ class AttributeEditContext:
         """
         return f'file_title_{self.owner_id}_{attribute_id}'
     
+    # Container-based ID generation for multi-instance support
+    @property
+    def id_suffix(self) -> str:
+        """
+        Get the suffix to append to DIVID constants for unique element IDs.
+        
+        This creates namespaced IDs that prevent conflicts when multiple 
+        attribute editing contexts exist on the same page.
+        
+        Returns:
+            str: Suffix like '-entity-123' or '-location-456'
+        """
+        return f'-{self.owner_type}-{self.owner_id}'
+    
+    @property
+    def container_html_id(self) -> str:
+        """Get unique ID for the root container element."""
+        return f'attr-v2-container{self.id_suffix}'
+    
+    @property
+    def content_html_id(self) -> str:
+        """Get unique ID for the main content area (antinode target)."""
+        return f'attr-v2-content{self.id_suffix}'
+    
+    @property
+    def status_msg_html_id(self) -> str:
+        """Get unique ID for the status message area (antinode target)."""
+        return f'attr-v2-status-msg{self.id_suffix}'
+    
+    @property
+    def dirty_msg_html_id(self) -> str:
+        """Get unique ID for the dirty message area."""
+        return f'attr-v2-dirty-message{self.id_suffix}'
+    
+    @property
+    def form_html_id(self) -> str:
+        """Get unique ID for the main form element."""
+        return f'attr-v2-form{self.id_suffix}'
+    
+    @property
+    def file_input_html_id(self) -> str:
+        """Get unique ID for the file input element."""
+        return f'attr-v2-file-input{self.id_suffix}'
+    
     def to_template_context(self) -> Dict[str, Any]:
         """
         Convert this context to a dictionary suitable for template rendering.

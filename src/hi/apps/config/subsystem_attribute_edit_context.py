@@ -17,3 +17,16 @@ class SubsystemAttributeEditContext(AttributeEditContext):
     def subsystem(self) -> Subsystem:
         """Get the Subsystem instance (typed accessor)."""
         return self.owner
+    
+    @property
+    def id_suffix(self) -> str:
+        """
+        Override to provide simple subsystem suffix (no ID needed).
+        
+        Since there's only one subsystem configuration context,
+        we don't need the numeric ID like entity/location contexts.
+        
+        Returns:
+            str: Simple suffix '-subsystem'
+        """
+        return '-subsystem'

@@ -168,7 +168,9 @@
     }
     
     function handleAlertStatusData( alertStatusData ) {
-        if ( Hi.DEBUG ) { console.log('Alert Status Data: ', JSON.stringify(alertStatusData) ); }
+        if ( Hi.DEBUG && alertStatusData.length ) {
+            console.log('Alert Status Data: ', JSON.stringify(alertStatusData) );
+        }
 
         if ( ! alertStatusData ) {
             Hi.audio.clearAudibleSignal();

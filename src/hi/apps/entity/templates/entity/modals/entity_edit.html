@@ -5,40 +5,46 @@
 {% block title_text %}{{ entity.name }}{% endblock %}
 
 {% block body %}
-<form id="{{ DIVID.ATTR_V2_FORM }}" 
-      action="{% url 'entity_edit' entity_id=entity.id %}" 
-      method="post" 
-      class="form {{ DIVID.ATTR_V2_MODAL_CLASS }}" 
-      data-async="true"
-      data-stay-in-modal="true"
-      enctype="multipart/form-data">
-  {% csrf_token %}
+<!-- Root container for this attribute editing context -->
+<div id="{{ attr_context.container_html_id }}" 
+     class="attr-v2-container" 
+     data-context-suffix="{{ attr_context.id_suffix }}">
   
-<!-- Main content wrapper for antinode updates -->
-<div id="{{ DIVID.ATTR_V2_CONTENT }}">
-  {% include "entity/panes/entity_edit_content_body.html" %}
-</div>
-</form>
-
-<!-- File Upload Form Container (separate from main form to avoid nesting) -->
-<div id="{{ DIVID.ATTR_V2_UPLOAD_FORM_CONTAINER }}">
-  {% url 'entity_attribute_upload' entity_id=entity.id as file_upload_url %}  
-  {% include "attribute/components/upload_form.html" with file_upload_url=file_upload_url %}
-</div>
-
-<!-- Success/Error Messages -->
-{% if messages %}
-  <div class="{{ DIVID.ATTR_V2_MESSAGES }}" id="{{ DIVID.ATTR_V2_MESSAGES }}">
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
+  <div class="attr-v2-form">
+    <form id="{{ attr_context.form_html_id }}" 
+          action="{% url 'entity_edit' entity_id=entity.id %}" 
+          method="post" 
+          class="attr-v2-form form" 
+          enctype="multipart/form-data">
+      {% csrf_token %}
+      
+      <!-- Main content wrapper for antinode updates -->
+      <div id="{{ attr_context.content_html_id }}" class="attr-v2-content">
+        {% include "entity/panes/entity_edit_content_body.html" %}
       </div>
-    {% endfor %}
+    </form>
   </div>
-{% endif %}
+
+  <!-- File Upload Form Container (separate from main form to avoid nesting) -->
+  <div id="{{ DIVID.ATTR_V2_UPLOAD_FORM_CONTAINER }}">
+    {% url 'entity_attribute_upload' entity_id=entity.id as file_upload_url %}  
+    {% include "attribute/components/upload_form.html" with file_upload_url=file_upload_url %}
+  </div>
+
+  <!-- Success/Error Messages -->
+  {% if messages %}
+    <div class="{{ DIVID.ATTR_V2_MESSAGES }}" id="{{ DIVID.ATTR_V2_MESSAGES }}">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
 
 <!-- JavaScript for V2 functionality loaded via Django Pipeline js_before_content bundle -->
 

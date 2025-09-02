@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
-import hi.apps.common.antinode as antinode
+import json
 from hi.constants import DIVID
 from .config_edit_form_handler import ConfigEditFormHandler
 from .forms import SubsystemAttributeFormSet
@@ -52,9 +52,15 @@ class ConfigEditResponseRenderer:
         if selected_subsystem_id is None and subsystem_formset_list:
             selected_subsystem_id = str(subsystem_formset_list[0].instance.id)
         
+        # Special case: Subsystem editing combines multiple Subsystem objects 
+        # into a single editing context (unlike Entity/Location's one-to-one relationship).
+        # Provide the shared context for container IDs and namespacing.
+        shared_context = subsystem_edit_data_list[0].context if subsystem_edit_data_list else None
+        
         context = {
             'subsystem_edit_data_list': subsystem_edit_data_list,
             'selected_subsystem_id': selected_subsystem_id,
+            'shared_editing_context': shared_context,  # For container IDs and namespacing
             'history_url_name': 'config_attribute_history',
             'restore_url_name': 'config_attribute_restore',
             'success_message': success_message,
@@ -86,13 +92,27 @@ class ConfigEditResponseRenderer:
         # Render the content body that gets replaced
         content_html = render(request, 'config/panes/config_settings_content_body.html', context).content.decode('utf-8')
         
-        # Use antinode response with proper DIVID key (not selector)
-        # This replaces the content inside the element with id="attr-v2-content"
-        return antinode.response(
-            insert_map={
-                DIVID['ATTR_V2_CONTENT']: content_html,
-                # Future: Can add DIVID['ATTR_V2_UPLOAD_FORM_CONTAINER'] for file uploads
-            }
+        # Use custom JSON response with context-specific IDs for proper targeting
+        shared_context = context.get('shared_editing_context')
+        content_target = f"#{shared_context.content_html_id}" if shared_context else f"#{DIVID['ATTR_V2_CONTENT']}"
+        
+        # Build JSON response with container-aware target selectors
+        response_data = {
+            "success": True,
+            "updates": [
+                {
+                    "target": content_target,
+                    "html": content_html,
+                    "mode": "replace"
+                }
+                # Future: Can add upload form container targeting
+            ],
+            "message": "Settings saved successfully"
+        }
+        
+        return HttpResponse(
+            json.dumps(response_data),
+            content_type='application/json'
         )
 
     def render_error_response(
@@ -122,9 +142,25 @@ class ConfigEditResponseRenderer:
         # Render the content body with error state
         content_html = render(request, 'config/panes/config_settings_content_body.html', context).content.decode('utf-8')
         
-        # Use antinode response for consistent behavior
-        return antinode.response(
-            insert_map={
-                DIVID['ATTR_V2_CONTENT']: content_html,
-            }
+        # Use custom JSON response with context-specific IDs for proper targeting
+        shared_context = context.get('shared_editing_context')
+        content_target = f"#{shared_context.content_html_id}" if shared_context else f"#{DIVID['ATTR_V2_CONTENT']}"
+        
+        # Build JSON error response with container-aware target selectors
+        response_data = {
+            "success": False,
+            "updates": [
+                {
+                    "target": content_target,
+                    "html": content_html,
+                    "mode": "replace"
+                }
+            ],
+            "message": error_message
+        }
+        
+        return HttpResponse(
+            json.dumps(response_data),
+            content_type='application/json',
+            status=400
         )

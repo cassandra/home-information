@@ -85,13 +85,13 @@ Individual file attribute card with preview, actions, and metadata
     {% if attribute.attribute_type.can_delete %}
       <button type="button" 
               class="btn btn-sm btn-outline-danger {{ DIVID.ATTR_V2_DELETE_BTN_CLASS }}"
-              onclick="markFileForDeletion('{{ attribute.id }}')"
+              onclick="markFileForDeletion('{{ attribute.id }}', '#{{ attr_context.container_html_id }}')"
               title="Delete file">
         {% icon "delete" size="sm" %}
       </button>
       <button type="button" 
               class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_UNDO_BTN_CLASS }}"
-              onclick="undoFileDeletion('{{ attribute.id }}')"
+              onclick="undoFileDeletion('{{ attribute.id }}', '#{{ attr_context.container_html_id }}')"
               title="Undo deletion"
               style="display: none;">
         Undo

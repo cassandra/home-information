@@ -100,6 +100,7 @@
         
         // Ready-to-use jQuery selectors
         ATTR_V2_FORM_SELECTOR: '#attr-v2-form',
+        ATTR_V2_FORM_CLASS_SELECTOR: '.attr-v2-form',
         ATTR_V2_CONTENT_SELECTOR: '#attr-v2-content',
         ATTR_V2_UPLOAD_FORM_CONTAINER_SELECTOR: '#attr-v2-upload-form-container',
         ATTR_V2_FILE_GRID_SELECTOR: '#attr-v2-file-grid',

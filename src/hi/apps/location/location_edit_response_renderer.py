@@ -11,7 +11,8 @@ from django.http import HttpRequest
 from django.template.loader import render_to_string
 from django.urls import reverse
 
-import hi.apps.common.antinode as antinode
+import json
+from django.http import HttpResponse
 from hi.constants import DIVID
 from .location_edit_form_handler import LocationEditFormHandler
 from .models import Location, LocationAttribute
@@ -145,9 +146,17 @@ class LocationEditResponseRenderer:
         # Upload form needs to be specific to location
         file_upload_url: str = reverse('location_attribute_upload',
                                        kwargs={'location_id': location.id})
+        
+        # Create the attribute edit context for the upload form
+        from .location_attribute_edit_context import LocationAttributeEditContext
+        attr_context = LocationAttributeEditContext(location)
+        
         upload_form: str = render_to_string(
             'attribute/components/upload_form.html',
-            {'file_upload_url': file_upload_url},
+            {
+                'file_upload_url': file_upload_url,
+                'attr_context': attr_context
+            },
             request=request,  # Needed for context processors (CSRF, DIVID, etc.)
         )
         
@@ -155,15 +164,15 @@ class LocationEditResponseRenderer:
 
     def render_success_response( self,
                                  request  : HttpRequest,
-                                 location : Location      ) -> 'antinode.Response':
-        """Render success response using antinode helpers - multiple target replacement.
+                                 location : Location      ) -> HttpResponse:
+        """Render success response using custom JSON format - multiple target replacement.
         
         Args:
             request: HTTP request object
             location: Location instance
             
         Returns:
-            antinode.Response: Success response for HTMX update
+            HttpResponse: Success response with JSON format for custom Ajax handling
         """
         # Re-render both content body and upload form with fresh forms
         content_body, upload_form = self.render_update_fragments(
@@ -172,11 +181,30 @@ class LocationEditResponseRenderer:
             success_message="Changes saved successfully"
         )
         
-        return antinode.response(
-            insert_map={
-                DIVID['ATTR_V2_CONTENT']: content_body,
-                DIVID['ATTR_V2_UPLOAD_FORM_CONTAINER']: upload_form
-            }
+        # Get the edit context to build proper target selectors
+        attr_context = LocationAttributeEditContext(location)
+        
+        # Build JSON response with container-aware target selectors
+        response_data = {
+            "success": True,
+            "updates": [
+                {
+                    "target": f"#{attr_context.content_html_id}",
+                    "html": content_body,
+                    "mode": "replace"
+                },
+                {
+                    "target": f"#{DIVID['ATTR_V2_UPLOAD_FORM_CONTAINER']}",
+                    "html": upload_form,
+                    "mode": "replace"
+                }
+            ],
+            "message": "Changes saved successfully"
+        }
+        
+        return HttpResponse(
+            json.dumps(response_data),
+            content_type='application/json'
         )
 
     def render_error_response(
@@ -184,8 +212,8 @@ class LocationEditResponseRenderer:
             request                     : HttpRequest,
             location                    : Location,
             location_form               : LocationModalEditForm,
-            regular_attributes_formset  : LocationAttributeRegularFormSet ) -> 'antinode.Response':
-        """Render error response using antinode helpers - multiple target replacement.
+            regular_attributes_formset  : LocationAttributeRegularFormSet ) -> HttpResponse:
+        """Render error response using custom JSON format - multiple target replacement.
         
         Args:
             request: HTTP request object
@@ -194,7 +222,7 @@ class LocationEditResponseRenderer:
             regular_attributes_formset: FormSet instance with validation errors
             
         Returns:
-            antinode.Response: Error response for HTMX update with 400 status
+            HttpResponse: Error response with JSON format for custom Ajax handling
         """
         # Re-render both content body and upload form with form errors
         content_body, upload_form = self.render_update_fragments(
@@ -206,10 +234,29 @@ class LocationEditResponseRenderer:
             has_errors=True,
         )
         
-        return antinode.response(
-            insert_map={
-                DIVID['ATTR_V2_CONTENT']: content_body,
-                DIVID['ATTR_V2_UPLOAD_FORM_CONTAINER']: upload_form
-            },
+        # Get the edit context to build proper target selectors
+        attr_context = LocationAttributeEditContext(location)
+        
+        # Build JSON error response with container-aware target selectors
+        response_data = {
+            "success": False,
+            "updates": [
+                {
+                    "target": f"#{attr_context.content_html_id}",
+                    "html": content_body,
+                    "mode": "replace"
+                },
+                {
+                    "target": f"#{DIVID['ATTR_V2_UPLOAD_FORM_CONTAINER']}",
+                    "html": upload_form,
+                    "mode": "replace"
+                }
+            ],
+            "message": "Please correct the errors below"
+        }
+        
+        return HttpResponse(
+            json.dumps(response_data),
+            content_type='application/json',
             status=400
         )

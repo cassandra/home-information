@@ -40,9 +40,7 @@ Compact history display that loads into attribute cards
         <div>
           {% if record.value != attribute.value %}
             <a href="{% attr_restore_url attr_context attribute.id record.pk %}"
-               data-async="true"
-               data-stay-in-modal="true"
-               class="btn btn-xs btn-outline-primary"
+               class="btn btn-xs btn-outline-primary attr-v2-restore-link"
                title="Restore this value">
               Restore
             </a>
