@@ -194,7 +194,7 @@ class LocationEditResponseRenderer:
                     "mode": "replace"
                 },
                 {
-                    "target": f"#{DIVID['ATTR_V2_UPLOAD_FORM_CONTAINER']}",
+                    "target": f"#{attr_context.upload_form_container_html_id}",
                     "html": upload_form,
                     "mode": "replace"
                 }
@@ -247,7 +247,7 @@ class LocationEditResponseRenderer:
                     "mode": "replace"
                 },
                 {
-                    "target": f"#{DIVID['ATTR_V2_UPLOAD_FORM_CONTAINER']}",
+                    "target": f"#{attr_context.upload_form_container_html_id}",
                     "html": upload_form,
                     "mode": "replace"
                 }

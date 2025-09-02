@@ -55,7 +55,7 @@ This is what gets replaced on form submission
            role="tab" 
            aria-controls="subsystem-{{ subsystem_data.subsystem.id }}-panel" 
            aria-selected="{% if selected_subsystem_id == subsystem_data.subsystem.id|stringformat:'s' %}true{% else %}false{% endif %}"
-           onclick="window.attrV2.updateFormAction('{% url 'config_settings' subsystem_id=subsystem_data.subsystem.id %}', '{{ shared_editing_context.container_html_id }}')">
+           onclick="window.Hi.attr.updateFormAction('{% url 'config_settings' subsystem_id=subsystem_data.subsystem.id %}', '{{ shared_editing_context.container_html_id }}')">
           {{ subsystem_data.subsystem.name }}
           {% if subsystem_data.error_count > 0 %}
             <span class="badge badge-danger ml-1">{{ subsystem_data.error_count }}</span>

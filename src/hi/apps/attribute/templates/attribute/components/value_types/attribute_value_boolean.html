@@ -18,7 +18,7 @@ Renders a checkbox input for boolean attributes
            data-hidden-field="hidden-{{ attribute_form.value.id_for_label }}"
            {% if attribute_form.value.value == "True" or attribute_form.value.value == True %}checked{% endif %}
            {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %}
-           onchange="attrV2.updateBooleanHiddenField(this)" />
+           onchange="Hi.attr.updateBooleanHiddenField(this)" />
     <label class="custom-control-label" for="{{ attribute_form.value.id_for_label }}">
       {{ attribute_form.instance.name }}
     </label>

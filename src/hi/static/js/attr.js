@@ -1,7 +1,7 @@
 /*
- * Home Information - Attribute V2 Modal JavaScript
- * Enhanced entity attribute editing modal functionality
- * Phase 1a: Basic structure and framework
+ * Home Information - Attribute Editing JavaScript
+ * Core attribute editing functionality for entities, locations, and configurations
+ * Provides container-aware form handling, AJAX operations, and UI management
  */
 
 (function() {
@@ -47,31 +47,94 @@
         FORM_GROUP_SELECTOR: '.form-group'
     };
     
-    // Create a namespace for V2 modal functions to avoid global pollution
-    window.attrV2 = window.attrV2 || {};
+    // Create the main Hi.attr namespace
+    window.Hi = window.Hi || {};
     
-    // Make initialization function globally accessible for template-driven initialization
-    window.attrV2.initializeContainer = function(containerSelector) {
-        const $container = $(containerSelector);
-        if ($container.length > 0) {
-            initializeAttrV2Container($container);
+    const HiAttr = {
+        // Container Management
+        initializeContainer: function(containerSelector) {
+            const $container = $(containerSelector);
+            if ($container.length > 0) {
+                _initializeContainer($container);
+            }
+        },
+        
+        reinitializeContainer: function(containerId) {
+            const $container = $(`#${containerId}`);
+            if ($container.length > 0) {
+                _initializeContainer($container);
+            }
+        },
+        
+        // Form Operations
+        submitForm: function(form, options = {}) {
+            return _ajax.submitFormWithAjax(form, options);
+        },
+        
+        updateFormAction: function(newUrl, containerId) {
+            return _updateFormAction(newUrl, containerId);
+        },
+        
+        // Content Management
+        loadContent: function(url, target, options = {}) {
+            return _ajax.loadContentIntoTarget(url, target, options);
+        },
+        
+        updateElement: function(selector, html, mode = 'replace') {
+            return _ajax.updateDOMElement(selector, html, mode);
+        },
+        
+        // Status & Messages
+        showStatusMessage: function(message, type = 'info', form = null) {
+            return _ajax.showStatusMessage(message, type, form);
+        },
+        
+        // UI Actions
+        showAddAttribute: function(containerSelector = null) {
+            return _showAddAttribute(containerSelector);
+        },
+        
+        toggleSecretField: function(button) {
+            return _toggleSecretField(button);
+        },
+        
+        updateBooleanHiddenField: function(checkbox) {
+            return _updateBooleanHiddenField(checkbox);
+        },
+        
+        toggleExpandedView: function(button) {
+            return _toggleExpandedView(button);
+        },
+        
+        // Initialization
+        init: function() {
+            _initializeAllContainers();
         }
     };
     
-    // Custom Ajax Infrastructure
-    window.attrV2.ajax = {
+    // Export to Hi namespace
+    window.Hi.attr = HiAttr;
+    
+    // Private Ajax Infrastructure
+    const _ajax = {
         // Submit form with custom Ajax handling
         submitFormWithAjax: function(form, options = {}) {
             console.log('DEBUG: submitFormWithAjax called with form:', form);
             const $form = $(form);
             
+            // Ensure we have a valid form element
+            if ($form.length === 0 || !$form[0] || $form[0].tagName !== 'FORM') {
+                console.error('DEBUG: Invalid form element passed to submitFormWithAjax:', form);
+                return;
+            }
+            
             // Find the container and sync textarea values to hidden fields before submission
             const $container = $form.closest(Hi.ATTR_V2_CONTAINER_SELECTOR);
             if ($container.length > 0) {
-                syncTextareaValuesToHiddenFields($container);
+                _syncTextareaValuesToHiddenFields($container);
             }
             
-            const formData = new FormData(form);
+            const formData = new FormData($form[0]);
             const url = $form.attr('action');
             const method = $form.attr('method') || 'POST';
             
@@ -175,7 +238,7 @@
             
             // Re-initialize containers after update
             setTimeout(() => {
-                initializeAllAttrV2Containers();
+                _initializeAllContainers();
             }, 50);
             
             // Modal management is handled by antinode.js, not our responsibility
@@ -246,35 +309,35 @@
     
     // Initialize all V2 containers when DOM is ready
     document.addEventListener('DOMContentLoaded', function() {
-        initializeAllAttrV2Containers();
+        _initializeAllContainers();
     });
     
     // No longer using antinode.js - initialization handled by custom Ajax callbacks
     
     // Listen for any modal shown events and initialize V2 containers
     $(document).on('shown.bs.modal', ATTR_V2_INTERNAL.MODAL_SELECTOR, function(e) {
-        initializeAllAttrV2Containers();
+        _initializeAllContainers();
         e.stopPropagation(); // Prevent bubbling to other handlers
     });
     
     // Container-aware utility function for updating form actions and browser history
     // This is a generic helper that can be called from template onclick handlers
-    window.attrV2.updateFormAction = function(newUrl, containerId) {
+    function _updateFormAction(newUrl, containerId) {
         if (!newUrl || !containerId) {
-            console.warn('attrV2.updateFormAction: newUrl and containerId are required');
+            console.warn('Hi.attr.updateFormAction: newUrl and containerId are required');
             return;
         }
         
         // Find the form within the specific container
         const $container = $(`#${containerId}`);
         if ($container.length === 0) {
-            console.warn('attrV2.updateFormAction: Container not found:', containerId);
+            console.warn('Hi.attr.updateFormAction: Container not found:', containerId);
             return;
         }
         
         const $form = $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR);
         if ($form.length === 0) {
-            console.warn('attrV2.updateFormAction: No form found in container:', containerId);
+            console.warn('Hi.attr.updateFormAction: No form found in container:', containerId);
             return;
         }
         
@@ -287,44 +350,50 @@
     
     
     // Multi-instance container initialization
-    function initializeAllAttrV2Containers() {
+    function _initializeAllContainers() {
         // Initialize all attribute editing containers found on page
         $(Hi.ATTR_V2_CONTAINER_SELECTOR).each(function() {
-            initializeAttrV2Container($(this));
+            _initializeContainer($(this));
         });
     }
     
-    function initializeAttrV2Container($container) {
+    function _initializeContainer($container) {
         // Check if this container is already initialized to prevent double-initialization
         if ($container.data(ATTR_V2_INTERNAL.INITIALIZED_DATA_KEY)) {
-            console.log('DEBUG: Container already initialized, but reprocessing AJAX handlers for new content:', $container[0]);
+            console.log('DEBUG: Container already initialized, but reprocessing handlers and textareas for new content:', $container[0]);
             // Always reprocess AJAX handlers to handle newly loaded content
-            setupCustomAjaxHandlers($container);
+            _setupCustomAjaxHandlers($container);
+            // Re-initialize textareas after content updates (DOM may have changed)
+            _reinitializeTextareas($container);
+            // Reinitialize dirty tracking for new content
+            if (window.Hi.attr.dirtyTracking) {
+                window.Hi.attr.dirtyTracking.reinitializeContainer($container.attr('id'));
+            }
             return;
         }
         
         console.log('DEBUG: Initializing container:', $container[0]);
         
         // Full container initialization - don't assume what persists across AJAX updates
-        setupBasicEventListeners($container);
-        initializeExpandableTextareas($container); // Must come BEFORE autosize
-        initializeAutosizeTextareas($container); // Now only applies to non-truncated
+        _setupBasicEventListeners($container);
+        _initializeExpandableTextareas($container); // Must come BEFORE autosize
+        _initializeAutosizeTextareas($container); // Now only applies to non-truncated
         // Note: Form submission handler removed - textarea sync now handled in Ajax submission
-        setupCustomAjaxHandlers($container); // NEW: Custom Ajax form handling
+        _setupCustomAjaxHandlers($container); // NEW: Custom Ajax form handling
         
         // Reinitialize dirty tracking for this container
-        if (window.attrV2 && window.attrV2.DirtyTracking) {
-            window.attrV2.DirtyTracking.reinitializeContainer($container);
+        if (window.Hi && window.Hi.attr && window.Hi.attr.dirtyTracking) {
+            window.Hi.attr.dirtyTracking.reinitializeContainer($container.attr('id'));
         }
         
         // Handle auto-dismiss messages for this container
-        handleAutoDismissMessages($container);
+        _handleAutoDismissMessages($container);
         
         // Mark this container as initialized
         $container.data(ATTR_V2_INTERNAL.INITIALIZED_DATA_KEY, true);
     }
     
-    function handleAutoDismissMessages($container) {
+    function _handleAutoDismissMessages($container) {
         const $statusMsg = $container.find(Hi.ATTR_V2_STATUS_MESSAGE_SELECTOR);
         const $dismissibleElements = $statusMsg.find(Hi.ATTR_V2_AUTO_DISMISS_SELECTOR);
         if ($dismissibleElements.length > 0) {
@@ -339,9 +408,9 @@
     }
     
     // Setup custom Ajax handlers for forms and links in this container
-    function setupCustomAjaxHandlers($container) {
+    function _setupCustomAjaxHandlers($container) {
         // Handle main form submissions
-        const $forms = $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR);
+        const $forms = $container.find(`form${Hi.ATTR_V2_FORM_CLASS_SELECTOR}`);
         console.log('DEBUG: setupCustomAjaxHandlers called for container:', $container[0], 'found forms:', $forms.length);
         
         $forms.each(function(index) {
@@ -358,7 +427,7 @@
                 console.log('DEBUG: Form submit handler triggered!', e);
                 e.preventDefault();
                 
-                window.attrV2.ajax.submitFormWithAjax(form);
+                _ajax.submitFormWithAjax(form);
             });
         });
         
@@ -388,9 +457,9 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 }).done((response) => {
-                    window.attrV2.ajax.handleFormSuccess(response, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
+                    _ajax.handleFormSuccess(response, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
                 }).fail((xhr) => {
-                    window.attrV2.ajax.handleFormError(xhr, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
+                    _ajax.handleFormError(xhr, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
                 });
             });
         });
@@ -421,9 +490,9 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 }).done((response) => {
-                    window.attrV2.ajax.handleFormSuccess(response, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
+                    _ajax.handleFormSuccess(response, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
                 }).fail((xhr) => {
-                    window.attrV2.ajax.handleFormError(xhr, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
+                    _ajax.handleFormError(xhr, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
                 });
             });
         });
@@ -461,7 +530,7 @@
                     console.log('DEBUG: Submitting form via Ajax');
                     // Use our custom Ajax submission with scroll-to-new-content option
                     // File uploads append new content that users want to see
-                    window.attrV2.ajax.submitFormWithAjax($uploadForm[0], {
+                    _ajax.submitFormWithAjax($uploadForm[0], {
                         scrollToNewContent: true
                     });
                 } else {
@@ -476,7 +545,7 @@
     
     
 
-    function setupBasicEventListeners() {
+    function _setupBasicEventListeners() {
         // Try multiple approaches to find the form
         let form = $(Hi.ATTR_V2_FORM_SELECTOR)[0];
         
@@ -490,7 +559,7 @@
                 
                 const finalForm = form || formAlt;
                 if (finalForm) {
-                    attachKeyHandler(finalForm);
+                    _attachKeyHandler(finalForm);
                 } else {
                     console.error('setupBasicEventListeners: No form found after timeout');
                 }
@@ -499,10 +568,10 @@
         }
         
         const finalForm = form || formAlt;
-        attachKeyHandler(finalForm);
+        _attachKeyHandler(finalForm);
     }
     
-    function attachKeyHandler(form) {
+    function _attachKeyHandler(form) {
         // Handle ENTER key behavior ONLY for V2 form inputs and textareas
         form.addEventListener('keydown', function(event) {
             // IMPORTANT: Only handle events from elements within the V2 form
@@ -567,7 +636,7 @@
     }
 
     // Simple add attribute - just show the last (empty) formset form
-    window.showAddAttribute = function(containerSelector = null) {
+    function _showAddAttribute(containerSelector = null) {
         // Find the last attribute card (should be the empty extra form)
         const scope = containerSelector ? $(containerSelector) : $(document);
         const attributeCards = scope.find(Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR);
@@ -745,7 +814,7 @@
         }
     };
 
-    window.attrV2.toggleSecretField = function(button) {
+    function _toggleSecretField(button) {
         const $button = $(button);
         const $input = $button.closest(Hi.ATTR_V2_SECRET_INPUT_WRAPPER_SELECTOR).find(Hi.ATTR_V2_SECRET_INPUT_SELECTOR);
         const $showIcon = $button.find(Hi.ATTR_V2_ICON_SHOW_SELECTOR);
@@ -787,7 +856,7 @@
     };
     
     // Update hidden field when boolean checkbox changes
-    window.attrV2.updateBooleanHiddenField = function(checkbox) {
+    function _updateBooleanHiddenField(checkbox) {
         const hiddenFieldId = checkbox.getAttribute(Hi.DATA_HIDDEN_FIELD_ATTR);
         const hiddenField = document.getElementById(hiddenFieldId);
         
@@ -799,7 +868,7 @@
     
     
     // Initialize autosize for all textareas in the modal
-    function initializeAutosizeTextareas() {
+    function _initializeAutosizeTextareas() {
         // Initialize autosize for existing textareas, but exclude truncated ones
         const textareas = $(Hi.ATTR_V2_TEXTAREA_SELECTOR).not('.truncated');
         if (textareas.length > 0) {
@@ -813,7 +882,7 @@
     }
     
     // Lightweight reinitialization for ajax content updates
-    function reinitializeTextareas($container = null) {
+    function _reinitializeTextareas($container = null) {
         // Find textareas that need initialization (scoped to container if provided)
         const textareas = $container ? 
             $container.find(Hi.ATTR_V2_TEXTAREA_SELECTOR) : 
@@ -838,9 +907,9 @@
             
             if (isOverflowing) {
                 if (hiddenField && hiddenField.length > 0) {
-                    applyTruncationFromHidden(textarea, hiddenField);
+                    _applyTruncationFromHidden(textarea, hiddenField);
                 } else {
-                    applyTruncation(textarea);
+                    _applyTruncation(textarea);
                 }
             }
         });
@@ -859,7 +928,7 @@
     }
     
     // Update overflow state based on current content
-    function updateOverflowState(textarea) {
+    function _updateOverflowState(textarea) {
         const content = textarea.val() || '';
         const lineCount = (content.match(/\n/g) || []).length + 1;
         const overflows = lineCount > 4;
@@ -872,7 +941,7 @@
     }
     
     // Apply truncation using hidden field as source (new pattern)
-    function applyTruncationFromHidden(displayField, hiddenField) {
+    function _applyTruncationFromHidden(displayField, hiddenField) {
         const fullValue = hiddenField.val() || '';
         
         // Destroy autosize first to prevent height override
@@ -899,7 +968,7 @@
     }
     
     // Legacy function - kept for compatibility with reinitializeTextareas
-    function applyTruncation(textarea) {
+    function _applyTruncation(textarea) {
         const value = textarea.val() || '';
         
         // Destroy autosize first to prevent height override
@@ -927,7 +996,7 @@
         expandControls.show();
     }
     
-    function initializeExpandableTextareas() {
+    function _initializeExpandableTextareas() {
         // Initialize based on server-rendered overflow state using hidden field pattern
         const displayTextareas = $('.display-field');
         
@@ -939,14 +1008,14 @@
             
             if (isOverflowing && hiddenField.length > 0) {
                 // Apply truncation using hidden field as source
-                applyTruncationFromHidden(displayField, hiddenField);
+                _applyTruncationFromHidden(displayField, hiddenField);
             }
             // For non-overflowing content, display field already has correct content from server
         });
     }
     
     // Global function for expand/collapse button (namespaced) - enhanced for hidden field pattern
-    window.attrV2.toggleExpandedView = function(button) {
+    function _toggleExpandedView(button) {
         const $button = $(button);
         const wrapper = $button.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
         const displayField = wrapper.find('.display-field, ' + Hi.ATTR_V2_TEXTAREA_SELECTOR); // Support both new and legacy
@@ -987,11 +1056,11 @@
             
             // Set up listener to track content changes
             displayField.off('input.overflow').on('input.overflow', function() {
-                updateOverflowState($(this));
+                _updateOverflowState($(this));
             });
         } else {
             // Currently expanded - check if we should collapse (Show Less)
-            const { lineCount, overflows } = updateOverflowState(displayField);
+            const { lineCount, overflows } = _updateOverflowState(displayField);
             
             if (!overflows) {
                 // Content now fits in 4 lines - remove truncation UI
@@ -1016,10 +1085,10 @@
                     hiddenField.val(currentValue);
                     
                     // Apply truncation using hidden field
-                    applyTruncationFromHidden(displayField, hiddenField);
+                    _applyTruncationFromHidden(displayField, hiddenField);
                 } else {
                     // Legacy pattern
-                    applyTruncation(displayField);
+                    _applyTruncation(displayField);
                 }
                 
                 showMoreText.show();
@@ -1032,7 +1101,7 @@
     }
     
     // Sync textarea values to hidden fields before form submission
-    function syncTextareaValuesToHiddenFields($container) {
+    function _syncTextareaValuesToHiddenFields($container) {
         // Process all display fields within this container
         $container.find('.display-field').each(function() {
             const displayField = $(this);
@@ -1052,7 +1121,7 @@
     }
     
     // Convert single-line input to textarea when user adds newlines
-    function convertToTextarea(inputElement) {
+    function _convertToTextarea(inputElement) {
         const $input = $(inputElement);
         const value = $input.val();
         
@@ -1080,6 +1149,5 @@
         
         return $textarea;
     }
-    
     
 })();

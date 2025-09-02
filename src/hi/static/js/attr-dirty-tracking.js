@@ -1,7 +1,7 @@
 /*
- * Home Information - Attribute V2 Dirty State Tracking
- * Container-aware dirty state tracking for V2 entity attribute editing
- * Supports multiple simultaneous editing contexts
+ * Home Information - Attribute Dirty State Tracking
+ * Container-aware dirty state tracking for attribute editing
+ * Supports multiple simultaneous editing contexts and visual dirty indicators
  */
 
 (function() {
@@ -23,8 +23,9 @@
         MESSAGE_CONTAINER_SELECTOR: '.attr-v2-dirty-message'
     };
     
-    // Create namespace
-    window.attrV2 = window.attrV2 || {};
+    // Create namespace  
+    window.Hi = window.Hi || {};
+    window.Hi.attr = window.Hi.attr || {};
     
     /**
      * DirtyTracker Class - Container-specific instance
@@ -403,35 +404,27 @@
     };
     
     /**
-     * DirtyTracking Factory - Manages container-specific instances
+     * Private DirtyTracker instance management
      */
-    window.attrV2.DirtyTracking = {
-        instances: new Map(),
-        
-        // Get or create instance for a container
+    const _instances = new Map();
+    
+    const HiAttrDirtyTracking = {
+        // Instance Management
         getInstance: function(containerId) {
-            if (!this.instances.has(containerId)) {
-                this.instances.set(containerId, new DirtyTracker(containerId));
+            if (!_instances.has(containerId)) {
+                _instances.set(containerId, new DirtyTracker(containerId));
             }
-            return this.instances.get(containerId);
+            return _instances.get(containerId);
         },
         
-        // Initialize or reinitialize tracking for a container
-        reinitializeContainer: function($container) {
-            const containerId = $container.attr('id');
-            if (!containerId) {
-                console.warn('DirtyTracking: Container missing ID, skipping initialization');
-                return;
-            }
-            
-            const instance = this.getInstance(containerId);
-            instance.reinitialize();
+        createInstance: function(containerId) {
+            const instance = new DirtyTracker(containerId);
+            _instances.set(containerId, instance);
+            return instance;
         },
         
-        
-        // Initialize all containers on page
-        init: function() {
-            // Find all attr-v2 containers
+        // Bulk Operations  
+        initializeAll: function() {
             const containers = document.querySelectorAll(Hi.ATTR_V2_CONTAINER_SELECTOR);
             containers.forEach(container => {
                 if (container.id) {
@@ -439,26 +432,44 @@
                     instance.init();
                 }
             });
-            
         },
         
-        // Handle antinode success events
-        handleAntiNodeSuccess: function(e) {
-            // Find the container that triggered the event
-            const form = e.target.closest(Hi.ATTR_V2_FORM_CLASS_SELECTOR);
+        reinitializeContainer: function(containerId) {
+            const $container = typeof containerId === 'string' ? $(`#${containerId}`) : $(containerId);
+            const id = $container.attr('id');
+            if (!id) {
+                console.warn('DirtyTracking: Container missing ID, skipping initialization');
+                return;
+            }
+            
+            const instance = this.getInstance(id);
+            instance.reinitialize();
+        },
+        
+        // Event Handling
+        handleFormSuccess: function(event) {
+            const form = event.target.closest(Hi.ATTR_V2_FORM_CLASS_SELECTOR);
             if (form) {
                 const container = form.closest(Hi.ATTR_V2_CONTAINER_SELECTOR);
                 if (container && container.id) {
                     const instance = this.getInstance(container.id);
-                    instance.handleFormSuccess(e);
+                    instance.handleFormSuccess(event);
                 }
             }
+        },
+        
+        // Initialization
+        init: function() {
+            this.initializeAll();
         }
     };
     
+    // Export to Hi namespace
+    window.Hi.attr.dirtyTracking = HiAttrDirtyTracking;
+    
     // Auto-initialize when DOM is ready
     document.addEventListener('DOMContentLoaded', function() {
-        window.attrV2.DirtyTracking.init();
+        HiAttrDirtyTracking.init();
     });
     
     // Initialize after modal shown
@@ -468,11 +479,9 @@
         const containers = modal.querySelectorAll(Hi.ATTR_V2_CONTAINER_SELECTOR);
         containers.forEach(container => {
             if (container.id) {
-                window.attrV2.DirtyTracking.reinitializeContainer($(container));
+                HiAttrDirtyTracking.reinitializeContainer(container.id);
             }
         });
     });
-    
-    // No longer using antinode - dirty tracking handled by custom Ajax callbacks
     
 })();

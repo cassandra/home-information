@@ -341,11 +341,14 @@ class TestEntityEditResponseRendererSuccessResponse(BaseTestCase):
             success_message="Changes saved successfully"
         )
         
-        # Verify antinode response was called with correct parameters
+        # Verify antinode response was called with correct parameters using contextual IDs
+        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeEditContext
+        attr_context = EntityAttributeEditContext(entity=self.entity)
+        
         mock_antinode_response.assert_called_once_with(
             insert_map={
-                DIVID['ATTR_V2_CONTENT']: '<content_html>',
-                DIVID['ATTR_V2_UPLOAD_FORM_CONTAINER']: '<upload_html>'
+                attr_context.content_html_id: '<content_html>',
+                attr_context.upload_form_container_html_id: '<upload_html>'
             }
         )
         
@@ -359,11 +362,14 @@ class TestEntityEditResponseRendererSuccessResponse(BaseTestCase):
         
         self.renderer.render_success_response(self.request, self.entity)
         
-        # Verify DIVID constants are used correctly
+        # Verify contextual IDs are used correctly
+        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeEditContext
+        attr_context = EntityAttributeEditContext(entity=self.entity)
+        
         call_args = mock_antinode_response.call_args
         insert_map = call_args[1]['insert_map']
         
-        expected_keys = [DIVID['ATTR_V2_CONTENT'], DIVID['ATTR_V2_UPLOAD_FORM_CONTAINER']]
+        expected_keys = [attr_context.content_html_id, attr_context.upload_form_container_html_id]
         for key in expected_keys:
             self.assertIn(key, insert_map)
 
@@ -405,11 +411,14 @@ class TestEntityEditResponseRendererErrorResponse(BaseTestCase):
             has_errors=True
         )
         
-        # Verify antinode response includes status 400
+        # Verify antinode response includes status 400 with contextual IDs
+        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeEditContext
+        attr_context = EntityAttributeEditContext(entity=self.entity)
+        
         mock_antinode_response.assert_called_once_with(
             insert_map={
-                DIVID['ATTR_V2_CONTENT']: '<error_content>',
-                DIVID['ATTR_V2_UPLOAD_FORM_CONTAINER']: '<error_upload>'
+                attr_context.content_html_id: '<error_content>',
+                attr_context.upload_form_container_html_id: '<error_upload>'
             },
             status=400
         )

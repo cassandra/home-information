@@ -133,6 +133,11 @@ class AttributeEditContext:
         """Get unique ID for the file input element."""
         return f'attr-v2-file-input{self.id_suffix}'
     
+    @property
+    def upload_form_container_html_id(self) -> str:
+        """Get unique ID for the upload form container element."""
+        return f'attr-v2-upload-form-container{self.id_suffix}'
+    
     def to_template_context(self) -> Dict[str, Any]:
         """
         Convert this context to a dictionary suitable for template rendering.

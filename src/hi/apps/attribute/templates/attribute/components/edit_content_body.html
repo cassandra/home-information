@@ -78,7 +78,7 @@ by using the AttributeEditContext pattern.
         <button id="{{ DIVID.ATTR_V2_ADD_ATTRIBUTE_BTN }}{{ attr_context.id_suffix }}" 
                 type="button" 
                 class="btn btn-sm btn-outline-primary"
-                onclick="showAddAttribute('#{{ attr_context.container_html_id }}');">
+                onclick="window.Hi.attr.showAddAttribute('#{{ attr_context.container_html_id }}');">
           {% icon "plus" size="sm" css_class="hi-icon-left" %}Add Info
         </button>
       </div>

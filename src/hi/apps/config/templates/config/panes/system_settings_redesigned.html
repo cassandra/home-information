@@ -28,7 +28,7 @@ Uses existing attr-v2-* components for consistency with Entity/Location editing.
 
 <script>
 // Initialize this specific container (for async-loaded content)
-if (window.attrV2 && window.attrV2.initializeContainer) {
-    window.attrV2.initializeContainer('#{{ shared_editing_context.container_html_id }}');
+if (window.Hi && window.Hi.attr && window.Hi.attr.initializeContainer) {
+    window.Hi.attr.initializeContainer('#{{ shared_editing_context.container_html_id }}');
 }
 </script>

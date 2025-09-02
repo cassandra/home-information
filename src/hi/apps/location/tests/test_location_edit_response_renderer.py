@@ -238,12 +238,20 @@ class TestLocationEditResponseRenderer(BaseTestCase):
             self.assertIn('insert_map', response_args[1])
             insert_map = response_args[1]['insert_map']
             
-            # Should have both content and upload form updates
-            from hi.constants import DIVID
-            self.assertIn(DIVID['ATTR_V2_CONTENT'], insert_map)
-            self.assertIn(DIVID['ATTR_V2_UPLOAD_FORM_CONTAINER'], insert_map)
-            self.assertEqual(insert_map[DIVID['ATTR_V2_CONTENT']], '<success_content>')
-            self.assertEqual(insert_map[DIVID['ATTR_V2_UPLOAD_FORM_CONTAINER']], '<success_upload>')
+            # Should have both content and upload form updates using contextual IDs
+            # Get the attr_context to check for contextual IDs
+            context = self.renderer.form_handler.create_success_context(
+                location=self.location,
+                location_form=Mock(),
+                file_attributes=[],
+                regular_attributes_formset=Mock()
+            )
+            attr_context = context['attr_context']
+            
+            self.assertIn(attr_context.content_html_id, insert_map)
+            self.assertIn(attr_context.upload_form_container_html_id, insert_map)
+            self.assertEqual(insert_map[attr_context.content_html_id], '<success_content>')
+            self.assertEqual(insert_map[attr_context.upload_form_container_html_id], '<success_upload>')
             
             self.assertEqual(response, mock_response)
             
