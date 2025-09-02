@@ -5,6 +5,10 @@ from . import views
 
 urlpatterns = [
 
+    re_path( r'^$', 
+             views.ConfigHomeView.as_view(), 
+             name='config_home' ),
+
     re_path( r'^settings(?:/(?P<subsystem_id>\d+))?$', 
              views.ConfigSettingsView.as_view(), 
              name='config_settings' ),

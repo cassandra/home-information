@@ -4,28 +4,28 @@
     <div class="d-flex justify-content-end">
       {% if request.view_parameters.is_editing %}
       <div class="mx-1">
-	<a href="{% url 'edit_help' %}"
-	   class="btn btn-tertiary btn-control" role="button"
-	   data-async="true" >
-	  EDITING HELP
-	</a>
+        <a href="{% url 'edit_help' %}"
+           class="btn btn-tertiary btn-control" role="button"
+           data-async="true" >
+          EDITING HELP
+        </a>
       </div>
       {% else %}
       <div class="mx-1">
-	{% include "console/panes/audio_control.html" %}
+        {% include "console/panes/audio_control.html" %}
       </div>
       <div class="mx-1">
-	{% include "console/panes/sleep_mode_control.html" %}
+        {% include "console/panes/sleep_mode_control.html" %}
       </div>
       <div class="mx-1">
-	{% include "console/panes/console_lock_button.html" %}
+        {% include "console/panes/console_lock_button.html" %}
       </div>
       <div class="mx-1">
-	<a href="{% url 'config_settings' %}"
-	   class="btn btn-tertiary btn-control" role="button"
-	   data-async="true" >
-	  SETTINGS
-	</a>
+        <a href="{% url 'config_home' %}"
+           class="btn btn-tertiary btn-control" role="button"
+           data-async="true" >
+          CONFIGURE
+        </a>
       </div>
       {% endif %}
     </div>

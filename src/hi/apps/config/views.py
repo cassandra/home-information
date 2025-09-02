@@ -2,7 +2,8 @@ import logging
 
 
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
+from django.urls import reverse
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
@@ -20,6 +21,13 @@ from .config_edit_response_renderer import ConfigEditResponseRenderer
 logger = logging.getLogger('__name__')
 
 
+class ConfigHomeView( View ):
+
+    def get( self, request, *args, **kwargs ):
+        redirect_url = reverse( ConfigPageType.default().url_name )
+        return HttpResponseRedirect( redirect_url )        
+
+    
 class ConfigPageView( HiGridView ):
     """
     The app's config/admin page is shown in the main area of the HiGridView
