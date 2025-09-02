@@ -92,5 +92,6 @@ DIVID = {
     'ATTR_V2_FILE_INPUT': 'attr-v2-file-input',
     'ATTR_V2_ADD_ATTRIBUTE_BTN': 'attr-v2-add-attribute-btn',
     'ATTR_V2_SCROLLABLE_CONTENT': 'attr-v2-scrollable-content',
+    'ATTR_V2_AUTO_DISMISS_CLASS': 'attr-v2-auto-dismiss',
     'SUBSYSTEM_TABS': 'subsystemTabs',
 }

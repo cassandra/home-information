@@ -129,6 +129,7 @@
         ATTR_V2_TEXTAREA_SELECTOR: '.attr-v2-textarea',
         ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR: '.attr-v2-text-value-wrapper',
         ATTR_V2_EXPAND_CONTROLS_SELECTOR: '.attr-v2-expand-controls',
+        ATTR_V2_AUTO_DISMISS_SELECTOR: '.attr-v2-auto-dismiss',
         SUBSYSTEM_TABS_SELECTOR: '#subsystemTabs'
         
     };

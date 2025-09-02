@@ -23,6 +23,19 @@
             if ($(Hi.ATTR_V2_FORM_SELECTOR).length) {
                 reinitializeAttrV2ForAjax();
             }
+            
+            // Auto-dismiss messages marked as dismissible after 5 seconds
+            const $statusMsg = $(Hi.ATTR_V2_STATUS_MSG_SELECTOR);
+            const $dismissibleElements = $statusMsg.find(Hi.ATTR_V2_AUTO_DISMISS_SELECTOR);
+            if ($dismissibleElements.length > 0) {
+                setTimeout(() => {
+                    $dismissibleElements.remove();
+                    // Hide the entire status message container if it's now empty
+                    if ($statusMsg.text().trim() === '') {
+                        $statusMsg.hide();
+                    }
+                }, 5000);
+            }
         });
     } else {
         console.error('AN.addAfterAsyncRenderFunction not available - this is a bug in antinode.js');

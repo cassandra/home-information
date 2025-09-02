@@ -22,7 +22,7 @@ This is what gets replaced on form submission
         <span id="{{ DIVID.ATTR_V2_DIRTY_MESSAGE }}" class="attr-v2-dirty-message ml-3"></span>
         <span id="{{ DIVID.ATTR_V2_STATUS_MSG }}" class="attr-v2-status-message ml-2">
           {% if success_message %}
-            <span class="text-success">{{ success_message }}</span>
+            <span class="text-success {{ DIVID.ATTR_V2_AUTO_DISMISS_CLASS }}">{{ success_message }}</span>
           {% elif error_message %}
             <span class="text-danger">{{ error_message }}</span>
           {% endif %}
