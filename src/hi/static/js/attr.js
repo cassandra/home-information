@@ -46,10 +46,21 @@
         FORM_GROUP_SELECTOR: '.form-group'
     };
     
+    // Status message type constants - exposed for public use
+    const STATUS_TYPE = {
+        SUCCESS: 'success',
+        ERROR: 'error',
+        WARNING: 'warning',
+        INFO: 'info'
+    };
+    
     // Create the main Hi.attr namespace
     window.Hi = window.Hi || {};
     
     const HiAttr = {
+        // Status message types
+        STATUS_TYPE: STATUS_TYPE,
+        
         // Container Management
         initializeContainer: function(containerSelector) {
             const $container = $(containerSelector);
@@ -232,7 +243,7 @@
             
             // Show success message if provided
             if (data.message) {
-                this.showStatusMessage(data.message, 'success', $form);
+                this.showStatusMessage(data.message, STATUS_TYPE.SUCCESS, $form);
             }
             
             // Re-initialize containers after update
@@ -258,7 +269,7 @@
                 // Use default error message
             }
             
-            this.showStatusMessage(errorMessage, 'error', $form);
+            this.showStatusMessage(errorMessage, STATUS_TYPE.ERROR, $form);
         },
         
         // Update DOM element with new content
@@ -285,24 +296,39 @@
         },
         
         // Show status message in appropriate container
-        showStatusMessage: function(message, type = 'info', $form = null) {
-            const $container = $form ? $form.closest(Hi.ATTR_V2_CONTAINER_SELECTOR) : $(Hi.ATTR_V2_CONTAINER_SELECTOR).first();
+        // $element can be the container itself or any element within it
+        showStatusMessage: function(message, type = STATUS_TYPE.INFO, $element = null, timeout = null) {
+            // If $element is provided, find its container (or itself if it IS the container)
+            // Otherwise use the first container on the page
+            const $container = $element ? $($element).closest(Hi.ATTR_V2_CONTAINER_SELECTOR) : $(Hi.ATTR_V2_CONTAINER_SELECTOR).first();
             const $statusMsg = $container.find(Hi.ATTR_V2_STATUS_MESSAGE_SELECTOR);
             
             if ($statusMsg.length === 0) return;
             
-            const cssClass = type === 'success' ? ATTR_V2_INTERNAL.STATUS_SUCCESS_CLASS : 
-                           type === 'error' ? ATTR_V2_INTERNAL.STATUS_ERROR_CLASS : ATTR_V2_INTERNAL.STATUS_INFO_CLASS;
+            // Map type to CSS class
+            const cssClass = type === STATUS_TYPE.SUCCESS ? ATTR_V2_INTERNAL.STATUS_SUCCESS_CLASS : 
+                           type === STATUS_TYPE.ERROR ? ATTR_V2_INTERNAL.STATUS_ERROR_CLASS : 
+                           type === STATUS_TYPE.WARNING ? ATTR_V2_INTERNAL.STATUS_WARNING_CLASS :
+                           ATTR_V2_INTERNAL.STATUS_INFO_CLASS;
             
+            // Set default timeout based on type if not provided
+            if (timeout === null) {
+                timeout = type === STATUS_TYPE.SUCCESS ? 3000 : 5000;
+            }
+            
+            // Update message with proper styling
             $statusMsg.text(message)
-                     .removeClass(`${ATTR_V2_INTERNAL.STATUS_SUCCESS_CLASS} ${ATTR_V2_INTERNAL.STATUS_ERROR_CLASS} ${ATTR_V2_INTERNAL.STATUS_INFO_CLASS}`)
-                     .addClass(cssClass)
+                     .removeClass(`${ATTR_V2_INTERNAL.STATUS_SUCCESS_CLASS} ${ATTR_V2_INTERNAL.STATUS_ERROR_CLASS} ${ATTR_V2_INTERNAL.STATUS_INFO_CLASS} ${ATTR_V2_INTERNAL.STATUS_WARNING_CLASS}`)
+                     .addClass(cssClass + ' ml-2')  // ml-2 for consistency with existing usage
                      .show();
             
-            // Auto-dismiss after 5 seconds
-            setTimeout(() => {
-                $statusMsg.text('').removeClass(cssClass).hide();
-            }, 5000);
+            // Auto-dismiss after specified timeout (0 = no auto-dismiss)
+            if (timeout > 0) {
+                setTimeout(() => {
+                    $statusMsg.text('')
+                             .attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2`);  // Reset to base class
+                }, timeout);
+            }
         }
     };
     
@@ -623,15 +649,7 @@
         $fileCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).show();
         
         // Show status message (scoped to container)
-        const $statusMsg = scope.find(Hi.ATTR_V2_STATUS_MESSAGE_SELECTOR);
-        if ($statusMsg.length > 0) {
-            $statusMsg.text(`"${fileValue}" will be deleted when you save`)
-                    .attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2 text-warning`);
-            
-            setTimeout(() => {
-                $statusMsg.text('').attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2`);
-            }, 5000);
-        }
+        _ajax.showStatusMessage(`"${fileValue}" will be deleted when you save`, STATUS_TYPE.WARNING, scope);
     };
     
     window.undoFileDeletion = function(attributeId, containerSelector = null) {
@@ -657,15 +675,7 @@
         $fileCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).hide();
         
         // Show status message (scoped to container)
-        const $statusMsg = scope.find(Hi.ATTR_V2_STATUS_MESSAGE_SELECTOR);
-        if ($statusMsg.length > 0) {
-            $statusMsg.text(`Deletion of "${fileValue}" cancelled`)
-                    .attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2 text-success`);
-            
-            setTimeout(() => {
-                $statusMsg.text('').attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2`);
-            }, 3000);
-        }
+        _ajax.showStatusMessage(`Deletion of "${fileValue}" cancelled`, STATUS_TYPE.SUCCESS, scope);
     };
     
     // History functionality now handled by antinode async pattern
@@ -697,15 +707,7 @@
         $attributeCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).show();
         
         // Show status message (scoped to container)
-        const $statusMsg = scope.find(Hi.ATTR_V2_STATUS_MESSAGE_SELECTOR);
-        if ($statusMsg.length > 0) {
-            $statusMsg.text(`"${attributeName}" will be deleted when you save`)
-                    .attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2 text-warning`);
-            
-            setTimeout(() => {
-                $statusMsg.text('').attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2`);
-            }, 5000);
-        }
+        _ajax.showStatusMessage(`"${attributeName}" will be deleted when you save`, STATUS_TYPE.WARNING, scope);
     };
     
     window.undoAttributeDeletion = function(attributeId, containerSelector = null) {
@@ -730,15 +732,7 @@
         $attributeCard.find(Hi.ATTR_V2_UNDO_BTN_SELECTOR).hide();
         
         // Show status message (scoped to container)
-        const $statusMsg = scope.find(Hi.ATTR_V2_STATUS_MESSAGE_SELECTOR);
-        if ($statusMsg.length > 0) {
-            $statusMsg.text(`Deletion of "${attributeName}" cancelled`)
-                    .attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2 text-success`);
-            
-            setTimeout(() => {
-                $statusMsg.text('').attr('class', `${Hi.ATTR_V2_STATUS_MESSAGE_CLASS} ml-2`);
-            }, 3000);
-        }
+        _ajax.showStatusMessage(`Deletion of "${attributeName}" cancelled`, STATUS_TYPE.SUCCESS, scope);
     };
 
     function _toggleSecretField(button) {
