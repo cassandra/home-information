@@ -61,8 +61,6 @@ class ConfigEditResponseRenderer:
             'subsystem_edit_data_list': subsystem_edit_data_list,
             'selected_subsystem_id': selected_subsystem_id,
             'shared_editing_context': shared_context,  # For container IDs and namespacing
-            'history_url_name': 'config_attribute_history',
-            'restore_url_name': 'config_attribute_restore',
             'success_message': success_message,
             'error_message': error_message,
             'has_errors': has_errors,

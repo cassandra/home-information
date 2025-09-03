@@ -154,26 +154,6 @@ class ConfigInternalView( View ):
         return JsonResponse( data, safe = False )
 
 
-class ConfigAttributeHistoryView(BaseAttributeHistoryView):
-    """View for displaying SubsystemAttribute history in a modal."""
-    
-    def get_attribute_model_class(self):
-        return SubsystemAttribute
-    
-    def get_history_url_name(self):
-        return 'config_attribute_history'
-    
-    def get_restore_url_name(self):
-        return 'config_attribute_restore'
-
-
-class ConfigAttributeRestoreView(BaseAttributeRestoreView):
-    """View for restoring SubsystemAttribute values from history."""
-    
-    def get_attribute_model_class(self):
-        return SubsystemAttribute
-
-
 class SubsystemAttributeHistoryInlineView(BaseAttributeHistoryView):
     """View for displaying SubsystemAttribute history inline within the edit interface."""
     ATTRIBUTE_HISTORY_VIEW_LIMIT = 50
