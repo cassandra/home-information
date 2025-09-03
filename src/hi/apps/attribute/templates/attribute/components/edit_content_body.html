@@ -12,7 +12,7 @@ by using the AttributeEditContext pattern.
 <div class="{{ DIVID.ATTR_V2_STICKY_PANEL_CLASS }}">
   <!-- Basic Owner Information (minimal) - only if owner_form provided -->
   {% if owner_form %}
-  <div class="{{ DIVID.ATTR_V2_ENTITY_INFO_CLASS }}">
+  <div class="attr-v2-entity-info">
     {% block basic_info %}
     <div class="{{ DIVID.ATTR_V2_BASIC_INFO_CLASS }}">
       {% block owner_fields %}
@@ -45,7 +45,7 @@ by using the AttributeEditContext pattern.
   <div class="{{ DIVID.ATTR_V2_ACTION_BAR_CLASS }}">
     <div class="{{ DIVID.ATTR_V2_ACTION_BAR_CONTENT_CLASS }}">
       <div>
-        <button id="{{ DIVID.ATTR_V2_UPDATE_BTN }}{{ attr_context.id_suffix }}" 
+        <button id="{{ attr_context.update_button_html_id }}" 
                 type="submit" 
                 class="btn btn-primary {{ DIVID.ATTR_V2_UPDATE_BTN_CLASS }}"
                 name="action" 
@@ -75,7 +75,7 @@ by using the AttributeEditContext pattern.
           {% icon "upload" size="sm" css_class="hi-icon-left" %}Add File
         </label>
         
-        <button id="{{ DIVID.ATTR_V2_ADD_ATTRIBUTE_BTN }}{{ attr_context.id_suffix }}" 
+        <button id="{{ attr_context.add_attribute_button_html_id }}" 
                 type="button" 
                 class="btn btn-sm btn-outline-primary"
                 onclick="window.Hi.attr.showAddAttribute('#{{ attr_context.container_html_id }}');">
@@ -87,7 +87,7 @@ by using the AttributeEditContext pattern.
 </div>
 
 <!-- Scrollable Content Area (below sticky panel) -->
-<div id="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT }}{{ attr_context.id_suffix }}" class="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT_CLASS }}">
+<div id="{{ attr_context.scrollable_content_html_id }}" class="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT_CLASS }}">
   
   <!-- Files Section -->
   {% block files_section %}

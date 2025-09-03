@@ -10,7 +10,9 @@ This component handles the auto-sizing and expand/collapse functionality
 {% with line_count=value_text|linecount %}
 {% with display_rows=line_count|min_value:4 %}
 {% with overflows=line_count|add:"-4" %}
-<div class="attr-v2-text-value-wrapper" data-overflow="{% if overflows > 0 %}true{% else %}false{% endif %}" data-line-count="{{ line_count }}">
+<div class="{{ DIVID.ATTR_V2_TEXT_VALUE_WRAPPER_CLASS }}"
+     data-overflow="{% if overflows > 0 %}true{% else %}false{% endif %}"
+     data-line-count="{{ line_count }}">
   
   <!-- Real form field - contains actual data, never manipulated during editing -->
   <input type="hidden" 
@@ -21,7 +23,7 @@ This component handles the auto-sizing and expand/collapse functionality
   <!-- Display field - for UI only (no name = not submitted) -->
   <textarea rows="{{ display_rows }}" 
             id="{{ attribute_form.value.id_for_label }}"
-            class="form-control attr-v2-textarea display-field"
+            class="form-control {{ DIVID.ATTR_V2_TEXTAREA_CLASS }} {{ DIVID.ATTR_V2_DISPLAY_FIELD_CLASS }}"
             data-overflow="{% if overflows > 0 %}true{% else %}false{% endif %}"
             data-hidden-field="hidden-{{ attribute_form.value.id_for_label }}"
             {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %}
@@ -32,10 +34,10 @@ This component handles the auto-sizing and expand/collapse functionality
     </div>
   {% endif %}
   {% if overflows > 0 %}
-  <div class="attr-v2-expand-controls" style="display: block;">
+    <div class="{{ DIVID.ATTR_V2_EXPAND_CONTROLS_CLASS }}" style="display: block;">
     <button type="button" class="btn btn-sm btn-link" onclick="Hi.attr.toggleExpandedView(this)">
-      <span class="show-more-text">Show more...</span>
-      <span class="show-less-text" style="display: none;">Show less</span>
+      <span class="{{ DIVID.ATTR_V2_SHOW_MORE_TEXT_CLASS }}">Show more...</span>
+      <span class="{{ DIVID.ATTR_V2_SHOW_LESS_TEXT_CLASS }}" style="display: none;">Show less</span>
     </button>
   </div>
   {% endif %}

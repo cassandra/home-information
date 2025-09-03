@@ -17,10 +17,9 @@
         MULTIPLE_FIELDS_MESSAGE_TEMPLATE: '{count} fields modified',
         DIRTY_INDICATOR_CHAR: '●',
         DIRTY_INDICATOR_TITLE: 'This field has been modified',
-        
-        // Form selectors (will be replaced with Hi.* constants)
-        FORM_SELECTOR: '.attr-v2-form',
-        MESSAGE_CONTAINER_SELECTOR: '.attr-v2-dirty-message'
+
+        FIELD_DIRTY_CLASS: 'attr-v2-field-dirty',
+        DIRTY_INDICATOR_CLASS: 'attr-v2-dirty-indicator',
     };
     
     // Create namespace  
@@ -40,8 +39,8 @@
             formSelector: Hi.ATTR_V2_FORM_CLASS_SELECTOR,
             messageContainerSelector: Hi.ATTR_V2_DIRTY_MESSAGE_SELECTOR,
             debounceDelay: DIRTY_TRACKING_INTERNAL.DEBOUNCE_DELAY,
-            dirtyFieldClass: Hi.ATTR_V2_FIELD_DIRTY_CLASS || 'attr-v2-field-dirty',
-            dirtyIndicatorClass: Hi.ATTR_V2_DIRTY_INDICATOR_CLASS || 'attr-v2-dirty-indicator'
+            dirtyFieldClass: DIRTY_TRACKING_INTERNAL.FIELD_DIRTY_CLASS,
+            dirtyIndicatorClass: DIRTY_TRACKING_INTERNAL.DIRTY_INDICATOR_CLASS
         };
         
         // Instance-specific state
@@ -340,7 +339,7 @@
             const form = this.container.querySelector(this.config.formSelector);
             if (!form) return;
             
-            const displayFields = form.querySelectorAll('.display-field');
+            const displayFields = form.querySelectorAll(Hi.ATTR_V2_DISPLAY_FIELD_SELECTOR);
             displayFields.forEach(displayField => {
                 const hiddenFieldId = displayField.getAttribute('data-hidden-field');
                 const hiddenField = hiddenFieldId ? document.getElementById(hiddenFieldId) : null;

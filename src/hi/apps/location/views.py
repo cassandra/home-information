@@ -214,7 +214,7 @@ class LocationAttributeUploadView( View, LocationViewMixin ):
                 "success": True,
                 "updates": [
                     {
-                        "target": f"#{DIVID['ATTR_V2_FILE_GRID']}",
+                        "target": f"#{attr_context.file_grid_html_id}",
                         "html": file_card_html,
                         "mode": "append"
                     }
@@ -241,7 +241,7 @@ class LocationAttributeUploadView( View, LocationViewMixin ):
                 "success": False,
                 "updates": [
                     {
-                        "target": f"#{DIVID['ATTR_V2_STATUS_MSG']}",
+                        "target": f'#{attr_context.status_msg_html_id}',
                         "html": error_html,
                         "mode": "replace"
                     }

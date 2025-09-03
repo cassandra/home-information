@@ -22,7 +22,7 @@ Individual attribute attribute card with value editing and actions
   {% endif %}
   
   <!-- Attribute Header -->
-  <div class="attr-v2-attribute-header">
+  <div class="{{ DIVID.ATTR_V2_ATTRIBUTE_HEADER_CLASS }}">
     <h6 class="{{ DIVID.ATTR_V2_ATTRIBUTE_NAME_CLASS }}">
       {% if attribute_form.instance.pk %}
         {{ attribute_form.instance.name }}
@@ -31,7 +31,7 @@ Individual attribute attribute card with value editing and actions
       {% endif %}
     </h6>
     
-    <div class="attr-v2-attribute-actions">
+    <div class="{{ DIVID.ATTR_V2_ATTRIBUTE_ACTIONS_CLASS }}">
       <!-- Reorder Controls (disabled until Issue #80, hidden if allow_reordering is False) -->
       {% if attribute_form.instance.pk and attribute_form.allow_reordering %}
       <button type="button" 
@@ -52,7 +52,7 @@ Individual attribute attribute card with value editing and actions
       
       {% if attribute_form.instance.pk %}
         <a href="{% attr_history_url attr_context attribute_form.instance.pk %}"
-           class="btn btn-sm btn-outline-secondary attr-v2-history-link"
+           class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_HISTORY_LINK_CLASS }}"
            title="View history">
           {% icon "history" size="sm" %}
         </a>
@@ -77,7 +77,7 @@ Individual attribute attribute card with value editing and actions
   </div>
   
   <!-- Attribute Value -->
-  <div class="attr-v2-attribute-value">
+  <div class="{{ DIVID.ATTR_V2_ATTRIBUTE_VALUE_CLASS }}">
     {% if attribute_form.instance.pk %}
       <!-- Existing attribute - include hidden name field -->
       <input type="hidden" 
@@ -111,20 +111,20 @@ Individual attribute attribute card with value editing and actions
         {% include "attribute/components/value_types/attribute_value_secret.html" %}
       {% else %}
         <!-- TEXT and other types use textarea -->
-        <div class="attr-v2-text-value">
+        <div class="{{ DIVID.ATTR_V2_TEXT_VALUE_CLASS }}">
           {% include "attribute/components/value_types/attribute_value_text.html" %}
         </div>
       {% endif %}
     {% else %}
       <!-- New attribute - always use textarea (TEXT behavior) -->
-      <div class="attr-v2-text-value">
+      <div class="{{ DIVID.ATTR_V2_TEXT_VALUE_CLASS }}">
         {% include "attribute/components/value_types/attribute_value_text.html" %}
       </div>
     {% endif %}
     
     <!-- Secret checkbox for new properties -->
     {% if not attribute_form.instance.pk %}
-      <div class="attr-v2-secret-checkbox">
+      <div class="{{ DIVID.ATTR_V2_SECRET_CHECKBOX_CLASS }}">
         <div class="custom-control custom-checkbox">
           {{ attribute_form.secret }}
           <label class="custom-control-label" for="{{ attribute_form.secret.id_for_label }}">
@@ -138,7 +138,7 @@ Individual attribute attribute card with value editing and actions
   <!-- Inline History Target (empty until populated) -->
   {% if attribute_form.instance.pk %}
     <div id="{{ attr_context|history_target_id:attribute_form.instance.pk }}" 
-         class="attr-v2-inline-history">
+         class="{{ DIVID.ATTR_V2_INLINE_HISTORY_CLASS }}">
     </div>
   {% endif %}
 </div>

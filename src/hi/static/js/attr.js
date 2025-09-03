@@ -25,7 +25,6 @@
         // CSS state classes (JS-managed, not in templates)
         TRUNCATED_CLASS: 'truncated',
         MARKED_FOR_DELETION_CLASS: 'marked-for-deletion',
-        DISPLAY_FIELD_CLASS: 'display-field',
         ACTIVATED_CLASS: 'activated',
         HAS_DIRTY_INDICATOR_CLASS: 'has-dirty-indicator',
         HAS_DIRTY_FIELD_CLASS: 'has-dirty-field',
@@ -498,11 +497,7 @@
         });
         
         // Handle file upload forms - find the context-specific file input
-        const contextSuffix = $container.attr(Hi.CONTEXT_SUFFIX_DATA_ATTR) || '';
-        const fileInputId = `${Hi.ATTR_V2_FILE_INPUT_ID}${contextSuffix}`;
-        const uploadContainerId = `${Hi.ATTR_V2_UPLOAD_FORM_CONTAINER_ID}${contextSuffix}`;
-        const $fileInput = $(`#${uploadContainerId}`).find(`#${fileInputId}`);
-        
+        const $fileInput = $container.find(Hi.ATTR_V2_FILE_INPUT_SELECTOR);
         
         if ($fileInput.length > 0) {
             // Skip if already processed
@@ -930,7 +925,7 @@
     
     function _initializeExpandableTextareas() {
         // Initialize based on server-rendered overflow state using hidden field pattern
-        const displayTextareas = $('.display-field');
+        const displayTextareas = $(Hi.ATTR_V2_DISPLAY_FIELD_SELECTOR);
         
         displayTextareas.each(function() {
             const displayField = $(this);
@@ -950,9 +945,10 @@
     function _toggleExpandedView(button) {
         const $button = $(button);
         const wrapper = $button.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
-        const displayField = wrapper.find('.display-field, ' + Hi.ATTR_V2_TEXTAREA_SELECTOR); // Support both new and legacy
-        const showMoreText = $button.find('.show-more-text');
-        const showLessText = $button.find('.show-less-text');
+        const displayField = wrapper.find(Hi.ATTR_V2_DISPLAY_FIELD_SELECTOR
+                                          + ', ' + Hi.ATTR_V2_TEXTAREA_SELECTOR); // Support both new and legacy
+        const showMoreText = $button.find(Hi.ATTR_V2_SHOW_MORE_TEXT_SELECTOR);
+        const showLessText = $button.find(Hi.ATTR_V2_SHOW_LESS_TEXT_SELECTOR);
         
         // Get hidden field if using new pattern
         const hiddenFieldId = displayField.attr(Hi.DATA_HIDDEN_FIELD_ATTR);
@@ -1035,7 +1031,7 @@
     // Sync textarea values to hidden fields before form submission
     function _syncTextareaValuesToHiddenFields($container) {
         // Process all display fields within this container
-        $container.find('.display-field').each(function() {
+        $container.find(Hi.ATTR_V2_DISPLAY_FIELD_SELECTOR).each(function() {
             const displayField = $(this);
             const hiddenFieldId = displayField.attr(Hi.DATA_HIDDEN_FIELD_ATTR);
             const hiddenField = hiddenFieldId ? $container.find('#' + hiddenFieldId) : null;

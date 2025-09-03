@@ -59,9 +59,9 @@ Compact history display that loads into attribute cards
               class="btn btn-sm btn-link p-0"
               data-toggle="collapse"
               data-target="#{{ attr_context|history_toggle_id:attribute.id }}"
-              onclick="$(this).find('.show-more-text, .show-less-text').toggle();">
-        <small class="show-more-text">Show {{ history_records|length|add:'-3' }} more...</small>
-        <small class="show-less-text" style="display: none;">Show less</small>
+              onclick="$(this).find('.show-more-history, .show-less-history').toggle();">
+        <small class="show-more-history">Show {{ history_records|length|add:'-3' }} more...</small>
+        <small class="show-less-history" style="display: none;">Show less</small>
       </button>
     </div>
     {% endif %}

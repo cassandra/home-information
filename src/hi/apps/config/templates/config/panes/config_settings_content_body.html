@@ -7,20 +7,22 @@ This is what gets replaced on form submission
 {% endcomment %}
 
 <!-- Sticky Panel - matches existing attr-v2 structure -->
-<div class="attr-v2-sticky-panel">
-  <div class="attr-v2-action-bar">
-    <div class="attr-v2-action-bar-content">
+<div class="{{ DIVID.ATTR_V2_STICKY_PANEL_CLASS }}">
+  <div class="{{ DIVID.ATTR_V2_ACTION_BAR_CLASS }}">
+    <div class="{{ DIVID.ATTR_V2_ACTION_BAR_CONTENT_CLASS }}">
       <!-- Left Side: UPDATE button and message area -->
       <div>
-        <button id="{{ DIVID.ATTR_V2_UPDATE_BTN }}{{ shared_editing_context.id_suffix }}" 
+        <button id="{{ shared_editing_context.update_button_html_id }}" 
                 type="submit" 
-                class="btn btn-primary attr-v2-update-btn"
+                class="btn btn-primary {{ DIVID.ATTR_V2_UPDATE_BTN_CLASS }}"
                 name="action" 
                 value="update">
           {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
         </button>
-        <span id="{{ shared_editing_context.dirty_msg_html_id }}" class="attr-v2-dirty-message ml-3"></span>
-        <span id="{{ shared_editing_context.status_msg_html_id }}" class="attr-v2-status-message ml-2">
+        <span id="{{ shared_editing_context.dirty_msg_html_id }}"
+              class="{{ DIVID.ATTR_V2_DIRTY_MESSAGE_CLASS }} ml-3"></span>
+        <span id="{{ shared_editing_context.status_msg_html_id }}"
+              class="{{ DIVID.ATTR_V2_STATUS_MESSAGE_CLASS }} ml-2">
           {% if success_message %}
             <span class="text-success {{ DIVID.ATTR_V2_AUTO_DISMISS_CLASS }}">{{ success_message }}</span>
           {% elif error_message %}
@@ -30,7 +32,7 @@ This is what gets replaced on form submission
       </div>
       
       <!-- Right Side: System Settings title (replaces Add buttons for system settings) -->
-      <div class="attr-v2-action-buttons">
+      <div class="{{ DIVID.ATTR_V2_ACTION_BUTTONS_CLASS }}">
         <h4 class="mb-0 text-muted">System Settings</h4>
       </div>
     </div>
@@ -38,13 +40,14 @@ This is what gets replaced on form submission
 </div>
 
 <!-- Scrollable Content Area - matches existing attr-v2 structure -->
-<div id="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT }}" class="attr-v2-scrollable-content">
+<div id="{{ shared_editing_context.scrollable_content_html_id }}"
+     class="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT_CLASS }}">
   
   <!-- Vertical Tabbed Subsystem Interface -->
   <div class="d-flex mt-3">
     <!-- Left Column: Vertical Navigation -->
     <div class="flex-column">
-      <nav class="nav flex-column" id="{{ DIVID.SUBSYSTEM_TABS }}" role="tablist">
+      <nav class="nav flex-column" id="subsystemTabs" role="tablist">
         {% for subsystem_data in subsystem_edit_data_list %}
         <a class="nav-link {% if selected_subsystem_id == subsystem_data.subsystem.id|stringformat:'s' %}active{% endif %}" 
            id="subsystem-{{ subsystem_data.subsystem.id }}-tab" 

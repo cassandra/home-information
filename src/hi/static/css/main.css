@@ -929,20 +929,6 @@ a.clickable-card:active {
     animation: fadeIn 0.3s ease;
 }
 
-/* Modal Overlay Transitions */
-.attr-v2-modal-overlay {
-    transition: opacity 0.3s ease;
-}
-
-.attr-v2-overlay-content {
-    transition: transform 0.3s ease;
-    transform: scale(0.9);
-}
-
-.attr-v2-modal-overlay:not([style*="display: none"]) .attr-v2-overlay-content {
-    transform: scale(1);
-}
-
 /* Status Message Transitions */
 .attr-v2-status-message {
     transition: opacity 0.25s ease, color 0.25s ease;
@@ -1120,8 +1106,6 @@ a.clickable-card:active {
     .attr-v2-container select,
     .attr-v2-container textarea,
     .attr-v2-add-form,
-    .attr-v2-modal-overlay,
-    .attr-v2-overlay-content,
     .attr-v2-file-thumbnail {
         animation: none;
         transition: none;
@@ -1184,52 +1168,6 @@ a.clickable-card:active {
 
 .attr-v2-add-form-content .custom-control {
     padding-top: 0.5rem;
-}
-
-/* Modal-over-Modal Overlay Pattern */
-.attr-v2-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    z-index: 1055; /* Above Bootstrap modal (1050) */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.attr-v2-overlay-content {
-    background: var(--white);
-    border-radius: 0.5rem;
-    max-width: 500px;
-    max-height: 70vh;
-    width: 90%;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    display: flex;
-    flex-direction: column;
-}
-
-.attr-v2-overlay-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    border-bottom: 1px solid var(--line-color);
-    flex-shrink: 0;
-}
-
-.attr-v2-overlay-header h6 {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
-}
-
-.attr-v2-overlay-body {
-    padding: 1rem;
-    overflow-y: auto;
-    flex-grow: 1;
 }
 
 .btn-control {
@@ -2687,55 +2625,6 @@ g[hover] {
 }
 
 /* ====================================================================== */
-/* HISTORY OVERLAY STYLING                                               */
-/* ====================================================================== */
-
-.attr-v2-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000; /* Above the main modal */
-}
-
-.attr-v2-overlay-content {
-    background: var(--background-color);
-    border-radius: 0.5rem;
-    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
-    max-width: 500px;
-    width: 90%;
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-}
-
-.attr-v2-overlay-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.attr-v2-overlay-header h6 {
-    margin: 0;
-    font-weight: 600;
-    color: var(--text-color);
-}
-
-.attr-v2-overlay-body {
-    padding: 1.5rem;
-    overflow-y: auto;
-    flex: 1;
-}
-
-
-/* ====================================================================== */
 /* COMPACT BASIC INFO HEADER                                              */
 /* ====================================================================== */
 
@@ -3052,10 +2941,6 @@ g[hover] {
 
 /* Touch device optimizations */
 @media (max-width: 768px) {
-    .attr-v2-overlay-content {
-        width: 95%;
-        max-height: 90vh;
-    }
     
     .attr-v2-add-form-actions {
         flex-direction: column;
