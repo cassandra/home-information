@@ -7,7 +7,8 @@ from typing import Any, Dict, List, Optional
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
-import json
+from hi.apps.attribute.response_helpers import AttributeResponseBuilder, UpdateMode
+from hi.apps.attribute.response_constants import DefaultMessages
 from hi.constants import DIVID
 from .config_edit_form_handler import ConfigEditFormHandler
 from .forms import SubsystemAttributeFormSet
@@ -83,7 +84,7 @@ class ConfigEditResponseRenderer:
         
         context = self.build_template_context(
             subsystem_formset_list,
-            success_message="Settings saved successfully",
+            success_message=DefaultMessages.SAVE_SUCCESS,
             selected_subsystem_id=selected_subsystem_id
         )
         
@@ -94,24 +95,16 @@ class ConfigEditResponseRenderer:
         shared_context = context.get('shared_editing_context')
         content_target = f"#{shared_context.content_html_id}" if shared_context else f"#{DIVID['ATTR_V2_CONTENT']}"
         
-        # Build JSON response with container-aware target selectors
-        response_data = {
-            "success": True,
-            "updates": [
-                {
-                    "target": content_target,
-                    "html": content_html,
-                    "mode": "replace"
-                }
-                # Future: Can add upload form container targeting
-            ],
-            "message": "Settings saved successfully"
-        }
-        
-        return HttpResponse(
-            json.dumps(response_data),
-            content_type='application/json'
-        )
+        # Build response using the new helper
+        return (AttributeResponseBuilder()
+                .success()
+                .add_update(
+                    target=content_target,
+                    html=content_html,
+                    mode=UpdateMode.REPLACE
+                )
+                .with_message(DefaultMessages.SAVE_SUCCESS)
+                .build_http_response())
 
     def render_error_response(
             self,
@@ -128,7 +121,7 @@ class ConfigEditResponseRenderer:
                 if form.errors:
                     error_count += len(form.errors)
         
-        error_message = "Please correct the errors below." if error_count > 0 else "Validation failed."
+        error_message = DefaultMessages.SAVE_ERROR if error_count > 0 else "Validation failed."
         
         context = self.build_template_context(
             subsystem_formset_list,
@@ -144,21 +137,13 @@ class ConfigEditResponseRenderer:
         shared_context = context.get('shared_editing_context')
         content_target = f"#{shared_context.content_html_id}" if shared_context else f"#{DIVID['ATTR_V2_CONTENT']}"
         
-        # Build JSON error response with container-aware target selectors
-        response_data = {
-            "success": False,
-            "updates": [
-                {
-                    "target": content_target,
-                    "html": content_html,
-                    "mode": "replace"
-                }
-            ],
-            "message": error_message
-        }
-        
-        return HttpResponse(
-            json.dumps(response_data),
-            content_type='application/json',
-            status=400
-        )
+        # Build error response using the new helper
+        return (AttributeResponseBuilder()
+                .error()
+                .add_update(
+                    target=content_target,
+                    html=content_html,
+                    mode=UpdateMode.REPLACE
+                )
+                .with_message(error_message)
+                .build_http_response())

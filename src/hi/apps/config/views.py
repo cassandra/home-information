@@ -11,6 +11,8 @@ import hi.apps.common.antinode as antinode
 from hi.enums import ViewMode, ViewType
 from hi.hi_grid_view import HiGridView
 from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
+from hi.apps.attribute.response_helpers import AttributeResponseBuilder, UpdateMode
+from hi.apps.attribute.response_constants import HTTPHeaders
 
 from .enums import ConfigPageType
 from .models import SubsystemAttribute
@@ -204,31 +206,26 @@ class SubsystemAttributeHistoryInlineView(BaseAttributeHistoryView):
         context.update(attr_context.to_template_context())
         
         # Check if this is an AJAX request and return JSON response
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if request.headers.get(HTTPHeaders.X_REQUESTED_WITH) == HTTPHeaders.XML_HTTP_REQUEST:
             from django.template.loader import render_to_string
-            from django.http import HttpResponse
-            import json
             
             # Render the template to HTML string
-            html_content = render_to_string(self.get_template_name(), context, request=request)
+            html_content = render_to_string(
+                template_name=self.get_template_name(), 
+                context=context, 
+                request=request
+            )
             
             # Build JSON response with target selector for history content
-            response_data = {
-                "success": True,
-                "updates": [
-                    {
-                        "target": f"#{attr_context.history_target_id(attribute.id)}",
-                        "html": html_content,
-                        "mode": "replace"
-                    }
-                ],
-                "message": f"History for {attribute.name}"
-            }
-            
-            return HttpResponse(
-                json.dumps(response_data),
-                content_type='application/json'
-            )
+            return (AttributeResponseBuilder()
+                    .success()
+                    .add_update(
+                        target=f"#{attr_context.history_target_id(attribute.id)}",
+                        html=html_content,
+                        mode=UpdateMode.REPLACE
+                    )
+                    .with_message(f"History for {attribute.name}")
+                    .build_http_response())
         else:
             # Use Django render shortcut for non-AJAX requests
             from django.shortcuts import render

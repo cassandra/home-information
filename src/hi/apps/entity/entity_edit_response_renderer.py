@@ -10,9 +10,9 @@ from django.http import HttpRequest
 from django.template.loader import render_to_string
 from django.urls import reverse
 
-import json
+from hi.apps.attribute.response_helpers import AttributeResponseBuilder, DOMUpdate, UpdateMode
+from hi.apps.attribute.response_constants import DefaultMessages
 from django.http import HttpResponse
-from hi.constants import DIVID
 from .entity_edit_form_handler import EntityEditFormHandler
 from .models import Entity, EntityAttribute
 from .forms import EntityForm, EntityAttributeRegularFormSet
@@ -177,34 +177,27 @@ class EntityEditResponseRenderer:
         content_body, upload_form = self.render_update_fragments(
             request=request,
             entity=entity, 
-            success_message="Changes saved successfully"
+            success_message=DefaultMessages.SAVE_SUCCESS
         )
         
         # Get the edit context to build proper target selectors
         attr_context = EntityAttributeEditContext(entity)
         
-        # Build JSON response with container-aware target selectors
-        response_data = {
-            "success": True,
-            "updates": [
-                {
-                    "target": f"#{attr_context.content_html_id}",
-                    "html": content_body,
-                    "mode": "replace"
-                },
-                {
-                    "target": f"#{attr_context.upload_form_container_html_id}",
-                    "html": upload_form,
-                    "mode": "replace"
-                }
-            ],
-            "message": "Changes saved successfully"
-        }
-        
-        return HttpResponse(
-            json.dumps(response_data),
-            content_type='application/json'
-        )
+        # Build response using the new helper
+        return (AttributeResponseBuilder()
+                .success()
+                .add_update(
+                    target=f"#{attr_context.content_html_id}",
+                    html=content_body,
+                    mode=UpdateMode.REPLACE
+                )
+                .add_update(
+                    target=f"#{attr_context.upload_form_container_html_id}",
+                    html=upload_form,
+                    mode=UpdateMode.REPLACE
+                )
+                .with_message(DefaultMessages.SAVE_SUCCESS)
+                .build_http_response())
 
     def render_error_response(
             self,
@@ -229,34 +222,26 @@ class EntityEditResponseRenderer:
             entity=entity, 
             entity_form=entity_form, 
             regular_attributes_formset=regular_attributes_formset, 
-            error_message="Please correct the errors below",
+            error_message=DefaultMessages.SAVE_ERROR,
             has_errors=True,
         )
         
         # Get the edit context to build proper target selectors
         attr_context = EntityAttributeEditContext(entity)
         
-        # Build JSON error response with container-aware target selectors
-        response_data = {
-            "success": False,
-            "updates": [
-                {
-                    "target": f"#{attr_context.content_html_id}",
-                    "html": content_body,
-                    "mode": "replace"
-                },
-                {
-                    "target": f"#{attr_context.upload_form_container_html_id}",
-                    "html": upload_form,
-                    "mode": "replace"
-                }
-            ],
-            "message": "Please correct the errors below"
-        }
-        
-        return HttpResponse(
-            json.dumps(response_data),
-            content_type='application/json',
-            status=400
-        )
+        # Build error response using the new helper
+        return (AttributeResponseBuilder()
+                .error()
+                .add_update(
+                    target=f"#{attr_context.content_html_id}",
+                    html=content_body,
+                    mode=UpdateMode.REPLACE
+                )
+                .add_update(
+                    target=f"#{attr_context.upload_form_container_html_id}",
+                    html=upload_form,
+                    mode=UpdateMode.REPLACE
+                )
+                .with_message(DefaultMessages.SAVE_ERROR)
+                .build_http_response())
     

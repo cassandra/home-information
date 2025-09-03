@@ -4,9 +4,11 @@ from typing import Any, Dict
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
-import json
 from django.template.loader import render_to_string
 from django.views.generic import View
+
+from hi.apps.attribute.response_helpers import AttributeResponseBuilder, UpdateMode
+from hi.apps.attribute.response_constants import DefaultMessages, HTTPHeaders
 
 from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
 import hi.apps.common.antinode as antinode
@@ -164,50 +166,35 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
             )
             
             # Build JSON response for successful file upload
-            response_data = {
-                "success": True,
-                "updates": [
-                    {
-                        "target": f"#{attr_context.file_grid_html_id}",
-                        "html": file_card_html,
-                        "mode": "append"
-                    }
-                ],
-                "message": "File uploaded successfully"
-            }
-            
-            return HttpResponse(
-                json.dumps(response_data),
-                content_type='application/json'
-            )
+            return (AttributeResponseBuilder()
+                    .success()
+                    .add_update(
+                        target=f"#{attr_context.file_grid_html_id}",
+                        html=file_card_html,
+                        mode=UpdateMode.APPEND
+                    )
+                    .with_message(DefaultMessages.UPLOAD_SUCCESS)
+                    .build_http_response())
         else:
             # Render error message to status area
             error_html: str = render_to_string(
                 'attribute/components/status_message.html',
                 {
-                    'error_message': 'File upload failed. Please check the file and try again.',
+                    'error_message': DefaultMessages.UPLOAD_ERROR,
                     'form_errors': entity_attribute_upload_form.errors
                 }
             )
 
             # Build JSON error response for failed file upload
-            response_data = {
-                "success": False,
-                "updates": [
-                    {
-                        "target": f'#{attr_context.status_msg_html_id}',
-                        "html": error_html,
-                        "mode": "replace"
-                    }
-                ],
-                "message": "File upload failed. Please check the file and try again."
-            }
-            
-            return HttpResponse(
-                json.dumps(response_data),
-                content_type='application/json',
-                status=400
-            )
+            return (AttributeResponseBuilder()
+                    .error()
+                    .add_update(
+                        target=f'#{attr_context.status_msg_html_id}',
+                        html=error_html,
+                        mode=UpdateMode.REPLACE
+                    )
+                    .with_message(DefaultMessages.UPLOAD_ERROR)
+                    .build_http_response())
 
 
 class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
@@ -263,27 +250,24 @@ class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
         context.update(attr_context.to_template_context())
         
         # Check if this is an AJAX request and return JSON response
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if request.headers.get(HTTPHeaders.X_REQUESTED_WITH) == HTTPHeaders.XML_HTTP_REQUEST:
             # Render the template to HTML string
-            html_content = render_to_string(self.get_template_name(), context, request=request)
+            html_content = render_to_string(
+                template_name=self.get_template_name(), 
+                context=context, 
+                request=request
+            )
             
             # Build JSON response with target selector for history content
-            response_data = {
-                "success": True,
-                "updates": [
-                    {
-                        "target": f"#{attr_context.history_target_id(attribute.id)}",
-                        "html": html_content,
-                        "mode": "replace"
-                    }
-                ],
-                "message": f"History for {attribute.name}"
-            }
-            
-            return HttpResponse(
-                json.dumps(response_data),
-                content_type='application/json'
-            )
+            return (AttributeResponseBuilder()
+                    .success()
+                    .add_update(
+                        target=f"#{attr_context.history_target_id(attribute.id)}",
+                        html=html_content,
+                        mode=UpdateMode.REPLACE
+                    )
+                    .with_message(f"History for {attribute.name}")
+                    .build_http_response())
         else:
             # Use Django render shortcut for non-AJAX requests
             return render(request, self.get_template_name(), context)
