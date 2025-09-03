@@ -632,7 +632,7 @@
         const fileValue = $fileCard.find(Hi.ATTR_V2_FILE_TITLE_INPUT_SELECTOR).val().trim();
 
         // Find and mark the server-rendered DELETE field for deletion
-        const $deleteField = $fileCard.find('input[name="delete_file_attribute"]');
+        const $deleteField = $fileCard.find(`input[name="${Hi.ATTR_V2_DELETE_FILE_ATTR}"]`);
         if ($deleteField.length > 0) {
             // Set value to the attribute ID to mark for deletion
             $deleteField.val(attributeId);
@@ -662,7 +662,7 @@
         const fileValue = $fileCard.find(Hi.ATTR_V2_FILE_TITLE_INPUT_SELECTOR).val().trim();
 
         // Unmark the DELETE field
-        const $deleteField = $fileCard.find('input[name="delete_file_attribute"]');
+        const $deleteField = $fileCard.find(`input[name="${Hi.ATTR_V2_DELETE_FILE_ATTR}"]`);
         if ($deleteField.length > 0) {
             $deleteField.val("");
         }

@@ -32,7 +32,7 @@ LocationAttributeRegularFormSet = forms.inlineformset_factory(
 )
 
 
-class LocationModalEditForm( forms.ModelForm ):
+class LocationForm( forms.ModelForm ):
     """
     Location edit form for modal - only includes name field.
     Geometry fields (svg_view_box_str, order_id) are edited separately.

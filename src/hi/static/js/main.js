@@ -107,6 +107,7 @@
         DATA_OVERFLOW_ATTR: 'data-overflow',
         DATA_LINE_COUNT_ATTR: 'data-line-count',
         DATA_ORIGINAL_VALUE_ATTR: 'data-original-value',
+        ATTR_V2_DELETE_FILE_ATTR: 'delete_file_attribute'
     };
     
     window.Hi = Hi;

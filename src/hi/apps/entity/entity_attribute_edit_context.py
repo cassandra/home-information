@@ -5,8 +5,16 @@ This module contains Entity-specific implementations of the AttributeEditContext
 pattern, encapsulating entity-specific domain knowledge while maintaining
 the generic template interface.
 """
+from typing import Any, Dict, Optional, Type
+
+from django.forms import ModelForm, BaseInlineFormSet
+from django.urls import reverse
+
 from hi.apps.attribute.edit_context import AttributeEditContext
-from .models import Entity
+from hi.apps.attribute.models import AttributeModel
+
+from .forms import EntityForm, EntityAttributeRegularFormSet
+from .models import Entity, EntityAttribute
 
 
 class EntityAttributeEditContext(AttributeEditContext):
@@ -31,3 +39,26 @@ class EntityAttributeEditContext(AttributeEditContext):
         """Get the Entity instance (typed accessor)."""
         return self.owner
     
+    @property
+    def attribute_model_subclass(self) -> Type[AttributeModel]:
+        return EntityAttribute
+    
+    def create_owner_form( self, form_data : Optional[ Dict[str, Any] ] = None ) -> ModelForm:
+        return EntityForm( form_data, instance = self.entity )
+    
+    def create_regular_attributes_formset(
+            self, form_data : Optional[ Dict[str, Any] ] = None ) -> BaseInlineFormSet:
+        return EntityAttributeRegularFormSet(
+            form_data,
+            instance = self.entity,
+            prefix = self.formset_prefix,
+        )
+
+    @property
+    def content_body_template_name(self):
+        return 'entity/panes/entity_edit_content_body.html'
+    
+    @property
+    def file_upload_url(self) -> str:
+        return reverse( 'entity_attribute_upload',
+                        kwargs = { 'entity_id': self.entity.id })

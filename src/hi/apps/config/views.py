@@ -10,9 +10,10 @@ import hi.apps.common.antinode as antinode
 
 from hi.enums import ViewMode, ViewType
 from hi.hi_grid_view import HiGridView
-from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
 from hi.apps.attribute.response_helpers import AttributeResponseBuilder, UpdateMode
 from hi.apps.attribute.response_constants import HTTPHeaders
+from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
+from hi.apps.attribute.views_base import AttributeEditViewMixin
 
 from .enums import ConfigPageType
 from .models import SubsystemAttribute
@@ -82,7 +83,47 @@ class ConfigPageView( HiGridView ):
         raise NotImplementedError('Subclasses must override this method.')
 
     
-class ConfigSettingsView( ConfigPageView, SettingsMixin ):
+class ConfigSettingsView_ORIGINAL( ConfigPageView, SettingsMixin ):
+
+    @property
+    def config_page_type(self) -> ConfigPageType:
+        return ConfigPageType.SETTINGS
+    
+    def get_main_template_name( self ) -> str:
+        return 'config/panes/settings.html'
+
+    def get_main_template_context( self, request, *args, **kwargs ):
+        """Delegate form creation and context building to handler."""
+        form_handler = ConfigEditFormHandler()
+        subsystem_id = kwargs.get('subsystem_id')
+        return form_handler.create_initial_context(selected_subsystem_id=subsystem_id)
+
+    def post( self, request, *args, **kwargs ):
+        """Handle unified form submission using helper classes."""
+        
+        # Delegate form handling to specialized handlers
+        form_handler = ConfigEditFormHandler()
+        renderer = ConfigEditResponseRenderer()
+        subsystem_id = kwargs.get('subsystem_id')
+        
+        # Create formsets with POST data
+        subsystem_formset_list = form_handler.create_config_forms(
+            request.POST, request.FILES
+        )
+
+        # Validate all formsets
+        if form_handler.validate_all_formsets(subsystem_formset_list):
+            # Save all formsets
+            form_handler.save_all_formsets(subsystem_formset_list, request)
+            
+            # Return success response with fresh data
+            return renderer.render_success_response(request, selected_subsystem_id=subsystem_id)
+        else:
+            # Return error response with validation errors
+            return renderer.render_error_response(request, subsystem_formset_list, selected_subsystem_id=subsystem_id)
+
+    
+class ConfigSettingsView( ConfigPageView, SettingsMixin, AttributeEditViewMixin ):
 
     @property
     def config_page_type(self) -> ConfigPageType:

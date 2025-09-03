@@ -9,15 +9,14 @@ from django.shortcuts import render, reverse
 from django.template.loader import render_to_string
 from django.views.generic import View
 
-import hi.apps.common.antinode as antinode
 from hi.apps.common.utils import is_ajax
 
-from hi.constants import DIVID
+from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
+from hi.apps.attribute.views_base import AttributeEditViewMixin
 from hi.enums import ItemType, ViewType
 from hi.exceptions import ForceSynchronousException
 from hi.hi_async_view import HiModalView
 from hi.hi_grid_view import HiGridView
-from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
 from hi.views import page_not_found_response
 
 from .forms import LocationAttributeUploadForm
@@ -118,7 +117,7 @@ class LocationItemStatusView( View ):
         raise BadRequest( f'Unknown item type "{item_type}".' )
 
 
-class LocationEditView(HiModalView, LocationViewMixin):
+class LocationEditView_ORIGINAL(HiModalView, LocationViewMixin):
     """Location attribute editing modal with redesigned interface.
     
     This view uses a dual response pattern:
@@ -174,9 +173,43 @@ class LocationEditView(HiModalView, LocationViewMixin):
             return renderer.render_error_response(
                 request, location, location_form, regular_attributes_formset
             )
+
+
+class LocationEditView( HiModalView, LocationViewMixin, AttributeEditViewMixin ):
+    """Location attribute editing modal with redesigned interface.
     
-    def get_success_url_name(self) -> str:
-        return 'location_edit'
+    This view uses a dual response pattern:
+    - get(): Returns full modal using standard modal_response()
+    - post(): Returns antinode fragments for async DOM updates
+    
+    Business logic is delegated to specialized handler classes following
+    the "keep views simple" design philosophy.
+    """
+    
+    def get_template_name(self) -> str:
+        return 'location/modals/location_edit.html'
+    
+    def get( self,
+             request : HttpRequest,
+             *args   : Any,
+             **kwargs: Any          ) -> HttpResponse:
+        location = self.get_location(request, *args, **kwargs)
+        attr_context = LocationAttributeEditContext( location = location )
+        template_context = self.create_initial_template_context(
+            attr_context= attr_context,
+        )
+        return self.modal_response( request, template_context )
+    
+    def post( self,
+              request : HttpRequest,
+              *args   : Any,
+              **kwargs: Any          ) -> HttpResponse:
+        location = self.get_location(request, *args, **kwargs)
+        attr_context = LocationAttributeEditContext( location = location )
+        return self.post_attribute_form(
+            request = request,
+            attr_context = attr_context,
+        )
 
     
 class LocationAttributeUploadView( View, LocationViewMixin ):

@@ -17,7 +17,7 @@ from django.http import HttpResponse
 from hi.constants import DIVID
 from .location_edit_form_handler import LocationEditFormHandler
 from .models import Location, LocationAttribute
-from .forms import LocationAttributeRegularFormSet, LocationModalEditForm
+from .forms import LocationAttributeRegularFormSet, LocationForm
 from .location_attribute_edit_context import LocationAttributeEditContext
 
 
@@ -36,7 +36,7 @@ class LocationEditResponseRenderer:
 
     def build_template_context( self,
                                 location                     : Location,
-                                location_form                : LocationModalEditForm,
+                                location_form                : LocationForm,
                                 file_attributes              : QuerySet[LocationAttribute],
                                 regular_attributes_formset   : LocationAttributeRegularFormSet,
                                 success_message              : Optional[str] = None,
@@ -46,7 +46,7 @@ class LocationEditResponseRenderer:
         
         Args:
             location: Location instance
-            location_form: LocationModalEditForm instance
+            location_form: LocationForm instance
             file_attributes: QuerySet of file attributes
             regular_attributes_formset: LocationAttributeRegularFormSet instance
             success_message: Optional success message for display
@@ -82,7 +82,7 @@ class LocationEditResponseRenderer:
     def render_update_fragments( self,
                                  request                     : HttpRequest,
                                  location                    : Location,
-                                 location_form               : Optional[LocationModalEditForm] = None,
+                                 location_form               : Optional[LocationForm] = None,
                                  regular_attributes_formset  : Optional[LocationAttributeRegularFormSet] = None,
                                  success_message             : Optional[str] = None,
                                  error_message               : Optional[str] = None,
@@ -205,14 +205,14 @@ class LocationEditResponseRenderer:
             self,
             request                     : HttpRequest,
             location                    : Location,
-            location_form               : LocationModalEditForm,
+            location_form               : LocationForm,
             regular_attributes_formset  : LocationAttributeRegularFormSet ) -> HttpResponse:
         """Render error response using custom JSON format - multiple target replacement.
         
         Args:
             request: HTTP request object
             location: Location instance
-            location_form: LocationModalEditForm instance with validation errors
+            location_form: LocationForm instance with validation errors
             regular_attributes_formset: FormSet instance with validation errors
             
         Returns:

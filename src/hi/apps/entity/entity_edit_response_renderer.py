@@ -10,7 +10,7 @@ from django.http import HttpRequest
 from django.template.loader import render_to_string
 from django.urls import reverse
 
-from hi.apps.attribute.response_helpers import AttributeResponseBuilder, DOMUpdate, UpdateMode
+from hi.apps.attribute.response_helpers import AttributeResponseBuilder, UpdateMode
 from hi.apps.attribute.response_constants import DefaultMessages
 from django.http import HttpResponse
 from .entity_edit_form_handler import EntityEditFormHandler

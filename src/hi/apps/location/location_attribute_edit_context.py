@@ -5,8 +5,16 @@ This module contains Location-specific implementations of the AttributeEditConte
 pattern, encapsulating location-specific domain knowledge while maintaining
 the generic template interface.
 """
+from typing import Any, Dict, Optional, Type
+
+from django.forms import ModelForm, BaseInlineFormSet
+from django.urls import reverse
+
 from hi.apps.attribute.edit_context import AttributeEditContext
-from .models import Location
+from hi.apps.attribute.models import AttributeModel
+
+from .forms import LocationForm, LocationAttributeRegularFormSet
+from .models import Location, LocationAttribute
 
 
 class LocationAttributeEditContext(AttributeEditContext):
@@ -30,4 +38,28 @@ class LocationAttributeEditContext(AttributeEditContext):
     def location(self) -> Location:
         """Get the Location instance (typed accessor)."""
         return self.owner
+    
+    @property
+    def attribute_model_subclass(self) -> Type[AttributeModel]:
+        return LocationAttribute
+    
+    def create_owner_form( self, form_data : Optional[ Dict[str, Any] ] = None ) -> ModelForm:
+        return LocationForm( form_data, instance = self.location )
+    
+    def create_regular_attributes_formset(
+            self, form_data : Optional[ Dict[str, Any] ] = None ) -> BaseInlineFormSet:
+        return LocationAttributeRegularFormSet(
+            form_data,
+            instance = self.location,
+            prefix = self.formset_prefix,
+        )
+
+    @property
+    def content_body_template_name(self):
+        return 'location/panes/location_edit_content_body.html'
+    
+    @property
+    def file_upload_url(self) -> str:
+        return reverse( 'location_attribute_upload',
+                        kwargs = { 'location_id': self.location.id })
     

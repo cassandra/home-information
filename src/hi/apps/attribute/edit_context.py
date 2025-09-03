@@ -5,9 +5,13 @@ This class provides a clean abstraction that allows attribute editing templates
 to work generically across different owner types (Entity, Location, etc.) while
 maintaining type safety and clear URL routing patterns.
 """
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Type
+
+from django.forms import ModelForm, BaseInlineFormSet
 
 from hi.constants import DIVID
+
+from .models import AttributeModel
 
 
 class AttributeEditContext:
@@ -44,15 +48,48 @@ class AttributeEditContext:
     def owner_name(self) -> str:
         """Get the owner's display name."""
         return self.owner.name
+
+    @property
+    def attribute_model_subclass(self) -> Type[AttributeModel]:
+        raise NotImplementedError('Subclasses must override this method')
+            
+    @property
+    def formset_prefix(self) -> str:
+        return f'{self.owner_type}-{self.owner.id}'
+
+    def create_owner_form( self, form_data : Optional[ Dict[str, Any] ] = None ) -> ModelForm:
+        """ Subclasses can override this if there are model properties of the owner model itself
+        that should be included in the attribute editing interface."""
+        return None
+
+    def create_regular_attributes_formset(
+            self, form_data : Optional[ Dict[str, Any] ] = None ) -> BaseInlineFormSet:
+        """ Formset should extend BaseInlineFormSet.  (should exclude FILE attributes) """
+        raise NotImplementedError('Subclasses must override this method')
+
+    def attributes_queryset(self):
+        """ Default is that AttributeModel suibclass has 'attributes' as the related name for 
+        the owner model. """
+        return self.owner.attributes
+
+    @property
+    def content_body_template_name(self):
+        """ This should be a template that extends attribute/components/edit_content_body.html """
+        raise NotImplementedError('Subclasses must override this method')
+    
+    @property
+    def file_upload_url(self) -> str:
+        """ Should be a view that extends BaseAttributeUploadView """
+        raise NotImplementedError('Subclasses must override this method')
     
     @property
     def history_url_name(self) -> str:
-        """Get the URL name for inline attribute history view."""
+        """ Should be a view that extends BaseAttributeHistoryView """
         return f'{self.owner_type}_attribute_history_inline'
     
     @property
     def restore_url_name(self) -> str:
-        """Get the URL name for inline attribute restore view."""
+        """ Should be a view that extends BaseAttributeRestoreView """
         return f'{self.owner_type}_attribute_restore_inline'
     
     def history_target_id(self, attribute_id: int) -> str:
@@ -157,9 +194,10 @@ class AttributeEditContext:
             dict: Template context variables
         """
         return {
-            "attr_context": self,
-            # Provide the owner under both generic and specific names for compatibility
             "owner": self.owner,
+            "attr_context": self,
+
+            # Duplicate with explicit naming for convenience.
             self.owner_type: self.owner,  # e.g., "entity": self.owner or "location": self.owner
         }
     

@@ -123,4 +123,5 @@ DIVID = {
     'ATTR_V2_DISPLAY_FIELD_CLASS': 'display-field',
     'ATTR_V2_SHOW_MORE_TEXT_CLASS': 'show-more-text',
     'ATTR_V2_SHOW_LESS_TEXT_CLASS': 'show-less-text',
+    'ATTR_V2_DELETE_FILE_ATTR': 'delete_file_attribute',
 }

@@ -11,15 +11,13 @@ from hi.apps.attribute.response_helpers import AttributeResponseBuilder, UpdateM
 from hi.apps.attribute.response_constants import DefaultMessages, HTTPHeaders
 
 from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
-import hi.apps.common.antinode as antinode
+from hi.apps.attribute.views_base import AttributeEditViewMixin
 from hi.apps.control.controller_history_manager import ControllerHistoryManager
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.apps.sense.sensor_history_manager import SensorHistoryMixin
 
 from hi.views import page_not_found_response
 from hi.hi_async_view import HiModalView
-
-from hi.constants import DIVID
 
 from .entity_edit_form_handler import EntityEditFormHandler
 from .entity_edit_response_renderer import EntityEditResponseRenderer
@@ -52,7 +50,7 @@ class EntityStatusView( HiModalView, EntityViewMixin ):
         return self.modal_response( request, context )
 
 
-class EntityEditView(HiModalView, EntityViewMixin):
+class EntityEditView_ORIGINAL(HiModalView, EntityViewMixin):
     """Entity attribute editing modal with redesigned interface.
     
     This view uses a dual response pattern:
@@ -102,9 +100,43 @@ class EntityEditView(HiModalView, EntityViewMixin):
         else:
             # Return error response
             return renderer.render_error_response(request, entity, entity_form, regular_attributes_formset)
+
+
+class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):
+    """Entity attribute editing modal with redesigned interface.
     
-    def get_success_url_name(self) -> str:
-        return 'entity_edit'
+    This view uses a dual response pattern:
+    - get(): Returns full modal using standard modal_response()
+    - post(): Returns antinode fragments for async DOM updates
+    
+    Business logic is delegated to specialized handler classes following
+    the "keep views simple" design philosophy.
+    """
+    
+    def get_template_name(self) -> str:
+        return 'entity/modals/entity_edit.html'
+    
+    def get( self,
+             request : HttpRequest,
+             *args   : Any,
+             **kwargs: Any          ) -> HttpResponse:
+        entity = self.get_entity(request, *args, **kwargs)
+        attr_context = EntityAttributeEditContext( entity = entity )
+        template_context = self.create_initial_template_context(
+            attr_context= attr_context,
+        )
+        return self.modal_response( request, template_context )
+    
+    def post( self,
+              request : HttpRequest,
+              *args   : Any,
+              **kwargs: Any          ) -> HttpResponse:
+        entity = self.get_entity(request, *args, **kwargs)
+        attr_context = EntityAttributeEditContext( entity = entity )
+        return self.post_attribute_form(
+            request = request,
+            attr_context = attr_context,
+        )
 
 
 class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin ):
@@ -166,15 +198,17 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
             )
             
             # Build JSON response for successful file upload
-            return (AttributeResponseBuilder()
-                    .success()
-                    .add_update(
-                        target=f"#{attr_context.file_grid_html_id}",
-                        html=file_card_html,
-                        mode=UpdateMode.APPEND
-                    )
-                    .with_message(DefaultMessages.UPLOAD_SUCCESS)
-                    .build_http_response())
+            return (
+                AttributeResponseBuilder()
+                .success()
+                .add_update(
+                    target=f"#{attr_context.file_grid_html_id}",
+                    html=file_card_html,
+                    mode=UpdateMode.APPEND
+                )
+                .with_message(DefaultMessages.UPLOAD_SUCCESS)
+                .build_http_response()
+            )
         else:
             # Render error message to status area
             error_html: str = render_to_string(
@@ -186,15 +220,17 @@ class EntityAttributeUploadView( View, EntityViewMixin ):
             )
 
             # Build JSON error response for failed file upload
-            return (AttributeResponseBuilder()
-                    .error()
-                    .add_update(
-                        target=f'#{attr_context.status_msg_html_id}',
-                        html=error_html,
-                        mode=UpdateMode.REPLACE
-                    )
-                    .with_message(DefaultMessages.UPLOAD_ERROR)
-                    .build_http_response())
+            return (
+                AttributeResponseBuilder()
+                .error()
+                .add_update(
+                    target=f'#{attr_context.status_msg_html_id}',
+                    html=error_html,
+                    mode=UpdateMode.REPLACE
+                )
+                .with_message(DefaultMessages.UPLOAD_ERROR)
+                .build_http_response()
+            )
 
 
 class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
@@ -259,15 +295,17 @@ class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
             )
             
             # Build JSON response with target selector for history content
-            return (AttributeResponseBuilder()
-                    .success()
-                    .add_update(
-                        target=f"#{attr_context.history_target_id(attribute.id)}",
-                        html=html_content,
-                        mode=UpdateMode.REPLACE
-                    )
-                    .with_message(f"History for {attribute.name}")
-                    .build_http_response())
+            return (
+                AttributeResponseBuilder()
+                .success()
+                .add_update(
+                    target=f"#{attr_context.history_target_id(attribute.id)}",
+                    html=html_content,
+                    mode=UpdateMode.REPLACE
+                )
+                .with_message(f"History for {attribute.name}")
+                .build_http_response()
+            )
         else:
             # Use Django render shortcut for non-AJAX requests
             return render(request, self.get_template_name(), context)
@@ -286,6 +324,8 @@ class EntityAttributeRestoreInlineView(BaseAttributeRestoreView):
              history_id   : int,
              *args        : Any,
              **kwargs     : Any          ) -> HttpResponse:
+        """ Need to do restore in a GET since nested in main form and cannot have a form in a form """
+        
         # Validate that the attribute belongs to this entity for security  
         try:
             attribute: EntityAttribute = EntityAttribute.objects.get(pk=attribute_id, entity_id=entity_id)

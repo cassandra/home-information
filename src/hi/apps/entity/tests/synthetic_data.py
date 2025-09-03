@@ -8,6 +8,7 @@ import uuid
 from django.core.files.uploadedfile import SimpleUploadedFile
 from typing import Optional, Dict, Any, List
 
+from hi.constants import DIVID
 from hi.apps.attribute.enums import AttributeType, AttributeValueType
 from hi.apps.entity.models import Entity, EntityAttribute
 from hi.apps.entity.enums import EntityType
@@ -221,6 +222,6 @@ class EntityAttributeSyntheticData:
     def create_file_deletion_data(file_attributes: List[EntityAttribute]) -> Dict[str, List[str]]:
         """Create POST data for file deletions."""
         return {
-            'delete_file_attribute': [str(attr.id) for attr in file_attributes]
+            DIVID['ATTR_V2_DELETE_FILE_ATTR']: [str(attr.id) for attr in file_attributes]
         }
     
