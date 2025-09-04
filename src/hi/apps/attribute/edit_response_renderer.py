@@ -1,11 +1,13 @@
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from django.http import HttpRequest, HttpResponse
 from django.template.loader import render_to_string
 
 from .edit_context import AttributeItemEditContext
 from .edit_form_handler import AttributeEditFormHandler
+from .forms import AttributeUploadForm
+from .models import AttributeModel, AttributeValueHistoryModel
 from .response_helpers import AttributeResponseBuilder, UpdateMode
 from .response_constants import DefaultMessages
 from .transient_models import AttributeEditFormData
@@ -29,7 +31,7 @@ class AttributeEditResponseRenderer:
     
     def render_success_response( self,
                                  attr_item_context  : AttributeItemEditContext,
-                                 request : HttpRequest      ) -> HttpResponse:
+                                 request            : HttpRequest      ) -> HttpResponse:
         """Render success response using custom JSON format - multiple target replacement.
         Returns:
             HttpResponse: Success response with JSON format for custom Ajax handling
@@ -57,9 +59,9 @@ class AttributeEditResponseRenderer:
         )
 
     def render_error_response( self,
-                               attr_item_context    : AttributeItemEditContext,
-                               edit_form_data  : AttributeEditFormData,
-                               request         : HttpRequest           ) -> HttpResponse:
+                               attr_item_context  : AttributeItemEditContext,
+                               edit_form_data     : AttributeEditFormData,
+                               request            : HttpRequest           ) -> HttpResponse:
         """Render error response using custom JSON format - multiple target replacement.
         Returns:
             HttpResponse: Error response with JSON format for custom Ajax handling
@@ -152,11 +154,11 @@ class AttributeEditResponseRenderer:
         return content_body, upload_form
     
     def build_template_context( self,
-                                attr_item_context     : AttributeItemEditContext,
-                                edit_form_data   : AttributeEditFormData,
-                                success_message  : Optional[str]          = None,
-                                error_message    : Optional[str]          = None,
-                                has_errors       : bool                   = False ) -> Dict[str, Any]:
+                                attr_item_context  : AttributeItemEditContext,
+                                edit_form_data     : AttributeEditFormData,
+                                success_message    : Optional[str]          = None,
+                                error_message      : Optional[str]          = None,
+                                has_errors         : bool                   = False ) -> Dict[str, Any]:
         """
         Returns:
             dict: Template context with all required variables
@@ -178,3 +180,83 @@ class AttributeEditResponseRenderer:
         context.update( attr_item_context.to_template_context() )
         
         return context
+
+    def render_upload_success_response( self,
+                                        attr_item_context  : AttributeItemEditContext,
+                                        attribute_upload_form  : AttributeUploadForm,
+                                        request            : HttpRequest      ) -> HttpResponse:
+
+        context = {'attribute': attribute_upload_form.instance }
+        context.update( attr_item_context.to_template_context() )
+
+        file_card_html = render_to_string(
+            'attribute/components/file_card.html',
+            context,
+            request=request
+        )
+        return (
+            AttributeResponseBuilder()
+            .success()
+            .add_update(
+                target=f"#{attr_item_context.file_grid_html_id}",
+                html=file_card_html,
+                mode=UpdateMode.APPEND
+            )
+            .with_message(DefaultMessages.UPLOAD_SUCCESS)
+            .build_http_response()
+        )
+        
+    def render_upload_error_response( self,
+                                      attr_item_context      : AttributeItemEditContext,
+                                      attribute_upload_form  : AttributeUploadForm,
+                                      request                : HttpRequest           ) -> HttpResponse:
+        error_html: str = render_to_string(
+            'attribute/components/status_message.html',
+            {
+                'error_message': DefaultMessages.UPLOAD_ERROR,
+                'form_errors': attribute_upload_form.errors
+            }
+        )
+        return (
+            AttributeResponseBuilder()
+            .error()
+            .add_update(
+                target=f'#{attr_item_context.status_msg_html_id}',
+                html=error_html,
+                mode=UpdateMode.REPLACE
+            )
+            .with_message(DefaultMessages.UPLOAD_ERROR)
+            .build_http_response()
+        )
+
+    def render_history_response( self,
+                                 attr_item_context  : AttributeItemEditContext,
+                                 attribute          : AttributeModel,
+                                 history_records    : List[AttributeValueHistoryModel],
+                                 request            : HttpRequest           ) -> HttpResponse:
+        context = {
+            'attribute': attribute,
+            'history_records': history_records,
+            'history_url_name': attr_item_context.history_url_name,
+            'restore_url_name': attr_item_context.restore_url_name,
+        }
+        context.update(attr_item_context.to_template_context())
+
+        html_content = render_to_string(
+            template_name = 'attribute/components/attribute_history_inline.html', 
+            context = context, 
+            request = request
+        )
+        
+        # Build JSON response with target selector for history content
+        return (
+            AttributeResponseBuilder()
+            .success()
+            .add_update(
+                target=f"#{attr_item_context.history_target_id(attribute.id)}",
+                html=html_content,
+                mode=UpdateMode.REPLACE
+            )
+            .with_message(f"History for {attribute.name}")
+            .build_http_response()
+        )

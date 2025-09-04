@@ -13,7 +13,7 @@ from hi.hi_grid_view import HiGridView
 from hi.apps.attribute.response_helpers import AttributeResponseBuilder, UpdateMode
 from hi.apps.attribute.response_constants import HTTPHeaders
 from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
-from hi.apps.attribute.views_base import AttributeEditViewMixin
+from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 
 from .enums import ConfigPageType
 from .models import SubsystemAttribute

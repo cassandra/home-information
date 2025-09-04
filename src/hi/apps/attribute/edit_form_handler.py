@@ -8,6 +8,7 @@ from django.http import HttpRequest
 
 from hi.constants import DIVID
 
+from .forms import AttributeUploadForm
 from .edit_context import AttributeItemEditContext
 from .enums import AttributeValueType
 from .models import AttributeModel
@@ -177,3 +178,22 @@ class AttributeEditFormHandler:
                 continue
         
         return non_field_errors
+
+    def create_upload_form( self,
+                            attr_item_context  : AttributeItemEditContext,
+                            request            : HttpRequest ) -> AttributeUploadForm:
+        AttributeUploadFormClass = attr_item_context.attribute_upload_form_class
+        owner_attribute = attr_item_context.create_attribute_model()
+        return AttributeUploadFormClass(
+            request.POST,
+            request.FILES,
+            instance = owner_attribute,
+        )
+
+    def validate_upload_form( self, attribute_upload_form : AttributeUploadForm ) -> bool:
+        return attribute_upload_form.is_valid()
+    
+    def save_upload_form( self, attribute_upload_form : AttributeUploadForm ) -> None:
+        with transaction.atomic():
+            attribute_upload_form.save()   
+        return

@@ -11,13 +11,14 @@ from django.forms import ModelForm, BaseInlineFormSet
 from django.urls import reverse
 
 from hi.apps.attribute.edit_context import AttributeItemEditContext
+from hi.apps.attribute.forms import AttributeUploadForm
 from hi.apps.attribute.models import AttributeModel
 
-from .forms import LocationForm, LocationAttributeRegularFormSet
+from .forms import LocationForm, LocationAttributeRegularFormSet, LocationAttributeUploadForm
 from .models import Location, LocationAttribute
 
 
-class LocationAttributeItemEditContext(AttributeItemEditContext):
+class LocationAttributeItemEditContext( AttributeItemEditContext ):
     """
     Location-specific context provider for attribute editing templates.
     
@@ -25,7 +26,7 @@ class LocationAttributeItemEditContext(AttributeItemEditContext):
     the generic interface expected by attribute editing templates.
     """
     
-    def __init__(self, location: Location) -> None:
+    def __init__(self, location: Location ) -> None:
         """
         Initialize context for Location attribute editing.
         
@@ -43,9 +44,16 @@ class LocationAttributeItemEditContext(AttributeItemEditContext):
     @property
     def attribute_model_subclass(self) -> Type[AttributeModel]:
         return LocationAttribute
+
+    @property
+    def attribute_upload_form_class(self) -> Type[AttributeUploadForm]:
+        return LocationAttributeUploadForm
     
     def create_owner_form( self, form_data : Optional[ Dict[str, Any] ] = None ) -> ModelForm:
         return LocationForm( form_data, instance = self.location )
+    
+    def create_attribute_model( self ) -> AttributeModel:
+        return LocationAttribute( location = self.location )
     
     def create_regular_attributes_formset(
             self, form_data : Optional[ Dict[str, Any] ] = None ) -> BaseInlineFormSet:

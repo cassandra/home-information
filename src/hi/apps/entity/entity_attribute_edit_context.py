@@ -11,9 +11,10 @@ from django.forms import ModelForm, BaseInlineFormSet
 from django.urls import reverse
 
 from hi.apps.attribute.edit_context import AttributeItemEditContext
+from hi.apps.attribute.forms import AttributeUploadForm
 from hi.apps.attribute.models import AttributeModel
 
-from .forms import EntityForm, EntityAttributeRegularFormSet
+from .forms import EntityForm, EntityAttributeRegularFormSet, EntityAttributeUploadForm
 from .models import Entity, EntityAttribute
 
 
@@ -43,9 +44,16 @@ class EntityAttributeItemEditContext(AttributeItemEditContext):
     @property
     def attribute_model_subclass(self) -> Type[AttributeModel]:
         return EntityAttribute
+
+    @property
+    def attribute_upload_form_class(self) -> Type[AttributeUploadForm]:
+        return EntityAttributeUploadForm
     
     def create_owner_form( self, form_data : Optional[ Dict[str, Any] ] = None ) -> ModelForm:
         return EntityForm( form_data, instance = self.entity )
+
+    def create_attribute_model( self ) -> AttributeModel:
+        return EntityAttribute( entity = self.entity )
     
     def create_regular_attributes_formset(
             self, form_data : Optional[ Dict[str, Any] ] = None ) -> BaseInlineFormSet:

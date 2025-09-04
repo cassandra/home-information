@@ -31,6 +31,7 @@ from django.db.models import Model
 
 from hi.constants import DIVID
 
+from .forms import AttributeUploadForm
 from .models import AttributeModel
 
 
@@ -75,17 +76,17 @@ class AttributePageEditContext:
     
     @property
     def file_upload_url(self) -> str:
-        """ Should be a view that extends BaseAttributeUploadView """
+        """ Should be a view that uses AttributeUploadViewMixin.post_upload() """
         raise NotImplementedError('Subclasses must override this method')
     
     @property
     def history_url_name(self) -> str:
-        """ Should be a view that extends BaseAttributeHistoryView """
+        """ Should be a view that uses AttributeHistoryViewMixin.get_history() """
         return f'{self.owner_type}_attribute_history_inline'
     
     @property
     def restore_url_name(self) -> str:
-        """ Should be a view that extends BaseAttributeRestoreView """
+        """ Should be a view that uses AttributeRestoreViewMixin.post_restore() """
         return f'{self.owner_type}_attribute_restore_inline'
 
     @property
@@ -117,12 +118,6 @@ class AttributePageEditContext:
         return f"{DIVID['ATTR_V2_UPDATE_BTN_ID']}{self.id_suffix}"
     
     def to_template_context(self) -> Dict[str, Any]:
-        """
-        Convert this context to a dictionary suitable for template rendering.
-        
-        Returns:
-            dict: Template context variables
-        """
         return {
             "attr_page_context": self,
         }
@@ -144,6 +139,10 @@ class AttributeItemEditContext( AttributePageEditContext ):
     @property
     def attribute_model_subclass(self) -> Type[AttributeModel]:
         raise NotImplementedError('Subclasses must override this method')
+
+    @property
+    def attribute_upload_form_class(self) -> Type[AttributeUploadForm]:
+        raise NotImplementedError('Subclasses must override this method')
             
     @property
     def formset_prefix(self) -> str:
@@ -153,6 +152,9 @@ class AttributeItemEditContext( AttributePageEditContext ):
         """ Subclasses can override this if there are model properties of the owner model itself
         that should be included in the attribute editing interface."""
         return None
+
+    def create_attribute_model( self ) -> AttributeModel:
+        raise NotImplementedError('Subclasses must override this method')
 
     def create_regular_attributes_formset(
             self, form_data : Optional[ Dict[str, Any] ] = None ) -> BaseInlineFormSet:
