@@ -17,7 +17,10 @@ urlpatterns = [
              views.ConfigInternalView.as_view(), 
              name='config_internal' ),
     
-    # Inline history and restore patterns expected by AttributeItemEditContext
+    re_path( r'^attribute/upload/(?P<subsystem_id>\d+)$', 
+             views.SubsystemAttributeUploadView.as_view(), 
+             name='subsystem_attribute_upload' ),
+
     re_path( r'^attribute/history/(?P<subsystem_id>\d+)/(?P<attribute_id>\d+)/$', 
              views.SubsystemAttributeHistoryInlineView.as_view(), 
              name='subsystem_attribute_history_inline'),

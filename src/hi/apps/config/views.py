@@ -1,5 +1,5 @@
 import logging
-
+from typing import List
 
 from django.conf import settings
 from django.http import JsonResponse, HttpResponseRedirect
@@ -13,13 +13,23 @@ from hi.hi_grid_view import HiGridView
 from hi.apps.attribute.response_helpers import AttributeResponseBuilder, UpdateMode
 from hi.apps.attribute.response_constants import HTTPHeaders
 from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
-from hi.apps.attribute.view_mixins import AttributeEditViewMixin
+from hi.apps.attribute.view_mixins import (
+    AttributeMultiEditViewMixin,
+    AttributeHistoryViewMixin,
+    AttributeRestoreViewMixin,
+    AttributeUploadViewMixin,
+)
 
 from .enums import ConfigPageType
 from .models import SubsystemAttribute
 from .settings_mixins import SettingsMixin
 from .config_edit_form_handler import ConfigEditFormHandler
 from .config_edit_response_renderer import ConfigEditResponseRenderer
+from .subsystem_attribute_edit_data import SubsystemAttributeEditData
+from .subsystem_attribute_edit_context import (
+    SubsystemAttributeItemEditContext,
+    SubsystemAttributePageEditContext,
+)
 
 logger = logging.getLogger('__name__')
 
@@ -83,6 +93,40 @@ class ConfigPageView( HiGridView ):
         raise NotImplementedError('Subclasses must override this method.')
 
     
+class ConfigInternalView( View ):
+
+    @classmethod
+    def get_config_data(self):
+        return {
+            'ALLOWED_HOSTS': settings.ALLOWED_HOSTS,
+            'DATABASES_NAME_PATH': settings.DATABASES['default']['NAME'],
+            'REDIS_HOST': settings.REDIS_HOST,
+            'REDIS_PORT': settings.REDIS_PORT,
+            'MEDIA_ROOT': settings.MEDIA_ROOT,
+            'DEFAULT_FROM_EMAIL': settings.DEFAULT_FROM_EMAIL,
+            'SERVER_EMAIL': settings.SERVER_EMAIL,
+            'EMAIL_HOST': settings.EMAIL_HOST,
+            'EMAIL_PORT': settings.EMAIL_PORT,
+            'EMAIL_HOST_USER': settings.EMAIL_HOST_USER,
+            'EMAIL_USE_TLS': settings.EMAIL_USE_TLS,
+            'EMAIL_USE_SSL': settings.EMAIL_USE_SSL,
+            'CORS_ALLOWED_ORIGINS': settings.CORS_ALLOWED_ORIGINS,
+            'CSP_DEFAULT_SRC': settings.CSP_DEFAULT_SRC,
+            'CSP_CONNECT_SRC': settings.CSP_CONNECT_SRC,
+            'CSP_FRAME_SRC': settings.CSP_FRAME_SRC,
+            'CSP_SCRIPT_SRC': settings.CSP_SCRIPT_SRC,
+            'CSP_STYLE_SRC': settings.CSP_STYLE_SRC,
+            'CSP_MEDIA_SRC': settings.CSP_MEDIA_SRC,
+            'CSP_IMG_SRC': settings.CSP_IMG_SRC,
+            'CSP_CHILD_SRC': settings.CSP_CHILD_SRC,
+            'CSP_FONT_SRC': settings.CSP_FONT_SRC,
+        }
+        
+    def get(self, request, *args, **kwargs):
+        data = self.get_config_data()
+        return JsonResponse( data, safe = False )
+
+    
 class ConfigSettingsView_ORIGINAL( ConfigPageView, SettingsMixin ):
 
     @property
@@ -121,9 +165,9 @@ class ConfigSettingsView_ORIGINAL( ConfigPageView, SettingsMixin ):
         else:
             # Return error response with validation errors
             return renderer.render_error_response(request, subsystem_formset_list, selected_subsystem_id=subsystem_id)
-
     
-class ConfigSettingsView( ConfigPageView, SettingsMixin, AttributeEditViewMixin ):
+    
+class ConfigSettingsView( ConfigPageView, SettingsMixin, AttributeMultiEditViewMixin ):
 
     @property
     def config_page_type(self) -> ConfigPageType:
@@ -133,76 +177,70 @@ class ConfigSettingsView( ConfigPageView, SettingsMixin, AttributeEditViewMixin 
         return 'config/panes/settings.html'
 
     def get_main_template_context( self, request, *args, **kwargs ):
-        attr_page_context = SubsystemAttributePageEditContext( owner_type = 'subsystem' )
+        selected_subsystem_id = kwargs.get('subsystem_id')
+        attr_page_context = SubsystemAttributePageEditContext()
+        attr_item_context_list = self._create_attr_item_context_list()
 
-        attr_item_context_list = list()
-        subsystem_list = self.settings_mixin.settings_manager().get_subsystems()
-        for subsystem in subsystem_list:
-            attr_item_context = SubsystemAttributeItemEditContext(
-                owner_type = 'subsystem',
-                owner = subsystem,
-            )
-            attr_item_context_list.append (attr_item_context )
-            continue
-            
-        return self.create_initial_template_context(
+        if not selected_subsystem_id and attr_item_context_list:
+            selected_subsystem_id = str(attr_item_context_list[0].owner_id)
+        
+        template_context = self.create_initial_template_context(
             attr_page_context = attr_page_context,
             attr_item_context_list = attr_item_context_list,
         )
 
-    def post( self, request, *args, **kwargs ):
-        attr_page_context = SubsystemAttributePageEditContext( owner_type = 'subsystem' )
-
-        attr_item_context_list = list()
-        subsystem_list = self.settings_mixin.settings_manager().get_subsystems()
-        for subsystem in subsystem_list:
-            attr_item_context = SubsystemAttributeItemEditContext(
-                owner_type = 'subsystem',
-                owner = subsystem,
+        # Using legacy config structure until chance to convert to new, more general structures.
+        multi_edit_form_data_list = template_context.get('multi_edit_form_data_list')
+        
+        subsystem_edit_data_list = [
+            SubsystemAttributeEditData(
+                formset = multi_edit_form_data.edit_form_data.regular_attributes_formset,
+                context = multi_edit_form_data.attr_item_context,
+                error_count = 0  # No errors on initial load
             )
-            attr_item_context_list.append (attr_item_context )
-            continue
+            for multi_edit_form_data in multi_edit_form_data_list
+        ]
+        return {
+            'subsystem_edit_data_list': subsystem_edit_data_list,
+            'selected_subsystem_id': selected_subsystem_id,
+            'attr_page_context': attr_page_context,  # For container IDs and namespacing
+        }
+        
+    def post( self, request, *args, **kwargs ):
+        selected_subsystem_id = kwargs.get('subsystem_id')
+        attr_page_context = SubsystemAttributePageEditContext( owner_type = 'subsystem' )
+        attr_item_context_list = self._create_attr_item_context_list()
+
+        if not selected_subsystem_id and attr_item_context_list:
+            selected_subsystem_id = str(attr_item_context_list[0].owner_id)
+    
         return self.post_attribute_form(
             request = request,
             attr_page_context = attr_page_context,
             attr_item_context_list = attr_item_context_list,
         )
-    
-       
-class ConfigInternalView( View ):
 
-    @classmethod
-    def get_config_data(self):
-        return {
-            'ALLOWED_HOSTS': settings.ALLOWED_HOSTS,
-            'DATABASES_NAME_PATH': settings.DATABASES['default']['NAME'],
-            'REDIS_HOST': settings.REDIS_HOST,
-            'REDIS_PORT': settings.REDIS_PORT,
-            'MEDIA_ROOT': settings.MEDIA_ROOT,
-            'DEFAULT_FROM_EMAIL': settings.DEFAULT_FROM_EMAIL,
-            'SERVER_EMAIL': settings.SERVER_EMAIL,
-            'EMAIL_HOST': settings.EMAIL_HOST,
-            'EMAIL_PORT': settings.EMAIL_PORT,
-            'EMAIL_HOST_USER': settings.EMAIL_HOST_USER,
-            'EMAIL_USE_TLS': settings.EMAIL_USE_TLS,
-            'EMAIL_USE_SSL': settings.EMAIL_USE_SSL,
-            'CORS_ALLOWED_ORIGINS': settings.CORS_ALLOWED_ORIGINS,
-            'CSP_DEFAULT_SRC': settings.CSP_DEFAULT_SRC,
-            'CSP_CONNECT_SRC': settings.CSP_CONNECT_SRC,
-            'CSP_FRAME_SRC': settings.CSP_FRAME_SRC,
-            'CSP_SCRIPT_SRC': settings.CSP_SCRIPT_SRC,
-            'CSP_STYLE_SRC': settings.CSP_STYLE_SRC,
-            'CSP_MEDIA_SRC': settings.CSP_MEDIA_SRC,
-            'CSP_IMG_SRC': settings.CSP_IMG_SRC,
-            'CSP_CHILD_SRC': settings.CSP_CHILD_SRC,
-            'CSP_FONT_SRC': settings.CSP_FONT_SRC,
-        }
+    def _create_attr_item_context_list( self ) -> List[SubsystemAttributeItemEditContext]:
+        attr_item_context_list = list()
+        subsystem_list = self.settings_manager().get_subsystems()
+        for subsystem in subsystem_list:
+            attr_item_context = SubsystemAttributeItemEditContext( subsystem = subsystem )
+            attr_item_context_list.append(attr_item_context )
+            continue
+        return attr_item_context_list
         
-    def get(self, request, *args, **kwargs):
-        data = self.get_config_data()
-        return JsonResponse( data, safe = False )
 
+class SubsystemAttributeUploadView( View, SettingsMixin, AttributeUploadViewMixin ):
 
+    def post( self, request,*args, **kwargs ):
+        subsystem = self.get_subsystem( request, *args, **kwargs )
+        attr_item_context = SubsystemAttributeItemEditContext( subsystem = subsystem )
+        return self.post_upload(
+            request = request,
+            attr_item_context = attr_item_context,
+        )
+
+    
 class SubsystemAttributeHistoryInlineView(BaseAttributeHistoryView):
     """View for displaying SubsystemAttribute history inline within the edit interface."""
     ATTRIBUTE_HISTORY_VIEW_LIMIT = 50

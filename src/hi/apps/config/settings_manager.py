@@ -75,6 +75,13 @@ class SettingsManager( Singleton ):
     def get_server_start_datetime( self ) -> datetime:
         return self._server_start_datetime
     
+    def get_subsystem( self, subsystem_id : int ) -> List[ Subsystem ]:
+        for subsystem in self._subsystem_list:
+            if subsystem.id == subsystem_id:
+                return system
+            continue
+        raise Subsystem.DoesNotExist()
+    
     def get_subsystems(self) -> List[ Subsystem ]:
         return self._subsystem_list
 

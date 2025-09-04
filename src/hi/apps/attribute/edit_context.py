@@ -67,16 +67,11 @@ class AttributePageEditContext:
         """
         if self.owner:
             return f'-{self.owner_type}-{self.owner_id}'
-        return self.owner_type
+        return f'-{self.owner_type}'
 
     @property
     def content_body_template_name(self):
         """ This should be a template that extends attribute/components/edit_content_body.html """
-        raise NotImplementedError('Subclasses must override this method')
-    
-    @property
-    def file_upload_url(self) -> str:
-        """ Should be a view that uses AttributeUploadViewMixin.post_upload() """
         raise NotImplementedError('Subclasses must override this method')
     
     @property
@@ -166,6 +161,11 @@ class AttributeItemEditContext( AttributePageEditContext ):
         the owner model. """
         return self.owner.attributes.all()
 
+    @property
+    def file_upload_url(self) -> str:
+        """ Should be a view that uses AttributeUploadViewMixin.post_upload() """
+        raise NotImplementedError('Subclasses must override this method')
+    
     def history_target_id(self, attribute_id: int) -> str:
         """
         Get the DOM ID for the attribute history container.

@@ -1,5 +1,5 @@
 """
-EntityAttributeItemEditContext - Entity-specific context for attribute editing templates.
+Entity Attribute Edit Context - Entity-specific context for attribute editing templates.
 
 This module contains Entity-specific implementations of the AttributeItemEditContext
 pattern, encapsulating entity-specific domain knowledge while maintaining

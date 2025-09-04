@@ -1,11 +1,11 @@
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from django.http import HttpRequest, HttpResponse
 
 from hi.views import page_not_found_response
 
-from .edit_context import AttributeItemEditContext
+from .edit_context import AttributeItemEditContext, AttributePageEditContext
 from .edit_form_handler import AttributeEditFormHandler
 from .edit_response_renderer import AttributeEditResponseRenderer
 from .models import AttributeModel
@@ -19,7 +19,6 @@ class AttributeEditViewMixin:
                              request       : HttpRequest,
                              attr_item_context  : AttributeItemEditContext ) -> HttpResponse:
     
-        # Delegate form handling to specialized handlers
         form_handler = AttributeEditFormHandler()
         renderer = AttributeEditResponseRenderer()
         
@@ -47,10 +46,7 @@ class AttributeEditViewMixin:
 
     def create_initial_template_context( self,
                                          attr_item_context  : AttributeItemEditContext ) -> Dict[str, Any]:
-        """ 
-        Returns:
-            dict: Template context for initial form display
-        """
+
         form_handler = AttributeEditFormHandler()
         edit_form_data = form_handler.create_edit_form_data(
             attr_item_context = attr_item_context,
@@ -154,3 +150,55 @@ class AttributeRestoreViewMixin:
             attr_item_context = attr_item_context,
             request= request,
         )
+
+
+class AttributeMultiEditViewMixin:
+    
+    def post_attribute_form(
+            self,
+            request                 : HttpRequest,
+            attr_page_context       : AttributePageEditContext,
+            attr_item_context_list  : List[AttributeItemEditContext] ) -> HttpResponse:
+    
+        form_handler = AttributeEditFormHandler()
+        renderer = AttributeEditResponseRenderer()    
+
+        multi_edit_form_data_list = form_handler.create_multi_edit_form_data(
+            attr_item_context_list = attr_item_context_list,
+        )
+        
+        if form_handler.validate_forms_multi( multi_edit_form_data_list = multi_edit_form_data_list ):
+            form_handler.save_forms_multi(
+                multi_edit_form_data_list = multi_edit_form_data_list,
+                request = request,
+            )
+            return renderer.render_success_response_multi(
+                attr_page_context = attr_page_context,
+                multi_edit_form_data_list = multi_edit_form_data_list,
+                request = request,
+            )
+        else:
+            return renderer.render_error_response_multi(
+                attr_page_context = attr_page_context,
+                multi_edit_form_data_list = multi_edit_form_data_list,
+                request = request,
+            )
+
+
+    def create_initial_template_context(
+            self,
+            attr_page_context       : AttributePageEditContext,
+            attr_item_context_list  : List[AttributeItemEditContext] ) -> Dict[str, Any]:
+
+        form_handler = AttributeEditFormHandler()
+        
+        multi_edit_form_data_list = form_handler.create_multi_edit_form_data(
+            attr_item_context_list = attr_item_context_list,
+        )
+        context = {
+            'multi_edit_form_data_list': multi_edit_form_data_list,
+        }
+        # Merge in the context variables from AttributeItemEditContext
+        context.update( attr_page_context.to_template_context() )
+        return context
+        

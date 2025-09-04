@@ -12,7 +12,7 @@ from .forms import AttributeUploadForm
 from .edit_context import AttributeItemEditContext
 from .enums import AttributeValueType
 from .models import AttributeModel
-from .transient_models import AttributeEditFormData
+from .transient_models import AttributeEditFormData, AttributeMultiEditFormData
 
 logger = logging.getLogger(__name__)
 
@@ -197,3 +197,36 @@ class AttributeEditFormHandler:
         with transaction.atomic():
             attribute_upload_form.save()   
         return
+    
+    def create_multi_edit_form_data(
+            self,
+            attr_item_context_list  : List[AttributeItemEditContext],
+            form_data               : Optional[ Dict[str, Any] ] = None ) -> List[AttributeMultiEditFormData]:
+
+        multi_edit_form_data_list = list()
+        for attr_item_context in attr_item_context_list:
+            edit_form_data = self.create_edit_form_data(
+                attr_item_context = attr_item_context,
+                form_data = form_data,
+            )
+            multi_edit_form_data = AttributeMultiEditFormData(
+                attr_item_context = attr_item_context,
+                edit_form_data = edit_form_data,
+            )
+            multi_edit_form_data_list.append( multi_edit_form_data )
+            continue
+        return multi_edit_form_data_list
+
+    def validate_forms_multi( self, multi_edit_form_data_list : List[AttributeMultiEditFormData] ) -> bool:
+        for multi_edit_form_data in multi_edit_form_data_list:
+            if not self.validate_forms( edit_form_data = multi_edit_form_data.edit_form_data ):
+                return False
+            continue
+        return True
+
+    save_forms_multi
+
+    render_success_response_multi
+
+    render_error_response_multi
+    

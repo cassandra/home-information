@@ -1,6 +1,6 @@
 from django import forms
 
-from hi.apps.attribute.forms import AttributeForm
+from hi.apps.attribute.forms import AttributeForm, AttributeUploadForm
 
 from .models import Subsystem, SubsystemAttribute
 
@@ -19,3 +19,8 @@ SubsystemAttributeFormSet = forms.inlineformset_factory(
     absolute_max = 100,
     can_delete = False,
 )
+
+
+class SubsystemAttributeUploadForm( AttributeUploadForm ):
+    class Meta( AttributeUploadForm.Meta ):
+        model = SubsystemAttribute

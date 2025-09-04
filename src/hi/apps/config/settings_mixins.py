@@ -2,6 +2,10 @@ from asgiref.sync import sync_to_async
 import asyncio
 import logging
 
+from django.core.exceptions import BadRequest
+from django.http import Http404
+
+from .models import Subsystem
 from .settings_manager import SettingsManager
 
 logger = logging.getLogger(__name__)
@@ -31,3 +35,14 @@ class SettingsMixin:
                 return None
             
         return self._settings_manager
+    
+    def get_subsystem( self, request, *args, **kwargs ) -> Subsystem:
+        """ Assumes there is a required subsystem_id in kwargs """
+        try:
+            subsystem_id = int( kwargs.get( 'subsystem_id' ))
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid subsystem id.' )
+        try:
+            return Subsystem.objects.get( id = subsystem_id )
+        except Subsystem.DoesNotExist:
+            raise Http404( request )
