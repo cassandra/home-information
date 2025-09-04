@@ -391,21 +391,39 @@ a.clickable-card:active {
 
 .attr-v2-action-bar-content {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     gap: 1rem;
+}
+
+/* Left group: button and messages */
+.attr-v2-action-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1; /* Take available space */
+}
+
+/* Message stack */
+.attr-v2-message-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 .attr-v2-update-btn {
     min-height: 44px; /* Touch-friendly primary action */
     min-width: 80px;
     padding: 0.75rem 1.5rem;
+    flex-shrink: 0; /* Don't shrink button */
 }
 
+/* Right group: action buttons */
 .attr-v2-action-buttons {
     display: flex;
     gap: 0.5rem;
     align-items: center;
+    flex-shrink: 0; /* Don't shrink buttons */
+    margin-left: auto; /* Push to right */
 }
 
 .attr-v2-action-buttons button {
@@ -2491,12 +2509,16 @@ g[hover] {
 .attr-v2-dirty-message {
     font-size: 0.875rem;
     color: transparent;
-    transition: color 0.2s ease-in-out;
+    transition: all 0.2s ease-in-out;
     min-width: 120px;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
 }
 
 .attr-v2-dirty-message.active {
-    color: var(--warning-color);
+    color: #8B4513; /* Darker brown text for better contrast */
+    background-color: #FFF3CD; /* Light warning background */
+    border-left: 3px solid var(--warning-color);
     font-weight: 500;
 }
 
@@ -2704,6 +2726,114 @@ g[hover] {
 .attr-v2-basic-info .invalid-feedback {
     font-size: 0.75rem;
     margin-top: 0.25rem;
+}
+
+/* ====================================================================== */
+/* ERROR MESSAGE STYLING                                                  */
+/* ====================================================================== */
+
+/* Non-field errors container - page level (owner form) */
+.attr-v2-sticky-panel .attr-v2-non-field-errors {
+    border-left: 3px solid #dc2626;
+    padding-left: 1rem;
+    margin: 0.5rem 0;
+}
+
+.attr-v2-sticky-panel .attr-v2-non-field-errors .attr-v2-error-item {
+    color: #dc2626;
+    font-size: 0.875rem;
+    margin: 0.25rem 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.attr-v2-sticky-panel .attr-v2-non-field-errors .attr-v2-error-item:before {
+    content: "•";
+    color: #dc2626;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+/* Formset non-form errors (same style as owner non-field errors) */
+.attr-v2-formset-errors {
+    border-left: 3px solid #dc2626;
+    padding-left: 1rem;
+    margin: 0.5rem 0;
+}
+
+.attr-v2-formset-errors .attr-v2-error-item {
+    color: #dc2626;
+    font-size: 0.875rem;
+    margin: 0.25rem 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.attr-v2-formset-errors .attr-v2-error-item:before {
+    content: "•";
+    color: #dc2626;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+/* Non-field errors - individual attribute card level (most subtle) */
+.attr-v2-attribute-card .attr-v2-non-field-errors {
+    margin: 0.5rem 0 0 0;
+    padding: 0;
+}
+
+.attr-v2-attribute-card .attr-v2-non-field-errors .attr-v2-error-item {
+    color: #dc2626;
+    font-size: 0.8125rem;
+    margin: 0.25rem 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.375rem;
+}
+
+.attr-v2-attribute-card .attr-v2-non-field-errors .attr-v2-error-item:before {
+    content: "•";
+    color: #dc2626;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+/* Field-level errors */
+.attr-v2-field-errors {
+    color: #dc2626;
+    font-size: 0.8125rem;
+    margin-top: 0.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.attr-v2-field-errors .attr-v2-error-text {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.375rem;
+}
+
+.attr-v2-field-errors .attr-v2-error-text:before {
+    content: "•";
+    color: #dc2626;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+/* Invalid form controls */
+.attr-v2-attribute-card .form-control.is-invalid,
+.attr-v2-basic-info .form-control.is-invalid {
+    border-color: #dc2626;
+    background-image: none;
+}
+
+.attr-v2-attribute-card .form-control.is-invalid:focus,
+.attr-v2-basic-info .form-control.is-invalid:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 0.2rem rgba(220, 38, 38, 0.25);
 }
 
 /* ====================================================================== */

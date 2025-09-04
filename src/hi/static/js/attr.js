@@ -186,23 +186,59 @@
                 // Handle response for content loading
                 if (typeof response === 'string') {
                     this.updateDOMElement(target, response, options.mode || 'replace');
+                } else {
+                    console.warn('loadContentIntoTarget: Unexpected response type:', typeof response);
                 }
             }).fail((xhr) => {
                 console.error('Failed to load content:', xhr);
+                
+                // Show error message to user if we can find a form context
+                const $target = $(target);
+                const $form = $target.closest('form');
+                if ($form.length > 0) {
+                    this.handleFormError(xhr, $form);
+                } else {
+                    // Fallback: show error in any available status container
+                    // These are transient errors (like history loading), so allow auto-dismiss
+                    const errorMessage = this.getErrorMessageForStatus(xhr.status, xhr.statusText);
+                    this.showStatusMessage(errorMessage, STATUS_TYPE.ERROR, null, 5000);
+                }
             });
         },
         
         // Handle successful form submission
-        handleFormSuccess: function(response, $form, options = {}) {
-            // Try to parse as JSON first
-            let data;
-            try {
-                data = typeof response === 'string' ? JSON.parse(response) : response;
-            } catch (e) {
-                // Fallback to treating as HTML (legacy antinode format)
-                data = { html: response };
+        // Parse response data into normalized format
+        parseResponse: function(response) {
+            // Handle null/undefined responses
+            if (!response) {
+                return {};
             }
             
+            // Handle string responses
+            if (typeof response === 'string') {
+                if (response.trim() === '') {
+                    return {};
+                }
+                try {
+                    return JSON.parse(response);
+                } catch (e) {
+                    console.warn('Failed to parse response as JSON:', e);
+                    return { message: response }; // Treat as plain text message
+                }
+            }
+            
+            // Handle object responses
+            if (typeof response === 'object') {
+                return response;
+            }
+            
+            // Handle other types (number, boolean, etc.)
+            console.warn('Unexpected response type:', typeof response);
+            return { message: String(response) };
+        },
+        
+        // Process DOM updates from response data
+        processDOMUpdates: function(data, options = {}) {
             // Track the last append target for scrolling decision
             // When scrollToNewContent is requested and multiple updates occur,
             // we scroll to the LAST appended content. This decision assumes that
@@ -212,7 +248,6 @@
             let lastAppendTarget = null;
             
             if (data.updates && Array.isArray(data.updates)) {
-                // New JSON format with multiple updates
                 data.updates.forEach(update => {
                     if (update.target && update.html) {
                         this.updateDOMElement(update.target, update.html, update.mode || 'replace');
@@ -223,12 +258,46 @@
                         }
                     }
                 });
-            } else if (data.html) {
-                // Single HTML update (legacy format)
-                const containerId = $form.closest(Hi.ATTR_V2_CONTAINER_SELECTOR).attr('id');
-                const target = `#${containerId} .${Hi.ATTR_V2_CONTENT_CLASS}`;
-                this.updateDOMElement(target, data.html, 'replace');
             }
+            
+            return lastAppendTarget;
+        },
+        
+        // Process status message from response data
+        processStatusMessage: function(data, $form, isError = false) {
+            console.log('DEBUG: processStatusMessage called with:', { data, isError });
+            console.log('DEBUG: data.message:', data ? data.message : 'no data');
+            
+            // Handle explicit messages from server
+            if (data && data.message) {
+                const messageType = isError ? STATUS_TYPE.ERROR : STATUS_TYPE.SUCCESS;
+                console.log('DEBUG: Using data.message:', data.message, 'with type:', messageType);
+                
+                // For form validation errors, make them persistent (no auto-dismiss)
+                const timeout = isError ? 0 : null; // 0 = no auto-dismiss for errors, null = default for success
+                this.showStatusMessage(data.message, messageType, $form, timeout);
+                return;
+            }
+            
+            // Provide default messages when server doesn't provide one
+            if (!isError) {
+                // Success case with no explicit message
+                console.log('DEBUG: Using default success message');
+                this.showStatusMessage('Success', STATUS_TYPE.SUCCESS, $form);
+            } else {
+                // Error case with no explicit message - make persistent
+                console.log('DEBUG: Using default error message');
+                this.showStatusMessage('An error occurred while processing your request', STATUS_TYPE.ERROR, $form, 0);
+            }
+        },
+        
+        // Unified response handler for both success and error responses
+        handleResponse: function(response, $form, options = {}, isError = false) {
+            // Parse response into normalized format
+            const data = this.parseResponse(response);
+            
+            // Process DOM updates first (works for both success and error)
+            const lastAppendTarget = this.processDOMUpdates(data, options);
             
             // Handle scroll-to-new-content if requested by caller
             if (options.scrollToNewContent && lastAppendTarget) {
@@ -241,35 +310,100 @@
                 }
             }
             
-            // Show success message if provided
-            if (data.message) {
-                this.showStatusMessage(data.message, STATUS_TYPE.SUCCESS, $form);
-            }
+            // Show status message
+            this.processStatusMessage(data, $form, isError);
             
             // Re-initialize containers after update
             setTimeout(() => {
                 _initializeAllContainers();
             }, 50);
-            
-            // Modal management is handled by antinode.js, not our responsibility
         },
         
-        // Handle form submission errors
+        // Handle successful form submission - now delegates to unified handler
+        handleFormSuccess: function(response, $form, options = {}) {
+            this.handleResponse(response, $form, options, false);
+        },
+        
+        // Handle form submission errors - now delegates to unified handler
         handleFormError: function(xhr, $form) {
-            let errorMessage = 'An error occurred while saving.';
+            console.log('DEBUG: handleFormError called with xhr:', xhr);
+            console.log('DEBUG: xhr.status:', xhr.status, 'xhr.statusText:', xhr.statusText);
+            console.log('DEBUG: xhr.responseText:', xhr.responseText);
             
-            try {
-                const response = JSON.parse(xhr.responseText);
-                if (response.message) {
-                    errorMessage = response.message;
-                } else if (response.errors) {
-                    errorMessage = Object.values(response.errors).flat().join('; ');
+            let response;
+            let hasValidResponse = false;
+            
+            // Try to parse error response if we have content
+            if (xhr.responseText && xhr.responseText.trim()) {
+                try {
+                    response = JSON.parse(xhr.responseText);
+                    hasValidResponse = true;
+                    console.log('DEBUG: Parsed response:', response);
+                } catch (e) {
+                    console.warn('Failed to parse error response JSON:', e);
+                    // Continue to create fallback response
                 }
-            } catch (e) {
-                // Use default error message
             }
             
-            this.showStatusMessage(errorMessage, STATUS_TYPE.ERROR, $form);
+            // Create fallback error response if parsing fails or no content
+            if (!hasValidResponse) {
+                const fallbackMessage = this.getErrorMessageForStatus(xhr.status, xhr.statusText);
+                response = {
+                    success: false,
+                    message: fallbackMessage
+                };
+                console.log('DEBUG: Using fallback response with message:', fallbackMessage);
+            } else {
+                // If we have a parsed response but no message, add status-based message
+                if (!response.message) {
+                    response.message = this.getErrorMessageForStatus(xhr.status, xhr.statusText);
+                    console.log('DEBUG: Added status-based message to parsed response:', response.message);
+                }
+            }
+            
+            // Ensure response has required structure
+            if (!response.hasOwnProperty('success')) {
+                response.success = false;
+            }
+            
+            console.log('DEBUG: Final response being passed to handleResponse:', response);
+            
+            // Use unified handler to process error response (including DOM updates)
+            this.handleResponse(response, $form, {}, true);
+        },
+        
+        // Generate appropriate error message based on HTTP status code
+        getErrorMessageForStatus: function(status, statusText) {
+            switch (status) {
+                case 400:
+                    return 'Bad request - please check your input and try again';
+                case 401:
+                    return 'Authentication required - please log in and try again';
+                case 403:
+                    return 'Access denied - you do not have permission for this action';
+                case 404:
+                    return 'The requested resource was not found';
+                case 408:
+                    return 'Request timeout - please try again';
+                case 500:
+                    return 'Server error occurred - please try again later';
+                case 502:
+                    return 'Bad gateway - server is temporarily unavailable';
+                case 503:
+                    return 'Service unavailable - please try again later';
+                case 504:
+                    return 'Gateway timeout - please try again later';
+                case 0:
+                    return 'Network error - please check your connection and try again';
+                default:
+                    if (status >= 400 && status < 500) {
+                        return `Client error (${status}): ${statusText || 'Please check your request and try again'}`;
+                    } else if (status >= 500) {
+                        return `Server error (${status}): ${statusText || 'Please try again later'}`;
+                    } else {
+                        return `Unexpected error (${status}): ${statusText || 'Please try again'}`;
+                    }
+            }
         },
         
         // Update DOM element with new content

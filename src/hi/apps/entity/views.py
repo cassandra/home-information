@@ -4,12 +4,7 @@ from typing import Any, Dict
 from django.http import HttpRequest, HttpResponse
 from django.views.generic import View
 
-from hi.apps.attribute.view_mixins import (
-    AttributeEditViewMixin,
-    AttributeHistoryViewMixin,
-    AttributeRestoreViewMixin,
-    AttributeUploadViewMixin,
-)
+from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.control.controller_history_manager import ControllerHistoryManager
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.apps.sense.sensor_history_manager import SensorHistoryMixin
@@ -98,7 +93,7 @@ class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):
         )
 
 
-class EntityAttributeUploadView( View, EntityViewMixin, AttributeUploadViewMixin ):
+class EntityAttributeUploadView( View, EntityViewMixin, AttributeEditViewMixin ):
 
     def post( self, request,*args, **kwargs ):
         entity = self.get_entity( request, *args, **kwargs )
@@ -109,7 +104,7 @@ class EntityAttributeUploadView( View, EntityViewMixin, AttributeUploadViewMixin
         )
 
 
-class EntityAttributeHistoryInlineView( View, AttributeHistoryViewMixin ):
+class EntityAttributeHistoryInlineView( View, AttributeEditViewMixin ):
     """View for displaying EntityAttribute history inline within the edit modal."""
 
     def get( self,
@@ -133,11 +128,8 @@ class EntityAttributeHistoryInlineView( View, AttributeHistoryViewMixin ):
         )
 
 
-class EntityAttributeRestoreInlineView( View, AttributeRestoreViewMixin ):
+class EntityAttributeRestoreInlineView( View, AttributeEditViewMixin ):
     """View for restoring EntityAttribute values from history within the edit modal."""
-    
-    def get_attribute_model_class(self):
-        return EntityAttribute
     
     def get( self,
              request      : HttpRequest,

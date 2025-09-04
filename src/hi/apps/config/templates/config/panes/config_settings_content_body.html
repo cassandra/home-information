@@ -29,6 +29,15 @@ This is what gets replaced on form submission
             <span class="text-danger">{{ error_message }}</span>
           {% endif %}
         </span>
+
+        <div class="">
+          {% if non_field_errors %}
+          {% for error in non_field_errors %}
+          <br><small class="text-danger">{{ error }}</small>
+          {% endfor %}
+          {% endif %}
+        </div>
+        
       </div>
       
       <!-- Right Side: System Settings title (replaces Add buttons for system settings) -->
@@ -48,20 +57,20 @@ This is what gets replaced on form submission
     <!-- Left Column: Vertical Navigation -->
     <div class="flex-column">
       <nav class="nav flex-column" id="subsystemTabs" role="tablist">
-        {% for subsystem_data in subsystem_edit_data_list %}
-        <a class="nav-link {% if selected_subsystem_id == subsystem_data.subsystem.id|stringformat:'s' %}active{% endif %}" 
-           id="subsystem-{{ subsystem_data.subsystem.id }}-tab" 
+        {% for multi_edit_form_data in multi_edit_form_data_list %}
+        <a class="nav-link {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}active{% endif %}" 
+           id="subsystem-{{ multi_edit_form_data.owner.id }}-tab" 
            data-toggle="tab" 
-           data-subsystem-id="{{ subsystem_data.subsystem.id }}"
+           data-subsystem-id="{{ multi_edit_form_data.owner.id }}"
            data-config-settings-url="{% url 'config_settings' %}"
-           href="#subsystem-{{ subsystem_data.subsystem.id }}-panel" 
+           href="#subsystem-{{ multi_edit_form_data.owner.id }}-panel" 
            role="tab" 
-           aria-controls="subsystem-{{ subsystem_data.subsystem.id }}-panel" 
-           aria-selected="{% if selected_subsystem_id == subsystem_data.subsystem.id|stringformat:'s' %}true{% else %}false{% endif %}"
-           onclick="window.Hi.attr.updateFormAction('{% url 'config_settings' subsystem_id=subsystem_data.subsystem.id %}', '{{ attr_page_context.container_html_id }}')">
-          {{ subsystem_data.subsystem.name }}
-          {% if subsystem_data.error_count > 0 %}
-            <span class="badge badge-danger ml-1">{{ subsystem_data.error_count }}</span>
+           aria-controls="subsystem-{{ multi_edit_form_data.owner.id }}-panel" 
+           aria-selected="{% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}true{% else %}false{% endif %}"
+           onclick="window.Hi.attr.updateFormAction('{% url 'config_settings' subsystem_id=multi_edit_form_data.owner.id %}', '{{ attr_page_context.container_html_id }}')">
+          {{ multi_edit_form_data.owner.name }}
+          {% if multi_edit_form_data.error_count > 0 %}
+          <span class="badge badge-danger ml-1">{{ multi_edit_form_data.error_count }}</span>
           {% endif %}
         </a>
         {% endfor %}
@@ -71,31 +80,16 @@ This is what gets replaced on form submission
     <!-- Right Column: Tab Content -->
     <div class="flex-column flex-grow-1">
       <div class="tab-content" id="subsystemTabContent">
-      {% for subsystem_data in subsystem_edit_data_list %}
-      <div class="tab-pane fade {% if selected_subsystem_id == subsystem_data.subsystem.id|stringformat:'s' %}show active{% endif %}" 
-           id="subsystem-{{ subsystem_data.subsystem.id }}-panel" 
+      {% for multi_edit_form_data in multi_edit_form_data_list %}
+      <div class="tab-pane fade {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}show active{% endif %}" 
+           id="subsystem-{{ multi_edit_form_data.owner.id }}-panel" 
            role="tabpanel" 
-           aria-labelledby="subsystem-{{ subsystem_data.subsystem.id }}-tab">
+           aria-labelledby="subsystem-{{ multi_edit_form_data.owner.id }}-tab">
         
         <!-- Subsystem content using existing attribute editing components -->
         <div class="py-3">
-          <!-- Management form for this formset -->
-          {{ subsystem_data.formset.management_form }}
-          
-          <!-- File Attributes Section (if any) -->
-          {% comment %}File attributes would be displayed here when file support is implemented{% endcomment %}
-          
           <!-- Regular Attributes Section -->
-          {% if subsystem_data.formset %}
-            <div class="attr-v2-attribute-section">
-              <h6 class="attr-v2-section-title">Properties</h6>
-              <div class="attr-v2-attribute-list">
-                {% for attribute_form in subsystem_data.formset %}
-                  {% include "attribute/components/regular_attribute_card.html" with attribute_form=attribute_form attr_item_context=subsystem_data.context %}
-                {% endfor %}
-              </div>
-            </div>
-          {% endif %}
+          {% include "attribute/components/regular_attribute_list.html" with regular_attributes_formset=multi_edit_form_data.formset %}
         </div>
         
       </div>

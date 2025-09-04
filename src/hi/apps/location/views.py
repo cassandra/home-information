@@ -8,13 +8,7 @@ from django.views.generic import View
 
 from hi.apps.common.utils import is_ajax
 
-from hi.apps.attribute.view_mixins import (
-    AttributeEditViewMixin,
-    AttributeHistoryViewMixin,
-    AttributeRestoreViewMixin,
-    AttributeUploadViewMixin,
-)
-
+from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.enums import ItemType, ViewType
 from hi.exceptions import ForceSynchronousException
 from hi.hi_async_view import HiModalView
@@ -147,7 +141,7 @@ class LocationEditView( HiModalView, LocationViewMixin, AttributeEditViewMixin )
         )
 
     
-class LocationAttributeUploadView( View, LocationViewMixin, AttributeUploadViewMixin ):
+class LocationAttributeUploadView( View, LocationViewMixin, AttributeEditViewMixin ):
 
     def post( self, request,*args, **kwargs ):
         location = self.get_location( request, *args, **kwargs )
@@ -158,7 +152,7 @@ class LocationAttributeUploadView( View, LocationViewMixin, AttributeUploadViewM
         )
 
 
-class LocationAttributeHistoryInlineView( View, AttributeHistoryViewMixin ):
+class LocationAttributeHistoryInlineView( View, AttributeEditViewMixin ):
     """View for displaying LocationAttribute history inline within the edit modal."""
 
     def get( self,
@@ -184,11 +178,8 @@ class LocationAttributeHistoryInlineView( View, AttributeHistoryViewMixin ):
         )
 
     
-class LocationAttributeRestoreInlineView( View, AttributeRestoreViewMixin ):
+class LocationAttributeRestoreInlineView( View, AttributeEditViewMixin ):
     """View for restoring LocationAttribute values from history within the edit modal."""
-    
-    def get_attribute_model_class(self):
-        return LocationAttribute
     
     def get( self,
              request       : HttpRequest,

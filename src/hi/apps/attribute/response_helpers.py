@@ -98,7 +98,7 @@ class AttributeResponseBuilder:
         mode: UpdateMode = UpdateMode.REPLACE
     ) -> "AttributeResponseBuilder":
         """Add a DOM update instruction."""
-        self._updates.append(DOMUpdate(target=target, html=html, mode=mode))
+        self._updates.append( DOMUpdate(target=target, html=html, mode=mode) )
         return self
     
     def with_message(self, message: str) -> "AttributeResponseBuilder":

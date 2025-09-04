@@ -30,6 +30,14 @@ Individual attribute attribute card with value editing and actions
         {% icon "plus" size="sm" css_class="hi-icon-left" %}Add New
       {% endif %}
     </h6>
+
+    {% if attribute_form.non_field_errors %}
+    <div class="attr-v2-non-field-errors">
+      {% for err in attribute_form.non_field_errors %}
+      <div class="attr-v2-error-item">{{ err }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
     
     <div class="{{ DIVID.ATTR_V2_ATTRIBUTE_ACTIONS_CLASS }}">
       <!-- Reorder Controls (disabled until Issue #80, hidden if allow_reordering is False) -->
@@ -90,8 +98,10 @@ Individual attribute attribute card with value editing and actions
         {{ attribute_form.name.label_tag }}
         {{ attribute_form.name }}
         {% if attribute_form.name.errors %}
-          <div class="invalid-feedback d-block">
-            {{ attribute_form.name.errors }}
+          <div class="attr-v2-field-errors">
+            {% for error in attribute_form.name.errors %}
+            <div class="attr-v2-error-text">{{ error }}</div>
+            {% endfor %}
           </div>
         {% endif %}
       </div>

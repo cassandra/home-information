@@ -76,12 +76,12 @@ class AttributePageEditContext:
     
     @property
     def history_url_name(self) -> str:
-        """ Should be a view that uses AttributeHistoryViewMixin.get_history() """
+        """ Should be a view that uses AttributeEditViewMixin.get_history() """
         return f'{self.owner_type}_attribute_history_inline'
     
     @property
     def restore_url_name(self) -> str:
-        """ Should be a view that uses AttributeRestoreViewMixin.post_restore() """
+        """ Should be a view that uses AttributeEditViewMixin.post_restore() """
         return f'{self.owner_type}_attribute_restore_inline'
 
     @property
@@ -136,10 +136,6 @@ class AttributeItemEditContext( AttributePageEditContext ):
         raise NotImplementedError('Subclasses must override this method')
 
     @property
-    def attribute_upload_form_class(self) -> Type[AttributeUploadForm]:
-        raise NotImplementedError('Subclasses must override this method')
-            
-    @property
     def formset_prefix(self) -> str:
         return f'{self.owner_type}-{self.owner.id}'
 
@@ -162,10 +158,20 @@ class AttributeItemEditContext( AttributePageEditContext ):
         return self.owner.attributes.all()
 
     @property
+    def attribute_upload_form_class(self) -> Type[AttributeUploadForm]:
+        return None
+
+    @property
     def file_upload_url(self) -> str:
-        """ Should be a view that uses AttributeUploadViewMixin.post_upload() """
-        raise NotImplementedError('Subclasses must override this method')
-    
+        """ File uploads are Optional.
+        Subclasses should use a view that uses AttributeEditViewMixin.post_upload() """
+        return None
+
+    @property
+    def uses_file_uploads(self):
+        return bool( not (( self.attribute_upload_form_class is None )
+                          or self.file_upload_url is None ))
+            
     def history_target_id(self, attribute_id: int) -> str:
         """
         Get the DOM ID for the attribute history container.
@@ -219,12 +225,6 @@ class AttributeItemEditContext( AttributePageEditContext ):
         return f"{DIVID['ATTR_V2_ADD_ATTRIBUTE_BTN_ID']}{self.id_suffix}"
     
     def to_template_context(self) -> Dict[str, Any]:
-        """
-        Convert this context to a dictionary suitable for template rendering.
-        
-        Returns:
-            dict: Template context variables
-        """
         template_context = super().to_template_context()
         template_context.update({
             "owner": self.owner,

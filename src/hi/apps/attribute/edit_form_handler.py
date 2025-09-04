@@ -1,12 +1,16 @@
 import logging
+import random
 import re
 from typing import Any, Dict, List, Optional
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import QuerySet
+from django.forms.utils import ErrorList
 from django.http import HttpRequest
 
 from hi.constants import DIVID
+from hi.testing.dev_overrides import DevOverrideManager
 
 from .forms import AttributeUploadForm
 from .edit_context import AttributeItemEditContext
@@ -19,15 +23,18 @@ logger = logging.getLogger(__name__)
 
 class AttributeEditFormHandler:
 
-    def create_edit_form_data( self,
-                               attr_item_context  : AttributeItemEditContext,
-                               form_data     : Optional[ Dict[str, Any] ] = None ) -> AttributeEditFormData:
+    INJECT_TEST_ERRORS = True # For testing UI error display
+    
+    def create_edit_form_data(
+            self,
+            attr_item_context  : AttributeItemEditContext,
+            form_data          : Optional[ Dict[str, Any] ] = None ) -> AttributeEditFormData:
         """
         Args:
             form_data: POST data for bound forms, None for unbound forms
         """
         owner_form = attr_item_context.create_owner_form( form_data )
-        
+
         # Get file attributes for display (not a formset, just for template rendering)
         file_attributes: QuerySet[AttributeModel] = attr_item_context.attributes_queryset().filter(
             value_type_str = str( AttributeValueType.FILE )
@@ -43,12 +50,15 @@ class AttributeEditFormHandler:
             regular_attributes_formset = regular_attributes_formset,
         )
 
-    def validate_forms( self, edit_form_data : AttributeEditFormData ) -> bool:
+    def validate_forms(self, edit_form_data: AttributeEditFormData) -> bool:
         """
         Returns:
             bool: True if both forms are valid, False otherwise
         """
-        # Owner form is optional
+        if settings.DEBUG and settings.DEBUG_INJECT_ATTRIBUTE_FORM_ERRORS:
+            return DevOverrideManager.validate_forms( edit_form_data )
+        
+        # Normal validation
         if edit_form_data.owner_form and not edit_form_data.owner_form.is_valid():
             return False
         return edit_form_data.regular_attributes_formset.is_valid()
@@ -143,45 +153,60 @@ class AttributeEditFormHandler:
             except (AttributeModelClass.DoesNotExist) as e:
                 logger.warning(f'File attribute not found {field_name}: {e}')
 
-    def collect_form_errors( self, edit_form_data : AttributeEditFormData ) -> List[str]:
-        """Collect non-field errors from forms for enhanced error messaging.
-        Returns:
-            list: Formatted error messages with context prefixes
+    def collect_form_errors(self, edit_form_data: AttributeEditFormData) -> List[str]:
         """
-        non_field_errors: List[str] = []
+        Collect errors for central display and count all form errors (as side efffect).
+
+        Note: Individual form.non_field_errors() are NOT collected in the return list
+        They should be displayed inline with the specific forms/fields
+        """
+
+        non_form_errors = []
+        total_error_count = 0
         
-        # Owner form non-field errors
-        if ( edit_form_data.owner_form
-             and hasattr(edit_form_data.owner_form, 'non_field_errors')
-             and edit_form_data.owner_form.non_field_errors() ):
-            non_field_errors.extend(
-                [f"Owner: {error}"
-                 for error in edit_form_data.owner_form.non_field_errors()]
-            )
-        
-        # Property formset non-field errors
-        if ( edit_form_data.regular_attributes_formset
-             and hasattr(edit_form_data.regular_attributes_formset, 'non_field_errors')
-             and edit_form_data.regular_attributes_formset.non_field_errors() ):
-            non_field_errors.extend(
-                [f"Properties: {error}"
-                 for error in edit_form_data.regular_attributes_formset.non_field_errors()]
-            )
-        
-        # Individual property form non-field errors
-        if edit_form_data.regular_attributes_formset:
-            for i, form in enumerate(edit_form_data.regular_attributes_formset.forms):
-                if hasattr(form, 'non_field_errors') and form.non_field_errors():
-                    property_name: str = form.instance.name if form.instance.pk else f"New Property #{i+1}"
-                    non_field_errors.extend([f"{property_name}: {error}"
-                                             for error in form.non_field_errors()])
+        if edit_form_data.owner_form:
+            owner_form = edit_form_data.owner_form
+            total_error_count += len( owner_form.non_field_errors() )
+            for field_name in owner_form.fields:
+                total_error_count += len( owner_form[field_name].errors )
                 continue
         
-        return non_field_errors
+        if edit_form_data.regular_attributes_formset:
+            formset = edit_form_data.regular_attributes_formset
+            try:
+                # Accessing management_form will raise ValidationError if data is missing
+                formset.management_form
+            except Exception:
+                # Management form missing - count as one system error
+                total_error_count += 1
+                non_form_errors.append(
+                    "Form data is missing or incomplete."
+                )
+            else:
+                # Count formset-level errors
+                formset_non_form_errors = formset.non_form_errors()
+                if formset_non_form_errors:
+                    total_error_count += len(formset_non_form_errors)
+                    non_form_errors.extend(
+                        [f"Properties: {error}" for error in formset_non_form_errors]
+                    )
+                
+                # Count individual form errors (field and non-field)
+                for form in formset.forms:
+                    # Count field errors for each form using standard API
+                    total_error_count += len( form.non_field_errors() )
+                    for field_name in form.fields:
+                        total_error_count += len( form[field_name].errors )
+                        continue
+        
+        edit_form_data.error_count = total_error_count
+        return non_form_errors
 
     def create_upload_form( self,
                             attr_item_context  : AttributeItemEditContext,
                             request            : HttpRequest ) -> AttributeUploadForm:
+        assert attr_item_context.uses_file_uploads
+
         AttributeUploadFormClass = attr_item_context.attribute_upload_form_class
         owner_attribute = attr_item_context.create_attribute_model()
         return AttributeUploadFormClass(
@@ -217,16 +242,45 @@ class AttributeEditFormHandler:
             continue
         return multi_edit_form_data_list
 
-    def validate_forms_multi( self, multi_edit_form_data_list : List[AttributeMultiEditFormData] ) -> bool:
+    def validate_forms_multi(
+            self,
+            multi_edit_form_data_list : List[AttributeMultiEditFormData] ) -> bool:
+
+        if settings.DEBUG and settings.DEBUG_INJECT_ATTRIBUTE_FORM_ERRORS:
+            for multi_edit_form_data in multi_edit_form_data_list:
+                self.validate_forms( edit_form_data = multi_edit_form_data.edit_form_data )
+                continue
+            return False
+        
         for multi_edit_form_data in multi_edit_form_data_list:
             if not self.validate_forms( edit_form_data = multi_edit_form_data.edit_form_data ):
                 return False
             continue
         return True
 
-    save_forms_multi
+    def save_forms_multi(
+            self,
+            multi_edit_form_data_list  : List[AttributeMultiEditFormData],
+            request                    : HttpRequest ) -> None:
+        for multi_edit_form_data in multi_edit_form_data_list:
+            self.save_forms(
+                attr_item_context = multi_edit_form_data.attr_item_context,
+                edit_form_data = multi_edit_form_data.edit_form_data,
+                request = request,
+            )
+            continue
+        return True
+            
+    def collect_form_errors_multi(
+            self,
+            multi_edit_form_data_list  : List[AttributeMultiEditFormData] ) -> List[str]:
 
-    render_success_response_multi
+        non_form_errors = list()
+        for multi_edit_form_data in multi_edit_form_data_list:
+            errors = self.collect_form_errors(
+                edit_form_data = multi_edit_form_data.edit_form_data,
+            )
+            non_form_errors.extend( errors )
+            continue
 
-    render_error_response_multi
-    
+        return non_form_errors

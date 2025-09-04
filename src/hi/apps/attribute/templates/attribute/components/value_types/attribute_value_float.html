@@ -12,8 +12,10 @@ Renders a number input for float attributes
          step="any"
          {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %} />
   {% if attribute_form.value.errors %}
-    <div class="invalid-feedback d-block">
-      {{ attribute_form.value.errors }}
+    <div class="attr-v2-field-errors">
+      {% for error in attribute_form.value.errors %}
+      <div class="attr-v2-error-text">{{ error }}</div>
+      {% endfor %}
     </div>
   {% endif %}
 </div>

@@ -368,3 +368,6 @@ SUPPRESS_MONITORS = False
 # When enabled in DEBUG mode, allows injecting test data into API responses
 # for frontend testing without changing backend state. Never enabled in production.
 DEBUG_FORCE_TRANSIENT_VIEW_OVERRIDE = False
+
+# For testing UI error display of the various attribute editing form errors.
+DEBUG_INJECT_ATTRIBUTE_FORM_ERRORS = False

@@ -1,12 +1,14 @@
 from asgiref.sync import sync_to_async
 import asyncio
 import logging
+from typing import List
 
 from django.core.exceptions import BadRequest
 from django.http import Http404
 
 from .models import Subsystem
 from .settings_manager import SettingsManager
+from .subsystem_attribute_edit_context import SubsystemAttributeItemEditContext
 
 logger = logging.getLogger(__name__)
 
@@ -46,3 +48,16 @@ class SettingsMixin:
             return Subsystem.objects.get( id = subsystem_id )
         except Subsystem.DoesNotExist:
             raise Http404( request )
+
+        
+class SubsystemAttributeMixin( SettingsMixin ):
+
+    def _create_attr_item_context_list( self ) -> List[SubsystemAttributeItemEditContext]:
+        attr_item_context_list = list()
+        subsystem_list = self.settings_manager().get_subsystems()
+        for subsystem in subsystem_list:
+            attr_item_context = SubsystemAttributeItemEditContext( subsystem = subsystem )
+            attr_item_context_list.append(attr_item_context )
+            continue
+        return attr_item_context_list
+    

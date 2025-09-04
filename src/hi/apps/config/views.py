@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from django.conf import settings
 from django.http import JsonResponse, HttpResponseRedirect
@@ -7,25 +6,15 @@ from django.urls import reverse
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
+from hi.views import page_not_found_response
 
 from hi.enums import ViewMode, ViewType
 from hi.hi_grid_view import HiGridView
-from hi.apps.attribute.response_helpers import AttributeResponseBuilder, UpdateMode
-from hi.apps.attribute.response_constants import HTTPHeaders
-from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
-from hi.apps.attribute.view_mixins import (
-    AttributeMultiEditViewMixin,
-    AttributeHistoryViewMixin,
-    AttributeRestoreViewMixin,
-    AttributeUploadViewMixin,
-)
+from hi.apps.attribute.view_mixins import AttributeMultiEditViewMixin
 
 from .enums import ConfigPageType
 from .models import SubsystemAttribute
-from .settings_mixins import SettingsMixin
-from .config_edit_form_handler import ConfigEditFormHandler
-from .config_edit_response_renderer import ConfigEditResponseRenderer
-from .subsystem_attribute_edit_data import SubsystemAttributeEditData
+from .settings_mixins import SubsystemAttributeMixin
 from .subsystem_attribute_edit_context import (
     SubsystemAttributeItemEditContext,
     SubsystemAttributePageEditContext,
@@ -127,7 +116,9 @@ class ConfigInternalView( View ):
         return JsonResponse( data, safe = False )
 
     
-class ConfigSettingsView_ORIGINAL( ConfigPageView, SettingsMixin ):
+class ConfigSettingsView( ConfigPageView,
+                          SubsystemAttributeMixin,
+                          AttributeMultiEditViewMixin ):
 
     @property
     def config_page_type(self) -> ConfigPageType:
@@ -137,218 +128,82 @@ class ConfigSettingsView_ORIGINAL( ConfigPageView, SettingsMixin ):
         return 'config/panes/settings.html'
 
     def get_main_template_context( self, request, *args, **kwargs ):
-        """Delegate form creation and context building to handler."""
-        form_handler = ConfigEditFormHandler()
-        subsystem_id = kwargs.get('subsystem_id')
-        return form_handler.create_initial_context(selected_subsystem_id=subsystem_id)
 
-    def post( self, request, *args, **kwargs ):
-        """Handle unified form submission using helper classes."""
-        
-        # Delegate form handling to specialized handlers
-        form_handler = ConfigEditFormHandler()
-        renderer = ConfigEditResponseRenderer()
-        subsystem_id = kwargs.get('subsystem_id')
-        
-        # Create formsets with POST data
-        subsystem_formset_list = form_handler.create_config_forms(
-            request.POST, request.FILES
-        )
-
-        # Validate all formsets
-        if form_handler.validate_all_formsets(subsystem_formset_list):
-            # Save all formsets
-            form_handler.save_all_formsets(subsystem_formset_list, request)
-            
-            # Return success response with fresh data
-            return renderer.render_success_response(request, selected_subsystem_id=subsystem_id)
-        else:
-            # Return error response with validation errors
-            return renderer.render_error_response(request, subsystem_formset_list, selected_subsystem_id=subsystem_id)
-    
-    
-class ConfigSettingsView( ConfigPageView, SettingsMixin, AttributeMultiEditViewMixin ):
-
-    @property
-    def config_page_type(self) -> ConfigPageType:
-        return ConfigPageType.SETTINGS
-    
-    def get_main_template_name( self ) -> str:
-        return 'config/panes/settings.html'
-
-    def get_main_template_context( self, request, *args, **kwargs ):
-        selected_subsystem_id = kwargs.get('subsystem_id')
-        attr_page_context = SubsystemAttributePageEditContext()
         attr_item_context_list = self._create_attr_item_context_list()
 
+        selected_subsystem_id = kwargs.get('subsystem_id')
         if not selected_subsystem_id and attr_item_context_list:
             selected_subsystem_id = str(attr_item_context_list[0].owner_id)
-        
-        template_context = self.create_initial_template_context(
+
+        attr_page_context = SubsystemAttributePageEditContext(
+            selected_subsystem_id = selected_subsystem_id,
+        )
+        return self.create_initial_template_context(
             attr_page_context = attr_page_context,
             attr_item_context_list = attr_item_context_list,
         )
-
-        # Using legacy config structure until chance to convert to new, more general structures.
-        multi_edit_form_data_list = template_context.get('multi_edit_form_data_list')
-        
-        subsystem_edit_data_list = [
-            SubsystemAttributeEditData(
-                formset = multi_edit_form_data.edit_form_data.regular_attributes_formset,
-                context = multi_edit_form_data.attr_item_context,
-                error_count = 0  # No errors on initial load
-            )
-            for multi_edit_form_data in multi_edit_form_data_list
-        ]
-        return {
-            'subsystem_edit_data_list': subsystem_edit_data_list,
-            'selected_subsystem_id': selected_subsystem_id,
-            'attr_page_context': attr_page_context,  # For container IDs and namespacing
-        }
         
     def post( self, request, *args, **kwargs ):
-        selected_subsystem_id = kwargs.get('subsystem_id')
-        attr_page_context = SubsystemAttributePageEditContext( owner_type = 'subsystem' )
+
         attr_item_context_list = self._create_attr_item_context_list()
 
+        selected_subsystem_id = kwargs.get('subsystem_id')
         if not selected_subsystem_id and attr_item_context_list:
             selected_subsystem_id = str(attr_item_context_list[0].owner_id)
-    
+
+        attr_page_context = SubsystemAttributePageEditContext(
+            selected_subsystem_id = selected_subsystem_id,
+        )
+            
         return self.post_attribute_form(
             request = request,
             attr_page_context = attr_page_context,
             attr_item_context_list = attr_item_context_list,
         )
-
-    def _create_attr_item_context_list( self ) -> List[SubsystemAttributeItemEditContext]:
-        attr_item_context_list = list()
-        subsystem_list = self.settings_manager().get_subsystems()
-        for subsystem in subsystem_list:
-            attr_item_context = SubsystemAttributeItemEditContext( subsystem = subsystem )
-            attr_item_context_list.append(attr_item_context )
-            continue
-        return attr_item_context_list
         
 
-class SubsystemAttributeUploadView( View, SettingsMixin, AttributeUploadViewMixin ):
+class SubsystemAttributeHistoryInlineView( View, AttributeMultiEditViewMixin ):
 
-    def post( self, request,*args, **kwargs ):
-        subsystem = self.get_subsystem( request, *args, **kwargs )
-        attr_item_context = SubsystemAttributeItemEditContext( subsystem = subsystem )
-        return self.post_upload(
+    def get(self, request, subsystem_id, attribute_id, *args, **kwargs):
+        # Validate that the attribute belongs to this entity for security
+        try:
+            attribute = SubsystemAttribute.objects.select_related('subsystem').get(
+                pk = attribute_id, subsystem_id = subsystem_id )
+        except SubsystemAttribute.DoesNotExist:
+            return page_not_found_response(request, "Attribute not found.")
+
+        attr_item_context = SubsystemAttributeItemEditContext(
+            subsystem = attribute.subsystem,
+        )
+        return self.get_history(
             request = request,
+            attribute = attribute,
             attr_item_context = attr_item_context,
         )
 
-    
-class SubsystemAttributeHistoryInlineView(BaseAttributeHistoryView):
-    """View for displaying SubsystemAttribute history inline within the edit interface."""
-    ATTRIBUTE_HISTORY_VIEW_LIMIT = 50
-    
-    def get_template_name(self):
-        return 'attribute/components/attribute_history_inline.html'
-    
-    def get_attribute_model_class(self):
-        return SubsystemAttribute
-    
-    def get_history_url_name(self):
-        return 'subsystem_attribute_history_inline'
-    
-    def get_restore_url_name(self):
-        return 'subsystem_attribute_restore_inline'
-    
-    def get(self, request, subsystem_id, attribute_id, *args, **kwargs):
-        """Custom get implementation that creates the SubsystemAttributeItemEditContext."""
-        # Validate that the attribute belongs to this subsystem for security
-        try:
-            attribute = SubsystemAttribute.objects.get(pk=attribute_id, subsystem_id=subsystem_id)
-        except SubsystemAttribute.DoesNotExist:
-            from hi.views import page_not_found_response
-            return page_not_found_response(request, "Attribute not found.")
-        
-        # Get history records for this attribute
-        history_model_class = attribute._get_history_model_class()
-        if history_model_class:
-            history_records = history_model_class.objects.filter(
-                attribute=attribute
-            ).order_by('-changed_datetime')[:self.ATTRIBUTE_HISTORY_VIEW_LIMIT]
-        else:
-            history_records = []
-        
-        # Create the attribute edit context for template generalization
-        from .subsystem_attribute_edit_context import SubsystemAttributeItemEditContext
-        attr_item_context = SubsystemAttributeItemEditContext(attribute.subsystem)
-        
-        context = {
-            'subsystem': attribute.subsystem,
-            'attribute': attribute,
-            'history_records': history_records,
-            'history_url_name': self.get_history_url_name(),
-            'restore_url_name': self.get_restore_url_name(),
-        }
-        
-        # Merge in the context variables from AttributeItemEditContext
-        context.update(attr_item_context.to_template_context())
-        
-        # Check if this is an AJAX request and return JSON response
-        if request.headers.get(HTTPHeaders.X_REQUESTED_WITH) == HTTPHeaders.XML_HTTP_REQUEST:
-            from django.template.loader import render_to_string
-            
-            # Render the template to HTML string
-            html_content = render_to_string(
-                template_name=self.get_template_name(), 
-                context=context, 
-                request=request
-            )
-            
-            # Build JSON response with target selector for history content
-            return (AttributeResponseBuilder()
-                    .success()
-                    .add_update(
-                        target=f"#{attr_item_context.history_target_id(attribute.id)}",
-                        html=html_content,
-                        mode=UpdateMode.REPLACE
-                    )
-                    .with_message(f"History for {attribute.name}")
-                    .build_http_response())
-        else:
-            # Use Django render shortcut for non-AJAX requests
-            from django.shortcuts import render
-            return render(request, self.get_template_name(), context)
 
-
-class SubsystemAttributeRestoreInlineView(BaseAttributeRestoreView):
+class SubsystemAttributeRestoreInlineView( View,
+                                           SubsystemAttributeMixin,
+                                           AttributeMultiEditViewMixin ):
     """View for restoring SubsystemAttribute values from history inline."""
     
-    def get_attribute_model_class(self):
-        return SubsystemAttribute
-    
     def get(self, request, subsystem_id, attribute_id, history_id, *args, **kwargs):
-        """Custom get implementation for restoring from history."""
-        # Validate that the attribute belongs to this subsystem for security
         try:
-            attribute = SubsystemAttribute.objects.get(pk=attribute_id, subsystem_id=subsystem_id)
+            attribute = SubsystemAttribute.objects.select_related('subsystem').get(
+                pk = attribute_id, subsystem_id = subsystem_id
+            )
         except SubsystemAttribute.DoesNotExist:
-            from hi.views import page_not_found_response
             return page_not_found_response(request, "Attribute not found.")
-        
-        # Get the history record to restore from
-        history_model_class = attribute._get_history_model_class()
-        if not history_model_class:
-            from hi.views import page_not_found_response
-            return page_not_found_response(request, "No history available for this attribute type.")
-        
-        try:
-            history_record = history_model_class.objects.get(pk=history_id, attribute=attribute)
-        except history_model_class.DoesNotExist:
-            from hi.views import page_not_found_response
-            return page_not_found_response(request, "History record not found.")
-        
-        # Restore the value from the history record
-        attribute.value = history_record.value
-        attribute.save()  # This will create a new history record
-        
-        # Return updated content using ConfigEditResponseRenderer
-        from .config_edit_response_renderer import ConfigEditResponseRenderer
-        renderer = ConfigEditResponseRenderer()
-        return renderer.render_success_response(request, selected_subsystem_id=str(subsystem_id))
+
+        attr_page_context = SubsystemAttributePageEditContext(
+            selected_subsystem_id = subsystem_id,
+        )
+        attr_item_context_list = self._create_attr_item_context_list()
+
+        return self.post_restore(
+            request = request,
+            attribute = attribute,
+            history_id = history_id,
+            attr_page_context = attr_page_context,
+            attr_item_context_list = attr_item_context_list,
+        )

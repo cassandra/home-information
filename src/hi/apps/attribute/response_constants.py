@@ -50,3 +50,4 @@ class DefaultMessages:
     DELETE_PENDING = '"{}" will be deleted when you save'
     DELETE_CANCELLED = 'Deletion of "{}" cancelled'
     RESTORE_SUCCESS = "Value restored from history"
+    RESTORE_ERROR = "Value could not be restored from history."
