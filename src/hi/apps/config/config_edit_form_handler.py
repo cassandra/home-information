@@ -10,7 +10,7 @@ from django.http import HttpRequest
 
 from .forms import SubsystemAttributeFormSet
 from .settings_mixins import SettingsMixin
-from .subsystem_attribute_edit_context import SubsystemAttributeEditContext
+from .subsystem_attribute_edit_context import SubsystemAttributeItemEditContext
 from .subsystem_attribute_edit_data import SubsystemAttributeEditData
 
 logger = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ class ConfigEditFormHandler:
         subsystem_edit_data_list = [
             SubsystemAttributeEditData(
                 formset=formset,
-                context=SubsystemAttributeEditContext(formset.instance),
+                context=SubsystemAttributeItemEditContext(formset.instance),
                 error_count=0  # No errors on initial load
             )
             for formset in subsystem_formset_list
@@ -89,10 +89,10 @@ class ConfigEditFormHandler:
         # Special case: Subsystem editing combines multiple Subsystem objects 
         # into a single editing context (unlike Entity/Location's one-to-one relationship).
         # Provide the shared context for container IDs and namespacing.
-        shared_context = subsystem_edit_data_list[0].context if subsystem_edit_data_list else None
+        page_context = subsystem_edit_data_list[0].context if subsystem_edit_data_list else None
         
         return {
             'subsystem_edit_data_list': subsystem_edit_data_list,
             'selected_subsystem_id': selected_subsystem_id,
-            'shared_editing_context': shared_context,  # For container IDs and namespacing
+            'attr_page_context': page_context,  # For container IDs and namespacing
         }

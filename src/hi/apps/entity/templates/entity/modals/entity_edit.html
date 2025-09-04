@@ -6,11 +6,11 @@
 
 {% block body %}
 <!-- Root container for this attribute editing context -->
-<div id="{{ attr_context.container_html_id }}" 
+<div id="{{ attr_page_context.container_html_id }}" 
      class="{{ DIVID.ATTR_V2_CONTAINER_CLASS }}">
   
   <div class="{{ DIVID.ATTR_V2_FORM_CLASS }}">
-    <form id="{{ attr_context.form_html_id }}" 
+    <form id="{{ attr_page_context.form_html_id }}" 
           action="{% url 'entity_edit' entity_id=entity.id %}" 
           method="post" 
           class="{{ DIVID.ATTR_V2_FORM_CLASS }} form" 
@@ -18,7 +18,7 @@
       {% csrf_token %}
       
       <!-- Main content wrapper for antinode updates -->
-      <div id="{{ attr_context.content_html_id }}"
+      <div id="{{ attr_page_context.content_html_id }}"
            class="{{ DIVID.ATTR_V2_CONTENT_CLASS }}">
         {% include "entity/panes/entity_edit_content_body.html" %}
       </div>
@@ -26,7 +26,7 @@
   </div>
 
   <!-- File Upload Form Container (separate from main form to avoid nesting) -->
-  <div id="{{ attr_context.upload_form_container_html_id }}">
+  <div id="{{ attr_item_context.upload_form_container_html_id }}">
     {% url 'entity_attribute_upload' entity_id=entity.id as file_upload_url %}  
     {% include "attribute/components/upload_form.html" with file_upload_url=file_upload_url %}
   </div>

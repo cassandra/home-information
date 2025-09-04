@@ -51,7 +51,7 @@ Individual attribute attribute card with value editing and actions
       {% endif %}
       
       {% if attribute_form.instance.pk %}
-        <a href="{% attr_history_url attr_context attribute_form.instance.pk %}"
+        <a href="{% attr_history_url attr_item_context attribute_form.instance.pk %}"
            class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_HISTORY_LINK_CLASS }}"
            title="View history">
           {% icon "history" size="sm" %}
@@ -62,13 +62,13 @@ Individual attribute attribute card with value editing and actions
         <button type="button" 
                 class="{{ DIVID.ATTR_V2_DELETE_BTN_CLASS }}"
                 title="Delete attribute"
-                onclick="markAttributeForDeletion('{{ attribute_form.instance.pk }}', '#{{ attr_context.container_html_id }}')" >
+                onclick="markAttributeForDeletion('{{ attribute_form.instance.pk }}', '#{{ attr_page_context.container_html_id }}')" >
           {% icon "delete" size="sm" %}
         </button>
         <button type="button" 
                 class="btn btn-sm btn-outline-warning {{ DIVID.ATTR_V2_UNDO_BTN_CLASS }}"
                 title="Undo delete"
-                onclick="undoAttributeDeletion('{{ attribute_form.instance.pk }}', '#{{ attr_context.container_html_id }}')"
+                onclick="undoAttributeDeletion('{{ attribute_form.instance.pk }}', '#{{ attr_page_context.container_html_id }}')"
                 style="display: none;">
           ↶ Undo
         </button>
@@ -137,7 +137,7 @@ Individual attribute attribute card with value editing and actions
   
   <!-- Inline History Target (empty until populated) -->
   {% if attribute_form.instance.pk %}
-    <div id="{{ attr_context|history_target_id:attribute_form.instance.pk }}" 
+    <div id="{{ attr_item_context|history_target_id:attribute_form.instance.pk }}" 
          class="{{ DIVID.ATTR_V2_INLINE_HISTORY_CLASS }}">
     </div>
   {% endif %}

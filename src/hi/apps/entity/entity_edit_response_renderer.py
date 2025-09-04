@@ -16,7 +16,7 @@ from django.http import HttpResponse
 from .entity_edit_form_handler import EntityEditFormHandler
 from .models import Entity, EntityAttribute
 from .forms import EntityForm, EntityAttributeRegularFormSet
-from .entity_attribute_edit_context import EntityAttributeEditContext
+from .entity_attribute_edit_context import EntityAttributeItemEditContext
 
 
 class EntityEditResponseRenderer:
@@ -57,7 +57,7 @@ class EntityEditResponseRenderer:
         non_field_errors = self.form_handler.collect_form_errors(entity_form, regular_attributes_formset)
         
         # Create the attribute edit context for template generalization
-        attr_context = EntityAttributeEditContext(entity)
+        attr_item_context = EntityAttributeItemEditContext(entity)
         
         # Build context with both old and new patterns for compatibility
         context = {
@@ -72,8 +72,8 @@ class EntityEditResponseRenderer:
             'non_field_errors': non_field_errors,
         }
         
-        # Merge in the context variables from AttributeEditContext
-        context.update(attr_context.to_template_context())
+        # Merge in the context variables from AttributeItemEditContext
+        context.update(attr_item_context.to_template_context())
         
         return context
 
@@ -147,14 +147,14 @@ class EntityEditResponseRenderer:
                                        kwargs={'entity_id': entity.id})
         
         # Create the attribute edit context for the upload form
-        from .entity_attribute_edit_context import EntityAttributeEditContext
-        attr_context = EntityAttributeEditContext(entity)
+        from .entity_attribute_edit_context import EntityAttributeItemEditContext
+        attr_item_context = EntityAttributeItemEditContext(entity)
         
         upload_form: str = render_to_string(
             'attribute/components/upload_form.html',
             {
                 'file_upload_url': file_upload_url,
-                'attr_context': attr_context
+                'attr_item_context': attr_item_context
             },
             request=request,  # Needed for context processors (CSRF, DIVID, etc.)
         )
@@ -181,18 +181,18 @@ class EntityEditResponseRenderer:
         )
         
         # Get the edit context to build proper target selectors
-        attr_context = EntityAttributeEditContext(entity)
+        attr_item_context = EntityAttributeItemEditContext(entity)
         
         # Build response using the new helper
         return (AttributeResponseBuilder()
                 .success()
                 .add_update(
-                    target=f"#{attr_context.content_html_id}",
+                    target=f"#{attr_item_context.content_html_id}",
                     html=content_body,
                     mode=UpdateMode.REPLACE
                 )
                 .add_update(
-                    target=f"#{attr_context.upload_form_container_html_id}",
+                    target=f"#{attr_item_context.upload_form_container_html_id}",
                     html=upload_form,
                     mode=UpdateMode.REPLACE
                 )
@@ -227,18 +227,18 @@ class EntityEditResponseRenderer:
         )
         
         # Get the edit context to build proper target selectors
-        attr_context = EntityAttributeEditContext(entity)
+        attr_item_context = EntityAttributeItemEditContext(entity)
         
         # Build error response using the new helper
         return (AttributeResponseBuilder()
                 .error()
                 .add_update(
-                    target=f"#{attr_context.content_html_id}",
+                    target=f"#{attr_item_context.content_html_id}",
                     html=content_body,
                     mode=UpdateMode.REPLACE
                 )
                 .add_update(
-                    target=f"#{attr_context.upload_form_container_html_id}",
+                    target=f"#{attr_item_context.upload_form_container_html_id}",
                     html=upload_form,
                     mode=UpdateMode.REPLACE
                 )

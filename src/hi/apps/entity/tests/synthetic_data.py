@@ -12,7 +12,6 @@ from hi.constants import DIVID
 from hi.apps.attribute.enums import AttributeType, AttributeValueType
 from hi.apps.entity.models import Entity, EntityAttribute
 from hi.apps.entity.enums import EntityType
-from hi.apps.entity.entity_edit_form_handler import EntityEditFormHandler
 from hi.apps.location.models import Location
 
 
@@ -166,7 +165,7 @@ class EntityAttributeSyntheticData:
         ).order_by('id'))
         
         # Use EntityEditFormHandler as the single source of truth for prefix logic
-        prefix = EntityEditFormHandler.get_formset_prefix(entity)
+        prefix = f'entity.{entity.id}'
         
         # Formset management form data
         formset_data = {
@@ -191,7 +190,7 @@ class EntityAttributeSyntheticData:
     @staticmethod
     def create_formset_data_for_attributes(attributes: List[EntityAttribute], entity: Entity) -> Dict[str, Any]:
         """Create formset data dictionary for attribute formset submissions."""
-        prefix = EntityEditFormHandler.get_formset_prefix(entity)
+        prefix = f'entity.{entity.id}'
         data = {
             f'{prefix}-TOTAL_FORMS': str(len(attributes) + 1),  # +1 for empty form
             f'{prefix}-INITIAL_FORMS': str(len(attributes)),

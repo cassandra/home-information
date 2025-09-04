@@ -4,7 +4,7 @@ SubsystemAttributeEditData - Data container for pairing formsets with their cont
 from dataclasses import dataclass
 
 from .forms import SubsystemAttributeFormSet
-from .subsystem_attribute_edit_context import SubsystemAttributeEditContext
+from .subsystem_attribute_edit_context import SubsystemAttributeItemEditContext
 from .models import Subsystem
 
 
@@ -13,7 +13,7 @@ class SubsystemAttributeEditData:
     """Container that pairs a subsystem formset with its attribute edit context."""
     
     formset: SubsystemAttributeFormSet
-    context: SubsystemAttributeEditContext
+    context: SubsystemAttributeItemEditContext
     error_count: int = 0
     
     @property

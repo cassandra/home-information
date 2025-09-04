@@ -9,7 +9,6 @@ from unittest.mock import patch
 from django.http import HttpResponse
 from django.test import RequestFactory
 
-from hi.apps.entity.entity_edit_form_handler import EntityEditFormHandler
 from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransitionHandler
 from hi.apps.entity.enums import EntityType, EntityTransitionType
 from hi.apps.entity.forms import EntityForm, EntityAttributeRegularFormSet
@@ -118,46 +117,6 @@ class TestEntityTypeTransitionHandlerFormSaving(BaseTestCase):
         # Should return the transition response
         self.assertIsNotNone(result)
         self.assertIsInstance(result, HttpResponse)
-
-    def test_handle_entity_form_save_with_formset(self):
-        """Test form saving with both entity form and attribute formset."""
-        # Create attribute for formset
-        attr = EntityAttributeSyntheticData.create_test_text_attribute(entity=self.entity)
-        
-        # Create form data for both entity and formset
-        entity_data = EntityAttributeSyntheticData.create_form_data_for_entity_edit(
-            self.entity, name='Updated Name'
-        )
-        formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes([attr], self.entity)
-        prefix = EntityEditFormHandler.get_formset_prefix(self.entity)
-        formset_data[f'{prefix}-0-value'] = 'Updated Value'
-        
-        form_data = {**entity_data, **formset_data}
-        
-        entity_form = EntityForm(entity_data, instance=self.entity)
-        formset = EntityAttributeRegularFormSet(
-            form_data, instance=self.entity, prefix=prefix
-        )
-        
-        self.assertTrue(entity_form.is_valid())
-        self.assertTrue(formset.is_valid())
-        
-        result = self.handler.handle_entity_form_save(
-            request=self.request,
-            entity=self.entity,
-            entity_form=entity_form,
-            entity_attribute_formset=formset
-        )
-        
-        # Verify both were saved
-        self.entity.refresh_from_db()
-        attr.refresh_from_db()
-        
-        self.assertEqual(self.entity.name, 'Updated Name')
-        self.assertEqual(attr.value, 'Updated Value')
-        
-        # No type change, should return None
-        self.assertIsNone(result)
 
     def test_handle_entity_form_save_defaults_original_type(self):
         """Test that original_entity_type_str defaults to current entity type."""
@@ -405,60 +364,6 @@ class TestEntityTypeTransitionHandlerIntegration(BaseTestCase):
         # Verify refresh response was returned for icon transition
         self.assertIsNotNone(result)
         self.assertIsInstance(result, HttpResponse)
-
-    @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
-    def test_entity_type_change_with_attributes_formset(self, mock_entity_mgr):
-        """Test entity type change with simultaneous attribute changes using real objects."""
-        entity = EntityAttributeSyntheticData.create_test_entity(entity_type_str=str(EntityType.LIGHT))
-        attr = EntityAttributeSyntheticData.create_test_text_attribute(
-            entity=entity, name='brightness', value='100'
-        )
-        
-        # Create form data changing both entity type and attribute
-        entity_data = EntityAttributeSyntheticData.create_form_data_for_entity_edit(
-            entity, entity_type_str=str(EntityType.WALL_SWITCH), name='Updated Light'
-        )
-        formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes([attr], entity)
-        prefix = EntityEditFormHandler.get_formset_prefix(entity)
-        formset_data[f'{prefix}-0-value'] = '75'
-        
-        form_data = {**entity_data, **formset_data}
-        
-        entity_form = EntityForm(entity_data, instance=entity)
-        formset = EntityAttributeRegularFormSet(
-            form_data, instance=entity, prefix=prefix
-        )
-        
-        self.assertTrue(entity_form.is_valid())
-        self.assertTrue(formset.is_valid())
-        
-        # Mock only the entity manager's complex transition logic
-        mock_entity_mgr.return_value.handle_entity_type_transition.return_value = (True, EntityTransitionType.PATH_TO_PATH)
-        
-        result = self.handler.handle_entity_form_save(
-            request=self.request,
-            entity=entity,
-            entity_form=entity_form,
-            entity_attribute_formset=formset,
-            original_entity_type_str=str(EntityType.LIGHT)
-        )
-        
-        # Verify both entity and attribute were saved with real database transactions
-        entity.refresh_from_db()
-        attr.refresh_from_db()
-        
-        self.assertEqual(entity.entity_type_str, str(EntityType.WALL_SWITCH).lower())
-        self.assertEqual(entity.name, 'Updated Light')
-        self.assertEqual(attr.value, '75')
-        
-        # Verify transition was attempted with real location view
-        mock_entity_mgr.return_value.handle_entity_type_transition.assert_called_once_with(
-            entity=entity,
-            location_view=self.location_view
-        )
-        
-        # path_to_path transition should not require full page refresh
-        self.assertIsNone(result)
 
     @patch('hi.apps.entity.edit.entity_type_transition_handler.EntityManager')
     def test_transaction_rollback_on_transition_failure(self, mock_entity_mgr):

@@ -14,11 +14,10 @@ from django.urls import reverse
 from hi.apps.attribute.response_helpers import AttributeResponseBuilder, UpdateMode
 from hi.apps.attribute.response_constants import DefaultMessages
 from django.http import HttpResponse
-from hi.constants import DIVID
 from .location_edit_form_handler import LocationEditFormHandler
 from .models import Location, LocationAttribute
 from .forms import LocationAttributeRegularFormSet, LocationForm
-from .location_attribute_edit_context import LocationAttributeEditContext
+from .location_attribute_edit_context import LocationAttributeItemEditContext
 
 
 class LocationEditResponseRenderer:
@@ -59,7 +58,7 @@ class LocationEditResponseRenderer:
         non_field_errors = self.form_handler.collect_form_errors(location_form, regular_attributes_formset)
         
         # Create the attribute edit context for template generalization
-        attr_context = LocationAttributeEditContext(location)
+        attr_item_context = LocationAttributeItemEditContext(location)
         
         # Build context with both old and new patterns for compatibility
         context = {
@@ -74,8 +73,8 @@ class LocationEditResponseRenderer:
             'non_field_errors': non_field_errors,
         }
         
-        # Merge in the context variables from AttributeEditContext
-        context.update(attr_context.to_template_context())
+        # Merge in the context variables from AttributeItemEditContext
+        context.update(attr_item_context.to_template_context())
         
         return context
 
@@ -149,14 +148,14 @@ class LocationEditResponseRenderer:
                                        kwargs={'location_id': location.id})
         
         # Create the attribute edit context for the upload form
-        from .location_attribute_edit_context import LocationAttributeEditContext
-        attr_context = LocationAttributeEditContext(location)
+        from .location_attribute_edit_context import LocationAttributeItemEditContext
+        attr_item_context = LocationAttributeItemEditContext(location)
         
         upload_form: str = render_to_string(
             'attribute/components/upload_form.html',
             {
                 'file_upload_url': file_upload_url,
-                'attr_context': attr_context
+                'attr_item_context': attr_item_context
             },
             request=request,  # Needed for context processors (CSRF, DIVID, etc.)
         )
@@ -183,18 +182,18 @@ class LocationEditResponseRenderer:
         )
         
         # Get the edit context to build proper target selectors
-        attr_context = LocationAttributeEditContext(location)
+        attr_item_context = LocationAttributeItemEditContext(location)
         
         # Build response using the new helper
         return (AttributeResponseBuilder()
                 .success()
                 .add_update(
-                    target=f"#{attr_context.content_html_id}",
+                    target=f"#{attr_item_context.content_html_id}",
                     html=content_body,
                     mode=UpdateMode.REPLACE
                 )
                 .add_update(
-                    target=f"#{attr_context.upload_form_container_html_id}",
+                    target=f"#{attr_item_context.upload_form_container_html_id}",
                     html=upload_form,
                     mode=UpdateMode.REPLACE
                 )
@@ -229,18 +228,18 @@ class LocationEditResponseRenderer:
         )
         
         # Get the edit context to build proper target selectors
-        attr_context = LocationAttributeEditContext(location)
+        attr_item_context = LocationAttributeItemEditContext(location)
         
         # Build error response using the new helper
         return (AttributeResponseBuilder()
                 .error()
                 .add_update(
-                    target=f"#{attr_context.content_html_id}",
+                    target=f"#{attr_item_context.content_html_id}",
                     html=content_body,
                     mode=UpdateMode.REPLACE
                 )
                 .add_update(
-                    target=f"#{attr_context.upload_form_container_html_id}",
+                    target=f"#{attr_item_context.upload_form_container_html_id}",
                     html=upload_form,
                     mode=UpdateMode.REPLACE
                 )

@@ -6,7 +6,7 @@ Always renders container for dynamic file additions via antinode.js
 
 <div class="attr-v2-file-section">
   <h6 class="attr-v2-section-title">Files</h6>
-  <div id="{{ attr_context.file_grid_html_id }}"
+  <div id="{{ attr_item_context.file_grid_html_id }}"
        class="{{ DIVID.ATTR_V2_FILE_GRID_CLASS }}">
     {% for attribute in file_attributes %}
       {% include "attribute/components/file_card.html" with attribute=attribute %}

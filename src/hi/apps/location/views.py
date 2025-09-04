@@ -13,6 +13,9 @@ from hi.apps.common.utils import is_ajax
 
 from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
 from hi.apps.attribute.views_base import AttributeEditViewMixin
+from hi.apps.attribute.response_helpers import AttributeResponseBuilder, UpdateMode
+from hi.apps.attribute.response_constants import DefaultMessages, HTTPHeaders
+
 from hi.enums import ItemType, ViewType
 from hi.exceptions import ForceSynchronousException
 from hi.hi_async_view import HiModalView
@@ -23,9 +26,7 @@ from .forms import LocationAttributeUploadForm
 from .location_manager import LocationManager
 from .models import Location, LocationView, LocationAttribute
 from .view_mixins import LocationViewMixin
-from .location_attribute_edit_context import LocationAttributeEditContext
-from .location_edit_form_handler import LocationEditFormHandler
-from .location_edit_response_renderer import LocationEditResponseRenderer
+from .location_attribute_edit_context import LocationAttributeItemEditContext
 
 logger = logging.getLogger(__name__)
 
@@ -117,64 +118,6 @@ class LocationItemStatusView( View ):
         raise BadRequest( f'Unknown item type "{item_type}".' )
 
 
-class LocationEditView_ORIGINAL(HiModalView, LocationViewMixin):
-    """Location attribute editing modal with redesigned interface.
-    
-    This view uses a dual response pattern:
-    - get(): Returns full modal using standard modal_response()
-    - post(): Returns antinode fragments for async DOM updates
-    
-    Business logic is delegated to specialized handler classes following
-    the "keep views simple" design philosophy.
-    """
-    
-    def get_template_name(self) -> str:
-        return 'location/modals/location_edit.html'
-    
-    def get( self,
-             request : HttpRequest,
-             *args   : Any,
-             **kwargs: Any          ) -> HttpResponse:
-        location: Location = self.get_location(request, *args, **kwargs)
-        
-        # Delegate form creation and context building to handler
-        form_handler = LocationEditFormHandler()
-        context: Dict[str, Any] = form_handler.create_initial_context(location)
-        
-        return self.modal_response(request, context)
-    
-    def post( self,
-              request : HttpRequest,
-              *args   : Any,
-              **kwargs: Any          ) -> HttpResponse:
-        location: Location = self.get_location(request, *args, **kwargs)
-        
-        # Delegate form handling to specialized handlers
-        form_handler = LocationEditFormHandler()
-        renderer = LocationEditResponseRenderer()
-        
-        # Create forms with POST data
-        (
-            location_form,
-            file_attributes,
-            regular_attributes_formset,
-        ) = form_handler.create_location_forms(
-            location, request.POST
-        )
-        
-        if form_handler.validate_forms(location_form, regular_attributes_formset):
-            # Save forms and process files
-            form_handler.save_forms(location_form, regular_attributes_formset, request, location)
-            
-            # Return success response
-            return renderer.render_success_response(request, location)
-        else:
-            # Return error response
-            return renderer.render_error_response(
-                request, location, location_form, regular_attributes_formset
-            )
-
-
 class LocationEditView( HiModalView, LocationViewMixin, AttributeEditViewMixin ):
     """Location attribute editing modal with redesigned interface.
     
@@ -194,9 +137,9 @@ class LocationEditView( HiModalView, LocationViewMixin, AttributeEditViewMixin )
              *args   : Any,
              **kwargs: Any          ) -> HttpResponse:
         location = self.get_location(request, *args, **kwargs)
-        attr_context = LocationAttributeEditContext( location = location )
+        attr_item_context = LocationAttributeItemEditContext( location = location )
         template_context = self.create_initial_template_context(
-            attr_context= attr_context,
+            attr_item_context= attr_item_context,
         )
         return self.modal_response( request, template_context )
     
@@ -205,10 +148,10 @@ class LocationEditView( HiModalView, LocationViewMixin, AttributeEditViewMixin )
               *args   : Any,
               **kwargs: Any          ) -> HttpResponse:
         location = self.get_location(request, *args, **kwargs)
-        attr_context = LocationAttributeEditContext( location = location )
+        attr_item_context = LocationAttributeItemEditContext( location = location )
         return self.post_attribute_form(
             request = request,
-            attr_context = attr_context,
+            attr_item_context = attr_item_context,
         )
 
     
@@ -231,10 +174,10 @@ class LocationAttributeUploadView( View, LocationViewMixin ):
                 location_attribute_upload_form.save()   
             
             # Render new file card HTML to append to file grid
-            from hi.apps.location.location_attribute_edit_context import LocationAttributeEditContext
-            attr_context = LocationAttributeEditContext(location)
+            from hi.apps.location.location_attribute_edit_context import LocationAttributeItemEditContext
+            attr_item_context = LocationAttributeItemEditContext(location)
             context = {'attribute': location_attribute, 'location': location}
-            context.update(attr_context.to_template_context())
+            context.update(attr_item_context.to_template_context())
             
             file_card_html: str = render_to_string(
                 'attribute/components/file_card.html',
@@ -247,7 +190,7 @@ class LocationAttributeUploadView( View, LocationViewMixin ):
                 "success": True,
                 "updates": [
                     {
-                        "target": f"#{attr_context.file_grid_html_id}",
+                        "target": f"#{attr_item_context.file_grid_html_id}",
                         "html": file_card_html,
                         "mode": "append"
                     }
@@ -273,7 +216,7 @@ class LocationAttributeUploadView( View, LocationViewMixin ):
             return (AttributeResponseBuilder()
                     .error()
                     .add_update(
-                        target=f'#{attr_context.status_msg_html_id}',
+                        target=f'#{attr_item_context.status_msg_html_id}',
                         html=error_html,
                         mode=UpdateMode.REPLACE
                     )
@@ -322,7 +265,7 @@ class LocationAttributeHistoryInlineView(BaseAttributeHistoryView):
             history_records = []
         
         # Create the attribute edit context for template generalization
-        attr_context = LocationAttributeEditContext(attribute.location)
+        attr_item_context = LocationAttributeItemEditContext(attribute.location)
         
         context: Dict[str, Any] = {
             'location': attribute.location,
@@ -332,8 +275,8 @@ class LocationAttributeHistoryInlineView(BaseAttributeHistoryView):
             'restore_url_name': self.get_restore_url_name(),
         }
         
-        # Merge in the context variables from AttributeEditContext
-        context.update(attr_context.to_template_context())
+        # Merge in the context variables from AttributeItemEditContext
+        context.update(attr_item_context.to_template_context())
         
         # Check if this is an AJAX request and return JSON response
         if request.headers.get(HTTPHeaders.X_REQUESTED_WITH) == HTTPHeaders.XML_HTTP_REQUEST:
@@ -348,7 +291,7 @@ class LocationAttributeHistoryInlineView(BaseAttributeHistoryView):
             return (AttributeResponseBuilder()
                     .success()
                     .add_update(
-                        target=f"#{attr_context.history_target_id(attribute.id)}",
+                        target=f"#{attr_item_context.history_target_id(attribute.id)}",
                         html=html_content,
                         mode=UpdateMode.REPLACE
                     )

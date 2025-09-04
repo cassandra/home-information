@@ -11,4 +11,3 @@ class AttributeEditFormData:
     owner_form                 : ModelForm
     file_attributes            : QuerySet[AttributeModel]
     regular_attributes_formset : BaseInlineFormSet
-

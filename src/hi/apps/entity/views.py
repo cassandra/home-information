@@ -19,13 +19,11 @@ from hi.apps.sense.sensor_history_manager import SensorHistoryMixin
 from hi.views import page_not_found_response
 from hi.hi_async_view import HiModalView
 
-from .entity_edit_form_handler import EntityEditFormHandler
-from .entity_edit_response_renderer import EntityEditResponseRenderer
 from . import forms
 from .models import Entity, EntityAttribute
 from .transient_models import EntityStateHistoryData
 from .view_mixins import EntityViewMixin
-from .entity_attribute_edit_context import EntityAttributeEditContext
+from .entity_attribute_edit_context import EntityAttributeItemEditContext
 
 
 logger = logging.getLogger(__name__)
@@ -50,67 +48,11 @@ class EntityStatusView( HiModalView, EntityViewMixin ):
         return self.modal_response( request, context )
 
 
-class EntityEditView_ORIGINAL(HiModalView, EntityViewMixin):
-    """Entity attribute editing modal with redesigned interface.
-    
-    This view uses a dual response pattern:
-    - get(): Returns full modal using standard modal_response()
-    - post(): Returns antinode fragments for async DOM updates
-    
-    Business logic is delegated to specialized handler classes following
-    the "keep views simple" design philosophy.
-    """
-    
-    def get_template_name(self) -> str:
-        return 'entity/modals/entity_edit.html'
-    
-    def get( self,
-             request : HttpRequest,
-             *args   : Any,
-             **kwargs: Any          ) -> HttpResponse:
-        entity: Entity = self.get_entity(request, *args, **kwargs)
-        
-        # Delegate form creation and context building to handler
-        form_handler: EntityEditFormHandler = EntityEditFormHandler()
-        context: Dict[str, Any] = form_handler.create_initial_context(entity)
-        
-        return self.modal_response(request, context)
-    
-    def post( self,
-              request : HttpRequest,
-              *args   : Any,
-              **kwargs: Any          ) -> HttpResponse:
-        entity: Entity = self.get_entity(request, *args, **kwargs)
-        
-        # Delegate form handling to specialized handlers
-        form_handler: EntityEditFormHandler = EntityEditFormHandler()
-        renderer: EntityEditResponseRenderer = EntityEditResponseRenderer()
-        
-        # Create forms with POST data
-        entity_form, file_attributes, regular_attributes_formset = form_handler.create_entity_forms(
-            entity, request.POST
-        )
-        
-        if form_handler.validate_forms(entity_form, regular_attributes_formset):
-            # Save forms and process files
-            form_handler.save_forms(entity_form, regular_attributes_formset, request, entity)
-            
-            # Return success response
-            return renderer.render_success_response(request, entity)
-        else:
-            # Return error response
-            return renderer.render_error_response(request, entity, entity_form, regular_attributes_formset)
-
-
 class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):
-    """Entity attribute editing modal with redesigned interface.
-    
+    """
     This view uses a dual response pattern:
-    - get(): Returns full modal using standard modal_response()
-    - post(): Returns antinode fragments for async DOM updates
-    
-    Business logic is delegated to specialized handler classes following
-    the "keep views simple" design philosophy.
+      - get(): Returns full modal using standard modal_response()
+      - post(): Returns custom JSON response with HTML fragments for async DOM updates
     """
     
     def get_template_name(self) -> str:
@@ -121,9 +63,9 @@ class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):
              *args   : Any,
              **kwargs: Any          ) -> HttpResponse:
         entity = self.get_entity(request, *args, **kwargs)
-        attr_context = EntityAttributeEditContext( entity = entity )
+        attr_item_context = EntityAttributeItemEditContext( entity = entity )
         template_context = self.create_initial_template_context(
-            attr_context= attr_context,
+            attr_item_context= attr_item_context,
         )
         return self.modal_response( request, template_context )
     
@@ -132,11 +74,76 @@ class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):
               *args   : Any,
               **kwargs: Any          ) -> HttpResponse:
         entity = self.get_entity(request, *args, **kwargs)
-        attr_context = EntityAttributeEditContext( entity = entity )
+        attr_item_context = EntityAttributeItemEditContext( entity = entity )
         return self.post_attribute_form(
             request = request,
-            attr_context = attr_context,
+            attr_item_context = attr_item_context,
         )
+
+
+class EntityAttributeUploadView( View, EntityViewMixin ):
+
+    def post( self,
+              request : HttpRequest,
+              *args   : Any,
+              **kwargs: Any          ) -> HttpResponse:
+        entity: Entity = self.get_entity( request, *args, **kwargs )
+        entity_attribute: EntityAttribute = EntityAttribute( entity = entity )
+        entity_attribute_upload_form: forms.EntityAttributeUploadForm = forms.EntityAttributeUploadForm(
+            request.POST,
+            request.FILES,
+            instance = entity_attribute,
+        )
+        
+        if entity_attribute_upload_form.is_valid():
+            with transaction.atomic():
+                entity_attribute_upload_form.save()   
+            
+            # Render new file card HTML to append to file grid
+            attr_item_context = EntityAttributeItemEditContext(entity)
+            context = {'attribute': entity_attribute, 'entity': entity}
+            context.update(attr_item_context.to_template_context())
+            
+            file_card_html: str = render_to_string(
+                'attribute/components/file_card.html',
+                context,
+                request=request
+            )
+            
+            # Build JSON response for successful file upload
+            return (
+                AttributeResponseBuilder()
+                .success()
+                .add_update(
+                    target=f"#{attr_item_context.file_grid_html_id}",
+                    html=file_card_html,
+                    mode=UpdateMode.APPEND
+                )
+                .with_message(DefaultMessages.UPLOAD_SUCCESS)
+                .build_http_response()
+            )
+        else:
+            # Render error message to status area
+            error_html: str = render_to_string(
+                'attribute/components/status_message.html',
+                {
+                    'error_message': DefaultMessages.UPLOAD_ERROR,
+                    'form_errors': entity_attribute_upload_form.errors
+                }
+            )
+
+            # Build JSON error response for failed file upload
+            return (
+                AttributeResponseBuilder()
+                .error()
+                .add_update(
+                    target=f'#{attr_item_context.status_msg_html_id}',
+                    html=error_html,
+                    mode=UpdateMode.REPLACE
+                )
+                .with_message(DefaultMessages.UPLOAD_ERROR)
+                .build_http_response()
+            )
 
 
 class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin ):
@@ -166,71 +173,6 @@ class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin )
         )
         context: Dict[str, Any] = entity_state_history_data.to_template_context()
         return self.modal_response( request, context )
-
-
-class EntityAttributeUploadView( View, EntityViewMixin ):
-
-    def post( self,
-              request : HttpRequest,
-              *args   : Any,
-              **kwargs: Any          ) -> HttpResponse:
-        entity: Entity = self.get_entity( request, *args, **kwargs )
-        entity_attribute: EntityAttribute = EntityAttribute( entity = entity )
-        entity_attribute_upload_form: forms.EntityAttributeUploadForm = forms.EntityAttributeUploadForm(
-            request.POST,
-            request.FILES,
-            instance = entity_attribute,
-        )
-        
-        if entity_attribute_upload_form.is_valid():
-            with transaction.atomic():
-                entity_attribute_upload_form.save()   
-            
-            # Render new file card HTML to append to file grid
-            attr_context = EntityAttributeEditContext(entity)
-            context = {'attribute': entity_attribute, 'entity': entity}
-            context.update(attr_context.to_template_context())
-            
-            file_card_html: str = render_to_string(
-                'attribute/components/file_card.html',
-                context,
-                request=request
-            )
-            
-            # Build JSON response for successful file upload
-            return (
-                AttributeResponseBuilder()
-                .success()
-                .add_update(
-                    target=f"#{attr_context.file_grid_html_id}",
-                    html=file_card_html,
-                    mode=UpdateMode.APPEND
-                )
-                .with_message(DefaultMessages.UPLOAD_SUCCESS)
-                .build_http_response()
-            )
-        else:
-            # Render error message to status area
-            error_html: str = render_to_string(
-                'attribute/components/status_message.html',
-                {
-                    'error_message': DefaultMessages.UPLOAD_ERROR,
-                    'form_errors': entity_attribute_upload_form.errors
-                }
-            )
-
-            # Build JSON error response for failed file upload
-            return (
-                AttributeResponseBuilder()
-                .error()
-                .add_update(
-                    target=f'#{attr_context.status_msg_html_id}',
-                    html=error_html,
-                    mode=UpdateMode.REPLACE
-                )
-                .with_message(DefaultMessages.UPLOAD_ERROR)
-                .build_http_response()
-            )
 
 
 class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
@@ -272,7 +214,7 @@ class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
             history_records = []
         
         # Create the attribute edit context for template generalization
-        attr_context = EntityAttributeEditContext(attribute.entity)
+        attr_item_context = EntityAttributeItemEditContext(attribute.entity)
         
         context: Dict[str, Any] = {
             'entity': attribute.entity,
@@ -282,8 +224,8 @@ class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
             'restore_url_name': self.get_restore_url_name(),
         }
         
-        # Merge in the context variables from AttributeEditContext
-        context.update(attr_context.to_template_context())
+        # Merge in the context variables from AttributeItemEditContext
+        context.update(attr_item_context.to_template_context())
         
         # Check if this is an AJAX request and return JSON response
         if request.headers.get(HTTPHeaders.X_REQUESTED_WITH) == HTTPHeaders.XML_HTTP_REQUEST:
@@ -299,7 +241,7 @@ class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
                 AttributeResponseBuilder()
                 .success()
                 .add_update(
-                    target=f"#{attr_context.history_target_id(attribute.id)}",
+                    target=f"#{attr_item_context.history_target_id(attribute.id)}",
                     html=html_content,
                     mode=UpdateMode.REPLACE
                 )

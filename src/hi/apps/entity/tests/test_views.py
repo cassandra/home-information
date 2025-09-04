@@ -8,7 +8,6 @@ from django.urls import reverse
 from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.control.controller_history_manager import ControllerHistoryManager
 from hi.apps.entity.enums import EntityType, EntityStateType
-from hi.apps.entity.entity_edit_form_handler import EntityEditFormHandler
 from hi.apps.entity.models import Entity, EntityAttribute
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.enums import LocationViewType
@@ -119,7 +118,7 @@ class TestEntityEditView(DualModeViewTestCase):
         )
         
         # Modify attribute values
-        prefix = EntityEditFormHandler.get_formset_prefix(self.entity)
+        prefix = f'entity.{entity.id}'
         for i, attr in enumerate(attributes):
             if attr == self.text_attr:
                 formset_data[f'{prefix}-{i}-value'] = 'Updated brightness value'
@@ -236,7 +235,7 @@ class TestEntityEditView(DualModeViewTestCase):
         
         # Create formset data with existing attributes plus new one using correct prefix
         existing_attrs = list(self.entity.attributes.all())
-        prefix = EntityEditFormHandler.get_formset_prefix(self.entity)
+        prefix = f'entity.{entity.id}'
         formset_data = {
             f'{prefix}-TOTAL_FORMS': str(len(existing_attrs) + 2),  # +1 existing +1 new
             f'{prefix}-INITIAL_FORMS': str(len(existing_attrs)),

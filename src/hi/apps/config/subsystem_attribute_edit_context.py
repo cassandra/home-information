@@ -1,11 +1,11 @@
 """
-SubsystemAttributeEditContext - Subsystem-specific context for attribute editing templates.
+SubsystemAttributeItemEditContext - Subsystem-specific context for attribute editing templates.
 """
-from hi.apps.attribute.edit_context import AttributeEditContext
+from hi.apps.attribute.edit_context import AttributeItemEditContext
 from .models import Subsystem
 
 
-class SubsystemAttributeEditContext(AttributeEditContext):
+class SubsystemAttributeItemEditContext(AttributeItemEditContext):
     """Subsystem-specific context provider for attribute editing templates."""
     
     def __init__(self, subsystem: Subsystem) -> None:

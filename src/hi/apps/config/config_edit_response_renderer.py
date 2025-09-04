@@ -12,7 +12,7 @@ from hi.apps.attribute.response_constants import DefaultMessages
 from hi.constants import DIVID
 from .config_edit_form_handler import ConfigEditFormHandler
 from .forms import SubsystemAttributeFormSet
-from .subsystem_attribute_edit_context import SubsystemAttributeEditContext
+from .subsystem_attribute_edit_context import SubsystemAttributeItemEditContext
 from .subsystem_attribute_edit_data import SubsystemAttributeEditData
 
 
@@ -44,7 +44,7 @@ class ConfigEditResponseRenderer:
             # Create data object with error count
             subsystem_data = SubsystemAttributeEditData(
                 formset=formset,
-                context=SubsystemAttributeEditContext(formset.instance),
+                context=SubsystemAttributeItemEditContext(formset.instance),
                 error_count=error_count
             )
             subsystem_edit_data_list.append(subsystem_data)
@@ -56,12 +56,12 @@ class ConfigEditResponseRenderer:
         # Special case: Subsystem editing combines multiple Subsystem objects 
         # into a single editing context (unlike Entity/Location's one-to-one relationship).
         # Provide the shared context for container IDs and namespacing.
-        shared_context = subsystem_edit_data_list[0].context if subsystem_edit_data_list else None
+        page_context = subsystem_edit_data_list[0].context if subsystem_edit_data_list else None
         
         context = {
             'subsystem_edit_data_list': subsystem_edit_data_list,
             'selected_subsystem_id': selected_subsystem_id,
-            'shared_editing_context': shared_context,  # For container IDs and namespacing
+            'attr_page_context': page_context,  # For container IDs and namespacing
             'success_message': success_message,
             'error_message': error_message,
             'has_errors': has_errors,
@@ -92,8 +92,8 @@ class ConfigEditResponseRenderer:
         content_html = render(request, 'config/panes/config_settings_content_body.html', context).content.decode('utf-8')
         
         # Use custom JSON response with context-specific IDs for proper targeting
-        shared_context = context.get('shared_editing_context')
-        content_target = f"#{shared_context.content_html_id}" if shared_context else f"#{DIVID['ATTR_V2_CONTENT']}"
+        page_context = context.get('attr_page_context')
+        content_target = f"#{page_context.content_html_id}" if page_context else f"#{DIVID['ATTR_V2_CONTENT']}"
         
         # Build response using the new helper
         return (AttributeResponseBuilder()
@@ -134,8 +134,8 @@ class ConfigEditResponseRenderer:
         content_html = render(request, 'config/panes/config_settings_content_body.html', context).content.decode('utf-8')
         
         # Use custom JSON response with context-specific IDs for proper targeting
-        shared_context = context.get('shared_editing_context')
-        content_target = f"#{shared_context.content_html_id}" if shared_context else f"#{DIVID['ATTR_V2_CONTENT']}"
+        page_context = context.get('attr_page_context')
+        content_target = f"#{page_context.content_html_id}" if page_context else f"#{DIVID['ATTR_V2_CONTENT']}"
         
         # Build error response using the new helper
         return (AttributeResponseBuilder()

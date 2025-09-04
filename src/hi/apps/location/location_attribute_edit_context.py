@@ -1,7 +1,7 @@
 """
-LocationAttributeEditContext - Location-specific context for attribute editing templates.
+LocationAttributeItemEditContext - Location-specific context for attribute editing templates.
 
-This module contains Location-specific implementations of the AttributeEditContext
+This module contains Location-specific implementations of the AttributeItemEditContext
 pattern, encapsulating location-specific domain knowledge while maintaining
 the generic template interface.
 """
@@ -10,14 +10,14 @@ from typing import Any, Dict, Optional, Type
 from django.forms import ModelForm, BaseInlineFormSet
 from django.urls import reverse
 
-from hi.apps.attribute.edit_context import AttributeEditContext
+from hi.apps.attribute.edit_context import AttributeItemEditContext
 from hi.apps.attribute.models import AttributeModel
 
 from .forms import LocationForm, LocationAttributeRegularFormSet
 from .models import Location, LocationAttribute
 
 
-class LocationAttributeEditContext(AttributeEditContext):
+class LocationAttributeItemEditContext(AttributeItemEditContext):
     """
     Location-specific context provider for attribute editing templates.
     
@@ -32,7 +32,8 @@ class LocationAttributeEditContext(AttributeEditContext):
         Args:
             location: The Location instance that owns the attributes
         """
-        super().__init__(location, 'location')
+        super().__init__( owner_type = 'location', owner = location)
+        return
     
     @property
     def location(self) -> Location:

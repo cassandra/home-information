@@ -5,18 +5,18 @@ Uses existing attr-v2-* components for consistency with Entity/Location editing.
 {% endcomment %}
 
 <!-- Root container for this attribute editing context -->
-<div id="{{ shared_editing_context.container_html_id }}" 
+<div id="{{ attr_page_context.container_html_id }}" 
      class="{{ DIVID.ATTR_V2_CONTAINER_CLASS }}"> 
 
   <div class="{{ DIVID.ATTR_V2_FORM_CLASS }}">
-    <form id="{{ shared_editing_context.form_html_id }}"
+    <form id="{{ attr_page_context.form_html_id }}"
           action="{% if selected_subsystem_id %}{% url 'config_settings' subsystem_id=selected_subsystem_id %}{% else %}{% url 'config_settings' %}{% endif %}" 
           method="post" 
           class="{{ DIVID.ATTR_V2_FORM_CLASS }} form">
       {% csrf_token %}
       
       <!-- Main content wrapper for antinode updates -->
-      <div id="{{ shared_editing_context.content_html_id }}" 
+      <div id="{{ attr_page_context.content_html_id }}" 
            class="{{ DIVID.ATTR_V2_CONTENT_CLASS }}">
         {% include "config/panes/config_settings_content_body.html" %}
       </div>
@@ -28,6 +28,6 @@ Uses existing attr-v2-* components for consistency with Entity/Location editing.
 <script>
 // Initialize this specific container (for async-loaded content)
 if (window.Hi && window.Hi.attr && window.Hi.attr.initializeContainer) {
-    window.Hi.attr.initializeContainer('#{{ shared_editing_context.container_html_id }}');
+    window.Hi.attr.initializeContainer('#{{ attr_page_context.container_html_id }}');
 }
 </script>

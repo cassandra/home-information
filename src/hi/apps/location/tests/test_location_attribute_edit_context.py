@@ -1,19 +1,19 @@
 """
-Tests for LocationAttributeEditContext.
+Tests for LocationAttributeItemEditContext.
 
 Focuses on Location-specific context generation, URL patterns, and integration
 with LocationAttribute model relationships.
 """
 import logging
-from hi.apps.location.location_attribute_edit_context import LocationAttributeEditContext
+from hi.apps.location.location_attribute_edit_context import LocationAttributeItemEditContext
 from hi.apps.location.tests.synthetic_data import LocationSyntheticData
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
 
 
-class TestLocationAttributeEditContext(BaseTestCase):
-    """Test LocationAttributeEditContext location-specific functionality."""
+class TestLocationAttributeItemEditContext(BaseTestCase):
+    """Test LocationAttributeItemEditContext location-specific functionality."""
     
     def setUp(self):
         super().setUp()
@@ -21,14 +21,13 @@ class TestLocationAttributeEditContext(BaseTestCase):
             name="Test Location",
             svg_fragment_filename="test-location.svg"
         )
-        self.context = LocationAttributeEditContext(self.location)
+        self.context = LocationAttributeItemEditContext(self.location)
         
     def test_location_context_initialization(self):
-        """Test LocationAttributeEditContext initializes with correct owner type."""
+        """Test LocationAttributeItemEditContext initializes with correct owner type."""
         self.assertEqual(self.context.owner_type, "location")
         self.assertEqual(self.context.owner, self.location)
         self.assertEqual(self.context.owner_id, self.location.id)
-        self.assertEqual(self.context.owner_name, self.location.name)
         
     def test_location_property_accessor(self):
         """Test typed location property accessor - provides type safety."""
@@ -57,7 +56,7 @@ class TestLocationAttributeEditContext(BaseTestCase):
         template_context = self.context.to_template_context()
         
         # Should include generic keys
-        self.assertIn('attr_context', template_context)
+        self.assertIn('attr_item_context', template_context)
         self.assertIn('owner', template_context)
         
         # Should include location-specific key
@@ -73,11 +72,10 @@ class TestLocationAttributeEditContext(BaseTestCase):
             name="Another Location",
             svg_fragment_filename="another-location.svg"
         )
-        context2 = LocationAttributeEditContext(location2)
+        context2 = LocationAttributeItemEditContext(location2)
         
         # Should have different IDs and names
         self.assertNotEqual(self.context.owner_id, context2.owner_id)
-        self.assertNotEqual(self.context.owner_name, context2.owner_name)
         
         # But same URL patterns
         self.assertEqual(self.context.history_url_name, context2.history_url_name)
@@ -113,10 +111,9 @@ class TestLocationAttributeEditContext(BaseTestCase):
         self.assertIn(location_id_str, field_name)
         
     def test_location_context_inheritance_behavior(self):
-        """Test LocationAttributeEditContext properly inherits base functionality."""
+        """Test LocationAttributeItemEditContext properly inherits base functionality."""
         # Should inherit all base class methods
         self.assertTrue(hasattr(self.context, 'owner_id'))
-        self.assertTrue(hasattr(self.context, 'owner_name'))
         self.assertTrue(hasattr(self.context, 'owner_id_param_name'))
         self.assertTrue(hasattr(self.context, 'history_url_name'))
         self.assertTrue(hasattr(self.context, 'restore_url_name'))
@@ -132,9 +129,7 @@ class TestLocationAttributeEditContext(BaseTestCase):
             name="Location with & special chars!",
             svg_fragment_filename="special-location.svg"
         )
-        special_context = LocationAttributeEditContext(special_location)
-        
-        self.assertEqual(special_context.owner_name, "Location with & special chars!")
+        special_context = LocationAttributeItemEditContext(special_location)
         
         # DOM IDs should still be generated properly
         history_id = special_context.history_target_id(123)
@@ -148,7 +143,7 @@ class TestLocationAttributeEditContext(BaseTestCase):
             name="Location with Attributes"
         )
         
-        context = LocationAttributeEditContext(location_with_attrs)
+        context = LocationAttributeItemEditContext(location_with_attrs)
         
         # Context should work with the location regardless of attribute count
         self.assertEqual(context.location, location_with_attrs)
@@ -159,24 +154,18 @@ class TestLocationAttributeEditContext(BaseTestCase):
         self.assertIs(template_ctx['location'], location_with_attrs)
         
     def test_location_context_multiple_instances_isolation(self):
-        """Test multiple LocationAttributeEditContext instances don't interfere - instance isolation."""
+        """Test multiple LocationAttributeItemEditContext instances don't interfere - instance isolation."""
         location1 = LocationSyntheticData.create_test_location(name="Location 1")
         location2 = LocationSyntheticData.create_test_location(name="Location 2")
         
-        context1 = LocationAttributeEditContext(location1)
-        context2 = LocationAttributeEditContext(location2)
+        context1 = LocationAttributeItemEditContext(location1)
+        context2 = LocationAttributeItemEditContext(location2)
         
         # Contexts should be independent
         self.assertNotEqual(context1.owner_id, context2.owner_id)
-        self.assertNotEqual(context1.owner_name, context2.owner_name)
-        
-        # Modifying one location shouldn't affect the other context
-        location1.name = "Modified Location 1"
-        self.assertEqual(context1.owner_name, "Modified Location 1")
-        self.assertEqual(context2.owner_name, "Location 2")  # Should be unchanged
-        
+                
     def test_location_context_type_consistency(self):
-        """Test LocationAttributeEditContext maintains type consistency - type safety."""
+        """Test LocationAttributeItemEditContext maintains type consistency - type safety."""
         # owner_type should always be 'location'
         self.assertEqual(self.context.owner_type, "location")
         

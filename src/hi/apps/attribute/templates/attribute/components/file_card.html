@@ -65,8 +65,8 @@ Individual file attribute card with preview, actions, and metadata
   <!-- File Info -->
   <div class="{{ DIVID.ATTR_V2_FILE_INFO_CLASS }}">
     <input type="text" 
-           id="{{ attr_context|file_title_field_name:attribute.id }}"
-           name="{{ attr_context|file_title_field_name:attribute.id }}" 
+           id="{{ attr_item_context|file_title_field_name:attribute.id }}"
+           name="{{ attr_item_context|file_title_field_name:attribute.id }}" 
            value="{{ attribute.value }}" 
            class="{{ DIVID.ATTR_V2_FILE_TITLE_INPUT_CLASS }}"
            placeholder="Enter file title"
@@ -85,13 +85,13 @@ Individual file attribute card with preview, actions, and metadata
     {% if attribute.attribute_type.can_delete %}
       <button type="button" 
               class="btn btn-sm btn-outline-danger {{ DIVID.ATTR_V2_DELETE_BTN_CLASS }}"
-              onclick="markFileForDeletion('{{ attribute.id }}', '#{{ attr_context.container_html_id }}')"
+              onclick="markFileForDeletion('{{ attribute.id }}', '#{{ attr_page_context.container_html_id }}')"
               title="Delete file">
         {% icon "delete" size="sm" %}
       </button>
       <button type="button" 
               class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_UNDO_BTN_CLASS }}"
-              onclick="undoFileDeletion('{{ attribute.id }}', '#{{ attr_context.container_html_id }}')"
+              onclick="undoFileDeletion('{{ attribute.id }}', '#{{ attr_page_context.container_html_id }}')"
               title="Undo deletion"
               style="display: none;">
         Undo

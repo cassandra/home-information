@@ -133,36 +133,42 @@ class ConfigSettingsView( ConfigPageView, SettingsMixin, AttributeEditViewMixin 
         return 'config/panes/settings.html'
 
     def get_main_template_context( self, request, *args, **kwargs ):
-        """Delegate form creation and context building to handler."""
-        form_handler = ConfigEditFormHandler()
-        subsystem_id = kwargs.get('subsystem_id')
-        return form_handler.create_initial_context(selected_subsystem_id=subsystem_id)
+        attr_page_context = SubsystemAttributePageEditContext( owner_type = 'subsystem' )
 
-    def post( self, request, *args, **kwargs ):
-        """Handle unified form submission using helper classes."""
-        
-        # Delegate form handling to specialized handlers
-        form_handler = ConfigEditFormHandler()
-        renderer = ConfigEditResponseRenderer()
-        subsystem_id = kwargs.get('subsystem_id')
-        
-        # Create formsets with POST data
-        subsystem_formset_list = form_handler.create_config_forms(
-            request.POST, request.FILES
+        attr_item_context_list = list()
+        subsystem_list = self.settings_mixin.settings_manager().get_subsystems()
+        for subsystem in subsystem_list:
+            attr_item_context = SubsystemAttributeItemEditContext(
+                owner_type = 'subsystem',
+                owner = subsystem,
+            )
+            attr_item_context_list.append (attr_item_context )
+            continue
+            
+        return self.create_initial_template_context(
+            attr_page_context = attr_page_context,
+            attr_item_context_list = attr_item_context_list,
         )
 
-        # Validate all formsets
-        if form_handler.validate_all_formsets(subsystem_formset_list):
-            # Save all formsets
-            form_handler.save_all_formsets(subsystem_formset_list, request)
-            
-            # Return success response with fresh data
-            return renderer.render_success_response(request, selected_subsystem_id=subsystem_id)
-        else:
-            # Return error response with validation errors
-            return renderer.render_error_response(request, subsystem_formset_list, selected_subsystem_id=subsystem_id)
+    def post( self, request, *args, **kwargs ):
+        attr_page_context = SubsystemAttributePageEditContext( owner_type = 'subsystem' )
+
+        attr_item_context_list = list()
+        subsystem_list = self.settings_mixin.settings_manager().get_subsystems()
+        for subsystem in subsystem_list:
+            attr_item_context = SubsystemAttributeItemEditContext(
+                owner_type = 'subsystem',
+                owner = subsystem,
+            )
+            attr_item_context_list.append (attr_item_context )
+            continue
+        return self.post_attribute_form(
+            request = request,
+            attr_page_context = attr_page_context,
+            attr_item_context_list = attr_item_context_list,
+        )
+    
        
-        
 class ConfigInternalView( View ):
 
     @classmethod
@@ -214,7 +220,7 @@ class SubsystemAttributeHistoryInlineView(BaseAttributeHistoryView):
         return 'subsystem_attribute_restore_inline'
     
     def get(self, request, subsystem_id, attribute_id, *args, **kwargs):
-        """Custom get implementation that creates the SubsystemAttributeEditContext."""
+        """Custom get implementation that creates the SubsystemAttributeItemEditContext."""
         # Validate that the attribute belongs to this subsystem for security
         try:
             attribute = SubsystemAttribute.objects.get(pk=attribute_id, subsystem_id=subsystem_id)
@@ -232,8 +238,8 @@ class SubsystemAttributeHistoryInlineView(BaseAttributeHistoryView):
             history_records = []
         
         # Create the attribute edit context for template generalization
-        from .subsystem_attribute_edit_context import SubsystemAttributeEditContext
-        attr_context = SubsystemAttributeEditContext(attribute.subsystem)
+        from .subsystem_attribute_edit_context import SubsystemAttributeItemEditContext
+        attr_item_context = SubsystemAttributeItemEditContext(attribute.subsystem)
         
         context = {
             'subsystem': attribute.subsystem,
@@ -243,8 +249,8 @@ class SubsystemAttributeHistoryInlineView(BaseAttributeHistoryView):
             'restore_url_name': self.get_restore_url_name(),
         }
         
-        # Merge in the context variables from AttributeEditContext
-        context.update(attr_context.to_template_context())
+        # Merge in the context variables from AttributeItemEditContext
+        context.update(attr_item_context.to_template_context())
         
         # Check if this is an AJAX request and return JSON response
         if request.headers.get(HTTPHeaders.X_REQUESTED_WITH) == HTTPHeaders.XML_HTTP_REQUEST:
@@ -261,7 +267,7 @@ class SubsystemAttributeHistoryInlineView(BaseAttributeHistoryView):
             return (AttributeResponseBuilder()
                     .success()
                     .add_update(
-                        target=f"#{attr_context.history_target_id(attribute.id)}",
+                        target=f"#{attr_item_context.history_target_id(attribute.id)}",
                         html=html_content,
                         mode=UpdateMode.REPLACE
                     )

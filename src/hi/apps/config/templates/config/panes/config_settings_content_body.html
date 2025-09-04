@@ -12,16 +12,16 @@ This is what gets replaced on form submission
     <div class="{{ DIVID.ATTR_V2_ACTION_BAR_CONTENT_CLASS }}">
       <!-- Left Side: UPDATE button and message area -->
       <div>
-        <button id="{{ shared_editing_context.update_button_html_id }}" 
+        <button id="{{ attr_page_context.update_button_html_id }}" 
                 type="submit" 
                 class="btn btn-primary {{ DIVID.ATTR_V2_UPDATE_BTN_CLASS }}"
                 name="action" 
                 value="update">
           {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
         </button>
-        <span id="{{ shared_editing_context.dirty_msg_html_id }}"
+        <span id="{{ attr_page_context.dirty_msg_html_id }}"
               class="{{ DIVID.ATTR_V2_DIRTY_MESSAGE_CLASS }} ml-3"></span>
-        <span id="{{ shared_editing_context.status_msg_html_id }}"
+        <span id="{{ attr_page_context.status_msg_html_id }}"
               class="{{ DIVID.ATTR_V2_STATUS_MESSAGE_CLASS }} ml-2">
           {% if success_message %}
             <span class="text-success {{ DIVID.ATTR_V2_AUTO_DISMISS_CLASS }}">{{ success_message }}</span>
@@ -40,7 +40,7 @@ This is what gets replaced on form submission
 </div>
 
 <!-- Scrollable Content Area - matches existing attr-v2 structure -->
-<div id="{{ shared_editing_context.scrollable_content_html_id }}"
+<div id="{{ attr_page_context.scrollable_content_html_id }}"
      class="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT_CLASS }}">
   
   <!-- Vertical Tabbed Subsystem Interface -->
@@ -58,7 +58,7 @@ This is what gets replaced on form submission
            role="tab" 
            aria-controls="subsystem-{{ subsystem_data.subsystem.id }}-panel" 
            aria-selected="{% if selected_subsystem_id == subsystem_data.subsystem.id|stringformat:'s' %}true{% else %}false{% endif %}"
-           onclick="window.Hi.attr.updateFormAction('{% url 'config_settings' subsystem_id=subsystem_data.subsystem.id %}', '{{ shared_editing_context.container_html_id }}')">
+           onclick="window.Hi.attr.updateFormAction('{% url 'config_settings' subsystem_id=subsystem_data.subsystem.id %}', '{{ attr_page_context.container_html_id }}')">
           {{ subsystem_data.subsystem.name }}
           {% if subsystem_data.error_count > 0 %}
             <span class="badge badge-danger ml-1">{{ subsystem_data.error_count }}</span>
@@ -91,7 +91,7 @@ This is what gets replaced on form submission
               <h6 class="attr-v2-section-title">Properties</h6>
               <div class="attr-v2-attribute-list">
                 {% for attribute_form in subsystem_data.formset %}
-                  {% include "attribute/components/regular_attribute_card.html" with attribute_form=attribute_form attr_context=subsystem_data.context %}
+                  {% include "attribute/components/regular_attribute_card.html" with attribute_form=attribute_form attr_item_context=subsystem_data.context %}
                 {% endfor %}
               </div>
             </div>

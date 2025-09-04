@@ -15,7 +15,7 @@ from django.db.models import QuerySet
 from hi.apps.attribute.enums import AttributeValueType
 from .models import Location, LocationAttribute
 from .forms import LocationAttributeRegularFormSet, LocationForm
-from .location_attribute_edit_context import LocationAttributeEditContext
+from .location_attribute_edit_context import LocationAttributeItemEditContext
 
 logger = logging.getLogger(__name__)
 
@@ -233,7 +233,7 @@ class LocationEditFormHandler:
         location_form, file_attributes, regular_attributes_formset = self.create_location_forms(location)
         
         # Create the attribute edit context for template generalization
-        attr_context = LocationAttributeEditContext(location)
+        attr_item_context = LocationAttributeItemEditContext(location)
         
         # Build context with both old and new patterns for compatibility
         context = {
@@ -244,7 +244,7 @@ class LocationEditFormHandler:
             'regular_attributes_formset': regular_attributes_formset,
         }
         
-        # Merge in the context variables from AttributeEditContext
-        context.update(attr_context.to_template_context())
+        # Merge in the context variables from AttributeItemEditContext
+        context.update(attr_item_context.to_template_context())
         
         return context

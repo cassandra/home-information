@@ -14,7 +14,7 @@ from django.db.models import QuerySet
 from hi.apps.attribute.enums import AttributeValueType
 from .models import Entity, EntityAttribute
 from .forms import EntityForm, EntityAttributeRegularFormSet
-from .entity_attribute_edit_context import EntityAttributeEditContext
+from .entity_attribute_edit_context import EntityAttributeItemEditContext
 
 logger = logging.getLogger(__name__)
 
@@ -229,7 +229,7 @@ class EntityEditFormHandler:
         entity_form, file_attributes, regular_attributes_formset = self.create_entity_forms(entity)
         
         # Create the attribute edit context for template generalization
-        attr_context = EntityAttributeEditContext(entity)
+        attr_item_context = EntityAttributeItemEditContext(entity)
         
         # Build context with both old and new patterns for compatibility
         context = {
@@ -240,7 +240,7 @@ class EntityEditFormHandler:
             'regular_attributes_formset': regular_attributes_formset,
         }
         
-        # Merge in the context variables from AttributeEditContext
-        context.update(attr_context.to_template_context())
+        # Merge in the context variables from AttributeItemEditContext
+        context.update(attr_item_context.to_template_context())
         
         return context

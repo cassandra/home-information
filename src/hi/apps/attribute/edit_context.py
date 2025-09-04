@@ -1,20 +1,134 @@
 """
-AttributeEditContext - Generic context provider for attribute editing templates.
+Attribute Edit Contexts - Generic context provider for attribute editing templates.
 
-This class provides a clean abstraction that allows attribute editing templates
+These classes provide a clean abstraction that allows attribute editing templates
 to work generically across different owner types (Entity, Location, etc.) while
 maintaining type safety and clear URL routing patterns.
+
+Usage:
+
+- You have a Django model that extends AttributeModel and adds a foreign key
+- The owner object need to be a Django Model that serves as a foreign key into the AttributeModel subclass
+- You need to defined subclasses of AttributePageEditContext and AttributeItemEditContext.
+- In your view, you need to define one AttributePageEditContext instance
+- In your view, you need to define one or more AttributeItemEditContext instances
+
+Two Use Cases:
+
+1) Single Instance Editing (Entity, Location, modals)
+
+   Has one AttributeItemEditContext instance and that can be also be used for AttributePageEditContext.
+
+2) Multiple Instance Editing (Subsystem, special case)
+
+   Has multiple AttributeItemEditContext instance and a separate AttributePageEditContext.
+
 """
 from typing import Any, Dict, Optional, Type
 
 from django.forms import ModelForm, BaseInlineFormSet
+from django.db.models import Model
 
 from hi.constants import DIVID
 
 from .models import AttributeModel
 
 
-class AttributeEditContext:
+class AttributePageEditContext:
+    
+    def __init__(self, owner_type: str, owner: Model = None ) -> None:
+        self.owner_type = owner_type.lower()
+        self.owner = owner
+        return
+
+    @property
+    def owner_id(self) -> int:
+        """Get the owner's primary key ID."""
+        if self.owner:
+            return self.owner.id
+        return None
+    
+    @property
+    def owner_id_param_name(self) -> str:
+        """Get the URL parameter name for owner ID (e.g., 'entity_id', 'location_id')."""
+        return f'{self.owner_type}_id'
+    
+    @property
+    def id_suffix(self) -> str:
+        """
+        Get the suffix to append to DIVID constants for unique element IDs.
+        
+        This creates namespaced IDs that prevent conflicts when multiple 
+        attribute editing contexts exist on the same page.
+        
+        Returns:
+            str: Suffix like '-entity-123' or '-location-456', '-subsystem''
+        """
+        if self.owner:
+            return f'-{self.owner_type}-{self.owner_id}'
+        return self.owner_type
+
+    @property
+    def content_body_template_name(self):
+        """ This should be a template that extends attribute/components/edit_content_body.html """
+        raise NotImplementedError('Subclasses must override this method')
+    
+    @property
+    def file_upload_url(self) -> str:
+        """ Should be a view that extends BaseAttributeUploadView """
+        raise NotImplementedError('Subclasses must override this method')
+    
+    @property
+    def history_url_name(self) -> str:
+        """ Should be a view that extends BaseAttributeHistoryView """
+        return f'{self.owner_type}_attribute_history_inline'
+    
+    @property
+    def restore_url_name(self) -> str:
+        """ Should be a view that extends BaseAttributeRestoreView """
+        return f'{self.owner_type}_attribute_restore_inline'
+
+    @property
+    def container_html_id(self) -> str:
+        return f"{DIVID['ATTR_V2_CONTAINER_ID']}{self.id_suffix}"
+    
+    @property
+    def content_html_id(self) -> str:
+        return f"{DIVID['ATTR_V2_CONTENT_ID']}{self.id_suffix}"
+    
+    @property
+    def dirty_msg_html_id(self) -> str:
+        return f"{DIVID['ATTR_V2_DIRTY_MESSAGE_ID']}{self.id_suffix}"
+    
+    @property
+    def form_html_id(self) -> str:
+        return f"{DIVID['ATTR_V2_FORM_ID']}{self.id_suffix}"
+    
+    @property
+    def scrollable_content_html_id(self) -> str:
+        return f"{DIVID['ATTR_V2_SCROLLABLE_CONTENT_ID']}{self.id_suffix}"
+
+    @property
+    def status_msg_html_id(self) -> str:
+        return f"{DIVID['ATTR_V2_STATUS_MESSAGE_ID']}{self.id_suffix}"
+    
+    @property
+    def update_button_html_id(self) -> str:
+        return f"{DIVID['ATTR_V2_UPDATE_BTN_ID']}{self.id_suffix}"
+    
+    def to_template_context(self) -> Dict[str, Any]:
+        """
+        Convert this context to a dictionary suitable for template rendering.
+        
+        Returns:
+            dict: Template context variables
+        """
+        return {
+            "attr_page_context": self,
+        }
+
+    
+class AttributeItemEditContext( AttributePageEditContext ):
     """
     Context provider for attribute editing templates that abstracts away
     owner-specific details (entity vs location vs future types).
@@ -23,32 +137,10 @@ class AttributeEditContext:
     type-safe access to owner information, URLs, and DOM identifiers.
     """
     
-    def __init__(self, owner: Any, owner_type: str) -> None:
-        """
-        Initialize context for attribute editing.
+    def __init__(self, owner: Model, owner_type: str) -> None:
+        super().__init__( owner_type = owner_type, owner = owner )
+        return
         
-        Args:
-            owner: The model instance that owns the attributes (Entity, Location, etc.)
-            owner_type: String identifier for the owner type ("entity", "location", etc.)
-        """
-        self.owner = owner
-        self.owner_type = owner_type.lower()
-    
-    @property
-    def owner_id(self) -> int:
-        """Get the owner's primary key ID."""
-        return self.owner.id
-    
-    @property
-    def owner_id_param_name(self) -> str:
-        """Get the URL parameter name for owner ID (e.g., 'entity_id', 'location_id')."""
-        return f'{self.owner_type}_id'
-    
-    @property
-    def owner_name(self) -> str:
-        """Get the owner's display name."""
-        return self.owner.name
-
     @property
     def attribute_model_subclass(self) -> Type[AttributeModel]:
         raise NotImplementedError('Subclasses must override this method')
@@ -70,28 +162,8 @@ class AttributeEditContext:
     def attributes_queryset(self):
         """ Default is that AttributeModel suibclass has 'attributes' as the related name for 
         the owner model. """
-        return self.owner.attributes
+        return self.owner.attributes.all()
 
-    @property
-    def content_body_template_name(self):
-        """ This should be a template that extends attribute/components/edit_content_body.html """
-        raise NotImplementedError('Subclasses must override this method')
-    
-    @property
-    def file_upload_url(self) -> str:
-        """ Should be a view that extends BaseAttributeUploadView """
-        raise NotImplementedError('Subclasses must override this method')
-    
-    @property
-    def history_url_name(self) -> str:
-        """ Should be a view that extends BaseAttributeHistoryView """
-        return f'{self.owner_type}_attribute_history_inline'
-    
-    @property
-    def restore_url_name(self) -> str:
-        """ Should be a view that extends BaseAttributeRestoreView """
-        return f'{self.owner_type}_attribute_restore_inline'
-    
     def history_target_id(self, attribute_id: int) -> str:
         """
         Get the DOM ID for the attribute history container.
@@ -128,44 +200,6 @@ class AttributeEditContext:
         """
         return f'file_title_{self.owner_id}_{attribute_id}'
     
-    # Container-based ID generation for multi-instance support
-    @property
-    def id_suffix(self) -> str:
-        """
-        Get the suffix to append to DIVID constants for unique element IDs.
-        
-        This creates namespaced IDs that prevent conflicts when multiple 
-        attribute editing contexts exist on the same page.
-        
-        Returns:
-            str: Suffix like '-entity-123' or '-location-456'
-        """
-        return f'-{self.owner_type}-{self.owner_id}'
-    
-    @property
-    def container_html_id(self) -> str:
-        return f"{DIVID['ATTR_V2_CONTAINER_ID']}{self.id_suffix}"
-    
-    @property
-    def content_html_id(self) -> str:
-        return f"{DIVID['ATTR_V2_CONTENT_ID']}{self.id_suffix}"
-    
-    @property
-    def update_button_html_id(self) -> str:
-        return f"{DIVID['ATTR_V2_UPDATE_BTN_ID']}{self.id_suffix}"
-    
-    @property
-    def status_msg_html_id(self) -> str:
-        return f"{DIVID['ATTR_V2_STATUS_MESSAGE_ID']}{self.id_suffix}"
-    
-    @property
-    def dirty_msg_html_id(self) -> str:
-        return f"{DIVID['ATTR_V2_DIRTY_MESSAGE_ID']}{self.id_suffix}"
-    
-    @property
-    def form_html_id(self) -> str:
-        return f"{DIVID['ATTR_V2_FORM_ID']}{self.id_suffix}"
-    
     @property
     def file_input_html_id(self) -> str:
         return f"{DIVID['ATTR_V2_FILE_INPUT_ID']}{self.id_suffix}"
@@ -179,10 +213,6 @@ class AttributeEditContext:
         return f"{DIVID['ATTR_V2_UPLOAD_FORM_CONTAINER_ID']}{self.id_suffix}"
     
     @property
-    def scrollable_content_html_id(self) -> str:
-        return f"{DIVID['ATTR_V2_SCROLLABLE_CONTENT_ID']}{self.id_suffix}"
-
-    @property
     def add_attribute_button_html_id(self) -> str:
         return f"{DIVID['ATTR_V2_ADD_ATTRIBUTE_BTN_ID']}{self.id_suffix}"
     
@@ -193,11 +223,13 @@ class AttributeEditContext:
         Returns:
             dict: Template context variables
         """
-        return {
+        template_context = super().to_template_context()
+        template_context.update({
             "owner": self.owner,
-            "attr_context": self,
+            "attr_item_context": self,
 
             # Duplicate with explicit naming for convenience.
             self.owner_type: self.owner,  # e.g., "entity": self.owner or "location": self.owner
-        }
+        })
+        return template_context
     

@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Tuple
 from django.http import HttpRequest, HttpResponse
 from django.template.loader import render_to_string
 
-from .edit_context import AttributeEditContext
+from .edit_context import AttributeItemEditContext
 from .edit_form_handler import AttributeEditFormHandler
 from .response_helpers import AttributeResponseBuilder, UpdateMode
 from .response_constants import DefaultMessages
@@ -28,7 +28,7 @@ class AttributeEditResponseRenderer:
         return
     
     def render_success_response( self,
-                                 attr_context  : AttributeEditContext,
+                                 attr_item_context  : AttributeItemEditContext,
                                  request : HttpRequest      ) -> HttpResponse:
         """Render success response using custom JSON format - multiple target replacement.
         Returns:
@@ -36,7 +36,7 @@ class AttributeEditResponseRenderer:
         """
         # Re-render both content body and upload form with fresh forms
         content_body, upload_form = self.render_update_fragments(
-            attr_context = attr_context, 
+            attr_item_context = attr_item_context, 
             request = request,
             success_message = DefaultMessages.SAVE_SUCCESS
         )
@@ -44,11 +44,11 @@ class AttributeEditResponseRenderer:
             AttributeResponseBuilder()
             .success()
             .add_update(
-                target=f"#{attr_context.content_html_id}",
+                target=f"#{attr_item_context.content_html_id}",
                 html=content_body,
                 mode=UpdateMode.REPLACE
             ).add_update(
-                target=f"#{attr_context.upload_form_container_html_id}",
+                target=f"#{attr_item_context.upload_form_container_html_id}",
                 html=upload_form,
                 mode=UpdateMode.REPLACE
             )
@@ -57,7 +57,7 @@ class AttributeEditResponseRenderer:
         )
 
     def render_error_response( self,
-                               attr_context    : AttributeEditContext,
+                               attr_item_context    : AttributeItemEditContext,
                                edit_form_data  : AttributeEditFormData,
                                request         : HttpRequest           ) -> HttpResponse:
         """Render error response using custom JSON format - multiple target replacement.
@@ -66,7 +66,7 @@ class AttributeEditResponseRenderer:
         """
         # Re-render both content body and upload form with form errors
         content_body, upload_form = self.render_update_fragments(
-            attr_context = attr_context,
+            attr_item_context = attr_item_context,
             request = request,
             edit_form_data = edit_form_data,
             error_message = DefaultMessages.SAVE_ERROR,
@@ -76,12 +76,12 @@ class AttributeEditResponseRenderer:
             AttributeResponseBuilder()
             .error()
             .add_update(
-                target=f"#{attr_context.content_html_id}",
+                target=f"#{attr_item_context.content_html_id}",
                 html=content_body,
                 mode=UpdateMode.REPLACE
             )
             .add_update(
-                target=f"#{attr_context.upload_form_container_html_id}",
+                target=f"#{attr_item_context.upload_form_container_html_id}",
                 html=upload_form,
                 mode=UpdateMode.REPLACE
             )
@@ -90,7 +90,7 @@ class AttributeEditResponseRenderer:
         )
     
     def render_update_fragments( self,
-                                 attr_context     : AttributeEditContext,
+                                 attr_item_context     : AttributeItemEditContext,
                                  request          : HttpRequest,
                                  edit_form_data   : AttributeEditFormData  = None,
                                  success_message  : Optional[str]          = None,
@@ -103,7 +103,7 @@ class AttributeEditResponseRenderer:
             tuple: (content_body_html, upload_form_html)
         """
         # If forms not provided, create fresh ones (for success case)
-        fresh_form_data = self.form_handler.create_edit_form_data( attr_context= attr_context )
+        fresh_form_data = self.form_handler.create_edit_form_data( attr_item_context= attr_item_context )
         if edit_form_data:
             if edit_form_data.owner_form is None:
                 edit_form_data.owner_form = fresh_form_data.owner_form
@@ -115,20 +115,20 @@ class AttributeEditResponseRenderer:
             edit_form_data = fresh_form_data
             
         template_context = self.build_template_context(
-            attr_context = attr_context,
+            attr_item_context = attr_item_context,
             edit_form_data = edit_form_data,
             success_message = success_message,
             error_message = error_message,
             has_errors= has_errors,
         )
         return self.render_content_fragments(
-            attr_context = attr_context,
+            attr_item_context = attr_item_context,
             request = request,
             template_context = template_context,
         )
 
     def render_content_fragments( self,
-                                  attr_context      : AttributeEditContext,
+                                  attr_item_context      : AttributeItemEditContext,
                                   template_context  : Dict[str, Any],
                                   request           : HttpRequest         ) -> Tuple[str, str]:
         """Render both content body and upload form fragments.
@@ -137,22 +137,22 @@ class AttributeEditResponseRenderer:
         """
         # Render both fragments
         content_body = render_to_string(
-            attr_context.content_body_template_name,
+            attr_item_context.content_body_template_name,
             template_context,
             request = request,
         )        
         upload_form = render_to_string(
             'attribute/components/upload_form.html',
             {
-                'file_upload_url': attr_context.file_upload_url,
-                'attr_context': attr_context
+                'file_upload_url': attr_item_context.file_upload_url,
+                'attr_item_context': attr_item_context
             },
             request = request,  # Needed for context processors (CSRF, DIVID, etc.)
         )
         return content_body, upload_form
     
     def build_template_context( self,
-                                attr_context     : AttributeEditContext,
+                                attr_item_context     : AttributeItemEditContext,
                                 edit_form_data   : AttributeEditFormData,
                                 success_message  : Optional[str]          = None,
                                 error_message    : Optional[str]          = None,
@@ -174,7 +174,7 @@ class AttributeEditResponseRenderer:
             'non_field_errors': non_field_errors,
         }
         
-        # Merge in the context variables from AttributeEditContext
-        context.update( attr_context.to_template_context() )
+        # Merge in the context variables from AttributeItemEditContext
+        context.update( attr_item_context.to_template_context() )
         
         return context

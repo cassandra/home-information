@@ -1,7 +1,7 @@
 """
-EntityAttributeEditContext - Entity-specific context for attribute editing templates.
+EntityAttributeItemEditContext - Entity-specific context for attribute editing templates.
 
-This module contains Entity-specific implementations of the AttributeEditContext
+This module contains Entity-specific implementations of the AttributeItemEditContext
 pattern, encapsulating entity-specific domain knowledge while maintaining
 the generic template interface.
 """
@@ -10,14 +10,14 @@ from typing import Any, Dict, Optional, Type
 from django.forms import ModelForm, BaseInlineFormSet
 from django.urls import reverse
 
-from hi.apps.attribute.edit_context import AttributeEditContext
+from hi.apps.attribute.edit_context import AttributeItemEditContext
 from hi.apps.attribute.models import AttributeModel
 
 from .forms import EntityForm, EntityAttributeRegularFormSet
 from .models import Entity, EntityAttribute
 
 
-class EntityAttributeEditContext(AttributeEditContext):
+class EntityAttributeItemEditContext(AttributeItemEditContext):
     """
     Entity-specific context provider for attribute editing templates.
     
@@ -32,7 +32,8 @@ class EntityAttributeEditContext(AttributeEditContext):
         Args:
             entity: The Entity instance that owns the attributes
         """
-        super().__init__(entity, 'entity')
+        super().__init__( owner_type = 'entity', owner = entity )
+        return
     
     @property
     def entity(self) -> Entity:

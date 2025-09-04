@@ -14,7 +14,7 @@ Compact history display that loads into attribute cards
     </small>
     <button type="button" 
             class="btn btn-sm btn-link p-0 {{ DIVID.ATTR_V2_HISTORY_CLOSE_CLASS }}"
-            onclick="$('#{{ attr_context|history_target_id:attribute.id }}').empty();"
+            onclick="$('#{{ attr_item_context|history_target_id:attribute.id }}').empty();"
             title="Close history">
       {% icon "close" size="sm" %}
     </button>
@@ -31,7 +31,7 @@ Compact history display that loads into attribute cards
   <div class="{{ DIVID.ATTR_V2_HISTORY_RECORDS_CLASS }}">
     {% for record in history_records %}
     <div class="{{ DIVID.ATTR_V2_HISTORY_RECORD_CLASS }} {% if forloop.counter > 3 %}collapse{% endif %}" 
-         {% if forloop.counter > 3 %}id="{{ attr_context|history_toggle_id:attribute.id }}"{% endif %}>
+         {% if forloop.counter > 3 %}id="{{ attr_item_context|history_toggle_id:attribute.id }}"{% endif %}>
       <div class="d-flex justify-content-between align-items-center">
         <div>
           <small class="text-muted">{{ record.changed_datetime|naturaltime }}</small>
@@ -39,7 +39,7 @@ Compact history display that loads into attribute cards
         </div>
         <div>
           {% if record.value != attribute.value %}
-            <a href="{% attr_restore_url attr_context attribute.id record.pk %}"
+            <a href="{% attr_restore_url attr_item_context attribute.id record.pk %}"
                class="btn btn-xs btn-outline-primary {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
                title="Restore this value">
               Restore
@@ -58,7 +58,7 @@ Compact history display that loads into attribute cards
       <button type="button" 
               class="btn btn-sm btn-link p-0"
               data-toggle="collapse"
-              data-target="#{{ attr_context|history_toggle_id:attribute.id }}"
+              data-target="#{{ attr_item_context|history_toggle_id:attribute.id }}"
               onclick="$(this).find('.show-more-history, .show-less-history').toggle();">
         <small class="show-more-history">Show {{ history_records|length|add:'-3' }} more...</small>
         <small class="show-less-history" style="display: none;">Show less</small>
