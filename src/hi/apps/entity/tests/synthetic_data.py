@@ -165,7 +165,7 @@ class EntityAttributeSyntheticData:
         ).order_by('id'))
         
         # Use EntityEditFormHandler as the single source of truth for prefix logic
-        prefix = f'entity.{entity.id}'
+        prefix = f'entity-{entity.id}'
         
         # Formset management form data
         formset_data = {
@@ -190,7 +190,7 @@ class EntityAttributeSyntheticData:
     @staticmethod
     def create_formset_data_for_attributes(attributes: List[EntityAttribute], entity: Entity) -> Dict[str, Any]:
         """Create formset data dictionary for attribute formset submissions."""
-        prefix = f'entity.{entity.id}'
+        prefix = f'entity-{entity.id}'
         data = {
             f'{prefix}-TOTAL_FORMS': str(len(attributes) + 1),  # +1 for empty form
             f'{prefix}-INITIAL_FORMS': str(len(attributes)),

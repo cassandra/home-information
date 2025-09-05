@@ -112,6 +112,7 @@ class AttributeEditViewMixin( AttributeEditCommonMixin ):
             return renderer.render_form_success_response(
                 attr_item_context = attr_item_context,
                 request = request,
+                message = None,  # Use default message
             )
         else:
             return renderer.render_form_error_response(
@@ -175,6 +176,7 @@ class AttributeMultiEditViewMixin( AttributeEditCommonMixin ):
                 attr_page_context = attr_page_context,
                 multi_edit_form_data_list = multi_edit_form_data_list,
                 request = request,
+                message = None,  # Use default message
             )
         else:
             return renderer.render_form_error_response_multi(

@@ -11,6 +11,18 @@
 // both declarative (HTML attributes) and programmatic (JavaScript API) usage.
 
 // ====================
+// APPLICABILITY
+// ====================
+// This module's main use case is to allow ajax and dynamic content udpates
+// without needing to add any javascript. By adding element attributes
+// and/or with server-side payloads, a fairly rich set of common DOM
+// updates can be achieved with zero javascript code.  It also has a lot of
+// support for handling bootstrap-style modals.
+//
+// It is generally not applicabl if you need to have custom Javascript
+// for some client-server interactions
+
+// ====================
 // PREREQUISITES
 // ====================
 // 1. jQuery (for AJAX and DOM manipulation)
