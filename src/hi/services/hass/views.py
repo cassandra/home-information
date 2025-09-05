@@ -4,7 +4,7 @@ from django.db import transaction
 from django.shortcuts import render
 from django.views.generic import View
 
-from hi.integrations.forms import IntegrationAttributeFormSet
+from hi.integrations.forms import IntegrationAttributeRegularFormSet
 from hi.integrations.integration_manager import IntegrationManager
 
 from hi.hi_async_view import HiModalView
@@ -23,7 +23,7 @@ class HassSettingsView( View, HassMixin ):
         if not integration_data.is_enabled:
             raise BadRequest( 'HAss is not enabled' )
 
-        integration_attribute_formset = IntegrationAttributeFormSet(
+        integration_attribute_formset = IntegrationAttributeRegularFormSet(
             request.POST,
             request.FILES,
             instance = integration_data.integration,

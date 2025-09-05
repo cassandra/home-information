@@ -1,6 +1,6 @@
 from django import forms
 
-from hi.apps.attribute.forms import AttributeForm
+from hi.apps.attribute.forms import AttributeForm, RegularAttributeBaseFormSet
 
 from .models import Subsystem, SubsystemAttribute
 
@@ -10,10 +10,11 @@ class SubsystemAttributeForm( AttributeForm ):
         model = SubsystemAttribute
 
     
-SubsystemAttributeFormSet = forms.inlineformset_factory(
+SubsystemAttributeRegularFormSet = forms.inlineformset_factory(
     Subsystem,
     SubsystemAttribute,
     form = SubsystemAttributeForm,
+    formset = RegularAttributeBaseFormSet,
     extra = 0,
     max_num = 100,
     absolute_max = 100,

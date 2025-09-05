@@ -9,7 +9,7 @@ from hi.apps.attribute.edit_context import AttributeItemEditContext, AttributePa
 from hi.apps.attribute.forms import AttributeUploadForm
 from hi.apps.attribute.models import AttributeModel
 
-from .forms import SubsystemAttributeFormSet
+from .forms import SubsystemAttributeRegularFormSet
 
 from .models import Subsystem, SubsystemAttribute
 
@@ -57,7 +57,7 @@ class SubsystemAttributeItemEditContext(AttributeItemEditContext):
         return SubsystemAttribute
     
     def create_owner_form( self, form_data : Optional[ Dict[str, Any] ] = None ) -> ModelForm:
-        # No viewable/editable Subsystem properties.
+        # No viewable/editable Subsystem model properties.
         return None
 
     def create_attribute_model( self ) -> AttributeModel:
@@ -65,7 +65,7 @@ class SubsystemAttributeItemEditContext(AttributeItemEditContext):
         
     def create_regular_attributes_formset(
             self, form_data : Optional[ Dict[str, Any] ] = None ) -> BaseInlineFormSet:
-        return SubsystemAttributeFormSet(
+        return SubsystemAttributeRegularFormSet(
             form_data,
             instance = self.subsystem,
             prefix = self.formset_prefix,

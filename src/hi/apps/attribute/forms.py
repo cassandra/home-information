@@ -8,6 +8,24 @@ from hi.apps.common.utils import is_blank, str_to_bool
 from .enums import AttributeType, AttributeValueType
 
 
+class RegularAttributeBaseFormSet(forms.BaseInlineFormSet):
+    """Base formset that automatically excludes FILE attributes for regular attribute editing.
+    
+    This formset is used across all attribute-enabled modules (Entity, Location, Config)
+    to ensure FILE type attributes are handled separately from regular attributes.
+    """
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Apply filtering after parent initialization
+        self.queryset = self.queryset.exclude(value_type_str=str(AttributeValueType.FILE))
+    
+    def get_queryset(self):
+        """Override to automatically filter out FILE attributes"""
+        queryset = super().get_queryset()
+        return queryset.exclude(value_type_str=str(AttributeValueType.FILE))
+
+
 class AttributeForm( forms.ModelForm ):
     """
     Abstract mode form class the corresponds to the abstract model calss

@@ -1213,6 +1213,10 @@ input[type="number"] {
     cursor: pointer;
 }    
 
+.integration-title img {
+    height: 2rem;
+}
+
 #hi-integration-settings nav {
     border-right: 1px solid #888888;
     height: calc( 100vh - var(--top-buttons-height) - var(--bottom-buttons-height) - 6rem);

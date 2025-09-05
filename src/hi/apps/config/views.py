@@ -165,7 +165,7 @@ class ConfigSettingsView( ConfigPageView,
 class SubsystemAttributeHistoryInlineView( View, AttributeMultiEditViewMixin ):
 
     def get(self, request, subsystem_id, attribute_id, *args, **kwargs):
-        # Validate that the attribute belongs to this entity for security
+        # Validate that the attribute belongs to this subsystem for security
         try:
             attribute = SubsystemAttribute.objects.select_related('subsystem').get(
                 pk = attribute_id, subsystem_id = subsystem_id )
@@ -188,6 +188,7 @@ class SubsystemAttributeRestoreInlineView( View,
     """View for restoring SubsystemAttribute values from history inline."""
     
     def get(self, request, subsystem_id, attribute_id, history_id, *args, **kwargs):
+        """ Need to do restore in a GET since nested in main form and cannot have a form in a form """
         try:
             attribute = SubsystemAttribute.objects.select_related('subsystem').get(
                 pk = attribute_id, subsystem_id = subsystem_id

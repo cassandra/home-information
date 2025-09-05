@@ -14,7 +14,7 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.common.module_utils import import_module_safe
 
 from .enums import IntegrationAttributeType
-from .forms import IntegrationAttributeFormSet
+from .forms import IntegrationAttributeRegularFormSet
 from .integration_data import IntegrationData
 from .integration_gateway import IntegrationGateway
 from .transient_models import IntegrationKey
@@ -293,9 +293,10 @@ class IntegrationManager( Singleton ):
         )
         return
                 
-    def enable_integration( self,
-                            integration_data               : IntegrationData,
-                            integration_attribute_formset  : IntegrationAttributeFormSet ):
+    def enable_integration(
+            self,
+            integration_data               : IntegrationData,
+            integration_attribute_formset  : IntegrationAttributeRegularFormSet ):
         with self._data_lock:
             with transaction.atomic():
                 integration_data.integration.is_enabled = True

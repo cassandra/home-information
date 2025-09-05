@@ -102,7 +102,6 @@ DIVID = {
     'ATTR_V2_HISTORY_LINK_CLASS': 'attr-v2-history-link',
     'ATTR_V2_RESTORE_LINK_CLASS': 'attr-v2-restore-link',
     'ATTR_V2_STICKY_PANEL_CLASS': 'attr-v2-sticky-panel',
-    'ATTR_V2_BASIC_INFO_CLASS': 'attr-v2-basic-info',
     'ATTR_V2_ACTION_BAR_CLASS': 'attr-v2-action-bar',
     'ATTR_V2_ACTION_BAR_CONTENT_CLASS': 'attr-v2-action-bar-content',
     'ATTR_V2_ACTION_BUTTONS_CLASS': 'attr-v2-action-buttons',

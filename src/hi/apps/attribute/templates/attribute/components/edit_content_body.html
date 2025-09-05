@@ -11,25 +11,26 @@ by using the AttributeItemEditContext pattern.
 <!-- Sticky Panel: Owner Info + Action Bar (always visible) -->
 <div class="{{ DIVID.ATTR_V2_STICKY_PANEL_CLASS }}">
   <!-- Basic Owner Information (minimal) - only if owner_form provided -->
-  {% if owner_form %}
-  {% if owner_form.non_field_errors %}
-  <div class="attr-v2-non-field-errors">
-    {% for err in owner_form.non_field_errors %}
-    <div class="attr-v2-error-item">{{ err }}</div>
-    {% endfor %}
-  </div>
-  {% endif %}
-  
-  <div class="attr-v2-entity-info">
+
+  <div class="attr-v2-basic-info">
     {% block basic_info %}
-    <div class="{{ DIVID.ATTR_V2_BASIC_INFO_CLASS }}">
+    {% if owner_form %}
+    {% if owner_form.non_field_errors %}
+    <div class="attr-v2-non-field-errors">
+      {% for err in owner_form.non_field_errors %}
+      <div class="attr-v2-error-item">{{ err }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  
+    <div class="attr-v2-owner-fields }}">
       {% block owner_fields %}
       <!-- Subclasses should override this block to provide owner-specific fields -->
       {% endblock %}
     </div>
+    {% endif %}
     {% endblock %}
   </div>
-  {% endif %}
   
   <div class="{{ DIVID.ATTR_V2_ACTION_BAR_CLASS }}">
     <div class="{{ DIVID.ATTR_V2_ACTION_BAR_CONTENT_CLASS }}">

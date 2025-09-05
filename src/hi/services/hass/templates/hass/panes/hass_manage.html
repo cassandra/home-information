@@ -1,13 +1,17 @@
+{% load static %}
 <div class="d-flex justify-content-between">
-  <div>
-    {% include "hass/panes/hass_settings.html" %}
-  </div>    
-  <div class="my-4 py-4 mr-4 pr-4">
+  <div class="h3 integration-title">
+    <img class="img-fluid"
+         src="{% static 'img/integrations/home-assistant.png' %}"
+         alt="Home Assistant Logo" \>
+    Home Assistant
+  </div>
+  <div class="">
     <form action="{% url 'hass_sync' %}"
-	method="POST" role="form" data-async="true">
+        method="POST" role="form" data-async="true">
       {% csrf_token %}
-      <button type="submit" class="btn btn-lg btn-secondary" role="button"
-	      name="action" value="sync" >IMPORT ITEMS</button>
+      <button type="submit" class="btn btn-secondary" role="button"
+              name="action" value="sync" >SYNC ITEMS</button>
     </form>
   </div>
 </div>
