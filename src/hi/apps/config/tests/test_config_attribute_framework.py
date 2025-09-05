@@ -13,25 +13,20 @@ Following project testing guidelines:
 - Test meaningful Subsystem-specific edge cases and multi-editing workflows
 """
 import logging
-from typing import Any, Dict, List
 
-from django.core.files.uploadedfile import SimpleUploadedFile
-
-from hi.testing.attribute_framework_test_base import (
+from hi.apps.attribute.tests.attribute_framework_test_base import (
     AttributeEditFormHandlerTestMixin,
     AttributeEditResponseRendererTestMixin,
     AttributeEditTemplateContextBuilderTestMixin,
 )
 from hi.testing.base_test_case import BaseTestCase
-from hi.apps.attribute.view_mixins import AttributeMultiEditViewMixin
 from hi.apps.attribute.enums import AttributeType, AttributeValueType
 from hi.apps.attribute.models import AttributeModel
-from hi.apps.attribute.edit_context import AttributePageEditContext
 from hi.apps.config.subsystem_attribute_edit_context import (
     SubsystemAttributeItemEditContext,
     SubsystemAttributePageEditContext
 )
-from hi.apps.config.models import Subsystem, SubsystemAttribute
+from hi.apps.config.models import SubsystemAttribute
 from hi.apps.config.tests.synthetic_data import SubsystemAttributeSyntheticData
 
 logging.disable(logging.CRITICAL)
@@ -101,7 +96,7 @@ class SubsystemAttributeEditFormHandlerTest(AttributeEditFormHandlerTestMixin, B
         subsystem = self.create_owner_instance(name="System Attribute Test")
         
         # Create SYSTEM type attribute
-        system_attr = self.create_attribute_instance(
+        self.create_attribute_instance(
             subsystem, 
             name="system_config", 
             value="config_value",
@@ -126,11 +121,11 @@ class SubsystemAttributeEditFormHandlerTest(AttributeEditFormHandlerTestMixin, B
         subsystem = self.create_owner_instance(name="Formset Test Subsystem")
         
         # Create system configuration attributes
-        config_attr = self.create_attribute_instance(
+        self.create_attribute_instance(
             subsystem, name="endpoint", value="https://api.system.com",
             attribute_type_str=str(AttributeType.PREDEFINED)
         )
-        secret_attr = self.create_attribute_instance(
+        self.create_attribute_instance(
             subsystem, name="secret_key", value="secret123",
             value_type_str=str(AttributeValueType.SECRET),
             attribute_type_str=str(AttributeType.PREDEFINED)
@@ -174,7 +169,7 @@ class SubsystemAttributeEditFormHandlerTest(AttributeEditFormHandlerTestMixin, B
         handler = self._get_handler()
         
         # Create multi-edit form data
-        multi_form_data = SubsystemAttributeSyntheticData.create_form_data_for_subsystem_multi_edit(
+        SubsystemAttributeSyntheticData.create_form_data_for_subsystem_multi_edit(
             subsystem_list
         )
         

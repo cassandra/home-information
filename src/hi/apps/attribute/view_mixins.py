@@ -3,7 +3,6 @@ from typing import Any, Dict, List
 
 from django.http import HttpRequest, HttpResponse
 
-from hi.views import page_not_found_response
 
 from .edit_context import AttributeItemEditContext, AttributePageEditContext
 from .edit_form_handler import AttributeEditFormHandler

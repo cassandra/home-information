@@ -8,7 +8,6 @@ import uuid
 from django.core.files.uploadedfile import SimpleUploadedFile
 from typing import Optional, Dict, Any, List
 
-from hi.constants import DIVID
 from hi.apps.attribute.enums import AttributeType, AttributeValueType
 from hi.apps.config.models import Subsystem, SubsystemAttribute
 

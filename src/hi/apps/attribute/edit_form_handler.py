@@ -1,12 +1,10 @@
 import logging
-import random
 import re
 from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from django.db import transaction
 from django.db.models import QuerySet
-from django.forms.utils import ErrorList
 from django.http import HttpRequest
 
 from hi.constants import DIVID
@@ -23,8 +21,6 @@ logger = logging.getLogger(__name__)
 
 class AttributeEditFormHandler:
 
-    INJECT_TEST_ERRORS = True # For testing UI error display
-    
     def create_edit_form_data(
             self,
             attr_item_context  : AttributeItemEditContext,
@@ -89,7 +85,7 @@ class AttributeEditFormHandler:
         file_deletes: List[str] = request.POST.getlist( DIVID['ATTR_V2_DELETE_FILE_ATTR'] )
         if not file_deletes:
             return
-
+        
         AttributeModelClass = attr_item_context.attribute_model_subclass
         
         for attr_id in file_deletes:

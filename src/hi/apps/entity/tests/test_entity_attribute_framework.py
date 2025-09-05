@@ -12,22 +12,20 @@ Following project testing guidelines:
 - Test meaningful Entity-specific edge cases and workflows
 """
 import logging
-from typing import Any, Dict
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from hi.testing.attribute_framework_test_base import (
+from hi.apps.attribute.tests.attribute_framework_test_base import (
     AttributeEditFormHandlerTestMixin,
     AttributeEditResponseRendererTestMixin,
     AttributeEditTemplateContextBuilderTestMixin,
     AttributeViewMixinTestMixin,
 )
 from hi.testing.base_test_case import BaseTestCase
-from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.attribute.enums import AttributeType, AttributeValueType
 from hi.apps.attribute.models import AttributeModel
 from hi.apps.entity.entity_attribute_edit_context import EntityAttributeItemEditContext
-from hi.apps.entity.models import Entity, EntityAttribute
+from hi.apps.entity.models import EntityAttribute
 from hi.apps.entity.tests.synthetic_data import EntityAttributeSyntheticData
 from hi.apps.entity.views import EntityEditView
 
@@ -103,11 +101,11 @@ class EntityAttributeEditFormHandlerTest(AttributeEditFormHandlerTestMixin, Base
         entity = self.create_owner_instance(name="Formset Test Entity")
         
         # Create mixed attribute types
-        text_attr = self.create_attribute_instance(
+        self.create_attribute_instance(
             entity, name="text_prop", value="text_value",
             value_type_str=str(AttributeValueType.TEXT)
         )
-        file_attr = self.create_attribute_instance(
+        self.create_attribute_instance(
             entity, name="file_prop", value="File Title",
             value_type_str=str(AttributeValueType.FILE)
         )
@@ -160,10 +158,6 @@ class EntityAttributeEditFormHandlerTest(AttributeEditFormHandlerTestMixin, Base
         request.session = MockSession()
         
         # Should handle file upload processing
-        initial_count = EntityAttribute.objects.filter(
-            entity=entity,
-            value_type_str=str(AttributeValueType.FILE)
-        ).count()
         
         # File handling is tested at the view level, but we can test the context setup
         self.assertIsNotNone(context.file_upload_url)
@@ -232,12 +226,11 @@ class EntityAttributeEditResponseRendererTest(AttributeEditResponseRendererTestM
         data = json.loads(response.content)
         self.assertIsInstance(data, dict)
         
-        
     def _get_renderer(self):
         """Get renderer instance for testing."""
         from hi.apps.attribute.edit_response_renderer import AttributeEditResponseRenderer
         return AttributeEditResponseRenderer()
-        
+    
     def _get_mock_session(self):
         """Get mock session for testing."""
         from hi.testing.base_test_case import MockSession
@@ -386,7 +379,7 @@ class EntityAttributeViewMixinTest(AttributeViewMixinTestMixin, BaseTestCase):
         entity = self.create_owner_instance(name="View Integration Entity")
         
         # Create attributes for comprehensive testing
-        text_attr = self.create_attribute_instance(
+        self.create_attribute_instance(
             entity, name="description", value="Original description"
         )
         
@@ -431,7 +424,7 @@ class EntityAttributeViewMixinTest(AttributeViewMixinTestMixin, BaseTestCase):
     def test_entity_concurrent_editing_workflow(self):
         """Test Entity concurrent editing scenarios - Entity concurrency handling."""
         entity = self.create_owner_instance(name="Concurrent Test Entity")
-        attr = self.create_attribute_instance(
+        self.create_attribute_instance(
             entity, name="concurrent_attr", value="original"
         )
         

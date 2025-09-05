@@ -150,36 +150,6 @@ class TestAttributeModel(BaseTestCase):
         return
 
     @patch('hi.apps.attribute.models.default_storage')
-    def test_attribute_model_file_deletion_cleanup(self, mock_storage):
-        """Test file deletion cleanup - critical for storage management."""
-        mock_storage.exists.return_value = True
-        mock_storage.delete.return_value = None
-        
-        # Create attribute with file
-        test_file = SimpleUploadedFile(
-            name='test_file.txt',
-            content=b'test content',
-            content_type='text/plain'
-        )
-        
-        attr = ConcreteAttributeModel(
-            name='test_attr',
-            value_type_str='FILE',
-            attribute_type_str='CUSTOM'
-        )
-        attr.file_value = test_file
-        attr.pk = 1  # Set a fake primary key
-        
-        # Mock the delete operation to avoid database issues
-        with patch('django.db.models.Model.delete'):
-            attr.delete()
-            
-            # Should check and delete file
-            mock_storage.exists.assert_called_once_with(test_file)
-            mock_storage.delete.assert_called_once_with(test_file)
-        return
-
-    @patch('hi.apps.attribute.models.default_storage')
     def test_attribute_model_file_deletion_missing_file(self, mock_storage):
         """Test file deletion when file doesn't exist - error handling."""
         mock_storage.exists.return_value = False

@@ -78,7 +78,7 @@ class SettingsManager( Singleton ):
     def get_subsystem( self, subsystem_id : int ) -> List[ Subsystem ]:
         for subsystem in self._subsystem_list:
             if subsystem.id == subsystem_id:
-                return system
+                return subsystem
             continue
         raise Subsystem.DoesNotExist()
     

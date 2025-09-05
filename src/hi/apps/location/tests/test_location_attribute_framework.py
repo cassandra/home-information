@@ -12,22 +12,20 @@ Following project testing guidelines:
 - Test meaningful Location-specific edge cases and workflows
 """
 import logging
-from typing import Any, Dict
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from hi.testing.attribute_framework_test_base import (
+from hi.apps.attribute.tests.attribute_framework_test_base import (
     AttributeEditFormHandlerTestMixin,
     AttributeEditResponseRendererTestMixin,
     AttributeEditTemplateContextBuilderTestMixin,
     AttributeViewMixinTestMixin,
 )
 from hi.testing.base_test_case import BaseTestCase
-from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.attribute.enums import AttributeType, AttributeValueType
 from hi.apps.attribute.models import AttributeModel
 from hi.apps.location.location_attribute_edit_context import LocationAttributeItemEditContext
-from hi.apps.location.models import Location, LocationAttribute
+from hi.apps.location.models import LocationAttribute
 from hi.apps.location.tests.synthetic_data import LocationAttributeSyntheticData
 from hi.apps.location.views import LocationEditView
 
@@ -122,11 +120,11 @@ class LocationAttributeEditFormHandlerTest(AttributeEditFormHandlerTestMixin, Ba
         location = self.create_owner_instance(name="Formset Test Location")
         
         # Create mixed attribute types
-        text_attr = self.create_attribute_instance(
+        self.create_attribute_instance(
             location, name="description", value="location description",
             value_type_str=str(AttributeValueType.TEXT)
         )
-        file_attr = self.create_attribute_instance(
+        self.create_attribute_instance(
             location, name="floor_plan", value="Floor Plan",
             value_type_str=str(AttributeValueType.FILE)
         )
@@ -275,7 +273,6 @@ class LocationAttributeEditResponseRendererTest(AttributeEditResponseRendererTes
         import json
         data = json.loads(response.content)
         self.assertIsInstance(data, dict)
-        
         
     def test_location_template_context_integration(self):
         """Test Location template context integration - Location template handling."""
@@ -466,7 +463,7 @@ class LocationAttributeViewMixinTest(AttributeViewMixinTestMixin, BaseTestCase):
         location = self.create_owner_instance(name="View Integration Location")
         
         # Create attributes for comprehensive testing
-        text_attr = self.create_attribute_instance(
+        self.create_attribute_instance(
             location, name="description", value="Original description"
         )
         

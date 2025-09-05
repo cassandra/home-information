@@ -13,15 +13,14 @@ Following project testing guidelines:
 """
 import logging
 from abc import ABC, abstractmethod
-from typing import Type, Any, Dict, Optional
+from typing import Any, Dict
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.http import HttpRequest
 from django.test import RequestFactory
 from django.http import QueryDict
 
-from hi.testing.base_test_case import BaseTestCase, MockRequest, MockSession
-from hi.apps.attribute.edit_context import AttributeItemEditContext, AttributePageEditContext
+from hi.testing.base_test_case import MockRequest, MockSession
+from hi.apps.attribute.edit_context import AttributeItemEditContext
 from hi.apps.attribute.edit_form_handler import AttributeEditFormHandler
 from hi.apps.attribute.edit_response_renderer import AttributeEditResponseRenderer
 from hi.apps.attribute.edit_template_context_builder import AttributeEditTemplateContextBuilder
@@ -163,7 +162,7 @@ class AttributeEditFormHandlerTestMixin(AttributeFrameworkTestMixin, ABC):
         """Test form saving creates/updates database records - database integration."""
         owner = self.create_owner_instance(name="Original Name")
         # Create an existing attribute to update
-        existing_attr = self.create_attribute_instance(
+        self.create_attribute_instance(
             owner=owner,
             name="existing_attr",
             value="original_value"
@@ -392,7 +391,6 @@ class AttributeEditResponseRendererTestMixin(AttributeFrameworkTestMixin, ABC):
         # Should return error response
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response['Content-Type'], 'application/json')
-        
         
     def test_render_history_response_data_structure(self):
         """Test history response rendering - history display functionality."""
@@ -701,3 +699,4 @@ class AttributeViewMixinTestMixin(AttributeFrameworkTestMixin, ABC):
         
         # Should return response (may be error if no history exists)
         self.assertIn(response.status_code, [200, 400])
+        

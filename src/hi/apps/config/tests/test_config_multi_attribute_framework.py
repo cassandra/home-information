@@ -6,8 +6,11 @@ where multiple subsystems are edited simultaneously.
 """
 from typing import List, Dict, Any
 
+from hi.testing.base_test_case import MockRequest, MockSession
+from django.http import QueryDict
+
 from hi.testing.base_test_case import BaseTestCase
-from hi.testing.attribute_multi_framework_test_base import (
+from hi.apps.attribute.tests.attribute_multi_framework_test_base import (
     AttributeMultiEditFormHandlerTestMixin,
     AttributeMultiEditResponseRendererTestMixin,
     AttributeMultiEditTemplateContextBuilderTestMixin,
@@ -361,8 +364,3 @@ class SubsystemMultiAttributeViewMixinTest(AttributeMultiEditViewMixinTestMixin,
         for owner in owner_list:
             # Should have at least one attribute after processing
             self.assertTrue(owner.attributes.exists())
-
-
-# Import MockRequest and MockSession for the module-specific tests
-from hi.testing.base_test_case import MockRequest, MockSession
-from django.http import QueryDict

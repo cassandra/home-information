@@ -11,7 +11,7 @@ from django.test import RequestFactory
 
 from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransitionHandler
 from hi.apps.entity.enums import EntityType, EntityTransitionType
-from hi.apps.entity.forms import EntityForm, EntityAttributeRegularFormSet
+from hi.apps.entity.forms import EntityForm
 from hi.testing.base_test_case import BaseTestCase
 from hi.apps.entity.tests.synthetic_data import EntityAttributeSyntheticData
 from hi.apps.location.tests.synthetic_data import LocationSyntheticData

@@ -1,6 +1,6 @@
 from django import forms
 
-from hi.apps.attribute.forms import AttributeForm, AttributeUploadForm
+from hi.apps.attribute.forms import AttributeForm
 
 from .models import Subsystem, SubsystemAttribute
 

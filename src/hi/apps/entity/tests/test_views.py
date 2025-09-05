@@ -118,7 +118,7 @@ class TestEntityEditView(DualModeViewTestCase):
         )
         
         # Modify attribute values
-        prefix = f'entity.{entity.id}'
+        prefix = f'entity-{self.entity.id}'
         for i, attr in enumerate(attributes):
             if attr == self.text_attr:
                 formset_data[f'{prefix}-{i}-value'] = 'Updated brightness value'
@@ -199,7 +199,7 @@ class TestEntityEditView(DualModeViewTestCase):
         self.entity.refresh_from_db()
         self.assertNotEqual(self.entity.name, '')
 
-    def test_post_htmx_response_format(self):
+    def test_post_html_response_format(self):
         """Test that POST responses use correct HTMX/antinode format."""
         url = reverse('entity_edit', kwargs={'entity_id': self.entity.id})
         
@@ -218,11 +218,12 @@ class TestEntityEditView(DualModeViewTestCase):
 
         self.assertSuccessResponse(response)
         self.assertJsonResponse(response)
+        self.assertTemplateRendered(response, 'attribute/components/file_card.html')
         
         # Check antinode response structure
         data = response.json()
         self.assertTrue(
-            any(key in data for key in ['insert', 'append', 'modal', 'refresh'])
+            any(key in data for key in ['updates', 'message'])
         )
 
     def test_post_with_new_attribute_creation(self):
@@ -235,7 +236,7 @@ class TestEntityEditView(DualModeViewTestCase):
         
         # Create formset data with existing attributes plus new one using correct prefix
         existing_attrs = list(self.entity.attributes.all())
-        prefix = f'entity.{entity.id}'
+        prefix = f'entity-{self.entity.id}'
         formset_data = {
             f'{prefix}-TOTAL_FORMS': str(len(existing_attrs) + 2),  # +1 existing +1 new
             f'{prefix}-INITIAL_FORMS': str(len(existing_attrs)),
@@ -442,7 +443,7 @@ class TestEntityAttributeUploadView(SyncViewTestCase):
         # (may return 200 with form errors, or 400, depending on implementation)
         self.assertIn(response.status_code, [200, 400])  # Accept either valid response
 
-    @patch('hi.apps.entity.views.transaction.atomic')
+    @patch('hi.apps.attribute.edit_form_handler.transaction.atomic')
     def test_upload_uses_transaction(self, mock_atomic):
         """Test that file upload uses database transaction."""
         # Configure the mock to return the real transaction atomic context manager
@@ -762,6 +763,8 @@ class TestEntityEditViewFileUploadIntegration(DualModeViewTestCase):
 
         self.assertSuccessResponse(response)
         self.assertJsonResponse(response)
+
+        self.assertTemplateRendered(response, 'attribute/components/file_card.html')
         
         # Verify file attribute was created
         file_attrs = self.entity.attributes.filter(value_type_str=str(AttributeValueType.FILE))
@@ -770,11 +773,10 @@ class TestEntityEditViewFileUploadIntegration(DualModeViewTestCase):
         file_attr = file_attrs.first()
         self.assertEqual(file_attr.name, 'test_image.jpg')
         self.assertEqual(file_attr.file_mime_type, 'image/jpeg')
-        
+
         # Verify DOM update response structure
         data = response.json()
-        self.assertIn('append', data)
-        self.assertIn('scrollTo', data)
+        self.assertIn('updates', data)
 
     def test_file_upload_error_handling(self):
         """Test file upload error handling and DOM error display."""
@@ -787,9 +789,15 @@ class TestEntityEditViewFileUploadIntegration(DualModeViewTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertJsonResponse(response)
         
-        # Verify error DOM update structure
+        # Verify error DOM update structure  
         data = response.json()
-        self.assertIn('insert', data)
+        self.assertIn('updates', data)
+        self.assertFalse(data['success'])
+        
+        # Should have error update with replace mode
+        updates = data['updates']
+        self.assertTrue(len(updates) > 0)
+        self.assertEqual(updates[0]['mode'], 'replace')
         
         # Verify no file was created
         self.assertEqual(self.entity.attributes.filter(value_type_str=str(AttributeValueType.FILE)).count(), 0)

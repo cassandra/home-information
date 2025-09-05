@@ -11,7 +11,7 @@ from typing import List, Dict, Any
 from django.test import RequestFactory
 from django.http import QueryDict
 
-from hi.testing.base_test_case import BaseTestCase, MockRequest, MockSession
+from hi.testing.base_test_case import MockRequest, MockSession
 from hi.apps.attribute.edit_context import AttributePageEditContext, AttributeItemEditContext
 from hi.apps.attribute.edit_form_handler import AttributeEditFormHandler
 from hi.apps.attribute.edit_response_renderer import AttributeEditResponseRenderer
@@ -357,3 +357,4 @@ class AttributeMultiEditViewMixinTestMixin(AttributeMultiFrameworkTestMixin, ABC
         # Should return error response
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response['Content-Type'], 'application/json')
+        
