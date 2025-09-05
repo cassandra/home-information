@@ -11,7 +11,18 @@
         method="POST" role="form" data-async="">
       {% csrf_token %}
       <button type="submit" class="btn btn btn-secondary" role="button"
-              name="action" value="sync" >SYNC ITEMS</button>
+              name="action" value="sync" >
+        {% if has_entities %}
+        RE-SYNC
+        {% else %}
+        IMPORT
+        {% endif %}
+      </button>
     </form>
   </div>
 </div>
+{% if not has_entities %}
+<div class="alert alert-warning text-center">
+  Use the "IMPORT" button to add items from ZoneMinder.
+</div>
+{% endif %}

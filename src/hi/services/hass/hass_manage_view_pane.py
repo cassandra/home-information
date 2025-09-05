@@ -1,6 +1,6 @@
 from typing import Dict
 
-from hi.integrations.forms import IntegrationAttributeRegularFormSet
+from hi.apps.entity.models import Entity
 from hi.integrations.integration_data import IntegrationData
 from hi.integrations.integration_manage_view_pane import IntegrationManageViewPane
 
@@ -11,18 +11,9 @@ class HassManageViewPane( IntegrationManageViewPane ):
         return 'hass/panes/hass_manage.html'
 
     def get_template_context( self, integration_data : IntegrationData ) -> Dict[ str, object ]:
-
-        integration_attribute_formset = IntegrationAttributeRegularFormSet(
-            instance = integration_data.integration,
-            prefix = f'integration-{integration_data.integration_id}',
-            form_kwargs = {
-                'show_as_editable': True,
-            },
-        )
+        
+        has_entities = Entity.objects.filter( integration_id = integration_data.integration_id ).exists()
+        
         return {
-            'integration_attribute_formset': integration_attribute_formset,
-            'history_url_name': 'integration_attribute_history',
-            'restore_url_name': 'integration_attribute_restore',
+            'has_entities': has_entities,
         }
-
-

@@ -112,7 +112,8 @@ class IntegrationEnableView( HiModalView ):
             integration_attribute_formset = integration_attribute_formset,
         )
 
-        redirect_url = reverse( 'integrations_home' )
+        redirect_url = reverse( 'integrations_manage',
+                                kwargs = { 'integration_id': integration_id } )
         return self.redirect_response( request, redirect_url )
 
     

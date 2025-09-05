@@ -782,7 +782,7 @@ class HassConverter:
                                                    entity            : Entity,
                                                    integration_key   : IntegrationKey, 
                                                    name              : str,
-                                                   domain_payload   : dict ):
+                                                   domain_payload    : dict ):
         """Create appropriate controller based on EntityStateType"""
         
         if entity_state_type == EntityStateType.ON_OFF:
@@ -821,7 +821,7 @@ class HassConverter:
         # Store domain payload
         controller.integration_payload = domain_payload
         controller.save()
-        return controller.entity_state
+        return controller
 
     @classmethod  
     def _create_sensor_from_entity_state_type( cls,
@@ -829,7 +829,7 @@ class HassConverter:
                                                entity            : Entity,
                                                integration_key   : IntegrationKey, 
                                                name              : str,
-                                               domain_payload   : dict ):
+                                               domain_payload    : dict ):
         """Create appropriate sensor based on EntityStateType"""
         
         if entity_state_type == EntityStateType.MOVEMENT:
@@ -885,7 +885,7 @@ class HassConverter:
         # Store domain payload for sensors too
         sensor.integration_payload = domain_payload
         sensor.save()
-        return sensor.entity_state
+        return sensor
     
     @classmethod
     def _create_sensor_from_entity_state_type_with_params( cls,
