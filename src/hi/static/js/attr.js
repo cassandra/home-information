@@ -129,7 +129,6 @@
     const _ajax = {
         // Submit form with custom Ajax handling
         submitFormWithAjax: function(form, options = {}) {
-            console.log('DEBUG: submitFormWithAjax called with form:', form);
             const $form = $(form);
             
             // Ensure we have a valid form element
@@ -147,8 +146,6 @@
             const formData = new FormData($form[0]);
             const url = $form.attr('action');
             const method = $form.attr('method') || 'POST';
-            
-            console.log('DEBUG: Form submission details:', { url, method, form: $form[0] });
             
             // Add CSRF token if not already present
             if (!formData.has(ATTR_V2_INTERNAL.CSRF_TOKEN_NAME)) {
@@ -265,13 +262,10 @@
         
         // Process status message from response data
         processStatusMessage: function(data, $form, isError = false) {
-            console.log('DEBUG: processStatusMessage called with:', { data, isError });
-            console.log('DEBUG: data.message:', data ? data.message : 'no data');
             
             // Handle explicit messages from server
             if (data && data.message) {
                 const messageType = isError ? STATUS_TYPE.ERROR : STATUS_TYPE.SUCCESS;
-                console.log('DEBUG: Using data.message:', data.message, 'with type:', messageType);
                 
                 // For form validation errors, make them persistent (no auto-dismiss)
                 const timeout = isError ? 0 : null; // 0 = no auto-dismiss for errors, null = default for success
@@ -282,11 +276,9 @@
             // Provide default messages when server doesn't provide one
             if (!isError) {
                 // Success case with no explicit message
-                console.log('DEBUG: Using default success message');
                 this.showStatusMessage('Success', STATUS_TYPE.SUCCESS, $form);
             } else {
                 // Error case with no explicit message - make persistent
-                console.log('DEBUG: Using default error message');
                 this.showStatusMessage('An error occurred while processing your request', STATUS_TYPE.ERROR, $form, 0);
             }
         },
@@ -326,10 +318,6 @@
         
         // Handle form submission errors - now delegates to unified handler
         handleFormError: function(xhr, $form) {
-            console.log('DEBUG: handleFormError called with xhr:', xhr);
-            console.log('DEBUG: xhr.status:', xhr.status, 'xhr.statusText:', xhr.statusText);
-            console.log('DEBUG: xhr.responseText:', xhr.responseText);
-            
             let response;
             let hasValidResponse = false;
             
@@ -338,7 +326,6 @@
                 try {
                     response = JSON.parse(xhr.responseText);
                     hasValidResponse = true;
-                    console.log('DEBUG: Parsed response:', response);
                 } catch (e) {
                     console.warn('Failed to parse error response JSON:', e);
                     // Continue to create fallback response
@@ -352,12 +339,10 @@
                     success: false,
                     message: fallbackMessage
                 };
-                console.log('DEBUG: Using fallback response with message:', fallbackMessage);
             } else {
                 // If we have a parsed response but no message, add status-based message
                 if (!response.message) {
                     response.message = this.getErrorMessageForStatus(xhr.status, xhr.statusText);
-                    console.log('DEBUG: Added status-based message to parsed response:', response.message);
                 }
             }
             
@@ -365,8 +350,6 @@
             if (!response.hasOwnProperty('success')) {
                 response.success = false;
             }
-            
-            console.log('DEBUG: Final response being passed to handleResponse:', response);
             
             // Use unified handler to process error response (including DOM updates)
             this.handleResponse(response, $form, {}, true);
@@ -519,7 +502,6 @@
     function _initializeContainer($container) {
         // Check if this container is already initialized to prevent double-initialization
         if ($container.data(ATTR_V2_INTERNAL.INITIALIZED_DATA_KEY)) {
-            console.log('DEBUG: Container already initialized, but reprocessing handlers and textareas for new content:', $container[0]);
             // Always reprocess AJAX handlers to handle newly loaded content
             _setupCustomAjaxHandlers($container);
             // Re-initialize textareas after content updates (DOM may have changed)
@@ -530,8 +512,6 @@
             }
             return;
         }
-        
-        console.log('DEBUG: Initializing container:', $container[0]);
         
         // Full container initialization - don't assume what persists across AJAX updates
         _setupBasicEventListeners($container);
@@ -570,20 +550,15 @@
     function _setupCustomAjaxHandlers($container) {
         // Handle main form submissions
         const $forms = $container.find(`form${Hi.ATTR_V2_FORM_CLASS_SELECTOR}`);
-        console.log('DEBUG: setupCustomAjaxHandlers called for container:', $container[0], 'found forms:', $forms.length);
-        
         $forms.each(function(index) {
             const form = this;
             const $form = $(form);
-            
-            console.log('DEBUG: Setting up form handler for form', index, 'action:', $form.attr('action'), 'class:', $form.attr('class'));
             
             // Remove any existing handlers to avoid duplicates
             $form.off(`submit.${ATTR_V2_INTERNAL.AJAX_EVENT_NAMESPACE}`);
             
             // Add custom Ajax submission handler
             $form.on(`submit.${ATTR_V2_INTERNAL.AJAX_EVENT_NAMESPACE}`, function(e) {
-                console.log('DEBUG: Form submit handler triggered!', e);
                 e.preventDefault();
                 
                 _ajax.submitFormWithAjax(form);
@@ -662,38 +637,25 @@
         if ($fileInput.length > 0) {
             // Skip if already processed
             if ($fileInput.data(ATTR_V2_INTERNAL.PROCESSED_DATA_KEY)) {
-                console.log('DEBUG: File input already processed, skipping');
                 return;
             }
             
-            console.log('DEBUG: Setting up change handler for file input');
             $fileInput.data(ATTR_V2_INTERNAL.PROCESSED_DATA_KEY, true);
             $fileInput.off(`change.${ATTR_V2_INTERNAL.AJAX_EVENT_NAMESPACE}`);
             
             $fileInput.on(`change.${ATTR_V2_INTERNAL.AJAX_EVENT_NAMESPACE}`, function(e) {
-                console.log('DEBUG: File input change event fired!', e);
                 const fileInput = this;
                 const $uploadForm = $fileInput.closest('form');
                 
-                console.log('DEBUG: File input details:', {
-                    files: fileInput.files,
-                    fileCount: fileInput.files ? fileInput.files.length : 0,
-                    uploadForm: $uploadForm.length
-                });
                 
                 if (fileInput.files && fileInput.files[0] && $uploadForm.length) {
-                    console.log('DEBUG: Submitting form via Ajax');
                     // Use our custom Ajax submission with scroll-to-new-content option
                     // File uploads append new content that users want to see
                     _ajax.submitFormWithAjax($uploadForm[0], {
                         scrollToNewContent: true
                     });
-                } else {
-                    console.log('DEBUG: Not submitting - missing files or form');
-                }
+                } 
             });
-        } else {
-            console.log('DEBUG: File input not found!');
         }
     }
     

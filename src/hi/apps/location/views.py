@@ -111,8 +111,7 @@ class LocationItemStatusView( View ):
 
 
 class LocationEditView( HiModalView, LocationViewMixin, AttributeEditViewMixin ):
-    """Location attribute editing modal with redesigned interface.
-    
+    """
     This view uses a dual response pattern:
     - get(): Returns full modal using standard modal_response()
     - post(): Returns antinode fragments for async DOM updates
