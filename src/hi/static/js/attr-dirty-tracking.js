@@ -1,40 +1,65 @@
 /*
- * Home Information - Attribute V2 Dirty State Tracking
- * Comprehensive dirty state tracking for V2 entity attribute editing modal
- * Handles field-level changes with proper V2 pattern support
+ * Home Information - Attribute Dirty State Tracking
+ * Container-aware dirty state tracking for attribute editing
+ * Supports multiple simultaneous editing contexts and visual dirty indicators
  */
 
 (function() {
     'use strict';
     
-    // Create namespace
-    window.attrV2 = window.attrV2 || {};
-    window.attrV2.DirtyTracking = {
-        
+    // Internal constants - dirty tracking specific
+    const DIRTY_TRACKING_INTERNAL = {
         // Configuration
-        config: {
-            formSelector: Hi.ATTR_V2_FORM_SELECTOR,
-            messageContainerSelector: Hi.ATTR_V2_DIRTY_MESSAGE_SELECTOR,
-            debounceDelay: 300,
-            dirtyFieldClass: Hi.ATTR_V2_FIELD_DIRTY_CLASS,
-            dirtyIndicatorClass: Hi.ATTR_V2_DIRTY_INDICATOR_CLASS
-        },
+        DEBOUNCE_DELAY: 300,
         
-        // State
-        state: {
+        // Messages
+        SINGLE_FIELD_MESSAGE: '1 field modified',
+        MULTIPLE_FIELDS_MESSAGE_TEMPLATE: '{count} fields modified',
+        DIRTY_INDICATOR_CHAR: '●',
+        DIRTY_INDICATOR_TITLE: 'This field has been modified',
+
+        FIELD_DIRTY_CLASS: 'attr-v2-field-dirty',
+        DIRTY_INDICATOR_CLASS: 'attr-v2-dirty-indicator',
+    };
+    
+    // Create namespace  
+    window.Hi = window.Hi || {};
+    window.Hi.attr = window.Hi.attr || {};
+    
+    /**
+     * DirtyTracker Class - Container-specific instance
+     * Each editing context gets its own isolated tracker
+     */
+    function DirtyTracker(containerId) {
+        this.containerId = containerId;
+        this.container = document.getElementById(containerId);
+        
+        // Instance-specific configuration
+        this.config = {
+            formSelector: Hi.ATTR_V2_FORM_CLASS_SELECTOR,
+            messageContainerSelector: Hi.ATTR_V2_DIRTY_MESSAGE_SELECTOR,
+            debounceDelay: DIRTY_TRACKING_INTERNAL.DEBOUNCE_DELAY,
+            dirtyFieldClass: DIRTY_TRACKING_INTERNAL.FIELD_DIRTY_CLASS,
+            dirtyIndicatorClass: DIRTY_TRACKING_INTERNAL.DIRTY_INDICATOR_CLASS
+        };
+        
+        // Instance-specific state
+        this.state = {
             originalValues: new Map(),
             dirtyFields: new Set(),
             debounceTimers: new Map(),
             isInitialized: false
-        },
-        
-        // Initialize the dirty tracking system
+        };
+    }
+    
+    DirtyTracker.prototype = {
+        // Initialize the dirty tracking system for this container
         init: function() {
-            if (this.state.isInitialized) {
+            if (this.state.isInitialized || !this.container) {
                 return;
             }
             
-            const form = document.querySelector(this.config.formSelector);
+            const form = this.container.querySelector(this.config.formSelector);
             if (!form) {
                 return;
             }
@@ -44,15 +69,15 @@
             this.state.isInitialized = true;
         },
         
-        // Capture original values for all form fields
+        // Capture original values for all form fields in this container
         captureOriginalValues: function() {
-            const form = document.querySelector(this.config.formSelector);
+            const form = this.container.querySelector(this.config.formSelector);
             if (!form) return;
             
-            // Entity name field
-            const entityNameField = form.querySelector('input[name$="name"]:not([name*="-"])');
-            if (entityNameField) {
-                this.captureFieldValue(entityNameField);
+            // Entity/Location name field
+            const nameField = form.querySelector('input[name$="name"]:not([name*="-"])');
+            if (nameField) {
+                this.captureFieldValue(nameField);
             }
             
             // Attribute form fields
@@ -104,13 +129,13 @@
             return originalValue !== currentValue;
         },
         
-        // Bind event listeners
+        // Bind event listeners scoped to this container
         bindEvents: function() {
-            const form = document.querySelector(this.config.formSelector);
+            const form = this.container.querySelector(this.config.formSelector);
             if (!form) return;
             
             // Text input changes with debouncing
-            this.bindDebouncedEvents(form, 'input[type="text"], input[type="password"], textarea', 'input');
+            this.bindDebouncedEvents(form, 'input[type="text"], input[type="password"], input[type="number"], textarea', 'input');
             
             // Immediate changes for selects and checkboxes
             this.bindImmediateEvents(form, 'select, input[type="checkbox"]', 'change');
@@ -124,9 +149,6 @@
                     e.target.classList.add('activated');
                 }
             }, true); // Use capture phase to ensure we catch the event
-            
-            // Handle successful form submission (antinode.js pattern)
-            document.addEventListener('an:success', this.handleFormSuccess.bind(this));
         },
         
         // Bind debounced events for text inputs
@@ -243,8 +265,8 @@
         createDirtyIndicator: function() {
             const indicator = document.createElement('span');
             indicator.className = this.config.dirtyIndicatorClass;
-            indicator.innerHTML = '●'; // Simple dot indicator
-            indicator.title = 'This field has been modified';
+            indicator.innerHTML = DIRTY_TRACKING_INTERNAL.DIRTY_INDICATOR_CHAR;
+            indicator.title = DIRTY_TRACKING_INTERNAL.DIRTY_INDICATOR_TITLE;
             return indicator;
         },
         
@@ -287,9 +309,9 @@
             }
         },
         
-        // Update message area with current dirty state
+        // Update message area with current dirty state (scoped to this container)
         updateMessageArea: function() {
-            const messageContainer = document.querySelector(this.config.messageContainerSelector);
+            const messageContainer = this.container.querySelector(this.config.messageContainerSelector);
             if (!messageContainer) return;
             
             const dirtyCount = this.state.dirtyFields.size;
@@ -299,10 +321,10 @@
                 messageContainer.className = Hi.ATTR_V2_DIRTY_MESSAGE_CLASS;
             } else {
                 const message = dirtyCount === 1 
-                    ? '1 field modified' 
-                    : `${dirtyCount} fields modified`;
+                    ? DIRTY_TRACKING_INTERNAL.SINGLE_FIELD_MESSAGE
+                    : DIRTY_TRACKING_INTERNAL.MULTIPLE_FIELDS_MESSAGE_TEMPLATE.replace('{count}', dirtyCount);
                 messageContainer.textContent = message;
-                messageContainer.className = Hi.ATTR_V2_DIRTY_MESSAGE_CLASS + ' active';
+                messageContainer.className = `${Hi.ATTR_V2_DIRTY_MESSAGE_CLASS} active`;
             }
         },
         
@@ -314,10 +336,10 @@
         
         // Sync display fields to hidden fields before submission
         syncDisplayToHiddenFields: function() {
-            const form = document.querySelector(this.config.formSelector);
+            const form = this.container.querySelector(this.config.formSelector);
             if (!form) return;
             
-            const displayFields = form.querySelectorAll('.display-field');
+            const displayFields = form.querySelectorAll(Hi.ATTR_V2_DISPLAY_FIELD_SELECTOR);
             displayFields.forEach(displayField => {
                 const hiddenFieldId = displayField.getAttribute('data-hidden-field');
                 const hiddenField = hiddenFieldId ? document.getElementById(hiddenFieldId) : null;
@@ -330,13 +352,17 @@
         
         // Handle successful form submission
         handleFormSuccess: function(e) {
-            this.clearAllDirtyState();
+            // Only clear if the success event is for this container's form
+            const form = this.container.querySelector(this.config.formSelector);
+            if (form && e.target === form) {
+                this.clearAllDirtyState();
+            }
         },
         
-        // Clear all dirty state
+        // Clear all dirty state for this container
         clearAllDirtyState: function() {
             // Clear visual indicators
-            const form = document.querySelector(this.config.formSelector);
+            const form = this.container.querySelector(this.config.formSelector);
             if (form) {
                 form.querySelectorAll('.' + this.config.dirtyFieldClass).forEach(field => {
                     field.classList.remove(this.config.dirtyFieldClass);
@@ -367,7 +393,7 @@
             this.updateMessageArea();
         },
         
-        // Reinitialize for dynamic content (called by modal system)
+        // Reinitialize for dynamic content
         reinitialize: function() {
             this.clearAllDirtyState();
             this.state.originalValues.clear();
@@ -376,26 +402,85 @@
         }
     };
     
+    /**
+     * Private DirtyTracker instance management
+     */
+    const _instances = new Map();
+    
+    const HiAttrDirtyTracking = {
+        // Instance Management
+        getInstance: function(containerId) {
+            if (!_instances.has(containerId)) {
+                _instances.set(containerId, new DirtyTracker(containerId));
+            }
+            return _instances.get(containerId);
+        },
+        
+        createInstance: function(containerId) {
+            const instance = new DirtyTracker(containerId);
+            _instances.set(containerId, instance);
+            return instance;
+        },
+        
+        // Bulk Operations  
+        initializeAll: function() {
+            const containers = document.querySelectorAll(Hi.ATTR_V2_CONTAINER_SELECTOR);
+            containers.forEach(container => {
+                if (container.id) {
+                    const instance = this.getInstance(container.id);
+                    instance.init();
+                }
+            });
+        },
+        
+        reinitializeContainer: function(containerId) {
+            const $container = typeof containerId === 'string' ? $(`#${containerId}`) : $(containerId);
+            const id = $container.attr('id');
+            if (!id) {
+                console.warn('DirtyTracking: Container missing ID, skipping initialization');
+                return;
+            }
+            
+            const instance = this.getInstance(id);
+            instance.reinitialize();
+        },
+        
+        // Event Handling
+        handleFormSuccess: function(event) {
+            const form = event.target.closest(Hi.ATTR_V2_FORM_CLASS_SELECTOR);
+            if (form) {
+                const container = form.closest(Hi.ATTR_V2_CONTAINER_SELECTOR);
+                if (container && container.id) {
+                    const instance = this.getInstance(container.id);
+                    instance.handleFormSuccess(event);
+                }
+            }
+        },
+        
+        // Initialization
+        init: function() {
+            this.initializeAll();
+        }
+    };
+    
+    // Export to Hi namespace
+    window.Hi.attr.dirtyTracking = HiAttrDirtyTracking;
+    
     // Auto-initialize when DOM is ready
     document.addEventListener('DOMContentLoaded', function() {
-        window.attrV2.DirtyTracking.init();
+        HiAttrDirtyTracking.init();
     });
     
     // Initialize after modal shown
     document.addEventListener('shown.bs.modal', function(e) {
-        if (document.querySelector(Hi.ATTR_V2_FORM_SELECTOR)) {
-            window.attrV2.DirtyTracking.reinitialize();
-        }
-    });
-    
-    // Hook into antinode success to reinitialize
-    document.addEventListener('an:success', function(e) {
-        if (document.querySelector(Hi.ATTR_V2_FORM_SELECTOR)) {
-            // Delay to allow DOM updates
-            setTimeout(() => {
-                window.attrV2.DirtyTracking.reinitialize();
-            }, 100);
-        }
+        // Look for containers within the modal
+        const modal = e.target;
+        const containers = modal.querySelectorAll(Hi.ATTR_V2_CONTAINER_SELECTOR);
+        containers.forEach(container => {
+            if (container.id) {
+                HiAttrDirtyTracking.reinitializeContainer(container.id);
+            }
+        });
     });
     
 })();

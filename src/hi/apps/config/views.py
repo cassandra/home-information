@@ -1,26 +1,35 @@
 import logging
 
-from django.db import transaction
-from django.shortcuts import render
-
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
+from django.urls import reverse
 from django.views.generic import View
 
 import hi.apps.common.antinode as antinode
+from hi.views import page_not_found_response
 
 from hi.enums import ViewMode, ViewType
 from hi.hi_grid_view import HiGridView
-from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
+from hi.apps.attribute.view_mixins import AttributeMultiEditViewMixin
 
 from .enums import ConfigPageType
-from .forms import SubsystemAttributeFormSet
 from .models import SubsystemAttribute
-from .settings_mixins import SettingsMixin
+from .settings_mixins import SubsystemAttributeMixin
+from .subsystem_attribute_edit_context import (
+    SubsystemAttributeItemEditContext,
+    SubsystemAttributePageEditContext,
+)
 
 logger = logging.getLogger('__name__')
 
 
+class ConfigHomeView( View ):
+
+    def get( self, request, *args, **kwargs ):
+        redirect_url = reverse( ConfigPageType.default().url_name )
+        return HttpResponseRedirect( redirect_url )        
+
+    
 class ConfigPageView( HiGridView ):
     """
     The app's config/admin page is shown in the main area of the HiGridView
@@ -73,74 +82,6 @@ class ConfigPageView( HiGridView ):
         raise NotImplementedError('Subclasses must override this method.')
 
     
-class ConfigSettingsView( ConfigPageView, SettingsMixin ):
-
-    @property
-    def config_page_type(self) -> ConfigPageType:
-        return ConfigPageType.SETTINGS
-    
-    def get_main_template_name( self ) -> str:
-        return 'config/panes/settings.html'
-
-    def get_main_template_context( self, request, *args, **kwargs ):
-        
-        subsystem_list = self.settings_manager().get_subsystems()
-
-        subsystem_attribute_formset_list = list()
-        for subsystem in subsystem_list:
-            subsystem_attribute_formset = SubsystemAttributeFormSet(
-                instance = subsystem,
-                prefix = f'subsystem-{subsystem.id}',
-                form_kwargs = {
-                    'show_as_editable': True,
-                },
-            )
-            subsystem_attribute_formset_list.append( subsystem_attribute_formset )
-            continue
-        
-        return {
-            'subsystem_attribute_formset_list': subsystem_attribute_formset_list,
-            'history_url_name': 'config_attribute_history',
-            'restore_url_name': 'config_attribute_restore',
-        }
-
-    def post( self, request, *args, **kwargs ):
-
-        subsystem_list = self.settings_manager().get_subsystems()
-
-        all_valid = True
-        subsystem_attribute_formset_list = list()
-        for subsystem in subsystem_list:
-            subsystem_attribute_formset = SubsystemAttributeFormSet(
-                request.POST,
-                request.FILES,
-                instance = subsystem,
-                prefix = f'subsystem-{subsystem.id}',
-            )
-            if not subsystem_attribute_formset.is_valid():
-                all_valid = False
-            subsystem_attribute_formset_list.append( subsystem_attribute_formset )           
-            continue
-
-        if not all_valid:
-            context = {
-                'subsystem_attribute_formset_list': subsystem_attribute_formset_list,
-                'history_url_name': 'config_attribute_history',
-                'restore_url_name': 'config_attribute_restore',
-            }
-            return render( request, 'config/panes/settings_form.html', context )
-
-        with transaction.atomic():
-            for subsystem_attribute_formset in subsystem_attribute_formset_list:
-                subsystem_attribute_formset.save()
-                continue
-
-        # Some settings (e.g., audio files) define what gets loaded into
-        # the initial HTML, so refresh the page to ensure they get updated.
-        #
-        return antinode.refresh_response()
-       
-        
 class ConfigInternalView( View ):
 
     @classmethod
@@ -174,22 +115,95 @@ class ConfigInternalView( View ):
         data = self.get_config_data()
         return JsonResponse( data, safe = False )
 
+    
+class ConfigSettingsView( ConfigPageView,
+                          SubsystemAttributeMixin,
+                          AttributeMultiEditViewMixin ):
 
-class ConfigAttributeHistoryView(BaseAttributeHistoryView):
-    """View for displaying SubsystemAttribute history in a modal."""
+    @property
+    def config_page_type(self) -> ConfigPageType:
+        return ConfigPageType.SETTINGS
     
-    def get_attribute_model_class(self):
-        return SubsystemAttribute
-    
-    def get_history_url_name(self):
-        return 'config_attribute_history'
-    
-    def get_restore_url_name(self):
-        return 'config_attribute_restore'
+    def get_main_template_name( self ) -> str:
+        return 'config/panes/settings.html'
+
+    def get_main_template_context( self, request, *args, **kwargs ):
+
+        attr_item_context_list = self._create_attr_item_context_list()
+
+        selected_subsystem_id = kwargs.get('subsystem_id')
+        if not selected_subsystem_id and attr_item_context_list:
+            selected_subsystem_id = str(attr_item_context_list[0].owner_id)
+
+        attr_page_context = SubsystemAttributePageEditContext(
+            selected_subsystem_id = selected_subsystem_id,
+        )
+        return self.create_initial_template_context(
+            attr_page_context = attr_page_context,
+            attr_item_context_list = attr_item_context_list,
+        )
+        
+    def post( self, request, *args, **kwargs ):
+
+        attr_item_context_list = self._create_attr_item_context_list()
+
+        selected_subsystem_id = kwargs.get('subsystem_id')
+        if not selected_subsystem_id and attr_item_context_list:
+            selected_subsystem_id = str(attr_item_context_list[0].owner_id)
+
+        attr_page_context = SubsystemAttributePageEditContext(
+            selected_subsystem_id = selected_subsystem_id,
+        )
+            
+        return self.post_attribute_form(
+            request = request,
+            attr_page_context = attr_page_context,
+            attr_item_context_list = attr_item_context_list,
+        )
+        
+
+class SubsystemAttributeHistoryInlineView( View, AttributeMultiEditViewMixin ):
+
+    def get(self, request, subsystem_id, attribute_id, *args, **kwargs):
+        # Validate that the attribute belongs to this entity for security
+        try:
+            attribute = SubsystemAttribute.objects.select_related('subsystem').get(
+                pk = attribute_id, subsystem_id = subsystem_id )
+        except SubsystemAttribute.DoesNotExist:
+            return page_not_found_response(request, "Attribute not found.")
+
+        attr_item_context = SubsystemAttributeItemEditContext(
+            subsystem = attribute.subsystem,
+        )
+        return self.get_history(
+            request = request,
+            attribute = attribute,
+            attr_item_context = attr_item_context,
+        )
 
 
-class ConfigAttributeRestoreView(BaseAttributeRestoreView):
-    """View for restoring SubsystemAttribute values from history."""
+class SubsystemAttributeRestoreInlineView( View,
+                                           SubsystemAttributeMixin,
+                                           AttributeMultiEditViewMixin ):
+    """View for restoring SubsystemAttribute values from history inline."""
     
-    def get_attribute_model_class(self):
-        return SubsystemAttribute
+    def get(self, request, subsystem_id, attribute_id, history_id, *args, **kwargs):
+        try:
+            attribute = SubsystemAttribute.objects.select_related('subsystem').get(
+                pk = attribute_id, subsystem_id = subsystem_id
+            )
+        except SubsystemAttribute.DoesNotExist:
+            return page_not_found_response(request, "Attribute not found.")
+
+        attr_page_context = SubsystemAttributePageEditContext(
+            selected_subsystem_id = subsystem_id,
+        )
+        attr_item_context_list = self._create_attr_item_context_list()
+
+        return self.post_restore(
+            request = request,
+            attribute = attribute,
+            history_id = history_id,
+            attr_page_context = attr_page_context,
+            attr_item_context_list = attr_item_context_list,
+        )

@@ -1,13 +1,13 @@
 """
 Cross-owner template compatibility tests.
 
-Verifies that Entity and Location AttributeEditContext implementations work
+Verifies that Entity and Location AttributeItemEditContext implementations work
 identically with the same generic templates, ensuring true template generalization.
 """
 import logging
 from unittest.mock import patch
-from hi.apps.entity.entity_attribute_edit_context import EntityAttributeEditContext
-from hi.apps.location.location_attribute_edit_context import LocationAttributeEditContext
+from hi.apps.entity.entity_attribute_edit_context import EntityAttributeItemEditContext
+from hi.apps.location.location_attribute_edit_context import LocationAttributeItemEditContext
 from hi.apps.entity.tests.synthetic_data import EntityAttributeSyntheticData
 from hi.apps.location.tests.synthetic_data import LocationSyntheticData
 from hi.testing.base_test_case import BaseTestCase
@@ -25,8 +25,8 @@ class TestCrossOwnerTemplateCompatibility(BaseTestCase):
         self.location = LocationSyntheticData.create_test_location(name="Test Location")
         
         # Create corresponding contexts
-        self.entity_context = EntityAttributeEditContext(self.entity)
-        self.location_context = LocationAttributeEditContext(self.location)
+        self.entity_context = EntityAttributeItemEditContext(self.entity)
+        self.location_context = LocationAttributeItemEditContext(self.location)
         
     def test_context_interface_consistency(self):
         """Test both contexts provide identical interface - API compatibility."""
@@ -107,7 +107,7 @@ class TestCrossOwnerTemplateCompatibility(BaseTestCase):
         location_keys = set(location_context.keys())
         
         # Common keys that both should have
-        common_keys = {'attr_context', 'owner'}
+        common_keys = {'attr_item_context', 'owner'}
         self.assertTrue(common_keys.issubset(entity_keys))
         self.assertTrue(common_keys.issubset(location_keys))
         
@@ -127,9 +127,9 @@ class TestCrossOwnerTemplateCompatibility(BaseTestCase):
         self.assertIs(entity_context['owner'], self.entity)
         self.assertIs(location_context['owner'], self.location)
         
-        # attr_context should be the context instance itself
-        self.assertIs(entity_context['attr_context'], self.entity_context)
-        self.assertIs(location_context['attr_context'], self.location_context)
+        # attr_item_context should be the context instance itself
+        self.assertIs(entity_context['attr_item_context'], self.entity_context)
+        self.assertIs(location_context['attr_item_context'], self.location_context)
         
     def test_cross_owner_template_filter_compatibility(self):
         """Test template filters work identically with both contexts - filter compatibility."""
@@ -243,13 +243,13 @@ class TestCrossOwnerTemplateCompatibility(BaseTestCase):
                 
     def test_inheritance_hierarchy_consistency(self):
         """Test both contexts inherit from same base class - inheritance compatibility."""
-        from hi.apps.attribute.edit_context import AttributeEditContext
+        from hi.apps.attribute.edit_context import AttributeItemEditContext
         
-        self.assertIsInstance(self.entity_context, AttributeEditContext)
-        self.assertIsInstance(self.location_context, AttributeEditContext)
+        self.assertIsInstance(self.entity_context, AttributeItemEditContext)
+        self.assertIsInstance(self.location_context, AttributeItemEditContext)
         
         # Both should inherit all base methods
-        base_methods = [m for m in dir(AttributeEditContext) if not m.startswith('_')]
+        base_methods = [m for m in dir(AttributeItemEditContext) if not m.startswith('_')]
         
         for method in base_methods:
             with self.subTest(method=method):
@@ -280,12 +280,8 @@ class TestCrossOwnerTemplateCompatibility(BaseTestCase):
             name="Location with & symbols!"
         )
         
-        entity_ctx = EntityAttributeEditContext(special_entity)
-        location_ctx = LocationAttributeEditContext(special_location)
-        
-        # Both should handle special characters in names
-        self.assertEqual(entity_ctx.owner_name, "Entity with & symbols!")
-        self.assertEqual(location_ctx.owner_name, "Location with & symbols!")
+        entity_ctx = EntityAttributeItemEditContext(special_entity)
+        location_ctx = LocationAttributeItemEditContext(special_location)
         
         # DOM IDs should still be generated properly
         entity_id = entity_ctx.history_target_id(1)
@@ -303,19 +299,19 @@ class TestCrossOwnerTemplateCompatibility(BaseTestCase):
         location_template_ctx = self.location_context.to_template_context()
         
         # Both contexts should allow the same template operations
-        # Template would access: {{ owner.name }}, {{ attr_context.owner_id }}, etc.
+        # Template would access: {{ owner.name }}, {{ attr_item_context.owner_id }}, etc.
         
         # Generic owner access
         self.assertEqual(entity_template_ctx['owner'].name, "Test Entity")
         self.assertEqual(location_template_ctx['owner'].name, "Test Location")
         
         # Context property access
-        self.assertIsInstance(entity_template_ctx['attr_context'].owner_id, int)
-        self.assertIsInstance(location_template_ctx['attr_context'].owner_id, int)
+        self.assertIsInstance(entity_template_ctx['attr_item_context'].owner_id, int)
+        self.assertIsInstance(location_template_ctx['attr_item_context'].owner_id, int)
         
         # URL parameter access
-        self.assertEqual(entity_template_ctx['attr_context'].owner_id_param_name, "entity_id")
-        self.assertEqual(location_template_ctx['attr_context'].owner_id_param_name, "location_id")
+        self.assertEqual(entity_template_ctx['attr_item_context'].owner_id_param_name, "entity_id")
+        self.assertEqual(location_template_ctx['attr_item_context'].owner_id_param_name, "location_id")
         
         # This demonstrates that a template using these patterns would work identically
         # with both Entity and Location contexts, achieving true generalization

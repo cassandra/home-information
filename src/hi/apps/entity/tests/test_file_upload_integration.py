@@ -2,7 +2,7 @@
 File upload context integration tests.
 
 Tests file storage patterns, upload path generation, file cleanup operations,
-and cross-owner file handling consistency using AttributeEditContext pattern.
+and cross-owner file handling consistency using AttributeItemEditContext pattern.
 """
 import logging
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -16,7 +16,7 @@ logging.disable(logging.CRITICAL)
 
 
 class TestFileUploadContextIntegration(BaseTestCase):
-    """Test file upload operations with AttributeEditContext integration."""
+    """Test file upload operations with AttributeItemEditContext integration."""
     
     def setUp(self):
         super().setUp()
@@ -38,9 +38,9 @@ class TestFileUploadContextIntegration(BaseTestCase):
             file_value=test_file
         )
         
-        # Test AttributeEditContext integration
-        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeEditContext
-        context = EntityAttributeEditContext(self.entity)
+        # Test AttributeItemEditContext integration
+        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeItemEditContext
+        context = EntityAttributeItemEditContext(self.entity)
         
         # Context should provide file-related functionality
         file_title_field = context.file_title_field_name(file_attr.id)
@@ -76,8 +76,8 @@ class TestFileUploadContextIntegration(BaseTestCase):
         self.assertTrue(hasattr(entity_pdf, 'file_value'))
         
         # Context should handle both file types consistently
-        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeEditContext
-        context = EntityAttributeEditContext(self.entity)
+        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeItemEditContext
+        context = EntityAttributeItemEditContext(self.entity)
         
         image_field = context.file_title_field_name(entity_image.id)
         pdf_field = context.file_title_field_name(entity_pdf.id)
@@ -87,7 +87,7 @@ class TestFileUploadContextIntegration(BaseTestCase):
         self.assertRegex(pdf_field, r'^file_title_\d+_\d+$')
         
     def test_file_deletion_context_integration(self):
-        """Test file deletion with AttributeEditContext - cleanup workflow integration."""
+        """Test file deletion with AttributeItemEditContext - cleanup workflow integration."""
         test_file = SimpleUploadedFile(
             "test_delete.txt",
             b"content to be deleted",
@@ -103,8 +103,8 @@ class TestFileUploadContextIntegration(BaseTestCase):
             file_value=test_file
         )
         
-        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeEditContext
-        context = EntityAttributeEditContext(self.entity)
+        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeItemEditContext
+        context = EntityAttributeItemEditContext(self.entity)
         
         # Context should provide deletion-related functionality
         self.assertEqual(context.owner_id, self.entity.id)
@@ -134,8 +134,8 @@ class TestFileUploadContextIntegration(BaseTestCase):
             file_value=test_file
         )
         
-        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeEditContext
-        context = EntityAttributeEditContext(self.entity)
+        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeItemEditContext
+        context = EntityAttributeItemEditContext(self.entity)
         
         # Get field name that would be used in form
         field_name = context.file_title_field_name(file_attr.id)
@@ -155,7 +155,7 @@ class TestFileUploadContextIntegration(BaseTestCase):
         """Test file operations work consistently across Entity and Location - cross-owner compatibility."""
         from hi.apps.location.tests.synthetic_data import LocationSyntheticData
         from hi.apps.location.models import LocationAttribute
-        from hi.apps.location.location_attribute_edit_context import LocationAttributeEditContext
+        from hi.apps.location.location_attribute_edit_context import LocationAttributeItemEditContext
         
         # Create location for comparison
         location = LocationSyntheticData.create_test_location(name="File Test Location")
@@ -183,9 +183,9 @@ class TestFileUploadContextIntegration(BaseTestCase):
         )
         
         # Create contexts
-        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeEditContext
-        entity_context = EntityAttributeEditContext(self.entity)
-        location_context = LocationAttributeEditContext(location)
+        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeItemEditContext
+        entity_context = EntityAttributeItemEditContext(self.entity)
+        location_context = LocationAttributeItemEditContext(location)
         
         # File field naming should follow same pattern
         entity_field = entity_context.file_title_field_name(entity_attr.id)
@@ -199,9 +199,9 @@ class TestFileUploadContextIntegration(BaseTestCase):
         entity_template_ctx = entity_context.to_template_context()
         location_template_ctx = location_context.to_template_context()
         
-        # Both should have attr_context for template usage
-        self.assertIn('attr_context', entity_template_ctx)
-        self.assertIn('attr_context', location_template_ctx)
+        # Both should have attr_item_context for template usage
+        self.assertIn('attr_item_context', entity_template_ctx)
+        self.assertIn('attr_item_context', location_template_ctx)
         
     def test_file_mime_type_detection_integration(self):
         """Test MIME type detection works with context integration - file type handling."""
@@ -240,8 +240,8 @@ class TestFileUploadContextIntegration(BaseTestCase):
         )
         
         # Context should work with all file types
-        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeEditContext
-        context = EntityAttributeEditContext(self.entity)
+        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeItemEditContext
+        context = EntityAttributeItemEditContext(self.entity)
         
         # Should generate consistent field names regardless of MIME type
         image_field = context.file_title_field_name(image_attr.id)
@@ -264,8 +264,8 @@ class TestFileUploadContextIntegration(BaseTestCase):
             file_value=large_file
         )
         
-        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeEditContext
-        context = EntityAttributeEditContext(self.entity)
+        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeItemEditContext
+        context = EntityAttributeItemEditContext(self.entity)
         
         # Context operations should work efficiently with large files
         field_name = context.file_title_field_name(large_attr.id)
@@ -277,27 +277,27 @@ class TestFileUploadContextIntegration(BaseTestCase):
         
     def test_file_upload_form_context_integration(self):
         """Test file upload form integration with context - upload workflow."""
-        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeEditContext
-        context = EntityAttributeEditContext(self.entity)
+        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeItemEditContext
+        context = EntityAttributeItemEditContext(self.entity)
         
         # Context should provide template integration data
         template_ctx = context.to_template_context()
         
         # Should have context data needed for upload forms
-        self.assertIn('attr_context', template_ctx)
+        self.assertIn('attr_item_context', template_ctx)
         self.assertIn('owner', template_ctx)
         self.assertIn('entity', template_ctx)
         
         # Upload form would use these for generating correct field names and URLs
-        attr_context = template_ctx['attr_context']
-        self.assertEqual(attr_context.owner_type, 'entity')
-        self.assertEqual(attr_context.owner_id, self.entity.id)
+        attr_item_context = template_ctx['attr_item_context']
+        self.assertEqual(attr_item_context.owner_type, 'entity')
+        self.assertEqual(attr_item_context.owner_id, self.entity.id)
         
     def test_file_error_handling_context_integration(self):
         """Test file error handling with context integration - error resilience."""
         # Test with invalid file operations
-        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeEditContext
-        context = EntityAttributeEditContext(self.entity)
+        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeItemEditContext
+        context = EntityAttributeItemEditContext(self.entity)
         
         # Context should handle edge cases gracefully
         invalid_attr_id = 999999
@@ -337,8 +337,8 @@ class TestFileUploadContextIntegration(BaseTestCase):
             file_value=predefined_file
         )
         
-        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeEditContext
-        context = EntityAttributeEditContext(self.entity)
+        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeItemEditContext
+        context = EntityAttributeItemEditContext(self.entity)
         
         # Context should work with both permission levels
         custom_field = context.file_title_field_name(custom_attr.id)
@@ -365,8 +365,8 @@ class TestFileUploadContextIntegration(BaseTestCase):
             file_value=test_file
         )
         
-        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeEditContext
-        context = EntityAttributeEditContext(self.entity)
+        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeItemEditContext
+        context = EntityAttributeItemEditContext(self.entity)
         
         # Context should provide history-related functionality
         history_target = context.history_target_id(file_attr.id)

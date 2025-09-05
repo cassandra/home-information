@@ -5,40 +5,46 @@
 {% block title_text %}{{ location.name }}{% endblock %}
 
 {% block body %}
-<form id="{{ DIVID.ATTR_V2_FORM }}" 
-      action="{% url 'location_edit_location_edit' location_id=location.id %}" 
-      method="post" 
-      class="form {{ DIVID.ATTR_V2_MODAL_CLASS }}" 
-      data-async="true"
-      data-stay-in-modal="true"
-      enctype="multipart/form-data">
-  {% csrf_token %}
+<!-- Root container for this attribute editing context -->
+<div id="{{ attr_page_context.container_html_id }}" 
+     class="{{ DIVID.ATTR_V2_CONTAINER_CLASS }}" >
   
-<!-- Main content wrapper for antinode updates -->
-<div id="{{ DIVID.ATTR_V2_CONTENT }}">
-  {% include "location/panes/location_edit_content_body.html" %}
-</div>
-</form>
-
-<!-- File Upload Form Container (separate from main form to avoid nesting) -->
-<div id="{{ DIVID.ATTR_V2_UPLOAD_FORM_CONTAINER }}">
-  {% url 'location_attribute_upload' location_id=location.id as file_upload_url %}  
-  {% include "attribute/components/upload_form.html" with file_upload_url=file_upload_url %}
-</div>
-
-<!-- Success/Error Messages -->
-{% if messages %}
-  <div class="{{ DIVID.ATTR_V2_MESSAGES }}" id="{{ DIVID.ATTR_V2_MESSAGES }}">
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
+  <div class="{{ DIVID.ATTR_V2_FORM_CLASS }}">
+    <form id="{{ attr_page_context.form_html_id }}" 
+          action="{% url 'location_edit_location_edit' location_id=location.id %}" 
+          method="post" 
+          class="{{ DIVID.ATTR_V2_FORM_CLASS }} form" 
+          enctype="multipart/form-data">
+      {% csrf_token %}
+      
+      <!-- Main content wrapper for antinode updates -->
+      <div id="{{ attr_page_context.content_html_id }}"
+           class="{{ DIVID.ATTR_V2_CONTENT_CLASS }}">
+        {% include "location/panes/location_edit_content_body.html" %}
       </div>
-    {% endfor %}
+    </form>
   </div>
-{% endif %}
+
+  <!-- File Upload Form Container (separate from main form to avoid nesting) -->
+  <div id="{{ attr_item_context.upload_form_container_html_id }}">
+    {% url 'location_attribute_upload' location_id=location.id as file_upload_url %}  
+    {% include "attribute/components/upload_form.html" with file_upload_url=file_upload_url %}
+  </div>
+
+  <!-- Success/Error Messages -->
+  {% if messages %}
+    <div class="{{ DIVID.ATTR_V2_MESSAGES }}" id="{{ DIVID.ATTR_V2_MESSAGES }}">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
 
 <!-- JavaScript for V2 functionality loaded via Django Pipeline js_before_content bundle -->
 

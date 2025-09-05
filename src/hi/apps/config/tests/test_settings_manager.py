@@ -25,6 +25,11 @@ class TestSetting(SettingEnum):
 
 class TestSettingsManager(BaseTestCase):
 
+    def setUp(self):
+        super().setUp()
+        # Reset SettingsManager singleton for proper test isolation
+        SettingsManager._instance = None
+
     def test_singleton_behavior(self):
         """Test SettingsManager singleton pattern - critical for system consistency."""
         manager1 = SettingsManager()

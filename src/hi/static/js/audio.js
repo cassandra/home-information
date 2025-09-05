@@ -67,8 +67,6 @@
     function checkAudioStatus() {
         clearAudioPollingTimer();
         try {
-            if (Hi.DEBUG) { console.log(`Audio polling check - current: ${gActiveSignalName}`); }
-            
             Hi.watchdog.ok( AudioPollingWatchdogType );
 
             if ( gActiveSignalName ) {

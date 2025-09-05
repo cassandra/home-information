@@ -19,6 +19,10 @@ class TestConfigSettingsView(DualModeViewTestCase):
 
     def setUp(self):
         super().setUp()
+        # Reset SettingsManager singleton for proper test isolation
+        from hi.apps.config.settings_manager import SettingsManager
+        SettingsManager._instance = None
+        
         # Create test subsystem and attributes
         self.subsystem = Subsystem.objects.create(
             name='Test Subsystem',
@@ -77,16 +81,38 @@ class TestConfigSettingsView(DualModeViewTestCase):
     def test_post_settings_valid_data(self):
         """Test posting valid settings data."""
         url = reverse('config_settings')
-        post_data = {
-            f'subsystem-{self.subsystem.id}-TOTAL_FORMS': '2',
-            f'subsystem-{self.subsystem.id}-INITIAL_FORMS': '2',
-            f'subsystem-{self.subsystem.id}-MIN_NUM_FORMS': '0',
-            f'subsystem-{self.subsystem.id}-MAX_NUM_FORMS': '1000',
-            f'subsystem-{self.subsystem.id}-0-id': str(self.attribute1.id),
-            f'subsystem-{self.subsystem.id}-0-value': 'updated_value_1',
-            f'subsystem-{self.subsystem.id}-1-id': str(self.attribute2.id),
-            f'subsystem-{self.subsystem.id}-1-value': 'updated_value_2',
-        }
+        
+        # Build formset data for all existing subsystems (after SettingsManager reset)
+        post_data = {}
+        all_subsystems = Subsystem.objects.all()
+        
+        for subsystem in all_subsystems:
+            attributes = subsystem.attributes.all()
+            
+            # Add management form data for this subsystem
+            post_data.update({
+                f'subsystem-{subsystem.id}-TOTAL_FORMS': str(len(attributes)),
+                f'subsystem-{subsystem.id}-INITIAL_FORMS': str(len(attributes)),
+                f'subsystem-{subsystem.id}-MIN_NUM_FORMS': '0',
+                f'subsystem-{subsystem.id}-MAX_NUM_FORMS': '1000',
+            })
+            
+            # Add individual attribute form data
+            for i, attr in enumerate(attributes):
+                # Only modify the test attributes we created, leave others unchanged
+                if attr == self.attribute1:
+                    value = 'updated_value_1'
+                elif attr == self.attribute2:
+                    value = 'updated_value_2'
+                else:
+                    value = attr.value  # Keep original value
+                    
+                post_data.update({
+                    f'subsystem-{subsystem.id}-{i}-id': str(attr.id),
+                    f'subsystem-{subsystem.id}-{i}-name': attr.name,
+                    f'subsystem-{subsystem.id}-{i}-value': value,
+                    f'subsystem-{subsystem.id}-{i}-attribute_type_str': attr.attribute_type_str,
+                })
         
         response = self.client.post(url, data=post_data)
         
@@ -111,8 +137,8 @@ class TestConfigSettingsView(DualModeViewTestCase):
         response = self.client.post(url, data=post_data)
         
         # Should return form with errors
-        self.assertSuccessResponse(response)
-        self.assertTemplateRendered(response, 'config/panes/settings_form.html')
+        self.assertErrorResponse(response)
+        self.assertTemplateRendered(response, 'config/panes/subsystem_edit_content_body.html')
 
     def test_subsystems_in_context(self):
         """Test that subsystems are properly passed to template context."""
@@ -120,10 +146,10 @@ class TestConfigSettingsView(DualModeViewTestCase):
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
-        self.assertIn('subsystem_attribute_formset_list', response.context)
-        formset_list = response.context['subsystem_attribute_formset_list']
+        self.assertIn('multi_edit_form_data_list', response.context)
+        form_data_list = response.context['multi_edit_form_data_list']
         # There may be default system subsystems in addition to our test subsystem
-        self.assertGreaterEqual(len(formset_list), 1)  # At least our test subsystem
+        self.assertGreaterEqual(len(form_data_list), 1)  # At least our test subsystem
 
 
 class TestConfigInternalView(SyncViewTestCase):

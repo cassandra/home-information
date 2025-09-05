@@ -20,5 +20,6 @@ class ConfigPageType(LabeledEnum):
     EVENTS        = ('Triggers'     , ''   , 'event_definitions' )
     INTEGRATIONS  = ('Integrations' , ''   , 'integrations_home' )
 
-    def default(self):
-        return ConfigPageType.SETTINGS
+    @classmethod
+    def default(cls):
+        return cls.SETTINGS

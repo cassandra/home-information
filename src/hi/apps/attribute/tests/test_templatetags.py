@@ -13,7 +13,7 @@ from hi.apps.attribute.templatetags.attribute_extras import (
     attribute_preview, file_title_field_name, history_target_id, 
     history_toggle_id, attr_history_url, attr_restore_url
 )
-from hi.apps.attribute.edit_context import AttributeEditContext
+from hi.apps.attribute.edit_context import AttributeItemEditContext
 
 logging.disable(logging.CRITICAL)
 
@@ -119,11 +119,11 @@ class TestAttributePreviewFilter(TestCase):
 
 
 class TestAttributeContextFilters(TestCase):
-    """Test filters that work with AttributeEditContext objects."""
+    """Test filters that work with AttributeItemEditContext objects."""
     
     def setUp(self):
         self.mock_owner = MockOwner(id=123, name="Test Owner")
-        self.context = AttributeEditContext(self.mock_owner, "entity")
+        self.context = AttributeItemEditContext(self.mock_owner, "entity")
         self.attribute_id = 456
         
     def test_file_title_field_name_filter(self):
@@ -153,7 +153,7 @@ class TestAttributeUrlTags(TestCase):
     
     def setUp(self):
         self.mock_owner = MockOwner(id=123, name="Test Owner")
-        self.context = AttributeEditContext(self.mock_owner, "entity")
+        self.context = AttributeItemEditContext(self.mock_owner, "entity")
         self.attribute_id = 456
         self.history_id = 789
         
@@ -195,7 +195,7 @@ class TestAttributeUrlTags(TestCase):
     @patch('django.urls.reverse')
     def test_attr_history_url_tag_different_owner_types(self, mock_reverse):
         """Test URL tags work correctly with different owner types."""
-        location_context = AttributeEditContext(self.mock_owner, "location")
+        location_context = AttributeItemEditContext(self.mock_owner, "location")
         mock_reverse.return_value = "/location/123/attribute/456/history/"
         
         result = attr_history_url(location_context, self.attribute_id)
@@ -229,7 +229,7 @@ class TestTemplateIntegration(TestCase):
     
     def setUp(self):
         self.mock_owner = MockOwner(id=123, name="Test Owner")
-        self.context = AttributeEditContext(self.mock_owner, "entity")
+        self.context = AttributeItemEditContext(self.mock_owner, "entity")
         
     def test_attribute_preview_filter_in_template(self):
         """Test attribute_preview filter works in actual template rendering."""
@@ -251,17 +251,17 @@ class TestTemplateIntegration(TestCase):
         self.assertIn("lines", rendered)
         
     def test_context_filters_in_template(self):
-        """Test AttributeEditContext filters work in template rendering."""
+        """Test AttributeItemEditContext filters work in template rendering."""
         template_str = """
         {% load attribute_extras %}
-        Field: {{ attr_context|file_title_field_name:attribute_id }}
-        Target: {{ attr_context|history_target_id:attribute_id }}
-        Toggle: {{ attr_context|history_toggle_id:attribute_id }}
+        Field: {{ attr_item_context|file_title_field_name:attribute_id }}
+        Target: {{ attr_item_context|history_target_id:attribute_id }}
+        Toggle: {{ attr_item_context|history_toggle_id:attribute_id }}
         """
         
         template = Template(template_str)
         context = Context({
-            'attr_context': self.context,
+            'attr_item_context': self.context,
             'attribute_id': 456
         })
         
@@ -277,13 +277,13 @@ class TestTemplateIntegration(TestCase):
         
         template_str = """
         {% load attribute_extras %}
-        History: {% attr_history_url attr_context attribute_id %}
-        Restore: {% attr_restore_url attr_context attribute_id history_id %}
+        History: {% attr_history_url attr_item_context attribute_id %}
+        Restore: {% attr_restore_url attr_item_context attribute_id history_id %}
         """
         
         template = Template(template_str)
         context = Context({
-            'attr_context': self.context,
+            'attr_item_context': self.context,
             'attribute_id': 456,
             'history_id': 789
         })

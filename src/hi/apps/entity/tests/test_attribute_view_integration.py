@@ -63,13 +63,13 @@ class TestEntityAttributeViewIntegration(DualModeViewTestCase):
         self.assertIn('regular_attributes_formset', response.context)
         self.assertIn('file_attributes', response.context)
         
-        # Should have AttributeEditContext integration
-        self.assertIn('attr_context', response.context)
-        attr_context = response.context['attr_context']
+        # Should have AttributeItemEditContext integration
+        self.assertIn('attr_item_context', response.context)
+        attr_item_context = response.context['attr_item_context']
         
-        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeEditContext
-        self.assertIsInstance(attr_context, EntityAttributeEditContext)
-        self.assertEqual(attr_context.entity, self.entity)
+        from hi.apps.entity.entity_attribute_edit_context import EntityAttributeItemEditContext
+        self.assertIsInstance(attr_item_context, EntityAttributeItemEditContext)
+        self.assertEqual(attr_item_context.entity, self.entity)
         
     def test_entity_edit_view_ajax_get_request(self):
         """Test AJAX GET request returns JSON response - async rendering."""
@@ -242,24 +242,24 @@ class TestEntityAttributeViewIntegration(DualModeViewTestCase):
         self.assertIsInstance(response.status_code, int)
         
     def test_attribute_context_template_integration(self):
-        """Test AttributeEditContext integration with actual templates - template rendering."""
+        """Test AttributeItemEditContext integration with actual templates - template rendering."""
         url = reverse('entity_edit', kwargs={'entity_id': self.entity.id})
         response = self.client.get(url)
         
         self.assertSuccessResponse(response)
         
-        # Response should include AttributeEditContext data
+        # Response should include AttributeItemEditContext data
         context = response.context
-        self.assertIn('attr_context', context)
+        self.assertIn('attr_item_context', context)
         
-        attr_context = context['attr_context']
+        attr_item_context = context['attr_item_context']
         
         # Should provide all the template functionality
-        self.assertEqual(attr_context.owner_type, 'entity')
-        self.assertEqual(attr_context.owner_id, self.entity.id)
+        self.assertEqual(attr_item_context.owner_type, 'entity')
+        self.assertEqual(attr_item_context.owner_id, self.entity.id)
         
         # Template should be able to use these patterns
-        history_id = attr_context.history_target_id(123)
+        history_id = attr_item_context.history_target_id(123)
         self.assertIn('hi-entity-attr-history', history_id)
         
     def test_error_handling_integration(self):

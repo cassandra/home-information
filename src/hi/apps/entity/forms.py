@@ -32,6 +32,11 @@ class EntityAttributeForm( AttributeForm ):
 class RegularAttributeBaseFormSet(forms.BaseInlineFormSet):
     """Base formset that automatically excludes FILE attributes for regular attribute editing"""
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Apply filtering after parent initialization
+        self.queryset = self.queryset.exclude(value_type_str=str(AttributeValueType.FILE))
+    
     def get_queryset(self):
         """Override to automatically filter out FILE attributes"""
         queryset = super().get_queryset()

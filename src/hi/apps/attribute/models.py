@@ -211,14 +211,14 @@ class AttributeModel(models.Model):
         
         if self.file_value:
             try:
-                if default_storage.exists( self.file_value ):
-                    default_storage.delete( self.file_value )
-                    logger.debug( f'Deleted Attribute file: {self.file_value}' )
+                if default_storage.exists( self.file_value.name ):
+                    default_storage.delete( self.file_value.name )
+                    logger.debug( f'Deleted Attribute file: {self.file_value.name}' )
                 else:
-                    logger.warn( f'Attribute file not found: {self.file_value}' )
+                    logger.warn( f'Attribute file not found: {self.file_value.name}' )
             except Exception as e:
                 # Log the error or handle it accordingly
-                logger.warn( f'Error deleting Attribute file {self.file_value}: {e}' )
+                logger.warn( f'Error deleting Attribute file {self.file_value.name}: {e}' )
 
         super().delete( *args, **kwargs )
         return

@@ -2,12 +2,10 @@
       method="post" 
       enctype="multipart/form-data"
       class="form" 
-      data-async="true"
-      data-stay-in-modal="true"
       style="display: none;">
   {% csrf_token %}
   <input type="file" 
-         id="{{ DIVID.ATTR_V2_FILE_INPUT }}" 
-         name="file_value" 
-         onchange="Hi.submitForm(this);">
+         id="{{ attr_item_context.file_input_html_id }}"
+         class="{{ DIVID.ATTR_V2_FILE_INPUT_CLASS }}"
+         name="file_value">
 </form>

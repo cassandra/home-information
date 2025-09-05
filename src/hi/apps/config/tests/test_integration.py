@@ -36,6 +36,11 @@ class IntegrationTestSettings(SettingEnum):
 class TestConfigIntegration(BaseTestCase):
     """Integration tests for config module components working together in real workflows."""
 
+    def setUp(self):
+        super().setUp()
+        # Reset SettingsManager singleton for proper test isolation
+        SettingsManager._instance = None
+
     def test_complete_settings_discovery_workflow(self):
         """Test complete workflow from module discovery to setting value access."""
         # Create test module with settings

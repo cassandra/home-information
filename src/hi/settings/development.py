@@ -67,7 +67,7 @@ LOGGING = {
         },
         'hi.apps.alert': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
         'hi.apps.control': {
@@ -77,7 +77,7 @@ LOGGING = {
         },
         'hi.apps.console': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
         'hi.apps.notify': {
@@ -148,3 +148,6 @@ SUPPRESS_MONITORS = False
 
 # Allows injecting transient view data for testing auto-view functionality
 DEBUG_FORCE_TRANSIENT_VIEW_OVERRIDE = False  # Set to True to enable
+
+# For testing UI error display of the various attribute editing form errors.
+DEBUG_INJECT_ATTRIBUTE_FORM_ERRORS = False

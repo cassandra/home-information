@@ -14,6 +14,11 @@ class LocationAttributeForm( AttributeForm ):
 class RegularAttributeBaseFormSet(forms.BaseInlineFormSet):
     """Base formset that automatically excludes FILE attributes for regular attribute editing"""
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Apply filtering after parent initialization
+        self.queryset = self.queryset.exclude(value_type_str=str(AttributeValueType.FILE))
+    
     def get_queryset(self):
         """Override to automatically filter out FILE attributes"""
         queryset = super().get_queryset()
@@ -32,7 +37,7 @@ LocationAttributeRegularFormSet = forms.inlineformset_factory(
 )
 
 
-class LocationModalEditForm( forms.ModelForm ):
+class LocationForm( forms.ModelForm ):
     """
     Location edit form for modal - only includes name field.
     Geometry fields (svg_view_box_str, order_id) are edited separately.

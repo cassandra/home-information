@@ -1,13 +1,11 @@
 <div class="hi-administration-content">
-  <div class="h1 text-primary py-1">Administration</div>
-
   <ul id="hi-config-tab" class="nav nav-tabs" role="tablist">
     {% for config_page_type in request.config_page_type_list %}
     <li class="nav-item">
       <a id="hi-config-tab-{{ config_page_type }}" role="tab"
-	 class="nav-link {% if request.current_config_page_type == config_page_type %}active{% endif %}"
-	 href="{% url config_page_type.url_name %}" 
-	 data-async="true">{{ config_page_type.label }}</a>
+         class="nav-link {% if request.current_config_page_type == config_page_type %}active{% endif %}"
+         href="{% url config_page_type.url_name %}" 
+         data-async="true">{{ config_page_type.label }}</a>
     </li>
     {% endfor %}
   </ul>

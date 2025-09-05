@@ -1,14 +1,10 @@
 import logging
 from typing import Any, Dict
 
-from django.db import transaction
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import render
-from django.template.loader import render_to_string
 from django.views.generic import View
 
-from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
-import hi.apps.common.antinode as antinode
+from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.control.controller_history_manager import ControllerHistoryManager
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.apps.sense.sensor_history_manager import SensorHistoryMixin
@@ -16,15 +12,10 @@ from hi.apps.sense.sensor_history_manager import SensorHistoryMixin
 from hi.views import page_not_found_response
 from hi.hi_async_view import HiModalView
 
-from hi.constants import DIVID
-
-from .entity_edit_form_handler import EntityEditFormHandler
-from .entity_edit_response_renderer import EntityEditResponseRenderer
-from . import forms
 from .models import Entity, EntityAttribute
 from .transient_models import EntityStateHistoryData
 from .view_mixins import EntityViewMixin
-from .entity_attribute_edit_context import EntityAttributeEditContext
+from .entity_attribute_edit_context import EntityAttributeItemEditContext
 
 
 logger = logging.getLogger(__name__)
@@ -49,61 +40,6 @@ class EntityStatusView( HiModalView, EntityViewMixin ):
         return self.modal_response( request, context )
 
 
-class EntityEditView(HiModalView, EntityViewMixin):
-    """Entity attribute editing modal with redesigned interface.
-    
-    This view uses a dual response pattern:
-    - get(): Returns full modal using standard modal_response()
-    - post(): Returns antinode fragments for async DOM updates
-    
-    Business logic is delegated to specialized handler classes following
-    the "keep views simple" design philosophy.
-    """
-    
-    def get_template_name(self) -> str:
-        return 'entity/modals/entity_edit.html'
-    
-    def get( self,
-             request : HttpRequest,
-             *args   : Any,
-             **kwargs: Any          ) -> HttpResponse:
-        entity: Entity = self.get_entity(request, *args, **kwargs)
-        
-        # Delegate form creation and context building to handler
-        form_handler: EntityEditFormHandler = EntityEditFormHandler()
-        context: Dict[str, Any] = form_handler.create_initial_context(entity)
-        
-        return self.modal_response(request, context)
-    
-    def post( self,
-              request : HttpRequest,
-              *args   : Any,
-              **kwargs: Any          ) -> HttpResponse:
-        entity: Entity = self.get_entity(request, *args, **kwargs)
-        
-        # Delegate form handling to specialized handlers
-        form_handler: EntityEditFormHandler = EntityEditFormHandler()
-        renderer: EntityEditResponseRenderer = EntityEditResponseRenderer()
-        
-        # Create forms with POST data
-        entity_form, file_attributes, regular_attributes_formset = form_handler.create_entity_forms(
-            entity, request.POST
-        )
-        
-        if form_handler.validate_forms(entity_form, regular_attributes_formset):
-            # Save forms and process files
-            form_handler.save_forms(entity_form, regular_attributes_formset, request, entity)
-            
-            # Return success response
-            return renderer.render_success_response(request, entity)
-        else:
-            # Return error response
-            return renderer.render_error_response(request, entity, entity_form, regular_attributes_formset)
-    
-    def get_success_url_name(self) -> str:
-        return 'entity_edit'
-
-
 class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin ):
 
     ENTITY_STATE_HISTORY_ITEM_MAX = 5
@@ -111,10 +47,7 @@ class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin )
     def get_template_name( self ) -> str:
         return 'entity/modals/entity_state_history.html'
 
-    def get( self,
-             request : HttpRequest,
-             *args   : Any,
-             **kwargs: Any          ) -> HttpResponse:
+    def get( self, request,*args, **kwargs ):
         entity: Entity = self.get_entity( request, *args, **kwargs )
         sensor_history_list_map = self.sensor_history_manager().get_latest_entity_sensor_history(
             entity = entity,
@@ -133,76 +66,47 @@ class EntityStateHistoryView( HiModalView, EntityViewMixin, SensorHistoryMixin )
         return self.modal_response( request, context )
 
 
-class EntityAttributeUploadView( View, EntityViewMixin ):
-
-    def post( self,
-              request : HttpRequest,
-              *args   : Any,
-              **kwargs: Any          ) -> HttpResponse:
-        entity: Entity = self.get_entity( request, *args, **kwargs )
-        entity_attribute: EntityAttribute = EntityAttribute( entity = entity )
-        entity_attribute_upload_form: forms.EntityAttributeUploadForm = forms.EntityAttributeUploadForm(
-            request.POST,
-            request.FILES,
-            instance = entity_attribute,
+class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):
+    """
+    This view uses a dual response pattern:
+      - get(): Returns full modal using standard modal_response()
+      - post(): Returns custom JSON response with HTML fragments for async DOM updates
+    """
+    
+    def get_template_name(self) -> str:
+        return 'entity/modals/entity_edit.html'
+    
+    def get( self, request,*args, **kwargs ):
+        entity = self.get_entity(request, *args, **kwargs)
+        attr_item_context = EntityAttributeItemEditContext( entity = entity )
+        template_context = self.create_initial_template_context(
+            attr_item_context= attr_item_context,
         )
-        
-        if entity_attribute_upload_form.is_valid():
-            with transaction.atomic():
-                entity_attribute_upload_form.save()   
-            
-            # Render new file card HTML to append to file grid
-            attr_context = EntityAttributeEditContext(entity)
-            context = {'attribute': entity_attribute, 'entity': entity}
-            context.update(attr_context.to_template_context())
-            
-            file_card_html: str = render_to_string(
-                'attribute/components/file_card.html',
-                context,
-                request=request
-            )
-            
-            return antinode.response(
-                append_map={
-                    DIVID['ATTR_V2_FILE_GRID']: file_card_html
-                },
-                scroll_to=DIVID['ATTR_V2_FILE_GRID']
-            )
-        else:
-            # Render error message to status area
-            error_html: str = render_to_string(
-                'attribute/components/status_message.html',
-                {
-                    'error_message': 'File upload failed. Please check the file and try again.',
-                    'form_errors': entity_attribute_upload_form.errors
-                }
-            )
-            
-            return antinode.response(
-                insert_map={
-                    DIVID['ATTR_V2_STATUS_MSG']: error_html
-                },
-                status=400
-            )
+        return self.modal_response( request, template_context )
+    
+    def post( self, request,*args, **kwargs ):
+        entity = self.get_entity(request, *args, **kwargs)
+        attr_item_context = EntityAttributeItemEditContext( entity = entity )
+        return self.post_attribute_form(
+            request = request,
+            attr_item_context = attr_item_context,
+        )
 
 
-class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
+class EntityAttributeUploadView( View, EntityViewMixin, AttributeEditViewMixin ):
+
+    def post( self, request,*args, **kwargs ):
+        entity = self.get_entity( request, *args, **kwargs )
+        attr_item_context = EntityAttributeItemEditContext(entity)
+        return self.post_upload(
+            request = request,
+            attr_item_context = attr_item_context,
+        )
+
+
+class EntityAttributeHistoryInlineView( View, AttributeEditViewMixin ):
     """View for displaying EntityAttribute history inline within the edit modal."""
 
-    ATTRIBUTE_HISTORY_VIEW_LIMIT = 50
-    
-    def get_template_name(self):
-        return 'attribute/components/attribute_history_inline.html'
-    
-    def get_attribute_model_class(self):
-        return EntityAttribute
-    
-    def get_history_url_name(self):
-        return 'entity_attribute_history_inline'
-    
-    def get_restore_url_name(self):
-        return 'entity_attribute_restore_inline'
-    
     def get( self,
              request      : HttpRequest,
              entity_id    : int,
@@ -211,42 +115,21 @@ class EntityAttributeHistoryInlineView(BaseAttributeHistoryView):
              **kwargs     : Any          ) -> HttpResponse:
         # Validate that the attribute belongs to this entity for security
         try:
-            attribute: EntityAttribute = EntityAttribute.objects.get(pk=attribute_id, entity_id=entity_id)
+            attribute = EntityAttribute.objects.select_related('entity').get(
+                pk = attribute_id, entity_id = entity_id )
         except EntityAttribute.DoesNotExist:
             return page_not_found_response(request, "Attribute not found.")
-        
-        # Get history records for this attribute
-        history_model_class = attribute._get_history_model_class()
-        if history_model_class:
-            history_records = history_model_class.objects.filter(
-                attribute=attribute
-            ).order_by('-changed_datetime')[:self.ATTRIBUTE_HISTORY_VIEW_LIMIT]  # Limit for inline display
-        else:
-            history_records = []
-        
-        # Create the attribute edit context for template generalization
-        attr_context = EntityAttributeEditContext(attribute.entity)
-        
-        context: Dict[str, Any] = {
-            'entity': attribute.entity,
-            'attribute': attribute,
-            'history_records': history_records,
-            'history_url_name': self.get_history_url_name(),
-            'restore_url_name': self.get_restore_url_name(),
-        }
-        
-        # Merge in the context variables from AttributeEditContext
-        context.update(attr_context.to_template_context())
-        
-        # Use Django render shortcut
-        return render(request, self.get_template_name(), context)
+
+        attr_item_context = EntityAttributeItemEditContext( entity = attribute.entity )
+        return self.get_history(
+            request = request,
+            attribute = attribute,
+            attr_item_context = attr_item_context,
+        )
 
 
-class EntityAttributeRestoreInlineView(BaseAttributeRestoreView):
+class EntityAttributeRestoreInlineView( View, AttributeEditViewMixin ):
     """View for restoring EntityAttribute values from history within the edit modal."""
-    
-    def get_attribute_model_class(self):
-        return EntityAttribute
     
     def get( self,
              request      : HttpRequest,
@@ -255,33 +138,18 @@ class EntityAttributeRestoreInlineView(BaseAttributeRestoreView):
              history_id   : int,
              *args        : Any,
              **kwargs     : Any          ) -> HttpResponse:
-        # Validate that the attribute belongs to this entity for security  
+        """ Need to do restore in a GET since nested in main form and cannot have a form in a form """
+
         try:
-            attribute: EntityAttribute = EntityAttribute.objects.get(pk=attribute_id, entity_id=entity_id)
+            attribute = EntityAttribute.objects.select_related('entity').get(
+                pk = attribute_id, entity_id = entity_id )
         except EntityAttribute.DoesNotExist:
             return page_not_found_response(request, "Attribute not found.")
-        
-        # Get the history record to restore from
-        history_model_class = attribute._get_history_model_class()
-        if not history_model_class:
-            return page_not_found_response(request, "No history available for this attribute type.")
-        
-        try:
-            history_record = history_model_class.objects.get(pk=history_id, attribute=attribute)
-        except history_model_class.DoesNotExist:
-            return page_not_found_response(request, "History record not found.")
-        
-        # Restore the value from the history record
-        attribute.value = history_record.value
-        attribute.save()  # This will create a new history record
-        
-        # Delegate to EntityEditView logic to return updated modal content
-        entity: Entity = attribute.entity
-        
-        # Use EntityEditResponseRenderer to return updated modal content
-        from .entity_edit_response_renderer import EntityEditResponseRenderer
-        renderer: EntityEditResponseRenderer = EntityEditResponseRenderer()
-        return renderer.render_success_response(
+
+        attr_item_context = EntityAttributeItemEditContext( entity = attribute.entity )
+        return self.post_restore(
             request = request,
-            entity = entity,
+            attribute = attribute,
+            history_id = history_id,
+            attr_item_context = attr_item_context,
         )
