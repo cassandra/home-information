@@ -23,7 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [ ] `make test` (must show "OK")
 - [ ] `make lint` (must show no output)
 - [ ] Both MUST pass before PR creation
-- [ ] **Use HEREDOC syntax for PR body** (prevents quoting failures)
+- [ ] **Use a /tmp file for PR body** (prevents quoting failures)
 - [ ] Follow `.github/PULL_REQUEST_TEMPLATE.md` structure
 
 **Before Creating Unit Tests:**
