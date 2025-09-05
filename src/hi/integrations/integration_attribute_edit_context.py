@@ -78,19 +78,3 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
     def file_upload_url(self) -> str:
         # No file uploads for Integration attributes (as of yet)
         return None
-    
-    def to_template_context(self) -> Dict[str, Any]:
-        template_context = super().to_template_context()
-
-        manage_view_info_pane = self.integration_data.integration_gateway.get_manage_view_pane()
-        info_template_name = manage_view_info_pane.get_template_name()
-        info_template_context = manage_view_info_pane.get_template_context(
-            integration_data = self.integration_data,
-        )
-        template_context.update( info_template_context )
-        template_context.update({
-            # Nest this context to avoid collisions with integration
-            # context.  Integrations should not need to know about these.
-            'manage_view_info_template_name': info_template_name,
-        })
-        return template_context

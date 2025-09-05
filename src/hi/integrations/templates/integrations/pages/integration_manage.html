@@ -4,7 +4,7 @@
 <div id="hi-integration-settings" class="row">
   <nav class="nav flex-column">
     <div class="mx-auto mt-2">
-      <a class="btn btn-primary" role="button"
+      <a class="btn btn-secondary" role="button"
          href="{% url 'integrations_select' %}"
          data-async="modal">
         SEE ALL
@@ -27,6 +27,10 @@
       <div id="{{ attr_item_context.container_html_id }}" 
            class="{{ DIVID.ATTR_V2_CONTAINER_CLASS }}" >
         
+        <div class=" border-bottom mb-2 pb-2">
+          {% include core.manage_view_template_name %}
+        </div>
+
         <div class="{{ DIVID.ATTR_V2_FORM_CLASS }}">
           <form id="{{ attr_item_context.form_html_id }}" 
                 action="{% url 'integrations_manage' integration_id=integration.integration_id %}" 

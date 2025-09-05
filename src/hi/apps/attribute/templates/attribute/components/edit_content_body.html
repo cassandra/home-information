@@ -12,8 +12,8 @@ by using the AttributeItemEditContext pattern.
 <div class="{{ DIVID.ATTR_V2_STICKY_PANEL_CLASS }}">
   <!-- Basic Owner Information (minimal) - only if owner_form provided -->
 
+  {% block basic_info %}
   <div class="attr-v2-basic-info">
-    {% block basic_info %}
     {% if owner_form %}
     {% if owner_form.non_field_errors %}
     <div class="attr-v2-non-field-errors">
@@ -29,8 +29,8 @@ by using the AttributeItemEditContext pattern.
       {% endblock %}
     </div>
     {% endif %}
-    {% endblock %}
   </div>
+  {% endblock %}
   
   <div class="{{ DIVID.ATTR_V2_ACTION_BAR_CLASS }}">
     <div class="{{ DIVID.ATTR_V2_ACTION_BAR_CONTENT_CLASS }}">

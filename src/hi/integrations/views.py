@@ -172,15 +172,14 @@ class IntegrationManageView( ConfigPageView, AttributeEditViewMixin ):
         if not integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} integration is not enabled' )
             
-        integration_data_list = integration_manager.get_integration_data_list( enabled_only = True )
-
-        manage_view_pane = integration_data.integration_gateway.get_manage_view_pane()
-        template_name = manage_view_pane.get_template_name()
-        template_context = manage_view_pane.get_template_context( integration_data = integration_data )
-
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
         )
+        integration_data_list = integration_manager.get_integration_data_list( enabled_only = True )
+
+        manage_view_pane = integration_data.integration_gateway.get_manage_view_pane()
+        manage_template_name = manage_view_pane.get_template_name()
+        template_context = manage_view_pane.get_template_context( integration_data = integration_data )
 
         template_context.update(
             self.create_initial_template_context(
@@ -196,6 +195,7 @@ class IntegrationManageView( ConfigPageView, AttributeEditViewMixin ):
             'core': {
                 'integration_data_list': integration_data_list,
                 'integration_data': integration_data,
+                'manage_view_template_name': manage_template_name,
             },
         })
         return template_context
