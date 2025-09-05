@@ -67,14 +67,21 @@ class SubsystemAttributeEditFormHandlerTest(AttributeEditFormHandlerTestMixin, B
         )
         
     def create_invalid_form_data(self, owner):
-        """Create invalid form data for Subsystem editing - empty attribute name."""
+        """Create invalid form data for Subsystem editing."""
         form_data = SubsystemAttributeSyntheticData.create_form_data_for_single_subsystem_edit(owner)
-        # Make first attribute have invalid empty name on a non-empty form
-        # This ensures it's treated as a form that should be validated
         prefix = f'subsystem-{owner.id}'
-        form_data[f'{prefix}-0-name'] = ''
-        # Keep other fields to ensure form is not treated as empty
-        form_data[f'{prefix}-0-value'] = 'some value'
+        
+        # Create a scenario that will actually fail validation:
+        # Try to change the name of a PREDEFINED attribute, which is not allowed
+        if f'{prefix}-0-id' in form_data:
+            # Change the name of an existing PREDEFINED attribute (this should fail validation)
+            form_data[f'{prefix}-0-name'] = 'invalid_changed_name'
+            # Ensure it has a value to trigger validation
+            form_data[f'{prefix}-0-value'] = 'some value'
+        else:
+            # Fallback: create malformed formset data
+            form_data[f'{prefix}-TOTAL_FORMS'] = 'invalid_number'
+            
         return form_data
         
     def test_subsystem_no_owner_form_behavior(self):
@@ -249,7 +256,18 @@ class SubsystemAttributeEditResponseRendererTest(AttributeEditResponseRendererTe
         """Create invalid form data for Subsystem editing."""
         form_data = SubsystemAttributeSyntheticData.create_form_data_for_single_subsystem_edit(owner)
         prefix = f'subsystem-{owner.id}'
-        form_data[f'{prefix}-0-name'] = ''  # Invalid empty name
+        
+        # Create a scenario that will actually fail validation:
+        # Try to change the name of a PREDEFINED attribute, which is not allowed
+        if f'{prefix}-0-id' in form_data:
+            # Change the name of an existing PREDEFINED attribute (this should fail validation)
+            form_data[f'{prefix}-0-name'] = 'invalid_changed_name'
+            # Ensure it has a value to trigger validation
+            form_data[f'{prefix}-0-value'] = 'some value'
+        else:
+            # Fallback: create malformed formset data
+            form_data[f'{prefix}-TOTAL_FORMS'] = 'invalid_number'
+            
         return form_data
         
     def test_subsystem_specific_response_content(self):
