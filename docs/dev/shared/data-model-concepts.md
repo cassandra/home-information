@@ -1,5 +1,7 @@
 # Data Model Concepts
 
+Also see [Model Diagrams](./model-diagrams.md).
+
 ## Entity
 
 - A physical or logical object with associated information
