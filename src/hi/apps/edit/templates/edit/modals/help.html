@@ -1,4 +1,7 @@
 {% extends "modals/action_ok.html" %}
+{% load icons %}
+
+{% block modal_dialog_class %}hi-modal-dialog-700{% endblock %}
 
 {% block title_text %}
 Editing Help
@@ -6,56 +9,143 @@ Editing Help
 
 {% block body %}
 
-<div class="h3">Moving</div>
-<p>
-  <ul>
-    <li>Left mouse click and drag</li>
-    <li>One finger drag</li>
-  </ul>
-</p>
+<div class="editing-help-guide">
+    <div class="guide-header">
+        {% icon "edit" size="lg" color="primary" %}
+        <h5>Quick Reference Guide</h5>
+    </div>
+    
+    <div class="editing-help-categories">
+        <!-- Moving -->
+        <div class="help-category">
+            <div class="category-header">
+                <div class="category-icon">
+                    {% icon "move" size="sm" color="primary" %}
+                </div>
+                <h6 class="category-title">Moving</h6>
+            </div>
+            <ul class="help-actions">
+                <li>
+                    <span class="action-method">Click & Drag</span>
+                    <span class="action-description">Left mouse button</span>
+                </li>
+                <li>
+                    <span class="action-method">Touch Drag</span>
+                    <span class="action-description">One finger drag</span>
+                </li>
+            </ul>
+        </div>
 
-<div class="h3">Scaling</div>
-<p>
-  <ul>
-    <li>Mouse wheel</li>
-    <li>"+" key (zoom in)</li>
-    <li>"-" key (zoom out)</li>
-    <li>"s" key and drag</li>
-    <li>Two finger pinch/spread</li>
-    <li>"ESC" key to end</li>
-  </ul>
-</p>
+        <!-- Scaling -->
+        <div class="help-category">
+            <div class="category-header">
+                <div class="category-icon">
+                    {% icon "zoom" size="sm" color="primary" %}
+                </div>
+                <h6 class="category-title">Scaling</h6>
+            </div>
+            <ul class="help-actions">
+                <li>
+                    <span class="action-method">Mouse Wheel</span>
+                    <span class="action-description">Scroll to zoom</span>
+                </li>
+                <li>
+                    <span class="action-method">+ / -</span>
+                    <span class="action-description">Zoom in/out</span>
+                </li>
+                <li>
+                    <span class="action-method">S + Drag</span>
+                    <span class="action-description">Scale mode</span>
+                </li>
+                <li>
+                    <span class="action-method">Pinch</span>
+                    <span class="action-description">Two finger gesture</span>
+                </li>
+                <li>
+                    <span class="action-method">ESC</span>
+                    <span class="action-description">End scale mode</span>
+                </li>
+            </ul>
+        </div>
 
-<div class="h3">Rotating</div>
-<p>
-  <ul>
-    <li>"r" key and drag</li>
-    <li>"r" key and mouse wheel</li>
-    <li>"r" then "+" key (rotate right)</li>
-    <li>"r" then "-" key (rotate left)</li>
-    <li>Two finger rotate</li>
-    <li>"ESC" key to end</li>
-  </ul>
-</p>
+        <!-- Rotating -->
+        <div class="help-category">
+            <div class="category-header">
+                <div class="category-icon">
+                    {% icon "rotate" size="sm" color="primary" %}
+                </div>
+                <h6 class="category-title">Rotating</h6>
+            </div>
+            <ul class="help-actions">
+                <li>
+                    <span class="action-method">R + Drag</span>
+                    <span class="action-description">Rotate mode</span>
+                </li>
+                <li>
+                    <span class="action-method">R + Wheel</span>
+                    <span class="action-description">Rotate with mouse</span>
+                </li>
+                <li>
+                    <span class="action-method">R + +/-</span>
+                    <span class="action-description">Rotate right/left</span>
+                </li>
+                <li>
+                    <span class="action-method">Two Finger</span>
+                    <span class="action-description">Touch rotate</span>
+                </li>
+                <li>
+                    <span class="action-method">ESC</span>
+                    <span class="action-description">End rotate mode</span>
+                </li>
+            </ul>
+        </div>
 
-<div class="h3">Path Editing</div>
-<p>
-  <ul>
-    <li>Click to select area</li>
-    <li>Click and drag points to change area's shape</li>
-    <li>Click point of edge to select</li>
-    <li>"i" or "INSERT" key to insert path node </li>
-    <li>"x", "DEL" or "BACKSPACE" key to delete path node</li>
-    <li>"a" or "+" key - add new path node or path segment</li>
-    <li>"ESC" key to end path editing</li>
-  </ul>
-</p>
+        <!-- Path Editing -->
+        <div class="help-category">
+            <div class="category-header">
+                <div class="category-icon">
+                    {% icon "path" size="sm" color="primary" %}
+                </div>
+                <h6 class="category-title">Path Editing</h6>
+            </div>
+            <ul class="help-actions">
+                <li>
+                    <span class="action-method">Click</span>
+                    <span class="action-description">Select area</span>
+                </li>
+                <li>
+                    <span class="action-method">Drag Points</span>
+                    <span class="action-description">Change shape</span>
+                </li>
+                <li>
+                    <span class="action-method">I/INSERT</span>
+                    <span class="action-description">Insert path node</span>
+                </li>
+                <li>
+                    <span class="action-method">X/DEL</span>
+                    <span class="action-description">Delete path node</span>
+                </li>
+                <li>
+                    <span class="action-method">A/+</span>
+                    <span class="action-description">Add new segment</span>
+                </li>
+                <li>
+                    <span class="action-method">ESC</span>
+                    <span class="action-description">End path editing</span>
+                </li>
+            </ul>
+        </div>
+    </div>
 
-<div class="h3">Notes</div>
-<p>
-  <ul>
-    <li>Background edits of view only saved when the "View" editing pane is showing.</li>
-  </ul>
-</p>
+    <div class="help-note">
+        <div class="note-header">
+            {% icon "info-circle" size="sm" color="secondary" %}
+            <h6 class="note-title">Important Note</h6>
+        </div>
+        <p class="note-content">
+            Background edits are only saved when the "View" editing pane is showing.
+        </p>
+    </div>
+</div>
 
 {% endblock %}

@@ -42,7 +42,14 @@ AVAILABLE_ICONS = {
     'close',
     'upload',
     'eye',
-    'eye-off'
+    'eye-off',
+    'move',
+    'zoom',
+    'rotate',
+    'path',
+    'info-circle',
+    'rocket',
+    'question-circle'
 }
 
 # Define available sizes

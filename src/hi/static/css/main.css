@@ -811,8 +811,7 @@ g[hover] {
     border-bottom: 1px solid var(--line-color);
 }
 
-.getting-started-guide .guide-header i {
-    font-size: 1.2rem;
+.getting-started-guide .guide-header .hi-icon {
     margin-right: 0.5rem;
 }
 
@@ -890,11 +889,150 @@ g[hover] {
     border: 1px solid var(--line-color);
 }
 
-.getting-started-guide .help-hint i {
+.getting-started-guide .help-hint .hi-icon {
     margin-right: 0.5rem;
-    font-size: 0.9rem;
 }
 
 .getting-started-guide .help-hint small {
     color: var(--muted-color);
+}
+
+/* ================================= */
+/* Editing Help Modal Styles        */
+/* ================================= */
+
+.editing-help-guide {
+    font-size: 0.9rem;
+}
+
+.editing-help-guide .guide-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--line-color);
+}
+
+.editing-help-guide .guide-header h5 {
+    margin: 0;
+    color: var(--black);
+    font-weight: 600;
+}
+
+.editing-help-categories {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.editing-help-guide .help-category {
+    background: var(--white);
+    border: 1px solid var(--line-color);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    transition: all 0.2s ease;
+}
+
+.editing-help-guide .help-category:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+}
+
+.editing-help-guide .category-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--edit-tertiary-bg-color);
+}
+
+.editing-help-guide .category-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--edit-primary-bg-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.editing-help-guide .category-title {
+    font-weight: 600;
+    margin: 0;
+    color: var(--black);
+    font-size: 1rem;
+}
+
+.editing-help-guide .help-actions {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.editing-help-guide .help-actions li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0;
+    border-bottom: 1px solid var(--edit-tertiary-bg-color);
+}
+
+.editing-help-guide .help-actions li:last-child {
+    border-bottom: none;
+}
+
+.editing-help-guide .action-method {
+    font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    background: var(--edit-tertiary-bg-color);
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--primary-highlight-color);
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.editing-help-guide .action-description {
+    flex: 1;
+    color: var(--muted-color);
+    font-size: 0.85rem;
+}
+
+.editing-help-guide .help-note {
+    padding: 1rem;
+    background: var(--edit-secondary-bg-color);
+    border-radius: 0.5rem;
+    border-left: 4px solid var(--secondary-color);
+}
+
+.editing-help-guide .note-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.editing-help-guide .note-title {
+    font-weight: 600;
+    color: var(--black);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.editing-help-guide .note-content {
+    margin: 0;
+    color: var(--muted-color);
+    font-size: 0.9rem;
+}
+
+/* Responsive behavior for smaller modals */
+@media (max-width: 768px) {
+    .editing-help-guide .editing-help-categories {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
 }
