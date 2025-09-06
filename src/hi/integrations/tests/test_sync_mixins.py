@@ -2,14 +2,17 @@
 Unit tests for IntegrationSyncMixin.
 """
 
+import logging
+
 from django.test import TestCase, TransactionTestCase
 
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
 from hi.apps.common.processing_result import ProcessingResult
-
 from hi.integrations.sync_mixins import IntegrationSyncMixin
+
+logging.disable(logging.CRITICAL)
 
 
 class TestSynchronizer(IntegrationSyncMixin):

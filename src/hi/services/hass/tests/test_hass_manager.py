@@ -1,3 +1,4 @@
+import logging
 import threading
 from unittest.mock import Mock, patch
 from django.test import TestCase
@@ -10,6 +11,8 @@ from hi.services.hass.enums import HassAttributeType
 from hi.services.hass.hass_client import HassClient
 from hi.services.hass.hass_manager import HassManager
 from hi.services.hass.hass_metadata import HassMetaData
+
+logging.disable(logging.CRITICAL)
 
 
 class TestHassManagerSingleton(TestCase):

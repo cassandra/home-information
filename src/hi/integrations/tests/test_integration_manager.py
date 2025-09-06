@@ -3,18 +3,21 @@ Unit tests for IntegrationManager.
 """
 
 import asyncio
+import logging
 import threading
 from unittest.mock import Mock, AsyncMock, patch
+
 from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeType, AttributeValueType
-
 from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.integration_data import IntegrationData
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.models import Integration, IntegrationAttribute
 from hi.integrations.transient_models import IntegrationMetaData, IntegrationKey
 from hi.integrations.enums import IntegrationAttributeType
+
+logging.disable(logging.CRITICAL)
 
 
 class MockIntegrationAttributeType(IntegrationAttributeType):

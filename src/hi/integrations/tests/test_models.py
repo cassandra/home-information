@@ -2,13 +2,16 @@
 Unit tests for Integration models.
 """
 
+import logging
+
 from django.test import TestCase, TransactionTestCase
 from django.db import IntegrityError, transaction, models
 
 from hi.apps.attribute.enums import AttributeType, AttributeValueType
-
 from hi.integrations.models import Integration, IntegrationAttribute, IntegrationDetailsModel
 from hi.integrations.transient_models import IntegrationKey, IntegrationDetails
+
+logging.disable(logging.CRITICAL)
 
 
 class ConcreteIntegrationDetailsModel(IntegrationDetailsModel):

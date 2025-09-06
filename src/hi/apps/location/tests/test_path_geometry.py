@@ -1,9 +1,12 @@
+import logging
 from django.test import TestCase
 
 from hi.apps.entity.enums import EntityType
 from hi.apps.collection.enums import CollectionType
 from hi.apps.location.models import Location, LocationView
 from hi.apps.location.path_geometry import PathGeometry
+
+logging.disable(logging.CRITICAL)
 
 
 class TestPathGeometry(TestCase):

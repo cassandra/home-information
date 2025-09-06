@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime
 from unittest.mock import patch
 
@@ -11,6 +12,8 @@ from hi.apps.sense.models import Sensor, SensorHistory
 from hi.apps.sense.sensor_history_manager import SensorHistoryManager
 from hi.apps.sense.transient_models import SensorResponse
 from hi.integrations.transient_models import IntegrationKey
+
+logging.disable(logging.CRITICAL)
 
 
 class AsyncSensorHistoryManagerTestCase(AsyncTaskTestCase):

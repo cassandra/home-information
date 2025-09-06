@@ -2,10 +2,11 @@
 Integration tests for WeatherManager and DailyWeatherTracker.
 Tests the complete flow of temperature tracking and fallback value population.
 """
+import asyncio
+import logging
 import unittest
 from unittest.mock import patch
 from datetime import datetime
-import asyncio
 
 from django.core.cache import cache
 from django.utils import timezone
@@ -16,6 +17,8 @@ from hi.apps.weather.transient_models import WeatherConditionsData, NumericDataP
 from hi.apps.weather.weather_data_source import WeatherDataSource
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
+
+logging.disable(logging.CRITICAL)
 
 
 class MockWeatherDataSource(WeatherDataSource):

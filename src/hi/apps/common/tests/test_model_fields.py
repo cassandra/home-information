@@ -1,12 +1,15 @@
 """
 Tests for custom Django model fields.
 """
+import logging
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.test import TestCase
 
 from hi.apps.common.enums import LabeledEnum
 from hi.apps.common.model_fields import LabeledEnumField, NullableLabeledEnumField
+
+logging.disable(logging.CRITICAL)
 
 
 class TestEnum(LabeledEnum):

@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 
 from django.utils import timezone
@@ -9,6 +10,8 @@ from hi.apps.sense.models import Sensor, SensorHistory
 from hi.apps.sense.transient_models import SensorResponse
 from hi.integrations.transient_models import IntegrationKey
 from hi.testing.base_test_case import BaseTestCase
+
+logging.disable(logging.CRITICAL)
 
 
 class TestSensorResponse(BaseTestCase):

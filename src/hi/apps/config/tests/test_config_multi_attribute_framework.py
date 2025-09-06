@@ -4,6 +4,7 @@ Multi-instance attribute editing framework tests for config module.
 These tests are specifically designed for the config module's multi-edit architecture,
 where multiple subsystems are edited simultaneously.
 """
+import logging
 from typing import List, Dict, Any
 
 from hi.testing.base_test_case import MockRequest, MockSession
@@ -30,6 +31,8 @@ from hi.apps.config.subsystem_attribute_edit_context import (
     SubsystemAttributePageEditContext,
 )
 from hi.apps.config.tests.synthetic_data import SubsystemAttributeSyntheticData
+
+logging.disable(logging.CRITICAL)
 
 
 class SubsystemMultiAttributeEditFormHandlerTest(AttributeMultiEditFormHandlerTestMixin, BaseTestCase):

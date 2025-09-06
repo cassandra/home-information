@@ -1,3 +1,4 @@
+import logging
 from django.test import TestCase
 from unittest.mock import patch
 from datetime import datetime
@@ -7,6 +8,8 @@ from hi.apps.weather.interval_data_manager import IntervalDataManager
 from hi.apps.weather.transient_models import (
     WeatherForecastData, DataPointSource, IntervalEnvironmentalData, TimeInterval
 )
+
+logging.disable(logging.CRITICAL)
 
 
 class IntervalUpdatingTest(TestCase):

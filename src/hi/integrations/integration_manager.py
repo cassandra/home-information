@@ -14,7 +14,6 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.common.module_utils import import_module_safe
 
 from .enums import IntegrationAttributeType
-from .forms import IntegrationAttributeRegularFormSet
 from .integration_data import IntegrationData
 from .integration_gateway import IntegrationGateway
 from .transient_models import IntegrationKey

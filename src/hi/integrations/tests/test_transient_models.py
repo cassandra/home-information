@@ -2,10 +2,11 @@
 Unit tests for transient models (dataclasses and key parsing logic).
 """
 
+import logging
+
 from django.test import TestCase
 
 from hi.apps.attribute.enums import AttributeValueType
-
 from hi.integrations.transient_models import (
     IntegrationKey, 
     IntegrationDetails, 
@@ -13,6 +14,8 @@ from hi.integrations.transient_models import (
     IntegrationMetaData
 )
 from hi.integrations.enums import IntegrationAttributeType
+
+logging.disable(logging.CRITICAL)
 
 
 class MockIntegrationAttributeType(IntegrationAttributeType):

@@ -718,15 +718,17 @@ class HassConverter:
         
         if is_controllable:
             # Create controller and store payload
-            entity_state = cls._create_controller_from_entity_state_type(
+            controller = cls._create_controller_from_entity_state_type(
                 entity_state_type, entity, integration_key_for_storage, name, domain_payload
             )
+            entity_state = controller.entity_state
         else:
             # Create sensor and store payload  
-            entity_state = cls._create_sensor_from_entity_state_type(
+            sensor = cls._create_sensor_from_entity_state_type(
                 entity_state_type, entity, integration_key_for_storage, name, domain_payload
             )
-        
+            entity_state = sensor.entity_state
+            
         return entity_state
 
     @classmethod
@@ -777,12 +779,13 @@ class HassConverter:
         return (domain, entity_state_type) in cls.CONTROL_SERVICE_MAPPING
 
     @classmethod  
-    def _create_controller_from_entity_state_type( cls,
-                                                   entity_state_type : EntityStateType, 
-                                                   entity            : Entity,
-                                                   integration_key   : IntegrationKey, 
-                                                   name              : str,
-                                                   domain_payload    : dict ):
+    def _create_controller_from_entity_state_type(
+            cls,
+            entity_state_type : EntityStateType, 
+            entity            : Entity,
+            integration_key   : IntegrationKey, 
+            name              : str,
+            domain_payload    : dict ):
         """Create appropriate controller based on EntityStateType"""
         
         if entity_state_type == EntityStateType.ON_OFF:

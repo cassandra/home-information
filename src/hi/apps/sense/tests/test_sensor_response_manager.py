@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from unittest.mock import Mock, patch
 from django.utils import timezone
@@ -8,6 +9,8 @@ from hi.apps.sense.models import Sensor, SensorHistory
 from hi.apps.sense.sensor_response_manager import SensorResponseManager
 from hi.apps.sense.transient_models import SensorResponse
 from hi.integrations.transient_models import IntegrationKey
+
+logging.disable(logging.CRITICAL)
 
 
 class AsyncSensorResponseManagerTestCase(AsyncTaskTestCase):
