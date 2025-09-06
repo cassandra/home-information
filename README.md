@@ -4,94 +4,130 @@
 
 **Finally, a single place for all your home's information.**
 
-An application to visually organize data about your home and the things in it. Add and position items on the screen and then attach notes, manuals, links, maintenance and repair histories or any other information for easy visual reference. Optionally integrates with security and home automation systems for a single view of all your home-related information.
+Home Information transforms how you manage your property by creating a visual, centralized hub for everything about your home. Instead of hunting through drawers, email attachments, and scattered notes, you'll have manuals, maintenance records, device controls, and security monitoring all organized exactly where they belong - visually positioned on a map of your home.
 
 <img src="docs/img/screenshot-kitchen.png" alt="Kitchen Example" width="250"> <img src="docs/img/screenshot-security.png" alt="Security Example" width="250"> <img src="docs/img/screenshot-cameras.png" alt="Camera Example" width="250">
 
-See the [Features Page](docs/Features.md) for more details on what this app can do.
+## Why Home Information?
 
-You can also see the [Getting Started Page](docs/GettingStarted.md) to get a feel for how it looks and works.
+**The Problem:** Home automation and security systems give you device control, but they don't help you organize the information that makes your home truly manageable. Where did you put the HVAC manual? When was the water heater last serviced? Which camera covers the back door?
 
-## Project Status
+**Our Solution:** A spatial, visual approach to home information management that mirrors how you actually think about your home - by location and context, not by device type or vendor.
 
-We are looking for early adopters. The software is functional with all the major features now implemented.  It lacks having enough usage to work out the kinks.  We've added better styling to some parts of the app, but other visuals still need to be improved.
+**Perfect for:**
+- **Homeowners** who want to stay organized and maintain their property effectively
+- **Tech-savvy households** ready to move beyond scattered digital notes and files
+- **People with integrated homes** using security systems, home automation, or smart devices
 
-# Installation / Running
+See [Why Home Information?](docs/WhyHomeInformation.md) for more details on our approach.
 
-## Requirements
+## Quick Start
 
-- Python 3.8+ - installed
-- Docker - installed and running
+**Ready to try it?** Get running in under 5 minutes:
 
-## Install and Run (Quick Start)
+### Requirements
+- Docker installed and running
+- Basic command line familiarity
 
-_For those that want to run, use and/or explore the application.
+### Installation
+```shell
+# Download latest release
+curl -L https://github.com/cassandra/home-information/releases/latest/download/home-information.zip -o home-information.zip
+unzip home-information.zip && cd home-information*
 
-Download the latest release from: https://github.com/cassandra/home-information/releases/latest and unzip or untar it.
-``` shell
-unzip ~/Downloads/home-information-*.zip 
-cd home-information*
+# Setup and run
 make env-build
 make docker-build
 make docker-run-fg
 ```
-See the [Installation Page](docs/Installation.md) for more details and troubleshooting.
 
-## Running
+**Then visit:** [http://localhost:9411](http://localhost:9411)
 
-Run in the foreground with:
-``` shell
-make docker-run-fg
-```
-or in the background with:
-``` shell
-make docker-run
-```
+**New to the interface?** Follow the [Getting Started Guide](docs/GettingStarted.md) for a walkthrough.
 
-Then visit: [http://localhost:9411](http://localhost:9411) and the [Getting Started Page](docs/GettingStarted.md).
+**Need help?** Check our [FAQ](docs/FAQ.md) for common questions or see [Installation](docs/Installation.md) for detailed setup and troubleshooting.
 
-# Development
+## What You Can Do
 
-_For those that are interested in contributing or just peeking under the hood.
+**Information Management:**
+- Upload and organize manuals, warranties, and documents by location
+- Track maintenance histories and repair records
+- Store notes and specifications for every item in your home
 
-## Requirements
+**Visual Organization:**
+- Position items exactly where they belong on floor plans or property maps
+- Create multiple views (whole house, kitchen only, security zones, etc.)
+- Upload custom background images of your actual property
 
-- Python 3.11 (or higher) - installed
+**Home Automation Integration:**
+- Control lights, switches, and devices through [Home Assistant](docs/Integrations.md)
+- Monitor device states and histories
+- Set up automated rules and triggers
 
-## Tech Stack
+**Security & Monitoring:**
+- Integrate with [ZoneMinder](docs/Integrations.md) for camera management
+- Visual security zone monitoring with color-coded status
+- Email alerts and customizable alarm sounds
+- Browse video event histories
 
-- Django 4.2
-- Javascript using jQuery 3.7
-- Bootstrap 4 (CSS)
-- SQLite (database)
-- Redis (caching)
+See the complete [Features List](docs/Features.md) for details.
 
-## Development Setup Overview
+## Project Status
 
-Setting up for local development, in brief, looks like this:
-``` shell
-# Fork the repo: https://github.com/cassandra/home-information
+**Ready for Early Adopters** - All core features are implemented and functional. We're looking for users who want to help refine the experience and identify areas for improvement.
 
-# Clone your fork
-git clone https://github.com/${YOURUSERNAME}/home-information.git
+**What's Working:**
+- Full information management and visual organization
+- Home Assistant and ZoneMinder integrations
+- Security monitoring and alerts
+- Multi-location and multi-view support
 
-cd home-information
-./deploy/dev-setup.sh
-```
+**What's Evolving:**
+- UI polish in some areas (fully functional, but could be prettier)
+- Additional integrations based on user demand
+- Mobile experience optimization
 
-See the [Contributing](CONTRIBUTING.md) and [Development](docs/Development.md) pages for more details.
+## Contributing
+
+We welcome all types of contributions:
+
+**Users:** Try the app and share your experience - what works, what doesn't, what's missing
+
+**Developers:** Help improve the codebase. Built with Django, JavaScript, and Bootstrap. See [Development](docs/Development.md).
+
+**Designers:** Help us improve the user experience and visual design. We'd love your input on making this more intuitive and beautiful.
+
+**Home Automation Experts:** Help us understand what integrations would be most valuable.
+
+See [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+## Architecture & Security
+
+- **Local-first:** Your data stays on your network. No cloud services required.
+- **Integration-friendly:** Designed to work with existing home automation and security systems
+- **Docker-based:** Consistent deployment across platforms
+- **Django backend:** Mature, secure web framework
+- **SQLite storage:** Simple, reliable data management
+
+For technical details, see our [Development Documentation](docs/Development.md).
 
 ---
 
-# Resources
+## Resources
 
-- [Installation](docs/Installation.md)
-- [Getting Started](docs/GettingStarted.md)
-- [Features](docs/Features.md)
-- [Development](docs/Development.md)
-- [Integrations](docs/Integrations.md)
-- [Contributing](CONTRIBUTING.md)
-- [Code of Conduct](CODE_OF_CONDUCT.md)
-- [Security](SECURITY.md)
-- [ChangeLog](CHANGELOG.md)
-- [License](LICENSE.md)
+### Users
+- [Installation](docs/Installation.md) - Complete setup instructions
+- [FAQ](docs/FAQ.md) - Common questions and answers
+- [Getting Started](docs/GettingStarted.md) - First-time user walkthrough  
+- [Features](docs/Features.md) - Complete feature overview
+- [Integrations](docs/Integrations.md) - Home Assistant and ZoneMinder setup
+
+### Contributors  
+- [Contributing](CONTRIBUTING.md) - How to get involved
+- [Development](docs/Development.md) - Technical setup and guidelines
+- [Code of Conduct](CODE_OF_CONDUCT.md) - Community standards
+- [Security](SECURITY.md) - Security policy and reporting
+
+### Project
+- [ChangeLog](CHANGELOG.md) - Release history
+- [License](LICENSE.md) - MIT License terms

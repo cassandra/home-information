@@ -149,6 +149,8 @@ If you use any of the built-in integrations, so additional changes may be needed
 
 ## Troubleshooting
 
+For common questions, see the [FAQ](FAQ.md). For specific troubleshooting:
+
 ### Emails (if enabled)
 
 Email settings can be adjusted in env file with these settings:
