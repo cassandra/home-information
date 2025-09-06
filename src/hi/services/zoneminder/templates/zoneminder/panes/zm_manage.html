@@ -10,7 +10,7 @@
     <form action="{% url 'zm_sync' %}"
         method="POST" role="form" data-async="">
       {% csrf_token %}
-      <button type="submit" class="btn btn btn-secondary" role="button"
+      <button type="submit" class="btn btn btn-outline-secondary" role="button"
               name="action" value="sync" >
         {% if has_entities %}
         RE-SYNC

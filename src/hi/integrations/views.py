@@ -21,7 +21,7 @@ from .view_mixins import IntegrationViewMixin
 logger = logging.getLogger(__name__)
 
 
-class IntegrationHomeView( ConfigPageView ):
+class IntegrationHomeView( ConfigPageView, IntegrationViewMixin ):
 
     def config_page_type(self) -> ConfigPageType:
         return ConfigPageType.INTEGRATIONS
@@ -40,7 +40,7 @@ class IntegrationHomeView( ConfigPageView ):
         raise ForceRedirectException( redirect_url )
 
     
-class IntegrationSelectView( HiModalView ):
+class IntegrationSelectView( HiModalView, IntegrationViewMixin ):
 
     def get_template_name( self ) -> str:
         return 'integrations/modals/integrations_select.html'
