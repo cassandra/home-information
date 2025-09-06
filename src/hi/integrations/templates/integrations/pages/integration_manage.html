@@ -3,11 +3,12 @@
 {% block config_content %}
 <div id="hi-integration-settings" class="row">
   <nav class="nav flex-column hi-vertical-nav">
-    <div class="mx-auto mt-2">
-      <a class="btn btn-secondary" role="button"
+    <div class="hi-vertical-nav-header">
+      <h6 class="text-muted mb-2">INTEGRATIONS</h6>
+      <a class="btn btn-sm btn-outline-secondary w-100" role="button"
          href="{% url 'integrations_select' %}"
          data-async="modal">
-        MANAGE
+        <i class="fas fa-cog mr-1"></i>Manage
       </a>
     </div>
     {% for integration_data in core.integration_data_list %}
