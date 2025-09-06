@@ -1,30 +1,46 @@
-{% extends "modals/action_with_cancel.html" %}
+{% extends "modals/base.html" %}
+{% load icons %}
 
-{% block preamble %}
-<form action="{% url 'integrations_enable' integration_id=integration_data.integration_id %}" method="post" enctype="multipart/form-data"
-      class="form" data-async="modal">
-  {% csrf_token %}
-  {% endblock %}
+{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+{% block title_text %}{{ integration_data.label }} Integration{% endblock %}
 
-  {% block title_text %}
-  {{ integration_data.label }}
-  {% endblock %}
-
-  {% block body %}
-  <h4>Enable {{ integration_data.label }} Integration?</h4>
-
-  <div>
-    {% include "attribute/panes/attribute_form.html" with attribute_formset=integration_attribute_formset %}
+{% block body %}
+<!-- Root container for this attribute editing context -->
+<div id="{{ attr_page_context.container_html_id }}" 
+     class="{{ DIVID.ATTR_V2_CONTAINER_CLASS }}">
+  
+  <div class="{{ DIVID.ATTR_V2_FORM_CLASS }}">
+    <form id="{{ attr_page_context.form_html_id }}" 
+          action="{% url 'integrations_enable' integration_id=integration_data.integration_id %}" 
+          method="post" 
+          class="{{ DIVID.ATTR_V2_FORM_CLASS }} form" 
+          enctype="multipart/form-data">
+      {% csrf_token %}
+      
+      <!-- Main content wrapper for updates -->
+      <div id="{{ attr_page_context.content_html_id }}"
+           class="{{ DIVID.ATTR_V2_CONTENT_CLASS }}">
+        {% include "integrations/panes/integration_edit_content_body.html" with show_modal_cancel=True %}
+      </div>
+    </form>
   </div>
-  {% endblock %}
-  
-  {% block action_right %}
-  <button id="hi-integration-enable" type="submit" class="btn btn-lg btn-success"
-	  name="action" value="enable">
-    ENABLE
-  </button>
-  {% endblock %}
-  
-  {% block postamble %}
-</form>
+
+  <!-- Success/Error Messages -->
+  {% if messages %}
+    <div class="{{ DIVID.ATTR_V2_MESSAGES }}" id="{{ DIVID.ATTR_V2_MESSAGES }}">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block footer %}
+<!-- No footer - sticky panel contains all actions -->
 {% endblock %}

@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 from django.test import TestCase
@@ -7,6 +8,8 @@ from hi.apps.entity.enums import EntityStateValue
 
 from hi.services.zoneminder.monitors import ZoneMinderMonitor  
 from hi.services.zoneminder.zm_models import ZmEvent, AggregatedMonitorState
+
+logging.disable(logging.CRITICAL)
 
 
 class TestZoneMinderMonitorEventAggregation(TestCase):

@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from unittest.mock import Mock, patch, call
 from django.test import TestCase
@@ -11,6 +12,8 @@ from hi.integrations.transient_models import IntegrationKey
 
 from hi.services.zoneminder.zm_sync import ZoneMinderSynchronizer
 from hi.services.zoneminder.zm_metadata import ZmMetaData
+
+logging.disable(logging.CRITICAL)
 
 
 class TestZoneMinderSynchronizerLockBehavior(TestCase):

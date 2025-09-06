@@ -2,14 +2,17 @@
 Unit tests for EntityUserDataDetector utility.
 """
 
+import logging
+
 from django.test import TestCase
+from django.db import IntegrityError
 
 from hi.apps.entity.models import Entity, EntityAttribute, EntityState
 from hi.apps.sense.models import Sensor
 from hi.apps.control.models import Controller
-
 from hi.integrations.user_data_detector import EntityUserDataDetector
-from django.db import IntegrityError
+
+logging.disable(logging.CRITICAL)
 
 
 class EntityUserDataDetectorTestCase(TestCase):

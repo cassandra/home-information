@@ -1,0 +1,20 @@
+{% extends "attribute/components/edit_content_body.html" %}
+{% load icons %}
+{% load attribute_extras %}
+
+{% block basic_info %}{% endblock %}
+
+{% block additional_actions %}
+{% if show_modal_cancel %}
+<a id="hi-modal-cancel" role="button" {% if autofocus %}autofocus="autofocus"{% endif %}
+   class="btn btn-tertiary" href="#" data-dismiss="modal">
+  {% icon "cancel" size="sm" css_class="hi-icon-left" %}CANCEL
+</a>
+{% endif %}
+{% endblock %}
+
+{% block file_upload_button %}{% endblock %}
+
+{% block add_attribute_button %}{% endblock %}
+
+{% block files_section %}{% endblock %}

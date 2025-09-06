@@ -1,3 +1,4 @@
+import logging
 from django.test import TestCase
 from unittest.mock import patch
 from datetime import datetime
@@ -5,6 +6,8 @@ import pytz
 
 from hi.apps.weather.interval_data_manager import IntervalDataManager
 from hi.apps.weather.transient_models import WeatherForecastData, WeatherHistoryData
+
+logging.disable(logging.CRITICAL)
 
 
 class TimezoneIntervalTest(TestCase):

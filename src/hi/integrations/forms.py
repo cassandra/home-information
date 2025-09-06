@@ -1,6 +1,6 @@
 from django import forms
 
-from hi.apps.attribute.forms import AttributeForm
+from hi.apps.attribute.forms import AttributeForm, RegularAttributeBaseFormSet
 
 from .models import Integration, IntegrationAttribute
 
@@ -10,10 +10,11 @@ class IntegrationAttributeForm( AttributeForm ):
         model = IntegrationAttribute
 
     
-IntegrationAttributeFormSet = forms.inlineformset_factory(
+IntegrationAttributeRegularFormSet = forms.inlineformset_factory(
     Integration,
     IntegrationAttribute,
     form = IntegrationAttributeForm,
+    formset = RegularAttributeBaseFormSet,
     extra = 0,
     max_num = 100,
     absolute_max = 100,

@@ -2,34 +2,74 @@
 
 {% block config_content %}
 <div id="hi-integration-settings" class="row">
-  <nav class="nav flex-column">
+  <nav class="nav flex-column hi-vertical-nav">
+    <div class="hi-vertical-nav-header">
+      <h6 class="text-muted mb-2">INTEGRATIONS</h6>
+      <a class="btn btn-sm btn-outline-secondary w-100" role="button"
+         href="{% url 'integrations_select' %}"
+         data-async="modal">
+        <i class="fas fa-cog mr-1"></i>Manage
+      </a>
+    </div>
     {% for integration_data in core.integration_data_list %}
-    <a class="nav-link {% if core.integration_data.integration_id == integration_data.integration_id %}active{% endif %}"
+    <a class="nav-link hi-vertical-nav-link {% if core.integration_data.integration_id == integration_data.integration_id %}active{% endif %}"
        href="{% url 'integrations_manage' integration_id=integration_data.integration_id %}"
        data-async="true">
-      <div class="bg-primary p-2 text-center">
-	{{ integration_data.label }}
-      </div>
+      {{ integration_data.label }}
     </a>
     {% endfor %}
   </nav>
   <div class="flex-colum flex-grow-1">
     <div class="tab-content m-3">
-      <div class="d-flex justify-content-between">
-	<div class="h3">{{ core.integration_data.label }}</div>
-	<div>
-	  <a class="btn btn-primary" role="button"
-	     href="{% url 'integrations_select' %}"
-	     data-async="modal">
-	    SELECT INTEGRATIONS
-	  </a>
-	</div>
+
+      <!-- Root container for this attribute editing context -->
+      <div id="{{ attr_item_context.container_html_id }}" 
+           class="{{ DIVID.ATTR_V2_CONTAINER_CLASS }}" >
+        
+        <div class=" border-bottom mb-2 pb-2">
+          {% include core.manage_view_template_name %}
+        </div>
+
+        <div class="{{ DIVID.ATTR_V2_FORM_CLASS }}">
+          <form id="{{ attr_item_context.form_html_id }}" 
+                action="{% url 'integrations_manage' integration_id=integration.integration_id %}" 
+                method="post" 
+                class="{{ DIVID.ATTR_V2_FORM_CLASS }} form" 
+                enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <!-- Main content wrapper for updates -->
+            <div id="{{ attr_item_context.content_html_id }}"
+                 class="{{ DIVID.ATTR_V2_CONTENT_CLASS }}">
+              {% include "integrations/panes/integration_edit_content_body.html" %}
+            </div>
+          </form>
+        </div>
+
+        <!-- Success/Error Messages -->
+        {% if messages %}
+        <div class="{{ DIVID.ATTR_V2_MESSAGES }}" id="{{ DIVID.ATTR_V2_MESSAGES }}">
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
       </div>
-      
-      {% block integration_content %}
-      {% include core.manage_view_pane_template_name %}
-      {% endblock %}
+
     </div>
   </div>
 </div>
+
+<script>
+ // Initialize this specific container (for async-loaded content)
+ if (window.Hi && window.Hi.attr && window.Hi.attr.initializeContainer) {
+   window.Hi.attr.initializeContainer('#{{ attr_item_context.container_html_id }}');
+ }
+</script>
 {% endblock %}
+

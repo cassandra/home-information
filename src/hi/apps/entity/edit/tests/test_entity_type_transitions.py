@@ -2,6 +2,7 @@
 Tests for EntityType transition handling functionality.
 Focus on actual behavior and database state changes per testing guidelines.
 """
+import logging
 from decimal import Decimal
 
 from django.db import transaction
@@ -11,6 +12,8 @@ from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.enums import EntityType, EntityTransitionType
 from hi.apps.entity.models import Entity, EntityPath, EntityPosition
 from hi.apps.location.models import Location, LocationView
+
+logging.disable(logging.CRITICAL)
 
 
 class TestEntityTypeTransitions(TransactionTestCase):

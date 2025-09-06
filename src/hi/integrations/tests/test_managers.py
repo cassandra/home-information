@@ -1,6 +1,7 @@
 """
 Unit tests for IntegrationDetailsManager.
 """
+import logging
 
 from django.test import TransactionTestCase
 from django.db import models, connection
@@ -8,6 +9,8 @@ from django.db import models, connection
 from hi.integrations.managers import IntegrationDetailsManager
 from hi.integrations.models import IntegrationDetailsModel
 from hi.integrations.transient_models import IntegrationKey
+
+logging.disable(logging.CRITICAL)
 
 
 class ManagerTestModel(IntegrationDetailsModel):

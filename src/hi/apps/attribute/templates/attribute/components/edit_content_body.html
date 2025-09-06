@@ -1,35 +1,45 @@
 {% load icons %}
 {% comment %}
 Generic V2 Content Body Fragment
-Contains the main content area - used by both initial load and antinode updates
+Contains the main content area - used by both initial load and updates
 Includes: owner info (when provided), action bar, and scrollable content
 
 This template works generically for Entity, Location, and future attribute-owning models
 by using the AttributeItemEditContext pattern.
 {% endcomment %}
 
+
+<div class="d-flex mt-3">
+  <div class="flex-column">
+    {% block left_column %} 
+    {% endblock %}
+  </div>
+  <div class="flex-column flex-grow-1">
+
+
 <!-- Sticky Panel: Owner Info + Action Bar (always visible) -->
 <div class="{{ DIVID.ATTR_V2_STICKY_PANEL_CLASS }}">
   <!-- Basic Owner Information (minimal) - only if owner_form provided -->
-  {% if owner_form %}
-  {% if owner_form.non_field_errors %}
-  <div class="attr-v2-non-field-errors">
-    {% for err in owner_form.non_field_errors %}
-    <div class="attr-v2-error-item">{{ err }}</div>
-    {% endfor %}
-  </div>
-  {% endif %}
+
+  {% block basic_info %}
+  <div class="attr-v2-basic-info">
+    {% if owner_form %}
+    {% if owner_form.non_field_errors %}
+    <div class="attr-v2-non-field-errors">
+      {% for err in owner_form.non_field_errors %}
+      <div class="attr-v2-error-item">{{ err }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
   
-  <div class="attr-v2-entity-info">
-    {% block basic_info %}
-    <div class="{{ DIVID.ATTR_V2_BASIC_INFO_CLASS }}">
+    <div class="attr-v2-owner-fields }}">
       {% block owner_fields %}
       <!-- Subclasses should override this block to provide owner-specific fields -->
       {% endblock %}
     </div>
-    {% endblock %}
+    {% endif %}
   </div>
-  {% endif %}
+  {% endblock %}
   
   <div class="{{ DIVID.ATTR_V2_ACTION_BAR_CLASS }}">
     <div class="{{ DIVID.ATTR_V2_ACTION_BAR_CONTENT_CLASS }}">
@@ -40,7 +50,8 @@ by using the AttributeItemEditContext pattern.
                 class="btn btn-primary {{ DIVID.ATTR_V2_UPDATE_BTN_CLASS }}"
                 name="action" 
                 value="update">
-          {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
+          {% icon "save" size="sm" css_class="hi-icon-left" %}
+          {{ attr_page_context.update_button_label }}
         </button>
         <!-- Vertically stacked message areas -->
         <div class="attr-v2-message-stack">
@@ -79,14 +90,13 @@ by using the AttributeItemEditContext pattern.
     </div>
   </div>
 </div>
-
 <!-- Scrollable Content Area (below sticky panel) -->
 <div id="{{ attr_page_context.scrollable_content_html_id }}"
      class="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT_CLASS }}">
   
   <!-- Files Section -->
   {% block files_section %}
-    {% include "attribute/components/file_grid.html" with file_attributes=file_attributes %}
+  {% include "attribute/components/file_grid.html" with file_attributes=file_attributes %}
   {% endblock %}
   
   <!-- Properties Section -->
@@ -99,3 +109,12 @@ by using the AttributeItemEditContext pattern.
   {% endblock %}
   
 </div>
+
+
+
+
+  </div>
+</div>
+
+
+

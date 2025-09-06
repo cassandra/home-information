@@ -1,3 +1,4 @@
+import logging
 from unittest.mock import Mock, patch
 from django.test import TestCase
 
@@ -6,6 +7,8 @@ from hi.integrations.transient_models import IntegrationDetails, IntegrationKey
 from hi.services.zoneminder.zm_controller import ZoneMinderController
 from hi.services.zoneminder.zm_manager import ZoneMinderManager
 from hi.services.zoneminder.zm_metadata import ZmMetaData
+
+logging.disable(logging.CRITICAL)
 
 
 class TestZoneMinderControllerIntegrationKeyParsing(TestCase):

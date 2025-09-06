@@ -23,7 +23,7 @@
     {% endfor %}
   </div>
   {% empty %}
-  <div class="mt-3"><em>No items defined.</em></div>
+  {% include "edit/panes/no_entities_message.html" %}
   {% endfor %}
 
   {% if collection_view_group.item_list %}

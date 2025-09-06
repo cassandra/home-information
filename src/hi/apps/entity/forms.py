@@ -1,7 +1,6 @@
 from django import forms
 
-from hi.apps.attribute.forms import AttributeForm, AttributeUploadForm
-from hi.apps.attribute.enums import AttributeValueType
+from hi.apps.attribute.forms import AttributeForm, AttributeUploadForm, RegularAttributeBaseFormSet
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity, EntityAttribute
 
@@ -27,20 +26,6 @@ class EntityForm( forms.ModelForm ):
 class EntityAttributeForm( AttributeForm ):
     class Meta( AttributeForm.Meta ):
         model = EntityAttribute
-
-
-class RegularAttributeBaseFormSet(forms.BaseInlineFormSet):
-    """Base formset that automatically excludes FILE attributes for regular attribute editing"""
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Apply filtering after parent initialization
-        self.queryset = self.queryset.exclude(value_type_str=str(AttributeValueType.FILE))
-    
-    def get_queryset(self):
-        """Override to automatically filter out FILE attributes"""
-        queryset = super().get_queryset()
-        return queryset.exclude(value_type_str=str(AttributeValueType.FILE))
 
 
 EntityAttributeRegularFormSet = forms.inlineformset_factory(

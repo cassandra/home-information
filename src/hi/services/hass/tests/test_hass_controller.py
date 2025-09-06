@@ -1,9 +1,12 @@
+import logging
 from unittest.mock import Mock, patch
 from django.test import TestCase
 
 from hi.integrations.transient_models import IntegrationDetails, IntegrationKey, IntegrationControlResult
 
 from hi.services.hass.hass_controller import HassController
+
+logging.disable(logging.CRITICAL)
 
 
 class TestHassControllerBehaviorVerification(TestCase):

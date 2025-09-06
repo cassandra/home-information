@@ -14,7 +14,7 @@ Uses existing attr-v2-* components for consistency with Entity/Location editing.
           class="{{ DIVID.ATTR_V2_FORM_CLASS }} form">
       {% csrf_token %}
       
-      <!-- Main content wrapper for antinode updates -->
+      <!-- Main content wrapper for updates -->
       <div id="{{ attr_page_context.content_html_id }}" 
            class="{{ DIVID.ATTR_V2_CONTENT_CLASS }}">
         {% include "config/panes/subsystem_edit_content_body.html" %}

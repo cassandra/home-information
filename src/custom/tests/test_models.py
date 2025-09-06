@@ -1,7 +1,11 @@
+import logging
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from custom.models import CustomUser
+
+logging.disable(logging.CRITICAL)
 
 
 class UsersManagersTests(TestCase):

@@ -14,7 +14,6 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.common.module_utils import import_module_safe
 
 from .enums import IntegrationAttributeType
-from .forms import IntegrationAttributeFormSet
 from .integration_data import IntegrationData
 from .integration_gateway import IntegrationGateway
 from .transient_models import IntegrationKey
@@ -280,7 +279,7 @@ class IntegrationManager( Singleton ):
             integration_id = integration.integration_id,
             integration_name = str(attribute_type),
         )
-        IntegrationAttribute.objects.create(
+        attribute = IntegrationAttribute(
             integration = integration,
             name = attribute_type.label,
             value = attribute_type.initial_value,
@@ -291,18 +290,18 @@ class IntegrationManager( Singleton ):
             is_editable = attribute_type.is_editable,
             is_required = attribute_type.is_required,
         )
+        attribute.save( track_history = False )  # Do not want this initial value in history
         return
                 
-    def enable_integration( self,
-                            integration_data               : IntegrationData,
-                            integration_attribute_formset  : IntegrationAttributeFormSet ):
+    def enable_integration( self, integration_data : IntegrationData ):
         with self._data_lock:
             with transaction.atomic():
                 integration_data.integration.is_enabled = True
                 integration_data.integration.save()
-                integration_attribute_formset.save()
             self.refresh_integrations_from_db()
-            self._launch_integration_monitor_task( integration_data = integration_data )
+            self._launch_integration_monitor_task(
+                integration_data = integration_data,
+            )
         return
                 
     def disable_integration( self, integration_data : IntegrationData ):

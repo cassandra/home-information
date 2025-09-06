@@ -112,6 +112,10 @@ class AttributePageEditContext:
     def update_button_html_id(self) -> str:
         return f"{DIVID['ATTR_V2_UPDATE_BTN_ID']}{self.id_suffix}"
     
+    @property
+    def update_button_label(self) -> str:
+        return 'UPDATE'
+    
     def to_template_context(self) -> Dict[str, Any]:
         return {
             "attr_page_context": self,

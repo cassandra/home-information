@@ -1,3 +1,4 @@
+import logging
 import threading
 from datetime import timedelta
 from unittest.mock import Mock, patch
@@ -12,6 +13,8 @@ from hi.integrations.models import Integration, IntegrationAttribute
 from hi.services.zoneminder.enums import ZmAttributeType
 from hi.services.zoneminder.zm_manager import ZoneMinderManager
 from hi.services.zoneminder.zm_metadata import ZmMetaData
+
+logging.disable(logging.CRITICAL)
 
 
 class TestZoneMinderManagerSingleton(TestCase):

@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from unittest.mock import Mock, patch
 from django.test import TestCase
@@ -9,6 +10,8 @@ from hi.integrations.transient_models import IntegrationKey
 
 from hi.services.hass.hass_sync import HassSynchronizer
 from hi.services.hass.hass_models import HassDevice, HassState
+
+logging.disable(logging.CRITICAL)
 
 
 class TestHassSynchronizerInitialization(TestCase):

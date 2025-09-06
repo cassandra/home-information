@@ -59,6 +59,19 @@ class AttributeResponse:
             status=status_code,
         )
 
+    
+class AttributeRedirectResponse( HttpResponse ):
+
+    def __init__( self, url, *args, **kwargs ):
+        content = {
+            ResponseFields.REDIRECT: url,
+        }
+        super().__init__(
+            json.dumps( content ),
+            content_type = HTTPHeaders.APPLICATION_JSON,
+            status = 200,  # Do not make this a 3xx, else jQuery will handle it
+        )
+  
 
 class AttributeResponseBuilder:
     """

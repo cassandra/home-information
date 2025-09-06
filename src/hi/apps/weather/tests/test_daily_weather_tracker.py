@@ -2,6 +2,7 @@
 Unit tests for DailyWeatherTracker - daily weather statistics tracking.
 """
 import json
+import logging
 import unittest
 from datetime import datetime, timedelta
 from unittest.mock import patch
@@ -13,6 +14,8 @@ import pytz
 from hi.apps.weather.daily_weather_tracker import DailyWeatherTracker
 from hi.apps.weather.transient_models import WeatherConditionsData, NumericDataPoint, DataPointSource, Station
 from hi.units import UnitQuantity
+
+logging.disable(logging.CRITICAL)
 
 
 class TestDailyWeatherTracker(unittest.TestCase):

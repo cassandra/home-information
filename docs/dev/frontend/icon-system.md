@@ -165,6 +165,8 @@ Use for space-constrained areas with proper accessibility:
 
 ## Icon Parameters
 
+All icon CSS rules are defined in `src/hi/static/css/icons.css`.
+
 ### Size Options
 - `xs` - Extra small (12px)
 - `sm` - Small (16px) - **Most common**

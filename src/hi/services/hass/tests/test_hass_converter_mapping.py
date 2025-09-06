@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from django.test import TestCase
 from unittest.mock import Mock
@@ -10,6 +11,8 @@ from hi.apps.sense.models import Sensor
 from hi.integrations.transient_models import IntegrationKey
 from hi.services.hass.hass_converter import HassConverter
 from hi.services.hass.hass_models import HassApi, HassDevice
+
+logging.disable(logging.CRITICAL)
 
 
 class TestHassConverterMapping(TestCase):

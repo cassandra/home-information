@@ -1,6 +1,7 @@
 """
 Tests for WeatherAlertAlarmMapper - converting weather alerts to system alarms.
 """
+import logging
 from unittest.mock import patch
 from datetime import datetime, timedelta
 
@@ -19,6 +20,8 @@ from hi.apps.weather.enums import (
 from hi.apps.weather.transient_models import WeatherAlert
 from hi.apps.weather.weather_alert_alarm_mapper import WeatherAlertAlarmMapper
 from hi.testing.base_test_case import BaseTestCase
+
+logging.disable(logging.CRITICAL)
 
 
 class TestWeatherAlertAlarmMapper(BaseTestCase):

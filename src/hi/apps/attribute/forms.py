@@ -8,6 +8,24 @@ from hi.apps.common.utils import is_blank, str_to_bool
 from .enums import AttributeType, AttributeValueType
 
 
+class RegularAttributeBaseFormSet(forms.BaseInlineFormSet):
+    """Base formset that automatically excludes FILE attributes for regular attribute editing.
+    
+    This formset is used across all attribute-enabled modules (Entity, Location, Config)
+    to ensure FILE type attributes are handled separately from regular attributes.
+    """
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Apply filtering after parent initialization
+        self.queryset = self.queryset.exclude(value_type_str=str(AttributeValueType.FILE))
+    
+    def get_queryset(self):
+        """Override to automatically filter out FILE attributes"""
+        queryset = super().get_queryset()
+        return queryset.exclude(value_type_str=str(AttributeValueType.FILE))
+
+
 class AttributeForm( forms.ModelForm ):
     """
     Abstract mode form class the corresponds to the abstract model calss
@@ -42,10 +60,21 @@ class AttributeForm( forms.ModelForm ):
     @property
     def allow_reordering(self):
         return self._allow_reordering
+    
+    @property
+    def suppress_history(self):
+        return self._suppress_history
+    
+    @property
+    def show_secrets(self):
+        return self._show_secrets
         
     def __init__(self, *args, **kwargs):
         self._show_as_editable = kwargs.pop( 'show_as_editable', True )
         self._allow_reordering = kwargs.pop( 'allow_reordering', True )
+        self._suppress_history = kwargs.pop( 'suppress_history', False )
+        self._show_secrets = kwargs.pop( 'show_secrets', False )
+        
         instance = kwargs.get('instance')
         super().__init__(*args, **kwargs)
 

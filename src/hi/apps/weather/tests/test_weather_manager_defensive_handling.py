@@ -2,9 +2,10 @@
 Test that WeatherManager gracefully handles errors in daily weather tracking
 without breaking core weather API functionality.
 """
+import asyncio
+import logging
 from unittest.mock import patch
 from datetime import datetime
-import asyncio
 
 from django.core.cache import cache
 from django.utils import timezone
@@ -16,6 +17,8 @@ from hi.apps.weather.weather_data_source import WeatherDataSource
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
 from hi.testing.base_test_case import BaseTestCase
+
+logging.disable(logging.CRITICAL)
 
 
 class MockWeatherDataSource(WeatherDataSource):

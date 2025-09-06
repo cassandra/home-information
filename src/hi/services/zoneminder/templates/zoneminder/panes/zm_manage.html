@@ -1,13 +1,28 @@
+{% load static %}
 <div class="d-flex justify-content-between">
-  <div>
-    {% include "zoneminder/panes/zm_settings.html" %}
+  <div class="h3 integration-title">
+    <img class="img-fluid"
+         src="{% static 'img/integrations/zoneminder.png' %}"
+         alt="ZoneMinder Logo" \>
+    ZoneMinder
   </div>
-  <div class="my-4 py-4 mr-4 pr-4">
+  <div class="">
     <form action="{% url 'zm_sync' %}"
-	method="POST" role="form" data-async="">
+        method="POST" role="form" data-async="">
       {% csrf_token %}
-      <button type="submit" class="btn btn-lg btn-secondary" role="button"
-	      name="action" value="sync" >IMPORT ITEMS</button>
+      <button type="submit" class="btn btn btn-secondary" role="button"
+              name="action" value="sync" >
+        {% if has_entities %}
+        RE-SYNC
+        {% else %}
+        IMPORT
+        {% endif %}
+      </button>
     </form>
   </div>
 </div>
+{% if not has_entities %}
+<div class="alert alert-warning text-center">
+  Use the "IMPORT" button to add items from ZoneMinder.
+</div>
+{% endif %}

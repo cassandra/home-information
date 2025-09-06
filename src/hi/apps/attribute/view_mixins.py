@@ -119,6 +119,7 @@ class AttributeEditViewMixin( AttributeEditCommonMixin ):
                 edit_form_data = edit_form_data,
                 request = request,
             )
+        return
 
     def create_initial_template_context(
             self,

@@ -17,7 +17,7 @@
           enctype="multipart/form-data">
       {% csrf_token %}
       
-      <!-- Main content wrapper for antinode updates -->
+      <!-- Main content wrapper for updates -->
       <div id="{{ attr_page_context.content_html_id }}"
            class="{{ DIVID.ATTR_V2_CONTENT_CLASS }}">
         {% include "entity/panes/entity_edit_content_body.html" %}
@@ -45,9 +45,6 @@
     </div>
   {% endif %}
 </div>
-
-<!-- JavaScript for V2 functionality loaded via Django Pipeline js_before_content bundle -->
-
 {% endblock %}
 
 {% block footer %}

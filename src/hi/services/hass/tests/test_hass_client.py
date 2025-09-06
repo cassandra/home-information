@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from unittest.mock import Mock, patch
 from django.test import TestCase
@@ -6,6 +7,8 @@ from requests.exceptions import ConnectionError
 
 from hi.services.hass.hass_client import HassClient
 from hi.services.hass.hass_models import HassState
+
+logging.disable(logging.CRITICAL)
 
 
 class TestHassClientInitialization(TestCase):
