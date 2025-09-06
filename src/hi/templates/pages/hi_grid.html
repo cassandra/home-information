@@ -1,6 +1,10 @@
 {% extends "pages/base.html" %}
 {% load pipeline %}
 
+{% block header_post_javascript %}
+{% javascript 'js_hi_grid_header_content' %}
+{% endblock %}
+
 {% block content %}
 
 <div id="{{ DIVID.TOP }}" class="fixed-top" hi-edit="{{ request.view_parameters.is_editing }}">
@@ -15,12 +19,12 @@
   <div class="row">
     <div class="col-9 scrollable-column ">
       <div id="{{ DIVID.MAIN }}">
-	{% include main_template_name %}
+        {% include main_template_name %}
       </div>
     </div>
     <div class="col-3 fixed-column hi-side">
       <div id="{{ DIVID.SIDE }}">
-	{% include side_template_name %}
+        {% include side_template_name %}
       </div>
     </div>
   </div>

@@ -53,7 +53,7 @@ class ExceptionMiddleware(object):
 
     def process_request( self, request ):
         return None
-        
+    
     def process_exception( self, request, exception ):
         ip_address = request.META.get( 'HTTP_X_FORWARDED_FOR' )  # nginx forwarded
         logger.warning( f'Exception caught in middleware [{ip_address}]: {exception}' )

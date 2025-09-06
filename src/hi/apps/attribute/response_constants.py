@@ -29,7 +29,8 @@ class ResponseFields:
     TARGET = "target"
     HTML = "html"
     MODE = "mode"
-
+    REDIRECT = "redirect"
+    
 
 # HTTP Headers
 class HTTPHeaders:

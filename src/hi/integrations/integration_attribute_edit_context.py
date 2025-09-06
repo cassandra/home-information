@@ -78,3 +78,10 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
     def file_upload_url(self) -> str:
         # No file uploads for Integration attributes (as of yet)
         return None
+    
+    def to_template_context(self) -> Dict[str, Any]:
+        template_context = super().to_template_context()
+        template_context.update({
+            'integration_data': self.integration_data,
+        })
+        return template_context

@@ -245,6 +245,12 @@ PIPELINE = {
                 'js/antinode.js',
                 'js/autosize.min.js',
                 'js/main.js',
+            ),
+            'output_filename': 'js/js_before_content.js',
+        },
+        'js_hi_grid_header_content': {
+            'source_filenames': (
+                'js/watchdog.js',
                 'js/settings.js',
                 'js/audio.js',
                 'js/attribute-changes.js',
@@ -252,7 +258,7 @@ PIPELINE = {
                 'js/attr.js',
                 'js/attr-dirty-tracking.js',
             ),
-            'output_filename': 'js/js_before_content.js',
+            'output_filename': 'js/js_hi_grid_header_content.js',
         },
         'js_after_content': {
             'source_filenames': (
@@ -264,7 +270,6 @@ PIPELINE = {
         'js_hi_grid_content': {
             'source_filenames': (
                 'js/svg-utils.js',
-                'js/watchdog.js',
                 'js/status.js',
                 'js/auto-view.js',
                 'js/edit.js',

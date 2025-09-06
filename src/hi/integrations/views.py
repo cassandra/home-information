@@ -8,6 +8,7 @@ from hi.exceptions import ForceRedirectException
 from hi.hi_async_view import HiModalView
 from hi.views import page_not_found_response
 
+from hi.apps.attribute.response_helpers import AttributeRedirectResponse
 from hi.apps.attribute.views import BaseAttributeHistoryView, BaseAttributeRestoreView
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.config.enums import ConfigPageType
@@ -52,7 +53,7 @@ class IntegrationSelectView( HiModalView ):
         return self.modal_response( request, context )
 
 
-class IntegrationEnableView( HiModalView ):
+class IntegrationEnableView( HiModalView, AttributeEditViewMixin ):
 
     def get_template_name( self ) -> str:
         return 'integrations/modals/integration_enable.html'
@@ -71,19 +72,13 @@ class IntegrationEnableView( HiModalView ):
             integration_metadata = integration_data.integration_metadata,
             integration = integration_data.integration,
         )
-
-        integration_attribute_formset = IntegrationAttributeRegularFormSet(
-            instance = integration_data.integration,
-            prefix = f'integration-{integration_id}',
-            form_kwargs = {
-                'show_as_editable': True,
-            },
+        attr_item_context = IntegrationAttributeItemEditContext(
+            integration_data = integration_data,
         )
-        context = {
-            'integration_data': integration_data,
-            'integration_attribute_formset': integration_attribute_formset,
-        }
-        return self.modal_response( request, context )
+        template_context = self.create_initial_template_context(
+            attr_item_context= attr_item_context,
+        )
+        return self.modal_response( request, template_context )
 
     def post(self, request, *args, **kwargs):
         integration_manager = IntegrationManager()
@@ -93,30 +88,27 @@ class IntegrationEnableView( HiModalView ):
         )
         if integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} is already enabled' )
-        
-        integration_attribute_formset = IntegrationAttributeRegularFormSet(
-            request.POST,
-            request.FILES,
-            instance = integration_data.integration,
-            prefix = f'integration-{integration_id}',
+
+        attr_item_context = IntegrationAttributeItemEditContext(
+            integration_data = integration_data,
         )
-        if not integration_attribute_formset.is_valid():
-            context = {
-                'integration_data': integration_data,
-                'integration_attribute_formset': integration_attribute_formset,
-            }
-            return self.modal_response( request, context, status_code = 400 )
-        
+        response = self.post_attribute_form(
+            request = request,
+            attr_item_context = attr_item_context,
+        )
+
+        # Errors just dynamically populate modal content with form errors.
+        if response.status_code > 299:
+            return response
+
         integration_manager.enable_integration(
             integration_data = integration_data,
-            integration_attribute_formset = integration_attribute_formset,
         )
-
         redirect_url = reverse( 'integrations_manage',
                                 kwargs = { 'integration_id': integration_id } )
-        return self.redirect_response( request, redirect_url )
+        return AttributeRedirectResponse( url = redirect_url )
 
-    
+
 class IntegrationDisableView( HiModalView ):
 
     def get_template_name( self ) -> str:
@@ -284,6 +276,72 @@ class IntegrationAttributeRestoreInlineView( View, AttributeEditViewMixin ):
 
         
 
+
+
+class IntegrationEnableView_ORIGINAL( HiModalView ):
+
+    def get_template_name( self ) -> str:
+        return 'integrations/modals/integration_enable.html'
+
+    def get(self, request, *args, **kwargs):
+
+        integration_manager = IntegrationManager()
+        integration_id = kwargs.get('integration_id')
+        integration_data = integration_manager.get_integration_data(
+            integration_id = integration_id,
+        )
+        if integration_data.integration.is_enabled:
+            raise BadRequest( f'{integration_data.label} is already enabled' )
+
+        integration_manager._ensure_all_attributes_exist(
+            integration_metadata = integration_data.integration_metadata,
+            integration = integration_data.integration,
+        )
+
+        integration_attribute_formset = IntegrationAttributeRegularFormSet(
+            instance = integration_data.integration,
+            prefix = f'integration-{integration_id}',
+            form_kwargs = {
+                'show_as_editable': True,
+            },
+        )
+        context = {
+            'integration_data': integration_data,
+            'integration_attribute_formset': integration_attribute_formset,
+        }
+        return self.modal_response( request, context )
+
+    def post(self, request, *args, **kwargs):
+        integration_manager = IntegrationManager()
+        integration_id = kwargs.get('integration_id')
+        integration_data = integration_manager.get_integration_data(
+            integration_id = integration_id,
+        )
+        if integration_data.integration.is_enabled:
+            raise BadRequest( f'{integration_data.label} is already enabled' )
+        
+        integration_attribute_formset = IntegrationAttributeRegularFormSet(
+            request.POST,
+            request.FILES,
+            instance = integration_data.integration,
+            prefix = f'integration-{integration_id}',
+        )
+        if not integration_attribute_formset.is_valid():
+            context = {
+                'integration_data': integration_data,
+                'integration_attribute_formset': integration_attribute_formset,
+            }
+            return self.modal_response( request, context, status_code = 400 )
+        
+        integration_manager.enable_integration(
+            integration_data = integration_data,
+        )
+
+        redirect_url = reverse( 'integrations_manage',
+                                kwargs = { 'integration_id': integration_id } )
+        return self.redirect_response( request, redirect_url )
+
+    
 class IntegrationManageView_ORIGINAL( ConfigPageView ):
 
     def config_page_type(self) -> ConfigPageType:

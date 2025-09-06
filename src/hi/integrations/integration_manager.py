@@ -293,17 +293,15 @@ class IntegrationManager( Singleton ):
         )
         return
                 
-    def enable_integration(
-            self,
-            integration_data               : IntegrationData,
-            integration_attribute_formset  : IntegrationAttributeRegularFormSet ):
+    def enable_integration( self, integration_data : IntegrationData ):
         with self._data_lock:
             with transaction.atomic():
                 integration_data.integration.is_enabled = True
                 integration_data.integration.save()
-                integration_attribute_formset.save()
             self.refresh_integrations_from_db()
-            self._launch_integration_monitor_task( integration_data = integration_data )
+            self._launch_integration_monitor_task(
+                integration_data = integration_data,
+            )
         return
                 
     def disable_integration( self, integration_data : IntegrationData ):

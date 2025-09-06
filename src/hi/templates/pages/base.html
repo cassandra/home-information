@@ -23,6 +23,7 @@
      const gHiViewMode = "{{ request.view_parameters.view_mode }}";
     </script>
     {% javascript 'js_before_content' %}
+    {% block header_post_javascript %}{% endblock %}
 
     {% include "alert/panes/alert_banner.html" %}
 
