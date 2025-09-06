@@ -16,7 +16,7 @@ We welcome all kinds of contributions! Whether you want to use the software and 
 ### 2. Join the Community (2 minutes)  
 - Star the repository on GitHub
 - Watch the repository for updates on issues and discussions
-- Check out our [Roadmap](https://github.com/users/cassandra/projects/1/views/3) to see where we're heading
+- Check out our [Roadmap](https://github.com/users/cassandra/projects/1/views/3?sliceBy%5Bvalue%5D=Todo&sortedBy%5Bdirection%5D=asc&sortedBy%5BcolumnId%5D=168748500&visibleFields=%5B%22Title%22%2C168748500%2C%22Assignees%22%2C168599747%2C168599748%2C168599745%2C168599746%2C168599744%2C168603197%5D) to see where we're heading
 
 ### 3. Make Your First Contribution
 Choose what appeals to you:
@@ -63,7 +63,7 @@ No contribution is too small! Even fixing typos or clarifying confusing document
 **Getting started:**
 1. Check [Development Setup](docs/Development.md) for environment setup
 2. Browse "good first issue" labels in GitHub issues
-3. Read the [architecture overview](docs/dev/shared/architecture-overview.md)
+3. Read the [architecture overview](docs/dev/shared/architecture-overview.md) and [Data Model](docs/dev/shared/data-model.md) documents
 4. Start with small improvements to get familiar with the codebase
 
 **Development workflow:**
@@ -113,30 +113,6 @@ Understanding our goals will help you contribute more effectively:
 - Homeowners can find any piece of home information in under 30 seconds
 - Setting up new smart devices includes organizing their information, not just connecting them
 - Complex homes become easier to manage, not harder
-
-## Development Guidelines
-
-### Code Quality Standards
-- Follow [PEP 8](https://www.python.org/dev/peps/pep-0008/) for Python code
-- Write tests for new features and bug fixes
-- Use meaningful variable and function names
-- Comment complex logic and business decisions
-- Keep functions focused and modules cohesive
-
-### Pull Request Process
-1. **Create an issue first** - Discuss significant changes before implementing
-2. **Keep changes focused** - One logical change per pull request
-3. **Write good commit messages** - Explain why, not just what
-4. **Include tests** - New features need tests, bug fixes should prevent regression
-5. **Update documentation** - User-facing changes need documentation updates
-
-### Testing Philosophy
-- **Test business logic thoroughly** - Core functionality must be reliable
-- **Test integration points** - Where systems connect is where things break
-- **Don't test the framework** - Focus on your code, not Django internals
-- **Test user workflows** - Ensure the happy path works end-to-end
-
-See [Testing Guidelines](docs/dev/testing/testing-guidelines.md) for detailed standards.
 
 ## Getting Help
 

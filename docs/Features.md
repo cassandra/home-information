@@ -20,7 +20,7 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 - **Upload any file type** - manuals, warranties, photos, receipts, inspection reports
 - **Rich text notes** - maintenance logs, specifications, installation notes
 - **Attribute system** - structured data like model numbers, purchase dates, service providers
-- **Full search** across all stored information
+- **Full search** across all stored information (future)
 
 **Use case example:** Your dishwasher starts making noise. Click on it to instantly see the manual, warranty info, installation date, and service history - everything you need to decide whether to call for service or attempt a repair.
 
@@ -67,7 +67,7 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 **Real-world benefit:** At a glance, see which areas of your home are secured and quickly identify any issues without navigating through security system menus.
 
 ### ZoneMinder Camera Integration
-- **Camera positioning** - place camera icons exactly where cameras are located
+- **Camera positioning** - place camera icons exactly where cameras are located and define the areas they cover
 - **Live stream access** - click on camera icons to view live feeds
 - **Event browsing** - review motion detection events and recordings
 - **Auto-viewing** - automatically display relevant camera feeds when alarms trigger
@@ -83,7 +83,7 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 ### Advanced Security Features
 - **Event correlation** - connect security events across different systems (motion + camera + lights)
 - **Alarm history** - comprehensive logging and analysis of security events
-- **Custom security modes** - define your own security profiles beyond standard Home/Away/Sleep
+- **Customize security modes** - define your own security profiles for Home/Away/Sleep
 
 ## User Interface & Experience
 
@@ -105,7 +105,7 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 - **Visual editing mode** - drag and drop items, resize, and reshape areas
 - **Bulk operations** - efficiently manage multiple items or data imports
 - **User management** - multiple user accounts with different access levels (optional)
-- **Backup & restore** - protect your data investment
+- **Backup & restore** - keeps history of all information changes and one-click restoring
 
 **Perfect for:** Households that want a dedicated home management display, or anyone who prefers visual organization over list-based interfaces.
 

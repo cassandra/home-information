@@ -2,7 +2,7 @@
 
 # Integrations
 
-The current supported integrations are:
+We will add more integrations as there is demand, but presently the current supported integrations are:
 - **Home Assistant** - General home automation platform for many types of devices and protocols. Requires installation and setup.
 - **ZoneMinder** - For managing security cameras with motion detection. Requires installation and setup.
 
@@ -10,11 +10,11 @@ To enable an integration, go to "Settings > Integrations > Add Integrations".
 
 When you enable one of these integrations, you will need to provide the necessary connection information, usually in the way of API endpoints and credentials. 
 
-## Home Assistant (HAss)
+## Home Assistant
 
 You will need install and set this up by following all their documentation. Start at the [Home Assistant Home Page](https://www.home-assistant.io/).
 
-## ZoneMinder (ZM)
+## ZoneMinder
 
 You will need install and set this up by following all their documentation. Start at the [ZoneMinder Home Page](https://zoneminder.com//).
 

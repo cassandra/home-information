@@ -29,11 +29,12 @@ git checkout staging
 git pull github staging
 ```
 
-### 2. Update Version Number
+### 2. Update Version Number and CHANGELOG.ms
 
 ```bash
 # Edit HI_VERSION file with new version
-git add HI_VERSION
+# Add line to CHANGELOG.md file with short description
+git add HI_VERSION  CHANGELOG.md
 git commit -m "Bump version number to vX.X.X"
 git push github staging
 ```
