@@ -17,10 +17,10 @@
           enctype="multipart/form-data">
       {% csrf_token %}
       
-      <!-- Main content wrapper for antinode updates -->
+      <!-- Main content wrapper for updates -->
       <div id="{{ attr_page_context.content_html_id }}"
            class="{{ DIVID.ATTR_V2_CONTENT_CLASS }}">
-        {% include "integrations/panes/integration_edit_content_body.html" %}
+        {% include "integrations/panes/integration_edit_content_body.html" with show_modal_cancel=True %}
       </div>
     </form>
   </div>

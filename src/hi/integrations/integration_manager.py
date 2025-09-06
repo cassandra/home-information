@@ -280,7 +280,7 @@ class IntegrationManager( Singleton ):
             integration_id = integration.integration_id,
             integration_name = str(attribute_type),
         )
-        IntegrationAttribute.objects.create(
+        attribute = IntegrationAttribute(
             integration = integration,
             name = attribute_type.label,
             value = attribute_type.initial_value,
@@ -291,6 +291,7 @@ class IntegrationManager( Singleton ):
             is_editable = attribute_type.is_editable,
             is_required = attribute_type.is_required,
         )
+        attribute.save( track_history = False )  # Do not want this initial value in history
         return
                 
     def enable_integration( self, integration_data : IntegrationData ):
