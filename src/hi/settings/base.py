@@ -253,7 +253,6 @@ PIPELINE = {
                 'js/watchdog.js',
                 'js/settings.js',
                 'js/audio.js',
-                'js/attribute-changes.js',
                 'js/video-timeline.js',
                 'js/attr.js',
                 'js/attr-dirty-tracking.js',
