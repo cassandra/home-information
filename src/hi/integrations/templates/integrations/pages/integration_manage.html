@@ -2,7 +2,7 @@
 
 {% block config_content %}
 <div id="hi-integration-settings" class="row">
-  <nav class="nav flex-column">
+  <nav class="nav flex-column hi-vertical-nav">
     <div class="mx-auto mt-2">
       <a class="btn btn-secondary" role="button"
          href="{% url 'integrations_select' %}"
@@ -11,12 +11,10 @@
       </a>
     </div>
     {% for integration_data in core.integration_data_list %}
-    <a class="nav-link {% if core.integration_data.integration_id == integration_data.integration_id %}active{% endif %}"
+    <a class="nav-link hi-vertical-nav-link {% if core.integration_data.integration_id == integration_data.integration_id %}active{% endif %}"
        href="{% url 'integrations_manage' integration_id=integration_data.integration_id %}"
        data-async="true">
-      <div class="bg-primary p-2 text-center">
-        {{ integration_data.label }}
-      </div>
+      {{ integration_data.label }}
     </a>
     {% endfor %}
   </nav>

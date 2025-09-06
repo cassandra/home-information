@@ -3082,3 +3082,51 @@ g[hover] {
         align-items: stretch;
     }
 }
+
+/* General Vertical Tab Styling */
+.hi-vertical-nav {
+    min-width: 200px;
+    border-right: 1px solid var(--line-color);
+    padding: 1rem 0;
+}
+
+.hi-vertical-nav-link {
+    display: block;
+    padding: 0.75rem 1rem;
+    margin: 0.25rem 0;
+    border-radius: 0;
+    color: #495057;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    min-height: 44px; /* Touch-friendly */
+    display: flex;
+    align-items: center;
+}
+
+.hi-vertical-nav-link:hover {
+    background-color: #f8f9fa;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.hi-vertical-nav-link:focus {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.hi-vertical-nav-link.active {
+    background-color: var(--primary-color);
+    color: var(--on-primary-color);
+}
+
+.hi-vertical-nav-link.active:hover {
+    background-color: var(--primary-highlight-color);
+    color: var(--on-primary-color);
+}
+
+/* Responsive adjustments for vertical tabs */
+@media (max-width: 767.98px) {
+    .hi-vertical-nav {
+        min-width: 150px;
+    }
+}
