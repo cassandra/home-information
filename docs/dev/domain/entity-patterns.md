@@ -46,4 +46,4 @@ If the new type should be supported by the simulator, add it to:
 
 ## Related Documentation
 - Domain guidelines: [Domain Guidelines](domain-guidelines.md)
-- Data model concepts: [Data Model Concepts](../shared/data-model-concepts.md)
+- Data model concepts: [Data Model](../shared/data-model.md)

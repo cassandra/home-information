@@ -1,0 +1,129 @@
+@startuml Display Model Relationships
+
+!define TABLE(name,desc) class name as "desc" << (T,#FFAAAA) >>
+!define PRIMARY_KEY(x) <b>x</b>
+!define FOREIGN_KEY(x) <u>x</u>
+
+entity Location {
+    * PRIMARY_KEY(id) : bigint
+    --
+    * name : string
+    * svg_fragment_filename : string
+    svg_view_box_str : string
+    order_id : integer
+}
+
+entity LocationView {
+    * PRIMARY_KEY(id) : bigint
+    * FOREIGN_KEY(location_id) : bigint
+    --
+    * name : string
+    location_view_type_str : string
+    svg_transform_str : string
+    order_id : integer
+}
+
+entity LocationAttribute {
+    * PRIMARY_KEY(id) : bigint
+    * FOREIGN_KEY(location_id) : bigint
+    --
+    * name : string
+    value : text
+    file_value : string
+    attribute_type_str : string
+    value_type_str : string
+}
+
+entity Entity {
+    * PRIMARY_KEY(id) : bigint
+    --
+    * name : string
+    * entity_type_str : string
+}
+
+entity Collection {
+    * PRIMARY_KEY(id) : bigint
+    --
+    * name : string
+    collection_type_str : string
+    collection_display_str : string
+    order_id : integer
+}
+
+entity EntityPosition {
+    * PRIMARY_KEY(id) : bigint
+    * FOREIGN_KEY(entity_id) : bigint
+    * FOREIGN_KEY(location_id) : bigint
+    --
+    svg_x : decimal
+    svg_y : decimal
+    svg_scale : decimal
+    svg_rotate : decimal
+}
+
+entity EntityPath {
+    * PRIMARY_KEY(id) : bigint
+    * FOREIGN_KEY(entity_id) : bigint
+    * FOREIGN_KEY(location_id) : bigint
+    --
+    svg_path : text
+}
+
+entity CollectionPosition {
+    * PRIMARY_KEY(id) : bigint
+    * FOREIGN_KEY(collection_id) : bigint
+    * FOREIGN_KEY(location_id) : bigint
+    --
+    svg_x : decimal
+    svg_y : decimal
+    svg_scale : decimal
+    svg_rotate : decimal
+}
+
+entity CollectionPath {
+    * PRIMARY_KEY(id) : bigint
+    * FOREIGN_KEY(collection_id) : bigint
+    * FOREIGN_KEY(location_id) : bigint
+    --
+    svg_path : text
+}
+
+entity EntityView {
+    * PRIMARY_KEY(id) : bigint
+    * FOREIGN_KEY(entity_id) : bigint
+    * FOREIGN_KEY(location_view_id) : bigint
+}
+
+entity CollectionEntity {
+    * PRIMARY_KEY(id) : bigint
+    * FOREIGN_KEY(collection_id) : bigint
+    * FOREIGN_KEY(entity_id) : bigint
+}
+
+entity CollectionView {
+    * PRIMARY_KEY(id) : bigint
+    * FOREIGN_KEY(collection_id) : bigint
+    * FOREIGN_KEY(location_view_id) : bigint
+}
+
+Location ||--o{ LocationView : "has views"
+Location ||--o{ LocationAttribute : "has attributes"
+Location ||--o{ EntityPosition : "positions"
+Location ||--o{ EntityPath : "paths"
+Location ||--o{ CollectionPosition : "positions"
+Location ||--o{ CollectionPath : "paths"
+
+Entity ||--o{ EntityPosition : "positioned at"
+Entity ||--o{ EntityPath : "drawn as path"
+Entity ||--o{ EntityView : "visible in"
+Entity }o--o{ Collection : "grouped in"
+
+Collection ||--o{ CollectionEntity : "contains"
+Collection ||--o{ CollectionPosition : "positioned at"
+Collection ||--o{ CollectionPath : "drawn as path"
+Collection ||--o{ CollectionView : "visible in"
+
+LocationView ||--o{ EntityView : "displays"
+LocationView ||--o{ CollectionView : "displays"
+
+@enduml
