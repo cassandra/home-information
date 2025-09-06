@@ -41,7 +41,8 @@ by using the AttributeItemEditContext pattern.
                 class="btn btn-primary {{ DIVID.ATTR_V2_UPDATE_BTN_CLASS }}"
                 name="action" 
                 value="update">
-          {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
+          {% icon "save" size="sm" css_class="hi-icon-left" %}
+          {{ attr_page_context.update_button_label }}
         </button>
         <!-- Vertically stacked message areas -->
         <div class="attr-v2-message-stack">

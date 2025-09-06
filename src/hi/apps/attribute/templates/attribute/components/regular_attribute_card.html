@@ -58,7 +58,7 @@ Individual attribute attribute card with value editing and actions
       </button>
       {% endif %}
       
-      {% if attribute_form.instance.pk %}
+      {% if attribute_form.instance.pk and not attribute_form.suppress_history %}
         <a href="{% attr_history_url attr_item_context attribute_form.instance.pk %}"
            class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_HISTORY_LINK_CLASS }}"
            title="View history">

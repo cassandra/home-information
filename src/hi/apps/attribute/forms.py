@@ -60,10 +60,21 @@ class AttributeForm( forms.ModelForm ):
     @property
     def allow_reordering(self):
         return self._allow_reordering
+    
+    @property
+    def suppress_history(self):
+        return self._suppress_history
+    
+    @property
+    def show_secrets(self):
+        return self._show_secrets
         
     def __init__(self, *args, **kwargs):
         self._show_as_editable = kwargs.pop( 'show_as_editable', True )
         self._allow_reordering = kwargs.pop( 'allow_reordering', True )
+        self._suppress_history = kwargs.pop( 'suppress_history', False )
+        self._show_secrets = kwargs.pop( 'show_secrets', False )
+        
         instance = kwargs.get('instance')
         super().__init__(*args, **kwargs)
 

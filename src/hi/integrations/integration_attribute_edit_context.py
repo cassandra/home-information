@@ -26,7 +26,12 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
     the generic interface expected by attribute editing templates.
     """
     
-    def __init__(self, integration_data: IntegrationData ) -> None:
+    def __init__(self,
+                 integration_data: IntegrationData,
+                 update_button_label = 'UPDATE',
+                 suppress_history = False,
+                 show_secrets = False,
+                 ) -> None:
         """
         Initialize context for Integration attribute editing.
         
@@ -35,6 +40,10 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
         """
         super().__init__( owner_type = 'integration', owner = integration_data.integration )
         self.integration_data = integration_data
+        self._update_button_label = update_button_label
+        self._suppress_history = suppress_history
+        self._show_secrets = show_secrets
+        
         return
     
     @property
@@ -45,6 +54,10 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
     @property
     def content_body_template_name(self):
         return 'integrations/panes/integration_edit_content_body.html'
+    
+    @property
+    def update_button_label(self) -> str:
+        return self._update_button_label
     
     @property
     def attribute_model_subclass(self) -> Type[AttributeModel]:
@@ -66,6 +79,8 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
             form_kwargs={
                 'show_as_editable': True,
                 'allow_reordering': False,  # Disable reordering for system-defined attributes
+                'suppress_history': self._suppress_history,  # While enabling, no history
+                'show_secrets': self._show_secrets,  # While enable, plain password view
             }
         )
 

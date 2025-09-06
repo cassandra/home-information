@@ -74,6 +74,10 @@ class IntegrationEnableView( HiModalView, AttributeEditViewMixin ):
         )
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
+            update_button_label = 'ENABLE',
+            suppress_history = True,
+            show_secrets = True,
+            
         )
         template_context = self.create_initial_template_context(
             attr_item_context= attr_item_context,
@@ -91,6 +95,9 @@ class IntegrationEnableView( HiModalView, AttributeEditViewMixin ):
 
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
+            update_button_label = 'ENABLE',
+            suppress_history = True,
+            show_secrets = True,
         )
         response = self.post_attribute_form(
             request = request,
