@@ -8,6 +8,15 @@ This template works generically for Entity, Location, and future attribute-ownin
 by using the AttributeItemEditContext pattern.
 {% endcomment %}
 
+
+<div class="d-flex mt-3">
+  <div class="flex-column">
+    {% block left_column %} 
+    {% endblock %}
+  </div>
+  <div class="flex-column flex-grow-1">
+
+
 <!-- Sticky Panel: Owner Info + Action Bar (always visible) -->
 <div class="{{ DIVID.ATTR_V2_STICKY_PANEL_CLASS }}">
   <!-- Basic Owner Information (minimal) - only if owner_form provided -->
@@ -81,14 +90,13 @@ by using the AttributeItemEditContext pattern.
     </div>
   </div>
 </div>
-
 <!-- Scrollable Content Area (below sticky panel) -->
 <div id="{{ attr_page_context.scrollable_content_html_id }}"
      class="{{ DIVID.ATTR_V2_SCROLLABLE_CONTENT_CLASS }}">
   
   <!-- Files Section -->
   {% block files_section %}
-    {% include "attribute/components/file_grid.html" with file_attributes=file_attributes %}
+  {% include "attribute/components/file_grid.html" with file_attributes=file_attributes %}
   {% endblock %}
   
   <!-- Properties Section -->
@@ -101,3 +109,12 @@ by using the AttributeItemEditContext pattern.
   {% endblock %}
   
 </div>
+
+
+
+
+  </div>
+</div>
+
+
+

@@ -19,50 +19,45 @@ This is what gets replaced on form submission
 
 {% block files_section %}{% endblock %}
 
+{% block left_column %} 
+<nav class="nav flex-column" id="subsystemTabs" role="tablist">
+  {% for multi_edit_form_data in multi_edit_form_data_list %}
+  <a class="nav-link {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}active{% endif %}" 
+     id="subsystem-{{ multi_edit_form_data.owner.id }}-tab" 
+     data-toggle="tab" 
+     data-subsystem-id="{{ multi_edit_form_data.owner.id }}"
+     data-config-settings-url="{% url 'config_settings' %}"
+     href="#subsystem-{{ multi_edit_form_data.owner.id }}-panel" 
+     role="tab" 
+     aria-controls="subsystem-{{ multi_edit_form_data.owner.id }}-panel" 
+     aria-selected="{% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}true{% else %}false{% endif %}"
+     onclick="window.Hi.attr.updateFormAction('{% url 'config_settings' subsystem_id=multi_edit_form_data.owner.id %}', '{{ attr_page_context.container_html_id }}')">
+    {{ multi_edit_form_data.owner.name }}
+    {% if multi_edit_form_data.error_count > 0 %}
+    <span class="badge badge-danger ml-1">{{ multi_edit_form_data.error_count }}</span>
+    {% endif %}
+  </a>
+  {% endfor %}
+</nav>
+{% endblock %}
+
 {% block properties_section %}
 
 <!-- Vertical Tabbed Subsystem Interface -->
-<div class="d-flex mt-3">
-  <!-- Left Column: Vertical Navigation -->
-  <div class="flex-column">
-    <nav class="nav flex-column" id="subsystemTabs" role="tablist">
-      {% for multi_edit_form_data in multi_edit_form_data_list %}
-      <a class="nav-link {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}active{% endif %}" 
-         id="subsystem-{{ multi_edit_form_data.owner.id }}-tab" 
-         data-toggle="tab" 
-         data-subsystem-id="{{ multi_edit_form_data.owner.id }}"
-         data-config-settings-url="{% url 'config_settings' %}"
-         href="#subsystem-{{ multi_edit_form_data.owner.id }}-panel" 
-         role="tab" 
-         aria-controls="subsystem-{{ multi_edit_form_data.owner.id }}-panel" 
-         aria-selected="{% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}true{% else %}false{% endif %}"
-         onclick="window.Hi.attr.updateFormAction('{% url 'config_settings' subsystem_id=multi_edit_form_data.owner.id %}', '{{ attr_page_context.container_html_id }}')">
-        {{ multi_edit_form_data.owner.name }}
-        {% if multi_edit_form_data.error_count > 0 %}
-        <span class="badge badge-danger ml-1">{{ multi_edit_form_data.error_count }}</span>
-        {% endif %}
-      </a>
-      {% endfor %}
-    </nav>
-  </div>
-  
-  <!-- Right Column: Tab Content -->
-  <div class="flex-column flex-grow-1">
-    <div class="tab-content" id="subsystemTabContent">
-      {% for multi_edit_form_data in multi_edit_form_data_list %}
-      <div class="tab-pane fade {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}show active{% endif %}" 
-           id="subsystem-{{ multi_edit_form_data.owner.id }}-panel" 
-           role="tabpanel" 
-           aria-labelledby="subsystem-{{ multi_edit_form_data.owner.id }}-tab">
-        
-        <!-- Subsystem content using existing attribute editing components -->
-        <div class="py-3">
-          {% include "attribute/components/regular_attribute_list.html" with regular_attributes_formset=multi_edit_form_data.formset attr_item_context=multi_edit_form_data.context title=multi_edit_form_data.owner.name%}
-        </div>
-        
-      </div>
-      {% endfor %}
+<div class="tab-content" id="subsystemTabContent">
+
+  {% for multi_edit_form_data in multi_edit_form_data_list %}
+  <div class="tab-pane fade {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}show active{% endif %}" 
+       id="subsystem-{{ multi_edit_form_data.owner.id }}-panel" 
+       role="tabpanel" 
+       aria-labelledby="subsystem-{{ multi_edit_form_data.owner.id }}-tab">
+    
+    <!-- Subsystem content using existing attribute editing components -->
+    <div class="py-3">
+      {% include "attribute/components/regular_attribute_list.html" with regular_attributes_formset=multi_edit_form_data.formset attr_item_context=multi_edit_form_data.context %}
     </div>
+    
   </div>
-</div>
+  {% endfor %}
+</div>  
 {% endblock %}
