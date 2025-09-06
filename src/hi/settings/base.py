@@ -233,6 +233,9 @@ PIPELINE = {
             'source_filenames': (
                 'bootstrap/css/bootstrap.css',
                 'css/main.css',
+                'css/icons.css',
+                'css/attribute.css',
+                'css/stream-browser.css',
             ),
             'output_filename': 'css/css_head.css',
         },

@@ -16,6 +16,7 @@ from hi.apps.config.views import ConfigPageView
 from .integration_attribute_edit_context import IntegrationAttributeItemEditContext
 from .integration_manager import IntegrationManager
 from .models import IntegrationAttribute
+from .view_mixins import IntegrationViewMixin
 
 logger = logging.getLogger(__name__)
 
@@ -46,12 +47,12 @@ class IntegrationSelectView( HiModalView ):
 
     def get( self, request, *args, **kwargs ):
         context = {
-            'integration_data_list': IntegrationManager().get_integration_data_list(),
+            'integration_data_list': self.get_integration_data_list(),
         }
         return self.modal_response( request, context )
 
 
-class IntegrationEnableView( HiModalView, AttributeEditViewMixin ):
+class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditViewMixin ):
 
     def get_template_name( self ) -> str:
         return 'integrations/modals/integration_enable.html'
@@ -60,9 +61,10 @@ class IntegrationEnableView( HiModalView, AttributeEditViewMixin ):
 
         integration_manager = IntegrationManager()
         integration_id = kwargs.get('integration_id')
-        integration_data = integration_manager.get_integration_data(
+        integration_data = self.get_integration_data(
             integration_id = integration_id,
         )
+            
         if integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} is already enabled' )
 
@@ -85,7 +87,7 @@ class IntegrationEnableView( HiModalView, AttributeEditViewMixin ):
     def post(self, request, *args, **kwargs):
         integration_manager = IntegrationManager()
         integration_id = kwargs.get('integration_id')
-        integration_data = integration_manager.get_integration_data(
+        integration_data = self.get_integration_data(
             integration_id = integration_id,
         )
         if integration_data.integration.is_enabled:
@@ -114,14 +116,14 @@ class IntegrationEnableView( HiModalView, AttributeEditViewMixin ):
         return AttributeRedirectResponse( url = redirect_url )
 
 
-class IntegrationDisableView( HiModalView ):
+class IntegrationDisableView( HiModalView, IntegrationViewMixin ):
 
     def get_template_name( self ) -> str:
         return 'integrations/modals/integration_disable.html'
 
     def get(self, request, *args, **kwargs):
         integration_id = kwargs.get('integration_id')
-        integration_data = IntegrationManager().get_integration_data(
+        integration_data = self.get_integration_data(
             integration_id = integration_id,
         )
         if not integration_data.integration.is_enabled:
@@ -135,7 +137,7 @@ class IntegrationDisableView( HiModalView ):
     def post(self, request, *args, **kwargs):
         integration_manager = IntegrationManager()
         integration_id = kwargs.get('integration_id')
-        integration_data = integration_manager.get_integration_data(
+        integration_data = self.get_integration_data(
             integration_id = integration_id,
         )
         if not integration_data.integration.is_enabled:
@@ -148,7 +150,7 @@ class IntegrationDisableView( HiModalView ):
         return self.redirect_response( request, redirect_url )
 
     
-class IntegrationManageView( ConfigPageView, AttributeEditViewMixin ):
+class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEditViewMixin ):
 
     def config_page_type(self) -> ConfigPageType:
         return ConfigPageType.INTEGRATIONS
@@ -161,19 +163,19 @@ class IntegrationManageView( ConfigPageView, AttributeEditViewMixin ):
         
         integration_id = kwargs.get('integration_id')
         if integration_id:
-            integration_data = integration_manager.get_integration_data(
+            integration_data = self.get_integration_data(
                 integration_id = integration_id,
             )
         else:
             integration_data = integration_manager.get_default_integration_data()
-
+        
         if not integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} integration is not enabled' )
             
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
         )
-        integration_data_list = integration_manager.get_integration_data_list( enabled_only = True )
+        integration_data_list = self.get_integration_data_list( enabled_only = True )
 
         manage_view_pane = integration_data.integration_gateway.get_manage_view_pane()
         manage_template_name = manage_view_pane.get_template_name()
@@ -203,7 +205,7 @@ class IntegrationManageView( ConfigPageView, AttributeEditViewMixin ):
         
         integration_id = kwargs.get('integration_id')
         if integration_id:
-            integration_data = integration_manager.get_integration_data(
+            integration_data = self.get_integration_data(
                 integration_id = integration_id,
             )
         else:
@@ -221,7 +223,9 @@ class IntegrationManageView( ConfigPageView, AttributeEditViewMixin ):
         )
     
         
-class IntegrationAttributeHistoryInlineView( View, AttributeEditViewMixin ):
+class IntegrationAttributeHistoryInlineView( View,
+                                             IntegrationViewMixin,
+                                             AttributeEditViewMixin ):
 
     def get(self, request, integration_id, attribute_id, *args, **kwargs):
         # Validate that the attribute belongs to this integration for security
@@ -231,8 +235,7 @@ class IntegrationAttributeHistoryInlineView( View, AttributeEditViewMixin ):
         except IntegrationAttribute.DoesNotExist:
             return page_not_found_response(request, "Attribute not found.")
 
-        integration_manager = IntegrationManager()
-        integration_data = integration_manager.get_integration_data(
+        integration_data = self.get_integration_data(
             integration_id = attribute.integration.integration_id,
         )
         attr_item_context = IntegrationAttributeItemEditContext(
@@ -245,7 +248,9 @@ class IntegrationAttributeHistoryInlineView( View, AttributeEditViewMixin ):
         )
 
 
-class IntegrationAttributeRestoreInlineView( View, AttributeEditViewMixin ):
+class IntegrationAttributeRestoreInlineView( View,
+                                             IntegrationViewMixin,
+                                             AttributeEditViewMixin ):
     """View for restoring IntegrationAttribute values from history inline."""
     
     def get(self, request, integration_id, attribute_id, history_id, *args, **kwargs):
@@ -257,10 +262,10 @@ class IntegrationAttributeRestoreInlineView( View, AttributeEditViewMixin ):
         except IntegrationAttribute.DoesNotExist:
             return page_not_found_response(request, "Attribute not found.")
 
-        integration_manager = IntegrationManager()
-        integration_data = integration_manager.get_integration_data(
+        integration_data = self.get_integration_data(
             integration_id = attribute.integration.integration_id,
         )
+            
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
         )

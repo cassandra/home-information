@@ -24,6 +24,6 @@
     {% endfor %}
   </div>
   {% empty %}
-  <div><em>No items defined.</em></div>
+  {% include "edit/panes/no_entities_message.html" %}
   {% endfor %}
 </div>
