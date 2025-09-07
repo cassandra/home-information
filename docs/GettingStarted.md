@@ -22,9 +22,9 @@ This view with the background graphic is called a "Location View".
 
 ## Editing Mode
 
-You will start in "editing mode" where you can begin adding items to your home. When adding an item, it will appear in the middle of the screen, but you can move it around, change its size and change its orientation.
+You will start in "editing mode" where you can begin adding items to your home. Editing mode is not the main mode you will use. It is only the starting mode and then used occasionally to adjust the layout and add/remove items. However, since editing mode is where you need to start and since it allows introducing many of the concepts, we walk through some editing scenarios in detail.
 
-As an example, we'll add a refrigerator by clicking the "ADD NEW ITEM" button, giving it a name and choosing the "type" of item it is:
+When first adding a new item, it will appear in the middle of the screen, but you can move it around, change its size and change its orientation. As an example, we'll add a refrigerator by clicking the "ADD NEW ITEM" button, giving it a name and choosing the "type" of item it is:
 
 <img src="img/getting-started/add-item-modal-1024x768.png" alt="Home Information Add Item Dialog" width="250"> 
 
@@ -96,7 +96,7 @@ By default, you will see there is just one Location View created called "All".  
 
 <img src="img/getting-started/add-location-view-modal-1024x768.png" alt="Home Information New Location View" width="350"> &nbsp; <img src="img/getting-started/new-location-view-button-1024x768.png" alt="Home Information New Location View" width="350"> 
 
-We can add any existing kitchen items from the list at right, with the refrigerator being the only applicable one (unless you want to show all the small appliances too.)  Let's toggle the refrigerator and add a bunch of our other kitchen items: oven, cooktop, microwave, etc. We move and scale then as we did with the refrigerator to get something like this:
+We can add any existing kitchen items from the list at right, with the refrigerator being the only applicable one (unless you want to show all the small appliances too.)  Let's toggle the refrigerator and add a bunch of our other kitchen items: oven, cooktop, microwave, etc. We move and scale them as we did with the refrigerator to get something like this:
 
 <img src="img/getting-started/new-location-view-populated-1024x768.png" alt="Home Information Initial Location View" width="350">
 
