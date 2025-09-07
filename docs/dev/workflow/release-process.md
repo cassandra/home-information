@@ -66,10 +66,19 @@ Or via GitHub web interface:
 7. **Settings**: Check "Set as latest release"
 8. Click "Publish Release"
 
-## 5. Cleanup
+### 5. Validate Install URL Works
+
+Make sure that the published ZIP install link works and that it is at least 10MB in size.
+
+```bash
+curl -L https://github.com/cassandra/home-information/releases/latest/download/home-information.zip -o home-information.zip
+```
+
+## 6. Cleanup
 
 For safety, move back to staging branch.
 ```bash
+git fetch --tags
 git checkout staging
 ```
 

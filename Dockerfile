@@ -1,7 +1,14 @@
-FROM python:3.11
+# Pin specific Python version for consistency across platforms
+FROM python:3.11.8-bookworm
 
+# Install dependencies with curl for healthcheck
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends supervisor nginx redis-server redis-tools \
+    && apt-get install -y --no-install-recommends \
+        curl \
+        supervisor \
+        nginx \
+        redis-server \
+        redis-tools \
     && mkdir -p /var/log/supervisor \
     && mkdir -p /etc/supervisor/conf.d \
     && rm -rf /var/lib/apt/lists/* \
@@ -9,9 +16,9 @@ RUN apt-get update \
 
 WORKDIR /src
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV PYTHONPATH /src
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/src
 
 EXPOSE 8000
 
@@ -27,6 +34,12 @@ RUN pip install --no-cache-dir --root-user-action=ignore -r requirements.txt
 
 COPY package/docker_supervisord.conf /etc/supervisor/conf.d/hi.conf
 COPY package/docker_nginx.conf /etc/nginx/sites-available/default
+
+# Clean up nginx default configurations and ensure proper symlinks
+RUN rm -f /etc/nginx/conf.d/default.conf \
+    && rm -f /etc/nginx/sites-enabled/default \
+    && ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default \
+    && nginx -t
 
 COPY package/docker_entrypoint.sh /src/entrypoint.sh
 RUN chmod +x /src/entrypoint.sh
