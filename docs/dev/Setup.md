@@ -1,6 +1,6 @@
 <img src="../../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
-# Development Setup (one-time setup, external dev)
+# Development Setup (one-time setup for external devevelopment)
 
 ## Quick Setup (Recommended)
 
@@ -30,7 +30,21 @@ The script is interactive and will prompt you for necessary information. It's sa
 
 ## Manual Setup (Alternative)
 
-If you prefer to set up manually or need more control over the process, follow these detailed steps:
+If you prefer to set up manually or need more control over the process, follow these detailed steps (details below):
+```
+git clone https://github.com/${YOURUSERNAME}/home-information.git
+cd home-information
+make env-build-dev
+python3.11 -m venv venv
+. ./init-env-dev.sh
+pip install -r src/hi/requirements/development.txt
+cd src
+./manage.py check
+./manage.py migrate
+./manage.py hi_createsuperuser
+./manage.py hi_creategroups
+./manage.py runserver
+```
 
 ## Fork the Repository
 
@@ -195,6 +209,6 @@ make docker-stop
 If you want to familiarize yourself with how to use the app before diving into the code, see the [Getting Started Page](../GettingStarted.md).
 
 A look through these docs might also be a good starting point:
-- [Data Model](shared/data-model-concepts.md)
+- [Data Model](shared/data-model.md)
 - [Architecture](shared/architecture-overview.md)
 

@@ -10,7 +10,7 @@
     <form action="{% url 'hass_sync' %}"
         method="POST" role="form" data-async="true">
       {% csrf_token %}
-      <button type="submit" class="btn btn-secondary" role="button"
+      <button type="submit" class="btn btn-outline-secondary" role="button"
               name="action" value="sync" >
         {% if has_entities %}
         RE-SYNC

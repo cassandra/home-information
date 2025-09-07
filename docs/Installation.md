@@ -4,7 +4,6 @@
 
 ## Requirements and Dependencies
 
-- Python 3 - installed
 - Docker - installed and running
 
 See the [Dependencies Page](dev/Dependencies.md) if you want help installing those.
@@ -19,7 +18,7 @@ The alert mechanisms have a visual and audible presentation on the screen, but t
 
 ### Sign In
 
-If you want to require sign in and authentication of users, then you will need to also configure email sending since it uses emailed "magic codes" as its authentication mechanism.  For local deployments, security might not be a major priority, so it is up to you whether you see this as a feature of annoyance.
+If you want to require sign in and authentication of users, then you will need to also configure email sending since it uses emailed "magic codes" as its authentication mechanism.  For local deployments, security might not be a major priority, so it is up to you whether you see this as a feature or annoyance.
 
 ## Installation Steps
 
@@ -144,10 +143,12 @@ Note: You could sign in without creating users by using the existing admin user.
 
 #### Integrations
 
-If you use any of the built-in integrations, so additional changes may be needed. See the 
+If you use any of the built-in integrations, some additional changes may be needed. See the 
 [Integrations Page](Integrations.md) for more details.
 
 ## Troubleshooting
+
+For common questions, see the [FAQ](FAQ.md). For specific troubleshooting:
 
 ### Emails (if enabled)
 

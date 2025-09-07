@@ -4,9 +4,9 @@
     {% for camera_data in camera_control_display_list %}
     <div class="w-50 pl-1 pb-1">
       <a href="{% url 'console_entity_video_stream' entity_id=camera_data.entity.id %}"
-	 class="btn btn-primary btn-control btn-camera {% if camera_data.status_entity_state %}{{ camera_data.status_entity_state.css_class }}{% endif %}"
-	 {% if camera_data.status_entity_state %}status=""{% endif %}>
-	{{ camera_data.entity.name }}
+         class="btn btn-primary btn-control btn-camera {% if camera_data.status_entity_state %}{{ camera_data.status_entity_state.css_class }}{% endif %}"
+         {% if camera_data.status_entity_state %}status=""{% endif %}>
+        {{ camera_data.short_name }}
       </a>
     </div>
     {% endfor %}

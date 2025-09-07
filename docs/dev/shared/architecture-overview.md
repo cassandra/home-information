@@ -87,6 +87,7 @@
 
 ## Related Documentation
 
+- Data Model and Concepts [Data Model](./data-model.md)
 - Detailed backend patterns: [Backend Guidelines](../backend/backend-guidelines.md)
 - Integration specifics: [Integration Guidelines](../integrations/integration-guidelines.md)
 - Domain models: [Domain Guidelines](../domain/domain-guidelines.md)

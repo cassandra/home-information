@@ -1,0 +1,65 @@
+@startuml Core Model Relationships
+
+!define TABLE(name,desc) class name as "desc" << (T,#FFAAAA) >>
+!define PRIMARY_KEY(x) <b>x</b>
+!define FOREIGN_KEY(x) <u>x</u>
+
+entity Entity {
+    * PRIMARY_KEY(id) : bigint
+    --
+    * name : string
+    * entity_type_str : string
+    integration_id : string
+    integration_name : string
+    can_user_delete : boolean
+    created_datetime : datetime
+}
+
+entity EntityState {
+    * PRIMARY_KEY(id) : bigint
+    * FOREIGN_KEY(entity_id) : bigint
+    --
+    * entity_state_type_str : string
+    name : string
+    value_range_str : text
+}
+
+entity Sensor {
+    * PRIMARY_KEY(id) : bigint
+    * FOREIGN_KEY(entity_state_id) : bigint
+    --
+    * name : string
+    integration_id : string
+    integration_name : string
+    value : text
+    last_seen_datetime : datetime
+}
+
+entity Controller {
+    * PRIMARY_KEY(id) : bigint
+    * FOREIGN_KEY(entity_state_id) : bigint
+    --
+    * name : string
+    integration_id : string
+    integration_name : string
+    controller_type_str : string
+}
+
+entity EntityAttribute {
+    * PRIMARY_KEY(id) : bigint
+    * FOREIGN_KEY(entity_id) : bigint
+    --
+    * name : string
+    value : text
+    file_value : string
+    attribute_type_str : string
+    value_type_str : string
+    created_datetime : datetime
+}
+
+Entity ||--o{ EntityState : "has"
+EntityState ||--o{ Sensor : "observed by"
+EntityState ||--o{ Controller : "controlled by"
+Entity ||--o{ EntityAttribute : "has attributes"
+
+@enduml

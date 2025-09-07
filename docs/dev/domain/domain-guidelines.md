@@ -306,4 +306,4 @@ class EntityStateDelegation(models.Model):
 - Entity patterns: [Entity Patterns](entity-patterns.md)
 - Event and alert systems: [Event Alert Systems](event-alert-systems.md)
 - Business logic: [Business Logic](business-logic.md)
-- Data model concepts: [Data Model Concepts](../shared/data-model-concepts.md)
+- Data model concepts: [Data Model](../shared/data-model.md)

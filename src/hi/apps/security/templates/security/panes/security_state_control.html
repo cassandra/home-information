@@ -1,5 +1,5 @@
 <div id="{{ DIVID.SECURITY_STATE_CONTROL }}">
-  <div class="h6 text-center">Security State</div>
+  <div class="h6 text-center">Security</div>
   {% for action_value, action_label in security_status_data.security_state_action_choices %}
   <div class="my-1">
     <a class="btn {% if action_value == security_status_data.current_action_value %}btn-secondary{% else %}btn-primary{% endif %} btn-control"

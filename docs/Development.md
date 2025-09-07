@@ -29,7 +29,7 @@ These documents contain fundamental concepts that apply across all development a
 
 - **[Architecture Overview](dev/shared/architecture-overview.md)** - High-level system design and key patterns
 - **[Coding Standards](dev/shared/coding-standards.md)** - Code organization, style, and conventions
-- **[Data Model Concepts](dev/shared/data-model-concepts.md)** - Core domain models and relationships
+- **[Data Model](dev/shared/data-model.md)** - Core domain models and relationships
 - **[Testing Guidelines](dev/testing/testing-guidelines.md)** - Testing philosophy, best practices, and anti-patterns
 
 ## Development Areas
