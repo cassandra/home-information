@@ -40,6 +40,8 @@
 We chose SQLite specifically because it's an open format readable by countless tools. Your data is never locked in proprietary
 formats.
 
+We also provide some helper scripts [Helper Scripts README](../scripts/README.md).
+
 ## Technical Requirements
 
 ### Q: What devices can I use to access it?
