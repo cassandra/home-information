@@ -172,13 +172,18 @@
             console.log('Alert Status Data: ', JSON.stringify(alertStatusData) );
         }
 
+        // Clear audio if no alert data at all
         if ( ! alertStatusData ) {
             Hi.audio.clearAudibleSignal();
             return;
         }
         
-        if (( MaxAudioSignalNameAttr in alertStatusData )
-            && ( alertStatusData[MaxAudioSignalNameAttr] )) {
+        // Clear audio if no active signal (when alerts are acknowledged)
+        // Check both existence and value for safety
+        if ( ! (MaxAudioSignalNameAttr in alertStatusData) 
+             || ! alertStatusData[MaxAudioSignalNameAttr] ) {
+            Hi.audio.clearAudibleSignal();
+        } else {
             Hi.audio.setActiveSignalName( alertStatusData[MaxAudioSignalNameAttr] );
         }
         
