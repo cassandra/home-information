@@ -4,6 +4,7 @@
 
 _High-level view of the applications change history.  See releases and commits for more fine-grained history._
 
+- v1.0.1 : September 7, 2025 : Docker configuration fixes and release process improvements.
 - v1.0.0 : September 6, 2025 : Feature complete version with many UI improvements.
 - v0.2.0 : August 26, 2025 : Auto-view switching and video stream browsing features.
 - v0.1.0 : August 17, 2025 : Added weather API intgerations and alert audio.
