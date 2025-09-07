@@ -204,6 +204,19 @@ make docker-run                    # Background
 make docker-stop
 ```
 
+### Documentation
+
+Use `grip` for previewing GitHub markdown documents locally.
+
+```
+sudo apt install grip
+cd $PROJ_DIR
+grip
+
+# Then visit:
+http://localhost:6419
+```
+
 ## Getting Started
 
 If you want to familiarize yourself with how to use the app before diving into the code, see the [Getting Started Page](../GettingStarted.md).
