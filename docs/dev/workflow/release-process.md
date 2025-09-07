@@ -26,7 +26,7 @@ Releases follow structured branch workflow:
 
 ```bash
 git checkout staging
-git pull github staging
+git pull origin staging
 ```
 
 ### 2. Update Version Number and CHANGELOG.ms
@@ -36,16 +36,16 @@ git pull github staging
 # Add line to CHANGELOG.md file with short description
 git add HI_VERSION  CHANGELOG.md
 git commit -m "Bump version number to vX.X.X"
-git push github staging
+git push origin staging
 ```
 
 ### 3. Merge to Master
 
 ```bash
 git checkout master
-git pull github master
+git pull origin master
 git merge staging
-git push github master
+git push origin master
 ```
 
 ### 4. Create GitHub Release
@@ -65,6 +65,13 @@ Or via GitHub web interface:
 6. **Description**: Use "Generate release notes"
 7. **Settings**: Check "Set as latest release"
 8. Click "Publish Release"
+
+## 5. Cleanup
+
+For safety, move back to staging branch.
+```bash
+git checkout staging
+```
 
 ## Version Bumping Criteria
 
