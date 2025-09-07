@@ -28,23 +28,23 @@
     $(document).ready(function() {
 
 	$(DRAGGABLE_SELECTOR).on('dragstart', function(event) {
-	    if ( gHiViewMode != 'edit' ) { return; }
+	    if ( !Hi.isEditMode ) { return; }
 	    handleDragStart( event );
 	});
 	$(DRAGGABLE_SELECTOR).on('dragend', function(event) {
-	    if ( gHiViewMode != 'edit' ) { return; }
+	    if ( !Hi.isEditMode ) { return; }
 	    handleDragEnd( event );
 	});
 	$(DRAGGABLE_SELECTOR).on('dragover', function(event) {
-	    if ( gHiViewMode != 'edit' ) { return; }
+	    if ( !Hi.isEditMode ) { return; }
 	    handleDragOver( event );
 	});
 	$(DRAGGABLE_SELECTOR).on('dragenter', function(event) {
-	    if ( gHiViewMode != 'edit' ) { return; }
+	    if ( !Hi.isEditMode ) { return; }
 	    handleDragEnter( event );
 	});
 	$(DRAGGABLE_SELECTOR).on('dragleave', function(event) {
-	    if ( gHiViewMode != 'edit' ) { return; }
+	    if ( !Hi.isEditMode ) { return; }
 	    handleDragLeave( event );
 	});
     });

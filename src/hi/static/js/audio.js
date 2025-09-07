@@ -593,16 +593,18 @@
     /*
       DIAGNOSTIC BACKGROUND AUDIO TESTING
       
-      - Controlled by Hi.DEBUG_AUDIO flag
       - Plays sound every 10 seconds to test autoplay capability
       - Useful for verifying baseline state detection
     */
+
+    // Moule level tracing (w/overall DEBUG safety check)
+    const TRACE_AUDIO = false && window.Hi?.Config?.DEBUG,
     
     let diagnosticAudioTimer = null;
     let diagnosticCounter = 0;
 
     function _startDiagnosticAudio() {
-        if (!Hi.DEBUG_AUDIO) return;
+        if ( ! TRACE_AUDIO ) return;
         
         if (Hi.DEBUG) { console.log('🔊 Starting diagnostic background audio (every 10 seconds)'); }
         

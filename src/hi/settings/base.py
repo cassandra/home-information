@@ -15,69 +15,69 @@ import os
 
 from .helpers import EnvironmentSettings
 
-env_settings = EnvironmentSettings.get()
+ENV = EnvironmentSettings.get()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = env_settings.SECRET_KEY
+SECRET_KEY = ENV.SECRET_KEY
 
-DJANGO_SUPERUSER_EMAIL = env_settings.DJANGO_SUPERUSER_EMAIL
-DJANGO_SUPERUSER_PASSWORD = env_settings.DJANGO_SUPERUSER_PASSWORD
+DJANGO_SUPERUSER_EMAIL = ENV.DJANGO_SUPERUSER_EMAIL
+DJANGO_SUPERUSER_PASSWORD = ENV.DJANGO_SUPERUSER_PASSWORD
 
-SITE_ID = env_settings.SITE_ID
-SITE_DOMAIN = env_settings.SITE_DOMAIN
-SITE_NAME = env_settings.SITE_NAME
+SITE_ID = ENV.SITE_ID
+SITE_DOMAIN = ENV.SITE_DOMAIN
+SITE_NAME = ENV.SITE_NAME
 
-ALLOWED_HOSTS = env_settings.ALLOWED_HOSTS
+ALLOWED_HOSTS = ENV.ALLOWED_HOSTS
 
-CORS_ALLOWED_ORIGINS = env_settings.CORS_ALLOWED_ORIGINS
+CORS_ALLOWED_ORIGINS = ENV.CORS_ALLOWED_ORIGINS
 
 CSP_DEFAULT_SRC = (
     "'self'",
     'data:',
-) + env_settings.EXTRA_CSP_URLS
+) + ENV.EXTRA_CSP_URLS
 
 CSP_CONNECT_SRC = (
     "'self'",
-) + env_settings.EXTRA_CSP_URLS
+) + ENV.EXTRA_CSP_URLS
 
 CSP_FRAME_SRC = (
     "'self'",
-) + env_settings.EXTRA_CSP_URLS
+) + ENV.EXTRA_CSP_URLS
 
 CSP_SCRIPT_SRC = (
     "'self'",
     "'unsafe-inline'",
     "'unsafe-eval'",
-) + env_settings.EXTRA_CSP_URLS
+) + ENV.EXTRA_CSP_URLS
 
 CSP_STYLE_SRC = (
     "'self'",
     "'unsafe-inline'",
     "'unsafe-eval'",
-) + env_settings.EXTRA_CSP_URLS
+) + ENV.EXTRA_CSP_URLS
 
 CSP_MEDIA_SRC = (
     "'self'",
     "'unsafe-inline'",
     "'unsafe-eval'",
     'data:',
-) + env_settings.EXTRA_CSP_URLS
+) + ENV.EXTRA_CSP_URLS
 
 CSP_IMG_SRC = (
     "'self'",
     'data:',
-) + env_settings.EXTRA_CSP_URLS
+) + ENV.EXTRA_CSP_URLS
 
 CSP_CHILD_SRC = (
     "'self'",
-) + env_settings.EXTRA_CSP_URLS
+) + ENV.EXTRA_CSP_URLS
 
 CSP_FONT_SRC = (
     "'self'",
     'data:',
-) + env_settings.EXTRA_CSP_URLS
+) + ENV.EXTRA_CSP_URLS
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
@@ -153,6 +153,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'hi.context_processors.constants_context',
+                'hi.context_processors.client_config',
                 'hi.apps.console.context_processors.settings_context',
                 'hi.apps.audio.context_processors.audio_context',
             ],
@@ -169,7 +170,7 @@ WSGI_APPLICATION = 'hi.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join( env_settings.DATABASES_NAME_PATH, 'hi.sqlite3' ),
+        'NAME': os.path.join( ENV.DATABASES_NAME_PATH, 'hi.sqlite3' ),
     }
 }
 
@@ -219,7 +220,7 @@ STATICFILES_DIRS = (
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-MEDIA_ROOT = env_settings.MEDIA_ROOT
+MEDIA_ROOT = ENV.MEDIA_ROOT
 MEDIA_URL = '/media/'
 
 PIPELINE = {
@@ -298,9 +299,9 @@ CONSTANCE_CONFIG = {
     'DOWN_FOR_MAINTENANCE': ( False, 'Should we force the down for maintenance page to show?' ),
 }
 
-REDIS_HOST = env_settings.REDIS_HOST
-REDIS_PORT = env_settings.REDIS_PORT
-REDIS_KEY_PREFIX = env_settings.REDIS_KEY_PREFIX
+REDIS_HOST = ENV.REDIS_HOST
+REDIS_PORT = ENV.REDIS_PORT
+REDIS_KEY_PREFIX = ENV.REDIS_KEY_PREFIX
 
 CACHES = {
     'default': {
@@ -315,31 +316,31 @@ CACHES = {
 
 
 AUTH_USER_MODEL = "custom.CustomUser"
-SUPPRESS_AUTHENTICATION = env_settings.SUPPRESS_AUTHENTICATION
+SUPPRESS_AUTHENTICATION = ENV.SUPPRESS_AUTHENTICATION
 
 # ====================
 # Transactional Emails
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
-EMAIL_SUBJECT_PREFIX = "%s " % env_settings.EMAIL_SUBJECT_PREFIX
-DEFAULT_FROM_EMAIL = env_settings.DEFAULT_FROM_EMAIL
-SERVER_EMAIL = env_settings.SERVER_EMAIL
+EMAIL_SUBJECT_PREFIX = "%s " % ENV.EMAIL_SUBJECT_PREFIX
+DEFAULT_FROM_EMAIL = ENV.DEFAULT_FROM_EMAIL
+SERVER_EMAIL = ENV.SERVER_EMAIL
 FROM_EMAIL_NAME = "Home Information"
 
 # Normal Settings
-EMAIL_HOST = env_settings.EMAIL_HOST
+EMAIL_HOST = ENV.EMAIL_HOST
 try:
-    EMAIL_PORT = env_settings.EMAIL_PORT
+    EMAIL_PORT = ENV.EMAIL_PORT
 except (TypeError, ValueError):
     EMAIL_PORT = 587
     
-EMAIL_HOST_USER = env_settings.EMAIL_HOST_USER
-EMAIL_HOST_PASSWORD = env_settings.EMAIL_HOST_PASSWORD
+EMAIL_HOST_USER = ENV.EMAIL_HOST_USER
+EMAIL_HOST_PASSWORD = ENV.EMAIL_HOST_PASSWORD
 EMAIL_TIMEOUT = 10  # In seconds
 
-EMAIL_USE_TLS = env_settings.EMAIL_USE_TLS
-EMAIL_USE_SSL = env_settings.EMAIL_USE_SSL
+EMAIL_USE_TLS = ENV.EMAIL_USE_TLS
+EMAIL_USE_SSL = ENV.EMAIL_USE_SSL
     
 # Needed when sending emails in background tasks since HttpRequest not
 # available. Override this for development/testing/staging.

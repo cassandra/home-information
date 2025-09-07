@@ -87,6 +87,8 @@ class ConfigInternalView( View ):
     @classmethod
     def get_config_data(self):
         return {
+            'ENVIRONMENT': settings.ENV.environment_name,
+            'VERSION': settings.ENV.VERSION,
             'ALLOWED_HOSTS': settings.ALLOWED_HOSTS,
             'DATABASES_NAME_PATH': settings.DATABASES['default']['NAME'],
             'REDIS_HOST': settings.REDIS_HOST,

@@ -53,6 +53,6 @@ TEMPLATES = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join( env_settings.DATABASES_NAME_PATH, 'simulator.sqlite3' ),
+        'NAME': os.path.join( ENV.DATABASES_NAME_PATH, 'simulator.sqlite3' ),
     }
 }
