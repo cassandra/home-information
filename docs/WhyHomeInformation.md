@@ -2,6 +2,8 @@
 
 # Why Home Information?
 
+<img src="img/screenshots/spatial-data-org-1024x768.png" alt="Kitchen Example" width="400"> &nbsp; <img src="img/screenshots/attribute-info-files-1024x768.png" alt="Info View/Edit Example" width="400">
+
 ## The Home Information Problem
 
 Modern homes are more complex than ever. Between smart devices, security systems, appliances, maintenance schedules, warranties, and documentation, homeowners are drowning in scattered information. Consider these common frustrations:

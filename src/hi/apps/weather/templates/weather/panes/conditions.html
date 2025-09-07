@@ -13,33 +13,13 @@
 
 <div class="row">
   <div class="col-6" >
-    <div class="h3">
+    <div class="h2">
       {% if conditions.temperature is not None %}
       {{ conditions.temperature.quantity|format_magnitude:1 }}
       <small>{{ conditions.temperature.quantity|format_units }}</small>
       {% else %}
       -- °
       {% endif %}
-    </div>
-    <div class="d-flex justify-content-left">
-      <div>
-        Min:
-        {% if conditions.temperature_min_today is not None %}
-        {{ conditions.temperature_min_today.quantity|format_magnitude:1 }}
-        <small>{{ conditions.temperature_min_today.quantity|format_units }}</small>
-        {% else %}
-        -- °
-        {% endif %}
-      </div>
-      <div class="pl-1">
-        Max:
-        {% if conditions.temperature_max_today is not None %}
-        {{ conditions.temperature_max_today.quantity|format_magnitude:1 }}
-        <small>{{ conditions.temperature_max_today.quantity|format_units }}</small>
-        {% else %}
-        -- °
-        {% endif %}
-      </div>
     </div>
   </div>
   <div class="col-6" >
@@ -57,29 +37,53 @@
       -- %
       {% endif %}
     </div>
+  </div>
+</div>
+<div>
+  <div class="d-flex justify-content-left">
     <div>
-      Wind:
-      {% if conditions.windspeed %}
-      {{ conditions.windspeed.quantity|format_magnitude:1 }}
-      <small>{{ conditions.windspeed.quantity|format_units }}</small>
+      Min:
+      {% if conditions.temperature_min_today is not None %}
+      {{ conditions.temperature_min_today.quantity|format_magnitude:1 }}
+      <small>{{ conditions.temperature_min_today.quantity|format_units }}</small>
       {% else %}
-      -- 
-      {% endif %}
-      {% if conditions.wind_direction %}
-      {{ conditions.wind_direction.quantity|format_compass }}
+      -- °
       {% endif %}
     </div>
-    <div>
-      Humidity:
-      {% if conditions.relative_humidity %}
-      {{ conditions.relative_humidity.quantity|format_magnitude:1 }}
-      <small>{{ conditions.relative_humidity.quantity|format_units }}</small>
+    <div class="pl-1">
+      Max:
+      {% if conditions.temperature_max_today is not None %}
+      {{ conditions.temperature_max_today.quantity|format_magnitude:1 }}
+      <small>{{ conditions.temperature_max_today.quantity|format_units }}</small>
       {% else %}
-      -- %
+      -- °
       {% endif %}
     </div>
   </div>
+  <div>
+    Wind:
+    {% if conditions.windspeed %}
+    {{ conditions.windspeed.quantity|format_magnitude:1 }}
+    <small>{{ conditions.windspeed.quantity|format_units }}</small>
+    {% else %}
+    -- 
+    {% endif %}
+    {% if conditions.wind_direction %}
+    {{ conditions.wind_direction.quantity|format_compass }}
+    {% endif %}
+  </div>
+  <div>
+    Humidity:
+    {% if conditions.relative_humidity %}
+    {{ conditions.relative_humidity.quantity|format_magnitude:1 }}
+    <small>{{ conditions.relative_humidity.quantity|format_units }}</small>
+    {% else %}
+    -- %
+    {% endif %}
+  </div>
+
 </div>
+
 <div class="text-muted">
   <small><em>{{ conditions.temperature.source_datetime |localtime }}, {{ conditions.temperature.source.abbreviation }} </em></small>
 </div>

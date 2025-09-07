@@ -6,7 +6,7 @@
 
 Home Information transforms how you manage your property by creating a visual, centralized hub for everything about your home. Instead of hunting through drawers, email attachments, and scattered notes, you'll have manuals, maintenance records, device controls, and security monitoring all organized exactly where they belong - visually positioned on a map of your home.
 
-<img src="docs/img/screenshot-kitchen.png" alt="Kitchen Example" width="250"> <img src="docs/img/screenshot-security.png" alt="Security Example" width="250"> <img src="docs/img/screenshot-cameras.png" alt="Camera Example" width="250">
+<img src="docs/img/screenshots/spatial-data-org-1024x768.png" alt="Kitchen Example" width="250"> &nbsp; <img src="docs/img/screenshots/security-view-active-closeup-400x300.png" alt="Security Example" width="250"> &nbsp; <img src="docs/img/screenshots/stream-browser-1024x768.png" alt="Camera Example" width="250">
 
 ## Why Home Information?
 

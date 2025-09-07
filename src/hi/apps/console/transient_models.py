@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+import re
 from typing import Dict, List, Optional
 
 from hi.apps.entity.models import Entity, EntityState
@@ -32,7 +33,13 @@ class CameraControlDisplayData:
     entity: Entity
     status_entity_state: Optional[EntityState] = None
 
+    @property
+    def short_name(self):
+        """ Heuristic rules to reduce name length to fit in side panel narrow buttons """
+        short_name = re.sub( r'camera$', '', self.entity.name, flags = re.IGNORECASE )
+        return short_name.strip()
 
+    
 @dataclass
 class EntitySensorHistoryData:
     """

@@ -8,6 +8,8 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 
 **What it does:** Store, organize, and access all your home-related documents, notes, and data using a visual, location-based approach.
 
+<img src="img/screenshots/spatial-data-org-1024x768.png" alt="Kitchen Example" width="400"> &nbsp; <img src="img/screenshots/attribute-info-files-1024x768.png" alt="Info View/Edit Example" width="400">
+
 ### Spatial Data Organization
 - **Position items visually** on floor plans or property maps
 - **Multiple location support** - separate views for different floors, attic, basement, or outdoor areas
@@ -43,6 +45,8 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 
 **Real-world benefit:** Instead of opening a separate app and navigating device lists, you see device status right on your home map and control them in context.
 
+<img src="img/screenshots/automation-view-1024x768.png" alt="Automation View Example" width="400">
+
 ### Event & Automation System
 - **Visual rule builder** - create automation rules using the spatial interface
 - **Cross-system integration** - rules can involve devices from different platforms
@@ -73,6 +77,8 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 - **Auto-viewing** - automatically display relevant camera feeds when alarms trigger
 
 **Use case example:** Motion sensor triggers in the backyard. The system automatically shows you the backyard camera feed while logging the event and can send email alerts with relevant information.
+
+<img src="img/screenshots/security-view-active-1024x768.png" alt="Security View Example" width="400">
 
 ### Alert & Notification System
 - **Visual alerts** - on-screen notifications with color-coded severity
@@ -108,6 +114,8 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 - **Backup & restore** - keeps history of all information changes and one-click restoring
 
 **Perfect for:** Households that want a dedicated home management display, or anyone who prefers visual organization over list-based interfaces.
+
+<img src="img/screenshots/editing-view-1024x768.png" alt="Editing View Example" width="400">
 
 ## Integration & Extensibility
 
