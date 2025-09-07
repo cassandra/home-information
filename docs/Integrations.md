@@ -27,5 +27,5 @@ export HI_EXTRA_CSP_URLS="${SCHEME}://${HOST}:${PORT}"
 
 ### HTTPS/SSL Issues
 
-Another potential issue with viewing the ZoneMinder camera streams can happen if your Home Information server runs trhrough HTTP and the ZoneMinder server streams are served thruogh HTTPS/SSL.  Browsers prevent that due the security implications.  This can be made worse if the ZoneMinder server is using a self-signed SSL cert (the default?). A workaround we found was to stand up an nginx server to proxy the HTTPS/SSL urls and serve them as plain HTTP in Home Information pages by changing the ZoneMinder setting "Portal URL".
+Another potential issue with viewing the ZoneMinder camera streams can happen if your Home Information server runs trhrough HTTP and the ZoneMinder server streams are served thruogh HTTPS/SSL.  Browsers prevent that due to the security implications.  This can be made worse if the ZoneMinder server is using a self-signed SSL cert (the default?). A workaround we found was to stand up an nginx server to proxy the HTTPS/SSL urls and serve them as plain HTTP in Home Information pages by changing the ZoneMinder setting "Portal URL".
 
