@@ -66,6 +66,11 @@ Or via GitHub web interface:
 7. **Settings**: Check "Set as latest release"
 8. Click "Publish Release"
 
+#### Check GitHub Actions
+
+- Check that ZIP file was successfully built
+- Check that Docker image was built.
+
 ### 5. Validate Install URL Works
 
 Make sure that the published ZIP install link works and that it is at least 10MB in size and no more than 100MB in size.
