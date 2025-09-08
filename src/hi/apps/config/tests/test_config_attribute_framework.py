@@ -271,8 +271,7 @@ class SubsystemAttributeEditResponseRendererTest(AttributeEditResponseRendererTe
         context = self.create_item_edit_context(subsystem)
         renderer = self._get_renderer()
         
-        request = self.factory.post('/config/subsystem/test/')
-        request.session = self._get_mock_session()
+        request = self.create_hi_request('POST', '/config/subsystem/test/')
         
         response = renderer.render_form_success_response(
             attr_item_context=context,
@@ -304,8 +303,7 @@ class SubsystemAttributeEditResponseRendererTest(AttributeEditResponseRendererTe
             attr_item_context_list=item_context_list
         )
         
-        request = self.factory.post('/config/subsystem/multi/test/')
-        request.session = self._get_mock_session()
+        request = self.create_hi_request('POST', '/config/subsystem/multi/test/')
         
         response = renderer.render_form_success_response_multi(
             attr_page_context=page_context,
@@ -337,13 +335,10 @@ class SubsystemAttributeEditResponseRendererTest(AttributeEditResponseRendererTe
         from hi.apps.attribute.edit_form_handler import AttributeEditFormHandler
         return AttributeEditFormHandler()
         
-    def _get_mock_session(self):
-        """Get mock session for testing."""
-        from hi.testing.base_test_case import MockSession
-        return MockSession()
 
-
-class SubsystemAttributeEditTemplateContextBuilderTest(AttributeEditTemplateContextBuilderTestMixin, BaseTestCase):
+class SubsystemAttributeEditTemplateContextBuilderTest(
+        AttributeEditTemplateContextBuilderTestMixin,
+        BaseTestCase ):
     """Test AttributeEditTemplateContextBuilder with Subsystem-specific implementations."""
     
     def create_owner_instance(self, **kwargs):

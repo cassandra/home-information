@@ -19,8 +19,8 @@
   </head>
   <body>
     <script>
-     const AN_VERSION = "{{ AN_VERSION }}";
-     const gHiViewMode = "{{ request.view_parameters.view_mode }}";
+     window.HiClientConfig = {{ hi_client_config.to_json_dict|safe }};
+     window.AN_VERSION = window.HiClientConfig.VERSION;
     </script>
     {% javascript 'js_before_content' %}
     {% block header_post_javascript %}{% endblock %}

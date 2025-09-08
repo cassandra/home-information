@@ -28,6 +28,7 @@ urlpatterns = [
     re_path( r'^start$', views.StartView.as_view(), name='start' ),
     re_path( r'^health$', views.HealthView.as_view(), name='health' ),
 
+    re_path( r'^env/', include('hi.environment.urls' )),
     re_path( r'^user/', include('hi.apps.user.urls' )),
     re_path( r'^api/', include('hi.apps.api.urls' )),
     re_path( r'^config/', include('hi.apps.config.urls' )),

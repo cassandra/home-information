@@ -30,7 +30,7 @@
 // 3. js-cookie library (for CSRF token handling)
 // 4. Include antinode.js after the above libraries:
 //    <script src="{% static 'js/antinode.js' %}"></script>
-// 5. (Optional) Set AN_VERSION variable before loading for version compatibility
+// 5. (Optional) Set window.AN_VERSION variable before loading for version compatibility
 
 // ====================
 // DECLARATIVE USAGE (HTML Attributes)
@@ -135,7 +135,7 @@
 //
 // To help the server-side deal with this, this module will add a custom HTTP 
 // header to every asynchronous call with the version number. To enable this
-// feature, you need to ensure that the javascript variable AN_VERSION is
+// feature, you need to ensure that the javascript variable window.AN_VERSION is
 // set to the current version somewhere before this module loads. When
 // that variable exists, this module will add the header "X-AN-Version"
 // with the value of that variable. 
@@ -255,8 +255,8 @@
                 
                 beforeSend: function(jqXHR, ajaxSettings) {
                     // Add version header if available
-                    if ( typeof AN_VERSION !== 'undefined' ) {
-                        jqXHR.setRequestHeader('X-AN-Version', AN_VERSION);
+                    if ( typeof window.AN_VERSION !== 'undefined' ) {
+                        jqXHR.setRequestHeader('X-AN-Version', window.AN_VERSION);
                     }
                     
                     // Call custom beforeSend if provided
@@ -377,8 +377,8 @@ function asyncSubmitHandlerHelper( $form ) {
         processData: processData,
 
         beforeSend: function (jqXHR, settings) {
-            if ( typeof AN_VERSION !== 'undefined' ) {
-                jqXHR.setRequestHeader('X-AN-Version', AN_VERSION );
+            if ( typeof window.AN_VERSION !== 'undefined' ) {
+                jqXHR.setRequestHeader('X-AN-Version', window.AN_VERSION );
             }
         },
         
@@ -442,8 +442,8 @@ function asyncClickHandler(event) {
         url: url,
         
         beforeSend: function (jqXHR, settings) {
-            if ( typeof AN_VERSION !== 'undefined' ) {
-                jqXHR.setRequestHeader('X-AN-Version', AN_VERSION );
+            if ( typeof window.AN_VERSION !== 'undefined' ) {
+                jqXHR.setRequestHeader('X-AN-Version', window.AN_VERSION );
             }
         },
         
@@ -889,8 +889,8 @@ function asyncRedirect( $target, $mode, url ) {
         url: url,
         
         beforeSend: function (jqXHR, settings) {
-            if ( typeof AN_VERSION !== 'undefined' ) {
-                jqXHR.setRequestHeader('X-AN-Version', AN_VERSION );
+            if ( typeof window.AN_VERSION !== 'undefined' ) {
+                jqXHR.setRequestHeader('X-AN-Version', window.AN_VERSION );
             }
         },
         success: function(data, status, xhr) {

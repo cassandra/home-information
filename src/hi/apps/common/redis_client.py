@@ -1,9 +1,7 @@
 import logging
 import redis
-import redlock
 
 from django.conf import settings
-from django.contrib.auth.models import User as UserType
 
 logger = logging.getLogger(__name__)
 
@@ -60,14 +58,12 @@ def initialize_global_cache_client():
 
 
 def exists_redis_client():
-    global _g_global_redis_client
     if not _g_global_redis_client:
         initialize_global_cache_client()
     return _g_global_redis_client is not None
        
 
 def get_redis_client():
-    global _g_global_redis_client
     if not _g_global_redis_client:
         initialize_global_cache_client()
     return _g_global_redis_client
@@ -83,24 +79,8 @@ def clear_redis_client():
     return
 
 
-def get_redis_lock( lock_key : str ):
-    redis_client = get_redis_client()
-
-    lock_retry_times = 20
-    lock_retry_delay_ms = 250
-    lock_ttl_ms = 30 * 1000
-    
-    return redlock.RedLock( lock_key,
-                            connection_details = [ redis_client ],
-                            retry_times = lock_retry_times,
-                            retry_delay = lock_retry_delay_ms,
-                            ttl = lock_ttl_ms )
-        
-
 class CacheNotAvailableError(Exception):
     pass
 
 
-def get_user_lock( user : UserType ):
-    return get_redis_lock( f'trip:{user.id}:lock' )
     

@@ -1,0 +1,172 @@
+name: Rollback Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      rollback_to_version:
+        description: 'Version to rollback to (e.g., v1.0.1)'
+        required: true
+        type: string
+      bad_version:
+        description: 'Bad version to mark as DO NOT USE (e.g., v1.0.2)'
+        required: true
+        type: string
+      reason:
+        description: 'Brief reason for rollback'
+        required: false
+        type: string
+        default: 'Critical issue identified'
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Validate inputs
+        run: |
+          echo "Rolling back to: ${{ inputs.rollback_to_version }}"
+          echo "Marking as bad: ${{ inputs.bad_version }}"
+          echo "Reason: ${{ inputs.reason }}"
+          
+          # Basic validation
+          if [[ ! "${{ inputs.rollback_to_version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: rollback_to_version must be in format vX.Y.Z"
+            exit 1
+          fi
+          
+          if [[ ! "${{ inputs.bad_version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: bad_version must be in format vX.Y.Z"
+            exit 1
+          fi
+      
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Pull target rollback version
+        run: |
+          echo "Pulling version to rollback to: ${{ inputs.rollback_to_version }}"
+          docker pull ghcr.io/${{ github.repository_owner }}/home-information:${{ inputs.rollback_to_version }}
+      
+      - name: Re-tag as latest
+        run: |
+          echo "Re-tagging ${{ inputs.rollback_to_version }} as latest"
+          docker tag ghcr.io/${{ github.repository_owner }}/home-information:${{ inputs.rollback_to_version }} \
+                     ghcr.io/${{ github.repository_owner }}/home-information:latest
+      
+      - name: Push updated latest tag
+        run: |
+          echo "Pushing updated latest tag"
+          docker push ghcr.io/${{ github.repository_owner }}/home-information:latest
+      
+      - name: Update bad release notes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { rollback_to_version, bad_version, reason } = context.payload.inputs;
+            
+            try {
+              // Get the bad release
+              const release = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: bad_version
+              });
+              
+              // Update the release
+              const originalName = release.data.name || bad_version;
+              const updatedName = originalName.startsWith('⚠️ DO NOT USE') 
+                ? originalName 
+                : `⚠️ DO NOT USE - ROLLED BACK - ${originalName}`;
+              
+              const warningNotice = `
+              ## ⚠️ ROLLBACK NOTICE ⚠️
+              
+              **This release has been rolled back due to: ${reason}**
+              
+              **DO NOT USE THIS VERSION**
+              
+              Please use version ${rollback_to_version} instead or run:
+              \`\`\`bash
+              curl -fsSL https://raw.githubusercontent.com/${context.repo.owner}/${context.repo.repo}/master/update.sh | bash
+              \`\`\`
+              
+              ---
+              
+              `;
+              
+              const updatedBody = warningNotice + (release.data.body || '');
+              
+              await github.rest.repos.updateRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.data.id,
+                name: updatedName,
+                body: updatedBody,
+                prerelease: true  // Mark as prerelease to de-emphasize
+              });
+              
+              console.log(`Updated release ${bad_version} with rollback warning`);
+              
+            } catch (error) {
+              console.log(`Warning: Could not update release ${bad_version}: ${error.message}`);
+              // Don't fail the workflow if release update fails
+            }
+      
+      - name: Create rollback issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { rollback_to_version, bad_version, reason } = context.payload.inputs;
+            
+            const title = `Rollback executed: ${bad_version} → ${rollback_to_version}`;
+            const body = `
+            ## Rollback Summary
+            
+            **Rolled back from:** ${bad_version}  
+            **Rolled back to:** ${rollback_to_version}  
+            **Reason:** ${reason}  
+            **Executed by:** @${context.actor}  
+            **Date:** ${new Date().toISOString()}  
+            
+            ## Actions Taken
+            - ✅ Docker \`latest\` tag updated to point to ${rollback_to_version}
+            - ✅ Release ${bad_version} marked as "DO NOT USE"
+            - ✅ Users can update with: \`curl -fsSL https://raw.githubusercontent.com/${context.repo.owner}/${context.repo.repo}/master/update.sh | bash\`
+            
+            ## Next Steps
+            - [ ] Investigate root cause of issue in ${bad_version}
+            - [ ] Create fix for the issue
+            - [ ] Create new patch release
+            - [ ] Post-mortem (if needed)
+            
+            cc: @${context.repo.owner}
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['rollback', 'critical']
+            });
+      
+      - name: Display success message
+        run: |
+          echo "🚨 ROLLBACK COMPLETED SUCCESSFULLY 🚨"
+          echo ""
+          echo "📦 Docker latest tag now points to: ${{ inputs.rollback_to_version }}"
+          echo "⚠️  Bad release marked: ${{ inputs.bad_version }}"
+          echo "📋 Tracking issue created for follow-up"
+          echo ""
+          echo "Users can update immediately with:"
+          echo "curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/master/update.sh | bash"

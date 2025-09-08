@@ -220,7 +220,7 @@
 
     function clearSelectedPathSvgGroup() {
         if ( gSelectedPathSvgGroup ) {
-            console.log('Clearing svg path selection');
+            if ( Hi.DEBUG ) { console.log('Clearing svg path selection'); }
             collapseSvgPath( );
             gSelectedPathSvgGroup = null;
         }
@@ -373,7 +373,7 @@
 
     function extendProxyPath( event ) {
             
-        console.log( 'Extending proxy path' );
+        if ( Hi.DEBUG ) { console.log( 'Extending proxy path' ); }
         const baseSvgElement = $(Hi.BASE_SVG_SELECTOR);
         const svgViewBox = Hi.svgUtils.getSvgViewBox( baseSvgElement );
         let svgPoint = Hi.svgUtils.toSvgPoint( baseSvgElement, event.clientX, event.clientY );
@@ -406,7 +406,7 @@
         } else if (  $(referenceElement).hasClass( PROXY_LINE_CLASS ) ) {
             newProxyPoint = insertNewProxyPoint( svgPoint, referenceElement );
         } else {
-            console.log( 'Unrecognized reference proxy element.' );
+            if ( Hi.DEBUG ) { console.log( 'Unrecognized reference proxy element.' ); }
             return;
         }
         
@@ -710,7 +710,7 @@
             addProxyPointEventHandler( bottomLeftProxyPoint, bottomProxyLine, leftProxyLine );
 
         } else {
-            console.log( `Unknown proxy path type: ${proxyPathType}` );
+            if ( Hi.DEBUG ) { console.log( `Unknown proxy path type: ${proxyPathType}` ); }
         }
         saveSvgPath();  
     }
@@ -911,7 +911,7 @@
 
         });
 
-        console.log( `PATH = ${pathString}` );
+        if ( Hi.DEBUG ) { console.log( `PATH = ${pathString}` ); }
         return pathString;
     }
     

@@ -13,9 +13,6 @@ urlpatterns = [
              views.ConfigSettingsView.as_view(), 
              name='config_settings' ),
 
-    re_path( r'^internal$', 
-             views.ConfigInternalView.as_view(), 
-             name='config_internal' ),
 
     re_path( r'^attribute/history/(?P<subsystem_id>\d+)/(?P<attribute_id>\d+)/$', 
              views.SubsystemAttributeHistoryInlineView.as_view(), 

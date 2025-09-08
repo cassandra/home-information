@@ -2,7 +2,7 @@ from asgiref.sync import sync_to_async
 from cachetools import TTLCache
 from datetime import datetime
 import logging
-from pyzm.helpers.Monitor import Monitor as ZmMonitor
+from .pyzm_client.helpers.Monitor import Monitor as ZmMonitor
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.entity.enums import EntityStateValue

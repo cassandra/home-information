@@ -2,9 +2,16 @@
     
     const Hi = {
 
-        DEBUG: true,
-        DEBUG_AUDIO: false, // Enable diagnostic background audio testing
-        isEditMode: ( gHiViewMode == 'edit' ),  // Set by server to keep front-end in sync with back-end
+        // HiClientConfig comes from server-side template injection. This module
+        // (main.css) should be the only Javaacript that knows about
+        // HiClientConfig and the coordination mechanism with those
+        // server-delivered config settings.  All other JS modules should
+        // look to this module to relay any needed config settings (via
+        // variable below).
+        //
+        DEBUG: window.HiClientConfig?.DEBUG ?? false,
+        isEditMode: window.HiClientConfig?.IS_EDIT_MODE ?? false,
+
         MAIN_AREA_SELECTOR: '#hi-main-content',
         LOCATION_VIEW_AREA_SELECTOR: '#hi-location-view-main',
         LOCATION_VIEW_SVG_CLASS: 'hi-location-view-svg',
@@ -221,7 +228,7 @@
         }
         return null;
     }
-        
+    
     function _getRotationAngle( centerX, centerY, startX, startY, endX, endY ) {
 
         const startVectorX = startX - centerX;
@@ -309,5 +316,5 @@
     ${rectStr}`) ;
         
     }
-            
+    
 })();    

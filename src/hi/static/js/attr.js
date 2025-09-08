@@ -290,7 +290,7 @@
             
             // Handle redirects first - if redirect is present, do it immediately
             if (data.redirect) {
-                console.log('Form response contains redirect, navigating to:', data.redirect);
+                if ( Hi.DEBUG ) { console.log('Form response contains redirect, navigating to:', data.redirect); }
                 window.location.href = data.redirect;
                 return;
             }

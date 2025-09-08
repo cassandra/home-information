@@ -1,9 +1,9 @@
 import logging
-from pyzm.api import ZMApi
-from pyzm.helpers.Event import Event as ZmEvent
-from pyzm.helpers.Monitor import Monitor as ZmMonitor
-from pyzm.helpers.State import State as ZmState
-from pyzm.helpers.globals import logger as pyzm_logger
+from .pyzm_client.api import ZMApi
+from .pyzm_client.helpers.Event import Event as ZmEvent
+from .pyzm_client.helpers.Monitor import Monitor as ZmMonitor
+from .pyzm_client.helpers.State import State as ZmState
+from .pyzm_client.helpers.globals import logger as pyzm_logger
 from threading import Lock
 from typing import Dict, List
 

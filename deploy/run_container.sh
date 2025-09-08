@@ -22,7 +22,7 @@ while [[ $# -gt 0 ]]; do
             DATA_DIR="$2"
             shift 2
             ;; 
-	-port)
+        -port)
             EXTERNAL_PORT="$2"
             shift 2
             ;;

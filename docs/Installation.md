@@ -4,9 +4,49 @@
 
 ## Requirements and Dependencies
 
-- Docker - installed and running
+- **Docker** - installed and running ([Get Docker](https://docs.docker.com/get-docker/))
+- **Python 3.6+** - for secure credential generation (usually pre-installed on most systems)
 
-See the [Dependencies Page](dev/Dependencies.md) if you want help installing those.
+See the [Dependencies Page](dev/Dependencies.md) if you want help installing these dependencies.
+
+## Single-Command Installation (Recommended)
+
+The fastest way to get Home Information running:
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/install.sh | bash
+```
+
+This automated installer will:
+- Check that Docker is installed and running
+- Create required directories in `~/.hi/`
+- Generate secure admin credentials automatically  
+- Pull the latest Docker image from GitHub Container Registry
+- Start the application container
+- Display access URL and admin credentials
+
+**Result:** Visit [http://localhost:9411](http://localhost:9411) and sign in with the displayed credentials.
+
+Your data will be stored in:
+- Database: `~/.hi/database/`
+- Uploaded files: `~/.hi/media/`
+
+### Updating to Latest Version
+
+To update an existing installation to the latest version:
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/update.sh | bash
+```
+
+This will:
+- Pull the latest Docker image
+- Restart the container with your existing configuration
+- Preserve all your data and settings
+
+## Advanced Installation (Full Control)
+
+For users who want full control over the installation process or need to customize the setup:
 
 ## Pre-install Considerations
 
@@ -88,6 +128,29 @@ The server runs on port 9411, so point your browser to: [http://localhost:9411](
 The database file and any uploaded documents live outside the Docker container in your home directory. Their default locations are: 
 - Database file: `$HOME/.hi/database/hi.sqlite3`
 - Uploaded files: `$HOME/.hi/media`
+
+#### Updating (Manual Installation)
+
+To update a manual installation to the latest version:
+
+**Option 1: Use the update script**
+```shell
+curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/update.sh | bash
+```
+
+**Option 2: Manual update steps**
+```shell
+# Pull latest code
+cd $PROJ_DIR/home-information*
+git pull  # or download and extract latest release
+
+# Rebuild the Docker image
+make docker-build
+
+# Restart with new image
+make docker-stop
+make docker-run
+```
 
 ### Getting Started
 

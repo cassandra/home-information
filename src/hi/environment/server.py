@@ -19,6 +19,7 @@ class EnvironmentSettings:
     #
     DJANGO_SETTINGS_MODULE     : str           = None
     DJANGO_SERVER_PORT         : int           = 8000
+    VERSION                    : str           = 'unknown'
     SECRET_KEY                 : str           = None
     DJANGO_SUPERUSER_EMAIL     : str           = None
     DJANGO_SUPERUSER_PASSWORD  : str           = None
@@ -43,6 +44,19 @@ class EnvironmentSettings:
     EMAIL_HOST_PASSWORD        : str           = ''
     EMAIL_USE_TLS              : bool          = False
     EMAIL_USE_SSL              : bool          = False
+    
+    @property
+    def environment_name(self) -> str:
+        """
+        Extract environment name from DJANGO_SETTINGS_MODULE.
+        """
+        if not self.DJANGO_SETTINGS_MODULE:
+            return 'unknown'
+        
+        parts = self.DJANGO_SETTINGS_MODULE.split('.')
+        if len(parts) > 1:
+            return parts[-1]
+        return 'unknown'
     
     @classmethod
     def get( cls ) -> 'EnvironmentSettings':
@@ -69,6 +83,13 @@ class EnvironmentSettings:
             )
         except ( TypeError, ValueError ):
             pass
+        # Read version from HI_VERSION file (single source of truth)
+        version_file_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'HI_VERSION')
+        try:
+            with open(version_file_path, 'r') as f:
+                env_settings.VERSION = f.read().strip()
+        except (FileNotFoundError, IOError) as e:
+            raise ImproperlyConfigured(f"Cannot read version file {version_file_path}: {e}")
         env_settings.SECRET_KEY = cls.get_env_variable(
             'DJANGO_SECRET_KEY',
             env_settings.SECRET_KEY,

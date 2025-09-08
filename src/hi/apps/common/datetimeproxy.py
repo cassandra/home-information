@@ -30,8 +30,6 @@ def now( tzname = None ):
     Wraps Django's timezone.now() to return a timezone aware
     datetime object.
     """
-    global _time_delta
-
     # This assumes the Django system time is in UTC !!!
     utcnow = timezone.now() + _time_delta
     if tzname is None:

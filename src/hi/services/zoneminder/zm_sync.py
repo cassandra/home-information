@@ -1,5 +1,5 @@
 import logging
-from pyzm.helpers.Monitor import Monitor as ZmMonitor
+from .pyzm_client.helpers.Monitor import Monitor as ZmMonitor
 from typing import Dict
 
 from django.db import transaction

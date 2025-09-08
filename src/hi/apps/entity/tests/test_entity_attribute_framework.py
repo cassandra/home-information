@@ -148,14 +148,15 @@ class EntityAttributeEditFormHandlerTest(AttributeEditFormHandlerTestMixin, Base
             content_type="text/plain"
         )
         
-        from hi.testing.base_test_case import MockRequest, MockSession
-        request = MockRequest()
-        request.POST = {
-            'name': 'entity_document',
-            'value': 'Entity Test Document'
-        }
-        request.FILES = {'file_value': test_file}
-        request.session = MockSession()
+        _ = self.create_hi_request(
+            method='POST',
+            path='/entity/test/',
+            data={
+                'name': 'entity_document',
+                'value': 'Entity Test Document'
+            },
+            files={'file_value': test_file}
+        )
         
         # Should handle file upload processing
         
@@ -209,8 +210,7 @@ class EntityAttributeEditResponseRendererTest(AttributeEditResponseRendererTestM
         context = self.create_item_edit_context(entity)
         renderer = self._get_renderer()
         
-        request = self.factory.post('/entity/test/')
-        request.session = self._get_mock_session()
+        request = self.create_hi_request('POST', '/entity/test/')
         
         response = renderer.render_form_success_response(
             attr_item_context=context,
@@ -231,13 +231,10 @@ class EntityAttributeEditResponseRendererTest(AttributeEditResponseRendererTestM
         from hi.apps.attribute.edit_response_renderer import AttributeEditResponseRenderer
         return AttributeEditResponseRenderer()
     
-    def _get_mock_session(self):
-        """Get mock session for testing."""
-        from hi.testing.base_test_case import MockSession
-        return MockSession()
 
-
-class EntityAttributeEditTemplateContextBuilderTest(AttributeEditTemplateContextBuilderTestMixin, BaseTestCase):
+class EntityAttributeEditTemplateContextBuilderTest(
+        AttributeEditTemplateContextBuilderTestMixin,
+        BaseTestCase ):
     """Test AttributeEditTemplateContextBuilder with Entity-specific implementations."""
     
     def create_owner_instance(self, **kwargs):
@@ -387,8 +384,7 @@ class EntityAttributeViewMixinTest(AttributeViewMixinTestMixin, BaseTestCase):
         context = self.create_item_edit_context(entity)
         
         # Test GET request (initial template context)
-        get_request = self.factory.get(f'/entity/{entity.id}/edit/')
-        get_request.session = self._get_mock_session()
+        _ = self.create_hi_request('GET', f'/entity/{entity.id}/edit/')
         
         template_context = view.create_initial_template_context(
             attr_item_context=context
@@ -409,8 +405,7 @@ class EntityAttributeViewMixinTest(AttributeViewMixinTestMixin, BaseTestCase):
         view = self.create_test_view_instance()
         context = self.create_item_edit_context(entity)
         
-        request = self.factory.get(f'/entity/{entity.id}/attr/{attribute.id}/history/')
-        request.session = self._get_mock_session()
+        request = self.create_hi_request('GET', f'/entity/{entity.id}/attr/{attribute.id}/history/')
         
         response = view.get_history(
             request=request,
@@ -438,8 +433,7 @@ class EntityAttributeViewMixinTest(AttributeViewMixinTestMixin, BaseTestCase):
         entity.name = "External Update"
         entity.save()
         
-        request = self.factory.post(f'/entity/{entity.id}/edit/', form_data)
-        request.session = self._get_mock_session()
+        request = self.create_hi_request('POST', f'/entity/{entity.id}/edit/', form_data)
         
         response = view.post_attribute_form(
             request=request,
@@ -449,8 +443,4 @@ class EntityAttributeViewMixinTest(AttributeViewMixinTestMixin, BaseTestCase):
         # Should handle gracefully (may succeed or fail depending on validation)
         self.assertIn(response.status_code, [200, 400])
         
-    def _get_mock_session(self):
-        """Get mock session for testing."""
-        from hi.testing.base_test_case import MockSession
-        return MockSession()
     
