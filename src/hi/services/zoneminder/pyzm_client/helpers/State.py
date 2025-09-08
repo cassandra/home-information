@@ -9,7 +9,6 @@ the full object
 
 
 from .Base import Base
-from . import globals as g
 
 
 class State(Base):
@@ -24,7 +23,6 @@ class State(Base):
             :class:`pyzm.helpers.State`: raw state object
         """
         return self.state['State']
-    
 
     def active(self):
         """whether this state is active or not
@@ -57,5 +55,3 @@ class State(Base):
             int: id of this state
         """
         return int(self.state['State']['Id'])
-
-   

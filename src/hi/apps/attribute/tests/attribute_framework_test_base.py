@@ -342,8 +342,7 @@ class AttributeEditResponseRendererTestMixin(AttributeFrameworkTestMixin, ABC):
         context = self.create_item_edit_context(owner)
         renderer = AttributeEditResponseRenderer()
         
-        request = self.factory.post('/test/')
-        request.session = MockSession()
+        request = self.create_hi_request('POST', '/test/')
         
         response = renderer.render_form_success_response(
             attr_item_context=context,
@@ -379,8 +378,7 @@ class AttributeEditResponseRendererTestMixin(AttributeFrameworkTestMixin, ABC):
         is_valid = handler.validate_forms(edit_form_data=form_data)
         self.assertFalse(is_valid)
         
-        request = self.factory.post('/test/')
-        request.session = MockSession()
+        request = self.create_hi_request('POST', '/test/')
         
         response = renderer.render_form_error_response(
             attr_item_context=context,
@@ -403,8 +401,7 @@ class AttributeEditResponseRendererTestMixin(AttributeFrameworkTestMixin, ABC):
         context = self.create_item_edit_context(owner)
         renderer = AttributeEditResponseRenderer()
         
-        request = self.factory.get('/test/')
-        request.session = MockSession()
+        request = self.create_hi_request('GET', '/test/')
         
         # Create mock history records
         history_records = []
@@ -426,8 +423,7 @@ class AttributeEditResponseRendererTestMixin(AttributeFrameworkTestMixin, ABC):
         context = self.create_item_edit_context(owner)
         renderer = AttributeEditResponseRenderer()
         
-        request = self.factory.post('/test/')
-        request.session = MockSession()
+        request = self.create_hi_request('POST', '/test/')
         
         response = renderer.render_restore_success_response(
             attr_item_context=context,
@@ -572,8 +568,7 @@ class AttributeViewMixinTestMixin(AttributeFrameworkTestMixin, ABC):
         
         # Create valid POST data
         post_data = self.create_valid_form_data(owner, name="Updated via View")
-        request = self.factory.post('/test/', post_data)
-        request.session = MockSession()
+        request = self.create_hi_request('POST', '/test/', post_data)
         
         response = view.post_attribute_form(
             request=request,
@@ -592,8 +587,7 @@ class AttributeViewMixinTestMixin(AttributeFrameworkTestMixin, ABC):
         
         # Create invalid POST data
         invalid_data = self.create_invalid_form_data(owner)
-        request = self.factory.post('/test/', invalid_data)
-        request.session = MockSession()
+        request = self.create_hi_request('POST', '/test/', invalid_data)
         
         response = view.post_attribute_form(
             request=request,
@@ -635,12 +629,11 @@ class AttributeViewMixinTestMixin(AttributeFrameworkTestMixin, ABC):
             content_type="text/plain"
         )
         
-        request = self.factory.post('/test/', {
+        request = self.create_hi_request('POST', '/test/', {
             'file_value': test_file,
             'name': 'uploaded_document',
             'value': 'Test Document'
         })
-        request.session = MockSession()
         
         response = view.post_upload(
             request=request,
@@ -661,8 +654,7 @@ class AttributeViewMixinTestMixin(AttributeFrameworkTestMixin, ABC):
         context = self.create_item_edit_context(owner)
         view = self.create_test_view_instance()
         
-        request = self.factory.get('/test/')
-        request.session = MockSession()
+        request = self.create_hi_request('GET', '/test/')
         
         response = view.get_history(
             request=request,
@@ -687,8 +679,7 @@ class AttributeViewMixinTestMixin(AttributeFrameworkTestMixin, ABC):
         # Mock history record ID
         history_id = 1
         
-        request = self.factory.post('/test/')
-        request.session = MockSession()
+        request = self.create_hi_request('POST', '/test/')
         
         response = view.post_restore(
             request=request,

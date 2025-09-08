@@ -51,7 +51,6 @@ DisplayUnitsConversionMaps = {
 
 
 def get_display_quantity( quantity : UnitQuantity, display_units : DisplayUnits ):
-    global DisplayUnitsConversionMaps
     
     assert isinstance( quantity, UnitQuantity )
     conversion_map = DisplayUnitsConversionMaps.get( display_units, IMPERIAL_TO_METRIC_UNITS )

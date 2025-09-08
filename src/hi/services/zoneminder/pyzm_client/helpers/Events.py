@@ -10,14 +10,14 @@ You are not expected to use this module directly. It is instantiated when you us
 
 from .Base import Base
 from .Event import Event
-#import requests  # Unused 
+# import requests  # Unused
 import dateparser
 from . import globals as g
 
 
 class Events(Base):
     def __init__(self, api=None, options=None):
-       
+
         self.api = api
         self.events = []
         self.pagination = {}
@@ -40,8 +40,8 @@ class Events(Base):
         return int(self.pagination.get('count'))
 
     def _load(self, options={}):
-        g.logger.Debug(2,'Retrieving events via API')
-        url_filter=''
+        g.logger.Debug(2, 'Retrieving events via API')
+        url_filter = ''
        
         tz = {}
 
@@ -49,7 +49,7 @@ class Events(Base):
             url_filter += '/Id=:' + str(options.get('event_id'))
         if options.get('tz'):
             tz = {'TIMEZONE': options.get('tz')}
-            #print ('USING ',tz)
+            # print ('USING ',tz)
         if options.get('from'):
             from_list = options.get('from').split(" to ", 1)
             if len(from_list) == 2:
@@ -58,7 +58,7 @@ class Events(Base):
                 if from_start > from_end:
                     from_start, from_end = from_end, from_start
 
-                url_filter += '/StartTime >=:'+from_start.strftime('%Y-%m-%d %H:%M:%S')
+                url_filter += '/StartTime >=:' + from_start.strftime('%Y-%m-%d %H:%M:%S')
                 url_filter += '/StartTime <=:' + from_end.strftime('%Y-%m-%d %H:%M:%S')
             else:
                 url_filter += '/StartTime >=:' + dateparser.parse(from_list[0], settings=tz).strftime('%Y-%m-%d %H:%M:%S')
@@ -69,32 +69,30 @@ class Events(Base):
                 to_end = dateparser.parse(to_list[1], settings=tz)
                 if to_start > to_end:
                     to_start, to_end = to_end, to_start
-                url_filter += '/EndTime <=:'+to_end.strftime('%Y-%m-%d %H:%M:%S')
+                url_filter += '/EndTime <=:' + to_end.strftime('%Y-%m-%d %H:%M:%S')
                 url_filter += '/EndTime >=:' + to_start.strftime('%Y-%m-%d %H:%M:%S')
             else:
                 url_filter += '/EndTime <=:' + dateparser.parse(to_list[0], settings=tz).strftime('%Y-%m-%d %H:%M:%S')
         if options.get('mid'):
-            url_filter += '/MonitorId =:'+str(options.get('mid'))
+            url_filter += '/MonitorId =:' + str(options.get('mid'))
         if options.get('min_alarmed_frames'):
-            url_filter += '/AlarmFrames >=:'+str(options.get('min_alarmed_frames'))
+            url_filter += '/AlarmFrames >=:' + str(options.get('min_alarmed_frames'))
         if options.get('max_alarmed_frames'):
-            url_filter += '/AlarmFrames <=:'+str(options.get('max_alarmed_frames'))
+            url_filter += '/AlarmFrames <=:' + str(options.get('max_alarmed_frames'))
         if options.get('object_only'):
             url_filter += '/Notes REGEXP:detected:'
 
         # catch all
         if options.get('raw_filter'):
-             url_filter+=options.get('raw_filter')
+            url_filter += options.get('raw_filter')
 
-
-        #print ('URL filter: ',url_filter)
+        # print ('URL filter: ',url_filter)
         # tbd - no need for url_prefix in options
-    
-        url_prefix = options.get('url_prefix',self.api.api_url + '/events/index' )
-       
-        url = url_prefix + url_filter +'.json'
+        url_prefix = options.get('url_prefix', self.api.api_url + '/events/index')
+
+        url = url_prefix + url_filter + '.json'
         params = {
-            'sort':'StartTime',
+            'sort': 'StartTime',
             'direction': 'desc',
             'page': 1
         }
@@ -103,13 +101,15 @@ class Events(Base):
                 params[k] = options[k]
 
         numevents = 100
-        if options.get('max_events'): numevents = options.get('max_events')
-        if options.get('limit'): numevents = options.get('limit')
+        if options.get('max_events'):
+            numevents = options.get('max_events')
+        if options.get('limit'):
+            numevents = options.get('limit')
       
         params['limit'] = numevents
         currevents = 0
         self.events = []
-        events= []
+        events = []
         while True:
             r = self.api._make_request(url=url, query=params)
             events.extend(r.get('events'))
@@ -117,15 +117,15 @@ class Events(Base):
             self.pagination = pagination
             if not pagination:
                 break
-            if  not pagination.get('nextPage'):
+            if not pagination.get('nextPage'):
                 break
             currevents += int(pagination.get('current'))
             if currevents >= numevents:
                 break
-            params['page'] +=1 
+            params['page'] += 1 
         
         for event in events:
-            self.events.append(Event(event=event,api=self.api))
+            self.events.append(Event(event=event, api=self.api))
     
     def get(self, options={}):
         """Returns the full list of events. Typically useful if you need access to data for which you don't have an easy getter

@@ -9,7 +9,6 @@ which can be overriden
 
 from .Monitor import Monitor
 from .Base import Base
-import requests
 from . import globals as g
 
 
@@ -18,15 +17,14 @@ class Monitors(Base):
         self.api = api
         self._load()
 
-    def _load(self,options={}):
-        g.logger.Debug(2,'Retrieving monitors via API')
-        url = self.api.api_url +'/monitors.json'
+    def _load(self, options={}):
+        g.logger.Debug(2, 'Retrieving monitors via API')
+        url = self.api.api_url + '/monitors.json'
         r = self.api._make_request(url=url)
         ms = r.get('monitors')
         self.monitors = []
         for m in ms:
-           self.monitors.append(Monitor(monitor=m,api=self.api))
-
+            self.monitors.append(Monitor(monitor=m, api=self.api))
 
     def list(self):
         return self.monitors
@@ -58,7 +56,7 @@ class Monitors(Base):
         Returns:
             json: json response of API request
         """
-        url = self.api.api_url +'/monitors.json'
+        url = self.api.api_url + '/monitors.json'
         payload = {}
         if options.get('function'):
             payload['Monitor[Function]'] = options.get('function')
@@ -100,11 +98,6 @@ class Monitors(Base):
         if not id and not name:
             return None
         match = None
-        if id:
-            key = 'Id'
-        else:
-            key = 'Name'
-    
         for mon in self.monitors:
             if id and mon.id() == id:
                 match = mon
@@ -113,8 +106,3 @@ class Monitors(Base):
                 match = mon
                 break
         return match
-        
-
-
-    
-

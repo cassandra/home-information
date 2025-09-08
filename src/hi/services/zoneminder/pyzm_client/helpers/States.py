@@ -9,7 +9,6 @@ which can be overriden
 
 from .State import State
 from .Base import Base
-import requests
 from . import globals as g
 
 
@@ -18,15 +17,14 @@ class States(Base):
         self.api = api
         self._load()
 
-    def _load(self,options={}):
-        g.logger.Debug(2,'Retrieving states via API')
-        url = self.api.api_url +'/states.json'
+    def _load(self, options={}):
+        g.logger.Debug(2, 'Retrieving states via API')
+        url = self.api.api_url + '/states.json'
         r = self.api._make_request(url=url)
         states = r.get('states')
         self.states = []
         for state in states:
-           self.states.append(State(state=state,api=self.api))
-
+            self.states.append(State(state=state, api=self.api))
 
     def list(self):
         """Returns list of state objects
@@ -36,7 +34,6 @@ class States(Base):
         """
         return self.states
 
-    
     def find(self, id=None, name=None):
         """Return a state object that matches either and id or a
         
@@ -50,11 +47,6 @@ class States(Base):
         if not id and not name:
             return None
         match = None
-        if id:
-            key = 'Id'
-        else:
-            key = 'Name'
-    
         for state in self.states:
             if id and state.id() == id:
                 match = state
@@ -63,8 +55,3 @@ class States(Base):
                 match = state
                 break
         return match
-        
-
-
-    
-

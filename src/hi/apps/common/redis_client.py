@@ -2,7 +2,6 @@ import logging
 import redis
 
 from django.conf import settings
-from django.contrib.auth.models import User as UserType
 
 logger = logging.getLogger(__name__)
 
@@ -59,14 +58,12 @@ def initialize_global_cache_client():
 
 
 def exists_redis_client():
-    global _g_global_redis_client
     if not _g_global_redis_client:
         initialize_global_cache_client()
     return _g_global_redis_client is not None
        
 
 def get_redis_client():
-    global _g_global_redis_client
     if not _g_global_redis_client:
         initialize_global_cache_client()
     return _g_global_redis_client

@@ -11,7 +11,6 @@ from .Base import Base
 # import progressbar as pb  # Removed dependency - progress bars not needed
 import requests
 import os
-import sys
 from . import globals as g
 
 
@@ -28,7 +27,7 @@ class Event(Base):
         """
         return self.event['Event']
     
-    def get_image_url(self,fid='snapshot'):
+    def get_image_url(self, fid='snapshot'):
         """Returns the image URL for the specified frame
         
         Args:
@@ -38,7 +37,7 @@ class Event(Base):
             string: URL for the image
         """        
         eid = self.id()
-        url = self.api.portal_url+'/index.php?view=image&eid={}&fid={}'.format(eid,fid)+'&'+self.api.get_auth()
+        url = self.api.portal_url + '/index.php?view=image&eid={}&fid={}'.format(eid, fid) + '&' + self.api.get_auth()
         return url
 
     def get_video_url(self):
@@ -48,14 +47,14 @@ class Event(Base):
             string: URL for the video file
         """        
         if not self.video_file():
-            g.logger.Error ('Event {} does not have a video file'.format(self.id()))
+            g.logger.Error('Event {} does not have a video file'.format(self.id()))
             return None
         eid = self.id()
-        url = self.api.portal_url+'/index.php?mode=mpeg&eid={}&view=view_video'.format(eid)+'&'+self.api.get_auth()
+        url = self.api.portal_url + '/index.php?mode=mpeg&eid={}&view=view_video'.format(eid) + '&' + self.api.get_auth()
         return url
     
-    def download_image(self, fid='snapshot', dir='.', show_progress=False):     
-       
+    def download_image(self, fid='snapshot', dir='.', show_progress=False):
+
         """Downloads an image frame of the current event object
         
         Args:
@@ -66,10 +65,10 @@ class Event(Base):
         Returns:
             string: path+filename of downloaded image
         
-        """           
-           
+        """
+
         url = self.get_image_url(fid)
-        f = self._download_file(url, str(self.id())+'-'+fid+'.jpg', dir, show_progress)
+        f = self._download_file(url, str(self.id()) + '-' + fid + '.jpg', dir, show_progress)
         g.logger.Info('File downloaded to {}'.format(f))
         return f
 
@@ -89,7 +88,7 @@ class Event(Base):
         url = self.get_video_url()
         if not url:
             return None
-        f =  self._download_file(url, str(self.id())+'-video'+'.mp4', dir, show_progress)
+        f = self._download_file(url, str(self.id()) + '-video' + '.mp4', dir, show_progress)
         g.logger.Info('File downloaded to {}'.format(f))
         return f
 
@@ -99,7 +98,7 @@ class Event(Base):
         Returns:
             json: API response
         """
-        url = self.api.api_url+'/events/{}.json'.format(self.id())
+        url = self.api.api_url + '/events/{}.json'.format(self.id())
         return self.api._make_request(url=url, type='delete')
 
     def monitor_id(self):
@@ -197,12 +196,11 @@ class Event(Base):
         """
         return {
             'total': float(self.event['Event']['TotScore']),
-            'average':float(self.event['Event']['AvgScore']),
-            'max':float(self.event['Event']['MaxScore'])
+            'average': float(self.event['Event']['AvgScore']),
+            'max': float(self.event['Event']['MaxScore'])
         }
     
-    def _download_file(self,url, file_name, dest_dir, show_progress=False, reauth=True):
-
+    def _download_file(self, url, file_name, dest_dir, show_progress=False, reauth=True):
         
         if not os.path.exists(dest_dir):
             os.makedirs(dest_dir)
@@ -218,51 +216,45 @@ class Event(Base):
             req = requests
             if self.api and self.api.get_session():
                 req = self.api.get_session()
-                #print ("OVERRIDING")
+                # print ("OVERRIDING")
             r = req.get(url, allow_redirects=True, stream=True)
 
-#            r = requests.get(url, allow_redirects=True, stream=True)
+            # r = requests.get(url, allow_redirects=True, stream=True)
         except requests.exceptions.HTTPError as err:
             g.logger.Debug(1, 'Got download access error: {}'.format(err), 'error')
             if err.response.status_code == 401 and reauth:
-                g.logger.Debug (1, 'Retrying login once')
+                g.logger.Debug(1, 'Retrying login once')
                 self._relogin()
-                g.logger.Debug (1,'Retrying failed request again...')
+                g.logger.Debug(1, 'Retrying failed request again...')
                 return self._download_file(url, file_name, dest_dir, show_progress, reauth=False)
             else:
                 raise err
-        except:
-            #e = sys.exc_info()[0]
-            #print(e)
+        except Exception:
+            # e = sys.exc_info()[0]
+            # print(e)
             g.logger.Error("Could not establish connection. Download failed")
             return None
 
         if r.headers.get('Content-Type') and "text/html" in r.headers.get('Content-Type'):
             if reauth:
-                g.logger.Error ('We got redirected to login while trying to download, trying one more time')
+                g.logger.Error('We got redirected to login while trying to download, trying one more time')
                 return self._download_file(url, file_name, dest_dir, show_progress, reauth=False)
             else:
-                g.logger.Error ('Failed doing reauth, not trying again')
+                g.logger.Error('Failed doing reauth, not trying again')
                 return None
         
-        if r.headers.get('Content-Length'):
-            file_size = int(r.headers['Content-Length'])
-        else:
-            file_size = 0
-        
         chunk_size = 1024
-        if file_size:
-            num_bars = round(file_size / chunk_size)
-        else:
-            num_bars = 0
 
         if show_progress:
-            g.logger.Warning("Progress bar feature disabled in pyzm_client - progressbar dependency removed")
+            g.logger.WarningG("Progress bar feature disabled in pyzm_client - progressbar dependency removed")
             # Progress bar removed - not needed for our use case
-            # if file_size:
-            #     bar = pb.ProgressBar(maxval=num_bars).start()
-            # else:
-            #     bar = pb.ProgressBar().start()
+            # if r.headers.get('Content-Length'):
+            #     file_size = int(r.headers['Content-Length'])
+            #     if file_size:
+            #         num_bars = round(file_size / chunk_size)
+            #         bar = pb.ProgressBar(maxval=num_bars).start()
+            #     else:
+            #         bar = pb.ProgressBar().start()
         
         if r.status_code != requests.codes.ok:
             g.logger.Error("Error occurred while downloading file")
@@ -271,11 +263,11 @@ class Event(Base):
         count = 0
         
         with open(full_path_to_file, 'wb') as fp:
-            for chunk in  r.iter_content(chunk_size=chunk_size):
+            for chunk in r.iter_content(chunk_size=chunk_size):
                 fp.write(chunk)
                 if show_progress:
                     # bar.update(count)  # Progress bar disabled
-                    count +=1
+                    count += 1
             fp.close()
 
         return full_path_to_file

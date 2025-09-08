@@ -6,8 +6,10 @@ import json
 class ClientConfig:
     """Structured client-side configuration object.  Provides type safety
     and clear field definitions for server-to-client communication via
-    template injected JS.  Consumed only by main.css.  ALl other JS look to
-    main.css for relaying of these when needed.
+    template injected JS via context processor.  Consumed only by main.css.
+    ALl other JS modules should look to main.css for relaying of these as
+    needed.
+
     """
     DEBUG         : bool
     ENVIRONMENT   : str

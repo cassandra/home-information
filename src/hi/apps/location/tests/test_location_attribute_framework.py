@@ -170,14 +170,15 @@ class LocationAttributeEditFormHandlerTest(AttributeEditFormHandlerTestMixin, Ba
             content_type="application/pdf"
         )
         
-        from hi.testing.base_test_case import MockRequest, MockSession
-        request = MockRequest()
-        request.POST = {
-            'name': 'location_document',
-            'value': 'Location Test Document'
-        }
-        request.FILES = {'file_value': test_file}
-        request.session = MockSession()
+        _ = self.create_hi_request(
+            method='POST',
+            path='/location/test/',
+            data={
+                'name': 'location_document',
+                'value': 'Location Test Document'
+            },
+            files={'file_value': test_file}
+        )
         
         # Should handle file upload processing context
         initial_count = LocationAttribute.objects.filter(
@@ -257,8 +258,7 @@ class LocationAttributeEditResponseRendererTest(AttributeEditResponseRendererTes
         context = self.create_item_edit_context(location)
         renderer = self._get_renderer()
         
-        request = self.factory.post('/location/test/')
-        request.session = self._get_mock_session()
+        request = self.create_hi_request('POST', '/location/test/')
         
         response = renderer.render_form_success_response(
             attr_item_context=context,
@@ -296,13 +296,10 @@ class LocationAttributeEditResponseRendererTest(AttributeEditResponseRendererTes
         from hi.apps.attribute.edit_response_renderer import AttributeEditResponseRenderer
         return AttributeEditResponseRenderer()
         
-    def _get_mock_session(self):
-        """Get mock session for testing."""
-        from hi.testing.base_test_case import MockSession
-        return MockSession()
 
-
-class LocationAttributeEditTemplateContextBuilderTest(AttributeEditTemplateContextBuilderTestMixin, BaseTestCase):
+class LocationAttributeEditTemplateContextBuilderTest(
+        AttributeEditTemplateContextBuilderTestMixin,
+        BaseTestCase ):
     """Test AttributeEditTemplateContextBuilder with Location-specific implementations."""
     
     def create_owner_instance(self, **kwargs):
@@ -471,8 +468,7 @@ class LocationAttributeViewMixinTest(AttributeViewMixinTestMixin, BaseTestCase):
         context = self.create_item_edit_context(location)
         
         # Test GET request (initial template context)
-        get_request = self.factory.get(f'/location/{location.id}/edit/')
-        get_request.session = self._get_mock_session()
+        _ = self.create_hi_request('GET', f'/location/{location.id}/edit/')
         
         template_context = view.create_initial_template_context(
             attr_item_context=context
@@ -493,8 +489,7 @@ class LocationAttributeViewMixinTest(AttributeViewMixinTestMixin, BaseTestCase):
         view = self.create_test_view_instance()
         context = self.create_item_edit_context(location)
         
-        request = self.factory.get(f'/location/{location.id}/attr/{attribute.id}/history/')
-        request.session = self._get_mock_session()
+        request = self.create_hi_request('GET', f'/location/{location.id}/attr/{attribute.id}/history/')
         
         response = view.get_history(
             request=request,
@@ -524,8 +519,4 @@ class LocationAttributeViewMixinTest(AttributeViewMixinTestMixin, BaseTestCase):
         location_in_context = template_context['location']
         self.assertEqual(location_in_context.svg_view_box_str, "0 0 2000 1500")
         
-    def _get_mock_session(self):
-        """Get mock session for testing."""
-        from hi.testing.base_test_case import MockSession
-        return MockSession()
     

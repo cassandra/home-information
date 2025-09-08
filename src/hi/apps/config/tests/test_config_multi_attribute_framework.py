@@ -7,7 +7,6 @@ where multiple subsystems are edited simultaneously.
 import logging
 from typing import List, Dict, Any
 
-from hi.testing.base_test_case import MockRequest, MockSession
 from django.http import QueryDict
 
 from hi.testing.base_test_case import BaseTestCase
@@ -189,8 +188,7 @@ class SubsystemMultiAttributeEditResponseRendererTest(AttributeMultiEditResponse
             attr_item_context_list=item_context_list
         )
         
-        request = MockRequest()
-        request.session = MockSession()
+        request = self.create_hi_request('POST', '/config/subsystem/multi/test/')
         
         response = renderer.render_form_success_response_multi(
             attr_page_context=page_context,
@@ -348,9 +346,11 @@ class SubsystemMultiAttributeViewMixinTest(AttributeMultiEditViewMixinTestMixin,
             else:
                 post_data[key] = value
         
-        request = MockRequest()
-        request.POST = post_data
-        request.session = MockSession()
+        request = self.create_hi_request(
+            method='POST',
+            path='/config/subsystem/multi/test/',
+            data=post_data
+        )
         
         # Test the multi-edit view workflow
         response = view.post_attribute_form(

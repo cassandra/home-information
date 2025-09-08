@@ -11,7 +11,6 @@ from typing import List, Dict, Any
 from django.test import RequestFactory
 from django.http import QueryDict
 
-from hi.testing.base_test_case import MockRequest, MockSession
 from hi.apps.attribute.edit_context import AttributePageEditContext, AttributeItemEditContext
 from hi.apps.attribute.edit_form_handler import AttributeEditFormHandler
 from hi.apps.attribute.edit_response_renderer import AttributeEditResponseRenderer
@@ -169,8 +168,7 @@ class AttributeMultiEditFormHandlerTestMixin(AttributeMultiFrameworkTestMixin, A
         self.assertTrue(handler.validate_forms_multi(multi_edit_form_data_list=multi_edit_form_data_list))
         
         # Save forms
-        request = MockRequest()
-        request.POST = post_data
+        request = self.create_hi_request('POST', '/test/', post_data)
         handler.save_forms_multi(
             multi_edit_form_data_list=multi_edit_form_data_list,
             request=request
@@ -196,8 +194,7 @@ class AttributeMultiEditResponseRendererTestMixin(AttributeMultiFrameworkTestMix
             attr_item_context_list=item_context_list
         )
         
-        request = MockRequest()
-        request.session = MockSession()
+        request = self.create_hi_request('POST', '/test/')
         
         response = renderer.render_form_success_response_multi(
             attr_page_context=page_context,
@@ -242,9 +239,7 @@ class AttributeMultiEditResponseRendererTestMixin(AttributeMultiFrameworkTestMix
         is_valid = handler.validate_forms_multi(multi_edit_form_data_list=multi_edit_form_data_list)
         self.assertFalse(is_valid)
         
-        request = MockRequest()
-        request.POST = post_data
-        request.session = MockSession()
+        request = self.create_hi_request('POST', '/test/', post_data)
         
         response = renderer.render_form_error_response_multi(
             attr_page_context=page_context,
@@ -313,9 +308,7 @@ class AttributeMultiEditViewMixinTestMixin(AttributeMultiFrameworkTestMixin, ABC
             else:
                 post_data[key] = value
         
-        request = MockRequest()
-        request.POST = post_data
-        request.session = MockSession()
+        request = self.create_hi_request('POST', '/test/', post_data)
         
         response = view.post_attribute_form(
             request=request,
@@ -344,9 +337,7 @@ class AttributeMultiEditViewMixinTestMixin(AttributeMultiFrameworkTestMixin, ABC
             else:
                 post_data[key] = value
         
-        request = MockRequest()
-        request.POST = post_data
-        request.session = MockSession()
+        request = self.create_hi_request('POST', '/test/', post_data)
         
         response = view.post_attribute_form(
             request=request,

@@ -6,7 +6,9 @@ from django.views.generic import View
 class EnvironmentHomeView(View):
 
     @classmethod
-    def get_config_data(self):
+    def get_env_data_for_view(self):
+        # We do not necessarily want to expose every setting item in a
+        # view (e.g., passwords), so we pick and choose the safe ones here.
         return {
             'ENVIRONMENT': settings.ENV.environment_name,
             'VERSION': settings.ENV.VERSION,
@@ -35,6 +37,6 @@ class EnvironmentHomeView(View):
         }
         
     def get(self, request, *args, **kwargs):
-        data = self.get_config_data()
-        return JsonResponse(data, safe=False)
+        data = self.get_env_data_for_view()
+        return JsonResponse( data, safe = False )
     

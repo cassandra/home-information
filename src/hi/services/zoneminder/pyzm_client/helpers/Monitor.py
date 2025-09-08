@@ -9,7 +9,6 @@ the full object
 
 
 from .Base import Base
-from . import globals as g
 
 
 class Monitor(Base):
@@ -76,9 +75,8 @@ class Monitor(Base):
                 'height': int
             }
         """
-        return { 'width':int(self.monitor['Monitor']['Width']), 
-                 'height':int(self.monitor['Monitor']['Height'])
-        }
+        return {'width': int(self.monitor['Monitor']['Width']),
+                'height': int(self.monitor['Monitor']['Height'])}
     
     def events(self, options={}):
         """Returns events associated to the monitor, subject to filters in options
@@ -107,7 +105,7 @@ class Monitor(Base):
         options['mid'] = self.id()
         options['max_events'] = 1
         return self.api.events(options=options).count()
-        #print (s)
+        # print (s)
     
     def delete(self):
         """Deletes monitor
@@ -115,9 +113,8 @@ class Monitor(Base):
         Returns:
             json: API response
         """
-        url = self.api.api_url+'/monitors/{}.json'.format(self.id())
+        url = self.api.api_url + '/monitors/{}.json'.format(self.id())
         return self.api._make_request(url=url, type='delete')
-
 
     def set_parameter(self, options={}):
         """Changes monitor parameters
@@ -141,13 +138,13 @@ class Monitor(Base):
         Returns:
             json: API Response
         """
-        url = self.api.api_url+'/monitors/{}.json'.format(self.id())
+        url = self.api.api_url + '/monitors/{}.json'.format(self.id())
         payload = {}
         if options.get('function'):
             payload['Monitor[Function]'] = options.get('function')
         if options.get('name'):
             payload['Monitor[Name]'] = options.get('name')
-        if options.get('enabled') != None:
+        if options.get('enabled') is not None:
             enabled = '1' if options.get('enabled') else '0'
             payload['Monitor[Enabled]'] = enabled
 
@@ -174,11 +171,9 @@ class Monitor(Base):
         """
         return self._set_alarm(type='off')
 
-    def _set_alarm(self,type='on'):
-        url = self.api.api_url+'/monitors/alarm/id:{}/command:{}.json'.format(self.id(), type)
+    def _set_alarm(self, type='on'):
+        url = self.api.api_url + '/monitors/alarm/id:{}/command:{}.json'.format(self.id(), type)
         return self.api._make_request(url=url)
-
-
 
     def status(self):
         """Returns status of monitor, as reported by zmdc
@@ -187,5 +182,5 @@ class Monitor(Base):
         Returns:
             json: API response
         """
-        url = self.api.api_url+'/monitors/daemonStatus/id:{}/daemon:zmc.json'.format(self.id())
+        url = self.api.api_url + '/monitors/daemonStatus/id:{}/daemon:zmc.json'.format(self.id())
         return self.api._make_request(url=url)
