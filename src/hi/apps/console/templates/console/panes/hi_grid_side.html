@@ -11,8 +11,8 @@
 
   {% include "weather/panes/weather_alerts.html" %}
   {% include "weather/panes/weather_overview.html" %}
-  
-  <div class="d-flex justify-content-center my-2">
+
+  <div class="d-flex justify-content-center border-top my-2 pt-2">
     {% if camera_control_display_list %}
     <div class="col-6">
       {% include "console/panes/camera_controls.html" %}
@@ -24,7 +24,7 @@
   </div>
   <div class="my-2">
     <a href="{% url 'event_history' %}"
-       class="btn btn-primary btn-control" role="button"
+       class="btn btn-outline-secondary btn-control" role="button"
        data-async="true" >
       TRIGGER HISTORY
     </a>

@@ -21,10 +21,6 @@ urlpatterns = [
              views.TestUiForecastView.as_view(), 
              name='weather_tests_ui_forecast'),
 
-    re_path( r'^radar$',
-             views.TestUiRadarView.as_view(), 
-             name='weather_tests_ui_radar'),
-
     re_path( r'^history$',
              views.TestUiHistoryView.as_view(), 
              name='weather_tests_ui_history'),

@@ -44,7 +44,7 @@
     <div>
       Min:
       {% if conditions.temperature_min_today is not None %}
-      {{ conditions.temperature_min_today.quantity|format_magnitude:1 }}
+      {{ conditions.temperature_min_today.quantity|format_magnitude:0 }}
       <small>{{ conditions.temperature_min_today.quantity|format_units }}</small>
       {% else %}
       -- °
@@ -53,24 +53,12 @@
     <div class="pl-1">
       Max:
       {% if conditions.temperature_max_today is not None %}
-      {{ conditions.temperature_max_today.quantity|format_magnitude:1 }}
+      {{ conditions.temperature_max_today.quantity|format_magnitude:0 }}
       <small>{{ conditions.temperature_max_today.quantity|format_units }}</small>
       {% else %}
       -- °
       {% endif %}
     </div>
-  </div>
-  <div>
-    Wind:
-    {% if conditions.windspeed %}
-    {{ conditions.windspeed.quantity|format_magnitude:1 }}
-    <small>{{ conditions.windspeed.quantity|format_units }}</small>
-    {% else %}
-    -- 
-    {% endif %}
-    {% if conditions.wind_direction %}
-    {{ conditions.wind_direction.quantity|format_compass }}
-    {% endif %}
   </div>
   <div>
     Humidity:
@@ -84,7 +72,9 @@
 
 </div>
 
+{% if conditions.temperature.source %}
 <div class="text-muted">
-  <small><em>{{ conditions.temperature.source_datetime |localtime }}, {{ conditions.temperature.source.abbreviation }} </em></small>
+  <small><em>At {{ conditions.temperature.source_datetime |localtime|date:"g:i A" }} from {{ conditions.temperature.source.abbreviation }} </em></small>
 </div>
+{% endif %}
 {% endtimezone%}

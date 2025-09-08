@@ -44,14 +44,6 @@ class TestUiForecastView( View ):
         return render(request, "weather/modals/forecast.html", context )
 
 
-class TestUiRadarView( View ):
-
-    def get(self, request, *args, **kwargs):
-        context = {
-        }
-        return render(request, "weather/modals/radar.html", context )
-
-
 class TestUiHistoryView( View ):
 
     def get(self, request, *args, **kwargs):

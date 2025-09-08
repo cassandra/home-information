@@ -80,27 +80,7 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
-        'hi.apps.notify': {
-            'handlers': ['console' ],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'hi.apps.monitor': {
-            'handlers': ['console' ],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'hi.apps.sense': {
-            'handlers': ['console' ],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'hi.apps.security': {
-            'handlers': ['console' ],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'hi.apps.weather': {
+        'hi.services.hass': {
             'handlers': ['console' ],
             'level': 'INFO',
             'propagate': False,
@@ -110,9 +90,29 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
-        'hi.services.hass': {
+        'hi.apps.monitor': {
             'handlers': ['console' ],
             'level': 'INFO',
+            'propagate': False,
+        },
+        'hi.apps.notify': {
+            'handlers': ['console' ],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'hi.apps.security': {
+            'handlers': ['console' ],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'hi.apps.sense': {
+            'handlers': ['console' ],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'hi.apps.weather': {
+            'handlers': ['console' ],
+            'level': 'DEBUG',
             'propagate': False,
         },
         'hi.services.zoneminder': {
