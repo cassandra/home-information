@@ -17,10 +17,6 @@ urlpatterns = [
              views.ForecastView.as_view(), 
              name='weather_forecast'),
 
-    re_path( r'^radar$', 
-             views.RadarView.as_view(), 
-             name='weather_radar'),
-
     re_path( r'^history$', 
              views.HistoryView.as_view(), 
              name='weather_history'),

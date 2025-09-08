@@ -211,49 +211,6 @@ class TestForecastView(DualModeViewTestCase):
         self.assertEqual(response.status_code, 405)
 
 
-class TestRadarView(DualModeViewTestCase):
-    """
-    Tests for RadarView - demonstrates simple modal view testing.
-    This view displays weather radar information.
-    """
-
-    def test_get_radar_sync(self):
-        """Test getting weather radar with synchronous request."""
-        url = reverse('weather_radar')
-        response = self.client.get(url)
-
-        self.assertSuccessResponse(response)
-        self.assertHtmlResponse(response)
-        self.assertTemplateRendered(response, 'weather/modals/radar.html')
-
-    def test_get_radar_async(self):
-        """Test getting weather radar with AJAX request."""
-        url = reverse('weather_radar')
-        response = self.async_get(url)
-
-        self.assertSuccessResponse(response)
-        self.assertJsonResponse(response)
-        
-        # HiModalView returns JSON with modal content for AJAX requests
-        data = response.json()
-        self.assertIn('modal', data)
-
-    def test_radar_context_empty(self):
-        """Test that radar view has empty context."""
-        url = reverse('weather_radar')
-        response = self.client.get(url)
-
-        self.assertSuccessResponse(response)
-        # Radar view has minimal context - just checks that it renders correctly
-
-    def test_post_not_allowed(self):
-        """Test that POST requests are not allowed."""
-        url = reverse('weather_radar')
-        response = self.client.post(url)
-
-        self.assertEqual(response.status_code, 405)
-
-
 class TestHistoryView(DualModeViewTestCase):
     """
     Tests for HistoryView - demonstrates weather history testing.
