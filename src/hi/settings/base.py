@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 
-from .helpers import EnvironmentSettings
+from hi.environment.server import EnvironmentSettings
 
 ENV = EnvironmentSettings.get()
 
@@ -99,6 +99,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'constance',
     'custom',
+    'hi.environment',
     'hi.apps.common',
     'hi.apps.user',
     'hi.apps.config',
@@ -153,7 +154,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'hi.context_processors.constants_context',
-                'hi.context_processors.client_config',
+                'hi.environment.context_processors.client_config',
                 'hi.apps.console.context_processors.settings_context',
                 'hi.apps.audio.context_processors.audio_context',
             ],

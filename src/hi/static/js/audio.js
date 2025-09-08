@@ -598,7 +598,7 @@
     */
 
     // Moule level tracing (w/overall DEBUG safety check)
-    const TRACE_AUDIO = false && window.Hi?.Config?.DEBUG,
+    const TRACE_AUDIO = false && window.Hi?.Config?.DEBUG;
     
     let diagnosticAudioTimer = null;
     let diagnosticCounter = 0;

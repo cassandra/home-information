@@ -2,15 +2,15 @@
     
     const Hi = {
 
-        // Hi.Config comes form server-side template injection. This module
+        // HiClientConfig comes from server-side template injection. This module
         // (main.css) should be the only Javaacript that knows about
-        // Hi.Config and the coordination mechanism with those
+        // HiClientConfig and the coordination mechanism with those
         // server-delivered config settings.  All other JS modules should
         // look to this module to relay any needed config settings (via
         // variable below).
         //
-        DEBUG: window.Hi?.Config?.DEBUG ?? true,
-        isEditMode: window.Hi?.Config?.IS_EDIT_MODE ?? ( gHiViewMode == 'edit' ),
+        DEBUG: window.HiClientConfig?.DEBUG ?? true,
+        isEditMode: window.HiClientConfig?.IS_EDIT_MODE ?? false,
 
         MAIN_AREA_SELECTOR: '#hi-main-content',
         LOCATION_VIEW_AREA_SELECTOR: '#hi-location-view-main',
