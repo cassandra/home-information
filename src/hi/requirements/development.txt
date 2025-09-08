@@ -1,9 +1,9 @@
 -r base.txt
 
-autopep8==2.3.1
+autopep8==2.3.2
 black==24.8.0
-flake8==7.1.1
-jedi==0.19.1
-pipdeptree==2.25.0
-rope==1.13.0
-yapf==0.40.2
+flake8==7.3.0
+jedi==0.19.2
+pipdeptree==2.28.0
+rope==1.14.0
+yapf==0.43.0

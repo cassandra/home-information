@@ -1,4 +1,4 @@
-import pyzm.api as zmapi
+from .pyzm_client import api as zmapi
 import traceback
 
 from django.core.management.base import BaseCommand

@@ -5,7 +5,7 @@ from typing import Dict, List
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.entity.enums import EntityStateValue
 
-from pyzm.helpers.Event import Event as ZmApiEvent
+from .pyzm_client.helpers.Event import Event as ZmApiEvent
 
 from .constants import ZmDetailKeys
 from .zm_manager import ZoneMinderManager

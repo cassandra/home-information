@@ -81,9 +81,7 @@ class ConfigPageView( HiGridView ):
     def config_page_type(self) -> ConfigPageType:
         raise NotImplementedError('Subclasses must override this method.')
 
-    
-
-    
+        
 class ConfigSettingsView( ConfigPageView,
                           SubsystemAttributeMixin,
                           AttributeMultiEditViewMixin ):

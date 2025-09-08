@@ -227,7 +227,7 @@ MEDIA_URL = '/media/'
 PIPELINE = {
     'DISABLE_WRAPPER': True,  # Important since some scripts assume global scope
 
-    'CSS_COMPRESSOR': 'django_pipeline_csscompressor.CssCompressor',
+    'CSS_COMPRESSOR': None,  # Removed django-pipeline-csscompressor (unmaintained since 2016)
     'JS_COMPRESSOR': None,
     
     'STYLESHEETS': {
