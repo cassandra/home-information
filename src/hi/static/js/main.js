@@ -9,7 +9,7 @@
         // look to this module to relay any needed config settings (via
         // variable below).
         //
-        DEBUG: window.HiClientConfig?.DEBUG ?? true,
+        DEBUG: window.HiClientConfig?.DEBUG ?? false,
         isEditMode: window.HiClientConfig?.IS_EDIT_MODE ?? false,
 
         MAIN_AREA_SELECTOR: '#hi-main-content',

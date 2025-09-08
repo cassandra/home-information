@@ -283,7 +283,7 @@
             const isSvgIcon = ( svgDataType == Hi.DATA_TYPE_ICON_VALUE );
             const svgItemId = enclosingSvgGroup.attr('id');
             if ( isSvgIcon && svgItemId ) {
-                console.log( `Click [${MODULE_NAME}]`, event );
+                if ( Hi.DEBUG ) { console.log( `Click [${MODULE_NAME}]`, event ); }
                 if ( Hi.DEBUG ) { console.log( 'SVG Target Element', enclosingSvgGroup ); }
                 handleSvgIconClick( event, enclosingSvgGroup );
                 return true;
@@ -482,7 +482,7 @@
         if ( e.deltaY > 0 ) {
             scaleMultiplier = 1.0 - ( MOUSE_WHEEL_ZOOM_SCALE_FACTOR_PERCENT / 100.0 );
         }
-        console.log( `Scale multiplier = ${scaleMultiplier} [${gSvgIconActionEditData.isScaling}]` );
+        if ( Hi.DEBUG ) { console.log( `Scale multiplier = ${scaleMultiplier} [${gSvgIconActionEditData.isScaling}]` ); }
         updateScale( gSvgIconActionEditData.element, scaleMultiplier );
         saveIconSvgPositionDebouncer( gSelectedIconSvgGroup );
     }

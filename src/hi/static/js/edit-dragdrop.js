@@ -57,7 +57,7 @@
         // Hide the dragged element during the drag operation for better visuals
         setTimeout(() => {
             $(gDraggedElement).hide();
-	    console.log('Hidden class added');
+	    if ( Hi.DEBUG ) { console.log('Hidden class added'); }
         }, 0);
     }
     

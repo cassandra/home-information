@@ -516,7 +516,7 @@
                 } else {
                     buttonState = AudioButtonState.ENABLED;
                 }
-                console.log(`Button showing: ${buttonState} (permission: ${permissionState}, user: ${userSetting}, baseline: ${baselineAudioState}, current: ${currentAudioState}, status: ${changeStatus})`); 
+                if ( Hi.DEBUG ) { console.log(`Button showing: ${buttonState} (permission: ${permissionState}, user: ${userSetting}, baseline: ${baselineAudioState}, current: ${currentAudioState}, status: ${changeStatus})`); } 
             }
             
         } catch (error) {
