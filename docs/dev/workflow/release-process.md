@@ -32,7 +32,7 @@ git pull origin staging
 ### 2. Update Version Number and CHANGELOG.ms
 
 ```bash
-# Edit HI_VERSION file with new version
+# Edit HI_VERSION file with new version (no "-dev" suffix too)
 # Add line to CHANGELOG.md file with short description
 git add HI_VERSION  CHANGELOG.md
 git commit -m "Bump version number to vX.X.X"
@@ -86,6 +86,11 @@ For safety, move back to staging branch and get latest tags.
 ```bash
 git checkout staging
 git fetch --tags
+
+# Bump HI_VERSION file with next anticipatd version and a "-dev" suffix
+git add HI_VERSION 
+git commit -m "Bump version number to vX.X.X-dev"
+git push origin staging
 ```
 
 This is where the automated release process ends.
