@@ -23,13 +23,36 @@ See [Why Home Information?](docs/WhyHomeInformation.md) for more details on our 
 
 ## Quick Start
 
-**Ready to try it?** Get running in under 5 minutes:
-
-### Requirements
-- Docker installed and running
+### Prerequisites
+- **Docker** installed and running ([Get Docker](https://docs.docker.com/get-docker/))
+- **Python 3.6+** for secure credential generation
 - Basic command line familiarity
 
-### Installation
+### Single-Command Installation (Recommended)
+
+**Get running in 30 seconds:**
+
+```shell
+curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/install.sh | bash
+```
+
+**Then visit:** [http://localhost:9411](http://localhost:9411)
+
+The script will automatically:
+- Check that Docker is running
+- Create necessary directories (`~/.hi/`)
+- Generate secure admin credentials
+- Pull and start the application
+
+**To update an existing installation:**
+```shell
+curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/update.sh | bash
+```
+
+### Manual Installation (Full Control)
+
+**Step-by-step process for advanced users:**
+
 ```shell
 # Download latest release
 curl -L https://github.com/cassandra/home-information/releases/latest/download/home-information.zip -o home-information.zip

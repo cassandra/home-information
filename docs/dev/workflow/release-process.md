@@ -68,19 +68,49 @@ Or via GitHub web interface:
 
 ### 5. Validate Install URL Works
 
-Make sure that the published ZIP install link works and that it is at least 10MB in size.
+Make sure that the published ZIP install link works and that it is at least 10MB in size and no more than 100MB in size.
 
+Test the manual instalation ZIP file.
 ```bash
 curl -L https://github.com/cassandra/home-information/releases/latest/download/home-information.zip -o home-information.zip
 ```
 
 ## 6. Cleanup
 
-For safety, move back to staging branch.
+For safety, move back to staging branch and get latest tags.
 ```bash
-git fetch --tags
 git checkout staging
+git fetch --tags
 ```
+
+This is where the automated release process ends.
+
+## Post-Release Tasks (Manual)
+
+### Validate Install Script Works
+
+Test the single-command installation script (this must be done manually):
+```
+curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/install.sh | bash
+```
+
+### Post-Release Monitoring
+
+**Critical**: Monitor the release for the first few hours after publication:
+- Check GitHub Issues for user reports
+- Monitor GitHub Discussions for problems
+
+**If critical issues are discovered**, see [Rollback Process](rollback-process.md) for immediate response procedures.
+
+### Docker Image Cleanup (Periodic)
+
+**Every few releases**, clean up old Docker images to prevent clutter:
+1. Go to: `https://github.com/cassandra/home-information/pkgs/container/home-information`
+2. Review old versions and delete:
+   - Versions older than 6 months (except major releases)
+   - Keep at least 10 recent versions for rollback capability
+   - Always keep `latest` and current stable version
+3. This helps with storage management and reduces user confusion
 
 ## Version Bumping Criteria
 
@@ -104,3 +134,4 @@ git checkout staging
 
 ## Related Documentation
 - Workflow guidelines: [Workflow Guidelines](workflow-guidelines.md)
+- **[Rollback Process](rollback-process.md)** - Emergency rollback procedures for problematic releases

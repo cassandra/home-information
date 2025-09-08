@@ -83,10 +83,13 @@ class EnvironmentSettings:
             )
         except ( TypeError, ValueError ):
             pass
-        env_settings.VERSION = cls.get_env_variable(
-            'HI_VERSION',
-            env_settings.VERSION,
-        )
+        # Read version from HI_VERSION file (single source of truth)
+        version_file_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'HI_VERSION')
+        try:
+            with open(version_file_path, 'r') as f:
+                env_settings.VERSION = f.read().strip()
+        except (FileNotFoundError, IOError) as e:
+            raise ImproperlyConfigured(f"Cannot read version file {version_file_path}: {e}")
         env_settings.SECRET_KEY = cls.get_env_variable(
             'DJANGO_SECRET_KEY',
             env_settings.SECRET_KEY,

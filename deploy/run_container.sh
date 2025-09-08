@@ -76,7 +76,6 @@ docker rm hi 2>/dev/null || true
 docker run $BACKGROUND_FLAGS \
        --name hi \
        --env-file "$ENV_VAR_FILE" \
-       -e HI_VERSION="${HI_VERSION}" \
        -v "$DATABASE_DATA_DIR:/data/database" \
        -v "$MEDIA_DATA_DIR:/data/media" \
        -p "$EXTERNAL_PORT:8000" hi

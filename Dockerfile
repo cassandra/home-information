@@ -44,6 +44,7 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 COPY package/docker_entrypoint.sh /src/entrypoint.sh
 RUN chmod +x /src/entrypoint.sh
 
+COPY HI_VERSION /HI_VERSION
 COPY src /src
 RUN chmod +x /src/bin/docker-start-gunicorn.sh
 
