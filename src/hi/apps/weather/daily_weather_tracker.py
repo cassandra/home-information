@@ -83,7 +83,7 @@ class DailyWeatherTracker:
              and weather_conditions_data.temperature.quantity_ave is not None ):
             temp_celsius = weather_conditions_data.temperature.quantity_ave.to('degree_Celsius').magnitude
             temp_timestamp = weather_conditions_data.temperature.source_datetime or datetimeproxy.now()
-            
+
             self._record_field_value(
                 location_key=location_key,
                 field_name='temperature',
