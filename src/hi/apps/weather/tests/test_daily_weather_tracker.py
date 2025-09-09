@@ -502,6 +502,47 @@ class TestDailyWeatherTracker(unittest.TestCase):
             summary = self.tracker.get_daily_summary(location_key)
             self.assertIsNone(summary)
     
+    def test_bug_reproduction_first_bad_reading_sets_both_min_max(self):
+        """Test case reproducing Issue #166 - first bad reading sets both min and max to same wrong value."""
+        location_key = "test_location"
+        
+        with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
+            # Scenario: First reading of the day is a bad 88°F (31.1°C) value
+            # This sets both min and max to 31.1°C
+            bad_weather_data = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(31.1)  # 88°F
+            )
+            self.tracker.record_weather_conditions(bad_weather_data, location_key)
+            
+            # Verify both min and max are set to the bad value
+            min_temp, max_temp = self.tracker.get_temperature_min_max_today(location_key)
+            self.assertAlmostEqual(min_temp.quantity_ave.magnitude, 31.1, places=1)
+            self.assertAlmostEqual(max_temp.quantity_ave.magnitude, 31.1, places=1)
+            
+            # Simulate the bug: subsequent real readings don't get recorded due to 
+            # weather_manager passing incoming data instead of merged data
+            # (so this normal reading would have been missed before the fix)
+            normal_weather_data = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(27.2)  # 81°F
+            )
+            self.tracker.record_weather_conditions(normal_weather_data, location_key)
+            
+            # After the fix, this should update the min to the lower real value
+            min_temp, max_temp = self.tracker.get_temperature_min_max_today(location_key)
+            self.assertAlmostEqual(min_temp.quantity_ave.magnitude, 27.2, places=1)  # Should be updated to real min
+            self.assertAlmostEqual(max_temp.quantity_ave.magnitude, 31.1, places=1)  # Should remain the higher value
+            
+            # Record even lower reading that should become the new minimum
+            lower_weather_data = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(21.1)  # ~70°F
+            )
+            self.tracker.record_weather_conditions(lower_weather_data, location_key)
+            
+            # Now min should be the lowest real reading
+            min_temp, max_temp = self.tracker.get_temperature_min_max_today(location_key)
+            self.assertAlmostEqual(min_temp.quantity_ave.magnitude, 21.1, places=1)  # New minimum
+            self.assertAlmostEqual(max_temp.quantity_ave.magnitude, 31.1, places=1)  # Unchanged max
+    
     # ============= ORIGINAL TESTS (TO BE DEPRECATED) =============
     
     def test_extensibility_for_future_fields(self):

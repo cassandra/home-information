@@ -6,7 +6,7 @@ import asyncio
 import logging
 import unittest
 from unittest.mock import patch
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.core.cache import cache
 from django.utils import timezone
@@ -221,11 +221,14 @@ class TestWeatherManagerDailyTrackerIntegration(unittest.TestCase):
         location_key = "30.268,-97.743"  # This matches what the WeatherManager actually uses
         
         with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
-            # Update with multiple different temperatures
+            # Update with multiple different temperatures using different timestamps
+            # so each update actually gets recorded (otherwise same timestamp prevents overwrite)
             temperatures = [20.0, 25.0, 18.0, 30.0, 22.0]
             
-            for temp in temperatures:
-                conditions = self.create_test_conditions(temp, include_today_fields=False)
+            for i, temp in enumerate(temperatures):
+                # Use incrementing timestamps so each update actually overwrites the previous
+                timestamp = self.base_time + timedelta(minutes=i * 10)
+                conditions = self.create_test_conditions(temp, timestamp=timestamp, include_today_fields=False)
                 asyncio.run(self.weather_manager.update_current_conditions(
                     data_point_source=self.mock_source.data_point_source,
                     weather_conditions_data=conditions
