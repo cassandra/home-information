@@ -12,7 +12,12 @@ from django.utils import timezone
 import pytz
 
 from hi.apps.weather.daily_weather_tracker import DailyWeatherTracker
-from hi.apps.weather.transient_models import WeatherConditionsData, NumericDataPoint, DataPointSource, Station
+from hi.apps.weather.transient_models import (
+    WeatherConditionsData,
+    NumericDataPoint,
+    DataPointSource,
+    Station,
+)
 from hi.units import UnitQuantity
 
 logging.disable(logging.CRITICAL)
@@ -577,10 +582,12 @@ class TestDailyWeatherTracker(unittest.TestCase):
             min_celsius = min_temp.quantity_ave.magnitude
             max_celsius = max_temp.quantity_ave.magnitude
             
-            self.assertLessEqual(min_celsius, current_celsius, 
-                               f"Min temperature ({min_celsius:.1f}°C) should not be higher than current ({current_celsius:.1f}°C)")
-            self.assertGreaterEqual(max_celsius, current_celsius,
-                                  f"Max temperature ({max_celsius:.1f}°C) should not be lower than current ({current_celsius:.1f}°C)")
+            self.assertLessEqual(
+                min_celsius, current_celsius, 
+                f"Min temperature ({min_celsius:.1f}°C) should not be higher than current ({current_celsius:.1f}°C)")
+            self.assertGreaterEqual(
+                max_celsius, current_celsius,
+                f"Max temperature ({max_celsius:.1f}°C) should not be lower than current ({current_celsius:.1f}°C)")
             
             # Specific values should be correct
             self.assertAlmostEqual(min_celsius, 27.2, places=1)  # Should be updated to current

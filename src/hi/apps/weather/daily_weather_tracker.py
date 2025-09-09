@@ -256,12 +256,13 @@ class DailyWeatherTracker:
             # Store updated statistics if changed
             if updated:
                 self._store_field_stats(location_key, date_key, field_name, field_stats)
-                logger.debug(f"Updated daily {field_name} stats for {date_key} at location {location_key}: "
-                          f"min={field_stats.get('min', {}).get('value', 'None')}°C, "
-                          f"max={field_stats.get('max', {}).get('value', 'None')}°C, "
-                          f"new_value={value}°C")
+                logger.debug( f"Updated daily {field_name} stats for {date_key} at location {location_key}: "
+                              f"min={field_stats.get('min', {}).get('value', 'None')}°C, "
+                              f"max={field_stats.get('max', {}).get('value', 'None')}°C, "
+                              f"new_value={value}°C")
             else:
-                logger.warning(f"Temperature {value}°C not recorded - no min/max update needed for {date_key}")
+                logger.warning(f"Temperature {value}°C not recorded"
+                               f" - no min/max update needed for {date_key}")
                 
         except Exception as e:
             logger.exception(f"Error recording {field_name} value: {e}")

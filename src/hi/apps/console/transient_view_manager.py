@@ -42,11 +42,11 @@ class TransientViewManager(Singleton):
         if (self._current_suggestion is None
                 or suggestion.priority >= self._current_suggestion.priority):
             self._current_suggestion = suggestion
-            logger.debug(f"New transient view suggestion: {url} for {duration_seconds}s "
-                        f"(reason: {trigger_reason}, priority: {priority})")
+            logger.debug( f"New transient view suggestion: {url} for {duration_seconds}s "
+                          f"(reason: {trigger_reason}, priority: {priority})")
         else:
-            logger.debug(f"Ignoring lower priority suggestion: {url} "
-                         f"(priority {priority} vs current {self._current_suggestion.priority})")
+            logger.debug( f"Ignoring lower priority suggestion: {url} "
+                          f"(priority {priority} vs current {self._current_suggestion.priority})")
         
     def get_current_suggestion(self) -> Optional[TransientViewSuggestion]:
         """
