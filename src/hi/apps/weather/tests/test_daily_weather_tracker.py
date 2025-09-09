@@ -543,6 +543,49 @@ class TestDailyWeatherTracker(unittest.TestCase):
             self.assertAlmostEqual(min_temp.quantity_ave.magnitude, 21.1, places=1)  # New minimum
             self.assertAlmostEqual(max_temp.quantity_ave.magnitude, 31.1, places=1)  # Unchanged max
     
+    def test_current_temperature_outside_cached_range_scenario(self):
+        """Test the specific scenario from Issue #166 - current temp outside min/max range should not occur."""
+        location_key = "test_location"
+        
+        with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
+            # Simulate the problematic scenario: a high temperature gets recorded first
+            high_temp_data = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(31.1)  # 88°F - the problematic value
+            )
+            self.tracker.record_weather_conditions(high_temp_data, location_key)
+            
+            # Verify both min and max are set to the high value initially
+            min_temp, max_temp = self.tracker.get_temperature_min_max_today(location_key)
+            self.assertIsNotNone(min_temp)
+            self.assertIsNotNone(max_temp)
+            self.assertAlmostEqual(min_temp.quantity_ave.magnitude, 31.1, places=1)
+            self.assertAlmostEqual(max_temp.quantity_ave.magnitude, 31.1, places=1)
+            
+            # Now record the actual current temperature (81°F = 27.2°C)
+            current_temp_data = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(27.2)  # 81°F - actual current
+            )
+            self.tracker.record_weather_conditions(current_temp_data, location_key)
+            
+            # After the fix, min should update to include the current temperature
+            min_temp, max_temp = self.tracker.get_temperature_min_max_today(location_key)
+            self.assertIsNotNone(min_temp)
+            self.assertIsNotNone(max_temp)
+            
+            # Critical assertion: current temperature must be within the min/max range
+            current_celsius = 27.2
+            min_celsius = min_temp.quantity_ave.magnitude
+            max_celsius = max_temp.quantity_ave.magnitude
+            
+            self.assertLessEqual(min_celsius, current_celsius, 
+                               f"Min temperature ({min_celsius:.1f}°C) should not be higher than current ({current_celsius:.1f}°C)")
+            self.assertGreaterEqual(max_celsius, current_celsius,
+                                  f"Max temperature ({max_celsius:.1f}°C) should not be lower than current ({current_celsius:.1f}°C)")
+            
+            # Specific values should be correct
+            self.assertAlmostEqual(min_celsius, 27.2, places=1)  # Should be updated to current
+            self.assertAlmostEqual(max_celsius, 31.1, places=1)  # Should remain the higher value
+    
     # ============= ORIGINAL TESTS (TO BE DEPRECATED) =============
     
     def test_extensibility_for_future_fields(self):

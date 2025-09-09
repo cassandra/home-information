@@ -42,7 +42,7 @@ class TransientViewManager(Singleton):
         if (self._current_suggestion is None
                 or suggestion.priority >= self._current_suggestion.priority):
             self._current_suggestion = suggestion
-            logger.info(f"New transient view suggestion: {url} for {duration_seconds}s "
+            logger.debug(f"New transient view suggestion: {url} for {duration_seconds}s "
                         f"(reason: {trigger_reason}, priority: {priority})")
         else:
             logger.debug(f"Ignoring lower priority suggestion: {url} "
@@ -121,7 +121,7 @@ class TransientViewManager(Singleton):
             trigger_reason=f"{alert.alarm_source.name.lower()}_alert"
         )
         
-        logger.info(f"Created auto-view suggestion for alert {alert.signature}")
+        logger.debug(f"Created auto-view suggestion for alert {alert.signature}")
     
     def _is_auto_view_enabled(self) -> bool:
         """Check if auto-view switching is enabled in console settings."""
