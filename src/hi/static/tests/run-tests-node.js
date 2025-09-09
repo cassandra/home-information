@@ -64,6 +64,27 @@ const mockDocument = {
     },
     removeEventListener: function(event, handler, options) {
         // Mock implementation
+    },
+    getElementById: function(id) {
+        // Return mock element
+        return {
+            style: {},
+            classList: {
+                add: function() {},
+                remove: function() {},
+                contains: function() { return false; }
+            },
+            addEventListener: function() {},
+            removeEventListener: function() {},
+            getAttribute: function() { return null; },
+            setAttribute: function() {}
+        };
+    },
+    querySelector: function() {
+        return mockDocument.getElementById();
+    },
+    querySelectorAll: function() {
+        return [];
     }
 };
 
@@ -87,19 +108,26 @@ Object.keys(mockWindow).forEach(key => {
     }
 });
 
-console.log('Loading auto-view.js...');
+console.log('Loading JavaScript modules...');
 
-// Load and execute auto-view.js
-const autoViewPath = path.join(__dirname, '../js/auto-view.js');
-const autoViewCode = fs.readFileSync(autoViewPath, 'utf8');
+// Load modules (skip video-timeline.js as it has too many DOM dependencies for Node.js)
+const modules = [
+    { name: 'main.js', path: path.join(__dirname, '../js/main.js') },
+    { name: 'svg-utils.js', path: path.join(__dirname, '../js/svg-utils.js') },
+    { name: 'watchdog.js', path: path.join(__dirname, '../js/watchdog.js') },
+    { name: 'auto-view.js', path: path.join(__dirname, '../js/auto-view.js') }
+];
 
-try {
-    vm.runInNewContext(autoViewCode, sandbox);
-    console.log('✓ auto-view.js loaded successfully');
-} catch (error) {
-    console.error('✗ Error loading auto-view.js:', error.message);
-    process.exit(1);
-}
+modules.forEach(module => {
+    try {
+        const code = fs.readFileSync(module.path, 'utf8');
+        vm.runInNewContext(code, sandbox);
+        console.log(`✓ ${module.name} loaded successfully`);
+    } catch (error) {
+        console.error(`✗ Error loading ${module.name}:`, error.message);
+        process.exit(1);
+    }
+});
 
 // Simple test runner without QUnit
 console.log('\n=== Running Tests ===\n');
@@ -127,13 +155,35 @@ function test(name, fn) {
     }
 }
 
-// Run basic tests to verify the module loaded correctly
-test('AutoView module exists', () => {
-    assert(sandbox.Hi.autoView !== null, 'AutoView module is defined');
-    assert(typeof sandbox.Hi.autoView === 'object', 'AutoView is an object');
+// Run basic tests to verify modules loaded correctly
+test('All modules loaded', () => {
+    assert(typeof sandbox.Hi === 'object', 'Hi namespace exists');
+    assert(sandbox.Hi.autoView !== null, 'AutoView module loaded');
+    assert(sandbox.Hi.svgUtils !== null, 'SvgUtils module loaded');
+    assert(sandbox.Hi.watchdog !== null, 'Watchdog module loaded');
+    assert(typeof sandbox.Hi.generateUniqueId === 'function', 'Main module functions loaded');
 });
 
-test('Core functions exist', () => {
+test('SvgUtils functions exist', () => {
+    const svgUtils = sandbox.Hi.svgUtils;
+    assert(typeof svgUtils.getSvgTransformValues === 'function', 'getSvgTransformValues exists');
+    assert(typeof svgUtils.getSvgViewBox === 'function', 'getSvgViewBox exists');
+    assert(typeof svgUtils.setSvgViewBox === 'function', 'setSvgViewBox exists');
+});
+
+test('Main utility functions exist', () => {
+    assert(typeof sandbox.Hi.generateUniqueId === 'function', 'generateUniqueId exists');
+    assert(typeof sandbox.Hi.setCookie === 'function', 'setCookie exists');
+    assert(typeof sandbox.Hi.getCookie === 'function', 'getCookie exists');
+});
+
+test('Watchdog functions exist', () => {
+    const watchdog = sandbox.Hi.watchdog;
+    assert(typeof watchdog.add === 'function', 'watchdog add function exists');
+    assert(typeof watchdog.ok === 'function', 'watchdog ok function exists');
+});
+
+test('AutoView core functions exist', () => {
     const autoView = sandbox.Hi.autoView;
     assert(typeof autoView.throttle === 'function', 'throttle function exists');
     assert(typeof autoView.shouldAutoSwitch === 'function', 'shouldAutoSwitch function exists');
@@ -220,6 +270,28 @@ test('resetTransientState clears all state', () => {
     assert(autoView.originalContent === null, 'Clears originalContent');
     assert(autoView.originalUrl === null, 'Clears originalUrl');
     assert(autoView.transientUrls.length === 0, 'Clears transientUrls');
+});
+
+test('SvgUtils getSvgTransformValues basic functionality', () => {
+    const svgUtils = sandbox.Hi.svgUtils;
+    
+    // Test with null input
+    const defaultResult = svgUtils.getSvgTransformValues(null);
+    assert(typeof defaultResult.scale === 'object', 'Returns default scale object');
+    assert(defaultResult.scale.x === 1, 'Default scale x is 1');
+    assert(defaultResult.scale.y === 1, 'Default scale y is 1');
+    
+    // Test with simple transform
+    const scaleResult = svgUtils.getSvgTransformValues('scale(2)');
+    assert(scaleResult.scale.x === 2, 'Parses scale x correctly');
+    assert(scaleResult.scale.y === 2, 'Single scale value applies to both x and y');
+});
+
+test('Main generateUniqueId generates IDs', () => {
+    const id = sandbox.Hi.generateUniqueId();
+    assert(typeof id === 'string', 'generateUniqueId returns a string');
+    assert(id.startsWith('id-'), 'ID starts with id- prefix');
+    assert(id.includes('-'), 'ID contains separators');
 });
 
 // Print summary

@@ -13,15 +13,9 @@
     <!-- Dependencies -->
     <script src="../js/jquery-3.7.0.min.js"></script>
     
-    <!-- Mock Hi namespace before loading any modules -->
+    <!-- Mock external dependencies that modules might use -->
     <script>
-        // Create mock Hi namespace for testing
-        window.Hi = {
-            DEBUG: false,
-            MAIN_AREA_SELECTOR: '#main-content'
-        };
-        
-        // Mock external dependencies that modules might use
+        // Mock antinode functionality for auto-view.js
         window.AN = {
             loadAsyncContent: function(options) {
                 // Mock antinode functionality
@@ -30,10 +24,21 @@
                 }
             }
         };
+        
+        // Mock HiClientConfig that main.js expects
+        window.HiClientConfig = {
+            DEBUG: false,
+            IS_EDIT_MODE: false
+        };
     </script>
     
     <!-- Source modules under test -->
+    <!-- main.js must load first as it defines the base Hi namespace -->
+    <script src="../js/main.js"></script>
     <script src="../js/auto-view.js"></script>
+    <script src="../js/svg-utils.js"></script>
+    <script src="../js/video-timeline.js"></script>
+    <script src="../js/watchdog.js"></script>
     <!-- Future modules would be added here:
     <script src="../js/other-module.js"></script>
     -->
@@ -55,6 +60,10 @@
     
     <!-- All test modules -->
     <script src="test-auto-view.js"></script>
+    <script src="test-svg-utils.js"></script>
+    <script src="test-main.js"></script>
+    <script src="test-video-timeline.js"></script>
+    <script src="test-watchdog.js"></script>
     <!-- Future test modules would be added here:
     <script src="test-other-module.js"></script>
     -->
