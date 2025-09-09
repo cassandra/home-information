@@ -4,15 +4,15 @@ This directory contains unit tests for JavaScript modules in the Home Informatio
 
 ## Running Tests
 
-### Local Testing
+### All Tests (Recommended)
 
-1. **Open the test runner in your browser:**
+1. **Open the master test runner in your browser:**
    ```bash
    # From project root
-   open src/hi/static/tests/test-auto-view.html
+   open src/hi/static/tests/test-all.html
    
    # Or navigate to the file in your browser:
-   # file:///path/to/project/src/hi/static/tests/test-auto-view.html
+   # file:///path/to/project/src/hi/static/tests/test-all.html
    ```
 
 2. **Via Django development server:**
@@ -21,8 +21,13 @@ This directory contains unit tests for JavaScript modules in the Home Informatio
    src/manage.py runserver
    
    # Then navigate to:
-   # http://127.0.0.1:8411/static/tests/test-auto-view.html
+   # http://127.0.0.1:8411/static/tests/test-all.html
    ```
+
+### Individual Module Tests
+
+For debugging or focused testing, you can also run individual test files:
+- `test-auto-view.html` - Tests for auto-view.js only
 
 ### Test Results
 
@@ -39,8 +44,10 @@ Green bars indicate passing tests, red bars indicate failures.
 ```
 /src/hi/static/tests/
 ├── README.md              # This file
-├── test-auto-view.html    # Test runner for auto-view.js
+├── test-all.html          # Master test runner (runs all tests)
+├── test-auto-view.html    # Individual test runner for auto-view.js
 ├── test-auto-view.js      # Test cases for auto-view.js
+├── run-tests-node.js      # Node.js command-line test runner
 └── qunit/                 # QUnit framework files (vendored)
     ├── qunit-2.20.0.js
     └── qunit-2.20.0.css
@@ -50,36 +57,7 @@ Green bars indicate passing tests, red bars indicate failures.
 
 To add tests for a new JavaScript module:
 
-1. **Create a new test HTML file:**
-   ```html
-   <!-- test-module-name.html -->
-   <!DOCTYPE html>
-   <html>
-   <head>
-       <meta charset="utf-8">
-       <title>Module Name Tests</title>
-       <link rel="stylesheet" href="qunit/qunit-2.20.0.css">
-   </head>
-   <body>
-       <div id="qunit"></div>
-       <div id="qunit-fixture"></div>
-       
-       <!-- Dependencies -->
-       <script src="../js/jquery-3.7.0.min.js"></script>
-       
-       <!-- Source under test -->
-       <script src="../js/module-name.js"></script>
-       
-       <!-- Test framework -->
-       <script src="qunit/qunit-2.20.0.js"></script>
-       
-       <!-- Tests -->
-       <script src="test-module-name.js"></script>
-   </body>
-   </html>
-   ```
-
-2. **Create the test JavaScript file:**
+1. **Create the test JavaScript file:**
    ```javascript
    // test-module-name.js
    QUnit.module('ModuleName.functionName', function(hooks) {
@@ -95,6 +73,21 @@ To add tests for a new JavaScript module:
        });
    });
    ```
+
+2. **Add to the master test runner:**
+   Edit `test-all.html` and add:
+   ```html
+   <!-- In the source modules section -->
+   <script src="../js/module-name.js"></script>
+   
+   <!-- In the test modules section -->
+   <script src="test-module-name.js"></script>
+   ```
+
+3. **Optional: Create individual test runner:**
+   For focused debugging, create `test-module-name.html` following the pattern of `test-auto-view.html`
+
+This approach means you only need to visit one URL (`test-all.html`) to run all JavaScript tests.
 
 ## Test Philosophy
 

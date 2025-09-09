@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>JavaScript Unit Tests - All Modules</title>
+    <link rel="stylesheet" href="qunit/qunit-2.20.0.css">
+</head>
+<body>
+    <div id="qunit"></div>
+    <div id="qunit-fixture"></div>
+    
+    <!-- Dependencies -->
+    <script src="../js/jquery-3.7.0.min.js"></script>
+    
+    <!-- Mock Hi namespace before loading any modules -->
+    <script>
+        // Create mock Hi namespace for testing
+        window.Hi = {
+            DEBUG: false,
+            MAIN_AREA_SELECTOR: '#main-content'
+        };
+        
+        // Mock external dependencies that modules might use
+        window.AN = {
+            loadAsyncContent: function(options) {
+                // Mock antinode functionality
+                if (options.error) {
+                    setTimeout(() => options.error({ status: 404 }, {}, 'Not Found'), 10);
+                }
+            }
+        };
+    </script>
+    
+    <!-- Source modules under test -->
+    <script src="../js/auto-view.js"></script>
+    <!-- Future modules would be added here:
+    <script src="../js/other-module.js"></script>
+    -->
+    
+    <!-- Test framework -->
+    <script src="qunit/qunit-2.20.0.js"></script>
+    
+    <!-- Test configuration -->
+    <script>
+        // Configure QUnit
+        QUnit.config.autostart = false;
+        QUnit.config.reorder = false; // Keep test order consistent
+        
+        // Start tests after page load
+        window.addEventListener('load', function() {
+            QUnit.start();
+        });
+    </script>
+    
+    <!-- All test modules -->
+    <script src="test-auto-view.js"></script>
+    <!-- Future test modules would be added here:
+    <script src="test-other-module.js"></script>
+    -->
+</body>
+</html>
