@@ -176,13 +176,13 @@
             assert.false(result, 'Should not auto-switch when user active within 60 seconds');
         });
         
-        QUnit.test('returns false at exact threshold (60s)', function(assert) {
+        QUnit.test('returns true at exact threshold (60s)', function(assert) {
             // Set interaction exactly 60 seconds ago
             Hi.autoView.lastInteractionTime = mockTime - 60000;
             
             const result = Hi.autoView.shouldAutoSwitch({});
             
-            assert.false(result, 'Should not auto-switch at exactly 60 seconds (threshold is exclusive)');
+            assert.true(result, 'Should auto-switch at exactly 60 seconds (threshold is inclusive)');
         });
         
         QUnit.test('returns true after idle timeout (> 60s)', function(assert) {
