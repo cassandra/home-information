@@ -621,11 +621,11 @@ class HassConverter:
             
             if (( hass_state.domain == HassApi.SWITCH_DOMAIN )
                 and ( HassApi.LIGHT_DOMAIN in prefixes_seen )):
-                ignore_light_state_prefixes.add( hass_state.domain )
+                ignore_light_state_prefixes.add( HassApi.LIGHT_DOMAIN )
 
             elif (( hass_state.domain == HassApi.LIGHT_DOMAIN )
                   and ( HassApi.SWITCH_DOMAIN in prefixes_seen )):
-                ignore_light_state_prefixes.add( hass_state.domain )
+                ignore_light_state_prefixes.add( HassApi.LIGHT_DOMAIN )
 
             prefixes_seen.add( hass_state.domain )
             continue
