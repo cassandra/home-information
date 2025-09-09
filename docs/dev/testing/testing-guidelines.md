@@ -174,6 +174,7 @@ For complete usage details, see: `hi.testing.dev_injection.DevInjectionManager`
 - Django-specific patterns: [Testing Patterns](testing-patterns.md)
 - Test data management: [Test Data Management](test-data-management.md)
 - Simulator testing: [Test Simulator](test-simulator.md)
+- JavaScript testing: [JavaScript Testing](../frontend/javascript-testing.md)
 - Coding standards: [Coding Standards](../shared/coding-standards.md)
 - View testing: [Frontend Guidelines](../frontend/frontend-guidelines.md#view-testing)
 - Examples: [Test Case Examples](./test-examples)
