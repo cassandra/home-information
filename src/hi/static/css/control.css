@@ -1,0 +1,89 @@
+/* Light Dimmer Controller Styles */
+.brightness-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+}
+
+.brightness-slider {
+    width: 200px;
+    height: 6px;
+    border-radius: 3px;
+    background: #ccc;
+    outline: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+.brightness-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-color, #007bff);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.brightness-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-color, #007bff);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.brightness-slider::-webkit-slider-track {
+    height: 6px;
+    border-radius: 3px;
+    background: #ccc;
+}
+
+.brightness-slider::-moz-range-track {
+    height: 6px;
+    border-radius: 3px;
+    background: #ccc;
+    border: none;
+}
+
+.brightness-display {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.brightness-value {
+    font-weight: bold;
+    min-width: 3rem;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.brightness-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.brightness-btn {
+    min-width: 3rem;
+    font-size: 0.8rem;
+}
+
+/* Focus and active states */
+.brightness-slider:focus {
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.brightness-slider:hover::-webkit-slider-thumb {
+    transform: scale(1.1);
+}
+
+.brightness-slider:hover::-moz-range-thumb {
+    transform: scale(1.1);
+}
