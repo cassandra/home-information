@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Auto-View Unit Tests</title>
+    <link rel="stylesheet" href="qunit/qunit-2.20.0.css">
+</head>
+<body>
+    <div id="qunit"></div>
+    <div id="qunit-fixture"></div>
+    
+    <!-- Dependencies -->
+    <script src="../js/jquery-3.7.0.min.js"></script>
+    
+    <!-- Mock Hi namespace before loading auto-view.js -->
+    <script>
+        // Create mock Hi namespace for testing
+        window.Hi = {
+            DEBUG: false,
+            MAIN_AREA_SELECTOR: '#main-content'
+        };
+    </script>
+    
+    <!-- Source under test -->
+    <script src="../js/auto-view.js"></script>
+    
+    <!-- Test framework -->
+    <script src="qunit/qunit-2.20.0.js"></script>
+    
+    <!-- Test configuration -->
+    <script>
+        QUnit.config.autostart = false;
+        
+        // Start tests after page load
+        window.addEventListener('load', function() {
+            QUnit.start();
+        });
+    </script>
+    
+    <!-- Tests -->
+    <script src="test-auto-view.js"></script>
+</body>
+</html>

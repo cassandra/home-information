@@ -280,5 +280,6 @@ def test_modal_view_async_request(self):
 - Icon system: [Icon System](icon-system.md)
 - Style guidelines: [Style Guidelines](style-guidelines.md)
 - Template conventions: [Template Conventions](template-conventions.md)
+- JavaScript testing: [JavaScript Testing](javascript-testing.md)
 - UI testing: [UI Testing](ui-testing.md)
 - Testing patterns: [Testing Patterns](../testing/testing-patterns.md)
