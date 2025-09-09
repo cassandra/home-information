@@ -132,7 +132,7 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
     def get_weather_overview_data(self) -> WeatherOverviewData:
         return WeatherOverviewData(
             current_conditions_data = self.get_current_conditions_data(),
-            todays_astronomical_data = self.get_daily_astronomical_data,
+            todays_astronomical_data = self.get_todays_astronomical_data(),
         )
     
     def get_hourly_forecast(self) -> HourlyForecast:
