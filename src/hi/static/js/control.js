@@ -1,7 +1,23 @@
-// Control module for light dimmer controllers
+// Control module for all controller types
 // Uses jQuery event delegation for dynamically loaded content
 
 $(document).ready(function() {
+    
+    // Event delegation for on/off switch status update
+    $('body').on('change', '.switch-input', function() {
+        var $switch = $(this);
+        var $statusText = $switch.closest('.on-off-control').find('.status-text');
+        var isChecked = $switch.is(':checked');
+        $statusText.text(isChecked ? 'On' : 'Off');
+    });
+    
+    // Event delegation for discrete select status update
+    $('body').on('change', '.discrete-select', function() {
+        var $select = $(this);
+        var value = $select.val();
+        var $statusValue = $select.closest('.discrete-control').find('.status-value');
+        $statusValue.text(value);
+    });
     
     // Event delegation for brightness slider input (real-time display update)
     $('body').on('input', '.brightness-slider', function() {

@@ -1,9 +1,17 @@
-<select id="{{ attribute_form.value.id_for_label }}"
-	name="value"
-	onchange-async="true" >  
-  {% for value, label in controller_data.controller.choices %}
-  <option value="{{ value }}" {% if controller_data.latest_sensor_response.value.lower == value.lower %}selected="true"{% endif %}>
-    {{ label }}
-  </option>
-  {% endfor %}
-</select>
+<div class="discrete-control">
+  <select id="{{ attribute_form.value.id_for_label }}"
+          name="value"
+          class="{{ controller_data.css_class }} discrete-select form-select"
+          onchange-async="true"
+          data-controller-id="{{ controller_data.controller.id }}">  
+    {% for value, label in controller_data.controller.choices %}
+    <option value="{{ value }}" {% if controller_data.latest_sensor_response.value.lower == value.lower %}selected="true"{% endif %}>
+      {{ label }}
+    </option>
+    {% endfor %}
+  </select>
+  <div class="discrete-status">
+    <span class="status-label">Current:</span>
+    <span class="status-value">{{ controller_data.latest_sensor_response.value }}</span>
+  </div>
+</div>

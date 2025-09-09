@@ -1,7 +1,17 @@
-<label class="switch">
-  <input type="checkbox" name="value" class="{{ controller_data.css_class }}"
-	 {% if controller_data.latest_sensor_response.is_on %}checked="true"{% endif %}
-	 status="{{ controller_data.latest_sensor_response.value }}"
-	 onchange-async="true">
-  <span class="slider"></span>
-</label>
+<div class="on-off-control">
+  <label class="switch-modern">
+    <input type="checkbox" 
+           name="value" 
+           class="{{ controller_data.css_class }} switch-input"
+           {% if controller_data.latest_sensor_response.is_on %}checked="true"{% endif %}
+           status="{{ controller_data.latest_sensor_response.value }}"
+           onchange-async="true"
+           data-controller-id="{{ controller_data.controller.id }}">
+    <span class="switch-slider"></span>
+  </label>
+  <div class="switch-status">
+    <span class="status-text">
+      {% if controller_data.latest_sensor_response.is_on %}On{% else %}Off{% endif %}
+    </span>
+  </div>
+</div>
