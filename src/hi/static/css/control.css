@@ -1,0 +1,217 @@
+/* Controller Styles - Common styling for all controller types */
+
+/* Common Control Container Styles */
+.on-off-control,
+.discrete-control,
+.brightness-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    min-width: 200px;
+}
+
+/* On/Off Switch Controller Styles */
+.switch-modern {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 28px;
+}
+
+.switch-modern .switch-input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 28px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.switch-input:checked + .switch-slider {
+    background-color: var(--success-color, #28a745);
+}
+
+.switch-input:focus + .switch-slider {
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
+}
+
+.switch-input:checked + .switch-slider:before {
+    transform: translateX(32px);
+}
+
+.switch-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.status-text {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-color, #333);
+    min-width: 2rem;
+    text-align: center;
+}
+
+/* Discrete Select Controller Styles */
+.discrete-select {
+    min-width: 150px;
+    padding: 0.375rem 2rem 0.375rem 0.75rem;
+    font-size: 0.9rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    background-color: white;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.discrete-select:focus {
+    border-color: var(--primary-color, #007bff);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.discrete-select:hover {
+    border-color: #adb5bd;
+}
+
+.discrete-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    font-size: 0.85rem;
+}
+
+.status-label {
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.status-value {
+    font-weight: 600;
+    color: var(--text-color, #333);
+}
+
+/* Light Dimmer Controller Styles */
+.brightness-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+}
+
+.brightness-slider {
+    width: 200px;
+    height: 6px;
+    border-radius: 3px;
+    background: #ccc;
+    outline: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+.brightness-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-color, #007bff);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.brightness-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-color, #007bff);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.brightness-slider::-webkit-slider-track {
+    height: 6px;
+    border-radius: 3px;
+    background: #ccc;
+}
+
+.brightness-slider::-moz-range-track {
+    height: 6px;
+    border-radius: 3px;
+    background: #ccc;
+    border: none;
+}
+
+.brightness-display {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.brightness-value {
+    font-weight: bold;
+    min-width: 3rem;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.brightness-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.brightness-btn {
+    min-width: 3rem;
+    font-size: 0.8rem;
+}
+
+/* Focus and active states */
+.brightness-slider:focus {
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.brightness-slider:hover::-webkit-slider-thumb {
+    transform: scale(1.1);
+}
+
+.brightness-slider:hover::-moz-range-thumb {
+    transform: scale(1.1);
+}

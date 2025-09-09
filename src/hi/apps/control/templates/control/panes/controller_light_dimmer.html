@@ -1,0 +1,17 @@
+<div class="brightness-control">
+  <input type="range" 
+         name="value" 
+         min="0" 
+         max="100" 
+         value="{{ controller_data.latest_sensor_response.value|default:0 }}"
+         class="{{ controller_data.css_class }} brightness-slider"
+         onchange-async="true"
+         data-controller-id="{{ controller_data.controller.id }}">
+  <div class="brightness-display">
+    <span class="brightness-value">{{ controller_data.latest_sensor_response.value|default:0 }}%</span>
+    <div class="brightness-buttons">
+      <button type="button" class="btn btn-sm btn-secondary brightness-btn off-btn" data-value="0">Off</button>
+      <button type="button" class="btn btn-sm btn-primary brightness-btn full-btn" data-value="100">Full</button>
+    </div>
+  </div>
+</div>
