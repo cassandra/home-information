@@ -2,6 +2,8 @@
 
 This directory contains unit tests for JavaScript modules in the Home Information application.
 
+> **See [JavaScript Testing Documentation](../../../docs/dev/frontend/javascript-testing.md)** for testing philosophy, approach, and best practices.
+
 ## Running Tests
 
 ### All Tests (Recommended)
@@ -89,44 +91,24 @@ To add tests for a new JavaScript module:
 
 This approach means you only need to visit one URL (`test-all.html`) to run all JavaScript tests.
 
-## Test Philosophy
-
-Following the project's testing guidelines:
-
-- **Focus on business logic**, not framework internals
-- **Test actual behavior**, not implementation details
-- **Mock only at system boundaries** (window, external APIs)
-- **Avoid testing DOM manipulation** - jQuery handles this
-- **Use real objects** when available, not mocks
-
 ## Test Coverage
 
-Current test coverage includes:
-
 ### auto-view.js
-- ✅ Throttle function timing behavior
-- ✅ Idle timeout decision logic (shouldAutoSwitch)
-- ✅ Passive event detection and caching
-- ✅ State management (interaction recording, timer management)
-- ✅ Integration tests for initialization
-
-## Local-First Philosophy
-
-All test dependencies are vendored locally to support offline development:
-- QUnit framework files are stored in `/qunit/` directory
-- No CDN dependencies required
-- Tests can run completely offline
+- Throttle function timing behavior and edge cases
+- Idle timeout decision logic (shouldAutoSwitch)
+- Passive event detection and caching
+- State management (interaction recording, timer management)
+- Integration tests for initialization
 
 ## Debugging Tests
 
-1. **Browser Developer Console**: Check for JavaScript errors
-2. **QUnit UI**: Click on failed tests for detailed error messages
-3. **Add `console.log` statements**: Temporarily add logging in test code
-4. **Use `assert.async()`**: For testing asynchronous behavior
+- **Browser Developer Console**: Check for JavaScript errors
+- **QUnit UI**: Click on failed tests for detailed error messages  
+- **Individual runners**: Use `test-{module}.html` for focused debugging
+- **Async testing**: Use `assert.async()` for timing-dependent tests
 
-## Future Improvements
+## Notes
 
-- Add test coverage reporting
-- Integrate with CI/CD pipeline
-- Add visual regression tests for UI components
-- Create test fixtures for complex data structures
+- All dependencies vendored locally (no internet required)
+- Tests run in real browser environment 
+- See `auto-view.js` implementation as reference example
