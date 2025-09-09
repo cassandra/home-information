@@ -12,7 +12,12 @@ from django.utils import timezone
 import pytz
 
 from hi.apps.weather.daily_weather_tracker import DailyWeatherTracker
-from hi.apps.weather.transient_models import WeatherConditionsData, NumericDataPoint, DataPointSource, Station
+from hi.apps.weather.transient_models import (
+    WeatherConditionsData,
+    NumericDataPoint,
+    DataPointSource,
+    Station,
+)
 from hi.units import UnitQuantity
 
 logging.disable(logging.CRITICAL)
@@ -501,6 +506,92 @@ class TestDailyWeatherTracker(unittest.TestCase):
             # Verify summary is empty (should return None when no data)
             summary = self.tracker.get_daily_summary(location_key)
             self.assertIsNone(summary)
+    
+    def test_bug_reproduction_first_bad_reading_sets_both_min_max(self):
+        """Test case reproducing Issue #166 - first bad reading sets both min and max to same wrong value."""
+        location_key = "test_location"
+        
+        with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
+            # Scenario: First reading of the day is a bad 88°F (31.1°C) value
+            # This sets both min and max to 31.1°C
+            bad_weather_data = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(31.1)  # 88°F
+            )
+            self.tracker.record_weather_conditions(bad_weather_data, location_key)
+            
+            # Verify both min and max are set to the bad value
+            min_temp, max_temp = self.tracker.get_temperature_min_max_today(location_key)
+            self.assertAlmostEqual(min_temp.quantity_ave.magnitude, 31.1, places=1)
+            self.assertAlmostEqual(max_temp.quantity_ave.magnitude, 31.1, places=1)
+            
+            # Simulate the bug: subsequent real readings don't get recorded due to 
+            # weather_manager passing incoming data instead of merged data
+            # (so this normal reading would have been missed before the fix)
+            normal_weather_data = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(27.2)  # 81°F
+            )
+            self.tracker.record_weather_conditions(normal_weather_data, location_key)
+            
+            # After the fix, this should update the min to the lower real value
+            min_temp, max_temp = self.tracker.get_temperature_min_max_today(location_key)
+            self.assertAlmostEqual(min_temp.quantity_ave.magnitude, 27.2, places=1)  # Should be updated to real min
+            self.assertAlmostEqual(max_temp.quantity_ave.magnitude, 31.1, places=1)  # Should remain the higher value
+            
+            # Record even lower reading that should become the new minimum
+            lower_weather_data = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(21.1)  # ~70°F
+            )
+            self.tracker.record_weather_conditions(lower_weather_data, location_key)
+            
+            # Now min should be the lowest real reading
+            min_temp, max_temp = self.tracker.get_temperature_min_max_today(location_key)
+            self.assertAlmostEqual(min_temp.quantity_ave.magnitude, 21.1, places=1)  # New minimum
+            self.assertAlmostEqual(max_temp.quantity_ave.magnitude, 31.1, places=1)  # Unchanged max
+    
+    def test_current_temperature_outside_cached_range_scenario(self):
+        """Test the specific scenario from Issue #166 - current temp outside min/max range should not occur."""
+        location_key = "test_location"
+        
+        with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
+            # Simulate the problematic scenario: a high temperature gets recorded first
+            high_temp_data = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(31.1)  # 88°F - the problematic value
+            )
+            self.tracker.record_weather_conditions(high_temp_data, location_key)
+            
+            # Verify both min and max are set to the high value initially
+            min_temp, max_temp = self.tracker.get_temperature_min_max_today(location_key)
+            self.assertIsNotNone(min_temp)
+            self.assertIsNotNone(max_temp)
+            self.assertAlmostEqual(min_temp.quantity_ave.magnitude, 31.1, places=1)
+            self.assertAlmostEqual(max_temp.quantity_ave.magnitude, 31.1, places=1)
+            
+            # Now record the actual current temperature (81°F = 27.2°C)
+            current_temp_data = WeatherConditionsData(
+                temperature=self.create_test_temperature_datapoint(27.2)  # 81°F - actual current
+            )
+            self.tracker.record_weather_conditions(current_temp_data, location_key)
+            
+            # After the fix, min should update to include the current temperature
+            min_temp, max_temp = self.tracker.get_temperature_min_max_today(location_key)
+            self.assertIsNotNone(min_temp)
+            self.assertIsNotNone(max_temp)
+            
+            # Critical assertion: current temperature must be within the min/max range
+            current_celsius = 27.2
+            min_celsius = min_temp.quantity_ave.magnitude
+            max_celsius = max_temp.quantity_ave.magnitude
+            
+            self.assertLessEqual(
+                min_celsius, current_celsius, 
+                f"Min temperature ({min_celsius:.1f}°C) should not be higher than current ({current_celsius:.1f}°C)")
+            self.assertGreaterEqual(
+                max_celsius, current_celsius,
+                f"Max temperature ({max_celsius:.1f}°C) should not be lower than current ({current_celsius:.1f}°C)")
+            
+            # Specific values should be correct
+            self.assertAlmostEqual(min_celsius, 27.2, places=1)  # Should be updated to current
+            self.assertAlmostEqual(max_celsius, 31.1, places=1)  # Should remain the higher value
     
     # ============= ORIGINAL TESTS (TO BE DEPRECATED) =============
     

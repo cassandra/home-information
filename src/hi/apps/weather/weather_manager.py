@@ -169,7 +169,7 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
             try:
                 location_key = self._get_location_key()
                 self._daily_weather_tracker.record_weather_conditions(
-                    weather_conditions_data=weather_conditions_data,
+                    weather_conditions_data=self._current_conditions_data,
                     location_key=location_key
                 )
             except Exception as e:

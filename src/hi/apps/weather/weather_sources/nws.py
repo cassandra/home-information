@@ -859,7 +859,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         if cloud_layers_list is None:
             return
         if not cloud_layers_list:
-            logger.info('NWS cloudLayers list is empty; assuming clear skies.')
+            logger.debug('NWS cloudLayers list is empty; assuming clear skies.')
             weather_conditions_data.cloud_cover = NumericDataPoint(
                 station = station,
                 source_datetime = source_datetime,

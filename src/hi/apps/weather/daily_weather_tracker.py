@@ -49,6 +49,9 @@ class DailyWeatherTracker:
     STAT_COUNT = 'count'
     STAT_AVG = 'avg'  # Computed from sum/count
     
+    # Field names
+    FIELD_TEMPERATURE = 'temperature'
+    
     def __init__(self, user_timezone=None):
         """
         Initialize the daily weather tracker.
@@ -86,12 +89,14 @@ class DailyWeatherTracker:
 
             self._record_field_value(
                 location_key=location_key,
-                field_name='temperature',
+                field_name=self.FIELD_TEMPERATURE,
                 value=temp_celsius,
                 units='degree_Celsius',
                 timestamp=temp_timestamp,
                 track_stats=[self.STAT_MIN, self.STAT_MAX]
             )
+        else:
+            logger.warning(f"record_weather_conditions called for {location_key} but no temperature data available")
         
         # Future: Add other weather field tracking here
         # if weather_conditions_data.relative_humidity:
@@ -145,7 +150,7 @@ class DailyWeatherTracker:
             or (None, None) if no data available
         """
         try:
-            field_stats = self._get_field_stats_today(location_key, 'temperature')
+            field_stats = self._get_field_stats_today(location_key, self.FIELD_TEMPERATURE)
             
             min_data = field_stats.get(self.STAT_MIN)
             max_data = field_stats.get(self.STAT_MAX)
@@ -173,7 +178,7 @@ class DailyWeatherTracker:
                 quantity_ave=UnitQuantity(max_data['value'], max_data['units'])
             )
             
-            logger.debug(f"Retrieved today's temperature min/max:"
+            logger.debug(f"Retrieved today's temperature min/max for location {location_key}:"
                          f" {min_data['value']:.1f}°C / {max_data['value']:.1f}°C")
             
             return min_datapoint, max_datapoint
@@ -251,14 +256,20 @@ class DailyWeatherTracker:
             # Store updated statistics if changed
             if updated:
                 self._store_field_stats(location_key, date_key, field_name, field_stats)
-                logger.debug(f"Updated daily {field_name} stats for {date_key}")
+                logger.debug( f"Updated daily {field_name} stats for {date_key} at location {location_key}: "
+                              f"min={field_stats.get('min', {}).get('value', 'None')}°C, "
+                              f"max={field_stats.get('max', {}).get('value', 'None')}°C, "
+                              f"new_value={value}°C")
+            else:
+                logger.warning(f"Temperature {value}°C not recorded"
+                               f" - no min/max update needed for {date_key}")
                 
         except Exception as e:
             logger.exception(f"Error recording {field_name} value: {e}")
     
     def _get_field_stats(self, location_key: str, date_key: str, field_name: str) -> Dict[str, Any]:
         """Get field statistics from cache."""
-        cache_key = f"{self.CACHE_KEY_PREFIX}:{location_key}:{date_key}:{field_name}"
+        cache_key = self._get_cache_key(location_key, date_key, field_name)
         stats_json = cache.get(cache_key)
         
         if stats_json:
@@ -281,9 +292,11 @@ class DailyWeatherTracker:
                             field_name   : str,
                             stats        : Dict[str, Any]) -> None:
         """Store field statistics to cache."""
-        cache_key = f"{self.CACHE_KEY_PREFIX}:{location_key}:{date_key}:{field_name}"
+        cache_key = self._get_cache_key(location_key, date_key, field_name)
         stats_json = json.dumps(stats)
-        cache.set(cache_key, stats_json, timeout=self.CACHE_TIMEOUT_SECONDS)
+        success = cache.set(cache_key, stats_json, timeout=self.CACHE_TIMEOUT_SECONDS)
+        if not success:
+            logger.warning(f"Cache set failed for {field_name} stats on {date_key}")
     
     def clear_today(self, location_key: str = "default", field_name: Optional[str] = None) -> None:
         """
@@ -297,13 +310,13 @@ class DailyWeatherTracker:
         date_key = today_local.strftime('%Y-%m-%d')
         
         if field_name:
-            cache_key = f"{self.CACHE_KEY_PREFIX}:{location_key}:{date_key}:{field_name}"
+            cache_key = self._get_cache_key(location_key, date_key, field_name)
             cache.delete(cache_key)
             logger.info(f"Cleared today's {field_name} data for {location_key}")
         else:
             # Clear all fields - would need to iterate through known fields
             # For now, just clear temperature since that's what we implement
-            self.clear_today(location_key, 'temperature')
+            self.clear_today(location_key, self.FIELD_TEMPERATURE)
     
     def get_daily_summary(self, location_key: str = "default") -> Dict[str, Any]:
         """
@@ -322,12 +335,20 @@ class DailyWeatherTracker:
         }
         
         # Add temperature stats if available
-        temp_stats = self._get_field_stats(location_key, date_key, 'temperature')
+        temp_stats = self._get_field_stats(location_key, date_key, self.FIELD_TEMPERATURE)
         if temp_stats:
-            summary['fields']['temperature'] = temp_stats
+            summary['fields'][self.FIELD_TEMPERATURE] = temp_stats
         
         # Return None if no fields have data
         if not summary['fields']:
             return None
             
         return summary
+    
+    def _get_cache_key(self, location_key: str, date_key: str, field_name: str) -> str:
+        """Generate cache key for field statistics.
+        
+        Single source of truth for cache key format to ensure consistency
+        between storage and retrieval operations.
+        """
+        return f"{self.CACHE_KEY_PREFIX}:{location_key}:{date_key}:{field_name}"
