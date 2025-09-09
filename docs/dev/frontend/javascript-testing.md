@@ -83,11 +83,27 @@ Key test patterns demonstrated:
 
 ## Adding New Module Tests
 
-1. **Create test file**: `test-{module}.js`
-2. **Update master runner**: Add module and test scripts to `test-all.html`
-3. **Optional**: Create individual runner `test-{module}.html` for debugging
+1. **Create test file**: `test-{module}.js` following QUnit patterns:
+   ```javascript
+   QUnit.module('ModuleName.functionName', function(hooks) {
+       QUnit.test('description of test', function(assert) {
+           // Arrange, Act, Assert
+           const result = ModuleName.functionName(input);
+           assert.equal(result, expected, 'Function returns expected value');
+       });
+   });
+   ```
 
-See `/src/hi/static/tests/README.md` for detailed implementation instructions.
+2. **Update master runner**: Add to `test-all.html`:
+   ```html
+   <!-- In source modules section -->
+   <script src="../js/module-name.js"></script>
+   
+   <!-- In test modules section -->  
+   <script src="test-{module}.js"></script>
+   ```
+
+3. **Optional**: Create individual runner `test-{module}.html` for focused debugging
 
 ## Integration with Development Workflow
 
