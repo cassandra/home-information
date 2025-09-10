@@ -188,13 +188,14 @@ class VideoStreamBrowsingHelper:
         return sensor_responses, pagination_metadata
     
     @classmethod
-    def group_responses_by_time( cls, sensor_responses: List[SensorResponse] ) -> List[Dict]:
+    def group_responses_by_time( cls, sensor_responses: List[SensorResponse], user_timezone: str = None ) -> List[Dict]:
         """
         Group sensor responses by time period for timeline display.
         Uses adaptive grouping - hourly if many events in a day, otherwise daily.
         
         Args:
             sensor_responses: List of SensorResponse objects
+            user_timezone: User's timezone string (e.g., 'America/Chicago'). If None, uses UTC.
             
         Returns:
             List of grouped timeline items
@@ -207,14 +208,44 @@ class VideoStreamBrowsingHelper:
         current_hour = None
         current_group = None
         
-        # Determine if we should group by hour (if many events in current day)
-        today = timezone.now().date()
-        today_count = sum(1 for response in sensor_responses if response.timestamp.date() == today)
+        # Set up timezone conversion if user timezone provided
+        if user_timezone:
+            import pytz
+            try:
+                tz = pytz.timezone(user_timezone)
+                # Get current date in user's timezone
+                now_in_user_tz = timezone.now().astimezone(tz)
+                today = now_in_user_tz.date()
+                yesterday = today - timedelta(days=1)
+            except pytz.UnknownTimeZoneError:
+                # Fall back to UTC if invalid timezone
+                user_timezone = None
+                today = timezone.now().date()
+                yesterday = today - timedelta(days=1)
+        else:
+            # Use UTC (original behavior)
+            today = timezone.now().date()
+            yesterday = today - timedelta(days=1)
+        
+        # Count events for today to determine if we should use hourly grouping
+        if user_timezone:
+            today_count = sum(1 for response in sensor_responses 
+                            if response.timestamp.astimezone(tz).date() == today)
+        else:
+            today_count = sum(1 for response in sensor_responses 
+                            if response.timestamp.date() == today)
         use_hourly = today_count > 10
         
         for response in sensor_responses:
-            response_date = response.timestamp.date()
-            response_hour = response.timestamp.hour
+            # Convert response timestamp to user timezone if provided
+            if user_timezone:
+                response_in_tz = response.timestamp.astimezone(tz)
+                response_date = response_in_tz.date()
+                response_hour = response_in_tz.hour
+            else:
+                response_in_tz = response.timestamp
+                response_date = response.timestamp.date()
+                response_hour = response.timestamp.hour
             
             # Create new group if needed
             if use_hourly and response_date == today:
@@ -223,7 +254,7 @@ class VideoStreamBrowsingHelper:
                     current_date = response_date
                     current_hour = response_hour
                     current_group = {
-                        'label': f"{response.timestamp.strftime('%I:00 %p')}",
+                        'label': f"{response_in_tz.strftime('%I:00 %p')}",
                         'date': response_date,
                         'items': []
                     }
@@ -234,11 +265,11 @@ class VideoStreamBrowsingHelper:
                     current_date = response_date
                     current_hour = None
                     if response_date == today:
-                        label = f"Today {response.timestamp.strftime('%a')}"
-                    elif response_date == today - timedelta(days=1):
-                        label = f"Yesterday {response.timestamp.strftime('%a')}"
+                        label = f"Today {response_in_tz.strftime('%a')}"
+                    elif response_date == yesterday:
+                        label = f"Yesterday {response_in_tz.strftime('%a')}"
                     else:
-                        label = f"{response.timestamp.strftime('%B %d %a')}"
+                        label = f"{response_in_tz.strftime('%B %d %a')}"
                     
                     current_group = {
                         'label': label,
@@ -343,10 +374,11 @@ class VideoStreamBrowsingHelper:
     def build_sensor_history_data_default(
             cls,
             sensor             : Sensor,
-            sensor_history_id  : int      = None) -> EntitySensorHistoryData:
+            sensor_history_id  : int      = None,
+            user_timezone      : str      = None) -> EntitySensorHistoryData:
         """Build data for default view (most recent events or centered on specific record)."""
         return cls._build_sensor_history_data_internal(
-            sensor, sensor_history_id, None, None
+            sensor, sensor_history_id, None, None, user_timezone
         )
     
     @classmethod 
@@ -355,17 +387,19 @@ class VideoStreamBrowsingHelper:
             sensor                 : Sensor,
             sensor_history_id      : int       = None,
             preserve_window_start  : datetime  = None, 
-            preserve_window_end    : datetime  = None ) -> EntitySensorHistoryData:
+            preserve_window_end    : datetime  = None,
+            user_timezone          : str       = None ) -> EntitySensorHistoryData:
         """Build data for specific window preservation."""
         return cls._build_sensor_history_data_internal(
-            sensor, sensor_history_id, preserve_window_start, preserve_window_end
+            sensor, sensor_history_id, preserve_window_start, preserve_window_end, user_timezone
         )
     
     @classmethod
     def build_sensor_history_data_earlier(
             cls,
             sensor           : Sensor,
-            pivot_timestamp  : int) -> EntitySensorHistoryData:
+            pivot_timestamp  : int,
+            user_timezone    : str = None) -> EntitySensorHistoryData:
         """Build data for pagination to earlier events."""
         pivot_time = timezone.make_aware(datetime.fromtimestamp(pivot_timestamp))
         
@@ -404,7 +438,7 @@ class VideoStreamBrowsingHelper:
         current_sensor_response = sensor_responses[0] if sensor_responses else None
         
         # Group sensor responses by time period
-        timeline_groups = cls.group_responses_by_time(sensor_responses)
+        timeline_groups = cls.group_responses_by_time(sensor_responses, user_timezone)
         
         # Calculate pagination metadata
         timestamps = [record.response_datetime for record in history_records]
@@ -449,7 +483,8 @@ class VideoStreamBrowsingHelper:
     @classmethod
     def build_sensor_history_data_later( cls,
                                          sensor           : Sensor,
-                                         pivot_timestamp  : int ) -> EntitySensorHistoryData:
+                                         pivot_timestamp  : int,
+                                         user_timezone    : str = None ) -> EntitySensorHistoryData:
         """Build data for pagination to later events.""" 
         pivot_time = timezone.make_aware(datetime.fromtimestamp(pivot_timestamp))
         
@@ -491,7 +526,7 @@ class VideoStreamBrowsingHelper:
         current_sensor_response = sensor_responses[0] if sensor_responses else None
         
         # Group sensor responses by time period
-        timeline_groups = cls.group_responses_by_time(sensor_responses)
+        timeline_groups = cls.group_responses_by_time(sensor_responses, user_timezone)
         
         # Calculate pagination metadata
         timestamps = [record.response_datetime for record in history_records]
@@ -539,10 +574,11 @@ class VideoStreamBrowsingHelper:
             sensor                 : Sensor,
             sensor_history_id      : int       = None,
             preserve_window_start  : datetime  = None,
-            preserve_window_end    : datetime  = None ) -> EntitySensorHistoryData:
+            preserve_window_end    : datetime  = None,
+            user_timezone          : str       = None ) -> EntitySensorHistoryData:
         """Legacy method - delegates to window preservation method."""
         return cls.build_sensor_history_data_with_window(
-            sensor, sensor_history_id, preserve_window_start, preserve_window_end
+            sensor, sensor_history_id, preserve_window_start, preserve_window_end, user_timezone
         )
     
     @classmethod
@@ -551,7 +587,8 @@ class VideoStreamBrowsingHelper:
             sensor                 : Sensor,
             sensor_history_id      : int       = None,
             preserve_window_start  : datetime  = None,
-            preserve_window_end    : datetime  = None ) -> EntitySensorHistoryData:
+            preserve_window_end    : datetime  = None,
+            user_timezone          : str       = None ) -> EntitySensorHistoryData:
         """
         Build all data needed for the sensor history view.
         High-level method that encapsulates the business logic.
@@ -561,6 +598,7 @@ class VideoStreamBrowsingHelper:
             sensor_history_id: Optional specific record ID to display
             preserve_window_start: Start timestamp for timeline preservation
             preserve_window_end: End timestamp for timeline preservation
+            user_timezone: User's timezone string for display grouping
             
         Returns:
             EntitySensorHistoryData containing all view data
@@ -620,7 +658,7 @@ class VideoStreamBrowsingHelper:
             current_sensor_response = sensor_responses[0] if sensor_responses else None
         
         # Group sensor responses by time period
-        timeline_groups = cls.group_responses_by_time(sensor_responses)
+        timeline_groups = cls.group_responses_by_time(sensor_responses, user_timezone)
         
         # Find previous and next responses for navigation
         current_history_id = sensor_history_id if sensor_history_id else None

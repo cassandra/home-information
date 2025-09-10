@@ -818,3 +818,252 @@ class TestVideoDispatchResult(TransactionTestCase):
         
         self.assertIsInstance(result, VideoDispatchResult)
         self.assertEqual(result.sensor, self.video_sensor)
+
+
+class TestTimezoneHandling(TransactionTestCase):
+    """Test timezone-related functionality in VideoStreamBrowsingHelper."""
+
+    def setUp(self):
+        """Set up test entities and sensors."""
+        # Create test entity with video capability (matching existing pattern)
+        self.video_entity = Entity.objects.create(
+            integration_id='test.timezone.camera',
+            integration_name='test_timezone_integration',
+            name='Timezone Test Camera',
+            entity_type_str='camera',
+            has_video_stream=True
+        )
+        
+        # Create entity state
+        self.entity_state = EntityState.objects.create(
+            entity=self.video_entity,
+            entity_state_type_str='motion',
+            name='Motion Detection'
+        )
+        
+        # Create video sensor
+        self.video_sensor = Sensor.objects.create(
+            integration_id='test.timezone.sensor',
+            integration_name='test_timezone_integration',
+            name='Timezone Test Sensor',
+            entity_state=self.entity_state,
+            sensor_type_str='binary',
+            provides_video_stream=True
+        )
+
+    def test_group_responses_by_time_with_user_timezone(self):
+        """Test that group_responses_by_time correctly uses user timezone for grouping."""
+        from datetime import datetime
+        from pytz import UTC
+        
+        # Create test records at specific UTC times that would span multiple days in different timezones
+        # 11 PM CDT (4 AM UTC next day) and 1 AM CDT (6 AM UTC same day)
+        utc_time_1 = datetime(2023, 7, 15, 4, 0, 0, tzinfo=UTC)  # 11 PM CDT July 14
+        utc_time_2 = datetime(2023, 7, 15, 6, 0, 0, tzinfo=UTC)  # 1 AM CDT July 15
+        
+        record_1 = SensorHistory.objects.create(
+            sensor=self.video_sensor,
+            value='event_july_14_cdt',
+            response_datetime=utc_time_1,
+            has_video_stream=True
+        )
+        
+        record_2 = SensorHistory.objects.create(
+            sensor=self.video_sensor,
+            value='event_july_15_cdt',  
+            response_datetime=utc_time_2,
+            has_video_stream=True
+        )
+        
+        # Create sensor responses
+        response_1 = VideoStreamBrowsingHelper.create_sensor_response_with_history_id(record_1)
+        response_2 = VideoStreamBrowsingHelper.create_sensor_response_with_history_id(record_2)
+        
+        # Test with CDT timezone - should group into different days
+        groups_cdt = VideoStreamBrowsingHelper.group_responses_by_time(
+            [response_1, response_2],
+            user_timezone='America/Chicago'
+        )
+        
+        # Should have two separate day groups
+        self.assertEqual(len(groups_cdt), 2)
+        
+        # Test with UTC timezone - both should be in same day (July 15)
+        groups_utc = VideoStreamBrowsingHelper.group_responses_by_time(
+            [response_1, response_2], 
+            user_timezone='UTC'
+        )
+        
+        # Should have one day group since both events are on July 15 UTC
+        self.assertEqual(len(groups_utc), 1)
+
+    def test_group_responses_by_time_with_dst_transitions(self):
+        """Test timezone handling during DST transitions."""
+        from datetime import datetime
+        from pytz import timezone as pytz_timezone, UTC
+        
+        # Test during spring forward in US Central Time (March 2023)
+        # 1:30 AM CST (before spring forward) and 3:30 AM CDT (after spring forward)
+        cst_tz = pytz_timezone('America/Chicago')
+        
+        # Before DST transition (1:30 AM CST = 7:30 AM UTC)
+        utc_before = datetime(2023, 3, 12, 7, 30, 0, tzinfo=UTC)
+        # After DST transition (3:30 AM CDT = 8:30 AM UTC) 
+        utc_after = datetime(2023, 3, 12, 8, 30, 0, tzinfo=UTC)
+        
+        record_before = SensorHistory.objects.create(
+            sensor=self.video_sensor,
+            value='before_dst',
+            response_datetime=utc_before,
+            has_video_stream=True
+        )
+        
+        record_after = SensorHistory.objects.create(
+            sensor=self.video_sensor,
+            value='after_dst',
+            response_datetime=utc_after,
+            has_video_stream=True
+        )
+        
+        response_before = VideoStreamBrowsingHelper.create_sensor_response_with_history_id(record_before)
+        response_after = VideoStreamBrowsingHelper.create_sensor_response_with_history_id(record_after)
+        
+        # Test grouping with Chicago timezone
+        groups = VideoStreamBrowsingHelper.group_responses_by_time(
+            [response_before, response_after],
+            user_timezone='America/Chicago'
+        )
+        
+        # Should handle DST transition correctly and group appropriately
+        # Both events should be on same day (March 12) in Chicago timezone
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(len(groups[0]['items']), 2)
+
+    def test_group_responses_by_time_midnight_boundary_edge_case(self):
+        """Test timezone handling at midnight boundaries."""
+        from datetime import datetime
+        from pytz import UTC
+        
+        # Create records at 11:59 PM and 12:01 AM in a specific timezone
+        # Using Pacific Time: 11:59 PM PST = 7:59 AM UTC next day
+        pst_late_night = datetime(2023, 12, 15, 7, 59, 0, tzinfo=UTC)  # 11:59 PM PST Dec 14
+        pst_early_morning = datetime(2023, 12, 15, 8, 1, 0, tzinfo=UTC)  # 12:01 AM PST Dec 15
+        
+        record_late = SensorHistory.objects.create(
+            sensor=self.video_sensor,
+            value='late_night',
+            response_datetime=pst_late_night,
+            has_video_stream=True
+        )
+        
+        record_early = SensorHistory.objects.create(
+            sensor=self.video_sensor,
+            value='early_morning',
+            response_datetime=pst_early_morning,
+            has_video_stream=True
+        )
+        
+        response_late = VideoStreamBrowsingHelper.create_sensor_response_with_history_id(record_late)
+        response_early = VideoStreamBrowsingHelper.create_sensor_response_with_history_id(record_early)
+        
+        # Test with Pacific timezone - should be different days
+        groups_pst = VideoStreamBrowsingHelper.group_responses_by_time(
+            [response_late, response_early],
+            user_timezone='America/Los_Angeles'
+        )
+        
+        self.assertEqual(len(groups_pst), 2)  # Different days in PST
+        
+        # Test with UTC timezone - should be same day
+        groups_utc = VideoStreamBrowsingHelper.group_responses_by_time(
+            [response_late, response_early],
+            user_timezone='UTC'
+        )
+        
+        self.assertEqual(len(groups_utc), 1)  # Same day in UTC
+
+    def test_group_responses_by_time_invalid_timezone_fallback(self):
+        """Test that invalid timezone falls back to UTC behavior."""
+        from datetime import datetime
+        from pytz import UTC
+        
+        # Create a test record
+        utc_time = datetime(2023, 7, 15, 12, 0, 0, tzinfo=UTC)
+        
+        record = SensorHistory.objects.create(
+            sensor=self.video_sensor,
+            value='test_event',
+            response_datetime=utc_time,
+            has_video_stream=True
+        )
+        
+        response = VideoStreamBrowsingHelper.create_sensor_response_with_history_id(record)
+        
+        # Test with invalid timezone - should not crash and should fall back to UTC-like behavior
+        groups_invalid = VideoStreamBrowsingHelper.group_responses_by_time(
+            [response],
+            user_timezone='Invalid/Timezone'
+        )
+        
+        # Should still create groups without crashing
+        self.assertIsInstance(groups_invalid, list)
+        self.assertTrue(len(groups_invalid) > 0)
+        
+        # Compare with UTC behavior
+        groups_utc = VideoStreamBrowsingHelper.group_responses_by_time(
+            [response],
+            user_timezone='UTC'
+        )
+        
+        # Should have same structure as UTC (fallback behavior)
+        self.assertEqual(len(groups_invalid), len(groups_utc))
+
+    def test_build_sensor_history_data_methods_pass_timezone_parameter(self):
+        """Test that all build_sensor_history_data methods accept and pass timezone parameter."""
+        from datetime import datetime
+        from pytz import UTC
+        
+        # Create test record
+        utc_time = datetime(2023, 7, 15, 12, 0, 0, tzinfo=UTC)
+        test_timestamp = int(utc_time.timestamp())
+        
+        record = SensorHistory.objects.create(
+            sensor=self.video_sensor,
+            value='test_event',
+            response_datetime=utc_time,
+            has_video_stream=True
+        )
+        
+        # Test build_sensor_history_data_default with timezone
+        result_default = VideoStreamBrowsingHelper.build_sensor_history_data_default(
+            self.video_sensor,
+            user_timezone='America/New_York'
+        )
+        
+        self.assertIsInstance(result_default, EntitySensorHistoryData)
+        
+        # Test build_sensor_history_data_earlier with timezone
+        result_earlier = VideoStreamBrowsingHelper.build_sensor_history_data_earlier(
+            self.video_sensor,
+            test_timestamp,
+            user_timezone='America/New_York'
+        )
+        
+        self.assertIsInstance(result_earlier, EntitySensorHistoryData)
+        
+        # Test build_sensor_history_data_later with timezone
+        result_later = VideoStreamBrowsingHelper.build_sensor_history_data_later(
+            self.video_sensor,
+            test_timestamp,
+            user_timezone='America/New_York'
+        )
+        
+        self.assertIsInstance(result_later, EntitySensorHistoryData)
+        
+        # Test main build_sensor_history_data with timezone
+        result_main = VideoStreamBrowsingHelper.build_sensor_history_data(
+            self.video_sensor,
+            user_timezone='America/New_York'
+        )
+        
+        self.assertIsInstance(result_main, EntitySensorHistoryData)

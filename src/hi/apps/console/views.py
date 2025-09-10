@@ -157,16 +157,23 @@ class EntityVideoSensorHistoryView( BaseEntityVideoSensorHistoryView ):
                 preserve_window_end = timezone.make_aware(
                     datetime.fromtimestamp(int(window_end))
                 )
+                # Get user timezone for proper timeline grouping
+                user_timezone = ConsoleSettingsHelper().get_tz_name()
+                
                 return VideoStreamBrowsingHelper.build_sensor_history_data_with_window(
-                    sensor, sensor_history_id, preserve_window_start, preserve_window_end
+                    sensor, sensor_history_id, preserve_window_start, preserve_window_end, user_timezone
                 )
             except (ValueError, OSError):
                 # Invalid timestamp format - fall back to default
                 pass
         
+        # Get user timezone for proper timeline grouping
+        user_timezone = ConsoleSettingsHelper().get_tz_name()
+        
         return VideoStreamBrowsingHelper.build_sensor_history_data_default(
             sensor = sensor,
-            sensor_history_id = sensor_history_id
+            sensor_history_id = sensor_history_id,
+            user_timezone = user_timezone
         )
 
 
@@ -179,9 +186,12 @@ class EntityVideoSensorHistoryEarlierView( BaseEntityVideoSensorHistoryView ):
         if not timestamp:
             raise BadRequest('Timestamp parameter is required for earlier pagination.')
         
+        # Get user timezone for proper timeline grouping
+        user_timezone = ConsoleSettingsHelper().get_tz_name()
+        
         try:
             return VideoStreamBrowsingHelper.build_sensor_history_data_earlier(
-                sensor, int(timestamp)
+                sensor, int(timestamp), user_timezone
             )
         except (ValueError, TypeError):
             raise BadRequest('Invalid timestamp format.')
@@ -196,9 +206,12 @@ class EntityVideoSensorHistoryLaterView( BaseEntityVideoSensorHistoryView ):
         if not timestamp:
             raise BadRequest('Timestamp parameter is required for later pagination.')
         
+        # Get user timezone for proper timeline grouping
+        user_timezone = ConsoleSettingsHelper().get_tz_name()
+        
         try:
             return VideoStreamBrowsingHelper.build_sensor_history_data_later(
-                sensor, int(timestamp)
+                sensor, int(timestamp), user_timezone
             )
         except (ValueError, TypeError):
             raise BadRequest('Invalid timestamp format.')
