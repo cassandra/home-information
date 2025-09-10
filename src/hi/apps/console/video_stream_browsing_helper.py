@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from django.utils import timezone
 from django.urls import resolve, Resolver404
-import re
 
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor, SensorHistory

@@ -3,8 +3,6 @@ from django.http import Http404, JsonResponse
 from django.views.generic import View
 from datetime import datetime
 from django.utils import timezone
-from django.template.loader import render_to_string
-import re
 
 from hi.apps.entity.models import Entity
 from hi.apps.sense.models import Sensor
