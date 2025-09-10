@@ -1,3 +1,5 @@
+from datetime import datetime
+from pytz import timezone as UTC
 import logging
 
 from django.test import TransactionTestCase
@@ -899,12 +901,9 @@ class TestTimezoneHandling(TransactionTestCase):
 
     def test_group_responses_by_time_with_dst_transitions(self):
         """Test timezone handling during DST transitions."""
-        from datetime import datetime
-        from pytz import timezone as pytz_timezone, UTC
         
         # Test during spring forward in US Central Time (March 2023)
         # 1:30 AM CST (before spring forward) and 3:30 AM CDT (after spring forward)
-        cst_tz = pytz_timezone('America/Chicago')
         
         # Before DST transition (1:30 AM CST = 7:30 AM UTC)
         utc_before = datetime(2023, 3, 12, 7, 30, 0, tzinfo=UTC)
@@ -1027,7 +1026,7 @@ class TestTimezoneHandling(TransactionTestCase):
         utc_time = datetime(2023, 7, 15, 12, 0, 0, tzinfo=UTC)
         test_timestamp = int(utc_time.timestamp())
         
-        record = SensorHistory.objects.create(
+        _ = SensorHistory.objects.create(
             sensor=self.video_sensor,
             value='test_event',
             response_datetime=utc_time,

@@ -37,6 +37,7 @@ class EntityStatusData:
             'entity': self.entity,
             'entity_state_status_data_list': self.entity_state_status_data_list,
             'entity_for_video': self.entity_for_video,
+            'display_only_svg_icon_item': self.display_only_svg_icon_item,
         }
         return context
     

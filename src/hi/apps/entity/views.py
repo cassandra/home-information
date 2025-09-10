@@ -30,13 +30,13 @@ class EntityStatusView( HiModalView, EntityViewMixin ):
              request : HttpRequest,
              *args   : Any,
              **kwargs: Any          ) -> HttpResponse:
-        entity: Entity = self.get_entity( request, *args, **kwargs )
+        entity = self.get_entity( request, *args, **kwargs )
 
         entity_status_data = StatusDisplayManager().get_entity_status_data( entity = entity )
         if not entity_status_data.entity_state_status_data_list:
             return EntityEditView().get( request, *args, **kwargs )
         
-        context: Dict[str, Any] = entity_status_data.to_template_context()
+        context = entity_status_data.to_template_context()
         return self.modal_response( request, context )
 
 

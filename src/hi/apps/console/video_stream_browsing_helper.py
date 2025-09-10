@@ -172,8 +172,10 @@ class VideoStreamBrowsingHelper:
                 window_start_timestamp, window_end_timestamp = preserve_window_bounds
             else:
                 # Use actual bounds of returned records
-                window_start_timestamp = min(record.response_datetime for record in history_records)
-                window_end_timestamp = max(record.response_datetime for record in history_records)
+                window_start_timestamp = min( record.response_datetime
+                                              for record in history_records )
+                window_end_timestamp = max( record.response_datetime
+                                            for record in history_records )
         
         # Pagination metadata for future pagination feature
         pagination_metadata = {
@@ -188,14 +190,17 @@ class VideoStreamBrowsingHelper:
         return sensor_responses, pagination_metadata
     
     @classmethod
-    def group_responses_by_time( cls, sensor_responses: List[SensorResponse], user_timezone: str = None ) -> List[Dict]:
+    def group_responses_by_time( cls,
+                                 sensor_responses  : List[SensorResponse],
+                                 user_timezone     : str           = None ) -> List[Dict]:
         """
         Group sensor responses by time period for timeline display.
         Uses adaptive grouping - hourly if many events in a day, otherwise daily.
         
         Args:
             sensor_responses: List of SensorResponse objects
-            user_timezone: User's timezone string (e.g., 'America/Chicago'). If None, uses UTC.
+            user_timezone: User's timezone string (e.g., 'America/Chicago').
+            If None, uses UTC.
             
         Returns:
             List of grouped timeline items
@@ -229,11 +234,11 @@ class VideoStreamBrowsingHelper:
         
         # Count events for today to determine if we should use hourly grouping
         if user_timezone:
-            today_count = sum(1 for response in sensor_responses 
-                            if response.timestamp.astimezone(tz).date() == today)
+            today_count = sum( 1 for response in sensor_responses 
+                               if response.timestamp.astimezone(tz).date() == today)
         else:
-            today_count = sum(1 for response in sensor_responses 
-                            if response.timestamp.date() == today)
+            today_count = sum( 1 for response in sensor_responses 
+                               if response.timestamp.date() == today)
         use_hourly = today_count > 10
         
         for response in sensor_responses:
