@@ -7,6 +7,7 @@ from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.location.enums import LocationViewType
 from hi.apps.location.models import LocationView
+from hi.apps.location.svg_item_factory import SvgItemFactory
 from hi.apps.sense.models import Sensor
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
@@ -112,10 +113,16 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         entity_state_to_status_data = self._get_entity_state_to_entity_state_status_data(
             entity_states = entity_state_set,
         )
+
+        svg_item_factory = SvgItemFactory()
+        svg_icon_item = svg_item_factory.get_display_only_svg_icon_item(
+            entity = entity,
+        )
         return EntityStatusData(
             entity = entity,
             entity_state_status_data_list = list( entity_state_to_status_data.values() ),
             entity_for_video = entity_for_video,
+            display_only_svg_icon_item = svg_icon_item,
         )
 
     def get_entity_status_data_list(

@@ -1,7 +1,7 @@
 {% load video_tags %}
 {% entity_video_stream entity as video_url %}
 {% if video_url %}
-<div>
+<div class="video-container">
   <img class="img-fluid" src="{{ video_url }}" alt="{{ entity.name }} Live Video">
 </div>
 {% endif %}

@@ -6,14 +6,19 @@ and sensor selection for video streams.
 
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
+from urllib.parse import urlparse
+
+from django.core.exceptions import BadRequest
 from django.utils import timezone
+from django.urls import resolve, Resolver404
 
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor, SensorHistory
 from hi.apps.sense.transient_models import SensorResponse
 
 from .console_manager import ConsoleManager
-from .transient_models import EntitySensorHistoryData
+from .enums import VideoDispatchType
+from .transient_models import EntitySensorHistoryData, VideoDispatchResult
 
 
 class VideoStreamBrowsingHelper:
@@ -24,16 +29,10 @@ class VideoStreamBrowsingHelper:
     SENSOR_STATE_TYPE_PRIORITY = ConsoleManager.STATUS_ENTITY_STATE_PRIORITY
     
     @classmethod
-    def find_video_sensor_for_entity(cls, entity: Entity) -> Optional[Sensor]:
+    def find_video_sensor_for_entity( cls, entity: Entity ) -> Optional[Sensor]:
         """
         Find the first sensor with video capability for an entity.
         Uses priority order to select the best sensor and optimizes queries.
-        
-        Args:
-            entity: Entity to find video sensor for
-            
-        Returns:
-            First video-capable Sensor found, or None
         """
         if not entity or not entity.has_video_stream:
             return None
@@ -73,16 +72,9 @@ class VideoStreamBrowsingHelper:
         return None
     
     @classmethod
-    def create_sensor_response_with_history_id(cls, sensor_history: SensorHistory) -> SensorResponse:
-        """
-        Create SensorResponse from SensorHistory and set the core history ID property.
-        
-        Args:
-            sensor_history: SensorHistory record to convert
-            
-        Returns:
-            SensorResponse object with sensor_history_id property set
-        """
+    def create_sensor_response_with_history_id(
+            cls,
+            sensor_history  : SensorHistory) -> SensorResponse:
         sensor_response = SensorResponse.from_sensor_history(sensor_history)
         
         # Set the core Django primary key as a proper property
@@ -92,9 +84,11 @@ class VideoStreamBrowsingHelper:
     
     @classmethod
     def get_timeline_window(
-            cls, sensor: Sensor, center_record: SensorHistory = None, window_size: int = 50,
-            preserve_window_bounds: tuple = None
-    ):
+            cls,
+            sensor                  : Sensor,
+            center_record           : SensorHistory = None,
+            window_size             : int = 50,
+            preserve_window_bounds  : tuple = None ):
         """
         Get a timeline window of SensorHistory records around a center record.
         Designed to support future pagination functionality.
@@ -119,16 +113,14 @@ class VideoStreamBrowsingHelper:
             ).order_by('-response_datetime'))
             
             # Check for records outside the preserved window for pagination
-            has_older_records = SensorHistory.objects.filter(
-                sensor=sensor,
-                has_video_stream=True,
-                response_datetime__lt=start_time
-            ).exists()
-            has_newer_records = SensorHistory.objects.filter(
-                sensor=sensor,
-                has_video_stream=True,
-                response_datetime__gt=end_time
-            ).exists()
+            has_older_records = cls._has_older_records(
+                sensor = sensor,
+                timestamp = start_time
+            )
+            has_newer_records = cls._has_newer_records(
+                sensor = sensor,
+                timestamp = end_time
+            )
             window_center_timestamp = start_time if history_records else None
         elif center_record is None:
             # No center record - get most recent records (default behavior)
@@ -180,8 +172,10 @@ class VideoStreamBrowsingHelper:
                 window_start_timestamp, window_end_timestamp = preserve_window_bounds
             else:
                 # Use actual bounds of returned records
-                window_start_timestamp = min(record.response_datetime for record in history_records)
-                window_end_timestamp = max(record.response_datetime for record in history_records)
+                window_start_timestamp = min( record.response_datetime
+                                              for record in history_records )
+                window_end_timestamp = max( record.response_datetime
+                                            for record in history_records )
         
         # Pagination metadata for future pagination feature
         pagination_metadata = {
@@ -196,13 +190,17 @@ class VideoStreamBrowsingHelper:
         return sensor_responses, pagination_metadata
     
     @classmethod
-    def group_responses_by_time(cls, sensor_responses: List[SensorResponse]) -> List[Dict]:
+    def group_responses_by_time( cls,
+                                 sensor_responses  : List[SensorResponse],
+                                 user_timezone     : str           = None ) -> List[Dict]:
         """
         Group sensor responses by time period for timeline display.
         Uses adaptive grouping - hourly if many events in a day, otherwise daily.
         
         Args:
             sensor_responses: List of SensorResponse objects
+            user_timezone: User's timezone string (e.g., 'America/Chicago').
+            If None, uses UTC.
             
         Returns:
             List of grouped timeline items
@@ -215,14 +213,44 @@ class VideoStreamBrowsingHelper:
         current_hour = None
         current_group = None
         
-        # Determine if we should group by hour (if many events in current day)
-        today = timezone.now().date()
-        today_count = sum(1 for response in sensor_responses if response.timestamp.date() == today)
+        # Set up timezone conversion if user timezone provided
+        if user_timezone:
+            import pytz
+            try:
+                tz = pytz.timezone(user_timezone)
+                # Get current date in user's timezone
+                now_in_user_tz = timezone.now().astimezone(tz)
+                today = now_in_user_tz.date()
+                yesterday = today - timedelta(days=1)
+            except pytz.UnknownTimeZoneError:
+                # Fall back to UTC if invalid timezone
+                user_timezone = None
+                today = timezone.now().date()
+                yesterday = today - timedelta(days=1)
+        else:
+            # Use UTC (original behavior)
+            today = timezone.now().date()
+            yesterday = today - timedelta(days=1)
+        
+        # Count events for today to determine if we should use hourly grouping
+        if user_timezone:
+            today_count = sum( 1 for response in sensor_responses 
+                               if response.timestamp.astimezone(tz).date() == today)
+        else:
+            today_count = sum( 1 for response in sensor_responses 
+                               if response.timestamp.date() == today)
         use_hourly = today_count > 10
         
         for response in sensor_responses:
-            response_date = response.timestamp.date()
-            response_hour = response.timestamp.hour
+            # Convert response timestamp to user timezone if provided
+            if user_timezone:
+                response_in_tz = response.timestamp.astimezone(tz)
+                response_date = response_in_tz.date()
+                response_hour = response_in_tz.hour
+            else:
+                response_in_tz = response.timestamp
+                response_date = response.timestamp.date()
+                response_hour = response.timestamp.hour
             
             # Create new group if needed
             if use_hourly and response_date == today:
@@ -231,7 +259,7 @@ class VideoStreamBrowsingHelper:
                     current_date = response_date
                     current_hour = response_hour
                     current_group = {
-                        'label': f"{response.timestamp.strftime('%I:00 %p')}",
+                        'label': f"{response_in_tz.strftime('%I:00 %p')}",
                         'date': response_date,
                         'items': []
                     }
@@ -242,11 +270,11 @@ class VideoStreamBrowsingHelper:
                     current_date = response_date
                     current_hour = None
                     if response_date == today:
-                        label = f"Today {response.timestamp.strftime('%a')}"
-                    elif response_date == today - timedelta(days=1):
-                        label = f"Yesterday {response.timestamp.strftime('%a')}"
+                        label = f"Today {response_in_tz.strftime('%a')}"
+                    elif response_date == yesterday:
+                        label = f"Yesterday {response_in_tz.strftime('%a')}"
                     else:
-                        label = f"{response.timestamp.strftime('%B %d %a')}"
+                        label = f"{response_in_tz.strftime('%B %d %a')}"
                     
                     current_group = {
                         'label': label,
@@ -261,10 +289,9 @@ class VideoStreamBrowsingHelper:
         return groups
     
     @classmethod
-    def find_navigation_items(
-            cls, sensor_responses: List[SensorResponse], 
-            current_sensor_history_id: int
-    ) -> tuple:
+    def find_navigation_items( cls,
+                               sensor_responses           : List[SensorResponse], 
+                               current_sensor_history_id  : int ) -> tuple:
         """
         Find previous and next sensor responses for navigation.
         
@@ -298,7 +325,9 @@ class VideoStreamBrowsingHelper:
             return (None, None)
     
     @classmethod
-    def find_adjacent_records(cls, sensor: Sensor, current_history_id: int) -> tuple:
+    def find_adjacent_records( cls,
+                               sensor              : Sensor,
+                               current_history_id  : int ) -> tuple:
         """
         Find previous and next SensorHistory records for navigation.
         Uses database queries for efficient navigation.
@@ -347,43 +376,61 @@ class VideoStreamBrowsingHelper:
         return (prev_sensor_response, next_sensor_response)
     
     @classmethod
-    def build_sensor_history_data_default(cls, sensor: Sensor, sensor_history_id: int = None) -> EntitySensorHistoryData:
+    def build_sensor_history_data_default(
+            cls,
+            sensor             : Sensor,
+            sensor_history_id  : int      = None,
+            user_timezone      : str      = None) -> EntitySensorHistoryData:
         """Build data for default view (most recent events or centered on specific record)."""
         return cls._build_sensor_history_data_internal(
-            sensor, sensor_history_id, None, None
+            sensor, sensor_history_id, None, None, user_timezone
         )
     
     @classmethod 
     def build_sensor_history_data_with_window(
-            cls, sensor: Sensor, sensor_history_id: int = None,
-            preserve_window_start: datetime = None, preserve_window_end: datetime = None
-    ) -> EntitySensorHistoryData:
+            cls,
+            sensor                 : Sensor,
+            sensor_history_id      : int       = None,
+            preserve_window_start  : datetime  = None, 
+            preserve_window_end    : datetime  = None,
+            user_timezone          : str       = None ) -> EntitySensorHistoryData:
         """Build data for specific window preservation."""
         return cls._build_sensor_history_data_internal(
-            sensor, sensor_history_id, preserve_window_start, preserve_window_end
+            sensor, sensor_history_id, preserve_window_start, preserve_window_end, user_timezone
         )
     
     @classmethod
-    def build_sensor_history_data_earlier(cls, sensor: Sensor, pivot_timestamp: int) -> EntitySensorHistoryData:
+    def build_sensor_history_data_earlier(
+            cls,
+            sensor           : Sensor,
+            pivot_timestamp  : int,
+            user_timezone    : str = None) -> EntitySensorHistoryData:
         """Build data for pagination to earlier events."""
         pivot_time = timezone.make_aware(datetime.fromtimestamp(pivot_timestamp))
         
-        # Get 50 events before the pivot time
+        # Get events before the pivot time
         history_records = list(SensorHistory.objects.filter(
-            sensor=sensor,
-            has_video_stream=True,
-            response_datetime__lt=pivot_time
+            sensor = sensor,
+            has_video_stream = True,
+            response_datetime__lt = pivot_time
         ).order_by('-response_datetime')[:50])
         
         if not history_records:
-            # No earlier records found - return empty data
+            # No earlier records found - check for newer records to set pagination accurately
+            has_newer_records = cls._has_newer_records(
+                sensor = sensor,
+                timestamp = pivot_timestamp
+            )
+            
             return EntitySensorHistoryData(
-                sensor_responses=[],
-                current_sensor_response=None,
-                timeline_groups=[],
-                pagination_metadata={'has_older_records': False, 'has_newer_records': True},
-                prev_sensor_response=None,
-                next_sensor_response=None
+                sensor_responses = [],
+                current_sensor_response = None,
+                timeline_groups = [],
+                pagination_metadata = {'has_older_records': False, 'has_newer_records': has_newer_records},
+                prev_sensor_response = None,
+                next_sensor_response = None,
+                window_start_timestamp = None,
+                window_end_timestamp = pivot_timestamp if has_newer_records else None,
             )
         
         # Convert to SensorResponse objects
@@ -396,7 +443,7 @@ class VideoStreamBrowsingHelper:
         current_sensor_response = sensor_responses[0] if sensor_responses else None
         
         # Group sensor responses by time period
-        timeline_groups = cls.group_responses_by_time(sensor_responses)
+        timeline_groups = cls.group_responses_by_time(sensor_responses, user_timezone)
         
         # Calculate pagination metadata
         timestamps = [record.response_datetime for record in history_records]
@@ -404,17 +451,15 @@ class VideoStreamBrowsingHelper:
         window_end = max(timestamps)
         
         # Check for more records beyond this window
-        has_older_records = SensorHistory.objects.filter(
-            sensor=sensor,
-            has_video_stream=True,
-            response_datetime__lt=window_start
-        ).exists()
+        has_older_records = cls._has_older_records(
+            sensor = sensor,
+            timestamp = window_start
+        )
         
-        has_newer_records = SensorHistory.objects.filter(
-            sensor=sensor,
-            has_video_stream=True,
-            response_datetime__gt=window_end
-        ).exists()
+        has_newer_records = cls._has_newer_records(
+            sensor = sensor,
+            timestamp = window_end
+        )
         
         pagination_metadata = {
             'has_older_records': has_older_records,
@@ -441,26 +486,36 @@ class VideoStreamBrowsingHelper:
         )
     
     @classmethod
-    def build_sensor_history_data_later(cls, sensor: Sensor, pivot_timestamp: int) -> EntitySensorHistoryData:
+    def build_sensor_history_data_later( cls,
+                                         sensor           : Sensor,
+                                         pivot_timestamp  : int,
+                                         user_timezone    : str = None ) -> EntitySensorHistoryData:
         """Build data for pagination to later events.""" 
         pivot_time = timezone.make_aware(datetime.fromtimestamp(pivot_timestamp))
         
         # Get 50 events after the pivot time (ordered chronologically, oldest first)
-        history_records = list(SensorHistory.objects.filter(
+        history_records = list( SensorHistory.objects.filter(
             sensor=sensor,
             has_video_stream=True,
             response_datetime__gt=pivot_time
         ).order_by('response_datetime')[:50])
         
         if not history_records:
-            # No later records found - return empty data
+            # No later records found - check for older records to set pagination accurately
+            has_older_records = cls._has_older_records(
+                sensor = sensor,
+                timestamp = pivot_timestamp
+            )
+            
             return EntitySensorHistoryData(
                 sensor_responses=[],
                 current_sensor_response=None,
                 timeline_groups=[],
-                pagination_metadata={'has_older_records': True, 'has_newer_records': False},
+                pagination_metadata={'has_older_records': has_older_records, 'has_newer_records': False},
                 prev_sensor_response=None,
-                next_sensor_response=None
+                next_sensor_response=None,
+                window_start_timestamp = pivot_timestamp if has_older_records else None,
+                window_end_timestamp = None,
             )
         
         # Reverse to newest first for display (matching our standard ordering)
@@ -476,7 +531,7 @@ class VideoStreamBrowsingHelper:
         current_sensor_response = sensor_responses[0] if sensor_responses else None
         
         # Group sensor responses by time period
-        timeline_groups = cls.group_responses_by_time(sensor_responses)
+        timeline_groups = cls.group_responses_by_time(sensor_responses, user_timezone)
         
         # Calculate pagination metadata
         timestamps = [record.response_datetime for record in history_records]
@@ -484,17 +539,15 @@ class VideoStreamBrowsingHelper:
         window_end = max(timestamps)
         
         # Check for more records beyond this window
-        has_older_records = SensorHistory.objects.filter(
-            sensor=sensor,
-            has_video_stream=True,
-            response_datetime__lt=window_start
-        ).exists()
+        has_older_records = cls._has_older_records(
+            sensor = sensor,
+            timestamp = window_start
+        )
         
-        has_newer_records = SensorHistory.objects.filter(
-            sensor=sensor,
-            has_video_stream=True,
-            response_datetime__gt=window_end
-        ).exists()
+        has_newer_records = cls._has_newer_records(
+            sensor = sensor,
+            timestamp = window_end
+        )
         
         pagination_metadata = {
             'has_older_records': has_older_records,
@@ -522,19 +575,25 @@ class VideoStreamBrowsingHelper:
     
     @classmethod
     def build_sensor_history_data(
-            cls, sensor: Sensor, sensor_history_id: int = None,
-            preserve_window_start: datetime = None, preserve_window_end: datetime = None
-    ) -> EntitySensorHistoryData:
+            cls,
+            sensor                 : Sensor,
+            sensor_history_id      : int       = None,
+            preserve_window_start  : datetime  = None,
+            preserve_window_end    : datetime  = None,
+            user_timezone          : str       = None ) -> EntitySensorHistoryData:
         """Legacy method - delegates to window preservation method."""
         return cls.build_sensor_history_data_with_window(
-            sensor, sensor_history_id, preserve_window_start, preserve_window_end
+            sensor, sensor_history_id, preserve_window_start, preserve_window_end, user_timezone
         )
     
     @classmethod
     def _build_sensor_history_data_internal(
-            cls, sensor: Sensor, sensor_history_id: int = None,
-            preserve_window_start: datetime = None, preserve_window_end: datetime = None
-    ) -> EntitySensorHistoryData:
+            cls,
+            sensor                 : Sensor,
+            sensor_history_id      : int       = None,
+            preserve_window_start  : datetime  = None,
+            preserve_window_end    : datetime  = None,
+            user_timezone          : str       = None ) -> EntitySensorHistoryData:
         """
         Build all data needed for the sensor history view.
         High-level method that encapsulates the business logic.
@@ -544,6 +603,7 @@ class VideoStreamBrowsingHelper:
             sensor_history_id: Optional specific record ID to display
             preserve_window_start: Start timestamp for timeline preservation
             preserve_window_end: End timestamp for timeline preservation
+            user_timezone: User's timezone string for display grouping
             
         Returns:
             EntitySensorHistoryData containing all view data
@@ -603,7 +663,7 @@ class VideoStreamBrowsingHelper:
             current_sensor_response = sensor_responses[0] if sensor_responses else None
         
         # Group sensor responses by time period
-        timeline_groups = cls.group_responses_by_time(sensor_responses)
+        timeline_groups = cls.group_responses_by_time(sensor_responses, user_timezone)
         
         # Find previous and next responses for navigation
         current_history_id = sensor_history_id if sensor_history_id else None
@@ -626,4 +686,155 @@ class VideoStreamBrowsingHelper:
             next_sensor_response=next_sensor_response,
             window_start_timestamp=pagination_metadata.get('window_start_timestamp'),
             window_end_timestamp=pagination_metadata.get('window_end_timestamp'),
+        )
+    
+    @classmethod
+    def _has_older_records(cls, sensor: Sensor, timestamp: int) -> bool:
+        """Check if sensor has records earlier than the given timestamp."""
+        if isinstance( timestamp, datetime):
+            pivot_datetime = timestamp
+        else:
+            pivot_datetime = timezone.make_aware(datetime.fromtimestamp(timestamp))
+        return SensorHistory.objects.filter(
+            sensor = sensor,
+            has_video_stream = True,
+            response_datetime__lt = pivot_datetime
+        ).exists()
+
+    @classmethod
+    def _has_newer_records(cls, sensor: Sensor, timestamp: int) -> bool:
+        """Check if sensor has records later than the given timestamp."""
+        if isinstance( timestamp, datetime):
+            pivot_datetime = timestamp
+        else:
+            pivot_datetime = timezone.make_aware(datetime.fromtimestamp(timestamp))
+        return SensorHistory.objects.filter(
+            sensor = sensor,
+            has_video_stream = True,
+            response_datetime__gt = pivot_datetime
+        ).exists()
+
+    @classmethod
+    def get_video_dispatch_result( cls,
+                                   entity        : Entity,
+                                   referrer_url  : str    ) -> VideoDispatchResult:
+        """
+        Determine the appropriate video dispatch based on referrer URL context.
+        
+        Logic:
+        - If referrer has sensor_history_id with window bounds, use earlier view with start time
+        - If referrer has sensor_history_id without bounds, use default view  
+        - If referrer is "earlier" view, preserve it with same timestamp
+        - If referrer is "later" view, preserve it with same timestamp
+        - Otherwise use default (latest events)
+        
+        Returns:
+            VideoDispatchResult with dispatch type and necessary parameters
+        """
+        video_sensor = cls.find_video_sensor_for_entity(entity)
+        if not video_sensor:
+            raise BadRequest( f'No video sensor found for entity {entity.id}.' )
+        
+        # Extract timeline context from referrer URL if available
+        try:
+            parsed_url = urlparse(referrer_url)
+            path = parsed_url.path
+            
+            resolved = resolve(path)
+            url_name = resolved.url_name
+            
+            # Case 1: Referrer has sensor_history_id with window bounds
+            # Use EntityVideoSensorHistoryEarlierView to preserve timeline
+            if url_name == 'console_entity_video_sensor_history_detail_with_context':
+                window_start_str = resolved.kwargs.get('window_start', '')
+                window_end_str = resolved.kwargs.get('window_end', '')
+                if ( window_start_str
+                     and window_start_str.isdigit()
+                     and window_end_str
+                     and window_end_str.isdigit() ):
+                    timestamp = int(window_start_str)
+                    
+                    # Try earlier records first (preserve original intent)
+                    if cls._has_older_records(video_sensor, timestamp):
+                        return VideoDispatchResult(
+                            dispatch_type = VideoDispatchType.HISTORY_EARLIER,
+                            sensor = video_sensor,
+                            timestamp = timestamp,
+                        )
+                    # Fallback: show later records (closest in time)
+                    else:
+                        return VideoDispatchResult(
+                            dispatch_type = VideoDispatchType.HISTORY_LATER,
+                            sensor = video_sensor,
+                            timestamp = timestamp,
+                        )
+            
+            # Case 2: Referrer has sensor_history_id without window bounds  
+            # Use default view (it will center around most recent)
+            elif url_name == 'console_entity_video_sensor_history_detail':
+                return VideoDispatchResult(
+                    dispatch_type = VideoDispatchType.HISTORY_DEFAULT,
+                    sensor = video_sensor
+                )
+                
+            # Case 3: Referrer is "earlier" pagination view
+            # Preserve the same earlier view with same timestamp
+            elif url_name == 'console_entity_video_sensor_history_earlier':
+                timestamp_str = resolved.kwargs.get('timestamp', '')
+                if timestamp_str and timestamp_str.isdigit():
+                    timestamp = int(timestamp_str)
+                    
+                    # Try to preserve earlier view
+                    if cls._has_older_records(video_sensor, timestamp):
+                        return VideoDispatchResult(
+                            dispatch_type = VideoDispatchType.HISTORY_EARLIER,
+                            sensor = video_sensor,
+                            timestamp = timestamp
+                        )
+                    # Fallback: show later records (closest in time)
+                    else:
+                        return VideoDispatchResult(
+                            dispatch_type = VideoDispatchType.HISTORY_LATER,
+                            sensor = video_sensor,
+                            timestamp = timestamp
+                        )
+                    
+            # Case 4: Referrer is "later" pagination view  
+            # Preserve the same later view with same timestamp
+            elif url_name == 'console_entity_video_sensor_history_later':
+                timestamp_str = resolved.kwargs.get('timestamp', '')
+                if timestamp_str and timestamp_str.isdigit():
+                    timestamp = int(timestamp_str)
+                    
+                    # Try to preserve later view
+                    if cls._has_newer_records(video_sensor, timestamp):
+                        return VideoDispatchResult(
+                            dispatch_type = VideoDispatchType.HISTORY_LATER,
+                            sensor = video_sensor,
+                            timestamp = timestamp
+                        )
+                    # Fallback: show earlier records (closest in time)
+                    else:
+                        return VideoDispatchResult(
+                            dispatch_type = VideoDispatchType.HISTORY_EARLIER,
+                            sensor = video_sensor,
+                            timestamp = timestamp
+                        )
+                    
+            # Case 5: Basic sensor history view (no specific event)
+            # Use default view
+            elif url_name == 'console_entity_video_sensor_history':
+                return VideoDispatchResult(
+                    dispatch_type = VideoDispatchType.HISTORY_DEFAULT,
+                    sensor = video_sensor
+                )
+                    
+        except (Resolver404, ValueError, KeyError):
+            # No timeline context available - use default behavior
+            pass
+        
+        # Default fallback - use most recent history
+        return VideoDispatchResult(
+            dispatch_type = VideoDispatchType.HISTORY_DEFAULT,
+            sensor = video_sensor
         )

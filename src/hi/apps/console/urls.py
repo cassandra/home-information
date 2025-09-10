@@ -5,10 +5,17 @@ from . import views
 
 urlpatterns = [
 
+    re_path( r'^entity/video-stream-dispatch/(?P<entity_id>\d+)$', 
+             views.EntityVideoStreamDispatchView.as_view(), 
+             name='console_entity_video_stream_dispatch'),
 
     re_path( r'^entity/video-stream/(?P<entity_id>\d+)$', 
              views.EntityVideoStreamView.as_view(), 
              name='console_entity_video_stream'),
+
+    re_path( r'^entity/video-history/(?P<entity_id>\d+)$', 
+             views.EntityVideoHistoryView.as_view(), 
+             name='console_entity_sendor_video_history_default'),
 
     re_path( r'^entity/video-sensor-history/(?P<entity_id>\d+)/(?P<sensor_id>\d+)/$', 
              views.EntityVideoSensorHistoryView.as_view(), 

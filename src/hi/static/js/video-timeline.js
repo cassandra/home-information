@@ -239,6 +239,7 @@
         VideoConnectionManager.cleanup();
     });
     
+    
     // Expose for potential external use and debugging
     window.VideoTimelineScrollManager = VideoTimelineScrollManager;
     window.VideoConnectionManager = VideoConnectionManager;

@@ -19,8 +19,11 @@ class TransientViewManager(Singleton):
         self._current_suggestion: Optional[TransientViewSuggestion] = None
         logger.debug("TransientViewManager initialized")
         
-    def suggest_view_change(self, url: str, duration_seconds: int,
-                            priority: int = 0, trigger_reason: str = ""):
+    def suggest_view_change( self,
+                             url               : str,
+                             duration_seconds  : int,
+                             priority          : int  = 0,
+                             trigger_reason    : str  = "" ):
         """
         Register a suggestion for transient view change.
         
@@ -115,10 +118,10 @@ class TransientViewManager(Singleton):
         priority = alert.alert_priority  # Use the alert's priority
         
         self.suggest_view_change(
-            url=view_url,
-            duration_seconds=duration_seconds,
-            priority=priority,
-            trigger_reason=f"{alert.alarm_source.name.lower()}_alert"
+            url = view_url,
+            duration_seconds = duration_seconds,
+            priority = priority,
+            trigger_reason = f"{alert.alarm_source.name.lower()}_alert"
         )
         
         logger.debug(f"Created auto-view suggestion for alert {alert.signature}")
