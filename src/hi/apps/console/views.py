@@ -1,8 +1,10 @@
 from django.core.exceptions import BadRequest
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.views.generic import View
 from datetime import datetime
 from django.utils import timezone
+from django.template.loader import render_to_string
+import re
 
 from hi.apps.entity.models import Entity
 from hi.apps.sense.models import Sensor
@@ -160,6 +162,64 @@ class EntityVideoSensorHistoryLaterView( BaseEntityVideoSensorHistoryView ):
             )
         except (ValueError, TypeError):
             raise BadRequest('Invalid timestamp format.')
+
+
+class EntityVideoStreamDispatchView( View ):
+    """
+    Simple dispatch view for camera sidebar navigation.
+    Routes to existing views based on referrer context.
+    """
+    
+    def get( self, request, *args, **kwargs ):
+        # Detect context from referrer URL
+        referrer = request.META.get('HTTP_REFERER', '')
+        is_history_context = VideoStreamBrowsingHelper.is_video_history_context(referrer)
+        
+        if is_history_context:
+            # Route to history view with timeline preservation
+            return self._dispatch_to_history_view(request, referrer, **kwargs)
+        else:
+            # Route to live stream view
+            return self._dispatch_to_live_view(request, **kwargs)
+    
+    def _dispatch_to_live_view( self, request, **kwargs ):
+        """Dispatch to EntityVideoStreamView and return JSON response."""
+        view = EntityVideoStreamView()
+        response = view.get(request, **kwargs)
+        
+        # Convert HiGridView response to JSON for JavaScript consumption
+        if hasattr(response, 'content'):
+            # Extract main content from the response
+            html_content = response.content.decode('utf-8')
+            return JsonResponse({
+                'html': html_content,
+                'navigation_type': 'live'
+            })
+        return response
+    
+    def _dispatch_to_history_view( self, request, referrer_url, **kwargs ):
+        """Dispatch to EntityVideoSensorHistoryView with timeline preservation."""
+        entity_id = kwargs.get('entity_id')
+        
+        # Get video sensor and timeline context from helper
+        history_kwargs = VideoStreamBrowsingHelper.build_history_navigation_context(
+            entity_id, referrer_url
+        )
+        
+        # Update kwargs with history navigation context
+        kwargs.update(history_kwargs)
+        
+        view = EntityVideoSensorHistoryView()
+        response = view.get(request, **kwargs)
+        
+        # Convert HiGridView response to JSON for JavaScript consumption
+        if hasattr(response, 'content'):
+            html_content = response.content.decode('utf-8')
+            return JsonResponse({
+                'html': html_content,
+                'navigation_type': 'history'
+            })
+        return response
 
 
 class ConsoleLockView( View ):

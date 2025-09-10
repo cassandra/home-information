@@ -7,6 +7,8 @@ and sensor selection for video streams.
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from django.utils import timezone
+from django.urls import resolve, Resolver404
+import re
 
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor, SensorHistory
@@ -627,3 +629,76 @@ class VideoStreamBrowsingHelper:
             window_start_timestamp=pagination_metadata.get('window_start_timestamp'),
             window_end_timestamp=pagination_metadata.get('window_end_timestamp'),
         )
+    
+    @classmethod
+    def is_video_history_context( cls, referrer_url: str ) -> bool:
+        """Detect if referrer URL indicates video history browsing context."""
+        if not referrer_url:
+            return False
+        
+        try:
+            # Extract path from full URL
+            from urllib.parse import urlparse
+            parsed_url = urlparse(referrer_url)
+            path = parsed_url.path
+            
+            # Use Django URL resolver to check URL names
+            resolved = resolve(path)
+            
+            # Check if URL name matches video history patterns
+            history_url_names = [
+                'console_entity_video_sensor_history',
+                'console_entity_video_sensor_history_detail',
+                'console_entity_video_sensor_history_detail_with_context',
+                'console_entity_video_sensor_history_earlier',
+                'console_entity_video_sensor_history_later',
+            ]
+            
+            return resolved.url_name in history_url_names
+            
+        except (Resolver404, ValueError):
+            return False
+    
+    @classmethod
+    def build_history_navigation_context( cls, entity_id: int, referrer_url: str ) -> Dict:
+        """
+        Build navigation context for history view from referrer URL.
+        Returns kwargs needed for EntityVideoSensorHistoryView.
+        """
+        try:
+            entity = Entity.objects.get( id = entity_id )
+        except Entity.DoesNotExist:
+            raise ValueError(f'Entity {entity_id} not found.')
+        
+        # Find video sensor for the target entity
+        video_sensor = cls.find_video_sensor_for_entity(entity)
+        if not video_sensor:
+            raise ValueError(f'No video sensor found for entity {entity_id}.')
+        
+        # Start with basic navigation context
+        context = {
+            'sensor_id': video_sensor.id,
+        }
+        
+        # Extract timeline context from referrer URL if available
+        try:
+            from urllib.parse import urlparse
+            parsed_url = urlparse(referrer_url)
+            path = parsed_url.path
+            
+            resolved = resolve(path)
+            
+            # Check if referrer has timeline window context to preserve
+            if resolved.url_name == 'console_entity_video_sensor_history_detail_with_context':
+                # Extract window parameters from the resolved kwargs
+                if 'window_start' in resolved.kwargs and 'window_end' in resolved.kwargs:
+                    context.update({
+                        'window_start': resolved.kwargs['window_start'],
+                        'window_end': resolved.kwargs['window_end'],
+                    })
+                    
+        except (Resolver404, ValueError, KeyError):
+            # No timeline context available - use default behavior
+            pass
+        
+        return context

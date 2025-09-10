@@ -239,7 +239,83 @@
         VideoConnectionManager.cleanup();
     });
     
+    // Video Navigation Manager for camera sidebar
+    const VideoNavigationManager = {
+        init: function() {
+            this.setupCameraSidebarHandlers();
+        },
+        
+        setupCameraSidebarHandlers: function() {
+            // Handle camera sidebar button clicks
+            $(document).on('click', '.video-nav-button', (e) => {
+                e.preventDefault();
+                const button = $(e.currentTarget);
+                const entityId = button.data('entity-id');
+                const dispatchUrl = button.data('dispatch-url');
+                
+                if (!entityId || !dispatchUrl) {
+                    console.warn('Missing entity ID or dispatch URL for camera navigation');
+                    return;
+                }
+                
+                this.navigateToEntity(entityId, dispatchUrl);
+            });
+        },
+        
+        navigateToEntity: function(entityId, dispatchUrl) {
+            // Clean up current video connections before navigation
+            VideoConnectionManager.cleanup();
+            
+            // Make AJAX request to dispatch view
+            $.ajax({
+                url: dispatchUrl,
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                success: (response) => {
+                    if (response.html) {
+                        // Update main content area
+                        $('#hi-main-content').html(response.html);
+                        
+                        // Register new video element with connection manager
+                        VideoTimelineScrollManager.registerCurrentVideo();
+                        
+                        // Handle timeline scrolling if in history mode
+                        if (response.navigation_type === 'history') {
+                            VideoTimelineScrollManager.handleInitialLoad();
+                        }
+                        
+                        console.debug('Video navigation successful:', response.navigation_type);
+                    }
+                },
+                error: (xhr, status, error) => {
+                    console.error('Video navigation failed:', error);
+                    // Could add user-friendly error handling here
+                }
+            });
+        },
+        
+        getCSRFToken: function() {
+            // Get CSRF token from cookies
+            return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                   $('meta[name=csrf-token]').attr('content') ||
+                   Cookies.get('csrftoken');
+        }
+    };
+    
+    // Initialize video navigation when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            VideoNavigationManager.init();
+        });
+    } else {
+        VideoNavigationManager.init();
+    }
+    
     // Expose for potential external use and debugging
     window.VideoTimelineScrollManager = VideoTimelineScrollManager;
     window.VideoConnectionManager = VideoConnectionManager;
+    window.VideoNavigationManager = VideoNavigationManager;
 })();
