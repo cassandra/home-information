@@ -23,13 +23,20 @@ Individual attribute attribute card with value editing and actions
   
   <!-- Attribute Header -->
   <div class="{{ DIVID.ATTR_V2_ATTRIBUTE_HEADER_CLASS }}">
-    <h6 class="{{ DIVID.ATTR_V2_ATTRIBUTE_NAME_CLASS }}">
-      {% if attribute_form.instance.pk %}
-        {{ attribute_form.instance.name }}
-      {% else %}
+    {% if attribute_form.instance.pk %}
+      <div class="{{ DIVID.ATTR_V2_ATTRIBUTE_NAME_CLASS }}">
+        <input type="text" 
+               id="{{ attribute_form.name.id_for_label }}"
+               name="{{ attribute_form.name.html_name }}"
+               value="{{ attribute_form.instance.name }}" 
+               class="attr-v2-title-input"
+               maxlength="64">
+      </div>
+    {% else %}
+      <h6 class="{{ DIVID.ATTR_V2_ATTRIBUTE_NAME_CLASS }}">
         {% icon "plus" size="sm" css_class="hi-icon-left" %}Add New
-      {% endif %}
-    </h6>
+      </h6>
+    {% endif %}
 
     {% if attribute_form.non_field_errors %}
     <div class="attr-v2-non-field-errors">
@@ -86,13 +93,7 @@ Individual attribute attribute card with value editing and actions
   
   <!-- Attribute Value -->
   <div class="{{ DIVID.ATTR_V2_ATTRIBUTE_VALUE_CLASS }}">
-    {% if attribute_form.instance.pk %}
-      <!-- Existing attribute - include hidden name field -->
-      <input type="hidden" 
-             id="{{ attribute_form.name.id_for_label }}"
-             name="{{ attribute_form.name.html_name }}"
-             value="{{ attribute_form.instance.name }}" />
-    {% else %}
+    {% if not attribute_form.instance.pk %}
       <!-- New attribute form -->
       <div class="mb-2">
         {{ attribute_form.name.label_tag }}
