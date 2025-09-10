@@ -10,6 +10,7 @@ from hi.apps.common.utils import is_ajax
 
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
 from hi.apps.control.controller_manager import ControllerManager
+from hi.apps.control.one_click_control_service import OneClickControlService, OneClickControlNotSupportedException
 from hi.apps.entity.models import Entity
 from hi.apps.entity.enums import EntityStateValue
 from hi.apps.entity.view_mixins import EntityViewMixin
@@ -119,11 +120,16 @@ class LocationItemStatusView( View, EntityViewMixin ):
                 )
             
             # Service handles complete control flow
-            from hi.apps.control.one_click_control_service import OneClickControlService
-            outcome = OneClickControlService().execute_one_click_control(
-                entity = entity, 
-                location_view_type = location_view.location_view_type
-            )
+            try:
+                control_result = OneClickControlService().execute_one_click_control(
+                    entity = entity, 
+                    location_view_type = location_view.location_view_type
+                )
+                # Control was attempted - redirect to entity status regardless of success/failure
+                # Let polling update the state and show any errors
+            except OneClickControlNotSupportedException:
+                # Fall back to status modal when one-click control is not supported
+                pass
             
             # Always redirect to entity status - let polling update the state
             return HttpResponseRedirect(

@@ -1,20 +1,10 @@
-from dataclasses import dataclass
 from typing import Optional
 
 from hi.apps.control.controller_manager import ControllerManager
 from hi.apps.entity.enums import EntityStateType, EntityStateValue
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
-
-
-@dataclass
-class OneClickControlOutcome:
-    """Result of one-click control execution for UI handling."""
-    success: bool
-    executed_control: bool
-    control_value_sent: Optional[str] = None
-    error_message: Optional[str] = None
-    should_show_status_modal: bool = False
+from hi.integrations.transient_models import IntegrationControlResult
 
 
 class OneClickControlNotSupportedException(Exception):
@@ -53,62 +43,37 @@ class OneClickControlService:
         EntityStateValue.CONNECTED: EntityStateValue.DISCONNECTED,
     }
     
-    def execute_one_click_control(self, entity: Entity, location_view_type) -> OneClickControlOutcome:
+    def execute_one_click_control(self, entity: Entity, location_view_type) -> IntegrationControlResult:
         """
         Execute complete one-click control flow: decision, state detection, execution.
-        Returns outcome for view to handle UI appropriately.
+        Convenience wrapper around ControllerManager.do_control().
+        Raises OneClickControlNotSupportedException if control cannot be attempted.
         """
-        try:
-            # Find controllable state based on priority
-            controllable_state = self._find_controllable_entity_state(entity, location_view_type)
-            if not controllable_state:
-                return OneClickControlOutcome(
-                    success=False, 
-                    executed_control=False,
-                    should_show_status_modal=True
-                )
-            
-            # Get controller for this state
-            controller = controllable_state.controllers.first()
-            if not controller:
-                return OneClickControlOutcome(
-                    success=False, 
-                    executed_control=False,
-                    should_show_status_modal=True
-                )
-            
-            # Get current state for proper toggle behavior
-            current_value = self._get_current_state_value(controllable_state)
-            
-            # Determine target value for control
-            target_value = self._determine_control_value(controllable_state, current_value)
-            
-            # Execute control
-            control_result = ControllerManager().do_control(
-                controller=controller,
-                control_value=target_value
+        # Find controllable state based on priority
+        controllable_state = self._find_controllable_entity_state(entity, location_view_type)
+        if not controllable_state:
+            raise OneClickControlNotSupportedException(
+                f"No controllable states found for entity {entity.id} with location view type {location_view_type}"
             )
-            
-            return OneClickControlOutcome(
-                success=not control_result.has_errors,
-                executed_control=True,
-                control_value_sent=target_value,
-                error_message=control_result.error_message if control_result.has_errors else None
+        
+        # Get controller for this state
+        controller = controllable_state.controllers.first()
+        if not controller:
+            raise OneClickControlNotSupportedException(
+                f"No controllers found for entity state {controllable_state.id}"
             )
-            
-        except OneClickControlNotSupportedException:
-            return OneClickControlOutcome(
-                success=False, 
-                executed_control=False,
-                should_show_status_modal=True
-            )
-        except Exception as e:
-            return OneClickControlOutcome(
-                success=False, 
-                executed_control=False,
-                error_message=str(e),
-                should_show_status_modal=True
-            )
+        
+        # Get current state for proper toggle behavior
+        current_value = self._get_current_state_value(controllable_state)
+        
+        # Determine target value for control
+        target_value = self._determine_control_value(controllable_state, current_value)
+        
+        # Execute control and return the result directly
+        return ControllerManager().do_control(
+            controller=controller,
+            control_value=target_value
+        )
     
     def _find_controllable_entity_state(self, entity: Entity, location_view_type) -> Optional[EntityState]:
         """Find highest priority EntityState that has controllers and is supported."""
@@ -117,12 +82,15 @@ class OneClickControlService:
             
         priority_list = location_view_type.entity_state_type_priority_list
         
+        # Get all entity states once - Django will cache this
+        entity_states = entity.states.all()
+        
         for state_type in priority_list:
             # Only consider supported state types
             if state_type not in self.SUPPORTED_STATE_TYPES:
                 continue
                 
-            for entity_state in entity.entity_states.all():
+            for entity_state in entity_states:
                 if entity_state.entity_state_type == state_type:
                     if entity_state.controllers.exists():
                         return entity_state
