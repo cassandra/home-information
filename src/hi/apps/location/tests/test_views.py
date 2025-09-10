@@ -486,16 +486,21 @@ class TestLocationItemStatusView(SyncViewTestCase):
 
     @patch('hi.apps.location.views.ControllerManager')
     @patch('hi.apps.location.views.StatusDisplayManager')
-    def test_one_click_control_success_automation_view(self, mock_status_mgr, mock_controller_mgr):
-        """Test successful one-click control with AUTOMATION LocationViewType."""
+    def test_one_click_control_executes_highest_priority_controller_for_automation_view(self, mock_status_mgr, mock_controller_mgr):
+        """Test successful one-click control executes for highest priority EntityState."""
         from hi.enums import ItemType
         
-        # Mock successful control result
+        # Mock only at system boundaries
         mock_control_result = Mock()
         mock_control_result.has_errors = False
         mock_controller_mgr.return_value.do_control.return_value = mock_control_result
         
-        # Set up view parameters to simulate LocationView context
+        # Mock sensor response for toggle behavior
+        mock_sensor_response = Mock()
+        mock_sensor_response.value_str = 'OFF'
+        mock_status_mgr.return_value.get_latest_sensor_response.return_value = mock_sensor_response
+        
+        # Set up real session context (not mocked)
         session = self.client.session
         session['view_type'] = str(ViewType.LOCATION_VIEW)
         session['location_view_id'] = self.automation_view.id
@@ -504,28 +509,18 @@ class TestLocationItemStatusView(SyncViewTestCase):
         html_id = ItemType.ENTITY.html_id(self.entity.id)
         url = reverse('location_item_status', kwargs={'html_id': html_id})
         
-        # Mock request.view_parameters
-        with patch('hi.apps.location.views.hasattr') as mock_hasattr, \
-             patch('hi.apps.location.views.getattr') as mock_getattr:
-            
-            mock_hasattr.return_value = True
-            mock_getattr.side_effect = lambda obj, name, default=None: {
-                'location_view_id': self.automation_view.id
-            }.get(name, default)
-            
-            # Create mock view_parameters
-            mock_view_params = Mock()
-            mock_view_params.view_type = ViewType.LOCATION_VIEW
-            
-            with patch.object(self.client, 'get') as mock_get:
-                mock_request = Mock()
-                mock_request.view_parameters = mock_view_params
-                mock_get.return_value = Mock(status_code=302)
-                
-                response = self.client.get(url)
-
-        # Should execute control action and redirect to entity status
+        response = self.client.get(url)
+        
+        # Test actual behavior
         self.assertEqual(response.status_code, 302)
+        expected_url = reverse('entity_status', kwargs={'entity_id': self.entity.id})
+        self.assertEqual(response.url, expected_url)
+        
+        # Verify the control was actually called with toggled value
+        mock_controller_mgr.return_value.do_control.assert_called_once_with(
+            controller=self.controller,
+            control_value='ON'  # Should toggle from OFF to ON
+        )
 
     def test_one_click_control_entity_not_found(self):
         """Test handling of nonexistent entity."""
@@ -536,8 +531,8 @@ class TestLocationItemStatusView(SyncViewTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 400)
 
-    def test_entity_fallback_no_controllable_state(self):
-        """Test fallback when entity has no controllable state matching LocationViewType."""
+    def test_falls_back_to_status_modal_when_entity_has_no_controllable_states(self):
+        """Test fallback to status modal when entity has no controllable state matching LocationViewType."""
         from hi.enums import ItemType
         
         # Create entity with no controllers
@@ -623,6 +618,146 @@ class TestLocationItemStatusView(SyncViewTestCase):
         self.assertEqual(response.status_code, 302)
         expected_url = reverse('entity_status', kwargs={'entity_id': self.entity.id})
         self.assertEqual(response.url, expected_url)
+
+    def test_priority_matching_with_multiple_controllable_states(self):
+        """Test LocationViewType priority when entity has multiple controllable states."""
+        from hi.enums import ItemType
+        
+        # Create entity with multiple controllable states
+        multi_state_entity = Entity.objects.create(
+            name='Multi State Device',
+            entity_type_str='SWITCH'
+        )
+        
+        # Higher priority state (ON_OFF is first in AUTOMATION priority list)
+        high_priority_state = EntityState.objects.create(
+            entity=multi_state_entity,
+            entity_state_type_str='ON_OFF',
+            name='Power State'
+        )
+        
+        # Lower priority state (HIGH_LOW is later in priority list)
+        low_priority_state = EntityState.objects.create(
+            entity=multi_state_entity,
+            entity_state_type_str='HIGH_LOW',
+            name='Level State'
+        )
+        
+        # Create controllers for both
+        high_controller = Controller.objects.create(
+            name='Power Controller',
+            entity_state=high_priority_state,
+            controller_type_str='DEFAULT',
+            integration_id='test_integration',
+            integration_name='power_control'
+        )
+        
+        low_controller = Controller.objects.create(
+            name='Level Controller',
+            entity_state=low_priority_state,
+            controller_type_str='DEFAULT',
+            integration_id='test_integration',
+            integration_name='level_control'
+        )
+        
+        # Set up automation view context
+        session = self.client.session
+        session['view_type'] = str(ViewType.LOCATION_VIEW)
+        session['location_view_id'] = self.automation_view.id
+        session.save()
+        
+        # Mock control manager
+        with patch('hi.apps.location.views.ControllerManager') as mock_controller_mgr, \
+             patch('hi.apps.location.views.StatusDisplayManager') as mock_status_mgr:
+            
+            mock_control_result = Mock()
+            mock_control_result.has_errors = False
+            mock_controller_mgr.return_value.do_control.return_value = mock_control_result
+            
+            mock_sensor_response = Mock()
+            mock_sensor_response.value_str = 'OFF'
+            mock_status_mgr.return_value.get_latest_sensor_response.return_value = mock_sensor_response
+            
+            html_id = ItemType.ENTITY.html_id(multi_state_entity.id)
+            url = reverse('location_item_status', kwargs={'html_id': html_id})
+            
+            response = self.client.get(url)
+            
+            # Should redirect to entity status after executing control
+            self.assertEqual(response.status_code, 302)
+            expected_url = reverse('entity_status', kwargs={'entity_id': multi_state_entity.id})
+            self.assertEqual(response.url, expected_url)
+            
+            # Should use high priority controller
+            mock_controller_mgr.return_value.do_control.assert_called_once_with(
+                controller=high_controller,
+                control_value='ON'
+            )
+
+    def test_toggle_value_mapping_for_binary_states(self):
+        """Test TOGGLE_VALUE_MAP correctly toggles binary states."""
+        from hi.enums import ItemType
+        
+        test_cases = [
+            ('OFF', 'ON'),
+            ('ON', 'OFF'),
+            ('CLOSED', 'OPEN'),
+            ('OPEN', 'CLOSED'),
+            ('LOW', 'HIGH'),
+            ('HIGH', 'LOW'),
+        ]
+        
+        session = self.client.session
+        session['view_type'] = str(ViewType.LOCATION_VIEW)
+        session['location_view_id'] = self.automation_view.id
+        session.save()
+        
+        for current_value, expected_toggle in test_cases:
+            with self.subTest(current=current_value, expected=expected_toggle):
+                with patch('hi.apps.location.views.ControllerManager') as mock_controller_mgr, \
+                     patch('hi.apps.location.views.StatusDisplayManager') as mock_status_mgr:
+                    
+                    mock_control_result = Mock()
+                    mock_control_result.has_errors = False
+                    mock_controller_mgr.return_value.do_control.return_value = mock_control_result
+                    
+                    # Mock current sensor value
+                    mock_sensor_response = Mock()
+                    mock_sensor_response.value_str = current_value
+                    mock_status_mgr.return_value.get_latest_sensor_response.return_value = mock_sensor_response
+                    
+                    html_id = ItemType.ENTITY.html_id(self.entity.id)
+                    url = reverse('location_item_status', kwargs={'html_id': html_id})
+                    
+                    response = self.client.get(url)
+                    
+                    # Verify toggle value was sent
+                    mock_controller_mgr.return_value.do_control.assert_called_with(
+                        controller=self.controller,
+                        control_value=expected_toggle
+                    )
+
+    def test_location_view_context_persistence_across_requests(self):
+        """Test LocationView context persists across multiple requests."""
+        # Set context in session
+        session = self.client.session
+        session['view_type'] = str(ViewType.LOCATION_VIEW)
+        session['location_view_id'] = self.automation_view.id
+        session.save()
+        
+        # Make first request
+        from hi.enums import ItemType
+        html_id = ItemType.ENTITY.html_id(self.entity.id)
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
+        
+        response1 = self.client.get(url)
+        
+        # Context should persist for second request
+        response2 = self.client.get(url)
+        
+        # Both should redirect (fallback since no mocked controller)
+        self.assertEqual(response1.status_code, 302)
+        self.assertEqual(response2.status_code, 302)
 
 
 class TestLocationItemEditModeView(SyncViewTestCase):
