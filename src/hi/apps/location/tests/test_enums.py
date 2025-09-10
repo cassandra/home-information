@@ -17,31 +17,19 @@ class TestLocationViewType(BaseTestCase):
         self.assertIn(EntityStateType.MOVEMENT, default_priorities)
         self.assertIn(EntityStateType.TEMPERATURE, default_priorities)
         
-        # SECURITY should focus on security-related states
-        security_priorities = LocationViewType.SECURITY.entity_state_type_priority_list
-        self.assertIn(EntityStateType.MOVEMENT, security_priorities)
-        self.assertIn(EntityStateType.PRESENCE, security_priorities)
-        self.assertIn(EntityStateType.OPEN_CLOSE, security_priorities)
-        
-        # CLIMATE should focus on climate-related states
-        climate_priorities = LocationViewType.CLIMATE.entity_state_type_priority_list
-        self.assertIn(EntityStateType.TEMPERATURE, climate_priorities)
-        self.assertIn(EntityStateType.HUMIDITY, climate_priorities)
-        self.assertIn(EntityStateType.AIR_PRESSURE, climate_priorities)
-        
-        # SUPPRESS should have empty list
-        suppress_priorities = LocationViewType.SUPPRESS.entity_state_type_priority_list
-        self.assertEqual(len(suppress_priorities), 0)
+        # AUTOMATION should focus on controllable states
+        automation_priorities = LocationViewType.AUTOMATION.entity_state_type_priority_list
+        self.assertIn(EntityStateType.ON_OFF, automation_priorities)
+        self.assertIn(EntityStateType.LIGHT_LEVEL, automation_priorities)
+        self.assertIn(EntityStateType.OPEN_CLOSE, automation_priorities)
+        self.assertIn(EntityStateType.HIGH_LOW, automation_priorities)
         return
 
     def test_location_view_type_specialization_logic(self):
         """Test view type specialization - business logic for filtering sensor types."""
-        # Each view type should have unique focus
+        # Test AUTOMATION view type focus
         view_types = [
-            (LocationViewType.SECURITY, [EntityStateType.MOVEMENT, EntityStateType.PRESENCE]),
-            (LocationViewType.LIGHTS, [EntityStateType.LIGHT_LEVEL]),
-            (LocationViewType.SOUNDS, [EntityStateType.SOUND_LEVEL]),
-            (LocationViewType.ENERGY, [EntityStateType.ELECTRIC_USAGE, EntityStateType.WATER_FLOW]),
+            (LocationViewType.AUTOMATION, [EntityStateType.ON_OFF, EntityStateType.LIGHT_LEVEL, EntityStateType.OPEN_CLOSE]),
         ]
         
         for view_type, expected_states in view_types:
@@ -54,11 +42,7 @@ class TestLocationViewType(BaseTestCase):
     def test_location_view_type_labels(self):
         """Test LocationViewType labels - important for UI display."""
         self.assertEqual(LocationViewType.DEFAULT.label, 'Default')
-        self.assertEqual(LocationViewType.SECURITY.label, 'Security')
-        self.assertEqual(LocationViewType.LIGHTS.label, 'Lights')
-        self.assertEqual(LocationViewType.CLIMATE.label, 'Climate')
-        self.assertEqual(LocationViewType.ENERGY.label, 'Energy')
-        self.assertEqual(LocationViewType.SUPPRESS.label, 'Suppress')
+        self.assertEqual(LocationViewType.AUTOMATION.label, 'Automation')
         return
 
 
@@ -171,40 +155,32 @@ class TestSvgStyleName(BaseTestCase):
         
     def test_location_view_type_filtering_behavior(self):
         """Test how view types would filter entity states in real scenarios."""
-        # Test that specialized views are truly subsets of DEFAULT
+        # Test that AUTOMATION view is a subset of DEFAULT
         default_states = set(LocationViewType.DEFAULT.entity_state_type_priority_list)
+        automation_states = set(LocationViewType.AUTOMATION.entity_state_type_priority_list)
         
-        specialized_views = [
-            LocationViewType.SECURITY, LocationViewType.LIGHTS, LocationViewType.SOUNDS,
-            LocationViewType.CLIMATE, LocationViewType.ENERGY
-        ]
+        # AUTOMATION should be a subset of DEFAULT
+        self.assertTrue(automation_states.issubset(default_states),
+                        'AUTOMATION states should be subset of DEFAULT states')
         
-        for view_type in specialized_views:
-            view_states = set(view_type.entity_state_type_priority_list)
-            # Each specialized view should be a subset of DEFAULT
-            self.assertTrue(view_states.issubset(default_states),
-                            f'{view_type} states should be subset of DEFAULT states')
-            
-            # Specialized views should have fewer states than DEFAULT
-            self.assertLess(len(view_states), len(default_states),
-                            f'{view_type} should filter down from DEFAULT')
+        # AUTOMATION should have fewer states than DEFAULT  
+        self.assertLess(len(automation_states), len(default_states),
+                        'AUTOMATION should filter down from DEFAULT')
         
-        # Test that LIGHTS view only includes lighting-related states
-        lights_states = set(LocationViewType.LIGHTS.entity_state_type_priority_list)
-        non_lighting_states = {EntityStateType.MOVEMENT, EntityStateType.ELECTRIC_USAGE,
-                               EntityStateType.TEMPERATURE, EntityStateType.WATER_FLOW}
+        # Test that AUTOMATION view only includes controllable states
+        non_controllable_states = {EntityStateType.MOVEMENT, EntityStateType.ELECTRIC_USAGE,
+                                   EntityStateType.TEMPERATURE, EntityStateType.WATER_FLOW}
         
-        # LIGHTS should not include non-lighting states
-        intersection = lights_states.intersection(non_lighting_states)
+        # AUTOMATION should not include read-only sensor states  
+        intersection = automation_states.intersection(non_controllable_states)
         self.assertEqual(len(intersection), 0,
-                         'LIGHTS view should not include non-lighting entity states')
+                         'AUTOMATION view should focus on controllable entity states')
         return
         
     def test_enum_string_conversion_consistency(self):
         """Test enum string representations work correctly for database storage."""
         # Test LocationViewType string conversion
-        view_types = [LocationViewType.DEFAULT, LocationViewType.SECURITY,
-                      LocationViewType.CLIMATE, LocationViewType.SUPPRESS]
+        view_types = [LocationViewType.DEFAULT, LocationViewType.AUTOMATION]
         
         for view_type in view_types:
             # String representation should be lowercase of enum name

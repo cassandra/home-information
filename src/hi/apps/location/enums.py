@@ -19,6 +19,7 @@ class LocationViewType(LabeledEnum):
         '',
         [ EntityStateType.MOVEMENT,
           EntityStateType.PRESENCE,
+          EntityStateType.ON_OFF,
           EntityStateType.OPEN_CLOSE,
           EntityStateType.LIGHT_LEVEL,
           EntityStateType.SOUND_LEVEL,
@@ -30,53 +31,17 @@ class LocationViewType(LabeledEnum):
           EntityStateType.AIR_PRESSURE,
           EntityStateType.ELECTRIC_USAGE,
           EntityStateType.WATER_FLOW,
-          EntityStateType.HIGH_LOW,
           ],
 
     )
-    SECURITY = (
-        'Security',
+    AUTOMATION = (
+        'Automation',
         '',
-        [ EntityStateType.MOVEMENT,
-          EntityStateType.PRESENCE,
+        [ EntityStateType.ON_OFF,
+          EntityStateType.LIGHT_LEVEL,
           EntityStateType.OPEN_CLOSE,
-          ],
-    )
-    LIGHTS = (
-        'Lights',
-        '',
-        [ EntityStateType.LIGHT_LEVEL,
-          ],
-    )
-    SOUNDS = (
-        'Sounds',
-        '',
-        [ EntityStateType.SOUND_LEVEL,
-          ],
-    )
-    CLIMATE = (
-        'Climate',
-        '',
-        [ EntityStateType.TEMPERATURE,
-          EntityStateType.HIGH_LOW,
-          EntityStateType.HUMIDITY,
-          EntityStateType.MOISTURE,
-          EntityStateType.WIND_SPEED,
-          EntityStateType.AIR_PRESSURE,
-          ],
-    )
-    ENERGY = (
-        'Energy',
-        '',
-        [ EntityStateType.ELECTRIC_USAGE,
-          EntityStateType.WATER_FLOW,
           EntityStateType.HIGH_LOW,
           ],
-    )
-    SUPPRESS = (
-        'Suppress',
-        '',
-        [],
     )
 
 

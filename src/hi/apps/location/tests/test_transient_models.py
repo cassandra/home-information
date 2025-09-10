@@ -166,8 +166,8 @@ class TestLocationViewEditModeData(BaseTestCase):
         
         location_view = LocationView.objects.create(
             location=location,
-            location_view_type_str='SECURITY',
-            name='Security View',
+            location_view_type_str='AUTOMATION',
+            name='Automation View',
             svg_view_box_str='50 50 200 200',
             svg_rotate=45,
             svg_style_name_str='GREYSCALE'
@@ -181,7 +181,7 @@ class TestLocationViewEditModeData(BaseTestCase):
         
         # Test that form can handle enum field updates
         update_data = {
-            'name': 'Updated Security View',
+            'name': 'Updated Automation View',
             'location_view_type_str': 'CLIMATE',
             'svg_view_box_str': '25 25 250 250',
             'svg_rotate': 90,

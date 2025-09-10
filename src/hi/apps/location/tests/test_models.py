@@ -172,8 +172,8 @@ class TestLocation(BaseTestCase):
         )
         security_view = LocationView.objects.create(
             location=location,
-            location_view_type_str='SECURITY',
-            name='Security View',
+            location_view_type_str='AUTOMATION',
+            name='Automation View',
             svg_view_box_str='0 0 75 75',
             svg_rotate=45,
             svg_style_name_str='GREYSCALE'
@@ -214,8 +214,8 @@ class TestLocationView(BaseTestCase):
         
         location_view = LocationView.objects.create(
             location=location,
-            location_view_type_str='SECURITY',
-            name='Security View',
+            location_view_type_str='AUTOMATION',
+            name='Automation View',
             svg_view_box_str='0 0 50 50',
             svg_rotate=45,
             svg_style_name_str='GREYSCALE'
@@ -225,21 +225,21 @@ class TestLocationView(BaseTestCase):
         view_type = location_view.location_view_type
         style_name = location_view.svg_style_name
         
-        self.assertEqual(view_type, LocationViewType.SECURITY)
+        self.assertEqual(view_type, LocationViewType.AUTOMATION)
         self.assertEqual(style_name, SvgStyleName.GREYSCALE)
-        self.assertEqual(view_type.label, 'Security')
+        self.assertEqual(view_type.label, 'Automation')
         self.assertEqual(style_name.label, 'Grey Scale ')
         
         # Test setter conversions work correctly
-        location_view.location_view_type = LocationViewType.CLIMATE
+        location_view.location_view_type = LocationViewType.AUTOMATION
         location_view.svg_style_name = SvgStyleName.COLOR
         
-        self.assertEqual(location_view.location_view_type_str, 'climate')
+        self.assertEqual(location_view.location_view_type_str, 'automation')
         self.assertEqual(location_view.svg_style_name_str, 'color')
         
         # Test that enum business logic is accessible
-        climate_priorities = location_view.location_view_type.entity_state_type_priority_list
-        self.assertGreater(len(climate_priorities), 0)
+        automation_priorities = location_view.location_view_type.entity_state_type_priority_list
+        self.assertGreater(len(automation_priorities), 0)
         return
 
     def test_location_view_cascade_deletion_from_location(self):
@@ -389,8 +389,8 @@ class TestLocationAttribute(BaseTestCase):
         # Create view with different viewbox (zoomed in)
         zoomed_view = LocationView.objects.create(
             location=location,
-            location_view_type_str='SECURITY',
-            name='Zoomed Security View',
+            location_view_type_str='AUTOMATION',
+            name='Zoomed Automation View',
             svg_view_box_str='100 100 200 200',
             svg_rotate=0,
             svg_style_name_str='COLOR'
@@ -433,9 +433,7 @@ class TestLocationAttribute(BaseTestCase):
         # Create views of different types with varied configurations
         views_config = [
             ('DEFAULT', 'Main View', '0 0 1000 800', 0, 'COLOR'),
-            ('SECURITY', 'Security Zone', '200 200 600 400', 0, 'GREYSCALE'),
-            ('CLIMATE', 'Climate Monitor', '100 500 800 200', 45, 'COLOR'),
-            ('LIGHTS', 'Lighting Control', '0 0 500 400', 90, 'GREYSCALE'),
+            ('AUTOMATION', 'Automation Zone', '200 200 600 400', 0, 'GREYSCALE'),
         ]
         
         created_views = []
