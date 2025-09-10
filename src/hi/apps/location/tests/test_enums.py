@@ -10,15 +10,14 @@ logging.disable(logging.CRITICAL)
 class TestLocationViewType(BaseTestCase):
 
     def test_location_view_type_entity_state_priority_lists(self):
-        """Test entity state type priority lists - critical for sensor display ordering."""
-        # DEFAULT should have comprehensive list
+        """Test entity state type priority lists - critical for one-click control behavior."""
+        # DEFAULT should have empty list (always falls back to status modal)
         default_priorities = LocationViewType.DEFAULT.entity_state_type_priority_list
-        self.assertGreater(len(default_priorities), 5)
-        self.assertIn(EntityStateType.MOVEMENT, default_priorities)
-        self.assertIn(EntityStateType.TEMPERATURE, default_priorities)
+        self.assertEqual(len(default_priorities), 0)
         
         # AUTOMATION should focus on controllable states
         automation_priorities = LocationViewType.AUTOMATION.entity_state_type_priority_list
+        self.assertGreater(len(automation_priorities), 0)
         self.assertIn(EntityStateType.ON_OFF, automation_priorities)
         self.assertIn(EntityStateType.LIGHT_LEVEL, automation_priorities)
         self.assertIn(EntityStateType.OPEN_CLOSE, automation_priorities)
@@ -154,18 +153,16 @@ class TestSvgStyleName(BaseTestCase):
         return
         
     def test_location_view_type_filtering_behavior(self):
-        """Test how view types would filter entity states in real scenarios."""
-        # Test that AUTOMATION view is a subset of DEFAULT
+        """Test how view types control one-click behavior."""
+        # DEFAULT should have empty priority list (no one-click control)
         default_states = set(LocationViewType.DEFAULT.entity_state_type_priority_list)
+        self.assertEqual(len(default_states), 0,
+                        'DEFAULT should have no priority states (always shows status modal)')
+        
+        # AUTOMATION should have controllable states only
         automation_states = set(LocationViewType.AUTOMATION.entity_state_type_priority_list)
-        
-        # AUTOMATION should be a subset of DEFAULT
-        self.assertTrue(automation_states.issubset(default_states),
-                        'AUTOMATION states should be subset of DEFAULT states')
-        
-        # AUTOMATION should have fewer states than DEFAULT  
-        self.assertLess(len(automation_states), len(default_states),
-                        'AUTOMATION should filter down from DEFAULT')
+        self.assertGreater(len(automation_states), 0,
+                          'AUTOMATION should have priority states for one-click control')
         
         # Test that AUTOMATION view only includes controllable states
         non_controllable_states = {EntityStateType.MOVEMENT, EntityStateType.ELECTRIC_USAGE,

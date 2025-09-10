@@ -17,21 +17,7 @@ class LocationViewType(LabeledEnum):
     DEFAULT = (
         'Default',
         '',
-        [ EntityStateType.MOVEMENT,
-          EntityStateType.PRESENCE,
-          EntityStateType.ON_OFF,
-          EntityStateType.OPEN_CLOSE,
-          EntityStateType.LIGHT_LEVEL,
-          EntityStateType.SOUND_LEVEL,
-          EntityStateType.TEMPERATURE,
-          EntityStateType.HIGH_LOW,
-          EntityStateType.HUMIDITY,
-          EntityStateType.MOISTURE,
-          EntityStateType.WIND_SPEED,
-          EntityStateType.AIR_PRESSURE,
-          EntityStateType.ELECTRIC_USAGE,
-          EntityStateType.WATER_FLOW,
-          ],
+        [],  # Empty list - always falls back to status modal
 
     )
     AUTOMATION = (

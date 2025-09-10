@@ -759,6 +759,35 @@ class TestLocationItemStatusView(SyncViewTestCase):
         self.assertEqual(response1.status_code, 302)
         self.assertEqual(response2.status_code, 302)
 
+    def test_default_view_type_always_falls_back_to_status_modal(self):
+        """Test that DEFAULT LocationViewType always shows status modal (no one-click control)."""
+        from hi.enums import ItemType
+        
+        # Set up DEFAULT view context
+        session = self.client.session
+        session['view_type'] = str(ViewType.LOCATION_VIEW)
+        session['location_view_id'] = self.default_view.id
+        session.save()
+        
+        html_id = ItemType.ENTITY.html_id(self.entity.id)
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
+        
+        # Even with mocked controllers, should fallback due to empty priority list
+        with patch('hi.apps.location.views.ControllerManager') as mock_controller_mgr:
+            mock_control_result = Mock()
+            mock_control_result.has_errors = False
+            mock_controller_mgr.return_value.do_control.return_value = mock_control_result
+            
+            response = self.client.get(url)
+            
+            # Should fall back to entity status modal (no one-click control attempted)
+            self.assertEqual(response.status_code, 302)
+            expected_url = reverse('entity_status', kwargs={'entity_id': self.entity.id})
+            self.assertEqual(response.url, expected_url)
+            
+            # Control should NOT be called because DEFAULT has empty priority list
+            mock_controller_mgr.return_value.do_control.assert_not_called()
+
 
 class TestLocationItemEditModeView(SyncViewTestCase):
     """
