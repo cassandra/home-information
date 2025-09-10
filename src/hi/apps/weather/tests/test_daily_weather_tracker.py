@@ -33,7 +33,13 @@ class TestDailyWeatherTracker(unittest.TestCase):
         
         # Use UTC timezone for consistent testing
         self.test_timezone = pytz.UTC
-        self.tracker = DailyWeatherTracker(user_timezone=self.test_timezone)
+        
+        # Mock ConsoleSettingsHelper to return UTC for consistent testing
+        self.console_helper_patcher = patch('hi.apps.weather.daily_weather_tracker.ConsoleSettingsHelper')
+        mock_console_helper = self.console_helper_patcher.start()
+        mock_console_helper.return_value.get_tz_name.return_value = 'UTC'
+        
+        self.tracker = DailyWeatherTracker()
         
         # Create test data point source and station
         self.test_source = DataPointSource(
@@ -51,6 +57,10 @@ class TestDailyWeatherTracker(unittest.TestCase):
         
         # Base test time - use timezone-aware datetime
         self.base_time = timezone.make_aware(datetime(2024, 3, 15, 12, 0, 0), self.test_timezone)
+    
+    def tearDown(self):
+        """Clean up test environment."""
+        self.console_helper_patcher.stop()
     
     def create_test_temperature_datapoint(self, temp_celsius, timestamp=None):
         """Helper to create test temperature data points."""
@@ -151,7 +161,6 @@ class TestDailyWeatherTracker(unittest.TestCase):
         """Test that day boundaries are correctly handled in different timezones."""
         # Use US/Central timezone for this test
         central_tz = pytz.timezone('US/Central')
-        tracker_central = DailyWeatherTracker(user_timezone=central_tz)
         
         # Create time that's late at night in Central time but next day in UTC
         # March 15, 2024 11:30 PM Central = March 16, 2024 4:30 AM UTC
@@ -160,12 +169,25 @@ class TestDailyWeatherTracker(unittest.TestCase):
         
         location_key = "test_location"
         
-        with patch('hi.apps.common.datetimeproxy.now', return_value=utc_time):
+        # Mock ConsoleSettingsHelper to return Central timezone for this test
+        with patch('hi.apps.weather.daily_weather_tracker.ConsoleSettingsHelper') as mock_console, \
+             patch('hi.apps.common.datetimeproxy.now') as mock_now:
+            mock_console.return_value.get_tz_name.return_value = 'US/Central'
+            
+            # Mock datetimeproxy.now() to handle timezone conversion properly
+            def mock_now_func(tzname=None):
+                if tzname is None:
+                    return utc_time
+                else:
+                    tz = pytz.timezone(tzname)
+                    return utc_time.astimezone(tz)
+            mock_now.side_effect = mock_now_func
+            
             conditions = self.create_test_weather_conditions(20.0, utc_time)
-            tracker_central.record_weather_conditions(conditions, location_key=location_key)
+            self.tracker.record_weather_conditions(conditions, location_key=location_key)
             
             # Should be stored under March 15 (Central time), not March 16 (UTC)
-            summary = tracker_central.get_daily_summary(location_key=location_key)
+            summary = self.tracker.get_daily_summary(location_key=location_key)
             self.assertEqual(summary['date'], '2024-03-15')
     
     def test_no_data_scenarios(self):
@@ -199,29 +221,6 @@ class TestDailyWeatherTracker(unittest.TestCase):
         min_temp, max_temp = self.tracker.get_temperature_min_max_today(location_key=location_key)
         self.assertIsNone(min_temp)
         self.assertIsNone(max_temp)
-    
-    def test_populate_daily_fallbacks(self):
-        """Test populating fallback values in weather conditions data."""
-        location_key = "test_location"
-        
-        with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
-            # Record some temperature data
-            conditions_record = self.create_test_weather_conditions(25.0)
-            self.tracker.record_weather_conditions(conditions_record, location_key=location_key)
-            
-            # Create conditions data without today's min/max
-            conditions_empty = WeatherConditionsData()
-            self.assertIsNone(conditions_empty.temperature_min_today)
-            self.assertIsNone(conditions_empty.temperature_max_today)
-            
-            # Populate fallbacks
-            self.tracker.populate_daily_fallbacks(conditions_empty, location_key=location_key)
-            
-            # Should now have fallback values
-            self.assertIsNotNone(conditions_empty.temperature_min_today)
-            self.assertIsNotNone(conditions_empty.temperature_max_today)
-            self.assertEqual(conditions_empty.temperature_min_today.quantity_ave.magnitude, 25.0)
-            self.assertEqual(conditions_empty.temperature_max_today.quantity_ave.magnitude, 25.0)
     
     def test_fallback_source_properties(self):
         """Test that fallback data points have correct source properties."""
@@ -354,73 +353,6 @@ class TestDailyWeatherTracker(unittest.TestCase):
             self.assertAlmostEqual(max_temp.quantity_ave.magnitude, 30.0, places=1)
             self.assertEqual(min_temp.quantity_ave.units, 'degree_Celsius')
             self.assertEqual(max_temp.quantity_ave.units, 'degree_Celsius')
-    
-    def test_populate_daily_fallbacks_fills_missing_temperature_data(self):
-        """Test that populate_daily_fallbacks correctly fills missing temperature min/max."""
-        location_key = "test_location"
-        
-        with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
-            # First, record some temperature data to establish tracking
-            weather_data = WeatherConditionsData(
-                temperature=self.create_test_temperature_datapoint(20.0)
-            )
-            self.tracker.record_weather_conditions(weather_data, location_key)
-            
-            weather_data2 = WeatherConditionsData(
-                temperature=self.create_test_temperature_datapoint(25.0)
-            )
-            self.tracker.record_weather_conditions(weather_data2, location_key)
-            
-            # Create weather data with missing daily min/max
-            incomplete_weather_data = WeatherConditionsData(
-                temperature=self.create_test_temperature_datapoint(22.0),
-                # Note: temperature_min_today and temperature_max_today are None
-            )
-            
-            # Verify fallbacks are initially None
-            self.assertIsNone(incomplete_weather_data.temperature_min_today)
-            self.assertIsNone(incomplete_weather_data.temperature_max_today)
-            
-            # Use public interface to populate fallbacks
-            self.tracker.populate_daily_fallbacks(incomplete_weather_data, location_key)
-            
-            # Verify fallbacks were populated
-            self.assertIsNotNone(incomplete_weather_data.temperature_min_today)
-            self.assertIsNotNone(incomplete_weather_data.temperature_max_today)
-            self.assertAlmostEqual(
-                incomplete_weather_data.temperature_min_today.quantity_ave.magnitude, 20.0, places=1)
-            self.assertAlmostEqual(
-                incomplete_weather_data.temperature_max_today.quantity_ave.magnitude, 25.0, places=1)
-    
-    def test_populate_daily_fallbacks_preserves_existing_data(self):
-        """Test that populate_daily_fallbacks doesn't overwrite existing min/max data."""
-        location_key = "test_location"
-        
-        with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
-            # Record some tracking data
-            weather_data = WeatherConditionsData(
-                temperature=self.create_test_temperature_datapoint(20.0)
-            )
-            self.tracker.record_weather_conditions(weather_data, location_key)
-            
-            # Create weather data that already has min/max values
-            existing_min = self.create_test_temperature_datapoint(15.0)
-            existing_max = self.create_test_temperature_datapoint(30.0)
-            
-            complete_weather_data = WeatherConditionsData(
-                temperature=self.create_test_temperature_datapoint(22.0),
-                temperature_min_today=existing_min,
-                temperature_max_today=existing_max
-            )
-            
-            # Use public interface - should not overwrite existing data
-            self.tracker.populate_daily_fallbacks(complete_weather_data, location_key)
-            
-            # Verify existing data was preserved
-            self.assertAlmostEqual(
-                complete_weather_data.temperature_min_today.quantity_ave.magnitude, 15.0, places=1)
-            self.assertAlmostEqual(
-                complete_weather_data.temperature_max_today.quantity_ave.magnitude, 30.0, places=1)
     
     def test_get_daily_summary_provides_debug_information(self):
         """Test that get_daily_summary provides useful debugging information."""

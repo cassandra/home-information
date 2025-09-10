@@ -108,29 +108,6 @@ class TestWeatherManagerDefensiveHandling(BaseTestCase):
             # Verify the mock was called (showing the error path was taken)
             mock_record.assert_called_once()
     
-    def test_daily_tracker_error_during_fallback_population_does_not_break_getter(self):
-        """Test that errors in fallback population don't break getting current conditions."""
-        
-        # Set up some current conditions
-        conditions = self.create_test_conditions(22.0)
-        self.weather_manager._current_conditions_data = conditions
-        
-        # Mock the daily tracker to raise an exception during fallback population
-        with patch.object(self.weather_manager._daily_weather_tracker,
-                          'populate_daily_fallbacks') as mock_populate:
-            mock_populate.side_effect = Exception("Simulated fallback population error")
-            
-            # This should NOT raise an exception despite the daily tracker error
-            result_conditions = self.weather_manager.get_current_conditions_data()
-            
-            # Verify the main weather data is still returned
-            self.assertIsNotNone(result_conditions)
-            self.assertIsNotNone(result_conditions.temperature)
-            self.assertEqual(result_conditions.temperature.quantity_ave.magnitude, 22.0)
-            
-            # Verify the mock was called (showing the error path was taken)
-            mock_populate.assert_called_once()
-    
     def test_location_key_generation_error_is_handled(self):
         """Test that errors in location key generation are handled gracefully."""
         
@@ -152,30 +129,6 @@ class TestWeatherManagerDefensiveHandling(BaseTestCase):
             
             # Verify the mock was called (showing the error path was taken)
             mock_location_key.assert_called_once()
-    
-    def test_daily_tracker_internal_error_handling(self):
-        """Test that the daily tracker itself handles errors gracefully."""
-        
-        # Test that populate_daily_fallbacks handles internal errors
-        conditions = WeatherConditionsData()
-        
-        # Mock get_temperature_min_max_today to raise an exception
-        with patch.object(self.weather_manager._daily_weather_tracker,
-                          'get_temperature_min_max_today') as mock_get_temp:
-            mock_get_temp.side_effect = Exception("Simulated internal tracker error")
-            
-            # This should NOT raise an exception
-            self.weather_manager._daily_weather_tracker.populate_daily_fallbacks(
-                weather_conditions_data=conditions,
-                location_key="test_location"
-            )
-            
-            # The conditions object should remain unchanged (no fallbacks added)
-            self.assertIsNone(conditions.temperature_min_today)
-            self.assertIsNone(conditions.temperature_max_today)
-            
-            # Verify the mock was called (showing the error path was taken)
-            mock_get_temp.assert_called_once()
     
     def test_cache_error_does_not_break_tracking(self):
         """Test that Redis/cache errors don't break the tracking functionality."""
@@ -201,17 +154,14 @@ class TestWeatherManagerDefensiveHandling(BaseTestCase):
             # The tracking may fail, but it shouldn't crash
             self.assertTrue(success or True)  # Accept either graceful handling or internal error handling
     
-    def test_main_weather_processing_continues_with_multiple_tracker_errors(self):
-        """Test that multiple errors in daily tracking don't affect main processing."""
+    def test_main_weather_processing_continues_with_tracker_errors(self):
+        """Test that errors in daily tracking don't affect main processing."""
         
-        # Mock multiple parts of the daily tracker to fail
+        # Mock the daily tracker recording to fail
         with patch.object(self.weather_manager._daily_weather_tracker,
-                          'record_weather_conditions') as mock_record, \
-             patch.object(self.weather_manager._daily_weather_tracker,
-                          'populate_daily_fallbacks') as mock_populate:
+                          'record_weather_conditions') as mock_record:
             
             mock_record.side_effect = Exception("Recording error")
-            mock_populate.side_effect = Exception("Fallback error")
             
             # Update conditions
             conditions = self.create_test_conditions(30.0)
@@ -220,13 +170,12 @@ class TestWeatherManagerDefensiveHandling(BaseTestCase):
                 weather_conditions_data=conditions
             ))
             
-            # Get conditions (will try to populate fallbacks)
+            # Get conditions 
             result_conditions = self.weather_manager.get_current_conditions_data()
             
             # Main weather functionality should work despite tracker errors
             self.assertIsNotNone(result_conditions.temperature)
             self.assertEqual(result_conditions.temperature.quantity_ave.magnitude, 30.0)
             
-            # Both error paths should have been taken
+            # Recording error path should have been taken
             mock_record.assert_called_once()
-            mock_populate.assert_called_once()

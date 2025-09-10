@@ -122,8 +122,8 @@ class TestWeatherManagerDailyTrackerIntegration(unittest.TestCase):
             self.assertEqual(temp_stats['min']['value'], 25.0)
             self.assertEqual(temp_stats['max']['value'], 25.0)
     
-    def test_fallback_population_in_getter(self):
-        """Test that fallback values are populated when getting current conditions."""
+    def test_weather_stats_separate_from_conditions(self):
+        """Test that weather statistics are retrieved separately from current conditions."""
         location_key = "30.270,-97.740"  # Expected location key from mock source
         
         with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
@@ -141,7 +141,7 @@ class TestWeatherManagerDailyTrackerIntegration(unittest.TestCase):
                 source_datetime=self.base_time,
                 quantity_ave=UnitQuantity(25.0, 'degree_Celsius')
             )
-            # Explicitly set today fields to None to test fallback
+            # Explicitly set today fields to None to test they stay None
             current_conditions.temperature_min_today = None
             current_conditions.temperature_max_today = None
             
@@ -150,14 +150,20 @@ class TestWeatherManagerDailyTrackerIntegration(unittest.TestCase):
             
             # Mock the location key method to return consistent location
             with patch.object(self.weather_manager, '_get_location_key', return_value=location_key):
-                # Get current conditions (should populate fallbacks)
+                # Get current conditions (should NOT populate fallbacks)
                 result_conditions = self.weather_manager.get_current_conditions_data()
+                
+                # Get weather stats separately
+                weather_stats = self.weather_manager.get_weather_stats_today()
             
-            # Should now have fallback values
-            self.assertIsNotNone(result_conditions.temperature_min_today)
-            self.assertIsNotNone(result_conditions.temperature_max_today)
-            self.assertEqual(result_conditions.temperature_min_today.quantity_ave.magnitude, 22.0)
-            self.assertEqual(result_conditions.temperature_max_today.quantity_ave.magnitude, 22.0)
+            # Current conditions should not have fallback values (new architecture)
+            self.assertIsNone(result_conditions.temperature_min_today)
+            self.assertIsNone(result_conditions.temperature_max_today)
+            
+            # But weather stats should have the tracked values
+            self.assertIsNotNone(weather_stats.temperature)
+            # Note: Currently using max temp as the single temperature datapoint
+            self.assertEqual(weather_stats.temperature.quantity_ave.magnitude, 22.0)
     
     def test_fallback_does_not_overwrite_existing_data(self):
         """Test that fallback values don't overwrite existing API data."""
@@ -242,51 +248,52 @@ class TestWeatherManagerDailyTrackerIntegration(unittest.TestCase):
             self.assertEqual(temp_stats['min']['value'], 18.0)  # Lowest recorded
             self.assertEqual(temp_stats['max']['value'], 30.0)  # Highest recorded
     
-    def test_fallback_source_priority(self):
-        """Test that fallback sources have lower priority than real API sources."""
+    def test_weather_stats_source_priority(self):
+        """Test that weather stats sources have lower priority than real API sources."""
         location_key = "30.270,-97.740"
         
         with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
-            # Record temperature for fallback
+            # Record temperature for stats tracking
             conditions_to_record = self.create_test_conditions(20.0, include_today_fields=False)
             self.weather_manager._daily_weather_tracker.record_weather_conditions(
                 weather_conditions_data=conditions_to_record,
                 location_key=location_key
             )
             
-            # Get fallback values
-            current_conditions = WeatherConditionsData()
-            current_conditions.temperature_min_today = None
-            current_conditions.temperature_max_today = None
-            self.weather_manager._current_conditions_data = current_conditions
-            
             with patch.object(self.weather_manager, '_get_location_key', return_value=location_key):
-                result_conditions = self.weather_manager.get_current_conditions_data()
+                # Get weather stats (new architecture)
+                weather_stats = self.weather_manager.get_weather_stats_today()
             
-            # Check that fallback sources have high priority numbers (low priority)
-            fallback_min = result_conditions.temperature_min_today
-            fallback_max = result_conditions.temperature_max_today
-            
-            self.assertEqual(fallback_min.source.priority, 1000)  # Low priority
-            self.assertEqual(fallback_max.source.priority, 1000)  # Low priority
-            self.assertEqual(fallback_min.source.id, "daily_weather_tracker")
-            self.assertEqual(fallback_max.source.id, "daily_weather_tracker")
+            # Check that weather stats sources have high priority numbers (low priority)
+            self.assertIsNotNone(weather_stats.temperature)
+            self.assertEqual(weather_stats.temperature.source.priority, 1000)  # Low priority
+            self.assertEqual(weather_stats.temperature.source.id, "daily_weather_tracker")
     
     def test_timezone_consistency(self):
         """Test that timezone handling is consistent between recording and retrieval."""
         # Use a different timezone for the daily tracker
         pacific_tz = pytz.timezone('US/Pacific')
-        self.weather_manager._daily_weather_tracker = self.weather_manager._daily_weather_tracker.__class__(
-            user_timezone=pacific_tz
-        )
-        
         location_key = "30.268,-97.743"  # This matches what the WeatherManager actually uses
         
         # Time that's late in the day Pacific time
         pacific_late = pacific_tz.localize(datetime(2024, 3, 15, 23, 30, 0))
         utc_late = pacific_late.astimezone(pytz.UTC)
         
-        with patch('hi.apps.common.datetimeproxy.now', return_value=utc_late):
+        # Mock ConsoleSettingsHelper to return Pacific timezone
+        with patch('hi.apps.weather.daily_weather_tracker.ConsoleSettingsHelper') as mock_console, \
+             patch('hi.apps.common.datetimeproxy.now') as mock_now:
+            
+            mock_console.return_value.get_tz_name.return_value = 'US/Pacific'
+            
+            # Mock datetimeproxy.now() to handle timezone conversion properly
+            def mock_now_func(tzname=None):
+                if tzname is None:
+                    return utc_late
+                else:
+                    tz = pytz.timezone(tzname)
+                    return utc_late.astimezone(tz)
+            mock_now.side_effect = mock_now_func
+            
             # Record temperature
             conditions = self.create_test_conditions(25.0, utc_late, include_today_fields=False)
             asyncio.run(self.weather_manager.update_current_conditions(

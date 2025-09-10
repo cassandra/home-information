@@ -11,8 +11,8 @@ Current Conditions
 <div>{{ weather_conditions_data.description_short.value }}</div>
 {% endif %}
 
-{% include "weather/panes/conditions.html" with conditions=weather_conditions_data %}
-{% include "weather/panes/conditions_extended.html" with conditions=weather_conditions_data %}
+{% include "weather/panes/conditions.html" with conditions=weather_conditions_data weather_stats=weather_stats %}
+{% include "weather/panes/conditions_extended.html" with conditions=weather_conditions_data weather_stats=weather_stats %}
 
 {% with weather_conditions_data.stations as station_list %}
 {% if station_list %}

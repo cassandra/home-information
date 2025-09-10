@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field, fields
 from datetime import datetime, time, timedelta
-from typing import Dict, Generic, List, Set, TypeVar
+from typing import Dict, Generic, List, Optional, Set, TypeVar
 
 from pint.errors import OffsetUnitCalculusError
 
@@ -411,10 +411,28 @@ class IntervalAstronomical( IntervalEnvironmentalData ):
 
     
 @dataclass( kw_only = True )
+class WeatherStats:
+    temperature_min: Optional[NumericDataPoint] = None
+    temperature_max: Optional[NumericDataPoint] = None
+
+    @property
+    def temperature(self) -> NumericDataPoint:
+        if self.temperature_min and self.temperature_max:
+            return NumericDataPoint(
+                station = self.temperature_min.station,
+                source_datetime = self.temperature_min.source_datetime,
+                quantity_min = self.temperature_min.quantity,
+                quantity_max = self.temperature_max.quantity,
+            )
+        return None
+    
+
+@dataclass( kw_only = True )
 class WeatherOverviewData:
 
     current_conditions_data   : WeatherConditionsData
-    todays_astronomical_data  : AstronomicalData
+    todays_weather_stats      : WeatherStats          = None
+    todays_astronomical_data  : AstronomicalData      = None
 
     
 @dataclass( kw_only = True )
