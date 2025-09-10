@@ -119,7 +119,7 @@ class DailyWeatherTracker(Singleton):
         """
         try:
             field_stats = self._get_field_stats_today(location_key, self.FIELD_TEMPERATURE)
-            logger.info( f'GET field stats [today] = {field_stats}' )
+            logger.debug( f'GET field stats [today] = {field_stats}' )
             
             min_data = field_stats.get(self.STAT_MIN)
             max_data = field_stats.get(self.STAT_MAX)
@@ -192,7 +192,7 @@ class DailyWeatherTracker(Singleton):
             
             # Get current field statistics
             field_stats = self._get_field_stats(location_key, date_key, field_name)
-            logger.info( f'Start field stats [value={value}] = {field_stats}' )
+            logger.debug( f'Start field stats [value={value}] = {field_stats}' )
             
             # Update statistics
             updated = False
@@ -234,7 +234,7 @@ class DailyWeatherTracker(Singleton):
                 }
                 updated = True
             
-            logger.info( f'End field stats [updated={updated}] = {field_stats}' )
+            logger.debug( f'End field stats [updated={updated}] = {field_stats}' )
                 
             # Store updated statistics if changed
             if updated:
@@ -255,7 +255,7 @@ class DailyWeatherTracker(Singleton):
         cache_key = self._get_cache_key(location_key, date_key, field_name)
         stats_json = cache.get(cache_key)
 
-        logger.info( f'Retrieve field stats [key={cache_key}] - {stats_json}' )
+        logger.debug( f'Retrieve field stats [key={cache_key}] - {stats_json}' )
         
         if stats_json:
             try:
@@ -278,7 +278,7 @@ class DailyWeatherTracker(Singleton):
         """Store field statistics to cache."""
         cache_key = self._get_cache_key(location_key, date_key, field_name)
         stats_json = json.dumps(stats)
-        logger.info( f'Store field stats [key={cache_key}] - {stats_json}' )
+        logger.debug( f'Store field stats [key={cache_key}] - {stats_json}' )
         cache.set(cache_key, stats_json, timeout=self.CACHE_TIMEOUT_SECONDS)
         return
     
@@ -294,7 +294,7 @@ class DailyWeatherTracker(Singleton):
             date_key = self._get_date_key_today()
             cache_key = self._get_cache_key(location_key, date_key, field_name)
             cache.delete(cache_key)
-            logger.info(f"Cleared today's {field_name} data for {location_key}")
+            logger.debug(f"Cleared today's {field_name} data for {location_key}")
         else:
             # Clear all fields - would need to iterate through known fields
             # For now, just clear temperature since that's what we implement
