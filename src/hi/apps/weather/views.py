@@ -14,8 +14,10 @@ class CurrentConditionsDetailsView( HiModalView, WeatherMixin ):
         return 'weather/modals/conditions_details.html'
     
     def get(self, request, *args, **kwargs):
+        weather_overview_data = self.weather_manager().get_weather_overview_data()
         context = {
-            'weather_conditions_data': self.weather_manager().get_current_conditions_data(),
+            'weather_conditions_data': weather_overview_data.current_conditions_data,
+            'weather_stats': weather_overview_data.todays_weather_stats,
         }
         return self.modal_response( request, context )
 

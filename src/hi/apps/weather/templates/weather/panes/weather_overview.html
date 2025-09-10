@@ -1,6 +1,6 @@
 <div id="{{ DIVID.WEATHER_OVERVIEW }}">
   <a class="clickable-card" href="{% url 'weather_current_conditions_details' %}" data-async="modal">
-    {% include "weather/panes/conditions.html" with conditions=weather_overview_data.current_conditions_data %}
+    {% include "weather/panes/conditions.html" with conditions=weather_overview_data.current_conditions_data weather_stats=weather_overview_data.todays_weather_stats %}
   </a>
   <div class="">
     <a class="clickable-card" href="{% url 'weather_todays_astronomical_details' %}" data-async="modal">

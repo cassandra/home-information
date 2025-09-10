@@ -21,14 +21,21 @@ from typing import Optional, Tuple, Dict, Any
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 from django.core.cache import cache
-from django.utils import timezone
-from hi.apps.weather.transient_models import NumericDataPoint, DataPointSource, Station, WeatherConditionsData
+from hi.apps.common.singleton import Singleton
+from hi.apps.console.console_helper import ConsoleSettingsHelper
+from hi.apps.weather.transient_models import (
+    NumericDataPoint,
+    DataPointSource,
+    Station,
+    WeatherConditionsData,
+    WeatherStats,
+)
 from hi.units import UnitQuantity
 
 logger = logging.getLogger(__name__)
 
 
-class DailyWeatherTracker:
+class DailyWeatherTracker(Singleton):
     """
     Tracks daily weather statistics for fallback values.
     
@@ -52,15 +59,7 @@ class DailyWeatherTracker:
     # Field names
     FIELD_TEMPERATURE = 'temperature'
     
-    def __init__(self, user_timezone=None):
-        """
-        Initialize the daily weather tracker.
-        
-        Args:
-            user_timezone: Timezone for day boundaries (defaults to Django's TIME_ZONE)
-        """
-        self._user_timezone = user_timezone or timezone.get_current_timezone()
-        
+    def __init_singleton__(self):
         self._fallback_source = DataPointSource(
             id="daily_weather_tracker",
             label="Daily Weather Tracker",
@@ -104,41 +103,10 @@ class DailyWeatherTracker:
         # if weather_conditions_data.windspeed:
         #     self._record_wind_speed(weather_conditions_data.windspeed, location_key)
     
-    def populate_daily_fallbacks( self,
-                                  weather_conditions_data : WeatherConditionsData,
-                                  location_key            : str = "default") -> None:
-        """
-        Populate missing daily weather data with fallback values from tracking.
-        
-        Currently supports:
-        - temperature_min_today / temperature_max_today
-        
-        Args:
-            weather_conditions_data: Weather conditions to populate with fallbacks
-            location_key: Unique identifier for the location
-        """
-        try:
-            # Populate today's temperature min/max if not already provided by APIs
-            if ( not weather_conditions_data.temperature_min_today
-                 or not weather_conditions_data.temperature_max_today ):
-                min_temp, max_temp = self.get_temperature_min_max_today(location_key)
-                
-                if min_temp and not weather_conditions_data.temperature_min_today:
-                    weather_conditions_data.temperature_min_today = min_temp
-                    
-                if max_temp and not weather_conditions_data.temperature_max_today:
-                    weather_conditions_data.temperature_max_today = max_temp
-            
-            # Future: Add other fallback population here
-            # self._populate_humidity_fallbacks(weather_conditions_data, location_key)
-            # self._populate_wind_fallbacks(weather_conditions_data, location_key)
-        except Exception as e:
-            logger.exception(f"Error in populate_daily_fallbacks for location {location_key}: {e}")
-            # Don't re-raise - this should never break the caller
-    
     def get_temperature_min_max_today(
             self,
-            location_key: str = "default") -> Tuple[Optional[NumericDataPoint], Optional[NumericDataPoint]]:
+            location_key: str = "default"
+    ) -> Tuple[Optional[NumericDataPoint], Optional[NumericDataPoint]]:
         """
         Get today's minimum and maximum temperatures.
         
@@ -151,6 +119,7 @@ class DailyWeatherTracker:
         """
         try:
             field_stats = self._get_field_stats_today(location_key, self.FIELD_TEMPERATURE)
+            logger.info( f'GET field stats [today] = {field_stats}' )
             
             min_data = field_stats.get(self.STAT_MIN)
             max_data = field_stats.get(self.STAT_MAX)
@@ -186,6 +155,18 @@ class DailyWeatherTracker:
         except Exception as e:
             logger.exception(f"Error getting today's temperature min/max: {e}")
             return None, None
+
+    def get_weather_stats_today(self, location_key: str = "default") -> WeatherStats:
+        try:
+            min_temp, max_temp = self.get_temperature_min_max_today(location_key)
+            return WeatherStats(
+                temperature_min = min_temp,
+                temperature_max = max_temp,
+            )
+            
+        except Exception as e:
+            logger.exception(f"Error getting weather stats: {e}")
+            return WeatherStats()
     
     def _record_field_value( self, 
                              location_key : str, 
@@ -207,11 +188,11 @@ class DailyWeatherTracker:
         """
         try:
             # Get current date in local timezone
-            now_local = datetimeproxy.now().astimezone(self._user_timezone)
-            date_key = now_local.strftime('%Y-%m-%d')
+            date_key = self._get_date_key_today()
             
             # Get current field statistics
             field_stats = self._get_field_stats(location_key, date_key, field_name)
+            logger.info( f'Start field stats [value={value}] = {field_stats}' )
             
             # Update statistics
             updated = False
@@ -244,7 +225,7 @@ class DailyWeatherTracker:
                     'last_updated': timestamp.isoformat()
                 }
                 updated = True
-            
+
             if self.STAT_COUNT in track_stats:
                 count_data = field_stats.get(self.STAT_COUNT, {'value': 0})
                 field_stats[self.STAT_COUNT] = {
@@ -253,6 +234,8 @@ class DailyWeatherTracker:
                 }
                 updated = True
             
+            logger.info( f'End field stats [updated={updated}] = {field_stats}' )
+                
             # Store updated statistics if changed
             if updated:
                 self._store_field_stats(location_key, date_key, field_name, field_stats)
@@ -271,6 +254,8 @@ class DailyWeatherTracker:
         """Get field statistics from cache."""
         cache_key = self._get_cache_key(location_key, date_key, field_name)
         stats_json = cache.get(cache_key)
+
+        logger.info( f'Retrieve field stats [key={cache_key}] - {stats_json}' )
         
         if stats_json:
             try:
@@ -282,8 +267,7 @@ class DailyWeatherTracker:
     
     def _get_field_stats_today(self, location_key: str, field_name: str) -> Dict[str, Any]:
         """Get today's field statistics."""
-        today_local = datetimeproxy.now().astimezone(self._user_timezone)
-        date_key = today_local.strftime('%Y-%m-%d')
+        date_key = self._get_date_key_today()
         return self._get_field_stats(location_key, date_key, field_name)
     
     def _store_field_stats( self,
@@ -294,9 +278,9 @@ class DailyWeatherTracker:
         """Store field statistics to cache."""
         cache_key = self._get_cache_key(location_key, date_key, field_name)
         stats_json = json.dumps(stats)
-        success = cache.set(cache_key, stats_json, timeout=self.CACHE_TIMEOUT_SECONDS)
-        if not success:
-            logger.warning(f"Cache set failed for {field_name} stats on {date_key}")
+        logger.info( f'Store field stats [key={cache_key}] - {stats_json}' )
+        cache.set(cache_key, stats_json, timeout=self.CACHE_TIMEOUT_SECONDS)
+        return
     
     def clear_today(self, location_key: str = "default", field_name: Optional[str] = None) -> None:
         """
@@ -306,10 +290,8 @@ class DailyWeatherTracker:
             location_key: Unique identifier for the location
             field_name: Specific field to clear, or None to clear all
         """
-        today_local = datetimeproxy.now().astimezone(self._user_timezone)
-        date_key = today_local.strftime('%Y-%m-%d')
-        
         if field_name:
+            date_key = self._get_date_key_today()
             cache_key = self._get_cache_key(location_key, date_key, field_name)
             cache.delete(cache_key)
             logger.info(f"Cleared today's {field_name} data for {location_key}")
@@ -325,12 +307,12 @@ class DailyWeatherTracker:
         Returns:
             Dict with field statistics or empty dict if no data
         """
-        today_local = datetimeproxy.now().astimezone(self._user_timezone)
-        date_key = today_local.strftime('%Y-%m-%d')
+        tz_name = ConsoleSettingsHelper().get_tz_name()
+        date_key = self._get_date_key_today(tz_name)
         
         summary = {
             'date': date_key,
-            'timezone': str(self._user_timezone),
+            'timezone': tz_name,
             'fields': {}
         }
         
@@ -344,6 +326,12 @@ class DailyWeatherTracker:
             return None
             
         return summary
+    
+    def _get_date_key_today(self, tz_name: str = None) -> str:
+        if not tz_name:
+            tz_name = ConsoleSettingsHelper().get_tz_name()
+        now_local = datetimeproxy.now(tz_name)
+        return now_local.strftime('%Y-%m-%d')
     
     def _get_cache_key(self, location_key: str, date_key: str, field_name: str) -> str:
         """Generate cache key for field statistics.

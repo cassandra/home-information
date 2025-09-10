@@ -32,6 +32,7 @@ from .transient_models import (
     IntervalWeatherHistory,
     IntervalAstronomical,
     WeatherAlert,
+    WeatherStats,
 )
 from .interval_data_manager import IntervalDataManager
 from .weather_alert_alarm_mapper import WeatherAlertAlarmMapper
@@ -113,16 +114,6 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
     
     def get_current_conditions_data(self) -> WeatherConditionsData:
         with self._data_sync_lock:
-            # Populate any missing daily weather data with fallback values (defensive)
-            try:
-                location_key = self._get_location_key()
-                self._daily_weather_tracker.populate_daily_fallbacks(
-                    weather_conditions_data=self._current_conditions_data,
-                    location_key=location_key
-                )
-            except Exception as e:
-                logger.warning(f"Error populating daily weather fallbacks: {e}")
-            
             return self._current_conditions_data
     
     def get_todays_astronomical_data(self) -> AstronomicalData:
@@ -132,8 +123,13 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
     def get_weather_overview_data(self) -> WeatherOverviewData:
         return WeatherOverviewData(
             current_conditions_data = self.get_current_conditions_data(),
+            todays_weather_stats = self.get_weather_stats_today(),
             todays_astronomical_data = self.get_todays_astronomical_data(),
         )
+
+    def get_weather_stats_today(self) -> WeatherStats:
+        location_key = self._get_location_key()
+        return self._daily_weather_tracker.get_weather_stats_today(location_key)
     
     def get_hourly_forecast(self) -> HourlyForecast:
         with self._data_sync_lock:
@@ -424,7 +420,9 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
     def get_status_id_replace_map( self, request : HttpRequest ) -> Dict[ str, str ]:
 
         weather_overview_data = self.get_weather_overview_data()
-        context = { 'weather_overview_data': weather_overview_data }
+        context = {
+            'weather_overview_data': weather_overview_data,
+        }
         template = get_template( WeatherConstants.WEATHER_OVERVIEW_TEMPLATE_NAME )
         weather_overview_html_str = template.render( context, request = request )
         

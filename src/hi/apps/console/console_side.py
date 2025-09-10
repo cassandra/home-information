@@ -7,9 +7,10 @@ from .console_mixins import ConsoleMixin
 class ConsoleSideHelper( ConsoleMixin, SecurityMixin, WeatherMixin ):
     
     def get_side_template_name_and_context( self, request, *args, **kwargs ):
+        weather_manager = self.weather_manager()
         context = {
-            'weather_overview_data': self.weather_manager().get_weather_overview_data(),
-            'weather_alert_list': self.weather_manager().get_weather_alerts(),
+            'weather_overview_data': weather_manager.get_weather_overview_data(),
+            'weather_alert_list': weather_manager.get_weather_alerts(),
             'security_status_data': self.security_manager().get_security_status_data(),
             'camera_control_display_list': self.console_manager().get_camera_control_display_list(),
         }
