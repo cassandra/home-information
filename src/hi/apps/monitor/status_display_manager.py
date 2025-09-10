@@ -265,8 +265,6 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         """
         
         location_view_type = location_view.location_view_type
-        if location_view_type == LocationViewType.SUPPRESS:
-            return dict()
         
         entity_to_entity_state_list = self._get_entity_to_entity_state_list(
             location_view = location_view,
@@ -304,8 +302,6 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         LocationView.
         """
         location_view_type = location_view.location_view_type
-        if location_view_type == LocationViewType.SUPPRESS:
-            return dict()
         
         entity_state_type_priority_list = location_view_type.entity_state_type_priority_list
         
