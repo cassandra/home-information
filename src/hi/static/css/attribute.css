@@ -272,6 +272,14 @@
     background: rgba(0, 0, 0, 0.02);
 }
 
+/* Truncated textarea styling - indicate it's clickable */
+.attr-v2-textarea.truncated[readonly] {
+    cursor: pointer;
+}
+.attr-v2-textarea.truncated[readonly]:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
 .attr-v2-file-filename {
     font-size: 0.75rem;
     color: var(--muted-color);
