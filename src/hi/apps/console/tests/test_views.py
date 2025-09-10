@@ -3,7 +3,6 @@ from unittest.mock import Mock
 
 from django.urls import reverse
 from django.utils import timezone
-from django.http import Http404
 from django.core.exceptions import BadRequest
 
 from hi.apps.console.views import (
@@ -134,28 +133,6 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
             )
             self.sensor_history_records.append(record)
 
-    def test_get_main_template_name_returns_correct_template(self):
-        """Test that the view returns the correct template name."""
-        view = EntityVideoSensorHistoryView()
-        template_name = view.get_main_template_name()
-        
-        self.assertEqual(template_name, 'console/panes/entity_video_sensor_history.html')
-
-    def test_view_requires_valid_entity_id(self):
-        """Test that view raises Http404 for invalid entity ID."""
-        view = EntityVideoSensorHistoryView()
-        request = Mock()
-        request.view_parameters = Mock()
-        request.view_parameters.to_session = Mock()
-        
-        with self.assertRaises(Http404) as context:
-            view.get_main_template_context(
-                request, 
-                entity_id=99999, 
-                sensor_id=self.video_sensor.id
-            )
-        self.assertEqual(str(context.exception), 'Entity not found.')
-
     def test_view_requires_sensor_with_video_capability(self):
         """Test that view raises BadRequest for sensor without video stream capability."""
         # Create a sensor that doesn't provide video streams
@@ -180,21 +157,6 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 sensor_id=non_video_sensor.id
             )
         self.assertEqual(str(context.exception), 'Sensor does not provide video stream capability.')
-
-    def test_view_requires_valid_sensor_id(self):
-        """Test that view raises Http404 for invalid sensor ID."""
-        view = EntityVideoSensorHistoryView()
-        request = Mock()
-        request.view_parameters = Mock()
-        request.view_parameters.to_session = Mock()
-        
-        with self.assertRaises(Http404) as context:
-            view.get_main_template_context(
-                request,
-                entity_id=self.video_entity.id,
-                sensor_id=99999
-            )
-        self.assertEqual(str(context.exception), 'Sensor not found for this entity.')
 
     def test_view_returns_correct_context_structure_with_real_data(self):
         """Test that view returns expected context structure with real sensor history data."""

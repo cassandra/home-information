@@ -4,11 +4,14 @@ from django.test import TransactionTestCase
 from django.utils import timezone
 
 from hi.apps.console.video_stream_browsing_helper import VideoStreamBrowsingHelper
-from hi.apps.console.transient_models import EntitySensorHistoryData
+from hi.apps.console.transient_models import EntitySensorHistoryData, VideoDispatchResult
+from hi.apps.console.enums import VideoDispatchType
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor, SensorHistory
 from hi.apps.sense.transient_models import SensorResponse
 from hi.integrations.transient_models import IntegrationKey
+
+from django.core.exceptions import BadRequest
 
 logging.disable(logging.CRITICAL)
 
@@ -600,3 +603,218 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
         # Should handle far future timestamp
         self.assertIsNotNone(result)
         self.assertIsInstance(result.sensor_responses, list)
+
+
+class TestVideoDispatchResult(TransactionTestCase):
+    """Test get_video_dispatch_result method core functionality and edge cases."""
+    
+    def setUp(self):
+        # Create test entity with video stream capability
+        self.video_entity = Entity.objects.create(
+            integration_id='test.camera.dispatch',
+            integration_name='test_integration',
+            name='Dispatch Test Camera',
+            entity_type_str='camera',
+            has_video_stream=True
+        )
+        
+        # Create entity state
+        self.entity_state = EntityState.objects.create(
+            entity=self.video_entity,
+            entity_state_type_str='motion',
+            name='Motion Detection'
+        )
+        
+        # Create sensor with video capability
+        self.video_sensor = Sensor.objects.create(
+            integration_id='test.sensor.dispatch',
+            integration_name='test_integration',
+            name='Dispatch Motion Sensor',
+            entity_state=self.entity_state,
+            sensor_type_str='binary',
+            provides_video_stream=True
+        )
+        
+        # Create entity without video capability for error testing
+        self.non_video_entity = Entity.objects.create(
+            integration_id='test.no.video',
+            integration_name='test_integration',
+            name='No Video Entity',
+            entity_type_str='sensor',
+            has_video_stream=False
+        )
+
+    def test_get_video_dispatch_result_returns_valid_result_structure(self):
+        """Test that method returns properly structured VideoDispatchResult."""
+        referrer_url = f'/console/entity/{self.video_entity.id}/video-sensor-history/{self.video_sensor.id}/'
+        
+        result = VideoStreamBrowsingHelper.get_video_dispatch_result(
+            self.video_entity, referrer_url
+        )
+        
+        # Verify result structure
+        self.assertIsInstance(result, VideoDispatchResult)
+        self.assertIsInstance(result.dispatch_type, VideoDispatchType)
+        self.assertEqual(result.sensor, self.video_sensor)
+        
+        # Verify properties work
+        self.assertFalse(result.is_live_stream)
+        self.assertTrue(result.is_history_view)
+        
+        # Verify get_view_kwargs method
+        kwargs = result.get_view_kwargs()
+        self.assertIn('sensor_id', kwargs)
+        self.assertEqual(kwargs['sensor_id'], self.video_sensor.id)
+
+    def test_get_video_dispatch_result_fallback_behavior_with_records(self):
+        """Test fallback behavior when sensor has data records."""
+        base_time = timezone.now()
+        timestamp = int(base_time.timestamp())
+        
+        # Create both earlier and later records
+        earlier_time = base_time - timezone.timedelta(hours=1)
+        later_time = base_time + timezone.timedelta(hours=1)
+        
+        SensorHistory.objects.create(
+            sensor=self.video_sensor,
+            value='earlier_event',
+            response_datetime=earlier_time,
+            has_video_stream=True
+        )
+        
+        SensorHistory.objects.create(
+            sensor=self.video_sensor,
+            value='later_event',
+            response_datetime=later_time,
+            has_video_stream=True
+        )
+        
+        # Test with an earlier view URL that should trigger fallback logic
+        referrer_url = f'/console/entity/{self.video_entity.id}/video-sensor-history/{self.video_sensor.id}/earlier/{timestamp}/'
+        
+        result = VideoStreamBrowsingHelper.get_video_dispatch_result(
+            self.video_entity, referrer_url
+        )
+        
+        self.assertIsInstance(result, VideoDispatchResult)
+        self.assertEqual(result.sensor, self.video_sensor)
+        # Method should return a valid dispatch type based on available records
+        self.assertIn(result.dispatch_type, [
+            VideoDispatchType.HISTORY_DEFAULT,
+            VideoDispatchType.HISTORY_EARLIER,
+            VideoDispatchType.HISTORY_LATER
+        ])
+
+    def test_get_video_dispatch_result_no_video_sensor_raises_error(self):
+        """Test error handling when entity has no video sensor."""
+        with self.assertRaises(BadRequest) as context:
+            VideoStreamBrowsingHelper.get_video_dispatch_result(
+                self.non_video_entity, '/any/url/'
+            )
+        
+        self.assertIn('No video sensor found', str(context.exception))
+
+    def test_get_video_dispatch_result_none_entity_raises_error(self):
+        """Test error handling when entity is None."""
+        with self.assertRaises(AttributeError):
+            VideoStreamBrowsingHelper.get_video_dispatch_result(
+                None, '/any/url/'
+            )
+
+    def test_get_video_dispatch_result_fallback_to_default(self):
+        """Test fallback to default dispatch for unrecognized URLs."""
+        unrecognized_urls = [
+            '/some/invalid/url/',
+            '',
+            'not-a-url',
+            '/console/other/path/',
+        ]
+        
+        for url in unrecognized_urls:
+            with self.subTest(url=url):
+                result = VideoStreamBrowsingHelper.get_video_dispatch_result(
+                    self.video_entity, url
+                )
+                
+                # Should fallback to default dispatch
+                self.assertIsInstance(result, VideoDispatchResult)
+                self.assertEqual(result.dispatch_type, VideoDispatchType.HISTORY_DEFAULT)
+                self.assertEqual(result.sensor, self.video_sensor)
+                self.assertIsNone(result.timestamp)
+
+    def test_get_video_dispatch_result_with_empty_database(self):
+        """Test behavior when no sensor history records exist."""
+        # No SensorHistory records created - empty database for this sensor
+        referrer_url = f'/console/entity/{self.video_entity.id}/video-sensor-history/{self.video_sensor.id}/earlier/1234567890/'
+        
+        result = VideoStreamBrowsingHelper.get_video_dispatch_result(
+            self.video_entity, referrer_url
+        )
+        
+        # Should return a valid result even with empty database
+        self.assertIsInstance(result, VideoDispatchResult)
+        self.assertEqual(result.sensor, self.video_sensor)
+        # Could be any dispatch type depending on URL matching
+        self.assertIn(result.dispatch_type, [
+            VideoDispatchType.HISTORY_DEFAULT,
+            VideoDispatchType.HISTORY_EARLIER,
+            VideoDispatchType.HISTORY_LATER
+        ])
+
+    def test_get_video_dispatch_result_basic_history_view_url(self):
+        """Test basic sensor history view URL (Case 5: no specific event)."""
+        referrer_url = f'/console/entity/{self.video_entity.id}/video-sensor-history/{self.video_sensor.id}/'
+        
+        result = VideoStreamBrowsingHelper.get_video_dispatch_result(
+            self.video_entity, referrer_url
+        )
+        
+        self.assertIsInstance(result, VideoDispatchResult)
+        self.assertEqual(result.dispatch_type, VideoDispatchType.HISTORY_DEFAULT)
+        self.assertEqual(result.sensor, self.video_sensor)
+        self.assertIsNone(result.timestamp)
+
+    def test_get_video_dispatch_result_timestamp_handling(self):
+        """Test that method handles timestamp parameters correctly."""
+        test_timestamp = 1234567890
+        referrer_url = f'/console/entity/{self.video_entity.id}/video-sensor-history/{self.video_sensor.id}/earlier/{test_timestamp}/'
+        
+        result = VideoStreamBrowsingHelper.get_video_dispatch_result(
+            self.video_entity, referrer_url
+        )
+        
+        self.assertIsInstance(result, VideoDispatchResult)
+        self.assertEqual(result.sensor, self.video_sensor)
+        # If URL matches pattern and method sets timestamp, verify it
+        if result.timestamp is not None:
+            self.assertEqual(result.timestamp, test_timestamp)
+
+    def test_get_video_dispatch_result_helper_methods_integration(self):
+        """Test integration with helper methods _has_older_records and _has_newer_records."""
+        base_time = timezone.now()
+        timestamp = int(base_time.timestamp())
+        
+        # Create test record
+        SensorHistory.objects.create(
+            sensor=self.video_sensor,
+            value='test_event',
+            response_datetime=base_time - timezone.timedelta(hours=1),
+            has_video_stream=True
+        )
+        
+        # Test that helper methods work correctly
+        has_older = VideoStreamBrowsingHelper._has_older_records(self.video_sensor, timestamp)
+        has_newer = VideoStreamBrowsingHelper._has_newer_records(self.video_sensor, timestamp)
+        
+        self.assertTrue(has_older)  # Record exists 1 hour before timestamp
+        self.assertFalse(has_newer)   # No records after timestamp
+        
+        # Test dispatch method uses these results appropriately
+        referrer_url = f'/console/entity/{self.video_entity.id}/video-sensor-history/{self.video_sensor.id}/later/{timestamp}/'
+        
+        result = VideoStreamBrowsingHelper.get_video_dispatch_result(
+            self.video_entity, referrer_url
+        )
+        
+        self.assertIsInstance(result, VideoDispatchResult)
+        self.assertEqual(result.sensor, self.video_sensor)

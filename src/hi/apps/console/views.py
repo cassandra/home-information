@@ -1,11 +1,12 @@
 from django.core.exceptions import BadRequest
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpRequest
 from django.views.generic import View
 from datetime import datetime
 from django.utils import timezone
 
-from hi.apps.entity.models import Entity
+from hi.apps.entity.view_mixins import EntityViewMixin
 from hi.apps.sense.models import Sensor
+from hi.apps.sense.view_mixins import SenseViewMixin
 from hi.integrations.integration_manager import IntegrationManager
 
 from hi.enums import ViewType
@@ -14,37 +15,67 @@ from hi.hi_grid_view import HiGridView
 
 from .constants import ConsoleConstants
 from .console_helper import ConsoleSettingsHelper
+from .enums import VideoDispatchType
 from .video_stream_browsing_helper import VideoStreamBrowsingHelper
 
 
-class EntityVideoStreamView( HiGridView ):
+class EntityVideoStreamDispatchView( View, EntityViewMixin ):
+    """
+    Simple dispatch view for camera sidebar navigation.
+    Routes to existing views based on referrer context.
+    """
+    
+    def get( self, request, *args, **kwargs ):
+
+        if not request.view_parameters.view_type.is_video_browse:
+            return EntityVideoStreamView().get( request, **kwargs )
+
+        entity = self.get_entity( request, *args, **kwargs )
+        
+        # Get video dispatch decision based on referrer context
+        referrer_url = request.META.get('HTTP_REFERER', '')
+        dispatch_result = VideoStreamBrowsingHelper.get_video_dispatch_result(
+            entity = entity,
+            referrer_url = referrer_url,
+        )
+        
+        # Update kwargs with the dispatch parameters
+        kwargs.update( dispatch_result.get_view_kwargs() )
+        
+        # Route to appropriate view based on dispatch type
+        if dispatch_result.dispatch_type == VideoDispatchType.LIVE_STREAM:
+            return EntityVideoStreamView().get( request, **kwargs )
+        elif dispatch_result.dispatch_type == VideoDispatchType.HISTORY_EARLIER:
+            return EntityVideoSensorHistoryEarlierView().get( request, **kwargs )
+        elif dispatch_result.dispatch_type == VideoDispatchType.HISTORY_LATER:
+            return EntityVideoSensorHistoryLaterView().get( request, **kwargs )
+        else:  # VideoDispatchType.HISTORY_DEFAULT
+            return EntityVideoSensorHistoryView().get( request, **kwargs )
+
+
+class EntityVideoStreamView( HiGridView, EntityViewMixin ):
     """View for displaying entity-based video streams."""
 
     def get_main_template_name( self ) -> str:
         return 'console/panes/entity_video_pane.html'
 
     def get_main_template_context( self, request, *args, **kwargs ):
-        entity_id = kwargs.get('entity_id')
-        try:
-            entity = Entity.objects.get( id = entity_id )
-        except Entity.DoesNotExist:
-            raise Http404('Entity not found.')
+        entity = self.get_entity( request, *args, **kwargs )
 
         # Check if entity has video stream capability
         if not entity.has_video_stream:
             raise BadRequest( 'Entity does not have video stream capability.' )
 
-        # Get the integration gateway for this entity
+        # Get the integration gateway for this entity (Do we really need this check?)
         integration_gateway = IntegrationManager().get_integration_gateway( entity.integration_id )
         if not integration_gateway:
             raise BadRequest( 'Integration not available for video stream.' )
 
-        # Get the video stream using the integration gateway
-        if not entity.has_video_stream:
-            raise BadRequest( 'Video stream is not currently available.' )
-
         # Find the first sensor with video capability for history browsing
         video_sensor = VideoStreamBrowsingHelper.find_video_sensor_for_entity(entity)
+
+        if not video_sensor:
+            raise BadRequest( 'Entity does not have any video stream sensors.' )
         
         request.view_parameters.view_type = ViewType.ENTITY_VIDEO_STREAM
         request.view_parameters.to_session( request )
@@ -53,8 +84,26 @@ class EntityVideoStreamView( HiGridView ):
             'video_sensor': video_sensor,  # May be None if no video sensors
         }
 
+    
+class EntityVideoHistoryView( View, EntityViewMixin ):
+    """For sensor history for an entity's default sensor (with video).
+       Note: An entity having a video stream is independent of whether
+       it may have sensors with video streams.
+    """
 
-class BaseEntityVideoSensorHistoryView( HiGridView ):
+    def get( self, request, *args, **kwargs ):
+        entity = self.get_entity( request, *args, **kwargs )
+        sensor = VideoStreamBrowsingHelper.find_video_sensor_for_entity(
+            entity = entity,
+        )
+        if not sensor:
+            raise Http404( request )
+
+        kwargs.update({ 'sensor_id': sensor.id })
+        return EntityVideoSensorHistoryView().get( request = request, *args, **kwargs )
+        
+
+class BaseEntityVideoSensorHistoryView( HiGridView, EntityViewMixin, SenseViewMixin ):
     """Base view for browsing sensor history records with video streams."""
     
     def get_main_template_name( self ) -> str:
@@ -62,29 +111,22 @@ class BaseEntityVideoSensorHistoryView( HiGridView ):
     
     def get_main_template_context( self, request, *args, **kwargs ):
         """Common context building logic shared by all sensor history views."""
-        entity_id = kwargs.get('entity_id')
-        sensor_id = kwargs.get('sensor_id')
-        
-        # Get the entity
-        try:
-            entity = Entity.objects.get( id = entity_id )
-        except Entity.DoesNotExist:
-            raise Http404('Entity not found.')
-        
-        # Get the sensor
-        try:
-            sensor = Sensor.objects.get( id = sensor_id, entity_state__entity = entity )
-        except Sensor.DoesNotExist:
-            raise Http404('Sensor not found for this entity.')
+
+        entity = self.get_entity( request, *args, **kwargs )
+        sensor = self.get_sensor( request, *args, **kwargs )
         
         # Check if sensor provides video stream capability
         if not sensor.provides_video_stream:
             raise BadRequest( 'Sensor does not provide video stream capability.' )
-        
+                
         # Build sensor history data using subclass-specific method
-        sensor_history_data = self.get_sensor_history_data(sensor, request, **kwargs)
+        sensor_history_data = self.get_sensor_history_data(
+            sensor = sensor,
+            request = request,
+            **kwargs,
+        )
         
-        request.view_parameters.view_type = ViewType.ENTITY_VIDEO_STREAM
+        request.view_parameters.view_type = ViewType.SENSOR_VIDEO_BROWSE
         request.view_parameters.to_session( request )
         
         return {
@@ -93,7 +135,7 @@ class BaseEntityVideoSensorHistoryView( HiGridView ):
             'sensor_history_data': sensor_history_data,
         }
     
-    def get_sensor_history_data(self, sensor, request, **kwargs):
+    def get_sensor_history_data( self, sensor : Sensor, request : HttpRequest, **kwargs ):
         """Override in subclasses to provide specific sensor history data building logic."""
         raise NotImplementedError("Subclasses must implement get_sensor_history_data")
 
@@ -101,7 +143,7 @@ class BaseEntityVideoSensorHistoryView( HiGridView ):
 class EntityVideoSensorHistoryView( BaseEntityVideoSensorHistoryView ):
     """Default view for browsing sensor history records with video streams."""
     
-    def get_sensor_history_data(self, sensor, request, **kwargs):
+    def get_sensor_history_data(self, sensor : Sensor, request : HttpRequest, **kwargs):
         """Get default sensor history data or handle window context."""
         sensor_history_id = kwargs.get('sensor_history_id')
         window_start = kwargs.get('window_start')
@@ -122,16 +164,16 @@ class EntityVideoSensorHistoryView( BaseEntityVideoSensorHistoryView ):
                 # Invalid timestamp format - fall back to default
                 pass
         
-        # Default behavior
         return VideoStreamBrowsingHelper.build_sensor_history_data_default(
-            sensor, sensor_history_id
+            sensor = sensor,
+            sensor_history_id = sensor_history_id
         )
 
 
 class EntityVideoSensorHistoryEarlierView( BaseEntityVideoSensorHistoryView ):
     """View for browsing earlier sensor history records (pagination)."""
     
-    def get_sensor_history_data(self, sensor, request, **kwargs):
+    def get_sensor_history_data(self, sensor : Sensor, request : HttpRequest, **kwargs):
         """Get earlier sensor history data based on timestamp."""
         timestamp = kwargs.get('timestamp')
         if not timestamp:
@@ -148,7 +190,7 @@ class EntityVideoSensorHistoryEarlierView( BaseEntityVideoSensorHistoryView ):
 class EntityVideoSensorHistoryLaterView( BaseEntityVideoSensorHistoryView ):
     """View for browsing later sensor history records (pagination)."""
     
-    def get_sensor_history_data(self, sensor, request, **kwargs):
+    def get_sensor_history_data(self, sensor : Sensor, request : HttpRequest, **kwargs):
         """Get later sensor history data based on timestamp."""
         timestamp = kwargs.get('timestamp')
         if not timestamp:
@@ -160,64 +202,6 @@ class EntityVideoSensorHistoryLaterView( BaseEntityVideoSensorHistoryView ):
             )
         except (ValueError, TypeError):
             raise BadRequest('Invalid timestamp format.')
-
-
-class EntityVideoStreamDispatchView( View ):
-    """
-    Simple dispatch view for camera sidebar navigation.
-    Routes to existing views based on referrer context.
-    """
-    
-    def get( self, request, *args, **kwargs ):
-        # Detect context from referrer URL
-        referrer = request.META.get('HTTP_REFERER', '')
-        is_history_context = VideoStreamBrowsingHelper.is_video_history_context(referrer)
-        
-        if is_history_context:
-            # Route to history view with timeline preservation
-            return self._dispatch_to_history_view(request, referrer, **kwargs)
-        else:
-            # Route to live stream view
-            return self._dispatch_to_live_view(request, **kwargs)
-    
-    def _dispatch_to_live_view( self, request, **kwargs ):
-        """Dispatch to EntityVideoStreamView and return JSON response."""
-        view = EntityVideoStreamView()
-        response = view.get(request, **kwargs)
-        
-        # Convert HiGridView response to JSON for JavaScript consumption
-        if hasattr(response, 'content'):
-            # Extract main content from the response
-            html_content = response.content.decode('utf-8')
-            return JsonResponse({
-                'html': html_content,
-                'navigation_type': 'live'
-            })
-        return response
-    
-    def _dispatch_to_history_view( self, request, referrer_url, **kwargs ):
-        """Dispatch to EntityVideoSensorHistoryView with timeline preservation."""
-        entity_id = kwargs.get('entity_id')
-        
-        # Get video sensor and timeline context from helper
-        history_kwargs = VideoStreamBrowsingHelper.build_history_navigation_context(
-            entity_id, referrer_url
-        )
-        
-        # Update kwargs with history navigation context
-        kwargs.update(history_kwargs)
-        
-        view = EntityVideoSensorHistoryView()
-        response = view.get(request, **kwargs)
-        
-        # Convert HiGridView response to JSON for JavaScript consumption
-        if hasattr(response, 'content'):
-            html_content = response.content.decode('utf-8')
-            return JsonResponse({
-                'html': html_content,
-                'navigation_type': 'history'
-            })
-        return response
 
 
 class ConsoleLockView( View ):
