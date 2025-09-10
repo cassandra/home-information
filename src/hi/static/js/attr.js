@@ -989,6 +989,22 @@
         const wrapper = displayField.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
         const expandControls = wrapper.find(Hi.ATTR_V2_EXPAND_CONTROLS_SELECTOR);
         expandControls.show();
+        
+        // Add click handler to make textarea clickable for expansion
+        displayField.off('click.expand').on('click.expand', function(e) {
+            // Only expand if textarea is currently in readonly/truncated state
+            if ($(this).prop('readonly') && $(this).hasClass('truncated')) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Find the associated "Show more" button and trigger its click
+                const expandButton = expandControls.find('button');
+                if (expandButton.length > 0) {
+                    expandButton.click();
+                }
+            }
+            // If not readonly/truncated, let normal textarea behavior happen (cursor placement)
+        });
     }
     
     // Legacy function - kept for compatibility with reinitializeTextareas
