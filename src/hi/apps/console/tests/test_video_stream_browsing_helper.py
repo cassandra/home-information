@@ -1,5 +1,5 @@
 from datetime import datetime
-from pytz import timezone as UTC
+from pytz import UTC
 import logging
 
 from django.test import TransactionTestCase
