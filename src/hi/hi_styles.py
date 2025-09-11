@@ -523,3 +523,27 @@ class StatusStyle:
             fill_color = cls.DEFAULT_FILL_COLOR,
             fill_opacity = cls.DEFAULT_FILL_OPACITY,
         )
+
+    @classmethod
+    def light_dimmer( cls, status_value_str : str ):
+        try:
+            status_value = int(status_value_str)
+        except (TypeError, ValueError):
+            status_value = 0
+            
+        opacity = status_value / 100.0
+        if status_value < 15:
+            new_value = 'off'
+        elif status_value < 85:
+            new_value = 'dim'
+        else:
+            new_value = 'on'
+        
+        return SvgStatusStyle(
+            status_value = new_value,
+            stroke_color = 'yellow',
+            stroke_width = cls.DEFAULT_STROKE_WIDTH,
+            stroke_dasharray = cls.DEFAULT_STROKE_DASHARRAY,
+            fill_color = 'yellow',
+            fill_opacity = opacity,
+        )

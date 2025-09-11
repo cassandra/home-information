@@ -1123,13 +1123,45 @@ class HassConverter:
         )
     
     @classmethod
-    def hass_state_to_sensor_value_str( self, hass_state : HassState ) -> str:
+    def hass_state_to_sensor_value_str( cls, hass_state : HassState ) -> str:
 
         if hass_state.domain == HassApi.SUN_DOMAIN:
             return hass_state.state_value
         
         elif hass_state.domain == HassApi.WEATHER_DOMAIN:
             return hass_state.state_value
+        
+        elif hass_state.domain == HassApi.LIGHT_DOMAIN:
+            # Handle light domain - could be LIGHT_DIMMER or ON_OFF
+            if cls._has_brightness_capability(hass_state):
+                # This is a dimmer light - normalize to 0-100 numeric values
+                if hass_state.state_value.lower() == HassStateValue.OFF:
+                    return "0"
+                elif hass_state.state_value.lower() == HassStateValue.ON:
+                    # Extract brightness from attributes (HA uses 1-255, we use 0-100)
+                    brightness = hass_state.attributes.get('brightness')
+                    if brightness is not None:
+                        try:
+                            # Convert HA brightness (1-255) to percentage (0-100) with rounding
+                            brightness_pct = round((float(brightness) / 255.0) * 100)
+                            return str(brightness_pct)
+                        except (ValueError, TypeError):
+                            # Invalid brightness value, assume full brightness
+                            return "100"
+                    else:
+                        # No brightness info available, assume full brightness
+                        return "100"
+                else:
+                    # Unknown state, return as-is
+                    return hass_state.state_value
+            else:
+                # Regular on/off light - convert to EntityStateValue strings
+                if hass_state.state_value.lower() == HassStateValue.ON:
+                    return str(EntityStateValue.ON)
+                elif hass_state.state_value.lower() == HassStateValue.OFF:
+                    return str(EntityStateValue.OFF)
+                else:
+                    return hass_state.state_value
         
         elif hass_state.domain == HassApi.BINARY_SENSOR_DOMAIN:
 
@@ -1175,7 +1207,7 @@ class HassConverter:
         return hass_state.state_value
 
     @classmethod
-    def hass_entity_id_to_state_value_str( self,
+    def hass_entity_id_to_state_value_str( cls,
                                            hass_entity_id  : str,
                                            hi_value        : str) -> str:
         if hi_value is None:

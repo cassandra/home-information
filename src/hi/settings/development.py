@@ -70,14 +70,14 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
-        'hi.apps.control': {
+        'hi.apps.console': {
             'handlers': ['console' ],
             'level': 'INFO',
             'propagate': False,
         },
-        'hi.apps.console': {
+        'hi.apps.control': {
             'handlers': ['console' ],
-            'level': 'INFO',
+            'level': 'DEBUG',
             'propagate': False,
         },
         'hi.services.hass': {
@@ -88,6 +88,11 @@ LOGGING = {
         'hi.integrations': {
             'handlers': ['console' ],
             'level': 'INFO',
+            'propagate': False,
+        },
+        'hi.apps.location': {
+            'handlers': ['console' ],
+            'level': 'DEBUG',
             'propagate': False,
         },
         'hi.apps.monitor': {
@@ -112,7 +117,7 @@ LOGGING = {
         },
         'hi.apps.weather': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
         'hi.services.zoneminder': {

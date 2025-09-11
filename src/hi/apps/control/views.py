@@ -9,7 +9,6 @@ from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
 from hi.hi_async_view import HiModalView
 
-from .controller_history_manager import ControllerHistoryManager
 from .control_mixins import ControllerMixin
 from .models import Controller, ControllerHistory
 from .view_mixins import ControlViewMixin
@@ -38,7 +37,7 @@ class ControllerView( View, ControlViewMixin, ControllerMixin ):
         if control_value is None:
             control_value = self._get_value_for_missing_input( controller = controller )
 
-        control_result = self.controller_manager().do_control(
+        controller_outcome = self.controller_manager().do_control(
             controller = controller,
             control_value = control_value,
         )
@@ -54,30 +53,26 @@ class ControllerView( View, ControlViewMixin, ControllerMixin ):
         #
         #  2) We temporarily override the value in the
         #     StatusDisplayManager. This is to guard against the UI/client
-        #     polling happening beforee the server has been able to update
+        #     polling happening before the server has been able to update
         #     itrs values.  This override is temporary and expires in a
         #     time just longer than the polling intervals' maximum gaps.
         
-        if control_result.has_errors:
+        if controller_outcome.has_errors:
             override_sensor_value = None
         else:
             override_sensor_value = control_value
             StatusDisplayManager().add_entity_state_value_override(
                 entity_state = controller.entity_state,
-                override_value = control_value,
-            )
-            ControllerHistoryManager().add_to_controller_history(
-                controller = controller,
-                value = control_value,
+                override_value = override_sensor_value,
             )
 
         response_context = request.POST.get('response_context', 'page')
-        in_modal_context = bool(response_context == 'modal')
+        in_modal_context = bool( response_context == 'modal' )
         
         return self.controller_data_response(
             request = request,
             controller = controller,
-            error_list = control_result.error_list,
+            error_list = controller_outcome.error_list,
             override_sensor_value = override_sensor_value,
             in_modal_context = in_modal_context,
         )

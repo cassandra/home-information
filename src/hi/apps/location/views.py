@@ -7,12 +7,14 @@ from django.shortcuts import reverse
 from django.views.generic import View
 
 from hi.apps.common.utils import is_ajax
+import hi.apps.common.antinode as antinode
 
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
-from hi.apps.control.controller_manager import ControllerManager
-from hi.apps.control.one_click_control_service import OneClickControlService, OneClickControlNotSupportedException
+from hi.apps.control.one_click_control_service import (
+    OneClickControlService,
+    OneClickControlNotSupportedException,
+)
 from hi.apps.entity.models import Entity
-from hi.apps.entity.enums import EntityStateValue
 from hi.apps.entity.view_mixins import EntityViewMixin
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.enums import ItemType, ViewType
@@ -108,42 +110,51 @@ class LocationItemStatusView( View, EntityViewMixin ):
         
         if item_type == ItemType.ENTITY:
             entity = self.get_entity( request, entity_id = item_id )
-            
-            # Fail fast - assume middleware works or we want it to error
-            location_view_id = request.view_parameters.location_view_id
-            location_view = LocationView.objects.get( id = location_view_id )
-            
-            # Skip service for DEFAULT (no one-click behavior)
-            if location_view.location_view_type == LocationViewType.DEFAULT:
-                return HttpResponseRedirect(
-                    reverse( 'entity_status', kwargs = { 'entity_id': entity.id } )
-                )
-            
-            # Service handles complete control flow
-            try:
-                control_result = OneClickControlService().execute_one_click_control(
-                    entity = entity, 
-                    location_view_type = location_view.location_view_type
-                )
-                # Control was attempted - redirect to entity status regardless of success/failure
-                # Let polling update the state and show any errors
-            except OneClickControlNotSupportedException:
-                # Fall back to status modal when one-click control is not supported
-                pass
-            
-            # Always redirect to entity status - let polling update the state
-            return HttpResponseRedirect(
-                reverse( 'entity_status', kwargs = { 'entity_id': entity.id } )
-            )
+            return self._handle_entity( request = request, entity = entity )
     
         elif item_type == ItemType.COLLECTION:
-            return HttpResponseRedirect(
-                reverse( 'collection_view', kwargs = { 'collection_id': item_id } )
-            )
+            url = reverse( 'collection_view', kwargs = { 'collection_id': item_id } )
+            return HttpResponseRedirect( url )
 
         raise BadRequest( f'Unknown item type "{item_type}".' )
+        
+    def _handle_entity(self, request : HttpRequest, entity : Entity ):
+        
+        location_view_id = request.view_parameters.location_view_id
+        location_view = LocationView.objects.get( id = location_view_id )
+
+        if location_view.location_view_type == LocationViewType.AUTOMATION:
+            try:
+                logger.debug( f'Trying one-click: {entity}' )
+                controller_outcome = OneClickControlService().execute_one_click_control(
+                    entity = entity,
+                    location_view_type = location_view.location_view_type,
+                )
+                if controller_outcome.has_errors:
+                    logger.info( f'Problem handling click for : {entity}' )
+                    return antinode.response()
+                
+                override_sensor_value = controller_outcome.new_value
+                StatusDisplayManager().add_entity_state_value_override(
+                    entity_state = controller_outcome.controller.entity_state,
+                    override_value = override_sensor_value,
+                )
 
 
+
+
+                
+                return antinode.response()
+            
+            except OneClickControlNotSupportedException as e:
+                # Fall back to status modal when one-click control is not supported
+                logger.debug( f'One-click failed: {e}' )
+                pass
+            
+        url = reverse( 'entity_status', kwargs = { 'entity_id': entity.id } )
+        return HttpResponseRedirect( url )
+
+        
 class LocationEditView( HiModalView, LocationViewMixin, AttributeEditViewMixin ):
     """
     This view uses a dual response pattern:

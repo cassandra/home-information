@@ -225,7 +225,7 @@
                 elements.each( function() {
                     if (this.hasAttribute(attrName)) {
                         let currentValue = $(this).attr(attrName);
-                        if ( attrValue && ( currentValue !== String(attrValue) )) {
+                        if ( attrValue != null && ( currentValue !== String(attrValue) )) {
                             $(this).attr( attrName, attrValue );
                         }
                     } else {

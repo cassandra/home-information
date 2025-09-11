@@ -5,7 +5,6 @@ from hi.apps.control.transient_models import ControllerData
 from hi.apps.common.singleton import Singleton
 from hi.apps.entity.enums import EntityStateType
 from hi.apps.entity.models import Entity, EntityState
-from hi.apps.location.enums import LocationViewType
 from hi.apps.location.models import LocationView
 from hi.apps.location.svg_item_factory import SvgItemFactory
 from hi.apps.sense.models import Sensor
@@ -263,8 +262,6 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         define the visual display used in the LocationView where we can
         really only represent one thing at a time (visually).
         """
-        
-        location_view_type = location_view.location_view_type
         
         entity_to_entity_state_list = self._get_entity_to_entity_state_list(
             location_view = location_view,

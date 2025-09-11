@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Development Context - Our Prime Directive
+
+In all the code we write, we strive for extremely well factored code. We are thoughtful about responsibility boundaries, encapsulation, readability and maintainability.  We do not write the first code we can think of to solve the problem or meet the requirements: we find a well factored version that does the job.
+
 ## Quick Reference - Common Process Checkpoints
 
 **Before Starting Development:**

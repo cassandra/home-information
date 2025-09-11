@@ -4,6 +4,7 @@ import asyncio
 
 from hi.apps.control.controller_manager import ControllerManager
 from hi.apps.control.models import Controller
+from hi.apps.control.transient_models import ControllerOutcome
 from hi.apps.entity.models import Entity, EntityState
 from hi.integrations.transient_models import IntegrationControlResult
 from hi.testing.base_test_case import BaseTestCase
@@ -80,7 +81,7 @@ class TestControllerManager(BaseTestCase):
         result = manager.do_control(controller=controller, control_value='on')
         
         # Test actual return value and behavior
-        self.assertIsInstance(result, IntegrationControlResult)
+        self.assertIsInstance(result, ControllerOutcome)
         self.assertFalse(result.has_errors)
         self.assertEqual(result.new_value, 'on')
         self.assertEqual(result.error_list, [])
@@ -134,7 +135,7 @@ class TestControllerManager(BaseTestCase):
         result = manager.do_control(controller=controller, control_value='on')
         
         # Test that error information is properly returned
-        self.assertIsInstance(result, IntegrationControlResult)
+        self.assertIsInstance(result, ControllerOutcome)
         self.assertTrue(result.has_errors)
         self.assertEqual(result.error_list, ['Device is offline', 'Connection timeout'])
         self.assertEqual(result.new_value, '')

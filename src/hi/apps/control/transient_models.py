@@ -16,3 +16,14 @@ class ControllerData:
     def css_class(self):
         return self.controller.entity_state.css_class
     
+
+@dataclass
+class ControllerOutcome:
+    controller              : Controller
+    new_value               : str
+    error_list              : List[ str ]    = None
+    
+    @property
+    def has_errors(self):
+        return bool( self.error_list )
+    

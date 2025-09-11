@@ -616,6 +616,15 @@ div[status="on"] {
     color: var(--on-status-on-color);
     background-color: var(--status-on-color);
 }
+g[status="dim"] {
+    filter: drop-shadow(0 0 5px var(--status-on-color));
+    opacity: 0.5;
+}
+div[status="dim"] {
+    color: var(--on-status-on-color);
+    background-color: var(--status-on-color);
+    opacity: 0.5;
+}
 
 g[status="open"] {
     filter: drop-shadow(0 0 5px var(--status-bad-color));
@@ -632,6 +641,7 @@ g[status="high"] {
 g[status="low"] {
     filter: drop-shadow(0 0 5px var(--status-bad-color));
 }
+
 
 div[status] {
     color: var(--black);
