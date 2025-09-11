@@ -3,7 +3,6 @@ import logging
 from hi.apps.entity.enums import (
     EntityType,
     EntityStateType,
-    EntityStateValue,
     EntityGroupType,
 )
 from hi.testing.base_test_case import BaseTestCase
@@ -37,7 +36,7 @@ class TestEntityStateType(BaseTestCase):
         # Complex state types should work correctly
         multivalued_template = EntityStateType.MULTIVALUED.value_template_name()
         self.assertTrue(multivalued_template.startswith('sense/panes/sensor_value_'))
-        self.assertIn('multvalued', multivalued_template)
+        self.assertIn('multivalued', multivalued_template)
         
         return
 

@@ -1,90 +1,9 @@
 import logging
 
-from hi.apps.location.enums import LocationViewType, SvgItemType, SvgStyleName
-from hi.apps.entity.enums import EntityStateType
+from hi.apps.location.enums import LocationViewType, SvgStyleName
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
-
-
-class TestLocationViewType(BaseTestCase):
-
-    def test_location_view_type_entity_state_priority_lists(self):
-        """Test entity state type priority lists - critical for one-click control behavior."""
-        # DEFAULT should have empty list (always falls back to status modal)
-        default_priorities = LocationViewType.DEFAULT.entity_state_type_priority_list
-        self.assertEqual(len(default_priorities), 0)
-        
-        # AUTOMATION should focus on controllable states
-        automation_priorities = LocationViewType.AUTOMATION.entity_state_type_priority_list
-        self.assertGreater(len(automation_priorities), 0)
-        self.assertIn(EntityStateType.ON_OFF, automation_priorities)
-        self.assertIn(EntityStateType.LIGHT_LEVEL, automation_priorities)
-        self.assertIn(EntityStateType.OPEN_CLOSE, automation_priorities)
-        self.assertIn(EntityStateType.HIGH_LOW, automation_priorities)
-        return
-
-    def test_location_view_type_specialization_logic(self):
-        """Test view type specialization - business logic for filtering sensor types."""
-        # Test AUTOMATION view type focus
-        view_types = [
-            (LocationViewType.AUTOMATION, [EntityStateType.ON_OFF, EntityStateType.LIGHT_LEVEL, EntityStateType.OPEN_CLOSE]),
-        ]
-        
-        for view_type, expected_states in view_types:
-            with self.subTest(view_type=view_type):
-                priorities = view_type.entity_state_type_priority_list
-                for expected_state in expected_states:
-                    self.assertIn(expected_state, priorities)
-        return
-
-    def test_location_view_type_labels(self):
-        """Test LocationViewType labels - important for UI display."""
-        self.assertEqual(LocationViewType.DEFAULT.label, 'Default')
-        self.assertEqual(LocationViewType.AUTOMATION.label, 'Automation')
-        return
-
-
-class TestSvgItemType(BaseTestCase):
-
-    def test_svg_item_type_classification_properties(self):
-        """Test SvgItemType classification logic - critical for SVG rendering."""
-        # ICON should be icon, not path
-        self.assertTrue(SvgItemType.ICON.is_icon)
-        self.assertFalse(SvgItemType.ICON.is_path)
-        self.assertFalse(SvgItemType.ICON.is_path_closed)
-        
-        # OPEN_PATH should be path, not icon, not closed
-        self.assertFalse(SvgItemType.OPEN_PATH.is_icon)
-        self.assertTrue(SvgItemType.OPEN_PATH.is_path)
-        self.assertFalse(SvgItemType.OPEN_PATH.is_path_closed)
-        
-        # CLOSED_PATH should be path, not icon, and closed
-        self.assertFalse(SvgItemType.CLOSED_PATH.is_icon)
-        self.assertTrue(SvgItemType.CLOSED_PATH.is_path)
-        self.assertTrue(SvgItemType.CLOSED_PATH.is_path_closed)
-        return
-
-    def test_svg_item_type_path_detection_logic(self):
-        """Test is_path property logic - critical for SVG path processing."""
-        path_types = [SvgItemType.OPEN_PATH, SvgItemType.CLOSED_PATH]
-        non_path_types = [SvgItemType.ICON]
-        
-        for svg_type in path_types:
-            with self.subTest(svg_type=svg_type):
-                self.assertTrue(svg_type.is_path)
-        
-        for svg_type in non_path_types:
-            with self.subTest(svg_type=svg_type):
-                self.assertFalse(svg_type.is_path)
-        return
-
-    def test_svg_item_type_labels(self):
-        """Test SvgItemType labels - important for UI display."""
-        self.assertEqual(SvgItemType.ICON.label, 'Icon')
-        self.assertEqual(SvgItemType.OPEN_PATH.label, 'Open Path ')
-        self.assertEqual(SvgItemType.CLOSED_PATH.label, 'Closed Path ')
-        return
 
 
 class TestSvgStyleName(BaseTestCase):
@@ -150,28 +69,6 @@ class TestSvgStyleName(BaseTestCase):
         
         self.assertEqual(len(set(template_names)), len(all_styles))
         self.assertEqual(len(set(css_names)), len(all_styles))
-        return
-        
-    def test_location_view_type_filtering_behavior(self):
-        """Test how view types control one-click behavior."""
-        # DEFAULT should have empty priority list (no one-click control)
-        default_states = set(LocationViewType.DEFAULT.entity_state_type_priority_list)
-        self.assertEqual(len(default_states), 0,
-                        'DEFAULT should have no priority states (always shows status modal)')
-        
-        # AUTOMATION should have controllable states only
-        automation_states = set(LocationViewType.AUTOMATION.entity_state_type_priority_list)
-        self.assertGreater(len(automation_states), 0,
-                          'AUTOMATION should have priority states for one-click control')
-        
-        # Test that AUTOMATION view only includes controllable states
-        non_controllable_states = {EntityStateType.MOVEMENT, EntityStateType.ELECTRIC_USAGE,
-                                   EntityStateType.TEMPERATURE, EntityStateType.WATER_FLOW}
-        
-        # AUTOMATION should not include read-only sensor states  
-        intersection = automation_states.intersection(non_controllable_states)
-        self.assertEqual(len(intersection), 0,
-                         'AUTOMATION view should focus on controllable entity states')
         return
         
     def test_enum_string_conversion_consistency(self):

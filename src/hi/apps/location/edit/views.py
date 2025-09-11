@@ -302,7 +302,6 @@ class LocationViewAddView( HiModalView ):
                 'location_view_add_form': location_view_add_form,
             }
             return self.modal_response( request, context )
-
         try:
             temp_location_view = location_view_add_form.save( commit = False )
             location_view = LocationManager().create_location_view(

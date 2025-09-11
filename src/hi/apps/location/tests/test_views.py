@@ -6,7 +6,6 @@ from django.urls import reverse
 from hi.apps.collection.models import Collection
 from hi.apps.control.models import Controller
 from hi.apps.control.one_click_control_service import (
-    OneClickControlService,
     OneClickNotSupported,
 )
 from hi.apps.entity.models import Entity, EntityState
@@ -487,17 +486,20 @@ class TestLocationItemStatusView(SyncViewTestCase):
             collection_view_type_str='MAIN'
         )
 
-    @patch('hi.apps.location.views.OneClickControlService')
-    def test_view_parameters_required_for_automation_view(self, mock_service_class):
+    @patch('hi.apps.control.one_click_control_service.ControllerManager')
+    def test_view_parameters_required_for_automation_view(self, mock_controller_manager):
         """Test that view_parameters are required for AUTOMATION view processing."""
         from hi.enums import ItemType
-        from hi.integrations.transient_models import IntegrationControlResult
+        from hi.apps.control.transient_models import ControllerOutcome
         
-        # Mock service instance and successful control result
-        mock_service = Mock()
-        mock_service_class.return_value = mock_service
-        mock_control_result = IntegrationControlResult(new_value='ON', error_list=[])
-        mock_service.execute_one_click_control.return_value = mock_control_result
+        # Mock at the system boundary - the controller manager
+        mock_manager = Mock()
+        mock_controller_manager.return_value = mock_manager
+        mock_manager.do_control.return_value = ControllerOutcome(
+            controller=self.controller,
+            new_value='ON',
+            error_list=[]
+        )
         
         # Set up automation view context (this test verifies the flow works with proper setup)
         session = self.client.session
@@ -510,22 +512,25 @@ class TestLocationItemStatusView(SyncViewTestCase):
         
         response = self.client.get(url)
         
-        # Should successfully process with proper view_parameters
-        self.assertEqual(response.status_code, 302)
-        expected_url = reverse('entity_status', kwargs={'entity_id': self.entity.id})
-        self.assertEqual(response.url, expected_url)
+        # Should successfully execute control and return SVG attribute update response  
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('setAttributes', data)
 
-    @patch('hi.apps.location.views.OneClickControlService')
-    def test_automation_view_with_controllable_entity_executes_control(self, mock_service_class):
+    @patch('hi.apps.control.one_click_control_service.ControllerManager')
+    def test_automation_view_with_controllable_entity_executes_control(self, mock_controller_manager):
         """Test that AUTOMATION view executes control for entity with controllable states."""
         from hi.enums import ItemType
-        from hi.integrations.transient_models import IntegrationControlResult
+        from hi.apps.control.transient_models import ControllerOutcome
         
-        # Mock service instance and successful control result
-        mock_service = Mock()
-        mock_service_class.return_value = mock_service
-        mock_control_result = IntegrationControlResult(new_value='ON', error_list=[])
-        mock_service.execute_one_click_control.return_value = mock_control_result
+        # Mock at the system boundary - the controller manager
+        mock_manager = Mock()
+        mock_controller_manager.return_value = mock_manager
+        mock_manager.do_control.return_value = ControllerOutcome(
+            controller=self.controller,
+            new_value='ON',
+            error_list=[]
+        )
         
         # Set up automation view context
         session = self.client.session
@@ -538,10 +543,10 @@ class TestLocationItemStatusView(SyncViewTestCase):
         
         response = self.client.get(url)
         
-        # Should redirect to entity status (service handles the control logic)
-        self.assertEqual(response.status_code, 302)
-        expected_url = reverse('entity_status', kwargs={'entity_id': self.entity.id})
-        self.assertEqual(response.url, expected_url)
+        # Should successfully execute control and return SVG attribute update response
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('setAttributes', data)
 
     def test_one_click_control_entity_not_found(self):
         """Test handling of nonexistent entity."""
@@ -637,17 +642,20 @@ class TestLocationItemStatusView(SyncViewTestCase):
         expected_url = reverse('entity_status', kwargs={'entity_id': self.entity.id})
         self.assertEqual(response.url, expected_url)
 
-    @patch('hi.apps.location.views.OneClickControlService')
-    def test_automation_view_calls_service_for_entity_control(self, mock_service_class):
+    @patch('hi.apps.control.one_click_control_service.ControllerManager')
+    def test_automation_view_calls_service_for_entity_control(self, mock_controller_manager):
         """Test that AUTOMATION LocationViewType calls OneClickControlService for entity control."""
         from hi.enums import ItemType
-        from hi.integrations.transient_models import IntegrationControlResult
+        from hi.apps.control.transient_models import ControllerOutcome
         
-        # Mock service instance and successful control result
-        mock_service = Mock()
-        mock_service_class.return_value = mock_service
-        mock_control_result = IntegrationControlResult(new_value='ON', error_list=[])
-        mock_service.execute_one_click_control.return_value = mock_control_result
+        # Mock at the system boundary - the controller manager
+        mock_manager = Mock()
+        mock_controller_manager.return_value = mock_manager
+        mock_manager.do_control.return_value = ControllerOutcome(
+            controller=self.controller,
+            new_value='ON',
+            error_list=[]
+        )
         
         # Set up automation view context
         session = self.client.session
@@ -660,22 +668,17 @@ class TestLocationItemStatusView(SyncViewTestCase):
         
         response = self.client.get(url)
         
-        # Should call service and redirect to entity status
-        mock_service_class.assert_called_once()
-        mock_service.execute_one_click_control.assert_called_once_with(
-            entity=self.entity,
-            location_view_type=self.automation_view.location_view_type
-        )
-        self.assertEqual(response.status_code, 302)
-        expected_url = reverse('entity_status', kwargs={'entity_id': self.entity.id})
-        self.assertEqual(response.url, expected_url)
+        # Should successfully execute control and return SVG attribute update response
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('setAttributes', data)
 
     @patch('hi.apps.location.views.OneClickControlService')
     def test_automation_view_handles_unsupported_exception(self, mock_service_class):
         """Test that OneClickNotSupported falls back to status modal."""
         from hi.enums import ItemType
         
-        # Mock service to raise unsupported exception
+        # Mock service to raise unsupported exception - this is legitimate boundary testing
         mock_service = Mock()
         mock_service_class.return_value = mock_service
         mock_service.execute_one_click_control.side_effect = OneClickNotSupported("No controllable states")

@@ -415,7 +415,9 @@ class TestLocationViewAddView(DualModeViewTestCase):
         Location.objects.exclude(id=self.location.id).delete()
         
         url = reverse('location_edit_location_view_add')
-        response = self.client.post(url, {'name': 'New View'})
+        response = self.client.post(url, {'name': 'New View',
+                                          'location_view_type_str': 'default',
+                                          'svg_style_name_str': 'color' })
 
         # Expect JSON response for antinode.js
         self.assertEqual(response.status_code, 200)

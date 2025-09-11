@@ -3,19 +3,19 @@
 from django.db import migrations
 
 
-def fix_multvalued_typo(apps, schema_editor):
-    """Fix typo: change 'multvalued' to 'multivalued' in entity_state_type_str"""
+def fix_multivalued_typo(apps, schema_editor):
+    """Fix typo: change 'multivalued' to 'multivalued' in entity_state_type_str"""
     EntityState = apps.get_model('entity', 'EntityState')
-    EntityState.objects.filter(entity_state_type_str='multvalued').update(
+    EntityState.objects.filter(entity_state_type_str='multivalued').update(
         entity_state_type_str='multivalued'
     )
 
 
-def reverse_fix_multvalued_typo(apps, schema_editor):
-    """Reverse fix: change 'multivalued' back to 'multvalued'"""
+def reverse_fix_multivalued_typo(apps, schema_editor):
+    """Reverse fix: change 'multivalued' back to 'multivalued'"""
     EntityState = apps.get_model('entity', 'EntityState')
     EntityState.objects.filter(entity_state_type_str='multivalued').update(
-        entity_state_type_str='multvalued'
+        entity_state_type_str='multivalued'
     )
 
 
@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(
-            fix_multvalued_typo,
-            reverse_fix_multvalued_typo,
+            fix_multivalued_typo,
+            reverse_fix_multivalued_typo,
         ),
     ]

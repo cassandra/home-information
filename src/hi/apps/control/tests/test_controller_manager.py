@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 import asyncio
 
 from hi.apps.control.controller_manager import ControllerManager
+from hi.apps.control.controller_history_manager import ControllerHistoryManager
 from hi.apps.control.models import Controller
 from hi.apps.control.transient_models import ControllerOutcome
 from hi.apps.entity.models import Entity, EntityState
@@ -142,8 +143,10 @@ class TestControllerManager(BaseTestCase):
         return
 
     @patch.object(ControllerManager, '_instance', None)
+    @patch.object(ControllerHistoryManager, '_instance', None)
+    @patch('hi.apps.control.controller_history_manager.ControllerHistory.objects.create')
     @patch('hi.apps.control.controller_manager.IntegrationManager')
-    def test_do_control_async_returns_same_result_as_sync(self, mock_integration_manager_class):
+    def test_do_control_async_returns_same_result_as_sync(self, mock_integration_manager_class, mock_history_create):
         """Test async control returns identical result to sync version."""
         entity = Entity.objects.create(
             name='Test Dimmer',
@@ -154,12 +157,20 @@ class TestControllerManager(BaseTestCase):
             entity_state_type_str='DISCRETE'
         )
         
-        controller = Controller.objects.create(
-            name='Bedroom Dimmer',
+        controller_sync = Controller.objects.create(
+            name='Bedroom Dimmer Sync',
             entity_state=entity_state,
             controller_type_str='DEFAULT',
             integration_id='zigbee_integration',
             integration_name='Zigbee Integration'
+        )
+        
+        controller_async = Controller.objects.create(
+            name='Bedroom Dimmer Async',
+            entity_state=entity_state,
+            controller_type_str='DEFAULT',
+            integration_id='zigbee_integration',
+            integration_name='Zigbee Integration Async'
         )
         
         # Mock successful dimmer control
@@ -179,10 +190,10 @@ class TestControllerManager(BaseTestCase):
         
         # Test both sync and async produce same result
         manager = ControllerManager()
-        sync_result = manager.do_control(controller=controller, control_value='75')
+        sync_result = manager.do_control(controller=controller_sync, control_value='75')
         
         async def run_async_test():
-            return await manager.do_control_async(controller=controller, control_value='75')
+            return await manager.do_control_async(controller=controller_async, control_value='75')
         
         async_result = asyncio.run(run_async_test())
         

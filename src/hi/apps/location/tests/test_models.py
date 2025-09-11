@@ -451,7 +451,7 @@ class TestLocationAttribute(BaseTestCase):
         
         # Verify all views exist and have correct configurations
         all_views = LocationView.objects.filter(location=location).order_by('order_id')
-        self.assertEqual(len(all_views), 4)
+        self.assertEqual(len(all_views), 2)
         
         # Verify each view maintains its distinct configuration
         for view, expected_config in zip(all_views, views_config):

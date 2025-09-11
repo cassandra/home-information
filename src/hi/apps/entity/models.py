@@ -17,7 +17,6 @@ from hi.enums import ItemType
 from .enums import (
     EntityType,
     EntityStateType,
-    EntityStateValue,
 )
 
 

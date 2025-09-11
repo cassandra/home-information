@@ -149,3 +149,4 @@ class TestDimmerStateConversion(TestCase):
         
         result = HassConverter.hass_state_to_sensor_value_str(hass_state)
         self.assertEqual(result, "100")
+        
