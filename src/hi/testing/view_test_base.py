@@ -33,6 +33,12 @@ class ViewTestBase(BaseTestCase):
 
     def setUp(self):
         super().setUp()
+        
+        # Add 'testserver' to ALLOWED_HOSTS for Django test client
+        from django.conf import settings
+        if 'testserver' not in settings.ALLOWED_HOSTS:
+            settings.ALLOWED_HOSTS = list(settings.ALLOWED_HOSTS) + ['testserver']
+        
         User = get_user_model()
         self.user = User.objects.create_user(
             email='test@example.com',

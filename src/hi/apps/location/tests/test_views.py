@@ -1,10 +1,14 @@
 import logging
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from django.urls import reverse
 
 from hi.apps.collection.models import Collection
-from hi.apps.entity.models import Entity
+from hi.apps.control.models import Controller
+from hi.apps.control.one_click_control_service import (
+    OneClickNotSupported,
+)
+from hi.apps.entity.models import Entity, EntityState
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
 from hi.enums import ViewType
@@ -170,6 +174,12 @@ class TestLocationViewView(DualModeViewTestCase):
 
     def test_force_synchronous_exception_handling(self):
         """Test that ForceSynchronousException is properly handled."""
+        # Set up initial view parameters
+        self.setSessionViewParameters(
+            view_type=ViewType.LOCATION_VIEW,
+            location_view=self.location_view
+        )
+        
         # This would typically be tested by mocking should_force_sync_request
         # but the method is on the view class, making it complex to mock directly
         url = reverse('location_view', kwargs={'location_view_id': self.location_view.id})
@@ -180,6 +190,12 @@ class TestLocationViewView(DualModeViewTestCase):
 
     def test_session_parameters_updated(self):
         """Test that view parameters are properly updated in session."""
+        # Set up initial view parameters
+        self.setSessionViewParameters(
+            view_type=ViewType.LOCATION_VIEW,
+            location_view=self.location_view
+        )
+        
         url = reverse('location_view', kwargs={'location_view_id': self.location_view.id})
         response = self.client.get(url)
 
@@ -411,36 +427,172 @@ class TestLocationViewEditModeViewGet(AsyncViewTestCase):
 
 class TestLocationItemStatusView(SyncViewTestCase):
     """
-    Tests for LocationItemInfoView - demonstrates item type delegation testing.
-    This view redirects to appropriate info views based on item type.
+    Tests for LocationItemStatusView - demonstrates one-click control and fallback behavior.
+    This view executes one-click control based on LocationViewType or falls back to status modals.
     """
 
     def setUp(self):
         super().setUp()
-        # Create test entity and collection
+        
+        # Create test location and location views
+        self.location = Location.objects.create(
+            name='Test Location',
+            svg_fragment_filename='test.svg',
+            svg_view_box_str='0 0 100 100'
+        )
+        
+        self.automation_view = LocationView.objects.create(
+            location=self.location,
+            name='Automation View',
+            location_view_type_str='AUTOMATION',
+            svg_view_box_str='0 0 100 100',
+            svg_rotate=0.0,
+            order_id=1
+        )
+        
+        self.default_view = LocationView.objects.create(
+            location=self.location,
+            name='Default View',
+            location_view_type_str='DEFAULT',
+            svg_view_box_str='0 0 100 100',
+            svg_rotate=0.0,
+            order_id=2
+        )
+        
+        # Create test entity with controllable state
         self.entity = Entity.objects.create(
-            name='Test Entity',
+            name='Test Light',
             entity_type_str='LIGHT'
         )
+        
+        self.entity_state = EntityState.objects.create(
+            entity=self.entity,
+            entity_state_type_str='ON_OFF',
+            name='Power State'
+        )
+        
+        self.controller = Controller.objects.create(
+            name='Light Switch',
+            entity_state=self.entity_state,
+            controller_type_str='DEFAULT',
+            integration_id='test_integration',
+            integration_name='test_switch'
+        )
+        
+        # Create collection for fallback testing
         self.collection = Collection.objects.create(
             name='Test Collection',
             collection_type_str='ROOM',
             collection_view_type_str='MAIN'
         )
 
-    def test_entity_info_redirect(self):
-        """Test redirecting to entity status for entity items."""
+    @patch('hi.apps.control.one_click_control_service.ControllerManager')
+    def test_view_parameters_required_for_automation_view(self, mock_controller_manager):
+        """Test that view_parameters are required for AUTOMATION view processing."""
         from hi.enums import ItemType
+        from hi.apps.control.transient_models import ControllerOutcome
+        
+        # Mock at the system boundary - the controller manager
+        mock_manager = Mock()
+        mock_controller_manager.return_value = mock_manager
+        mock_manager.do_control.return_value = ControllerOutcome(
+            controller=self.controller,
+            new_value='ON',
+            error_list=[]
+        )
+        
+        # Set up automation view context (this test verifies the flow works with proper setup)
+        session = self.client.session
+        session['view_type'] = str(ViewType.LOCATION_VIEW)
+        session['location_view_id'] = self.automation_view.id
+        session.save()
+        
         html_id = ItemType.ENTITY.html_id(self.entity.id)
         url = reverse('location_item_status', kwargs={'html_id': html_id})
+        
         response = self.client.get(url)
+        
+        # Should successfully execute control and return SVG attribute update response  
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('setAttributes', data)
 
+    @patch('hi.apps.control.one_click_control_service.ControllerManager')
+    def test_automation_view_with_controllable_entity_executes_control(self, mock_controller_manager):
+        """Test that AUTOMATION view executes control for entity with controllable states."""
+        from hi.enums import ItemType
+        from hi.apps.control.transient_models import ControllerOutcome
+        
+        # Mock at the system boundary - the controller manager
+        mock_manager = Mock()
+        mock_controller_manager.return_value = mock_manager
+        mock_manager.do_control.return_value = ControllerOutcome(
+            controller=self.controller,
+            new_value='ON',
+            error_list=[]
+        )
+        
+        # Set up automation view context
+        session = self.client.session
+        session['view_type'] = str(ViewType.LOCATION_VIEW)
+        session['location_view_id'] = self.automation_view.id
+        session.save()
+        
+        html_id = ItemType.ENTITY.html_id(self.entity.id)
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
+        
+        response = self.client.get(url)
+        
+        # Should successfully execute control and return SVG attribute update response
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('setAttributes', data)
+
+    def test_one_click_control_entity_not_found(self):
+        """Test handling of nonexistent entity."""
+        from hi.enums import ItemType
+        html_id = ItemType.ENTITY.html_id(99999)  # Nonexistent entity
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
+        
+        response = self.client.get(url)
+        # EntityViewMixin raises Http404 for nonexistent entities
+        self.assertEqual(response.status_code, 404)
+
+    def test_falls_back_to_status_modal_when_entity_has_no_controllable_states(self):
+        """Test fallback to status modal when entity has no controllable state matching LocationViewType."""
+        from hi.enums import ItemType
+        
+        # Create entity with no controllers
+        uncontrollable_entity = Entity.objects.create(
+            name='Sensor Only',
+            entity_type_str='SENSOR'
+        )
+        
+        # Add state but no controllers
+        EntityState.objects.create(
+            entity=uncontrollable_entity,
+            entity_state_type_str='TEMPERATURE',
+            name='Temperature Reading'
+        )
+        
+        # Set up automation view context
+        session = self.client.session
+        session['view_type'] = str(ViewType.LOCATION_VIEW)
+        session['location_view_id'] = self.automation_view.id
+        session.save()
+        
+        html_id = ItemType.ENTITY.html_id(uncontrollable_entity.id)
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
+        
+        response = self.client.get(url)
+        
+        # Should fall back to entity status modal
         self.assertEqual(response.status_code, 302)
-        expected_url = reverse('entity_status', kwargs={'entity_id': self.entity.id})
+        expected_url = reverse('entity_status', kwargs={'entity_id': uncontrollable_entity.id})
         self.assertEqual(response.url, expected_url)
 
-    def test_collection_info_redirect(self):
-        """Test redirecting to collection view for collection items."""
+    def test_collection_always_redirects_to_collection_view(self):
+        """Test that collections always redirect to collection view (no one-click control)."""
         from hi.enums import ItemType
         html_id = ItemType.COLLECTION.html_id(self.collection.id)
         url = reverse('location_item_status', kwargs={'html_id': html_id})
@@ -452,18 +604,14 @@ class TestLocationItemStatusView(SyncViewTestCase):
 
     def test_unknown_item_type_returns_400(self):
         """Test that unknown item types return BadRequest."""
-        # Use an invalid html_id format to trigger BadRequest
         url = reverse('location_item_status', kwargs={'html_id': 'hi-unknown-1'})
         response = self.client.get(url)
-
         self.assertEqual(response.status_code, 400)
 
     def test_invalid_item_id_returns_400(self):
         """Test that invalid item IDs return BadRequest."""
-        # Use an invalid html_id format to trigger BadRequest
         url = reverse('location_item_status', kwargs={'html_id': 'invalid-format'})
         response = self.client.get(url)
-
         self.assertEqual(response.status_code, 400)
 
     def test_post_not_allowed(self):
@@ -472,8 +620,84 @@ class TestLocationItemStatusView(SyncViewTestCase):
         html_id = ItemType.ENTITY.html_id(self.entity.id)
         url = reverse('location_item_status', kwargs={'html_id': html_id})
         response = self.client.post(url)
-
         self.assertEqual(response.status_code, 405)
+
+    def test_default_view_type_skips_service_and_redirects_to_status(self):
+        """Test that DEFAULT LocationViewType skips OneClickControlService and redirects to status."""
+        from hi.enums import ItemType
+        
+        # Set up DEFAULT view context
+        session = self.client.session
+        session['view_type'] = str(ViewType.LOCATION_VIEW)
+        session['location_view_id'] = self.default_view.id
+        session.save()
+        
+        html_id = ItemType.ENTITY.html_id(self.entity.id)
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
+        
+        response = self.client.get(url)
+        
+        # Should redirect directly to entity status for DEFAULT view type
+        self.assertEqual(response.status_code, 302)
+        expected_url = reverse('entity_status', kwargs={'entity_id': self.entity.id})
+        self.assertEqual(response.url, expected_url)
+
+    @patch('hi.apps.control.one_click_control_service.ControllerManager')
+    def test_automation_view_calls_service_for_entity_control(self, mock_controller_manager):
+        """Test that AUTOMATION LocationViewType calls OneClickControlService for entity control."""
+        from hi.enums import ItemType
+        from hi.apps.control.transient_models import ControllerOutcome
+        
+        # Mock at the system boundary - the controller manager
+        mock_manager = Mock()
+        mock_controller_manager.return_value = mock_manager
+        mock_manager.do_control.return_value = ControllerOutcome(
+            controller=self.controller,
+            new_value='ON',
+            error_list=[]
+        )
+        
+        # Set up automation view context
+        session = self.client.session
+        session['view_type'] = str(ViewType.LOCATION_VIEW)
+        session['location_view_id'] = self.automation_view.id
+        session.save()
+        
+        html_id = ItemType.ENTITY.html_id(self.entity.id)
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
+        
+        response = self.client.get(url)
+        
+        # Should successfully execute control and return SVG attribute update response
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('setAttributes', data)
+
+    @patch('hi.apps.location.views.OneClickControlService')
+    def test_automation_view_handles_unsupported_exception(self, mock_service_class):
+        """Test that OneClickNotSupported falls back to status modal."""
+        from hi.enums import ItemType
+        
+        # Mock service to raise unsupported exception - this is legitimate boundary testing
+        mock_service = Mock()
+        mock_service_class.return_value = mock_service
+        mock_service.execute_one_click_control.side_effect = OneClickNotSupported("No controllable states")
+        
+        # Set up automation view context
+        session = self.client.session
+        session['view_type'] = str(ViewType.LOCATION_VIEW)
+        session['location_view_id'] = self.automation_view.id
+        session.save()
+        
+        html_id = ItemType.ENTITY.html_id(self.entity.id)
+        url = reverse('location_item_status', kwargs={'html_id': html_id})
+        
+        response = self.client.get(url)
+        
+        # Should still redirect to entity status (graceful fallback)
+        self.assertEqual(response.status_code, 302)
+        expected_url = reverse('entity_status', kwargs={'entity_id': self.entity.id})
+        self.assertEqual(response.url, expected_url)
 
 
 class TestLocationItemEditModeView(SyncViewTestCase):

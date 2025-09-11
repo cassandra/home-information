@@ -4,9 +4,10 @@ import logging
 from hi.apps.common.singleton import Singleton
 
 from hi.integrations.integration_manager import IntegrationManager
-from hi.integrations.transient_models import IntegrationControlResult
 
+from .controller_history_manager import ControllerHistoryManager
 from .models import Controller
+from .transient_models import ControllerOutcome
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class ControllerManager( Singleton ):
 
     def do_control( self,
                     controller     : Controller,
-                    control_value  : str ) -> IntegrationControlResult:
+                    control_value  : str ) -> ControllerOutcome:
         logger.debug( f'Controller action: {controller} = {control_value}' )
 
         integration_gateway = IntegrationManager().get_integration_gateway(
@@ -38,11 +39,21 @@ class ControllerManager( Singleton ):
             integration_details = controller.get_integration_details(),
             control_value = control_value,
         )
-        return control_result
+        if not control_result.has_errors:
+            ControllerHistoryManager().add_to_controller_history(
+                controller = controller,
+                value = control_result.new_value,
+            )
+        
+        return ControllerOutcome(
+            controller = controller,
+            new_value = control_result.new_value,
+            error_list = control_result.error_list,
+        )
 
     async def do_control_async( self,
                                 controller    : Controller,
-                                control_value : str ) -> IntegrationControlResult:
+                                control_value : str ) -> ControllerOutcome:
         return await sync_to_async( self.do_control )(
             controller = controller,
             control_value = control_value,

@@ -71,34 +71,20 @@ class LocationEditForm( forms.ModelForm ):
         }
 
 
-class LocationViewAddForm(forms.Form):
+class LocationViewAddForm( forms.ModelForm ):
 
     # N.B. When adding a LocationView, we use limited field options to keep
     # it simpler.
     
-    name = forms.CharField(
-        label = 'View Name',
-        required = True,
-    )
-
-    
-class LocationViewEditForm( forms.ModelForm ):
-
     class Meta:
         model = LocationView
         fields = (
             'name',
             'location_view_type_str',
             'svg_style_name_str',
-            'svg_view_box_str',
-            'svg_rotate',
-            'order_id',
         )
         widgets = {
             'name': forms.TextInput( attrs={'class': 'form-control'} ),
-            'svg_view_box_str': forms.TextInput( attrs={'class': 'form-control'} ),
-            'svg_rotate': forms.NumberInput( attrs={'class': 'form-control'} ),
-            'order_id': forms.NumberInput( attrs={'class': 'form-control'} ),
         }
 
     location_view_type_str = forms.ChoiceField(
@@ -115,6 +101,22 @@ class LocationViewEditForm( forms.ModelForm ):
         required = True,
         widget = forms.Select( attrs = { 'class' : 'custom-select' } ),
     )
+
+    
+class LocationViewEditForm( LocationViewAddForm ):
+
+    class Meta( LocationViewAddForm.Meta ):
+        fields = LocationViewAddForm.Meta.fields + (
+            'svg_view_box_str',
+            'svg_rotate',
+            'order_id',
+        )
+        widgets = {
+            **LocationViewAddForm.Meta.widgets,
+            'svg_view_box_str': forms.TextInput( attrs={'class': 'form-control'} ),
+            'svg_rotate': forms.NumberInput( attrs={'class': 'form-control'} ),
+            'order_id': forms.NumberInput( attrs={'class': 'form-control'} ),
+        }
     
     
 class LocationViewGeometryForm( forms.ModelForm ):

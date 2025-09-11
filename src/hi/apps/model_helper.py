@@ -27,7 +27,7 @@ class HiModelHelper:
     EXCLUDE_FROM_SENSOR_HISTORY = {
         EntityStateType.DATETIME,
         EntityStateType.BLOB,
-        EntityStateType.MULTVALUED,
+        EntityStateType.MULTIVALUED,
     }
 
     DEFAULT_CONNECTIVITY_EVENT_WINDOW_SECS = 180
@@ -69,7 +69,7 @@ class HiModelHelper:
             name = f'{entity.name} Values'
         return cls.create_sensor(
             entity = entity,
-            entity_state_type = EntityStateType.MULTVALUED,
+            entity_state_type = EntityStateType.MULTIVALUED,
             name = name,
             integration_key = integration_key,
         )

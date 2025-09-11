@@ -3,7 +3,6 @@ import logging
 from hi.apps.entity.enums import (
     EntityType,
     EntityStateType,
-    EntityStateValue,
     EntityGroupType,
 )
 from hi.testing.base_test_case import BaseTestCase
@@ -35,59 +34,9 @@ class TestEntityStateType(BaseTestCase):
         self.assertNotEqual(temperature_template, controller_template)
         
         # Complex state types should work correctly
-        multivalued_template = EntityStateType.MULTVALUED.value_template_name()
+        multivalued_template = EntityStateType.MULTIVALUED.value_template_name()
         self.assertTrue(multivalued_template.startswith('sense/panes/sensor_value_'))
-        self.assertIn('multvalued', multivalued_template)
-        
-        return
-
-
-class TestEntityStateValue(BaseTestCase):
-
-    def test_entity_state_value_choices_provide_ui_options(self):
-        """Test state value choices mapping - provides UI with appropriate options for each state type."""
-        choices = EntityStateValue.entity_state_value_choices()
-        
-        # Verify that different state types have appropriate choice sets
-        self.assertIn(EntityStateType.ON_OFF, choices)
-        self.assertIn(EntityStateType.CONNECTIVITY, choices)
-        self.assertIn(EntityStateType.MOVEMENT, choices)
-        self.assertIn(EntityStateType.OPEN_CLOSE, choices)
-        self.assertIn(EntityStateType.HIGH_LOW, choices)
-        
-        # Test ON_OFF state provides binary choices
-        on_off_choices = choices[EntityStateType.ON_OFF]
-        self.assertEqual(len(on_off_choices), 2)
-        
-        # Choices should be tuples of (value, label)
-        choice_values = [choice[0] for choice in on_off_choices]
-        choice_labels = [choice[1] for choice in on_off_choices]
-        
-        # Should include both on and off options
-        self.assertIn('on', choice_values)
-        self.assertIn('off', choice_values)
-        
-        # Labels should be user-friendly
-        self.assertIn('On', choice_labels)
-        self.assertIn('Off', choice_labels)
-        
-        # Test connectivity state has appropriate network-related choices
-        connectivity_choices = choices[EntityStateType.CONNECTIVITY]
-        connectivity_values = [choice[0] for choice in connectivity_choices]
-        self.assertIn('connected', connectivity_values)
-        self.assertIn('disconnected', connectivity_values)
-        
-        # Test movement state has activity-related choices
-        movement_choices = choices[EntityStateType.MOVEMENT]
-        movement_values = [choice[0] for choice in movement_choices]
-        self.assertIn('active', movement_values)
-        self.assertIn('idle', movement_values)
-        
-        # Test open/close state has position-related choices
-        open_close_choices = choices[EntityStateType.OPEN_CLOSE]
-        open_close_values = [choice[0] for choice in open_close_choices]
-        self.assertIn('open', open_close_values)
-        self.assertIn('closed', open_close_values)
+        self.assertIn('multivalued', multivalued_template)
         
         return
 

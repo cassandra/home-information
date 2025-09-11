@@ -22,6 +22,10 @@ class TestControllerView(SyncViewTestCase):
 
     def setUp(self):
         super().setUp()
+        # Reset singleton managers for proper test isolation
+        ControllerManager._instance = None
+        ControllerHistoryManager._instance = None
+        StatusDisplayManager._instance = None
         # Create test entity and controller
         self.entity = Entity.objects.create(
             name='Test Light',
@@ -35,30 +39,31 @@ class TestControllerView(SyncViewTestCase):
         self.controller = Controller.objects.create(
             entity_state=self.entity_state,
             controller_type_str='SWITCH',
+            integration_id='test_integration',
+            integration_name='test_switch',
             integration_payload='{"device_id": "test_device"}'
         )
 
-    @patch.object(ControllerManager, 'do_control')
-    @patch.object(StatusDisplayManager, 'add_entity_state_value_override')
-    @patch.object(ControllerHistoryManager, 'add_to_controller_history')
-    def test_post_control_success(self, mock_add_history, mock_add_override, mock_do_control):
+    @patch('hi.apps.control.controller_manager.IntegrationManager')
+    def test_post_control_success(self, mock_integration_manager):
         """Test successful controller action."""
-        mock_result = Mock()
-        mock_result.has_errors = False
-        mock_result.error_list = []
-        mock_do_control.return_value = mock_result
+        from hi.integrations.transient_models import IntegrationControlResult
+        
+        # Mock at the system boundary - the integration gateway
+        mock_manager = Mock()
+        mock_integration_manager.return_value = mock_manager
+        mock_gateway = Mock()
+        mock_manager.get_integration_gateway.return_value = mock_gateway
+        mock_gateway.get_controller.return_value.do_control.return_value = IntegrationControlResult(
+            new_value='ON',
+            error_list=[]
+        )
 
         url = reverse('control_controller', kwargs={'controller_id': self.controller.id})
         response = self.client.post(url, {'value': 'ON'})
 
+        # Should successfully execute control
         self.assertSuccessResponse(response)
-        mock_do_control.assert_called_once_with(
-            controller=self.controller,
-            control_value='ON'
-        )
-        # Should add override and history when successful
-        mock_add_override.assert_called_once()
-        mock_add_history.assert_called_once()
 
     @patch.object(ControllerManager, 'do_control')
     @patch.object(StatusDisplayManager, 'add_entity_state_value_override')

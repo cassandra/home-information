@@ -1,4 +1,4 @@
-from typing import Set
+from typing import List, Set, Tuple
 
 from hi.apps.common.enums import LabeledEnum
 
@@ -148,13 +148,35 @@ class EntityType(LabeledEnum):
         return self in self.get_open_path_types()
                     
     
+class EntityStateValue(LabeledEnum):
+
+    ACTIVE         = ( 'Active', '' )
+    IDLE           = ( 'Idle', '' )
+
+    ON             = ( 'On', '' )
+    OFF            = ( 'Off', '' )
+    
+    OPEN           = ( 'Open', '' )
+    CLOSED         = ( 'Closed', '' )
+
+    CONNECTED      = ( 'Connected', '' )
+    DISCONNECTED   = ( 'Disconnected', '' )
+
+    HIGH           = ( 'High', '' )
+    LOW            = ( 'Low', '' )
+ 
+    
 class EntityStateType(LabeledEnum):
     
     # General types
-    DISCRETE         = ( 'Discrete'         , 'Single value, fixed set of possible values' )
-    CONTINUOUS       = ( 'Continuous'       , 'For single value with a float type value' )
-    MULTVALUED       = ( 'Multi-valued'     , 'Provides multiple name-value pairs' )
-    BLOB             = ( 'Blob'             , 'Provides blob of uninterpreted data' )
+    DISCRETE         = ( 'Discrete'         , 'Single value, fixed set of possible values',
+                         [] )
+    CONTINUOUS       = ( 'Continuous'       , 'For single value with a float type value',
+                         [] )
+    MULTIVALUED      = ( 'Multi-valued'     , 'Provides multiple name-value pairs',
+                         [] )
+    BLOB             = ( 'Blob'             , 'Provides blob of uninterpreted data',
+                         [] )
 
     # Specific types
     #
@@ -162,25 +184,63 @@ class EntityStateType(LabeledEnum):
     # name-value pairs. However, by being more specific, we can provide
     # more specific visual and processing for the sensors/controllers.
     
-    AIR_PRESSURE     = ( 'Air Pressure'     , '' )
-    BANDWIDTH_USAGE  = ( 'Bandwidth Usage'  , '' )
-    CONNECTIVITY     = ( 'Connectivity'     , '' )    
-    DATETIME         = ( 'Date/Time'        , '' )
-    ELECTRIC_USAGE   = ( 'Electric Usage'   , '' )
-    HIGH_LOW         = ( 'High/Low'         , '' )    
-    HUMIDITY         = ( 'Humidity'         , '' )
-    LIGHT_DIMMER     = ( 'Light Dimmer'     , 'Controllable light brightness (0-100%)' )
-    LIGHT_LEVEL      = ( 'Light Level'      , '' )
-    MOISTURE         = ( 'Moisture'         , '' )
-    MOVEMENT         = ( 'Movement'         , '' )    
-    ON_OFF           = ( 'On/Off'           , '' )    
-    OPEN_CLOSE       = ( 'Open/Close'       , '' )    
-    PRESENCE         = ( 'Presence'         , '' )
-    SOUND_LEVEL      = ( 'Sound Level'      , '' )
-    TEMPERATURE      = ( 'Temperature'      , '' )
-    WATER_FLOW       = ( 'Water Flow'       , '' )
-    WIND_SPEED       = ( 'Wind Speed'       , '' )
+    AIR_PRESSURE     = ( 'Air Pressure'     , '',
+                         [] )
+    BANDWIDTH_USAGE  = ( 'Bandwidth Usage'  , '',
+                         [] )
+    CONNECTIVITY     = ( 'Connectivity'     , '',
+                         [ EntityStateValue.CONNECTED,
+                           EntityStateValue.DISCONNECTED ] )    
+    DATETIME         = ( 'Date/Time'        , '',
+                         [] )
+    ELECTRIC_USAGE   = ( 'Electric Usage'   , '',
+                         [] )
+    HIGH_LOW         = ( 'High/Low'         , '',
+                         [ EntityStateValue.HIGH,
+                           EntityStateValue.LOW ] )    
+    HUMIDITY         = ( 'Humidity'         , '',
+                         [] )
+    LIGHT_DIMMER     = ( 'Light Dimmer'     , 'Controllable light brightness (0-100)',
+                         [] )
+    LIGHT_LEVEL      = ( 'Light Level'      , '',
+                         [] )
+    MOISTURE         = ( 'Moisture'         , '',
+                         [] )
+    MOVEMENT         = ( 'Movement'         , '',
+                         [ EntityStateValue.ACTIVE,
+                           EntityStateValue.IDLE ] )    
+    ON_OFF           = ( 'On/Off'           , '',
+                         [ EntityStateValue.ON,
+                           EntityStateValue.OFF ] )    
+    OPEN_CLOSE       = ( 'Open/Close'       , '',
+                         [ EntityStateValue.OPEN,
+                           EntityStateValue.CLOSED ] )    
+    PRESENCE         = ( 'Presence'         , '',
+                         [ EntityStateValue.ACTIVE,
+                           EntityStateValue.IDLE ] )
+    SOUND_LEVEL      = ( 'Sound Level'      , '',
+                         [] )
+    TEMPERATURE      = ( 'Temperature'      , '',
+                         [] )
+    WATER_FLOW       = ( 'Water Flow'       , '',
+                         [] )
+    WIND_SPEED       = ( 'Wind Speed'       , '',
+                         [] )
+    
+    def __init__( self,
+                  label                    : str,
+                  description              : str,
+                  entity_state_value_list  : List[ EntityStateValue ] ):
+        super().__init__( label, description )
+        self.entity_state_value_list = entity_state_value_list
+        return
 
+    def choices(self) -> List[ Tuple[str, str] ]:
+        return [ ( str(x), x.label ) for x in self.entity_state_value_list ]
+    
+    def toggle_values(self) -> List[str]:
+        return [ str(x) for x in self.entity_state_value_list ]
+                         
     def value_template_name(self):
         """
         Template used to render a sensor's value for this state. Create the
@@ -198,45 +258,7 @@ class EntityStateType(LabeledEnum):
         "entity/panes/controller_value_default.html"
         """
         return f'control/panes/controller_{self.name.lower()}.html'
-
-
-class EntityStateValue(LabeledEnum):
-
-    ACTIVE         = ( 'Active', '' )
-    IDLE           = ( 'Idle', '' )
-
-    ON             = ( 'On', '' )
-    OFF            = ( 'Off', '' )
     
-    OPEN           = ( 'Open', '' )
-    CLOSED         = ( 'Closed', '' )
-
-    CONNECTED      = ( 'Connected', '' )
-    DISCONNECTED   = ( 'Disconnected', '' )
-
-    HIGH           = ( 'High', '' )
-    LOW            = ( 'Low', '' )
-
-    @classmethod
-    def entity_state_value_choices(cls):
-        return {
-            EntityStateType.CONNECTIVITY: [ ( str(x), x.label )
-                                            for x in [ EntityStateValue.CONNECTED,
-                                                       EntityStateValue.DISCONNECTED ]],
-            EntityStateType.HIGH_LOW: [ ( str(x), x.label )
-                                        for x in [ EntityStateValue.HIGH,
-                                                   EntityStateValue.LOW ]],
-            EntityStateType.MOVEMENT: [ ( str(x), x.label )
-                                        for x in [ EntityStateValue.ACTIVE,
-                                                   EntityStateValue.IDLE ]],
-            EntityStateType.ON_OFF: [ ( str(x), x.label )
-                                      for x in [ EntityStateValue.ON,
-                                                 EntityStateValue.OFF ]],
-            EntityStateType.OPEN_CLOSE: [ ( str(x), x.label )
-                                          for x in [ EntityStateValue.OPEN,
-                                                     EntityStateValue.CLOSED ]],
-        }
-
     
 class TemperatureUnit(LabeledEnum):
 

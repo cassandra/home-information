@@ -271,8 +271,8 @@ class TestHassConverterMapping(TestCase):
             (HassApi.BINARY_SENSOR_DOMAIN, EntityStateType.MOVEMENT),
             (HassApi.BINARY_SENSOR_DOMAIN, EntityStateType.CONNECTIVITY),
             (HassApi.BINARY_SENSOR_DOMAIN, EntityStateType.ON_OFF),
-            (HassApi.SUN_DOMAIN, EntityStateType.MULTVALUED),
-            (HassApi.WEATHER_DOMAIN, EntityStateType.MULTVALUED),
+            (HassApi.SUN_DOMAIN, EntityStateType.MULTIVALUED),
+            (HassApi.WEATHER_DOMAIN, EntityStateType.MULTIVALUED),
         ]
         
         for domain, entity_type in non_controllable_cases:

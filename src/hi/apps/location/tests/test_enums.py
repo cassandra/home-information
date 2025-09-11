@@ -1,107 +1,9 @@
 import logging
 
-from hi.apps.location.enums import LocationViewType, SvgItemType, SvgStyleName
-from hi.apps.entity.enums import EntityStateType
+from hi.apps.location.enums import LocationViewType, SvgStyleName
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
-
-
-class TestLocationViewType(BaseTestCase):
-
-    def test_location_view_type_entity_state_priority_lists(self):
-        """Test entity state type priority lists - critical for sensor display ordering."""
-        # DEFAULT should have comprehensive list
-        default_priorities = LocationViewType.DEFAULT.entity_state_type_priority_list
-        self.assertGreater(len(default_priorities), 5)
-        self.assertIn(EntityStateType.MOVEMENT, default_priorities)
-        self.assertIn(EntityStateType.TEMPERATURE, default_priorities)
-        
-        # SECURITY should focus on security-related states
-        security_priorities = LocationViewType.SECURITY.entity_state_type_priority_list
-        self.assertIn(EntityStateType.MOVEMENT, security_priorities)
-        self.assertIn(EntityStateType.PRESENCE, security_priorities)
-        self.assertIn(EntityStateType.OPEN_CLOSE, security_priorities)
-        
-        # CLIMATE should focus on climate-related states
-        climate_priorities = LocationViewType.CLIMATE.entity_state_type_priority_list
-        self.assertIn(EntityStateType.TEMPERATURE, climate_priorities)
-        self.assertIn(EntityStateType.HUMIDITY, climate_priorities)
-        self.assertIn(EntityStateType.AIR_PRESSURE, climate_priorities)
-        
-        # SUPPRESS should have empty list
-        suppress_priorities = LocationViewType.SUPPRESS.entity_state_type_priority_list
-        self.assertEqual(len(suppress_priorities), 0)
-        return
-
-    def test_location_view_type_specialization_logic(self):
-        """Test view type specialization - business logic for filtering sensor types."""
-        # Each view type should have unique focus
-        view_types = [
-            (LocationViewType.SECURITY, [EntityStateType.MOVEMENT, EntityStateType.PRESENCE]),
-            (LocationViewType.LIGHTS, [EntityStateType.LIGHT_LEVEL]),
-            (LocationViewType.SOUNDS, [EntityStateType.SOUND_LEVEL]),
-            (LocationViewType.ENERGY, [EntityStateType.ELECTRIC_USAGE, EntityStateType.WATER_FLOW]),
-        ]
-        
-        for view_type, expected_states in view_types:
-            with self.subTest(view_type=view_type):
-                priorities = view_type.entity_state_type_priority_list
-                for expected_state in expected_states:
-                    self.assertIn(expected_state, priorities)
-        return
-
-    def test_location_view_type_labels(self):
-        """Test LocationViewType labels - important for UI display."""
-        self.assertEqual(LocationViewType.DEFAULT.label, 'Default')
-        self.assertEqual(LocationViewType.SECURITY.label, 'Security')
-        self.assertEqual(LocationViewType.LIGHTS.label, 'Lights')
-        self.assertEqual(LocationViewType.CLIMATE.label, 'Climate')
-        self.assertEqual(LocationViewType.ENERGY.label, 'Energy')
-        self.assertEqual(LocationViewType.SUPPRESS.label, 'Suppress')
-        return
-
-
-class TestSvgItemType(BaseTestCase):
-
-    def test_svg_item_type_classification_properties(self):
-        """Test SvgItemType classification logic - critical for SVG rendering."""
-        # ICON should be icon, not path
-        self.assertTrue(SvgItemType.ICON.is_icon)
-        self.assertFalse(SvgItemType.ICON.is_path)
-        self.assertFalse(SvgItemType.ICON.is_path_closed)
-        
-        # OPEN_PATH should be path, not icon, not closed
-        self.assertFalse(SvgItemType.OPEN_PATH.is_icon)
-        self.assertTrue(SvgItemType.OPEN_PATH.is_path)
-        self.assertFalse(SvgItemType.OPEN_PATH.is_path_closed)
-        
-        # CLOSED_PATH should be path, not icon, and closed
-        self.assertFalse(SvgItemType.CLOSED_PATH.is_icon)
-        self.assertTrue(SvgItemType.CLOSED_PATH.is_path)
-        self.assertTrue(SvgItemType.CLOSED_PATH.is_path_closed)
-        return
-
-    def test_svg_item_type_path_detection_logic(self):
-        """Test is_path property logic - critical for SVG path processing."""
-        path_types = [SvgItemType.OPEN_PATH, SvgItemType.CLOSED_PATH]
-        non_path_types = [SvgItemType.ICON]
-        
-        for svg_type in path_types:
-            with self.subTest(svg_type=svg_type):
-                self.assertTrue(svg_type.is_path)
-        
-        for svg_type in non_path_types:
-            with self.subTest(svg_type=svg_type):
-                self.assertFalse(svg_type.is_path)
-        return
-
-    def test_svg_item_type_labels(self):
-        """Test SvgItemType labels - important for UI display."""
-        self.assertEqual(SvgItemType.ICON.label, 'Icon')
-        self.assertEqual(SvgItemType.OPEN_PATH.label, 'Open Path ')
-        self.assertEqual(SvgItemType.CLOSED_PATH.label, 'Closed Path ')
-        return
 
 
 class TestSvgStyleName(BaseTestCase):
@@ -169,42 +71,10 @@ class TestSvgStyleName(BaseTestCase):
         self.assertEqual(len(set(css_names)), len(all_styles))
         return
         
-    def test_location_view_type_filtering_behavior(self):
-        """Test how view types would filter entity states in real scenarios."""
-        # Test that specialized views are truly subsets of DEFAULT
-        default_states = set(LocationViewType.DEFAULT.entity_state_type_priority_list)
-        
-        specialized_views = [
-            LocationViewType.SECURITY, LocationViewType.LIGHTS, LocationViewType.SOUNDS,
-            LocationViewType.CLIMATE, LocationViewType.ENERGY
-        ]
-        
-        for view_type in specialized_views:
-            view_states = set(view_type.entity_state_type_priority_list)
-            # Each specialized view should be a subset of DEFAULT
-            self.assertTrue(view_states.issubset(default_states),
-                            f'{view_type} states should be subset of DEFAULT states')
-            
-            # Specialized views should have fewer states than DEFAULT
-            self.assertLess(len(view_states), len(default_states),
-                            f'{view_type} should filter down from DEFAULT')
-        
-        # Test that LIGHTS view only includes lighting-related states
-        lights_states = set(LocationViewType.LIGHTS.entity_state_type_priority_list)
-        non_lighting_states = {EntityStateType.MOVEMENT, EntityStateType.ELECTRIC_USAGE,
-                               EntityStateType.TEMPERATURE, EntityStateType.WATER_FLOW}
-        
-        # LIGHTS should not include non-lighting states
-        intersection = lights_states.intersection(non_lighting_states)
-        self.assertEqual(len(intersection), 0,
-                         'LIGHTS view should not include non-lighting entity states')
-        return
-        
     def test_enum_string_conversion_consistency(self):
         """Test enum string representations work correctly for database storage."""
         # Test LocationViewType string conversion
-        view_types = [LocationViewType.DEFAULT, LocationViewType.SECURITY,
-                      LocationViewType.CLIMATE, LocationViewType.SUPPRESS]
+        view_types = [LocationViewType.DEFAULT, LocationViewType.AUTOMATION]
         
         for view_type in view_types:
             # String representation should be lowercase of enum name

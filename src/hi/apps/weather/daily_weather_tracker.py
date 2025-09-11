@@ -244,8 +244,8 @@ class DailyWeatherTracker(Singleton):
                               f"max={field_stats.get('max', {}).get('value', 'None')}°C, "
                               f"new_value={value}°C")
             else:
-                logger.warning(f"Temperature {value}°C not recorded"
-                               f" - no min/max update needed for {date_key}")
+                logger.debug( f"Temperature {value}°C not recorded"
+                              f" - no min/max update needed for {date_key}")
                 
         except Exception as e:
             logger.exception(f"Error recording {field_name} value: {e}")

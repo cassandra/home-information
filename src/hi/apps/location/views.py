@@ -7,14 +7,24 @@ from django.shortcuts import reverse
 from django.views.generic import View
 
 from hi.apps.common.utils import is_ajax
+import hi.apps.common.antinode as antinode
 
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
+from hi.apps.control.one_click_control_service import (
+    OneClickControlService,
+    OneClickError,
+    OneClickNotSupported,
+)
+from hi.apps.entity.models import Entity
+from hi.apps.entity.view_mixins import EntityViewMixin
+from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.enums import ItemType, ViewType
 from hi.exceptions import ForceSynchronousException
 from hi.hi_async_view import HiModalView
 from hi.hi_grid_view import HiGridView
 from hi.views import page_not_found_response
 
+from .enums import LocationViewType
 from .location_attribute_edit_context import LocationAttributeItemEditContext
 from .location_manager import LocationManager
 from .models import LocationView, LocationAttribute
@@ -91,7 +101,7 @@ class LocationSwitchView( View, LocationViewMixin ):
         return HttpResponseRedirect( redirect_url )
 
 
-class LocationItemStatusView( View ):
+class LocationItemStatusView( View, LocationViewMixin, EntityViewMixin ):
 
     def get(self, request, *args, **kwargs):
         try:
@@ -100,16 +110,68 @@ class LocationItemStatusView( View ):
             raise BadRequest( 'Bad item id.' )
         
         if item_type == ItemType.ENTITY:
-            redirect_url = reverse( 'entity_status', kwargs = { 'entity_id': item_id } )
-            return HttpResponseRedirect( redirect_url )
+            entity = self.get_entity( request, entity_id = item_id )
+            return self._handle_entity( request = request, entity = entity )
     
-        if item_type == ItemType.COLLECTION:
-            redirect_url = reverse( 'collection_view', kwargs = { 'collection_id': item_id } )
-            return HttpResponseRedirect( redirect_url )
+        elif item_type == ItemType.COLLECTION:
+            url = reverse( 'collection_view', kwargs = { 'collection_id': item_id } )
+            return HttpResponseRedirect( url )
 
         raise BadRequest( f'Unknown item type "{item_type}".' )
+        
+    def _handle_entity(self, request : HttpRequest, entity : Entity ):
+        
+        location_view_id = request.view_parameters.location_view_id
+        location_view = LocationView.objects.get( id = location_view_id )
 
+        if location_view.location_view_type not in [ LocationViewType.AUTOMATION ]:
+            return self._entity_status_response(
+                request = request,
+                entity = entity,
+            )
+        try:
+            logger.debug( f'Trying one-click: {entity}' )
+            controller_outcome = OneClickControlService().execute_one_click_control(
+                entity = entity,
+                location_view_type = location_view.location_view_type,
+            )
+            if controller_outcome.has_errors:
+                raise OneClickError(
+                    ' '.join( controller_outcome.error_list )
+                )
 
+            status_display_manager = StatusDisplayManager()
+            override_sensor_value = controller_outcome.new_value
+            status_display_manager.add_entity_state_value_override(
+                entity_state = controller_outcome.controller.entity_state,
+                override_value = override_sensor_value,
+            )
+            return self.get_entity_svg_update_reponse( entity = entity )
+
+        except OneClickNotSupported:
+            return self._entity_status_response(
+                request = request,
+                entity = entity,
+            )
+            
+        except OneClickError as e:
+            # Fall back to status modal when one-click control is not supported
+            logger.warning( f'One-click control failed: {e}' )
+            return antinode.modal_from_template(
+                request = request,
+                template_name = 'modals/internal_error.html',
+                context = {
+                    'modal_title': entity.name,
+                    'error_message': str(e),
+                },
+                status = 500,
+            )
+
+    def _entity_status_response( self, request : HttpRequest, entity : Entity ):
+        url = reverse( 'entity_status', kwargs = { 'entity_id': entity.id } )
+        return HttpResponseRedirect( url )
+            
+        
 class LocationEditView( HiModalView, LocationViewMixin, AttributeEditViewMixin ):
     """
     This view uses a dual response pattern:

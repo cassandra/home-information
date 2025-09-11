@@ -1,5 +1,9 @@
 {% extends "modals/error_base.html" %}
 
 {% block title_text %}
+{% if modal_title %}
+{{ modal_title }}
+{% else %}
 Internal Error
+{% endif %}
 {% endblock %}

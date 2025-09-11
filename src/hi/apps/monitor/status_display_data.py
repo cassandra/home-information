@@ -82,6 +82,9 @@ class StatusDisplayData:
         if self.entity_state.entity_state_type == EntityStateType.ON_OFF:
             return self._get_on_off_status_style()
 
+        if self.entity_state.entity_state_type == EntityStateType.LIGHT_DIMMER:
+            return self._get_light_dimmer_status_style()
+
         if self.entity_state.entity_state_type == EntityStateType.OPEN_CLOSE:
             return self._get_open_close_status_style()
         
@@ -147,6 +150,9 @@ class StatusDisplayData:
         if self.latest_sensor_value == str(EntityStateValue.OFF):
             return StatusStyle.Off
         return None
+        
+    def _get_light_dimmer_status_style( self ):
+        return StatusStyle.light_dimmer( self.latest_sensor_value )
         
     def _get_open_close_status_style( self ):
 

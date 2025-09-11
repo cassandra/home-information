@@ -1,5 +1,5 @@
 import json
-from typing import Dict
+from typing import Dict, List, Tuple
 
 from django.db import models
 
@@ -17,7 +17,6 @@ from hi.enums import ItemType
 from .enums import (
     EntityType,
     EntityStateType,
-    EntityStateValue,
 )
 
 
@@ -202,21 +201,58 @@ class EntityState( models.Model ):
         self.value_range_str = json.dumps( value_dict )
         return
 
-    def choices(self):
+    def choices(self) -> List[ Tuple[str,str] ]:
         if self.value_range_str:
             try:
                 value_range = json.loads( self.value_range_str )
+                if (( len(value_range) == 2 )
+                    and ( 'min' in value_range )
+                    and ( 'max' in value_range )):
+                    return list()
                 if isinstance( value_range, dict ):
-                    return [ ( k, v ) for k, v in value_range.items() ]
+                    return [ ( str(k), str(v) ) for k, v in value_range.items() ]
                 if isinstance( value_range, list ):
-                    return [ ( x, x ) for x in value_range ]
+                    return [ ( str(x), str(x) ) for x in value_range ]
             except json.JSONDecodeError:
                 pass
+        return self.entity_state_type.choices()
 
-        choices_map = EntityStateValue.entity_state_value_choices()
-        return choices_map.get( self.entity_state_type, [] )
+    def toggle_values(self) -> List[str]:
+        if self.value_range_str:
+            try:
+                # Special case for min/max types to allow toggling extremes (e.g., dimmer switches)
+                value_range = json.loads( self.value_range_str )
+                if (( len(value_range) == 2 )
+                    and ( 'min' in value_range )
+                    and ( 'max' in value_range )):
+                    return [ str(value_range['min']), str(value_range['max']) ]
+                
+                if isinstance( value_range, dict ):
+                    return [ str(k) for k, v in value_range.items() ]
+                if isinstance( value_range, list ):
+                    return [ str(x) for x in value_range ]
+            except json.JSONDecodeError:
+                pass
+        return self.entity_state_type.toggle_values()
     
+    def to_toggle_value( self, actual_value : str ) -> str:
+        # Special case for min/max types to allow toggling extremes (e.g., dimmer switches)
+        if self.value_range_str:
+            try:
+                value_range = json.loads( self.value_range_str )
+                if (( len(value_range) == 2 )
+                    and ( 'min' in value_range )
+                    and ( 'max' in value_range )):
+                    min_value = value_range['min']
+                    max_value = value_range['max']
+                    if actual_value and ( float(actual_value) > float(min_value) ):
+                        return str(max_value)
+                    return str(min_value)
+            except ( TypeError, ValueError, json.JSONDecodeError ):
+                pass
+        return actual_value
 
+        
 class EntityStateDelegation(models.Model):
     """An EntityState associated with a Sensor or Controller is often serving
     representing the state of some other entity. In those cases, the entity

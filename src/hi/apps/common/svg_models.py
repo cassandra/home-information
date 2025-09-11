@@ -212,7 +212,7 @@ class SvgStatusStyle:
     stroke_dasharray  : List[ int ]
     fill_color        : str
     fill_opacity      : float
-
+    
     def to_dict(self):
         result = {
             'status': self.status_value,

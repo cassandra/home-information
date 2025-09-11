@@ -15,7 +15,8 @@ class HassController( IntegrationController, HassMixin ):
     def do_control( self,
                     integration_details : IntegrationDetails,
                     control_value       : str             ) -> IntegrationControlResult:
-        logger.debug( f'HAss do_control ENTRY: integration_details={integration_details}, control_value={control_value}' )
+        logger.debug( f'HAss do_control ENTRY: integration_details={integration_details},'
+                      f' control_value={control_value}' )
         try:
             entity_id = integration_details.key.integration_name
             domain_payload = integration_details.payload or {}
@@ -27,7 +28,10 @@ class HassController( IntegrationController, HassMixin ):
             )
             logger.debug( f'HAss do_control converted value: {hass_state_value}' )
                 
-            return self._do_control_with_services( entity_id, control_value, hass_state_value, domain_payload )
+            return self._do_control_with_services( entity_id,
+                                                   control_value,
+                                                   hass_state_value,
+                                                   domain_payload )
         except Exception as e:
             logger.warning( f'Exception in HAss do_control: {e}' )
             return IntegrationControlResult(
@@ -35,7 +39,10 @@ class HassController( IntegrationController, HassMixin ):
                 error_list = [ str(e) ],
             )
 
-    def _do_control_with_set_state( self, hass_state_id: str, control_value: str, hass_state_value: str ) -> IntegrationControlResult:
+    def _do_control_with_set_state( self,
+                                    hass_state_id     : str,
+                                    control_value     : str,
+                                    hass_state_value  : str ) -> IntegrationControlResult:
         """
         Legacy method using Home Assistant set_state API.
         
@@ -51,7 +58,8 @@ class HassController( IntegrationController, HassMixin ):
 
         # If we get here, the HTTP call succeeded (set_state raises exception on failure)
         error_list = list()
-        logger.debug( f'HAss set state SUCCESS: {hass_state_id}={hass_state_value}, response_data={response_data}' )
+        logger.debug( f'HAss set state SUCCESS: {hass_state_id}={hass_state_value},'
+                      f' response_data={response_data}' )
         return IntegrationControlResult(
             new_value = control_value,
             error_list = error_list,
@@ -69,23 +77,37 @@ class HassController( IntegrationController, HassMixin ):
         if not domain:
             # Fallback to parsing from entity_id if payload missing
             if '.' not in hass_state_id:
-                logger.warning( f'Invalid hass_state_id format and no domain payload: {hass_state_id}' )
+                logger.warning( f'Invalid hass_state_id format and no domain payload:'
+                                f' {hass_state_id}' )
                 return IntegrationControlResult(
                     new_value = None,
                     error_list = [f'Invalid entity_id format: {hass_state_id}'],
                 )
             domain = hass_state_id.split('.', 1)[0]
-            logger.warning( f'Missing domain payload for {hass_state_id}, using parsed domain: {domain}' )
+            logger.warning( f'Missing domain payload for {hass_state_id},'
+                            f' using parsed domain: {domain}' )
         
         # Use payload-based service routing if available, otherwise best-effort
         if domain_payload:
-            return self._control_device_with_payload( domain, hass_state_id, control_value, hass_state_value, domain_payload )
+            return self._control_device_with_payload( domain,
+                                                      hass_state_id,
+                                                      control_value,
+                                                      hass_state_value,
+                                                      domain_payload )
         else:
-            return self._control_device_best_effort( domain, hass_state_id, control_value, hass_state_value )
+            return self._control_device_best_effort( domain,
+                                                     hass_state_id,
+                                                     control_value,
+                                                     hass_state_value )
 
-    def _control_on_off_device( self, domain: str, hass_state_id: str, control_value: str, hass_state_value: str ) -> IntegrationControlResult:
+    def _control_on_off_device( self,
+                                domain: str,
+                                hass_state_id: str,
+                                control_value: str,
+                                hass_state_value: str ) -> IntegrationControlResult:
         """Handle on/off control for lights, switches, and similar devices"""
-        logger.debug( f'HAss attempting service call for {domain}: {hass_state_id}={control_value}' )
+        logger.debug( f'HAss attempting service call for {domain}:'
+                      f' {hass_state_id}={control_value}' )
         
         # Determine service based on control value
         if control_value.lower() in ['on', 'true', '1']:
@@ -113,7 +135,11 @@ class HassController( IntegrationController, HassMixin ):
             error_list = error_list,
         )
 
-    def _control_device_best_effort( self, domain: str, hass_state_id: str, control_value: str, hass_state_value: str ) -> IntegrationControlResult:
+    def _control_device_best_effort( self,
+                                     domain            : str,
+                                     hass_state_id     : str,
+                                     control_value     : str,
+                                     hass_state_value  : str ) -> IntegrationControlResult:
         """
         Best-effort device control when payload is missing.
         Uses standard Home Assistant service patterns based on domain and control value.
@@ -143,7 +169,10 @@ class HassController( IntegrationController, HassMixin ):
         except (ValueError, TypeError):
             return False
 
-    def _control_on_off_best_effort( self, domain: str, hass_state_id: str, control_value: str ) -> IntegrationControlResult:
+    def _control_on_off_best_effort( self,
+                                     domain         : str,
+                                     hass_state_id  : str,
+                                     control_value  : str ) -> IntegrationControlResult:
         """Best-effort on/off/open/close control based on standard HA patterns"""
         logger.debug( f'HAss best-effort on/off control: {domain} {hass_state_id}={control_value}' )
         
@@ -169,7 +198,8 @@ class HassController( IntegrationController, HassMixin ):
             else:
                 service = 'turn_off'  # Fallback
         else:
-            logger.warning( f'Unknown control value "{control_value}" for best-effort control of {hass_state_id}' )
+            logger.warning( f'Unknown control value "{control_value}"'
+                            f' for best-effort control of {hass_state_id}' )
             return IntegrationControlResult(
                 new_value = None,
                 error_list = [f'Unknown control value: {control_value}'],
@@ -182,15 +212,20 @@ class HassController( IntegrationController, HassMixin ):
             hass_state_id = hass_state_id,
         )
         
-        logger.debug( f'HAss best-effort service call SUCCESS: {domain}.{service} for {hass_state_id}' )
+        logger.debug( f'HAss best-effort service call SUCCESS: {domain}.{service}'
+                      f' for {hass_state_id}' )
         return IntegrationControlResult(
             new_value = control_value,
             error_list = [],
         )
 
-    def _control_numeric_best_effort( self, domain: str, hass_state_id: str, control_value: str ) -> IntegrationControlResult:
+    def _control_numeric_best_effort( self,
+                                      domain         : str,
+                                      hass_state_id  : str,
+                                      control_value  : str ) -> IntegrationControlResult:
         """Best-effort numeric control based on common HA patterns"""
-        logger.debug( f'HAss best-effort numeric control: {domain} {hass_state_id}={control_value}' )
+        logger.debug( f'HAss best-effort numeric control: {domain}'
+                      f' {hass_state_id}={control_value}' )
         
         try:
             numeric_value = float(control_value)
