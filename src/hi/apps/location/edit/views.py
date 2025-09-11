@@ -304,9 +304,12 @@ class LocationViewAddView( HiModalView ):
             return self.modal_response( request, context )
 
         try:
+            temp_location_view = location_view_add_form.save( commit = False )
             location_view = LocationManager().create_location_view(
                 location = current_location,
-                name = location_view_add_form.cleaned_data.get('name'),
+                name = temp_location_view.name,
+                location_view_type = temp_location_view.location_view_type,
+                svg_style_name = temp_location_view.svg_style_name,
             )
         except ValueError as e:
             raise BadRequest( str(e) )

@@ -450,7 +450,7 @@ class TestZoneMinderControllerMonitorFunctionControl(TestCase):
         with self.assertRaises(ValueError) as context:
             self.controller.set_monitor_function('222', 'InvalidFunction')
         
-        self.assertEqual(str(context.exception), 'Problen setting ZM monitor function.')
+        self.assertEqual(str(context.exception), 'Problem setting ZM monitor function.')
         
         # Verify the monitor was called and error was detected
         self.mock_monitor_222.set_parameter.assert_called_once_with({'function': 'InvalidFunction'})

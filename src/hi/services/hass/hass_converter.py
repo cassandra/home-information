@@ -217,8 +217,8 @@ class HassConverter:
         
         # Other domains (read-only)
         # Note: CAMERA_DOMAIN entities should have has_video_stream=True but no VIDEO_STREAM EntityState
-        (HassApi.SUN_DOMAIN, None, None): EntityStateType.MULTVALUED,
-        (HassApi.WEATHER_DOMAIN, None, None): EntityStateType.MULTVALUED,
+        (HassApi.SUN_DOMAIN, None, None): EntityStateType.MULTIVALUED,
+        (HassApi.WEATHER_DOMAIN, None, None): EntityStateType.MULTIVALUED,
     }
 
     # Mapping 2: Control Service Mapping - only for controllable EntityStates
@@ -853,7 +853,7 @@ class HassConverter:
                 integration_key = integration_key,
                 name = name,
             )
-        elif entity_state_type == EntityStateType.MULTVALUED:
+        elif entity_state_type == EntityStateType.MULTIVALUED:
             sensor = HiModelHelper.create_multivalued_sensor(
                 entity = entity,
                 integration_key = integration_key,
@@ -994,7 +994,7 @@ class HassConverter:
                 integration_key = integration_key,
                 name = name,
             )
-        elif entity_state_type == EntityStateType.MULTVALUED:
+        elif entity_state_type == EntityStateType.MULTIVALUED:
             sensor = HiModelHelper.create_multivalued_sensor(
                 entity = entity,
                 integration_key = integration_key,

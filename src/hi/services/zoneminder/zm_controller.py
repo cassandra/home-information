@@ -61,7 +61,7 @@ class ZoneMinderController( IntegrationController, ZoneMinderMixin ):
                 logger.debug( f'ZM Set monitor: {monitor_id}={function_value}, response={response}' )
                 response_message = response.get('message')
                 if response_message and ( 'error' in response_message.lower() ):
-                    raise ValueError( 'Problen setting ZM monitor function.')
+                    raise ValueError( 'Problem setting ZM monitor function.')
 
                 return IntegrationControlResult(
                     new_value = function_value,

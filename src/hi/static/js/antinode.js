@@ -76,17 +76,17 @@
 //
 // 2. JSON Response - supports multiple operations:
 //    {
-//      "location": "/redirect/url",        // Redirect browser
-//      "refresh": true,                     // Refresh entire page
-//      "html": "<div>...</div>",          // Content for main target
-//      "insert": {"id1": "...", ...},     // Replace inner HTML by ID
-//      "replace": {"id1": "...", ...},    // Replace entire elements by ID
-//      "append": {"id1": "...", ...},     // Append to elements by ID
-//      "setAttributes": {"id1": {...}},   // Set element attributes
-//      "modal": "<div>...</div>",         // Create and show modal
-//      "pushUrl": "/new/url",             // Update browser URL without reload
-//      "resetScrollbar": true,            // Reset to top of page
-//      "scrollTo": "element-id"           // Scroll to specified element ID
+//      "location": "/redirect/url",                  // Redirect browser
+//      "refresh": true,                              // Refresh entire page
+//      "html": "<div>...</div>",                     // Content for main target
+//      "insert": {"id1": "...", ...},                // Replace inner HTML by ID
+//      "replace": {"id1": "...", ...},               // Replace entire elements by ID
+//      "append": {"id1": "...", ...},                // Append to elements by ID
+//      "setAttributes": {"id-or-selector1": {...}},  // Set element attributes
+//      "modal": "<div>...</div>",                    // Create and show modal
+//      "pushUrl": "/new/url",                        // Update browser URL without reload
+//      "resetScrollbar": true,                       // Reset to top of page
+//      "scrollTo": "element-id"                      // Scroll to specified element ID
 //    }
 
 // ====================
@@ -652,19 +652,11 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
         }
     }
     
-    // This entry should be a map from html ids to content that should
-    // be appended. This add it as the last child of the target tag id.
+    // This entry should be a map from element selectors to attribute maps.
+    // Supports both plain IDs (backward compatibility) and CSS selectors.
     //
     if ( 'setAttributes' in json ) {
-        for ( let htmlId in json['setAttributes'] ) {
-            let targetObj = $("#"+htmlId);
-            let attrMap = json['setAttributes'][htmlId];
-            for ( let attrName in attrMap ) {
-                let attrValue = attrMap[attrName];
-                targetObj.attr( attrName, attrValue );
-                handleNewContentAdded( targetObj );
-            }
-        }
+        handleSetAttributes( json['setAttributes'] );
     }
     
     // In case any content with preserved scroll bars was refreshed.
@@ -707,6 +699,44 @@ function asyncUpdateDataFromJson( $target, $mode, json ) {
     }
 };
         
+//====================
+function handleSetAttributes( attributesMap ) {
+    for ( let selector in attributesMap ) {
+        let targetObj;
+        
+        try {
+            // Check if selector already looks like a CSS selector
+            if ( selector.startsWith('#') || selector.startsWith('.') || 
+                 selector.includes(' ') || selector.includes('[') || selector.includes(':') ) {
+                // Already a CSS selector, use directly
+                targetObj = $(selector);
+            } else {
+                // Try as ID first (backward compatibility)
+                targetObj = $("#" + selector);
+                
+                // If no match found, try as CSS selector
+                if ( targetObj.length === 0 ) {
+                    targetObj = $(selector);
+                }
+            }
+            
+            if ( targetObj.length > 0 ) {
+                let attrMap = attributesMap[selector];
+                for ( let attrName in attrMap ) {
+                    let attrValue = attrMap[attrName];
+                    targetObj.attr( attrName, attrValue );
+                    handleNewContentAdded( targetObj );
+                }
+            } else {
+                console.warn(`setAttributes: No elements found for selector '${selector}'`);
+            }
+        } catch (e) {
+            console.error(`setAttributes: Invalid selector '${selector}': ${e.message}`);
+            // Continue processing other selectors instead of failing completely
+        }
+    }
+}
+
 //====================
 function handleNewContentAdded( contentObj ) {
     doAutofocusIfNeeded( contentObj );

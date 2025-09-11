@@ -13,8 +13,31 @@
 <div class="input-group mb-2 mr-sm-2">
   <div class="input-group-prepend">
     <label for="{{ location_view_add_form.name.id_for_label }}"
-	   class="input-group-text">{{ location_view_add_form.name.label }}</label>
+           class="input-group-text">{{ location_view_add_form.name.label }}</label>
   </div>
   {{ location_view_add_form.name }}
   <small class="form-error text-danger"> {{ location_view_add_form.name.errors }}</small>
 </div>
+
+<div class=" hi-custom-select">
+  <div class="input-group mb-2 mr-sm-2">
+    <div class="input-group-prepend">
+      <label for="{{ location_view_add_form.location_view_type_str.id_for_label }}"
+             class="input-group-text">{{ location_view_add_form.location_view_type_str.label_tag }}</label>
+    </div>
+    {{ location_view_add_form.location_view_type_str }}
+  </div>
+  {{ location_view_add_form.location_view_type_str.errors }}
+</div>
+
+<div class="hi-custom-select">
+  <div class="input-group mb-2 mr-sm-2">
+    <div class="input-group-prepend">
+      <div for="{{ location_view_add_form.svg_style_name_str.id_for_label }}"
+             class="input-group-text">{{ location_view_add_form.svg_style_name_str.label_tag }}</div>
+    </div>
+    {{ location_view_add_form.svg_style_name_str }}
+  </div>
+  {{ location_view_add_form.svg_style_name_str.errors }}
+</div>
+

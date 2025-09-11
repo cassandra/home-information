@@ -10,7 +10,7 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
-from .enums import LocationViewType
+from .enums import LocationViewType, SvgStyleName
 from .location_view_data import LocationViewData
 from .models import (
     Location,
@@ -104,20 +104,29 @@ class LocationManager(Singleton):
                 os.makedirs( directory, exist_ok = True )
         return
     
-    def create_location_view( self,
-                              location  : Location,
-                              name      : str          ) -> LocationView:
+    def create_location_view(
+            self,
+            location            : Location,
+            name                : str,
+            location_view_type  : LocationViewType  = None,
+            svg_style_name      : SvgStyleName      = None ) -> LocationView:
 
+        if location_view_type is None:
+            location_view_type = LocationViewType.default()
+        if svg_style_name is None:
+            svg_style_name = SvgStyleName.default()
+            
         last_location_view = location.views.order_by( '-order_id' ).first()
         if last_location_view:
             order_id = last_location_view.order_id + 1
         else:
             order_id = 0
-            
+        
         return LocationView.objects.create(
             location = location,
-            location_view_type_str = str(LocationViewType.default()),
+            location_view_type_str = str(location_view_type),
             name = name,
+            svg_style_name_str = str( svg_style_name ),
             svg_view_box_str = str( location.svg_view_box ),
             svg_rotate = Decimal( 0.0 ),
             order_id = order_id,

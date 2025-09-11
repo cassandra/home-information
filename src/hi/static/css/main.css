@@ -599,6 +599,9 @@ g[status="past"] {
     filter: drop-shadow(0 0 5px var(--status-past-color));
 }
 
+g[status="off"] {
+    filter: drop-shadow(0 0 5px var(--status-on-color));
+}
 g[status="off"] path.hi-state-bg  {
     fill: var(--status-off-color);
 }

@@ -15,8 +15,13 @@ from .transient_models import ControllerOutcome
 logger = logging.getLogger(__name__)
 
 
-class OneClickControlNotSupportedException(Exception):
+class OneClickNotSupported(Exception):
     """Raised when EntityStateType doesn't support one-click control."""
+    pass
+
+
+class OneClickError(Exception):
+    """Raised when EntityStateType has erro being set."""
     pass
 
 
@@ -27,18 +32,13 @@ class OneClickControlService:
     - Current state detection for proper toggle behavior  
     - Control execution and outcome reporting
     """
-    
-    # Default toggle mappings for binary states
-    TOGGLE_VALUE_MAP = {
-        EntityStateValue.OFF: EntityStateValue.ON,
-        EntityStateValue.ON: EntityStateValue.OFF,
-        EntityStateValue.CLOSED: EntityStateValue.OPEN,
-        EntityStateValue.OPEN: EntityStateValue.CLOSED,
-        EntityStateValue.LOW: EntityStateValue.HIGH,
-        EntityStateValue.HIGH: EntityStateValue.LOW,
-        EntityStateValue.IDLE: EntityStateValue.ACTIVE,
-        EntityStateValue.ACTIVE: EntityStateValue.IDLE,
-    }
+
+    # Although we can cycle through a value enumeration of any length to
+    # have a one-click behavior. This is not going to be useful past a
+    # certain point, so we best limit one-click behavior to simpler
+    # controllers.
+    #
+    ONE_CLICK_CHOICE_LIMIT = 3
     
     def execute_one_click_control(
             self,
@@ -47,9 +47,8 @@ class OneClickControlService:
         """
         Execute complete one-click control flow: decision, state detection, execution.
         Convenience wrapper around ControllerManager.do_control().
-        Raises OneClickControlNotSupportedException if control cannot be attempted.
+        Raises OneClickNotSupported if control cannot be attempted.
         """
-
         controller = self._find_controller(
             entity = entity,
             location_view_type = location_view_type,
@@ -62,6 +61,7 @@ class OneClickControlService:
             current_value = current_value,
         )
         logger.debug( f'Calling control: {entity} : {current_value} -> {target_value}' )
+        
         return ControllerManager().do_control(
             controller = controller,
             control_value = target_value,
@@ -70,23 +70,30 @@ class OneClickControlService:
     def _find_controller( self,
                           entity              : Entity,
                           location_view_type  : LocationViewType  = None ) -> Controller:
-        """Find highest priority EntityState that has controllers and is supported."""
+        """Find highest priority EntityState that has controllers and is supported.
+
+        We only want one-click controls to apply the entity state being
+        used in the display status.  Thus, we make sure we use the same
+        logic to pick the entity state, then see if it has a controller.
+        """
 
         if not location_view_type:
             location_view_type = LocationViewType.default()
         priority_list = location_view_type.entity_state_type_priority_list
-        
-        entity_state_queryset = entity.states.all()
-        for state_type in priority_list:
-            for entity_state in entity_state_queryset:
-                if entity_state.entity_state_type == state_type:
-                    controller = entity_state.controllers.first()
-                    if controller:
-                        return controller
-                continue
+
+        entity_state_list = StatusDisplayManager().get_entity_state_list_for_status(
+            entity = entity,
+            entity_state_type_priority_list = priority_list,
+        )
+
+        for entity_state in entity_state_list:
+            if entity_state.entity_state_type:
+                controller = entity_state.controllers.first()
+                if controller:
+                    return controller
             continue
         
-        raise OneClickControlNotSupportedException(f'No priority states found for {entity}')
+        raise OneClickNotSupported(f'No priority states found for {entity}')
     
     def _get_current_state_value( self, entity_state: EntityState ) -> Optional[str]:
         try:
@@ -96,7 +103,12 @@ class OneClickControlService:
             if sensor_response:
                 logger.debug( f'Latest response: {entity_state}'
                               f' = {sensor_response.value}' )
-                return sensor_response.value
+                current_state_value = sensor_response.value
+
+                # Normalize the value in case non-discrete and toggle-able (e.g., dimmers)
+                return entity_state.to_toggle_value(
+                    actual_value = current_state_value,
+                )
             logger.debug( f'No latest response for: {entity_state}' )
         except Exception as e:
             logger.warning( f'Problem getting latest response for: {entity_state} - {e}' )
@@ -106,37 +118,21 @@ class OneClickControlService:
     def _determine_control_value( self,
                                   entity_state   : EntityState,
                                   current_value  : Optional[str] ) -> str:
-        entity_state_type = entity_state.entity_state_type
+        toggle_state_value_list = entity_state.toggle_values()
+        logger.debug( f' Next for {current_value} : {toggle_state_value_list}' )
+        if not toggle_state_value_list:
+            raise OneClickNotSupported(f'No toggle value list found for {entity_state}')
 
-        # Handle special cases for specific state types
-        if entity_state_type == EntityStateType.LIGHT_DIMMER:
-            # For dimmers: current_value might be "0" (OFF) or ">0" (ON)
-            try:
-                if current_value and float(current_value) > 0:
-                    return "0"  # Turn off
-                else:
-                    return "100"  # Turn on to full
-            except (ValueError, TypeError):
-                return "100"  # Default to on
-        
-        # If we have current value, try to toggle it
-        if current_value:
-            try:
-                current_enum_value = EntityStateValue.from_name_safe( current_value )
-                if current_enum_value in self.TOGGLE_VALUE_MAP:
-                    return str(self.TOGGLE_VALUE_MAP[current_enum_value] )
-            except ( ValueError, AttributeError ):
-                pass
-                
-        # Fallback defaults for known controllable types
-        if entity_state_type == EntityStateType.ON_OFF:
-            return str(EntityStateValue.ON)
-        elif entity_state_type == EntityStateType.OPEN_CLOSE:
-            return str(EntityStateValue.OPEN)
-        elif entity_state_type == EntityStateType.HIGH_LOW:
-            return str(EntityStateValue.HIGH)
-        elif entity_state_type == EntityStateType.LIGHT_LEVEL:
-            return str(EntityStateValue.ON)
-        
-        # Final fallback
-        return str(EntityStateValue.ON)
+        if len(toggle_state_value_list) > self.ONE_CLICK_CHOICE_LIMIT:
+            raise OneClickNotSupported(f'Too many values to toggle for {entity_state}')
+            
+        for idx, toggle_state_value in enumerate( toggle_state_value_list ):
+            if toggle_state_value != current_value:
+                continue
+
+            next_idx = idx + 1
+            if next_idx < len(toggle_state_value_list):
+                return toggle_state_value_list[next_idx]
+            return toggle_state_value_list[0]
+
+        return toggle_state_value_list[0]

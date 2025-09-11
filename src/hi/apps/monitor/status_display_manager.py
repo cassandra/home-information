@@ -25,7 +25,7 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
             ttl = self.STATUS_VALUE_OVERRIDES_SECS,
         )
         return
-
+        
     def get_status_css_class_update_map( self ) -> Dict[ str, str ]:
 
         entity_state_status_data_list = self.get_all_entity_state_status_data_list()
@@ -197,7 +197,7 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
             self,
             entity_states : Sequence[ EntityState ] ) -> Dict[ EntityState, EntityStateStatusData ]:
 
-        # Collect all the sensors for al the input EntityStates, so we can
+        # Collect all the sensors for all the input EntityStates, so we can
         # issue one fetch of the latest SensorData.
         #
         entity_state_to_sensor_list = dict()
@@ -304,7 +304,7 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         
         entity_to_entity_state_list = dict()
         for entity in entities:
-            entity_state_list = self._get_entity_state_list_for_status(
+            entity_state_list = self.get_entity_state_list_for_status(
                 entity = entity,
                 entity_state_type_priority_list = entity_state_type_priority_list,
             )
@@ -314,7 +314,7 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         
         return entity_to_entity_state_list
 
-    def _get_entity_state_list_for_status(
+    def get_entity_state_list_for_status(
             self,
             entity                           : Entity,
             entity_state_type_priority_list  : List[ EntityStateType ] ) -> List[ EntityState ]:
@@ -329,7 +329,7 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         all_entity_states = [ x.entity_state for x in delegations_queryset ]
         all_entity_states.extend( entity.states.all() )
 
-        # Gather all possible EntityStateType for the Entity and its pricipals.
+        # Gather all possible EntityStateType for the Entity and its principals.
         entity_state_list_map = dict()
         for entity_state in all_entity_states:
             if entity_state.entity_state_type not in entity_state_list_map:
@@ -340,21 +340,20 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         if not entity_state_list_map:
             return None
 
-        entity_state_type_for_status = self._get_entity_state_type_for_status(
+        entity_state_type_for_status = self.get_entity_state_type_for_status(
             entity_state_types = entity_state_list_map.keys(),
             entity_state_type_priority_list = entity_state_type_priority_list,
         )
         entity_state_list = entity_state_list_map.get( entity_state_type_for_status )
-
         return entity_state_list
 
-    def _get_entity_state_type_for_status(
+    def get_entity_state_type_for_status(
             self,
             entity_state_types               : Sequence[ EntityStateType ],
             entity_state_type_priority_list  : List[ EntityStateType ] ) -> EntityStateType:
         """
         Determines the single EntityStateType that is the highest display priority
-        from the given priority list.
+        from the given priority list.  This defined what status will be visually displayed.
         """
 
         for priority_entity_state_type in entity_state_type_priority_list:

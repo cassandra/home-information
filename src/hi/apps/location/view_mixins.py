@@ -1,8 +1,12 @@
 from django.core.exceptions import BadRequest
-from django.http import Http404
+from django.http import Http404, HttpResponse
 
+import hi.apps.common.antinode as antinode
+from hi.apps.entity.models import Entity
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
+from hi.apps.monitor.status_display_data import StatusDisplayData
+from hi.apps.monitor.status_display_manager import StatusDisplayManager
 
 
 class LocationViewMixin:
@@ -36,3 +40,24 @@ class LocationViewMixin:
             )
         except LocationView.DoesNotExist:
             raise Http404( request )
+
+    def get_entity_svg_update_reponse( self, entity : Entity ) -> HttpResponse:
+        """ For updating a single entity in the location view vis antinode reponse """
+
+        entity_status_data = StatusDisplayManager().get_entity_status_data(
+            entity = entity,
+        )
+        set_attributes_map = dict()
+        for entity_state_status_data in entity_status_data.entity_state_status_data_list:
+            status_display_data = StatusDisplayData(
+                entity_state_status_data = entity_state_status_data,
+            )
+            selector = f'.{status_display_data.css_class}'
+            set_attributes_map.update({
+                selector: status_display_data.attribute_dict
+            })
+            continue
+        return antinode.response(
+            set_attributes_map = set_attributes_map,
+        )
+        

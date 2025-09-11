@@ -5,7 +5,10 @@ from django.urls import reverse
 
 from hi.apps.collection.models import Collection
 from hi.apps.control.models import Controller
-from hi.apps.control.one_click_control_service import OneClickControlService, OneClickControlNotSupportedException
+from hi.apps.control.one_click_control_service import (
+    OneClickControlService,
+    OneClickNotSupported,
+)
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.location.location_manager import LocationManager
 from hi.apps.location.models import Location, LocationView
@@ -669,13 +672,13 @@ class TestLocationItemStatusView(SyncViewTestCase):
 
     @patch('hi.apps.location.views.OneClickControlService')
     def test_automation_view_handles_unsupported_exception(self, mock_service_class):
-        """Test that OneClickControlNotSupportedException falls back to status modal."""
+        """Test that OneClickNotSupported falls back to status modal."""
         from hi.enums import ItemType
         
         # Mock service to raise unsupported exception
         mock_service = Mock()
         mock_service_class.return_value = mock_service
-        mock_service.execute_one_click_control.side_effect = OneClickControlNotSupportedException("No controllable states")
+        mock_service.execute_one_click_control.side_effect = OneClickNotSupported("No controllable states")
         
         # Set up automation view context
         session = self.client.session
