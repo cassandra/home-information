@@ -23,13 +23,6 @@ See [Why Home Information?](docs/WhyHomeInformation.md) for more details on our 
 
 ## Quick Start
 
-### Prerequisites
-- **Docker** installed and running ([Get Docker](https://docs.docker.com/get-docker/))
-- **Python 3.6+** for secure credential generation
-- Basic command line familiarity
-
-### Single-Command Installation (Recommended)
-
 **Get running in 30 seconds:**
 
 ```shell
@@ -38,37 +31,13 @@ curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/i
 
 **Then visit:** [http://localhost:9411](http://localhost:9411)
 
-The script will automatically:
-- Check that Docker is running
-- Create necessary directories (`~/.hi/`)
-- Generate secure admin credentials
-- Pull and start the application
+The install script automatically handles everything: Docker setup verification, secure credential generation, and application startup.
 
-**To update an existing installation:**
-```shell
-curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/update.sh | bash
-```
+**Requirements:** [Docker](https://docs.docker.com/get-docker/) installed and running.
 
-### Manual Installation (Full Control)
-
-**Step-by-step process for advanced users:**
-
-```shell
-# Download latest release
-curl -L https://github.com/cassandra/home-information/releases/latest/download/home-information.zip -o home-information.zip
-unzip home-information.zip && cd home-information*
-
-# Setup and run
-make env-build
-make docker-build
-make docker-run-fg
-```
-
-**Then visit:** [http://localhost:9411](http://localhost:9411)
+**Need more control?** See [Installation Guide](docs/Installation.md) for manual installation, deployment options, and troubleshooting.
 
 **New to the interface?** Follow the [Getting Started Guide](docs/GettingStarted.md) for a walkthrough.
-
-**Need help?** Check our [FAQ](docs/FAQ.md) for common questions or see [Installation](docs/Installation.md) for detailed setup and troubleshooting.
 
 ## What You Can Do
 

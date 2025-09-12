@@ -1,234 +1,215 @@
 <img src="../src/hi/static/img/hi-logo-w-tagline-197x96.png" alt="Home Information Logo" width="128">
 
-# Installation
+# Installation Guide
 
-## Requirements and Dependencies
+Complete installation instructions for Home Information, from quick setup to advanced deployment.
+
+## Prerequisites
 
 - **Docker** - installed and running ([Get Docker](https://docs.docker.com/get-docker/))
-- **Python 3.6+** - for secure credential generation (usually pre-installed on most systems)
+- **Python 3.6+** - for secure credential generation (usually pre-installed)
 
-See the [Dependencies Page](dev/Dependencies.md) if you want help installing these dependencies.
+## Quick Installation
 
-## Single-Command Installation (Recommended)
-
-The fastest way to get Home Information running:
+**One command gets you running in 30 seconds:**
 
 ```shell
 curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/install.sh | bash
 ```
 
-This automated installer will:
-- Check that Docker is installed and running
-- Create required directories in `~/.hi/`
-- Generate secure admin credentials automatically  
-- Pull the latest Docker image from GitHub Container Registry
-- Start the application container
-- Display access URL and admin credentials
+**What it does:**
+- Verifies Docker is running
+- Creates data directories in `~/.hi/`
+- Generates secure admin credentials
+- Downloads and starts the application
+- Shows your login URL and credentials
 
 **Result:** Visit [http://localhost:9411](http://localhost:9411) and sign in with the displayed credentials.
 
-Your data will be stored in:
+**Data location:**
 - Database: `~/.hi/database/`
-- Uploaded files: `~/.hi/media/`
+- Files: `~/.hi/media/`
 
-### Updating to Latest Version
-
-To update an existing installation to the latest version:
+### Updates
 
 ```shell
 curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/update.sh | bash
 ```
 
-This will:
-- Pull the latest Docker image
-- Restart the container with your existing configuration
-- Preserve all your data and settings
+This preserves all your data while updating to the latest version.
 
-## Advanced Installation (Full Control)
+## Manual Installation
 
-For users who want full control over the installation process or need to customize the setup:
+For users who want full control over the installation process or need to customize the setup.
 
-## Pre-install Considerations
+### Before You Start
 
-By default, the installation process will not configure the app for user sign ins and does not have email configured for alerts.  This is to make it as simple as possible to get started.  However, before installing, you might want to consider whether you want to enable these.  You can change these after the initial install by adjusting the environment variable file that gets generated.
+**Default configuration** is designed for simplicity - no user authentication, no email alerts. You can enable these later by modifying the environment file.
 
-### Emails
+**Optional features to consider:**
+- **Email alerts** - Get notifications when away from home (requires email provider configuration)
+- **User authentication** - Require login via emailed "magic codes" (requires email configuration)
 
-The alert mechanisms have a visual and audible presentation on the screen, but to allow email alerts when away from the device, you can configure it to send emails.  This is prompted when you run the `make env-build` script (see below).
+Both can be configured during manual setup or added later by editing `~/.hi/env/local.env`.
 
-### Sign In
+### Step-by-Step Manual Installation
 
-If you want to require sign in and authentication of users, then you will need to also configure email sending since it uses emailed "magic codes" as its authentication mechanism.  For local deployments, security might not be a major priority, so it is up to you whether you see this as a feature or annoyance.
+#### 1. Download and Extract
 
-## Installation Steps
-
-### Running on localhost
-
-Decide where you want to download the code to and adjust the following:
-``` shell
+Choose your project directory:
+```shell
 PROJ_DIR="proj"
-mkdir -p $PROJ_DIR
-cd $PROJ_DIR
+mkdir -p $PROJ_DIR && cd $PROJ_DIR
 ```
 
-#### Downloading
+Download latest release from: https://github.com/cassandra/home-information/releases/latest
 
-Download the code from: https://github.com/cassandra/home-information/releases/latest.
+Extract the code:
+```shell
+# Download method depends on your preference
+curl -L https://github.com/cassandra/home-information/releases/latest/download/home-information.zip -o home-information.zip
+unzip home-information.zip && cd home-information*
 
-Unzip (or untar) the release code in your chosen project root location. e.g., 
-
-``` shell
-cd $PROJ_DIR
-unzip ~/Downloads/home-information-*.zip 
-
-# Or if using tarball:
-tar zxvf ~/Downloads/home-information-*.tar.gz
+# Alternative: tarball
+# tar zxvf ~/Downloads/home-information-*.tar.gz && cd home-information*
 ```
 
-#### Building
+#### 2. Configure Environment
 
-Generate the environment variable file and review with the command below. The file will contain sensitive secrets and are stored in a `${HOME}/.hi/env` directory. Also note the administrative credentials created during this next step and can be found in that secrets file.
-``` shell
-cd $PROJ_DIR/home-information*
+Generate environment configuration (includes secure admin credentials):
+```shell
 make env-build
 ```
-This generates an environment variable file used when running:
-```
-$HOME/.hi/env/local.env
-```
 
-Build the Docker image. (This will take a while the first time.)
-``` shell
+This creates: `$HOME/.hi/env/local.env` with all necessary settings and credentials.
+
+#### 3. Build and Run
+
+Build the Docker image:
+```shell
 make docker-build
 ```
 
-#### Running
-
-Decide if you want to run the Docker image in the foreground or background. Foreground best for first attempts as it will show the errors to the console.
-
-The first time you run this container, it will need to do some initializations (e.g., setting up the database). It will start faster after this first time.
-
-To run in the foreground:
-``` shell
+Start the application:
+```shell
+# Foreground (recommended for first run - shows errors)
 make docker-run-fg
-```
-Or in the background:
-``` shell
+
+# OR background
 make docker-run
 ```
-When you want to stop the Docker container:
-``` shell
+
+Stop when needed:
+```shell
 make docker-stop
 ```
 
-#### Result
+#### 4. Access Your Installation
 
-The server runs on port 9411, so point your browser to: [http://localhost:9411](http://localhost:9411)
+**URL:** [http://localhost:9411](http://localhost:9411)
 
-The database file and any uploaded documents live outside the Docker container in your home directory. Their default locations are: 
-- Database file: `$HOME/.hi/database/hi.sqlite3`
-- Uploaded files: `$HOME/.hi/media`
+**Credentials:** Found in `$HOME/.hi/env/local.env`
 
-#### Updating (Manual Installation)
+**Data location:**
+- Database: `$HOME/.hi/database/hi.sqlite3`
+- Files: `$HOME/.hi/media`
 
-To update a manual installation to the latest version:
+### Manual Installation Updates
 
-**Option 1: Use the update script**
+**Easiest:** Use the update script (works for any installation type):
 ```shell
 curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/update.sh | bash
 ```
 
-**Option 2: Manual update steps**
+**Manual steps:**
 ```shell
-# Pull latest code
 cd $PROJ_DIR/home-information*
-git pull  # or download and extract latest release
 
-# Rebuild the Docker image
+# Get latest code (download new release)
+# Then rebuild and restart:
 make docker-build
-
-# Restart with new image
-make docker-stop
-make docker-run
+make docker-stop && make docker-run
 ```
 
-### Getting Started
+## Production Deployment
 
-With the server running, you are now ready to set up for your home's use.  See the [Getting Started Page](GettingStarted.md).
+Ready to deploy beyond localhost? Here's what you need to configure.
 
-### Beyond localhost
+### Network Access Configuration
 
-When you are ready to deploy this for access to other devices, some extra steps are needed.  Web browser and Django security models enforce strict checking of hostnames, so you may need to change some of your environment configurations in the file `$HOME/.hi/env/local.env`.
-
-#### Allowed Hosts
-
-You will need to know what URL(s) you will be loading in the web browser and set this environment variable:
-``` shell
-export HI_EXTRA_HOST_URLS="${SCHEME}://${HOST}:${PORT}"
-```
-If you want to use more than one url, put them all in there with a space between them. e.g., Adding one for the mnemonic host name and one for accessing through its IP address.
-
-#### Surviving Reboots
-
-If you deploy the service for continued use, you probably want to make sure it will restart if the server reboots. The `make docker-run` command is set up to tell Docker to restart on reboot, but that assumes Docker itself is set up to restart on reboots.
-
-##### MacOs
-
-Check that Docker will restart:
-```
-Docker Desktop > Go to Settings > General > Check "Start Docker Desktop when you log in".
+Edit `$HOME/.hi/env/local.env` to add your deployment URLs:
+```shell
+# Example: accessing via IP address and hostname
+HI_EXTRA_HOST_URLS="http://192.168.1.100:9411 http://home-server:9411"
 ```
 
-##### Ubuntu (GNU/Linux)
+### Auto-Start on Reboot
 
-Check that Docker will restart: (want 'enabled')
+The Docker container is configured to restart automatically, but Docker itself needs to start on boot:
+
+**macOS (Docker Desktop):**
 ```
+Docker Desktop → Settings → General → "Start Docker Desktop when you log in"
+```
+
+**Linux (Ubuntu/systemd):**
+```shell
+# Check if enabled
 systemctl is-enabled docker
-```
-If not, set to enabled with:
-```
+
+# Enable if needed
 sudo systemctl enable docker
 ```
 
-#### User Sign In
+### User Management (Optional)
 
-If you have enabled requiring individual user logins, then you will need to create users manually. There is no general signup process through the app (currently), so all users need to be added using the administrator credentials using Django administrative pages.
+If you enabled user authentication, you'll need to create user accounts manually via the Django admin interface:
 
-Sign into the Django admin console using the credentials defined in the environment file as:
-- `DJANGO_SUPERUSER_EMAIL`
-- `DJANGO_SUPERUSER_PASSWORD`
+1. Sign in at [http://localhost:9411/admin/](http://localhost:9411/admin/) using:
+   - Email: `DJANGO_SUPERUSER_EMAIL` (from your env file)
+   - Password: `DJANGO_SUPERUSER_PASSWORD` (from your env file)
 
-The Django admin console URL for adding users is: [http://127.0.0.1:8411/admin/custom/customuser/add/](http://127.0.0.1:8411/admin/custom/customuser/add/)
+2. Add users at: [http://localhost:9411/admin/custom/customuser/add/](http://localhost:9411/admin/custom/customuser/add/)
 
-Make sure email is configured and that you use a valid email address. Login requires getting an email confirmation code.
+**Requirements:** Email configuration must be working (users receive "magic code" login links)
 
-Note: You could sign in without creating users by using the existing admin user. That is (naturally) not recommended.
+### Integrations
 
-#### Integrations
+Connect Home Information with your existing home automation and security systems. See the [Integrations Guide](Integrations.md) for setup instructions:
+- **Home Assistant** - Device control and monitoring
+- **ZoneMinder** - Security camera management
 
-If you use any of the built-in integrations, some additional changes may be needed. See the 
-[Integrations Page](Integrations.md) for more details.
+## Next Steps
+
+### First-Time Setup
+With your installation running, see the [Getting Started Guide](GettingStarted.md) for:
+- Creating your first home layout
+- Adding devices and information
+- Setting up monitoring and alerts
 
 ## Troubleshooting
 
-For common questions, see the [FAQ](FAQ.md). For specific troubleshooting:
+### Common Issues
 
-### Emails (if enabled)
+**Can't access from other devices?**
+- Add your network URLs to `HI_EXTRA_HOST_URLS` in `$HOME/.hi/env/local.env`
+- Restart with `make docker-stop && make docker-run`
 
-Email settings can be adjusted in env file with these settings:
-``` shell
-HI_EMAIL_HOST
-HI_EMAIL_PORT
-HI_EMAIL_HOST_USER
-HI_EMAIL_HOST_PASSWORD
-HI_EMAIL_USE_TLS
-HI_EMAIL_USE_SSL
+**Email alerts not working?**
+Configure email settings in `$HOME/.hi/env/local.env`:
+```shell
+HI_EMAIL_HOST=smtp.gmail.com
+HI_EMAIL_PORT=587
+HI_EMAIL_HOST_USER=your-email@gmail.com
+HI_EMAIL_HOST_PASSWORD=your-app-password
+HI_EMAIL_USE_TLS=true
 ```
-Your email provider may require configuration to allow the program to send emails.
 
-### Sign Ins (if enabled)
+**User login issues?**
+- Ensure email is configured (login requires "magic codes" sent via email)
+- Disable authentication temporarily: `HI_SUPPRESS_AUTHENTICATION="true"`
 
-Requiring sign in depends on emails. If you have problems getting email working, then disable sign in by setting the env file:
-``` shell
-HI_SUPPRESS_AUTHENTICATION="true"
-```
+### More Help
+
+- **Detailed troubleshooting:** [FAQ](FAQ.md)
+- **Feature questions:** [Features](Features.md)
