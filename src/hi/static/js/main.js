@@ -78,6 +78,7 @@
         ATTR_V2_FILE_TITLE_INPUT_CLASS: 'attr-v2-file-title-input',
         ATTR_V2_DIRTY_MESSAGE_CLASS: 'attr-v2-dirty-message',
         ATTR_V2_STATUS_MESSAGE_CLASS: 'attr-v2-status-message',
+        ATTR_V2_UPDATE_BTN_CLASS: 'attr-v2-update-btn',
 
         ATTR_V2_ATTRIBUTE_NAME_CLASS: 'attr-v2-attribute-name',
         // Ready-to-use jQuery selectors
@@ -104,6 +105,7 @@
         ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR: '.attr-v2-text-value-wrapper',
         ATTR_V2_EXPAND_CONTROLS_SELECTOR: '.attr-v2-expand-controls',
         ATTR_V2_AUTO_DISMISS_SELECTOR: '.attr-v2-auto-dismiss',
+        ATTR_V2_UPDATE_BTN_SELECTOR: '.attr-v2-update-btn',
         ATTR_V2_DISPLAY_FIELD_SELECTOR: '.display-field',
         ATTR_V2_SHOW_MORE_TEXT_SELECTOR: '.show-more-text',
         ATTR_V2_SHOW_LESS_TEXT_SELECTOR: '.show-less-text',

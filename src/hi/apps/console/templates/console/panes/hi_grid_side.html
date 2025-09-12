@@ -2,7 +2,7 @@
   {% if request.view_parameters.location %}
   <div class="my-2">
     <a href="{% url 'location_edit_location_edit' location_id=request.view_parameters.location.id %}"
-       class="btn btn-primary btn-control" role="button"
+       class="btn btn-outline-primary btn-control" role="button"
        data-async="true" >
       {{ request.view_parameters.location.name }} Info
     </a>
