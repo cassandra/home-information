@@ -306,10 +306,6 @@ a.clickable-card:active {
     background-color: #f4f4f4;
 }
 
-
-
-
-
 /* Phone Landscape (Side-by-Side) */
 @media (min-aspect-ratio: 16/9) and (max-height: 600px) {
     .interstitial-page {
@@ -926,6 +922,17 @@ g[hover] {
     justify-content: center;
     font-size: 0.8rem;
     font-weight: bold;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.getting-started-guide .step-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin-right: 0.75rem;
     flex-shrink: 0;
     margin-top: 2px;

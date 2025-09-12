@@ -49,7 +49,9 @@ AVAILABLE_ICONS = {
     'path',
     'info-circle',
     'rocket',
-    'question-circle'
+    'question-circle',
+    'map-pin',
+    'settings'
 }
 
 # Define available sizes

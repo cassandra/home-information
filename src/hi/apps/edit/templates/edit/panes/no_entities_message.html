@@ -1,39 +1,5 @@
-{% load icons %}
-<div class="getting-started-guide">
-    <div class="guide-header">
-        {% icon "rocket" size="lg" color="primary" %}
-        <h5>Getting Started</h5>
-    </div>
-    
-    <div class="guide-content">
-        <div class="mode-explanation">
-            <span class="badge badge-info">Edit Mode</span>
-            <p class="small mb-0">You're in editing mode to set up your home layout.</p>
-        </div>
-        
-        <div class="steps">
-            <div class="step">
-                <div class="step-number">1</div>
-                <div class="step-content">
-                    <div><strong>Add Your First Item</strong></div>
-                    <p class="small mb-0">Click "Add New Item" above to create your first home item.</p>
-                </div>
-            </div>
-            
-            <div class="step">
-                <div class="step-number">2</div>
-                <div class="step-content">
-                    <div><strong>Switch to View Mode</strong></div>
-                    <p class="small mb-0">Click "Exit Edit" above when done to start managing your home's information.</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="help-hint">
-            {% icon "question-circle" size="sm" color="muted" %}
-            <small>Use "Editing Help" below for layout tips</small>
-        </div>
-    </div>
-</div>
-
-
+{% if request.view_parameters.is_editing %}
+{% include "profiles/panes/edit_mode_help_sidebar.html" %}
+{% else %}
+{% include "profiles/panes/view_mode_help_sidebar.html" %}
+{% endif %}

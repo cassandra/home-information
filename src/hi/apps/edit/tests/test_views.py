@@ -517,38 +517,4 @@ class TestEntityStateValueChoicesView(SyncViewTestCase):
 
         self.assertEqual(response.status_code, 405)
 
-
-class TestEditHelpView(DualModeViewTestCase):
-    """
-    Tests for EditHelpView - demonstrates simple HiModalView testing.
-    This view displays help information for edit mode.
-    """
-
-    def test_get_help_sync(self):
-        """Test getting edit help with synchronous request."""
-        url = reverse('edit_help')
-        response = self.client.get(url)
-
-        self.assertSuccessResponse(response)
-        self.assertHtmlResponse(response)
-        self.assertTemplateRendered(response, 'edit/modals/help.html')
-
-    def test_get_help_async(self):
-        """Test getting edit help with AJAX request."""
-        url = reverse('edit_help')
-        response = self.async_get(url)
-
-        self.assertSuccessResponse(response)
-        self.assertJsonResponse(response)
-        
-        # HiModalView returns JSON with modal content for AJAX requests
-        data = response.json()
-        self.assertIn('modal', data)
-
-    def test_post_not_allowed(self):
-        """Test that POST requests are not allowed."""
-        url = reverse('edit_help')
-        response = self.client.post(url)
-
-        self.assertEqual(response.status_code, 405)
         

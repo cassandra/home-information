@@ -182,14 +182,3 @@ class EntityStateValueChoicesView( View ):
 
         return HttpResponse( json.dumps( entity_state.choices() ),
                              content_type='application/json' )
-
-
-class EditHelpView( HiModalView ):
-
-    def get_template_name( self ) -> str:
-        return 'edit/modals/help.html'
-
-    def get( self, request, *args, **kwargs ):
-        context = {
-        }
-        return self.modal_response( request, context )
