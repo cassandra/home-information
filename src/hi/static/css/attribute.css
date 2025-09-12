@@ -395,6 +395,10 @@
     transition: all 0.2s ease;
 }
 
+.attr-v2-attribute-card[is_editable="false"] {
+    background-color: #e0e0e0;
+}
+                                              
 .attr-v2-attribute-header {
     display: flex;
     justify-content: space-between;

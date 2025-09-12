@@ -739,6 +739,14 @@
         if ($deleteField.length > 0) {
             // Set value to the attribute ID to mark for deletion
             $deleteField.val(attributeId);
+            
+            // Directly notify dirty tracking system
+            const $container = $fileCard.closest(Hi.ATTR_V2_CONTAINER_SELECTOR);
+            if ($container.length > 0 && window.Hi.attr.dirtyTracking) {
+                const containerId = $container.attr('id');
+                const instance = window.Hi.attr.dirtyTracking.getInstance(containerId);
+                instance.handleFieldChange($deleteField[0]);
+            }
         } else {
             console.warn(`DELETE field not found for file attribute ${attributeId}`);
             return;
@@ -768,6 +776,14 @@
         const $deleteField = $fileCard.find(`input[name="${Hi.ATTR_V2_DELETE_FILE_ATTR}"]`);
         if ($deleteField.length > 0) {
             $deleteField.val("");
+            
+            // Directly notify dirty tracking system
+            const $container = $fileCard.closest(Hi.ATTR_V2_CONTAINER_SELECTOR);
+            if ($container.length > 0 && window.Hi.attr.dirtyTracking) {
+                const containerId = $container.attr('id');
+                const instance = window.Hi.attr.dirtyTracking.getInstance(containerId);
+                instance.handleFieldChange($deleteField[0]);
+            }
         }
         
         // Remove visual feedback - CSS handles all styling
