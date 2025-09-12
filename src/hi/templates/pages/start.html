@@ -1,20 +1,43 @@
 {% extends "pages/interstitial_page.html" %}
+{% load static %}
 
 {% block interstitial_content %}
 <div>
-  <div class="display-4">Welcome!</div>
-  <p class="lead mt-2 mb-4">
-    To get started, add your home's name to create a new location.
+  <div class="display-4" style="font-size: clamp(2rem, 5vw, 3.5rem);">Welcome!</div>
+  <p class="lead mt-2 mb-4" style="font-size: clamp(1rem, 2.5vw, 1.25rem);">
+    Choose your type of home to get started.
   </p>
-  <div class="">
-    <a role="button" class="btn btn-primary"
-       href="{% url 'location_edit_location_add_first' %}"
-       data-async="modal">
-      ADD MY LOCATION
+  
+  <!-- Home Profile Selection -->
+  <div class="profile-selection-container">
+    <a href="{% url 'profiles_initialize' 'single_story' %}" class="profile-button">
+      <img src="{% static 'img/profiles/icon-single-story.svg' %}" 
+           alt="Single Story Home" class="profile-icon">
+      <span class="profile-label">Single Story</span>
+    </a>
+    
+    <a href="{% url 'profiles_initialize' 'two_story' %}" class="profile-button">
+      <img src="{% static 'img/profiles/icon-two-story.svg' %}" 
+           alt="Two Story Home" class="profile-icon">
+      <span class="profile-label">Two Story</span>
+    </a>
+    
+    <a href="{% url 'profiles_initialize' 'apartment' %}" class="profile-button">
+      <img src="{% static 'img/profiles/icon-apartment.svg' %}" 
+           alt="Apartment" class="profile-icon">
+      <span class="profile-label">Apartment</span>
     </a>
   </div>
-  <p class="text-muted mt-4">
-    Optionally, you can upload an SVG image of your home or property layout.
-  </p>
+  
+  <!-- Start from Scratch Option -->
+  <div class="text-center mt-4">
+    <p class="text-muted small mb-2">Want to customize everything yourself?</p>
+    <a href="{% url 'location_edit_location_add_first' %}" 
+       class="start-empty-link" 
+       data-async="modal">
+      <img src="{% static 'img/hi-gear.svg' %}" alt="Customize" class="empty-layout-icon">
+      Start with an empty layout
+    </a>
+  </div>
 </div>
 {% endblock %}

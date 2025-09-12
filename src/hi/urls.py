@@ -36,6 +36,7 @@ urlpatterns = [
     re_path( r'^integration/', include('hi.integrations.urls' )),
     re_path( r'^location/', include('hi.apps.location.urls' )),
     re_path( r'^entity/', include('hi.apps.entity.urls' )),
+    re_path( r'^profiles/', include('hi.apps.profiles.urls' )),
     re_path( r'^collection/', include('hi.apps.collection.urls' )),
     re_path( r'^sense/', include('hi.apps.sense.urls' )),
     re_path( r'^control/', include('hi.apps.control.urls' )),

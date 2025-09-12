@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="50 20 100 100" class="profile-image single-story">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="50 40 100 80" class="profile-image single-story">
   <!-- Ranch-style house silhouette -->
   <!-- Roof (lower profile) -->
   <polygon points="100,60 50,85 150,85" fill="#177072"/>

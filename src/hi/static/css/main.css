@@ -98,6 +98,76 @@ a.clickable-card:active {
     opacity: 0.75;
 }
 
+/* Home profile selection styles */
+.profile-selection-container {
+  display: flex;
+  justify-content: center;
+  gap: clamp(1rem, 3vw, 2rem);
+  margin: clamp(1rem, 3vh, 2rem) 0;
+  flex-wrap: wrap;
+}
+
+.profile-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(1rem, 2vh, 1.5rem) clamp(1.5rem, 3vw, 2rem) clamp(0.5rem, 1vh, 1rem);
+  border: 2px solid var(--line-color);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+  background: white;
+  min-width: clamp(120px, 15vw, 140px);
+  flex: 0 1 auto;
+}
+
+.profile-button:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(23, 112, 114, 0.2);
+  text-decoration: none;
+  color: inherit;
+}
+
+.profile-icon {
+  width: clamp(60px, 8vw, 100px);
+  height: clamp(60px, 8vw, 100px);
+  max-width: 100%;
+  margin-bottom: clamp(0.5rem, 1vh, 0.75rem);
+}
+
+.profile-label {
+  font-size: clamp(0.875rem, 2vw, 1rem);
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--tertiary-color);
+}
+
+/* Start empty layout link */
+.start-empty-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.start-empty-link:hover {
+  color: var(--primary-color);
+  text-decoration: none;
+  border-bottom-color: var(--primary-color);
+}
+
+.empty-layout-icon {
+  width: 20px;
+  height: 20px;
+}
+
 .text-primary {
     color: var(--primary-color) !important;
 }
@@ -219,17 +289,16 @@ a.clickable-card:active {
 
 .interstitial-page {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1rem;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    min-height: 100vh;
     max-width: 1200px;
     margin: auto;
+    padding: 1rem;
+    box-sizing: border-box;
 }
 
-.interstitial-header {
-    padding: 2rem;
-    text-align: center;
-}
 .interstitial-body {
     padding: 1rem;
     text-align: center;
@@ -238,43 +307,23 @@ a.clickable-card:active {
 }
 
 
-/* Phone Portrait */
-@media (max-width: 600px) {
-    .interstitial-page {
-        flex-direction: column;
-    }
-    .interstitial-header {
-        width: 75%;
-    }
-    .interstitial-body {
-        width: 100%;
-    }
-}
+
+
 
 /* Phone Landscape (Side-by-Side) */
-@media (min-aspect-ratio: 16/9) {
+@media (min-aspect-ratio: 16/9) and (max-height: 600px) {
     .interstitial-page {
         flex-direction: row;
-        margin-top: 1rem;
+        gap: 2rem;
     }
     .interstitial-header {
-        width: 30%;
+        flex: 0 0 auto;
+        padding: 0.5rem;
     }
     .interstitial-body {
-        width: 60%;
-    }
-}
-
-/* Desktop */
-@media (min-width: 901px) and (max-aspect-ratio: 16/9) {
-    .interstitial-page {
-        flex-direction: column;
-    }
-    .interstitial-header {
-        width: 40%;
-    }
-    .interstitial-body {
-        width: 60%;
+        flex: 1;
+        display: flex;
+        align-items: center;
     }
 }
 

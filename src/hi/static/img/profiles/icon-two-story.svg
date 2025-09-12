@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="45 20 110 110" class="profile-image two-story">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="45 40 110 90" class="profile-image two-story">
   <!-- Two-story house silhouette -->
   <!-- Roof -->
   <polygon points="100,40 57,75 143,75" fill="#177072"/>

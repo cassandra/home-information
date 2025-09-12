@@ -107,6 +107,7 @@ INSTALLED_APPS = [
     'hi.apps.attribute',
     'hi.apps.location',
     'hi.apps.entity',
+    'hi.apps.profiles',
     'hi.apps.collection',
     'hi.apps.sense',
     'hi.apps.control',
