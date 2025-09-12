@@ -1,8 +1,10 @@
 import logging
 from threading import Lock
 import threading
+import time
 
 from hi.apps.config.models import Subsystem, SubsystemAttribute
+from hi.apps.config.settings_manager import do_settings_manager_reload_background
 from hi.apps.config.settings_manager import SettingsManager
 from hi.apps.config.setting_enums import SettingEnum, SettingDefinition
 from hi.apps.attribute.enums import AttributeValueType
@@ -267,9 +269,6 @@ class TestSettingsManager(BaseTestCase):
 
     def test_no_deadlock_on_setting_save(self):
         """Test that setting a value doesn't cause deadlock from signal-triggered reload."""
-        import time
-        from threading import Thread, Event
-        from hi.apps.config.settings_manager import do_settings_manager_reload_background
         
         manager = SettingsManager()
         manager.ensure_initialized()
@@ -280,7 +279,7 @@ class TestSettingsManager(BaseTestCase):
             subsystem_key='deadlock_test',
         )
         test_key = TestSetting.TEST_SETTING.key
-        attribute = SubsystemAttribute.objects.create(
+        _ = SubsystemAttribute.objects.create(
             subsystem=subsystem,
             setting_key=test_key,
             value_type=AttributeValueType.TEXT,
@@ -291,7 +290,7 @@ class TestSettingsManager(BaseTestCase):
         manager.reload()
         
         # Track if the background reload completes
-        reload_completed = Event()
+        reload_completed = threading.Event()
         original_background_reload = do_settings_manager_reload_background
         
         def tracking_background_reload():
@@ -321,7 +320,7 @@ class TestSettingsManager(BaseTestCase):
             # Background reload completion is secondary (timing-dependent in tests)
             if not reload_completed.is_set():
                 # This is just a warning - the important thing is no deadlock occurred
-                print("Warning: Background reload didn't complete in test timeframe, but no deadlock occurred")
+                pass
             
             # Verify the setting was actually saved
             self.assertEqual(manager.get_setting_value(TestSetting.TEST_SETTING), 'deadlock_test_value')
