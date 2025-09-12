@@ -1,6 +1,6 @@
 from datetime import datetime
 import logging
-from threading import local, Lock
+from threading import local, Lock, Timer
 from typing import List
 
 from django.db import transaction
@@ -111,12 +111,41 @@ class SettingsManager( Singleton ):
 _thread_local = local()
 
 
+_reload_timer = None
+
+
+def do_settings_manager_reload_background():
+    """Execute the settings reload in a background thread to prevent deadlocks."""
+    try:
+        logger.debug( 'Reloading SettingsManager from model changes in background thread.')
+        settings_manager = SettingsManager()
+        settings_manager.ensure_initialized()
+        settings_manager.reload()
+        logger.debug( 'Background SettingsManager reload completed successfully.')
+    except Exception as e:
+        logger.error( f'Error during background SettingsManager reload: {e}')
+    finally:
+        # Reset the reload registration flag
+        _thread_local.reload_registered = False
+        global _reload_timer
+        _reload_timer = None
+
+        
 def do_settings_manager_reload():
-    logger.debug( 'Reloading SettingsManager from model changes.')
-    settings_manager = SettingsManager()
-    settings_manager.ensure_initialized()
-    settings_manager.reload()
-    _thread_local.reload_registered = False
+    """Queue the settings reload to execute in a background thread after a short delay."""
+    global _reload_timer
+    
+    # Cancel any existing timer to avoid duplicate reloads
+    if _reload_timer and _reload_timer.is_alive():
+        _reload_timer.cancel()
+    
+    # Schedule the reload to run in a background thread after a short delay
+    # The delay ensures the current transaction can complete first
+    _reload_timer = Timer(0.1, do_settings_manager_reload_background)
+    _reload_timer.daemon = True  # Don't prevent process shutdown
+    _reload_timer.start()
+    
+    logger.debug( 'Scheduled SettingsManager reload in background thread.')
     return
 
 

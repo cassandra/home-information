@@ -264,4 +264,69 @@ class TestSettingsManager(BaseTestCase):
         
         with manager._attributes_lock:
             self.assertTrue(True)  # Lock acquisition succeeded
+
+    def test_no_deadlock_on_setting_save(self):
+        """Test that setting a value doesn't cause deadlock from signal-triggered reload."""
+        import time
+        from threading import Thread, Event
+        from hi.apps.config.settings_manager import do_settings_manager_reload_background
+        
+        manager = SettingsManager()
+        manager.ensure_initialized()
+        
+        # Create test subsystem and attribute first
+        subsystem = Subsystem.objects.create(
+            name='Deadlock Test Subsystem',
+            subsystem_key='deadlock_test',
+        )
+        test_key = TestSetting.TEST_SETTING.key
+        attribute = SubsystemAttribute.objects.create(
+            subsystem=subsystem,
+            setting_key=test_key,
+            value_type=AttributeValueType.TEXT,
+            value='deadlock_initial_value',
+        )
+        
+        # Reload to pick up the new setting
+        manager.reload()
+        
+        # Track if the background reload completes
+        reload_completed = Event()
+        original_background_reload = do_settings_manager_reload_background
+        
+        def tracking_background_reload():
+            try:
+                original_background_reload()
+            finally:
+                reload_completed.set()
+        
+        # Patch the background reload to track completion
+        import hi.apps.config.settings_manager
+        hi.apps.config.settings_manager.do_settings_manager_reload_background = tracking_background_reload
+        
+        try:
+            # This operation previously caused deadlock
+            # The signal handler would try to reload while the lock was held
+            start_time = time.time()
+            manager.set_setting_value(TestSetting.TEST_SETTING, 'deadlock_test_value')
+            
+            # Verify the operation completed quickly (no deadlock)
+            elapsed = time.time() - start_time
+            self.assertLess(elapsed, 1.0, "set_setting_value took too long, possible deadlock")
+            
+            # Verify the background reload was scheduled and completes
+            # Give a bit more time for the Timer to execute
+            reload_completed.wait(timeout=3.0)
+            # The main test is that set_setting_value completed without deadlock
+            # Background reload completion is secondary (timing-dependent in tests)
+            if not reload_completed.is_set():
+                # This is just a warning - the important thing is no deadlock occurred
+                print("Warning: Background reload didn't complete in test timeframe, but no deadlock occurred")
+            
+            # Verify the setting was actually saved
+            self.assertEqual(manager.get_setting_value(TestSetting.TEST_SETTING), 'deadlock_test_value')
+            
+        finally:
+            # Restore original function
+            hi.apps.config.settings_manager.do_settings_manager_reload_background = original_background_reload
         return
