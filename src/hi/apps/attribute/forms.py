@@ -97,7 +97,9 @@ class AttributeForm( forms.ModelForm ):
         
         form_is_bound = bool( self.instance.pk )
         if form_is_bound:
-            if not self.instance.is_editable and value:
+            if ( not self.instance.is_editable
+                 and ( value is not None )
+                 and ( value != self.instance.value )):
                 raise ValidationError( f'The attribute "{self.instance.name}" is not editable.' )
             if ( self.instance.attribute_type == AttributeType.PREDEFINED
                  and ( name != self.instance.name )):

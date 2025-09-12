@@ -129,33 +129,33 @@
             return originalValue !== currentValue;
         },
         
-        // Bind event listeners scoped to this container
+        // Bind event listeners scoped to this container using event delegation
         bindEvents: function() {
-            const form = this.container.querySelector(this.config.formSelector);
-            if (!form) return;
+            const $container = $(`#${this.containerId}`);
+            const form = $container.find(this.config.formSelector);
+            if (form.length === 0) return;
             
-            // Text input changes with debouncing
-            this.bindDebouncedEvents(form, 'input[type="text"], input[type="password"], input[type="number"], textarea', 'input');
+            // Remove any existing dirty tracking event handlers to avoid duplicates
+            $container.off('.dirty-tracking');
             
-            // Immediate changes for selects and checkboxes
-            this.bindImmediateEvents(form, 'select, input[type="checkbox"]', 'change');
+            // Text input changes with debouncing - use event delegation
+            this.bindDebouncedEvents($container, 'input[type="text"], input[type="password"], input[type="number"], textarea', 'input');
             
-            // Form submission handling
-            form.addEventListener('submit', this.handleFormSubmission.bind(this));
+            // Immediate changes for selects and checkboxes - use event delegation  
+            this.bindImmediateEvents($container, 'select, input[type="checkbox"]', 'change');
             
-            // Handle file title input activation (persistent styling on first interaction)
-            form.addEventListener('focus', (e) => {
-                if (e.target.classList.contains(Hi.ATTR_V2_FILE_TITLE_INPUT_CLASS)) {
-                    e.target.classList.add('activated');
-                }
-            }, true); // Use capture phase to ensure we catch the event
+            // Form submission handling - delegate to container
+            $container.on('submit.dirty-tracking', this.config.formSelector, this.handleFormSubmission.bind(this));
+            
+            // Handle file title input activation - delegate to container
+            $container.on('focus.dirty-tracking', '.' + Hi.ATTR_V2_FILE_TITLE_INPUT_CLASS, (e) => {
+                $(e.target).addClass('activated');
+            });
         },
         
-        // Bind debounced events for text inputs
-        bindDebouncedEvents: function(form, selector, eventType) {
-            form.addEventListener(eventType, (e) => {
-                if (!e.target.matches(selector)) return;
-                
+        // Bind debounced events for text inputs using jQuery event delegation
+        bindDebouncedEvents: function($container, selector, eventType) {
+            const handler = (e) => {
                 const field = e.target;
                 const fieldId = field.id;
                 
@@ -173,15 +173,18 @@
                 }, this.config.debounceDelay);
                 
                 this.state.debounceTimers.set(fieldId, timer);
-            });
+            };
+            
+            $container.on(`${eventType}.dirty-tracking`, selector, handler);
         },
         
-        // Bind immediate events for selects and checkboxes
-        bindImmediateEvents: function(form, selector, eventType) {
-            form.addEventListener(eventType, (e) => {
-                if (!e.target.matches(selector)) return;
+        // Bind immediate events for selects and checkboxes using jQuery event delegation
+        bindImmediateEvents: function($container, selector, eventType) {
+            const handler = (e) => {
                 this.handleFieldChange(e.target);
-            });
+            };
+            
+            $container.on(`${eventType}.dirty-tracking`, selector, handler);
         },
         
         // Handle individual field change
@@ -311,11 +314,15 @@
         
         // Update message area with current dirty state (scoped to this container)
         updateMessageArea: function() {
-            const messageContainer = this.container.querySelector(this.config.messageContainerSelector);
+            // Get fresh reference to container (important for modal scenarios)
+            this.container = document.getElementById(this.containerId);
+            const messageContainer = this.container ? this.container.querySelector(this.config.messageContainerSelector) : null;
             if (!messageContainer) return;
             
             const dirtyCount = this.state.dirtyFields.size;
+            const isDirty = dirtyCount > 0;
             
+            // Update message area
             if (dirtyCount === 0) {
                 messageContainer.textContent = '';
                 messageContainer.className = Hi.ATTR_V2_DIRTY_MESSAGE_CLASS;
@@ -325,6 +332,21 @@
                     : DIRTY_TRACKING_INTERNAL.MULTIPLE_FIELDS_MESSAGE_TEMPLATE.replace('{count}', dirtyCount);
                 messageContainer.textContent = message;
                 messageContainer.className = `${Hi.ATTR_V2_DIRTY_MESSAGE_CLASS} active`;
+            }
+            
+            // Update button prominence
+            this.updateButtonProminence(isDirty);
+        },
+        
+        // Update UPDATE button prominence based on dirty state
+        updateButtonProminence: function(isDirty) {
+            const $updateButton = $(this.container).find(Hi.ATTR_V2_UPDATE_BTN_SELECTOR);
+            if ($updateButton.length === 0) return;
+
+            if (isDirty) {
+                $updateButton.addClass('form-dirty');
+            } else {
+                $updateButton.removeClass('form-dirty');
             }
         },
         
@@ -471,16 +493,7 @@
         HiAttrDirtyTracking.init();
     });
     
-    // Initialize after modal shown
-    document.addEventListener('shown.bs.modal', function(e) {
-        // Look for containers within the modal
-        const modal = e.target;
-        const containers = modal.querySelectorAll(Hi.ATTR_V2_CONTAINER_SELECTOR);
-        containers.forEach(container => {
-            if (container.id) {
-                HiAttrDirtyTracking.reinitializeContainer(container.id);
-            }
-        });
-    });
+    // Note: Modal initialization is handled by attr.js module, not here
+    // attr.js calls reinitializeContainer() for modal content
     
 })();

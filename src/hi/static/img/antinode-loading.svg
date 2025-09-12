@@ -1,0 +1,136 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      /* Super clean, cross-browser compatible version */
+      
+      /* Subtle background with floating effect */
+      .background-panel {
+        fill: rgba(253, 253, 253, 0.85);
+        stroke: rgba(23, 112, 114, 0.2);
+        stroke-width: 1;
+        filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+      }
+      
+      .app-house {
+        fill: #177072;
+        stroke: none;
+      }
+      
+      .app-house-body {
+        fill: #fdfdfd;
+        stroke: #177072;
+        stroke-width: 2;
+      }
+      
+      .app-house-base {
+        fill: #F45F36;
+        stroke: none;
+      }
+      
+      .app-house-door {
+        fill: #177072;
+      }
+      
+      .device-ring {
+        transform-origin: 64px 64px;
+        animation: rotate-smooth 6s linear infinite;
+      }
+      
+      .device-ring-reverse {
+        transform-origin: 64px 64px;
+        animation: rotate-smooth 8s linear infinite reverse;
+      }
+      
+      .center-pulse {
+        transform-origin: 64px 64px;
+        animation: gentle-pulse 4s ease-in-out infinite;
+      }
+      
+      .outer-ring {
+        fill: none;
+        stroke: #177072;
+        stroke-width: 1;
+        stroke-opacity: 0.3;
+        stroke-dasharray: 2,4;
+        transform-origin: 64px 64px;
+        animation: rotate-smooth 10s linear infinite;
+      }
+      
+      @keyframes rotate-smooth {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      
+      @keyframes gentle-pulse {
+        0%, 100% { 
+          transform: scale(1);
+          opacity: 0.95;
+        }
+        50% { 
+          transform: scale(1.03);
+          opacity: 1;
+        }
+      }
+      
+      .device-dot-1 { fill: #F45F36; }
+      .device-dot-2 { fill: #177219; }
+      .device-dot-3 { fill: #ECA500; }
+      .device-dot-4 { fill: #177072; }
+    </style>
+  </defs>
+  
+  <!-- Subtle circular background with floating effect -->
+  <circle class="background-panel" cx="64" cy="64" r="56"/>
+  
+  <!-- Outer dashed ring -->
+  <circle class="outer-ring" cx="64" cy="64" r="55"/>
+  
+  <!-- Rotating device dots (outer ring) -->
+  <g class="device-ring">
+    <circle class="device-dot-1" cx="64" cy="16" r="5"/>
+    <circle class="device-dot-2" cx="112" cy="64" r="5"/>
+    <circle class="device-dot-3" cx="64" cy="112" r="5"/>
+    <circle class="device-dot-4" cx="16" cy="64" r="5"/>
+  </g>
+  
+  <!-- Rotating device dots (inner ring, reverse direction) -->
+  <g class="device-ring-reverse">
+    <circle class="device-dot-2" cx="88" cy="28" r="4"/>
+    <circle class="device-dot-1" cx="100" cy="88" r="4"/>
+    <circle class="device-dot-4" cx="40" cy="100" r="4"/>
+    <circle class="device-dot-3" cx="28" cy="40" r="4"/>
+  </g>
+  
+  <!-- Central app icon (recreated from hi-icon-128x128.png) -->
+  <g class="center-pulse">
+    <!-- Orange base/foundation -->
+    <rect class="app-house-base" x="44" y="72" width="40" height="10" rx="1"/>
+    
+    <!-- White house body -->
+    <rect class="app-house-body" x="48" y="54" width="32" height="22" rx="1"/>
+    
+    <!-- Teal roof -->
+    <path class="app-house" d="M 38 54 L 64 36 L 90 54 L 80 54 L 64 42 L 48 54 Z"/>
+    
+    <!-- Door -->
+    <rect class="app-house-door" x="61" y="64" width="6" height="12" rx="1"/>
+    
+    <!-- Teal columns/pillars (from the icon) -->
+    <rect class="app-house" x="50" y="58" width="3" height="14"/>
+    <rect class="app-house" x="75" y="58" width="3" height="14"/>
+    
+    <!-- Small window above door -->
+    <rect class="app-house" x="62" y="58" width="4" height="3" rx="0.5"/>
+    
+    <!-- Subtle glow effect -->
+    <circle fill="none" stroke="#177072" stroke-width="1" stroke-opacity="0.2" cx="64" cy="64" r="28"/>
+  </g>
+  
+  <!-- Connection indicators (very subtle) -->
+  <g opacity="0.15">
+    <line stroke="#177072" stroke-width="1" x1="64" y1="54" x2="64" y2="16" stroke-dasharray="1,2"/>
+    <line stroke="#177072" stroke-width="1" x1="80" y1="64" x2="112" y2="64" stroke-dasharray="1,2"/>
+    <line stroke="#177072" stroke-width="1" x1="64" y1="76" x2="64" y2="112" stroke-dasharray="1,2"/>
+    <line stroke="#177072" stroke-width="1" x1="48" y1="64" x2="16" y2="64" stroke-dasharray="1,2"/>
+  </g>
+</svg>

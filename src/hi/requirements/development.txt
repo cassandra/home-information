@@ -3,6 +3,7 @@
 autopep8==2.3.2
 black==24.8.0
 flake8==7.3.0
+grip==4.6.2
 jedi==0.19.2
 pipdeptree==2.28.0
 rope==1.14.0

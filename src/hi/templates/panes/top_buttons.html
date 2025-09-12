@@ -6,19 +6,30 @@
       <img src="{% static 'img/hi-logo-149x64.png' %}" alt="Home Information Logo">
     </div>
     <div class="d-flex justify-content-end">
-      {% include "location/panes/location_dropdown.html" %}
+      {% if request.view_parameters.location and not request.view_parameters.is_editing %}
       <div class="px-1">
-	{% if request.view_parameters.is_editing %}
-	<a href="{% url 'edit_end' %}"
-	   class="btn btn-tertiary btn-control" role="button" >
-	  EXIT EDIT
-	</a>
-	{% else %}
-	<a href="{% url 'edit_start' %}"
-	   class="btn btn-tertiary btn-control" role="button" >
-	  EDIT
-	</a>
-	{% endif %}
+        <a href="{% url 'location_edit_location_edit' location_id=request.view_parameters.location.id %}"
+           class="btn btn-primary btn-control" role="button"
+           data-async="true" >
+          Location Info
+        </a>
+      </div>
+      {% endif %}
+    
+      {% include "location/panes/location_dropdown.html" %}
+
+      <div class="px-1">
+        {% if request.view_parameters.is_editing %}
+        <a href="{% url 'edit_end' %}"
+           class="btn btn-tertiary btn-control" role="button" >
+          EXIT EDIT
+        </a>
+        {% else %}
+        <a href="{% url 'edit_start' %}"
+           class="btn btn-tertiary btn-control" role="button" >
+          EDIT
+        </a>
+        {% endif %}
       </div>
     </div>
   </div>

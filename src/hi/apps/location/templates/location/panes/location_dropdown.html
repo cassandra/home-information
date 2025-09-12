@@ -2,8 +2,8 @@
 <div>
   {% if location_list %}
   <div class="dropdown">
-    <button class="btn btn-secondary btn-control dropdown-toggle" type="button"
-	    id="hi-location-menu" data-toggle="dropdown">
+    <button class="btn btn-outline-primary btn-control dropdown-toggle" type="button"
+            id="hi-location-menu" data-toggle="dropdown">
       {% if request.view_parameters.location %}
       {{ request.view_parameters.location.name }}
       {% else %}
@@ -12,26 +12,26 @@
       <span class="caret"></span>
     </button>
     <div class="dropdown-menu"
-	 role="menu" aria-labelledby="hi-location-menu">
+         role="menu" aria-labelledby="hi-location-menu">
       {% for location in location_list %}
       {% if forloop.counter > 1 %}
       <div class="dropdown-divider"></div>
       {% endif %}
       <a role="menuitem" class="dropdown-item plain"
-	 href="{% url 'location_switch' location_id=location.id %} ">
-	{{ location.name }}
+         href="{% url 'location_switch' location_id=location.id %} ">
+        {{ location.name }}
       </a>
       {% empty %}
       <div class="dropdown-item alert alert-secondary text-center">
-	<em>No locations.</em>
+        <em>No locations.</em>
       </div>
       {% endfor %}
       {% if request.view_parameters.is_editing %}
       <div class="dropdown-divider"></div>
       <a role="menuitem" class="dropdown-item plain"
-	 href="{% url 'location_edit_location_add' %}"
-	 data-async="modal">
-	{% icon "plus" size="sm" css_class="hi-icon-left" %}ADD NEW LOCATION
+         href="{% url 'location_edit_location_add' %}"
+         data-async="modal">
+        {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD NEW LOCATION
       </a>
       {% endif %}
     </div>

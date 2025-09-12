@@ -77,7 +77,7 @@ LOGGING = {
         },
         'hi.apps.control': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
         'hi.services.hass': {
@@ -92,7 +92,7 @@ LOGGING = {
         },
         'hi.apps.location': {
             'handlers': ['console' ],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
         'hi.apps.monitor': {

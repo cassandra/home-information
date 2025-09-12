@@ -13,12 +13,17 @@ Individual attribute attribute card with value editing and actions
      data-value-type="{{ attribute_form.instance.value_type.name|default:'text' }}"
      data-is-secret="{{ attribute_form.instance.value_type.is_secret|yesno:'true,false' }}"
      data-can-delete="{{ attribute_form.instance.attribute_type.can_delete|yesno:'true,false' }}"
-     {% if not attribute_form.instance.pk and not attribute_form.is_bound %}style="display: none;"{% endif %}>
+     {% if not attribute_form.instance.pk and not attribute_form.is_bound %}style="display: none;"{% endif %}
+     {% if attribute_form.instance and not attribute_form.instance.is_editable %}is_editable="false"{% endif %} >
   
   <!-- Hidden form fields -->
   {{ attribute_form.id }}
   {% if attribute_form.DELETE %}
     {{ attribute_form.DELETE.as_hidden }}
+  {% endif %}
+
+  {% if attribute_form.instance and not attribute_form.instance.is_editable %}
+  <div class="text-muted text-center"><small>SYSTEM INFO</small></div>
   {% endif %}
   
   <!-- Attribute Header -->
@@ -30,7 +35,8 @@ Individual attribute attribute card with value editing and actions
                name="{{ attribute_form.name.html_name }}"
                value="{{ attribute_form.instance.name }}" 
                class="attr-v2-title-input"
-               maxlength="64">
+               maxlength="64"
+               {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %}   >
       </div>
     {% else %}
       <h6 class="{{ DIVID.ATTR_V2_ATTRIBUTE_NAME_CLASS }}">

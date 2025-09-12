@@ -395,6 +395,10 @@
     transition: all 0.2s ease;
 }
 
+.attr-v2-attribute-card[is_editable="false"] {
+    background-color: #e0e0e0;
+}
+                                              
 .attr-v2-attribute-header {
     display: flex;
     justify-content: space-between;
@@ -595,6 +599,26 @@
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
     box-shadow: 0 0 0 0.2rem rgba(23, 112, 114, 0.25);
+}
+
+/* Update button prominence changes based on dirty state */
+.attr-v2-update-btn.form-dirty {
+    background-color: var(--primary-color, #007bff) !important;
+    border-color: var(--primary-color, #007bff) !important;
+    color: white !important;
+}
+
+.attr-v2-update-btn.form-dirty:hover {
+    background-color: var(--primary-color-dark, #0056b3) !important;
+    border-color: var(--primary-color-dark, #0056b3) !important;
+    color: white !important;
+}
+
+.attr-v2-update-btn.form-dirty:focus {
+    background-color: var(--primary-color, #007bff) !important;
+    border-color: var(--primary-color, #007bff) !important;
+    color: white !important;
+    box-shadow: 0 0 0 0.2rem rgba(23, 112, 114, 0.25) !important;
 }
 
 .attr-v2-reorder-controls button:focus:disabled {
