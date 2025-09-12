@@ -85,7 +85,7 @@ class LocationSwitchView( View, LocationViewMixin ):
 
     def get(self, request, *args, **kwargs):
         location = self.get_location( request, *args, **kwargs )
-
+        
         location_view = location.views.order_by( 'order_id' ).first()
         if not location_view:
             raise BadRequest( 'No views defined for this location.' )

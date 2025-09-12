@@ -513,7 +513,7 @@ function getAsyncTarget( anchorNode ) {
 
 function insertLoadingImage() {
     // N.B. The negative margins in the css should be half the width of the loading image.
-    let htmlString = '<div id="antinode-loader" style="display:none; position: absolute; top: 50%; left: 50%; margin-left: -64px; margin-top: -64px; z-index: 1055;"><img src="/static/img/antinode-loading.gif" alt="Page Loading Interstitial"/></div>';
+    let htmlString = '<div id="antinode-loader" style="display:none; position: absolute; top: 50%; left: 50%; margin-left: -64px; margin-top: -64px; z-index: 1055;"><img src="/static/img/antinode-loading.svg" alt="Page Loading Interstitial"/></div>';
     let loadingObj = $.parseHTML(htmlString);
     $('body').append( loadingObj );
     return;
