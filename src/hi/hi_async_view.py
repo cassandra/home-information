@@ -115,12 +115,13 @@ class HiModalView( View ):
     def modal_response( self, request, context = None, status = 200 ):
         if context is None:
             context = dict()
-        modal_response = antinode.modal_from_template(
-            request = request,
-            template_name = self.get_template_name(),
-            context = context,
-        )
         if is_ajax( request ):
+            modal_response = antinode.modal_from_template(
+                request = request,
+                template_name = self.get_template_name(),
+                context = context,
+                status = status,
+            )
             return modal_response
 
         context['initial_modal_template_name'] = self.get_template_name()

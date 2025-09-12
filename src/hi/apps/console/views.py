@@ -250,7 +250,7 @@ class ConsoleUnlockView( HiModalView ):
         return 'console/modals/console_unlock.html'
 
     def get(self, request, *args, **kwargs):
-        return self.modal_response( request )
+        return self.modal_response( request, status = 403 )
                                     
     def post(self, request, *args, **kwargs):
 
