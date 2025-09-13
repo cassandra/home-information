@@ -14,3 +14,6 @@ class ProfileType( LabeledEnum ):
     def json_filename(self):
         return f'profile_{self}.json'
     
+    def icon_filename(self):
+        return f'icon_{self}.svg'
+    

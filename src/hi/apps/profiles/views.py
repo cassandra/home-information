@@ -1,9 +1,12 @@
 import logging
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, Http404
 from django.views.generic import View
 from django.shortcuts import redirect
+from django.contrib import messages
 
 from hi.hi_async_view import HiModalView
+from .profile_manager import ProfileManager
+from .enums import ProfileType
 
 logger = logging.getLogger(__name__)
 
@@ -11,9 +14,34 @@ logger = logging.getLogger(__name__)
 class ProfilesInitializeView(View):
     
     def get( self, request: HttpRequest, profile_type: str ) -> HttpResponse:
-        # TODO: Implement profile application logic
-        # For now, just redirect to location edit as placeholder
-        return redirect('location_edit_location_add_first')
+        # GET requests should redirect back to start page
+        # Profile initialization requires POST for database changes
+        return redirect('start')
+    
+    def post( self, request: HttpRequest, profile_type: str ) -> HttpResponse:
+        """
+        Handle POST request to initialize database with selected profile.
+        
+        This view should only be accessible when the database is empty
+        (no LocationView objects exist).
+        """
+        # Validate profile_type parameter - raise 404 for invalid URLs
+        try:
+            profile_enum = ProfileType.from_name(profile_type)
+        except ValueError:
+            raise Http404( f'Invalid profile type: {profile_type}' )
+        
+        # Initialize ProfileManager and load the selected profile
+        profile_manager = ProfileManager()
+        try:
+            profile_manager.load_profile( profile_enum )
+            logger.info( f'Successfully loaded profile: {profile_enum}' )
+            messages.success(request, f'Your {profile_enum.label} home has been set up!')
+            return redirect('home')
+        except Exception as e:
+            logger.error(f'Failed to load profile {profile_enum}: {e}')
+            # Fall back to manual setup flow - user can't fix system issues
+            return redirect('location_edit_location_add_first')
 
 
 class ViewModeHelpView( HiModalView ):

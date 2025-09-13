@@ -10,23 +10,16 @@
   
   <!-- Home Profile Selection -->
   <div class="profile-selection-container">
-    <a href="{% url 'profiles_initialize' 'single_story' %}" class="profile-button">
-      <img src="{% static 'img/profiles/icon-single-story.svg' %}" 
-           alt="Single Story Home" class="profile-icon">
-      <span class="profile-label">Single Story</span>
-    </a>
-    
-    <a href="{% url 'profiles_initialize' 'two_story' %}" class="profile-button">
-      <img src="{% static 'img/profiles/icon-two-story.svg' %}" 
-           alt="Two Story Home" class="profile-icon">
-      <span class="profile-label">Two Story</span>
-    </a>
-    
-    <a href="{% url 'profiles_initialize' 'apartment' %}" class="profile-button">
-      <img src="{% static 'img/profiles/icon-apartment.svg' %}" 
-           alt="Apartment" class="profile-icon">
-      <span class="profile-label">Apartment</span>
-    </a>
+    {% for profile_type in profile_type_list %}
+    <form method="post" action="{% url 'profiles_initialize' profile_type %}" style="display: inline-block;">
+      {% csrf_token %}
+      <button type="submit" class="profile-button">
+        <img src="{% static 'img/profiles/'|add:profile_type.icon_filename %}" 
+             alt="{{ profile_type.label }}" class="profile-icon">
+        <span class="profile-label">{{ profile_type.label }}</span>
+      </button>
+    </form>
+    {% endfor %}
   </div>
   
   <!-- Start from Scratch Option -->
