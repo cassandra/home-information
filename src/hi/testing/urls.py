@@ -10,6 +10,6 @@ urlpatterns = [
              name='testing_home'),
 
     re_path( r'^ui/', include('hi.testing.ui.urls' )),
+    re_path( r'^devtools/', include('hi.testing.devtools.urls' )),
 
 ]
-
