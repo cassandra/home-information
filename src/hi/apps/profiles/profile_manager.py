@@ -1,12 +1,14 @@
 import json
 import logging
 import os
+import shutil
 from decimal import Decimal
 from pathlib import Path
 from typing import Dict, List
 from dataclasses import dataclass
 
 from django.conf import settings
+from django.core.files.storage import default_storage, FileSystemStorage
 from django.db import transaction
 
 from hi.apps.entity.models import Entity, EntityPosition, EntityPath, EntityView
@@ -138,6 +140,9 @@ class ProfileManager:
         # Validate fundamental requirements before starting
         self._validate_fundamental_requirements(profile_data)
         
+        # Copy SVG fragment files from assets to MEDIA_ROOT before validation
+        self._copy_svg_fragment_files(profile_data)
+        
         # Initialize tracking
         stats = ProfileLoadingStats()
         
@@ -244,6 +249,73 @@ class ProfileManager:
         except Exception:
             logger.exception(f'Unexpected error loading profile file {json_file_path}')
             raise
+
+    def _get_assets_base_directory(self) -> Path:
+        """
+        Get the base directory for profile assets.
+        
+        This is separated into its own method to allow easy overriding in tests.
+        
+        Returns:
+            Path: The base directory containing profile assets
+        """
+        return Path(__file__).parent / 'assets'
+    
+    def _copy_svg_fragment_files(self, profile_data: dict) -> None:
+        """
+        Copy predefined SVG fragment files from profile assets to MEDIA_ROOT.
+        
+        This must be called before location creation/validation to ensure
+        referenced SVG files exist in MEDIA_ROOT.
+        
+        Args:
+            profile_data: The loaded profile JSON data
+            
+        Raises:
+            FileNotFoundError: If required SVG fragment files are missing from assets
+            Exception: For other file system errors during copying
+        """
+        locations_data = profile_data.get(PC.PROFILE_FIELD_LOCATIONS, [])
+        assets_base_dir = self._get_assets_base_directory()
+        
+        for location_data in locations_data:
+            svg_fragment_filename = location_data.get(PC.LOCATION_FIELD_SVG_FRAGMENT_FILENAME)
+            if not svg_fragment_filename:
+                continue
+                
+            # Source: profile assets directory
+            source_path = assets_base_dir / svg_fragment_filename
+            
+            # Destination: MEDIA_ROOT
+            destination_path = os.path.join(settings.MEDIA_ROOT, svg_fragment_filename)
+            
+            try:
+                if not source_path.exists():
+                    raise FileNotFoundError(f'SVG fragment file not found in assets: {source_path}')
+                
+                # Ensure destination directory exists
+                self._ensure_directory_exists(svg_fragment_filename)
+                
+                # Copy the file
+                shutil.copy2(str(source_path), destination_path)
+                logger.debug(f'Copied SVG fragment: {source_path} -> {destination_path}')
+                
+            except Exception as e:
+                logger.error(f'Failed to copy SVG fragment {svg_fragment_filename}: {e}')
+                raise
+                
+        logger.debug('SVG fragment files copied successfully')
+        
+    def _ensure_directory_exists(self, filepath: str) -> None:
+        """
+        Ensure the directory for the given filepath exists in MEDIA_ROOT.
+        
+        This follows the same pattern as LocationManager._ensure_directory_exists
+        """
+        if isinstance(default_storage, FileSystemStorage):
+            directory = os.path.dirname(default_storage.path(filepath))
+            if not os.path.exists(directory):
+                os.makedirs(directory, exist_ok=True)
 
     def _create_locations(self, location_data_list: List[dict]) -> List[Location]:
         locations = []

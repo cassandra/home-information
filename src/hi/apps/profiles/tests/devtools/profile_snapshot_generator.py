@@ -1,8 +1,13 @@
 import json
 import logging
+import os
+import shutil
 from decimal import Decimal
 from pathlib import Path
 from typing import Dict, List, Any, Optional
+
+from django.conf import settings
+from django.core.files.storage import default_storage
 
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location
@@ -49,8 +54,68 @@ class ProfileSnapshotGenerator:
         with open(output_path, 'w') as f:
             json.dump(profile_data, f, indent=2, default=str)
         
+        # Copy SVG fragments to assets if writing to real profile location
+        if not output_to_tmp:
+            self._copy_svg_fragments_to_assets(profile_data)
+        
         logger.info(f"Generated profile snapshot to {output_path}")
         return output_path
+    
+    def _get_assets_base_directory(self) -> Path:
+        """
+        Get the base directory for profile assets.
+        
+        This is separated into its own method to allow easy overriding in tests.
+        
+        Returns:
+            Path: The base directory containing profile assets
+        """
+        return Path(__file__).parent.parent.parent / 'assets'
+    
+    def _copy_svg_fragments_to_assets(self, profile_data: Dict[str, Any]) -> None:
+        """
+        Copy SVG fragment files from MEDIA_ROOT to profile assets directory.
+        
+        This copies the SVG fragments referenced in the profile data to the assets
+        directory so they can be packaged with the application for distribution.
+        
+        Args:
+            profile_data: The profile data containing location SVG references
+            
+        Raises:
+            FileNotFoundError: If referenced SVG fragment files don't exist in MEDIA_ROOT
+            Exception: For other file system errors during copying
+        """
+        locations_data = profile_data.get(PC.PROFILE_FIELD_LOCATIONS, [])
+        assets_base_dir = self._get_assets_base_directory()
+        
+        for location_data in locations_data:
+            svg_fragment_filename = location_data.get(PC.LOCATION_FIELD_SVG_FRAGMENT_FILENAME)
+            if not svg_fragment_filename:
+                continue
+                
+            # Source: MEDIA_ROOT
+            source_path = os.path.join(settings.MEDIA_ROOT, svg_fragment_filename)
+            
+            # Destination: profile assets directory
+            destination_path = assets_base_dir / svg_fragment_filename
+            
+            try:
+                if not os.path.exists(source_path):
+                    raise FileNotFoundError(f'SVG fragment file not found in MEDIA_ROOT: {source_path}')
+                
+                # Ensure destination directory exists
+                destination_path.parent.mkdir(parents=True, exist_ok=True)
+                
+                # Copy the file
+                shutil.copy2(source_path, str(destination_path))
+                logger.debug(f'Copied SVG fragment to assets: {source_path} -> {destination_path}')
+                
+            except Exception as e:
+                logger.error(f'Failed to copy SVG fragment {svg_fragment_filename} to assets: {e}')
+                raise
+                
+        logger.debug('SVG fragment files copied to assets successfully')
     
     def _get_profile_json_path(self, profile_type: ProfileType) -> Path:
         """Get the path to the profile JSON file in the data directory."""
