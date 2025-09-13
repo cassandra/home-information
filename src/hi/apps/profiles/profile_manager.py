@@ -20,6 +20,7 @@ from hi.apps.collection.models import (
 from hi.apps.collection.enums import CollectionType, CollectionViewType
 
 from .enums import ProfileType
+import hi.apps.profiles.constants as PC
 
 logger = logging.getLogger(__name__)
 
@@ -54,48 +55,48 @@ class ProfileManager:
             profile_data = self._load_json_file( json_file_path )
             
             # Create in dependency order
-            locations = self._create_locations( profile_data.get('locations', []) )
+            locations = self._create_locations( profile_data.get(PC.PROFILE_FIELD_LOCATIONS, []) )
             location_lookup = { location.name: location for location in locations }
             
-            entities = self._create_entities(profile_data.get('entities', []))
+            entities = self._create_entities(profile_data.get(PC.PROFILE_FIELD_ENTITIES, []))
             entity_lookup = { entity.name: entity for entity in entities }
             
             self._create_entity_positions_and_paths(
-                profile_data.get('entities', []), 
+                profile_data.get(PC.PROFILE_FIELD_ENTITIES, []), 
                 entity_lookup, 
                 location_lookup,
             )
             
             self._create_location_views(
-                profile_data.get('locations', []), 
+                profile_data.get(PC.PROFILE_FIELD_LOCATIONS, []), 
                 location_lookup,
             )
             
             self._create_entity_views(
-                profile_data.get('entities', []),
+                profile_data.get(PC.PROFILE_FIELD_ENTITIES, []),
                 entity_lookup,
                 location_lookup,
             )
             
             collections = self._create_collections(
-                profile_data.get('collections', [])
+                profile_data.get(PC.PROFILE_FIELD_COLLECTIONS, [])
             )
             collection_lookup = { collection.name: collection for collection in collections }
             
             self._create_collection_entities(
-                profile_data.get( 'collections', [] ),
+                profile_data.get( PC.PROFILE_FIELD_COLLECTIONS, [] ),
                 collection_lookup,
                 entity_lookup,
             )
             
             self._create_collection_positions_and_paths(
-                profile_data.get('collections', []),
+                profile_data.get(PC.PROFILE_FIELD_COLLECTIONS, []),
                 collection_lookup,
                 location_lookup,
             )
             
             self._create_collection_views(
-                profile_data.get('collections', []),
+                profile_data.get(PC.PROFILE_FIELD_COLLECTIONS, []),
                 collection_lookup,
                 location_lookup,
             )
@@ -142,7 +143,7 @@ class ProfileManager:
         except json.JSONDecodeError as e:
             logger.error(f'Invalid JSON in profile file {json_file_path}: {e}')
             raise
-        except Exception as e:
+        except Exception:
             logger.exception(f'Unexpected error loading profile file {json_file_path}')
             raise
 
@@ -151,10 +152,10 @@ class ProfileManager:
 
         for location_data in location_data_list:
             location = Location.objects.create(
-                name = location_data['name'],
-                svg_fragment_filename = location_data['svg_fragment_filename'],
-                svg_view_box_str = location_data['svg_view_box_str'],
-                order_id = location_data.get('order_id', 0),
+                name = location_data[PC.LOCATION_FIELD_NAME],
+                svg_fragment_filename = location_data[PC.LOCATION_FIELD_SVG_FRAGMENT_FILENAME],
+                svg_view_box_str = location_data[PC.LOCATION_FIELD_SVG_VIEW_BOX_STR],
+                order_id = location_data.get(PC.LOCATION_FIELD_ORDER_ID, 0),
             )
             locations.append(location)
             continue
@@ -168,21 +169,20 @@ class ProfileManager:
         view_count = 0
         
         for location_data in location_data_list:
-            location_name = location_data['name']
+            location_name = location_data[PC.LOCATION_FIELD_NAME]
             location = location_lookup[ location_name ]
             
-            for view_data in location_data.get( 'views', [] ):
-                location_view_name = view_data['name']
+            for view_data in location_data.get( PC.LOCATION_FIELD_VIEWS, [] ):
+                location_view_name = view_data[PC.LOCATION_VIEW_FIELD_NAME]
                 try:
-                    input_str = view_data['location_view_type_str']
+                    input_str = view_data[PC.LOCATION_VIEW_FIELD_TYPE_STR]
                     location_view_type = LocationViewType.from_name( input_str )
-                    location_view_type_str = str(location_view_type)
                 except (KeyError, ValueError) as e:
                     logger.error( f'Invalid location_view_type_str: {input_str}: {e}' )
                     raise ValueError( f'Invalid location_view_type_str {input_str}' )
                 
                 try:
-                    input_str = view_data['svg_style_name_str']
+                    input_str = view_data[PC.LOCATION_VIEW_FIELD_SVG_STYLE_NAME_STR]
                     svg_style_name = SvgStyleName.from_name( input_str )
                 except (KeyError, ValueError) as e:
                     logger.error(f'Invalid svg_style_name_str {input_str}: {e}')
@@ -192,10 +192,10 @@ class ProfileManager:
                     location = location,
                     name = location_view_name,
                     location_view_type_str= str( location_view_type ),
-                    svg_view_box_str = view_data['svg_view_box_str'],
+                    svg_view_box_str = view_data[PC.LOCATION_VIEW_FIELD_SVG_VIEW_BOX_STR],
                     svg_style_name_str = str(svg_style_name),
-                    svg_rotate = Decimal( str(view_data.get('svg_rotate', 0.0)) ),
-                    order_id = view_data.get('order_id', 0),
+                    svg_rotate = Decimal( str(view_data.get(PC.COMMON_FIELD_SVG_ROTATE, 0.0)) ),
+                    order_id = view_data.get(PC.LOCATION_VIEW_FIELD_ORDER_ID, 0),
                 )
                 view_count += 1
                 continue
@@ -210,18 +210,18 @@ class ProfileManager:
         
         for entity_data in entity_data_list:
             # Skip comment-only entries
-            if 'name' not in entity_data:
+            if PC.ENTITY_FIELD_NAME not in entity_data:
                 continue
             
             try:
-                input_str = entity_data['entity_type_str']
+                input_str = entity_data[PC.ENTITY_FIELD_TYPE_STR]
                 entity_type = EntityType.from_name( input_str )
             except (KeyError, ValueError) as e:
                 logger.error( f'Invalid entity_type_str {input_str}: {e}')
                 raise ValueError( f'Invalid entity_type_str {input_str}' )
                 
             entity = Entity.objects.create(
-                name = entity_data['name'],
+                name = entity_data[PC.ENTITY_FIELD_NAME],
                 entity_type_str = str(entity_type),
             )
             entities.append(entity)
@@ -238,32 +238,32 @@ class ProfileManager:
         path_count = 0
         
         for entity_data in entity_data_list:
-            if 'name' not in entity_data:
+            if PC.ENTITY_FIELD_NAME not in entity_data:
                 continue
                 
-            entity = entity_lookup[entity_data['name']]
+            entity = entity_lookup[entity_data[PC.ENTITY_FIELD_NAME]]
             
-            for position_data in entity_data.get('positions', []):
-                location = location_lookup[position_data['location_name']]
+            for position_data in entity_data.get(PC.ENTITY_FIELD_POSITIONS, []):
+                location = location_lookup[position_data[PC.COMMON_FIELD_LOCATION_NAME]]
                 
                 EntityPosition.objects.create(
                     entity = entity,
                     location = location,
-                    svg_x = Decimal(str(position_data['svg_x'])),
-                    svg_y = Decimal(str(position_data['svg_y'])),
-                    svg_scale = Decimal(str(position_data.get('svg_scale', 1.0))),
-                    svg_rotate = Decimal(str(position_data.get('svg_rotate', 0.0))),
+                    svg_x = Decimal(str(position_data[PC.COMMON_FIELD_SVG_X])),
+                    svg_y = Decimal(str(position_data[PC.COMMON_FIELD_SVG_Y])),
+                    svg_scale = Decimal(str(position_data.get(PC.COMMON_FIELD_SVG_SCALE, 1.0))),
+                    svg_rotate = Decimal(str(position_data.get(PC.COMMON_FIELD_SVG_ROTATE, 0.0))),
                 )
                 position_count += 1
                 continue
             
-            for path_data in entity_data.get('paths', []):
-                location = location_lookup[path_data['location_name']]
+            for path_data in entity_data.get(PC.ENTITY_FIELD_PATHS, []):
+                location = location_lookup[path_data[PC.COMMON_FIELD_LOCATION_NAME]]
                 
                 EntityPath.objects.create(
                     entity = entity,
                     location = location,
-                    svg_path = path_data['svg_path'],
+                    svg_path = path_data[PC.COMMON_FIELD_SVG_PATH],
                 )
                 path_count += 1
                 continue
@@ -279,12 +279,12 @@ class ProfileManager:
         view_count = 0
         
         for entity_data in entity_data_list:
-            if 'name' not in entity_data:
+            if PC.ENTITY_FIELD_NAME not in entity_data:
                 continue
                 
-            entity = entity_lookup[entity_data['name']]
+            entity = entity_lookup[entity_data[PC.ENTITY_FIELD_NAME]]
             
-            for view_name in entity_data.get('visible_in_views', []):
+            for view_name in entity_data.get(PC.ENTITY_FIELD_VISIBLE_IN_VIEWS, []):
                 location_view = None
                 for location in location_lookup.values():
                     try:
@@ -319,24 +319,24 @@ class ProfileManager:
                 continue
             
             try:
-                input_str = collection_data['collection_type_str']
+                input_str = collection_data[PC.COLLECTION_FIELD_TYPE_STR]
                 collection_type = CollectionType.from_name( input_str )
             except (KeyError, ValueError) as e:
                 logger.error( f'Invalid collection_type_str {input_str}: {e}')
                 raise ValueError(f'Invalid collection_type_str {input_str}' )
             
             try:
-                input_str = collection_data['collection_view_type_str']
+                input_str = collection_data[PC.COLLECTION_FIELD_VIEW_TYPE_STR]
                 collection_view_type = CollectionViewType.from_name( input_str )
             except (KeyError, ValueError) as e:
                 logger.error( f'Invalid collection_view_type_str {input_str}: {e}' )
                 raise ValueError( f'Invalid collection_view_type_str {input_str}' )
                 
             collection = Collection.objects.create(
-                name = collection_data['name'],
+                name = collection_data[PC.COLLECTION_FIELD_NAME],
                 collection_type_str = str(collection_type),
                 collection_view_type_str = str(collection_view_type),
-                order_id = collection_data.get('order_id', 0),
+                order_id = collection_data.get(PC.COLLECTION_FIELD_ORDER_ID, 0),
             )
             collections.append(collection)
             continue
@@ -351,12 +351,12 @@ class ProfileManager:
         relationship_count = 0
         
         for collection_data in collection_data_list:
-            if 'name' not in collection_data:
+            if PC.COLLECTION_FIELD_NAME not in collection_data:
                 continue
                 
-            collection = collection_lookup[collection_data['name']]
+            collection = collection_lookup[collection_data[PC.COLLECTION_FIELD_NAME]]
             
-            for order_id, entity_name in enumerate(collection_data.get('entities', [])):
+            for order_id, entity_name in enumerate(collection_data.get(PC.COLLECTION_FIELD_ENTITIES, [])):
                 if entity_name in entity_lookup:
                     entity = entity_lookup[entity_name]
                     
@@ -382,33 +382,33 @@ class ProfileManager:
         path_count = 0
         
         for collection_data in collection_data_list:
-            if 'name' not in collection_data:
+            if PC.COLLECTION_FIELD_NAME not in collection_data:
                 continue
                 
-            collection = collection_lookup[collection_data['name']]
+            collection = collection_lookup[collection_data[PC.COLLECTION_FIELD_NAME]]
             
-            for position_data in collection_data.get('positions', []):
-                location = location_lookup[position_data['location_name']]
+            for position_data in collection_data.get(PC.COLLECTION_FIELD_POSITIONS, []):
+                location = location_lookup[position_data[PC.COMMON_FIELD_LOCATION_NAME]]
                 
                 CollectionPosition.objects.create(
                     collection = collection,
                     location = location,
-                    svg_x = Decimal(str(position_data['svg_x'])),
-                    svg_y = Decimal(str(position_data['svg_y'])),
-                    svg_scale = Decimal(str(position_data.get('svg_scale', 1.0))),
-                    svg_rotate = Decimal(str(position_data.get('svg_rotate', 0.0))),
+                    svg_x = Decimal(str(position_data[PC.COMMON_FIELD_SVG_X])),
+                    svg_y = Decimal(str(position_data[PC.COMMON_FIELD_SVG_Y])),
+                    svg_scale = Decimal(str(position_data.get(PC.COMMON_FIELD_SVG_SCALE, 1.0))),
+                    svg_rotate = Decimal(str(position_data.get(PC.COMMON_FIELD_SVG_ROTATE, 0.0))),
                 )
                 position_count += 1
                 continue
             
             # Create CollectionPath instances
-            for path_data in collection_data.get('paths', []):
-                location = location_lookup[path_data['location_name']]
+            for path_data in collection_data.get(PC.COLLECTION_FIELD_PATHS, []):
+                location = location_lookup[path_data[PC.COMMON_FIELD_LOCATION_NAME]]
                 
                 CollectionPath.objects.create(
                     collection=collection,
                     location=location,
-                    svg_path=path_data['svg_path'],
+                    svg_path=path_data[PC.COMMON_FIELD_SVG_PATH],
                 )
                 path_count += 1
                 continue
@@ -424,12 +424,12 @@ class ProfileManager:
         view_count = 0
         
         for collection_data in collection_data_list:
-            if 'name' not in collection_data:
+            if PC.COLLECTION_FIELD_NAME not in collection_data:
                 continue
                 
-            collection = collection_lookup[collection_data['name']]
+            collection = collection_lookup[collection_data[PC.COLLECTION_FIELD_NAME]]
             
-            for view_name in collection_data.get('visible_in_views', []):
+            for view_name in collection_data.get(PC.COLLECTION_FIELD_VISIBLE_IN_VIEWS, []):
                 location_view = None
                 for location in location_lookup.values():
                     try:

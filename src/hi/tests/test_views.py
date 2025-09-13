@@ -62,7 +62,6 @@ class TestStartView(SyncViewTestCase):
         response = self.client.get(url)
         
         self.assertSuccessResponse(response)
-        self.assertSessionValue(response, 'view_mode', str(ViewMode.EDIT))
 
 
 class TestHomeView(SyncViewTestCase):

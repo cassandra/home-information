@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 
 from django.shortcuts import render
 from django.views.generic import View

@@ -24,7 +24,7 @@ from hi.apps.location.edit.views import (
 from hi.apps.profiles.session_helpers import mark_edit_mode_entry
 from hi.decorators import edit_required
 from hi.enums import ItemType, ViewMode
-from hi.hi_async_view import HiModalView, HiSideView
+from hi.hi_async_view import HiSideView
 
 
 logger = logging.getLogger(__name__)

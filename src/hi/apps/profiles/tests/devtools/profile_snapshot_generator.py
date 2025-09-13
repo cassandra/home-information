@@ -4,24 +4,12 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
-from hi.apps.entity.models import Entity, EntityPosition, EntityPath, EntityView
-from hi.apps.location.models import Location, LocationView
-from hi.apps.collection.models import (
-    Collection,
-    CollectionEntity,
-    CollectionPosition,
-    CollectionPath,
-    CollectionView,
-)
+from hi.apps.entity.models import Entity
+from hi.apps.location.models import Location
+from hi.apps.collection.models import Collection
 
 from hi.apps.profiles.enums import ProfileType
-from hi.apps.profiles.constants import (
-    ENTITY_COMMENT_ICON_POSITIONED,
-    ENTITY_COMMENT_PATH_ENTITY,
-    ENTITY_COMMENT_COLLECTION_MEMBER,
-    COLLECTION_COMMENT_WITH_POSITIONING,
-    COLLECTION_COMMENT_PATH_BASED,
-)
+import hi.apps.profiles.constants as PC
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +54,6 @@ class ProfileSnapshotGenerator:
     
     def _get_profile_json_path(self, profile_type: ProfileType) -> Path:
         """Get the path to the profile JSON file in the data directory."""
-        from django.conf import settings
         import hi.apps.profiles
         
         module_dir = Path(hi.apps.profiles.__file__).parent
@@ -75,11 +62,11 @@ class ProfileSnapshotGenerator:
     def _build_profile_data(self, profile_type: ProfileType) -> Dict[str, Any]:
         """Build the complete profile data structure from database."""
         return {
-            "profile_name": profile_type.label,
-            "description": "Generated snapshot from current database state",
-            "locations": self._extract_locations(),
-            "collections": self._extract_collections(),
-            "entities": self._extract_entities(),
+            PC.PROFILE_FIELD_NAME: profile_type.label,
+            PC.PROFILE_FIELD_DESCRIPTION: "Generated snapshot from current database state",
+            PC.PROFILE_FIELD_LOCATIONS: self._extract_locations(),
+            PC.PROFILE_FIELD_COLLECTIONS: self._extract_collections(),
+            PC.PROFILE_FIELD_ENTITIES: self._extract_entities(),
         }
     
     def _extract_locations(self) -> List[Dict[str, Any]]:
@@ -88,23 +75,23 @@ class ProfileSnapshotGenerator:
         
         for location in Location.objects.order_by('order_id'):
             location_dict = {
-                "name": location.name,
-                "svg_fragment_filename": location.svg_fragment_filename,
-                "svg_view_box_str": location.svg_view_box_str,
-                "order_id": location.order_id,
-                "views": []
+                PC.LOCATION_FIELD_NAME: location.name,
+                PC.LOCATION_FIELD_SVG_FRAGMENT_FILENAME: location.svg_fragment_filename,
+                PC.LOCATION_FIELD_SVG_VIEW_BOX_STR: location.svg_view_box_str,
+                PC.LOCATION_FIELD_ORDER_ID: location.order_id,
+                PC.LOCATION_FIELD_VIEWS: []
             }
             
             # Add location views
             for view in location.views.order_by('order_id'):
                 view_dict = {
-                    "name": view.name,
-                    "location_view_type_str": str(view.location_view_type),
-                    "svg_view_box_str": view.svg_view_box_str,
-                    "svg_style_name_str": str(view.svg_style_name),
-                    "order_id": view.order_id
+                    PC.LOCATION_VIEW_FIELD_NAME: view.name,
+                    PC.LOCATION_VIEW_FIELD_TYPE_STR: str(view.location_view_type),
+                    PC.LOCATION_VIEW_FIELD_SVG_VIEW_BOX_STR: view.svg_view_box_str,
+                    PC.LOCATION_VIEW_FIELD_SVG_STYLE_NAME_STR: str(view.svg_style_name),
+                    PC.LOCATION_VIEW_FIELD_ORDER_ID: view.order_id
                 }
-                location_dict["views"].append(view_dict)
+                location_dict[PC.LOCATION_FIELD_VIEWS].append(view_dict)
             
             locations_data.append(location_dict)
         
@@ -119,50 +106,50 @@ class ProfileSnapshotGenerator:
         
         for collection in Collection.objects.order_by('order_id'):
             collection_dict = {
-                "name": collection.name,
-                "collection_type_str": str(collection.collection_type),
-                "collection_view_type_str": str(collection.collection_view_type),
-                "order_id": collection.order_id,
-                "entities": []
+                PC.COLLECTION_FIELD_NAME: collection.name,
+                PC.COLLECTION_FIELD_TYPE_STR: str(collection.collection_type),
+                PC.COLLECTION_FIELD_VIEW_TYPE_STR: str(collection.collection_view_type),
+                PC.COLLECTION_FIELD_ORDER_ID: collection.order_id,
+                PC.COLLECTION_FIELD_ENTITIES: []
             }
             
             # Add comment for first example of each structural pattern
             comment = self._get_collection_pattern_comment(collection, seen_collection_patterns)
             if comment:
-                collection_dict["comment"] = comment
+                collection_dict[PC.COMMON_FIELD_COMMENT] = comment
             
             # Add collection entities
             for collection_entity in collection.entities.select_related('entity').order_by('order_id'):
-                collection_dict["entities"].append(collection_entity.entity.name)
+                collection_dict[PC.COLLECTION_FIELD_ENTITIES].append(collection_entity.entity.name)
             
             # Add collection positions
             positions = []
             for position in collection.positions.select_related('location'):
                 position_dict = {
-                    "location_name": position.location.name,
-                    "svg_x": float(position.svg_x),
-                    "svg_y": float(position.svg_y),
+                    PC.COMMON_FIELD_LOCATION_NAME: position.location.name,
+                    PC.COMMON_FIELD_SVG_X: float(position.svg_x),
+                    PC.COMMON_FIELD_SVG_Y: float(position.svg_y),
                 }
                 if position.svg_scale != Decimal('1.0'):
-                    position_dict["svg_scale"] = float(position.svg_scale)
+                    position_dict[PC.COMMON_FIELD_SVG_SCALE] = float(position.svg_scale)
                 if position.svg_rotate != Decimal('0.0'):
-                    position_dict["svg_rotate"] = float(position.svg_rotate)
+                    position_dict[PC.COMMON_FIELD_SVG_ROTATE] = float(position.svg_rotate)
                 positions.append(position_dict)
             
             if positions:
-                collection_dict["positions"] = positions
+                collection_dict[PC.COLLECTION_FIELD_POSITIONS] = positions
             
             # Add collection paths
             paths = []
             for path in collection.paths.select_related('location'):
                 path_dict = {
-                    "location_name": path.location.name,
-                    "svg_path": path.svg_path,
+                    PC.COMMON_FIELD_LOCATION_NAME: path.location.name,
+                    PC.COMMON_FIELD_SVG_PATH: path.svg_path,
                 }
                 paths.append(path_dict)
             
             if paths:
-                collection_dict["paths"] = paths
+                collection_dict[PC.COLLECTION_FIELD_PATHS] = paths
             
             # Add visible_in_views
             visible_views = []
@@ -170,7 +157,7 @@ class ProfileSnapshotGenerator:
                 visible_views.append(view.location_view.name)
             
             if visible_views:
-                collection_dict["visible_in_views"] = visible_views
+                collection_dict[PC.COLLECTION_FIELD_VISIBLE_IN_VIEWS] = visible_views
             
             collections_data.append(collection_dict)
         
@@ -188,43 +175,43 @@ class ProfileSnapshotGenerator:
         
         for entity in all_entities:
             entity_dict = {
-                "name": entity.name,
-                "entity_type_str": str(entity.entity_type),
+                PC.ENTITY_FIELD_NAME: entity.name,
+                PC.ENTITY_FIELD_TYPE_STR: str(entity.entity_type),
             }
             
             # Add comment for first example of each structural pattern
             comment = self._get_entity_pattern_comment(entity, seen_entity_patterns)
             if comment:
-                entity_dict["comment"] = comment
+                entity_dict[PC.COMMON_FIELD_COMMENT] = comment
             
             # Add entity positions
             positions = []
             for position in entity.positions.select_related('location'):
                 position_dict = {
-                    "location_name": position.location.name,
-                    "svg_x": float(position.svg_x),
-                    "svg_y": float(position.svg_y),
+                    PC.COMMON_FIELD_LOCATION_NAME: position.location.name,
+                    PC.COMMON_FIELD_SVG_X: float(position.svg_x),
+                    PC.COMMON_FIELD_SVG_Y: float(position.svg_y),
                 }
                 if position.svg_scale != Decimal('1.0'):
-                    position_dict["svg_scale"] = float(position.svg_scale)
+                    position_dict[PC.COMMON_FIELD_SVG_SCALE] = float(position.svg_scale)
                 if position.svg_rotate != Decimal('0.0'):
-                    position_dict["svg_rotate"] = float(position.svg_rotate)
+                    position_dict[PC.COMMON_FIELD_SVG_ROTATE] = float(position.svg_rotate)
                 positions.append(position_dict)
             
             if positions:
-                entity_dict["positions"] = positions
+                entity_dict[PC.ENTITY_FIELD_POSITIONS] = positions
             
             # Add entity paths
             paths = []
             for path in entity.paths.select_related('location'):
                 path_dict = {
-                    "location_name": path.location.name,
-                    "svg_path": path.svg_path,
+                    PC.COMMON_FIELD_LOCATION_NAME: path.location.name,
+                    PC.COMMON_FIELD_SVG_PATH: path.svg_path,
                 }
                 paths.append(path_dict)
             
             if paths:
-                entity_dict["paths"] = paths
+                entity_dict[PC.ENTITY_FIELD_PATHS] = paths
             
             # Add visible_in_views
             visible_views = []
@@ -232,7 +219,7 @@ class ProfileSnapshotGenerator:
                 visible_views.append(view.location_view.name)
             
             if visible_views:
-                entity_dict["visible_in_views"] = visible_views
+                entity_dict[PC.ENTITY_FIELD_VISIBLE_IN_VIEWS] = visible_views
             
             entities_data.append(entity_dict)
         
@@ -243,17 +230,17 @@ class ProfileSnapshotGenerator:
         # Check if entity is part of any collections
         if entity.collections.exists() and 'collection_member' not in seen_patterns:
             seen_patterns.add('collection_member')
-            return ENTITY_COMMENT_COLLECTION_MEMBER
+            return PC.ENTITY_COMMENT_COLLECTION_MEMBER
         
         # Check if entity has paths (EntityPath)
         if entity.paths.exists() and 'path_entity' not in seen_patterns:
             seen_patterns.add('path_entity')
-            return ENTITY_COMMENT_PATH_ENTITY
+            return PC.ENTITY_COMMENT_PATH_ENTITY
         
         # Check if entity has positions (EntityPosition) - most common case
         if entity.positions.exists() and 'icon_positioned' not in seen_patterns:
             seen_patterns.add('icon_positioned')
-            return ENTITY_COMMENT_ICON_POSITIONED
+            return PC.ENTITY_COMMENT_ICON_POSITIONED
         
         return None
     
@@ -262,12 +249,12 @@ class ProfileSnapshotGenerator:
         # Check if collection has paths
         if collection.paths.exists() and 'path_based' not in seen_patterns:
             seen_patterns.add('path_based')
-            return COLLECTION_COMMENT_PATH_BASED
+            return PC.COLLECTION_COMMENT_PATH_BASED
         
         # Check if collection has positions
         if collection.positions.exists() and 'with_positioning' not in seen_patterns:
             seen_patterns.add('with_positioning')
-            return COLLECTION_COMMENT_WITH_POSITIONING
+            return PC.COLLECTION_COMMENT_WITH_POSITIONING
         
         return None
     
