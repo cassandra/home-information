@@ -11,7 +11,9 @@
   <!-- Home Profile Selection -->
   <div class="profile-selection-container">
     {% for profile_type in profile_type_list %}
-    <form method="post" action="{% url 'profiles_initialize' profile_type %}" style="display: inline-block;">
+    <form method="post" action="{% url 'profiles_initialize_predefined' profile_type %}"
+          style="display: inline-block;"
+          data-async="true">
       {% csrf_token %}
       <button type="submit" class="profile-button">
         <img src="{% static 'img/profiles/'|add:profile_type.icon_filename %}" 
@@ -25,7 +27,7 @@
   <!-- Start from Scratch Option -->
   <div class="text-center mt-4">
     <p class="text-muted small mb-2">Want to customize everything yourself?</p>
-    <a href="{% url 'location_edit_location_add_first' %}" 
+    <a href="{% url 'profiles_initialize_custom' %}" 
        class="start-empty-link" 
        data-async="modal">
       <img src="{% static 'img/hi-gear.svg' %}" alt="Customize" class="empty-layout-icon">

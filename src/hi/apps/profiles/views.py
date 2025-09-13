@@ -1,22 +1,34 @@
 import logging
 from django.http import HttpRequest, HttpResponse, Http404
+from django.urls import reverse
 from django.views.generic import View
-from django.shortcuts import redirect
 
+from hi.enums import ViewMode
 from hi.hi_async_view import HiModalView
+
+import hi.apps.common.antinode as antinode
+from hi.apps.location.edit.views import LocationAddFirstView
+
 from .profile_manager import ProfileManager
 from .enums import ProfileType
-from .session_helpers import mark_profile_initialized
+from .session_helpers import mark_profile_initialized, mark_first_location_created
 
 logger = logging.getLogger(__name__)
 
 
-class ProfilesInitializeView(View):
+class InitializeCustomView(View):
+
+    def get(self, request, *args, **kwargs):
+        # Create actions need edit ability.
+        request.view_parameters.view_mode = ViewMode.EDIT
+        request.view_parameters.to_session( request )
+
+        response = LocationAddFirstView().get( request, *args, **kwargs )
+        mark_first_location_created( request )
+        return response
+
     
-    def get( self, request: HttpRequest, profile_type: str ) -> HttpResponse:
-        # GET requests should redirect back to start page
-        # Profile initialization requires POST for database changes
-        return redirect('start')
+class InitializePredefinedView(View):
     
     def post( self, request: HttpRequest, profile_type: str ) -> HttpResponse:
         """
@@ -38,27 +50,33 @@ class ProfilesInitializeView(View):
             
             # Mark profile as initialized for help system
             mark_profile_initialized(request)
+
+            request.view_parameters.view_mode = ViewMode.MONITOR
+            request.view_parameters.to_session( request )
             
-            return redirect('home')
+            redirect_url = reverse('home')
+            return antinode.redirect_response( redirect_url )
+        
         except Exception as e:
             logger.error(f'Failed to load profile {profile_enum}: {e}')
             # Fall back to manual setup flow - user can't fix system issues
-            return redirect('location_edit_location_add_first')
+            redirect_url = reverse('profiles_initialize_custom')
+            return antinode.redirect_response( redirect_url )
 
 
-class ViewModeHelpView( HiModalView ):
+class ViewReferenceHelpView( HiModalView ):
 
     def get_template_name( self ) -> str:
-        return 'profiles/modals/view_mode_help.html'
+        return 'profiles/modals/view_reference_help.html'
 
     def get( self, request, *args, **kwargs ):
         return self.modal_response( request )
 
 
-class EditModeHelpView( HiModalView ):
+class EditReferenceHelpView( HiModalView ):
 
     def get_template_name( self ) -> str:
-        return 'profiles/modals/edit_mode_help.html'
+        return 'profiles/modals/edit_reference_help.html'
 
     def get( self, request, *args, **kwargs ):
         return self.modal_response( request )

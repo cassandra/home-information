@@ -147,32 +147,6 @@ class TestLocationAddView(DualModeViewTestCase):
         self.assertEqual(Location.objects.filter(name='').count(), 0)
 
 
-class TestLocationAddFirstView(DualModeViewTestCase):
-    """
-    Tests for LocationAddFirstView - demonstrates specialized location creation testing.
-    This view is used when adding the first location.
-    """
-
-    def setUp(self):
-        super().setUp()
-        # Set edit mode (required by decorator)
-        self.setSessionViewMode(ViewMode.EDIT)
-
-    def test_get_location_add_first_form(self):
-        """Test getting first location add form."""
-        url = reverse('location_edit_location_add_first')
-        response = self.client.get(url)
-
-        self.assertSuccessResponse(response)
-        self.assertHtmlResponse(response)
-        self.assertTemplateRendered(response, 'location/edit/modals/location_add_first.html')
-
-    def test_inherits_from_location_add_view(self):
-        """Test that LocationAddFirstView inherits from LocationAddView."""
-        from hi.apps.location.edit.views import LocationAddFirstView, LocationAddView
-        self.assertTrue(issubclass(LocationAddFirstView, LocationAddView))
-
-
 class TestLocationSvgReplaceView(DualModeViewTestCase):
     """
     Tests for LocationSvgReplaceView - demonstrates SVG replacement testing.
