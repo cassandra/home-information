@@ -1,0 +1,273 @@
+import json
+import logging
+from decimal import Decimal
+from pathlib import Path
+from typing import Dict, List, Any, Optional
+
+from hi.apps.entity.models import Entity, EntityPosition, EntityPath, EntityView
+from hi.apps.location.models import Location, LocationView
+from hi.apps.collection.models import (
+    Collection,
+    CollectionEntity,
+    CollectionPosition,
+    CollectionPath,
+    CollectionView,
+)
+
+from hi.apps.profiles.enums import ProfileType
+from hi.apps.profiles.constants import (
+    ENTITY_COMMENT_ICON_POSITIONED,
+    ENTITY_COMMENT_PATH_ENTITY,
+    ENTITY_COMMENT_COLLECTION_MEMBER,
+    COLLECTION_COMMENT_WITH_POSITIONING,
+    COLLECTION_COMMENT_PATH_BASED,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class ProfileSnapshotGenerator:
+    """
+    Generates JSON profile specifications from current database state.
+    
+    Creates profile data files in the same format used by ProfileManager for
+    loading, allowing developers to capture UI-configured layouts as templates.
+    """
+    
+    def generate_snapshot(self, profile_type: ProfileType, output_to_tmp: bool = True) -> Path:
+        """
+        Generate a JSON snapshot of the current database state.
+        
+        Args:
+            profile_type: The ProfileType enum to use for naming
+            output_to_tmp: If True, writes to /tmp; if False, overwrites existing profile data file
+            
+        Returns:
+            Path to the generated JSON file
+            
+        Raises:
+            ValueError: If database is empty (no locations)
+        """
+        if not Location.objects.exists():
+            raise ValueError("Cannot generate snapshot from empty database")
+        
+        profile_data = self._build_profile_data(profile_type)
+        
+        if output_to_tmp:
+            output_path = Path('/tmp') / profile_type.json_filename()
+        else:
+            output_path = self._get_profile_json_path(profile_type)
+        
+        with open(output_path, 'w') as f:
+            json.dump(profile_data, f, indent=2, default=str)
+        
+        logger.info(f"Generated profile snapshot to {output_path}")
+        return output_path
+    
+    def _get_profile_json_path(self, profile_type: ProfileType) -> Path:
+        """Get the path to the profile JSON file in the data directory."""
+        from django.conf import settings
+        import hi.apps.profiles
+        
+        module_dir = Path(hi.apps.profiles.__file__).parent
+        return module_dir / 'data' / profile_type.json_filename()
+    
+    def _build_profile_data(self, profile_type: ProfileType) -> Dict[str, Any]:
+        """Build the complete profile data structure from database."""
+        return {
+            "profile_name": profile_type.label,
+            "description": "Generated snapshot from current database state",
+            "locations": self._extract_locations(),
+            "collections": self._extract_collections(),
+            "entities": self._extract_entities(),
+        }
+    
+    def _extract_locations(self) -> List[Dict[str, Any]]:
+        """Extract location data with their views."""
+        locations_data = []
+        
+        for location in Location.objects.order_by('order_id'):
+            location_dict = {
+                "name": location.name,
+                "svg_fragment_filename": location.svg_fragment_filename,
+                "svg_view_box_str": location.svg_view_box_str,
+                "order_id": location.order_id,
+                "views": []
+            }
+            
+            # Add location views
+            for view in location.views.order_by('order_id'):
+                view_dict = {
+                    "name": view.name,
+                    "location_view_type_str": str(view.location_view_type),
+                    "svg_view_box_str": view.svg_view_box_str,
+                    "svg_style_name_str": str(view.svg_style_name),
+                    "order_id": view.order_id
+                }
+                location_dict["views"].append(view_dict)
+            
+            locations_data.append(location_dict)
+        
+        return locations_data
+    
+    def _extract_collections(self) -> List[Dict[str, Any]]:
+        """Extract collection data with their entities and positions."""
+        collections_data = []
+        
+        # Track which structural patterns we've documented
+        seen_collection_patterns = set()
+        
+        for collection in Collection.objects.order_by('order_id'):
+            collection_dict = {
+                "name": collection.name,
+                "collection_type_str": str(collection.collection_type),
+                "collection_view_type_str": str(collection.collection_view_type),
+                "order_id": collection.order_id,
+                "entities": []
+            }
+            
+            # Add comment for first example of each structural pattern
+            comment = self._get_collection_pattern_comment(collection, seen_collection_patterns)
+            if comment:
+                collection_dict["comment"] = comment
+            
+            # Add collection entities
+            for collection_entity in collection.entities.select_related('entity').order_by('order_id'):
+                collection_dict["entities"].append(collection_entity.entity.name)
+            
+            # Add collection positions
+            positions = []
+            for position in collection.positions.select_related('location'):
+                position_dict = {
+                    "location_name": position.location.name,
+                    "svg_x": float(position.svg_x),
+                    "svg_y": float(position.svg_y),
+                }
+                if position.svg_scale != Decimal('1.0'):
+                    position_dict["svg_scale"] = float(position.svg_scale)
+                if position.svg_rotate != Decimal('0.0'):
+                    position_dict["svg_rotate"] = float(position.svg_rotate)
+                positions.append(position_dict)
+            
+            if positions:
+                collection_dict["positions"] = positions
+            
+            # Add collection paths
+            paths = []
+            for path in collection.paths.select_related('location'):
+                path_dict = {
+                    "location_name": path.location.name,
+                    "svg_path": path.svg_path,
+                }
+                paths.append(path_dict)
+            
+            if paths:
+                collection_dict["paths"] = paths
+            
+            # Add visible_in_views
+            visible_views = []
+            for view in collection.collection_views.select_related('location_view'):
+                visible_views.append(view.location_view.name)
+            
+            if visible_views:
+                collection_dict["visible_in_views"] = visible_views
+            
+            collections_data.append(collection_dict)
+        
+        return collections_data
+    
+    def _extract_entities(self) -> List[Dict[str, Any]]:
+        """Extract entity data with their positions and visibility."""
+        entities_data = []
+        
+        # Track which structural patterns we've documented
+        seen_entity_patterns = set()
+        
+        # Get all entities not in collections first, then those in collections
+        all_entities = Entity.objects.order_by('name')
+        
+        for entity in all_entities:
+            entity_dict = {
+                "name": entity.name,
+                "entity_type_str": str(entity.entity_type),
+            }
+            
+            # Add comment for first example of each structural pattern
+            comment = self._get_entity_pattern_comment(entity, seen_entity_patterns)
+            if comment:
+                entity_dict["comment"] = comment
+            
+            # Add entity positions
+            positions = []
+            for position in entity.positions.select_related('location'):
+                position_dict = {
+                    "location_name": position.location.name,
+                    "svg_x": float(position.svg_x),
+                    "svg_y": float(position.svg_y),
+                }
+                if position.svg_scale != Decimal('1.0'):
+                    position_dict["svg_scale"] = float(position.svg_scale)
+                if position.svg_rotate != Decimal('0.0'):
+                    position_dict["svg_rotate"] = float(position.svg_rotate)
+                positions.append(position_dict)
+            
+            if positions:
+                entity_dict["positions"] = positions
+            
+            # Add entity paths
+            paths = []
+            for path in entity.paths.select_related('location'):
+                path_dict = {
+                    "location_name": path.location.name,
+                    "svg_path": path.svg_path,
+                }
+                paths.append(path_dict)
+            
+            if paths:
+                entity_dict["paths"] = paths
+            
+            # Add visible_in_views
+            visible_views = []
+            for view in entity.entity_views.select_related('location_view'):
+                visible_views.append(view.location_view.name)
+            
+            if visible_views:
+                entity_dict["visible_in_views"] = visible_views
+            
+            entities_data.append(entity_dict)
+        
+        return entities_data
+    
+    def _get_entity_pattern_comment(self, entity, seen_patterns: set) -> Optional[str]:
+        """Get comment for entity if it's the first example of a structural pattern."""
+        # Check if entity is part of any collections
+        if entity.collections.exists() and 'collection_member' not in seen_patterns:
+            seen_patterns.add('collection_member')
+            return ENTITY_COMMENT_COLLECTION_MEMBER
+        
+        # Check if entity has paths (EntityPath)
+        if entity.paths.exists() and 'path_entity' not in seen_patterns:
+            seen_patterns.add('path_entity')
+            return ENTITY_COMMENT_PATH_ENTITY
+        
+        # Check if entity has positions (EntityPosition) - most common case
+        if entity.positions.exists() and 'icon_positioned' not in seen_patterns:
+            seen_patterns.add('icon_positioned')
+            return ENTITY_COMMENT_ICON_POSITIONED
+        
+        return None
+    
+    def _get_collection_pattern_comment(self, collection, seen_patterns: set) -> Optional[str]:
+        """Get comment for collection if it's the first example of a structural pattern."""
+        # Check if collection has paths
+        if collection.paths.exists() and 'path_based' not in seen_patterns:
+            seen_patterns.add('path_based')
+            return COLLECTION_COMMENT_PATH_BASED
+        
+        # Check if collection has positions
+        if collection.positions.exists() and 'with_positioning' not in seen_patterns:
+            seen_patterns.add('with_positioning')
+            return COLLECTION_COMMENT_WITH_POSITIONING
+        
+        return None
+    

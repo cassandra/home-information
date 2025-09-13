@@ -1,0 +1,31 @@
+{% extends "modals/action_ok.html" %}
+
+{% block title_text %}
+Snapshot Generated Successfully
+{% endblock %}
+
+{% block body %}
+<div class="alert alert-success">
+  <strong>Success!</strong> Profile snapshot has been generated.
+</div>
+
+<div class="mb-3">
+  <strong>Profile Type:</strong> {{ profile_type_label }}<br>
+  <strong>Output File:</strong> <code>{{ output_path }}</code>
+</div>
+
+{% if output_to_tmp %}
+<div class="alert alert-info">
+  <small>
+    The snapshot was written to the temporary directory. To use this profile,
+    copy it to the profiles data directory.
+  </small>
+</div>
+{% else %}
+<div class="alert alert-warning">
+  <small>
+    The existing profile data file has been overwritten with the new snapshot.
+  </small>
+</div>
+{% endif %}
+{% endblock %}
