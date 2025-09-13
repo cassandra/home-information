@@ -158,6 +158,7 @@ TEMPLATES = [
                 'hi.environment.context_processors.client_config',
                 'hi.apps.console.context_processors.settings_context',
                 'hi.apps.audio.context_processors.audio_context',
+                'hi.apps.profiles.context_processors.profiles_context',
             ],
         },
     },

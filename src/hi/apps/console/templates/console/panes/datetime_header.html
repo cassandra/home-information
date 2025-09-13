@@ -1,3 +1,5 @@
+{% load tz %}
+{% timezone USER_TIMEZONE %}
 <div class="datetime-header text-center my-2 border-bottom">
   <a class="plain text-black" href="{% url 'config_settings' %}">
     <div class="">
@@ -8,3 +10,4 @@
     </div>
   </a>
 </div>
+{% endtimezone %}

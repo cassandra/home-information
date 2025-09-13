@@ -2,11 +2,11 @@ import logging
 from django.http import HttpRequest, HttpResponse, Http404
 from django.views.generic import View
 from django.shortcuts import redirect
-from django.contrib import messages
 
 from hi.hi_async_view import HiModalView
 from .profile_manager import ProfileManager
 from .enums import ProfileType
+from .session_helpers import mark_profile_initialized
 
 logger = logging.getLogger(__name__)
 
@@ -31,12 +31,14 @@ class ProfilesInitializeView(View):
         except ValueError:
             raise Http404( f'Invalid profile type: {profile_type}' )
         
-        # Initialize ProfileManager and load the selected profile
         profile_manager = ProfileManager()
         try:
             profile_manager.load_profile( profile_enum )
             logger.info( f'Successfully loaded profile: {profile_enum}' )
-            messages.success(request, f'Your {profile_enum.label} home has been set up!')
+            
+            # Mark profile as initialized for help system
+            mark_profile_initialized(request)
+            
             return redirect('home')
         except Exception as e:
             logger.error(f'Failed to load profile {profile_enum}: {e}')

@@ -1,0 +1,20 @@
+{% if show_edit_mode_help %}
+<div class="alert alert-info mb-3" id="edit-mode-welcome">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <strong>Welcome to Edit Mode!</strong>
+    </div>
+    <button type="button" 
+            class="btn btn-sm btn-link p-0" 
+            data-toggle="collapse" 
+            data-target="#edit-mode-welcome-content"
+            aria-expanded="false"
+            aria-controls="edit-mode-welcome-content">
+      Tips ▼
+    </button>
+  </div>
+  <div class="collapse mt-2 getting-started-guide" id="edit-mode-welcome-content">
+    {% include "profiles/panes/edit_mode_help_content.html" %}
+  </div>
+</div>
+{% endif %}

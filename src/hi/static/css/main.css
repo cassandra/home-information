@@ -853,12 +853,19 @@ g[hover] {
 }
 
 /* Getting Started Guide Styles */
-.getting-started-guide {
+.getting-started-sidebar {
     background: var(--white);
     border-radius: 0.5rem;
     padding: 1rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     border: 1px solid var(--line-color);
+}
+
+.getting-started-guide {
+    /* Content styles - with background and padding for when used without sidebar container */
+    background: var(--white);
+    padding: 1rem;
+    border-radius: 0.5rem;
 }
 
 .getting-started-guide .guide-header {
