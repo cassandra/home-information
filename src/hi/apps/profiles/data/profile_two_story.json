@@ -5,7 +5,7 @@
   "locations": [
     {
       "name": "Main Floor",
-      "svg_fragment_filename": "main-floor.svg",
+      "svg_fragment_filename": "location/svg/main-floor.svg",
       "svg_view_box_str": "0 0 800 600", 
       "order_id": 1,
       "views": [
@@ -34,7 +34,7 @@
     },
     {
       "name": "Second Floor",
-      "svg_fragment_filename": "second-floor.svg",
+      "svg_fragment_filename": "location/svg/second-floor.svg",
       "svg_view_box_str": "0 0 800 600",
       "order_id": 2,
       "views": [

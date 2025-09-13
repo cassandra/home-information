@@ -1,9 +1,12 @@
 import json
 import logging
+import os
 from decimal import Decimal
 from pathlib import Path
 from typing import Dict, List
 
+from django.conf import settings
+from django.core.files.storage import default_storage
 from django.db import transaction
 
 from hi.apps.entity.models import Entity, EntityPosition, EntityPath, EntityView
@@ -151,9 +154,16 @@ class ProfileManager:
         locations = []
 
         for location_data in location_data_list:
+            svg_fragment_filename = location_data[PC.LOCATION_FIELD_SVG_FRAGMENT_FILENAME]
+            
+            # Validate SVG file exists in MEDIA_ROOT (same as include_media_template)
+            full_filesystem_path = os.path.join(settings.MEDIA_ROOT, svg_fragment_filename)
+            if not os.path.exists(full_filesystem_path):
+                raise ValueError(f'SVG file not found: {full_filesystem_path}')
+            
             location = Location.objects.create(
                 name = location_data[PC.LOCATION_FIELD_NAME],
-                svg_fragment_filename = location_data[PC.LOCATION_FIELD_SVG_FRAGMENT_FILENAME],
+                svg_fragment_filename = svg_fragment_filename,
                 svg_view_box_str = location_data[PC.LOCATION_FIELD_SVG_VIEW_BOX_STR],
                 order_id = location_data.get(PC.LOCATION_FIELD_ORDER_ID, 0),
             )
