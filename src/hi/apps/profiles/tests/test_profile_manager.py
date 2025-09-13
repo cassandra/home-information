@@ -33,9 +33,67 @@ class TestProfileManager(BaseTestCase):
         
         # Load the profile - should not raise any exceptions
         try:
-            self.profile_manager.load_profile(profile_type)
+            stats = self.profile_manager.load_profile(profile_type)
         except Exception as e:
             self.fail(f"Profile loading should succeed but raised: {e}")
+        
+        # Verify perfect loading stats - real JSON files should have zero failures
+        self.assertTrue(stats.meets_minimum_requirements(), 
+                        f"Perfect JSON files should meet minimum requirements for {profile_type}")
+        self.assertEqual(stats.locations_failed, 0, 
+                         f"Perfect JSON should have zero location failures for {profile_type}")
+        self.assertEqual(stats.entities_failed, 0, 
+                         f"Perfect JSON should have zero entity failures for {profile_type}")
+        self.assertEqual(stats.collections_failed, 0, 
+                         f"Perfect JSON should have zero collection failures for {profile_type}")
+        self.assertEqual(stats.location_views_failed, 0, 
+                         f"Perfect JSON should have zero location view failures for {profile_type}")
+        self.assertEqual(stats.entity_positions_failed, 0, 
+                         f"Perfect JSON should have zero entity position failures for {profile_type}")
+        self.assertEqual(stats.entity_paths_failed, 0, 
+                         f"Perfect JSON should have zero entity path failures for {profile_type}")
+        self.assertEqual(stats.entity_views_failed, 0, 
+                         f"Perfect JSON should have zero entity view failures for {profile_type}")
+        self.assertEqual(stats.collection_entities_failed, 0, 
+                         f"Perfect JSON should have zero collection entity failures for {profile_type}")
+        self.assertEqual(stats.collection_positions_failed, 0, 
+                         f"Perfect JSON should have zero collection position failures for {profile_type}")
+        self.assertEqual(stats.collection_paths_failed, 0, 
+                         f"Perfect JSON should have zero collection path failures for {profile_type}")
+        self.assertEqual(stats.collection_views_failed, 0, 
+                         f"Perfect JSON should have zero collection view failures for {profile_type}")
+        
+        # Verify attempted counts equal successful counts (since failures are zero)
+        self.assertEqual(stats.locations_attempted, stats.locations_succeeded,
+                         f"Perfect JSON: locations attempted should equal succeeded for {profile_type}")
+        self.assertEqual(stats.entities_attempted, stats.entities_succeeded,
+                         f"Perfect JSON: entities attempted should equal succeeded for {profile_type}")
+        self.assertEqual(stats.collections_attempted, stats.collections_succeeded,
+                         f"Perfect JSON: collections attempted should equal succeeded for {profile_type}")
+        self.assertEqual(stats.location_views_attempted, stats.location_views_succeeded,
+                         f"Perfect JSON: location views attempted should equal succeeded for {profile_type}")
+        self.assertEqual(stats.entity_positions_attempted, stats.entity_positions_succeeded,
+                         f"Perfect JSON: entity positions attempted should equal succeeded for {profile_type}")
+        self.assertEqual(stats.entity_paths_attempted, stats.entity_paths_succeeded,
+                         f"Perfect JSON: entity paths attempted should equal succeeded for {profile_type}")
+        self.assertEqual(stats.entity_views_attempted, stats.entity_views_succeeded,
+                         f"Perfect JSON: entity views attempted should equal succeeded for {profile_type}")
+        self.assertEqual(stats.collection_entities_attempted, stats.collection_entities_succeeded,
+                         f"Perfect JSON: collection entities attempted should equal succeeded for {profile_type}")
+        self.assertEqual(stats.collection_positions_attempted, stats.collection_positions_succeeded,
+                         f"Perfect JSON: collection positions attempted should equal succeeded for {profile_type}")
+        self.assertEqual(stats.collection_paths_attempted, stats.collection_paths_succeeded,
+                         f"Perfect JSON: collection paths attempted should equal succeeded for {profile_type}")
+        self.assertEqual(stats.collection_views_attempted, stats.collection_views_succeeded,
+                         f"Perfect JSON: collection views attempted should equal succeeded for {profile_type}")
+        
+        # Verify success counts match database counts
+        self.assertEqual(stats.locations_succeeded, Location.objects.count(), 
+                         f"Location success count should match database count for {profile_type}")
+        self.assertEqual(stats.entities_succeeded, Entity.objects.count(), 
+                         f"Entity success count should match database count for {profile_type}")
+        self.assertEqual(stats.collections_succeeded, Collection.objects.count(), 
+                         f"Collection success count should match database count for {profile_type}")
         
         # Verify database objects were created
         location_count = Location.objects.count()
