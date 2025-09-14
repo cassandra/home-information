@@ -21,9 +21,10 @@ from hi.apps.location.edit.views import (
     LocationViewReorder,
 )
 
+from hi.apps.profiles.session_helpers import mark_edit_mode_entry
 from hi.decorators import edit_required
 from hi.enums import ItemType, ViewMode
-from hi.hi_async_view import HiModalView, HiSideView
+from hi.hi_async_view import HiSideView
 
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,9 @@ class EditStartView( View ):
 
         request.view_parameters.view_mode = ViewMode.EDIT
         request.view_parameters.to_session( request )
+        
+        # Track edit mode entry for help system
+        mark_edit_mode_entry(request)
             
         return redirect( redirect_url )
 
@@ -182,14 +186,3 @@ class EntityStateValueChoicesView( View ):
 
         return HttpResponse( json.dumps( entity_state.choices() ),
                              content_type='application/json' )
-
-
-class EditHelpView( HiModalView ):
-
-    def get_template_name( self ) -> str:
-        return 'edit/modals/help.html'
-
-    def get( self, request, *args, **kwargs ):
-        context = {
-        }
-        return self.modal_response( request, context )

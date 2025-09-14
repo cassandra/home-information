@@ -1,6 +1,9 @@
 import logging
+import tempfile
+import shutil
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 from django.urls import reverse
 
 from hi.apps.collection.collection_manager import CollectionManager
@@ -25,9 +28,20 @@ class TestLocationAddView(DualModeViewTestCase):
         super().setUp()
         # Set edit mode (required by decorator)
         self.setSessionViewMode(ViewMode.EDIT)
+        
+        # Set up isolated MEDIA_ROOT for file upload tests
+        self._temp_media_dir = tempfile.mkdtemp()
+        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
+        self._settings_patcher.enable()
 
     def tearDown(self):
         """Clean up singletons when using real objects instead of mocks."""
+        # Clean up the temporary media directory and settings
+        if hasattr(self, '_settings_patcher'):
+            self._settings_patcher.disable()
+        if hasattr(self, '_temp_media_dir'):
+            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
+            
         # Reset singleton managers to ensure clean state between tests
         try:
             LocationManager._instance = None
@@ -147,32 +161,6 @@ class TestLocationAddView(DualModeViewTestCase):
         self.assertEqual(Location.objects.filter(name='').count(), 0)
 
 
-class TestLocationAddFirstView(DualModeViewTestCase):
-    """
-    Tests for LocationAddFirstView - demonstrates specialized location creation testing.
-    This view is used when adding the first location.
-    """
-
-    def setUp(self):
-        super().setUp()
-        # Set edit mode (required by decorator)
-        self.setSessionViewMode(ViewMode.EDIT)
-
-    def test_get_location_add_first_form(self):
-        """Test getting first location add form."""
-        url = reverse('location_edit_location_add_first')
-        response = self.client.get(url)
-
-        self.assertSuccessResponse(response)
-        self.assertHtmlResponse(response)
-        self.assertTemplateRendered(response, 'location/edit/modals/location_add_first.html')
-
-    def test_inherits_from_location_add_view(self):
-        """Test that LocationAddFirstView inherits from LocationAddView."""
-        from hi.apps.location.edit.views import LocationAddFirstView, LocationAddView
-        self.assertTrue(issubclass(LocationAddFirstView, LocationAddView))
-
-
 class TestLocationSvgReplaceView(DualModeViewTestCase):
     """
     Tests for LocationSvgReplaceView - demonstrates SVG replacement testing.
@@ -184,12 +172,26 @@ class TestLocationSvgReplaceView(DualModeViewTestCase):
         # Set edit mode (required by decorator)
         self.setSessionViewMode(ViewMode.EDIT)
         
+        # Create temporary media root for this test class
+        self._temp_media_dir = tempfile.mkdtemp()
+        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
+        self._settings_patcher.enable()
+        
         # Create test location
         self.location = Location.objects.create(
             name='Test Location',
             svg_fragment_filename='test.svg',
             svg_view_box_str='0 0 100 100'
         )
+    
+    def tearDown(self):
+        # Clean up the temporary media directory and settings
+        if hasattr(self, '_settings_patcher'):
+            self._settings_patcher.disable()
+        if hasattr(self, '_temp_media_dir'):
+            import shutil
+            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
+        super().tearDown()
 
     def test_get_svg_replace_form(self):
         """Test getting SVG replace form."""

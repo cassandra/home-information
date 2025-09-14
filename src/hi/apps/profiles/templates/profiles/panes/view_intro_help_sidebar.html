@@ -1,0 +1,58 @@
+{% load icons %}
+<div class="getting-started-guide">
+    <div class="guide-header">
+        {% icon "rocket" size="lg" color="secondary" %}
+      <h5 class=" text-secondary">Getting Started</h5>
+    </div>
+    
+    <div class="guide-content">
+        <div class="steps">
+            <div class="step">
+                <div class="step-icon">
+                    {% icon "plus" color="primary" aria_label="Add information" %}
+                </div>
+                <div class="step-content">
+                    <div><strong>Click to Add Info</strong></div>
+                    <p class="small mb-0">Tap an icon to add information and attach files.</p>
+                </div>
+            </div>
+            
+            <div class="step">
+                <div class="step-icon">
+                    {% icon "map-pin" color="secondary" aria_label="Set location" %}
+                </div>
+                <div class="step-content">
+                    <div><strong>Set Your Location</strong></div>
+                    <p class="small mb-0">Configure your timezone and location for weather info and alerts.</p>
+                </div>
+            </div>
+            
+            <div class="step">
+                <div class="step-icon">
+                  {% icon "edit" color="muted" aria_label="Customize layout" %}
+                </div>
+                <div class="step-content">
+                  <div><strong>Customize Layout</strong></div>
+                    <p class="small mb-0">Switch to Edit Mode to adjust visual appearance.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-icon">
+                    {% icon "settings" color="warning" aria_label="Configure integrations" %}
+                </div>
+                <div class="step-content">
+                    <div><strong>Add Integrations</strong></div>
+                    <p class="small mb-0">Connect smart devices via the Configure button.</p>
+                </div>
+            </div>
+            
+        </div>
+        
+        <a class="plain" href="{% url 'profiles_view_reference_help' %}" data-async="modal">
+          <div class="help-hint">
+            {% icon "question-circle" size="sm" color="muted" %}
+            <small>Need more help with getting started?</small>
+          </div>
+        </a>
+    </div>
+</div>

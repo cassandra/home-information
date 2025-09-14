@@ -1,0 +1,61 @@
+{% load icons %}
+{% if request.view_parameters.is_editing and show_edit_intro_help %}
+<div class="bg-secondary pb-2" id="edit-mode-welcome">
+  <div class="d-flex justify-content-between align-items-center p-3">
+    <div class="">
+      <strong>Welcome to Edit Mode!</strong>
+    </div>
+    <button type="button" 
+            class="btn btn-sm btn-secondary btn-link p-0" 
+            data-toggle="collapse" 
+            data-target="#edit-mode-welcome-content"
+            aria-expanded="false"
+            aria-controls="edit-mode-welcome-content">
+      Tips ▼
+    </button>
+  </div>
+  <div class="collapse getting-started-guide mx-2" id="edit-mode-welcome-content">
+
+    <div class="guide-content p-2">
+      
+      <div class="steps">
+        <div class="step">
+          <div class="step-icon">
+            {% icon "move" color="primary" aria_label="Add items" %}
+          </div>
+          <div class="step-content">
+            <div><strong>Adjust the Layout</strong></div>
+            <p class="small mb-0">Drag, rotate and zoom items.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-icon">
+            {% icon "plus" color="primary" aria_label="Add items" %}
+          </div>
+          <div class="step-content">
+            <div><strong>Manage Items</strong></div>
+            <p class="small mb-0">Add/remove items from your home.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-icon">
+            {% icon "eye" color="primary" aria_label="Add items" %}
+          </div>
+          <div class="step-content">
+            <div><strong>Exit to View Mode</strong></div>
+            <p class="small mb-0">Exit to resume managing your home's information..</p>
+          </div>
+        </div>
+        
+      </div>
+      
+      <a class="plain" href="{% url 'profiles_edit_reference_help' %}" data-async="modal">
+        <div class="help-hint">
+          {% icon "question-circle" size="sm" color="muted" %}
+          <small>Use "Editing Help" below for layout tips</small>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+{% endif %}

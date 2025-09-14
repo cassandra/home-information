@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="45 40 110 90" class="profile-image two-story">
+  <!-- Two-story house silhouette -->
+  <!-- Roof -->
+  <polygon points="100,40 57,75 143,75" fill="#177072"/>
+  <!-- Main house body (unified, proper 2-story height) -->
+  <rect x="68" y="75" width="64" height="55" fill="#177072"/>
+  
+  <!-- Upper windows -->
+  <rect x="78" y="85" width="10" height="10" fill="#fdfdfd"/>
+  <rect x="112" y="85" width="10" height="10" fill="#fdfdfd"/>
+  
+  <!-- Lower window -->
+  <rect x="78" y="105" width="10" height="10" fill="#fdfdfd"/>
+  
+  <!-- Door -->
+  <rect x="112" y="105" width="12" height="20" fill="#F45F36"/>
+  
+  <!-- Orange foundation accent (with 45-degree bevels like HI logo) -->
+  <polygon points="55,130 60,125 140,125 145,130" fill="#F45F36"/>
+  
+</svg>

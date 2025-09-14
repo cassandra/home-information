@@ -5,7 +5,9 @@ Tests file storage patterns, upload path generation, file cleanup operations,
 and cross-owner file handling consistency using AttributeItemEditContext pattern.
 """
 import logging
+import tempfile
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 
 from hi.apps.entity.tests.synthetic_data import EntityAttributeSyntheticData
 from hi.apps.entity.models import EntityAttribute
@@ -20,9 +22,23 @@ class TestFileUploadContextIntegration(BaseTestCase):
     
     def setUp(self):
         super().setUp()
+        # Create temporary media root for this test class
+        self._temp_media_dir = tempfile.mkdtemp()
+        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
+        self._settings_patcher.enable()
+        
         self.entity = EntityAttributeSyntheticData.create_test_entity(
             name="File Upload Test Entity"
         )
+    
+    def tearDown(self):
+        # Clean up the temporary media directory and settings
+        if hasattr(self, '_settings_patcher'):
+            self._settings_patcher.disable()
+        if hasattr(self, '_temp_media_dir'):
+            import shutil
+            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
+        super().tearDown()
         
     def test_file_attribute_creation_with_context(self):
         """Test file attribute creation provides correct context - file lifecycle integration."""
@@ -88,11 +104,7 @@ class TestFileUploadContextIntegration(BaseTestCase):
         
     def test_file_deletion_context_integration(self):
         """Test file deletion with AttributeItemEditContext - cleanup workflow integration."""
-        test_file = SimpleUploadedFile(
-            "test_delete.txt",
-            b"content to be deleted",
-            content_type="text/plain"
-        )
+        test_file = self.create_test_text_file("test_delete.txt", "content to be deleted")
         
         file_attr = EntityAttribute.objects.create(
             entity=self.entity,
@@ -119,11 +131,7 @@ class TestFileUploadContextIntegration(BaseTestCase):
         
     def test_file_title_update_context_integration(self):
         """Test file title updates through context interface - metadata management."""
-        test_file = SimpleUploadedFile(
-            "original_title.txt",
-            b"file content",
-            content_type="text/plain"
-        )
+        test_file = self.create_test_text_file("original_title.txt", "file content")
         
         file_attr = EntityAttribute.objects.create(
             entity=self.entity,
@@ -161,8 +169,8 @@ class TestFileUploadContextIntegration(BaseTestCase):
         location = LocationSyntheticData.create_test_location(name="File Test Location")
         
         # Create file attributes for both entity and location
-        entity_file = SimpleUploadedFile("entity_file.txt", b"entity content")
-        location_file = SimpleUploadedFile("location_file.txt", b"location content")
+        entity_file = self.create_test_text_file("entity_file.txt", "entity content")
+        location_file = self.create_test_text_file("location_file.txt", "location content")
         
         entity_attr = EntityAttribute.objects.create(
             entity=self.entity,

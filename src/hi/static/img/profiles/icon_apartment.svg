@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="30 28 140 120" class="profile-image apartment">
+  <!-- Apartment building silhouette -->
+  <!-- Building outline -->
+  <rect x="50" y="50" width="100" height="95" fill="#177072"/>
+  
+  <!-- Window grid (3x3 pattern) -->
+  <!-- Top row -->
+  <rect x="60" y="60" width="12" height="12" fill="#fdfdfd"/>
+  <rect x="94" y="60" width="12" height="12" fill="#fdfdfd"/>
+  <rect x="128" y="60" width="12" height="12" fill="#fdfdfd"/>
+  
+  <!-- Middle row -->
+  <rect x="60" y="85" width="12" height="12" fill="#fdfdfd"/>
+  <rect x="94" y="85" width="12" height="12" fill="#fdfdfd"/>
+  <rect x="128" y="85" width="12" height="12" fill="#fdfdfd"/>
+  
+  <!-- Bottom row (center is door) -->
+  <rect x="60" y="110" width="12" height="12" fill="#fdfdfd"/>
+  <rect x="91" y="110" width="18" height="32" fill="#F45F36"/>
+  <rect x="128" y="110" width="12" height="12" fill="#fdfdfd"/>
+  
+  <!-- Orange foundation accent (with 45-degree bevels like HI logo) -->
+  <polygon points="40,148 45,140 155,140 160,148" fill="#F45F36"/>
+</svg>

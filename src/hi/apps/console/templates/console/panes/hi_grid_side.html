@@ -1,5 +1,14 @@
 <div class="d-flex flex-column h-100">
+  {% include "console/panes/datetime_header.html" %}
+  {% if show_view_intro_help %}
+  {% include "profiles/panes/view_intro_help_sidebar.html" %}
+  {% else %}
+  
+  {% if weather_alert_list %}
   {% include "weather/panes/weather_alerts.html" %}
+  {% else %{
+  {% include "console/panes/datetime_header.html" %}
+  {% endif %}
   {% include "weather/panes/weather_overview.html" %}
 
   <div class="d-flex justify-content-center border-top my-2 pt-2">
@@ -19,4 +28,5 @@
       TRIGGER HISTORY
     </a>
   </div>
+  {% endif %}
 </div>

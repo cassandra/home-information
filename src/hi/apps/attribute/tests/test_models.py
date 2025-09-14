@@ -1,7 +1,6 @@
 import json
 import logging
 from unittest.mock import patch
-from django.core.files.uploadedfile import SimpleUploadedFile
 
 from hi.apps.attribute.models import AttributeModel
 from hi.apps.attribute.enums import AttributeValueType, AttributeType
@@ -121,32 +120,30 @@ class TestAttributeModel(BaseTestCase):
         """Test file save logic with unique filename generation - complex file handling."""
         mock_generate_unique_filename.return_value = 'unique_test_file.txt'
         
-        # Create a simple uploaded file
-        test_file = SimpleUploadedFile(
-            name='test_file.txt',
-            content=b'test content',
-            content_type='text/plain'
-        )
-        
-        attr = ConcreteAttributeModel(
-            name='test_attr',
-            value_type_str='FILE',
-            attribute_type_str='CUSTOM'
-        )
-        attr.file_value = test_file
-        # Ensure pk is None for new object behavior
-        attr.pk = None
-        
-        # Mock the super().save() call to avoid database issues
-        with patch('django.db.models.Model.save'):
-            # Simulate calling save
-            attr.save()
+        # Use isolated MEDIA_ROOT to prevent production pollution
+        with self.isolated_media_root():
+            # Create test file using base test utility
+            test_file = self.create_test_text_file('test_file.txt', 'test content')
             
-            # Should set upload_to and generate unique filename for new objects
-            mock_generate_unique_filename.assert_called_once_with('test_file.txt')
-            self.assertEqual(attr.value, 'test_file.txt')  # Value set to original filename
-            self.assertEqual(attr.file_value.name, 'unique_test_file.txt')  # Name updated to unique
-            self.assertEqual(attr.file_value.field.upload_to, 'test_attributes/')
+            attr = ConcreteAttributeModel(
+                name='test_attr',
+                value_type_str='FILE',
+                attribute_type_str='CUSTOM'
+            )
+            attr.file_value = test_file
+            # Ensure pk is None for new object behavior
+            attr.pk = None
+            
+            # Mock the super().save() call to avoid database issues
+            with patch('django.db.models.Model.save'):
+                # Simulate calling save
+                attr.save()
+                
+                # Should set upload_to and generate unique filename for new objects
+                mock_generate_unique_filename.assert_called_once_with('test_file.txt')
+                self.assertEqual(attr.value, 'test_file.txt')  # Value set to original filename
+                self.assertEqual(attr.file_value.name, 'unique_test_file.txt')  # Name updated to unique
+                self.assertEqual(attr.file_value.field.upload_to, 'test_attributes/')
         return
 
     @patch('hi.apps.attribute.models.default_storage')

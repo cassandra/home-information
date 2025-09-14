@@ -6,7 +6,10 @@ including handler/renderer integration, session dependencies, and
 antinode response patterns.
 """
 import logging
+import tempfile
+import shutil
 from django.urls import reverse
+from django.test import override_settings
 
 from hi.apps.entity.tests.synthetic_data import EntityAttributeSyntheticData
 from hi.apps.entity.models import EntityAttribute
@@ -22,6 +25,11 @@ class TestEntityAttributeViewIntegration(DualModeViewTestCase):
     
     def setUp(self):
         super().setUp()
+        # Set up isolated MEDIA_ROOT for file upload tests
+        self._temp_media_dir = tempfile.mkdtemp()
+        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
+        self._settings_patcher.enable()
+        
         # Create entity with attributes for testing
         self.entity = EntityAttributeSyntheticData.create_test_entity(
             name="Test Entity Integration"
@@ -48,6 +56,14 @@ class TestEntityAttributeViewIntegration(DualModeViewTestCase):
         
         # Set required session state for views
         self.setSessionViewMode(ViewMode.EDIT)
+    
+    def tearDown(self):
+        # Clean up the temporary media directory and settings
+        if hasattr(self, '_settings_patcher'):
+            self._settings_patcher.disable()
+        if hasattr(self, '_temp_media_dir'):
+            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
+        super().tearDown()
         
     def test_entity_edit_view_get_request_success(self):
         """Test GET request to entity edit view returns correct template and context - initial rendering."""

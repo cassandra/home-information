@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="50 40 100 80" class="profile-image single-story">
+  <!-- Ranch-style house silhouette -->
+  <!-- Roof (lower profile) -->
+  <polygon points="100,60 50,85 150,85" fill="#177072"/>
+  <!-- Main house body (longer and much lower) -->
+  <rect x="60" y="85" width="80" height="35" fill="#177072"/>
+  <!-- Door (taller and darker to look like actual door) -->
+  <rect x="92" y="90" width="16" height="30" fill="#F45F36"/>
+  <!-- Windows (side by side, no window above door) -->
+  <rect x="70" y="90" width="12" height="12" fill="#fdfdfd"/>
+  <rect x="118" y="90" width="12" height="12" fill="#fdfdfd"/>
+  <!-- Orange foundation accent (with 45-degree bevels like HI logo) -->
+  <polygon points="50,120 55,115 145,115 150,120" fill="#F45F36"/>
+</svg>
+ 

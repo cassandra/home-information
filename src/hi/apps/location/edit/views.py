@@ -53,7 +53,10 @@ class LocationEditModeView( HiSideView, LocationViewMixin ):
 
 
 class LocationViewEditModeView( HiSideView, LocationViewMixin, LocationEditViewMixin ):
-    """Location view edit mode panel view - shows location view properties editing interface and handles form submission."""
+    """
+    Location view edit mode panel view - shows location view properties
+    editing interface and handles form submission.
+    """
 
     def get_template_name( self ) -> str:
         return 'location/edit/panes/location_view_edit_mode_panel.html'

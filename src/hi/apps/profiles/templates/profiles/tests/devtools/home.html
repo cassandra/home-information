@@ -1,0 +1,29 @@
+{% extends "pages/base.html" %}
+{% block head_title %}HI: Profiles DevTools{% endblock %}
+
+{% block content %}
+<div class="container-fluid m-4">
+
+  <h2 class="text-info">DevTools: Profiles</h2>
+
+  <div class="row">
+    <div class="col-xl-4 col-lg-4 col-md-6 col-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title text-primary">Profile Definitions</h3>
+        </div>
+        <div class="panel-body">
+          <ul>
+            <li>
+              <a href="{% url 'profiles_devtools_snapshot' %}" data-async="modal">
+              Snapshot Current Data
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,20 +1,38 @@
 {% extends "pages/interstitial_page.html" %}
+{% load static %}
 
 {% block interstitial_content %}
 <div>
-  <div class="display-4">Welcome!</div>
-  <p class="lead mt-2 mb-4">
-    To get started, add your home's name to create a new location.
+  <div class="display-4" style="font-size: clamp(2rem, 5vw, 3.5rem);">Welcome!</div>
+  <p class="lead mt-2 mb-4" style="font-size: clamp(1rem, 2.5vw, 1.25rem);">
+    Choose your type of home to get started.
   </p>
-  <div class="">
-    <a role="button" class="btn btn-primary"
-       href="{% url 'location_edit_location_add_first' %}"
+  
+  <!-- Home Profile Selection -->
+  <div class="profile-selection-container">
+    {% for profile_type in profile_type_list %}
+    <form method="post" action="{% url 'profiles_initialize_predefined' profile_type %}"
+          style="display: inline-block;"
+          data-async="true">
+      {% csrf_token %}
+      <button type="submit" class="profile-button">
+        <img src="{% static 'img/profiles/'|add:profile_type.icon_filename %}" 
+             alt="{{ profile_type.label }}" class="profile-icon">
+        <span class="profile-label">{{ profile_type.label }}</span>
+      </button>
+    </form>
+    {% endfor %}
+  </div>
+  
+  <!-- Start from Scratch Option -->
+  <div class="text-center mt-4">
+    <p class="text-muted small mb-2">Want to customize everything yourself?</p>
+    <a href="{% url 'profiles_initialize_custom' %}" 
+       class="start-empty-link" 
        data-async="modal">
-      ADD MY LOCATION
+      <img src="{% static 'img/hi-gear.svg' %}" alt="Customize" class="empty-layout-icon">
+      Start with an empty layout
     </a>
   </div>
-  <p class="text-muted mt-4">
-    Optionally, you can upload an SVG image of your home or property layout.
-  </p>
 </div>
 {% endblock %}

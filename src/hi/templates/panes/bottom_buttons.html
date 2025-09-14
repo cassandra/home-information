@@ -4,10 +4,10 @@
     <div class="d-flex justify-content-end">
       {% if request.view_parameters.is_editing %}
       <div class="mx-1">
-        <a href="{% url 'edit_help' %}"
+        <a href="{% url 'profiles_edit_reference_help' %}"
            class="btn btn-tertiary btn-control" role="button"
            data-async="true" >
-          EDITING HELP
+          EDIT HELP
         </a>
       </div>
       {% else %}

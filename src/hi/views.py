@@ -17,7 +17,7 @@ from hi.apps.common.healthcheck import do_healthcheck
 from hi.apps.common.utils import is_ajax
 from hi.apps.location.models import LocationView
 
-from hi.enums import ViewMode
+from hi.apps.profiles.enums import ProfileType
 
 
 def error_response( request             : HttpRequest,
@@ -189,9 +189,17 @@ class StartView( View ):
             redirect_url = reverse( 'home' )
             return HttpResponseRedirect( redirect_url )
 
-        # First actions need edit ability.
-        request.view_parameters.view_mode = ViewMode.EDIT
-        request.view_parameters.to_session( request )
+        # Define which profiles to show and in what order
+        # This allows us to control which profiles appear on the start page
+        # and their display order, independent of enum definition order
+        profile_type_list = [
+            ProfileType.SINGLE_STORY,
+            ProfileType.TWO_STORY,
+            ProfileType.APARTMENT,
+        ]
+        
         context = {   
+            'profile_type_list': profile_type_list,
         }
         return render( request, 'pages/start.html', context )
+    

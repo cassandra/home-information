@@ -3,7 +3,7 @@
 {% block interstitial_content %}
 <h1 class="text-danger">{% block title %}Error{% endblock %}</h1>
 
-<div>
-  {{ error_message }}
-</div>
+{% block interstitial_message %}
+<div>{{ error_message }}</div>
+{% endblock %}
 {% endblock %}

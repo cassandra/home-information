@@ -1,13 +1,14 @@
 {% extends "pages/base.html" %}
-{% block head_title %}HI: Testing Home Page{% endblock %}
+{% block head_title %}HI: Developer Page{% endblock %}
 
 {% block content %}
 <div class="container-fluid m-4">
 
-  <h2 class="text-info">Testing Home</h2>
+  <h2 class="text-info">Developer Home</h2>
 
   <ul>
     <li><a href='{% url 'testing_ui_home' %}'>UI Testing</a></li>
+    <li><a href='{% url 'testing_devtools_home' %}'>Development Tools</a></li>
   </ul>
 </div>
 {% endblock %}
