@@ -4,13 +4,222 @@
 {% block modal_dialog_class %}hi-modal-dialog-700{% endblock %}
 
 {% block title_text %}
-Home Information Help
+Quick Reference
 {% endblock %}
 
 {% block body %}
 
-<div class="hi-help-guide">
-PLACEHOLDER
+<div class="editing-help-guide">
+    <div class="guide-header">
+        {% icon "home" size="lg" color="primary" %}
+        <h5>Home Management Guide</h5>
+    </div>
+    
+    <div class="editing-help-categories">
+        <!-- Information Management -->
+        <div class="help-category">
+            <div class="category-header">
+                <div class="category-icon">
+                    {% icon "info-circle" size="sm" color="primary" %}
+                </div>
+                <h6 class="category-title">Information</h6>
+            </div>
+            <ul class="help-actions">
+                <li>
+                    <span class="action-method">Tap Items</span>
+                    <span class="action-description">Add details and files</span>
+                </li>
+                <li>
+                    <span class="action-method">Top Right</span>
+                    <span class="action-description">Home overview info</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Views -->
+        <div class="help-category">
+            <div class="category-header">
+                <div class="category-icon">
+                    {% icon "view" size="sm" color="primary" %}
+                </div>
+                <h6 class="category-title">Views</h6>
+            </div>
+            <ul class="help-actions">
+                <li>
+                    <span class="action-method">Top Left</span>
+                    <span class="action-description">Switch between views</span>
+                </li>
+                <li>
+                  <span class="action-method">Customize</span>
+                  <span class="action-description">Choose items per view</span>
+                </li>
+                <li>
+                    <span class="action-method">Edit Mode</span>
+                    <span class="action-description">Zoom/Rotate</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Spaces -->
+        <div class="help-category">
+            <div class="category-header">
+                <div class="category-icon">
+                    {% icon "layers" size="sm" color="primary" %}
+                </div>
+                <h6 class="category-title">Spaces</h6>
+            </div>
+            <ul class="help-actions">
+                <li>
+                    <span class="action-method">Floors</span>
+                    <span class="action-description">Create per level</span>
+                </li>
+                <li>
+                    <span class="action-method">Properties</span>
+                    <span class="action-description">Add vacation homes</span>
+                </li>
+                <li>
+                    <span class="action-method">Multiple</span>
+                    <span class="action-description">Views per space</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Collections -->
+        <div class="help-category">
+            <div class="category-header">
+                <div class="category-icon">
+                    {% icon "collection" size="sm" color="primary" %}
+                </div>
+                <h6 class="category-title">Collections</h6>
+            </div>
+            <ul class="help-actions">
+                <li>
+                    <span class="action-method">Bottom Right</span>
+                    <span class="action-description">Access groups</span>
+                </li>
+                <li>
+                    <span class="action-method">Organize</span>
+                    <span class="action-description">Related items</span>
+                </li>
+                <li>
+                    <span class="action-method">Edit Mode</span>
+                    <span class="action-description">Add and manage</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Edit Mode -->
+        <div class="help-category">
+            <div class="category-header">
+                <div class="category-icon">
+                    {% icon "edit" size="sm" color="primary" %}
+                </div>
+                <h6 class="category-title">Edit Mode</h6>
+            </div>
+            <ul class="help-actions">
+                <li>
+                    <span class="action-method">Layout</span>
+                    <span class="action-description">Adjust items</span>
+                </li>
+                <li>
+                    <span class="action-method">Items</span>
+                    <span class="action-description">Add or remove</span>
+                </li>
+                <li>
+                    <span class="action-method">Transform</span>
+                    <span class="action-description">Move, scale, rotate</span>
+                </li>
+                <li>
+                    <span class="action-method">Background</span>
+                    <span class="action-description">Custom images</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Access Control -->
+        <div class="help-category">
+            <div class="category-header">
+                <div class="category-icon">
+                    {% icon "shield" size="sm" color="primary" %}
+                </div>
+                <h6 class="category-title">Access Control</h6>
+            </div>
+            <ul class="help-actions">
+                <li>
+                    <span class="action-method">Lock Mode</span>
+                    <span class="action-description">Visitor access</span>
+                </li>
+                <li>
+                    <span class="action-method">Sleep Mode</span>
+                    <span class="action-description">Night dimming</span>
+                </li>
+                <li>
+                    <span class="action-method">Alerts</span>
+                    <span class="action-description">Always active</span>
+                </li>
+                <li>
+                  <span class="action-method">Security</span>
+                  <span class="action-description">Day, night and away profiles</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Weather -->
+        <div class="help-category">
+            <div class="category-header">
+                <div class="category-icon">
+                    {% icon "cloud" size="sm" color="primary" %}
+                </div>
+                <h6 class="category-title">Weather</h6>
+            </div>
+            <ul class="help-actions">
+                <li>
+                    <span class="action-method">Current</span>
+                    <span class="action-description">Live conditions</span>
+                </li>
+                <li>
+                  <span class="action-method">Alerts</span>
+                  <span class="action-description">Weather warnings</span>
+                </li>
+                <li>
+                    <span class="action-method">Forecast</span>
+                    <span class="action-description">Future outlook</span>
+                </li>
+                <li>
+                  <span class="action-method">Astronomy</span>
+                  <span class="action-description">Sunrise, sunset, moon phase</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Integrations -->
+        <div class="help-category">
+            <div class="category-header">
+                <div class="category-icon">
+                    {% icon "plug" size="sm" color="primary" %}
+                </div>
+                <h6 class="category-title">Configuration</h6>
+            </div>
+            <ul class="help-actions">
+                <li>
+                    <span class="action-method">Personalize</span>
+                    <span class="action-description">Timezone and location</span>
+                </li>
+                <li>
+                    <span class="action-method">Alerts</span>
+                    <span class="action-description">Customize alert sounds</span>
+                </li>
+                <li>
+                    <span class="action-method">Integrations</span>
+                    <span class="action-description">Automation and Security</span>
+                </li>
+                <li>
+                    <span class="action-method">Notifciations</span>
+                    <span class="action-description">Alerts while you're away</span>
+                </li>
+            </ul>
+        </div>
+    </div>
 </div>
 
 {% endblock %}

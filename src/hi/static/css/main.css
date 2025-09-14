@@ -13,7 +13,7 @@
   --secondary-highlight-color: #F8AD98;
   --tertiary-color: #020204;
   --on-tertiary-color: #ffffff;
-  --secondary-highlight-color: #7e7e81;
+  --tertiary-highlight-color: #7e7e81;
   --success-color: #177219;
   --on-success-color: #ffffff;
   --success-bg-light: #e8f5e8;
@@ -170,6 +170,9 @@ a.clickable-card:active {
 
 .text-primary {
     color: var(--primary-color) !important;
+}
+.text-secondary {
+    color: var(--secondary-color) !important;
 }
 .text-on-primary {
     color: var(--on-primary-color) !important;
@@ -336,9 +339,15 @@ a.clickable-card:active {
     max-height: 2rem;
     width: auto;
 }
+.hi-side {
+    padding-left: 0;
+    padding-right: 0;
+}
 #hi-side-content {
     height: calc(100vh - var(--top-buttons-height) - var(--bottom-buttons-height));
     display: flex;
+    padding-left: 1rem;
+    padding-right: 1rem;
     flex-direction: column;
     overflow-y: auto;
 }
@@ -864,7 +873,6 @@ g[hover] {
 .getting-started-guide {
     /* Content styles - with background and padding for when used without sidebar container */
     background: var(--white);
-    padding: 1rem;
     border-radius: 0.5rem;
 }
 

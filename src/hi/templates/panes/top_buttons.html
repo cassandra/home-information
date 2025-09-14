@@ -11,7 +11,7 @@
         <a href="{% url 'location_edit_location_edit' location_id=request.view_parameters.location.id %}"
            class="btn btn-primary btn-control" role="button"
            data-async="true" >
-          Location Info
+          {{ request.view_parameters.location.name }}
         </a>
       </div>
       {% endif %}

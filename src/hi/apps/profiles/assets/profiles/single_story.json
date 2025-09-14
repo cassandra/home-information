@@ -301,8 +301,8 @@
       "positions": [
         {
           "location_name": "Main Floor",
-          "svg_x": 650.0,
-          "svg_y": 450.0
+          "svg_x": 433.213409,
+          "svg_y": 175.65947
         }
       ],
       "visible_in_views": [
@@ -315,8 +315,22 @@
       "positions": [
         {
           "location_name": "Main Floor",
-          "svg_x": 583.02948,
-          "svg_y": 306.290924
+          "svg_x": 102.270172,
+          "svg_y": 503.477203
+        }
+      ],
+      "visible_in_views": [
+        "Full Floor View"
+      ]
+    },
+    {
+      "name": "Toilet",
+      "entity_type_str": "toilet",
+      "positions": [
+        {
+          "location_name": "Main Floor",
+          "svg_x": 580.815308,
+          "svg_y": 54.916061
         }
       ],
       "visible_in_views": [

@@ -1,16 +1,11 @@
 {% load icons %}
 <div class="getting-started-guide">
     <div class="guide-header">
-        {% icon "rocket" size="lg" color="primary" %}
-        <h5>Get Started</h5>
+        {% icon "rocket" size="lg" color="secondary" %}
+      <h5 class=" text-secondary">Getting Started</h5>
     </div>
     
     <div class="guide-content">
-        <div class="mode-explanation">
-            <span class="badge badge-success">View Mode</span>
-            <p class="small mb-0">Your home information system is ready to personalize.</p>
-        </div>
-        
         <div class="steps">
             <div class="step">
                 <div class="step-icon">
@@ -18,7 +13,7 @@
                 </div>
                 <div class="step-content">
                     <div><strong>Click to Add Info</strong></div>
-                    <p class="small mb-0">Tap any item or icon to add details, photos, and information.</p>
+                    <p class="small mb-0">Tap an icon to add information and attach files.</p>
                 </div>
             </div>
             
@@ -28,17 +23,7 @@
                 </div>
                 <div class="step-content">
                     <div><strong>Set Your Location</strong></div>
-                    <p class="small mb-0">Configure timezone and location for weather updates.</p>
-                </div>
-            </div>
-            
-            <div class="step">
-                <div class="step-icon">
-                    {% icon "settings" color="warning" aria_label="Configure integrations" %}
-                </div>
-                <div class="step-content">
-                    <div><strong>Add Integrations</strong></div>
-                    <p class="small mb-0">Connect smart devices via the Configure button.</p>
+                    <p class="small mb-0">Configure your timezone and location for weather info and alerts.</p>
                 </div>
             </div>
             
@@ -51,6 +36,16 @@
                     <p class="small mb-0">Switch to Edit Mode to adjust visual appearance.</p>
                 </div>
             </div>
+            <div class="step">
+                <div class="step-icon">
+                    {% icon "settings" color="warning" aria_label="Configure integrations" %}
+                </div>
+                <div class="step-content">
+                    <div><strong>Add Integrations</strong></div>
+                    <p class="small mb-0">Connect smart devices via the Configure button.</p>
+                </div>
+            </div>
+            
         </div>
         
         <a class="plain" href="{% url 'profiles_view_reference_help' %}" data-async="modal">

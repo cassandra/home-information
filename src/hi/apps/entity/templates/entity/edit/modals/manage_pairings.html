@@ -30,11 +30,11 @@
     <div class="row">
     {% for entity_view_item in entity_view_group.item_list %}
       <div class="col-6">
-	<input type="checkbox"
-	       id="principal-entity-checkbox-{{ entity_view_item.entity.id }}"
-	       name="{{ principal_entity_id_name_prefix }}{{ entity_view_item.entity.id }}" 
+        <input type="checkbox"
+               id="principal-entity-checkbox-{{ entity_view_item.entity.id }}"
+               name="{{ principal_entity_id_name_prefix }}{{ entity_view_item.entity.id }}" 
                {% if entity_view_item.exists_in_view %}checked{% endif %} >
-	<label for="principal-entity-checkbox-{{ entity_view_item.entity.id }}">{{ entity_view_item.entity.name }}</label>
+        <label for="principal-entity-checkbox-{{ entity_view_item.entity.id }}">{{ entity_view_item.entity.name }}</label>
       </div>
       {% endfor %}
     </div>
@@ -46,8 +46,8 @@
   {% endblock %}
   
   {% block action_right %}
-  <button id="hi-principal-manage-button" type="submit" class="btn btn-lg btn-success"
-	name="action" value="submit">
+  <button id="hi-principal-manage-button" type="submit" class="btn btn-lg btn-primary"
+        name="action" value="submit">
     SUBMIT
   </button>
   {% endblock %}

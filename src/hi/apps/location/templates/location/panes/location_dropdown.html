@@ -4,11 +4,7 @@
   <div class="dropdown">
     <button class="btn btn-outline-primary btn-control dropdown-toggle" type="button"
             id="hi-location-menu" data-toggle="dropdown">
-      {% if request.view_parameters.location %}
-      {{ request.view_parameters.location.name }}
-      {% else %}
-      -- CHOOSE --
-      {% endif %}
+      SPACES
       <span class="caret"></span>
     </button>
     <div class="dropdown-menu"
@@ -38,7 +34,7 @@
   </div>
   {% else %}
   <a href="{% url 'start' %}"
-     class="btn btn-success btn-control" role="button" >
+     class="btn btn-primary btn-control" role="button" >
     START
   </a>
   {% endif %}
