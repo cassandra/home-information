@@ -1,0 +1,9 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+<rect x="12" y="16" width="40" height="32" rx="2" fill="#1a1a2e" stroke="#333333" stroke-width="2"/>
+<rect x="16" y="20" width="8" height="8" fill="#4444ff" opacity="0.8"/>
+<rect x="28" y="20" width="8" height="8" fill="#4444ff" opacity="0.8"/>
+<rect x="40" y="20" width="8" height="8" fill="#4444ff" opacity="0.8"/>
+<rect x="16" y="32" width="8" height="8" fill="#4444ff" opacity="0.8"/>
+<rect x="28" y="32" width="8" height="8" fill="#4444ff" opacity="0.8"/>
+<rect x="40" y="32" width="8" height="8" fill="#4444ff" opacity="0.8"/>
+<path d="M52,8 L56,4 L60,8" stroke="#ffcc00" stroke-width="2" fill="none" stroke-linecap="round"/>

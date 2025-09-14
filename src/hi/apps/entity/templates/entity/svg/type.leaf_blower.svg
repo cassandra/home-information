@@ -1,0 +1,6 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M12,32 C12,26 16,22 22,22 L42,22 C48,22 52,26 52,32 C52,38 48,42 42,42 L22,42 C16,42 12,38 12,32 Z" fill="#ff8800" stroke="#333333" stroke-width="2"/>
+<path d="M52,32 L58,32" stroke="#333333" stroke-width="2" stroke-linecap="round"/>
+<circle cx="20" cy="32" r="3" fill="#333333"/>
+<path d="M56,24 C58,26 58,38 56,40" stroke="#333333" stroke-width="1" fill="none"/>
+<circle cx="30" cy="28" r="2" fill="#333333"/>

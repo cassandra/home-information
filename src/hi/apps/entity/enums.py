@@ -19,10 +19,13 @@ class EntityType(LabeledEnum):
     AUTOMOBILE           = ( 'Automobile', '' )
     AV_RECEIVER          = ( 'A/V Receiver', '' )  # Controls Speakers/TV
     BAROMETER            = ( 'Barometer', '' )
+    BATHTUB              = ( 'Bathtub', '' )
     CAMERA               = ( 'Camera', '' )
+    CARBON_MONOXIDE_DETECTOR = ( 'Carbon Monoxide Detector', '' )
     CEILING_FAN          = ( 'Ceiling Fan', '' )
     CLOTHES_DRYER        = ( 'Clothes Dryer', '' )
     CLOTHES_WASHER       = ( 'Clothes Washer', '' )
+    COFFEE_MAKER         = ( 'Coffee Maker', '' )
     COMPUTER             = ( 'Computer', '' )
     CONSUMABLE           = ( 'Consumable', '' )
     CONTROLLER           = ( 'Controller', '' )
@@ -30,24 +33,33 @@ class EntityType(LabeledEnum):
     COOKTOP              = ( 'Cooktop', '' )
     DISHWASHER           = ( 'Dishwasher', '' )
     DISK                 = ( 'Disk', '' )
-    DOOR                 = ( 'Door', '' )    
+    DOOR                 = ( 'Door', '' )
+    DOORBELL             = ( 'Doorbell', '' )
     DOOR_LOCK            = ( 'Door Lock', '' )  # Controls doors
+    DRAINAGE_PIPE        = ( 'Drainage Pipe', '' )
     ELECTRICAL_OUTLET    = ( 'Electrical Outlet', '' )
     ELECTRICITY_METER    = ( 'Electricity Meter', '' )
     ELECTRIC_PANEL       = ( 'Electric Panel', '' )
     ELECTRIC_WIRE        = ( 'Electric Wire', '' )
     EXHAUST_FAN          = ( 'Exhaust Fan', '' )
     FENCE                = ( 'Fence', '' )
+    FIRE_EXTINGUISHER    = ( 'Fire Extinguisher', '' )
     FIREPLACE            = ( 'Fireplace', '' )
     FURNITURE            = ( 'Furniture', '' )
+    GARBAGE_DISPOSAL     = ( 'Garbage Disposal', '' )
+    GENERATOR            = ( 'Generator', '' )
     GREENHOUSE           = ( 'Greenhouse', '' )
+    GRILL                = ( 'Grill', '' )  # BBQ
     HEALTHCHECK          = ( 'Healthcheck', '' )
+    HEDGE_TRIMMER        = ( 'Hedge Trimmer', '' )
     HUMIDIFIER           = ( 'Humidifier', '' )  # Controls area
     HVAC_AIR_HANDLER     = ( 'HVAC Air Handler', '' )  # Controls area
     HVAC_CONDENSER       = ( 'HVAC Condenser', '' )  # Controls area
     HVAC_FURNACE         = ( 'HVAC Furnace', '' )  # Controls area
     HVAC_MINI_SPLIT      = ( 'HVAC Mini-split', '' )  # Controls area
     HYGROMETER           = ( 'Hygrometer', '' )
+    LAWN_MOWER           = ( 'Lawn Mower', '' )
+    LEAF_BLOWER          = ( 'Leaf Blower', '' )
     LIGHT                = ( 'Light', '' )
     LIGHT_SENSOR         = ( 'Light Sensor', '' )
     MICROWAVE_OVEN       = ( 'Microwave Oven', '' )
@@ -62,9 +74,11 @@ class EntityType(LabeledEnum):
     PIPE                 = ( 'Pipe', '' )
     PLANT                = ( 'Plant', '' )
     POOL_FILTER          = ( 'Pool Filter', '' )
+    POWER_WASHER         = ( 'Power Washer', '' )
     PRESENCE_SENSOR      = ( 'Presence Sensor', '' )
     PRINTER              = ( 'Printer', '' )
     PUMP                 = ( 'Pump', '' )
+    RANGE_HOOD           = ( 'Range Hood', '' )
     REFRIGERATOR         = ( 'Refrigerator', '' )
     SATELLITE_DISH       = ( 'Satellite Dish'  , '' )
     SERVER               = ( 'Server'  , '' )
@@ -73,7 +87,9 @@ class EntityType(LabeledEnum):
     SHOWER               = ( 'Shower', '' ) 
     SHED                 = ( 'Shed', '' ) 
     SINK                 = ( 'Sink', '' ) 
-    SKYLIGHT             = ( 'Skylight', '' ) 
+    SKYLIGHT             = ( 'Skylight', '' )
+    SMOKE_DETECTOR       = ( 'Smoke Detector', '' )
+    SOLAR_PANEL          = ( 'Solar Panel', '' )
     SPEAKER              = ( 'Speaker', '' )
     SPEAKER_WIRE         = ( 'Speaker Wire', '' )
     SPRINKLER_HEAD       = ( 'Sprinkler Head', '' )
@@ -85,9 +101,12 @@ class EntityType(LabeledEnum):
     THERMOMETER          = ( 'Thermometer', '' )
     THERMOSTAT           = ( 'Thermostat', '' )
     TIME_SOURCE          = ( 'Time Source', '' )
-    TOILET               = ( 'Toilet', '' ) 
+    TOILET               = ( 'Toilet', '' )
     TOOL                 = ( 'Tool', '' )
     TREE                 = ( 'Tree', '' )
+    TRIMMER              = ( 'Trimmer', '' )
+    UPS                  = ( 'UPS', '' )  # Uninterruptible Power Supply
+    VANITY               = ( 'Vanity', '' )
     WALL                 = ( 'Wall', '' )
     WALL_SWITCH          = ( 'Wall Switch', '' )
     WATER_HEATER         = ( 'Water Heater', '' )
@@ -115,11 +134,12 @@ class EntityType(LabeledEnum):
             cls.WINDOW,
         }
     
-    @classmethod  
+    @classmethod
     def get_open_path_types(cls) -> Set['EntityType']:
         """EntityTypes that require open paths (lines/routes)"""
         return {
             cls.CONTROL_WIRE,
+            cls.DRAINAGE_PIPE,
             cls.ELECTRIC_WIRE,
             cls.FENCE,
             cls.PIPE,
@@ -296,10 +316,14 @@ class EntityGroupType(LabeledEnum):
         EntityType.APPLIANCE,
         EntityType.CLOTHES_DRYER,
         EntityType.CLOTHES_WASHER,
+        EntityType.COFFEE_MAKER,
         EntityType.COOKTOP,
         EntityType.DISHWASHER,
+        EntityType.GARBAGE_DISPOSAL,
+        EntityType.GRILL,
         EntityType.MICROWAVE_OVEN,
         EntityType.OVEN,
+        EntityType.RANGE_HOOD,
         EntityType.REFRIGERATOR,
         EntityType.WATER_HEATER,
     })
@@ -344,11 +368,13 @@ class EntityGroupType(LabeledEnum):
     })
     FIXTURES = ( 'Fixtures', '', {
         EntityType.ATTIC_STAIRS,
+        EntityType.BATHTUB,
         EntityType.CEILING_FAN,
         EntityType.FURNITURE,
         EntityType.SHOWER,
         EntityType.SINK,
         EntityType.TOILET,
+        EntityType.VANITY,
     })
     LIGHTS_SWITCHES = ( 'Lights, Switches, Outlets', '', {
         EntityType.ELECTRICAL_OUTLET,
@@ -363,24 +389,33 @@ class EntityGroupType(LabeledEnum):
         EntityType.FENCE,
         EntityType.CONTROLLER,
         EntityType.GREENHOUSE,
+        EntityType.HEDGE_TRIMMER,
+        EntityType.LAWN_MOWER,
+        EntityType.LEAF_BLOWER,
         EntityType.MOTOR,
         EntityType.PIPE,
         EntityType.PLANT,
         EntityType.POOL_FILTER,
+        EntityType.POWER_WASHER,
         EntityType.PUMP,
         EntityType.SHED,
         EntityType.SPRINKLER_HEAD,
         EntityType.SPRINKLER_VALVE,
         EntityType.SPRINKLER_WIRE,
         EntityType.TREE,
+        EntityType.TRIMMER,
     })
     SECURITY = ( 'Security', '', {
         EntityType.CAMERA,
+        EntityType.CARBON_MONOXIDE_DETECTOR,
+        EntityType.DOORBELL,
         EntityType.DOOR_LOCK,
+        EntityType.FIRE_EXTINGUISHER,
         EntityType.LIGHT_SENSOR,
         EntityType.MOTION_SENSOR,
         EntityType.OPEN_CLOSE_SENSOR,
         EntityType.PRESENCE_SENSOR,
+        EntityType.SMOKE_DETECTOR,
     })
     STRUCTURAL = ( 'Structural', '', {
         EntityType.DOOR,
@@ -398,13 +433,17 @@ class EntityGroupType(LabeledEnum):
     })
     UTILITIES = ( 'Utilities', '', {
         EntityType.ANTENNA,
+        EntityType.DRAINAGE_PIPE,
         EntityType.ELECTRICITY_METER,
         EntityType.ELECTRIC_PANEL,
         EntityType.ELECTRIC_WIRE,
+        EntityType.GENERATOR,
         EntityType.SATELLITE_DISH,
         EntityType.SEWER_LINE,
+        EntityType.SOLAR_PANEL,
         EntityType.TELECOM_BOX,
         EntityType.TELECOM_WIRE,
+        EntityType.UPS,
         EntityType.WATER_LINE,
         EntityType.WATER_METER,
         EntityType.WATER_SHUTOFF_VALVE,

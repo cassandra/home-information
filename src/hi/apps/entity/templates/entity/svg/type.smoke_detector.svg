@@ -1,0 +1,8 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+<circle cx="32" cy="32" r="24" fill="#f0f0f0" stroke="#333333" stroke-width="2"/>
+<circle cx="32" cy="32" r="20" fill="#e0e0e0" stroke="#333333" stroke-width="1"/>
+<circle cx="32" cy="32" r="8" fill="#ff4444" stroke="#cc0000" stroke-width="1"/>
+<circle cx="32" cy="20" r="3" fill="#333333"/>
+<circle cx="44" cy="32" r="3" fill="#333333"/>
+<circle cx="32" cy="44" r="3" fill="#333333"/>
+<circle cx="20" cy="32" r="3" fill="#333333"/>

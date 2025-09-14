@@ -1,0 +1,8 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+<rect x="16" y="20" width="32" height="28" rx="2" fill="#606060" stroke="#333333" stroke-width="2"/>
+<rect x="20" y="24" width="24" height="8" fill="#ff8800" stroke="#333333" stroke-width="1"/>
+<rect x="20" y="36" width="8" height="8" rx="1" fill="#333333"/>
+<rect x="32" y="36" width="8" height="8" rx="1" fill="#333333"/>
+<path d="M24,28 L28,28" stroke="#ffffff" stroke-width="2"/>
+<path d="M36,28 L40,28" stroke="#ffffff" stroke-width="2"/>
+<circle cx="52" cy="24" r="2" fill="#00ff00"/>

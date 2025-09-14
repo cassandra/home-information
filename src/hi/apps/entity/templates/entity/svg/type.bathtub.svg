@@ -1,0 +1,5 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+<path d="M8,24 C8,20 12,16 16,16 L48,16 C52,16 56,20 56,24 L56,40 C56,44 52,48 48,48 L16,48 C12,48 8,44 8,40 Z" fill="#e0e0ff" stroke="#333333" stroke-width="2"/>
+<ellipse cx="32" cy="32" rx="20" ry="12" fill="#c0c0ff" opacity="0.5"/>
+<circle cx="48" cy="20" r="3" fill="#808080" stroke="#333333" stroke-width="1"/>
+<path d="M48,20 L48,12" stroke="#333333" stroke-width="2" stroke-linecap="round"/>
