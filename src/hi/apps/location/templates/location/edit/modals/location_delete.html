@@ -1,18 +1,18 @@
 {% extends "modals/action_with_cancel.html" %}
 
 {% block title_text %}
-Delete Location?
+Delete Space?
 {% endblock %}
 
 {% block body %}
 <p>
-  Please confirm that you want to delete the location:
+  Please confirm that you want to delete the space:
   <ul>
     <span class="h4 text-primary">{{ location.name }}</span>
   </ul>
 </p>
 <p>
-  This will also delete all views for this location. This action cannot be undone.
+  This will also delete all views for this space. This action cannot be undone.
 </p>
 {% endblock %}
 
@@ -22,7 +22,7 @@ Delete Location?
       data-async="true" >
   {% csrf_token %}
   <button id="hi-delete-location-button" type="submit" class="btn btn-lg btn-danger"
-	  name="action" value="confirm">
+          name="action" value="confirm">
     DELETE
   </button>
 </form>

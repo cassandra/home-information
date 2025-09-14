@@ -9,7 +9,7 @@
   
   <div class="text-center" >
     <button id="hi-location-properties-edit-button" type="submit" class="btn btn-primary"
-	name="action" value="update">
+        name="action" value="update">
       {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
     </button>
   </div>
@@ -20,7 +20,7 @@
   <a href="{% url 'location_edit_svg_replace' location_id=location.id %}"
      id="hi-svg-replace-link" class="btn btn-primary btn-control" role="button"
      data-async="true">
-    {% icon "upload" size="sm" css_class="hi-icon-left" %}REPLACE BACKGROUND SVG IMAGE
+    {% icon "upload" size="sm" css_class="hi-icon-left" %}REPLACE BACKGROUND IMAGE
   </a>
 </div>
 
@@ -28,7 +28,7 @@
   <a href="{% url 'location_edit_location_delete' location_id=location.id %}"
      id="hi-delete-location-link" class="btn btn-danger btn-control" role="button"
      data-async="true">
-    {% icon "delete" size="sm" css_class="hi-icon-left" %}DELETE LOCATION AND ALL VIEWS
+    {% icon "delete" size="sm" css_class="hi-icon-left" %}DELETE SPACE AND ALL VIEWS
   </a>
 </div>
 {% endif %}

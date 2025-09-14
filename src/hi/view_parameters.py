@@ -54,19 +54,22 @@ class ViewParameters:
     def location_view(self) -> LocationView:
         if self._location_view:
             return self._location_view
-        try:
-            queryset = LocationView.objects.select_related('location')
+        try:            
             if self.location_view_id is None:
-                self._location_view = queryset.order_by( 'order_id' ).first()
+                location = Location.objects.all().order_by( 'order_id' ).first()
+                if not location:
+                    raise Location.DoesNotExist()
+                self._location_view = location.views.all().order_by( 'order_id' ).first()
                 if not self._location_view:
                     raise LocationView.DoesNotExist()
             else:
+                queryset = LocationView.objects.select_related('location')
                 self._location_view = queryset.get( id = self.location_view_id )
                 
             self.location_view_id = self._location_view.id
             self._location = self._location_view.location
             return self._location_view
-        except LocationView.DoesNotExist:
+        except ( Location.DoesNotExist, LocationView.DoesNotExist ):
             self.location_view_id = None
             return None
 
