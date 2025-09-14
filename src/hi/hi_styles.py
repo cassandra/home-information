@@ -126,7 +126,7 @@ class EntityStyle:
         stroke_color = '#040406',
         stroke_width = 2,
         stroke_dasharray = [],
-        fill_color = '#e6f0fa',
+        fill_color = '#f8f8f0',
         fill_opacity = 1,
     )
     Area = SvgStatusStyle(
@@ -305,7 +305,6 @@ class EntityStyle:
         EntityType.SATELLITE_DISH,
         EntityType.SERVER,
         EntityType.SERVICE,
-        EntityType.SHED,
         EntityType.SHOWER,
         EntityType.SINK,
         EntityType.SKYLIGHT,
@@ -368,6 +367,7 @@ class EntityStyle:
         EntityType.AREA: Area,
         EntityType.CONTROL_WIRE: ControlWire,
         EntityType.DOOR: Door,
+        EntityType.DRAINAGE_PIPE: Pipe,
         EntityType.ELECTRIC_WIRE: ElectricWire,
         EntityType.FENCE: Fence,
         EntityType.FURNITURE: Furniture,

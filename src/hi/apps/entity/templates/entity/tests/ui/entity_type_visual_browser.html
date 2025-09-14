@@ -1,0 +1,253 @@
+{% extends "pages/base.html" %}
+{% block head_title %}HI: EntityType Visual Browser{% endblock %}
+
+{% block content %}
+<div class="container-fluid m-4">
+
+  <h2 class="text-info">EntityType Visual Browser</h2>
+  <p class="text-muted">{{ total_entity_types }} EntityTypes: Icons, Closed Paths, and Open Paths</p>
+
+  <!-- Sticky Controls Header -->
+  <div class="sticky-controls bg-white border-bottom shadow-sm">
+    <div class="container-fluid">
+      <div class="row py-3">
+        <div class="col-md-6">
+          <h5 class="text-primary mb-2">Size Controls</h5>
+          <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setSize('sm')">Small</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm active" onclick="setSize('md')">Medium</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setSize('lg')">Large</button>
+          </div>
+        </div>
+        <div class="col-md-6 text-md-right">
+          <h5 class="text-primary mb-2">Status Preview</h5>
+          <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary btn-sm active" onclick="setStatus('none')">None</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setStatus('active')">Active</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setStatus('on')">On</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setStatus('off')">Off</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setStatus('open')">Open</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setStatus('connected')">Connected</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setStatus('disconnected')">Disconnected</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main EntityType Grid -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h3 class="text-primary">All EntityTypes (Alphabetical)</h3>
+
+      <div class="row" id="entity-types-grid">
+        {% for data in entity_type_data %}
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12 mb-3">
+          <div class="card entity-type-card" onclick="showEnlarged('{{ data.entity_type.name }}', '{{ data.label }}', '{{ data.visual_type }}')">
+            <div class="card-body text-center">
+
+              <!-- Visual Representation -->
+              <div class="mb-2 d-flex align-items-center justify-content-center" style="height: 80px;">
+                {% if data.visual_type == "Icon" %}
+                  {% if data.svg_item %}
+                    <svg class="entity-visual img-fluid"
+                         xmlns="http://www.w3.org/2000/svg"
+                         viewBox="{{ data.svg_item.bounding_box }}"
+                         style="max-width: 64px; max-height: 64px;">
+                      <g class="status-target">
+                        {% include data.svg_item.template_name %}
+                      </g>
+                    </svg>
+                  {% else %}
+                    <div class="text-muted text-center">
+                      <i class="fas fa-question-circle"></i><br>
+                      <small>No Icon</small>
+                    </div>
+                  {% endif %}
+
+                {% elif data.visual_type == "Closed Path" %}
+                  <svg class="entity-visual img-fluid"
+                       xmlns="http://www.w3.org/2000/svg"
+                       viewBox="0 0 60 60"
+                       style="max-width: 60px; max-height: 60px;">
+                    <g class="status-target">
+                      <path d="{{ data.sample_path_data.svg_path }}"
+                            fill="{{ data.sample_path_data.fill_color }}"
+                            fill-opacity="{{ data.sample_path_data.fill_opacity }}"
+                            stroke="{{ data.sample_path_data.stroke_color }}"
+                            stroke-width="{{ data.sample_path_data.stroke_width }}"
+                            {% if data.sample_path_data.stroke_dasharray %}stroke-dasharray="{{ data.sample_path_data.stroke_dasharray }}"{% endif %}/>
+                    </g>
+                  </svg>
+
+                {% elif data.visual_type == "Open Path" %}
+                  <svg class="entity-visual img-fluid"
+                       xmlns="http://www.w3.org/2000/svg"
+                       viewBox="0 0 60 60"
+                       style="max-width: 60px; max-height: 60px;">
+                    <g class="status-target">
+                      <path d="{{ data.sample_path_data.svg_path }}"
+                            fill="{{ data.sample_path_data.fill_color }}"
+                            fill-opacity="{{ data.sample_path_data.fill_opacity }}"
+                            stroke="{{ data.sample_path_data.stroke_color }}"
+                            stroke-width="{{ data.sample_path_data.stroke_width }}"
+                            {% if data.sample_path_data.stroke_dasharray %}stroke-dasharray="{{ data.sample_path_data.stroke_dasharray }}"{% endif %}
+                            stroke-linecap="round"/>
+                    </g>
+                  </svg>
+                {% endif %}
+              </div>
+
+              <!-- EntityType Info -->
+              <small class="text-muted d-block">{{ data.name }}</small>
+              <small class="text-primary d-block">{{ data.label }}</small>
+              <span class="badge badge-{% if data.visual_type == 'Icon' %}primary{% elif data.visual_type == 'Closed Path' %}success{% else %}warning{% endif %} badge-sm">
+                {{ data.visual_type }}
+              </span>
+
+              {% if data.visual_type == "Icon" and not data.is_registered %}
+                <br><span class="badge badge-danger badge-sm mt-1">Not Registered</span>
+              {% endif %}
+
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+
+</div>
+
+<!-- Enlarged View Modal -->
+<div class="modal fade" id="enlargedModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="enlargedModalTitle">EntityType Details</h5>
+        <button type="button" class="close" data-dismiss="modal">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body text-center">
+        <div id="enlargedContent" style="height: 200px; display: flex; align-items: center; justify-content: center;">
+          <!-- Content will be populated by JavaScript -->
+        </div>
+        <div class="mt-3">
+          <strong id="enlargedName"></strong><br>
+          <span class="badge" id="enlargedType"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Sticky controls header */
+.sticky-controls {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  margin-left: -1.5rem;
+  margin-right: -1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.entity-type-card {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.entity-type-card:hover {
+  transform: scale(1.05);
+}
+
+/* Size controls using existing Bootstrap responsive principles */
+.size-sm .entity-visual {
+  max-width: 32px !important;
+  max-height: 32px !important;
+}
+
+.size-lg .entity-visual {
+  max-width: 96px !important;
+  max-height: 96px !important;
+}
+
+/* Status styling handled by existing CSS rules in main.css:
+   g[status="active"], g[status="on"], g[status="off"], g[status="open"],
+   g[status="connected"], g[status="disconnected"], etc. */
+</style>
+
+<script>
+function setSize(size) {
+  const container = document.querySelector('.container-fluid');
+
+  // Remove existing size classes
+  container.classList.remove('size-sm', 'size-md', 'size-lg');
+
+  // Add new size class (md is default, no class needed)
+  if (size !== 'md') {
+    container.classList.add('size-' + size);
+  }
+
+  // Update button states for size controls
+  document.querySelectorAll('.btn-group .btn').forEach(btn => {
+    if (btn.onclick && btn.onclick.toString().includes('setSize')) {
+      btn.classList.remove('active');
+    }
+  });
+  event.target.classList.add('active');
+}
+
+function setStatus(status) {
+  // Find all status target elements (g elements with class status-target)
+  const statusTargets = document.querySelectorAll('.status-target');
+
+  // Remove any existing status attributes
+  statusTargets.forEach(target => {
+    target.removeAttribute('status');
+
+    // Add new status attribute if not 'none'
+    if (status !== 'none') {
+      target.setAttribute('status', status);
+    }
+  });
+
+  // Update button states for status controls
+  document.querySelectorAll('.btn-group .btn').forEach(btn => {
+    if (btn.onclick && btn.onclick.toString().includes('setStatus')) {
+      btn.classList.remove('active');
+    }
+  });
+  event.target.classList.add('active');
+}
+
+function showEnlarged(entityTypeName, label, visualType) {
+  // Find the original card element
+  const originalCard = event.currentTarget;
+  const originalVisual = originalCard.querySelector('.entity-visual').cloneNode(true);
+
+  // Make it larger by removing size restrictions and adding Bootstrap classes
+  originalVisual.style.maxWidth = '128px';
+  originalVisual.style.maxHeight = '128px';
+  originalVisual.classList.add('img-fluid');
+
+  // Update modal content
+  document.getElementById('enlargedModalTitle').textContent = label;
+  document.getElementById('enlargedContent').innerHTML = '';
+  document.getElementById('enlargedContent').appendChild(originalVisual);
+  document.getElementById('enlargedName').textContent = entityTypeName;
+
+  const typeBadge = document.getElementById('enlargedType');
+  typeBadge.textContent = visualType;
+  typeBadge.className = 'badge badge-' +
+    (visualType === 'Icon' ? 'primary' :
+     visualType === 'Closed Path' ? 'success' : 'warning');
+
+  // Show modal
+  $('#enlargedModal').modal('show');
+}
+</script>
+
+{% endblock %}

@@ -84,8 +84,7 @@ class EntityType(LabeledEnum):
     SERVER               = ( 'Server'  , '' )
     SERVICE              = ( 'Service'   , '' )
     SEWER_LINE           = ( 'Sewer Line', '' )
-    SHOWER               = ( 'Shower', '' ) 
-    SHED                 = ( 'Shed', '' ) 
+    SHOWER               = ( 'Shower', '' )
     SINK                 = ( 'Sink', '' ) 
     SKYLIGHT             = ( 'Skylight', '' )
     SMOKE_DETECTOR       = ( 'Smoke Detector', '' )
@@ -398,7 +397,6 @@ class EntityGroupType(LabeledEnum):
         EntityType.POOL_FILTER,
         EntityType.POWER_WASHER,
         EntityType.PUMP,
-        EntityType.SHED,
         EntityType.SPRINKLER_HEAD,
         EntityType.SPRINKLER_VALVE,
         EntityType.SPRINKLER_WIRE,
