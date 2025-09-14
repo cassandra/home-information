@@ -12,7 +12,8 @@ class ProfileType( LabeledEnum ):
         return cls.SINGLE_STORY
 
     def json_filename(self):
-        return f'profile_{self}.json'
+        """ Relative to this module's directory """
+        return f'assets/profiles/{self}.json'
     
     def icon_filename(self):
         return f'icon_{self}.svg'

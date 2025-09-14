@@ -121,7 +121,7 @@ class ProfileSnapshotGenerator:
         import hi.apps.profiles
         
         module_dir = Path(hi.apps.profiles.__file__).parent
-        return module_dir / 'data' / profile_type.json_filename()
+        return module_dir / profile_type.json_filename()
     
     def _build_profile_data(self, profile_type: ProfileType) -> Dict[str, Any]:
         """Build the complete profile data structure from database."""

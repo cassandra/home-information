@@ -226,7 +226,7 @@ class ProfileManager:
         return
     
     def _get_profile_json_path(self, profile_type: ProfileType) -> str:
-        base_dir = Path(__file__).parent / 'data'
+        base_dir = Path(__file__).parent
         json_filename = profile_type.json_filename()
         return str( base_dir / json_filename )
 

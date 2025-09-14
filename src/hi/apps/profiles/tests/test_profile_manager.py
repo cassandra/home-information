@@ -188,7 +188,7 @@ class TestProfileManager(BaseTestCase):
         """Test that ProfileType enum generates correct JSON filenames."""
         for profile_type in ProfileType:
             filename = profile_type.json_filename()
-            expected_pattern = f"profile_{profile_type}.json"
+            expected_pattern = f"assets/profiles/{profile_type}.json"
             self.assertEqual(filename, expected_pattern, 
                              f"JSON filename should match pattern for {profile_type}")
             
