@@ -231,8 +231,8 @@ class TestProfileManager(BaseTestCase):
                 
                 # Create test SVG fragment files
                 test_svg_files = {
-                    'location/svg/main-floor.svg': '<g id="test-main">Test Main Floor</g>',
-                    'location/svg/second-floor.svg': '<g id="test-second">Test Second Floor</g>',
+                    'location/svg/single_story-0.svg': '<g id="test-main">Test Main Floor</g>',
+                    'location/svg/single_story-1.svg': '<g id="test-main">Test Main Floor</g>',
                 }
                 
                 for svg_path, svg_content in test_svg_files.items():

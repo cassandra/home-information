@@ -143,7 +143,7 @@ class ProfileSnapshotGenerator:
                 PC.LOCATION_FIELD_SVG_FRAGMENT_FILENAME: location.svg_fragment_filename,
                 PC.LOCATION_FIELD_SVG_VIEW_BOX_STR: location.svg_view_box_str,
                 PC.LOCATION_FIELD_ORDER_ID: location.order_id,
-                PC.LOCATION_FIELD_VIEWS: []
+                PC.LOCATION_FIELD_VIEWS: [],
             }
             
             # Add location views
@@ -153,7 +153,8 @@ class ProfileSnapshotGenerator:
                     PC.LOCATION_VIEW_FIELD_TYPE_STR: str(view.location_view_type),
                     PC.LOCATION_VIEW_FIELD_SVG_VIEW_BOX_STR: view.svg_view_box_str,
                     PC.LOCATION_VIEW_FIELD_SVG_STYLE_NAME_STR: str(view.svg_style_name),
-                    PC.LOCATION_VIEW_FIELD_ORDER_ID: view.order_id
+                    PC.COMMON_FIELD_SVG_ROTATE: float( view.svg_rotate ),
+                    PC.LOCATION_VIEW_FIELD_ORDER_ID: view.order_id,
                 }
                 location_dict[PC.LOCATION_FIELD_VIEWS].append(view_dict)
             

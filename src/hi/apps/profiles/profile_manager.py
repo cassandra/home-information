@@ -102,8 +102,12 @@ class ProfileLoadingStats:
     
     def meets_minimum_requirements(self) -> bool:
         """Check if minimum viable profile was loaded (at least 1 Location and 1 Entity)."""
-        return self.locations_succeeded >= 1 and self.entities_succeeded >= 1
-
+        if self.locations_succeeded < 1:
+            return False
+        if self.entities_attempted > 0:
+            return bool( self.entities_succeeded >= 1 )
+        return True
+    
 
 class ProfileManager:
     """
@@ -205,11 +209,6 @@ class ProfileManager:
         locations_data = profile_data.get(PC.PROFILE_FIELD_LOCATIONS, [])
         if not locations_data:
             raise ValueError('Profile must contain at least one location definition')
-        
-        # Ensure there are entities defined
-        entities_data = profile_data.get(PC.PROFILE_FIELD_ENTITIES, [])
-        if not entities_data:
-            raise ValueError('Profile must contain at least one entity definition')
         
         return
         

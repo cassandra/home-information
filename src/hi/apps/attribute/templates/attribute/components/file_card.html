@@ -21,7 +21,7 @@ Individual file attribute card with preview, actions, and metadata
   <!-- File Preview/Thumbnail Area -->
   <div class="attr-v2-file-thumbnail" 
        onclick="window.open('{{ attribute.file_value.url }}', '_blank');" 
-       title="Click to view file">
+       title="Tap to view file">
     {% comment %}Content-type specific placeholder icons{% endcomment %}
     {% if attribute.file_mime_type|slice:':5' == "image" %}
       {% icon "camera" size="lg" %}

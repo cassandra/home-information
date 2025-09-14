@@ -142,18 +142,6 @@ class TestProfileManagerErrorHandling(BaseTestCase):
         error_message = str(cm.exception)
         self.assertIn('at least one location', error_message)
 
-    def test_fundamental_validation_no_entities(self):
-        """Test that profiles with no entities fail fundamental validation."""
-        # Create data with no entities
-        malformed_data = self.data_generator.create_no_entities_data()
-        
-        # Should raise ValueError during fundamental validation
-        with self.assertRaises(ValueError) as cm:
-            self.profile_manager._validate_fundamental_requirements(malformed_data)
-        
-        error_message = str(cm.exception)
-        self.assertIn('at least one entity', error_message)
-
     def test_data_generator_produces_expected_malformations(self):
         """Test that our data generator utilities produce the expected malformed data."""
         # Test missing SVG file data
@@ -206,6 +194,12 @@ class TestProfileManagerErrorHandling(BaseTestCase):
         self.assertTrue(stats.meets_minimum_requirements())
         
         # Test with only locations
+        stats.entities_attempted = 0
+        stats.entities_succeeded = 0
+        self.assertTrue(stats.meets_minimum_requirements())
+        
+        # Test with only locations
+        stats.entities_attempted = 1
         stats.entities_succeeded = 0
         self.assertFalse(stats.meets_minimum_requirements())
         
@@ -306,9 +300,9 @@ class TestProfileManagerErrorHandling(BaseTestCase):
         # Start with nothing - should not meet requirements
         self.assertFalse(stats.meets_minimum_requirements())
         
-        # Add exactly 1 location - still not enough
+        # Add exactly 1 location - OK
         stats.locations_succeeded = 1
-        self.assertFalse(stats.meets_minimum_requirements())
+        self.assertTrue(stats.meets_minimum_requirements())
         
         # Add exactly 1 entity - now should meet minimum
         stats.entities_succeeded = 1
@@ -320,6 +314,7 @@ class TestProfileManagerErrorHandling(BaseTestCase):
         self.assertTrue(stats.meets_minimum_requirements())
         
         # But fails if either drops to 0
+        stats.entities_attempted = 1
         stats.entities_succeeded = 0
         self.assertFalse(stats.meets_minimum_requirements())
         
@@ -341,14 +336,6 @@ class TestProfileManagerErrorHandling(BaseTestCase):
         self.assertIn('location', location_error.lower())
         self.assertIn('at least one', location_error.lower())
         
-        # Entity validation error should be descriptive
-        with self.assertRaises(ValueError) as cm:
-            self.profile_manager._validate_fundamental_requirements(empty_entities_data)
-        
-        entity_error = str(cm.exception)
-        self.assertIn('entity', entity_error.lower())
-        self.assertIn('at least one', entity_error.lower())
-
     def test_database_state_verification_after_failures(self):
         """Test that database state is consistent after handling various failures."""
         # This test verifies that even with errors, database constraints are maintained
