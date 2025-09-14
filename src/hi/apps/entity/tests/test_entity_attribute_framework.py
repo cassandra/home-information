@@ -12,8 +12,11 @@ Following project testing guidelines:
 - Test meaningful Entity-specific edge cases and workflows
 """
 import logging
+import tempfile
+import shutil
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 
 from hi.apps.attribute.tests.attribute_framework_test_base import (
     AttributeEditFormHandlerTestMixin,
@@ -34,6 +37,21 @@ logging.disable(logging.CRITICAL)
 
 class EntityAttributeEditFormHandlerTest(AttributeEditFormHandlerTestMixin, BaseTestCase):
     """Test AttributeEditFormHandler with Entity-specific implementations."""
+    
+    def setUp(self):
+        super().setUp()
+        # Set up isolated MEDIA_ROOT for file upload tests
+        self._temp_media_dir = tempfile.mkdtemp()
+        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
+        self._settings_patcher.enable()
+    
+    def tearDown(self):
+        # Clean up the temporary media directory and settings
+        if hasattr(self, '_settings_patcher'):
+            self._settings_patcher.disable()
+        if hasattr(self, '_temp_media_dir'):
+            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
+        super().tearDown()
     
     def create_owner_instance(self, **kwargs):
         """Create Entity instance for testing."""
@@ -334,6 +352,21 @@ class EntityAttributeEditTemplateContextBuilderTest(
 
 class EntityAttributeViewMixinTest(AttributeViewMixinTestMixin, BaseTestCase):
     """Test AttributeEditViewMixin with Entity-specific view implementations."""
+    
+    def setUp(self):
+        super().setUp()
+        # Set up isolated MEDIA_ROOT for file upload tests
+        self._temp_media_dir = tempfile.mkdtemp()
+        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
+        self._settings_patcher.enable()
+    
+    def tearDown(self):
+        # Clean up the temporary media directory and settings
+        if hasattr(self, '_settings_patcher'):
+            self._settings_patcher.disable()
+        if hasattr(self, '_temp_media_dir'):
+            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
+        super().tearDown()
     
     def create_owner_instance(self, **kwargs):
         """Create Entity instance for testing."""

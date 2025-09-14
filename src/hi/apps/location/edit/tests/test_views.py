@@ -1,5 +1,6 @@
 import logging
 import tempfile
+import shutil
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
@@ -27,9 +28,20 @@ class TestLocationAddView(DualModeViewTestCase):
         super().setUp()
         # Set edit mode (required by decorator)
         self.setSessionViewMode(ViewMode.EDIT)
+        
+        # Set up isolated MEDIA_ROOT for file upload tests
+        self._temp_media_dir = tempfile.mkdtemp()
+        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
+        self._settings_patcher.enable()
 
     def tearDown(self):
         """Clean up singletons when using real objects instead of mocks."""
+        # Clean up the temporary media directory and settings
+        if hasattr(self, '_settings_patcher'):
+            self._settings_patcher.disable()
+        if hasattr(self, '_temp_media_dir'):
+            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
+            
         # Reset singleton managers to ensure clean state between tests
         try:
             LocationManager._instance = None
