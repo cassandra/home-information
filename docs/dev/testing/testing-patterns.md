@@ -277,6 +277,32 @@ def test_location_view_with_entities(self):
     self.assertIn(self.entity, response.context['entities'])
 ```
 
+## Testing Code needing MEDIA_ROOT
+
+```python
+# Use context manager for individual test methods
+def test_file_upload(self):
+    with self.isolated_media_root() as temp_media_root:
+        # File operations here
+        test_file = self.create_test_text_file("test.txt", "content")
+        # ... test logic
+        
+# OR use class-level isolation for test classes with many file operations
+class TestFileOperations(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self._temp_media_dir = tempfile.mkdtemp()
+        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
+        self._settings_patcher.enable()
+        
+    def tearDown(self):
+        if hasattr(self, '_settings_patcher'):
+            self._settings_patcher.disable()
+        if hasattr(self, '_temp_media_dir'):
+            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
+        super().tearDown()
+```
+
 ## Related Documentation
 - Testing guidelines: [Testing Guidelines](testing-guidelines.md)
 - UI testing: [UI Testing](../frontend/ui-testing.md)

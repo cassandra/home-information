@@ -1,6 +1,8 @@
 import logging
+import tempfile
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 from django.urls import reverse
 
 from hi.apps.collection.collection_manager import CollectionManager
@@ -158,12 +160,26 @@ class TestLocationSvgReplaceView(DualModeViewTestCase):
         # Set edit mode (required by decorator)
         self.setSessionViewMode(ViewMode.EDIT)
         
+        # Create temporary media root for this test class
+        self._temp_media_dir = tempfile.mkdtemp()
+        self._settings_patcher = override_settings(MEDIA_ROOT=self._temp_media_dir)
+        self._settings_patcher.enable()
+        
         # Create test location
         self.location = Location.objects.create(
             name='Test Location',
             svg_fragment_filename='test.svg',
             svg_view_box_str='0 0 100 100'
         )
+    
+    def tearDown(self):
+        # Clean up the temporary media directory and settings
+        if hasattr(self, '_settings_patcher'):
+            self._settings_patcher.disable()
+        if hasattr(self, '_temp_media_dir'):
+            import shutil
+            shutil.rmtree(self._temp_media_dir, ignore_errors=True)
+        super().tearDown()
 
     def test_get_svg_replace_form(self):
         """Test getting SVG replace form."""

@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 
 from django.conf import settings
-from django.core.files.storage import default_storage
 
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location

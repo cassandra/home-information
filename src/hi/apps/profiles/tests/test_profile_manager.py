@@ -3,7 +3,6 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from django.test import override_settings
 from hi.apps.profiles.profile_manager import ProfileManager
 from hi.apps.profiles.enums import ProfileType
 from hi.apps.entity.models import Entity, EntityPosition
@@ -221,7 +220,6 @@ class TestProfileManager(BaseTestCase):
     def test_svg_fragment_file_management_with_test_isolation(self):
         """Test SVG fragment copying with proper test isolation using temporary directories."""
         import os
-        import json
         
         # Create temporary directories for test isolation
         with tempfile.TemporaryDirectory() as temp_media_root:
@@ -244,7 +242,9 @@ class TestProfileManager(BaseTestCase):
                 
                 # Use Django's override_settings and patch the assets directory
                 with self.settings(MEDIA_ROOT=temp_media_root):
-                    with patch.object(self.profile_manager, '_get_assets_base_directory', return_value=test_assets_dir):
+                    with patch.object(self.profile_manager,
+                                      '_get_assets_base_directory',
+                                      return_value=test_assets_dir):
                         
                         # Test the actual profile loading with SVG copying
                         stats = self.profile_manager.load_profile(ProfileType.SINGLE_STORY)
@@ -253,26 +253,30 @@ class TestProfileManager(BaseTestCase):
                         # Verify that SVG files were copied to test MEDIA_ROOT
                         for svg_filename in test_svg_files.keys():
                             media_path = os.path.join(temp_media_root, svg_filename)
-                            self.assertTrue(os.path.exists(media_path), 
-                                           f"SVG file should be copied to test MEDIA_ROOT: {media_path}")
+                            self.assertTrue(
+                                os.path.exists(media_path), 
+                                f"SVG file should be copied to test MEDIA_ROOT: {media_path}")
                             
                             # Verify file content was copied correctly
                             with open(media_path, 'r') as f:
                                 copied_content = f.read()
-                            self.assertEqual(copied_content, test_svg_files[svg_filename],
-                                           f"SVG file content should match: {svg_filename}")
+                            self.assertEqual(
+                                copied_content, test_svg_files[svg_filename],
+                                f"SVG file content should match: {svg_filename}")
                         
                         # Verify database objects were created
                         locations = Location.objects.all()
                         self.assertGreater(locations.count(), 0, "Should create locations")
                         
                         for location in locations:
-                            self.assertIsNotNone(location.svg_fragment_filename,
-                                               "Location should have SVG fragment filename")
+                            self.assertIsNotNone(
+                                location.svg_fragment_filename,
+                                "Location should have SVG fragment filename")
                             # Verify the referenced file exists in test MEDIA_ROOT
                             full_path = os.path.join(temp_media_root, location.svg_fragment_filename)
-                            self.assertTrue(os.path.exists(full_path),
-                                           f"Location SVG file should exist in test MEDIA_ROOT: {full_path}")
+                            self.assertTrue(
+                                os.path.exists(full_path),
+                                f"Location SVG file should exist in test MEDIA_ROOT: {full_path}")
     
     def test_real_profile_assets_exist(self):
         """Test that the real profile JSON files point to existing assets."""
@@ -289,8 +293,9 @@ class TestProfileManager(BaseTestCase):
                 svg_filename = location_data.get('svg_fragment_filename')
                 if svg_filename:
                     asset_path = assets_base_dir / svg_filename
-                    self.assertTrue(asset_path.exists(), 
-                                   f"Real profile {profile_type} references missing asset: {asset_path}")
+                    self.assertTrue(
+                        asset_path.exists(), 
+                        f"Real profile {profile_type} references missing asset: {asset_path}")
     
     def test_profile_svg_copying_error_handling(self):
         """Test error handling when SVG fragment files are missing from assets."""
