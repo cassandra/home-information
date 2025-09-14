@@ -326,7 +326,6 @@ class TestProfileManagerErrorHandling(BaseTestCase):
         """Test that error messages provide useful context for debugging failures."""
         # Test fundamental validation error messages
         empty_locations_data = self.data_generator.create_no_locations_data()
-        empty_entities_data = self.data_generator.create_no_entities_data()
         
         # Location validation error should be descriptive
         with self.assertRaises(ValueError) as cm:
