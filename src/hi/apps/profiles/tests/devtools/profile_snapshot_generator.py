@@ -55,7 +55,7 @@ class ProfileSnapshotGenerator:
         
         # Copy SVG fragments to assets if writing to real profile location
         if not output_to_tmp:
-            self._copy_svg_fragments_to_assets(profile_data)
+            self._copy_svg_fragments_to_assets(profile_data, profile_type)
         
         logger.info(f"Generated profile snapshot to {output_path}")
         return output_path
@@ -71,49 +71,58 @@ class ProfileSnapshotGenerator:
         """
         return Path(__file__).parent.parent.parent / 'assets'
     
-    def _copy_svg_fragments_to_assets(self, profile_data: Dict[str, Any]) -> None:
+    def _copy_svg_fragments_to_assets(self, profile_data: Dict[str, Any], profile_type: ProfileType) -> None:
         """
         Copy SVG fragment files from MEDIA_ROOT to profile assets directory.
-        
+
         This copies the SVG fragments referenced in the profile data to the assets
         directory so they can be packaged with the application for distribution.
-        
+        The files are renamed to follow the predictable pattern: {profile_type}-{order_id}.svg
+
         Args:
             profile_data: The profile data containing location SVG references
-            
+            profile_type: The ProfileType enum to use for naming the SVG files
+
         Raises:
             FileNotFoundError: If referenced SVG fragment files don't exist in MEDIA_ROOT
             Exception: For other file system errors during copying
         """
         locations_data = profile_data.get(PC.PROFILE_FIELD_LOCATIONS, [])
         assets_base_dir = self._get_assets_base_directory()
-        
+
         for location_data in locations_data:
-            svg_fragment_filename = location_data.get(PC.LOCATION_FIELD_SVG_FRAGMENT_FILENAME)
-            if not svg_fragment_filename:
+            original_svg_fragment_filename = location_data.get(PC.LOCATION_FIELD_SVG_FRAGMENT_FILENAME)
+            if not original_svg_fragment_filename:
                 continue
-                
-            # Source: MEDIA_ROOT
-            source_path = os.path.join(settings.MEDIA_ROOT, svg_fragment_filename)
-            
-            # Destination: profile assets directory
-            destination_path = assets_base_dir / svg_fragment_filename
-            
+
+            # Generate predictable filename: {profile_type}-{order_id}.svg
+            order_id = location_data.get(PC.LOCATION_FIELD_ORDER_ID, 0)
+            predictable_filename = f"location/svg/{profile_type}-{order_id}.svg"
+
+            # Update the location data to use the predictable filename
+            location_data[PC.LOCATION_FIELD_SVG_FRAGMENT_FILENAME] = predictable_filename
+
+            # Source: MEDIA_ROOT (original random filename)
+            source_path = os.path.join(settings.MEDIA_ROOT, original_svg_fragment_filename)
+
+            # Destination: profile assets directory (predictable filename)
+            destination_path = assets_base_dir / predictable_filename
+
             try:
                 if not os.path.exists(source_path):
                     raise FileNotFoundError(f'SVG fragment file not found in MEDIA_ROOT: {source_path}')
-                
+
                 # Ensure destination directory exists
                 destination_path.parent.mkdir(parents=True, exist_ok=True)
-                
-                # Copy the file
+
+                # Copy the file with new predictable name
                 shutil.copy2(source_path, str(destination_path))
                 logger.debug(f'Copied SVG fragment to assets: {source_path} -> {destination_path}')
-                
+
             except Exception as e:
-                logger.error(f'Failed to copy SVG fragment {svg_fragment_filename} to assets: {e}')
+                logger.error(f'Failed to copy SVG fragment {original_svg_fragment_filename} to assets: {e}')
                 raise
-                
+
         logger.debug('SVG fragment files copied to assets successfully')
     
     def _get_profile_json_path(self, profile_type: ProfileType) -> Path:
