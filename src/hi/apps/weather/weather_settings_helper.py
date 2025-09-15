@@ -7,7 +7,7 @@ from .settings import WeatherSetting
 logger = logging.getLogger(__name__)
 
 
-class WeatherSettingsHelper(SettingsMixin):
+class WeatherSettingsHelper( SettingsMixin ):
     """Helper class to access weather-related settings."""
     
     def _get_weather_source_enabled_value(self, source_id: str, settings_manager):
@@ -87,15 +87,26 @@ class WeatherSettingsHelper(SettingsMixin):
             return value.lower() in ('true', '1', 'yes', 'on')
         return bool(value)
     
-    def is_weather_alerts_enabled(self) -> bool:
-        """Check if weather alerts processing is enabled."""
-        value = self.settings_manager().get_setting_value(WeatherSetting.WEATHER_ALERTS_ENABLED)
+    def _get_weather_alerts_enabled_value(self, settings_manager):
+        """Private helper to get weather alerts enabled value with any settings manager."""
+        value = settings_manager.get_setting_value(WeatherSetting.WEATHER_ALERTS_ENABLED)
         if value is None:
             return True
         # Handle string boolean values from database
         if isinstance(value, str):
             return value.lower() in ('true', '1', 'yes', 'on')
         return bool(value)
+
+    def is_weather_alerts_enabled(self) -> bool:
+        """Check if weather alerts processing is enabled."""
+        return self._get_weather_alerts_enabled_value(self.settings_manager())
+
+    async def is_weather_alerts_enabled_async(self) -> bool:
+        """Check if weather alerts processing is enabled (async version)."""
+        settings_manager = await self.settings_manager_async()
+        if not settings_manager:
+            return True
+        return self._get_weather_alerts_enabled_value(settings_manager)
     
     def get_weather_source_config(self, source_id: str) -> Dict[str, any]:
         """Get complete configuration for a weather source."""

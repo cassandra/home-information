@@ -249,7 +249,7 @@ class WeatherManager( Singleton, SettingsMixin, AlertMixin ):
         """Update weather alerts from data sources and create system alarms for qualifying alerts."""
         # Check if weather alerts processing is enabled
         weather_settings_helper = WeatherSettingsHelper()
-        if not weather_settings_helper.is_weather_alerts_enabled():
+        if not await weather_settings_helper.is_weather_alerts_enabled_async():
             logger.debug(f'Weather alerts processing disabled, ignoring'
                          f' {len(weather_alerts)} alerts from {data_point_source.id}')
             return

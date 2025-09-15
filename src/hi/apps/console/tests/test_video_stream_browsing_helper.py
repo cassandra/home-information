@@ -11,7 +11,6 @@ from hi.apps.console.enums import VideoDispatchType
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor, SensorHistory
 from hi.apps.sense.transient_models import SensorResponse
-from hi.apps.sense.tests.synthetic_data import SensorHistorySyntheticData
 from hi.apps.sense.enums import CorrelationRole
 from hi.integrations.transient_models import IntegrationKey
 
@@ -243,8 +242,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
                     sensor=self.video_sensor,
                     detail_attrs={'duration_seconds': '120', 'details': f'Motion event {days_ago}_{hour_offset}'},
                     has_video_stream=True,
-                            sensor_history_id=int(f'{days_ago}{hour_offset}')  # Use unique ID for test
-                    
+                    sensor_history_id=int(f'{days_ago}{hour_offset}')  # Use unique ID for test
                 )
                 sensor_responses.append(response)
         
@@ -286,7 +284,7 @@ class TestVideoStreamBrowsingHelper(TransactionTestCase):
                 sensor=self.video_sensor,
                 detail_attrs={'duration_seconds': '90', 'details': f'Motion event hour {hour}'},
                 has_video_stream=True,
-                    sensor_history_id=hour
+                sensor_history_id=hour
             )
             sensor_responses.append(response)
         

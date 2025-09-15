@@ -2,9 +2,7 @@
 Integration tests for WeatherManager and DailyWeatherTracker.
 Tests the complete flow of temperature tracking and fallback value population.
 """
-import asyncio
 import logging
-import unittest
 from unittest.mock import patch
 from datetime import datetime, timedelta
 
@@ -17,6 +15,7 @@ from hi.apps.weather.transient_models import WeatherConditionsData, NumericDataP
 from hi.apps.weather.weather_data_source import WeatherDataSource
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
+from hi.testing.async_task_utils import AsyncTaskTestCase
 
 logging.disable(logging.CRITICAL)
 
@@ -44,7 +43,7 @@ class MockWeatherDataSource(WeatherDataSource):
         pass  # Not used in these tests
 
 
-class TestWeatherManagerDailyTrackerIntegration(unittest.TestCase):
+class TestWeatherManagerDailyTrackerIntegration(AsyncTaskTestCase):
     """Test integration between WeatherManager and DailyWeatherTracker."""
     
     def setUp(self):
@@ -68,7 +67,13 @@ class TestWeatherManagerDailyTrackerIntegration(unittest.TestCase):
         
         # Base test time
         self.base_time = timezone.make_aware(datetime(2024, 3, 15, 12, 0, 0), pytz.UTC)
-    
+
+    def tearDown(self):
+        """Clean up test environment."""
+        # Clear cache to prevent test interference in parallel execution
+        cache.clear()
+        super().tearDown()
+
     def create_test_conditions(self, temp_celsius, timestamp=None, include_today_fields=True):
         """Helper to create test weather conditions."""
         if timestamp is None:
@@ -105,7 +110,7 @@ class TestWeatherManagerDailyTrackerIntegration(unittest.TestCase):
             conditions = self.create_test_conditions(25.0, include_today_fields=False)
             
             # Update current conditions (should record temperature)
-            asyncio.run(self.weather_manager.update_current_conditions(
+            self.run_async(self.weather_manager.update_current_conditions(
                 data_point_source=self.mock_source.data_point_source,
                 weather_conditions_data=conditions
             ))
@@ -235,7 +240,7 @@ class TestWeatherManagerDailyTrackerIntegration(unittest.TestCase):
                 # Use incrementing timestamps so each update actually overwrites the previous
                 timestamp = self.base_time + timedelta(minutes=i * 10)
                 conditions = self.create_test_conditions(temp, timestamp=timestamp, include_today_fields=False)
-                asyncio.run(self.weather_manager.update_current_conditions(
+                self.run_async(self.weather_manager.update_current_conditions(
                     data_point_source=self.mock_source.data_point_source,
                     weather_conditions_data=conditions
                 ))
@@ -296,7 +301,7 @@ class TestWeatherManagerDailyTrackerIntegration(unittest.TestCase):
             
             # Record temperature
             conditions = self.create_test_conditions(25.0, utc_late, include_today_fields=False)
-            asyncio.run(self.weather_manager.update_current_conditions(
+            self.run_async(self.weather_manager.update_current_conditions(
                 data_point_source=self.mock_source.data_point_source,
                 weather_conditions_data=conditions
             ))

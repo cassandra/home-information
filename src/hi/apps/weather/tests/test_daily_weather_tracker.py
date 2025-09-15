@@ -4,6 +4,7 @@ Unit tests for DailyWeatherTracker - daily weather statistics tracking.
 import json
 import logging
 import unittest
+import uuid
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
@@ -30,15 +31,18 @@ class TestDailyWeatherTracker(unittest.TestCase):
         """Set up test environment."""
         # Clear cache before each test
         cache.clear()
-        
+
+        # Create unique test identifier for cache isolation
+        self.test_id = uuid.uuid4().hex[:8]
+
         # Use UTC timezone for consistent testing
         self.test_timezone = pytz.UTC
-        
+
         # Mock ConsoleSettingsHelper to return UTC for consistent testing
         self.console_helper_patcher = patch('hi.apps.weather.daily_weather_tracker.ConsoleSettingsHelper')
         mock_console_helper = self.console_helper_patcher.start()
         mock_console_helper.return_value.get_tz_name.return_value = 'UTC'
-        
+
         self.tracker = DailyWeatherTracker()
         
         # Create test data point source and station
@@ -60,6 +64,8 @@ class TestDailyWeatherTracker(unittest.TestCase):
     
     def tearDown(self):
         """Clean up test environment."""
+        # Clear cache to prevent test interference in parallel execution
+        cache.clear()
         self.console_helper_patcher.stop()
     
     def create_test_temperature_datapoint(self, temp_celsius, timestamp=None):
@@ -86,10 +92,11 @@ class TestDailyWeatherTracker(unittest.TestCase):
         with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
             # Record a temperature observation
             conditions = self.create_test_weather_conditions(25.0)
-            self.tracker.record_weather_conditions(conditions, location_key="test_location")
+            location_key = f"test_location_{self.test_id}"
+            self.tracker.record_weather_conditions(conditions, location_key=location_key)
             
             # Check that data was stored
-            summary = self.tracker.get_daily_summary(location_key="test_location")
+            summary = self.tracker.get_daily_summary(location_key=location_key)
             self.assertIsNotNone(summary)
             self.assertEqual(summary['date'], '2024-03-15')
             self.assertIn('temperature', summary['fields'])
@@ -101,7 +108,7 @@ class TestDailyWeatherTracker(unittest.TestCase):
     def test_temperature_min_max_tracking(self):
         """Test that min/max temperatures are tracked correctly."""
         with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
-            location_key = "test_location"
+            location_key = f"test_location_{self.test_id}"
             
             # Record multiple temperatures throughout the day
             temps_and_times = [
@@ -131,7 +138,7 @@ class TestDailyWeatherTracker(unittest.TestCase):
     
     def test_multiple_days_tracking(self):
         """Test that data is tracked separately for different days."""
-        location_key = "test_location"
+        location_key = f"test_location_{self.test_id}"
         
         # Day 1: Record temperatures
         day1 = self.base_time
@@ -167,7 +174,7 @@ class TestDailyWeatherTracker(unittest.TestCase):
         central_time = central_tz.localize(datetime(2024, 3, 15, 23, 30, 0))
         utc_time = central_time.astimezone(pytz.UTC)
         
-        location_key = "test_location"
+        location_key = f"test_location_{self.test_id}"
         
         # Mock ConsoleSettingsHelper to return Central timezone for this test
         with patch('hi.apps.weather.daily_weather_tracker.ConsoleSettingsHelper') as mock_console, \
@@ -192,7 +199,7 @@ class TestDailyWeatherTracker(unittest.TestCase):
     
     def test_no_data_scenarios(self):
         """Test behavior when no temperature data is available."""
-        location_key = "empty_location"
+        location_key = f"empty_location_{self.test_id}"
         
         # Should return None for both min and max when no data
         min_temp, max_temp = self.tracker.get_temperature_min_max_today(location_key=location_key)
@@ -205,7 +212,7 @@ class TestDailyWeatherTracker(unittest.TestCase):
     
     def test_invalid_temperature_data(self):
         """Test handling of invalid temperature data."""
-        location_key = "test_location"
+        location_key = f"test_location_{self.test_id}"
         
         # Test with None temperature
         conditions_none = WeatherConditionsData()
@@ -224,7 +231,7 @@ class TestDailyWeatherTracker(unittest.TestCase):
     
     def test_fallback_source_properties(self):
         """Test that fallback data points have correct source properties."""
-        location_key = "test_location"
+        location_key = f"test_location_{self.test_id}"
         
         with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
             conditions = self.create_test_weather_conditions(20.0)
@@ -240,7 +247,7 @@ class TestDailyWeatherTracker(unittest.TestCase):
     
     def test_cache_storage_and_retrieval(self):
         """Test that data is properly stored and retrieved from cache."""
-        location_key = "test_location"
+        location_key = f"test_location_{self.test_id}"
         
         with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
             # Record temperature
@@ -260,7 +267,7 @@ class TestDailyWeatherTracker(unittest.TestCase):
     
     def test_clear_today_functionality(self):
         """Test clearing today's temperature data."""
-        location_key = "test_location"
+        location_key = f"test_location_{self.test_id}"
         
         with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
             # Record temperature
@@ -303,7 +310,7 @@ class TestDailyWeatherTracker(unittest.TestCase):
     
     def test_temperature_unit_conversion(self):
         """Test that temperatures are consistently stored in Celsius."""
-        location_key = "test_location"
+        location_key = f"test_location_{self.test_id}"
         
         with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
             # Record temperature in Fahrenheit
@@ -330,7 +337,7 @@ class TestDailyWeatherTracker(unittest.TestCase):
     
     def test_record_weather_conditions_tracks_temperature_statistics(self):
         """Test that recording weather conditions properly tracks temperature min/max."""
-        location_key = "test_location"
+        location_key = f"test_location_{self.test_id}"
         
         with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
             # Record multiple temperature readings throughout the day
@@ -356,7 +363,7 @@ class TestDailyWeatherTracker(unittest.TestCase):
     
     def test_get_daily_summary_provides_debug_information(self):
         """Test that get_daily_summary provides useful debugging information."""
-        location_key = "test_location"
+        location_key = f"test_location_{self.test_id}"
         
         with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
             # Record some temperature data
@@ -413,7 +420,7 @@ class TestDailyWeatherTracker(unittest.TestCase):
     
     def test_clear_today_resets_tracking_data(self):
         """Test that clear_today properly resets tracking for a location."""
-        location_key = "test_location"
+        location_key = f"test_location_{self.test_id}"
         
         with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
             # Record some temperature data
@@ -441,7 +448,7 @@ class TestDailyWeatherTracker(unittest.TestCase):
     
     def test_bug_reproduction_first_bad_reading_sets_both_min_max(self):
         """Test case reproducing Issue #166 - first bad reading sets both min and max to same wrong value."""
-        location_key = "test_location"
+        location_key = f"test_location_{self.test_id}"
         
         with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
             # Scenario: First reading of the day is a bad 88°F (31.1°C) value
@@ -482,7 +489,7 @@ class TestDailyWeatherTracker(unittest.TestCase):
     
     def test_current_temperature_outside_cached_range_scenario(self):
         """Test the specific scenario from Issue #166 - current temp outside min/max range should not occur."""
-        location_key = "test_location"
+        location_key = f"test_location_{self.test_id}"
         
         with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
             # Simulate the problematic scenario: a high temperature gets recorded first
@@ -530,7 +537,7 @@ class TestDailyWeatherTracker(unittest.TestCase):
     def test_extensibility_for_future_fields(self):
         """Test that the architecture supports future weather field additions."""
         # This test verifies the general field recording mechanism
-        location_key = "test_location"
+        location_key = f"test_location_{self.test_id}"
         
         with patch('hi.apps.common.datetimeproxy.now', return_value=self.base_time):
             # Test the internal _record_field_value method for extensibility

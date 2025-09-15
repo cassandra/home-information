@@ -169,8 +169,8 @@ class TestTimelinePreservationLogic(TransactionTestCase):
                 value='active',
                 response_datetime=base_time.replace(hour=hour),
                 has_video_stream=True,
-            correlation_role_str=str(CorrelationRole.END),
-            correlation_id='test',
+                correlation_role_str=str(CorrelationRole.END),
+                correlation_id='test',
                 details='{"day": "today"}'
             )
             today_records.append(record)
@@ -243,8 +243,8 @@ class TestTimelinePreservationLogic(TransactionTestCase):
                 value=f'nav_test_{i}',
                 response_datetime=base_time - timezone.timedelta(hours=i),
                 has_video_stream=True,
-            correlation_role_str=str(CorrelationRole.END),
-            correlation_id='test',
+                correlation_role_str=str(CorrelationRole.END),
+                correlation_id='test',
                 details=f'{{"nav_order": "{i}"}}'
             )
             records.append(record)
@@ -283,8 +283,8 @@ class TestTimelinePreservationLogic(TransactionTestCase):
                 value=response.value,
                 response_datetime=response.timestamp,
                 has_video_stream=True,
-            correlation_role_str=str(CorrelationRole.END),
-            correlation_id='test',
+                correlation_role_str=str(CorrelationRole.END),
+                correlation_id='test',
                 details='{"timezone": "aware"}'
             )
             records.append(record)

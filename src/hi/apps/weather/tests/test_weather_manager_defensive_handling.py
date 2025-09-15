@@ -2,7 +2,6 @@
 Test that WeatherManager gracefully handles errors in daily weather tracking
 without breaking core weather API functionality.
 """
-import asyncio
 import logging
 from unittest.mock import patch
 from datetime import datetime
@@ -16,7 +15,7 @@ from hi.apps.weather.transient_models import WeatherConditionsData, NumericDataP
 from hi.apps.weather.weather_data_source import WeatherDataSource
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
-from hi.testing.base_test_case import BaseTestCase
+from hi.testing.async_task_utils import AsyncTaskTestCase
 
 logging.disable(logging.CRITICAL)
 
@@ -48,7 +47,7 @@ class MockWeatherDataSource(WeatherDataSource):
         pass
 
 
-class TestWeatherManagerDefensiveHandling(BaseTestCase):
+class TestWeatherManagerDefensiveHandling(AsyncTaskTestCase):
     """Test defensive error handling for daily weather tracking."""
     
     def setUp(self):
@@ -70,7 +69,13 @@ class TestWeatherManagerDefensiveHandling(BaseTestCase):
         )
         
         self.base_time = timezone.make_aware(datetime(2024, 3, 15, 12, 0, 0), pytz.UTC)
-    
+
+    def tearDown(self):
+        """Clean up test environment."""
+        # Clear cache to prevent test interference in parallel execution
+        cache.clear()
+        super().tearDown()
+
     def create_test_conditions(self, temp_celsius):
         """Helper to create test weather conditions."""
         temperature_datapoint = NumericDataPoint(
@@ -95,7 +100,7 @@ class TestWeatherManagerDefensiveHandling(BaseTestCase):
             conditions = self.create_test_conditions(25.0)
             
             # The update should complete successfully
-            asyncio.run(self.weather_manager.update_current_conditions(
+            self.run_async(self.weather_manager.update_current_conditions(
                 data_point_source=self.mock_source.data_point_source,
                 weather_conditions_data=conditions
             ))
@@ -118,7 +123,7 @@ class TestWeatherManagerDefensiveHandling(BaseTestCase):
             # This should NOT raise an exception
             conditions = self.create_test_conditions(20.0)
             
-            asyncio.run(self.weather_manager.update_current_conditions(
+            self.run_async(self.weather_manager.update_current_conditions(
                 data_point_source=self.mock_source.data_point_source,
                 weather_conditions_data=conditions
             ))
@@ -165,7 +170,7 @@ class TestWeatherManagerDefensiveHandling(BaseTestCase):
             
             # Update conditions
             conditions = self.create_test_conditions(30.0)
-            asyncio.run(self.weather_manager.update_current_conditions(
+            self.run_async(self.weather_manager.update_current_conditions(
                 data_point_source=self.mock_source.data_point_source,
                 weather_conditions_data=conditions
             ))
