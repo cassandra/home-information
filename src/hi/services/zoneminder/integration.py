@@ -3,7 +3,8 @@ from typing import Optional
 
 from hi.apps.entity.models import Entity
 from hi.apps.entity.transient_models import VideoStream
-from hi.apps.entity.enums import VideoStreamType
+from hi.apps.entity.enums import VideoStreamType, VideoStreamMode
+from hi.apps.entity.constants import VideoStreamMetadataKeys
 from hi.apps.sense.transient_models import SensorResponse
 from hi.integrations.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
@@ -53,7 +54,10 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
                 return VideoStream(
                     stream_type=VideoStreamType.URL,
                     source_url=video_url,
-                    metadata={'monitor_id': monitor_id, 'stream_type': 'live'}
+                    metadata={
+                        'monitor_id': monitor_id,
+                        VideoStreamMetadataKeys.STREAM_MODE: str(VideoStreamMode.LIVE)
+                    }
                 )
             except (IndexError, ValueError):
                 logger.warning(f"Could not parse monitor ID from entity integration name: {entity.integration_name}")
@@ -74,11 +78,25 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
             try:
                 event_id = int(sensor_response.detail_attrs[event_id_fieldname])
                 video_url = self.zm_manager().get_event_video_stream_url(event_id)
-                
+
+                # Extract duration from detail_attrs if available
+                metadata = {
+                    event_id_fieldname: event_id,
+                    VideoStreamMetadataKeys.STREAM_MODE: str(VideoStreamMode.RECORDED)
+                }
+
+                # Look for duration in detail_attrs using the ZoneMinder constant
+                if ZmDetailKeys.DURATION_SECS in sensor_response.detail_attrs:
+                    try:
+                        duration_secs = float(sensor_response.detail_attrs[ZmDetailKeys.DURATION_SECS])
+                        metadata[VideoStreamMetadataKeys.DURATION_SECS] = int(duration_secs)
+                    except (ValueError, TypeError):
+                        logger.debug(f"Could not parse duration from sensor response: {sensor_response.detail_attrs.get(ZmDetailKeys.DURATION_SECS)}")
+
                 return VideoStream(
                     stream_type=VideoStreamType.URL,
                     source_url=video_url,
-                    metadata={event_id_fieldname: event_id, 'stream_type': 'recorded'}
+                    metadata=metadata
                 )
             except (ValueError, TypeError):
                 logger.warning(f"Could not parse event ID from sensor response: {sensor_response.detail_attrs}")

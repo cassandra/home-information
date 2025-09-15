@@ -8,6 +8,7 @@ from hi.apps.console.video_stream_browsing_helper import VideoStreamBrowsingHelp
 from hi.apps.console.views import EntityVideoSensorHistoryView
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor, SensorHistory
+from hi.apps.sense.tests.synthetic_data import SensorHistorySyntheticData
 
 logging.disable(logging.CRITICAL)
 
@@ -152,18 +153,13 @@ class TestIntegrationErrorHandling(TransactionTestCase):
         base_time = timezone.now()
         batch_size = 1000  # Large enough to test memory handling
         
-        # Create records in batches for efficiency
-        records_to_create = []
-        for i in range(batch_size):
-            records_to_create.append(SensorHistory(
-                sensor=self.video_sensor,
-                value=f'memory_test_{i}',
-                response_datetime=base_time - timezone.timedelta(minutes=i),
-                has_video_stream=True,
-                details=f'{{"memory_test": {i}}}'
-            ))
-        
-        SensorHistory.objects.bulk_create(records_to_create)
+        # Create records efficiently using synthetic data helper
+        SensorHistorySyntheticData.create_bulk_sensor_history(
+            sensor=self.video_sensor,
+            count=batch_size,
+            base_time=base_time,
+            value_prefix='memory_test'
+        )
         
         # Test that helper methods handle large datasets efficiently
         result = VideoStreamBrowsingHelper.build_sensor_history_data_default(self.video_sensor)
@@ -203,11 +199,10 @@ class TestIntegrationErrorHandling(TransactionTestCase):
         ]
         
         for i, test_time in enumerate(challenging_times):
-            SensorHistory.objects.create(
+            SensorHistorySyntheticData.create_simple_sensor_history(
                 sensor=self.video_sensor,
                 value=f'timezone_edge_{i}',
                 response_datetime=test_time,
-                has_video_stream=True,
                 details=f'{{"timezone_test": {i}}}'
             )
         
@@ -228,15 +223,12 @@ class TestIntegrationErrorHandling(TransactionTestCase):
         base_time = timezone.now()
         
         # Create exactly 50 records (common pagination boundary)
-        boundary_records = []
-        for i in range(50):
-            record = SensorHistory.objects.create(
-                sensor=self.video_sensor,
-                value=f'boundary_record_{i}',
-                response_datetime=base_time - timezone.timedelta(minutes=i),
-                has_video_stream=True
-            )
-            boundary_records.append(record)
+        boundary_records = SensorHistorySyntheticData.create_bulk_sensor_history(
+            sensor=self.video_sensor,
+            count=50,
+            base_time=base_time,
+            value_prefix='boundary_record'
+        )
         
         # Test pagination at the exact boundary
         result = VideoStreamBrowsingHelper.build_sensor_history_data_default(self.video_sensor)

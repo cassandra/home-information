@@ -2,10 +2,15 @@
 {% load icons %}
 <div>
   {% if show_video_inline %}
-    {% sensor_response_video_stream sensor_response as video_url %}
-    {% if video_url %}
+    {% sensor_response_video_stream sensor_response as video_stream %}
+    {% if video_stream and video_stream.source_url %}
     <div class="mb-2">
-      <img class="img-fluid" src="{{ video_url }}" alt="{{ alarm.title }}">
+      <img class="img-fluid" src="{{ video_stream.source_url }}" alt="{{ alarm.title }}">
+    </div>
+    {% elif sensor_response.source_image_url %}
+    <!-- Fallback to image when video stream is not available -->
+    <div class="mb-2">
+      <img class="img-fluid" src="{{ sensor_response.source_image_url }}" alt="{{ alarm.title }}">
     </div>
     {% endif %}
   {% endif %}

@@ -2,7 +2,6 @@
 Integration tests for weather alert to system alarm conversion.
 Tests the complete flow from NWS data parsing to alarm creation.
 """
-import asyncio
 import logging
 from unittest.mock import Mock, AsyncMock
 
@@ -11,12 +10,12 @@ from hi.apps.weather.weather_sources.nws import NationalWeatherService
 from hi.apps.weather.weather_manager import WeatherManager
 from hi.transient_models import GeographicLocation
 from hi.units import UnitQuantity
-from hi.testing.base_test_case import BaseTestCase
+from hi.testing.async_task_utils import AsyncTaskTestCase
 
 logging.disable(logging.CRITICAL)
 
 
-class TestWeatherAlertIntegration(BaseTestCase):
+class TestWeatherAlertIntegration(AsyncTaskTestCase):
     """Test end-to-end weather alert to alarm integration."""
     
     def test_nws_tornado_warning_creates_critical_alarm(self):
@@ -194,8 +193,8 @@ class TestWeatherAlertIntegration(BaseTestCase):
                 data_point_source=mock_data_source.data_point_source,
                 weather_alerts=test_alerts
             )
-        
-        asyncio.run(test_update())
+
+        self.run_async(test_update())
         
         # Verify alert manager was called to add alarms
         self.assertEqual(mock_alert_manager.add_alarm.call_count, 2)  # Only 2 should create alarms

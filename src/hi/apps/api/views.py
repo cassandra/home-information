@@ -11,6 +11,7 @@ from django.views.generic import View
 from hi.apps.alert.alert_mixins import AlertMixin
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.config.settings_mixins import SettingsMixin
+from hi.apps.console.console_mixins import ConsoleMixin
 from hi.apps.console.transient_view_manager import TransientViewManager
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.apps.security.security_mixins import SecurityMixin
@@ -20,7 +21,12 @@ from hi.testing.dev_injection import DevInjectionManager
 logger = logging.getLogger(__name__)
 
 
-class StatusView( View, AlertMixin, SecurityMixin, SettingsMixin, WeatherMixin ):
+class StatusView( View,
+                  ConsoleMixin,
+                  AlertMixin,
+                  SecurityMixin,
+                  SettingsMixin,
+                  WeatherMixin ):
 
     ServerStartTimestampAttr = 'startTimestamp'
     ServerTimestampAttr = 'timestamp'
@@ -57,6 +63,7 @@ class StatusView( View, AlertMixin, SecurityMixin, SettingsMixin, WeatherMixin )
         )
 
         id_replace_map = dict()
+        id_replace_map.update( self.console_manager().get_status_id_replace_map( request = request ) )
         id_replace_map.update( self.security_manager().get_status_id_replace_map( request = request ) )
         id_replace_map.update( self.weather_manager().get_status_id_replace_map( request = request ) )
 

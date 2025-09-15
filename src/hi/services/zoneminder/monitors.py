@@ -9,6 +9,7 @@ from hi.apps.entity.enums import EntityStateValue
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
+from hi.apps.sense.enums import CorrelationRole
 
 from .constants import ZmDetailKeys
 from .zm_models import ZmEvent, AggregatedMonitorState
@@ -306,7 +307,13 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         return detail_attrs is not None and ZmDetailKeys.EVENT_ID_ATTR_NAME in detail_attrs
     
     def _create_movement_active_sensor_response( self, zm_event : ZmEvent ):
-        detail_attrs = zm_event.to_detail_attrs()
+        all_detail_attrs = zm_event.to_detail_attrs()
+        # For active (start) events, only include basic event info
+        detail_attrs = {
+            ZmDetailKeys.EVENT_ID_ATTR_NAME: all_detail_attrs.get(ZmDetailKeys.EVENT_ID_ATTR_NAME),
+            ZmDetailKeys.START_TIME: all_detail_attrs.get(ZmDetailKeys.START_TIME),
+            ZmDetailKeys.NOTES: all_detail_attrs.get(ZmDetailKeys.NOTES),
+        }
         return SensorResponse(
             integration_key = self.zm_manager()._to_integration_key(
                 prefix = ZoneMinderManager.MOVEMENT_SENSOR_PREFIX,
@@ -317,9 +324,15 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             detail_attrs = detail_attrs,
             source_image_url = zm_event.image_url( self.zm_manager() ),
             has_video_stream = self._has_video_stream_capability(detail_attrs),
+            correlation_role = CorrelationRole.START,
+            correlation_id = all_detail_attrs.get(ZmDetailKeys.EVENT_ID_ATTR_NAME),
         )
 
     def _create_movement_idle_sensor_response( self, zm_event : ZmEvent ):
+        all_detail_attrs = zm_event.to_detail_attrs()
+        # For idle (end) events, include all detail attributes
+        detail_attrs = all_detail_attrs
+
         return SensorResponse(
             integration_key = self.zm_manager()._to_integration_key(
                 prefix = ZoneMinderManager.MOVEMENT_SENSOR_PREFIX,
@@ -327,7 +340,10 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             ),
             value = str(EntityStateValue.IDLE),
             timestamp = zm_event.end_datetime,
-            has_video_stream = False,
+            detail_attrs = detail_attrs,
+            has_video_stream = self._has_video_stream_capability(detail_attrs),
+            correlation_role = CorrelationRole.END,
+            correlation_id = all_detail_attrs.get(ZmDetailKeys.EVENT_ID_ATTR_NAME),
         )
 
     def _create_idle_sensor_response( self, zm_monitor : ZmMonitor, timestamp : datetime ):

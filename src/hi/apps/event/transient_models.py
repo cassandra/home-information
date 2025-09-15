@@ -24,7 +24,7 @@ class EntityStateTransition:
     
 @dataclass
 class Event:
-    """ This would be more preceisly described as an "Entity State Change Event" """
+    """ This would be more precisely described as an "Entity State Change Event" """
     
     event_definition      : EventDefinition
     sensor_response_list  : List[ SensorResponse ]

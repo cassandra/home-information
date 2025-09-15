@@ -1,7 +1,6 @@
 from datetime import timedelta, datetime
 import logging
 from unittest.mock import patch, AsyncMock
-import asyncio
 import pytz
 
 import hi.apps.common.datetimeproxy as datetimeproxy
@@ -28,13 +27,13 @@ from hi.apps.weather.enums import (
 )
 from hi.units import UnitQuantity
 
-from hi.testing.base_test_case import BaseTestCase
+from hi.testing.async_task_utils import AsyncTaskTestCase
 from hi.apps.weather.tests.synthetic_data import WeatherSyntheticData
 
 logging.disable(logging.CRITICAL)
 
 
-class TestWeatherManager( BaseTestCase ):
+class TestWeatherManager( AsyncTaskTestCase ):
     
     def _create_test_weather_data(self, priority, time_offset_secs, temperature_value, is_null=False):
         """Helper to create test weather data with specified parameters."""
@@ -125,7 +124,7 @@ class TestWeatherManager( BaseTestCase ):
             self.assertEqual(current_conditions.temperature.source, high_priority_source)
         
         # Run the async test
-        asyncio.run(run_test())
+        self.run_async(run_test())
     
     def test_update_current_conditions_preserves_newer_data(self):
         """Test that newer data is preserved even from lower priority sources within staleness window."""
@@ -177,7 +176,7 @@ class TestWeatherManager( BaseTestCase ):
             # This test documents the actual behavior rather than testing implementation
         
         # Run the async test
-        asyncio.run(run_test())
+        self.run_async(run_test())
     
     def test_update_hourly_forecast_aggregates_multiple_sources(self):
         """Test that hourly forecast properly aggregates data from multiple sources."""
@@ -220,7 +219,7 @@ class TestWeatherManager( BaseTestCase ):
             self.assertGreater(len(hourly_forecast.data_list), 0)
         
         # Run the async test
-        asyncio.run(run_test())
+        self.run_async(run_test())
     
     def test_get_current_conditions_returns_latest_data(self):
         """Test that get_current_conditions returns the most recent weather data."""
@@ -261,7 +260,7 @@ class TestWeatherManager( BaseTestCase ):
             )
         
         # Run the async test
-        asyncio.run(run_test())
+        self.run_async(run_test())
     
     def test_update_weather_alerts_stores_alerts_when_enabled(self):
         """Test that weather alerts are stored when alerts feature is enabled."""
@@ -298,7 +297,7 @@ class TestWeatherManager( BaseTestCase ):
             # Mock settings to enable alerts
             with patch('hi.apps.weather.weather_manager.WeatherSettingsHelper') as mock_helper_class:
                 mock_helper = mock_helper_class.return_value
-                mock_helper.is_weather_alerts_enabled.return_value = True
+                mock_helper.is_weather_alerts_enabled_async = AsyncMock(return_value=True)
                 
                 # Mock alert manager
                 with patch.object(weather_manager, 'alert_manager_async', return_value=AsyncMock()):
@@ -314,7 +313,7 @@ class TestWeatherManager( BaseTestCase ):
                     self.assertEqual(stored_alerts[0].event, "Severe Thunderstorm Warning")
         
         # Run the async test
-        asyncio.run(run_test())
+        self.run_async(run_test())
     
     # ============= ORIGINAL TESTS (TO BE DEPRECATED) =============
     
@@ -540,8 +539,8 @@ class TestWeatherManager( BaseTestCase ):
 
     def test_weather_alerts_enabled_disabled_integration(self):
         """Integration test running both enabled and disabled scenarios."""
-        asyncio.run(self.test_weather_alerts_enabled_stores_alerts())
-        asyncio.run(self.test_weather_alerts_disabled_blocks_processing())
+        self.run_async(self.test_weather_alerts_enabled_stores_alerts())
+        self.run_async(self.test_weather_alerts_disabled_blocks_processing())
     
     def test_daily_history_data_flow(self):
         """Test that daily history data flows correctly from weather manager to template context."""
@@ -604,7 +603,7 @@ class TestWeatherManager( BaseTestCase ):
             )
         
         # Run the async test
-        asyncio.run(test_update())
+        self.run_async(test_update())
         
         # Verify daily history is populated
         daily_history = weather_manager.get_daily_history()
@@ -705,7 +704,7 @@ class TestWeatherManager( BaseTestCase ):
         # Mock WeatherSettingsHelper to return disabled state
         with patch('hi.apps.weather.weather_manager.WeatherSettingsHelper') as mock_helper_class:
             mock_helper = mock_helper_class.return_value
-            mock_helper.is_weather_alerts_enabled.return_value = False
+            mock_helper.is_weather_alerts_enabled_async = AsyncMock(return_value=False)
             
             # Test actual behavior when disabled
             await weather_manager.update_weather_alerts(

@@ -46,18 +46,37 @@
 <!-- Visual Content (Smart Rendering) -->
 {% if video_source_count == 1 and alert_visual_content and alert_visual_content.sensor_response %}
 <!-- Show single video at alert level to avoid duplication -->
-{% sensor_response_video_stream alert_visual_content.sensor_response as video_url %}
-{% if video_url %}
+{% sensor_response_video_stream alert_visual_content.sensor_response as video_stream %}
+{% if video_stream and video_stream.source_url %}
 <div class="row mb-3">
   <div class="col-12">
     <div class="card">
       <div class="card-header bg-primary text-white">
         <h6 class="mb-0">
-          {% icon "camera" size="sm" css_class="hi-icon-left" %}Visual Content
+          {% icon "camera" size="sm" css_class="hi-icon-left" %}Video
         </h6>
       </div>
       <div class="card-body p-2">
-        <img class="img-fluid" src="{{ video_url }}" alt="{{ alert_visual_content.alarm.title }}">
+        <img class="img-fluid" src="{{ video_stream.source_url }}" alt="{{ alert_visual_content.alarm.title }}">
+        {% if not alert_visual_content.is_from_latest %}
+        <small class="text-muted d-block mt-1">From: {{ alert_visual_content.alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% elif alert_visual_content.source_image_url %}
+<!-- Fallback to snapshot image when video stream is not available -->
+<div class="row mb-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h6 class="mb-0">
+          {% icon "camera" size="sm" css_class="hi-icon-left" %}Image
+        </h6>
+      </div>
+      <div class="card-body p-2">
+        <img class="img-fluid" src="{{ alert_visual_content.source_image_url }}" alt="{{ alert_visual_content.alarm.title }}">
         {% if not alert_visual_content.is_from_latest %}
         <small class="text-muted d-block mt-1">From: {{ alert_visual_content.alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
         {% endif %}
@@ -75,7 +94,7 @@
         <h6 class="mb-0">
           <a class="text-white text-decoration-none" data-toggle="collapse" href="#videoSources" 
              role="button" aria-expanded="false" aria-controls="videoSources">
-            {% icon "camera" size="sm" css_class="hi-icon-left" %}Visual Content ({{ video_source_count }} sources)
+            {% icon "camera" size="sm" css_class="hi-icon-left" %}Video Sources ({{ video_source_count }})
             {% icon "play" size="sm" css_class="hi-icon-right" %}
           </a>
         </h6>
@@ -85,14 +104,14 @@
           <div class="row">
             {% for video_source in all_video_sources %}
             <div class="col-md-6 mb-3">
-              {% sensor_response_video_stream video_source.sensor_response as video_url %}
-              {% if video_url %}
+              {% sensor_response_video_stream video_source.sensor_response as video_stream %}
+              {% if video_stream and video_stream.source_url %}
               <div class="card">
                 <div class="card-header py-1">
                   <small class="text-muted">Source {{ video_source.index }} - {{ video_source.alarm.timestamp|localtime|date:"M j H:i" }}</small>
                 </div>
                 <div class="card-body p-2">
-                  <img class="img-fluid" src="{{ video_url }}" alt="Source {{ video_source.index }}">
+                  <img class="img-fluid" src="{{ video_stream.source_url }}" alt="Source {{ video_source.index }}">
                 </div>
               </div>
               {% endif %}

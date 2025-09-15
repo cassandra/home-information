@@ -6,7 +6,21 @@ from hi.apps.entity.models import EntityState
 
 from hi.integrations.models import IntegrationDetailsModel
 
-from .enums import SensorType
+from .enums import SensorType, CorrelationRole
+
+
+class SensorHistoryManager(models.Manager):
+    def filter_video_browse(self):
+        """Return queryset filtered for video browsing - records with END
+        correlation role.  We do this mostly because of the ZoneMinder
+        integration behavior where the video duration time is only known on
+        the end event.
+
+        If we did not filter at all, we would be getting the start and end
+        events for the same video stream and thus have duplicates
+        everywhere.
+        """
+        return self.filter(correlation_role_str=str(CorrelationRole.END))
 
 
 class Sensor( IntegrationDetailsModel ):
@@ -72,6 +86,8 @@ class Sensor( IntegrationDetailsModel ):
     
 class SensorHistory(models.Model):
 
+    objects = SensorHistoryManager()
+
     sensor = models.ForeignKey(
         Sensor,
         related_name = 'history',
@@ -94,6 +110,16 @@ class SensorHistory(models.Model):
         'Has Video Stream',
         default = False,
     )
+    correlation_role_str = models.CharField(
+        'Correlation Role',
+        max_length = 32,
+        null = True, blank = True,
+    )
+    correlation_id = models.CharField(
+        'Correlation ID',
+        max_length = 32,
+        null = True, blank = True,
+    )
     response_datetime = models.DateTimeField(
         'Timestamp',
         db_index = True,
@@ -112,4 +138,14 @@ class SensorHistory(models.Model):
         if self.details:
             return json.loads( self.details )
         return dict()
+
+    @property
+    def correlation_role(self) -> CorrelationRole:
+        if self.correlation_role_str:
+            return CorrelationRole.from_name_safe(self.correlation_role_str)
+        return None
+
+    @correlation_role.setter
+    def correlation_role(self, correlation_role: CorrelationRole):
+        self.correlation_role_str = str(correlation_role) if correlation_role else None
     

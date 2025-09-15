@@ -18,7 +18,7 @@ class TestViewUrlUtils(BaseTestCase):
         # Create entity with video stream capability
         self.video_entity = Entity.objects.create(
             integration_id='test.camera.video',
-            integration_name='test_integration', 
+            integration_name='test_integration',
             name='Video Camera',
             entity_type_str='camera',
             has_video_stream=True

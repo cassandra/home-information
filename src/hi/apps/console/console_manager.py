@@ -1,14 +1,20 @@
 import logging
-from typing import List, Optional
+from typing import Dict, List, Optional
 from cachetools import TTLCache
+
+from django.http import HttpRequest
+from django.template.loader import get_template
+
+from hi.constants import DIVID
 
 from hi.apps.common.singleton import Singleton
 from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.entity.enums import EntityStateType
-
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
+
+from .constants import ConsoleConstants
 from .transient_models import CameraControlDisplayData
 
 logger = logging.getLogger(__name__)
@@ -47,6 +53,15 @@ class ConsoleManager( Singleton, SettingsMixin, SensorResponseMixin ):
         self._was_initialized = True
         return
 
+    def get_status_id_replace_map( self, request : HttpRequest ) -> Dict[ str, str ]:
+
+        context = dict()
+        template = get_template( ConsoleConstants.DATETIME_HEADER_TEMPLATE_NAME )
+        datetime_header_html_str = template.render( context, request = request )
+        return {
+            DIVID['DATETIME_HEADER']: datetime_header_html_str,
+        }
+        
     def get_camera_control_display_list(self) -> List[CameraControlDisplayData]:
         """Get camera control display data with TTL caching."""
         self.ensure_initialized()

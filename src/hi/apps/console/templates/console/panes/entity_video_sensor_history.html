@@ -65,8 +65,14 @@
                                aria-label="View event from {{ response.timestamp|localtime|date:'g:i A' }}{% if response.sensor_history_id == sensor_history_data.current_sensor_response.sensor_history_id %} - Currently viewing{% endif %}">
                                 <div>
                                     <span class="time">{{ response.timestamp|localtime|date:"g:i A" }}</span>
+                                    {% if response.has_video_stream %}
+                                    {% sensor_response_video_stream response as video_stream %}
+                                    {% if video_stream and video_stream.metadata.duration_secs %}
+                                    <small class="text-muted d-block duration">{{ video_stream.metadata.duration_secs|format_duration }}</small>
+                                    {% endif %}
+                                    {% endif %}
                                     {% if response.sensor_history_id == sensor_history_data.current_sensor_response.sensor_history_id %}
-                                    <small class="text-muted d-block" aria-current="page">→ Currently viewing</small>
+                                    <small class="text-muted d-block" aria-current="page">→ Showing</small>
                                     {% endif %}
                                 </div>
                             </a>
@@ -106,11 +112,17 @@
 
                 <!-- Video display area -->
                 <div class="video-container mb-3" role="img" aria-label="Event video playback">
-                    {% sensor_response_video_stream sensor_history_data.current_sensor_response as video_url %}
-                    {% if video_url %}
-                    <img class="img-fluid" src="{{ video_url }}" alt="Video recording from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}" data-event-id="{{ sensor_history_data.current_sensor_response.sensor_history_id }}" onerror="this.style.display='none'; this.outerHTML='<div class=\'alert alert-warning text-center d-flex align-items-center justify-content-center\' style=\'min-height: 240px;\'><div><div class=\'mb-2\'>[VIDEO]</div><h6>Video No Longer Available</h6></div></div>'">
+                    {% sensor_response_video_stream sensor_history_data.current_sensor_response as video_stream %}
+                    {% if video_stream and video_stream.source_url %}
+                    <img class="img-fluid" src="{{ video_stream.source_url }}" alt="Video recording from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}" data-event-id="{{ sensor_history_data.current_sensor_response.sensor_history_id }}" onerror="this.style.display='none'; this.outerHTML='<div class=\'alert alert-warning text-center d-flex align-items-center justify-content-center\' style=\'min-height: 240px;\'><div><div class=\'mb-2\'>[VIDEO]</div><h6>Video No Longer Available</h6></div></div>'">
+                    {% elif sensor_history_data.current_sensor_response.source_image_url %}
+                    <!-- Fallback to image when video stream is not available -->
+                    <img class="img-fluid" src="{{ sensor_history_data.current_sensor_response.source_image_url }}" alt="Image from {{ sensor_history_data.current_sensor_response.timestamp|localtime|date:'F j, Y g:i A' }}" data-event-id="{{ sensor_history_data.current_sensor_response.sensor_history_id }}">
+                    <div class="text-center mt-2">
+                        <small class="text-muted">Image - video may be processing</small>
+                    </div>
                     {% else %}
-                    <!-- Fallback when no video stream is available -->
+                    <!-- Fallback when no video stream or snapshot is available -->
                     <div class="video-placeholder d-flex align-items-center justify-content-center">
                         <div class="text-center">
                             <div class="video-placeholder-icon mb-3">

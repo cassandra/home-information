@@ -299,12 +299,23 @@ class EntityPairingType(LabeledEnum):
     DELEGATE   = ( 'Delegate', '' )
     
 
+class VideoStreamMode(LabeledEnum):
+    """Mode of video stream - whether live or recorded."""
+
+    LIVE = ('Live', 'Live real-time video stream')
+    RECORDED = ('Recorded', 'Recorded video playback')
+
+    @classmethod
+    def default(cls):
+        return cls.LIVE
+
+
 class VideoStreamType(LabeledEnum):
     """Types of video streams that can be provided by entities or sensor responses."""
-    
+
     URL = ('URL', 'Direct video stream URL')
     OTHER = ('Other', 'Other video stream type for future extensibility')
-    
+
     @classmethod
     def default(cls):
         return cls.OTHER

@@ -1,25 +1,28 @@
 from dataclasses import dataclass
 from datetime import datetime
 import json
-from typing import Dict
+from typing import Dict, Optional
 
 from hi.apps.entity.enums import EntityStateValue
 
 from hi.integrations.transient_models import IntegrationKey
 
 from .models import Sensor, SensorHistory
+from .enums import CorrelationRole
 
 
 @dataclass
 class SensorResponse:
-    integration_key     : IntegrationKey
-    value               : str
-    timestamp           : datetime
-    sensor              : Sensor            = None
-    detail_attrs        : Dict[ str, str ]  = None
-    source_image_url    : str               = None
-    has_video_stream    : bool              = False
-    sensor_history_id   : int               = None  # Core Django SensorHistory primary key
+    integration_key          : IntegrationKey
+    value                    : str
+    timestamp                : datetime
+    sensor                   : Sensor            = None
+    detail_attrs             : Dict[ str, str ]  = None
+    source_image_url         : str               = None
+    has_video_stream         : bool              = False
+    correlation_role         : Optional[CorrelationRole] = None
+    correlation_id           : Optional[str]     = None
+    sensor_history_id        : int               = None  # Core Django SensorHistory primary key
     
     def __str__(self):
         return json.dumps( self.to_dict() )
@@ -42,6 +45,8 @@ class SensorResponse:
             'detail_attrs': self.detail_attrs,
             'source_image_url': self.source_image_url,
             'has_video_stream': self.has_video_stream,
+            'correlation_role': str(self.correlation_role) if self.correlation_role else None,
+            'correlation_id': self.correlation_id,
             'sensor_history_id': self.sensor_history_id,
         }
 
@@ -57,6 +62,8 @@ class SensorResponse:
             details = details,
             source_image_url = self.source_image_url,
             has_video_stream = self.has_video_stream,
+            correlation_role_str = str(self.correlation_role) if self.correlation_role else None,
+            correlation_id = self.correlation_id,
         )
         
     @classmethod
@@ -69,16 +76,32 @@ class SensorResponse:
             detail_attrs = sensor_history.detail_attrs,
             source_image_url = sensor_history.source_image_url,
             has_video_stream = sensor_history.has_video_stream,
+            correlation_role = sensor_history.correlation_role,
+            correlation_id = sensor_history.correlation_id,
+            sensor_history_id = sensor_history.id,
         )
         
     @classmethod
     def from_string( cls, sensor_response_str : str ) -> 'SensorResponse':
         sensor_response_dict = json.loads( sensor_response_str )
+
+        # Parse correlation_role if present
+        correlation_role = None
+        correlation_role_str = sensor_response_dict.get('correlation_role')
+        if correlation_role_str:
+            correlation_role = CorrelationRole.from_name_safe(correlation_role_str)
+
         return SensorResponse(
             integration_key = IntegrationKey.from_string( sensor_response_dict.get('key') ),
             value = sensor_response_dict.get('value'),
             timestamp = datetime.fromisoformat( sensor_response_dict.get('timestamp') ),
             detail_attrs = sensor_response_dict.get('detail_attrs'),
-            source_image_url = sensor_response_dict.get('source_image_url') or sensor_response_dict.get('image_url'),
+            source_image_url = (
+                sensor_response_dict.get('source_image_url')
+                or sensor_response_dict.get('image_url')
+            ),
             has_video_stream = sensor_response_dict.get('has_video_stream', False),
+            correlation_role = correlation_role,
+            correlation_id = sensor_response_dict.get('correlation_id'),
+            sensor_history_id = sensor_response_dict.get('sensor_history_id'),
         )
