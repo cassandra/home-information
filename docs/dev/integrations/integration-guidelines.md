@@ -4,6 +4,11 @@
 
 Each integration is a Django app in the `hi/services` directory. The `hi.integration` app handles integration management and required interfaces.
 
+### Responsibility Boundaries
+
+
+he detail_attrs should be an opaque blob of data to main application.  Only the integration populates or utiizes the data in here.  It is the integration that created the SensorResponse object and it is only that level of objects that the application can access.  For example, these SensorResponses get turned into Event objects with start and end times, so the Event object duration is the only place to get duration information. Though the Event duration is connected to the ZoneMinder durations, the Event object does not know or need to know this.
+
 ## Nomenclature
 
 - **integration_id** - Unique identifier for each integration type

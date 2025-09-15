@@ -107,12 +107,12 @@ class ZmEvent:
     def to_detail_attrs( self ) -> Dict[ str, str ]:
         return {
             ZmDetailKeys.EVENT_ID_ATTR_NAME: self.event_id,
-            'Start Time': self.start_datetime.isoformat(),
-            'Score': self.score,
-            'Duration (secs)': self.duration_secs,
-            'Alarmed Frames': self.alarmed_frame_count,
-            'Total Frames': self.total_frame_count,
-            'Notes': self.notes,
+            ZmDetailKeys.START_TIME: self.start_datetime.isoformat(),
+            ZmDetailKeys.SCORE: self.score,
+            ZmDetailKeys.DURATION_SECS: self.duration_secs,
+            ZmDetailKeys.ALARMED_FRAMES: self.alarmed_frame_count,
+            ZmDetailKeys.TOTAL_FRAMES: self.total_frame_count,
+            ZmDetailKeys.NOTES: self.notes,
         }
 
 
