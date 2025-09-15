@@ -1,8 +1,10 @@
 import asyncio
 import logging
 
+from hi.apps.common.external_api_mixin import ExternalApiMixin
 
-class PeriodicMonitor:
+
+class PeriodicMonitor(ExternalApiMixin):
     """
     Base class for any content/information that should be automatically,
     and periodically updated from some external source.

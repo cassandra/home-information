@@ -5,6 +5,7 @@ import redis
 from django.conf import settings
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.common.external_api_mixin import ExternalApiMixin
 from hi.apps.common.redis_client import get_redis_client
 from hi.apps.console.console_helper import ConsoleSettingsHelper
 from hi.apps.weather.transient_models import DataPointSource
@@ -12,7 +13,7 @@ from hi.apps.weather.transient_models import DataPointSource
 logger = logging.getLogger(__name__)
 
 
-class WeatherDataSource:
+class WeatherDataSource(ExternalApiMixin):
 
     TRACE = False
     FORCE_CAN_POLL = False  # For debugging
@@ -46,6 +47,7 @@ class WeatherDataSource:
             abbreviation = self._abbreviation,
             priority = self._priority,
         )
+        self._logger = logging.getLogger(self.__class__.__module__)
 
         polling_intervals_per_day_limit = requests_per_day_limit / requests_per_polling_interval
         limit_polling_interval_secs = ( 24 * 60 * 60 ) / polling_intervals_per_day_limit
