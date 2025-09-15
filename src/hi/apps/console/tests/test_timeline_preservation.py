@@ -168,6 +168,7 @@ class TestTimelinePreservationLogic(TransactionTestCase):
                 value='active',
                 response_datetime=base_time.replace(hour=hour),
                 has_video_stream=True,
+                video_stream_duration_ms=5000,
                 details='{"day": "today"}'
             )
             today_records.append(record)
@@ -179,9 +180,10 @@ class TestTimelinePreservationLogic(TransactionTestCase):
             value='active',
             response_datetime=yesterday,
             has_video_stream=True,
+            video_stream_duration_ms=5000,
             details='{"day": "yesterday"}'
         )
-        
+
         # Older records
         old_time = base_time - timezone.timedelta(days=3)
         old_record = SensorHistory.objects.create(
@@ -189,6 +191,7 @@ class TestTimelinePreservationLogic(TransactionTestCase):
             value='active',
             response_datetime=old_time,
             has_video_stream=True,
+            video_stream_duration_ms=5000,
             details='{"day": "old"}'
         )
         
@@ -236,6 +239,7 @@ class TestTimelinePreservationLogic(TransactionTestCase):
                 value=f'nav_test_{i}',
                 response_datetime=base_time - timezone.timedelta(hours=i),
                 has_video_stream=True,
+                video_stream_duration_ms=5000,
                 details=f'{{"nav_order": "{i}"}}'
             )
             records.append(record)
@@ -274,6 +278,7 @@ class TestTimelinePreservationLogic(TransactionTestCase):
                 value=response.value,
                 response_datetime=response.timestamp,
                 has_video_stream=True,
+                video_stream_duration_ms=5000,
                 details='{"timezone": "aware"}'
             )
             records.append(record)

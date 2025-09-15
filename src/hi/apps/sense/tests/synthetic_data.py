@@ -225,6 +225,7 @@ class SensorHistorySyntheticData:
                     value='active' if hours_ago % 3 == 0 else 'idle',
                     response_datetime=timestamp,
                     has_video_stream=True,
+                    video_stream_duration_ms=5000,
                     details=f'{{"event_id": "{hours_ago}", "duration_seconds": "{60 + hours_ago * 15}"}}'
                 )
                 records.append(record)
@@ -247,6 +248,7 @@ class SensorHistorySyntheticData:
                     value=f'event_{hours_ago}',
                     response_datetime=timestamp,
                     has_video_stream=True,
+                    video_stream_duration_ms=5000,
                     details=f'{{"hours_ago": "{hours_ago}"}}'
                 )
                 all_records.append(record)
@@ -274,6 +276,7 @@ class SensorHistorySyntheticData:
                     value=f'record_{i}',
                     response_datetime=timestamp,
                     has_video_stream=True,
+                    video_stream_duration_ms=5000,
                     details=f'{{"record_index": "{i}", "window_size": "{window}"}}'
                 )
                 records.append(record)

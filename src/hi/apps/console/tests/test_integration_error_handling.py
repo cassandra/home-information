@@ -62,7 +62,8 @@ class TestIntegrationErrorHandling(TransactionTestCase):
                     sensor=self.video_sensor,
                     value='duplicate',
                     response_datetime=timezone.now(),
-                    has_video_stream=True
+                    has_video_stream=True,
+                    video_stream_duration_ms=5000
                 )
     
     def test_helper_method_failure_recovery(self):
@@ -160,6 +161,7 @@ class TestIntegrationErrorHandling(TransactionTestCase):
                 value=f'memory_test_{i}',
                 response_datetime=base_time - timezone.timedelta(minutes=i),
                 has_video_stream=True,
+                video_stream_duration_ms=5000,
                 details=f'{{"memory_test": {i}}}'
             ))
         
@@ -208,6 +210,7 @@ class TestIntegrationErrorHandling(TransactionTestCase):
                 value=f'timezone_edge_{i}',
                 response_datetime=test_time,
                 has_video_stream=True,
+                video_stream_duration_ms=5000,
                 details=f'{{"timezone_test": {i}}}'
             )
         
@@ -234,7 +237,8 @@ class TestIntegrationErrorHandling(TransactionTestCase):
                 sensor=self.video_sensor,
                 value=f'boundary_record_{i}',
                 response_datetime=base_time - timezone.timedelta(minutes=i),
-                has_video_stream=True
+                has_video_stream=True,
+                video_stream_duration_ms=5000
             )
             boundary_records.append(record)
         
