@@ -14,6 +14,7 @@ class EntityType(LabeledEnum):
     ACCESS_POINT         = ( 'Access Point', '' )
     ANTENNA              = ( 'Antenna', '' )
     APPLIANCE            = ( 'Appliance', '' )
+    LARGE_APPLIANCE      = ( 'Large Appliance', '' )
     AREA                 = ( 'Area', '' )
     ATTIC_STAIRS         = ( 'Attic Stairs', '' )
     AUTOMOBILE           = ( 'Automobile', '' )
@@ -124,7 +125,7 @@ class EntityType(LabeledEnum):
     def get_closed_path_types(cls) -> Set['EntityType']:
         """EntityTypes that require closed paths (areas/regions)"""
         return {
-            cls.APPLIANCE,
+            cls.LARGE_APPLIANCE,
             cls.AREA,
             cls.DOOR,
             cls.FURNITURE,
@@ -313,6 +314,7 @@ class EntityGroupType(LabeledEnum):
 
     APPLIANCES = ( 'Appliances', '', {
         EntityType.APPLIANCE,
+        EntityType.LARGE_APPLIANCE,
         EntityType.CLOTHES_DRYER,
         EntityType.CLOTHES_WASHER,
         EntityType.COFFEE_MAKER,

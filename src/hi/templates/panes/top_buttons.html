@@ -6,10 +6,14 @@
       <img src="{% static 'img/hi-logo-149x64.png' %}" alt="Home Information Logo">
     </div>
     <div class="d-flex justify-content-end">
-      {% if request.view_parameters.location and not request.view_parameters.is_editing %}
+      {% if request.view_parameters.location %}
       <div class="px-1">
-        <a href="{% url 'location_edit_location_edit' location_id=request.view_parameters.location.id %}"
-           class="btn btn-primary btn-control" role="button"
+        <a class="btn btn-primary btn-control" role="button"
+           {% if request.view_parameters.is_editing %}
+           href="{% url 'location_edit_mode' location_id=request.view_parameters.location.id %}"
+           {% else %}
+           href="{% url 'location_edit_location_edit' location_id=request.view_parameters.location.id %}"
+           {% endif %}
            data-async="true" >
           {{ request.view_parameters.location.name }}
         </a>

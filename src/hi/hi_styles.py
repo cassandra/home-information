@@ -246,6 +246,7 @@ class EntityStyle:
         # Default icon used if not in this map
         EntityType.ACCESS_POINT,
         EntityType.ANTENNA,
+        EntityType.APPLIANCE,
         EntityType.ATTIC_STAIRS,
         EntityType.AUTOMOBILE,
         EntityType.AV_RECEIVER,
@@ -363,7 +364,7 @@ class EntityStyle:
         EntityType.WATER_METER: SvgViewBox( x = 0, y = 0, width = 64, height = 43 ),
     }
     PathEntityTypeToSvgStatusStyle = {
-        EntityType.APPLIANCE: Appliance,
+        EntityType.LARGE_APPLIANCE: Appliance,
         EntityType.AREA: Area,
         EntityType.CONTROL_WIRE: ControlWire,
         EntityType.DOOR: Door,
