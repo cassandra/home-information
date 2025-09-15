@@ -8,11 +8,23 @@ Sensor Response Details
 {% block body %}
 <div>
   <div class="h4">{{ sensor_history.sensor.name }}</div>
-  {% if sensor_response and sensor_response.has_video_stream %}
-    {% sensor_response_video_stream sensor_response as video_stream %}
-    {% if video_stream and video_stream.source_url %}
+  {% if sensor_response %}
+    {% if sensor_response.has_video_stream %}
+      {% sensor_response_video_stream sensor_response as video_stream %}
+      {% if video_stream and video_stream.source_url %}
+      <div>
+        <img class="img-fluid" src="{{ video_stream.source_url }}" alt="Sensor History">
+      </div>
+      {% elif sensor_response.source_image_url %}
+      <!-- Fallback to image when video stream is not available -->
+      <div>
+        <img class="img-fluid" src="{{ sensor_response.source_image_url }}" alt="Sensor History">
+      </div>
+      {% endif %}
+    {% elif sensor_response.source_image_url %}
+    <!-- Show image when no video stream capability -->
     <div>
-      <img class="img-fluid" src="{{ video_stream.source_url }}" alt="Sensor History">
+      <img class="img-fluid" src="{{ sensor_response.source_image_url }}" alt="Sensor History">
     </div>
     {% endif %}
   {% endif %}

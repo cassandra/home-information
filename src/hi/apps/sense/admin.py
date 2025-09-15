@@ -40,6 +40,8 @@ class SensorHistoryAdmin(admin.ModelAdmin):
         'value',
         'response_datetime',
         'details',
+        'has_video_stream',
+        'video_stream_duration_ms',
         'source_image_url',
     )
 

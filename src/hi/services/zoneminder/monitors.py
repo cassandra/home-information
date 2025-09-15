@@ -346,7 +346,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             value = str(EntityStateValue.IDLE),
             timestamp = zm_event.end_datetime,
             detail_attrs = detail_attrs,
-            has_video_stream = False,
+            has_video_stream = self._has_video_stream_capability(detail_attrs),
             video_stream_duration_ms = video_stream_duration_ms,
         )
 

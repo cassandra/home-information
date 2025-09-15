@@ -53,6 +53,7 @@ DIVID = {
 
     'ATTRIBUTE_CONTAINER_CLASS': 'hi-attribute',
 
+    'DATETIME_HEADER': 'hi-datetime-header',
     'ALERT_BANNER_CONTAINER': 'hi-alert-banner-container',
     'ALERT_BANNER_CONTENT': 'hi-alert-banner-content',
     'SECURITY_STATE_CONTROL': 'hi-security-state-control',
