@@ -735,7 +735,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                f"hourly=temperature_2m,relativehumidity_2m,dewpoint_2m,precipitation,pressure_msl&"
                f"units=metric")
         
-        response = requests.get(url, headers = self._headers)
+        response = self.safe_external_api_call_sync( requests.get, url, headers = self._headers )
         response.raise_for_status()
         current_data = response.json()           
         return current_data
@@ -769,7 +769,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                f"forecast_days=7&"
                f"units=metric")
         
-        response = requests.get(url, headers = self._headers)
+        response = self.safe_external_api_call_sync( requests.get, url, headers = self._headers )
         response.raise_for_status()
         forecast_data = response.json()           
         return forecast_data
@@ -803,7 +803,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                f"forecast_days=14&"
                f"units=metric")
         
-        response = requests.get(url, headers = self._headers)
+        response = self.safe_external_api_call_sync( requests.get, url, headers = self._headers )
         response.raise_for_status()
         forecast_data = response.json()           
         return forecast_data
@@ -848,7 +848,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                f"daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum&"
                f"units=metric")
         
-        response = requests.get(url, headers = self._headers)
+        response = self.safe_external_api_call_sync( requests.get, url, headers = self._headers )
         response.raise_for_status()
         historical_data = response.json()           
         return historical_data

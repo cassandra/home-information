@@ -269,7 +269,7 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
                f"date={target_date.isoformat()}&"
                f"formatted=0")  # Get ISO format times
         
-        response = requests.get(url, headers = self._headers)
+        response = self.safe_external_api_call_sync( requests.get, url, headers = self._headers )
         response.raise_for_status()
         api_data = response.json()           
         return api_data

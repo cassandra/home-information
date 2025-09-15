@@ -1,4 +1,3 @@
-from asgiref.sync import sync_to_async
 from cachetools import TTLCache
 from datetime import datetime
 import logging
@@ -45,8 +44,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         if not zm_manager:
             return
         _ = await self.sensor_response_manager_async()  # Allows async use of self.sensor_response_manager()
-        self._zm_tzname = await sync_to_async( zm_manager.get_zm_tzname,
-                                               thread_sensitive = True )()
+        self._zm_tzname = await self.safe_external_api_call( zm_manager.get_zm_tzname )
         self._poll_from_datetime = datetimeproxy.now()
         zm_manager.register_change_listener( self.refresh )
         self._was_initialized = True
@@ -94,7 +92,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             'from': tz_adjusted_poll_from_datetime.isoformat(),  # "from" only looks at event start time
             'tz': self._zm_tzname,
         }
-        zm_events = await sync_to_async( self.zm_manager().get_zm_events )( options = options )
+        zm_events = await self.safe_external_api_call( self.zm_manager().get_zm_events, options = options )
         logger.debug( f'Found {len(zm_events)} new ZM events' )
 
         # Sensor readings and state value transitions are points in time,
@@ -138,7 +136,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         # If there are no events for monitors/states, we still want to emit the
         # sensor response of it being idle.
         #
-        zm_monitors = await sync_to_async( self.zm_manager().get_zm_monitors )()
+        zm_monitors = await self.safe_external_api_call( self.zm_manager().get_zm_monitors )
         for zm_monitor in zm_monitors:
             if zm_monitor.id() not in zm_monitor_ids_seen:
                 idle_sensor_response = self._create_idle_sensor_response(
@@ -263,9 +261,8 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         current_poll_datetime = datetimeproxy.now()
         sensor_response_map = dict()
 
-        zm_monitors = await sync_to_async( self.zm_manager().get_zm_monitors )(
-            force_load = self.CACHING_DISABLED,
-        )
+        zm_monitors = await self.safe_external_api_call( self.zm_manager().get_zm_monitors,
+                                                         force_load = self.CACHING_DISABLED )
         for zm_monitor in zm_monitors:
             function_sensor_response = self._create_monitor_function_sensor_response(
                 zm_monitor = zm_monitor,
@@ -281,9 +278,8 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         sensor_response_map = dict()
 
         active_run_state_name = None
-        zm_states = await sync_to_async( self.zm_manager().get_zm_states )(
-            force_load = self.CACHING_DISABLED,
-        )
+        zm_states = await self.safe_external_api_call( self.zm_manager().get_zm_states,
+                                                       force_load = self.CACHING_DISABLED )
         for zm_state in zm_states:
             if zm_state.active():
                 active_run_state_name = zm_state.name()

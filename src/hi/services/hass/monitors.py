@@ -49,7 +49,7 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         if not hass_manager:
             return
         
-        id_to_hass_state_map = hass_manager.fetch_hass_states_from_api( verbose = False )
+        id_to_hass_state_map = await self.safe_external_api_call( hass_manager.fetch_hass_states_from_api, verbose = False )
         logger.debug( f'Fetched {len(id_to_hass_state_map)} HAss States' )
         
         current_datetime = datetimeproxy.now()

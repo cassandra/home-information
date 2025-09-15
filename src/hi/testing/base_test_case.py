@@ -3,6 +3,7 @@ import logging
 import tempfile
 from contextlib import contextmanager
 from typing import Dict
+from unittest.mock import Mock
 
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth.models import User as UserType
@@ -250,6 +251,32 @@ class BaseTestCase(TestCase):
             
         self.assertEqual( actual_content, expected_content,
                           f"File content should match for: {full_path}")
+
+    def create_mock_requests_get(self, return_data=None, status_code=200, raise_for_status_error=None):
+        """
+        Create a properly configured mock for requests.get() that works with timeout protection.
+        
+        Args:
+            return_data: Data to return from response.json()
+            status_code: HTTP status code (default: 200)
+            raise_for_status_error: Exception to raise from raise_for_status() if any
+            
+        Returns:
+            Mock object configured to behave like requests.get
+        """
+        mock_response = Mock()
+        mock_response.json.return_value = return_data or {}
+        mock_response.status_code = status_code
+        
+        if raise_for_status_error:
+            mock_response.raise_for_status.side_effect = raise_for_status_error
+        else:
+            mock_response.raise_for_status.return_value = None
+        
+        mock_get = Mock(return_value=mock_response)
+        mock_get.__name__ = 'get'  # Required for external_api_mixin timeout logging
+        
+        return mock_get
 
 
 @dataclass
