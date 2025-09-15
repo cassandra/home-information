@@ -306,7 +306,13 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         return detail_attrs is not None and ZmDetailKeys.EVENT_ID_ATTR_NAME in detail_attrs
     
     def _create_movement_active_sensor_response( self, zm_event : ZmEvent ):
-        detail_attrs = zm_event.to_detail_attrs()
+        all_detail_attrs = zm_event.to_detail_attrs()
+        # For active (start) events, only include basic event info
+        detail_attrs = {
+            ZmDetailKeys.EVENT_ID_ATTR_NAME: all_detail_attrs.get(ZmDetailKeys.EVENT_ID_ATTR_NAME),
+            ZmDetailKeys.START_TIME: all_detail_attrs.get(ZmDetailKeys.START_TIME),
+            ZmDetailKeys.NOTES: all_detail_attrs.get(ZmDetailKeys.NOTES),
+        }
         return SensorResponse(
             integration_key = self.zm_manager()._to_integration_key(
                 prefix = ZoneMinderManager.MOVEMENT_SENSOR_PREFIX,
@@ -320,6 +326,18 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         )
 
     def _create_movement_idle_sensor_response( self, zm_event : ZmEvent ):
+        all_detail_attrs = zm_event.to_detail_attrs()
+        # For idle (end) events, include all detail attributes
+        detail_attrs = all_detail_attrs
+
+        # Extract duration for video_stream_duration_ms field
+        video_stream_duration_ms = None
+        if ZmDetailKeys.DURATION_SECS in detail_attrs:
+            try:
+                video_stream_duration_ms = int(float(detail_attrs[ZmDetailKeys.DURATION_SECS]) * 1000)
+            except (ValueError, TypeError):
+                pass
+
         return SensorResponse(
             integration_key = self.zm_manager()._to_integration_key(
                 prefix = ZoneMinderManager.MOVEMENT_SENSOR_PREFIX,
@@ -327,7 +345,9 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             ),
             value = str(EntityStateValue.IDLE),
             timestamp = zm_event.end_datetime,
+            detail_attrs = detail_attrs,
             has_video_stream = False,
+            video_stream_duration_ms = video_stream_duration_ms,
         )
 
     def _create_idle_sensor_response( self, zm_monitor : ZmMonitor, timestamp : datetime ):

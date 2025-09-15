@@ -105,9 +105,8 @@ class VideoStreamBrowsingHelper:
         if preserve_window_bounds:
             # Preserve existing timeline window - query records within bounds
             start_time, end_time = preserve_window_bounds
-            history_records = list(SensorHistory.objects.filter(
+            history_records = list(SensorHistory.objects.filter_video_browse().filter(
                 sensor=sensor,
-                has_video_stream=True,
                 response_datetime__gte=start_time,
                 response_datetime__lte=end_time
             ).order_by('-response_datetime'))
@@ -124,9 +123,8 @@ class VideoStreamBrowsingHelper:
             window_center_timestamp = start_time if history_records else None
         elif center_record is None:
             # No center record - get most recent records (default behavior)
-            history_records = SensorHistory.objects.filter(
-                sensor=sensor,
-                has_video_stream=True
+            history_records = SensorHistory.objects.filter_video_browse().filter(
+                sensor=sensor
             ).order_by('-response_datetime')[:window_size]
             
             has_older_records = len(history_records) == window_size
@@ -137,16 +135,14 @@ class VideoStreamBrowsingHelper:
             half_window = window_size // 2
             
             # Get records before center (older timestamps)
-            before_records = list(SensorHistory.objects.filter(
+            before_records = list(SensorHistory.objects.filter_video_browse().filter(
                 sensor=sensor,
-                has_video_stream=True,
                 response_datetime__lt=center_record.response_datetime
             ).order_by('-response_datetime')[:half_window])
             
-            # Get records after center (newer timestamps) 
-            after_records = list(SensorHistory.objects.filter(
+            # Get records after center (newer timestamps)
+            after_records = list(SensorHistory.objects.filter_video_browse().filter(
                 sensor=sensor,
-                has_video_stream=True,
                 response_datetime__gt=center_record.response_datetime
             ).order_by('response_datetime')[:half_window])
             
@@ -352,9 +348,8 @@ class VideoStreamBrowsingHelper:
             return (None, None)
         
         # Find previous record (older timestamp)
-        prev_record = SensorHistory.objects.filter(
+        prev_record = SensorHistory.objects.filter_video_browse().filter(
             sensor=sensor,
-            has_video_stream=True,
             response_datetime__lt=current_record.response_datetime
         ).order_by('-response_datetime').first()
         
@@ -363,9 +358,8 @@ class VideoStreamBrowsingHelper:
             prev_sensor_response = cls.create_sensor_response_with_history_id(prev_record)
         
         # Find next record (newer timestamp)
-        next_record = SensorHistory.objects.filter(
+        next_record = SensorHistory.objects.filter_video_browse().filter(
             sensor=sensor,
-            has_video_stream=True,
             response_datetime__gt=current_record.response_datetime
         ).order_by('response_datetime').first()
         
@@ -409,9 +403,8 @@ class VideoStreamBrowsingHelper:
         pivot_time = timezone.make_aware(datetime.fromtimestamp(pivot_timestamp))
         
         # Get events before the pivot time
-        history_records = list(SensorHistory.objects.filter(
+        history_records = list(SensorHistory.objects.filter_video_browse().filter(
             sensor = sensor,
-            has_video_stream = True,
             response_datetime__lt = pivot_time
         ).order_by('-response_datetime')[:50])
         
@@ -494,9 +487,8 @@ class VideoStreamBrowsingHelper:
         pivot_time = timezone.make_aware(datetime.fromtimestamp(pivot_timestamp))
         
         # Get 50 events after the pivot time (ordered chronologically, oldest first)
-        history_records = list( SensorHistory.objects.filter(
+        history_records = list( SensorHistory.objects.filter_video_browse().filter(
             sensor=sensor,
-            has_video_stream=True,
             response_datetime__gt=pivot_time
         ).order_by('response_datetime')[:50])
         
@@ -695,9 +687,8 @@ class VideoStreamBrowsingHelper:
             pivot_datetime = timestamp
         else:
             pivot_datetime = timezone.make_aware(datetime.fromtimestamp(timestamp))
-        return SensorHistory.objects.filter(
+        return SensorHistory.objects.filter_video_browse().filter(
             sensor = sensor,
-            has_video_stream = True,
             response_datetime__lt = pivot_datetime
         ).exists()
 
@@ -708,9 +699,8 @@ class VideoStreamBrowsingHelper:
             pivot_datetime = timestamp
         else:
             pivot_datetime = timezone.make_aware(datetime.fromtimestamp(timestamp))
-        return SensorHistory.objects.filter(
+        return SensorHistory.objects.filter_video_browse().filter(
             sensor = sensor,
-            has_video_stream = True,
             response_datetime__gt = pivot_datetime
         ).exists()
 

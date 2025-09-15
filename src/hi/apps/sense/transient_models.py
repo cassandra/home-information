@@ -12,14 +12,15 @@ from .models import Sensor, SensorHistory
 
 @dataclass
 class SensorResponse:
-    integration_key     : IntegrationKey
-    value               : str
-    timestamp           : datetime
-    sensor              : Sensor            = None
-    detail_attrs        : Dict[ str, str ]  = None
-    source_image_url    : str               = None
-    has_video_stream    : bool              = False
-    sensor_history_id   : int               = None  # Core Django SensorHistory primary key
+    integration_key          : IntegrationKey
+    value                    : str
+    timestamp                : datetime
+    sensor                   : Sensor            = None
+    detail_attrs             : Dict[ str, str ]  = None
+    source_image_url         : str               = None
+    has_video_stream         : bool              = False
+    video_stream_duration_ms : int               = None
+    sensor_history_id        : int               = None  # Core Django SensorHistory primary key
     
     def __str__(self):
         return json.dumps( self.to_dict() )
@@ -42,6 +43,7 @@ class SensorResponse:
             'detail_attrs': self.detail_attrs,
             'source_image_url': self.source_image_url,
             'has_video_stream': self.has_video_stream,
+            'video_stream_duration_ms': self.video_stream_duration_ms,
             'sensor_history_id': self.sensor_history_id,
         }
 
@@ -57,6 +59,7 @@ class SensorResponse:
             details = details,
             source_image_url = self.source_image_url,
             has_video_stream = self.has_video_stream,
+            video_stream_duration_ms = self.video_stream_duration_ms,
         )
         
     @classmethod
@@ -69,6 +72,7 @@ class SensorResponse:
             detail_attrs = sensor_history.detail_attrs,
             source_image_url = sensor_history.source_image_url,
             has_video_stream = sensor_history.has_video_stream,
+            video_stream_duration_ms = sensor_history.video_stream_duration_ms,
         )
         
     @classmethod
@@ -79,6 +83,14 @@ class SensorResponse:
             value = sensor_response_dict.get('value'),
             timestamp = datetime.fromisoformat( sensor_response_dict.get('timestamp') ),
             detail_attrs = sensor_response_dict.get('detail_attrs'),
-            source_image_url = sensor_response_dict.get('source_image_url') or sensor_response_dict.get('image_url'),
+            source_image_url = (
+                sensor_response_dict.get('source_image_url')
+                or sensor_response_dict.get('image_url')
+            ),
             has_video_stream = sensor_response_dict.get('has_video_stream', False),
+            video_stream_duration_ms = (
+                int(sensor_response_dict.get('video_stream_duration_ms'))
+                if sensor_response_dict.get('video_stream_duration_ms') is not None
+                else None
+            ),
         )

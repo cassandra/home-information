@@ -9,6 +9,12 @@ from hi.integrations.models import IntegrationDetailsModel
 from .enums import SensorType
 
 
+class SensorHistoryManager(models.Manager):
+    def filter_video_browse(self):
+        """Return queryset filtered for video browsing - records with meaningful video duration."""
+        return self.filter(video_stream_duration_ms__gt=0)
+
+
 class Sensor( IntegrationDetailsModel ):
     """
     - Represents an observed state of an entity.
@@ -72,6 +78,8 @@ class Sensor( IntegrationDetailsModel ):
     
 class SensorHistory(models.Model):
 
+    objects = SensorHistoryManager()
+
     sensor = models.ForeignKey(
         Sensor,
         related_name = 'history',
@@ -93,6 +101,10 @@ class SensorHistory(models.Model):
     has_video_stream = models.BooleanField(
         'Has Video Stream',
         default = False,
+    )
+    video_stream_duration_ms = models.IntegerField(
+        'Video Stream Duration (ms)',
+        null = True, blank = True,
     )
     response_datetime = models.DateTimeField(
         'Timestamp',

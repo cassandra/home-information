@@ -114,3 +114,24 @@ def format_duration(duration_secs):
         return get_humanized_secs(duration_secs)
     except (ValueError, TypeError):
         return ""
+
+
+@register.filter
+def format_duration_ms(duration_ms):
+    """
+    Format duration in milliseconds to a human-readable format.
+
+    Args:
+        duration_ms: Duration in milliseconds (int)
+
+    Returns:
+        Formatted duration string using get_humanized_secs
+    """
+    if duration_ms is None:
+        return ""
+
+    try:
+        duration_secs = float(duration_ms) / 1000.0
+        return get_humanized_secs(duration_secs)
+    except (ValueError, TypeError):
+        return ""
