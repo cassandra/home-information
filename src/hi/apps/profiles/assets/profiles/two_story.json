@@ -141,6 +141,21 @@
       ]
     },
     {
+      "name": "Coffee Machine",
+      "entity_type_str": "coffee_maker",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 1651.280273,
+          "svg_y": 665.384888,
+          "svg_scale": 1.526897
+        }
+      ],
+      "visible_in_views": [
+        "Kitchen"
+      ]
+    },
+    {
       "name": "Dishwasher",
       "entity_type_str": "dishwasher",
       "positions": [
@@ -213,7 +228,7 @@
     },
     {
       "name": "Hedge Trimmer",
-      "entity_type_str": "other"
+      "entity_type_str": "hedge_trimmer"
     },
     {
       "name": "Kitchen Sink",
@@ -233,11 +248,26 @@
     },
     {
       "name": "Lawn Mower",
-      "entity_type_str": "other"
+      "entity_type_str": "lawn_mower"
     },
     {
       "name": "Leaf Blower",
-      "entity_type_str": "other"
+      "entity_type_str": "leaf_blower"
+    },
+    {
+      "name": "Live Oak",
+      "entity_type_str": "tree",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 238.043137,
+          "svg_y": 242.832367,
+          "svg_scale": 4.283128
+        }
+      ],
+      "visible_in_views": [
+        "Exterior"
+      ]
     },
     {
       "name": "Microwave",
@@ -245,8 +275,8 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1722.6073,
-          "svg_y": 666.888,
+          "svg_x": 1761.850586,
+          "svg_y": 671.72168,
           "svg_scale": 1.326768
         }
       ],
@@ -293,7 +323,7 @@
     },
     {
       "name": "String Trimmer",
-      "entity_type_str": "other"
+      "entity_type_str": "trimmer"
     },
     {
       "name": "Television",

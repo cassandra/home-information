@@ -622,6 +622,15 @@ svg .highlighted {
 g.hi-icon {
     pointer-events: all;
 }
+
+/* Hide background rectangles used for click targets */
+.hi-entity-bg {
+    fill: none !important;
+    stroke: none !important;
+    opacity: 0;
+    pointer-events: all;
+}
+
 path.hi-path-closed[hover] {
 }
 path.hover-target {

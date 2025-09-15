@@ -1,0 +1,6 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+<circle cx="32" cy="32" r="20" fill="#808080" stroke="#333333" stroke-width="2"/>
+<circle cx="32" cy="32" r="16" fill="#606060" stroke="#333333" stroke-width="1"/>
+<circle cx="32" cy="32" r="8" fill="#333333"/>
+<path d="M32,24 L38,32 L32,40 L26,32 Z" fill="#a0a0a0" stroke="#333333" stroke-width="1"/>
+<circle cx="32" cy="32" r="3" fill="#333333"/>

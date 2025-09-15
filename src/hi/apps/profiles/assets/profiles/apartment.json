@@ -48,6 +48,26 @@
       "visible_in_views": [
         "All"
       ]
+    },
+    {
+      "name": "Electronics",
+      "collection_type_str": "electronics",
+      "collection_view_type_str": "grid",
+      "order_id": 4,
+      "entities": [
+        "Laptop",
+        "Mobile Phone",
+        "Gaming System"
+      ],
+      "paths": [
+        {
+          "location_name": "My Home",
+          "svg_path": "M 823.3533790955232,985.8875988155462 L 1178.4192381842113,985.8875988155462 L 1178.4192381842113,1254.3023930466932 L 823.3533790955232,1254.3023930466932 Z"
+        }
+      ],
+      "visible_in_views": [
+        "All"
+      ]
     }
   ],
   "entities": [
@@ -58,8 +78,8 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 243.805206,
-          "svg_y": 953.147949,
+          "svg_x": 278.080048,
+          "svg_y": 961.716675,
           "svg_scale": 1.673368
         }
       ],
@@ -89,14 +109,29 @@
       ]
     },
     {
+      "name": "Coffee Machine",
+      "entity_type_str": "coffee_maker",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 1747.110962,
+          "svg_y": 711.662842,
+          "svg_scale": 2.99799
+        }
+      ],
+      "visible_in_views": [
+        "All"
+      ]
+    },
+    {
       "name": "Dryer",
       "entity_type_str": "clothes_dryer",
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1777.978882,
-          "svg_y": 1361.411255,
-          "svg_scale": 1.712929
+          "svg_x": 1766.678955,
+          "svg_y": 1381.208496,
+          "svg_scale": 2.397479
         }
       ],
       "visible_in_views": [
@@ -108,14 +143,22 @@
       "entity_type_str": "appliance"
     },
     {
+      "name": "Gaming System",
+      "entity_type_str": "other"
+    },
+    {
+      "name": "Laptop",
+      "entity_type_str": "computer"
+    },
+    {
       "name": "Microwave",
       "entity_type_str": "microwave_oven",
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1722.6073,
-          "svg_y": 666.888,
-          "svg_scale": 1.326768
+          "svg_x": 1582.65979,
+          "svg_y": 703.361755,
+          "svg_scale": 2.208718
         }
       ],
       "visible_in_views": [
@@ -123,14 +166,18 @@
       ]
     },
     {
+      "name": "Mobile Phone",
+      "entity_type_str": "other"
+    },
+    {
       "name": "Refrigerator",
       "entity_type_str": "refrigerator",
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1794.635742,
-          "svg_y": 777.043701,
-          "svg_scale": 1.471845
+          "svg_x": 1759.571411,
+          "svg_y": 913.085083,
+          "svg_scale": 3.580818
         }
       ],
       "visible_in_views": [
@@ -147,9 +194,9 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 244.450958,
-          "svg_y": 830.973022,
-          "svg_scale": 1.761753
+          "svg_x": 284.881439,
+          "svg_y": 820.065247,
+          "svg_scale": 3.494066
         }
       ],
       "visible_in_views": [
@@ -162,9 +209,9 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1779.282104,
-          "svg_y": 1226.346924,
-          "svg_scale": 1.683932
+          "svg_x": 1771.391724,
+          "svg_y": 1208.834717,
+          "svg_scale": 2.375069
         }
       ],
       "visible_in_views": [
@@ -192,9 +239,9 @@
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 246.357956,
-          "svg_y": 700.745972,
-          "svg_scale": 1.351972
+          "svg_x": 788.435913,
+          "svg_y": 705.137451,
+          "svg_scale": 1.95791
         }
       ],
       "visible_in_views": [

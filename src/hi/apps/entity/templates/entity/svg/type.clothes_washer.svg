@@ -1,5 +1,6 @@
 <rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
-  <path fill="#fcfcfc" stroke="black" stroke-width="1"
+  <!-- Main washer body with light blue-gray tint -->
+  <path fill="#f0f4f8" stroke="black" stroke-width="1"
         d="M 11.36,1.61
            C 11.36,1.61 16.00,1.61 16.00,1.61
              16.00,1.61 24.96,1.61 24.96,1.61
@@ -116,3 +117,11 @@
              27.38,54.63 36.99,54.60 43.04,48.71
              44.41,47.38 45.63,45.52 46.39,43.76
              46.99,42.36 47.57,40.24 47.60,38.72 Z" />
+
+  <!-- Add subtle color accents -->
+  <!-- Blue tint for drum/water area -->
+  <circle cx="32" cy="37.5" r="16" fill="#e3f2fd" opacity="0.3"/>
+
+  <!-- Colored indicator buttons -->
+  <circle cx="14.5" cy="8.5" r="2" fill="#4fc3f7" opacity="0.7"/>
+  <circle cx="21" cy="8.5" r="2" fill="#66bb6a" opacity="0.7"/>

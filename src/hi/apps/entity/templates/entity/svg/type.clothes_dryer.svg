@@ -1,5 +1,6 @@
 <rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
-  <path fill="#fcfcfc" stroke="black" stroke-width="1"
+  <!-- Main dryer body with warm light gray tint -->
+  <path fill="#f8f5f0" stroke="black" stroke-width="1"
         d="M 6.96,0.01
            C 6.96,0.01 11.60,0.01 11.60,0.01
              11.60,0.01 20.56,0.01 20.56,0.01
@@ -153,3 +154,12 @@
              38.56,36.00 38.56,36.88 38.56,36.88
              38.56,36.88 46.88,36.88 46.88,36.88
              46.88,36.88 46.88,36.00 46.88,36.00 Z" />
+
+  <!-- Add subtle color accents -->
+  <!-- Warm orange tint for drum/heat area -->
+  <circle cx="32" cy="36.5" r="15" fill="#fff3e0" opacity="0.4"/>
+
+  <!-- Colored indicator button and controls -->
+  <circle cx="10.5" cy="6.5" r="1.8" fill="#ff9800" opacity="0.8"/>
+  <rect x="17" y="5" width="12" height="1.5" rx="0.5" fill="#ffa726" opacity="0.6"/>
+  <rect x="25" y="7.5" width="8" height="1.5" rx="0.5" fill="#ffb74d" opacity="0.6"/>

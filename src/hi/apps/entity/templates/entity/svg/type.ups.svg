@@ -1,0 +1,7 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+<rect x="16" y="22" width="32" height="20" rx="2" fill="#333333" stroke="#333333" stroke-width="2"/>
+<rect x="20" y="26" width="24" height="12" fill="#00ff00" opacity="0.8" stroke="#333333" stroke-width="1"/>
+<text x="32" y="35" text-anchor="middle" font-family="monospace" font-size="8" font-weight="bold" fill="#ffffff">UPS</text>
+<rect x="14" y="30" width="4" height="4" fill="#808080"/>
+<rect x="46" y="30" width="4" height="4" fill="#808080"/>
+<circle cx="32" cy="18" r="2" fill="#00ff00"/>

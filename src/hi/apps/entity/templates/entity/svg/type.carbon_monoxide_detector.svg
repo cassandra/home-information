@@ -1,0 +1,5 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+<rect x="12" y="12" width="40" height="40" rx="4" fill="#f0f0f0" stroke="#333333" stroke-width="2"/>
+<rect x="16" y="16" width="32" height="32" rx="2" fill="#e0e0e0" stroke="#333333" stroke-width="1"/>
+<text x="32" y="30" text-anchor="middle" font-family="monospace" font-size="12" font-weight="bold" fill="#333333">CO</text>
+<circle cx="32" cy="40" r="3" fill="#ff8800" stroke="#cc6600" stroke-width="1"/>

@@ -1,0 +1,40 @@
+{% extends "pages/base.html" %}
+{% block head_title %}HI: {{ app_name|title }} UI Tests{% endblock %}
+
+{% block content %}
+<div class="container-fluid m-4">
+  <h2 class="text-info">{{ app_name|title }} UI Tests</h2>
+
+  <div class="row">
+    <div class="col-md-8">
+      <h3>Visual Testing Tools</h3>
+      <ul class="list-group">
+        <li class="list-group-item">
+          <a href="{% url 'test_entity_type_visual_browser' %}">
+            <strong>EntityType Visual Browser</strong>
+          </a>
+          <p class="text-muted mb-0 mt-1">
+            View all EntityType visual representations (icons, closed paths, open paths) with zoom controls and status variations.
+          </p>
+        </li>
+      </ul>
+    </div>
+
+    <div class="col-md-4">
+      <h3>About Entity Visual Testing</h3>
+      <div class="card">
+        <div class="card-body">
+          <p class="card-text">
+            Entity visual testing tools help developers verify how EntityTypes render without manually creating entities in the app.
+          </p>
+          <ul class="small text-muted">
+            <li><strong>Icons:</strong> SVG icons for point-like entities</li>
+            <li><strong>Closed Paths:</strong> Filled areas for rooms/zones</li>
+            <li><strong>Open Paths:</strong> Lines for wires/pipes</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

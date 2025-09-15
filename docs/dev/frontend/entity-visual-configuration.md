@@ -57,6 +57,9 @@ New Entity Type
    ```
 
 2. **Create Custom SVG Icon** ([Create SVG Icon Asset](#create-svg-icon-asset))
+
+Note: Do **not** use the `<g>` tag inside these SVGs!
+
    ```xml
    <!-- File: hi/apps/entity/templates/entity/svg/type.smart_door_lock.svg -->
    <rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
