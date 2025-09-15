@@ -23,6 +23,7 @@ def client_config(request):
         VIEW_MODE = str(request.view_parameters.view_mode),
         VIEW_TYPE = str(request.view_parameters.view_type) if request.view_parameters.view_type else None,
         IS_EDIT_MODE = request.view_parameters.is_editing,
+        DEBUG_AUTO_VIEW_OVERLAY = settings.DEBUG and getattr(settings, 'DEBUG_AUTO_VIEW_DEBUG_OVERLAY', False),
     )
     
     return {

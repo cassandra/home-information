@@ -17,6 +17,7 @@ class ClientConfig:
     VIEW_MODE     : str
     VIEW_TYPE     : str
     IS_EDIT_MODE  : bool
+    DEBUG_AUTO_VIEW_OVERLAY : bool
     
     def to_json_dict(self) -> dict:
         """

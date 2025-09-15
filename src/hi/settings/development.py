@@ -156,3 +156,6 @@ DEBUG_FORCE_TRANSIENT_VIEW_OVERRIDE = False  # Set to True to enable
 
 # For testing UI error display of the various attribute editing form errors.
 DEBUG_INJECT_ATTRIBUTE_FORM_ERRORS = False
+
+# Shows auto-view debug overlay for iOS interaction testing
+DEBUG_AUTO_VIEW_DEBUG_OVERLAY = True  # Set to True to enable

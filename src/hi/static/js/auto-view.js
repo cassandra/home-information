@@ -22,26 +22,58 @@
 
         // User interaction tracking
         attachInteractionListeners: function() {
-            // Note: excludes mousemove for performance reasons
-            const events = ['mousedown', 'keydown', 'touchstart', 'click'];
-            
-            // Throttle interaction recording to prevent excessive calls
-            const throttledRecordInteraction = this.throttle(() => {
-                this.recordInteraction();
-            }, 100); // Max once per 100ms
-            
-            events.forEach(event => {
-                // Use passive listeners where possible for better performance
-                const options = this.isPassiveEventSupported() && 
-                              (event === 'touchstart') ? { passive: true } : false;
-                              
-                document.addEventListener(event, throttledRecordInteraction, options);
+            // Enhanced event detection for iOS compatibility
+            // Includes touch events, scroll events, and iOS-specific gesture events
+            const basicEvents = ['mousedown', 'keydown', 'click'];
+            const touchEvents = ['touchstart', 'touchend', 'touchmove'];
+            const scrollEvents = ['scroll', 'wheel'];
+            const gestureEvents = ['gesturestart', 'gesturechange', 'gestureend'];
+
+            // All events to monitor
+            const allEvents = [...basicEvents, ...touchEvents, ...scrollEvents, ...gestureEvents];
+
+            // Event-specific throttle delays (ms)
+            const throttleDelays = {
+                'touchmove': 200,   // Less frequent for performance
+                'scroll': 200,      // Less frequent for performance
+                'wheel': 200,       // Less frequent for performance
+                'gesturechange': 200, // Less frequent for performance
+                'default': 100      // Standard throttle for most events
+            };
+
+            allEvents.forEach(event => {
+                // Get throttle delay for this event type
+                const throttleDelay = throttleDelays[event] || throttleDelays.default;
+
+                // Create throttled function for each event type to capture event name
+                const throttledRecordInteraction = this.throttle(() => {
+                    this.recordInteraction(event);
+                }, throttleDelay);
+
+                // Determine passive option based on event type
+                const shouldUsePassive = this.isPassiveEventSupported() &&
+                    ['touchstart', 'touchmove', 'scroll', 'wheel'].includes(event);
+                const options = shouldUsePassive ? { passive: true } : false;
+
+                try {
+                    document.addEventListener(event, throttledRecordInteraction, options);
+                    // Log successful listener attachment in debug mode
+                    if (Hi.DEBUG && ['gesturestart', 'gesturechange', 'gestureend'].includes(event)) {
+                        console.log(`AutoView: Added ${event} listener (iOS gesture support)`);
+                    }
+                } catch (error) {
+                    // Some older browsers may not support certain events
+                    if (Hi.DEBUG) {
+                        console.warn(`AutoView: Failed to add ${event} listener:`, error);
+                    }
+                }
             });
+
         },
 
-        recordInteraction: function() {
+        recordInteraction: function(eventType = 'unknown') {
             this.lastInteractionTime = Date.now();
-            
+
             // If we're in a transient view and user interacts, make it permanent
             if (this.isTransientView) {
                 this.makeTransientViewPermanent();
@@ -125,7 +157,7 @@
         navigateToTransientView: function(suggestion) {
             const url = suggestion.url;
             const durationSeconds = suggestion.durationSeconds;
-            
+
             if (Hi.DEBUG) {
                 console.log(`Auto-switching to: ${url} for ${durationSeconds}s (reason: ${suggestion.triggerReason})`);
             }
@@ -178,7 +210,7 @@
             if (!this.isTransientView || !this.originalContent) {
                 return;
             }
-            
+
             if (Hi.DEBUG) {
                 console.log(`Reverting to original view and URL: ${this.originalUrl}`);
             }

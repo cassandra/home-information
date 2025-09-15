@@ -280,6 +280,7 @@ PIPELINE = {
                 'js/svg-utils.js',
                 'js/status.js',
                 'js/auto-view.js',
+                'js/auto-view-debug.js',
                 'js/edit.js',
                 'js/edit-dragdrop.js',
                 'js/svg-icon.js',
@@ -384,3 +385,7 @@ DEBUG_FORCE_TRANSIENT_VIEW_OVERRIDE = False
 
 # For testing UI error display of the various attribute editing form errors.
 DEBUG_INJECT_ATTRIBUTE_FORM_ERRORS = False
+
+# When enabled in DEBUG mode, shows auto-view debug overlay in lower-left corner
+# for real-time visibility into auto-view state, interaction detection, and iOS compatibility.
+DEBUG_AUTO_VIEW_DEBUG_OVERLAY = False

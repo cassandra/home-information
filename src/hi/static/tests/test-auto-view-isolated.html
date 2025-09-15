@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Auto-View Isolated Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .info {
+            background: #e3f2fd;
+            border: 1px solid #1976d2;
+            color: #0d47a1;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .test-button {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-area {
+            min-height: 150px;
+            border: 2px dashed #ccc;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: center;
+            background: #f9f9f9;
+        }
+        .config-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Auto-View Isolated Debug Test</h1>
+
+        <div class="info">
+            <strong>Test Instructions:</strong><br>
+            1. To enable debug overlay: Set <code>DEBUG_AUTO_VIEW_DEBUG_OVERLAY = True</code> in development.py<br>
+            2. Look for debug overlay in lower-left corner (only appears when enabled)<br>
+            3. Try interactions below - should see events logged<br>
+            4. Wait 60+ seconds - status should change to IDLE
+        </div>
+
+        <div class="config-display">
+            <strong>Current Configuration:</strong><br>
+            <span id="configDisplay">Loading...</span>
+        </div>
+
+        <div>
+            <h3>Test Controls</h3>
+            <button class="test-button" onclick="simulateInteraction()">Record Interaction</button>
+            <button class="test-button" onclick="simulateAutoView()">Simulate Auto-View</button>
+            <button class="test-button" onclick="resetIdleTimer()">Reset Idle Timer</button>
+        </div>
+
+        <div class="test-area" id="interactionArea">
+            <p><strong>Interaction Test Area</strong></p>
+            <p>Click, touch, scroll, or type here to test interaction detection:</p>
+            <button class="test-button">Click Me</button>
+            <input type="text" placeholder="Type here..." style="margin: 10px; padding: 8px;">
+            <div style="height: 80px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                <p>Scrollable content...</p>
+                <p>More content to scroll...</p>
+                <p>Even more content...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simulate Django template context -->
+    <script>
+        // Mock HiClientConfig (simulates Django template injection)
+        window.HiClientConfig = {
+            DEBUG: true,
+            DEBUG_AUTO_VIEW_OVERLAY: false, // Change to true to test debug overlay
+            ENVIRONMENT: "development",
+            VERSION: "test",
+            VIEW_MODE: "grid",
+            VIEW_TYPE: null,
+            IS_EDIT_MODE: false
+        };
+
+        // Mock Hi namespace and dependencies
+        window.Hi = window.Hi || {
+            DEBUG: true,
+            MAIN_AREA_SELECTOR: '#interactionArea'
+        };
+
+        // Mock jQuery for auto-view compatibility
+        window.$ = function(selector) {
+            const elements = document.querySelectorAll(selector);
+            return {
+                html: function(content) {
+                    if (content !== undefined) {
+                        if (elements[0]) elements[0].innerHTML = content;
+                        return this;
+                    }
+                    return elements[0] ? elements[0].innerHTML : '';
+                },
+                length: elements.length
+            };
+        };
+
+        // Mock antinode for auto-view compatibility
+        window.AN = {
+            loadAsyncContent: function(options) {
+                console.log('Mock AN.loadAsyncContent called:', options);
+                setTimeout(() => {
+                    if (options.url && options.target) {
+                        $(options.target).html(`<div>Mock content from ${options.url}</div>`);
+                    }
+                }, 100);
+            }
+        };
+    </script>
+
+    <!-- Load auto-view modules in correct order -->
+    <script src="../js/auto-view.js"></script>
+    <script src="../js/auto-view-debug.js"></script>
+
+    <!-- Test functions -->
+    <script>
+        function updateConfigDisplay() {
+            const config = window.HiClientConfig;
+            const debugEnabled = config.DEBUG_AUTO_VIEW_OVERLAY;
+
+            const configText = `
+                DEBUG: ${config.DEBUG}
+                DEBUG_AUTO_VIEW_OVERLAY: ${debugEnabled}
+                ENVIRONMENT: ${config.ENVIRONMENT}
+                Auto-View Available: ${!!window.Hi.autoView}
+                Debug Overlay Expected: ${debugEnabled ? 'YES' : 'NO'}
+                Debug Overlay Active: ${window.Hi.autoViewDebug?.isInitialized ? 'YES' : 'NO'}
+            `;
+
+            document.getElementById('configDisplay').textContent = configText.trim();
+        }
+
+        function simulateInteraction() {
+            if (window.Hi.autoView) {
+                window.Hi.autoView.recordInteraction('manual_test');
+                console.log('Simulated interaction recorded');
+            } else {
+                console.log('Auto-view not available');
+            }
+        }
+
+        function simulateAutoView() {
+            if (window.Hi.autoView) {
+                // Force idle state
+                window.Hi.autoView.lastInteractionTime = Date.now() - 65000;
+
+                const mockSuggestion = {
+                    url: '/test/alert/view',
+                    durationSeconds: 10,
+                    priority: 'high',
+                    triggerReason: 'motion_alert'
+                };
+
+                console.log('Simulating auto-view suggestion...');
+                window.Hi.autoView.handleTransientViewSuggestion(mockSuggestion);
+            } else {
+                console.log('Auto-view not available');
+            }
+        }
+
+        function resetIdleTimer() {
+            if (window.Hi.autoView) {
+                window.Hi.autoView.recordInteraction('manual_reset');
+                console.log('Idle timer reset');
+            } else {
+                console.log('Auto-view not available');
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Test page loaded');
+
+            // Update config display periodically
+            setInterval(updateConfigDisplay, 1000);
+            updateConfigDisplay();
+
+            // Log current state
+            setTimeout(() => {
+                console.log('=== Test Environment Status ===');
+                console.log('HiClientConfig:', window.HiClientConfig);
+                console.log('Hi.autoView:', window.Hi.autoView);
+                console.log('Hi.autoViewDebug:', window.Hi.autoViewDebug);
+                console.log('Debug overlay should be:', window.HiClientConfig.DEBUG_AUTO_VIEW_OVERLAY ? 'VISIBLE' : 'HIDDEN');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
