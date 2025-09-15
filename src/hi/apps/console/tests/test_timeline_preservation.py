@@ -6,6 +6,7 @@ from hi.apps.console.video_stream_browsing_helper import VideoStreamBrowsingHelp
 from hi.apps.console.transient_models import EntitySensorHistoryData
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor, SensorHistory
+from hi.apps.sense.enums import CorrelationRole
 from hi.apps.sense.tests.synthetic_data import SensorHistorySyntheticData
 
 logging.disable(logging.CRITICAL)
@@ -168,7 +169,8 @@ class TestTimelinePreservationLogic(TransactionTestCase):
                 value='active',
                 response_datetime=base_time.replace(hour=hour),
                 has_video_stream=True,
-                video_stream_duration_ms=5000,
+            correlation_role_str=str(CorrelationRole.END),
+            correlation_id='test',
                 details='{"day": "today"}'
             )
             today_records.append(record)
@@ -180,7 +182,8 @@ class TestTimelinePreservationLogic(TransactionTestCase):
             value='active',
             response_datetime=yesterday,
             has_video_stream=True,
-            video_stream_duration_ms=5000,
+            correlation_role_str=str(CorrelationRole.END),
+            correlation_id='test',
             details='{"day": "yesterday"}'
         )
 
@@ -191,7 +194,8 @@ class TestTimelinePreservationLogic(TransactionTestCase):
             value='active',
             response_datetime=old_time,
             has_video_stream=True,
-            video_stream_duration_ms=5000,
+            correlation_role_str=str(CorrelationRole.END),
+            correlation_id='test',
             details='{"day": "old"}'
         )
         
@@ -239,7 +243,8 @@ class TestTimelinePreservationLogic(TransactionTestCase):
                 value=f'nav_test_{i}',
                 response_datetime=base_time - timezone.timedelta(hours=i),
                 has_video_stream=True,
-                video_stream_duration_ms=5000,
+            correlation_role_str=str(CorrelationRole.END),
+            correlation_id='test',
                 details=f'{{"nav_order": "{i}"}}'
             )
             records.append(record)
@@ -278,7 +283,8 @@ class TestTimelinePreservationLogic(TransactionTestCase):
                 value=response.value,
                 response_datetime=response.timestamp,
                 has_video_stream=True,
-                video_stream_duration_ms=5000,
+            correlation_role_str=str(CorrelationRole.END),
+            correlation_id='test',
                 details='{"timezone": "aware"}'
             )
             records.append(record)

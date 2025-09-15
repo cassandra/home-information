@@ -9,6 +9,7 @@ from hi.apps.entity.enums import EntityStateValue
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
+from hi.apps.sense.enums import CorrelationRole
 
 from .constants import ZmDetailKeys
 from .zm_models import ZmEvent, AggregatedMonitorState
@@ -323,20 +324,14 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             detail_attrs = detail_attrs,
             source_image_url = zm_event.image_url( self.zm_manager() ),
             has_video_stream = self._has_video_stream_capability(detail_attrs),
+            correlation_role = CorrelationRole.START,
+            correlation_id = all_detail_attrs.get(ZmDetailKeys.EVENT_ID_ATTR_NAME),
         )
 
     def _create_movement_idle_sensor_response( self, zm_event : ZmEvent ):
         all_detail_attrs = zm_event.to_detail_attrs()
         # For idle (end) events, include all detail attributes
         detail_attrs = all_detail_attrs
-
-        # Extract duration for video_stream_duration_ms field
-        video_stream_duration_ms = None
-        if ZmDetailKeys.DURATION_SECS in detail_attrs:
-            try:
-                video_stream_duration_ms = int(float(detail_attrs[ZmDetailKeys.DURATION_SECS]) * 1000)
-            except (ValueError, TypeError):
-                pass
 
         return SensorResponse(
             integration_key = self.zm_manager()._to_integration_key(
@@ -347,7 +342,8 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             timestamp = zm_event.end_datetime,
             detail_attrs = detail_attrs,
             has_video_stream = self._has_video_stream_capability(detail_attrs),
-            video_stream_duration_ms = video_stream_duration_ms,
+            correlation_role = CorrelationRole.END,
+            correlation_id = all_detail_attrs.get(ZmDetailKeys.EVENT_ID_ATTR_NAME),
         )
 
     def _create_idle_sensor_response( self, zm_monitor : ZmMonitor, timestamp : datetime ):

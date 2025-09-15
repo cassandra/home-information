@@ -1,13 +1,14 @@
 from dataclasses import dataclass
 from datetime import datetime
 import json
-from typing import Dict
+from typing import Dict, Optional
 
 from hi.apps.entity.enums import EntityStateValue
 
 from hi.integrations.transient_models import IntegrationKey
 
 from .models import Sensor, SensorHistory
+from .enums import CorrelationRole
 
 
 @dataclass
@@ -19,7 +20,8 @@ class SensorResponse:
     detail_attrs             : Dict[ str, str ]  = None
     source_image_url         : str               = None
     has_video_stream         : bool              = False
-    video_stream_duration_ms : int               = None
+    correlation_role         : Optional[CorrelationRole] = None
+    correlation_id           : Optional[str]     = None
     sensor_history_id        : int               = None  # Core Django SensorHistory primary key
     
     def __str__(self):
@@ -43,7 +45,8 @@ class SensorResponse:
             'detail_attrs': self.detail_attrs,
             'source_image_url': self.source_image_url,
             'has_video_stream': self.has_video_stream,
-            'video_stream_duration_ms': self.video_stream_duration_ms,
+            'correlation_role': str(self.correlation_role) if self.correlation_role else None,
+            'correlation_id': self.correlation_id,
             'sensor_history_id': self.sensor_history_id,
         }
 
@@ -59,7 +62,8 @@ class SensorResponse:
             details = details,
             source_image_url = self.source_image_url,
             has_video_stream = self.has_video_stream,
-            video_stream_duration_ms = self.video_stream_duration_ms,
+            correlation_role_str = str(self.correlation_role) if self.correlation_role else None,
+            correlation_id = self.correlation_id,
         )
         
     @classmethod
@@ -72,12 +76,21 @@ class SensorResponse:
             detail_attrs = sensor_history.detail_attrs,
             source_image_url = sensor_history.source_image_url,
             has_video_stream = sensor_history.has_video_stream,
-            video_stream_duration_ms = sensor_history.video_stream_duration_ms,
+            correlation_role = sensor_history.correlation_role,
+            correlation_id = sensor_history.correlation_id,
+            sensor_history_id = sensor_history.id,
         )
         
     @classmethod
     def from_string( cls, sensor_response_str : str ) -> 'SensorResponse':
         sensor_response_dict = json.loads( sensor_response_str )
+
+        # Parse correlation_role if present
+        correlation_role = None
+        correlation_role_str = sensor_response_dict.get('correlation_role')
+        if correlation_role_str:
+            correlation_role = CorrelationRole.from_name_safe(correlation_role_str)
+
         return SensorResponse(
             integration_key = IntegrationKey.from_string( sensor_response_dict.get('key') ),
             value = sensor_response_dict.get('value'),
@@ -88,9 +101,7 @@ class SensorResponse:
                 or sensor_response_dict.get('image_url')
             ),
             has_video_stream = sensor_response_dict.get('has_video_stream', False),
-            video_stream_duration_ms = (
-                int(sensor_response_dict.get('video_stream_duration_ms'))
-                if sensor_response_dict.get('video_stream_duration_ms') is not None
-                else None
-            ),
+            correlation_role = correlation_role,
+            correlation_id = sensor_response_dict.get('correlation_id'),
+            sensor_history_id = sensor_response_dict.get('sensor_history_id'),
         )

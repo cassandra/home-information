@@ -12,6 +12,7 @@ from hi.apps.console.views import (
 from hi.apps.console.transient_models import EntitySensorHistoryData
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.models import Sensor, SensorHistory
+from hi.apps.sense.enums import CorrelationRole
 from hi.testing.base_test_case import BaseTestCase
 
 logging.disable(logging.CRITICAL)
@@ -129,7 +130,8 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 value='active' if i % 2 == 0 else 'idle',
                 response_datetime=base_time - timezone.timedelta(hours=i),
                 has_video_stream=True,
-                video_stream_duration_ms=5000,
+            correlation_role_str=str(CorrelationRole.END),
+            correlation_id='test',
                 details='{"test": "data"}'
             )
             self.sensor_history_records.append(record)
@@ -173,7 +175,8 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 value=f'motion_detected_{i}',
                 response_datetime=base_time - timezone.timedelta(hours=i),
                 has_video_stream=True,
-                video_stream_duration_ms=5000,
+            correlation_role_str=str(CorrelationRole.END),
+            correlation_id='test',
                 details=f'{{"event": "test_{i}", "confidence": 0.9}}'
             )
             test_records.append(record)
@@ -231,7 +234,8 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 value=f'older_motion_{i}',
                 response_datetime=base_time - timezone.timedelta(hours=3 + i),
                 has_video_stream=True,
-                video_stream_duration_ms=5000,
+            correlation_role_str=str(CorrelationRole.END),
+            correlation_id='test',
                 details=f'{{"event": "older_{i}", "confidence": 0.8}}'
             )
             older_records.append(record)
@@ -243,7 +247,8 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 value=f'newer_motion_{i}',
                 response_datetime=base_time - timezone.timedelta(minutes=30 * i),
                 has_video_stream=True,
-                video_stream_duration_ms=5000,
+            correlation_role_str=str(CorrelationRole.END),
+            correlation_id='test',
                 details=f'{{"event": "newer_{i}", "confidence": 0.9}}'
             )
             newer_records.append(record)
@@ -298,7 +303,8 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 value=f'older_motion_{i}',
                 response_datetime=base_time - timezone.timedelta(hours=5 + i),
                 has_video_stream=True,
-                video_stream_duration_ms=5000,
+            correlation_role_str=str(CorrelationRole.END),
+            correlation_id='test',
                 details=f'{{"event": "older_{i}", "confidence": 0.7}}'
             )
             older_records.append(record)
@@ -310,7 +316,8 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 value=f'newer_motion_{i}',
                 response_datetime=base_time - timezone.timedelta(hours=2.5) + timezone.timedelta(minutes=15 * i),
                 has_video_stream=True,
-                video_stream_duration_ms=5000,
+            correlation_role_str=str(CorrelationRole.END),
+            correlation_id='test',
                 details=f'{{"event": "newer_{i}", "confidence": 0.95}}'
             )
             newer_records.append(record)
@@ -383,7 +390,8 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 value=f'inside_window_{i}',
                 response_datetime=base_time - timezone.timedelta(hours=2) + timezone.timedelta(minutes=20 * i),
                 has_video_stream=True,
-                video_stream_duration_ms=5000,
+            correlation_role_str=str(CorrelationRole.END),
+            correlation_id='test',
                 details=f'{{"window_test": "record_{i}"}}'
             )
             window_records.append(record)
@@ -480,7 +488,8 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
             value='active',
             response_datetime=timezone.now(),
             has_video_stream=True,
-            video_stream_duration_ms=5000,
+            correlation_role_str=str(CorrelationRole.END),
+            correlation_id='test',
             details='invalid-json-format{not valid}'
         )
         
@@ -575,7 +584,8 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 value=f'large_dataset_record_{i}',
                 response_datetime=base_time - timezone.timedelta(minutes=i * 10),
                 has_video_stream=True,
-                video_stream_duration_ms=5000,
+            correlation_role_str=str(CorrelationRole.END),
+            correlation_id='test',
                 details=f'{{"large_test": true, "index": {i}}}'
             )
             large_dataset.append(record)
@@ -621,7 +631,8 @@ class TestEntityVideoSensorHistoryView(BaseTestCase):
                 value=f'same_time_{i}',
                 response_datetime=same_timestamp,
                 has_video_stream=True,
-                video_stream_duration_ms=5000,
+            correlation_role_str=str(CorrelationRole.END),
+            correlation_id='test',
                 details=f'{{"same_timestamp_test": {i}}}'
             )
         

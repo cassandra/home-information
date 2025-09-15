@@ -65,8 +65,11 @@
                                aria-label="View event from {{ response.timestamp|localtime|date:'g:i A' }}{% if response.sensor_history_id == sensor_history_data.current_sensor_response.sensor_history_id %} - Currently viewing{% endif %}">
                                 <div>
                                     <span class="time">{{ response.timestamp|localtime|date:"g:i A" }}</span>
-                                    {% if response.video_stream_duration_ms %}
-                                    <small class="text-muted d-block duration">{{ response.video_stream_duration_ms|format_duration_ms }}</small>
+                                    {% if response.has_video_stream %}
+                                    {% sensor_response_video_stream response as video_stream %}
+                                    {% if video_stream and video_stream.metadata.duration_secs %}
+                                    <small class="text-muted d-block duration">{{ video_stream.metadata.duration_secs|format_duration }}</small>
+                                    {% endif %}
                                     {% endif %}
                                     {% if response.sensor_history_id == sensor_history_data.current_sensor_response.sensor_history_id %}
                                     <small class="text-muted d-block" aria-current="page">→ Showing</small>

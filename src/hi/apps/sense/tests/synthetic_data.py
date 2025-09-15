@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from hi.apps.sense.models import Sensor, SensorHistory
 from hi.apps.sense.transient_models import SensorResponse
+from hi.apps.sense.enums import CorrelationRole
 from hi.integrations.transient_models import IntegrationKey
 
 
@@ -225,7 +226,8 @@ class SensorHistorySyntheticData:
                     value='active' if hours_ago % 3 == 0 else 'idle',
                     response_datetime=timestamp,
                     has_video_stream=True,
-                    video_stream_duration_ms=5000,
+                    correlation_role_str=str(CorrelationRole.END),
+                    correlation_id=str(hours_ago),
                     details=f'{{"event_id": "{hours_ago}", "duration_seconds": "{60 + hours_ago * 15}"}}'
                 )
                 records.append(record)
@@ -248,7 +250,8 @@ class SensorHistorySyntheticData:
                     value=f'event_{hours_ago}',
                     response_datetime=timestamp,
                     has_video_stream=True,
-                    video_stream_duration_ms=5000,
+                    correlation_role_str=str(CorrelationRole.END),
+                    correlation_id=str(hours_ago),
                     details=f'{{"hours_ago": "{hours_ago}"}}'
                 )
                 all_records.append(record)
@@ -276,7 +279,8 @@ class SensorHistorySyntheticData:
                     value=f'record_{i}',
                     response_datetime=timestamp,
                     has_video_stream=True,
-                    video_stream_duration_ms=5000,
+                    correlation_role_str=str(CorrelationRole.END),
+                    correlation_id=str(i),
                     details=f'{{"record_index": "{i}", "window_size": "{window}"}}'
                 )
                 records.append(record)
@@ -337,6 +341,67 @@ class SensorHistorySyntheticData:
         
         return responses
     
+    @staticmethod
+    def create_simple_sensor_history(
+        sensor: Sensor,
+        value: str = 'active',
+        response_datetime: Optional[datetime] = None,
+        has_video_stream: bool = True,
+        correlation_role: CorrelationRole = CorrelationRole.END,
+        correlation_id: Optional[str] = None,
+        details: Optional[str] = None
+    ) -> SensorHistory:
+        """
+        Create a single SensorHistory record with correlation fields.
+        Simple helper to replace manual SensorHistory.objects.create() calls in tests.
+        """
+        if response_datetime is None:
+            response_datetime = timezone.now()
+
+        if correlation_id is None:
+            correlation_id = str(int(response_datetime.timestamp()))
+
+        return SensorHistory.objects.create(
+            sensor=sensor,
+            value=value,
+            response_datetime=response_datetime,
+            has_video_stream=has_video_stream,
+            correlation_role_str=str(correlation_role),
+            correlation_id=correlation_id,
+            details=details
+        )
+
+    @staticmethod
+    def create_bulk_sensor_history(
+        sensor: Sensor,
+        count: int,
+        base_time: Optional[datetime] = None,
+        time_interval_minutes: int = 1,
+        value_prefix: str = 'test_record',
+        has_video_stream: bool = True,
+        correlation_role: CorrelationRole = CorrelationRole.END
+    ) -> List[SensorHistory]:
+        """
+        Create multiple SensorHistory records efficiently for testing.
+        """
+        if base_time is None:
+            base_time = timezone.now()
+
+        records_to_create = []
+        for i in range(count):
+            timestamp = base_time - timezone.timedelta(minutes=i * time_interval_minutes)
+            records_to_create.append(SensorHistory(
+                sensor=sensor,
+                value=f'{value_prefix}_{i}',
+                response_datetime=timestamp,
+                has_video_stream=has_video_stream,
+                correlation_role_str=str(correlation_role),
+                correlation_id=str(i),
+                details=f'{{"{value_prefix}": {i}}}'
+            ))
+
+        return SensorHistory.objects.bulk_create(records_to_create)
+
     # Legacy methods for backward compatibility - use create_timeline_test_scenario instead
     @staticmethod
     def create_timeline_preservation_test_data(sensor: Sensor) -> Tuple[List[SensorHistory], datetime, datetime]:
