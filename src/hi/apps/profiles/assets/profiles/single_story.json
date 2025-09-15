@@ -19,7 +19,7 @@
         {
           "name": "Exterior",
           "location_view_type_str": "default",
-          "svg_view_box_str": "0 638.7247498505448 2265.4049914169536 1712.5505002989098",
+          "svg_view_box_str": "0 318.06855973518157 2415 2569.8468517796878",
           "svg_style_name_str": "color",
           "svg_rotate": 0.0,
           "order_id": 4
@@ -126,18 +126,47 @@
       ]
     },
     {
+      "name": "Cable/Internet Service",
+      "entity_type_str": "telecom_wire",
+      "comment": "Path entity (EntityPath) - represented by SVG paths",
+      "paths": [
+        {
+          "location_name": "My Home",
+          "svg_path": " M 2179.982431137094,196.57792663574173 L 1657.2027116470472,1139.6352539062495"
+        }
+      ],
+      "visible_in_views": [
+        "Exterior"
+      ]
+    },
+    {
       "name": "Car",
       "entity_type_str": "automobile",
       "positions": [
         {
           "location_name": "My Home",
-          "svg_x": 1496.240479,
-          "svg_y": 1881.578247,
+          "svg_x": 1493.880981,
+          "svg_y": 1879.286499,
           "svg_rotate": 267.210213
         }
       ],
       "visible_in_views": [
         "Exterior"
+      ]
+    },
+    {
+      "name": "Coffee Machine",
+      "entity_type_str": "coffee_maker",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 1619.84021,
+          "svg_y": 1196.970825,
+          "svg_rotate": 357.022144
+        }
+      ],
+      "visible_in_views": [
+        "Kitchen"
       ]
     },
     {
@@ -188,8 +217,51 @@
       ]
     },
     {
+      "name": "Electric Service",
+      "entity_type_str": "electric_wire",
+      "paths": [
+        {
+          "location_name": "My Home",
+          "svg_path": " M 2215.5436493988127,196.55610656738236 L 1690.0055680923597,1183.372436523437"
+        }
+      ],
+      "visible_in_views": [
+        "Exterior"
+      ]
+    },
+    {
+      "name": "Elm",
+      "entity_type_str": "tree",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 317.453674,
+          "svg_y": 356.626373,
+          "svg_scale": 3.87844
+        }
+      ],
+      "visible_in_views": [
+        "Exterior"
+      ]
+    },
+    {
       "name": "Food Processor",
       "entity_type_str": "appliance"
+    },
+    {
+      "name": "Garbage Disposal",
+      "entity_type_str": "garbage_disposal",
+      "positions": [
+        {
+          "location_name": "My Home",
+          "svg_x": 1477.062256,
+          "svg_y": 1171.971313,
+          "svg_scale": 0.558648
+        }
+      ],
+      "visible_in_views": [
+        "Kitchen"
+      ]
     },
     {
       "name": "HVAC",
@@ -208,7 +280,7 @@
     },
     {
       "name": "Hedge Trimmer",
-      "entity_type_str": "other"
+      "entity_type_str": "hedge_trimmer"
     },
     {
       "name": "Kitchen Sink",
@@ -228,11 +300,11 @@
     },
     {
       "name": "Lawn Mower",
-      "entity_type_str": "other"
+      "entity_type_str": "lawn_mower"
     },
     {
       "name": "Leaf Blower",
-      "entity_type_str": "other"
+      "entity_type_str": "leaf_blower"
     },
     {
       "name": "Microwave",
@@ -269,7 +341,6 @@
     {
       "name": "Pool",
       "entity_type_str": "area",
-      "comment": "Path entity (EntityPath) - represented by SVG paths",
       "paths": [
         {
           "location_name": "My Home",
@@ -302,7 +373,7 @@
     },
     {
       "name": "String Trimmer",
-      "entity_type_str": "other"
+      "entity_type_str": "trimmer"
     },
     {
       "name": "Television",
@@ -376,6 +447,19 @@
           "svg_x": 2206.597656,
           "svg_y": 2803.320313,
           "svg_scale": 2.019884
+        }
+      ],
+      "visible_in_views": [
+        "Exterior"
+      ]
+    },
+    {
+      "name": "Water Service",
+      "entity_type_str": "water_line",
+      "paths": [
+        {
+          "location_name": "My Home",
+          "svg_path": " M 1693.4159028167815,1650.810668945312 L 2212.1012712173597,2785.221557617187"
         }
       ],
       "visible_in_views": [
