@@ -2,181 +2,127 @@
 
 # Getting Started
 
-Once successfully running (see [Installation](Installation.md)), you should be greeted with the following starting page:
+Once successfully running (see the [Installation Page](Installation.md)), you will be greeted with:
 
 <img src="img/getting-started/start-page-1024x768.png" alt="Home Information Start Page" width="400"> 
 
-Click the "ADD MY LOCATION" button and then you should see this dialog:
+Choose which home type you want to use. If you choose "Single Story", you will see this initial screen with some common household items pre-populated.
 
-<img src="img/getting-started/add-first-location-modal-1024x768.png" alt="Home Information Create Dialog" width="300"> 
+<img src="img/getting-started/initial-view-1024x768.png" alt="initial-view-1024x768" width="400" />
 
-All you need to provide is a name for your location to get started. 
+These provide defaults to get started quickly. You can modify and customize as much as you want after this.
 
-The SVG file is optional and allows uploading a background image. The background can always be added later when you want to further customize the appearance.
+## Adding Information
 
-If you did not upload your own SVG, then you should see the initial screen with the default background image like this:
+To core feature of Home Information is managing information about your home and the things in it.  To add information, tap on any of the items and you will see the main information view/edit dialog. Initially, it looks like this:
 
-<img src="img/getting-started/initial-edit-screen-1024x768.png" alt="Home Information Initial Location View" width="400"> 
+<img src="img/getting-started/item-edit-modal-empty-1024x768.png" alt="item-edit-modal-empty-1024x768" width="400" />
 
-This view with the background graphic is called a "Location View".
+Use the "Add Info" button to add some information about the item. Or use the "Add File" button to upload a document:
 
-## Editing Mode
+<img src="img/getting-started/item-edit-add-info-1024x768.png" alt="item-edit-add-info-1024x768" width="350" /> &nbsp; <img src="img/getting-started/item-edit-add-file-1024x768.png" alt="item-edit-add-file-1024x768" width="350" />
 
-You will start in "editing mode" where you can begin adding items to your home. Editing mode is not the main mode you will use. It is only the starting mode and then used occasionally to adjust the layout and add/remove items. However, since editing mode is where you need to start and since it allows introducing many of the concepts, we walk through some editing scenarios in detail.
+Some information may not be associated with an individual item, but the home overall. For that, use the top-right button to add the information to the home itself.
 
-When first adding a new item, it will appear in the middle of the screen, but you can move it around, change its size and change its orientation. As an example, we'll add a refrigerator by clicking the "ADD NEW ITEM" button, giving it a name and choosing the "type" of item it is:
+<img src="img/getting-started/location-info-button.png" alt="location-edit-modal-1024x768" width="200" />
 
-<img src="img/getting-started/add-item-modal-1024x768.png" alt="Home Information Add Item Dialog" width="250"> 
+<img src="img/getting-started/location-edit-modal-1024x768.png" alt="location-edit-modal-1024x768" width="400" />
 
-After clicking the add button, you will see an icon for the refrigerator in the middle of the screen.  We can now use the mouse or touch screen to reposition it. Click the icon to highlight it, then drag it to the position you want. Use the `s` key and then the `+` and `-` keys to change its size.
+## Multiple Spaces
 
-<img src="img/getting-started/first-item-center-1024x768.png" alt="Home Information Initial Item" width="350">  <img src="img/getting-started/first-item-moved-scaled-1024x768.png" alt="Home Information Moved Item" width="350"> 
+If you have a multi-story house, basement, attic or even another vacation home or second property, you can create a different "space" for that.  Here we have an extra space defined for the attic.
 
-There are many ways to adjust items, so see the "EDITING HELP" button on the bottom right of the screen for more information.
+<img src="img/getting-started/spaces-dropdown-1024x768.png" alt="spaces-dropdown-1024x768" width="250" /> &nbsp; <img src="img/getting-started/view-second-space-1024x768.png" alt="view-second-space-1024x768" width="300" />
 
-When selecting an item, the right side of the screen changes to show the details of that item. Although you can add attributes to the item in that area, editing mode is predominantly for adding and placing items.  Item attributes can be added any time, even when not in editing mode.  Clicking the "X" in the upper right of that area returns the side view to allow adding more items.
+## Collections
 
-### Item Icons and Areas
+Not everything in your home has a well defined location, so use the "collections" bottom buttons for those items and you can choose whether you prefer a list of grid layout.
 
-The refrigerator type items will show with a refrigerator icon and many other types have their own icons.  However, some types of items can represent larger areas or allow you to define them with a custom shape. For example, let's show adding an "area" to represent a pool.  This pool item will allow us to keep all the information we have about our pool.
+<img src="img/getting-started/collections-buttons.png" alt="collections-buttons" width="200" />
 
-First click "ADD NEW ITEM", give it the name "Pool", choose the "Area" type and click the "ADD" button. 
+<img src="img/getting-started/collections-grid-1024x768.png" alt="collections-grid-1024x768" width="350" /> & nbsp; <img src="img/getting-started/collections-list-1024x768.png" alt="collections-list-1024x768" width="350" />
 
-<img src="img/getting-started/add-area-item-modal-1024x768.png" alt="Home Information Adding Pool" width="350"> &nbsp; <img src="img/getting-started/first-area-center-1024x768.png" alt="Home Information Initial Pool Item" width="350">
+## Weather
 
-This will result in a square area that you can move and reshape. Click the square area to begin editing the shape. It will change color and show circles/dots where the lines meet. Click the dots to select then drag them to a new location until it has the shape you want.
+There are some default weather integrations which also provide weather alerts. Tap on the weather information to see more details.
 
-<img src="img/getting-started/first-area-edit-start-1024x768.png" alt="Home Information Pool Selected" width="350"> &nbsp; <img src="img/getting-started/first-area-edit-moved-1024x768.png" alt="Home Information Pool Moved" width="350">
+<img src="img/getting-started/weather-details-1024x768.png" alt="weather-details-1024x768" width="400" /> &nbsp; <img src="img/getting-started/weather-forecast-1024x768.png" alt="weather-forecast-1024x768" width="400" />
 
-You are not limited to square shapes either. With a dot or line selected, press the `i` key to insert new points and move them where you want.  Press the `ESC` key when done editing.
+Seen sunrise times, sunset, moon phase, weather history and more.
 
-<img src="img/getting-started/first-area-edit-shaped-1024x768.png" alt="Home Information Pool Reshaped" width="350"> &nbsp; <img src="img/getting-started/first-area-shaped-done-1024x768.png" alt="Home Information Pool Done" width="350">
+<img src="img/getting-started/astronomical-details-1024x768.png" alt="astronomical-details-1024x768" width="400" /> &nbsp; <img src="img/getting-started/weather-history-1024x768.png" alt="weather-history-1024x768" width="400" />
 
-### Line Items
+## Controls and Settings
 
-Another type of item is like an area, but for representing linear items. For example, suppose you have underground electric service and would like to show where the underground line runs. 
+Control alert sounds, screen brightness and lock your screen. The alerts and display keep running so you do not miss anything.
 
-Click "ADD NEW ITEM", give it the name "Electric Service Line", choose the "Electric Wire Line" type and click the "ADD" button. 
+<img src="img/getting-started/bottom-right-buttons-1024x768.png" alt="bottom-right-buttons-1024x768" width="400" />
 
-<img src="img/getting-started/add-line-item-modal-1024x768.png" alt="Home Information Adding Electric" width="350"> &nbsp; <img src="img/getting-started/first-line-center-1024x768.png" alt="Home Information Initial Electric Item" width="350">
+For accurate weather and time, be sure to set your timezone and geographic location in the configuration pages.
 
-As with the area items, clicking it will give you the ability to edit by moving and/or adding points to it, pressing the `ESC` key when done.
+<img src="img/getting-started/console-settings-page-1024x768.png" alt="console-settings-page-1024x768" width="400" />
 
-<img src="img/getting-started/first-line-edit-start-1024x768.png" alt="Home Information Electric Selected" width="250"> &nbsp; <img src="img/getting-started/first-line-edit-moved-1024x768.png" alt="Home Information Electric Moved" width="250"> &nbsp; <img src="img/getting-started/first-line-edit-done-1024x768.png" alt="Home Information Electric Done" width="250">
 
+## Layout Editing
 
-### Collections
+You have full control of the layout of your items and the background image. These are all managed by choosing "EDIT" and entering "Editing Mode".
 
-Not every item you may want to keep information about will make sense to have a specific location. For example, power tools and small appliances are items that you may have user manuals, replacement part info, etc.  Though you could add them as we have been doing, sometimes you just want to keep a list of these "movable" items.
+<img src="img/getting-started/edit-button.png" alt="edit-button" width="100" />
 
-A "collection" can be used to put items into meaningful groups, like "Small Appliances" or "Power Tools".  The bottom left of the screen will show all the defined collections, though we need to add some first by clicking the "ADD" button which brings up a dialog.
+<img src="img/getting-started/edit-mode-1024x768.png" alt="edit-mode-1024x768" width="400" />
 
-<img src="img/getting-started/add-collection-modal-1024x768.png" alt="Home Information Adding Collection" width="300">
+The [Editing Page](Editing.md) has many details on how to use the editor.
 
-A few notes about this dialog:
-- The "Display" can be a List or Grid view, depending on your preferences.
-- The "Order Id" just defines the order they will appear at the bottom of the screen.
-- You can optionally represent the entire collection as one item in the graphical view if you want.
+## Integrations
 
-After adding, you will now see a button for the new collection at the bottom left. Clicking the button will change the main center view from the graphical location view to the collection view.  Here we could add existing items by clicking the checkboxes on the right panel.  Note that any items you add can appear in the graphical location view, the collection or both and you can easily toggle them on and off with a click of those checkboxes on the right.
+For smart home device automation, go to the configuration area to enable one of the current integrations (e.g., Home Assistant).
 
-<img src="img/getting-started/new-collection-button-1024x768.png" alt="Home Information Adding Collection" width="350">  <img src="img/getting-started/collection-edit-view-empty-1024x768.png" alt="Home Information Empty Collection" width="350"> 
+<img src="img/getting-started/integrations-page-empty-1024x768.png" alt="integrations-page-empty-1024x768" width="400" /> &nbsp; <img src="img/getting-started/integrations-enable-modal-1024x768.png" alt="integrations-enable-modal-1024x768" width="400" />
 
-However, since we have not added any small appliances yet, we can go and do this now by clicking the "ADD NEW ITEM" button.  When viewing a collection, that button adds a new item and will also add it to the collection.  When viewing the location view, it adds it to that view.  Here is what the collection view look like after adding a bunch of small appliances. It shows both the list view (left) and grid view (right).
+After enabled, you can import all the items to add them to your views and collections.
 
-<img src="img/getting-started/collection-edit-list-view-1024x768.png" alt="Home Information Collection List" width="350">  <img src="img/getting-started/collection-edit-grid-view-1024x768.png" alt="Home Information Collection Grid" width="350"> 
+<img src="img/getting-started/integrations-page-view-1024x768.png" alt="integrations-page-view-1024x768" width="400" /> <img src="img/getting-started/integrations-sync-result-1024x768.png" alt="integrations-sync-result-1024x768" width="400" />
 
-The message you see "_No status data available_" can be ignored for now. This refers to these items not being connected to any integrations that monitor their status.  Integrations are discussed a little more below.
+See the [Integrations Page](Integrations.md) for more details.
+ 
+### Cameras
 
-### Multiple Location Views
+If the integation provides cameras with video feeds (e.g., ZoneMinder), the cameras will appear in the side bar for easy access to their streams and for browsing the video stream history from past motion events.
 
-So far, we have seen just the one Location View.  As more and more items are added, a single screen can get cluttered, often with a mix of concerns that would be better separated.  We can add as many different Location Views as we need to do this.  Each Location View can define which items do an do not appear in the view and you can switch between views with the top left buttons.  An item can appear in just one or multiple views and/or multiple collections.
+<img src="img/getting-started/video-stream-live-1024x768.png" alt="video-stream-live-1024x768.png" width="400" /> &nbsp; <img src="img/getting-started/video-stream-history-1024x768.png" alt="video-stream-history-1024x768.png" width="400" />
 
-By default, you will see there is just one Location View created called "All".  In editing mode you will also see the "ADD" button to create new views.  Let's suppose we want to have a view that just focuses on the items in the Kitchen area. Click the "ADD" button, given it a name in the dialog and then you will see a new button and a new, but empty Location View.
+### Alert Triggering Rules and Security Modes
 
-<img src="img/getting-started/add-location-view-modal-1024x768.png" alt="Home Information New Location View" width="350"> &nbsp; <img src="img/getting-started/new-location-view-button-1024x768.png" alt="Home Information New Location View" width="350"> 
+By default, if you have motion sensors, open/close sensors, camera motion, etc. the integration item import automatically creates alert triggering rules.  You can view, refine and manage these in the configuration pages.
 
-We can add any existing kitchen items from the list at right, with the refrigerator being the only applicable one (unless you want to show all the small appliances too.)  Let's toggle the refrigerator and add a bunch of our other kitchen items: oven, cooktop, microwave, etc. We move and scale them as we did with the refrigerator to get something like this:
+<img src="img/getting-started/trigger-rules-1024x768.png" alt="trigger-rules-1024x768" width="400" />
 
-<img src="img/getting-started/new-location-view-populated-1024x768.png" alt="Home Information Initial Location View" width="350">
+The triggering rules allows you to target different "security modes" for better control of what alerts and when. 
 
-This is a good start, but we'd also like to zoom in to focus just on that kitchen area.  The Location View allows zooming in and moving it around by clicking the background then using the mouse wheel, two finger pinching and/or dragging.  By doing this, you can show only the kitchen area.
+<img src="img/getting-started/security-modes.png" alt="security-modes" width="250" />
 
-<img src="img/getting-started/new-location-view-zoomed-1024x768.png" alt="Home Information Zoomed Location View" width="350">
+### Alert Areas
 
-However, most of the time, zooming and moving the Location View is done on a temporary basis as you move around the view. For the Kitchen view, we want to have this change permanent, so we need to enter the Location View editing pane in order for changes to be saved.
+In the editor, you can define areas and associate it with a device, like a camera.  Then, if the camera detects motion, both the camera and the area will be highlighted.
 
-Near the top right, there is the "View: Kitchen" label and a "EDIT" button to its right.  That is how to enter the editing mode for this location view to make any zooming and moving permanent. 
+<img src="img/getting-started/camera-area-idle-1024x768.png" alt="camera-area-idle-1024x768.png" width="400" /> &nbsp; <img src="img/getting-started/camera-area-active-1024x768.png" alt="camera-area-active-1024x768.png" width="400" />
 
-<img src="img/getting-started/new-location-view-edit-zoomed-1024x768.png" alt="Home Information Location View Edit" width="350">
+The highlighting will change color over time so you can see what is currently alarming, recently alarmed or what was active in the near past.
 
-After adjusting the view with the Location View editing area open, now when you click the "Kitchen" button on the top left, it will zoom in to that saved geometry.
+<img src="img/getting-started/camera-area-recent-1024x768.png" alt="camera-area-recent-1024x768.png" width="400" /> &nbsp; <img src="img/getting-started/camera-area-past-1024x768.png" alt="camera-area-past-1024x768.png" width="400" />
 
-### Multiple Locations
 
-The Location Views we've seen so far are all defined with respect to a single "Location", which is the default location you gave a name to when your first started.  A single Location only has one background image and the Location Views are just different windows into that Location's image.
+## Additional Details
 
-However, if you have a two-story house, an attic or basement, you may want to define two or three locations, so you can place items in a more logical place.  For example, if your Air Conditioner's Air Handler is in your attic and you want to keep information about it, it would make sense to define an "Attic" location and represent it there instead of placing it on the floor below.
+### Custom Background Images
 
-When in editing mode, there is a Location drop-down on the top right that allows you to add a new Location.  This opens the same dialog as when you first started and created the initial location.  You give it a name and an optional SVG background image and from then on can change to that location with the drop-down.
+In the editor, you can swap out the default property/house images for your own custom images.  See the [Custom Background Image Page](CustomBackgrounds.md) for more details.
 
-<img src="img/getting-started/new-location-drop-down-1024x768.png" alt="Home Information New Location" width="250"> &nbsp; <img src="img/getting-started/add-location-modal-1024x768.png" alt="Home Information Location Dialog" width="250"> &nbsp; <img src="img/getting-started/new-location-added-drop-down-1024x768.png" alt="Home Information Location Menu" width="250">
-
-Below is the Attic location's view after using a custom SVG background and adding the A/C Air Handler, some control wire routes, exhaust fans and a skylight.
-
-<img src="img/getting-started/new-location-alt-svg-1024x768.png" alt="Home Information Attic Location" width="350">
-
-## Normal Usage
-
-So far, we have only focused on editing mode. However, editing is something you would only do initially and every once in a while. Normal usage is seen by using the "EXIT EDIT" button on the top right.  This normal operating mode allows you to changes views, zoom, move and click on items to view and add information.
-
-Normal operation looks and behaves mostly the same as editing mode, but there is no option to add new items or relocate them. Instead, navigating around and clicking an item will bring up a dialog with all your previously added information about the item.  Here is what the normal view and item information dialog looks like for the previously added Kitchen view and after clicking on the Cooktop item.
-
-<img src="img/getting-started/view-mode-1024x768.png" alt="Home Information Normal View" width="350"> &nbsp; <img src="img/getting-started/item-edit-modal-empty-1024x768.png" alt="Home Information Item Edit" width="350">
-
-We have not yet added any attributes to the cooktop, but can do so now with the "Add New Attribute" button.  Add a name for the attribute and put in the information. For example, the make and model number might be information you want to keep.  You can also upload files, so it is a good place to keep a manual, purchase receipt, warranty information, repair information, etc.
-
-Here is a sequence of adding purchase information and uploading a PDF of the item's specs.
-
-<img src="img/getting-started/item-edit-add-info-1024x768.png" alt="Home Information Item Attribute" width="350"> &nbsp; <img src="img/getting-started/item-edit-add-file-1024x768.png" alt="Home Information Item Upload" width="350">
-
-
-## Other Features
-
-### Weather Data
-
-The weather data requires knowing your longitude and latitude.  These are located in the "Setting" page.  By default, these are set to Austin, TX, USA. The data comes from a few free weather APIs (e.g., National Weather Service, OpenMeteo).
-
-### Location Attributes
-
-All the items you add can have any number of attributes.  However, there are some attributes that may not belong to any item, but are associated with the entire location.  For example, I have the elevation, GPS coordinates and Plat Map of the property for my home that I want to associated with the entire house Location itself.
-
-For those higher-level, attributes, you can add them to a location using the "Info" button at top right just under the location drop down. That brings up a dialog where you can add location-specific attributes.
-
-<img src="img/getting-started/location-edit-modal-1024x768.png" alt="Home Information Location Attribute" width="350"> 
-
-### Bottom Right Buttons
-
-<img src="img/getting-started/bottom-right-buttons-1024x768.png" alt="Home Information Location Attribute" width="350"> 
-
-#### Sounds
+### Alert Sounds
 
 For features that use sounds (e.g., alerts), this allows toggling to mute and unmute.  The alert sounds are considered "auto-play" by browsers, so you may need to allow this in the browser in order to hear the alert sounds.  If you see "blocked' on this button, click it to see more info about fixing it.
 
-#### Sleep
+### Locking Feature
 
-For always on devices, this darkens the screen in case the light is disruptive, but without stopping it from running. Just touch screen to brighten again.
+When visitors are in your house, be they friends, acquaintances, service or maintenance people, you may want to temporarily lock the screen so they cannot access the information you've stored. To unlock, it uses a password you set the first time you lock the screen.  This is is just a light security convenience against casual snooping. Locking the device itself is better protection.
 
-#### Lock
-
-When visitors are in your house, be they friends, acquaintances, service or maintenance people, you may want to temporarily lock the screen so they cannot access the information you've stored. To unlock, it uses a password you set the first time you lock the screen.
-
-## Security States, Events, Alerts and Integrations
-
-Storing and accessing information about your home as shown above is useful, but it is only half of what Home Information was designed for.  With home security and home automation systems having become prevalent, these are now very important parts of the overall "Home Information" need.  With Google Home, Apple Home, Amazon Alex, etc.,  there is no shortage of platforms for managing those devices.  These platforms are device-centric and miss the information-centric view needed to truly unify all your home information in one place.
-
-The Home Information app does not aim to build yet another device platform, but aims to build a unified interface into all your information.  To achieve that, it integrates with devices and platforms to pull in the data and controls needed for managing devices from a "single plane of glass" (as they say).
-
-Many of the unmentioned buttons and features you see in the Home Information interface are for these integrations.  Integrations allow getting status information from devices and the ability to control those devices (using APIs).  With these integrations, you can then create security and automation views, define events and generate alerts for interesting events across all your devices and platforms.
-
-We do not go any deeper into the integrations, events and alerts here as this page's intent is to just get you started with the basics.  See the [Integrations Page](Integrations.md) for more details.

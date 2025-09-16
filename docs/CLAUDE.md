@@ -18,19 +18,19 @@ In all the code we write, we strive for extremely well factored code. We are tho
 - [ ] **All imports MUST be at file top** (never inside functions/methods)
 - [ ] **Use `/bin/rm` instead of `rm`** (avoid interactive prompts)
 
-**Before Any Commit:**
-- [ ] Use concise commit messages WITHOUT Claude attribution
-- [ ] Examples: "Fix UI testing framework system state issue" ✅
-- [ ] Avoid: "🤖 Generated with Claude Code" ❌
+**Before Any Commit or Pull Request:**
+- [ ] Use concise, factual messages WITHOUT Claude attribution
+- [ ] Avoid overly verbose or marketing-like language
+- [ ] **DO NOT** add attributions such as: "🤖 Generated with Claude Code" ❌
 
 **Before Creating Pull Request:**
-- [ ] `make test` (must show "OK")
-- [ ] `make lint` (must show no output)
+- [ ] `cd $PROJ_DIR ; make lint` (must show no output)
+- [ ] `cd $PROJ_DIR ; make test` (must show "OK")
 - [ ] Both MUST pass before PR creation
 - [ ] **Use a /tmp file for PR body** (prevents quoting failures)
-- [ ] Follow `.github/PULL_REQUEST_TEMPLATE.md` structure
+- [ ] **MUST** use template and follow `.github/PULL_REQUEST_TEMPLATE.md` structure
 
-**Before Creating Unit Tests:**
+**Before Creating Tests:**
 - [ ] Consult Testing guidelines and `docs/dev/testing/testing-guidelines.md`
 
 **Process Verification Pattern:**
@@ -58,7 +58,7 @@ IMPORTANT: Always use the TodoWrite tool to plan and track tasks throughout the 
 
 ## Sub-Agent Usage Patterns
 
-Claude Code has access to specialized sub-agents with specific expertise areas defined in their YAML configurations. Use them proactively rather than as a fallback - they often provide more thorough, expert-level analysis than attempting work directly.
+Claude Code has access to specialized sub-agents with specific expertise areas defined in their YAML configurations. Use them proactively rather than as a fallback - they often provide more thorough, expert-level analysis than attempting work directly.  They should also be useed to do code reviews.
 
 ### Best Practices for Sub-Agent Usage
 
@@ -69,20 +69,6 @@ Claude Code has access to specialized sub-agents with specific expertise areas d
 **Request Actionable Output**: Ask for specific deliverables like "return the exact test code to add" or "provide the minimal fix for the payload detection logic"
 
 **Chain Sub-Agents**: Use results from one sub-agent as input to another (e.g., investigation findings from general-purpose → specific implementation from domain expert)
-
-### Example Usage
-
-```
-# Good: Specific scope and clear deliverable request
-Task(subagent_type="test-engineer", 
-     prompt="Debug why EntityEditView POST test fails with 500 error when submitting properties-only form. 
-     Focus on form validation - I suspect EntityForm.is_valid() is failing but need to identify the specific field causing issues.
-     Return the exact cause and minimal fix needed.")
-
-# Less effective: Too broad and vague
-Task(subagent_type="general-purpose", 
-     prompt="Help with entity editing")
-```
 
 **Key Insight**: Sub-agents often provide more thorough, expert-level analysis than attempting the work directly. Use them proactively rather than as a fallback.
 
@@ -236,7 +222,7 @@ This workflow keeps the repository clean while providing comprehensive design do
    - Wait for human feedback before proceeding to subsequent phases
    - Only create PR when all phases complete or explicitly requested
 
-6. **Development environment check** - The virtual environment and necessary environment variables should be set before starting claude. If there is no virtual environment, this is an indication that the environment has not been properly set up. That means the unit test cannot run and code changes cannot be validated.  We shoudl stop the process and fix it.  There is no need to check ever time since this shoudl be rare, but if running tests is failing, that is a good thing to look for.
+6. **Development environment check** - The virtual environment and necessary environment variables should be set before starting claude. If there is no virtual environment, this is an indication that the environment has not been properly set up. That means the test cannot run and code changes cannot be validated.  We shoudl stop the process and fix it.  There is no need to check ever time since this shoudl be rare, but if running tests is failing, that is a good thing to look for.
 
 7. **Do development changes** - Commit to git at logical checkpoints during development
 
@@ -255,13 +241,13 @@ This workflow keeps the repository clean while providing comprehensive design do
 **NOTE**: All commands run from PROJECT ROOT directory for consistency.
 
 ```bash
-# 1. Run full unit test suite
-make test
-# Must show: "OK" with all tests passing
-
-# 2. Run code quality check (only if source code was modified)
+# 1. Run code quality check (only if source code was modified)
 make lint
 # Must show: no output (clean)
+
+# 2. Run full test suite
+make test
+# Must show: "OK" with all tests passing
 ```
 
 **Important**: Do not create pull requests if any of these checks fail. Fix all issues first.
@@ -270,9 +256,11 @@ make lint
 
 Before any pull request can be merged, the following requirements must be met:
 
-1. **Unit Tests**: All unit tests must pass (`make test`)
+1. **Tests**: All tests must pass (`make test`)
 2. **Code Quality**: flake8 linting with `.flake8-ci` configuration must pass with no violations (if source code modified) (`make lint`)
 3. **GitHub CI**: GitHub Actions will automatically verify these requirements and will block PR merging if they fail
+4. **MUST** use pull request template `.github/PULL_REQUEST_TEMPLATE.md`
+5. No Claude attributions in message.
 
 These requirements are enforced by GitHub branch protection rules and cannot be bypassed.
 
@@ -287,12 +275,12 @@ For detailed branching conventions and additional workflow information, see `doc
 
 **Good examples:**
 ```
-Fix weather module unit test failures and improve WMO units handling
+Fix weather module test failures and improve WMO units handling
 Add support for temperature offset unit arithmetic in Pint
 Remove invalid AlertUrgency.PAST enum value for weather alerts
 ```
 
-**Avoid:**
+**Bad Examples:**
 ```
 🤖 Generated with Claude Code
 Co-Authored-By: Claude <noreply@anthropic.com>
@@ -368,32 +356,6 @@ gh issue create --template operations.md --title "[Ops] Description"
 ```
 
 **Note**: The repository has `blank_issues_enabled: false`, so you must use a template.
-
-### Work Documentation for Non-Trivial Issues
-
-When working on complex issues that involve significant planning or multi-step implementation:
-
-1. **Capture Work Progress**: Document completed work, current status, and remaining tasks
-2. **Document Planning**: Record architectural decisions, implementation approaches, and design rationale
-3. **Maintain Context**: Keep notes that allow resuming work efficiently if interrupted
-4. **Reference in Issues**: Update the GitHub issue with progress summaries and decision points
-
-This documentation helps maintain continuity across work sessions and provides valuable context for code reviews and future maintenance.
-
-## Environment-Specific Configuration
-
-### Git Remote Configuration
-- Use `git push origin` or `git push -u origin branch-name` for pushing branches
-
-### Development Commands Quick Reference
-For detailed setup and daily commands, see [Development Setup](dev/Setup.md).
-
-```bash
-# Common commands (all run from PROJECT ROOT)
-make test                # Run unit tests
-make lint               # Run code quality checks
-src/manage.py runserver  # http://127.0.0.1:8411
-```
 
 ## Project Documentation References
 

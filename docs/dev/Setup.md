@@ -139,7 +139,7 @@ cd $PROJ_DIR/src
 ./manage.py hi_creategroups
 ```
 
-It is a good idea to run the unit tests to validate that you can and that the installation seem fine.
+It is a good idea to run the tests to validate that you can and that the installation seem fine.
 ``` shell
 cd $PROJ_DIR/src
 ./manage.py test
@@ -176,7 +176,7 @@ cd $PROJ_DIR/src
 ./manage.py check
 
 # Testing
-./manage.py test                    # Run all unit tests
+./manage.py test                    # Run all tests
 ./manage.py test weather.tests     # Run specific app tests
 
 # User management

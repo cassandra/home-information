@@ -18,7 +18,7 @@ hi/apps/${APPNAME}/
 ├── monitors.py           # Periodic background processes
 ├── templates/${APPNAME}/ # App templates
 ├── apps.py               # Django-required module definition
-├── tests/                # Unit tests
+├── tests/                # Tests
 └── admin.py              # Django admin console integration
 
 # Edit mode structure (when applicable)

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document captures critical discoveries and learnings from a comprehensive effort to fix over-mocking issues in Django unit tests across the HI application. The work involved systematically converting heavily mocked tests to use real objects, revealing numerous anti-patterns and best practices.
+This document captures critical discoveries and learnings from a comprehensive effort to fix over-mocking issues in Django tests across the HI application. The work involved systematically converting heavily mocked tests to use real objects, revealing numerous anti-patterns and best practices.
 
 ## Core Anti-Patterns Identified
 
