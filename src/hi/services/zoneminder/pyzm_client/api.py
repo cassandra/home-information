@@ -181,12 +181,12 @@ class ZMApi (Base):
                 data = {}
                 url = self.api_url + '/host/getVersion.json'
                 
-            r = self.session.post(url, data=data)
+            r = self.session.post(url, data=data, timeout=25.0)
             if r.status_code == 401 and self.options.get('token') and self.auth_enabled:
                 g.logger.Debug(1, 'Token auth with refresh failed. Likely revoked, doing u/p login')
                 self.options['token'] = None
                 data = {'user': self.options.get('user'), 'pass': self.options.get('password')}
-                r = self.session.post(url, data=data)
+                r = self.session.post(url, data=data, timeout=25.0)
                 r.raise_for_status()
             else:
                 r.raise_for_status()
@@ -259,14 +259,14 @@ class ZMApi (Base):
         try:
             g.logger.Debug(3, 'make_request called with url={} payload={} type={} query={}'.format(url, payload, type, query))
             if type == 'get':
-                r = self.session.get(url, params=query)
+                r = self.session.get(url, params=query, timeout=25.0)
 
             elif type == 'post':
-                r = self.session.post(url, data=payload, params=query)
+                r = self.session.post(url, data=payload, params=query, timeout=25.0)
             elif type == 'put':
-                r = self.session.put(url, data=payload, params=query)
+                r = self.session.put(url, data=payload, params=query, timeout=25.0)
             elif type == 'delete':
-                r = self.session.delete(url, data=payload, params=query)
+                r = self.session.delete(url, data=payload, params=query, timeout=25.0)
             else:
                 g.logger.Error('Unsupported request type:{}'.format(type))
                 raise ValueError('Unsupported request type:{}'.format(type))

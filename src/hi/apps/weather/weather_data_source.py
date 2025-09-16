@@ -5,7 +5,6 @@ import redis
 from django.conf import settings
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.common.external_api_mixin import ExternalApiMixin
 from hi.apps.common.redis_client import get_redis_client
 from hi.apps.console.console_helper import ConsoleSettingsHelper
 from hi.apps.weather.transient_models import DataPointSource
@@ -13,7 +12,7 @@ from hi.apps.weather.transient_models import DataPointSource
 logger = logging.getLogger(__name__)
 
 
-class WeatherDataSource(ExternalApiMixin):
+class WeatherDataSource:
 
     TRACE = False
     FORCE_CAN_POLL = False  # For debugging
@@ -96,6 +95,9 @@ class WeatherDataSource(ExternalApiMixin):
     @property
     def tz_name(self):
         return self._console_settings_helper.get_tz_name()
+    
+    def get_api_timeout(self) -> float:
+        return 30.0
     
     def _get_weather_settings_helper(self):
         """Lazy initialization of weather settings helper to avoid circular imports."""

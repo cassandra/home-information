@@ -23,6 +23,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
     # TODO: Move this into the integrations attributes for users to set
     ZONEMINDER_SERVER_TIMEZONE = 'America/Chicago'
     ZONEMINDER_POLLING_INTERVAL_SECS = 4
+    ZONEMINDER_API_TIMEOUT_SECS = 10.0  # Shorter timeout appropriate for 4-second polling
 
     CACHING_DISABLED = True
     
@@ -38,13 +39,16 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         self._poll_from_datetime = None
         self._was_initialized = False
         return
+    
+    def get_api_timeout(self) -> float:
+        return self.ZONEMINDER_API_TIMEOUT_SECS
 
     async def _initialize(self):
         zm_manager = await self.zm_manager_async()
         if not zm_manager:
             return
         _ = await self.sensor_response_manager_async()  # Allows async use of self.sensor_response_manager()
-        self._zm_tzname = await self.safe_external_api_call( zm_manager.get_zm_tzname )
+        self._zm_tzname = await zm_manager.get_zm_tzname_async()
         self._poll_from_datetime = datetimeproxy.now()
         zm_manager.register_change_listener( self.refresh )
         self._was_initialized = True
@@ -52,7 +56,12 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
     
     def refresh( self ):
         """ Should be called when integration settings are changed (via listener callback). """
-        self._zm_tzname = self.zm_manager().get_zm_tzname()
+        # Reload ZoneMinderManager configuration with new settings
+        if hasattr( self, '_zm_manager' ):
+            self._zm_manager.reload()
+            # Clear cached timezone to force reload on next cycle
+            self._zm_tzname = None
+            logger.info( 'ZoneMinderMonitor refreshed - ZoneMinderManager reloaded with new settings' )
         return
 
     async def do_work(self):
@@ -92,7 +101,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             'from': tz_adjusted_poll_from_datetime.isoformat(),  # "from" only looks at event start time
             'tz': self._zm_tzname,
         }
-        zm_events = await self.safe_external_api_call( self.zm_manager().get_zm_events, options = options )
+        zm_events = await self.zm_manager().get_zm_events_async( options = options )
         logger.debug( f'Found {len(zm_events)} new ZM events' )
 
         # Sensor readings and state value transitions are points in time,
@@ -136,7 +145,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         # If there are no events for monitors/states, we still want to emit the
         # sensor response of it being idle.
         #
-        zm_monitors = await self.safe_external_api_call( self.zm_manager().get_zm_monitors )
+        zm_monitors = await self.zm_manager().get_zm_monitors_async()
         for zm_monitor in zm_monitors:
             if zm_monitor.id() not in zm_monitor_ids_seen:
                 idle_sensor_response = self._create_idle_sensor_response(
@@ -261,8 +270,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         current_poll_datetime = datetimeproxy.now()
         sensor_response_map = dict()
 
-        zm_monitors = await self.safe_external_api_call( self.zm_manager().get_zm_monitors,
-                                                         force_load = self.CACHING_DISABLED )
+        zm_monitors = await self.zm_manager().get_zm_monitors_async( force_load = self.CACHING_DISABLED )
         for zm_monitor in zm_monitors:
             function_sensor_response = self._create_monitor_function_sensor_response(
                 zm_monitor = zm_monitor,
@@ -278,8 +286,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         sensor_response_map = dict()
 
         active_run_state_name = None
-        zm_states = await self.safe_external_api_call( self.zm_manager().get_zm_states,
-                                                       force_load = self.CACHING_DISABLED )
+        zm_states = await self.zm_manager().get_zm_states_async( force_load = self.CACHING_DISABLED )
         for zm_state in zm_states:
             if zm_state.active():
                 active_run_state_name = zm_state.name()

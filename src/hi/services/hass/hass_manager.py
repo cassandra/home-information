@@ -1,4 +1,5 @@
 import logging
+from asgiref.sync import sync_to_async
 from threading import Lock
 from typing import Dict
 
@@ -147,3 +148,13 @@ class HassManager( Singleton ):
             continue
 
         return hass_entity_id_to_state
+    
+    async def fetch_hass_states_from_api_async( self, verbose : bool = True ) -> Dict[ str, HassState ]:
+        """
+        Async version of fetch_hass_states_from_api for use in async contexts (monitors).
+        Uses sync_to_async to properly handle the synchronous API call.
+        """
+        return await sync_to_async(
+            self.fetch_hass_states_from_api,
+            thread_sensitive=True
+        )(verbose=verbose)

@@ -385,7 +385,7 @@ class USNO(WeatherDataSource, WeatherMixin):
         
         logger.debug(f'USNO API request: {url}')
         
-        response = self.safe_external_api_call_sync( requests.get, url, headers = self._headers )
+        response = requests.get( url, headers = self._headers, timeout = self.get_api_timeout() )
         response.raise_for_status()
         api_data = response.json()           
         return api_data

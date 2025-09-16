@@ -15,7 +15,7 @@ test-fast:
 lint:
 	cd src && flake8 --config=.flake8-ci hi/ 2>/dev/null
 
-check:	test lint
+check:	lint test
 
 check-fast:	test-fast lint
 

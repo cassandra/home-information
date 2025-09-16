@@ -1,4 +1,5 @@
 import logging
+from asgiref.sync import sync_to_async
 from .pyzm_client.api import ZMApi
 from .pyzm_client.helpers.Event import Event as ZmEvent
 from .pyzm_client.helpers.Monitor import Monitor as ZmMonitor
@@ -200,6 +201,36 @@ class ZoneMinderManager( Singleton ):
     def get_zm_events( self, options : Dict[ str, str ] ) -> List[ ZmEvent ]:
         return self.zm_client.events( options ).list()
     
+    async def get_zm_states_async( self, force_load : bool = False ) -> List[ ZmState ]:
+        """
+        Async version of get_zm_states for use in async contexts (monitors).
+        Uses sync_to_async to properly handle the synchronous API call.
+        """
+        return await sync_to_async(
+            self.get_zm_states,
+            thread_sensitive=True
+        )(force_load=force_load)
+    
+    async def get_zm_monitors_async( self, force_load : bool = False ) -> List[ ZmMonitor ]:
+        """
+        Async version of get_zm_monitors for use in async contexts (monitors).
+        Uses sync_to_async to properly handle the synchronous API call.
+        """
+        return await sync_to_async(
+            self.get_zm_monitors,
+            thread_sensitive=True
+        )(force_load=force_load)
+    
+    async def get_zm_events_async( self, options : Dict[ str, str ] ) -> List[ ZmEvent ]:
+        """
+        Async version of get_zm_events for use in async contexts (monitors).
+        Uses sync_to_async to properly handle the synchronous API call.
+        """
+        return await sync_to_async(
+            self.get_zm_events,
+            thread_sensitive=True
+        )(options=options)
+    
     def _zm_integration_key( self ) -> IntegrationKey:
         return IntegrationKey(
             integration_id = ZmMetaData.integration_id,
@@ -244,6 +275,16 @@ class ZoneMinderManager( Singleton ):
             logger.error( 'ZoneMinder timezone not found.' )
 
         return 'UTC'
+    
+    async def get_zm_tzname_async(self) -> str:
+        """
+        Async version of get_zm_tzname for use in async contexts (monitors).
+        Uses sync_to_async to properly handle the synchronous database call.
+        """
+        return await sync_to_async(
+            self.get_zm_tzname,
+            thread_sensitive=True
+        )()
 
     def get_video_stream_url( self, monitor_id : int ):
         return f'{self.zm_client.portal_url}/cgi-bin/nph-zms?mode=jpeg&scale=100&rate=5&maxfps=5&monitor={monitor_id}'
