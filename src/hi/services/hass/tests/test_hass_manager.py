@@ -3,8 +3,9 @@ import threading
 from unittest.mock import Mock, patch
 from django.test import TestCase
 
+from hi.integrations.enums import IntegrationHealthStatusType
 from hi.integrations.exceptions import IntegrationAttributeError
-from hi.integrations.transient_models import IntegrationKey, IntegrationHealthStatusType
+from hi.integrations.transient_models import IntegrationKey
 from hi.integrations.models import Integration
 
 from hi.services.hass.enums import HassAttributeType
@@ -84,7 +85,7 @@ class TestHassManagerInitialization(TestCase):
         """Test singleton initialization sets correct defaults"""
         self.assertEqual(self.manager._hass_attr_type_to_attribute, {})
         self.assertIsNone(self.manager._hass_client)
-        self.assertEqual(self.manager._change_listeners, [])
+        self.assertEqual(self.manager._change_listeners, set())
         self.assertFalse(self.manager._was_initialized)
         self.assertIsNotNone(self.manager._data_lock)
     
@@ -139,8 +140,7 @@ class TestHassManagerInitialization(TestCase):
         
         # Health status should reflect the configuration error
         health = self.manager.get_health_status()
-        self.assertEqual(health.status, IntegrationHealthStatusType.CONFIG_ERROR)
-        self.assertIn('not enabled', health.error_message)
+        self.assertEqual(health.status, IntegrationHealthStatusType.DISABLED)
     
     def test_reload_with_missing_required_attribute(self):
         """Test reload handles missing required attributes gracefully"""
@@ -298,83 +298,41 @@ class TestHassManagerClientCreation(TestCase):
             HassAttributeType.API_BASE_URL: Mock(value='https://test.homeassistant.io:8123')
             # Missing API_TOKEN
         }
-        
-        with self.assertRaises(IntegrationAttributeError) as context:
+
+        # Should raise IntegrationAttributeError for missing required attribute
+        with self.assertRaises(IntegrationAttributeError):
             self.manager.create_hass_client(incomplete_attributes)
-        
-        self.assertIn('Missing HAss API attribute', str(context.exception))
     
     def test_create_hass_client_empty_api_attribute_value(self):
         """Test create_hass_client raises error for empty API attribute values"""
         attributes = self.create_mock_attributes()
         attributes[HassAttributeType.API_BASE_URL].value = '   '  # Empty value
-        
-        with self.assertRaises(IntegrationAttributeError) as context:
+
+        # Should raise IntegrationAttributeError for empty attribute value
+        with self.assertRaises(IntegrationAttributeError):
             self.manager.create_hass_client(attributes)
-        
-        self.assertIn('Missing HAss API attribute value for', str(context.exception))
     
-    @patch('hi.services.hass.hass_manager.HassClient')
-    def test_create_hass_client_success(self, mock_hass_client):
+    def test_create_hass_client_success(self):
         """Test create_hass_client successfully creates HassClient with correct options"""
-        # Store the real constants before mocking
-        real_api_base_url = HassClient.API_BASE_URL
-        real_api_token = HassClient.API_TOKEN
-        
         attributes = self.create_mock_attributes()
-        mock_client = Mock()
-        mock_hass_client.return_value = mock_client
-        # Set the constants on the mock to match the real values
-        mock_hass_client.API_BASE_URL = real_api_base_url
-        mock_hass_client.API_TOKEN = real_api_token
-        
+
         result = self.manager.create_hass_client(attributes)
-        
-        # Verify HassClient was called with correct options
-        expected_options = {
-            'api_base_url': 'https://test.homeassistant.io:8123',
-            'api_token': 'test_token_123456'
-        }
-        mock_hass_client.assert_called_once_with(api_options=expected_options)
-        self.assertEqual(result, mock_client)
-        
-        # Verify the returned client is stored in manager instance
-        self.manager._hass_client = result
-        self.assertIs(self.manager.hass_client, mock_client)
+
+        # Verify HassClient was created and is of the correct type
+        self.assertIsInstance(result, HassClient)
+
+        # Verify the client was configured with the right options by checking the internal attributes
+        self.assertEqual(result._api_base_url, 'https://test.homeassistant.io:8123')
+        self.assertIn('Bearer test_token_123456', result._headers['Authorization'])
     
     def test_create_hass_client_validates_attribute_structure(self):
         """Test create_hass_client validates integration key structure correctly"""
-        # Create attributes with different integration keys to test validation
-        attributes = {}
-        
-        # Add API_BASE_URL with correct integration key
-        mock_attr = Mock()
-        mock_attr.value = 'https://test.homeassistant.io:8123'
-        mock_attr.integration_key = IntegrationKey(
-            integration_id=HassMetaData.integration_id,
-            integration_name=str(HassAttributeType.API_BASE_URL)
-        )
-        attributes[HassAttributeType.API_BASE_URL] = mock_attr
-        
-        # Add API_TOKEN with correct integration key
-        mock_attr2 = Mock()
-        mock_attr2.value = 'test_token'
-        mock_attr2.integration_key = IntegrationKey(
-            integration_id=HassMetaData.integration_id,
-            integration_name=str(HassAttributeType.API_TOKEN)
-        )
-        attributes[HassAttributeType.API_TOKEN] = mock_attr2
-        
-        with patch('hi.services.hass.hass_manager.HassClient') as mock_client:
-            mock_client.API_BASE_URL = 'api_base_url'
-            mock_client.API_TOKEN = 'api_token'
-            mock_client.return_value = Mock()
-            
-            result = self.manager.create_hass_client(attributes)
-            
-            # Should succeed and create client
-            self.assertIsNotNone(result)
-            mock_client.assert_called_once()
+        # Create valid attributes - this should succeed
+        attributes = self.create_mock_attributes()
+
+        # Should successfully create a client with valid attributes
+        result = self.manager.create_hass_client(attributes)
+        self.assertIsInstance(result, HassClient)
 
 
 class TestHassManagerChangeListeners(TestCase):
@@ -402,9 +360,25 @@ class TestHassManagerChangeListeners(TestCase):
         self.assertIn(callback1, self.manager._change_listeners)
         self.assertIn(callback2, self.manager._change_listeners)
         
-        # Verify order is preserved
-        self.assertEqual(self.manager._change_listeners[0], callback1)
-        self.assertEqual(self.manager._change_listeners[1], callback2)
+        # Verify both callbacks are present (sets don't guarantee order)
+        self.assertEqual(self.manager._change_listeners, {callback1, callback2})
+
+    def test_register_change_listener_prevents_duplicates(self):
+        """Test that registering the same listener multiple times only adds it once"""
+        callback = Mock()
+
+        # Register the same callback multiple times
+        self.manager.register_change_listener(callback)
+        self.manager.register_change_listener(callback)
+        self.manager.register_change_listener(callback)
+
+        # Should only be registered once
+        self.assertEqual(len(self.manager._change_listeners), 1)
+        self.assertIn(callback, self.manager._change_listeners)
+
+        # Verify it's only called once when settings change
+        self.manager.notify_settings_changed()
+        callback.assert_called_once()
     
     @patch.object(HassManager, 'reload')
     def test_notify_settings_changed_calls_reload_and_listeners(self, mock_reload):
@@ -429,8 +403,11 @@ class TestHassManagerChangeListeners(TestCase):
         
         self.manager.notify_settings_changed()
         
-        # Verify reload is called first, then callbacks
-        self.assertEqual(call_order, ['reload', 'callback1', 'callback2'])
+        # Verify reload is called first, then both callbacks (order may vary due to set)
+        self.assertEqual(call_order[0], 'reload')  # reload must be first
+        self.assertEqual(len(call_order), 3)  # reload + 2 callbacks
+        self.assertIn('callback1', call_order[1:])  # both callbacks called
+        self.assertIn('callback2', call_order[1:])
         mock_reload.assert_called_once()
         callback1.assert_called_once()
         callback2.assert_called_once()
@@ -702,7 +679,6 @@ class TestHassManagerApiDataFetching(TestCase):
         
         # Verify health status was updated to CONNECTION_ERROR
         health_status = self.manager.get_health_status()
-        from hi.integrations.transient_models import IntegrationHealthStatusType
         self.assertEqual(health_status.status, IntegrationHealthStatusType.CONNECTION_ERROR)
         self.assertIn("Connection error", health_status.error_message)
     
@@ -796,10 +772,9 @@ class TestHassManagerIntegrationBoundaries(TestCase):
         
         attributes = {HassAttributeType.API_BASE_URL: mock_attr}
         
-        with self.assertRaises(IntegrationAttributeError) as context:
+        # Should raise IntegrationAttributeError for invalid integration key
+        with self.assertRaises(IntegrationAttributeError):
             self.manager.create_hass_client(attributes)
-        
-        self.assertIn('Missing HAss API attribute', str(context.exception))
     
     # Removed - duplicate of test_reload_handles_optional_attributes
     

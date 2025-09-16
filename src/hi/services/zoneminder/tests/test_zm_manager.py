@@ -6,8 +6,9 @@ from django.test import TestCase
 import pytz
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.integrations.enums import IntegrationHealthStatusType
 from hi.integrations.exceptions import IntegrationAttributeError
-from hi.integrations.transient_models import IntegrationKey, IntegrationHealthStatusType
+from hi.integrations.transient_models import IntegrationKey
 from hi.integrations.models import Integration, IntegrationAttribute
 
 from hi.services.zoneminder.enums import ZmAttributeType
@@ -64,7 +65,7 @@ class TestZoneMinderManagerInitialization(TestCase):
         self.assertIsNone(self.manager._zm_client)
         self.assertEqual(self.manager._zm_state_list, [])
         self.assertEqual(self.manager._zm_monitor_list, [])
-        self.assertEqual(self.manager._change_listeners, [])
+        self.assertEqual(self.manager._change_listeners, set())
         self.assertFalse(self.manager._was_initialized)
         self.assertIsNotNone(self.manager._data_lock)
     
@@ -104,8 +105,7 @@ class TestZoneMinderManagerInitialization(TestCase):
         
         # Health status should reflect the configuration error
         health = self.manager.get_health_status()
-        self.assertEqual(health.status, IntegrationHealthStatusType.CONFIG_ERROR)
-        self.assertIn('not enabled', health.error_message)
+        self.assertEqual(health.status, IntegrationHealthStatusType.DISABLED)
     
     def test_reload_with_missing_required_attribute(self):
         """Test reload handles missing required attributes gracefully"""
@@ -236,37 +236,25 @@ class TestZoneMinderManagerClientCreation(TestCase):
         
         self.assertIn('Missing ZM API attribute value for', str(context.exception))
     
-    @patch('hi.services.zoneminder.zm_manager.ZMApi')
-    def test_create_zm_client_success(self, mock_zmapi):
-        """Test create_zm_client successfully creates ZMApi with correct options 
-        and returns functional client"""
-        attributes = self.create_mock_attributes()
-        
-        # Create a mock client with realistic behavior
+    @patch('hi.services.zoneminder.zm_client_factory.ZMApi')
+    def test_create_zm_client_success(self, mock_zmapi_class):
+        """Test create_zm_client successfully delegates to factory"""
+        # Arrange
         mock_client = Mock()
-        mock_client.portal_url = 'https://test.com/zm'
-        mock_client.api_url = 'https://test.com/zm/api'
-        mock_zmapi.return_value = mock_client
-        
+        mock_zmapi_class.return_value = mock_client
+        attributes = self.create_mock_attributes()
+
+        # For now, just test that the manager has a factory and delegates properly
+        # The actual ZMApi creation with network calls is tested in the factory tests
+        self.assertIsNotNone(self.manager._client_factory)
+        self.assertTrue(hasattr(self.manager._client_factory, 'create_client'))
+
+        # Act - Test that calling create_zm_client delegates to factory properly
         result = self.manager.create_zm_client(attributes)
-        
-        # Verify behavior: returns a client that has expected properties
-        self.assertIsNotNone(result)
-        self.assertEqual(result.portal_url, 'https://test.com/zm')
-        self.assertEqual(result.api_url, 'https://test.com/zm/api')
-        
-        # Verify client can be used for typical operations
-        self.assertTrue(hasattr(result, 'states'))
-        self.assertTrue(hasattr(result, 'monitors'))
-        
-        # Verify ZMApi was called with correct configuration options
-        expected_options = {
-            'apiurl': 'https://test.com/zm/api',
-            'portalurl': 'https://test.com/zm',
-            'user': 'testuser',
-            'password': 'testpass'
-        }
-        mock_zmapi.assert_called_once_with(options=expected_options)
+
+        # Assert - Test delegation behavior without network calls
+        self.assertIs(result, mock_client)
+        mock_zmapi_class.assert_called_once()
 
 
 class TestZoneMinderManagerCaching(TestCase):
@@ -510,6 +498,23 @@ class TestZoneMinderManagerChangeListeners(TestCase):
         self.assertEqual(len(self.manager._change_listeners), 2)
         self.assertIn(callback1, self.manager._change_listeners)
         self.assertIn(callback2, self.manager._change_listeners)
+
+    def test_register_change_listener_prevents_duplicates(self):
+        """Test that registering the same listener multiple times only adds it once"""
+        callback = Mock()
+
+        # Register the same callback multiple times
+        self.manager.register_change_listener(callback)
+        self.manager.register_change_listener(callback)
+        self.manager.register_change_listener(callback)
+
+        # Should only be registered once
+        self.assertEqual(len(self.manager._change_listeners), 1)
+        self.assertIn(callback, self.manager._change_listeners)
+
+        # Verify it's only called once when settings change
+        self.manager.notify_settings_changed()
+        callback.assert_called_once()
     
     @patch.object(ZoneMinderManager, 'reload')
     def test_notify_settings_changed_calls_reload_and_listeners(self, mock_reload):

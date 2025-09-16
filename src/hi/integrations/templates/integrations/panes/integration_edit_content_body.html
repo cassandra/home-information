@@ -13,22 +13,22 @@
 {% endif %}
 
 <!-- Integration Health Status Display -->
-{% if core.health_status %}
+{% if health_status %}
 <div class="ml-3">
-  <a href="{% url 'integrations_health_status' integration_id=core.integration_data.integration_id %}"
+  <a href="{% url 'integrations_health_status' integration_id=integration_data.integration_id %}"
      class="btn btn-link p-0 d-flex align-items-center text-decoration-none"
      data-async="modal"
      title="View health status details">
     <!-- Health status badge -->
-    <span class="badge {% if core.health_status.is_healthy %}badge-success{% elif core.health_status.is_critical %}badge-danger{% else %}badge-warning{% endif %}">
-      {% if core.health_status.is_healthy %}
-        {% icon "check-circle" size="sm" css_class="mr-1" %}Healthy
-      {% elif core.health_status.is_critical %}
-        {% icon "warning" size="sm" css_class="mr-1" %}Error
+    <button class="btn btn-sm {% if health_status.is_healthy %}btn-outline-primary{% elif health_status.is_critical %}btn-danger{% else %}btn-warning{% endif %}">
+      {% if health_status.is_healthy %}
+        {% icon "check-circle" size="mdm" css_class="mr-1" %}Healthy
+      {% elif health_status.is_critical %}
+        {% icon "warning" size="md" css_class="mr-1" %}Error
       {% else %}
-        {% icon "info-circle" size="sm" css_class="mr-1" %}Warning
+        {% icon "info-circle" size="md" css_class="mr-1" %}Warning
       {% endif %}
-    </span>
+    </button>
   </a>
 </div>
 {% endif %}

@@ -87,7 +87,7 @@ LOGGING = {
         },
         'hi.integrations': {
             'handlers': ['console' ],
-            'level': 'INFO',
+            'level': 'DEBUG',
             'propagate': False,
         },
         'hi.apps.location': {

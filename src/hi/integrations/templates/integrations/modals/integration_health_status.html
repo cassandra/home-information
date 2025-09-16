@@ -11,11 +11,11 @@
   <div class="d-flex align-items-center mb-2">
     <span class="badge badge-lg {% if health_status.is_healthy %}badge-success{% elif health_status.is_critical %}badge-danger{% else %}badge-warning{% endif %} mr-3">
       {% if health_status.is_healthy %}
-        {% icon "check-circle" size="sm" css_class="mr-1" %}{{ health_status.status_display }}
+        {% icon "check-circle" size="lg" css_class="mr-1" %}{{ health_status.status_display }}
       {% elif health_status.is_critical %}
-        {% icon "warning" size="sm" css_class="mr-1" %}{{ health_status.status_display }}
+        {% icon "warning" size="lg" css_class="mr-1" %}{{ health_status.status_display }}
       {% else %}
-        {% icon "info-circle" size="sm" css_class="mr-1" %}{{ health_status.status_display }}
+        {% icon "info-circle" size="lg" css_class="mr-1" %}{{ health_status.status_display }}
       {% endif %}
     </span>
   </div>

@@ -15,9 +15,10 @@ test-fast:
 lint:
 	cd src && flake8 --config=.flake8-ci hi/ 2>/dev/null
 
-check:	lint test
+lint-strict:
+	cd src && flake8 --config=.flake8 hi/ 2>/dev/null
 
-check-fast:	test-fast lint
+check:	lint test
 
 docker-build:	Dockerfile
 	@HI_VERSION=$$(cat HI_VERSION); \

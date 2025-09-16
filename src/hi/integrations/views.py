@@ -136,43 +136,18 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
                                 kwargs = { 'integration_id': integration_id } )
         return AttributeRedirectResponse( url = redirect_url )
 
-    def validate_attributes_extra(self, attr_item_context, regular_attributes_formset, request):
-        """Validate API connectivity before enabling integration."""
-        # Get the integration data from the context
-        integration_data = attr_item_context.integration_data
-        
-        try:
-            # Get current attribute values from the formset
-            integration_attributes = []
-            for form in regular_attributes_formset:
-                if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
-                    # Create a temporary attribute-like object with the form data
-                    attr_instance = form.instance
-                    attr_instance.value = form.cleaned_data.get('value', '')
-                    integration_attributes.append(attr_instance)
-            
-            # Validate API connectivity using the integration gateway
-            validation_result = integration_data.integration_gateway.validate_configuration(integration_attributes)
-            
-            if not validation_result.get('success', False):
-                error_message = validation_result.get('error_message', 'API validation failed')
-                logger.warning(f'API validation failed for {integration_data.label}: {error_message}')
-                
-                # Add non-field error to the formset
-                regular_attributes_formset._non_form_errors.append(
-                    f'Cannot enable integration: {error_message}'
-                )
-                
-        except Exception as e:
-            error_message = f'API validation error: {e}'
-            logger.exception(f'Error during API validation for {integration_data.label}: {e}')
-            
-            # Add non-field error to the formset
-            regular_attributes_formset._non_form_errors.append(
-                f'Cannot enable integration: {error_message}'
-            )
+    def validate_attributes_extra( self,
+                                   attr_item_context,
+                                   regular_attributes_formset,
+                                   request ):
+        """ Override for AttributeEditViewMixin """
+        self.validate_attributes_extra_helper(
+            attr_item_context,
+            regular_attributes_formset,
+            error_title = 'Cannot enable integration.' )            
+        return
 
-
+    
 class IntegrationDisableView( HiModalView, IntegrationViewMixin ):
 
     def get_template_name( self ) -> str:
@@ -229,8 +204,12 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
         if not integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} integration is not enabled' )
             
+        # Get health status from the integration gateway
+        health_status = integration_data.integration_gateway.get_health_status()
+        
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
+            health_status = health_status,
         )
         integration_data_list = self.get_integration_data_list( enabled_only = True )
 
@@ -243,9 +222,6 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
                 attr_item_context= attr_item_context,
             )
         )
-        # Get health status from the integration gateway
-        health_status = integration_data.integration_gateway.get_health_status()
-        
         template_context.update({
             # Extra needed on initial view only for tabbed navigation. Not
             # needed for attribute edit operations.
@@ -275,15 +251,31 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
         if not integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} integration is not enabled' )
 
+        # Get health status from the integration gateway
+        health_status = integration_data.integration_gateway.get_health_status()
+                
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
+            health_status = health_status,
         )
+        
         return self.post_attribute_form(
             request = request,
             attr_item_context = attr_item_context,
         )
+
+    def validate_attributes_extra( self,
+                                   attr_item_context,
+                                   regular_attributes_formset,
+                                   request ):
+        """ Override for AttributeEditViewMixin """
+        self.validate_attributes_extra_helper(
+            attr_item_context,
+            regular_attributes_formset,
+            error_title = 'Cannot save settings.' )            
+        return
+
     
-        
 class IntegrationAttributeHistoryInlineView( View,
                                              IntegrationViewMixin,
                                              AttributeEditViewMixin ):

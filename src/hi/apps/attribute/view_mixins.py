@@ -105,7 +105,6 @@ class AttributeEditViewMixin( AttributeEditCommonMixin ):
         forms_valid = form_handler.validate_forms( edit_form_data = edit_form_data )
         
         if forms_valid:
-            # Optional extra validation hook after forms are valid but before saving
             self.validate_attributes_extra(
                 attr_item_context = attr_item_context,
                 regular_attributes_formset = edit_form_data.regular_attributes_formset,
@@ -134,17 +133,7 @@ class AttributeEditViewMixin( AttributeEditCommonMixin ):
         return
 
     def validate_attributes_extra(self, attr_item_context, regular_attributes_formset, request):
-        """Optional extra validation hook called after forms are valid but before saving.
-        
-        Subclasses can override this method to add custom validation logic.
-        If validation fails, add errors to the formset using add_error() or 
-        regular_attributes_formset.non_form_errors().
-        
-        Args:
-            attr_item_context: AttributeItemEditContext instance
-            regular_attributes_formset: The validated formset that can have errors added
-            request: HttpRequest instance
-        """
+        """Optional extra validation hook called after forms are valid but before saving."""
         pass
 
     def create_initial_template_context(

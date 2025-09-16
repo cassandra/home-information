@@ -31,28 +31,19 @@ class DelayedSignalProcessor:
     """
     
     def __init__(self, name: str, callback_func: Callable[[], None], delay_seconds: float = 0.1):
-        """
-        Initialize the delayed signal processor.
-        
-        Args:
-            name: Unique name for this processor (used in logging)
-            callback_func: Function to call when processing is triggered
-            delay_seconds: Delay before executing callback after transaction commit
-        """
         self.name = name
         self.callback_func = callback_func
         self.delay_seconds = delay_seconds
         self._timer = None
         self._thread_local = local()
+        return
     
     def schedule_processing(self):
         """
-        Schedule the callback to run after transaction commit with delay.
-        
         This method can be called multiple times within a transaction,
         but the callback will only be scheduled once.
         """
-        # Initialize thread-local flag if not present
+
         if not hasattr(self._thread_local, "processing_registered"):
             self._thread_local.processing_registered = False
         
@@ -65,21 +56,23 @@ class DelayedSignalProcessor:
             transaction.on_commit(self._queue_delayed_processing)
     
     def _queue_delayed_processing(self):
-        """Queue the processing to execute in a background thread after a short delay."""
         # Cancel any existing timer to avoid duplicate processing
         if self._timer and self._timer.is_alive():
             self._timer.cancel()
-        
+
+        # Reset the flag immediately since we're about to schedule processing
+        # This allows new signals to schedule additional processing if needed
+        self._thread_local.processing_registered = False
+
         # Schedule the processing to run in a background thread after delay
         # The delay ensures the current transaction can complete first
         self._timer = Timer(self.delay_seconds, self._execute_processing_background)
         self._timer.daemon = True  # Don't prevent process shutdown
         self._timer.start()
-        
+
         logger.debug(f'Scheduled {self.name} processing in background thread.')
     
     def _execute_processing_background(self):
-        """Execute the processing callback in a background thread."""
         try:
             logger.debug(f'Executing {self.name} processing in background thread.')
             self.callback_func()
@@ -87,8 +80,8 @@ class DelayedSignalProcessor:
         except Exception as e:
             logger.error(f'Error during background {self.name} processing: {e}')
         finally:
-            # Reset the registration flag
-            self._thread_local.processing_registered = False
+            # Only clear the timer reference - the processing_registered flag
+            # was already reset in _queue_delayed_processing in the main thread
             self._timer = None
     
     def create_signal_handler(self):

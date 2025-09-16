@@ -1,4 +1,5 @@
 {% extends "config/pages/config_base.html" %}
+{% load icons %}
 
 {% block config_content %}
 <div id="hi-integration-settings" class="row">
@@ -19,9 +20,8 @@
         <span>{{ integration_data.label }}</span>
         {% with health_status=integration_data.integration_gateway.get_health_status %}
         {% if health_status.is_error %}
-        <span class="badge badge-sm {% if health_status.is_critical %}badge-danger{% else %}badge-warning{% endif %}" 
-              title="{{ health_status.status_display }}: {{ health_status.error_message|default:'Configuration issue' }}">
-          !
+        <span class="text-danger">
+        &nbsp; {% icon "warning" size="lg" css_class="mr-1" %}
         </span>
         {% endif %}
         {% endwith %}

@@ -1,11 +1,13 @@
+import hi.apps.common.datetimeproxy as datetimeproxy
 import logging
-from typing import Dict, List
+from typing import List
 
+from hi.integrations.enums import IntegrationHealthStatusType
 from hi.integrations.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manage_view_pane import IntegrationManageViewPane
 from hi.integrations.models import IntegrationAttribute
-from hi.integrations.transient_models import IntegrationMetaData, IntegrationHealthStatus
+from hi.integrations.transient_models import IntegrationMetaData, IntegrationHealthStatus, IntegrationValidationResult
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .hass_controller import HassController
@@ -54,17 +56,15 @@ class HassGateway( IntegrationGateway ):
         except Exception as e:
             logger.exception(f'Error getting HASS integration health status: {e}')
             # Return a default error status if we can't get the real status
-            from hi.integrations.transient_models import IntegrationHealthStatusType
-            import hi.apps.common.datetimeproxy as datetimeproxy
             return IntegrationHealthStatus(
                 status=IntegrationHealthStatusType.TEMPORARY_ERROR,
                 last_check=datetimeproxy.now(),
                 error_message=f'Failed to get health status: {e}'
             )
     
-    def validate_configuration(self, integration_attributes: List[IntegrationAttribute]) -> Dict[str, any]:
+    def validate_configuration(self, integration_attributes: List[IntegrationAttribute]) -> IntegrationValidationResult:
         """Validate HASS integration configuration by testing API connectivity.
-        
+
         Delegates to HassManager for configuration validation.
         """
         try:
@@ -72,8 +72,7 @@ class HassGateway( IntegrationGateway ):
             return hass_manager.validate_configuration(integration_attributes)
         except Exception as e:
             logger.exception(f'Error validating HASS integration configuration: {e}')
-            return {
-                'success': False,
-                'error_message': f'Configuration validation failed: {e}',
-                'error_type': 'unknown'
-            }
+            return IntegrationValidationResult.error(
+                status=IntegrationHealthStatusType.TEMPORARY_ERROR,
+                error_message=f'Configuration validation failed: {e}'
+            )

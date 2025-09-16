@@ -145,6 +145,10 @@ class AttributeModel(models.Model):
         self.attribute_type_str = str(attribute_type)
         return
 
+    @property
+    def is_predefined(self):
+        return bool( self.attribute_type == AttributeType.PREDEFINED )
+    
     def choices(self):
         # First check predefined ids
         choice_list = PredefinedValueRanges.get_choices( self.value_range_str )

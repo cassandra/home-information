@@ -7,16 +7,22 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.utils import str_to_bool
 
-from hi.integrations.exceptions import IntegrationAttributeError, IntegrationError
+from hi.integrations.exceptions import (
+    IntegrationAttributeError,
+    IntegrationError,
+    IntegrationDisabledError,
+)
+from hi.integrations.enums import IntegrationHealthStatusType
 from hi.integrations.transient_models import (
     IntegrationKey,
     IntegrationHealthStatus,
-    IntegrationHealthStatusType,
+    IntegrationValidationResult,
 )
 from hi.integrations.models import Integration, IntegrationAttribute
 
 from .enums import HassAttributeType
 from .hass_client import HassClient
+from .hass_client_factory import HassClientFactory
 from .hass_metadata import HassMetaData
 from .hass_models import HassState
 
@@ -28,11 +34,12 @@ class HassManager( Singleton ):
     def __init_singleton__( self ):
         self._hass_attr_type_to_attribute = dict()
         self._hass_client = None
-        
-        self._change_listeners = list()
+        self._client_factory = HassClientFactory()
+
+        self._change_listeners = set()
         self._was_initialized = False
         self._data_lock = Lock()
-        
+
         # Health status tracking
         self._health_status = IntegrationHealthStatus(
             status=IntegrationHealthStatusType.UNKNOWN,
@@ -48,8 +55,11 @@ class HassManager( Singleton ):
         return
     
     def register_change_listener( self, callback ):
-        logger.debug( f'Adding HASS setting change listener from {callback.__module__}' )
-        self._change_listeners.append( callback )
+        if callback not in self._change_listeners:
+            logger.debug( f'Adding HASS setting change listener from {callback.__module__}' )
+            self._change_listeners.add( callback )
+        else:
+            logger.debug( f'HASS setting change listener from {callback.__module__} already registered, skipping duplicate' )
         return
     
     def notify_settings_changed(self):
@@ -76,18 +86,25 @@ class HassManager( Singleton ):
                 self.clear_caches()
                 self._update_health_status(IntegrationHealthStatusType.HEALTHY)
                 logger.debug( 'HASS manager loading completed.' )
+            except IntegrationDisabledError:
+                msg = 'HASS integration disabled'
+                logger.info(msg)
+                self._update_health_status( IntegrationHealthStatusType.DISABLED, msg  )
             except IntegrationError as e:
                 error_msg = f'HASS integration configuration error: {e}'
                 logger.error(error_msg)
-                self._update_health_status(IntegrationHealthStatusType.CONFIG_ERROR, error_msg)
+                self._update_health_status( IntegrationHealthStatusType.CONFIG_ERROR,
+                                            error_msg )
             except IntegrationAttributeError as e:
                 error_msg = f'HASS integration attribute error: {e}'
                 logger.error(error_msg)
-                self._update_health_status(IntegrationHealthStatusType.CONFIG_ERROR, error_msg)
+                self._update_health_status( IntegrationHealthStatusType.CONFIG_ERROR,
+                                            error_msg )
             except Exception as e:
                 error_msg = f'Unexpected error loading HASS configuration: {e}'
                 logger.exception(error_msg)
-                self._update_health_status(IntegrationHealthStatusType.TEMPORARY_ERROR, error_msg)
+                self._update_health_status( IntegrationHealthStatusType.TEMPORARY_ERROR,
+                                            error_msg )
         return
 
     def clear_caches(self):
@@ -100,7 +117,7 @@ class HassManager( Singleton ):
             raise IntegrationError( 'Home Assistant integration is not implemented.' )
         
         if not hass_integration.is_enabled:
-            raise IntegrationError( 'Home Assistant integration is not enabled.' )
+            raise IntegrationDisabledError( 'Home Assistant integration is not enabled.' )
         
         integration_attributes = list(hass_integration.attributes.all())
         return self._build_hass_attr_type_to_attribute_map(
@@ -111,33 +128,11 @@ class HassManager( Singleton ):
     def create_hass_client(
             self,
             hass_attr_type_to_attribute : Dict[ HassAttributeType, IntegrationAttribute ] ) -> HassClient:
-        # Verify integration and build API data payload
-        api_options = {
-            # 'disable_ssl_cert_check': True
-        }
-        attr_to_api_option_key = {
-            HassAttributeType.API_BASE_URL: HassClient.API_BASE_URL,
-            HassAttributeType.API_TOKEN: HassClient.API_TOKEN,
-        }
-        
-        integration_key_to_attribute = { x.integration_key: x for x in hass_attr_type_to_attribute.values() }
-        for hass_attr_type in attr_to_api_option_key.keys():
-            integration_key = IntegrationKey(
-                integration_id = HassMetaData.integration_id,
-                integration_name = str(hass_attr_type),
-            )
-            hass_attr = integration_key_to_attribute.get( integration_key )
-            if not hass_attr:
-                raise IntegrationAttributeError( f'Missing HAss API attribute {hass_attr_type}' )
-            if not hass_attr.value.strip():
-                raise IntegrationAttributeError( f'Missing HAss API attribute value for {hass_attr_type}' )
+        """Create a HassClient from integration attributes.
 
-            options_key = attr_to_api_option_key[hass_attr_type]
-            api_options[options_key] = hass_attr.value
-            continue
-        
-        logger.debug( f'Home Assistant client options: {api_options}' )
-        return HassClient( api_options = api_options )
+        Delegates to HassClientFactory for actual client creation.
+        """
+        return self._client_factory.create_client(hass_attr_type_to_attribute)
 
     @property
     def should_add_alarm_events( self ) -> bool:
@@ -198,6 +193,8 @@ class HassManager( Singleton ):
         if old_status != status:
             if status == IntegrationHealthStatusType.HEALTHY:
                 logger.info('HASS integration is now healthy')
+            elif status == IntegrationHealthStatusType.DISABLED:
+                logger.info('HASS integration is now disabled')
             else:
                 logger.warning(f'HASS integration health status changed to {status.value}: {error_message}')
     
@@ -223,82 +220,44 @@ class HassManager( Singleton ):
             self._update_health_status(IntegrationHealthStatusType.CONNECTION_ERROR, error_msg)
             return False
     
-    def test_client_with_attributes(self, hass_attr_type_to_attribute: Dict[HassAttributeType, IntegrationAttribute]) -> Dict[str, any]:
+    def test_client_with_attributes(self, hass_attr_type_to_attribute: Dict[HassAttributeType, IntegrationAttribute]) -> IntegrationValidationResult:
         """
         Test API connectivity using provided attributes without affecting manager state.
-        
+
         Args:
             hass_attr_type_to_attribute: Dictionary mapping attribute types to attribute objects
-            
+
         Returns:
-            Dictionary with validation result:
-            {
-                'success': bool,
-                'error_message': str or None,
-                'error_type': 'config'|'connection'|'auth'|'unknown' or None
-            }
+            IntegrationValidationResult with test results
         """
         try:
             # Create temporary client with provided attributes
-            temp_client = self.create_hass_client(hass_attr_type_to_attribute)
-            
-            # Test basic API connectivity
-            states = temp_client.states()
-            if states is not None:
-                # Successful API call
-                return {
-                    'success': True,
-                    'error_message': None,
-                    'error_type': None
-                }
-            else:
-                return {
-                    'success': False,
-                    'error_message': 'Failed to fetch states from Home Assistant API',
-                    'error_type': 'connection'
-                }
-                
+            temp_client = self._client_factory.create_client(hass_attr_type_to_attribute)
+            # Test the client
+            return self._client_factory.test_client(temp_client)
+
         except IntegrationError as e:
-            return {
-                'success': False,
-                'error_message': str(e),
-                'error_type': 'config'
-            }
+            return IntegrationValidationResult.error(
+                status=IntegrationHealthStatusType.CONFIG_ERROR,
+                error_message=str(e)
+            )
         except IntegrationAttributeError as e:
-            return {
-                'success': False,
-                'error_message': str(e),
-                'error_type': 'config'
-            }
-        except Exception as e:
-            error_msg = str(e).lower()
-            
-            # Categorize common error types for better user feedback
-            if any(keyword in error_msg for keyword in ['auth', 'unauthorized', 'forbidden', 'token', 'credential']):
-                error_type = 'auth'
-                user_message = f'Authentication failed: {e}'
-            elif any(keyword in error_msg for keyword in ['connect', 'network', 'timeout', 'unreachable', 'resolve']):
-                error_type = 'connection'  
-                user_message = f'Cannot connect to Home Assistant: {e}'
-            else:
-                error_type = 'unknown'
-                user_message = f'API test failed: {e}'
-            
-            return {
-                'success': False,
-                'error_message': user_message,
-                'error_type': error_type
-            }
+            return IntegrationValidationResult.error(
+                status=IntegrationHealthStatusType.CONFIG_ERROR,
+                error_message=str(e)
+            )
     
-    def validate_configuration(self, integration_attributes: List[IntegrationAttribute]) -> Dict[str, any]:
+    def validate_configuration(
+            self,
+            integration_attributes: List[IntegrationAttribute]) -> IntegrationValidationResult:
         """
         Validate HASS configuration using provided attributes.
-        
+
         Args:
             integration_attributes: List of IntegrationAttribute objects
-            
+
         Returns:
-            Dictionary with validation result (same format as test_client_with_attributes)
+            IntegrationValidationResult with validation results
         """
         try:
             # Build attribute mapping without enforcing requirements (for validation testing)
@@ -306,17 +265,16 @@ class HassManager( Singleton ):
                 integration_attributes=integration_attributes,
                 enforce_requirements=False
             )
-            
+
             # Use existing test method
             return self.test_client_with_attributes(hass_attr_type_to_attribute)
-            
+
         except Exception as e:
             logger.exception(f'Error in HASS configuration validation: {e}')
-            return {
-                'success': False,
-                'error_message': f'Configuration validation failed: {e}',
-                'error_type': 'unknown'
-            }
+            return IntegrationValidationResult.error(
+                status=IntegrationHealthStatusType.TEMPORARY_ERROR,
+                error_message=f'Configuration validation failed: {e}'
+            )
     
     def _build_hass_attr_type_to_attribute_map(
             self, 

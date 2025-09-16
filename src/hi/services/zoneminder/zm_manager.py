@@ -12,11 +12,21 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.utils import str_to_bool
 
-from hi.integrations.exceptions import IntegrationAttributeError, IntegrationError
-from hi.integrations.transient_models import IntegrationKey, IntegrationHealthStatus, IntegrationHealthStatusType
+from hi.integrations.enums import IntegrationHealthStatusType
+from hi.integrations.exceptions import (
+    IntegrationAttributeError,
+    IntegrationError,
+    IntegrationDisabledError,
+)
+from hi.integrations.transient_models import (
+    IntegrationKey,
+    IntegrationHealthStatus,
+    IntegrationValidationResult,
+)
 from hi.integrations.models import Integration, IntegrationAttribute
 
 from .enums import ZmAttributeType
+from .zm_client_factory import ZmClientFactory
 from .zm_metadata import ZmMetaData
 
 logger = logging.getLogger(__name__)
@@ -46,17 +56,18 @@ class ZoneMinderManager( Singleton ):
     def __init_singleton__( self ):
         self._zm_attr_type_to_attribute = dict()
         self._zm_client = None
+        self._client_factory = ZmClientFactory()
 
         self._zm_state_list = list()
         self._zm_state_timestamp = datetimeproxy.min()
-        
+
         self._zm_monitor_list = list()
         self._zm_monitor_timestamp = datetimeproxy.min()
 
-        self._change_listeners = list()
+        self._change_listeners = set()
         self._was_initialized = False
         self._data_lock = Lock()
-        
+
         # Health status tracking
         self._health_status = IntegrationHealthStatus(
             status=IntegrationHealthStatusType.UNKNOWN,
@@ -72,8 +83,11 @@ class ZoneMinderManager( Singleton ):
         return
 
     def register_change_listener( self, callback ):
-        logger.debug( f'Adding ZM setting change listener from {callback.__module__}' )
-        self._change_listeners.append( callback )
+        if callback not in self._change_listeners:
+            logger.debug( f'Adding ZM setting change listener from {callback.__module__}' )
+            self._change_listeners.add( callback )
+        else:
+            logger.debug( f'ZM setting change listener from {callback.__module__} already registered, skipping duplicate' )
         return
     
     def notify_settings_changed(self):
@@ -103,18 +117,25 @@ class ZoneMinderManager( Singleton ):
                 self.clear_caches()
                 self._update_health_status(IntegrationHealthStatusType.HEALTHY)
                 logger.debug( 'ZoneMinder manager loading completed.' )
+            except IntegrationDisabledError:
+                msg = 'ZoneMinder integration disabled'
+                logger.info(msg)
+                self._update_health_status( IntegrationHealthStatusType.DISABLED, msg  )
             except IntegrationError as e:
                 error_msg = f'ZoneMinder integration configuration error: {e}'
                 logger.error(error_msg)
-                self._update_health_status(IntegrationHealthStatusType.CONFIG_ERROR, error_msg)
+                self._update_health_status( IntegrationHealthStatusType.CONFIG_ERROR,
+                                            error_msg) 
             except IntegrationAttributeError as e:
                 error_msg = f'ZoneMinder integration attribute error: {e}'
                 logger.error(error_msg)
-                self._update_health_status(IntegrationHealthStatusType.CONFIG_ERROR, error_msg)
+                self._update_health_status( IntegrationHealthStatusType.CONFIG_ERROR,
+                                            error_msg )
             except Exception as e:
                 error_msg = f'Unexpected error loading ZoneMinder configuration: {e}'
                 logger.exception(error_msg)
-                self._update_health_status(IntegrationHealthStatusType.TEMPORARY_ERROR, error_msg)
+                self._update_health_status( IntegrationHealthStatusType.TEMPORARY_ERROR,
+                                            error_msg )
         return
 
     def clear_caches(self):
@@ -129,7 +150,7 @@ class ZoneMinderManager( Singleton ):
             raise IntegrationError( 'ZoneMinder integration is not implemented.' )
         
         if not zm_integration.is_enabled:
-            raise IntegrationError( 'ZoneMinder integration is not enabled.' )
+            raise IntegrationDisabledError( 'ZoneMinder integration is not enabled.' )
 
         integration_attributes = list(zm_integration.attributes.all())
         return self._build_zm_attr_type_to_attribute_map(
@@ -140,36 +161,11 @@ class ZoneMinderManager( Singleton ):
     def create_zm_client(
             self,
             zm_attr_type_to_attribute : Dict[ ZmAttributeType, IntegrationAttribute ] ) -> ZMApi:
+        """Create a ZMApi client from integration attributes.
 
-        # Verify integration and build API data payload
-        api_options = {
-            # 'disable_ssl_cert_check': True
-        }
-        attr_to_api_option_key = {
-            ZmAttributeType.API_URL: 'apiurl',
-            ZmAttributeType.PORTAL_URL: 'portalurl',
-            ZmAttributeType.API_USER: 'user',
-            ZmAttributeType.API_PASSWORD: 'password',
-        }
-        
-        integration_key_to_attribute = { x.integration_key: x for x in zm_attr_type_to_attribute.values() }
-        for zm_attr_type in attr_to_api_option_key.keys():
-            integration_key = IntegrationKey(
-                integration_id = ZmMetaData.integration_id,
-                integration_name = str(zm_attr_type),
-            )
-            zm_attr = integration_key_to_attribute.get( integration_key )
-            if not zm_attr:
-                raise IntegrationAttributeError( f'Missing ZM API attribute {zm_attr_type}' )
-            if not zm_attr.value.strip():
-                raise IntegrationAttributeError( f'Missing ZM API attribute value for {zm_attr_type}' )
-
-            options_key = attr_to_api_option_key[zm_attr_type]
-            api_options[options_key] = zm_attr.value
-            continue
-        
-        logger.debug( f'ZoneMinder client options: {api_options}' )
-        return ZMApi( options = api_options )
+        Delegates to ZmClientFactory for actual client creation.
+        """
+        return self._client_factory.create_client(zm_attr_type_to_attribute)
 
     @property
     def should_add_alarm_events( self ) -> bool:
@@ -328,6 +324,8 @@ class ZoneMinderManager( Singleton ):
         if old_status != status:
             if status == IntegrationHealthStatusType.HEALTHY:
                 logger.info('ZoneMinder integration is now healthy')
+            elif status == IntegrationHealthStatusType.DISABLED:
+                logger.info('ZoneMinder integration is now disabled')
             else:
                 logger.warning(f'ZoneMinder integration health status changed to {status.value}: {error_message}')
     
@@ -353,82 +351,42 @@ class ZoneMinderManager( Singleton ):
             self._update_health_status(IntegrationHealthStatusType.CONNECTION_ERROR, error_msg)
             return False
     
-    def test_client_with_attributes(self, zm_attr_type_to_attribute: Dict[ZmAttributeType, IntegrationAttribute]) -> Dict[str, any]:
+    def test_client_with_attributes(self, zm_attr_type_to_attribute: Dict[ZmAttributeType, IntegrationAttribute]) -> IntegrationValidationResult:
         """
         Test API connectivity using provided attributes without affecting manager state.
-        
+
         Args:
             zm_attr_type_to_attribute: Dictionary mapping attribute types to attribute objects
-            
+
         Returns:
-            Dictionary with validation result:
-            {
-                'success': bool,
-                'error_message': str or None,
-                'error_type': 'config'|'connection'|'auth'|'unknown' or None
-            }
+            IntegrationValidationResult with test results
         """
         try:
             # Create temporary client with provided attributes
-            temp_client = self.create_zm_client(zm_attr_type_to_attribute)
-            
-            # Test basic API connectivity by fetching states
-            states = temp_client.states().list()
-            if states is not None:
-                # Successful API call
-                return {
-                    'success': True,
-                    'error_message': None,
-                    'error_type': None
-                }
-            else:
-                return {
-                    'success': False,
-                    'error_message': 'Failed to fetch states from ZoneMinder API',
-                    'error_type': 'connection'
-                }
-                
+            temp_client = self._client_factory.create_client(zm_attr_type_to_attribute)
+            # Test the client
+            return self._client_factory.test_client(temp_client)
+
         except IntegrationError as e:
-            return {
-                'success': False,
-                'error_message': str(e),
-                'error_type': 'config'
-            }
+            return IntegrationValidationResult.error(
+                status=IntegrationHealthStatusType.CONFIG_ERROR,
+                error_message=str(e)
+            )
         except IntegrationAttributeError as e:
-            return {
-                'success': False,
-                'error_message': str(e),
-                'error_type': 'config'
-            }
-        except Exception as e:
-            error_msg = str(e).lower()
-            
-            # Categorize common error types for better user feedback
-            if any(keyword in error_msg for keyword in ['auth', 'unauthorized', 'forbidden', 'login', 'credential', 'password']):
-                error_type = 'auth'
-                user_message = f'Authentication failed: {e}'
-            elif any(keyword in error_msg for keyword in ['connect', 'network', 'timeout', 'unreachable', 'resolve', 'schema', 'url']):
-                error_type = 'connection'  
-                user_message = f'Cannot connect to ZoneMinder: {e}'
-            else:
-                error_type = 'unknown'
-                user_message = f'API test failed: {e}'
-            
-            return {
-                'success': False,
-                'error_message': user_message,
-                'error_type': error_type
-            }
+            return IntegrationValidationResult.error(
+                status=IntegrationHealthStatusType.CONFIG_ERROR,
+                error_message=str(e)
+            )
     
-    def validate_configuration(self, integration_attributes: List[IntegrationAttribute]) -> Dict[str, any]:
+    def validate_configuration(self, integration_attributes: List[IntegrationAttribute]) -> IntegrationValidationResult:
         """
         Validate ZoneMinder configuration using provided attributes.
-        
+
         Args:
             integration_attributes: List of IntegrationAttribute objects
-            
+
         Returns:
-            Dictionary with validation result (same format as test_client_with_attributes)
+            IntegrationValidationResult with validation results
         """
         try:
             # Build attribute mapping without enforcing requirements (for validation testing)
@@ -436,17 +394,16 @@ class ZoneMinderManager( Singleton ):
                 integration_attributes=integration_attributes,
                 enforce_requirements=False
             )
-            
+
             # Use existing test method
             return self.test_client_with_attributes(zm_attr_type_to_attribute)
-            
+
         except Exception as e:
             logger.exception(f'Error in ZoneMinder configuration validation: {e}')
-            return {
-                'success': False,
-                'error_message': f'Configuration validation failed: {e}',
-                'error_type': 'unknown'
-            }
+            return IntegrationValidationResult.error(
+                status=IntegrationHealthStatusType.TEMPORARY_ERROR,
+                error_message=f'Configuration validation failed: {e}'
+            )
     
     def _build_zm_attr_type_to_attribute_map(
             self, 

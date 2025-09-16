@@ -16,6 +16,7 @@ from hi.apps.attribute.models import AttributeModel
 from .forms import IntegrationAttributeRegularFormSet
 from .integration_data import IntegrationData
 from .models import Integration, IntegrationAttribute
+from .transient_models import IntegrationHealthStatus
 
 
 class IntegrationAttributeItemEditContext(AttributeItemEditContext):
@@ -26,12 +27,13 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
     the generic interface expected by attribute editing templates.
     """
     
-    def __init__(self,
-                 integration_data: IntegrationData,
-                 update_button_label = 'UPDATE',
-                 suppress_history = False,
-                 show_secrets = False,
-                 ) -> None:
+    def __init__( self,
+                  integration_data     : IntegrationData,
+                  health_status        : IntegrationHealthStatus  = None,
+                  update_button_label  : str                      = 'UPDATE',
+                  suppress_history     : bool                     = False,
+                  show_secrets         : bool                     = False,
+                  ) -> None:
         """
         Initialize context for Integration attribute editing.
         
@@ -40,6 +42,7 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
         """
         super().__init__( owner_type = 'integration', owner = integration_data.integration )
         self.integration_data = integration_data
+        self._health_status = health_status
         self._update_button_label = update_button_label
         self._suppress_history = suppress_history
         self._show_secrets = show_secrets
@@ -98,5 +101,6 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
         template_context = super().to_template_context()
         template_context.update({
             'integration_data': self.integration_data,
+            'health_status': self._health_status,
         })
         return template_context

@@ -1,16 +1,21 @@
 import logging
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from hi.apps.entity.models import Entity
 from hi.apps.entity.transient_models import VideoStream
 from hi.apps.entity.enums import VideoStreamType, VideoStreamMode
 from hi.apps.entity.constants import VideoStreamMetadataKeys
 from hi.apps.sense.transient_models import SensorResponse
+from hi.integrations.enums import IntegrationHealthStatusType
 from hi.integrations.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manage_view_pane import IntegrationManageViewPane
 from hi.integrations.models import IntegrationAttribute
-from hi.integrations.transient_models import IntegrationMetaData, IntegrationHealthStatus
+from hi.integrations.transient_models import (
+    IntegrationMetaData,
+    IntegrationHealthStatus,
+    IntegrationValidationResult,
+)
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .constants import ZmDetailKeys
@@ -61,7 +66,6 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
         except Exception as e:
             logger.exception(f'Error getting ZoneMinder integration health status: {e}')
             # Return a default error status if we can't get the real status
-            from hi.integrations.transient_models import IntegrationHealthStatusType
             import hi.apps.common.datetimeproxy as datetimeproxy
             return IntegrationHealthStatus(
                 status=IntegrationHealthStatusType.TEMPORARY_ERROR,
@@ -69,9 +73,12 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
                 error_message=f'Failed to get health status: {e}'
             )
     
-    def validate_configuration(self, integration_attributes: List[IntegrationAttribute]) -> Dict[str, any]:
+    def validate_configuration(
+            self,
+            integration_attributes: List[IntegrationAttribute]
+    ) -> IntegrationValidationResult:
         """Validate ZoneMinder integration configuration by testing API connectivity.
-        
+
         Delegates to ZoneMinderManager for configuration validation.
         """
         try:
@@ -79,11 +86,10 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
             return zm_manager.validate_configuration(integration_attributes)
         except Exception as e:
             logger.exception(f'Error validating ZoneMinder integration configuration: {e}')
-            return {
-                'success': False,
-                'error_message': f'Configuration validation failed: {e}',
-                'error_type': 'unknown'
-            }
+            return IntegrationValidationResult.error(
+                status=IntegrationHealthStatusType.TEMPORARY_ERROR,
+                error_message=f'Configuration validation failed: {e}'
+            )
     
     def get_entity_video_stream(self, entity: Entity) -> Optional[VideoStream]:
         """Get entity's primary video stream (typically live)"""
@@ -93,7 +99,8 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
         # Check if this is a ZoneMinder camera entity
         if (entity.integration_id == ZmMetaData.integration_id
                 and entity.integration_name
-                and entity.integration_name.startswith(self.zm_manager().ZM_MONITOR_INTEGRATION_NAME_PREFIX)):
+                and entity.integration_name.startswith(
+                    self.zm_manager().ZM_MONITOR_INTEGRATION_NAME_PREFIX)):
             
             # Extract monitor ID from integration name (format: "monitor.{id}")
             try:
