@@ -8,15 +8,18 @@ from typing import Dict, List
 from django.apps import apps
 from django.conf import settings
 from django.db import transaction
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 
 from hi.apps.attribute.enums import AttributeType
+from hi.apps.common.delayed_signal_processor import DelayedSignalProcessor
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.module_utils import import_module_safe
 
 from .enums import IntegrationAttributeType
 from .integration_data import IntegrationData
 from .integration_gateway import IntegrationGateway
-from .transient_models import IntegrationKey
+from .transient_models import IntegrationKey, IntegrationHealthStatus, IntegrationHealthStatusType
 from .models import Integration, IntegrationAttribute
 from .transient_models import IntegrationMetaData
 
@@ -311,3 +314,53 @@ class IntegrationManager( Singleton ):
                 integration_data.integration.save()
             self._stop_integration_monitor( integration_data = integration_data )
         return
+    
+    def notify_integration_settings_changed(self):
+        """
+        Notify all integrations that their settings have changed.
+        
+        This method is called when Integration or IntegrationAttribute models
+        are modified. It loops through all discovered integrations and calls
+        their gateway's notify_settings_changed() method to reload configuration.
+        """
+        logger.debug('Integration settings changed - notifying all integrations')
+        
+        for integration_data in self._integration_data_map.values():
+            integration_id = integration_data.integration_id
+            try:
+                # Notify the integration gateway that settings have changed
+                integration_gateway = integration_data.integration_gateway
+                integration_gateway.notify_settings_changed()
+                logger.debug(f'Notified {integration_id} integration of settings change')
+                    
+            except Exception as e:
+                logger.exception(f'Could not notify {integration_id} integration: {e}')
+
+
+def _integration_manager_reload_callback():
+    """Callback function for delayed integration manager reload."""
+    integration_manager = IntegrationManager()
+    integration_manager.notify_integration_settings_changed()
+
+
+# Create delayed signal processor for integration changes
+_integration_processor = DelayedSignalProcessor(
+    name="integration_manager",
+    callback_func=_integration_manager_reload_callback,
+    delay_seconds=0.1
+)
+
+
+@receiver(post_save, sender=Integration)
+@receiver(post_delete, sender=Integration)
+@receiver(post_save, sender=IntegrationAttribute)
+@receiver(post_delete, sender=IntegrationAttribute)
+def integration_model_changed(sender, instance, **kwargs):
+    """
+    Handle changes to Integration and IntegrationAttribute models.
+    
+    This signal handler schedules the IntegrationManager to notify all
+    integration monitors after the transaction commits.
+    """
+    logger.debug(f'Integration model change detected: {sender.__name__}')
+    _integration_processor.schedule_processing()

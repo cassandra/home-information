@@ -15,7 +15,17 @@
     <a class="nav-link hi-vertical-nav-link {% if core.integration_data.integration_id == integration_data.integration_id %}active{% endif %}"
        href="{% url 'integrations_manage' integration_id=integration_data.integration_id %}"
        data-async="true">
-      {{ integration_data.label }}
+      <div class="d-flex justify-content-between align-items-center">
+        <span>{{ integration_data.label }}</span>
+        {% with health_status=integration_data.integration_gateway.get_health_status %}
+        {% if health_status.is_error %}
+        <span class="badge badge-sm {% if health_status.is_critical %}badge-danger{% else %}badge-warning{% endif %}" 
+              title="{{ health_status.status_display }}: {{ health_status.error_message|default:'Configuration issue' }}">
+          !
+        </span>
+        {% endif %}
+        {% endwith %}
+      </div>
     </a>
     {% endfor %}
   </nav>

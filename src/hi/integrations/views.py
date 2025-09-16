@@ -52,6 +52,27 @@ class IntegrationSelectView( HiModalView, IntegrationViewMixin ):
         return self.modal_response( request, context )
 
 
+class IntegrationHealthStatusView( HiModalView, IntegrationViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'integrations/modals/integration_health_status.html'
+
+    def get( self, request, *args, **kwargs ):
+        integration_id = kwargs.get('integration_id')
+        integration_data = self.get_integration_data(
+            integration_id = integration_id,
+        )
+        
+        # Get health status from the integration gateway
+        health_status = integration_data.integration_gateway.get_health_status()
+        
+        context = {
+            'integration_data': integration_data,
+            'health_status': health_status.to_dict(),
+        }
+        return self.modal_response( request, context )
+
+
 class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditViewMixin ):
 
     def get_template_name( self ) -> str:
@@ -91,7 +112,7 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
             integration_id = integration_id,
         )
         if integration_data.integration.is_enabled:
-            raise BadRequest( f'{integration_data.label} is already enabled' )
+            raise BadRequest( f'{integration_data.label} i\s already enabled' )
 
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
@@ -114,6 +135,42 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
         redirect_url = reverse( 'integrations_manage',
                                 kwargs = { 'integration_id': integration_id } )
         return AttributeRedirectResponse( url = redirect_url )
+
+    def validate_attributes_extra(self, attr_item_context, regular_attributes_formset, request):
+        """Validate API connectivity before enabling integration."""
+        # Get the integration data from the context
+        integration_data = attr_item_context.integration_data
+        
+        try:
+            # Get current attribute values from the formset
+            integration_attributes = []
+            for form in regular_attributes_formset:
+                if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
+                    # Create a temporary attribute-like object with the form data
+                    attr_instance = form.instance
+                    attr_instance.value = form.cleaned_data.get('value', '')
+                    integration_attributes.append(attr_instance)
+            
+            # Validate API connectivity using the integration gateway
+            validation_result = integration_data.integration_gateway.validate_configuration(integration_attributes)
+            
+            if not validation_result.get('success', False):
+                error_message = validation_result.get('error_message', 'API validation failed')
+                logger.warning(f'API validation failed for {integration_data.label}: {error_message}')
+                
+                # Add non-field error to the formset
+                regular_attributes_formset._non_form_errors.append(
+                    f'Cannot enable integration: {error_message}'
+                )
+                
+        except Exception as e:
+            error_message = f'API validation error: {e}'
+            logger.exception(f'Error during API validation for {integration_data.label}: {e}')
+            
+            # Add non-field error to the formset
+            regular_attributes_formset._non_form_errors.append(
+                f'Cannot enable integration: {error_message}'
+            )
 
 
 class IntegrationDisableView( HiModalView, IntegrationViewMixin ):
@@ -186,6 +243,9 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
                 attr_item_context= attr_item_context,
             )
         )
+        # Get health status from the integration gateway
+        health_status = integration_data.integration_gateway.get_health_status()
+        
         template_context.update({
             # Extra needed on initial view only for tabbed navigation. Not
             # needed for attribute edit operations.
@@ -196,6 +256,7 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
                 'integration_data_list': integration_data_list,
                 'integration_data': integration_data,
                 'manage_view_template_name': manage_template_name,
+                'health_status': health_status.to_dict(),
             },
         })
         return template_context

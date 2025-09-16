@@ -21,6 +21,7 @@ register = template.Library()
 AVAILABLE_ICONS = {
     'camera',
     'cancel',
+    'check-circle',
     'chevron-double-left',
     'chevron-double-right',
     'chevron-down',
@@ -57,6 +58,7 @@ AVAILABLE_ICONS = {
     'upload',
     'video',
     'view',
+    'warning',
     'zoom',
 }
 

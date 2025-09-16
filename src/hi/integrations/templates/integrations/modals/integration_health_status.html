@@ -1,0 +1,70 @@
+{% extends "modals/action_done.html" %}
+{% load icons %}
+
+{% block title_text %}
+{{ integration_data.label }} Health Status
+{% endblock %}
+
+{% block body %}
+
+<div class="mb-3">
+  <div class="d-flex align-items-center mb-2">
+    <span class="badge badge-lg {% if health_status.is_healthy %}badge-success{% elif health_status.is_critical %}badge-danger{% else %}badge-warning{% endif %} mr-3">
+      {% if health_status.is_healthy %}
+        {% icon "check-circle" size="sm" css_class="mr-1" %}{{ health_status.status_display }}
+      {% elif health_status.is_critical %}
+        {% icon "warning" size="sm" css_class="mr-1" %}{{ health_status.status_display }}
+      {% else %}
+        {% icon "info-circle" size="sm" css_class="mr-1" %}{{ health_status.status_display }}
+      {% endif %}
+    </span>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-sm-3"><strong>Last Check:</strong></div>
+  <div class="col-sm-9">{{ health_status.last_check|date:"M j, Y H:i:s" }}</div>
+</div>
+
+{% if health_status.error_message %}
+<div class="row mt-2">
+  <div class="col-sm-3"><strong>Error Details:</strong></div>
+  <div class="col-sm-9">
+    <div class="alert alert-{% if health_status.is_critical %}danger{% else %}warning{% endif %} p-2">
+      {{ health_status.error_message }}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if health_status.error_count > 1 %}
+<div class="row mt-2">
+  <div class="col-sm-3"><strong>Error Count:</strong></div>
+  <div class="col-sm-9">{{ health_status.error_count }}</div>
+</div>
+{% endif %}
+
+{% if health_status.is_healthy %}
+<div class="alert alert-success mt-3">
+  <p class="mb-0">
+    {% icon "check-circle" size="sm" css_class="mr-2" %}
+    This integration is operating normally. All configuration settings are valid and the connection to the external service is working properly.
+  </p>
+</div>
+{% elif health_status.is_critical %}
+<div class="alert alert-danger mt-3">
+  <p class="mb-0">
+    {% icon "warning" size="sm" css_class="mr-2" %}
+    This integration requires immediate attention. Please check the configuration settings and ensure the external service is accessible.
+  </p>
+</div>
+{% else %}
+<div class="alert alert-warning mt-3">
+  <p class="mb-0">
+    {% icon "info-circle" size="sm" css_class="mr-2" %}
+    This integration has encountered temporary issues. The problem may resolve automatically, but monitoring is recommended.
+  </p>
+</div>
+{% endif %}
+
+{% endblock %}

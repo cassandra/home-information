@@ -55,13 +55,17 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         return
     
     def refresh( self ):
-        """ Should be called when integration settings are changed (via listener callback). """
-        # Reload ZoneMinderManager configuration with new settings
-        if hasattr( self, '_zm_manager' ):
-            self._zm_manager.reload()
-            # Clear cached timezone to force reload on next cycle
-            self._zm_tzname = None
-            logger.info( 'ZoneMinderMonitor refreshed - ZoneMinderManager reloaded with new settings' )
+        """ 
+        Called when integration settings are changed (via listener callback).
+        
+        Note: ZoneMinderManager.reload() is already called BEFORE this callback is triggered,
+        so we should NOT call manager.reload() here to avoid redundant reloads.
+        The monitor should just reset its own state to pick up fresh manager state.
+        """
+        # Reset monitor state so next cycle reinitializes with updated manager
+        self._was_initialized = False
+        self._zm_tzname = None  # Clear cached timezone
+        logger.info( 'ZoneMinderMonitor refreshed - will reinitialize with new settings on next cycle' )
         return
 
     async def do_work(self):

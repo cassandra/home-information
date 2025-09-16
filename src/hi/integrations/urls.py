@@ -23,6 +23,10 @@ urlpatterns = [
              views.IntegrationDisableView.as_view(), 
              name='integrations_disable' ),
 
+    re_path( r'^health/(?P<integration_id>[\w\-]+)$', 
+             views.IntegrationHealthStatusView.as_view(), 
+             name='integrations_health_status' ),
+
     re_path( r'^manage/(?P<integration_id>[\w\-]*)$', 
              views.IntegrationManageView.as_view(), 
              name='integrations_manage' ),

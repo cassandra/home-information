@@ -37,11 +37,16 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         return
     
     def refresh( self ):
-        """ Should be called when integration settings are changed (via listener callback). """
-        # Reload HassManager configuration with new settings
-        if hasattr( self, '_hass_manager' ):
-            self._hass_manager.reload()
-            logger.info( 'HassMonitor refreshed - HassManager reloaded with new settings' )
+        """ 
+        Called when integration settings are changed (via listener callback).
+        
+        Note: HassManager.reload() is already called BEFORE this callback is triggered,
+        so we should NOT call manager.reload() here to avoid redundant reloads.
+        The monitor should just reset its own state to pick up fresh manager state.
+        """
+        # Reset monitor state so next cycle reinitializes with updated manager
+        self._was_initialized = False
+        logger.info( 'HassMonitor refreshed - will reinitialize with new settings on next cycle' )
         return
     
     async def do_work(self):
