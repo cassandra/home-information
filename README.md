@@ -23,6 +23,8 @@ See [Why Home Information?](docs/WhyHomeInformation.md) for more details on our 
 
 ## Quick Start
 
+**Requirements:** [Docker](https://docs.docker.com/get-docker/) installed and running.
+
 **Get running in 30 seconds:**
 
 ```shell
@@ -33,18 +35,16 @@ curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/i
 
 The install script automatically handles everything: Docker setup verification, secure credential generation, and application startup.
 
-**Requirements:** [Docker](https://docs.docker.com/get-docker/) installed and running.
+**New to the interface?** Follow the [Getting Started Guide](docs/GettingStarted.md) for a walkthrough.
 
 **Need more control?** See [Installation Guide](docs/Installation.md) for manual installation, deployment options, and troubleshooting.
-
-**New to the interface?** Follow the [Getting Started Guide](docs/GettingStarted.md) for a walkthrough.
 
 ## What You Can Do
 
 **Information Management:**
 - Upload and organize manuals, warranties, and documents by location
-- Track maintenance histories and repair records
 - Store notes and specifications for every item in your home
+- Track maintenance histories and repair records
 
 **Visual Organization:**
 - Position items exactly where they belong on floor plans or property maps
@@ -54,7 +54,7 @@ The install script automatically handles everything: Docker setup verification, 
 **Home Automation Integration:**
 - Control lights, switches, and devices through [Home Assistant](docs/Integrations.md)
 - Monitor device states and histories
-- Set up automated rules and triggers
+- Set up automated alerts, rules and triggers
 
 **Security & Monitoring:**
 - Integrate with [ZoneMinder](docs/Integrations.md) for camera management
