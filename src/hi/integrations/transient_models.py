@@ -1,7 +1,8 @@
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Dict, List, Optional
 
-from .enums import IntegrationAttributeType
+from .enums import IntegrationAttributeType, IntegrationHealthStatusType
 
 
 @dataclass
@@ -26,7 +27,10 @@ class IntegrationControlResult:
 
 @dataclass
 class IntegrationKey:
-    """ Internal identifier to help map to/from an integration's external names/identifiers """
+    """
+    Internal identifier to help map to/from an integration's
+    external names/identifiers
+    """
 
     integration_id    : str  # Internally defined unique identifier for the integration source
     integration_name  : str  # Name or identifier that is used by the external source.
@@ -63,6 +67,78 @@ class IntegrationKey:
 
 @dataclass
 class IntegrationDetails:
-    """ Integration key plus data for cases where additional integration-specific data is needed """
+    """
+    Integration key plus data for cases where additional integration-specific
+    data is needed
+    """
     key      : IntegrationKey
     payload  : Optional[Dict] = None
+
+
+@dataclass
+class IntegrationHealthStatus:
+
+    status         : IntegrationHealthStatusType
+    last_check     : datetime
+    error_message  : Optional[str]     = None
+    error_count    : int               = 0
+
+    @property
+    def is_healthy(self) -> bool:
+        return self.status == IntegrationHealthStatusType.HEALTHY
+
+    @property
+    def is_error(self) -> bool:
+        return self.status.is_error
+
+    @property
+    def is_critical(self) -> bool:
+        return self.status.is_critical
+
+    @property
+    def status_display(self) -> str:
+        return self.status.label
+
+    def to_dict(self) -> Dict:
+        return {
+            'status': self.status.value,
+            'status_display': self.status_display,
+            'last_check': self.last_check,
+            'error_message': self.error_message,
+            'error_count': self.error_count,
+            'is_healthy': self.is_healthy,
+            'is_error': self.is_error,
+            'is_critical': self.is_critical,
+        }
+
+
+@dataclass
+class IntegrationValidationResult:
+    """Result from integration configuration validation."""
+
+    is_valid       : bool
+    status         : IntegrationHealthStatusType
+    error_message  : Optional[str] = None
+    timestamp      : Optional[datetime] = None
+
+    def __post_init__(self):
+        if self.timestamp is None:
+            import hi.apps.common.datetimeproxy as datetimeproxy
+            self.timestamp = datetimeproxy.now()
+
+    @classmethod
+    def success(cls) -> 'IntegrationValidationResult':
+        """Create a successful validation result."""
+        return cls(
+            is_valid=True,
+            status=IntegrationHealthStatusType.HEALTHY
+        )
+
+    @classmethod
+    def error(cls, status: IntegrationHealthStatusType, error_message: str) -> 'IntegrationValidationResult':
+        """Create an error validation result."""
+        return cls(
+            is_valid=False,
+            status=status,
+            error_message=error_message
+        )

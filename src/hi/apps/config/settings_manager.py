@@ -1,13 +1,13 @@
 from datetime import datetime
 import logging
-from threading import local, Lock, Timer
+from threading import Lock
 from typing import List
 
-from django.db import transaction
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+from hi.apps.common.delayed_signal_processor import DelayedSignalProcessor
 from hi.apps.common.singleton import Singleton
 
 from .models import Subsystem, SubsystemAttribute
@@ -107,46 +107,20 @@ class SettingsManager( Singleton ):
     def _load_settings( self ):
         return list( Subsystem.objects.prefetch_related('attributes').all() )
 
-    
-_thread_local = local()
+
+def _settings_manager_reload_callback():
+    """Callback function for delayed settings manager reload."""
+    settings_manager = SettingsManager()
+    settings_manager.ensure_initialized()
+    settings_manager.reload()
 
 
-_reload_timer = None
-
-
-def do_settings_manager_reload_background():
-    """Execute the settings reload in a background thread to prevent deadlocks."""
-    try:
-        logger.debug( 'Reloading SettingsManager from model changes in background thread.')
-        settings_manager = SettingsManager()
-        settings_manager.ensure_initialized()
-        settings_manager.reload()
-        logger.debug( 'Background SettingsManager reload completed successfully.')
-    except Exception as e:
-        logger.error( f'Error during background SettingsManager reload: {e}')
-    finally:
-        # Reset the reload registration flag
-        _thread_local.reload_registered = False
-        global _reload_timer
-        _reload_timer = None
-
-        
-def do_settings_manager_reload():
-    """Queue the settings reload to execute in a background thread after a short delay."""
-    global _reload_timer
-    
-    # Cancel any existing timer to avoid duplicate reloads
-    if _reload_timer and _reload_timer.is_alive():
-        _reload_timer.cancel()
-    
-    # Schedule the reload to run in a background thread after a short delay
-    # The delay ensures the current transaction can complete first
-    _reload_timer = Timer(0.1, do_settings_manager_reload_background)
-    _reload_timer.daemon = True  # Don't prevent process shutdown
-    _reload_timer.start()
-    
-    logger.debug( 'Scheduled SettingsManager reload in background thread.')
-    return
+# Create the delayed signal processor for settings manager
+_settings_processor = DelayedSignalProcessor(
+    name="settings_manager",
+    callback_func=_settings_manager_reload_callback,
+    delay_seconds=0.1
+)
 
 
 @receiver( post_save, sender = Subsystem )
@@ -160,15 +134,5 @@ def settings_manager_model_changed( sender, instance, **kwargs ):
     models saved as part of a transaction (which is the normal case for
     SettingsDefinition and its related models.)
     """
-    if not hasattr(_thread_local, "reload_registered"):
-        _thread_local.reload_registered = False
-
-    logger.debug( 'SettingsManager model change detected.')
-        
-    if not _thread_local.reload_registered:
-        logger.debug( 'Queuing SettingsManager reload on model change.')
-        _thread_local.reload_registered = True
-        transaction.on_commit( do_settings_manager_reload )
-    
-    return
+    _settings_processor.schedule_processing()
         

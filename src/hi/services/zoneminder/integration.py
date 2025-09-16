@@ -1,20 +1,27 @@
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from hi.apps.entity.models import Entity
 from hi.apps.entity.transient_models import VideoStream
 from hi.apps.entity.enums import VideoStreamType, VideoStreamMode
 from hi.apps.entity.constants import VideoStreamMetadataKeys
 from hi.apps.sense.transient_models import SensorResponse
+from hi.integrations.enums import IntegrationHealthStatusType
 from hi.integrations.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manage_view_pane import IntegrationManageViewPane
-from hi.integrations.transient_models import IntegrationMetaData
+from hi.integrations.models import IntegrationAttribute
+from hi.integrations.transient_models import (
+    IntegrationMetaData,
+    IntegrationHealthStatus,
+    IntegrationValidationResult,
+)
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .constants import ZmDetailKeys
 from .zm_controller import ZoneMinderController
 from .zm_manage_view_pane import ZmManageViewPane
+from .zm_manager import ZoneMinderManager
 from .zm_metadata import ZmMetaData
 from .monitors import ZoneMinderMonitor
 from .zm_mixins import ZoneMinderMixin
@@ -36,6 +43,54 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
     def get_controller(self) -> IntegrationController:
         return ZoneMinderController()
     
+    def notify_settings_changed(self):
+        """Notify ZoneMinder integration that settings have changed.
+        
+        Delegates to ZoneMinderManager to reload configuration and notify monitors.
+        """
+        try:
+            zm_manager = ZoneMinderManager()
+            zm_manager.notify_settings_changed()
+            logger.debug('ZoneMinder integration notified of settings change')
+        except Exception as e:
+            logger.exception(f'Error notifying ZoneMinder integration of settings change: {e}')
+    
+    def get_health_status(self) -> IntegrationHealthStatus:
+        """Get the current health status of the ZoneMinder integration.
+        
+        Delegates to ZoneMinderManager for health status information.
+        """
+        try:
+            zm_manager = ZoneMinderManager()
+            return zm_manager.get_health_status()
+        except Exception as e:
+            logger.exception(f'Error getting ZoneMinder integration health status: {e}')
+            # Return a default error status if we can't get the real status
+            import hi.apps.common.datetimeproxy as datetimeproxy
+            return IntegrationHealthStatus(
+                status=IntegrationHealthStatusType.TEMPORARY_ERROR,
+                last_check=datetimeproxy.now(),
+                error_message=f'Failed to get health status: {e}'
+            )
+    
+    def validate_configuration(
+            self,
+            integration_attributes: List[IntegrationAttribute]
+    ) -> IntegrationValidationResult:
+        """Validate ZoneMinder integration configuration by testing API connectivity.
+
+        Delegates to ZoneMinderManager for configuration validation.
+        """
+        try:
+            zm_manager = ZoneMinderManager()
+            return zm_manager.validate_configuration(integration_attributes)
+        except Exception as e:
+            logger.exception(f'Error validating ZoneMinder integration configuration: {e}')
+            return IntegrationValidationResult.error(
+                status=IntegrationHealthStatusType.TEMPORARY_ERROR,
+                error_message=f'Configuration validation failed: {e}'
+            )
+    
     def get_entity_video_stream(self, entity: Entity) -> Optional[VideoStream]:
         """Get entity's primary video stream (typically live)"""
         if not entity.has_video_stream:
@@ -44,7 +99,8 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
         # Check if this is a ZoneMinder camera entity
         if (entity.integration_id == ZmMetaData.integration_id
                 and entity.integration_name
-                and entity.integration_name.startswith(self.zm_manager().ZM_MONITOR_INTEGRATION_NAME_PREFIX)):
+                and entity.integration_name.startswith(
+                    self.zm_manager().ZM_MONITOR_INTEGRATION_NAME_PREFIX)):
             
             # Extract monitor ID from integration name (format: "monitor.{id}")
             try:

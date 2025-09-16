@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 from hi.apps.entity.models import Entity
 from hi.apps.entity.transient_models import VideoStream
@@ -7,7 +7,8 @@ from hi.apps.sense.transient_models import SensorResponse
 
 from .integration_controller import IntegrationController
 from .integration_manage_view_pane import IntegrationManageViewPane
-from .transient_models import IntegrationMetaData
+from .models import IntegrationAttribute
+from .transient_models import IntegrationMetaData, IntegrationHealthStatus, IntegrationValidationResult
 
 
 class IntegrationGateway:
@@ -27,24 +28,27 @@ class IntegrationGateway:
     def get_controller(self) -> IntegrationController:
         raise NotImplementedError('Subclasses must override this method')
     
-    def get_entity_video_stream(self, entity: Entity) -> Optional[VideoStream]:
-        """Get entity's primary video stream (typically live)
-        
-        Args:
-            entity: Entity instance to get video stream for
-            
-        Returns:
-            VideoStream object or None if entity has no video stream
+    def notify_settings_changed(self):
         """
+        This method is called when Integration or IntegrationAttribute models
+        are modified. Each integration should implement this to reload its
+        configuration and notify any dependent components.
+        """
+        raise NotImplementedError('Subclasses must override this method')
+    
+    def get_health_status(self) -> IntegrationHealthStatus:
+        raise NotImplementedError('Subclasses must override this method')
+    
+    def validate_configuration(self, integration_attributes: List[IntegrationAttribute]) -> IntegrationValidationResult:
+        """Validate integration configuration. e.g., by testing API connectivity
+
+        Returns:
+            IntegrationValidationResult with validation status and any error information
+        """
+        raise NotImplementedError('Subclasses must override this method')
+    
+    def get_entity_video_stream(self, entity: Entity) -> Optional[VideoStream]:
         return None
         
     def get_sensor_response_video_stream(self, sensor_response: SensorResponse) -> Optional[VideoStream]:
-        """Get video stream from sensor response (recorded events)
-        
-        Args:
-            sensor_response: SensorResponse instance to get video stream for
-            
-        Returns:
-            VideoStream object or None if sensor response has no video stream
-        """
         return None

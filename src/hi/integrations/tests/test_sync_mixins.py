@@ -26,7 +26,7 @@ class IntegrationSyncMixinTestCase(TestCase):
     def setUp(self):
         """Set up test data."""
         self.synchronizer = TestSynchronizer()
-        self.result = ProcessingResult(title='Test Sync Result')
+        self.result = ProcessingResult(title='Test Import Result')
         
         # Create a test entity
         self.entity = Entity.objects.create(
@@ -632,7 +632,7 @@ class IntegrationSyncMixinTransactionTestCase(TransactionTestCase):
         initializer.run(sender=None)
         
         self.synchronizer = TestSynchronizer()
-        self.result = ProcessingResult(title='Test Sync Result')
+        self.result = ProcessingResult(title='Test Import Result')
         
         # Create a test entity
         self.entity = Entity.objects.create(

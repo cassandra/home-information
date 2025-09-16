@@ -4,8 +4,7 @@ import threading
 import time
 
 from hi.apps.config.models import Subsystem, SubsystemAttribute
-from hi.apps.config.settings_manager import do_settings_manager_reload_background
-from hi.apps.config.settings_manager import SettingsManager
+from hi.apps.config.settings_manager import SettingsManager, _settings_processor
 from hi.apps.config.setting_enums import SettingEnum, SettingDefinition
 from hi.apps.attribute.enums import AttributeValueType
 from hi.testing.base_test_case import BaseTestCase
@@ -291,17 +290,16 @@ class TestSettingsManager(BaseTestCase):
         
         # Track if the background reload completes
         reload_completed = threading.Event()
-        original_background_reload = do_settings_manager_reload_background
+        original_callback = _settings_processor.callback_func
         
-        def tracking_background_reload():
+        def tracking_callback():
             try:
-                original_background_reload()
+                original_callback()
             finally:
                 reload_completed.set()
         
-        # Patch the background reload to track completion
-        import hi.apps.config.settings_manager
-        hi.apps.config.settings_manager.do_settings_manager_reload_background = tracking_background_reload
+        # Patch the processor callback to track completion
+        _settings_processor.callback_func = tracking_callback
         
         try:
             # This operation previously caused deadlock
@@ -313,7 +311,7 @@ class TestSettingsManager(BaseTestCase):
             elapsed = time.time() - start_time
             self.assertLess(elapsed, 1.0, "set_setting_value took too long, possible deadlock")
             
-            # Verify the background reload was scheduled and completes
+            # Verify the delayed reload was scheduled and completes
             # Give a bit more time for the Timer to execute
             reload_completed.wait(timeout=3.0)
             # The main test is that set_setting_value completed without deadlock
@@ -326,6 +324,6 @@ class TestSettingsManager(BaseTestCase):
             self.assertEqual(manager.get_setting_value(TestSetting.TEST_SETTING), 'deadlock_test_value')
             
         finally:
-            # Restore original function
-            hi.apps.config.settings_manager.do_settings_manager_reload_background = original_background_reload
+            # Restore original callback
+            _settings_processor.callback_func = original_callback
         return

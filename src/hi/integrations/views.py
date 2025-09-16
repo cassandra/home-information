@@ -52,6 +52,27 @@ class IntegrationSelectView( HiModalView, IntegrationViewMixin ):
         return self.modal_response( request, context )
 
 
+class IntegrationHealthStatusView( HiModalView, IntegrationViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'integrations/modals/integration_health_status.html'
+
+    def get( self, request, *args, **kwargs ):
+        integration_id = kwargs.get('integration_id')
+        integration_data = self.get_integration_data(
+            integration_id = integration_id,
+        )
+        
+        # Get health status from the integration gateway
+        health_status = integration_data.integration_gateway.get_health_status()
+        
+        context = {
+            'integration_data': integration_data,
+            'health_status': health_status.to_dict(),
+        }
+        return self.modal_response( request, context )
+
+
 class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditViewMixin ):
 
     def get_template_name( self ) -> str:
@@ -115,7 +136,18 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
                                 kwargs = { 'integration_id': integration_id } )
         return AttributeRedirectResponse( url = redirect_url )
 
+    def validate_attributes_extra( self,
+                                   attr_item_context,
+                                   regular_attributes_formset,
+                                   request ):
+        """ Override for AttributeEditViewMixin """
+        self.validate_attributes_extra_helper(
+            attr_item_context,
+            regular_attributes_formset,
+            error_title = 'Cannot enable integration.' )            
+        return
 
+    
 class IntegrationDisableView( HiModalView, IntegrationViewMixin ):
 
     def get_template_name( self ) -> str:
@@ -172,8 +204,12 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
         if not integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} integration is not enabled' )
             
+        # Get health status from the integration gateway
+        health_status = integration_data.integration_gateway.get_health_status()
+        
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
+            health_status = health_status,
         )
         integration_data_list = self.get_integration_data_list( enabled_only = True )
 
@@ -196,6 +232,7 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
                 'integration_data_list': integration_data_list,
                 'integration_data': integration_data,
                 'manage_view_template_name': manage_template_name,
+                'health_status': health_status.to_dict(),
             },
         })
         return template_context
@@ -214,15 +251,31 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
         if not integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} integration is not enabled' )
 
+        # Get health status from the integration gateway
+        health_status = integration_data.integration_gateway.get_health_status()
+                
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
+            health_status = health_status,
         )
+        
         return self.post_attribute_form(
             request = request,
             attr_item_context = attr_item_context,
         )
+
+    def validate_attributes_extra( self,
+                                   attr_item_context,
+                                   regular_attributes_formset,
+                                   request ):
+        """ Override for AttributeEditViewMixin """
+        self.validate_attributes_extra_helper(
+            attr_item_context,
+            regular_attributes_formset,
+            error_title = 'Cannot save settings.' )            
+        return
+
     
-        
 class IntegrationAttributeHistoryInlineView( View,
                                              IntegrationViewMixin,
                                              AttributeEditViewMixin ):

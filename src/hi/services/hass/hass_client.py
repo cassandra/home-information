@@ -37,7 +37,7 @@ class HassClient:
     def states(self) -> List[ HassState ]:
 
         url = f'{self._api_base_url}/api/states'
-        response = get( url, headers = self._headers )
+        response = get( url, headers = self._headers, timeout = 25.0 )
         data = json.loads(response.text)
         if self.TRACE:
             logger.debug( f'HAss Response = {response.text}' )
@@ -51,7 +51,7 @@ class HassClient:
         }
         if attributes:
             data["attributes"] = attributes
-        response = post( url, json = data, headers = self._headers )
+        response = post( url, json = data, headers = self._headers, timeout = 25.0 )
         if response.status_code != 200:
             raise ValueError( f"Failed to set state: {response.status_code} {response.text}" )
         
@@ -77,7 +77,7 @@ class HassClient:
         if service_data:
             data.update(service_data)
             
-        response = post( url, json = data, headers = self._headers )
+        response = post( url, json = data, headers = self._headers, timeout = 25.0 )
         if response.status_code not in [200, 201]:
             raise ValueError( f"Failed to call service: {response.status_code} {response.text}" )
             

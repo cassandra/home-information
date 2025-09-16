@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
 
     HASS_POLLING_INTERVAL_SECS = 2
+    HASS_API_TIMEOUT_SECS = 10.0  # Shorter timeout appropriate for 2-second polling
 
     def __init__( self ):
         super().__init__(
@@ -22,6 +23,9 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         )
         self._was_initialized = False
         return
+    
+    def get_api_timeout(self) -> float:
+        return self.HASS_API_TIMEOUT_SECS
 
     async def _initialize(self):
         hass_manager = await self.hass_manager_async()
@@ -33,7 +37,16 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         return
     
     def refresh( self ):
-        """ Should be called when integration settings are changed (via listener callback). """
+        """ 
+        Called when integration settings are changed (via listener callback).
+        
+        Note: HassManager.reload() is already called BEFORE this callback is triggered,
+        so we should NOT call manager.reload() here to avoid redundant reloads.
+        The monitor should just reset its own state to pick up fresh manager state.
+        """
+        # Reset monitor state so next cycle reinitializes with updated manager
+        self._was_initialized = False
+        logger.info( 'HassMonitor refreshed - will reinitialize with new settings on next cycle' )
         return
     
     async def do_work(self):
@@ -49,7 +62,7 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         if not hass_manager:
             return
         
-        id_to_hass_state_map = await self.safe_external_api_call( hass_manager.fetch_hass_states_from_api, verbose = False )
+        id_to_hass_state_map = await hass_manager.fetch_hass_states_from_api_async( verbose = False )
         logger.debug( f'Fetched {len(id_to_hass_state_map)} HAss States' )
         
         current_datetime = datetimeproxy.now()

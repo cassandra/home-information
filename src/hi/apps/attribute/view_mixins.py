@@ -102,7 +102,18 @@ class AttributeEditViewMixin( AttributeEditCommonMixin ):
             form_data = request.POST,
         )
         
-        if form_handler.validate_forms( edit_form_data = edit_form_data ):
+        forms_valid = form_handler.validate_forms( edit_form_data = edit_form_data )
+        
+        if forms_valid:
+            self.validate_attributes_extra(
+                attr_item_context = attr_item_context,
+                regular_attributes_formset = edit_form_data.regular_attributes_formset,
+                request = request,
+            )
+            # Re-check formset validity after extra validation
+            forms_valid = edit_form_data.regular_attributes_formset.is_valid()
+        
+        if forms_valid:
             form_handler.save_forms(
                 attr_item_context = attr_item_context,
                 edit_form_data = edit_form_data,
@@ -120,6 +131,10 @@ class AttributeEditViewMixin( AttributeEditCommonMixin ):
                 request = request,
             )
         return
+
+    def validate_attributes_extra(self, attr_item_context, regular_attributes_formset, request):
+        """Optional extra validation hook called after forms are valid but before saving."""
+        pass
 
     def create_initial_template_context(
             self,

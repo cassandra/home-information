@@ -29,15 +29,18 @@ Individual attribute attribute card with value editing and actions
   <!-- Attribute Header -->
   <div class="{{ DIVID.ATTR_V2_ATTRIBUTE_HEADER_CLASS }}">
     {% if attribute_form.instance.pk %}
-      <div class="{{ DIVID.ATTR_V2_ATTRIBUTE_NAME_CLASS }}">
-        <input type="text" 
-               id="{{ attribute_form.name.id_for_label }}"
-               name="{{ attribute_form.name.html_name }}"
-               value="{{ attribute_form.instance.name }}" 
-               class="attr-v2-title-input"
-               maxlength="64"
-               {% if attribute_form.instance and not attribute_form.instance.is_editable %}disabled="true"{% endif %}   >
-      </div>
+    <div class="{{ DIVID.ATTR_V2_ATTRIBUTE_NAME_CLASS }}">
+      {% include "attribute/components/name_field.html" %}
+    </div>
+
+    {% if attribute_form.name.errors %}
+    <div class="attr-v2-field-errors">
+      {% for error in attribute_form.name.errors %}
+      <div class="attr-v2-error-text">{{ error }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+      
     {% else %}
       <h6 class="{{ DIVID.ATTR_V2_ATTRIBUTE_NAME_CLASS }}">
         {% icon "plus" size="sm" css_class="hi-icon-left" %}Add New

@@ -40,7 +40,7 @@ class TestZoneMinderSynchronizerLockBehavior(TestCase):
         mock_lock_context.assert_called_once_with(name='zm_integration_sync')
         
         # Test actual behavior: should return result with error when client disabled
-        self.assertEqual(result.title, 'ZM Sync Result')
+        self.assertEqual(result.title, 'ZM Import Result')
         self.assertGreater(len(result.error_list), 0)
         self.assertIn('Sync problem. ZM integration disabled?', result.error_list[0])
     
@@ -53,7 +53,7 @@ class TestZoneMinderSynchronizerLockBehavior(TestCase):
         result = self.synchronizer.sync()
         
         # Test error handling behavior
-        self.assertEqual(result.title, 'ZM Sync Result')
+        self.assertEqual(result.title, 'ZM Import Result')
         self.assertEqual(len(result.error_list), 1)
         self.assertIn(lock_error_msg, result.error_list[0])
         
@@ -81,7 +81,7 @@ class TestZoneMinderSynchronizerSyncHelper(TestCase):
         
         result = self.synchronizer._sync_helper()
         
-        self.assertEqual(result.title, 'ZM Sync Result')
+        self.assertEqual(result.title, 'ZM Import Result')
         self.assertIn('Sync problem. ZM integration disabled?', result.error_list[0])
     
     def test_sync_helper_calls_both_sync_methods(self):
@@ -108,7 +108,7 @@ class TestZoneMinderSynchronizerSyncHelper(TestCase):
             mock_sync_monitors.assert_called_once()
             
             # Test result aggregation: messages from both operations
-            self.assertEqual(result.title, 'ZM Sync Result')
+            self.assertEqual(result.title, 'ZM Import Result')
             self.assertIn('States synced successfully', result.message_list)
             self.assertIn('Monitors synced successfully', result.message_list)
             

@@ -1,4 +1,5 @@
 {% extends "config/pages/config_base.html" %}
+{% load icons %}
 
 {% block config_content %}
 <div id="hi-integration-settings" class="row">
@@ -15,7 +16,16 @@
     <a class="nav-link hi-vertical-nav-link {% if core.integration_data.integration_id == integration_data.integration_id %}active{% endif %}"
        href="{% url 'integrations_manage' integration_id=integration_data.integration_id %}"
        data-async="true">
-      {{ integration_data.label }}
+      <div class="d-flex justify-content-between align-items-center">
+        <span>{{ integration_data.label }}</span>
+        {% with health_status=integration_data.integration_gateway.get_health_status %}
+        {% if health_status.is_error %}
+        <span class="text-danger">
+        &nbsp; {% icon "warning" size="lg" css_class="mr-1" %}
+        </span>
+        {% endif %}
+        {% endwith %}
+      </div>
     </a>
     {% endfor %}
   </nav>
