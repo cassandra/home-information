@@ -33,7 +33,7 @@ class HassSynchronizer( HassMixin, IntegrationSyncMixin ):
         except RuntimeError as e:
             logger.exception( e )
             return ProcessingResult(
-                title = 'HAss Sync Result',
+                title = 'HAss Import Result',
                 error_list = [ str(e) ],
             )
         finally:
@@ -41,7 +41,7 @@ class HassSynchronizer( HassMixin, IntegrationSyncMixin ):
     
     def _sync_helper( self ) -> ProcessingResult:
         hass_manager = self.hass_manager()
-        result = ProcessingResult( title = 'HAss Sync Result' )
+        result = ProcessingResult( title = 'HAss Import Result' )
 
         hass_client = hass_manager.hass_client
         if not hass_client:

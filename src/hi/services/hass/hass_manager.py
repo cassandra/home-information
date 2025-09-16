@@ -1,6 +1,5 @@
 import logging
 from asgiref.sync import sync_to_async
-from datetime import datetime
 from threading import Lock
 from typing import Dict, List
 
@@ -9,7 +8,11 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.common.utils import str_to_bool
 
 from hi.integrations.exceptions import IntegrationAttributeError, IntegrationError
-from hi.integrations.transient_models import IntegrationKey, IntegrationHealthStatus, IntegrationHealthStatusType
+from hi.integrations.transient_models import (
+    IntegrationKey,
+    IntegrationHealthStatus,
+    IntegrationHealthStatusType,
+)
 from hi.integrations.models import Integration, IntegrationAttribute
 
 from .enums import HassAttributeType

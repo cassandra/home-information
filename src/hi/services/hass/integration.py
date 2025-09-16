@@ -8,7 +8,6 @@ from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import IntegrationMetaData, IntegrationHealthStatus
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
-from .enums import HassAttributeType
 from .hass_controller import HassController
 from .hass_manage_view_pane import HassManageViewPane
 from .hass_manager import HassManager

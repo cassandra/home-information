@@ -112,7 +112,7 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
             integration_id = integration_id,
         )
         if integration_data.integration.is_enabled:
-            raise BadRequest( f'{integration_data.label} i\s already enabled' )
+            raise BadRequest( f'{integration_data.label} is already enabled' )
 
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,

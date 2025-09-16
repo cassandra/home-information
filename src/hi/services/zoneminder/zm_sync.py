@@ -44,14 +44,14 @@ class ZoneMinderSynchronizer( ZoneMinderMixin, IntegrationSyncMixin ):
                 return self._sync_helper()
         except RuntimeError as e:
             return ProcessingResult(
-                title = 'ZM Sync Result',
+                title = 'ZM Import Result',
                 error_list = [ str(e) ],
             )
         finally:
             logger.debug( 'ZoneMinder integration sync ended.' )
     
     def _sync_helper( self ) -> ProcessingResult:
-        result = ProcessingResult( title = 'ZM Sync Result' )
+        result = ProcessingResult( title = 'ZM Import Result' )
 
         if not self.zm_manager().zm_client:
             logger.debug( 'ZoneMinder client not created. ZM integration disabled?' )

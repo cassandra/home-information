@@ -109,3 +109,4 @@ class DelayedSignalProcessor:
         def signal_handler(sender, instance, **kwargs):
             self.schedule_processing()
         return signal_handler
+    

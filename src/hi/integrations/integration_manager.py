@@ -19,7 +19,7 @@ from hi.apps.common.module_utils import import_module_safe
 from .enums import IntegrationAttributeType
 from .integration_data import IntegrationData
 from .integration_gateway import IntegrationGateway
-from .transient_models import IntegrationKey, IntegrationHealthStatus, IntegrationHealthStatusType
+from .transient_models import IntegrationKey
 from .models import Integration, IntegrationAttribute
 from .transient_models import IntegrationMetaData
 

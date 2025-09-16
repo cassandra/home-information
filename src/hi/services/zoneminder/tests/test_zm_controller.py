@@ -65,6 +65,8 @@ class TestZoneMinderControllerIntegrationKeyParsing(TestCase):
         mock_integration.is_enabled = True
         mock_integration.integration_id = ZmMetaData.integration_id
         mock_integration.attributes_by_integration_key = mock_attributes
+        # Add attributes.all() mock for the new _load_attributes method
+        mock_integration.attributes.all.return_value = list(mock_attributes.values())
         self.mock_integration_get.return_value = mock_integration
     
     def tearDown(self):
@@ -228,6 +230,8 @@ class TestZoneMinderControllerRunStateControl(TestCase):
         mock_integration.is_enabled = True
         mock_integration.integration_id = ZmMetaData.integration_id
         mock_integration.attributes_by_integration_key = mock_attributes
+        # Add attributes.all() mock for the new _load_attributes method
+        mock_integration.attributes.all.return_value = list(mock_attributes.values())
         self.mock_integration_get.return_value = mock_integration
     
     def tearDown(self):
@@ -352,6 +356,8 @@ class TestZoneMinderControllerMonitorFunctionControl(TestCase):
         mock_integration.is_enabled = True
         mock_integration.integration_id = ZmMetaData.integration_id
         mock_integration.attributes_by_integration_key = mock_attributes
+        # Add attributes.all() mock for the new _load_attributes method
+        mock_integration.attributes.all.return_value = list(mock_attributes.values())
         self.mock_integration_get.return_value = mock_integration
     
     def tearDown(self):
@@ -517,6 +523,8 @@ class TestZoneMinderControllerExceptionHandling(TestCase):
         mock_integration.is_enabled = True
         mock_integration.integration_id = ZmMetaData.integration_id
         mock_integration.attributes_by_integration_key = mock_attributes
+        # Add attributes.all() mock for the new _load_attributes method
+        mock_integration.attributes.all.return_value = list(mock_attributes.values())
         self.mock_integration_get.return_value = mock_integration
     
     def tearDown(self):

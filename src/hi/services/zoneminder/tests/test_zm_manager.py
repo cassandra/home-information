@@ -6,8 +6,8 @@ from django.test import TestCase
 import pytz
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.integrations.exceptions import IntegrationAttributeError, IntegrationError
-from hi.integrations.transient_models import IntegrationKey
+from hi.integrations.exceptions import IntegrationAttributeError
+from hi.integrations.transient_models import IntegrationKey, IntegrationHealthStatusType
 from hi.integrations.models import Integration, IntegrationAttribute
 
 from hi.services.zoneminder.enums import ZmAttributeType
@@ -80,98 +80,109 @@ class TestZoneMinderManagerInitialization(TestCase):
         
         self.assertTrue(self.manager._was_initialized)
     
-    @patch.object(Integration.objects, 'get')
-    def test_load_attributes_integration_not_found(self, mock_get):
-        """Test _load_attributes raises IntegrationError when integration not found"""
-        mock_get.side_effect = Integration.DoesNotExist()
+    def test_reload_without_integration_in_database(self):
+        """Test reload handles missing integration gracefully"""
+        # Don't create any Integration in the database
+        self.manager.reload()
         
-        with self.assertRaises(IntegrationError) as context:
-            self.manager._load_attributes()
-        
-        self.assertEqual(str(context.exception), 'ZoneMinder integration is not implemented.')
+        # Manager should still be functional, just with no configuration
+        self.assertIsNotNone(self.manager)
+        # Health status should reflect the configuration error
+        health = self.manager.get_health_status()
+        self.assertEqual(health.status, IntegrationHealthStatusType.CONFIG_ERROR)
+        self.assertIn('not implemented', health.error_message)
     
-    @patch.object(Integration.objects, 'get')
-    def test_load_attributes_integration_disabled(self, mock_get):
-        """Test _load_attributes raises IntegrationError when integration disabled"""
-        mock_integration = Mock()
-        mock_integration.is_enabled = False
-        mock_get.return_value = mock_integration
+    def test_reload_with_disabled_integration(self):
+        """Test reload handles disabled integration gracefully"""
+        # Create a disabled integration
+        Integration.objects.create(
+            integration_id=ZmMetaData.integration_id,
+            is_enabled=False
+        )
         
-        with self.assertRaises(IntegrationError) as context:
-            self.manager._load_attributes()
+        self.manager.reload()
         
-        self.assertEqual(str(context.exception), 'ZoneMinder integration is not enabled.')
+        # Health status should reflect the configuration error
+        health = self.manager.get_health_status()
+        self.assertEqual(health.status, IntegrationHealthStatusType.CONFIG_ERROR)
+        self.assertIn('not enabled', health.error_message)
     
-    @patch.object(Integration.objects, 'get')
-    def test_load_attributes_missing_required_attribute(self, mock_get):
-        """Test _load_attributes raises IntegrationAttributeError for missing required attributes"""
-        mock_integration = Mock()
-        mock_integration.is_enabled = True
-        mock_integration.integration_id = ZmMetaData.integration_id
-        mock_integration.attributes_by_integration_key = {}
-        mock_get.return_value = mock_integration
+    def test_reload_with_missing_required_attribute(self):
+        """Test reload handles missing required attributes gracefully"""
+        # Create an enabled integration but without required attributes
+        Integration.objects.create(
+            integration_id=ZmMetaData.integration_id,
+            is_enabled=True
+        )
+        # Don't create any attributes - missing required ones
         
-        with self.assertRaises(IntegrationAttributeError) as context:
-            self.manager._load_attributes()
+        self.manager.reload()
         
-        # Should fail on first required attribute (API_URL)
-        self.assertIn('Missing ZM attribute', str(context.exception))
-        self.assertIn('api_url', str(context.exception))
+        # Health status should reflect the configuration error
+        health = self.manager.get_health_status()
+        self.assertEqual(health.status, IntegrationHealthStatusType.CONFIG_ERROR)
+        self.assertIn('Missing ZM attribute', health.error_message)
     
-    @patch.object(Integration.objects, 'get')
-    def test_load_attributes_empty_required_value(self, mock_get):
-        """Test _load_attributes raises IntegrationAttributeError for empty required values"""
-        mock_integration = Mock()
-        mock_integration.is_enabled = True
-        mock_integration.integration_id = ZmMetaData.integration_id
+    def test_reload_with_empty_required_value(self):
+        """Test reload handles empty required attribute values gracefully"""
+        # Create a real integration in the database
+        integration = Integration.objects.create(
+            integration_id=ZmMetaData.integration_id,
+            is_enabled=True
+        )
         
-        # Create mock attribute with empty value
-        mock_attr = Mock()
-        mock_attr.is_required = True
-        mock_attr.value = '   '  # Empty/whitespace only
-        
-        integration_key = IntegrationKey(
+        # Create an attribute with whitespace-only value
+        attr = IntegrationAttribute.objects.create(
+            integration=integration,
+            name=str(ZmAttributeType.API_URL),
+            value='   ',  # Whitespace only
+            is_required=True
+        )
+        attr.integration_key = IntegrationKey(
             integration_id=ZmMetaData.integration_id,
             integration_name=str(ZmAttributeType.API_URL)
         )
-        mock_integration.attributes_by_integration_key = {integration_key: mock_attr}
-        mock_get.return_value = mock_integration
+        attr.save()
         
-        with self.assertRaises(IntegrationAttributeError) as context:
-            self.manager._load_attributes()
+        # Reload should handle this gracefully
+        self.manager.reload()
         
-        self.assertIn('Missing ZM attribute value for', str(context.exception))
+        # Health status should reflect the configuration error
+        health = self.manager.get_health_status()
+        self.assertEqual(health.status, IntegrationHealthStatusType.CONFIG_ERROR)
+        self.assertIn('Missing ZM attribute', health.error_message)
     
-    @patch.object(Integration.objects, 'get')
-    def test_load_attributes_success_with_all_required(self, mock_get):
-        """Test _load_attributes successfully loads all required attributes"""
-        mock_integration = Mock()
-        mock_integration.is_enabled = True
-        mock_integration.integration_id = ZmMetaData.integration_id
+    def test_reload_success_with_all_required_attributes(self):
+        """Test reload successfully configures manager with all required attributes"""
+        # Create a real integration in the database
+        integration = Integration.objects.create(
+            integration_id=ZmMetaData.integration_id,
+            is_enabled=True
+        )
         
-        # Create mock attributes for all required types
-        attributes = {}
+        # Create all required attributes with valid values
         for attr_type in ZmAttributeType:
             if attr_type.is_required:
-                mock_attr = Mock()
-                mock_attr.is_required = True
-                mock_attr.value = f'test_value_{attr_type.name}'
-                integration_key = IntegrationKey(
+                attr = IntegrationAttribute.objects.create(
+                    integration=integration,
+                    name=str(attr_type),
+                    value=f'test_value_{attr_type.name}',
+                    is_required=True
+                )
+                attr.integration_key = IntegrationKey(
                     integration_id=ZmMetaData.integration_id,
                     integration_name=str(attr_type)
                 )
-                attributes[integration_key] = mock_attr
+                attr.save()
         
-        mock_integration.attributes_by_integration_key = attributes
-        mock_get.return_value = mock_integration
+        # Reload should configure the manager successfully
+        self.manager.reload()
         
-        result = self.manager._load_attributes()
-        
-        # Should return dictionary with all required attribute types
-        required_types = [attr_type for attr_type in ZmAttributeType if attr_type.is_required]
-        self.assertEqual(len(result), len(required_types))
-        for attr_type in required_types:
-            self.assertIn(attr_type, result)
+        # Health status should not have missing attribute errors
+        health = self.manager.get_health_status()
+        # Note: might still have connection errors if ZM API is unreachable,
+        # but no missing attribute config errors
+        self.assertNotIn('Missing ZM attribute', health.error_message)
 
 
 class TestZoneMinderManagerClientCreation(TestCase):
@@ -227,7 +238,8 @@ class TestZoneMinderManagerClientCreation(TestCase):
     
     @patch('hi.services.zoneminder.zm_manager.ZMApi')
     def test_create_zm_client_success(self, mock_zmapi):
-        """Test create_zm_client successfully creates ZMApi with correct options and returns functional client"""
+        """Test create_zm_client successfully creates ZMApi with correct options 
+        and returns functional client"""
         attributes = self.create_mock_attributes()
         
         # Create a mock client with realistic behavior
@@ -581,7 +593,10 @@ class TestZoneMinderManagerUrlGeneration(TestCase):
     def test_get_event_video_stream_url(self):
         """Test event video stream URL generation"""
         event_id = 456
-        expected_base_url = 'https://test.com/zm/cgi-bin/nph-zms?mode=jpeg&scale=100&rate=5&maxfps=5&replay=single&source=event&event=456&_t='
+        expected_base_url = (
+            'https://test.com/zm/cgi-bin/nph-zms?mode=jpeg&scale=100&rate=5&'
+            'maxfps=5&replay=single&source=event&event=456&_t='
+        )
         
         result = self.manager.get_event_video_stream_url(event_id)
         
