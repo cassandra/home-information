@@ -10,23 +10,15 @@ This is what gets replaced on form submission
 {% block basic_info %}{% endblock %}
 
 {% block additional_actions %}
-<div class="d-flex align-items-center">
-  <button type="button"
-          class="btn btn-outline-primary btn-sm mr-3"
-          onclick="Hi.audio.testAudio();"
-          title="Test audio playback">
-    {% icon "play" size="sm" css_class="hi-icon-left" %}Test Audio
-  </button>
-  <h4 class="mb-0 text-muted {{ DIVID.ATTR_V2_FORM_DISPLAY_LABEL_CLASS }}">
-    {% for multi_edit_form_data in multi_edit_form_data_list %}
-      {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}
-        {{ multi_edit_form_data.owner.name }} Settings
-      {% endif %}
-    {% empty %}
-      System Settings
-    {% endfor %}
-  </h4>
-</div>
+<h4 class="mb-0 text-muted {{ DIVID.ATTR_V2_FORM_DISPLAY_LABEL_CLASS }}">
+  {% for multi_edit_form_data in multi_edit_form_data_list %}
+    {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}
+      {{ multi_edit_form_data.owner.name }} Settings
+    {% endif %}
+  {% empty %}
+    System Settings
+  {% endfor %}
+</h4>
 {% endblock %}
 
 {% block file_upload_button %}{% endblock %}
@@ -70,6 +62,17 @@ This is what gets replaced on form submission
     
     <!-- Subsystem content using existing attribute editing components -->
     <div class="py-3">
+      {% if multi_edit_form_data.owner.subsystem_key == "hi.apps.audio" %}
+      <!-- Audio Test Button - only shown for Audio subsystem -->
+      <div class="mb-3">
+        <button type="button"
+                class="btn btn-outline-primary btn-xs"
+                onclick="Hi.audio.testAudio();"
+                title="Test audio playback">
+          {% icon "play" size="xs" css_class="hi-icon-left" %}Test Audio
+        </button>
+      </div>
+      {% endif %}
       {% include "attribute/components/regular_attribute_list.html" with regular_attributes_formset=multi_edit_form_data.formset attr_item_context=multi_edit_form_data.context %}
     </div>
     
