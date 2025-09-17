@@ -25,6 +25,11 @@
             return _handleAudioButtonClick();
         },
         
+        // Audio testing method for configuration pages
+        testAudio: function() {
+            _testAudio();
+        },
+
         // Initialization
         init: function() {
             startAudioPolling();
@@ -630,6 +635,26 @@
             diagnosticCounter = 0;
             if (Hi.DEBUG) { console.log('🔇 Diagnostic background audio stopped'); }
         }
+    }
+
+    /*
+      AUDIO TESTING FOR CONFIGURATION PAGES
+
+      - Provides a simple test function to play a soft audio signal
+      - Uses existing audio infrastructure and error handling
+    */
+
+    function _testAudio() {
+        if (Hi.DEBUG) { console.log('Testing audio with ConsoleInfo signal'); }
+
+        // Use the softer ConsoleInfo signal as requested
+        _startAudibleSignal('ConsoleInfo');
+
+        // The _startAudibleSignal function already handles:
+        // - Audio disabled check
+        // - Missing audio elements
+        // - Autoplay restrictions with user feedback
+        // - All error cases with appropriate logging
     }
 
     // Initialize systems when audio module loads

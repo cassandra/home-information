@@ -150,4 +150,22 @@ class TestConfigSettingsView(DualModeViewTestCase):
         # There may be default system subsystems in addition to our test subsystem
         self.assertGreaterEqual(len(form_data_list), 1)  # At least our test subsystem
 
+    def test_audio_test_button_appears(self):
+        """Test that the Test Audio button appears in the settings page template."""
+        url = reverse('config_settings')
+        response = self.client.get(url)
+
+        self.assertSuccessResponse(response)
+        self.assertHtmlResponse(response)
+
+        # Check that the Test Audio button is present in the rendered HTML
+        content = response.content.decode('utf-8')
+        self.assertIn('Test Audio', content)
+        self.assertIn('Hi.audio.testAudio()', content)
+        self.assertIn('btn-outline-primary', content)
+
+        # Verify the button has proper attributes
+        self.assertIn('type="button"', content)
+        self.assertIn('title="Test audio playback"', content)
+
 
