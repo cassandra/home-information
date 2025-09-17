@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, Write, Edit, Grep, TodoWrite
 description: Find existing icons or create new ones for the standardized icon system
-model: claude-3-5-sonnet-20241022
+model: claude-3-5-sonnet-20250115
 argument-hint: [concept/action]
 ---
 

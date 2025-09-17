@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, TodoWrite
 description: Create smart commits following our message standards
-model: claude-3-5-sonnet-20241022
+model: claude-3-5-sonnet-20250115
 argument-hint: [commit-message]
 ---
 

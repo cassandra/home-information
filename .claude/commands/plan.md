@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, TodoWrite, Grep, Glob
 description: Strategic planning and work breakdown for GitHub issues
-model: claude-3-5-sonnet-20241022
+model: claude-3-5-sonnet-20250115
 argument-hint: [issue-number]
 ---
 
