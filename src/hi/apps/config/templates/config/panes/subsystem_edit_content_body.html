@@ -10,7 +10,15 @@ This is what gets replaced on form submission
 {% block basic_info %}{% endblock %}
 
 {% block additional_actions %}
-<h4 class="mb-0 text-muted">System Settings</h4>
+<h4 class="mb-0 text-muted">
+  {% for multi_edit_form_data in multi_edit_form_data_list %}
+    {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}
+      {{ multi_edit_form_data.owner.name }}
+    {% endif %}
+  {% empty %}
+    System Settings
+  {% endfor %}
+</h4>
 {% endblock %}
 
 {% block file_upload_button %}{% endblock %}
