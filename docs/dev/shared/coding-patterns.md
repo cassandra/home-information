@@ -1,3 +1,19 @@
+## Coding Patterns
+
+- [ ] New modal dialogs extend one of the standard base classes in `hi/templates/modals`.
+- [ ] New model dialogs extend the `HiModalView` class.
+- [ ] The `antinode.js` framework and pattern is used for async/ajax content updates and modals.
+- [ ] Javascript uses jQuery for DOM manipulations.
+- [ ] Minimal business logic in templates: views prepare the template context needed
+- [ ] Minimal business logic in Django views: use helepr classes
+- [ ] No ORM calls in template tags
+- [ ] Only internal system icons are used (no font-awesome icon).
+- [ ] Appropriate icons are selected, or new icons created.
+
+
+
+
+zzzzzzzz
 # Django Patterns
 
 ## Model Design Patterns

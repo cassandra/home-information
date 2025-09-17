@@ -2,41 +2,64 @@
 
 ## Code Conventions Checklist
 
-Use these checklists when writing code and when reviewing code.
+Checklists for writing and reviewing code.
 
-The answers to all of the questions in this checklist should be "no".
-- [ ] Is the code using hard-coded "magic" strings?
-- [ ] Are any comments stating the obvious given the naming and typing?
-- [ ] Do any method return position-dependent tuples?
-- [ ] Are there any hard-coded "magic" numbers?
-- [ ] Are the compound/complex conditional statements without using explicit parentheses?
-- [ ] Are double quoted strings used where single quotes could be used?
-- [ ] Does any method definition with more than two arguments appear on one line?
-- [ ] Are there any .flake8 linting violations?
-- [ ] Do multi-line definitions omit the last commas when it can be provided?
-- [ ] Are there any urls using a string path instead of a Django url name?
-- [ ] Do templates have in-line Javascript
-- [ ] Do templates have in-line CSS
+**General**:
+- [ ] Code does not use hard-coded "magic" strings.
+- [ ] Code does no use any hard-coded "magic" numbers.
+- [ ] All comments add value and follow our commenting guidelines.
+- [ ] No urls appear as hard-coded path and all use Django url names and `reverse()`.
+- [ ] There no .flake8 linting violations.
+- [ ] The file ends with a newline
+- [ ] All new files follow the project structure's name and location conventions.
+- [ ] There are no Emoji's in any code, templates or documentation.
 
-The answers to all of the questions in this checklist should be "yes".
-- [ ] Are all module imports at the top?
-- [ ] All all methods using types for their parameters and return values?
-- [ ] Are all function calls using named parameters?
-- [ ] Are the spaces surrounding the equals ("=") sign when pasing parameters to methods?
-- [ ] Does the file end with a newline?
-- [ ] Do all multi-line method signatures have all their types and default values aligned?
-- [ ] Do dataclass definitions have all their types and default values aligned?
-- [ ] Do enum definitions have all their types and default values aligned?
-- [ ] Are the spaces between logical groupings of imports (system/pip, django, project, local)?
-- [ ] Do url paths follow our standard ordering convention?
-- [ ] Do url names follow our standard naming convention?
-- [ ] Do view names match url names?
-- [ ] Do template names match view names?
-- [ ] Do views raise exceptions for common error conditions? (Letting middleware handle it.)
-- [ ] Are new enums subclassing LabeledEnum?
-- [ ] Are boolean assignments to conditional clauses wrapped in `bool()`?
-- [ ] Do all loops end with a `continue` or a `return`?
-- [ ] Do all methods  end with a `return` or a `raise`?
+**Imports**:
+- [ ] All module imports are at the top of the file.
+- [ ] Imports are grouped logically: system/pip, django, project, apps then module local.
+- [ ] Imports have one line space between groups.
+- [ ] Within a group, imports are sorted alphabetically
+- [ ] No module relies on indirect (hidden) imports
+- [ ] There are no unused imports
+
+**Method Declarations**:
+- [ ] All methods uses type hints for their parameters and return values.
+- [ ] All method definition with more than two arguments use one line per argunment.
+- [ ] All multi-line method signatures have all their types and default values aligned.
+- [ ] No methods return position-dependent tuples.
+
+**Class Declarations**:
+- [ ] All dataclass definitions have all their types and default values aligned.
+- [ ] All enum definitions have all their types and default values aligned.
+- [ ] Are enums subclass LabeledEnum
+
+**Method Calling**:
+- [ ] All method calls use named parameters.
+- [ ] All metghod calls with more than two argumants use one line per argument.
+- [ ] All multi-line method calls use a comma after last item.
+- [ ] Spaces surrounding all equals ("=") signs when passing parameters to methods.
+
+**Expressions**:
+- [ ] All boolean assignments to conditional clauses are wrapped in `bool()`.
+- [ ] All loops end with an explicit  `continue` or a `return`.
+- [ ] All methods end with an explicit `return` or a `raise`?
+- [ ] All multi-line arrays, sets, dictionaries use a comma after last item.
+- [ ] Compound/complex conditional statements use explicit delimiting parentheses.
+- [ ] Single quote are used for all strings in Python code.
+- [ ] All multi-line arrays, dictionaries and sets use a comma after last item.
+
+**Views**:
+- [ ] All url paths components follow our standard ordering conventions.
+- [ ] All url Django names follow our standard naming conventions
+- [ ] All view names match url names (except for casing and underlining).
+- [ ] ALl views raise exceptions for common error conditions. (Let middleware handle it.)
+
+**Templates**:
+- [ ] Template names referenced in views closely match the view names that use them.
+- [ ] No templates have in-line Javascript.
+- [ ] No templates have in-line CSS.
+- [ ] Templates appear in a subdirectory matching their purpose: modals, panes, pages.
+- [ ] Template tags `load` statments near the top of the file.
 
 ## Code Conventions Details
 
@@ -44,9 +67,7 @@ The answers to all of the questions in this checklist should be "yes".
 
 We do not use "magic" or hard-coded strings when needing multiple references. Any string that need to be used in two or more places is a risk of them being mismatched. This includes, but is not limited to:
 
-- All references to urls *must* use the Django url name and reverse() to construct.
-- Use enum values or constants/class variables to act as coordination point and provide some amount of compiler help in identifying mismatches. Most needed strings will already have a LabeledEnum type defined, but we should add new ones as needed. See "Enums" in [Back End Guidelines](../backend/backend-guidelines.md).
-- All DOM ids and class strings that are shared between client and server must adhere to our `DIVID` pattern. See "Client-Server Namespace Sharing" in [Front End Guidelines](../frontend/frontend-guidelines.md).
+All DOM ids and class strings that are shared between client and server must adhere to our `DIVID` pattern. See "Client-Server Namespace Sharing" in [Front End Guidelines](../frontend/frontend-guidelines.md).
 
 ### Type Hints
 
@@ -63,7 +84,7 @@ For readability, besides adding type hints to method parameters, we adhere to th
 - If more than one parameter and app-defined types, then use a multiple line declaration.
 - For methods with three or more parameters, we use one line per parameter and align the type names.
 
-**Good Examples**
+**Good Examples**:
 
 ```
     def set_entity( self, entity_id : int ) -> EntityPath:
@@ -76,7 +97,7 @@ For readability, besides adding type hints to method parameters, we adhere to th
                          svg_path_str  : str        ) -> EntityPath:
 ```
 
-**Bad Examples**
+**Bad Examples**:
 
 ```
     def set_entity_type( self, entity_id : int, entity_type : EntityType ) -> EntityPath:
@@ -111,7 +132,7 @@ We prefer to wrap all expression that evaluate to a boolean in `bool()` to make 
 - We use one line per clause unless the combined clauses are very short and obvious.
 - Single boolean typed variables or methods that return a boolean do not need paretheses.
 
-**Good**
+**Good**:
 ```
     if is_editing and location_view:
         pass
@@ -127,43 +148,11 @@ We prefer to wrap all expression that evaluate to a boolean in `bool()` to make 
    
 ```
 
-**Bad***
+**Bad**:
 ```
     if hass_state.domain == HassApi.SWITCH_DOMAIN and HassApi.LIGHT_DOMAIN == 'foo':
         pass
 ```
-
-### Flake8 Configurations
-
-The project uses two different flake8 configurations:
-
-#### Development Configuration (`.flake8`)
-Our preferred style for daily development work, with specific whitespace deviations from PEP8 for enhanced readability:
-
-```ini
-[flake8]
-max-line-length = 110
-# Disabled for enhanced readability with spaces:
-# E129, E201, E202, E203, E221, E231, E251, W293, W291, W391, W503
-ignore = E129,D203,E201,E202,E203,E221,E231,E251,W293,W291,W391,W503
-```
-
-#### CI Configuration (`.flake8-ci`)
-**Hard requirement** for pull request approval. GitHub Actions enforces these standards and blocks PR merging if violations exist.
-
-**Before submitting any PR**, you must run: `flake8 --config=src/.flake8-ci src/` and ensure it passes with no violations.
-
-### Generated Code Standards
-
-### Linting
-
-All generated code (including AI-generated code) must comply with `.flake8-ci` configuration:
-
-1. **Final Newlines**: All files must end with a single newline character
-2. **Unused Imports**: Remove all unused import statements
-3. **Unused Variables**: Remove or prefix unused variables with underscore (`_variable`)
-4. **Line Continuation**: Proper indentation for multi-line statements following PEP 8
-5. **Line Length**: Respect maximum line length limits defined in `.flake8-ci`
 
 ### Control Flow Statements
 - Always include explicit `continue` statements in loops
@@ -208,6 +197,12 @@ is_active = user.last_login
 in_modal_context = request.POST.get('context') == 'modal'
 ```
 
+### Linting: Flake8 Configurations
+
+The project uses two different flake8 configurations:
+- Development Configuration (`src/.flake8`) : Our preferred style for daily development work, with specific whitespace deviations from PEP8 for enhanced readability:
+- CI Configuration (`src/.flake8-ci`): GitHub Actions enforces these standards and blocks PR merging if violations exist.
+
 ## Commenting Guidelines
 
 - We avoid over-commenting and let the code variable/method naming be clear on the intent.
@@ -224,17 +219,18 @@ in_modal_context = request.POST.get('context') == 'modal'
   - Contain development artifacts or work-stream context
   - Leave commented-out code (creates confusion)
   - Explain what better naming could clarify
-- When in doubt, ask: "Can I change the code to make this comment unnecessary?"
+
+  - When in doubt, ask: "Can I change the code to make this comment unnecessary?"
   
 ### Special Cases
 
 #### TRACE Pattern (Accepted)
 - `TRACE = False # for debugging` is an accepted pattern
 - Addresses Python logging limitation (lacks TRACE level below DEBUG)
-- Used for very frequent or large-volume debug output
-- Keep the comment to explain purpose for those unfamiliar with the pattern
 
-### GOOD Comments - What TO Include
+### Examples
+
+#### GOOD Comments - What TO Include
 
 1. **Design rationale that is non-obvious**
    - Example: `# Single source of truth for position vs path classification`
@@ -294,7 +290,7 @@ in_modal_context = request.POST.get('context') == 'modal'
    - Documents what was broken and why the current approach fixes it
    - Helps prevent regression
 
-### BAD Comments - What NOT To Include
+#### BAD Comments - What NOT To Include
 
 1. **Avoid commenting obvious variable purposes**
    - Bad: `# Store original entity_type_str to detect changes`
@@ -330,13 +326,6 @@ in_modal_context = request.POST.get('context') == 'modal'
    - If needed for future reference, create an issue instead
    - Exception: Very brief one-line hints at extension points (see "Future extension points" in good comments)
    - Commented code creates confusion about whether it should be active
-
-### Consider Alternatives
-
-1. **Method names over behavioral comments**
-   - Instead of commenting behavior, consider renaming methods to be self-documenting
-   - Example: Comment about "always attempt regardless of mode/view" might be better as a more descriptive method name
-
 
 ## Related Documentation
 - Testing standards: [Testing Guidelines](../testing/testing-guidelines.md)

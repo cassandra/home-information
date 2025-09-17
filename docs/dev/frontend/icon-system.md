@@ -2,7 +2,7 @@
 
 ## Icon System Overview
 
-Use the standardized `{% icon %}` template tag. See `hi/apps/common/templatetags/icons.py` for implementation details and parameters.
+Use the standardized `{% icon %}` template tag for consistent icon rendering. See `hi/apps/common/templatetags/icons.py` for available icons and parameters.
 
 ## UX Principles for Icon Usage
 
@@ -10,13 +10,12 @@ Use the standardized `{% icon %}` template tag. See `hi/apps/common/templatetags
 Icons provide faster recognition, universal language, space efficiency, and visual hierarchy.
 
 ### ALWAYS Add Icons When
-
 - **Universal Actions**: Add (+), Delete (trash), Edit (pencil), Save (checkmark), Cancel (×)
 - **Navigation**: Back/Forward arrows, Up/Down, Expand/Collapse
 - **Media Controls**: Play, Pause, Video, Camera
 - **Status/Feedback**: Success, Warning, Error, Info
 
-### Key Principle
+### Key Design Principle
 Focus on **ACTION TYPE** (add, delete, edit), not object specificity. "Add Item" and "Add Rule" both get the same + icon because they're both "add" actions.
 
 ## Implementation Requirements
@@ -26,6 +25,29 @@ Focus on **ACTION TYPE** (add, delete, edit), not object specificity. "Add Item"
 - Use semantic size and color parameters when available
 - Include appropriate ARIA labels for accessibility
 - Maintain consistency: same action = same icon across the application
+
+## Icon Parameters
+
+### Size Options
+- `xs` - Extra small (12px)
+- `sm` - Small (16px) - **Most common**
+- `md` - Medium (20px) - Default
+- `lg` - Large (24px)
+- `xl` - Extra large (32px)
+
+### CSS Classes
+- `hi-icon-left` - Icon positioned to the left of text
+- `hi-icon-right` - Icon positioned to the right of text
+- `hi-icon-only` - Icon without accompanying text
+- `hi-icon-spin` - Spinning animation for loading states
+
+### Color Options
+When available through the icon system:
+- `text-primary` - Primary theme color
+- `text-success` - Success/positive actions
+- `text-warning` - Warning/caution
+- `text-danger` - Danger/destructive actions
+- `text-muted` - Subtle/disabled state
 
 ## Template Usage Examples
 
@@ -51,12 +73,6 @@ Focus on **ACTION TYPE** (add, delete, edit), not object specificity. "Add Item"
   {% icon "save" size="sm" css_class="hi-icon-left" %}
   Save Changes
 </button>
-
-<!-- Cancel action -->
-<a class="btn btn-tertiary" href="#" data-dismiss="modal">
-  {% icon "cancel" size="sm" css_class="hi-icon-left" %}
-  Cancel
-</a>
 ```
 
 ### Icon-Only Actions
@@ -73,19 +89,6 @@ Use for space-constrained areas with proper accessibility:
 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
   {% icon "close" size="sm" %}
 </button>
-
-<!-- Toolbar actions -->
-<div class="btn-group" role="group">
-  <button type="button" class="btn btn-outline-secondary" aria-label="Bold">
-    {% icon "bold" size="sm" %}
-  </button>
-  <button type="button" class="btn btn-outline-secondary" aria-label="Italic">
-    {% icon "italic" size="sm" %}
-  </button>
-  <button type="button" class="btn btn-outline-secondary" aria-label="Underline">
-    {% icon "underline" size="sm" %}
-  </button>
-</div>
 ```
 
 ### Status and Feedback Icons
@@ -102,91 +105,7 @@ Use for space-constrained areas with proper accessibility:
   {% icon "exclamation-triangle" size="sm" css_class="hi-icon-left" %}
   Please review your settings before continuing.
 </div>
-
-<!-- Error message -->
-<div class="alert alert-danger">
-  {% icon "times-circle" size="sm" css_class="hi-icon-left" %}
-  An error occurred while processing your request.
-</div>
-
-<!-- Info message -->
-<div class="alert alert-info">
-  {% icon "info-circle" size="sm" css_class="hi-icon-left" %}
-  This feature is currently in beta.
-</div>
 ```
-
-### Navigation Icons
-
-```django
-<!-- Breadcrumb navigation -->
-<nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item">
-      <a href="{% url 'home' %}">
-        {% icon "home" size="sm" css_class="hi-icon-left" %}
-        Home
-      </a>
-    </li>
-    <li class="breadcrumb-item">
-      <a href="{% url 'entities' %}">Entities</a>
-    </li>
-    <li class="breadcrumb-item active">Edit Entity</li>
-  </ol>
-</nav>
-
-<!-- Back button -->
-<a href="{{ back_url }}" class="btn btn-secondary">
-  {% icon "arrow-left" size="sm" css_class="hi-icon-left" %}
-  Back
-</a>
-
-<!-- Pagination -->
-<nav>
-  <ul class="pagination">
-    <li class="page-item">
-      <a class="page-link" href="?page={{ page.previous_page_number }}">
-        {% icon "chevron-left" size="sm" %}
-        Previous
-      </a>
-    </li>
-    <li class="page-item active">
-      <span class="page-link">{{ page.number }}</span>
-    </li>
-    <li class="page-item">
-      <a class="page-link" href="?page={{ page.next_page_number }}">
-        Next
-        {% icon "chevron-right" size="sm" %}
-      </a>
-    </li>
-  </ul>
-</nav>
-```
-
-## Icon Parameters
-
-All icon CSS rules are defined in `src/hi/static/css/icons.css`.
-
-### Size Options
-- `xs` - Extra small (12px)
-- `sm` - Small (16px) - **Most common**
-- `md` - Medium (20px) - Default
-- `lg` - Large (24px)
-- `xl` - Extra large (32px)
-
-### CSS Classes
-- `hi-icon-left` - Icon positioned to the left of text
-- `hi-icon-right` - Icon positioned to the right of text
-- `hi-icon-only` - Icon without accompanying text
-- `hi-icon-spin` - Spinning animation for loading states
-
-### Color Options
-When available through the icon system:
-- `text-primary` - Primary theme color
-- `text-success` - Success/positive actions
-- `text-warning` - Warning/caution
-- `text-danger` - Danger/destructive actions
-- `text-muted` - Subtle/disabled state
 
 ## Accessibility Considerations
 
@@ -222,47 +141,13 @@ Ensure icon buttons have visible focus indicators:
 }
 ```
 
-## Available Icons
+## Icon Discovery and Creation
 
-Common icons available in the system (see `hi/apps/common/templatetags/icons.py` for complete list):
-
-### Actions
-- `plus` - Add/Create
-- `edit` / `pencil` - Edit/Modify
-- `delete` / `trash` - Delete/Remove
-- `save` / `check` - Save/Confirm
-- `cancel` / `times` - Cancel/Close
-- `copy` - Duplicate
-- `download` - Export/Download
-- `upload` - Import/Upload
-
-### Navigation
-- `home` - Home page
-- `arrow-left` / `arrow-right` - Back/Forward
-- `chevron-left` / `chevron-right` - Previous/Next
-- `arrow-up` / `arrow-down` - Up/Down
-- `external-link` - External links
-
-### Status/Feedback
-- `check-circle` - Success
-- `exclamation-triangle` - Warning
-- `times-circle` - Error
-- `info-circle` - Information
-- `question-circle` - Help
-
-### Media
-- `play` - Play action
-- `pause` - Pause action
-- `video` - Video content
-- `camera` - Camera/Photo
-
-### UI Elements
-- `search` - Search functionality
-- `filter` - Filter/Sort
-- `settings` / `cog` - Configuration
-- `user` - User/Profile
-- `list` - List view
-- `grid` - Grid view
+For finding appropriate icons or creating new ones, use the `/icon` command which will:
+- Search existing icons for semantic matches
+- Recommend existing icons when appropriate
+- Guide creation of new icons when needed
+- Maintain consistency with the icon system
 
 ## Related Documentation
 - Frontend guidelines: [Frontend Guidelines](frontend-guidelines.md)

@@ -32,6 +32,7 @@ This project has extensive custom commands for workflow automation. Use them pro
 - **`/debug "issue"`** - AI-assisted debugging and troubleshooting
 - **`/refactor Class`** - Expert refactoring planning
 - **`/release 1.2.3`** - Complete release process automation
+- **`/icon "concept"`** - Find existing icon or create new one
 
 **Command files:** `.claude/commands/*.md` contain detailed specifications.
 

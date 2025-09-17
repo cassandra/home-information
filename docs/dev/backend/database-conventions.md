@@ -14,4 +14,4 @@ class Meta:
 
 ## Related Documentation
 - Backend guidelines: [Backend Guidelines](backend-guidelines.md)
-- Django patterns: [Django Patterns](django-patterns.md)
+- Coding patterns: [Django Patterns](../shared/coding-patterns.md)
