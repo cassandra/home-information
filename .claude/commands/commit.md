@@ -39,9 +39,12 @@ Execute standardized commit workflow:
    - **MUST NOT**: Claude Code attribution or co-author tags
    - **MUST NOT**: Implementation details in commit message
 
-5. **Create commit** - Use provided message:
+5. **Create commit** - Use provided message with safe handling:
    ```bash
-   git commit -m "$1"
+   # Write commit message to file for safety with special characters
+   echo "$1" > /tmp/commit_msg.txt
+   git commit -F /tmp/commit_msg.txt
+   rm -f /tmp/commit_msg.txt
    ```
 
 6. **Push to current branch** - Update remote:

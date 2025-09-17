@@ -74,6 +74,27 @@ Help plan the work described in GitHub issue #$1 to determine optimal breakdown 
    - Value delivery timeline and milestones
    - If multi-issue approach recommended, provide `/createissue` commands for each issue
 
+9. **Plan Outcome Execution Guidance** - Direct next steps for implementation:
+   - **Use `/design` for issues requiring:**
+     - Visual mockups or wireframes for UI changes
+     - UI interaction specifications and patterns
+     - Design decision clarification before implementation
+     - User experience flow definition
+   - **Use `/execute` for issues with:**
+     - Clear technical requirements and approach
+     - Defined implementation path
+     - No design ambiguity or visual decisions needed
+     - Ready for immediate development
+   - **Use `/investigate` for issues needing:**
+     - Technical research or feasibility analysis
+     - Codebase exploration and pattern discovery
+     - Integration complexity assessment
+     - Architecture decision investigation
+   - **Continue planning if:**
+     - Additional issue decomposition needed
+     - Cross-issue dependencies require coordination
+     - Strategic decisions still unclear
+
 **Strategic Planning Goals:**
 - Optimize for independent value delivery
 - Minimize dependencies and coupling

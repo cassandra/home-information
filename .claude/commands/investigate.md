@@ -63,6 +63,27 @@ Perform comprehensive codebase analysis and implementation planning:
    - Questions or concerns requiring clarification
    - Estimated complexity and timeline
 
+9. **Investigation Outcome Recommendations** - Guide next steps based on findings:
+   - **Recommend `/plan` if analysis reveals:**
+     - Multi-phase implementation needed across multiple PRs
+     - Epic-level work requiring issue decomposition
+     - Cross-cutting changes affecting multiple systems
+     - Work breakdown structure needed for complex features
+   - **Recommend `/design` if analysis reveals:**
+     - UI/UX decisions requiring mockups or wireframes
+     - Visual design specifications missing
+     - Interaction patterns need clarification
+     - Ambiguous styling or layout requirements
+   - **Recommend `/execute` if analysis reveals:**
+     - Clear implementation path identified
+     - All technical questions resolved
+     - Requirements well-defined and single-PR scope
+     - Ready for immediate development
+   - **Recommend continued `/investigate` if analysis reveals:**
+     - Additional research domains identified
+     - More technical unknowns discovered
+     - Need for deeper integration analysis
+
 **Investigation target:** GitHub issue #$1
 **Goal:** Complete technical analysis and implementation roadmap
 

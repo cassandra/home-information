@@ -32,13 +32,14 @@ Execute the complete PR creation workflow:
 
 4. **Create PR using GitHub CLI** - Follow exact template from `.github/PULL_REQUEST_TEMPLATE.md`:
 
-   **CRITICAL**: Use HEREDOC syntax to prevent quoting failures:
+   **CRITICAL**: Use file-based approach to prevent escaping failures:
    ```bash
-   gh pr create --title "$1" --body "$(cat <<'EOF'
-   ## Pull Request: $1
+   # Write PR body to temporary file first
+   cat > /tmp/pr_body.md <<'EOF'
+   ## Pull Request: [TITLE]
 
    ### Issue Link
-   Closes #ISSUE_NUMBER
+   Closes #[ISSUE_NUMBER]
 
    ---
 
@@ -54,16 +55,12 @@ Execute the complete PR creation workflow:
    ---
 
    ## Changes Summary
-   - Change 1
-   - Change 2
-   - Change 3
+   - [Describe changes made]
 
    ---
 
    ## How to Test
-   1. Step 1
-   2. Step 2
-   3. Step 3
+   1. [Testing steps]
 
    ---
 
@@ -97,7 +94,16 @@ Execute the complete PR creation workflow:
    ### **Reviewer(s)**
    @cassandra
    EOF
-   )"
+
+   # Update placeholders in the file
+   sed -i '' "s/\[TITLE\]/$1/g" /tmp/pr_body.md
+   sed -i '' "s/\[ISSUE_NUMBER\]/ISSUE_NUMBER/g" /tmp/pr_body.md
+
+   # Create PR using file reference
+   gh pr create --title "$1" --body-file /tmp/pr_body.md
+
+   # Clean up temporary file
+   rm -f /tmp/pr_body.md
    ```
 
 5. **Verify PR creation** - Check that:

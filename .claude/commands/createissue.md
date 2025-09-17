@@ -37,9 +37,21 @@ Execute standardized issue creation with proper templates:
    tests:    "[Tests] Add integration tests for weather service"
    ```
 
-4. **Create issue using GitHub CLI** - Use proper template syntax:
+4. **Create issue using GitHub CLI** - Use proper template syntax with error handling:
    ```bash
-   gh issue create --template $1.md --title "$2"
+   # Map issue type to template filename
+   case "$1" in
+     bug) TEMPLATE="bug_report.md" ;;
+     feature) TEMPLATE="feature_request.md" ;;
+     docs) TEMPLATE="documentation.md" ;;
+     ops) TEMPLATE="operations.md" ;;
+     refactor) TEMPLATE="refactor.md" ;;
+     tests) TEMPLATE="tests.md" ;;
+     *) echo "Invalid issue type: $1"; exit 1 ;;
+   esac
+
+   # Create issue with proper template
+   gh issue create --template "$TEMPLATE" --title "$2"
    ```
 
    **Template to File Mapping:**

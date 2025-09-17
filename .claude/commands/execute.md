@@ -22,20 +22,49 @@ Execute complete strategic-to-delivery workflow with intelligent coordination:
    - Determine if multi-phase or multi-issue approach needed
    - **CHECKPOINT**: Pause for human clarification if critical questions identified
 
-3. **Phase 2: Design Assessment** - Evaluate design requirements:
+3. **Pre-execution Validation** - Confirm issue readiness for execution:
+   - **ESCALATE to `/plan` if:**
+     - Issue spans multiple PRs or requires decomposition
+     - Requires major architectural changes
+     - Affects multiple apps/systems significantly
+     - Epic-level work requiring breakdown
+   - **ESCALATE to `/investigate` if:**
+     - Implementation approach still unclear after planning
+     - Significant technical unknowns remain
+     - Requires extensive codebase research
+     - Complex integration challenges identified
+   - **ESCALATE to `/design` if:**
+     - Visual mockups missing for UI changes
+     - UI interaction patterns undefined
+     - Requests visual improvements without specifications
+     - Design decisions still needed
+   - **ESCALATE to `/pickup` if:**
+     - Single domain/file change with clear solution
+     - Bug fix with identified root cause and location
+     - Simple enhancement using existing patterns
+     - No coordination between technical specialties needed
+     - Atomic task suitable for single agent
+   - **Continue with execution if:**
+     - Multiple technical domains requiring coordination
+     - Clear functional boundaries that can be divided among agents
+     - Implementation phases with dependencies between specialties
+     - Cross-system impacts requiring expert coordination
+     - Issue contains artifacts enabling agent specialization
+
+4. **Phase 2: Design Assessment** - Evaluate design requirements:
    - Assess if issue involves both design AND implementation work
    - Look for indicators: "better styling", "improved layout", "enhanced UI"
    - Check for ambiguous visual requirements needing wireframes
    - **CONDITIONAL EXECUTION**: If design-heavy, recommend design phase first
    - **CHECKPOINT**: Pause if design phase recommended - wait for approval
 
-4. **Phase 3: Development Preparation** - Setup and initial analysis:
+5. **Phase 3: Development Preparation** - Setup and initial analysis:
    - Ensure on latest staging branch: `git checkout staging && git pull origin staging`
    - Assign issue: `gh issue edit $1 --add-assignee @me`
    - Create feature branch with proper naming (bugfix/feature/docs/ops/refactor)
    - Push branch: `git push -u origin [branch-name]`
 
-5. **Phase 4: Intelligent Implementation Coordination** - Parallel sub-agent execution:
+6. **Phase 4: Intelligent Implementation Coordination** - Parallel sub-agent execution:
 
    **Use Task tool to launch specialized agents in parallel:**
 
@@ -55,7 +84,7 @@ Execute complete strategic-to-delivery workflow with intelligent coordination:
    - Automatic handoffs between agents for dependencies
    - Progress tracking across all parallel work streams
 
-6. **Phase 5: Quality Orchestration** - Systematic quality validation:
+7. **Phase 5: Quality Orchestration** - Systematic quality validation:
 
    **Quality Gates (must pass before proceeding):**
    ```bash
@@ -75,14 +104,14 @@ Execute complete strategic-to-delivery workflow with intelligent coordination:
    - Architecture and patterns aligned
    - Documentation updated appropriately
 
-7. **Phase 6: PR Creation** - Automated pull request generation:
+8. **Phase 6: PR Creation** - Automated pull request generation:
    - Generate PR title based on issue and implementation
    - Create comprehensive PR description following template
-   - Use HEREDOC syntax for GitHub CLI: `gh pr create --title "..." --body "$(cat <<'EOF' ... EOF)"`
+   - Use file-based approach for GitHub CLI: write PR body to temp file, then `gh pr create --body-file`
    - Include proper issue linking: `Closes #$1`
    - Select appropriate category and fill testing section
 
-8. **Phase 7: Post-Creation Validation** - Verify successful completion:
+9. **Phase 7: Post-Creation Validation** - Verify successful completion:
    - Confirm PR created successfully
    - Verify all GitHub Actions pass
    - Check PR template formatting

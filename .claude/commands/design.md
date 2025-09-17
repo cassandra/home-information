@@ -13,6 +13,7 @@ Execute design-focused work session for planning and mockup creation:
 
 1. **Use TodoWrite to plan design phases** - Track design workflow steps
    - Read `docs/CLAUDE.md` for AI-specific guidance and development philosophy
+   - Follow design workflow in `docs/dev/workflow/design-workflow.md`
    - Focus on well-factored design solutions
 
 2. **Read GitHub issue completely** - Understand design requirements:

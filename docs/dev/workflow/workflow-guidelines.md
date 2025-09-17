@@ -35,13 +35,17 @@ git checkout -b feature/42-entity-icons
 - Make logical commits with clear messages
 - Focus on **what** changed and **why**, not implementation details
 - Keep commits focused and atomic
+- Do not add any extra attributions.
+- Do not uses marketing-like language
 
-### 4. Push Branch
+### 4. Push Branch (at checkpoints and when done)
 ```bash
 git push -u origin feature/42-entity-icons
 ```
 
 ### 5. Create Pull Request
+Use pull request template: `.github/PULL_REQUEST_TEMPLATE.md`:
+
 Use GitHub CLI or web interface:
 ```bash
 gh pr create --title "Add entity icon system" --body "$(cat <<'EOF'
@@ -111,48 +115,21 @@ Remove invalid AlertUrgency.PAST enum value for weather alerts
 
 **SHOULD NOT:**
 - Generic messages like "update code" or "fix bug"
+- Flowery or marketing-like boasts about the changes
 
 ## Pre-PR Requirements
 
 **MANDATORY checks before creating any PR:**
 
 ```bash
-# 1. Run full test suite (must pass)
-make test
 
-# 2. Run code quality check (must pass with no output)
-make lint
+# 1. Run code quality check (must pass with no output)
+cd $PROJ_ROOT ; make lint
+# 2. Run full test suite (must pass)
+cd $PROJ_ROOT ; make test
 ```
 
-Both checks must pass before PR creation. Fix all issues first.
-
-## Pull Request Guidelines
-
-### PR Description Structure
-
-Follow `.github/PULL_REQUEST_TEMPLATE.md`:
-
-```markdown
-## Pull Request: [Short Title]
-
-### Issue Link
-Closes #123
-
-### Summary
-- Brief overview of changes
-- Key components modified
-- Business impact
-
-### Testing
-- [ ] Tests pass
-- [ ] Integration tests pass  
-- [ ] Manual testing completed
-
-### Documentation
-- [ ] Code comments updated
-- [ ] Documentation files updated
-- [ ] Breaking changes documented
-```
+Both checks must pass before PR creation. Fix all issues first. Run `make lint` first because it is faster and any lint changes will also require re-running `make test`.
 
 ### PR Review Process
 
@@ -175,5 +152,6 @@ See [Release Process](release-process.md) for detailed release procedures.
 
 ## Related Documentation
 - Release procedures: [Release Process](release-process.md)
+- Rollback procedures: [Rollback Process](rollback-process.md)
 - Documentation standards: [Documentation Standards](documentation-standards.md)
-- Coding standards: [Coding Standards](../shared/coding-standards.md)
+- Design procedures: [Design Workflow](design-workflow.md)
