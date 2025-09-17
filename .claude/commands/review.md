@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, TodoWrite, Task
 description: Prepare code for review with quality checks and analysis
-model: claude-3-5-sonnet-20241120
+model: claude-sonnet-4-20250514
 argument-hint:
 ---
 

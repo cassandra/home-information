@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, TodoWrite
 description: Create GitHub issues using proper templates and conventions
-model: claude-3-5-sonnet-20241120
+model: claude-sonnet-4-20250514
 argument-hint: [type] [title]
 ---
 

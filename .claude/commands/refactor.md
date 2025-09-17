@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, TodoWrite, Grep, Glob, Task
 description: Plan and execute refactoring with expert analysis
-model: claude-3-5-sonnet-20241120
+model: claude-sonnet-4-20250514
 argument-hint: [target] (e.g., ClassName, module_name, or file_path)
 ---
 

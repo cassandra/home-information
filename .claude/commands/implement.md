@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, Edit, Write, TodoWrite, Grep, Glob, Task
 description: Implement a GitHub issue that has been picked up, stopping at PR-ready state
-model: claude-3-5-sonnet-20241120
+model: claude-sonnet-4-20250514
 argument-hint: [issue-number]
 ---
 
