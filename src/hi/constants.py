@@ -117,6 +117,7 @@ DIVID = {
     'ATTR_V2_ATTRIBUTE_HEADER_CLASS': 'attr-v2-attribute-header',
     'ATTR_V2_ATTRIBUTE_ACTIONS_CLASS': 'attr-v2-attribute-actions',
     'ATTR_V2_ATTRIBUTE_VALUE_CLASS': 'attr-v2-attribute-value',
+    'ATTR_V2_FORM_DISPLAY_LABEL_CLASS': 'attr-v2-form-display-label',
     'ATTR_V2_TEXT_VALUE_CLASS': 'attr-v2-text-value',
     'ATTR_V2_SECRET_CHECKBOX_CLASS': 'attr-v2-secret-checkbox',
     'ATTR_V2_INLINE_HISTORY_CLASS': 'attr-v2-inline-history',

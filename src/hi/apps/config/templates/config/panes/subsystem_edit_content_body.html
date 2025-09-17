@@ -10,10 +10,10 @@ This is what gets replaced on form submission
 {% block basic_info %}{% endblock %}
 
 {% block additional_actions %}
-<h4 class="mb-0 text-muted">
+<h4 class="mb-0 text-muted {{ DIVID.ATTR_V2_FORM_DISPLAY_LABEL_CLASS }}">
   {% for multi_edit_form_data in multi_edit_form_data_list %}
     {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}
-      {{ multi_edit_form_data.owner.name }}
+      {{ multi_edit_form_data.owner.name }} Settings
     {% endif %}
   {% empty %}
     System Settings
@@ -39,7 +39,7 @@ This is what gets replaced on form submission
      role="tab" 
      aria-controls="subsystem-{{ multi_edit_form_data.owner.id }}-panel" 
      aria-selected="{% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}true{% else %}false{% endif %}"
-     onclick="window.Hi.attr.updateFormAction('{% url 'config_settings' subsystem_id=multi_edit_form_data.owner.id %}', '{{ attr_page_context.container_html_id }}')">
+     onclick="window.Hi.attr.updateFormAction('{% url 'config_settings' subsystem_id=multi_edit_form_data.owner.id %}', '{{ attr_page_context.container_html_id }}', '{{ multi_edit_form_data.owner.name }} Settings')">
     {{ multi_edit_form_data.owner.name }}
     {% if multi_edit_form_data.error_count > 0 %}
     <span class="badge badge-danger ml-1">{{ multi_edit_form_data.error_count }}</span>

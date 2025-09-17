@@ -471,28 +471,36 @@
     
     // Container-aware utility function for updating form actions and browser history
     // This is a generic helper that can be called from template onclick handlers
-    function _updateFormAction(newUrl, containerId) {
+    function _updateFormAction(newUrl, containerId, labelText = null) {
         if (!newUrl || !containerId) {
             console.warn('Hi.attr.updateFormAction: newUrl and containerId are required');
             return;
         }
-        
+
         // Find the form within the specific container
         const $container = $(`#${containerId}`);
         if ($container.length === 0) {
             console.warn('Hi.attr.updateFormAction: Container not found:', containerId);
             return;
         }
-        
+
         const $form = $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR);
         if ($form.length === 0) {
             console.warn('Hi.attr.updateFormAction: No form found in container:', containerId);
             return;
         }
-        
+
         // Update form action
         $form.attr('action', newUrl);
-        
+
+        // Update form display label if provided
+        if (labelText) {
+            const $label = $container.find(Hi.ATTR_V2_FORM_DISPLAY_LABEL_SELECTOR);
+            if ($label.length > 0) {
+                $label.text(labelText);
+            }
+        }
+
         // Update browser history without page reload
         history.pushState(null, '', newUrl);
     };

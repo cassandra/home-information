@@ -98,6 +98,7 @@
         ATTR_V2_UNDO_BTN_SELECTOR: '.attr-v2-undo-btn',
         ATTR_V2_FILE_CARD_SELECTOR: '.attr-v2-file-card',
         ATTR_V2_SECRET_INPUT_WRAPPER_SELECTOR: '.attr-v2-secret-input-wrapper',
+        ATTR_V2_FORM_DISPLAY_LABEL_SELECTOR: '.attr-v2-form-display-label',
         ATTR_V2_SECRET_INPUT_SELECTOR: '.attr-v2-secret-input',
         ATTR_V2_ICON_SHOW_SELECTOR: '.attr-v2-icon-show',
         ATTR_V2_ICON_HIDE_SELECTOR: '.attr-v2-icon-hide',
