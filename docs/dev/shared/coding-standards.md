@@ -1,37 +1,73 @@
 # Coding Standards
 
-## Code Organization and Conventions
+## Code Conventions Checklist
 
-### Directory Structure
+Checklists for writing and reviewing code.
 
-#### Top-level Directory
-- `src`: application source code
-- `deploy`: helper scripts and files for deploying and setting up the application
-- `package`: extra items that need to be packaged up to support running the application in Docker
-- `Makefile`: provides convenience wrappers around commands for building, packaging and running
-- `docs`: all documentation suitable to be in markdown files
+**General**:
+- [ ] Code does not use hard-coded "magic" strings.
+- [ ] Code does no use any hard-coded "magic" numbers.
+- [ ] All comments add value and follow our commenting guidelines.
+- [ ] No urls appear as hard-coded path and all use Django url names and `reverse()`.
+- [ ] There no .flake8 linting violations.
+- [ ] The file ends with a newline
+- [ ] All new files follow the project structure's name and location conventions.
+- [ ] There are no Emoji's in any code, templates or documentation.
 
-#### The `src` Directory
-- `hi`: entry point urls/views and some app-wide helper classes
-- `hi/templates`: For top-level views and app-wide common base templates
-- `hi/apps/${APPNAME}`: For normal application modules
-- `hi/integrations`: Code for dealing with integration not related to a specific integration
-- `hi/services/${SERVICENAME}`: Code for a particular integration
-- `hi/simulator`: The code for the separate simulator helper app
-- `hi/settings`: Django settings, including runtime population from environment variables
-- `hi/requirements`: Python package dependencies
-- `custom`: Custom user model and other general customizations
-- `bin`: Helper scripts needed with the code to run inside a Docker container
+**Imports**:
+- [ ] All module imports are at the top of the file.
+- [ ] Imports are grouped logically: system/pip, django, project, apps then module local.
+- [ ] Imports have one line space between groups.
+- [ ] Within a group, imports are sorted alphabetically
+- [ ] No module relies on indirect (hidden) imports
+- [ ] There are no unused imports
 
-## Coding Style
+**Method Declarations**:
+- [ ] All methods uses type hints for their parameters and return values.
+- [ ] All method definition with more than two arguments use one line per argunment.
+- [ ] All multi-line method signatures have all their types and default values aligned.
+- [ ] No methods return position-dependent tuples.
+
+**Class Declarations**:
+- [ ] All dataclass definitions have all their types and default values aligned.
+- [ ] All enum definitions have all their types and default values aligned.
+- [ ] Are enums subclass LabeledEnum
+
+**Method Calling**:
+- [ ] All method calls use named parameters.
+- [ ] All metghod calls with more than two argumants use one line per argument.
+- [ ] All multi-line method calls use a comma after last item.
+- [ ] Spaces surrounding all equals ("=") signs when passing parameters to methods.
+
+**Expressions**:
+- [ ] All boolean assignments to conditional clauses are wrapped in `bool()`.
+- [ ] All loops end with an explicit  `continue` or a `return`.
+- [ ] All methods end with an explicit `return` or a `raise`?
+- [ ] All multi-line arrays, sets, dictionaries use a comma after last item.
+- [ ] Compound/complex conditional statements use explicit delimiting parentheses.
+- [ ] Single quote are used for all strings in Python code.
+- [ ] All multi-line arrays, dictionaries and sets use a comma after last item.
+
+**Views**:
+- [ ] All url paths components follow our standard ordering conventions.
+- [ ] All url Django names follow our standard naming conventions
+- [ ] All view names match url names (except for casing and underlining).
+- [ ] ALl views raise exceptions for common error conditions. (Let middleware handle it.)
+
+**Templates**:
+- [ ] Template names referenced in views closely match the view names that use them.
+- [ ] No templates have in-line Javascript.
+- [ ] No templates have in-line CSS.
+- [ ] Templates appear in a subdirectory matching their purpose: modals, panes, pages.
+- [ ] Template tags `load` statments near the top of the file.
+
+## Code Conventions Details
 
 ### No "magic" strings
 
 We do not use "magic" or hard-coded strings when needing multiple references. Any string that need to be used in two or more places is a risk of them being mismatched. This includes, but is not limited to:
 
-- All references to urls *must* use the Django url name and reverse() to construct.
-- Use enum values or constants/class variables to act as coordination point and provide some amount of compiler help in identifying mismatches. Most needed strings will already have a LabeledEnum type defined, but we should add new ones as needed. See "Enums" in [Back End Guidelines](../backend/backend-guidelines.md).
-- All DOM ids and class strings that are shared between client and server must adhere to our `DIVID` pattern. See "Client-Server Namespace Sharing" in [Front End Guidelines](../frontend/frontend-guidelines.md).
+All DOM ids and class strings that are shared between client and server must adhere to our `DIVID` pattern. See "Client-Server Namespace Sharing" in [Front End Guidelines](../frontend/frontend-guidelines.md).
 
 ### Type Hints
 
@@ -40,7 +76,6 @@ We do not use "magic" or hard-coded strings when needing multiple references. An
 - Some allowed, but not required exceptions:
   - The `request` parameter when appearing in a Django view class.
   - Single parameter methods where the method name or parameter name makes its type unambiguous.
-  
 
 ### Method Parameter Formatting
 
@@ -49,7 +84,7 @@ For readability, besides adding type hints to method parameters, we adhere to th
 - If more than one parameter and app-defined types, then use a multiple line declaration.
 - For methods with three or more parameters, we use one line per parameter and align the type names.
 
-**Good Examples**
+**Good Examples**:
 
 ```
     def set_entity( self, entity_id : int ) -> EntityPath:
@@ -62,7 +97,7 @@ For readability, besides adding type hints to method parameters, we adhere to th
                          svg_path_str  : str        ) -> EntityPath:
 ```
 
-**Bad Examples**
+**Bad Examples**:
 
 ```
     def set_entity_type( self, entity_id : int, entity_type : EntityType ) -> EntityPath:
@@ -97,15 +132,15 @@ We prefer to wrap all expression that evaluate to a boolean in `bool()` to make 
 - We use one line per clause unless the combined clauses are very short and obvious.
 - Single boolean typed variables or methods that return a boolean do not need paretheses.
 
-**Good**
+**Good**:
 ```
     if is_editing and location_view:
         pass
-		
+                
     if (( hass_state.domain == HassApi.SWITCH_DOMAIN )
           and ( HassApi.LIGHT_DOMAIN in prefixes_seen )):
         pass
-		
+                
     if ( HassApi.BINARY_SENSOR_DOMAIN in domain_set
          and device_class_set.intersection( HassApi.OPEN_CLOSE_DEVICE_CLASS_SET )):
         pass
@@ -113,43 +148,11 @@ We prefer to wrap all expression that evaluate to a boolean in `bool()` to make 
    
 ```
 
-**Bad***
+**Bad**:
 ```
     if hass_state.domain == HassApi.SWITCH_DOMAIN and HassApi.LIGHT_DOMAIN == 'foo':
         pass
 ```
-
-### Flake8 Configurations
-
-The project uses two different flake8 configurations:
-
-#### Development Configuration (`.flake8`)
-Our preferred style for daily development work, with specific whitespace deviations from PEP8 for enhanced readability:
-
-```ini
-[flake8]
-max-line-length = 110
-# Disabled for enhanced readability with spaces:
-# E129, E201, E202, E203, E221, E231, E251, W293, W291, W391, W503
-ignore = E129,D203,E201,E202,E203,E221,E231,E251,W293,W291,W391,W503
-```
-
-#### CI Configuration (`.flake8-ci`)
-**Hard requirement** for pull request approval. GitHub Actions enforces these standards and blocks PR merging if violations exist.
-
-**Before submitting any PR**, you must run: `flake8 --config=src/.flake8-ci src/` and ensure it passes with no violations.
-
-### Generated Code Standards
-
-### Linting
-
-All generated code (including AI-generated code) must comply with `.flake8-ci` configuration:
-
-1. **Final Newlines**: All files must end with a single newline character
-2. **Unused Imports**: Remove all unused import statements
-3. **Unused Variables**: Remove or prefix unused variables with underscore (`_variable`)
-4. **Line Continuation**: Proper indentation for multi-line statements following PEP 8
-5. **Line Length**: Respect maximum line length limits defined in `.flake8-ci`
 
 ### Control Flow Statements
 - Always include explicit `continue` statements in loops
@@ -194,6 +197,135 @@ is_active = user.last_login
 in_modal_context = request.POST.get('context') == 'modal'
 ```
 
+### Linting: Flake8 Configurations
+
+The project uses two different flake8 configurations:
+- Development Configuration (`src/.flake8`) : Our preferred style for daily development work, with specific whitespace deviations from PEP8 for enhanced readability:
+- CI Configuration (`src/.flake8-ci`): GitHub Actions enforces these standards and blocks PR merging if violations exist.
+
+## Commenting Guidelines
+
+- We avoid over-commenting and let the code variable/method naming be clear on the intent.
+- We believe in the philosophy: "Before add a comment, ask yourself how the code can be changed to make this comment unnecessary."
+- Do not add comments that are not timeless and refer to work in progress or future work. i.e., it must make sense for future readers of the code.
+- Comments should explain the **why** not the **what**. Good comments document:
+  - Non-obvious design decisions
+  - Complex business logic
+  - External API/library quirks and workarounds
+  - Time-based complexities
+  - Bug fixes that prevent regression
+- Avoid comments that:
+  - State what the code obviously does
+  - Contain development artifacts or work-stream context
+  - Leave commented-out code (creates confusion)
+  - Explain what better naming could clarify
+
+  - When in doubt, ask: "Can I change the code to make this comment unnecessary?"
+  
+### Special Cases
+
+#### TRACE Pattern (Accepted)
+- `TRACE = False # for debugging` is an accepted pattern
+- Addresses Python logging limitation (lacks TRACE level below DEBUG)
+
+### Examples
+
+#### GOOD Comments - What TO Include
+
+1. **Design rationale that is non-obvious**
+   - Example: `# Single source of truth for position vs path classification`
+   - Explains architectural decisions
+
+2. **Complex domain logic explanations**
+   - Example: Multi-line explanation of entity delegation concept
+   - Business rules that aren't obvious from code structure
+
+3. **Summarize complex or non-standard coding approaches**
+   - When using unusual patterns or workarounds
+   - Algorithm explanations that aren't obvious
+
+4. **Design decision rationale**
+   - Example: "The general types could be used for these, since all are just name-value pairs. However, by being more specific, we can provide more specific visual and processing"
+   - Explains why one approach was chosen over alternatives
+
+5. **Mathematical/geometric calculations**
+   - Example: `'80.0,40.0', # top-left (100-20, 50-10)`
+   - Coordinate calculations that are difficult to verify mentally
+   - Especially valuable in test cases for validation
+
+6. **Cross-file coordination notes**
+   - Example: `# Match SvgItemFactory.NEW_PATH_RADIUS_PERCENT`
+   - Important synchronization between related constants/values in different files
+
+7. **Complex domain abstractions**
+   - Example: Multi-line explanation of LocationItem interface concept
+   - Abstract concepts that need implementation guidance
+
+8. **Multi-step process/algorithm documentation**
+   - Example: `alert_manager.py:40-56` - Breaks down the three distinct checks and explains why HTML is always returned
+   - Complex workflows that need step-by-step explanation of the "why"
+
+9. **External API/library limitations and workarounds**
+   - Example: `wmo_units.py:838-841` - Documents Pint library limitations requiring unit mappings
+   - Example: `zoneminder/monitors.py:81-87` - pyzm timezone parsing quirks
+   - Critical for understanding why non-obvious code patterns exist
+   - Brief expressions of frustration (e.g., "ugh") acceptable when documenting known pain points
+
+10. **External service configuration rationale**
+   - Example: `usno.py:59-62` - Documents API priority, rate limits, polling intervals
+   - Explains constraints and decisions for external integrations
+
+11. **Future extension points**
+   - Example: `daily_weather_tracker.py:96-100` - "Future: Add other weather field tracking here"
+   - Marks logical insertion points for anticipated features
+   - Should be brief hints, not commented-out code blocks
+
+12. **Temporal/timing complexity in APIs**
+   - Example: `zoneminder/monitors.py:99-110` - Events as intervals vs points, open/closed handling
+   - Example: `zoneminder/monitors.py:166-171` - Why polling time cannot advance
+   - Critical for understanding time-based edge cases in external systems
+
+13. **Bug fix documentation**
+   - Example: `zoneminder/monitors.py:132-133` - "This fixes the core bug where..."
+   - Documents what was broken and why the current approach fixes it
+   - Helps prevent regression
+
+#### BAD Comments - What NOT To Include
+
+1. **Avoid commenting obvious variable purposes**
+   - Bad: `# Store original entity_type_str to detect changes`
+   - The variable name should make this clear
+
+2. **Remove work-stream artifacts**
+   - Bad: Comments explaining why tests were removed or referencing specific issues
+   - Comments should be timeless, not tied to particular development contexts
+
+3. **Redundant descriptions of clear code**
+   - Bad: `# Track EntityType change and response needed after transaction`
+   - When variable names already convey this information
+
+4. **Cryptic references**
+   - Bad: `# Recreate to preserve "max" to show new form`
+   - If unclear, either explain properly or remove
+
+5. **Development phase/work-stream artifacts**
+   - Bad: Comments explaining "Phase 3/Phase 4" development contexts
+   - Bad: Explanations of why code was removed or changed
+   - These belong in commit messages or PR descriptions, not in main branch code
+
+6. **TODO comments (high bar to justify)**
+   - Generally avoid TODOs in main branch
+   - If important enough for TODO, create an issue and prioritize it
+   - Only acceptable when there's a compelling reason not to address immediately
+   - Must be specific and actionable, not vague intentions
+
+7. **Commented-out code**
+   - Bad: Dead code that's been disabled or replaced
+   - Bad: Example implementations as large code blocks
+   - Bad: Logic that looks like it might need uncommenting (e.g., `zoneminder/integration.py:65-66`)
+   - If needed for future reference, create an issue instead
+   - Exception: Very brief one-line hints at extension points (see "Future extension points" in good comments)
+   - Commented code creates confusion about whether it should be active
 
 ## Related Documentation
 - Testing standards: [Testing Guidelines](../testing/testing-guidelines.md)
@@ -201,8 +333,5 @@ in_modal_context = request.POST.get('context') == 'modal'
 - Frontend standards: [Frontend Guidelines](../frontend/frontend-guidelines.md)
 - Workflow and commits: [Workflow Guidelines](../workflow/workflow-guidelines.md)
 
-### Commenting
 
-- We avoid over-commenting and let the code variable/method naming be clear on the intent.
-- We believe in the philosophy: "Before add a comment, ask yourself how the code can be changed to make this comment unnecessary."
-- Do not add comments that are not timeless and refer to work in progress or future work. i.e., it must make sense for future readers of the code.
+
