@@ -26,7 +26,20 @@ Execute safe branch cleanup after PR merge:
    # 2. Verify working directory is clean (no uncommitted changes)
    git status
    # Must show: "nothing to commit, working tree clean"
-   # STOP if there are uncommitted changes - commit or stash them first
+   # If uncommitted changes exist, HALT with recovery guidance:
+   if ! git diff-index --quiet HEAD --; then
+     echo "❌ SAFETY CHECK FAILED: Uncommitted changes detected"
+     echo "These changes were made after PR merge (workflow violation)"
+     echo ""
+     echo "Recovery options:"
+     echo "1. Commit to staging: git add . && git commit -m 'Post-merge fix'"
+     echo "2. Create new branch: git switch -c fix/post-merge-changes"
+     echo "3. Discard changes: git restore ."
+     echo "4. Stash for later: git stash push -m 'Post-merge changes'"
+     echo ""
+     echo "After handling changes, re-run: /cleanup $1"
+     exit 1
+   fi
    ```
 
    ```bash
@@ -75,7 +88,9 @@ Execute safe branch cleanup after PR merge:
 
 **If any safety check fails:**
 - DO NOT proceed with cleanup actions
-- Address the issue first (commit changes, wait for PR merge, etc.)
-- Re-run verification before attempting cleanup
+- **For uncommitted changes**: Use the provided recovery options to handle changes properly
+- **For non-merged PR**: Wait for PR to be merged before cleanup
+- **For wrong branch**: Switch to correct feature branch first
+- Re-run `/cleanup $1` after addressing the issue
 
 Begin cleanup process now.
