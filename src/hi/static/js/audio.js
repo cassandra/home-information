@@ -25,6 +25,11 @@
             return _handleAudioButtonClick();
         },
         
+        // Audio testing method for configuration pages
+        testAudio: function() {
+            _testAudio();
+        },
+
         // Initialization
         init: function() {
             startAudioPolling();
@@ -112,12 +117,12 @@
         return `${SignalAudioIdPrefix}-${signalName}`;
     }
     
-    function _startAudibleSignal( signalName ) {
-        if ( Hi.DEBUG ) { console.log( `Starting audio signal = ${signalName}` ); }
+    function _startAudibleSignal( signalName, forcePlay = false ) {
+        if ( Hi.DEBUG ) { console.log( `Starting audio signal = ${signalName}, forcePlay = ${forcePlay}` ); }
         try {
             stopAudio( );
             clearAudibleSignalTimer();
-            if ( ! Hi.settings.isAudioEnabled() ) {
+            if ( ! forcePlay && ! Hi.settings.isAudioEnabled() ) {
                 if ( Hi.DEBUG ) { console.log( `Audio disabled, not playing signal: ${signalName}` ); }
                 return;
             }
@@ -630,6 +635,26 @@
             diagnosticCounter = 0;
             if (Hi.DEBUG) { console.log('🔇 Diagnostic background audio stopped'); }
         }
+    }
+
+    /*
+      AUDIO TESTING FOR CONFIGURATION PAGES
+
+      - Provides a simple test function to play a soft audio signal
+      - Uses existing audio infrastructure and error handling
+    */
+
+    function _testAudio() {
+        if (Hi.DEBUG) { console.log('Testing audio with ConsoleInfo signal (bypassing audio enabled setting)'); }
+
+        // Use forcePlay=true to bypass audio enabled setting for testing
+        _startAudibleSignal('ConsoleInfo', true);
+
+        // The _startAudibleSignal function handles:
+        // - Missing audio elements
+        // - Autoplay restrictions with user feedback
+        // - All error cases with appropriate logging
+        // - Audio enabled setting (bypassed with forcePlay=true)
     }
 
     // Initialize systems when audio module loads

@@ -5,12 +5,14 @@
   <h6 class="attr-v2-section-title">{{ title }}</h6>
   {% endif %}
 
+  {% if regular_attributes_formset.non_form_errors %}
   <div class="attr-v2-formset-errors"
        style="width: 450px; overflow: hidden; word-wrap: break-word;">
     {% for err in regular_attributes_formset.non_form_errors %}
     <div class="attr-v2-error-item" style="word-break: break-word;">{{ err }}</div>
     {% endfor %}
   </div>
+  {% endif %}
   
   <div class="attr-v2-attribute-list">
     {% for attribute_form in regular_attributes_formset %}
