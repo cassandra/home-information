@@ -4,6 +4,7 @@
 
 _High-level view of the applications change history.  See releases and commits for more fine-grained history._
 
+- v1.1.0 : September 16, 2025 : Video stream browser, starting profiles, integration improvements.
 - v1.0.2 : September 9, 2025 : Min/max temperature fixes, audio fixes, and installation improvements.
 - v1.0.1 : September 7, 2025 : Docker configuration fixes and release process improvements.
 - v1.0.0 : September 6, 2025 : Feature complete version with many UI improvements.
