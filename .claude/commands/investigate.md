@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, Edit, TodoWrite, Grep, Glob, Task
 description: Deep investigation and analysis of GitHub issues for implementation planning
-model: claude-3-5-sonnet-20250115
+model: claude-3-5-sonnet-20241120
 argument-hint: [issue-number]
 ---
 

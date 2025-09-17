@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, Read, TodoWrite, Grep
 description: Pick up a GitHub issue following our development workflow
-model: claude-3-5-sonnet-20250115
+model: claude-3-5-sonnet-20241120
 argument-hint: [issue-number]
 ---
 

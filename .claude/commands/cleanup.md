@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash, TodoWrite
 description: Post-PR branch cleanup following our safety procedures
-model: claude-3-5-sonnet-20250115
+model: claude-3-5-sonnet-20241120
 argument-hint: [feature-branch-name]
 ---
 
