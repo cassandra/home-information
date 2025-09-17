@@ -76,7 +76,7 @@ git checkout -b feature/$(ISSUE_NUM}-${MNEMONIC} upstream/staging
 ## Do Your Thing
 
 - Make your changes to the code.
-- Test your changes locally (and add unit tests).
+- Test your changes locally (and add tests).
 - Stage changes: `git add .`
 - Commit changes: `git commit -m "Add feature: [brief description]"`
 - Push branch to your fork: `git push origin feature/$(ISSUE_NUM}-${MNEMONIC}`

@@ -920,7 +920,7 @@ Entity Visual Configuration Review Checklist:
   - Cross-browser compatibility verified
 
 □ Testing Requirements:
-  - Unit tests cover registration
+  - Tests cover registration
   - Visual tests verify appearance
   - Status change tests verify dynamic updates
   - Error cases handled gracefully

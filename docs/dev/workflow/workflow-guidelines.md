@@ -56,7 +56,7 @@ Closes #42
 - Update entity templates to use new icon system
 
 ### Testing
-- [ ] Unit tests pass
+- [ ] Tests pass
 - [ ] Icon rendering verified in UI
 - [ ] Multiple size variants tested
 
@@ -100,7 +100,7 @@ For complex issues involving multiple aspects or trade-offs:
 
 **Good examples:**
 ```
-Fix weather module unit test failures and improve WMO units handling
+Fix weather module test failures and improve WMO units handling
 Add support for temperature offset unit arithmetic in Pint
 Remove invalid AlertUrgency.PAST enum value for weather alerts
 ```
@@ -117,7 +117,7 @@ Remove invalid AlertUrgency.PAST enum value for weather alerts
 **MANDATORY checks before creating any PR:**
 
 ```bash
-# 1. Run full unit test suite (must pass)
+# 1. Run full test suite (must pass)
 make test
 
 # 2. Run code quality check (must pass with no output)
@@ -144,7 +144,7 @@ Closes #123
 - Business impact
 
 ### Testing
-- [ ] Unit tests pass
+- [ ] Tests pass
 - [ ] Integration tests pass  
 - [ ] Manual testing completed
 

@@ -1,6 +1,6 @@
 # JavaScript Testing
 
-This document describes the approach for unit testing JavaScript modules in the Home Information application.
+This document describes the approach for testing JavaScript modules in the Home Information application.
 
 ## Overview
 

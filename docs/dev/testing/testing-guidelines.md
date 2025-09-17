@@ -1,11 +1,22 @@
 # Testing Guidelines
 
-## Unit Tests
+## Running Tests
+
+Run all the tests with:
 
 ```bash
-cd $PROJ_DIR/src
-./manage.py test
+cd $PROJ_DIR
+make test
 ```
+Run individual tests using Django with:
+
+```bash
+cd $PROJ_DIR
+./src/manage.py test --keepdb <test-module-goes-here>
+```
+## Overall Guidelines
+
+We only want to mock as external system boundaries and avoid mocking anything that is internal to this code base.  We need to know how our internal components integrate and the test are the best way to know if something has chnaged in an incompatible way.  We rarely want "pure" unit testing since mocking internal app boundaries masks issues.
 
 ## High-Value vs Low-Value Testing Criteria
 
