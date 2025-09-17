@@ -97,10 +97,22 @@ This is where the automated release process ends.
 
 ## Post-Release Tasks (Manual)
 
+### Refine Release
+
+- Read and refine the release notes on the github page.
+- Attach an image to the release
+
 ### Validate Install Script Works
+
+Check github actions for completion of Docke rimage building.
 
 Test the single-command installation script (this must be done manually):
 ```
+DATE=`date '+%Y-%m-%d'`
+mkdir ~/testing
+cd ~/testing
+mv ~/.hi ~/.hi-$DATE
+
 curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/install.sh | bash
 ```
 
