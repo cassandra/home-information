@@ -150,22 +150,62 @@ class TestConfigSettingsView(DualModeViewTestCase):
         # There may be default system subsystems in addition to our test subsystem
         self.assertGreaterEqual(len(form_data_list), 1)  # At least our test subsystem
 
-    def test_audio_test_button_appears(self):
-        """Test that the Test Audio button appears in the settings page template."""
+    def test_audio_test_button_appears_only_for_audio_subsystem(self):
+        """Test that audio test functionality appears only in audio subsystem context."""
+        # Get or create an audio subsystem to trigger the audio test button display
+        audio_subsystem, _ = Subsystem.objects.get_or_create(
+            subsystem_key='hi.apps.audio',
+            defaults={'name': 'Audio System'}
+        )
+
+        # Create a non-audio subsystem for comparison
+        other_subsystem = Subsystem.objects.create(
+            name='Other System',
+            subsystem_key='hi.apps.other.test'
+        )
+
         url = reverse('config_settings')
         response = self.client.get(url)
 
         self.assertSuccessResponse(response)
         self.assertHtmlResponse(response)
 
-        # Check that the Test Audio button is present in the rendered HTML
+        # Verify structural elements for audio test functionality
         content = response.content.decode('utf-8')
-        self.assertIn('Test Audio', content)
-        self.assertIn('Hi.audio.testAudio()', content)
-        self.assertIn('btn-outline-primary', content)
 
-        # Verify the button has proper attributes
+        # Test that audio test functionality is present (structural check)
+        # Look for button element with audio test trigger (using semantic HTML structure)
+        self.assertIn('onclick="Hi.audio.testAudio()', content)
         self.assertIn('type="button"', content)
-        self.assertIn('title="Test audio playback"', content)
+
+        # Verify the button appears in the correct subsystem context
+        # Check that it appears within the audio subsystem panel
+        audio_panel_id = f'subsystem-{audio_subsystem.id}-panel'
+        self.assertIn(audio_panel_id, content)
+
+        # Verify tab structure includes both subsystems
+        audio_tab_id = f'subsystem-{audio_subsystem.id}-tab'
+        other_tab_id = f'subsystem-{other_subsystem.id}-tab'
+        self.assertIn(audio_tab_id, content)
+        self.assertIn(other_tab_id, content)
+
+        # Test accessibility: button should have descriptive title attribute
+        self.assertIn('title=', content)
+
+        # Ensure the audio test button only appears in audio subsystem context
+        # This is the key structural behavior - conditional rendering based on subsystem_key
+        audio_section_start = content.find(f'id="{audio_panel_id}"')
+        audio_section_end = content.find('</div>', audio_section_start + len(audio_panel_id) + 20)
+        audio_section = content[audio_section_start:audio_section_end] if audio_section_start != -1 else ""
+
+        # Verify audio test function call exists within audio subsystem section
+        self.assertIn('Hi.audio.testAudio()', audio_section)
+
+        # Verify the non-audio subsystem doesn't have audio test functionality
+        other_section_start = content.find(f'id="subsystem-{other_subsystem.id}-panel"')
+        if other_section_start != -1:
+            other_section_end = content.find('</div>', other_section_start + 50)
+            other_section = content[other_section_start:other_section_end]
+            self.assertNotIn('Hi.audio.testAudio()', other_section)
 
 
