@@ -105,7 +105,7 @@ Focus on responding to feedback on GitHub pull request #$1:
     git commit -m "Address PR feedback: [summary of changes]"
 
     # Push updates to PR
-    git push
+    git push origin
     ```
 
 12. **Follow up on PR** - Ensure review completion:

@@ -49,7 +49,7 @@ Execute standardized commit workflow:
 
 6. **Push to current branch** - Update remote:
    ```bash
-   git push
+   git push origin
    ```
 
 7. **Verify commit success** - Confirm clean state:

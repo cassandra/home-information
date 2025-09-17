@@ -106,7 +106,7 @@ Execute focused implementation workflow for issue that has already been picked u
    git commit -m "[Concise description of what was implemented]"
 
    # Push to remote feature branch
-   git push
+   git push origin
    ```
 
 10. **Final status report** - Provide implementation summary:
