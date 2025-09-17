@@ -25,6 +25,7 @@ Execute the complete PR creation workflow:
 
 3. **Gather PR information** - Collect required details:
    - Current branch name and recent commits
+   - **Detect correct base branch** using `git remote show origin` to find HEAD branch
    - Related GitHub issue number(s)
    - Summary of changes made
    - Testing performed
@@ -34,6 +35,14 @@ Execute the complete PR creation workflow:
 
    **CRITICAL**: Use file-based approach to prevent escaping failures:
    ```bash
+   # Detect the correct base branch from remote HEAD
+   BASE_BRANCH=$(git remote show origin | grep 'HEAD branch:' | cut -d' ' -f5)
+   if [ -z "$BASE_BRANCH" ]; then
+     echo "Warning: Could not detect base branch, falling back to 'main'"
+     BASE_BRANCH="main"
+   fi
+   echo "Using base branch: $BASE_BRANCH"
+
    # Write PR body to temporary file first
    cat > /tmp/pr_body.md <<'EOF'
    ## Pull Request: [TITLE]
@@ -99,8 +108,8 @@ Execute the complete PR creation workflow:
    sed -i '' "s/\[TITLE\]/$1/g" /tmp/pr_body.md
    sed -i '' "s/\[ISSUE_NUMBER\]/ISSUE_NUMBER/g" /tmp/pr_body.md
 
-   # Create PR using file reference
-   gh pr create --title "$1" --body-file /tmp/pr_body.md
+   # Create PR using file reference with detected base branch
+   gh pr create --title "$1" --body-file /tmp/pr_body.md --base "$BASE_BRANCH"
 
    # Clean up temporary file
    rm -f /tmp/pr_body.md
@@ -116,6 +125,7 @@ Execute the complete PR creation workflow:
 **Requirements:**
 - Follow exact workflow from `docs/dev/workflow/workflow-guidelines.md`
 - Use exact template from `.github/PULL_REQUEST_TEMPLATE.md`
+- **Automatically detect base branch** - Never assume 'main' or 'master', always detect from remote HEAD
 - Must pass all pre-PR checks before creation
 - Use HEREDOC syntax to prevent formatting issues
 - No Claude attribution in PR description
