@@ -81,8 +81,8 @@
             return _ajax.submitFormWithAjax(form, options);
         },
         
-        updateFormAction: function(newUrl, containerId) {
-            return _updateFormAction(newUrl, containerId);
+        updateFormAction: function(newUrl, containerId, labelText = null) {
+            return _updateFormAction(newUrl, containerId, labelText);
         },
         
         // Content Management
