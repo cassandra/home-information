@@ -96,7 +96,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             logger.debug('Processing ZoneMinder events')
             sensor_response_map.update( await self._process_events( ) )
             events_duration = (datetimeproxy.now() - events_start).total_seconds()
-            logger.debug(f'Event processing completed in {events_duration:.2f}s, found {len([k for k in sensor_response_map.keys() if "motion" in k])} motion sensors')
+            logger.debug(f'Event processing completed in {events_duration:.2f}s, found {len([k for k in sensor_response_map.keys() if "motion" in k.integration_name])} motion sensors')
 
             # Process monitors with timing
             monitors_start = datetimeproxy.now()
