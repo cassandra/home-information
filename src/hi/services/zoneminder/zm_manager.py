@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from asgiref.sync import sync_to_async
 from .pyzm_client.api import ZMApi
 from .pyzm_client.helpers.Event import Event as ZmEvent
@@ -25,6 +26,7 @@ from hi.integrations.transient_models import (
 )
 from hi.integrations.models import Integration, IntegrationAttribute
 
+from .constants import ZmTimeouts
 from .enums import ZmAttributeType
 from .zm_client_factory import ZmClientFactory
 from .zm_metadata import ZmMetaData
@@ -47,11 +49,9 @@ class ZoneMinderManager( Singleton ):
     MONITOR_FUNCTION_SENSOR_PREFIX = 'monitor.function'
     ZM_RUN_STATE_SENSOR_INTEGRATION_NAME = 'run.state'
 
-    # ZM monitors and states will not change frequently, so we do not need
-    # to query for them at a high frequency.
-    #
-    STATE_REFRESH_INTERVAL_SECS = 300
-    MONITOR_REFRESH_INTERVAL_SECS = 300
+    # Use centralized timeout values from constants
+    STATE_REFRESH_INTERVAL_SECS = ZmTimeouts.STATE_REFRESH_INTERVAL_SECS
+    MONITOR_REFRESH_INTERVAL_SECS = ZmTimeouts.MONITOR_REFRESH_INTERVAL_SECS
    
     def __init_singleton__( self ):
         self._zm_attr_type_to_attribute = dict()
@@ -68,10 +68,18 @@ class ZoneMinderManager( Singleton ):
         self._was_initialized = False
         self._data_lock = Lock()
 
-        # Health status tracking
+        # Health status tracking with enhanced monitoring
         self._health_status = IntegrationHealthStatus(
             status=IntegrationHealthStatusType.UNKNOWN,
-            last_check=datetimeproxy.now()
+            last_check=datetimeproxy.now(),
+            monitor_heartbeat=datetimeproxy.now(),
+            last_api_success=None,
+            api_metrics={
+                'last_response_time': None,
+                'consecutive_failures': 0,
+                'total_calls': 0,
+                'total_failures': 0,
+            }
         )
         return
     
@@ -182,9 +190,17 @@ class ZoneMinderManager( Singleton ):
             if not self.zm_client:
                 logger.warning('ZoneMinder client not available - cannot fetch states')
                 return []
-            self._zm_state_list = self.zm_client.states().list()
-            self._zm_state_timestamp = datetimeproxy.now()
-            logger.debug( f'Fetched ZM states: {[ x.get() for x in self._zm_state_list ]}' )
+
+            # Track API call timing
+            start_time = self._record_api_call_start()
+            try:
+                self._zm_state_list = self.zm_client.states().list()
+                self._zm_state_timestamp = datetimeproxy.now()
+                self._record_api_call_success(start_time)
+                logger.debug( f'Fetched ZM states: {[ x.get() for x in self._zm_state_list ]}' )
+            except Exception as e:
+                self._record_api_call_failure(start_time, e)
+                raise
         return self._zm_state_list
     
     def get_zm_monitors( self, force_load : bool = False ) -> List[ ZmMonitor ]:
@@ -195,20 +211,37 @@ class ZoneMinderManager( Singleton ):
             if not self.zm_client:
                 logger.warning('ZoneMinder client not available - cannot fetch monitors')
                 return []
-            options = {
-                'force_reload': True,  # pyzm caches monitors so need to force api call
-            }
-            self._zm_monitor_list = self.zm_client.monitors( options ).list()
-            self._zm_monitor_timestamp = datetimeproxy.now()
-            logger.debug( f'\n\nFetched ZM monitors: {[ x.get() for x in self._zm_monitor_list ]}\n\n' )
-            
+
+            # Track API call timing
+            start_time = self._record_api_call_start()
+            try:
+                options = {
+                    'force_reload': True,  # pyzm caches monitors so need to force api call
+                }
+                self._zm_monitor_list = self.zm_client.monitors( options ).list()
+                self._zm_monitor_timestamp = datetimeproxy.now()
+                self._record_api_call_success(start_time)
+                logger.debug( f'\n\nFetched ZM monitors: {[ x.get() for x in self._zm_monitor_list ]}\n\n' )
+            except Exception as e:
+                self._record_api_call_failure(start_time, e)
+                raise
+
         return self._zm_monitor_list
         
     def get_zm_events( self, options : Dict[ str, str ] ) -> List[ ZmEvent ]:
         if not self.zm_client:
             logger.warning('ZoneMinder client not available - cannot fetch events')
             return []
-        return self.zm_client.events( options ).list()
+
+        # Track API call timing for events (this is the most critical API call)
+        start_time = self._record_api_call_start()
+        try:
+            result = self.zm_client.events( options ).list()
+            self._record_api_call_success(start_time)
+            return result
+        except Exception as e:
+            self._record_api_call_failure(start_time, e)
+            raise
     
     async def get_zm_states_async( self, force_load : bool = False ) -> List[ ZmState ]:
         """
@@ -307,17 +340,73 @@ class ZoneMinderManager( Singleton ):
     def get_health_status(self) -> IntegrationHealthStatus:
         """Get the current health status of the ZoneMinder integration."""
         return self._health_status
+
+    def update_monitor_heartbeat(self):
+        """Update the monitor heartbeat timestamp to indicate monitor is alive."""
+        self._health_status.monitor_heartbeat = datetimeproxy.now()
+        logger.debug('Monitor heartbeat updated')
+
+    def get_monitor_status(self) -> Dict:
+        """Get detailed monitor status information for debugging."""
+        # The IntegrationHealthStatus now contains all monitoring data
+        status_dict = self._health_status.to_dict()
+
+        # Add computed heartbeat health check
+        if self._health_status.monitor_heartbeat:
+            now = datetimeproxy.now()
+            heartbeat_age = (now - self._health_status.monitor_heartbeat).total_seconds()
+            status_dict['is_heartbeat_healthy'] = heartbeat_age < ZmTimeouts.MONITOR_HEARTBEAT_TIMEOUT_SECS
+
+        return status_dict
+
+    def _record_api_call_start(self) -> datetime:
+        """Record the start of an API call for timing purposes."""
+        return datetimeproxy.now()
+
+    def _record_api_call_success(self, start_time: datetime):
+        """Record a successful API call and update metrics."""
+        end_time = datetimeproxy.now()
+        response_time = (end_time - start_time).total_seconds()
+
+        self._health_status.last_api_success = end_time
+        if self._health_status.api_metrics:
+            self._health_status.api_metrics['last_response_time'] = response_time
+            self._health_status.api_metrics['consecutive_failures'] = 0
+            self._health_status.api_metrics['total_calls'] += 1
+
+        # Log performance warnings
+        if response_time > ZmTimeouts.API_RESPONSE_CRITICAL_THRESHOLD_SECS:
+            logger.warning(f'ZoneMinder API call took {response_time:.2f}s (critical threshold: {ZmTimeouts.API_RESPONSE_CRITICAL_THRESHOLD_SECS}s)')
+        elif response_time > ZmTimeouts.API_RESPONSE_WARNING_THRESHOLD_SECS:
+            logger.warning(f'ZoneMinder API call took {response_time:.2f}s (warning threshold: {ZmTimeouts.API_RESPONSE_WARNING_THRESHOLD_SECS}s)')
+        else:
+            logger.debug(f'ZoneMinder API call completed in {response_time:.2f}s')
+
+    def _record_api_call_failure(self, start_time: datetime, error: Exception):
+        """Record a failed API call and update metrics."""
+        end_time = datetimeproxy.now()
+        response_time = (end_time - start_time).total_seconds()
+
+        if self._health_status.api_metrics:
+            self._health_status.api_metrics['consecutive_failures'] += 1
+            self._health_status.api_metrics['total_failures'] += 1
+            self._health_status.api_metrics['total_calls'] += 1
+
+        logger.warning(f'ZoneMinder API call failed after {response_time:.2f}s: {error}')
     
     def _update_health_status(self, status: IntegrationHealthStatusType, error_message: str = None):
         """Update the health status of this integration."""
         old_status = self._health_status.status
         
-        # Update health status
+        # Update health status while preserving monitoring data
         self._health_status = IntegrationHealthStatus(
             status=status,
             last_check=datetimeproxy.now(),
             error_message=error_message,
-            error_count=self._health_status.error_count + (1 if status.is_error else 0)
+            error_count=self._health_status.error_count + (1 if status.is_error else 0),
+            monitor_heartbeat=self._health_status.monitor_heartbeat,
+            last_api_success=self._health_status.last_api_success,
+            api_metrics=self._health_status.api_metrics
         )
         
         # Log status changes
