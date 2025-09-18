@@ -53,6 +53,8 @@ class SensorHistoryManager( Singleton ):
         return
         
     async def _bulk_create_sensor_history_async( self, sensor_history_list : List[ SensorHistory ] ):
+        if not sensor_history_list:
+            return
         await sync_to_async( SensorHistory.objects.bulk_create,
                              thread_sensitive = True)( sensor_history_list )
         return

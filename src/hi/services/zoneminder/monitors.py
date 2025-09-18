@@ -10,7 +10,7 @@ from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.sense.enums import CorrelationRole
 
-from .constants import ZmDetailKeys
+from .constants import ZmDetailKeys, ZmTimeouts
 from .zm_models import ZmEvent, AggregatedMonitorState
 from .zm_manager import ZoneMinderManager
 from .zm_mixins import ZoneMinderMixin
@@ -22,8 +22,10 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
 
     # TODO: Move this into the integrations attributes for users to set
     ZONEMINDER_SERVER_TIMEZONE = 'America/Chicago'
-    ZONEMINDER_POLLING_INTERVAL_SECS = 4
-    ZONEMINDER_API_TIMEOUT_SECS = 10.0  # Shorter timeout appropriate for 4-second polling
+
+    # Use centralized timeout constants
+    ZONEMINDER_POLLING_INTERVAL_SECS = ZmTimeouts.POLLING_INTERVAL_SECS
+    ZONEMINDER_API_TIMEOUT_SECS = ZmTimeouts.API_TIMEOUT_SECS
 
     CACHING_DISABLED = True
     
@@ -65,7 +67,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         # Reset monitor state so next cycle reinitializes with updated manager
         self._was_initialized = False
         self._zm_tzname = None  # Clear cached timezone
-        logger.info( 'ZoneMinderMonitor refreshed - will reinitialize with new settings on next cycle' )
+        logger.debug( 'ZoneMinderMonitor refreshed - will reinitialize with new settings on next cycle' )
         return
 
     async def do_work(self):
@@ -76,15 +78,33 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             # Timing issues when first enabling could fail initialization.
             logger.warning( 'ZoneMinder monitor failed to initialize. Skipping work cycle.' )
             return
-            
-        sensor_response_map = dict()
-        sensor_response_map.update( await self._process_events( ) )
-        sensor_response_map.update( await self._process_monitors() )
-        sensor_response_map.update( await self._process_states() )
 
-        await self.sensor_response_manager().update_with_latest_sensor_responses(
-            sensor_response_map = sensor_response_map,
-        )
+        try:
+            # Update heartbeat to indicate monitor is alive and working
+            zm_manager = await self.zm_manager_async()
+            if zm_manager:
+                zm_manager.update_monitor_heartbeat()
+
+            sensor_response_map = dict()
+
+            # Process ZoneMinder events for motion detection
+            sensor_response_map.update( await self._process_events( ) )
+
+            # Process ZoneMinder monitors for function changes
+            sensor_response_map.update( await self._process_monitors() )
+
+            # Process ZoneMinder states for run state changes
+            sensor_response_map.update( await self._process_states() )
+
+            # Update sensor responses
+            await self.sensor_response_manager().update_with_latest_sensor_responses(
+                sensor_response_map = sensor_response_map,
+            )
+
+        except Exception as e:
+            logger.exception(f'ZoneMinder monitor cycle failed: {e}')
+            raise
+
         return
     
     async def _process_events(self):
@@ -105,8 +125,11 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             'from': tz_adjusted_poll_from_datetime.isoformat(),  # "from" only looks at event start time
             'tz': self._zm_tzname,
         }
-        zm_events = await self.zm_manager().get_zm_events_async( options = options )
-        logger.debug( f'Found {len(zm_events)} new ZM events' )
+        try:
+            zm_events = await self.zm_manager().get_zm_events_async( options = options )
+        except Exception as e:
+            logger.error(f'ZoneMinder events API call failed: {e}')
+            raise
 
         # Sensor readings and state value transitions are points in time,
         # but ZoneMinder events are intervals.  Thus, one ZoneMinder event
@@ -127,7 +150,6 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         closed_zm_event_list = list()
         zm_monitor_ids_seen = set()
         for zm_api_event in zm_events:
-            logger.debug( f'ZM Api Event: {zm_api_event.get()}' )
             zm_event = ZmEvent( zm_api_event = zm_api_event,
                                 zm_tzname = self._zm_tzname )
 

@@ -311,7 +311,7 @@ class TestEventManagerEventDetection(AsyncEventManagerTestCase):
             self.manager._recent_transitions.append(transition)
             
             # Should detect event
-            event = await self.manager._create_event_if_detected(event_def)
+            event = await sync_to_async(self.manager._create_event_if_detected)(event_def)
             
             self.assertIsInstance(event, Event)
             self.assertEqual(event.event_definition, event_def)
@@ -381,7 +381,7 @@ class TestEventManagerEventDetection(AsyncEventManagerTestCase):
             self.manager._recent_transitions.extend([transition1, transition2])
             
             # Should detect event with both sensor responses
-            event = await self.manager._create_event_if_detected(event_def)
+            event = await sync_to_async(self.manager._create_event_if_detected)(event_def)
             
             self.assertIsInstance(event, Event)
             self.assertEqual(len(event.sensor_response_list), 2)
@@ -431,7 +431,7 @@ class TestEventManagerEventDetection(AsyncEventManagerTestCase):
             manager._recent_transitions.append(transition)
             
             # Should NOT detect event due to timing constraint
-            event = await manager._create_event_if_detected(event_def)
+            event = await sync_to_async(manager._create_event_if_detected)(event_def)
             
             self.assertFalse(event)
         
@@ -457,7 +457,7 @@ class TestEventManagerDeduplication(AsyncEventManagerTestCase):
             self.manager._recent_events[event_def.id] = recent_event
             
             # Should detect recent event within dedupe window
-            has_recent = await self.manager._has_recent_event(event_def)
+            has_recent = self.manager._has_recent_event(event_def)
             
             self.assertTrue(has_recent)
         
@@ -483,7 +483,7 @@ class TestEventManagerDeduplication(AsyncEventManagerTestCase):
             self.manager._recent_events[event_def.id] = old_event
             
             # Should NOT have recent event (outside dedupe window)
-            has_recent = await self.manager._has_recent_event(event_def)
+            has_recent = self.manager._has_recent_event(event_def)
             
             self.assertFalse(has_recent)
         

@@ -82,6 +82,11 @@ class IntegrationHealthStatus:
     last_check     : datetime
     error_message  : Optional[str]     = None
     error_count    : int               = 0
+    # Enhanced monitoring fields for debugging transient issues
+    monitor_heartbeat : Optional[datetime] = None  # Last time the monitor cycled successfully
+    last_api_success  : Optional[datetime] = None  # Last successful API call
+    api_metrics      : Optional[Dict] = None      # API call performance metrics
+    async_diagnostics : Optional[Dict] = None     # Background task and async loop diagnostics
 
     @property
     def is_healthy(self) -> bool:
@@ -100,7 +105,7 @@ class IntegrationHealthStatus:
         return self.status.label
 
     def to_dict(self) -> Dict:
-        return {
+        result = {
             'status': self.status.value,
             'status_display': self.status_display,
             'last_check': self.last_check,
@@ -110,6 +115,24 @@ class IntegrationHealthStatus:
             'is_error': self.is_error,
             'is_critical': self.is_critical,
         }
+
+        # Include enhanced monitoring fields if present
+        if self.monitor_heartbeat is not None:
+            import hi.apps.common.datetimeproxy as datetimeproxy
+            heartbeat_age = (datetimeproxy.now() - self.monitor_heartbeat).total_seconds()
+            result['monitor_heartbeat'] = self.monitor_heartbeat
+            result['monitor_heartbeat_age_seconds'] = heartbeat_age
+
+        if self.last_api_success is not None:
+            result['last_api_success'] = self.last_api_success
+
+        if self.api_metrics is not None:
+            result['api_metrics'] = self.api_metrics
+
+        if self.async_diagnostics is not None:
+            result['async_diagnostics'] = self.async_diagnostics
+
+        return result
 
 
 @dataclass

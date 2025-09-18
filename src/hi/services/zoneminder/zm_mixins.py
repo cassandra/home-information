@@ -1,4 +1,3 @@
-from asgiref.sync import sync_to_async
 import asyncio
 import logging
 
@@ -19,14 +18,13 @@ class ZoneMinderMixin:
         if not hasattr( self, '_zm_manager' ):
             self._zm_manager = ZoneMinderManager()
             try:
-                await asyncio.shield( sync_to_async( self._zm_manager.ensure_initialized )())
-
+                # ensure_initialized_async() already handles thread_sensitive=True internally
+                await asyncio.shield(self._zm_manager.ensure_initialized_async())
             except asyncio.CancelledError:
-                logger.warning( 'ZM init sync_to_async() was cancelled! Handling gracefully.')
+                logger.warning( 'ZM init ensure_initialized_async() was cancelled! Handling gracefully.')
                 return None
-
             except Exception as e:
-                logger.warning( f'ZM init sync_to_async() exception! Handling gracefully. ({e})' )
+                logger.warning( f'ZM init ensure_initialized_async() exception! Handling gracefully. ({e})' )
                 return None
 
         return self._zm_manager

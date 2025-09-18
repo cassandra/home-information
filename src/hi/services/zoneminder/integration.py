@@ -57,8 +57,10 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
     
     def get_health_status(self) -> IntegrationHealthStatus:
         """Get the current health status of the ZoneMinder integration.
-        
+
         Delegates to ZoneMinderManager for health status information.
+        The health status now includes enhanced monitoring data for debugging
+        transient issues like the bug in #205.
         """
         try:
             zm_manager = ZoneMinderManager()

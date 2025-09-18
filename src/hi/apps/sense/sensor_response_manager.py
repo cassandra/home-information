@@ -30,7 +30,7 @@ class SensorResponseMixin:
         if not hasattr( self, '_sensor_response_manager' ):
             self._sensor_response_manager = SensorResponseManager()
             try:
-                await asyncio.shield( sync_to_async( self._sensor_response_manager.ensure_initialized )())
+                await asyncio.shield( sync_to_async( self._sensor_response_manager.ensure_initialized, thread_sensitive=True )())
  
             except asyncio.CancelledError:
                 logger.warning( 'SensorResponse init sync_to_async() was cancelled! Handling gracefully.')
@@ -113,6 +113,7 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
                 previous_sensor_response = SensorResponse.from_string( cached_value )
                 if latest_sensor_response.value == previous_sensor_response.value:
                     continue
+
                 entity_state_transition = await self._create_entity_state_transition(
                     previous_sensor_response = previous_sensor_response,
                     latest_sensor_response = latest_sensor_response,
@@ -122,13 +123,15 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
                 
             changed_sensor_response_list.append( latest_sensor_response )
             continue
-        
-        logger.debug( f'Sensors changed: {len(changed_sensor_response_list)} of {len(sensor_response_map)}' )
+
         await self._add_latest_sensor_responses( changed_sensor_response_list )
+
         event_manager = await self.event_manager_async()
         if not event_manager:
             return
+
         await event_manager.add_entity_state_transitions( entity_state_transition_list )
+
         return
 
     def get_all_latest_sensor_responses( self ) -> Dict[ Sensor, List[ SensorResponse ] ]:
@@ -206,7 +209,9 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
         pipeline.execute()
 
         await self._add_sensors( sensor_response_list = sensor_response_list )
+
         sensor_history_manager = await self.sensor_history_manager_async()
+
         await sensor_history_manager.add_to_sensor_history(
             sensor_response_list = sensor_response_list,
         )        

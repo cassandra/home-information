@@ -1,10 +1,9 @@
 import logging
 from asgiref.sync import sync_to_async
-from threading import Lock
 from typing import Dict, List
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.common.singleton import Singleton
+from hi.apps.common.singleton_manager import SingletonManager
 from hi.apps.common.utils import str_to_bool
 
 from hi.integrations.exceptions import (
@@ -29,29 +28,21 @@ from .hass_models import HassState
 logger = logging.getLogger(__name__)
 
 
-class HassManager( Singleton ):
+class HassManager( SingletonManager ):
 
     def __init_singleton__( self ):
+        super().__init_singleton__()
         self._hass_attr_type_to_attribute = dict()
         self._hass_client = None
         self._client_factory = HassClientFactory()
 
         self._change_listeners = set()
-        self._was_initialized = False
-        self._data_lock = Lock()
 
         # Health status tracking
         self._health_status = IntegrationHealthStatus(
             status=IntegrationHealthStatusType.UNKNOWN,
             last_check=datetimeproxy.now()
         )
-        return
-
-    def ensure_initialized(self):
-        if self._was_initialized:
-            return
-        self.reload()
-        self._was_initialized = True
         return
     
     def register_change_listener( self, callback ):
@@ -71,40 +62,40 @@ class HassManager( Singleton ):
                 logger.exception( 'Problem calling setting change callback.' )
             continue
         return
-    
+
     @property
     def hass_client(self):
         return self._hass_client
-    
-    def reload( self ):
-        """ Called when integration models are changed (via signals below). """
-        logger.debug( 'HASS manager loading started.' )
-        with self._data_lock:
-            try:
-                self._hass_attr_type_to_attribute = self._load_attributes()
-                self._hass_client = self.create_hass_client( self._hass_attr_type_to_attribute )
-                self.clear_caches()
-                self._update_health_status(IntegrationHealthStatusType.HEALTHY)
-                logger.debug( 'HASS manager loading completed.' )
-            except IntegrationDisabledError:
-                msg = 'HASS integration disabled'
-                logger.info(msg)
-                self._update_health_status( IntegrationHealthStatusType.DISABLED, msg  )
-            except IntegrationError as e:
-                error_msg = f'HASS integration configuration error: {e}'
-                logger.error(error_msg)
-                self._update_health_status( IntegrationHealthStatusType.CONFIG_ERROR,
-                                            error_msg )
-            except IntegrationAttributeError as e:
-                error_msg = f'HASS integration attribute error: {e}'
-                logger.error(error_msg)
-                self._update_health_status( IntegrationHealthStatusType.CONFIG_ERROR,
-                                            error_msg )
-            except Exception as e:
-                error_msg = f'Unexpected error loading HASS configuration: {e}'
-                logger.exception(error_msg)
-                self._update_health_status( IntegrationHealthStatusType.TEMPORARY_ERROR,
-                                            error_msg )
+
+    def _reload_implementation( self ):
+        """
+        Perform the actual HASS manager reload work.
+        Called by SingletonManager with appropriate locks already held.
+        """
+        try:
+            self._hass_attr_type_to_attribute = self._load_attributes()
+            self._hass_client = self.create_hass_client( self._hass_attr_type_to_attribute )
+            self.clear_caches()
+            self._update_health_status(IntegrationHealthStatusType.HEALTHY)
+        except IntegrationDisabledError:
+            msg = 'HASS integration disabled'
+            logger.info(msg)
+            self._update_health_status( IntegrationHealthStatusType.DISABLED, msg  )
+        except IntegrationError as e:
+            error_msg = f'HASS integration configuration error: {e}'
+            logger.error(error_msg)
+            self._update_health_status( IntegrationHealthStatusType.CONFIG_ERROR,
+                                        error_msg )
+        except IntegrationAttributeError as e:
+            error_msg = f'HASS integration attribute error: {e}'
+            logger.error(error_msg)
+            self._update_health_status( IntegrationHealthStatusType.CONFIG_ERROR,
+                                        error_msg )
+        except Exception as e:
+            error_msg = f'Unexpected error loading HASS configuration: {e}'
+            logger.exception(error_msg)
+            self._update_health_status( IntegrationHealthStatusType.TEMPORARY_ERROR,
+                                        error_msg )
         return
 
     def clear_caches(self):
