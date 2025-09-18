@@ -100,24 +100,26 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
 
             # Process monitors with timing
             monitors_start = datetimeproxy.now()
-            logger.debug('Processing ZoneMinder monitors')
+            logger.info('Processing ZoneMinder monitors')
             sensor_response_map.update( await self._process_monitors() )
             monitors_duration = (datetimeproxy.now() - monitors_start).total_seconds()
-            logger.debug(f'Monitor processing completed in {monitors_duration:.2f}s')
+            logger.info(f'Monitor processing completed in {monitors_duration:.2f}s')
 
             # Process states with timing
             states_start = datetimeproxy.now()
-            logger.debug('Processing ZoneMinder states')
+            logger.info('Processing ZoneMinder states')
             sensor_response_map.update( await self._process_states() )
             states_duration = (datetimeproxy.now() - states_start).total_seconds()
-            logger.debug(f'State processing completed in {states_duration:.2f}s')
+            logger.info(f'State processing completed in {states_duration:.2f}s')
 
             # Update sensor responses
+            logger.info('Starting updating SensorResponse items')
             update_start = datetimeproxy.now()
             await self.sensor_response_manager().update_with_latest_sensor_responses(
                 sensor_response_map = sensor_response_map,
             )
             update_duration = (datetimeproxy.now() - update_start).total_seconds()
+            logger.info(f'Update SensorResponse items competed in {update_duration:.2f}s')
 
             # Log cycle completion with comprehensive timing
             total_duration = (datetimeproxy.now() - cycle_start_time).total_seconds()

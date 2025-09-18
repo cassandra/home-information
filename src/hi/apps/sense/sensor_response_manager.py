@@ -123,7 +123,7 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
             changed_sensor_response_list.append( latest_sensor_response )
             continue
         
-        logger.debug( f'Sensors changed: {len(changed_sensor_response_list)} of {len(sensor_response_map)}' )
+        logger.info( f'Sensors changed: {len(changed_sensor_response_list)} of {len(sensor_response_map)}' )
         await self._add_latest_sensor_responses( changed_sensor_response_list )
         event_manager = await self.event_manager_async()
         if not event_manager:
