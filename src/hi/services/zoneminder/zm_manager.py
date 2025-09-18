@@ -339,7 +339,18 @@ class ZoneMinderManager( Singleton ):
     
     def get_health_status(self) -> IntegrationHealthStatus:
         """Get the current health status of the ZoneMinder integration."""
-        return self._health_status
+        # Add on-demand async diagnostics
+        health_status = self._health_status
+        health_status.async_diagnostics = self._get_async_diagnostics()
+        return health_status
+
+    def _get_async_diagnostics(self) -> Dict:
+        """Get async task diagnostics on-demand"""
+        try:
+            from hi.apps.common.asyncio_utils import BackgroundTaskMonitor
+            return BackgroundTaskMonitor.get_background_task_status()
+        except Exception as e:
+            return {'error': f'Failed to get async diagnostics: {e}'}
 
     def update_monitor_heartbeat(self):
         """Update the monitor heartbeat timestamp to indicate monitor is alive."""
@@ -406,7 +417,8 @@ class ZoneMinderManager( Singleton ):
             error_count=self._health_status.error_count + (1 if status.is_error else 0),
             monitor_heartbeat=self._health_status.monitor_heartbeat,
             last_api_success=self._health_status.last_api_success,
-            api_metrics=self._health_status.api_metrics
+            api_metrics=self._health_status.api_metrics,
+            async_diagnostics=None  # Reset async diagnostics, will be populated on-demand
         )
         
         # Log status changes

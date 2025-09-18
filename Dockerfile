@@ -26,7 +26,7 @@ VOLUME /data/database /data/media
 RUN mkdir -p /data/database && mkdir -p /data/media
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8000/health/ || exit 1
+    CMD curl -f http://localhost:8000/health || exit 1
 
 # Assumes base.txt is all that is needed (ignores dev-specific dependencies)
 COPY src/hi/requirements/base.txt /src/requirements.txt

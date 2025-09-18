@@ -86,6 +86,7 @@ class IntegrationHealthStatus:
     monitor_heartbeat : Optional[datetime] = None  # Last time the monitor cycled successfully
     last_api_success  : Optional[datetime] = None  # Last successful API call
     api_metrics      : Optional[Dict] = None      # API call performance metrics
+    async_diagnostics : Optional[Dict] = None     # Background task and async loop diagnostics
 
     @property
     def is_healthy(self) -> bool:
@@ -127,6 +128,9 @@ class IntegrationHealthStatus:
 
         if self.api_metrics is not None:
             result['api_metrics'] = self.api_metrics
+
+        if self.async_diagnostics is not None:
+            result['async_diagnostics'] = self.async_diagnostics
 
         return result
 
