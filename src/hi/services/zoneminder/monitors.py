@@ -67,7 +67,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         # Reset monitor state so next cycle reinitializes with updated manager
         self._was_initialized = False
         self._zm_tzname = None  # Clear cached timezone
-        logger.info( 'ZoneMinderMonitor refreshed - will reinitialize with new settings on next cycle' )
+        logger.debug( 'ZoneMinderMonitor refreshed - will reinitialize with new settings on next cycle' )
         return
 
     async def do_work(self):
@@ -100,30 +100,30 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
 
             # Process monitors with timing
             monitors_start = datetimeproxy.now()
-            logger.info('Processing ZoneMinder monitors')
+            logger.debug('Processing ZoneMinder monitors')
             sensor_response_map.update( await self._process_monitors() )
             monitors_duration = (datetimeproxy.now() - monitors_start).total_seconds()
-            logger.info(f'Monitor processing completed in {monitors_duration:.2f}s')
+            logger.debug(f'Monitor processing completed in {monitors_duration:.2f}s')
 
             # Process states with timing
             states_start = datetimeproxy.now()
-            logger.info('Processing ZoneMinder states')
+            logger.debug('Processing ZoneMinder states')
             sensor_response_map.update( await self._process_states() )
             states_duration = (datetimeproxy.now() - states_start).total_seconds()
-            logger.info(f'State processing completed in {states_duration:.2f}s')
+            logger.debug(f'State processing completed in {states_duration:.2f}s')
 
             # Update sensor responses
-            logger.info('Starting updating SensorResponse items')
+            logger.debug('Starting updating SensorResponse items')
             update_start = datetimeproxy.now()
             await self.sensor_response_manager().update_with_latest_sensor_responses(
                 sensor_response_map = sensor_response_map,
             )
             update_duration = (datetimeproxy.now() - update_start).total_seconds()
-            logger.info(f'Update SensorResponse items competed in {update_duration:.2f}s')
+            logger.debug(f'Update SensorResponse items competed in {update_duration:.2f}s')
 
             # Log cycle completion with comprehensive timing
             total_duration = (datetimeproxy.now() - cycle_start_time).total_seconds()
-            logger.info(f'ZoneMinder monitor cycle completed successfully in {total_duration:.2f}s '
+            logger.debug(f'ZoneMinder monitor cycle completed successfully in {total_duration:.2f}s '
                         f'(events: {events_duration:.2f}s, monitors: {monitors_duration:.2f}s, '
                         f'states: {states_duration:.2f}s, update: {update_duration:.2f}s) '
                         f'- {len(sensor_response_map)} sensor responses')
