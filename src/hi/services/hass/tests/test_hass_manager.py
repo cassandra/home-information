@@ -89,30 +89,30 @@ class TestHassManagerInitialization(TestCase):
         self.assertFalse(self.manager._was_initialized)
         self.assertIsNotNone(self.manager._data_lock)
     
-    @patch('hi.services.hass.hass_manager.HassManager.reload')
-    def test_ensure_initialized_calls_reload_once(self, mock_reload):
+    @patch('hi.services.hass.hass_manager.HassManager._reload_implementation')
+    def test_ensure_initialized_calls_reload_once(self, mock_reload_impl):
         """Test ensure_initialized only calls reload once and sets state correctly"""
         # Verify initial state
         self.assertFalse(self.manager._was_initialized)
-        
+
         self.manager.ensure_initialized()
-        mock_reload.assert_called_once()
+        mock_reload_impl.assert_called_once()
         self.assertTrue(self.manager._was_initialized)
-        
+
         # Second call should not trigger reload but state should remain
         self.manager.ensure_initialized()
-        mock_reload.assert_called_once()  # Still only one call
+        mock_reload_impl.assert_called_once()  # Still only one call
         self.assertTrue(self.manager._was_initialized)
     
     def test_ensure_initialized_idempotent_behavior(self):
         """Test ensure_initialized can be called multiple times safely"""
-        with patch.object(self.manager, 'reload') as mock_reload:
+        with patch.object(self.manager, '_reload_implementation') as mock_reload_impl:
             # Call multiple times
             for _ in range(5):
                 self.manager.ensure_initialized()
-            
+
             # Should only be called once
-            mock_reload.assert_called_once()
+            mock_reload_impl.assert_called_once()
             self.assertTrue(self.manager._was_initialized)
     
     def test_reload_without_integration_in_database(self):
