@@ -74,7 +74,14 @@ Help plan the work described in GitHub issue #$1 to determine optimal breakdown 
    - Value delivery timeline and milestones
    - If multi-issue approach recommended, provide `/createissue` commands for each issue
 
-9. **Plan Outcome Execution Guidance** - Direct next steps for implementation:
+9. **Post strategic plan to GitHub issue** - Document planning analysis:
+   - Use `gh issue comment $1` to post the complete strategic plan
+   - Include all key sections: complexity assessment, breakdown strategy, phase descriptions, timeline, risk assessment
+   - Provide clear rationale for chosen approach
+   - Document effort estimates and value delivery timeline
+   - Create permanent record for team coordination and future reference
+
+10. **Plan Outcome Execution Guidance** - Direct next steps for implementation:
    - **Use `/design` for issues requiring:**
      - Visual mockups or wireframes for UI changes
      - UI interaction specifications and patterns
