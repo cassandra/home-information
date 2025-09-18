@@ -227,7 +227,6 @@ class ZoneMinderManager( SingletonManager ):
                 self._zm_state_list = self.zm_client.states().list()
                 self._zm_state_timestamp = datetimeproxy.now()
                 self._record_api_call_success(start_time)
-                logger.debug( f'Fetched ZM states: {[ x.get() for x in self._zm_state_list ]}' )
             except Exception as e:
                 self._record_api_call_failure(start_time, e)
                 raise
@@ -251,7 +250,6 @@ class ZoneMinderManager( SingletonManager ):
                 self._zm_monitor_list = self.zm_client.monitors( options ).list()
                 self._zm_monitor_timestamp = datetimeproxy.now()
                 self._record_api_call_success(start_time)
-                logger.debug( f'\n\nFetched ZM monitors: {[ x.get() for x in self._zm_monitor_list ]}\n\n' )
             except Exception as e:
                 self._record_api_call_failure(start_time, e)
                 raise
@@ -426,8 +424,6 @@ class ZoneMinderManager( SingletonManager ):
             logger.warning(f'ZoneMinder API call took {response_time:.2f}s (critical threshold: {ZmTimeouts.API_RESPONSE_CRITICAL_THRESHOLD_SECS}s)')
         elif response_time > ZmTimeouts.API_RESPONSE_WARNING_THRESHOLD_SECS:
             logger.warning(f'ZoneMinder API call took {response_time:.2f}s (warning threshold: {ZmTimeouts.API_RESPONSE_WARNING_THRESHOLD_SECS}s)')
-        else:
-            logger.debug(f'ZoneMinder API call completed in {response_time:.2f}s')
 
     def _record_api_call_failure(self, start_time: datetime, error: Exception):
         """Record a failed API call and update metrics."""

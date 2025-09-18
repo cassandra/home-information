@@ -71,11 +71,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         return
 
     async def do_work(self):
-        cycle_start_time = datetimeproxy.now()
-        logger.debug('ZoneMinder monitor cycle starting')
-
         if not self._was_initialized:
-            logger.debug('Monitor not initialized, attempting initialization')
             await self._initialize()
 
         if not self._was_initialized:
@@ -91,51 +87,22 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
 
             sensor_response_map = dict()
 
-            # Process events with timing
-            events_start = datetimeproxy.now()
-            logger.debug('Processing ZoneMinder events')
+            # Process ZoneMinder events for motion detection
             sensor_response_map.update( await self._process_events( ) )
-            events_duration = (datetimeproxy.now() - events_start).total_seconds()
-            logger.debug(f'Event processing completed in {events_duration:.2f}s, found {len([k for k in sensor_response_map.keys() if "motion" in k.integration_name])} motion sensors')
 
-            # Process monitors with timing
-            monitors_start = datetimeproxy.now()
-            logger.debug('Processing ZoneMinder monitors')
+            # Process ZoneMinder monitors for function changes
             sensor_response_map.update( await self._process_monitors() )
-            monitors_duration = (datetimeproxy.now() - monitors_start).total_seconds()
-            logger.debug(f'Monitor processing completed in {monitors_duration:.2f}s')
 
-            # Process states with timing
-            states_start = datetimeproxy.now()
-            logger.debug('Processing ZoneMinder states')
+            # Process ZoneMinder states for run state changes
             sensor_response_map.update( await self._process_states() )
-            states_duration = (datetimeproxy.now() - states_start).total_seconds()
-            logger.debug(f'State processing completed in {states_duration:.2f}s')
 
             # Update sensor responses
-            logger.debug('Starting updating SensorResponse items')
-            update_start = datetimeproxy.now()
             await self.sensor_response_manager().update_with_latest_sensor_responses(
                 sensor_response_map = sensor_response_map,
             )
-            update_duration = (datetimeproxy.now() - update_start).total_seconds()
-            logger.debug(f'Update SensorResponse items competed in {update_duration:.2f}s')
-
-            # Log cycle completion with comprehensive timing
-            total_duration = (datetimeproxy.now() - cycle_start_time).total_seconds()
-            logger.debug(f'ZoneMinder monitor cycle completed successfully in {total_duration:.2f}s '
-                         f'(events: {events_duration:.2f}s, monitors: {monitors_duration:.2f}s, '
-                         f'states: {states_duration:.2f}s, update: {update_duration:.2f}s) '
-                         f'- {len(sensor_response_map)} sensor responses')
-
-            # Log warning if cycle is taking too long
-            if total_duration > (self.ZONEMINDER_POLLING_INTERVAL_SECS * 0.8):
-                logger.warning(f'ZoneMinder monitor cycle took {total_duration:.2f}s, '
-                               f'approaching polling interval of {self.ZONEMINDER_POLLING_INTERVAL_SECS}s')
 
         except Exception as e:
-            cycle_duration = (datetimeproxy.now() - cycle_start_time).total_seconds()
-            logger.exception(f'ZoneMinder monitor cycle failed after {cycle_duration:.2f}s: {e}')
+            logger.exception(f'ZoneMinder monitor cycle failed: {e}')
             raise
 
         return
@@ -158,23 +125,10 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             'from': tz_adjusted_poll_from_datetime.isoformat(),  # "from" only looks at event start time
             'tz': self._zm_tzname,
         }
-        # Log the API call details for debugging
-        logger.debug(f'Querying ZoneMinder events from {tz_adjusted_poll_from_datetime.isoformat()} with options: {options}')
-        api_call_start = datetimeproxy.now()
-
         try:
             zm_events = await self.zm_manager().get_zm_events_async( options = options )
-            api_call_duration = (datetimeproxy.now() - api_call_start).total_seconds()
-            logger.debug( f'Found {len(zm_events)} new ZM events in {api_call_duration:.2f}s' )
-
-            # Log performance warning if API call is slow
-            if api_call_duration > ZmTimeouts.API_RESPONSE_WARNING_THRESHOLD_SECS:
-                logger.warning(f'ZoneMinder events API call took {api_call_duration:.2f}s '
-                               f'(warning threshold: {ZmTimeouts.API_RESPONSE_WARNING_THRESHOLD_SECS}s)')
-
         except Exception as e:
-            api_call_duration = (datetimeproxy.now() - api_call_start).total_seconds()
-            logger.error(f'ZoneMinder events API call failed after {api_call_duration:.2f}s: {e}')
+            logger.error(f'ZoneMinder events API call failed: {e}')
             raise
 
         # Sensor readings and state value transitions are points in time,
@@ -196,7 +150,6 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         closed_zm_event_list = list()
         zm_monitor_ids_seen = set()
         for zm_api_event in zm_events:
-            logger.debug( f'ZM Api Event: {zm_api_event.get()}' )
             zm_event = ZmEvent( zm_api_event = zm_api_event,
                                 zm_tzname = self._zm_tzname )
 

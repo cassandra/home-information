@@ -97,20 +97,15 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
         changed_sensor_response_list = list()
         entity_state_transition_list = list()
 
-        logger.debug( '========= START update_with_latest_sensor_responses() ' )
-        
         list_cache_keys = [ self.to_sensor_response_list_cache_key(x) for x in sensor_response_map.keys() ]
         integration_keys = list( sensor_response_map.keys() )
 
-        logger.debug( f'Start cached values redis pipeline: {len(list_cache_keys)} keys' )
         pipeline = self._redis_client.pipeline()
         for list_cache_key in list_cache_keys:
             pipeline.lindex( list_cache_key, 0 )
             continue
         cached_values = pipeline.execute()
-        logger.debug( f'End cached values redis pipeline: {len(cached_values)} values' )
 
-        logger.debug( f'Start create changed states: {len(integration_keys)} sensors' )
         for integration_key, cached_value in zip( integration_keys, cached_values ):
             latest_sensor_response = sensor_response_map.get( integration_key )
 
@@ -123,13 +118,11 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
                     previous_sensor_response = previous_sensor_response,
                     latest_sensor_response = latest_sensor_response,
                 )
-                logger.debug( f'End create transiiton: {integration_key}' )
                 if entity_state_transition:
                     entity_state_transition_list.append( entity_state_transition )
                 
             changed_sensor_response_list.append( latest_sensor_response )
             continue
-        logger.debug( f'End create changed states: {len(changed_sensor_response_list)} changes' )
 
         await self._add_latest_sensor_responses( changed_sensor_response_list )
 
@@ -137,10 +130,8 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
         if not event_manager:
             return
 
-        logger.debug( f'Start add events: {len(entity_state_transition_list)} transitions' )
         await event_manager.add_entity_state_transitions( entity_state_transition_list )
 
-        logger.debug( f'End add events: {len(entity_state_transition_list)} transitions' )
         return
 
     def get_all_latest_sensor_responses( self ) -> Dict[ Sensor, List[ SensorResponse ] ]:
@@ -207,7 +198,6 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
 
         self._latest_sensor_data_dirty = True
 
-        logger.debug( f'Start add values redis pipeline: {len(sensor_response_list)} responses' )
         pipeline = self._redis_client.pipeline()
         for sensor_response in sensor_response_list:
             list_cache_key = self.to_sensor_response_list_cache_key( sensor_response.integration_key )
@@ -217,19 +207,14 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
             pipeline.sadd( self.SENSOR_RESPONSE_LIST_SET_KEY, list_cache_key )
             continue
         pipeline.execute()
-        logger.debug( f'End add values redis pipeline: {len(sensor_response_list)} responses' )
 
-        logger.debug( f'Start add responses: {len(sensor_response_list)} total' )
         await self._add_sensors( sensor_response_list = sensor_response_list )
-        logger.debug( f'End add responses: {len(sensor_response_list)} total' )
 
         sensor_history_manager = await self.sensor_history_manager_async()
 
-        logger.debug( f'Start add history: {len(sensor_response_list)} total' )
         await sensor_history_manager.add_to_sensor_history(
             sensor_response_list = sensor_response_list,
         )        
-        logger.debug( f'End add history: {len(sensor_response_list)} total' )
         return
     
     def to_sensor_response_list_cache_key( self, integration_key : IntegrationKey ) -> str:
