@@ -1,4 +1,3 @@
-import asyncio
 from asgiref.sync import sync_to_async
 from cachetools import TTLCache
 from collections import deque
@@ -78,25 +77,25 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
         if not entity_state_transition_list:
             return
 
-        logger.info(f'EVENT_MANAGER: Starting add_entity_state_transitions with {len(entity_state_transition_list)} transitions')
+        logger.debug(f'EVENT_MANAGER: Starting add_entity_state_transitions with {len(entity_state_transition_list)} transitions')
         logger.debug( f'Adding state transitions: {entity_state_transition_list}' )
 
         self._recent_transitions.extend( entity_state_transition_list )
-        logger.info('EVENT_MANAGER: Added transitions to recent list')
+        logger.debug('EVENT_MANAGER: Added transitions to recent list')
 
         self._purge_old_transitions()
-        logger.info('EVENT_MANAGER: Purged old transitions')
+        logger.debug('EVENT_MANAGER: Purged old transitions')
 
         new_event_list = await sync_to_async(self._get_new_events, thread_sensitive=True)()
-        logger.info(f'EVENT_MANAGER: Got {len(new_event_list)} new events')
+        logger.debug(f'EVENT_MANAGER: Got {len(new_event_list)} new events')
 
         logger.debug( f'New events found: {new_event_list}' )
 
         await self._do_new_event_action( event_list = new_event_list )
-        logger.info(f'EVENT_MANAGER: Completed new event actions for {len(new_event_list)} events')
+        logger.debug(f'EVENT_MANAGER: Completed new event actions for {len(new_event_list)} events')
 
         await self._add_to_event_history( event_list = new_event_list )
-        logger.info(f'EVENT_MANAGER: Completed add to event history for {len(new_event_list)} events')
+        logger.debug(f'EVENT_MANAGER: Completed add to event history for {len(new_event_list)} events')
 
         return
                                       
