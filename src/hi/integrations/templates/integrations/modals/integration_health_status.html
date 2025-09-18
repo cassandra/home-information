@@ -44,6 +44,58 @@
 </div>
 {% endif %}
 
+{% if health_status.monitor_heartbeat %}
+<div class="row mt-3">
+  <div class="col-sm-12">
+    <h6 class="mb-2">Enhanced Monitoring</h6>
+  </div>
+  <div class="col-sm-3"><strong>Monitor Status:</strong></div>
+  <div class="col-sm-9">
+    {% if health_status.monitor_heartbeat_age_seconds < 30 %}
+      <span class="text-success">
+        {% icon "check-circle" size="sm" css_class="mr-1" %}Active
+      </span>
+      (last seen {{ health_status.monitor_heartbeat|date:"H:i:s" }})
+    {% else %}
+      <span class="text-warning">
+        {% icon "warning" size="sm" css_class="mr-1" %}Stale
+      </span>
+      ({{ health_status.monitor_heartbeat_age_seconds|floatformat:0 }} seconds ago)
+    {% endif %}
+  </div>
+</div>
+
+{% if health_status.last_api_success %}
+<div class="row mt-2">
+  <div class="col-sm-3"><strong>Last API Success:</strong></div>
+  <div class="col-sm-9">{{ health_status.last_api_success|date:"H:i:s" }}</div>
+</div>
+{% endif %}
+
+{% if health_status.api_metrics %}
+<div class="row mt-2">
+  <div class="col-sm-3"><strong>API Metrics:</strong></div>
+  <div class="col-sm-9">
+    <div class="small">
+      <div>Total calls: {{ health_status.api_metrics.total_calls }}</div>
+      {% if health_status.api_metrics.total_failures > 0 %}
+      <div class="text-warning">
+        {% icon "warning" size="sm" css_class="mr-1" %}
+        Failures: {{ health_status.api_metrics.total_failures }}
+        ({{ health_status.api_metrics.consecutive_failures }} consecutive)
+      </div>
+      {% endif %}
+      {% if health_status.api_metrics.last_response_time %}
+      <div>
+        Last response time: {{ health_status.api_metrics.last_response_time|floatformat:2 }}s
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
 {% if health_status.is_healthy %}
 <div class="alert alert-success mt-3">
   <p class="mb-0">

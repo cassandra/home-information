@@ -104,12 +104,16 @@ Execute complete strategic-to-delivery workflow with intelligent coordination:
    - Architecture and patterns aligned
    - Documentation updated appropriately
 
+   **Code Review:**
+   - Use `/review` command for self-review before PR creation
+   - This ensures all changes meet project standards
+
 8. **Phase 6: PR Creation** - Automated pull request generation:
-   - Generate PR title based on issue and implementation
-   - Create comprehensive PR description following template
-   - Use file-based approach for GitHub CLI: write PR body to temp file, then `gh pr create --body-file`
-   - Include proper issue linking: `Closes #$1`
-   - Select appropriate category and fill testing section
+   - Use `/commit` command to create a properly formatted commit with issue context
+   - Use `/pr` command to create pull request with standard template
+   - This ensures consistent formatting and automatic issue linking
+   - The `/pr` command handles `Closes #$1` automatically
+   - Example: `/pr bugfix/205-monitoring 205`
 
 9. **Phase 7: Post-Creation Validation** - Verify successful completion:
    - Confirm PR created successfully
