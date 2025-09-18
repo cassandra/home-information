@@ -1,3 +1,4 @@
+import asyncio
 from asgiref.sync import sync_to_async
 from cachetools import TTLCache
 from collections import deque
@@ -86,7 +87,7 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
         self._purge_old_transitions()
         logger.info('EVENT_MANAGER: Purged old transitions')
 
-        new_event_list = await self._get_new_events()
+        new_event_list = await sync_to_async(self._get_new_events, thread_sensitive=True)()
         logger.info(f'EVENT_MANAGER: Got {len(new_event_list)} new events')
 
         logger.debug( f'New events found: {new_event_list}' )
@@ -99,16 +100,16 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
 
         return
                                       
-    async def _get_new_events( self ):
+    def _get_new_events( self ):
         if self._event_definition_reload_needed:
-            await sync_to_async( self.reload, thread_sensitive = True )()
-            
+            self.reload()
+
         with self._event_definitions_lock:
             new_event_list = list()
             for event_definition in self._event_definitions:
-                if await self._has_recent_event( event_definition ):
+                if self._has_recent_event( event_definition ):
                     continue
-                event = await self._create_event_if_detected( event_definition )
+                event = self._create_event_if_detected( event_definition )
                 if not event:
                     continue
                 self._recent_events[event_definition.id] = event
@@ -117,21 +118,21 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
 
         return new_event_list
 
-    async def _has_recent_event( self, event_definition : EventDefinition ) -> bool:
+    def _has_recent_event( self, event_definition : EventDefinition ) -> bool:
         recent_event = self._recent_events.get( event_definition.id )
         if not recent_event:
             return False
         recent_event_timedelta = datetimeproxy.now() - recent_event.timestamp
         return bool( recent_event_timedelta.total_seconds() <= event_definition.dedupe_window_secs )
     
-    async def _create_event_if_detected( self, event_definition : EventDefinition ) -> bool:
-        if not await sync_to_async(event_definition.event_clauses.exists)():
+    def _create_event_if_detected( self, event_definition : EventDefinition ) -> bool:
+        if not event_definition.event_clauses.exists():
             return False
 
         current_timestamp = datetimeproxy.now()
         sensor_response_list = list()
-        
-        event_clauses = await sync_to_async(list)(event_definition.event_clauses.select_related('entity_state').all())
+
+        event_clauses = list(event_definition.event_clauses.select_related('entity_state').all())
         for event_clause in event_clauses:
             matches = False
             for transition in self._recent_transitions:
@@ -148,7 +149,7 @@ class EventManager( Singleton, AlertMixin, ControllerMixin, SecurityMixin ):
             if not matches:
                 return False
             continue
-        
+
         return Event(
             event_definition = event_definition,
             sensor_response_list = sensor_response_list,

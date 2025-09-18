@@ -124,9 +124,9 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             # Log cycle completion with comprehensive timing
             total_duration = (datetimeproxy.now() - cycle_start_time).total_seconds()
             logger.debug(f'ZoneMinder monitor cycle completed successfully in {total_duration:.2f}s '
-                        f'(events: {events_duration:.2f}s, monitors: {monitors_duration:.2f}s, '
-                        f'states: {states_duration:.2f}s, update: {update_duration:.2f}s) '
-                        f'- {len(sensor_response_map)} sensor responses')
+                         f'(events: {events_duration:.2f}s, monitors: {monitors_duration:.2f}s, '
+                         f'states: {states_duration:.2f}s, update: {update_duration:.2f}s) '
+                         f'- {len(sensor_response_map)} sensor responses')
 
             # Log warning if cycle is taking too long
             if total_duration > (self.ZONEMINDER_POLLING_INTERVAL_SECS * 0.8):

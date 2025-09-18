@@ -97,7 +97,7 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
         changed_sensor_response_list = list()
         entity_state_transition_list = list()
 
-        logger.info( f'========= START update_with_latest_sensor_responses() ' )
+        logger.info( '========= START update_with_latest_sensor_responses() ' )
         
         list_cache_keys = [ self.to_sensor_response_list_cache_key(x) for x in sensor_response_map.keys() ]
         integration_keys = list( sensor_response_map.keys() )
