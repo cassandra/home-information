@@ -121,6 +121,7 @@ class ZoneMinderManager( SingletonManager ):
                 logger.debug(f'Created new thread-local ZM client for thread: {threading.current_thread().name}')
             else:
                 logger.warning('Cannot create ZM client - no attributes configured')
+                self._thread_local.zm_client = None
                 return None
 
         return self._thread_local.zm_client
