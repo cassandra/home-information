@@ -19,7 +19,7 @@ class NotificationMixin:
         if not hasattr( self, '_notification_manager' ):
             self._notification_manager = NotificationManager()
             try:
-                await asyncio.shield( sync_to_async( self._notification_manager.ensure_initialized )())
+                await asyncio.shield( sync_to_async( self._notification_manager.ensure_initialized, thread_sensitive=True )())
    
             except asyncio.CancelledError:
                 logger.warning( 'Notification init sync_to_async() was cancelled! Handling gracefully.')

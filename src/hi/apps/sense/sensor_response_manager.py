@@ -30,7 +30,7 @@ class SensorResponseMixin:
         if not hasattr( self, '_sensor_response_manager' ):
             self._sensor_response_manager = SensorResponseManager()
             try:
-                await asyncio.shield( sync_to_async( self._sensor_response_manager.ensure_initialized )())
+                await asyncio.shield( sync_to_async( self._sensor_response_manager.ensure_initialized, thread_sensitive=True )())
  
             except asyncio.CancelledError:
                 logger.warning( 'SensorResponse init sync_to_async() was cancelled! Handling gracefully.')

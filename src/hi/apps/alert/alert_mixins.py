@@ -19,7 +19,7 @@ class AlertMixin:
         if not hasattr( self, '_alert_manager' ):
             self._alert_manager = AlertManager()
             try:
-                await asyncio.shield( sync_to_async(self._alert_manager.ensure_initialized )())
+                await asyncio.shield( sync_to_async(self._alert_manager.ensure_initialized, thread_sensitive=True )())
                 
             except asyncio.CancelledError:
                 logger.warning( 'AlertMixin sync_to_async() was cancelled! Handling gracefully.' )

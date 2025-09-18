@@ -1,4 +1,5 @@
 import logging
+import threading
 from datetime import datetime
 from asgiref.sync import sync_to_async
 from .pyzm_client.api import ZMApi
@@ -6,11 +7,10 @@ from .pyzm_client.helpers.Event import Event as ZmEvent
 from .pyzm_client.helpers.Monitor import Monitor as ZmMonitor
 from .pyzm_client.helpers.State import State as ZmState
 from .pyzm_client.helpers.globals import logger as pyzm_logger
-from threading import Lock
 from typing import Dict, List
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.common.singleton import Singleton
+from hi.apps.common.singleton_manager import SingletonManager
 from hi.apps.common.utils import str_to_bool
 
 from hi.integrations.enums import IntegrationHealthStatusType
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 pyzm_logger.set_level( 0 )  # pyzm does not use standard 'logging' module. ugh.
 
 
-class ZoneMinderManager( Singleton ):
+class ZoneMinderManager( SingletonManager ):
     """
     References:
       ZM Api code: https://github.com/ZoneMinder/zoneminder/tree/master/web/api/app/Controller
@@ -54,9 +54,11 @@ class ZoneMinderManager( Singleton ):
     MONITOR_REFRESH_INTERVAL_SECS = ZmTimeouts.MONITOR_REFRESH_INTERVAL_SECS
    
     def __init_singleton__( self ):
+        super().__init_singleton__()  # Initialize _data_lock, _async_data_lock, _was_initialized
         self._zm_attr_type_to_attribute = dict()
-        self._zm_client = None
         self._client_factory = ZmClientFactory()
+        # Thread-local storage for ZMApi clients to avoid session sharing
+        self._thread_local = threading.local()
 
         self._zm_state_list = list()
         self._zm_state_timestamp = datetimeproxy.min()
@@ -65,8 +67,6 @@ class ZoneMinderManager( Singleton ):
         self._zm_monitor_timestamp = datetimeproxy.min()
 
         self._change_listeners = set()
-        self._was_initialized = False
-        self._data_lock = Lock()
 
         # Health status tracking with enhanced monitoring
         self._health_status = IntegrationHealthStatus(
@@ -83,13 +83,6 @@ class ZoneMinderManager( Singleton ):
         )
         return
     
-    def ensure_initialized(self):
-        if self._was_initialized:
-            return
-        self.reload()
-        self._was_initialized = True
-        return
-
     def register_change_listener( self, callback ):
         if callback not in self._change_listeners:
             logger.debug( f'Adding ZM setting change listener from {callback.__module__}' )
@@ -110,46 +103,82 @@ class ZoneMinderManager( Singleton ):
     
     @property
     def zm_client(self):
-        # Docs: https://pyzm.readthedocs.io/en/latest/
-        if not self._zm_client:
-            self.reload()
-        return self._zm_client
+        """
+        Get thread-local ZMApi client instance.
+
+        Each thread gets its own client with its own requests.Session
+        to avoid thread-safety issues with shared HTTP connections.
+        """
+        # Check if current thread has a client
+        if not hasattr(self._thread_local, 'zm_client') or self._thread_local.zm_client is None:
+            # Ensure we have configuration loaded
+            if not self._was_initialized:
+                self.ensure_initialized()
+
+            # Create new client for this thread
+            if self._zm_attr_type_to_attribute:
+                self._thread_local.zm_client = self.create_zm_client(self._zm_attr_type_to_attribute)
+                logger.debug(f'Created new thread-local ZM client for thread: {threading.current_thread().name}')
+            else:
+                logger.warning('Cannot create ZM client - no attributes configured')
+                return None
+
+        return self._thread_local.zm_client
     
-    def reload( self ):
-        """ Called when integration models are changed (via signals below). """
-        logger.debug( 'ZoneMinder manager loading started.' )
-        with self._data_lock:
-            try:
-                self._zm_attr_type_to_attribute = self._load_attributes()
-                self._zm_client = self.create_zm_client( self._zm_attr_type_to_attribute )
-                self.clear_caches()
-                self._update_health_status(IntegrationHealthStatusType.HEALTHY)
-                logger.debug( 'ZoneMinder manager loading completed.' )
-            except IntegrationDisabledError:
-                msg = 'ZoneMinder integration disabled'
-                logger.info(msg)
-                self._update_health_status( IntegrationHealthStatusType.DISABLED, msg  )
-            except IntegrationError as e:
-                error_msg = f'ZoneMinder integration configuration error: {e}'
-                logger.error(error_msg)
-                self._update_health_status( IntegrationHealthStatusType.CONFIG_ERROR,
-                                            error_msg) 
-            except IntegrationAttributeError as e:
-                error_msg = f'ZoneMinder integration attribute error: {e}'
-                logger.error(error_msg)
-                self._update_health_status( IntegrationHealthStatusType.CONFIG_ERROR,
-                                            error_msg )
-            except Exception as e:
-                error_msg = f'Unexpected error loading ZoneMinder configuration: {e}'
-                logger.exception(error_msg)
-                self._update_health_status( IntegrationHealthStatusType.TEMPORARY_ERROR,
-                                            error_msg )
+    def _reload_implementation(self):
+        try:
+            self._zm_attr_type_to_attribute = self._load_attributes()
+            # Clear all thread-local clients since configuration changed
+            self._clear_thread_local_clients()
+            self.clear_caches()
+            self._update_health_status(IntegrationHealthStatusType.HEALTHY)
+            logger.debug( 'ZoneMinder manager loading completed.' )
+        except IntegrationDisabledError:
+            msg = 'ZoneMinder integration disabled'
+            logger.info(msg)
+            self._update_health_status( IntegrationHealthStatusType.DISABLED, msg  )
+        except IntegrationError as e:
+            error_msg = f'ZoneMinder integration configuration error: {e}'
+            logger.error(error_msg)
+            self._update_health_status( IntegrationHealthStatusType.CONFIG_ERROR,
+                                        error_msg)
+        except IntegrationAttributeError as e:
+            error_msg = f'ZoneMinder integration attribute error: {e}'
+            logger.error(error_msg)
+            self._update_health_status( IntegrationHealthStatusType.CONFIG_ERROR,
+                                        error_msg )
+        except Exception as e:
+            error_msg = f'Unexpected error loading ZoneMinder configuration: {e}'
+            logger.exception(error_msg)
+            self._update_health_status( IntegrationHealthStatusType.TEMPORARY_ERROR,
+                                        error_msg )
         return
 
     def clear_caches(self):
         self._zm_state_list = list()
         self._zm_monitor_list = list()
         return
+
+    def _clear_thread_local_clients(self):
+        """
+        Clear thread-local client for current thread.
+
+        Note: We can only clear the client for the current thread since
+        threading.local() only exposes data for the current thread.
+        Other threads will get new clients on their next access.
+        """
+        if hasattr(self._thread_local, 'zm_client'):
+            old_client = self._thread_local.zm_client
+            self._thread_local.zm_client = None
+            logger.debug(f'Cleared thread-local ZM client for thread: {threading.current_thread().name}')
+
+            # Clean up the old client's session if possible
+            try:
+                if old_client and hasattr(old_client, 'session'):
+                    old_client.session.close()
+                    logger.debug('Closed old ZM client session')
+            except Exception as e:
+                logger.debug(f'Error closing old ZM client session: {e}')
 
     def _load_attributes(self) -> Dict[ ZmAttributeType, IntegrationAttribute ]:
         try:
@@ -367,6 +396,12 @@ class ZoneMinderManager( Singleton ):
             now = datetimeproxy.now()
             heartbeat_age = (now - self._health_status.monitor_heartbeat).total_seconds()
             status_dict['is_heartbeat_healthy'] = heartbeat_age < ZmTimeouts.MONITOR_HEARTBEAT_TIMEOUT_SECS
+
+        # Add thread-local client information for debugging
+        status_dict['thread_info'] = {
+            'current_thread': threading.current_thread().name,
+            'has_thread_local_client': hasattr(self._thread_local, 'zm_client') and self._thread_local.zm_client is not None
+        }
 
         return status_dict
 

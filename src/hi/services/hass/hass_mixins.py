@@ -19,7 +19,7 @@ class HassMixin:
         if not hasattr( self, '_hass_manager' ):
             self._hass_manager = HassManager()
             try:
-                await asyncio.shield( sync_to_async( self._hass_manager.ensure_initialized )())
+                await asyncio.shield( sync_to_async( self._hass_manager.ensure_initialized, thread_sensitive=True )())
 
             except asyncio.CancelledError:
                 logger.warning( 'HAss init sync_to_async() was cancelled! Handling gracefully.')

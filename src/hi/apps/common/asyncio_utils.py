@@ -72,7 +72,7 @@ class BackgroundTaskMonitor:
                                     task_info['coro_name'] = coro.__qualname__
                                 else:
                                     task_info['coro_name'] = str(type(coro).__name__)
-                            except:
+                            except Exception:
                                 task_info['coro_name'] = 'unknown'
 
                             task_details.append(task_info)
