@@ -1,6 +1,5 @@
 import logging
 import threading
-from datetime import datetime
 from asgiref.sync import sync_to_async
 from .pyzm_client.api import ZMApi
 from .pyzm_client.helpers.Event import Event as ZmEvent
@@ -12,8 +11,10 @@ from typing import Dict, List
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton_manager import SingletonManager
 from hi.apps.common.utils import str_to_bool
+from hi.apps.system.api_owner_mixin import ApiOwnerMixin
+from hi.apps.system.enums import HealthStatusType
+from hi.apps.system.health_status_mixin import HealthStatusMixin
 
-from hi.integrations.enums import IntegrationHealthStatusType
 from hi.integrations.exceptions import (
     IntegrationAttributeError,
     IntegrationError,
@@ -21,7 +22,6 @@ from hi.integrations.exceptions import (
 )
 from hi.integrations.transient_models import (
     IntegrationKey,
-    IntegrationHealthStatus,
     IntegrationValidationResult,
 )
 from hi.integrations.models import Integration, IntegrationAttribute
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 pyzm_logger.set_level( 0 )  # pyzm does not use standard 'logging' module. ugh.
 
 
-class ZoneMinderManager( SingletonManager ):
+class ZoneMinderManager( SingletonManager, HealthStatusMixin, ApiOwnerMixin ):
     """
     References:
       ZM Api code: https://github.com/ZoneMinder/zoneminder/tree/master/web/api/app/Controller
@@ -68,19 +68,6 @@ class ZoneMinderManager( SingletonManager ):
 
         self._change_listeners = set()
 
-        # Health status tracking with enhanced monitoring
-        self._health_status = IntegrationHealthStatus(
-            status=IntegrationHealthStatusType.UNKNOWN,
-            last_check=datetimeproxy.now(),
-            monitor_heartbeat=datetimeproxy.now(),
-            last_api_success=None,
-            api_metrics={
-                'last_response_time': None,
-                'consecutive_failures': 0,
-                'total_calls': 0,
-                'total_failures': 0,
-            }
-        )
         return
     
     def register_change_listener( self, callback ):
@@ -88,7 +75,8 @@ class ZoneMinderManager( SingletonManager ):
             logger.debug( f'Adding ZM setting change listener from {callback.__module__}' )
             self._change_listeners.add( callback )
         else:
-            logger.debug( f'ZM setting change listener from {callback.__module__} already registered, skipping duplicate' )
+            logger.debug( f'ZM setting change listener from {callback.__module__}'
+                          f' already registered, skipping duplicate' )
         return
     
     def notify_settings_changed(self):
@@ -118,7 +106,8 @@ class ZoneMinderManager( SingletonManager ):
             # Create new client for this thread
             if self._zm_attr_type_to_attribute:
                 self._thread_local.zm_client = self.create_zm_client(self._zm_attr_type_to_attribute)
-                logger.debug(f'Created new thread-local ZM client for thread: {threading.current_thread().name}')
+                logger.debug( f'Created new thread-local ZM client for thread:'
+                              f' {threading.current_thread().name}' )
             else:
                 logger.warning('Cannot create ZM client - no attributes configured')
                 self._thread_local.zm_client = None
@@ -132,27 +121,28 @@ class ZoneMinderManager( SingletonManager ):
             # Clear all thread-local clients since configuration changed
             self._clear_thread_local_clients()
             self.clear_caches()
-            self._update_health_status(IntegrationHealthStatusType.HEALTHY)
+            self.update_health_status(HealthStatusType.HEALTHY)
             logger.debug( 'ZoneMinder manager loading completed.' )
+
         except IntegrationDisabledError:
             msg = 'ZoneMinder integration disabled'
             logger.info(msg)
-            self._update_health_status( IntegrationHealthStatusType.DISABLED, msg  )
+            self.update_health_status( HealthStatusType.DISABLED, msg )
+
         except IntegrationError as e:
             error_msg = f'ZoneMinder integration configuration error: {e}'
             logger.error(error_msg)
-            self._update_health_status( IntegrationHealthStatusType.CONFIG_ERROR,
-                                        error_msg)
+            self.update_health_status( HealthStatusType.CONFIG_ERROR, error_msg )
+
         except IntegrationAttributeError as e:
             error_msg = f'ZoneMinder integration attribute error: {e}'
             logger.error(error_msg)
-            self._update_health_status( IntegrationHealthStatusType.CONFIG_ERROR,
-                                        error_msg )
+            self.update_health_status( HealthStatusType.CONFIG_ERROR, error_msg )
+
         except Exception as e:
             error_msg = f'Unexpected error loading ZoneMinder configuration: {e}'
             logger.exception(error_msg)
-            self._update_health_status( IntegrationHealthStatusType.TEMPORARY_ERROR,
-                                        error_msg )
+            self.update_health_status( HealthStatusType.TEMPORARY_ERROR, error_msg )
         return
 
     def clear_caches(self):
@@ -221,15 +211,10 @@ class ZoneMinderManager( SingletonManager ):
                 logger.warning('ZoneMinder client not available - cannot fetch states')
                 return []
 
-            # Track API call timing
-            start_time = self._record_api_call_start()
-            try:
+            with self.api_call_context( 'zm_states' ):
                 self._zm_state_list = self.zm_client.states().list()
                 self._zm_state_timestamp = datetimeproxy.now()
-                self._record_api_call_success(start_time)
-            except Exception as e:
-                self._record_api_call_failure(start_time, e)
-                raise
+                
         return self._zm_state_list
     
     def get_zm_monitors( self, force_load : bool = False ) -> List[ ZmMonitor ]:
@@ -241,18 +226,12 @@ class ZoneMinderManager( SingletonManager ):
                 logger.warning('ZoneMinder client not available - cannot fetch monitors')
                 return []
 
-            # Track API call timing
-            start_time = self._record_api_call_start()
-            try:
+            with self.api_call_context( 'zm_monitors' ):
                 options = {
                     'force_reload': True,  # pyzm caches monitors so need to force api call
                 }
                 self._zm_monitor_list = self.zm_client.monitors( options ).list()
                 self._zm_monitor_timestamp = datetimeproxy.now()
-                self._record_api_call_success(start_time)
-            except Exception as e:
-                self._record_api_call_failure(start_time, e)
-                raise
 
         return self._zm_monitor_list
         
@@ -262,14 +241,10 @@ class ZoneMinderManager( SingletonManager ):
             return []
 
         # Track API call timing for events (this is the most critical API call)
-        start_time = self._record_api_call_start()
-        try:
+        with self.api_call_context( 'zm_events' ):
             result = self.zm_client.events( options ).list()
-            self._record_api_call_success(start_time)
-            return result
-        except Exception as e:
-            self._record_api_call_failure(start_time, e)
-            raise
+
+        return result
     
     async def get_zm_states_async( self, force_load : bool = False ) -> List[ ZmState ]:
         """
@@ -364,177 +339,68 @@ class ZoneMinderManager( SingletonManager ):
         import time
         timestamp = int(time.time())
         return f'{self.zm_client.portal_url}/cgi-bin/nph-zms?mode=jpeg&scale=100&rate=5&maxfps=5&replay=single&source=event&event={event_id}&_t={timestamp}'
-    
-    def get_health_status(self) -> IntegrationHealthStatus:
-        """Get the current health status of the ZoneMinder integration."""
-        # Add on-demand async diagnostics
-        health_status = self._health_status
-        health_status.async_diagnostics = self._get_async_diagnostics()
-        return health_status
-
-    def _get_async_diagnostics(self) -> Dict:
-        """Get async task diagnostics on-demand"""
-        try:
-            from hi.apps.common.asyncio_utils import BackgroundTaskMonitor
-            return BackgroundTaskMonitor.get_background_task_status()
-        except Exception as e:
-            return {'error': f'Failed to get async diagnostics: {e}'}
-
-    def update_monitor_heartbeat(self):
-        """Update the monitor heartbeat timestamp to indicate monitor is alive."""
-        self._health_status.monitor_heartbeat = datetimeproxy.now()
-        logger.debug('Monitor heartbeat updated')
-
-    def get_monitor_status(self) -> Dict:
-        """Get detailed monitor status information for debugging."""
-        # The IntegrationHealthStatus now contains all monitoring data
-        status_dict = self._health_status.to_dict()
-
-        # Add computed heartbeat health check
-        if self._health_status.monitor_heartbeat:
-            now = datetimeproxy.now()
-            heartbeat_age = (now - self._health_status.monitor_heartbeat).total_seconds()
-            status_dict['is_heartbeat_healthy'] = heartbeat_age < ZmTimeouts.MONITOR_HEARTBEAT_TIMEOUT_SECS
-
-        # Add thread-local client information for debugging
-        status_dict['thread_info'] = {
-            'current_thread': threading.current_thread().name,
-            'has_thread_local_client': hasattr(self._thread_local, 'zm_client') and self._thread_local.zm_client is not None
-        }
-
-        return status_dict
-
-    def _record_api_call_start(self) -> datetime:
-        """Record the start of an API call for timing purposes."""
-        return datetimeproxy.now()
-
-    def _record_api_call_success(self, start_time: datetime):
-        """Record a successful API call and update metrics."""
-        end_time = datetimeproxy.now()
-        response_time = (end_time - start_time).total_seconds()
-
-        self._health_status.last_api_success = end_time
-        if self._health_status.api_metrics:
-            self._health_status.api_metrics['last_response_time'] = response_time
-            self._health_status.api_metrics['consecutive_failures'] = 0
-            self._health_status.api_metrics['total_calls'] += 1
-
-        # Log performance warnings
-        if response_time > ZmTimeouts.API_RESPONSE_CRITICAL_THRESHOLD_SECS:
-            logger.warning(f'ZoneMinder API call took {response_time:.2f}s (critical threshold: {ZmTimeouts.API_RESPONSE_CRITICAL_THRESHOLD_SECS}s)')
-        elif response_time > ZmTimeouts.API_RESPONSE_WARNING_THRESHOLD_SECS:
-            logger.warning(f'ZoneMinder API call took {response_time:.2f}s (warning threshold: {ZmTimeouts.API_RESPONSE_WARNING_THRESHOLD_SECS}s)')
-
-    def _record_api_call_failure(self, start_time: datetime, error: Exception):
-        """Record a failed API call and update metrics."""
-        end_time = datetimeproxy.now()
-        response_time = (end_time - start_time).total_seconds()
-
-        if self._health_status.api_metrics:
-            self._health_status.api_metrics['consecutive_failures'] += 1
-            self._health_status.api_metrics['total_failures'] += 1
-            self._health_status.api_metrics['total_calls'] += 1
-
-        logger.warning(f'ZoneMinder API call failed after {response_time:.2f}s: {error}')
-    
-    def _update_health_status(self, status: IntegrationHealthStatusType, error_message: str = None):
-        """Update the health status of this integration."""
-        old_status = self._health_status.status
         
-        # Update health status while preserving monitoring data
-        self._health_status = IntegrationHealthStatus(
-            status=status,
-            last_check=datetimeproxy.now(),
-            error_message=error_message,
-            error_count=self._health_status.error_count + (1 if status.is_error else 0),
-            monitor_heartbeat=self._health_status.monitor_heartbeat,
-            last_api_success=self._health_status.last_api_success,
-            api_metrics=self._health_status.api_metrics,
-            async_diagnostics=None  # Reset async diagnostics, will be populated on-demand
-        )
-        
-        # Log status changes
-        if old_status != status:
-            if status == IntegrationHealthStatusType.HEALTHY:
-                logger.info('ZoneMinder integration is now healthy')
-            elif status == IntegrationHealthStatusType.DISABLED:
-                logger.info('ZoneMinder integration is now disabled')
-            else:
-                logger.warning(f'ZoneMinder integration health status changed to {status.value}: {error_message}')
-    
     def test_connection(self) -> bool:
         """Test the connection to ZoneMinder API and update health status."""
         try:
             if not self.zm_client:
-                self._update_health_status(IntegrationHealthStatusType.CONFIG_ERROR, "ZoneMinder client not configured")
+                self.update_health_status( HealthStatusType.CONFIG_ERROR,
+                                           "ZoneMinder client not configured")
                 return False
             
             # Try to fetch states to test connection
             states = self.get_zm_states(force_load=True)
             if states:
-                self._update_health_status(IntegrationHealthStatusType.HEALTHY)
+                self.update_health_status(HealthStatusType.HEALTHY)
                 return True
             else:
-                self._update_health_status(IntegrationHealthStatusType.CONNECTION_ERROR, "Failed to fetch states from ZoneMinder API")
+                self.update_health_status(HealthStatusType.CONNECTION_ERROR,
+                                          "Failed to fetch states from ZoneMinder API")
                 return False
                 
         except Exception as e:
             error_msg = f'Connection test failed: {e}'
             logger.debug(error_msg)
-            self._update_health_status(IntegrationHealthStatusType.CONNECTION_ERROR, error_msg)
+            self.update_health_status(HealthStatusType.CONNECTION_ERROR, error_msg)
             return False
     
-    def test_client_with_attributes(self, zm_attr_type_to_attribute: Dict[ZmAttributeType, IntegrationAttribute]) -> IntegrationValidationResult:
+    def test_client_with_attributes(
+            self,
+            zm_attr_type_to_attribute: Dict[ZmAttributeType, IntegrationAttribute]
+    ) -> IntegrationValidationResult:
         """
         Test API connectivity using provided attributes without affecting manager state.
-
-        Args:
-            zm_attr_type_to_attribute: Dictionary mapping attribute types to attribute objects
-
-        Returns:
-            IntegrationValidationResult with test results
         """
         try:
-            # Create temporary client with provided attributes
             temp_client = self._client_factory.create_client(zm_attr_type_to_attribute)
-            # Test the client
             return self._client_factory.test_client(temp_client)
 
         except IntegrationError as e:
             return IntegrationValidationResult.error(
-                status=IntegrationHealthStatusType.CONFIG_ERROR,
-                error_message=str(e)
+                status = HealthStatusType.CONFIG_ERROR,
+                error_message = str(e)
             )
         except IntegrationAttributeError as e:
             return IntegrationValidationResult.error(
-                status=IntegrationHealthStatusType.CONFIG_ERROR,
-                error_message=str(e)
+                status = HealthStatusType.CONFIG_ERROR,
+                error_message = str(e)
             )
     
-    def validate_configuration(self, integration_attributes: List[IntegrationAttribute]) -> IntegrationValidationResult:
-        """
-        Validate ZoneMinder configuration using provided attributes.
-
-        Args:
-            integration_attributes: List of IntegrationAttribute objects
-
-        Returns:
-            IntegrationValidationResult with validation results
-        """
+    def validate_configuration(
+            self,
+            integration_attributes: List[IntegrationAttribute]) -> IntegrationValidationResult:
         try:
             # Build attribute mapping without enforcing requirements (for validation testing)
             zm_attr_type_to_attribute = self._build_zm_attr_type_to_attribute_map(
                 integration_attributes=integration_attributes,
                 enforce_requirements=False
             )
-
-            # Use existing test method
             return self.test_client_with_attributes(zm_attr_type_to_attribute)
 
         except Exception as e:
             logger.exception(f'Error in ZoneMinder configuration validation: {e}')
             return IntegrationValidationResult.error(
-                status=IntegrationHealthStatusType.TEMPORARY_ERROR,
+                status=HealthStatusType.TEMPORARY_ERROR,
                 error_message=f'Configuration validation failed: {e}'
             )
     
@@ -542,17 +408,10 @@ class ZoneMinderManager( SingletonManager ):
             self, 
             integration_attributes: List[IntegrationAttribute], 
             enforce_requirements: bool = True) -> Dict[ZmAttributeType, IntegrationAttribute]:
-        """Build mapping from ZmAttributeType to IntegrationAttribute.
-        
-        Args:
-            integration_attributes: List of IntegrationAttribute objects
-            enforce_requirements: If True, raise errors for missing required attributes
-            
-        Returns:
-            Dictionary mapping ZmAttributeType to IntegrationAttribute
-        """
+
         zm_attr_type_to_attribute = {}
-        integration_key_to_attribute = {attr.integration_key: attr for attr in integration_attributes}
+        integration_key_to_attribute = { attr.integration_key: attr
+                                         for attr in integration_attributes }
         
         for zm_attr_type in ZmAttributeType:
             integration_key = IntegrationKey(

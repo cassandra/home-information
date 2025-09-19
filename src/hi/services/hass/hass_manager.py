@@ -2,19 +2,19 @@ import logging
 from asgiref.sync import sync_to_async
 from typing import Dict, List
 
-import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton_manager import SingletonManager
 from hi.apps.common.utils import str_to_bool
+from hi.apps.system.api_owner_mixin import ApiOwnerMixin
+from hi.apps.system.enums import HealthStatusType
+from hi.apps.system.health_status_mixin import HealthStatusMixin
 
 from hi.integrations.exceptions import (
     IntegrationAttributeError,
     IntegrationError,
     IntegrationDisabledError,
 )
-from hi.integrations.enums import IntegrationHealthStatusType
 from hi.integrations.transient_models import (
     IntegrationKey,
-    IntegrationHealthStatus,
     IntegrationValidationResult,
 )
 from hi.integrations.models import Integration, IntegrationAttribute
@@ -28,7 +28,7 @@ from .hass_models import HassState
 logger = logging.getLogger(__name__)
 
 
-class HassManager( SingletonManager ):
+class HassManager( SingletonManager, HealthStatusMixin, ApiOwnerMixin ):
 
     def __init_singleton__( self ):
         super().__init_singleton__()
@@ -38,11 +38,6 @@ class HassManager( SingletonManager ):
 
         self._change_listeners = set()
 
-        # Health status tracking
-        self._health_status = IntegrationHealthStatus(
-            status=IntegrationHealthStatusType.UNKNOWN,
-            last_check=datetimeproxy.now()
-        )
         return
     
     def register_change_listener( self, callback ):
@@ -50,7 +45,8 @@ class HassManager( SingletonManager ):
             logger.debug( f'Adding HASS setting change listener from {callback.__module__}' )
             self._change_listeners.add( callback )
         else:
-            logger.debug( f'HASS setting change listener from {callback.__module__} already registered, skipping duplicate' )
+            logger.debug( f'HASS setting change listener from'
+                          f' {callback.__module__} already registered, skipping duplicate' )
         return
     
     def notify_settings_changed(self):
@@ -76,26 +72,27 @@ class HassManager( SingletonManager ):
             self._hass_attr_type_to_attribute = self._load_attributes()
             self._hass_client = self.create_hass_client( self._hass_attr_type_to_attribute )
             self.clear_caches()
-            self._update_health_status(IntegrationHealthStatusType.HEALTHY)
+            self.update_health_status(HealthStatusType.HEALTHY)
+
         except IntegrationDisabledError:
             msg = 'HASS integration disabled'
             logger.info(msg)
-            self._update_health_status( IntegrationHealthStatusType.DISABLED, msg  )
+            self.update_health_status( HealthStatusType.DISABLED, msg  )
+
         except IntegrationError as e:
             error_msg = f'HASS integration configuration error: {e}'
             logger.error(error_msg)
-            self._update_health_status( IntegrationHealthStatusType.CONFIG_ERROR,
-                                        error_msg )
+            self.update_health_status( HealthStatusType.CONFIG_ERROR, error_msg )
+
         except IntegrationAttributeError as e:
             error_msg = f'HASS integration attribute error: {e}'
             logger.error(error_msg)
-            self._update_health_status( IntegrationHealthStatusType.CONFIG_ERROR,
-                                        error_msg )
+            self.update_health_status( HealthStatusType.CONFIG_ERROR, error_msg )
+
         except Exception as e:
             error_msg = f'Unexpected error loading HASS configuration: {e}'
             logger.exception(error_msg)
-            self._update_health_status( IntegrationHealthStatusType.TEMPORARY_ERROR,
-                                        error_msg )
+            self.update_health_status( HealthStatusType.TEMPORARY_ERROR, error_msg )
         return
 
     def clear_caches(self):
@@ -140,19 +137,16 @@ class HassManager( SingletonManager ):
             logger.warning('HASS client not available - cannot fetch states')
             return {}
             
-        try:
-            hass_entity_id_to_state = dict()
-            for hass_state in self.hass_client.states():
-                hass_entity_id = hass_state.entity_id
-                hass_entity_id_to_state[hass_entity_id] = hass_state
-                continue
+        with self.api_call_context( 'hass_states' ):
+            hass_state_sequence = self.hass_client.states()
 
-            return hass_entity_id_to_state
-        except Exception as e:
-            error_msg = f'Failed to fetch HASS states: {e}'
-            logger.warning(error_msg)
-            self._update_health_status(IntegrationHealthStatusType.CONNECTION_ERROR, error_msg)
-            return {}
+        hass_entity_id_to_state = dict()
+        for hass_state in hass_state_sequence:
+            hass_entity_id = hass_state.entity_id
+            hass_entity_id_to_state[hass_entity_id] = hass_state
+            continue
+
+        return hass_entity_id_to_state
     
     async def fetch_hass_states_from_api_async( self, verbose : bool = True ) -> Dict[ str, HassState ]:
         """
@@ -164,54 +158,34 @@ class HassManager( SingletonManager ):
             thread_sensitive=True
         )(verbose=verbose)
     
-    def get_health_status(self) -> IntegrationHealthStatus:
-        """Get the current health status of the HASS integration."""
-        return self._health_status
-    
-    def _update_health_status(self, status: IntegrationHealthStatusType, error_message: str = None):
-        """Update the health status of this integration."""
-        old_status = self._health_status.status
-        
-        # Update health status
-        self._health_status = IntegrationHealthStatus(
-            status=status,
-            last_check=datetimeproxy.now(),
-            error_message=error_message,
-            error_count=self._health_status.error_count + (1 if status.is_error else 0)
-        )
-        
-        # Log status changes
-        if old_status != status:
-            if status == IntegrationHealthStatusType.HEALTHY:
-                logger.info('HASS integration is now healthy')
-            elif status == IntegrationHealthStatusType.DISABLED:
-                logger.info('HASS integration is now disabled')
-            else:
-                logger.warning(f'HASS integration health status changed to {status.value}: {error_message}')
-    
     def test_connection(self) -> bool:
         """Test the connection to HASS API and update health status."""
         try:
             if not self.hass_client:
-                self._update_health_status(IntegrationHealthStatusType.CONFIG_ERROR, "HASS client not configured")
+                self.update_health_status(HealthStatusType.CONFIG_ERROR,
+                                          "HASS client not configured")
                 return False
             
             # Try to fetch states to test connection
             states = self.fetch_hass_states_from_api(verbose=False)
             if states is not None:
-                self._update_health_status(IntegrationHealthStatusType.HEALTHY)
+                self.update_health_status(HealthStatusType.HEALTHY)
                 return True
             else:
-                self._update_health_status(IntegrationHealthStatusType.CONNECTION_ERROR, "Failed to fetch states from HASS API")
+                self.update_health_status(HealthStatusType.CONNECTION_ERROR,
+                                          "Failed to fetch states from HASS API")
                 return False
                 
         except Exception as e:
             error_msg = f'Connection test failed: {e}'
             logger.debug(error_msg)
-            self._update_health_status(IntegrationHealthStatusType.CONNECTION_ERROR, error_msg)
+            self.update_health_status(HealthStatusType.CONNECTION_ERROR, error_msg)
             return False
     
-    def test_client_with_attributes(self, hass_attr_type_to_attribute: Dict[HassAttributeType, IntegrationAttribute]) -> IntegrationValidationResult:
+    def test_client_with_attributes(
+            self,
+            hass_attr_type_to_attribute: Dict[HassAttributeType, IntegrationAttribute]
+    ) -> IntegrationValidationResult:
         """
         Test API connectivity using provided attributes without affecting manager state.
 
@@ -229,12 +203,12 @@ class HassManager( SingletonManager ):
 
         except IntegrationError as e:
             return IntegrationValidationResult.error(
-                status=IntegrationHealthStatusType.CONFIG_ERROR,
+                status=HealthStatusType.CONFIG_ERROR,
                 error_message=str(e)
             )
         except IntegrationAttributeError as e:
             return IntegrationValidationResult.error(
-                status=IntegrationHealthStatusType.CONFIG_ERROR,
+                status=HealthStatusType.CONFIG_ERROR,
                 error_message=str(e)
             )
     
@@ -263,7 +237,7 @@ class HassManager( SingletonManager ):
         except Exception as e:
             logger.exception(f'Error in HASS configuration validation: {e}')
             return IntegrationValidationResult.error(
-                status=IntegrationHealthStatusType.TEMPORARY_ERROR,
+                status=HealthStatusType.TEMPORARY_ERROR,
                 error_message=f'Configuration validation failed: {e}'
             )
     

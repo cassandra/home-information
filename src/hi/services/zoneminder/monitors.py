@@ -79,32 +79,21 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
             logger.warning( 'ZoneMinder monitor failed to initialize. Skipping work cycle.' )
             return
 
-        try:
-            # Update heartbeat to indicate monitor is alive and working
-            zm_manager = await self.zm_manager_async()
-            if zm_manager:
-                zm_manager.update_monitor_heartbeat()
+        sensor_response_map = dict()
 
-            sensor_response_map = dict()
+        # Process ZoneMinder events for motion detection
+        sensor_response_map.update( await self._process_events( ) )
 
-            # Process ZoneMinder events for motion detection
-            sensor_response_map.update( await self._process_events( ) )
+        # Process ZoneMinder monitors for function changes
+        sensor_response_map.update( await self._process_monitors() )
 
-            # Process ZoneMinder monitors for function changes
-            sensor_response_map.update( await self._process_monitors() )
+        # Process ZoneMinder states for run state changes
+        sensor_response_map.update( await self._process_states() )
 
-            # Process ZoneMinder states for run state changes
-            sensor_response_map.update( await self._process_states() )
-
-            # Update sensor responses
-            await self.sensor_response_manager().update_with_latest_sensor_responses(
-                sensor_response_map = sensor_response_map,
-            )
-
-        except Exception as e:
-            logger.exception(f'ZoneMinder monitor cycle failed: {e}')
-            raise
-
+        # Update sensor responses
+        await self.sensor_response_manager().update_with_latest_sensor_responses(
+            sensor_response_map = sensor_response_map,
+        )
         return
     
     async def _process_events(self):

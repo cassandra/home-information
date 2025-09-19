@@ -3,8 +3,9 @@
 import logging
 from typing import Dict
 
+from hi.apps.system.enums import HealthStatusType
+
 from hi.integrations.exceptions import IntegrationAttributeError
-from hi.integrations.enums import IntegrationHealthStatusType
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import IntegrationKey, IntegrationValidationResult
 
@@ -84,7 +85,7 @@ class HassClientFactory:
                 return IntegrationValidationResult.success()
             else:
                 return IntegrationValidationResult.error(
-                    status=IntegrationHealthStatusType.CONNECTION_ERROR,
+                    status=HealthStatusType.CONNECTION_ERROR,
                     error_message='Failed to fetch states from Home Assistant API'
                 )
 
@@ -97,17 +98,17 @@ class HassClientFactory:
                                                         'forbidden',
                                                         'token',
                                                         'credential']):
-                status = IntegrationHealthStatusType.CONNECTION_ERROR
+                status = HealthStatusType.CONNECTION_ERROR
                 user_message = f'Authentication failed: {e}'
             elif any(keyword in error_msg for keyword in ['connect',
                                                           'network',
                                                           'timeout',
                                                           'unreachable',
                                                           'resolve']):
-                status = IntegrationHealthStatusType.CONNECTION_ERROR
+                status = HealthStatusType.CONNECTION_ERROR
                 user_message = f'Cannot connect to Home Assistant: {e}'
             else:
-                status = IntegrationHealthStatusType.TEMPORARY_ERROR
+                status = HealthStatusType.TEMPORARY_ERROR
                 user_message = f'API test failed: {e}'
 
             return IntegrationValidationResult.error(

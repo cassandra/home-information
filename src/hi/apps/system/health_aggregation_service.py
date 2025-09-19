@@ -1,8 +1,8 @@
 """
-Business logic service for aggregating monitor health status.
+Business logic service for aggregating health status.
 
-This service implements the domain rules defined in MonitorHealthAggregationRule
-and provides centralized logic for determining overall monitor health from
+This service implements the domain rules defined in HealthAggregationRule
+and provides centralized logic for determining overall health from
 multiple status inputs (heartbeat, API sources, etc.).
 """
 
@@ -11,28 +11,30 @@ from datetime import datetime
 from typing import List, Optional
 
 import hi.apps.common.datetimeproxy as datetimeproxy
+
+from .api_health import ApiHealthStatus
 from .enums import (
-    MonitorHealthStatusType,
-    MonitorHeartbeatStatusType,
-    ApiSourceHealthStatusType,
-    MonitorHealthAggregationRule
+    HealthStatusType,
+    HeartbeatStatusType,
+    ApiHealthStatusType,
+    HealthAggregationRule
 )
-from .transient_models import MonitorHealthStatus, ApiSourceHealth
+from .health_status import HealthStatus
 
 logger = logging.getLogger(__name__)
 
 
-class MonitorHealthAggregationService:
+class HealthAggregationService:
     """
-    Service for aggregating monitor health status using domain business rules.
+    Service for aggregating health status using domain business rules.
 
-    This service encapsulates the complex logic for determining overall monitor
+    This service encapsulates the complex logic for determining overall
     health based on multiple factors including heartbeat status, API source health,
     and configurable aggregation rules.
     """
 
     @staticmethod
-    def calculate_heartbeat_status(last_heartbeat: Optional[datetime]) -> MonitorHeartbeatStatusType:
+    def calculate_heartbeat_status(last_heartbeat: Optional[datetime]) -> HeartbeatStatusType:
         """
         Calculate heartbeat status based on last heartbeat timestamp.
 
@@ -43,10 +45,10 @@ class MonitorHealthAggregationService:
             Appropriate heartbeat status
         """
         if last_heartbeat is None:
-            return MonitorHeartbeatStatusType.DEAD
+            return HeartbeatStatusType.DEAD
 
         seconds_since_last = (datetimeproxy.now() - last_heartbeat).total_seconds()
-        return MonitorHeartbeatStatusType.from_last_heartbeat(seconds_since_last)
+        return HeartbeatStatusType.from_last_heartbeat(seconds_since_last)
 
     @staticmethod
     def calculate_api_source_health(
@@ -55,7 +57,7 @@ class MonitorHealthAggregationService:
         consecutive_failures: int = 0,
         total_failures: int = 0,
         total_requests: int = 0
-    ) -> ApiSourceHealthStatusType:
+    ) -> ApiHealthStatusType:
         """
         Calculate API source health status using business logic thresholds.
 
@@ -69,7 +71,7 @@ class MonitorHealthAggregationService:
         Returns:
             Appropriate API source health status
         """
-        return ApiSourceHealthStatusType.from_metrics(
+        return ApiHealthStatusType.from_metrics(
             success_rate=success_rate,
             avg_response_time=avg_response_time,
             consecutive_failures=consecutive_failures,
@@ -80,9 +82,9 @@ class MonitorHealthAggregationService:
     @classmethod
     def aggregate_api_source_health(
         cls,
-        api_sources: List[ApiSourceHealth],
-        aggregation_rule: MonitorHealthAggregationRule
-    ) -> MonitorHealthStatusType:
+        api_sources: List[ApiHealthStatus],
+        aggregation_rule: HealthAggregationRule
+    ) -> HealthStatusType:
         """
         Aggregate health status across multiple API sources using specified rule.
 
@@ -91,123 +93,123 @@ class MonitorHealthAggregationService:
             aggregation_rule: Rule to use for aggregation
 
         Returns:
-            Aggregated monitor health status
+            Aggregated health status
         """
         if not api_sources:
-            if aggregation_rule == MonitorHealthAggregationRule.HEARTBEAT_ONLY:
-                return MonitorHealthStatusType.HEALTHY  # No API dependencies
+            if aggregation_rule == HealthAggregationRule.HEARTBEAT_ONLY:
+                return HealthStatusType.HEALTHY  # No API dependencies
             else:
-                return MonitorHealthStatusType.HEALTHY  # No sources to fail
+                return HealthStatusType.HEALTHY  # No sources to fail
 
-        # Convert API source statuses to monitor health statuses
-        api_health_statuses = [source.status.to_monitor_health_status() for source in api_sources]
+        # Convert API source statuses to health statuses
+        api_health_statuses = [source.status.to_health_status() for source in api_sources]
 
         # Count each status type
-        healthy_count = sum(1 for status in api_health_statuses if status == MonitorHealthStatusType.HEALTHY)
-        warning_count = sum(1 for status in api_health_statuses if status == MonitorHealthStatusType.WARNING)
-        error_count = sum(1 for status in api_health_statuses if status == MonitorHealthStatusType.ERROR)
+        healthy_count = sum(1 for status in api_health_statuses if status == HealthStatusType.HEALTHY)
+        warning_count = sum(1 for status in api_health_statuses if status == HealthStatusType.WARNING)
+        error_count = sum(1 for status in api_health_statuses if status == HealthStatusType.ERROR)
 
         total_sources = len(api_sources)
 
         # Apply aggregation rule
-        if aggregation_rule == MonitorHealthAggregationRule.ALL_SOURCES_HEALTHY:
+        if aggregation_rule == HealthAggregationRule.ALL_SOURCES_HEALTHY:
             # All sources must be healthy
             if error_count > 0:
-                return MonitorHealthStatusType.ERROR
+                return HealthStatusType.ERROR
             elif warning_count > 0:
-                return MonitorHealthStatusType.WARNING
+                return HealthStatusType.WARNING
             else:
-                return MonitorHealthStatusType.HEALTHY
+                return HealthStatusType.HEALTHY
 
-        elif aggregation_rule == MonitorHealthAggregationRule.MAJORITY_SOURCES_HEALTHY:
+        elif aggregation_rule == HealthAggregationRule.MAJORITY_SOURCES_HEALTHY:
             # Majority of sources must be healthy
             majority_threshold = (total_sources + 1) // 2  # More than half
 
             if error_count >= majority_threshold:
-                return MonitorHealthStatusType.ERROR
+                return HealthStatusType.ERROR
             elif (error_count + warning_count) >= majority_threshold:
-                return MonitorHealthStatusType.WARNING
+                return HealthStatusType.WARNING
             else:
-                return MonitorHealthStatusType.HEALTHY
+                return HealthStatusType.HEALTHY
 
-        elif aggregation_rule == MonitorHealthAggregationRule.ANY_SOURCE_HEALTHY:
+        elif aggregation_rule == HealthAggregationRule.ANY_SOURCE_HEALTHY:
             # At least one source must be healthy
             if healthy_count > 0:
-                return MonitorHealthStatusType.HEALTHY
+                return HealthStatusType.HEALTHY
             elif warning_count > 0:
-                return MonitorHealthStatusType.WARNING
+                return HealthStatusType.WARNING
             else:
-                return MonitorHealthStatusType.ERROR
+                return HealthStatusType.ERROR
 
-        elif aggregation_rule == MonitorHealthAggregationRule.WEIGHTED_AVERAGE:
+        elif aggregation_rule == HealthAggregationRule.WEIGHTED_AVERAGE:
             # Future enhancement - for now, use majority rule
             logger.warning("Weighted average aggregation not yet implemented, using majority rule")
-            return cls.aggregate_api_source_health(api_sources, MonitorHealthAggregationRule.MAJORITY_SOURCES_HEALTHY)
+            return cls.aggregate_api_source_health(api_sources, HealthAggregationRule.MAJORITY_SOURCES_HEALTHY)
 
         else:  # HEARTBEAT_ONLY or unknown
-            return MonitorHealthStatusType.HEALTHY
+            return HealthStatusType.HEALTHY
 
     @classmethod
-    def calculate_overall_monitor_health(
+    def calculate_overall_health(
         cls,
-        monitor_health_status: MonitorHealthStatus,
-        aggregation_rule: Optional[MonitorHealthAggregationRule] = None
-    ) -> MonitorHealthStatusType:
+        health_status: HealthStatus,
+        aggregation_rule: Optional[HealthAggregationRule] = None
+    ) -> HealthStatusType:
         """
-        Calculate overall monitor health status from all available inputs.
+        Calculate overall health status from all available inputs.
 
         This is the primary business logic entry point that combines:
-        - Current monitor status
+        - Current status
         - Heartbeat status
         - API source health aggregation
         - Aggregation rule logic
 
         Args:
-            monitor_health_status: Current monitor health status object
+            health_status: Current health status object
             aggregation_rule: Rule to use for aggregation (auto-determined if None)
 
         Returns:
-            Overall calculated monitor health status
+            Overall calculated health status
         """
         # Auto-determine aggregation rule if not provided
         if aggregation_rule is None:
-            api_count = len(monitor_health_status.api_sources)
-            aggregation_rule = MonitorHealthAggregationRule.default_for_api_count(api_count)
+            api_count = len(health_status.api_sources)
+            aggregation_rule = HealthAggregationRule.default_for_api_count(api_count)
 
         # Calculate heartbeat status
-        heartbeat_status = cls.calculate_heartbeat_status(monitor_health_status.monitor_heartbeat)
-        heartbeat_health = heartbeat_status.to_monitor_health_status()
+        heartbeat_status = cls.calculate_heartbeat_status(health_status.heartbeat)
+        heartbeat_health = heartbeat_status.to_health_status()
 
         # Calculate API source aggregated health
-        api_health = cls.aggregate_api_source_health(monitor_health_status.api_sources, aggregation_rule)
+        api_health = cls.aggregate_api_source_health(health_status.api_sources, aggregation_rule)
 
         # Combine heartbeat and API health using worst-case logic
         # (if either heartbeat or API sources are unhealthy, overall is unhealthy)
         combined_statuses = [heartbeat_health, api_health]
 
         # Apply priority-based worst-case logic
-        if MonitorHealthStatusType.ERROR in combined_statuses:
-            return MonitorHealthStatusType.ERROR
-        elif MonitorHealthStatusType.WARNING in combined_statuses:
-            return MonitorHealthStatusType.WARNING
+        if HealthStatusType.ERROR in combined_statuses:
+            return HealthStatusType.ERROR
+        elif HealthStatusType.WARNING in combined_statuses:
+            return HealthStatusType.WARNING
         else:
-            return MonitorHealthStatusType.HEALTHY
+            return HealthStatusType.HEALTHY
 
     @classmethod
-    def should_update_monitor_status(
+    def should_update_status(
         cls,
-        current_status: MonitorHealthStatusType,
-        calculated_status: MonitorHealthStatusType,
+        current_status: HealthStatusType,
+        calculated_status: HealthStatusType,
         error_count: int = 0
     ) -> bool:
         """
-        Determine if monitor status should be updated based on business rules.
+        Determine if status should be updated based on business rules.
 
         This implements hysteresis logic to prevent status flapping and ensures
         that status changes are meaningful and stable.
 
         Args:
-            current_status: Current monitor health status
+            current_status: Current health status
             calculated_status: Newly calculated health status
             error_count: Current error count for stability assessment
 
@@ -229,59 +231,59 @@ class MonitorHealthAggregationService:
     @classmethod
     def get_health_summary_message(
         cls,
-        monitor_health_status: MonitorHealthStatus,
-        aggregation_rule: Optional[MonitorHealthAggregationRule] = None
+        health_status: HealthStatus,
+        aggregation_rule: Optional[HealthAggregationRule] = None
     ) -> str:
         """
         Generate a human-readable health summary message.
 
         Args:
-            monitor_health_status: Current monitor health status
+            health_status: Current health status
             aggregation_rule: Rule used for aggregation
 
         Returns:
-            Human-readable summary of monitor health
+            Human-readable summary of health
         """
-        overall_status = cls.calculate_overall_monitor_health(monitor_health_status, aggregation_rule)
+        overall_status = cls.calculate_overall_health(health_status, aggregation_rule)
 
         # Calculate component status
-        heartbeat_status = cls.calculate_heartbeat_status(monitor_health_status.monitor_heartbeat)
-        api_count = len(monitor_health_status.api_sources)
+        heartbeat_status = cls.calculate_heartbeat_status(health_status.heartbeat)
+        api_count = len(health_status.api_sources)
         healthy_api_count = sum(
-            1 for source in monitor_health_status.api_sources
-            if source.status == ApiSourceHealthStatusType.HEALTHY
+            1 for source in health_status.api_sources
+            if source.status == ApiHealthStatusType.HEALTHY
         )
 
-        if overall_status == MonitorHealthStatusType.HEALTHY:
+        if overall_status == HealthStatusType.HEALTHY:
             if api_count > 0:
-                return f"Monitor is healthy. Heartbeat is {heartbeat_status.label.lower()} and all {api_count} API sources are responding normally."
+                return f"Is healthy. Heartbeat is {heartbeat_status.label.lower()} and all {api_count} API sources are responding normally."
             else:
-                return f"Monitor is healthy. Heartbeat is {heartbeat_status.label.lower()}."
+                return f"Is healthy. Heartbeat is {heartbeat_status.label.lower()}."
 
-        elif overall_status == MonitorHealthStatusType.WARNING:
+        elif overall_status == HealthStatusType.WARNING:
             issues = []
-            if heartbeat_status != MonitorHeartbeatStatusType.ACTIVE:
+            if heartbeat_status != HeartbeatStatusType.ACTIVE:
                 issues.append(f"heartbeat is {heartbeat_status.label.lower()}")
             if api_count > 0 and healthy_api_count < api_count:
                 issues.append(f"{healthy_api_count}/{api_count} API sources are healthy")
 
             issue_text = " and ".join(issues) if issues else "experiencing temporary issues"
-            return f"Monitor has warnings: {issue_text}. Monitoring recommended."
+            return f"Has warnings: {issue_text}. Monitoring recommended."
 
         else:  # ERROR
             issues = []
-            if heartbeat_status == MonitorHeartbeatStatusType.DEAD:
+            if heartbeat_status == HeartbeatStatusTypey.DEAD:
                 issues.append("heartbeat is dead")
             if api_count > 0:
                 failing_count = sum(
-                    1 for source in monitor_health_status.api_sources
+                    1 for source in health_status.api_sources
                     if source.status in (
-                        ApiSourceHealthStatusType.FAILING,
-                        ApiSourceHealthStatusType.UNAVAILABLE
+                        ApiHealthStatusType.FAILING,
+                        ApiHealthStatusType.UNAVAILABLE
                     )
                 )
                 if failing_count > 0:
                     issues.append(f"{failing_count}/{api_count} API sources are failing")
 
             issue_text = " and ".join(issues) if issues else "experiencing critical errors"
-            return f"Monitor requires immediate attention: {issue_text}. Please check configuration and external service availability."
+            return f"Requires immediate attention: {issue_text}. Please check configuration and external service availability."

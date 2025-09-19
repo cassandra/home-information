@@ -24,14 +24,14 @@
             </div>
 
             <!-- Monitor Heartbeat -->
-            {% if health_status.monitor_heartbeat %}
+            {% if health_status.heartbeat %}
             <div class="row">
                 <div class="col-sm-3"><strong>Monitor Status:</strong></div>
                 <div class="col-sm-9">
                     <span class="heartbeat-indicator {{ health_status.heartbeat_css_class }}"></span>
                     <span class="{{ health_status.heartbeat_text_class }}">{{ health_status.heartbeat_status_text }}</span>
                     <small class="text-muted-custom">
-                        (last seen {{ health_status.monitor_heartbeat|localtime|date:"H:i:s" }})
+                        (last seen {{ health_status.heartbeat|localtime|date:"H:i:s" }})
                     </small>
                 </div>
             </div>

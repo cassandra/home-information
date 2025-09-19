@@ -2,12 +2,14 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 import logging
 from typing import List
 
-from hi.integrations.enums import IntegrationHealthStatusType
+from hi.apps.system.enums import HealthStatusType
+from hi.apps.system.health_status import HealthStatus
+
 from hi.integrations.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manage_view_pane import IntegrationManageViewPane
 from hi.integrations.models import IntegrationAttribute
-from hi.integrations.transient_models import IntegrationMetaData, IntegrationHealthStatus, IntegrationValidationResult
+from hi.integrations.transient_models import IntegrationMetaData, IntegrationValidationResult
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from .hass_controller import HassController
@@ -45,24 +47,25 @@ class HassGateway( IntegrationGateway ):
         except Exception as e:
             logger.exception(f'Error notifying HASS integration of settings change: {e}')
     
-    def get_health_status(self) -> IntegrationHealthStatus:
+    def get_health_status(self) -> HealthStatus:
         """Get the current health status of the HASS integration.
         
         Delegates to HassManager for health status information.
         """
         try:
-            hass_manager = HassManager()
-            return hass_manager.get_health_status()
+            return HassManager().health_status
         except Exception as e:
             logger.exception(f'Error getting HASS integration health status: {e}')
             # Return a default error status if we can't get the real status
-            return IntegrationHealthStatus(
-                status=IntegrationHealthStatusType.TEMPORARY_ERROR,
-                last_check=datetimeproxy.now(),
-                error_message=f'Failed to get health status: {e}'
+            return HealthStatus(
+                status = HealthStatusType.TEMPORARY_ERROR,
+                last_check = datetimeproxy.now(),
+                error_message = f'Failed to get health status: {e}'
             )
     
-    def validate_configuration(self, integration_attributes: List[IntegrationAttribute]) -> IntegrationValidationResult:
+    def validate_configuration(
+            self, integration_attributes: List[IntegrationAttribute]
+    ) -> IntegrationValidationResult:
         """Validate HASS integration configuration by testing API connectivity.
 
         Delegates to HassManager for configuration validation.
@@ -73,6 +76,6 @@ class HassGateway( IntegrationGateway ):
         except Exception as e:
             logger.exception(f'Error validating HASS integration configuration: {e}')
             return IntegrationValidationResult.error(
-                status=IntegrationHealthStatusType.TEMPORARY_ERROR,
+                status=HealthStatusType.TEMPORARY_ERROR,
                 error_message=f'Configuration validation failed: {e}'
             )

@@ -19,6 +19,7 @@ class ConfigPageType(LabeledEnum):
     SETTINGS      = ('Settings'     , ''   , 'config_settings' )
     EVENTS        = ('Triggers'     , ''   , 'event_definitions' )
     INTEGRATIONS  = ('Integrations' , ''   , 'integrations_home' )
+    SYSTEM_INFO   = ('System Info'  , ''   , 'system_info' )
 
     @classmethod
     def default(cls):

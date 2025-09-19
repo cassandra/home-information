@@ -3,7 +3,7 @@ import logging
 
 from hi.testing.async_task_utils import AsyncTaskTestCase
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
-from hi.apps.monitor.enums import MonitorHealthStatusType, ApiSourceHealthStatusType
+from hi.apps.system.enums import HealthStatusType, ApiHealthStatusType
 
 logging.disable(logging.CRITICAL)
 
@@ -279,67 +279,5 @@ class TestPeriodicMonitor(AsyncTaskTestCase):
             
             # Should have continued running despite error
             self.assertGreaterEqual(fast_monitor.do_work_called, 2)
-
-        self.run_async(test_logic())
-
-    def test_health_status_tracking(self):
-        """Test health status tracking functionality."""
-
-        async def test_logic():
-            # Check initial health status
-            health = self.monitor.health_status
-            self.assertEqual(health.status, MonitorHealthStatusType.HEALTHY)
-            self.assertEqual(len(health.api_sources), 0)
-
-            # Register an API source
-            self.monitor.register_api_source('test-api', 'Test API')
-
-            # Check health status after registration
-            health = self.monitor.health_status
-            self.assertEqual(len(health.api_sources), 1)
-            api_source = health.api_sources[0]
-            self.assertEqual(api_source.source_id, 'test-api')
-            self.assertEqual(api_source.source_name, 'Test API')
-            self.assertEqual(api_source.status, ApiSourceHealthStatusType.HEALTHY)
-
-            # Track a successful API call
-            self.monitor.track_api_call('test-api', success=True, response_time=0.5)
-
-            # Check updated metrics
-            health = self.monitor.health_status
-            api_source = health.api_sources[0]
-            self.assertEqual(api_source.total_calls, 1)
-            self.assertEqual(api_source.total_failures, 0)
-            self.assertEqual(api_source.consecutive_failures, 0)
-            self.assertEqual(api_source.status, ApiSourceHealthStatusType.HEALTHY)
-            self.assertIsNotNone(api_source.last_success)
-
-            # Track a failed API call
-            self.monitor.track_api_call('test-api', success=False, error_message='Timeout error')
-
-            # Check updated metrics after failure
-            health = self.monitor.health_status
-            api_source = health.api_sources[0]
-            self.assertEqual(api_source.total_calls, 2)
-            self.assertEqual(api_source.total_failures, 1)
-            self.assertEqual(api_source.consecutive_failures, 1)
-
-            # Mark monitor as having an error
-            self.monitor.mark_monitor_error(MonitorHealthStatusType.ERROR, "Test error")
-
-            # Check error status
-            health = self.monitor.health_status
-            self.assertEqual(health.status, MonitorHealthStatusType.ERROR)
-            self.assertEqual(health.error_message, "Test error")
-            self.assertTrue(health.error_count > 0)
-
-            # Mark monitor as healthy again
-            self.monitor.mark_monitor_healthy("Recovered")
-
-            # Check recovery
-            health = self.monitor.health_status
-            self.assertEqual(health.status, MonitorHealthStatusType.HEALTHY)
-            self.assertEqual(health.error_message, "Recovered")
-            self.assertEqual(health.error_count, 0)
 
         self.run_async(test_logic())
