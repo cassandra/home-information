@@ -1,13 +1,12 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 from datetime import datetime
-from enum import Enum
 
 from hi.apps.control.transient_models import ControllerData
 from hi.apps.common.svg_models import SvgIconItem
 from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.transient_models import SensorResponse
-from .enums import MonitorHealthStatusType, ApiSourceHealthStatusType, MonitorHeartbeatStatusType
+from .enums import MonitorHealthStatusType, ApiSourceHealthStatusType
 
 # For backwards compatibility
 HealthStatusType = ApiSourceHealthStatusType

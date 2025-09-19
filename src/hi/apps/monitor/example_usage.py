@@ -7,11 +7,8 @@ health tracking infrastructure implemented in Phase 1 of issue #207.
 
 import asyncio
 import logging
-from datetime import datetime
-from typing import Optional
 
 from .periodic_monitor import PeriodicMonitor
-from .enums import MonitorHealthStatusType, ApiSourceHealthStatusType
 
 
 class ExampleWeatherMonitor(PeriodicMonitor):

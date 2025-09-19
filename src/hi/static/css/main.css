@@ -1129,3 +1129,128 @@ g[hover] {
         gap: 1rem;
     }
 }
+
+/* Monitor Health Status Styles */
+.hi-modal-dialog-800 {
+    max-width: 800px;
+}
+
+.monitor-status-badge {
+    font-size: 1.1rem;
+    padding: 0.5rem 1rem;
+}
+
+.monitor-status-healthy {
+    background-color: var(--success-color);
+    color: var(--on-success-color);
+}
+
+.monitor-status-warning {
+    background-color: var(--warning-color);
+    color: var(--on-warning-color);
+}
+
+.monitor-status-error {
+    background-color: var(--error-color);
+    color: var(--on-error-color);
+}
+
+.text-success-custom {
+    color: var(--success-color);
+}
+
+.text-warning-custom {
+    color: var(--warning-color);
+}
+
+.text-error-custom {
+    color: var(--error-color);
+}
+
+.text-muted-custom {
+    color: var(--muted-color);
+}
+
+.heartbeat-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+
+.heartbeat-healthy {
+    background-color: var(--success-color);
+    animation: heartbeat-pulse 2s infinite;
+}
+
+.heartbeat-stale {
+    background-color: var(--warning-color);
+}
+
+.heartbeat-dead {
+    background-color: var(--error-color);
+}
+
+@keyframes heartbeat-pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.api-source-section {
+    border-left: 3px solid var(--line-color);
+    padding-left: 1rem;
+    margin-left: 0.5rem;
+}
+
+.api-source-healthy {
+    border-left-color: var(--success-color);
+}
+
+.api-source-warning {
+    border-left-color: var(--warning-color);
+}
+
+.api-source-error {
+    border-left-color: var(--error-color);
+}
+
+.api-source-muted {
+    border-left-color: var(--muted-color);
+}
+
+.api-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.metric-item {
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
+    border-left: 3px solid var(--line-color);
+}
+
+.metric-item.success {
+    border-left-color: var(--success-color);
+}
+
+.metric-item.warning {
+    border-left-color: var(--warning-color);
+}
+
+.metric-item.error {
+    border-left-color: var(--error-color);
+}
+
+.metric-item.muted {
+    border-left-color: var(--muted-color);
+}
+
+.metric-value {
+    font-weight: 600;
+    font-size: 1.1rem;
+}

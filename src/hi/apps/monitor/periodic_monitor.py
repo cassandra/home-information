@@ -1,8 +1,6 @@
 import asyncio
 import logging
 import threading
-import time
-from datetime import datetime
 from typing import Dict, Optional
 
 import hi.apps.common.datetimeproxy as datetimeproxy
@@ -177,7 +175,7 @@ class PeriodicMonitor:
         with self._health_lock:
             self._health_status.monitor_heartbeat = datetimeproxy.now()
 
-        self._logger.debug(f"Monitor heartbeat updated")
+        self._logger.debug("Monitor heartbeat updated")
 
     def register_api_source(self, source_id: str, source_name: str) -> None:
         """Register a new API source for health tracking."""
