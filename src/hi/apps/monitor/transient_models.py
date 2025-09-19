@@ -8,7 +8,6 @@ from hi.apps.entity.models import Entity, EntityState
 from hi.apps.sense.transient_models import SensorResponse
 from .enums import MonitorHealthStatusType, ApiSourceHealthStatusType
 
-# For backwards compatibility
 HealthStatusType = ApiSourceHealthStatusType
 
 

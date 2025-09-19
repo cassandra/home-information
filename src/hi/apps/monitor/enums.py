@@ -20,33 +20,28 @@ class MonitorHealthStatusType(LabeledEnum):
 
     @property
     def is_healthy(self) -> bool:
-        """True if monitor is operating normally."""
         return self == MonitorHealthStatusType.HEALTHY
 
     @property
     def is_warning(self) -> bool:
-        """True if monitor has temporary issues or degraded performance."""
         return self == MonitorHealthStatusType.WARNING
 
     @property
     def is_error(self) -> bool:
-        """True if monitor has critical failures."""
         return self == MonitorHealthStatusType.ERROR
 
     @property
     def is_operational(self) -> bool:
-        """True if monitor is still providing value (HEALTHY or WARNING)."""
         return self in (MonitorHealthStatusType.HEALTHY, MonitorHealthStatusType.WARNING)
 
     @property
     def requires_attention(self) -> bool:
-        """True if monitor status requires immediate attention."""
         return self == MonitorHealthStatusType.ERROR
 
     @classmethod
     def from_priority(cls, priority: int) -> 'MonitorHealthStatusType':
         """
-        Map priority levels to health status for backwards compatibility.
+        Map priority levels to health status.
         Lower numbers = higher priority = worse health.
         """
         if priority <= 1:
@@ -103,7 +98,6 @@ class MonitorHeartbeatStatusType(LabeledEnum):
             return cls.DEAD
 
     def to_monitor_health_status(self) -> MonitorHealthStatusType:
-        """Convert heartbeat status to overall monitor health status."""
         if self == MonitorHeartbeatStatusType.ACTIVE:
             return MonitorHealthStatusType.HEALTHY
         elif self == MonitorHeartbeatStatusType.STALE:

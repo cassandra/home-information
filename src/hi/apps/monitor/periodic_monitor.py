@@ -27,7 +27,7 @@ class PeriodicMonitor:
         # Health tracking infrastructure
         self._health_lock = threading.Lock()
         self._health_status = MonitorHealthStatus(
-            status=MonitorHealthStatusType.HEALTHY,  # Start optimistic
+            status=MonitorHealthStatusType.HEALTHY,
             last_check=datetimeproxy.now(),
         )
 
