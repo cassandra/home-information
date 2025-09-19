@@ -4,9 +4,10 @@ from typing import Dict, List
 
 from hi.apps.common.singleton_manager import SingletonManager
 from hi.apps.common.utils import str_to_bool
-from hi.apps.system.api_owner_mixin import ApiOwnerMixin
+from hi.apps.system.aggregate_health_provider import AggregateHealthProvider
+from hi.apps.system.api_health_status_provider import ApiHealthStatusProvider
+from hi.apps.system.api_service_info import ApiServiceInfo
 from hi.apps.system.enums import HealthStatusType
-from hi.apps.system.health_status_mixin import HealthStatusMixin
 
 from hi.integrations.exceptions import (
     IntegrationAttributeError,
@@ -28,7 +29,7 @@ from .hass_models import HassState
 logger = logging.getLogger(__name__)
 
 
-class HassManager( SingletonManager, HealthStatusMixin, ApiOwnerMixin ):
+class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusProvider ):
 
     def __init_singleton__( self ):
         super().__init_singleton__()
@@ -38,7 +39,19 @@ class HassManager( SingletonManager, HealthStatusMixin, ApiOwnerMixin ):
 
         self._change_listeners = set()
 
+        # Add self as the API health status provider to aggregate
+        self.add_api_health_status_provider(self)
+
         return
+
+    @classmethod
+    def get_api_service_info(cls) -> ApiServiceInfo:
+        """Get the API service info for this manager."""
+        return ApiServiceInfo(
+            service_id='hass_api',
+            service_name='Home Assistant API',
+            description='Home Assistant REST API for entity states'
+        )
     
     def register_change_listener( self, callback ):
         if callback not in self._change_listeners:

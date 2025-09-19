@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from contextlib import contextmanager
 import copy
 import logging
@@ -5,39 +6,51 @@ import threading
 import time
 
 from hi.apps.system.api_health import ApiCallContext, ApiHealthStatus
+from hi.apps.system.api_service_info import ApiServiceInfo
 from hi.apps.system.enums import ApiCallStatusType, ApiHealthStatusType
 
 logger = logging.getLogger(__name__)
 
 
-class ApiOwnerMixin:
+class ApiHealthStatusProvider(ABC):
     
     def __init__(self):
-        # We try not to depend on __init__() being called fo a mixin context,
+        # We try not to depend on __init__() being called fo a provider context,
         # so protected most access methods anyway.
-        self._ensure_api_owner_mixin_setup()
+        self._ensure_api_health_status_provider_setup()
         return
     
-    def _ensure_api_owner_mixin_setup(self):
+    def _ensure_api_health_status_provider_setup(self):
         if hasattr( self, '_api_health_status' ):
             return
 
-        source_id = 'zzz'  # TODO: FIXME
-        source_name = 'Zzz'  # TODO: FIXME
+        # Get the API service info from the implementing class
+        service_info = self.get_api_service_info()
         self._api_health_lock = threading.Lock()
         self._api_health_status = ApiHealthStatus(
-            source_id = source_id,
-            source_name = source_name,
+            service_id = service_info.service_id,
+            service_name = service_info.service_name,
             status = ApiHealthStatusType.UNKNOWN,
         )
         return
 
+    @classmethod
+    @abstractmethod
+    def get_api_service_info(cls) -> ApiServiceInfo:
+        """Get the API service info for this class. Must be implemented by subclasses."""
+        pass
+
     @property
     def api_health_status(self) -> ApiHealthStatus:
-        self._ensure_api_owner_mixin_setup()
+        self._ensure_api_health_status_provider_setup()
         with self._api_health_lock:
             api_health_status = copy.deepcopy( self._api_health_status )
         return api_health_status
+
+    @property
+    def api_service_info(self) -> ApiServiceInfo:
+        """Get the API service info for this API health status provider."""
+        return self.get_api_service_info()
 
     @contextmanager
     def api_call_context( self, operation_name : str ):
@@ -48,7 +61,7 @@ class ApiOwnerMixin:
               with self.api_context( 'fetch_user' ) as ctx:
                   response = requests.get( f'/api/users/{user_id}' )
           """
-        self._ensure_api_owner_mixin_setup()
+        self._ensure_api_health_status_provider_setup()
         start_time = time.time()
         api_call_context = ApiCallContext(
             operation_name = operation_name,
@@ -69,7 +82,7 @@ class ApiOwnerMixin:
         return
     
     def record_api_call( self, api_call_context : ApiCallContext ):
-        self._ensure_api_owner_mixin_setup()
+        self._ensure_api_health_status_provider_setup()
         with self._api_health_lock:
             self._api_health_status.record_api_call(         
                 api_call_context = api_call_context,

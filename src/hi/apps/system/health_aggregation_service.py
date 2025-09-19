@@ -104,10 +104,12 @@ class HealthAggregationService:
         # Convert API source statuses to health statuses
         api_health_statuses = [source.status.to_health_status() for source in api_sources]
 
-        # Count each status type
-        healthy_count = sum(1 for status in api_health_statuses if status == HealthStatusType.HEALTHY)
-        warning_count = sum(1 for status in api_health_statuses if status == HealthStatusType.WARNING)
-        error_count = sum(1 for status in api_health_statuses if status == HealthStatusType.ERROR)
+        # Count by status categories using the properties
+        healthy_count = sum(1 for status in api_health_statuses if status.is_healthy)
+        warning_count = sum(1 for status in api_health_statuses if status.is_warning)
+        info_count = sum(1 for status in api_health_statuses if status.is_info)
+        error_count = sum(1 for status in api_health_statuses if status.is_error)
+        unknown_count = sum(1 for status in api_health_statuses if status == HealthStatusType.UNKNOWN)
 
         total_sources = len(api_sources)
 
@@ -115,9 +117,16 @@ class HealthAggregationService:
         if aggregation_rule == HealthAggregationRule.ALL_SOURCES_HEALTHY:
             # All sources must be healthy
             if error_count > 0:
-                return HealthStatusType.ERROR
+                # Return worst error status present
+                return min((s for s in api_health_statuses if s.is_error), key=lambda s: s.priority)
             elif warning_count > 0:
-                return HealthStatusType.WARNING
+                # Return worst warning status present
+                return min((s for s in api_health_statuses if s.is_warning), key=lambda s: s.priority)
+            elif info_count > 0:
+                # Return worst info status present
+                return min((s for s in api_health_statuses if s.is_info), key=lambda s: s.priority)
+            elif unknown_count > 0:
+                return HealthStatusType.UNKNOWN
             else:
                 return HealthStatusType.HEALTHY
 
@@ -126,9 +135,12 @@ class HealthAggregationService:
             majority_threshold = (total_sources + 1) // 2  # More than half
 
             if error_count >= majority_threshold:
-                return HealthStatusType.ERROR
+                # Return worst error status present
+                return min((s for s in api_health_statuses if s.is_error), key=lambda s: s.priority)
             elif (error_count + warning_count) >= majority_threshold:
-                return HealthStatusType.WARNING
+                # Return worst warning/error status present
+                problematic_statuses = [s for s in api_health_statuses if s.is_error or s.is_warning]
+                return min(problematic_statuses, key=lambda s: s.priority)
             else:
                 return HealthStatusType.HEALTHY
 
@@ -137,9 +149,16 @@ class HealthAggregationService:
             if healthy_count > 0:
                 return HealthStatusType.HEALTHY
             elif warning_count > 0:
-                return HealthStatusType.WARNING
+                # Return worst warning status present
+                return min((s for s in api_health_statuses if s.is_warning), key=lambda s: s.priority)
+            elif info_count > 0:
+                # Return worst info status present
+                return min((s for s in api_health_statuses if s.is_info), key=lambda s: s.priority)
+            elif error_count > 0:
+                # Return worst error status present
+                return min((s for s in api_health_statuses if s.is_error), key=lambda s: s.priority)
             else:
-                return HealthStatusType.ERROR
+                return HealthStatusType.UNKNOWN
 
         elif aggregation_rule == HealthAggregationRule.WEIGHTED_AVERAGE:
             # Future enhancement - for now, use majority rule
@@ -183,17 +202,12 @@ class HealthAggregationService:
         # Calculate API source aggregated health
         api_health = cls.aggregate_api_source_health(health_status.api_sources, aggregation_rule)
 
-        # Combine heartbeat and API health using worst-case logic
+        # Combine heartbeat and API health using priority-based worst-case logic
         # (if either heartbeat or API sources are unhealthy, overall is unhealthy)
         combined_statuses = [heartbeat_health, api_health]
 
-        # Apply priority-based worst-case logic
-        if HealthStatusType.ERROR in combined_statuses:
-            return HealthStatusType.ERROR
-        elif HealthStatusType.WARNING in combined_statuses:
-            return HealthStatusType.WARNING
-        else:
-            return HealthStatusType.HEALTHY
+        # Return status with highest priority (lowest priority number)
+        return min(combined_statuses, key=lambda s: s.priority)
 
     @classmethod
     def should_update_status(
@@ -272,7 +286,7 @@ class HealthAggregationService:
 
         else:  # ERROR
             issues = []
-            if heartbeat_status == HeartbeatStatusTypey.DEAD:
+            if heartbeat_status == HeartbeatStatusType.DEAD:
                 issues.append("heartbeat is dead")
             if api_count > 0:
                 failing_count = sum(

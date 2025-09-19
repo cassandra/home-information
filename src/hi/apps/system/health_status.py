@@ -1,9 +1,8 @@
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime
 
-from .api_health import ApiHealthStatus
-from .enums import HealthStatusType, ApiHealthStatusType
+from .enums import HealthStatusType
 
 
 @dataclass
@@ -16,8 +15,6 @@ class HealthStatus:
     error_message  : Optional[str]       = None
     error_count    : int                 = 0
 
-    # API source health (new requirement)
-    api_sources: List[ApiHealthStatus] = field(default_factory=list)
 
     @property
     def is_healthy(self) -> bool:
@@ -29,53 +26,13 @@ class HealthStatus:
 
     @property
     def is_critical(self) -> bool:
-        return self.status.requires_attention
+        return self.status.is_critical
 
     @property
     def status_display(self) -> str:
         return self.status.label
 
-    @property
-    def overall_api_health_status(self) -> ApiHealthStatusType:
-        if not self.api_sources:
-            return ApiHealthStatusType.HEALTHY
 
-        # If any API source is unavailable or failing, overall status reflects worst case
-        worst_status = ApiHealthStatusType.HEALTHY
-        for api_source in self.api_sources:
-            if api_source.status == ApiHealthStatusType.UNAVAILABLE:
-                return ApiHealthStatusType.UNAVAILABLE
-            elif api_source.status == ApiHealthStatusType.FAILING:
-                worst_status = ApiHealthStatusType.FAILING
-            elif ( api_source.status == ApiHealthStatusType.DEGRADED
-                   and worst_status == ApiHealthStatusType.HEALTHY ):
-                worst_status = ApiHealthStatusType.DEGRADED
-
-        return worst_status
-
-    def get_api_source(self, source_id: str) -> Optional[ApiHealthStatus]:
-        """Get an API source by its ID."""
-        for api_source in self.api_sources:
-            if api_source.source_id == source_id:
-                return api_source
-        return None
-
-    def add_or_update_api_source(self, api_source: ApiHealthStatus) -> None:
-        """Add a new API source or update an existing one."""
-        existing = self.get_api_source(api_source.source_id)
-        if existing:
-            # Update existing source
-            existing.source_name = api_source.source_name
-            existing.status = api_source.status
-            existing.last_success = api_source.last_success
-            existing.total_calls = api_source.total_calls
-            existing.total_failures = api_source.total_failures
-            existing.consecutive_failures = api_source.consecutive_failures
-            existing.average_response_time = api_source.average_response_time
-            existing.last_response_time = api_source.last_response_time
-        else:
-            # Add new source
-            self.api_sources.append(api_source)
 
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
@@ -90,8 +47,6 @@ class HealthStatus:
             'is_healthy': self.is_healthy,
             'is_error': self.is_error,
             'is_critical': self.is_critical,
-            'overall_api_health_status': self.overall_api_health_status.value,
-            'api_sources': [api_source.to_dict() for api_source in self.api_sources],
         }
 
         # Include heartbeat details if present
@@ -102,9 +57,6 @@ class HealthStatus:
 
         return result
 
-    @property
-    def has_api_sources(self) -> bool:
-        return len(self.api_sources) > 0
 
     @property
     def heartbeat_age_seconds(self) -> Optional[int]:
@@ -164,17 +116,26 @@ class HealthStatus:
     @property
     def status_badge_class(self) -> str:
         """Get Bootstrap badge class for overall status."""
-        return {
-            HealthStatusType.HEALTHY: "monitor-status-healthy",
-            HealthStatusType.WARNING: "monitor-status-warning",
-            HealthStatusType.ERROR: "monitor-status-error"
-        }[self.status]
+        if self.status.is_healthy:
+            return "monitor-status-healthy"
+        elif self.status.is_warning:
+            return "monitor-status-warning"
+        elif self.status.is_info:
+            return "monitor-status-info"
+        elif self.status.is_critical:
+            return "monitor-status-critical"
+        elif self.status.is_error:
+            return "monitor-status-error"
+        else:  # UNKNOWN
+            return "monitor-status-unknown"
 
     @property
     def status_alert_class(self) -> str:
         """Get alert class for status summary."""
         if self.is_healthy:
             return "alert-success"
+        elif self.status.is_info:
+            return "alert-info"
         elif self.is_critical:
             return "alert-danger"
         else:
@@ -183,20 +144,24 @@ class HealthStatus:
     @property
     def status_icon(self) -> str:
         """Get Font Awesome icon for status."""
-        return {
-            HealthStatusType.HEALTHY: "check-circle",
-            HealthStatusType.WARNING: "warning",
-            HealthStatusType.ERROR: "warning"
-        }[self.status]
+        if self.status.is_healthy:
+            return "check-circle"
+        elif self.status.is_warning:
+            return "warning"
+        elif self.status.is_info:
+            return "info-circle"
+        elif self.status.is_critical:
+            return "times-circle"
+        elif self.status.is_error:
+            return "exclamation-circle"
+        else:  # UNKNOWN
+            return "question-circle"
 
     @property
     def status_summary_message(self) -> str:
         """Get appropriate status summary message."""
         if self.is_healthy:
-            if self.has_api_sources:
-                return "Is operating normally. All API sources are responding correctly and heartbeat is active."
-            else:
-                return "Is operating normally and heartbeat is active."
+            return "Is operating normally and heartbeat is active."
         elif self.is_critical:
             return "Requires immediate attention. Please check the configuration settings and ensure external services are accessible."
         else:

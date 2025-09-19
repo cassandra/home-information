@@ -1,14 +1,11 @@
 import asyncio
 import logging
-import threading
 
-import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.system.enums import HealthStatusType
-from hi.apps.system.health_status import HealthStatus
-from hi.apps.system.health_status_mixin import HealthStatusMixin
+from hi.apps.system.health_status_provider import HealthStatusProvider
 
 
-class PeriodicMonitor( HealthStatusMixin ):
+class PeriodicMonitor( HealthStatusProvider ):
     """
     Base class for any content/information that should be automatically,
     and periodically updated from some external source.
@@ -21,13 +18,6 @@ class PeriodicMonitor( HealthStatusMixin ):
         self._is_running = False
         self._logger = logging.getLogger(__name__)
 
-        # Health tracking infrastructure
-        self._health_lock = threading.Lock()
-        self._health_status = HealthStatus(
-            status = HealthStatusType.HEALTHY,
-            last_check = datetimeproxy.now(),
-        )
-
         self._logger.debug(f"Initialized: {self.__class__.__name__} with health tracking")
         return
 
@@ -39,14 +29,6 @@ class PeriodicMonitor( HealthStatusMixin ):
     def is_running(self):
         return self._is_running
 
-    @property
-    def health_status(self) -> HealthStatus:
-        """Get current health status (thread-safe)."""
-        with self._health_lock:
-            # Return a copy to prevent external modification
-            import copy
-            return copy.deepcopy(self._health_status)
-    
     async def start(self) -> None:
         self._is_running = True
         self._logger.info(f"{self.__class__.__name__} async task starting"

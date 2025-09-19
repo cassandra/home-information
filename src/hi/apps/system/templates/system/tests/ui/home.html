@@ -9,7 +9,8 @@
 
   <div class="row">
     <div class="col-md-6">
-      <h3>Monitor Health Status Modals</h3>
+      <h3>Health Status Provider Modals</h3>
+      <h5 class="text-muted mt-3">Basic Status Types</h5>
       <ul class="list-group">
         <li class="list-group-item">
           <a href="{% url 'system_test_ui_health_status' monitor_type='zoneminder' %}" data-async="modal">
@@ -24,6 +25,30 @@
         <li class="list-group-item">
           <a href="{% url 'system_test_ui_health_status' monitor_type='alert' %}" data-async="modal">
             Alert - Error No APIs
+          </a>
+        </li>
+      </ul>
+
+      <h5 class="text-muted mt-4">Extended Status Types</h5>
+      <ul class="list-group">
+        <li class="list-group-item">
+          <a href="{% url 'system_test_ui_health_status' monitor_type='config_error' %}" data-async="modal">
+            Config Error - Configuration Issues
+          </a>
+        </li>
+        <li class="list-group-item">
+          <a href="{% url 'system_test_ui_health_status' monitor_type='connection_error' %}" data-async="modal">
+            Connection Error - Network Issues
+          </a>
+        </li>
+        <li class="list-group-item">
+          <a href="{% url 'system_test_ui_health_status' monitor_type='temporary_error' %}" data-async="modal">
+            Temporary Error - Rate Limiting
+          </a>
+        </li>
+        <li class="list-group-item">
+          <a href="{% url 'system_test_ui_health_status' monitor_type='disabled' %}" data-async="modal">
+            Disabled - Maintenance Mode
           </a>
         </li>
       </ul>

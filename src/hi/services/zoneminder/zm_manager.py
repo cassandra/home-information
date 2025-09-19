@@ -11,9 +11,10 @@ from typing import Dict, List
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.singleton_manager import SingletonManager
 from hi.apps.common.utils import str_to_bool
-from hi.apps.system.api_owner_mixin import ApiOwnerMixin
+from hi.apps.system.aggregate_health_provider import AggregateHealthProvider
+from hi.apps.system.api_health_status_provider import ApiHealthStatusProvider
+from hi.apps.system.api_service_info import ApiServiceInfo
 from hi.apps.system.enums import HealthStatusType
-from hi.apps.system.health_status_mixin import HealthStatusMixin
 
 from hi.integrations.exceptions import (
     IntegrationAttributeError,
@@ -35,7 +36,7 @@ logger = logging.getLogger(__name__)
 pyzm_logger.set_level( 0 )  # pyzm does not use standard 'logging' module. ugh.
 
 
-class ZoneMinderManager( SingletonManager, HealthStatusMixin, ApiOwnerMixin ):
+class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusProvider ):
     """
     References:
       ZM Api code: https://github.com/ZoneMinder/zoneminder/tree/master/web/api/app/Controller
@@ -68,7 +69,19 @@ class ZoneMinderManager( SingletonManager, HealthStatusMixin, ApiOwnerMixin ):
 
         self._change_listeners = set()
 
+        # Add self as the API health status provider to aggregate
+        self.add_api_health_status_provider(self)
+
         return
+
+    @classmethod
+    def get_api_service_info(cls) -> ApiServiceInfo:
+        """Get the API service info for this manager."""
+        return ApiServiceInfo(
+            service_id='zm_api',
+            service_name='ZoneMinder API',
+            description='ZoneMinder video surveillance system API'
+        )
     
     def register_change_listener( self, callback ):
         if callback not in self._change_listeners:

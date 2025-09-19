@@ -31,8 +31,13 @@ class HealthStatusType(LabeledEnum):
     @property
     def is_warning(self) -> bool:
         return bool( self in (
-            self == HealthStatusType.WARNING,
-            self == HealthStatusType.DISABLED,
+            HealthStatusType.WARNING,
+        ))
+
+    @property
+    def is_info(self) -> bool:
+        return bool( self in (
+            HealthStatusType.DISABLED,
         ))
     
     @property
@@ -81,12 +86,18 @@ class HealthStatusType(LabeledEnum):
         """
         Priority level for sorting/escalation (lower = higher priority).
         """
-        if self == HealthStatusType.ERROR:
+        if self.is_critical:  # ERROR, CONFIG_ERROR, CONNECTION_ERROR
             return 1
-        elif self == HealthStatusType.WARNING:
+        elif self.is_error:  # TEMPORARY_ERROR (non-critical error)
             return 2
-        else:
+        elif self.is_warning:  # WARNING
             return 3
+        elif self.is_info:  # DISABLED
+            return 4
+        elif self == HealthStatusType.HEALTHY:
+            return 5
+        else:  # UNKNOWN
+            return 6
 
 
 class HeartbeatStatusType(LabeledEnum):

@@ -20,8 +20,8 @@ class ApiHealthStatus:
     """Health status tracking for individual API sources."""
 
     # Identification
-    source_name: str          # User-friendly display name
-    source_id: str           # Technical identifier
+    service_name: str          # User-friendly display name
+    service_id: str           # Technical identifier
 
     # Health status
     status: ApiHealthStatusType
@@ -123,8 +123,8 @@ class ApiHealthStatus:
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
         return {
-            'source_name': self.source_name,
-            'source_id': self.source_id,
+            'service_name': self.service_name,
+            'service_id': self.service_id,
             'status': self.status.value,
             'status_display': self.status.label,
             'last_success': self.last_success,
