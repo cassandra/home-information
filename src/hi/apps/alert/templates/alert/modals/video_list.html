@@ -1,0 +1,31 @@
+{% load tz %}
+{% load video_tags %}
+
+{% for video_source in video_sources_page %}
+<div class="col-md-6 mb-3">
+  {% sensor_response_video_stream video_source.sensor_response as video_stream %}
+  {% if video_stream and video_stream.source_url %}
+  <div class="card">
+    <div class="card-header py-1">
+      {# Calculate a 1-based index for the video across all pages #}
+      <small class="text-muted">Source {{ forloop.counter0|add:1|add:((current_page|add:"-1") * 4) }} - {{ video_source.alarm.timestamp|localtime|date:"M j H:i" }}</small>
+    </div>
+    <div class="card-body p-2">
+      <video class="img-fluid" src="{{ video_stream.source_url }}" controls autoplay muted loop></video>
+    </div>
+  </div>
+  {% else %}
+  <div class="card">
+    <div class="card-body">
+      <small class="text-muted">Video stream not available.</small>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+
+{% if not video_sources_page %}
+<div class="col-12">
+    <p class="text-muted">No videos on this page.</p>
+</div>
+{% endif %}

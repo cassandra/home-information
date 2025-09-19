@@ -43,90 +43,40 @@
   </div>
 </div>
 
-<!-- Visual Content (Smart Rendering) -->
-{% if video_source_count == 1 and alert_visual_content and alert_visual_content.sensor_response %}
-<!-- Show single video at alert level to avoid duplication -->
-{% sensor_response_video_stream alert_visual_content.sensor_response as video_stream %}
-{% if video_stream and video_stream.source_url %}
+{% if video_source_count > 0 %}
 <div class="row mb-3">
   <div class="col-12">
     <div class="card">
       <div class="card-header bg-primary text-white">
         <h6 class="mb-0">
-          {% icon "camera" size="sm" css_class="hi-icon-left" %}Video
+          {% icon "camera" size="sm" css_class="hi-icon-left" %}Video Sources ({{ video_source_count }})
         </h6>
       </div>
-      <div class="card-body p-2">
-        <img class="img-fluid" src="{{ video_stream.source_url }}" alt="{{ alert_visual_content.alarm.title }}">
-        {% if not alert_visual_content.is_from_latest %}
-        <small class="text-muted d-block mt-1">From: {{ alert_visual_content.alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-</div>
-{% elif alert_visual_content.source_image_url %}
-<!-- Fallback to snapshot image when video stream is not available -->
-<div class="row mb-3">
-  <div class="col-12">
-    <div class="card">
-      <div class="card-header bg-primary text-white">
-        <h6 class="mb-0">
-          {% icon "camera" size="sm" css_class="hi-icon-left" %}Image
-        </h6>
-      </div>
-      <div class="card-body p-2">
-        <img class="img-fluid" src="{{ alert_visual_content.source_image_url }}" alt="{{ alert_visual_content.alarm.title }}">
-        {% if not alert_visual_content.is_from_latest %}
-        <small class="text-muted d-block mt-1">From: {{ alert_visual_content.alarm.timestamp|localtime|date:"M j, Y H:i" }}</small>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-</div>
-{% endif %}
-{% elif video_source_count >= 4 %}
-<!-- Show collapsible video list for many videos -->
-<div class="row mb-3">
-  <div class="col-12">
-    <div class="card">
-      <div class="card-header bg-primary text-white">
-        <h6 class="mb-0">
-          <a class="text-white text-decoration-none" data-toggle="collapse" href="#videoSources" 
-             role="button" aria-expanded="false" aria-controls="videoSources">
-            {% icon "camera" size="sm" css_class="hi-icon-left" %}Video Sources ({{ video_source_count }})
-            {% icon "play" size="sm" css_class="hi-icon-right" %}
-          </a>
-        </h6>
-      </div>
-      <div class="collapse" id="videoSources">
-        <div class="card-body">
-          <div class="row">
-            {% for video_source in all_video_sources %}
-            <div class="col-md-6 mb-3">
-              {% sensor_response_video_stream video_source.sensor_response as video_stream %}
-              {% if video_stream and video_stream.source_url %}
-              <div class="card">
-                <div class="card-header py-1">
-                  <small class="text-muted">Source {{ video_source.index }} - {{ video_source.alarm.timestamp|localtime|date:"M j H:i" }}</small>
-                </div>
-                <div class="card-body p-2">
-                  <img class="img-fluid" src="{{ video_stream.source_url }}" alt="Source {{ video_source.index }}">
-                </div>
-              </div>
-              {% endif %}
-            </div>
-            {% endfor %}
-          </div>
+      <div class="card-body">
+        <div class="row" id="video-container">
+          {% include 'alert/modals/video_list.html' %}
         </div>
       </div>
+      
+      {% if total_pages > 1 %}
+      <div class="card-footer text-center"
+           id="pagination-controls"
+           data-current-page="{{ current_page }}"
+           data-total-pages="{{ total_pages }}"
+           data-alert-id="{{ alert.id }}">
+        <button class="btn btn-secondary" id="prev-page-btn" {% if not has_previous_page %}disabled{% endif %}>
+          &laquo; Previous
+        </button>
+        <span class="mx-3 align-middle">Page {{ current_page }} of {{ total_pages }}</span>
+        <button class="btn btn-secondary" id="next-page-btn" {% if not has_next_page %}disabled{% endif %}>
+          Next &raquo;
+        </button>
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>
 {% endif %}
-<!-- For 2-3 video sources, they will be shown inline at sensor response level -->
-
-<!-- Recent Alarm Details -->
 <div class="row mb-3">
   <div class="col-12">
     <div class="card">
@@ -150,7 +100,6 @@
   </div>
 </div>
 
-<!-- Additional Alarms (Collapsible) -->
 {% if alert.alarm_count > 1 %}
 <div class="row">
   <div class="col-12">
@@ -182,4 +131,60 @@
 {% endif %}
 
 {% endtimezone %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const controls = document.getElementById('pagination-controls');
+  if (!controls) return; 
+
+  const prevButton = document.getElementById('prev-page-btn');
+  const nextButton = document.getElementById('next-page-btn');
+  const videoContainer = document.getElementById('video-container');
+  const pageIndicator = controls.querySelector('span');
+  
+  const fetchAndRenderVideos = async (page) => {
+    const alertId = controls.dataset.alertId;
+    const url = `/alerts/details/${alertId}/?page=${page}`; 
+
+    try {
+      videoContainer.innerHTML = '<div class="col-12 text-center"><p>Loading videos...</p></div>';
+
+      const response = await fetch(url, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      if (!response.ok) throw new Error('Network response was not ok');
+      
+      const data = await response.json();
+
+      videoContainer.innerHTML = data.html;
+
+      controls.dataset.currentPage = data.current_page;
+      pageIndicator.textContent = `Page ${data.current_page} of ${data.total_pages}`;
+      prevButton.disabled = !data.has_previous_page;
+      nextButton.disabled = !data.has_next_page;
+      
+    } catch (error) {
+      console.error('Failed to fetch videos:', error);
+      videoContainer.innerHTML = '<div class="col-12 text-center"><p class="text-danger">Error loading videos.</p></div>';
+    }
+  };
+
+  prevButton.addEventListener('click', () => {
+    let currentPage = parseInt(controls.dataset.currentPage, 10);
+    if (currentPage > 1) {
+      fetchAndRenderVideos(currentPage - 1);
+    }
+  });
+
+  nextButton.addEventListener('click', () => {
+    let currentPage = parseInt(controls.dataset.currentPage, 10);
+    let totalPages = parseInt(controls.dataset.totalPages, 10);
+    if (currentPage < totalPages) {
+      fetchAndRenderVideos(currentPage + 1);
+    }
+  });
+});
+</script>
 {% endblock %}

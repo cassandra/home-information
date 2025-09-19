@@ -30,7 +30,7 @@ class AlertAcknowledgeView( View, AlertMixin ):
             },
         )
 
-
+VIDEOS_PER_PAGE = 4
 class AlertDetailsView( HiModalView, AlertMixin ):
 
     def get_template_name( self ) -> str:
@@ -49,6 +49,18 @@ class AlertDetailsView( HiModalView, AlertMixin ):
         all_video_sources = alert.get_all_video_sources()
         video_count = alert.get_video_source_count()
 
+        try:
+            # Get the page number from the request, default to page 1
+            page = int(request.GET.get('page', 1))
+        except (ValueError, TypeError):
+            page = 1
+        
+        start_index = (page - 1) * VIDEOS_PER_PAGE
+        end_index = start_index + VIDEOS_PER_PAGE
+
+        paginated_videos = all_video_sources[start_index:end_index]
+
+        total_pages = (video_count + VIDEOS_PER_PAGE - 1) // VIDEOS_PER_PAGE
         # Determine video rendering strategy
         show_video_inline = video_count >= 2 and video_count <= 3
         
