@@ -34,7 +34,7 @@ class SystemTestUiHealthStatusView(View):
         try:
             # Convert status_type to HealthStatusType enum
             status_enum = HealthStatusType.from_name(status_type.upper())
-            status_type = status_type.lower()
+            status_type = str(status_enum)
         except (ValueError, AttributeError):
             raise Http404(f"Invalid status type: {status_type}")
 
@@ -57,7 +57,5 @@ class SystemTestUiHealthStatusView(View):
         # Render template with scenario data (matching existing modal template expectations)
         context = {
             'health_status': health_status,
-            'monitor_label': f'{SystemSyntheticData.get_status_label(status_type)} Test Provider',
-            'monitor_id': f'{status_type}_{api_flag}',
         }
         return render(request, template_name, context)

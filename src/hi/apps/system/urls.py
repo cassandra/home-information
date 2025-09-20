@@ -9,7 +9,7 @@ urlpatterns = [
              views.SystemInfoView.as_view(), 
              name = 'system_info' ),
 
-    re_path( r'^health/<str:monitor_id>$',
+    re_path( r'^health/<str:provider_id>$',
              views.SystemHealthStatusView.as_view(),
              name = 'system_health_status' ),
 ]

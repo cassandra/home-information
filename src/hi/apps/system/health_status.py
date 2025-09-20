@@ -10,11 +10,11 @@ class HealthStatus:
     """Health status tracking for PeriodicMonitor instances."""
 
     # Identification
-    provider_name   : str         # User-friendly display name
-    provider_id     : str         # Technical identifier
+    provider_name   : str                    # User-friendly display name
+    provider_id     : str                    # Technical identifier
     
-    status         : HealthStatusType
-    last_check     : datetime
+    status         : HealthStatusType        # When did we last check
+    last_check     : datetime                # When did provider last report
     heartbeat      : Optional[datetime]  = None
     error_message  : Optional[str]       = None
     error_count    : int                 = 0

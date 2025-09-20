@@ -33,10 +33,8 @@ class SystemHealthStatusView(HiModalView):
         return 'system/modals/system_health_status.html'
 
     def get(self, request, *args, **kwargs):
-        """Handle GET request for health status."""
-        monitor_id = kwargs.get('monitor_id')
-        if not monitor_id:
-            raise Http404("Monitor ID is required")
+        provider_id = kwargs.get('provider_id')
+        if not provider_id:
+            raise Http404("Provider ID is required")
 
-        # Phase 1: Infrastructure only - actual monitor integration comes in Phase 2
-        raise Http404("Monitor health status integration not yet implemented - use UI testing for development")
+        raise NotImplementedError("Health status integration not yet implemented")
