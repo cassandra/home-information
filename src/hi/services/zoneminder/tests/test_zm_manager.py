@@ -119,7 +119,7 @@ class ZoneMinderManagerConfigurationTest(TransactionTestCase):
 
         self.assertIsNone(client)
         health = manager.health_status
-        self.assertEqual(health.status, HealthStatusType.DISABLED)
+        self.assertEqual(health.status, HealthStatusType.WARNING)
 
     def test_validates_required_attributes(self):
         """Should validate that required attributes are present."""

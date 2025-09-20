@@ -6,7 +6,7 @@ Focuses on high-value testing: client creation, validation, and error handling.
 from unittest.mock import Mock, patch
 from django.test import TestCase
 
-from hi.apps.system..enums import HealthStatusType
+from hi.apps.system.enums import HealthStatusType
 
 from hi.integrations.exceptions import IntegrationAttributeError
 from hi.integrations.models import IntegrationAttribute

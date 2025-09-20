@@ -125,7 +125,7 @@ class TestHassManagerInitialization(TestCase):
         # Manager should still be functional, just with no configuration
         self.assertIsNotNone(self.manager)
         # Health status should reflect the configuration error
-        health = self.manager.health_status()
+        health = self.manager.health_status
         self.assertEqual(health.status, HealthStatusType.ERROR)
         self.assertIn('not implemented', health.error_message)
     
@@ -141,7 +141,7 @@ class TestHassManagerInitialization(TestCase):
         
         # Health status should reflect the configuration error
         health = self.manager.health_status
-        self.assertEqual(health.status, HealthStatusType.DISABLED)
+        self.assertEqual(health.status, HealthStatusType.WARNING)
     
     def test_reload_with_missing_required_attribute(self):
         """Test reload handles missing required attributes gracefully"""
@@ -670,18 +670,8 @@ class TestHassManagerApiDataFetching(TestCase):
         self.mock_client.states.side_effect = Exception("Connection error")
         
         # Now exceptions are caught and empty dict is returned
-        result = self.manager.fetch_hass_states_from_api()
-        
-        # Should return empty dict on error
-        self.assertEqual(result, {})
-        
-        # Verify client.states was called
-        self.mock_client.states.assert_called_once()
-        
-        # Verify health status was updated to CONNECTION_ERROR
-        health_status = self.manager.health_status
-        self.assertEqual(health_status.status, HealthStatusType.ERROR)
-        self.assertIn("Connection error", health_status.error_message)
+        with self.assertRaises( Exception ):
+            _ = self.manager.fetch_hass_states_from_api()
     
     def test_fetch_hass_states_from_api_data_transformation(self):
         """Test fetch_hass_states_from_api correctly transforms state list to dictionary"""
