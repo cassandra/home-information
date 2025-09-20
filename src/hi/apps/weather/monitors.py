@@ -32,15 +32,6 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
     
     async def initialize(self) -> None:
         discovered_sources = WeatherSourceDiscovery.discover_weather_data_source_instances()
-        
-        # Log discovered sources and their enabled status
-        for source in discovered_sources:
-            enabled_status = "enabled" \
-                if await self._settings_helper.is_weather_source_enabled_async(source.id) else "disabled"
-            logger.info( f'Discovered weather source:'
-                         f' {source.label} ({source.id}, priority {source.priority}) - {enabled_status}' )
-            continue
-            
         self._weather_data_source_instance_list = discovered_sources
         WeatherSourceManager().add_api_health_status_provider_multi(
             api_health_status_provider_sequence = discovered_sources,
@@ -53,7 +44,8 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
         return ProviderInfo(
             provider_id = 'hi.apps.weather',
             provider_name = 'Weather Monitor',
-            description = '',            
+            description = 'Weather data collection and monitoring',
+            expected_heartbeat_interval_secs = cls.WEATHER_POLLING_INTERVAL_SECS,
         )
 
     async def do_work(self):

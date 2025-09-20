@@ -44,8 +44,9 @@ logger = logging.getLogger(__name__)
 
 class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
+    SOURCE_ID = 'nws'
     BASE_URL = "https://api.weather.gov/"
-
+    
     POINTS_DATA_CACHE_EXPIRY_SECS = 12 * 60 * 60  # Data can change, but not often
     STATIONS_DATA_CACHE_EXPIRY_SECS = 12 * 60 * 60  # Data can change, but not often
     OBSERVATIONS_DATA_CACHE_EXPIRY_SECS = 5 * 60  # Cache for rate-limit risk reduction
@@ -56,7 +57,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
     @classmethod
     def weather_source_id(cls):
-        return 'hi.apps.weather.weather_sources.nws'
+        return cls.SOURCE_ID
     
     @classmethod
     def weather_source_label(cls):

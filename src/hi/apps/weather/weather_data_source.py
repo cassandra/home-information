@@ -142,7 +142,7 @@ class WeatherDataSource( ApiHealthStatusProvider ):
     def get_api_provider_info(cls) -> ProviderInfo:
         """ Subclasses should override with something more meaningful. """
         return ProviderInfo(
-            provider_id = cls.weather_source_id(),
+            provider_id = f'hi.apps.weather.weather_sources.{cls.weather_source_id()}',
             provider_name = cls.weather_source_label(),
             description = f'{cls.weather_source_label()} ({cls.weather_source_abbreviation})',
         )

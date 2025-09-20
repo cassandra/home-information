@@ -25,7 +25,8 @@ class NotificationMonitor( PeriodicMonitor, NotificationMixin ):
         return ProviderInfo(
             provider_id = 'hi.apps.notify',
             provider_name = 'Notifications Monitor',
-            description = '',            
+            description = 'Notification processing and delivery management',
+            expected_heartbeat_interval_secs = cls.NOTIFICATION_POLLING_INTERVAL_SECS,
         )
         
     async def do_work(self):

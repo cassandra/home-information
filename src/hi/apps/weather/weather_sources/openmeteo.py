@@ -31,9 +31,10 @@ logger = logging.getLogger(__name__)
 
 class OpenMeteo(WeatherDataSource, WeatherMixin):
 
+    SOURCE_ID = 'openmeteo'
     BASE_URL = "https://api.open-meteo.com/v1/"
     ARCHIVE_BASE_URL = "https://archive-api.open-meteo.com/v1/archive"
-
+    
     CURRENT_DATA_CACHE_EXPIRY_SECS = 10 * 60  # Cache for 10 minutes
     FORECAST_DATA_CACHE_EXPIRY_SECS = 60 * 60  # Cache for 1 hour
     HISTORICAL_DATA_CACHE_EXPIRY_SECS = 30 * 24 * 60 * 60  # 30 days - historical data rarely changes
@@ -42,7 +43,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
     
     @classmethod
     def weather_source_id(cls):
-        return 'hi.apps.weather.weather_sources.openmeteo'
+        return cls.SOURCE_ID
     
     @classmethod
     def weather_source_label(cls):

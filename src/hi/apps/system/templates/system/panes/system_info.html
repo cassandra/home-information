@@ -29,6 +29,21 @@
     {% endfor %}
   </div>
 
+  <!-- Integrations Monitors Grid -->
+  <div class="row">
+    <div class="col-12">
+      <h5 class="mb-3">Integration Monitors</h5>
+    </div>
+  </div>
+
+  <div class="row">
+    {% for integration_provider in integration_providers %}
+    <div class="col-lg-6 col-md-12 mb-3">
+      {% include "system/panes/health_status_card.html" with health_status_provider=integration_provider %}
+    </div>
+    {% endfor %}
+  </div>
+
   <!-- Weather Sources Section -->
   <div class="row mt-4">
     <div class="col-12">

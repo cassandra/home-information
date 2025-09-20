@@ -31,7 +31,8 @@ class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
         return ProviderInfo(
             provider_id = 'hi.apps.security',
             provider_name = 'Security Monitor',
-            description = '',            
+            description = 'Security state monitoring and automated day/night transitions',
+            expected_heartbeat_interval_secs = cls.SECURITY_POLLING_INTERVAL_SECS,
         )
 
     async def do_work(self):

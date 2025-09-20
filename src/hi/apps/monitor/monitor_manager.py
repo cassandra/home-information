@@ -46,7 +46,8 @@ class AppMonitorManager( Singleton ):
                         continue
 
                     logger.debug( f'Starting app monitor: {monitor.id}' )
-                    asyncio.create_task( monitor.start() )
+                    asyncio.create_task( monitor.start(),
+                                         name=f'App-{monitor.id}' )
 
                 continue
         return
@@ -61,14 +62,9 @@ class AppMonitorManager( Singleton ):
 
     def get_health_status_providers(self) -> List[HealthStatusProvider]:
         """Get health status providers for all registered monitors.
-
-        Returns:
-            List of HealthStatusProvider instances.
             Each provider exposes get_provider_info() and health_status.
         """
         with self._data_lock:
-            # Return monitors as HealthStatusProvider instances
-            # PeriodicMonitor inherits from HealthStatusProvider
             return list( self._monitor_map.values() )
 
     def _discover_periodic_monitors(self) -> List[ Type[ PeriodicMonitor ]]:

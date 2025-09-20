@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
 
-    HASS_POLLING_INTERVAL_SECS = 2
+    HASS_POLLING_INTERVAL_SECS = 4
     HASS_API_TIMEOUT_SECS = 10.0  # Shorter timeout appropriate for 2-second polling
 
     def __init__( self ):
@@ -56,7 +56,8 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         return ProviderInfo(
             provider_id = 'hi.sevices.hass',
             provider_name = 'Home Assistant Monitor',
-            description = '',            
+            description = 'Home Assistant state monitoring and entity tracking',
+            expected_heartbeat_interval_secs = cls.HASS_POLLING_INTERVAL_SECS,
         )
 
     async def do_work(self):

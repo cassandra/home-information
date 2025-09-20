@@ -30,6 +30,7 @@ class HealthStatusProvider(ABC):
             provider_name = provider_info.provider_name,
             status = HealthStatusType.UNKNOWN,
             last_check = datetimeproxy.now(),
+            expected_heartbeat_interval_secs = provider_info.expected_heartbeat_interval_secs,
         )
         self._health_lock = threading.Lock()
         return

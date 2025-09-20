@@ -63,7 +63,8 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         return ProviderInfo(
             provider_id = 'hi.sevices.zoneminder',
             provider_name = 'ZoneMinder Monitor',
-            description = '',            
+            description = 'ZoneMinder event processing and motion detection',
+            expected_heartbeat_interval_secs = cls.ZONEMINDER_POLLING_INTERVAL_SECS,
         )
     
     def refresh( self ):

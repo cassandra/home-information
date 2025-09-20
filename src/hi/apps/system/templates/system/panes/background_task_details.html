@@ -60,9 +60,9 @@
         <div class="row">
           <div class="col-sm-3"><strong>Tasks:</strong></div>
           <div class="col-sm-9">
-            {% for task_detail in task_info.event_loop.task_details %}
+          {% for task_detail in task_info.event_loop.task_details %}
             <div class="small mb-1">
-              - {{ task_detail.coro_name|default:"unknown" }}
+              - {{ task_detail.name|default:"unknown" }}
               {% if task_detail.done %}
                 <span class="text-muted">(done)</span>
               {% elif task_detail.cancelled %}

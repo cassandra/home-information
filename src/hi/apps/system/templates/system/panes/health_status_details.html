@@ -23,6 +23,9 @@
           <small class="text-muted-custom">
             (last seen {{ health_status.heartbeat|localtime|date:"H:i:s" }})
           </small>
+          {% if health_status.expected_heartbeat_interval_secs %}
+          <br>Expected: {{ health_status.expected_heartbeat_interval_secs }}s
+          {% endif %}
         </div>
       </div>
       {% endif %}

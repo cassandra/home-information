@@ -18,6 +18,7 @@ class HealthStatus:
     heartbeat      : Optional[datetime]  = None
     error_message  : Optional[str]       = None
     error_count    : int                 = 0
+    expected_heartbeat_interval_secs : Optional[int] = None  # Expected polling interval for dynamic heartbeat thresholds
 
     @property
     def is_healthy(self) -> bool:
@@ -42,50 +43,72 @@ class HealthStatus:
         import hi.apps.common.datetimeproxy as datetimeproxy
         return int((datetimeproxy.now() - self.heartbeat).total_seconds())
 
+    def _get_heartbeat_thresholds(self) -> tuple[int, int]:
+        """Get active and stale thresholds in seconds based on expected interval or fixed defaults."""
+        if self.expected_heartbeat_interval_secs:
+            # Dynamic thresholds: 1.5x interval for active, 3x for stale
+            active_threshold = int(self.expected_heartbeat_interval_secs * 1.5)
+            stale_threshold = int(self.expected_heartbeat_interval_secs * 3.0)
+        else:
+            # Fixed thresholds for backward compatibility
+            active_threshold = 30
+            stale_threshold = 300  # 5 minutes
+
+        return active_threshold, stale_threshold
+
     @property
     def heartbeat_status_text(self) -> str:
-        """Get heartbeat status description."""
+        """Get heartbeat status description using dynamic thresholds when available."""
         if not self.heartbeat:
             return "Unknown"
 
         age = self.heartbeat_age_seconds
         if age is None:
             return "Unknown"
-        elif age < 30:
+
+        active_threshold, stale_threshold = self._get_heartbeat_thresholds()
+
+        if age < active_threshold:
             return "Active"
-        elif age < 300:  # 5 minutes
+        elif age < stale_threshold:
             return "Stale"
         else:
             return "Dead"
 
     @property
     def heartbeat_css_class(self) -> str:
-        """Get CSS class for heartbeat indicator."""
+        """Get CSS class for heartbeat indicator using dynamic thresholds when available."""
         if not self.heartbeat:
             return "heartbeat-dead"
 
         age = self.heartbeat_age_seconds
         if age is None:
             return "heartbeat-dead"
-        elif age < 30:
+
+        active_threshold, stale_threshold = self._get_heartbeat_thresholds()
+
+        if age < active_threshold:
             return "heartbeat-healthy"
-        elif age < 300:  # 5 minutes
+        elif age < stale_threshold:
             return "heartbeat-stale"
         else:
             return "heartbeat-dead"
 
     @property
     def heartbeat_text_class(self) -> str:
-        """Get text color class for heartbeat status."""
+        """Get text color class for heartbeat status using dynamic thresholds when available."""
         if not self.heartbeat:
             return "text-error-custom"
 
         age = self.heartbeat_age_seconds
         if age is None:
             return "text-error-custom"
-        elif age < 30:
+
+        active_threshold, stale_threshold = self._get_heartbeat_thresholds()
+
+        if age < active_threshold:
             return "text-success-custom"
-        elif age < 300:  # 5 minutes
+        elif age < stale_threshold:
             return "text-warning-custom"
         else:
             return "text-error-custom"

@@ -15,6 +15,7 @@ from hi.apps.attribute.enums import AttributeType
 from hi.apps.common.delayed_signal_processor import DelayedSignalProcessor
 from hi.apps.common.singleton import Singleton
 from hi.apps.common.module_utils import import_module_safe
+from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from .enums import IntegrationAttributeType
 from .integration_data import IntegrationData
@@ -72,6 +73,10 @@ class IntegrationManager( Singleton ):
             return self._integration_data_map[integration_id].integration_gateway
         raise KeyError( f'Unknown integration id "{integration_id}".' )
 
+    def get_health_status_providers(self) -> List[HealthStatusProvider]:
+        with self._data_lock:
+            return list( self._monitor_map.values() )
+        
     async def initialize( self, event_loop ) -> None:
         """
         This should be initialized from the background thread where the
@@ -185,7 +190,8 @@ class IntegrationManager( Singleton ):
                 return
             
             logger.debug(f"Starting integration monitor: {integration_id}")
-            asyncio.create_task( monitor.start() )
+            asyncio.create_task( monitor.start(),
+                                 name=f'Integration-{integration_id}' )
         return
 
     def _stop_integration_monitor( self, integration_data : IntegrationData ):

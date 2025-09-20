@@ -10,6 +10,8 @@ from hi.apps.config.views import ConfigPageView
 from hi.apps.monitor.monitor_manager import AppMonitorManager
 from hi.apps.weather.weather_source_manager import WeatherSourceManager
 
+from hi.integrations.integration_manager import IntegrationManager
+
 from .asyncio_health_provider import AsyncioHealthStatusProvider
 
 logger = logging.getLogger(__name__)
@@ -25,13 +27,17 @@ class SystemInfoView( ConfigPageView ):
         return 'system/panes/system_info.html'
 
     def get_main_template_context( self, request, *args, **kwargs ):
-        app_monitor_manager = AppMonitorManager()
         app_monitor_providers = sorted(
-            app_monitor_manager.get_health_status_providers(),
+            AppMonitorManager().get_health_status_providers(),
+            key = lambda m: m.get_provider_info().provider_name
+        )
+        integration_providers = sorted(
+            IntegrationManager().get_health_status_providers(),
             key = lambda m: m.get_provider_info().provider_name
         )
         return {
             'app_monitor_providers': app_monitor_providers,
+            'integration_providers': integration_providers,
             'weather_provider': WeatherSourceManager(),
             'background_task_provider': AsyncioHealthStatusProvider(),
         }

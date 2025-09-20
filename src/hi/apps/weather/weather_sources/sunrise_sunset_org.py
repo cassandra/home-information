@@ -44,7 +44,7 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
     
     @classmethod
     def weather_source_id(cls):
-        return f'hi.apps.weather.weather_sources.{cls.SOURCE_ID}'
+        return cls.SOURCE_ID
     
     @classmethod
     def weather_source_label(cls):
