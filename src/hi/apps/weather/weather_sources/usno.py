@@ -34,7 +34,7 @@ class USNOStatus(Enum):
     INVALID_REQUEST = "invalid_request"
 
 
-class USNO(WeatherDataSource, WeatherMixin):
+class USNO( WeatherDataSource, WeatherMixin ):
     """
     US Naval Observatory Astronomical Applications Department API integration.
     
@@ -51,11 +51,20 @@ class USNO(WeatherDataSource, WeatherMixin):
     
     SKIP_CACHE = False  # For debugging    
     
+    @classmethod
+    def weather_source_id(cls):
+        return cls.SOURCE_ID
+    
+    @classmethod
+    def weather_source_label(cls):
+        return 'US Naval Observatory'
+    
+    @classmethod
+    def weather_source_abbreviation(cls):
+        return 'USNO'
+    
     def __init__(self):
         super().__init__(
-            id = self.SOURCE_ID,
-            label = 'US Naval Observatory',
-            abbreviation = 'USNO',
             priority = 2,  # Higher priority than sunrise-sunset.org due to moon phase data
             requests_per_day_limit = 1000,  # Conservative estimate
             requests_per_polling_interval = 1,  # Only need one request per day per location
@@ -385,7 +394,12 @@ class USNO(WeatherDataSource, WeatherMixin):
         
         logger.debug(f'USNO API request: {url}')
         
-        response = requests.get( url, headers = self._headers, timeout = self.get_api_timeout() )
+        with self.api_call_context( 'usno' ):
+            response = requests.get(
+                url,
+                headers = self._headers,
+                timeout = self.get_api_timeout(),
+            )
         response.raise_for_status()
         api_data = response.json()           
         return api_data

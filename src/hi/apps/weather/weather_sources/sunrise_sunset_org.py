@@ -42,11 +42,20 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
     
     SKIP_CACHE = False  # For debugging    
     
+    @classmethod
+    def weather_source_id(cls):
+        return cls.SOURCE_ID
+    
+    @classmethod
+    def weather_source_label(cls):
+        return 'Sunrise-Sunset.org'
+    
+    @classmethod
+    def weather_source_abbreviation(cls):
+        return 'SunriseSunset'
+    
     def __init__(self):
         super().__init__(
-            id = self.SOURCE_ID,
-            label = 'Sunrise-Sunset.org',
-            abbreviation = 'SunriseSunset',
             priority = 3,  # Lower priority than NWS and OpenMeteo
             requests_per_day_limit = 1000,  # Conservative estimate for "reasonable" usage
             requests_per_polling_interval = 1,  # Only need one request per day per location
@@ -269,7 +278,12 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
                f"date={target_date.isoformat()}&"
                f"formatted=0")  # Get ISO format times
         
-        response = requests.get( url, headers = self._headers, timeout = self.get_api_timeout() )
+        with self.api_call_context( 'sunrise_sunset' ):
+            response = requests.get(
+                url,
+                headers = self._headers,
+                timeout = self.get_api_timeout(),
+            )
         response.raise_for_status()
         api_data = response.json()           
         return api_data

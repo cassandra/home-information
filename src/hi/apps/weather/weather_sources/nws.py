@@ -53,12 +53,21 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
     ALERTS_DATA_CACHE_EXPIRY_SECS = 10 * 60  # Alerts can change frequently, short cache
     
     SKIP_CACHE = False  # For debugging    
+
+    @classmethod
+    def weather_source_id(cls):
+        return 'nws'
+    
+    @classmethod
+    def weather_source_label(cls):
+        return 'National Weather Service'
+    
+    @classmethod
+    def weather_source_abbreviation(cls):
+        return 'NWS'
     
     def __init__( self ):
         super().__init__(
-            id = 'nws',
-            label = 'National Weather Service',
-            abbreviation = 'NWS',
             priority = 1,
             requests_per_day_limit = 432,
             requests_per_polling_interval = 3,
@@ -149,6 +158,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         return
 
     def get_current_conditions( self, geographic_location : GeographicLocation ) -> WeatherConditionsData:
+        
         station = self._get_station( geographic_location = geographic_location )
         observations_data = self._get_observations_data( station = station )
         return self._parse_observation_data(
@@ -498,7 +508,13 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         return observations_data
 
     def _get_observations_data_from_api( self, station : Station ) -> Dict[ str, Any ]:
-        observations_response = requests.get( station.observations_url, headers = self._headers, timeout = self.get_api_timeout() )
+        with self.api_call_context( 'nws_observations' ):
+            observations_response = requests.get(
+                station.observations_url,
+                headers = self._headers,
+                timeout = self.get_api_timeout(),
+            )
+            
         observations_response.raise_for_status()
         observations_data = observations_response.json()           
         return observations_data
@@ -524,7 +540,12 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         return forecast_hourly_data
 
     def _get_forecast_hourly_data_from_api( self, station : Station ) -> Dict[ str, Any ]:
-        forecast_hourly_response = requests.get( station.forecast_url, headers = self._headers, timeout = self.get_api_timeout() )
+        with self.api_call_context( 'nws_forecast_hourly' ):
+            forecast_hourly_response = requests.get(
+                station.forecast_url,
+                headers = self._headers,
+                timeout = self.get_api_timeout(),
+            )
         forecast_hourly_response.raise_for_status()
         forecast_hourly_data = forecast_hourly_response.json()           
         return forecast_hourly_data
@@ -550,7 +571,12 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         return forecast_12h_data
 
     def _get_forecast_12h_data_from_api( self, station : Station ) -> Dict[ str, Any ]:
-        forecast_12h_response = requests.get( station.forecast_url, headers = self._headers, timeout = self.get_api_timeout() )
+        with self.api_call_context( 'nws_forecast' ):
+            forecast_12h_response = requests.get(
+                station.forecast_url,
+                headers = self._headers,
+                timeout = self.get_api_timeout(),
+            )
         forecast_12h_response.raise_for_status()
         forecast_12h_data = forecast_12h_response.json()           
         return forecast_12h_data
@@ -586,7 +612,13 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         # Can cache this data, expires 12 hours-ish (they do not change often)
         points_data = self._get_points_data( geographic_location = geographic_location )
         stations_url = points_data['properties']['observationStations']
-        stations_response = requests.get( stations_url, headers = self._headers, timeout = self.get_api_timeout() )
+
+        with self.api_call_context( 'nws_stations' ):
+            stations_response = requests.get(
+                stations_url,
+                headers = self._headers,
+                timeout = self.get_api_timeout(),
+            )
         stations_response.raise_for_status()
         stations_data = stations_response.json()
         return stations_data
@@ -613,7 +645,13 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
     def _get_points_data_from_api( self, geographic_location : GeographicLocation ) -> Dict[ str, Any ]:
         # Can cache this data, expires 12 hours-ish (they do not change often)
         points_url = f'{self.BASE_URL}points/{geographic_location.latitude},{geographic_location.longitude}'
-        points_response = requests.get( points_url, headers = self._headers, timeout = self.get_api_timeout() )
+
+        with self.api_call_context( 'nws_points' ):
+            points_response = requests.get(
+                points_url,
+                headers = self._headers,
+                timeout = self.get_api_timeout(),
+            )
         points_response.raise_for_status()
         points_data = points_response.json()
         return points_data
@@ -1031,7 +1069,12 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
         alerts_url = f'{self.BASE_URL}alerts/active?point={geographic_location.latitude},{geographic_location.longitude}'
         logger.debug(f'NWS alerts API request: {alerts_url}')
         
-        response = requests.get( alerts_url, headers=self._headers, timeout = self.get_api_timeout() )
+        with self.api_call_context( 'nws_alerts' ):
+            response = requests.get(
+                alerts_url,
+                headers=self._headers,
+                timeout = self.get_api_timeout(),
+            )
         response.raise_for_status()
         alerts_data = response.json()
         return alerts_data

@@ -10,6 +10,7 @@ from hi.apps.system.provider_info import ProviderInfo
 
 from .weather_settings_helper import WeatherSettingsHelper
 from .weather_source_discovery import WeatherSourceDiscovery
+from .weather_source_manager import WeatherSourceManager
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,9 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
             continue
             
         self._weather_data_source_instance_list = discovered_sources
+        WeatherSourceManager().add_api_health_status_provider_multi(
+            api_health_status_provider_sequence = discovered_sources,
+        )
         return
     
     @classmethod
@@ -65,8 +69,10 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
         
         task_list = list()
         for weather_data_source in self._weather_data_source_instance_list:
-            # Only fetch from enabled weather sources
-            if await self._settings_helper.is_weather_source_enabled_async(weather_data_source.id):
+            is_enabled = await self._settings_helper.is_weather_source_enabled_async(
+                weather_data_source.id
+            )
+            if is_enabled:
                 task = asyncio.create_task( weather_data_source.fetch() )
                 task_list.append( task )
             else:

@@ -40,11 +40,20 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
     
     SKIP_CACHE = False  # For debugging    
     
+    @classmethod
+    def weather_source_id(cls):
+        return 'openmeteo'
+    
+    @classmethod
+    def weather_source_label(cls):
+        return 'Open-Meteo'
+    
+    @classmethod
+    def weather_source_abbreviation(cls):
+        return 'OpenMeteo'
+    
     def __init__(self):
         super().__init__(
-            id = 'openmeteo',
-            label = 'Open-Meteo',
-            abbreviation = 'OpenMeteo',
             priority = 2,  # Lower priority than NWS
             requests_per_day_limit = 10000,  # Open-Meteo is very generous
             requests_per_polling_interval = 5,
@@ -735,7 +744,12 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                f"hourly=temperature_2m,relativehumidity_2m,dewpoint_2m,precipitation,pressure_msl&"
                f"units=metric")
         
-        response = requests.get( url, headers = self._headers, timeout = self.get_api_timeout() )
+        with self.api_call_context( 'openmeteo_current' ):
+            response = requests.get(
+                url,
+                headers = self._headers,
+                timeout = self.get_api_timeout(),
+            )
         response.raise_for_status()
         current_data = response.json()           
         return current_data
@@ -769,7 +783,12 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                f"forecast_days=7&"
                f"units=metric")
         
-        response = requests.get( url, headers = self._headers, timeout = self.get_api_timeout() )
+        with self.api_call_context( 'openmeteo_forecast_hourly' ):
+            response = requests.get(
+                url,
+                headers = self._headers,
+                timeout = self.get_api_timeout(),
+            )
         response.raise_for_status()
         forecast_data = response.json()           
         return forecast_data
@@ -803,7 +822,12 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                f"forecast_days=14&"
                f"units=metric")
         
-        response = requests.get( url, headers = self._headers, timeout = self.get_api_timeout() )
+        with self.api_call_context( 'openmeteo_forecast_daily' ):
+            response = requests.get(
+                url,
+                headers = self._headers,
+                timeout = self.get_api_timeout(),
+            )
         response.raise_for_status()
         forecast_data = response.json()           
         return forecast_data
@@ -848,7 +872,12 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                f"daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum&"
                f"units=metric")
         
-        response = requests.get( url, headers = self._headers, timeout = self.get_api_timeout() )
+        with self.api_call_context( 'openmeteo_history' ):
+            response = requests.get(
+                url,
+                headers = self._headers,
+                timeout = self.get_api_timeout(),
+            )
         response.raise_for_status()
         historical_data = response.json()           
         return historical_data
