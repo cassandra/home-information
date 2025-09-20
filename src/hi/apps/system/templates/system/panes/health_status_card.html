@@ -1,0 +1,46 @@
+{% load icons %}
+{% load tz %}
+
+{% timezone USER_TIMEZONE %}
+{% if health_status_provider.get_provider_info.provider_id == 'hi.apps.system.background_tasks' %}
+  {% url 'background_task_details' as modal_url %}
+{% else %}
+  {% url 'system_health_status' provider_id=health_status_provider.get_provider_info.provider_id as modal_url %}
+{% endif %}
+
+<a href="{{ modal_url }}"
+   class="clickable-card"
+   data-async="modal">
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="mb-0">{{ health_status_provider.get_provider_info.provider_name }}</h6>
+      <span class="badge monitor-status-badge {{ health_status_provider.health_status.status_badge_class }}">
+        {% icon health_status_provider.health_status.status_icon size="sm" css_class="mr-1" %}{{ health_status_provider.health_status.status_display }}
+      </span>
+    </div>
+
+    {% if not standalone %}
+    <div class="row">
+      <div class="col-sm-6">
+        <small class="text-muted">Last Check:</small><br>
+        <span>{{ health_status_provider.health_status.last_check|localtime|date:"H:i:s" }}</span>
+      </div>
+      <div class="col-sm-6">
+        <small class="text-muted">Status:</small><br>
+        <span class="heartbeat-indicator {{ health_status_provider.health_status.heartbeat_css_class }}"></span>
+        <span class="{{ health_status_provider.health_status.heartbeat_text_class }}">{{ health_status_provider.health_status.heartbeat_status_text }}</span>
+      </div>
+    </div>
+    {% else %}
+    <!-- Standalone layout for background tasks -->
+    <div class="row">
+      <div class="col-12">
+        <small class="text-muted">{{ health_status_provider.get_provider_info.description }}</small>
+      </div>
+    </div>
+    {% endif %}
+    </div>
+  </div>
+</a>
+{% endtimezone %}

@@ -1,0 +1,34 @@
+{% load icons %}
+{% load tz %}
+
+{% timezone USER_TIMEZONE %}
+<div class="card">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h6 class="mb-0">{{ health_status.provider_name }}</h6>
+      {% if health_status.api_status_map %}
+      <small class="text-muted">{{ health_status.api_status_map|length }} API source{{ health_status.api_status_map|length|pluralize }} configured</small>
+      {% else %}
+      <small class="text-muted">No API sources configured</small>
+      {% endif %}
+    </div>
+    <span class="badge monitor-status-badge {{ health_status.status_badge_class }}">
+      {% icon health_status.status_icon size="sm" css_class="mr-1" %}{{ health_status.status_display }}
+    </span>
+  </div>
+
+  {% if health_status.api_status_map %}
+  <div class="api-sources-list">
+    {% for api_status in health_status.api_status_map.values %}
+      {% include "system/panes/api_health_status_item.html" with api_status=api_status %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-muted">
+    <p class="mb-0">No API sources available for monitoring.</p>
+  </div>
+  {% endif %}
+  </div>
+</div>
+{% endtimezone %}

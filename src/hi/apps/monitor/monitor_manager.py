@@ -3,6 +3,8 @@ import logging
 import threading
 from typing import List, Type
 
+from hi.apps.system.health_status_provider import HealthStatusProvider
+
 from django.apps import apps
 from django.conf import settings
 
@@ -56,6 +58,18 @@ class AppMonitorManager( Singleton ):
             monitor.stop()
             continue
         return
+
+    def get_health_status_providers(self) -> List[HealthStatusProvider]:
+        """Get health status providers for all registered monitors.
+
+        Returns:
+            List of HealthStatusProvider instances.
+            Each provider exposes get_provider_info() and health_status.
+        """
+        with self._data_lock:
+            # Return monitors as HealthStatusProvider instances
+            # PeriodicMonitor inherits from HealthStatusProvider
+            return list(self._monitor_map.values())
 
     def _discover_periodic_monitors(self) -> List[ Type[ PeriodicMonitor ]]:
         periodic_monitor_class_list = list()

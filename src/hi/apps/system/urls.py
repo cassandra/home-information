@@ -12,4 +12,8 @@ urlpatterns = [
     re_path( r'^health/<str:provider_id>$',
              views.SystemHealthStatusView.as_view(),
              name = 'system_health_status' ),
+
+    re_path( r'^background-tasks/details$',
+             views.BackgroundTaskDetailsView.as_view(),
+             name = 'background_task_details' ),
 ]

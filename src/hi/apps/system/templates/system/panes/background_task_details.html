@@ -1,0 +1,89 @@
+{% load icons %}
+{% load tz %}
+
+{% timezone USER_TIMEZONE %}
+{% if async_diagnostics %}
+<div class="background-task-details">
+  <div class="row mb-3">
+    <div class="col-sm-3"><strong>Main Thread:</strong></div>
+    <div class="col-sm-9">{{ async_diagnostics.main_thread.name }}</div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-sm-3"><strong>Active Threads:</strong></div>
+    <div class="col-sm-9">{{ async_diagnostics.current_thread.active_count }}</div>
+  </div>
+
+  {% if async_diagnostics.background_tasks %}
+  <div class="row">
+    <div class="col-12">
+      <h6 class="mb-3">Background Tasks</h6>
+      {% for task_name, task_info in async_diagnostics.background_tasks.items %}
+      <div class="mt-3 p-3 border-left border-info">
+        <div class="mb-2"><strong>{{ task_name }}</strong></div>
+
+        <div class="row mb-2">
+          <div class="col-sm-3"><strong>Thread:</strong></div>
+          <div class="col-sm-9">
+            {% if task_info.thread.is_alive %}
+            <span class="text-success">
+              {% icon "check-circle" size="sm" css_class="mr-1" %}{{ task_info.thread_name }}
+            </span>
+            {% else %}
+            <span class="text-danger">
+              {% icon "warning" size="sm" css_class="mr-1" %}Dead
+            </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="row mb-2">
+          <div class="col-sm-3"><strong>Event Loop:</strong></div>
+          <div class="col-sm-9">
+            {% if task_info.event_loop.exists and task_info.event_loop.is_running %}
+            <span class="text-success">
+              {% icon "check-circle" size="sm" css_class="mr-1" %}Running ({{ task_info.event_loop.active_tasks }} active tasks)
+            </span>
+            {% elif task_info.event_loop.exists %}
+            <span class="text-warning">
+              {% icon "warning" size="sm" css_class="mr-1" %}Stopped
+            </span>
+            {% else %}
+            <span class="text-danger">
+              {% icon "warning" size="sm" css_class="mr-1" %}Dead
+            </span>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if task_info.event_loop.task_details %}
+        <div class="row">
+          <div class="col-sm-3"><strong>Tasks:</strong></div>
+          <div class="col-sm-9">
+            {% for task_detail in task_info.event_loop.task_details %}
+            <div class="small mb-1">
+              - {{ task_detail.coro_name|default:"unknown" }}
+              {% if task_detail.done %}
+                <span class="text-muted">(done)</span>
+              {% elif task_detail.cancelled %}
+                <span class="text-warning">(cancelled)</span>
+              {% else %}
+                <span class="text-success">(running)</span>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div class="alert alert-warning">
+  <p class="mb-0">Background task status information is not available.</p>
+</div>
+{% endif %}
+{% endtimezone %}
