@@ -8,9 +8,10 @@
   <!-- System Health Page Header -->
   <div class="d-flex justify-content-between align-items-center my-3">
     <h3>System Health</h3>
-    <button class="btn btn-outline-secondary btn-sm" data-async="refresh">
+    <a hrf="{% url 'system_info' %}"
+        class="btn btn-outline-secondary btn-sm" data-async="true">
       {% icon "sync" size="sm" css_class="mr-1" %}Refresh Status
-    </button>
+    </a>
   </div>
 
   <!-- Application Monitors Grid -->
@@ -21,9 +22,9 @@
   </div>
 
   <div class="row">
-    {% for monitor in app_monitors %}
+    {% for monitor_provider in app_monitor_providers %}
     <div class="col-lg-6 col-md-12 mb-3">
-      {% include "system/panes/health_status_card.html" with health_status_provider=monitor %}
+      {% include "system/panes/health_status_card.html" with health_status_provider=monitor_provider %}
     </div>
     {% endfor %}
   </div>
@@ -37,7 +38,7 @@
 
   <div class="row">
     <div class="col-12">
-      {% include "system/panes/health_status_pane.html" with health_status=weather_health %}
+      {% include "system/panes/health_status_pane.html" with health_status_provider=weather_provider %}
     </div>
   </div>
 
@@ -50,7 +51,7 @@
 
   <div class="row">
     <div class="col-12">
-      {% include "system/panes/health_status_pane.html" with health_status=background_task_health_status %}
+      {% include "system/panes/health_status_pane.html" with health_status_provider=background_task_provider %}
     </div>
   </div>
 </div>

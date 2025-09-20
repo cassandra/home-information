@@ -69,7 +69,7 @@ class AppMonitorManager( Singleton ):
         with self._data_lock:
             # Return monitors as HealthStatusProvider instances
             # PeriodicMonitor inherits from HealthStatusProvider
-            return list(self._monitor_map.values())
+            return list( self._monitor_map.values() )
 
     def _discover_periodic_monitors(self) -> List[ Type[ PeriodicMonitor ]]:
         periodic_monitor_class_list = list()

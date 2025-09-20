@@ -42,7 +42,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
     
     @classmethod
     def weather_source_id(cls):
-        return 'openmeteo'
+        return 'hi.apps.weather.weather_sources.openmeteo'
     
     @classmethod
     def weather_source_label(cls):

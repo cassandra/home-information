@@ -5,7 +5,7 @@ import logging
 import threading
 import time
 
-from .api_health import ApiCallContext, ApiHealthStatus
+from .api_health_status import ApiCallContext, ApiHealthStatus
 from .provider_info import ProviderInfo
 from .enums import ApiCallStatusType, ApiHealthStatusType
 

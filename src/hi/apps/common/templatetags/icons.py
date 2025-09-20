@@ -56,6 +56,7 @@ AVAILABLE_ICONS = {
     'settings',
     'shield',
     'sync',
+    'tasks',
     'times-circle',
     'upload',
     'video',

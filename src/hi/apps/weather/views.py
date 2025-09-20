@@ -80,16 +80,3 @@ class HistoryView( HiModalView, WeatherMixin ):
             'interval_daily_history_list': daily_history.data_list,
         }
         return self.modal_response( request, context )
-
-    
-class WeatherSourceStatusView( HiModalView ):
-
-    def get_template_name( self ) -> str:
-        return 'system/modals/aggregate_health_status.html'
-
-    def get( self, request, *args, **kwargs ):
-        health_status = WeatherSourceManager().health_status
-        context = {
-            'health_status': health_status,
-        }
-        return self.modal_response( request, context )

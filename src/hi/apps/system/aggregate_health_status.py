@@ -2,13 +2,13 @@ from dataclasses import dataclass, field
 from typing import Dict
 
 from .health_status import HealthStatus
-from .api_health import ApiHealthStatus
+from .api_health_status import ApiHealthStatus
 from .provider_info import ProviderInfo
 from .enums import HealthStatusType, ApiHealthStatusType, HealthAggregationRule
 
 
 @dataclass
-class ApiHealthAggregator( HealthStatus ):
+class AggregateHealthStatus( HealthStatus ):
     """
     Extends HealthStatus to add API source tracking and aggregation.
     """

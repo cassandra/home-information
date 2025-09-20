@@ -56,7 +56,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
     @classmethod
     def weather_source_id(cls):
-        return 'nws'
+        return 'hi.apps.weather.weather_sources.nws'
     
     @classmethod
     def weather_source_label(cls):

@@ -18,7 +18,7 @@ class SystemTestUiHomeView(View):
 class SystemTestUiHealthStatusView(View):
     """
     View for testing health status modals with various synthetic data scenarios.
-    Supports all HealthStatusType values with both regular HealthStatus and ApiHealthAggregator data.
+    Supports all HealthStatusType values with both regular HealthStatus and AggregateHealthStatus data.
 
     URL patterns:
     - /test/health-status/<status_type>/<api_flag>/
@@ -49,13 +49,8 @@ class SystemTestUiHealthStatusView(View):
             status_type,
             with_api_data = with_api_data,
         )
-        if with_api_data:
-            template_name = 'system/modals/aggregate_health_status.html'
-        else:
-            template_name = 'system/modals/health_status.html'
-
         # Render template with scenario data (matching existing modal template expectations)
         context = {
             'health_status': health_status,
         }
-        return render(request, template_name, context)
+        return render(request, 'system/modals/health_status.html', context)

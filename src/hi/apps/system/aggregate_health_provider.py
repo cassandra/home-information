@@ -5,7 +5,8 @@ import threading
 from typing import Optional, Sequence
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from .api_health_aggregator import ApiHealthAggregator
+
+from .aggregate_health_status import AggregateHealthStatus
 from .api_health_status_provider import ApiHealthStatusProvider
 from .enums import HealthStatusType, HealthAggregationRule
 from .provider_info import ProviderInfo
@@ -32,7 +33,7 @@ class AggregateHealthProvider(ABC):
         self._api_health_status_providers = []  # Track API health status providers
 
         provider_info = self.get_provider_info()
-        self._aggregated_health_status = ApiHealthAggregator(
+        self._aggregated_health_status = AggregateHealthStatus(
             provider_id = provider_info.provider_id,
             provider_name = provider_info.provider_name,
             status = HealthStatusType.UNKNOWN,
@@ -51,7 +52,7 @@ class AggregateHealthProvider(ABC):
         pass
 
     @property
-    def health_status(self) -> ApiHealthAggregator:
+    def health_status(self) -> AggregateHealthStatus:
         """Get aggregated health status (thread-safe, always fresh)."""
         self._ensure_api_aggregator_setup()
         with self._health_lock:

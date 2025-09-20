@@ -2,20 +2,20 @@
 {% load tz %}
 
 {% timezone USER_TIMEZONE %}
-<a href="{% url 'weather_source_status' %}"
-   class="weather-source-item clickable-card"
+<a href="{% url 'system_api_health_status' provider_id=api_health_status.provider_id %}"
+   class="clickable-card"
    data-async="modal">
   <div>
-    <strong>{{ api_status.provider_name }}</strong>
-    {% if api_status.last_success %}
-    <small class="text-muted d-block">Last success: {{ api_status.last_success|localtime|date:"H:i:s" }}</small>
+    <strong>{{ api_health_status.provider_name }}</strong>
+    {% if api_health_status.last_success %}
+    <small class="text-muted d-block">Last success: {{ api_health_status.last_success|localtime|date:"H:i:s" }}</small>
     {% else %}
     <small class="text-muted d-block">No recent success</small>
     {% endif %}
   </div>
   <div>
-    <span class="heartbeat-indicator {{ api_status.heartbeat_css_class }}"></span>
-    <span class="{{ api_status.status_text_class }} small">{{ api_status.status_display }}</span>
+    <span class="heartbeat-indicator {{ api_health_status.heartbeat_css_class }}"></span>
+    <span class="{{ api_health_status.status_text_class }} small">{{ api_health_status.status_display }}</span>
   </div>
 </a>
 {% endtimezone %}
