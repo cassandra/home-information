@@ -20,8 +20,8 @@ class ApiHealthStatus:
     """Health status tracking for individual API sources."""
 
     # Identification
-    service_name           : str          # User-friendly display name
-    service_id             : str          # Technical identifier
+    provider_name          : str          # User-friendly display name
+    provider_id            : str          # Technical identifier
 
     status                 : ApiHealthStatusType
     last_success           : Optional[datetime] = None
@@ -83,6 +83,7 @@ class ApiHealthStatus:
         return {
             ApiHealthStatusType.HEALTHY: "success",
             ApiHealthStatusType.DEGRADED: "warning",
+            ApiHealthStatusType.UNKNOWN: "warning",
             ApiHealthStatusType.FAILING: "error",
             ApiHealthStatusType.UNAVAILABLE: "error"
         }[self.status]
@@ -93,6 +94,7 @@ class ApiHealthStatus:
         return {
             ApiHealthStatusType.HEALTHY: "badge-success",
             ApiHealthStatusType.DEGRADED: "monitor-status-warning",
+            ApiHealthStatusType.UNKNOWN: "monitor-status-warning",
             ApiHealthStatusType.FAILING: "monitor-status-error",
             ApiHealthStatusType.UNAVAILABLE: "monitor-status-error"
         }[self.status]
@@ -103,6 +105,7 @@ class ApiHealthStatus:
         return {
             ApiHealthStatusType.HEALTHY: "check-circle",
             ApiHealthStatusType.DEGRADED: "warning",
+            ApiHealthStatusType.UNKNOWN: "warning",
             ApiHealthStatusType.FAILING: "warning",
             ApiHealthStatusType.UNAVAILABLE: "warning"
         }[self.status]
@@ -113,6 +116,7 @@ class ApiHealthStatus:
         return {
             ApiHealthStatusType.HEALTHY: "api-source-healthy",
             ApiHealthStatusType.DEGRADED: "api-source-warning",
+            ApiHealthStatusType.UNKNOWN: "api-source-warning",
             ApiHealthStatusType.FAILING: "api-source-error",
             ApiHealthStatusType.UNAVAILABLE: "api-source-error"
         }[self.status]

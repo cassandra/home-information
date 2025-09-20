@@ -62,7 +62,7 @@
         </div>
     </div>
 
-    {% if health_status.api_sources %}
+    {% if health_status.api_status_map %}
     <!-- API Sources Section -->
     <div class="row">
         <div class="col-12">
@@ -71,54 +71,54 @@
                 API Sources
             </h6>
 
-            {% for api_source in health_status.api_sources %}
-            <div class="api-source-section {{ api_source.border_color_class }} mb-4">
+            {% for api_status in health_status.api_status_map.values %}
+            <div class="api-source-section {{ api_status.border_color_class }} mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="mb-0">{{ api_source.service_name }}</h6>
-                    <span class="badge {{ api_source.status_badge_class }}">
-                        {% icon api_source.status.status_icon size="sm" css_class="mr-1" %}{{ api_source.status.label }}
+                    <h6 class="mb-0">{{ api_status.provider_name }}</h6>
+                    <span class="badge {{ api_status.status_badge_class }}">
+                        {% icon api_status.status_icon size="sm" css_class="mr-1" %}{{ api_status.status.label }}
                     </span>
                 </div>
 
-                {% if api_source.last_success %}
+                {% if api_status.last_success %}
                 <div class="row">
                     <div class="col-sm-3"><strong>Last Success:</strong></div>
-                    <div class="col-sm-9">{{ api_source.last_success|localtime|date:"H:i:s" }}</div>
+                    <div class="col-sm-9">{{ api_status.last_success|localtime|date:"H:i:s" }}</div>
                 </div>
                 {% endif %}
 
                 <div class="api-metrics-grid mt-2">
-                    <div class="metric-item {{ api_source.status_css_class }}">
+                    <div class="metric-item {{ api_status.status_css_class }}">
                         <div class="small text-muted-custom">Total Calls</div>
-                        <div class="metric-value">{{ api_source.total_calls|floatformat:0 }}</div>
+                        <div class="metric-value">{{ api_status.total_calls|floatformat:0 }}</div>
                     </div>
-                    <div class="metric-item {{ api_source.status_css_class }}">
+                    <div class="metric-item {{ api_status.status_css_class }}">
                         <div class="small text-muted-custom">Success Rate</div>
-                        <div class="metric-value">{{ api_source.success_rate_percentage|floatformat:1 }}%</div>
+                        <div class="metric-value">{{ api_status.success_rate_percentage|floatformat:1 }}%</div>
                     </div>
-                    {% if api_source.last_response_time %}
-                    <div class="metric-item {{ api_source.status_css_class }}">
+                    {% if api_status.last_response_time %}
+                    <div class="metric-item {{ api_status.status_css_class }}">
                         <div class="small text-muted-custom">Last Response</div>
-                        <div class="metric-value">{{ api_source.last_response_time|floatformat:2 }}s</div>
+                        <div class="metric-value">{{ api_status.last_response_time|floatformat:2 }}s</div>
                     </div>
-                    {% elif api_source.average_response_time %}
-                    <div class="metric-item {{ api_source.status_css_class }}">
+                    {% elif api_status.average_response_time %}
+                    <div class="metric-item {{ api_status.status_css_class }}">
                         <div class="small text-muted-custom">Avg Response</div>
-                        <div class="metric-value">{{ api_source.average_response_time|floatformat:2 }}s</div>
+                        <div class="metric-value">{{ api_status.average_response_time|floatformat:2 }}s</div>
                     </div>
                     {% else %}
-                    <div class="metric-item {{ api_source.status_css_class }}">
+                    <div class="metric-item {{ api_status.status_css_class }}">
                         <div class="small text-muted-custom">Response Time</div>
                         <div class="metric-value">timeout</div>
                     </div>
                     {% endif %}
-                    {% if api_source.total_failures > 0 or api_source.consecutive_failures > 0 %}
-                    <div class="metric-item {{ api_source.status_css_class }}">
+                    {% if api_status.total_failures > 0 or api_status.consecutive_failures > 0 %}
+                    <div class="metric-item {{ api_status.status_css_class }}">
                         <div class="small text-muted-custom">
-                            {% if api_source.consecutive_failures > 0 %}Consecutive Failures{% else %}Total Failures{% endif %}
+                            {% if api_status.consecutive_failures > 0 %}Consecutive Failures{% else %}Total Failures{% endif %}
                         </div>
                         <div class="metric-value">
-                            {% if api_source.consecutive_failures > 0 %}{{ api_source.consecutive_failures }}{% else %}{{ api_source.total_failures }}{% endif %}
+                            {% if api_status.consecutive_failures > 0 %}{{ api_status.consecutive_failures }}{% else %}{{ api_status.total_failures }}{% endif %}
                         </div>
                     </div>
                     {% endif %}

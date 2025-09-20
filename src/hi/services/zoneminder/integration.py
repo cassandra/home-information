@@ -57,23 +57,7 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
             logger.exception(f'Error notifying ZoneMinder integration of settings change: {e}')
     
     def get_health_status(self) -> HealthStatus:
-        """Get the current health status of the ZoneMinder integration.
-
-        Delegates to ZoneMinderManager for health status information.
-        The health status now includes enhanced monitoring data for debugging
-        transient issues like the bug in #205.
-        """
-        try:
-            return ZoneMinderManager().health_status
-        except Exception as e:
-            logger.exception(f'Error getting ZoneMinder integration health status: {e}')
-            # Return a default error status if we can't get the real status
-            import hi.apps.common.datetimeproxy as datetimeproxy
-            return HealthStatus(
-                status = HealthStatusType.WARNING,
-                last_check = datetimeproxy.now(),
-                error_message = f'Failed to get health status: {e}'
-            )
+        return ZoneMinderManager().health_status
     
     def validate_configuration(
             self,

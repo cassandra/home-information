@@ -29,13 +29,13 @@ class SystemSyntheticData:
     """
 
     @classmethod
-    def create_health_status_for_testing(cls, status_type: str, has_api_sources: bool):
+    def create_health_status_for_testing(cls, status_type: str, with_api_data: bool):
         """
         Create synthetic health status data for UI testing.
 
         Args:
             status_type: One of 'unknown', 'healthy', 'warning', 'error', 'disabled'
-            has_api_sources: Whether to create ApiHealthAggregator (True) or HealthStatus (False)
+            with_api_data: Whether to create ApiHealthAggregator (True) or HealthStatus (False)
 
         Returns:
             HealthStatus or ApiHealthAggregator instance with appropriate test data
@@ -55,6 +55,8 @@ class SystemSyntheticData:
 
         # Base health status data
         base_data = {
+            'provider_id': 'provider-0',
+            'provider_name': 'Provider 0',
             'status': status_enum,
             'last_check': now,
         }
@@ -87,13 +89,13 @@ class SystemSyntheticData:
                 'error_message': "Service has been manually disabled for scheduled maintenance",
             })
 
-        if has_api_sources:
+        if with_api_data:
             # Create ApiHealthAggregator with sample API sources
-            api_sources = cls._create_sample_api_sources(status_type, now)
+            api_status_map = cls._create_sample_api_status_map(status_type, now)
             aggregation_rule = cls._get_aggregation_rule_for_status(status_type)
 
             return ApiHealthAggregator(
-                api_sources=api_sources,
+                api_status_map=api_status_map,
                 aggregation_rule=aggregation_rule,
                 **base_data
             )
@@ -114,13 +116,13 @@ class SystemSyntheticData:
         return labels.get(status_type, 'Health Status')
 
     @classmethod
-    def _create_sample_api_sources(cls, status_type: str, now: datetime) -> Dict[ProviderInfo, ApiHealthStatus]:
+    def _create_sample_api_status_map(cls, status_type: str, now: datetime) -> Dict[ProviderInfo, ApiHealthStatus]:
         """Create sample API sources based on status type."""
         if status_type == 'healthy':
             return {
-                ProviderInfo(service_name="Primary API", service_id="primary_api"): ApiHealthStatus(
-                    service_name="Primary API",
-                    service_id="primary_api",
+                ProviderInfo(provider_name="Primary API", provider_id="primary_api"): ApiHealthStatus(
+                    provider_name="Primary API",
+                    provider_id="primary_api",
                     status=ApiHealthStatusType.HEALTHY,
                     last_success=now,
                     total_calls=1247,
@@ -129,9 +131,9 @@ class SystemSyntheticData:
                     average_response_time=0.23,
                     last_response_time=0.21
                 ),
-                ProviderInfo(service_name="Secondary API", service_id="secondary_api"): ApiHealthStatus(
-                    service_name="Secondary API",
-                    service_id="secondary_api",
+                ProviderInfo(provider_name="Secondary API", provider_id="secondary_api"): ApiHealthStatus(
+                    provider_name="Secondary API",
+                    provider_id="secondary_api",
                     status=ApiHealthStatusType.HEALTHY,
                     last_success=now - timedelta(seconds=10),
                     total_calls=892,
@@ -144,9 +146,9 @@ class SystemSyntheticData:
 
         elif status_type == 'warning':
             return {
-                ProviderInfo(service_name="Primary API", service_id="primary_api"): ApiHealthStatus(
-                    service_name="Primary API",
-                    service_id="primary_api",
+                ProviderInfo(provider_name="Primary API", provider_id="primary_api"): ApiHealthStatus(
+                    provider_name="Primary API",
+                    provider_id="primary_api",
                     status=ApiHealthStatusType.HEALTHY,
                     last_success=now,
                     total_calls=1247,
@@ -155,9 +157,9 @@ class SystemSyntheticData:
                     average_response_time=0.23,
                     last_response_time=0.21
                 ),
-                ProviderInfo(service_name="Secondary API", service_id="secondary_api"): ApiHealthStatus(
-                    service_name="Secondary API",
-                    service_id="secondary_api",
+                ProviderInfo(provider_name="Secondary API", provider_id="secondary_api"): ApiHealthStatus(
+                    provider_name="Secondary API",
+                    provider_id="secondary_api",
                     status=ApiHealthStatusType.DEGRADED,
                     last_success=now - timedelta(minutes=3),
                     total_calls=892,
@@ -166,9 +168,9 @@ class SystemSyntheticData:
                     average_response_time=1.45,
                     last_response_time=2.31
                 ),
-                ProviderInfo(service_name="Backup API", service_id="backup_api"): ApiHealthStatus(
-                    service_name="Backup API",
-                    service_id="backup_api",
+                ProviderInfo(provider_name="Backup API", provider_id="backup_api"): ApiHealthStatus(
+                    provider_name="Backup API",
+                    provider_id="backup_api",
                     status=ApiHealthStatusType.HEALTHY,
                     last_success=now - timedelta(seconds=30),
                     total_calls=456,
@@ -181,9 +183,9 @@ class SystemSyntheticData:
 
         elif status_type == 'error':
             return {
-                ProviderInfo(service_name="Primary API", service_id="primary_api"): ApiHealthStatus(
-                    service_name="Primary API",
-                    service_id="primary_api",
+                ProviderInfo(provider_name="Primary API", provider_id="primary_api"): ApiHealthStatus(
+                    provider_name="Primary API",
+                    provider_id="primary_api",
                     status=ApiHealthStatusType.FAILING,
                     last_success=now - timedelta(hours=2),
                     total_calls=1247,
@@ -192,9 +194,9 @@ class SystemSyntheticData:
                     average_response_time=5.23,
                     last_response_time=None
                 ),
-                ProviderInfo(service_name="Secondary API", service_id="secondary_api"): ApiHealthStatus(
-                    service_name="Secondary API",
-                    service_id="secondary_api",
+                ProviderInfo(provider_name="Secondary API", provider_id="secondary_api"): ApiHealthStatus(
+                    provider_name="Secondary API",
+                    provider_id="secondary_api",
                     status=ApiHealthStatusType.UNAVAILABLE,
                     last_success=now - timedelta(hours=6),
                     total_calls=892,
@@ -207,9 +209,9 @@ class SystemSyntheticData:
 
         elif status_type == 'disabled':
             return {
-                ProviderInfo(service_name="Maintenance API", service_id="maintenance_api"): ApiHealthStatus(
-                    service_name="Maintenance API",
-                    service_id="maintenance_api",
+                ProviderInfo(provider_name="Maintenance API", provider_id="maintenance_api"): ApiHealthStatus(
+                    provider_name="Maintenance API",
+                    provider_id="maintenance_api",
                     status=ApiHealthStatusType.HEALTHY,
                     last_success=now,
                     total_calls=45,
@@ -222,9 +224,9 @@ class SystemSyntheticData:
 
         else:  # unknown
             return {
-                ProviderInfo(service_name="Unknown API", service_id="unknown_api"): ApiHealthStatus(
-                    service_name="Unknown API",
-                    service_id="unknown_api",
+                ProviderInfo(provider_name="Unknown API", provider_id="unknown_api"): ApiHealthStatus(
+                    provider_name="Unknown API",
+                    provider_id="unknown_api",
                     status=ApiHealthStatusType.UNKNOWN,
                     last_success=None,
                     total_calls=0,

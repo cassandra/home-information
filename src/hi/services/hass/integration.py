@@ -1,4 +1,3 @@
-import hi.apps.common.datetimeproxy as datetimeproxy
 import logging
 from typing import List
 
@@ -48,20 +47,7 @@ class HassGateway( IntegrationGateway ):
             logger.exception(f'Error notifying HASS integration of settings change: {e}')
     
     def get_health_status(self) -> HealthStatus:
-        """Get the current health status of the HASS integration.
-        
-        Delegates to HassManager for health status information.
-        """
-        try:
-            return HassManager().health_status
-        except Exception as e:
-            logger.exception(f'Error getting HASS integration health status: {e}')
-            # Return a default error status if we can't get the real status
-            return HealthStatus(
-                status = HealthStatusType.WARNING,
-                last_check = datetimeproxy.now(),
-                error_message = f'Failed to get health status: {e}'
-            )
+        return HassManager().health_status
     
     def validate_configuration(
             self, integration_attributes: List[IntegrationAttribute]

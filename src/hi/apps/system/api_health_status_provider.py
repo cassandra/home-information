@@ -28,8 +28,8 @@ class ApiHealthStatusProvider(ABC):
         service_info = self.get_api_provider_info()
         self._api_health_lock = threading.Lock()
         self._api_health_status = ApiHealthStatus(
-            service_id = service_info.service_id,
-            service_name = service_info.service_name,
+            provider_id = service_info.provider_id,
+            provider_name = service_info.provider_name,
             status = ApiHealthStatusType.UNKNOWN,
         )
         return

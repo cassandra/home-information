@@ -13,17 +13,17 @@ class ApiHealthAggregator( HealthStatus ):
     Extends HealthStatus to add API source tracking and aggregation.
     """
     # Current aggregated API health data
-    api_sources      : Dict[ProviderInfo, ApiHealthStatus] = field(default_factory=dict)
-    aggregation_rule : HealthAggregationRule     = HealthAggregationRule.ALL_SOURCES_HEALTHY
+    api_status_map    : Dict[ProviderInfo, ApiHealthStatus] = field(default_factory=dict)
+    aggregation_rule  : HealthAggregationRule     = HealthAggregationRule.ALL_SOURCES_HEALTHY
 
     def aggregate_health(self) -> HealthStatusType:
         """
         Returns the computed health based on aggregation rule.
         """
-        if not self.api_sources:
+        if not self.api_status_map:
             return self.status  # No API sources, use base health
 
-        api_statuses = [ api.status for api in self.api_sources.values() ]
+        api_statuses = [ api.status for api in self.api_status_map.values() ]
 
         if self.aggregation_rule == HealthAggregationRule.ALL_SOURCES_HEALTHY:
             # All must be healthy

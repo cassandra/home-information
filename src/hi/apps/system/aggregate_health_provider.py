@@ -30,7 +30,11 @@ class AggregateHealthProvider(ABC):
 
         self._health_lock = threading.Lock()
         self._api_health_status_providers = []  # Track API health status providers
+
+        provider_info = self.get_provider_info()
         self._aggregated_health_status = ApiHealthAggregator(
+            provider_id = provider_info.provider_id,
+            provider_name = provider_info.provider_name,
             status = HealthStatusType.UNKNOWN,
             last_check = datetimeproxy.now(),
             aggregation_rule = self._get_aggregation_rule()
@@ -96,13 +100,13 @@ class AggregateHealthProvider(ABC):
     def _refresh_aggregated_health(self) -> None:
         """Refresh aggregated health from all tracked API health status providers."""
         # Clear current sources
-        self._aggregated_health_status.api_sources.clear()
+        self._aggregated_health_status.api_status_map.clear()
 
         # Collect current health from all providers
         for provider in self._api_health_status_providers:
             service_info = provider.get_api_provider_info()
             api_health = provider.api_health_status
-            self._aggregated_health_status.api_sources[service_info] = api_health
+            self._aggregated_health_status.api_status_map[service_info] = api_health
             continue
         
         # Update overall status based on aggregation

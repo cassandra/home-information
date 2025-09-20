@@ -25,12 +25,4 @@ class ProviderInfo:
         if isinstance(other, ProviderInfo):
             return self.provider_id == other.provider_id 
         return False
-
-    @property
-    def service_id(self):
-        return self.provider_id 
-
-    @property
-    def service_name(self):
-        return self.provider_name
    

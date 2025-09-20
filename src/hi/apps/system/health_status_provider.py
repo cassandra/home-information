@@ -24,11 +24,14 @@ class HealthStatusProvider(ABC):
     def _ensure_health_status_provider_setup(self):
         if hasattr( self, '_health_status' ):
             return
-        self._health_lock = threading.Lock()
+        provider_info = self.get_provider_info()
         self._health_status = HealthStatus(
+            provider_id = provider_info.provider_id,
+            provider_name = provider_info.provider_name,
             status = HealthStatusType.UNKNOWN,
             last_check = datetimeproxy.now(),
         )
+        self._health_lock = threading.Lock()
         return
 
     @classmethod

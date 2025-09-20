@@ -42,14 +42,14 @@ class SystemTestUiHealthStatusView(View):
         if api_flag not in ['with-api', 'no-api', 'withapi', 'noapi']:
             raise Http404(f"Invalid api flag: {api_flag}")
 
-        has_api_data = api_flag in ['with-api', 'withapi']
+        with_api_data = api_flag in ['with-api', 'withapi']
 
         # Create health status for the requested scenario
         health_status = SystemSyntheticData.create_health_status_for_testing(
             status_type,
-            has_api_sources = has_api_data,
+            with_api_data = with_api_data,
         )
-        if has_api_data:
+        if with_api_data:
             template_name = 'system/modals/aggregate_health_status.html'
         else:
             template_name = 'system/modals/health_status.html'

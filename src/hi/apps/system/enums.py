@@ -237,21 +237,21 @@ class HealthAggregationRule(LabeledEnum):
     WEIGHTED_AVERAGE = ('Weighted Average', 'Weighted average of source health with custom priorities')
 
     @classmethod
-    def default_for_api_count(cls, api_source_count: int) -> 'HealthAggregationRule':
+    def default_for_api_count(cls, api_provider_count: int) -> 'HealthAggregationRule':
         """
         Determine appropriate aggregation rule based on number of API sources.
 
         Args:
-            api_source_count: Number of API sources this depends on
+            api_provider_count: Number of API sources this depends on
 
         Returns:
             Recommended aggregation rule
         """
-        if api_source_count == 0:
+        if api_provider_count == 0:
             return cls.HEARTBEAT_ONLY
-        elif api_source_count == 1:
+        elif api_provider_count == 1:
             return cls.ALL_SOURCES_HEALTHY  # Single source must be healthy
-        elif api_source_count <= 3:
+        elif api_provider_count <= 3:
             return cls.MAJORITY_SOURCES_HEALTHY  # Most sources must be healthy
         else:
             return cls.ANY_SOURCE_HEALTHY  # At least one source must work
