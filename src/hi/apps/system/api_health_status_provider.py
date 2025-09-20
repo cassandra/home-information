@@ -5,9 +5,9 @@ import logging
 import threading
 import time
 
-from hi.apps.system.api_health import ApiCallContext, ApiHealthStatus
-from hi.apps.system.api_service_info import ApiServiceInfo
-from hi.apps.system.enums import ApiCallStatusType, ApiHealthStatusType
+from .api_health import ApiCallContext, ApiHealthStatus
+from .provider_info import ProviderInfo
+from .enums import ApiCallStatusType, ApiHealthStatusType
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class ApiHealthStatusProvider(ABC):
             return
 
         # Get the API service info from the implementing class
-        service_info = self.get_api_service_info()
+        service_info = self.get_api_provider_info()
         self._api_health_lock = threading.Lock()
         self._api_health_status = ApiHealthStatus(
             service_id = service_info.service_id,
@@ -36,7 +36,7 @@ class ApiHealthStatusProvider(ABC):
 
     @classmethod
     @abstractmethod
-    def get_api_service_info(cls) -> ApiServiceInfo:
+    def get_api_provider_info(cls) -> ProviderInfo:
         """Get the API service info for this class. Must be implemented by subclasses."""
         pass
 
@@ -46,11 +46,6 @@ class ApiHealthStatusProvider(ABC):
         with self._api_health_lock:
             api_health_status = copy.deepcopy( self._api_health_status )
         return api_health_status
-
-    @property
-    def api_service_info(self) -> ApiServiceInfo:
-        """Get the API service info for this API health status provider."""
-        return self.get_api_service_info()
 
     @contextmanager
     def api_call_context( self, operation_name : str ):

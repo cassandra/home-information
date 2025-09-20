@@ -85,7 +85,7 @@ class HassClientFactory:
                 return IntegrationValidationResult.success()
             else:
                 return IntegrationValidationResult.error(
-                    status=HealthStatusType.CONNECTION_ERROR,
+                    status=HealthStatusType.ERROR,
                     error_message='Failed to fetch states from Home Assistant API'
                 )
 
@@ -98,17 +98,17 @@ class HassClientFactory:
                                                         'forbidden',
                                                         'token',
                                                         'credential']):
-                status = HealthStatusType.CONNECTION_ERROR
+                status = HealthStatusType.ERROR
                 user_message = f'Authentication failed: {e}'
             elif any(keyword in error_msg for keyword in ['connect',
                                                           'network',
                                                           'timeout',
                                                           'unreachable',
                                                           'resolve']):
-                status = HealthStatusType.CONNECTION_ERROR
+                status = HealthStatusType.ERROR
                 user_message = f'Cannot connect to Home Assistant: {e}'
             else:
-                status = HealthStatusType.TEMPORARY_ERROR
+                status = HealthStatusType.WARNING
                 user_message = f'API test failed: {e}'
 
             return IntegrationValidationResult.error(

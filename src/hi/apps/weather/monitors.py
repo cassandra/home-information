@@ -6,6 +6,7 @@ from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
 from hi.apps.alert.alert_mixins import AlertMixin
 from hi.apps.config.settings_mixins import SettingsMixin
+from hi.apps.system.provider_info import ProviderInfo
 
 from .weather_settings_helper import WeatherSettingsHelper
 from .weather_source_discovery import WeatherSourceDiscovery
@@ -42,6 +43,15 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
         self._weather_data_source_instance_list = discovered_sources
         return
     
+    @classmethod
+    def get_provider_info(cls) -> ProviderInfo:
+        """ Subclasses should override with something more meaningful. """
+        return ProviderInfo(
+            provider_id = 'hi.apps.weather',
+            provider_name = 'Weather Monitor',
+            description = '',            
+        )
+
     async def do_work(self):
 
         # To help guard against hitting API rate limits, hold off on

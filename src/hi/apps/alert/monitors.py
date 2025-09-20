@@ -1,6 +1,7 @@
 import logging
 
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
+from hi.apps.system.provider_info import ProviderInfo
 
 from .alert_mixins import AlertMixin
 
@@ -19,6 +20,15 @@ class AlertMonitor( PeriodicMonitor, AlertMixin ):
             interval_secs = self.ALERT_POLLING_INTERVAL_SECS,
         )
         return
+
+    @classmethod
+    def get_provider_info(cls) -> ProviderInfo:
+        """ Subclasses should override with something more meaningful. """
+        return ProviderInfo(
+            provider_id = 'hi.apps.alert',
+            provider_name = 'Alert Monitor',
+            description = '',            
+        )
 
     async def do_work(self):
         if self.TRACE:

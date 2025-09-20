@@ -4,6 +4,7 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
+from hi.apps.system.provider_info import ProviderInfo
 
 from .hass_converter import HassConverter
 from .hass_mixins import HassMixin
@@ -48,7 +49,16 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         self._was_initialized = False
         logger.info( 'HassMonitor refreshed - will reinitialize with new settings on next cycle' )
         return
-    
+        
+    @classmethod
+    def get_provider_info(cls) -> ProviderInfo:
+        """ Subclasses should override with something more meaningful. """
+        return ProviderInfo(
+            provider_id = 'hi.sevices.hass',
+            provider_name = 'Home Assistant Monitor',
+            description = '',            
+        )
+
     async def do_work(self):
         if not self._was_initialized:
             await self._initialize()

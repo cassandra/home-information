@@ -13,7 +13,7 @@ from hi.apps.common.singleton_manager import SingletonManager
 from hi.apps.common.utils import str_to_bool
 from hi.apps.system.aggregate_health_provider import AggregateHealthProvider
 from hi.apps.system.api_health_status_provider import ApiHealthStatusProvider
-from hi.apps.system.api_service_info import ApiServiceInfo
+from hi.apps.system.provider_info import ProviderInfo
 from hi.apps.system.enums import HealthStatusType
 
 from hi.integrations.exceptions import (
@@ -75,12 +75,21 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
         return
 
     @classmethod
-    def get_api_service_info(cls) -> ApiServiceInfo:
+    def get_provider_info(cls) -> ProviderInfo:
+        """ Subclasses should override with something more meaningful. """
+        return ProviderInfo(
+            provider_id = 'zm_integration',
+            provider_name = 'ZoneMinder Integration',
+            description = '',            
+        )
+    
+    @classmethod
+    def get_api_provider_info(cls) -> ProviderInfo:
         """Get the API service info for this manager."""
-        return ApiServiceInfo(
-            service_id='zm_api',
-            service_name='ZoneMinder API',
-            description='ZoneMinder video surveillance system API'
+        return ProviderInfo(
+            provider_id = 'zm_api',
+            provider_name = 'ZoneMinder API',
+            description = 'ZoneMinder video surveillance system API'
         )
     
     def register_change_listener( self, callback ):
@@ -145,17 +154,17 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
         except IntegrationError as e:
             error_msg = f'ZoneMinder integration configuration error: {e}'
             logger.error(error_msg)
-            self.update_health_status( HealthStatusType.CONFIG_ERROR, error_msg )
+            self.update_health_status( HealthStatusType.ERROR, f"Configuration error: {error_msg}" )
 
         except IntegrationAttributeError as e:
             error_msg = f'ZoneMinder integration attribute error: {e}'
             logger.error(error_msg)
-            self.update_health_status( HealthStatusType.CONFIG_ERROR, error_msg )
+            self.update_health_status( HealthStatusType.ERROR, f"Configuration error: {error_msg}" )
 
         except Exception as e:
             error_msg = f'Unexpected error loading ZoneMinder configuration: {e}'
             logger.exception(error_msg)
-            self.update_health_status( HealthStatusType.TEMPORARY_ERROR, error_msg )
+            self.update_health_status( HealthStatusType.WARNING, f"Temporary issue: {error_msg}" )
         return
 
     def clear_caches(self):
@@ -357,7 +366,7 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
         """Test the connection to ZoneMinder API and update health status."""
         try:
             if not self.zm_client:
-                self.update_health_status( HealthStatusType.CONFIG_ERROR,
+                self.update_health_status( HealthStatusType.ERROR,
                                            "ZoneMinder client not configured")
                 return False
             
@@ -367,14 +376,14 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
                 self.update_health_status(HealthStatusType.HEALTHY)
                 return True
             else:
-                self.update_health_status(HealthStatusType.CONNECTION_ERROR,
+                self.update_health_status(HealthStatusType.ERROR,
                                           "Failed to fetch states from ZoneMinder API")
                 return False
                 
         except Exception as e:
             error_msg = f'Connection test failed: {e}'
             logger.debug(error_msg)
-            self.update_health_status(HealthStatusType.CONNECTION_ERROR, error_msg)
+            self.update_health_status(HealthStatusType.ERROR, f"Connection error: {error_msg}")
             return False
     
     def test_client_with_attributes(
@@ -390,12 +399,12 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
 
         except IntegrationError as e:
             return IntegrationValidationResult.error(
-                status = HealthStatusType.CONFIG_ERROR,
+                status = HealthStatusType.ERROR,
                 error_message = str(e)
             )
         except IntegrationAttributeError as e:
             return IntegrationValidationResult.error(
-                status = HealthStatusType.CONFIG_ERROR,
+                status = HealthStatusType.ERROR,
                 error_message = str(e)
             )
     
@@ -413,7 +422,7 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
         except Exception as e:
             logger.exception(f'Error in ZoneMinder configuration validation: {e}')
             return IntegrationValidationResult.error(
-                status=HealthStatusType.TEMPORARY_ERROR,
+                status=HealthStatusType.WARNING,
                 error_message=f'Configuration validation failed: {e}'
             )
     

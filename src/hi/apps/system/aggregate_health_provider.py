@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 import copy
 import logging
 import threading
@@ -7,11 +8,12 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 from .api_health_aggregator import ApiHealthAggregator
 from .api_health_status_provider import ApiHealthStatusProvider
 from .enums import HealthStatusType, HealthAggregationRule
+from .provider_info import ProviderInfo
 
 logger = logging.getLogger(__name__)
 
 
-class AggregateHealthProvider:
+class AggregateHealthProvider(ABC):
     """
     Provider for components that aggregate API health from one or more sources.
     Provides health status tracking with API health aggregation capability.
@@ -37,6 +39,12 @@ class AggregateHealthProvider:
     def _get_aggregation_rule(self) -> HealthAggregationRule:
         """Override to provide custom aggregation rule."""
         return HealthAggregationRule.ALL_SOURCES_HEALTHY
+
+    @classmethod
+    @abstractmethod
+    def get_provider_info(cls) -> ProviderInfo:
+        """Get the API service info for this class. Must be implemented by subclasses."""
+        pass
 
     @property
     def health_status(self) -> ApiHealthAggregator:
@@ -92,7 +100,7 @@ class AggregateHealthProvider:
 
         # Collect current health from all providers
         for provider in self._api_health_status_providers:
-            service_info = provider.get_api_service_info()
+            service_info = provider.get_api_provider_info()
             api_health = provider.api_health_status
             self._aggregated_health_status.api_sources[service_info] = api_health
             continue

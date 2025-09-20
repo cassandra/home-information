@@ -136,7 +136,7 @@ class TestZmClientFactory(TestCase):
         # Assert - Test error handling behavior
         self.assertIsInstance(result, IntegrationValidationResult)
         self.assertFalse(result.is_valid)
-        self.assertEqual(result.status, HealthStatusType.CONNECTION_ERROR)
+        self.assertEqual(result.status, HealthStatusType.ERROR)
         self.assertIn('Cannot connect to ZoneMinder', result.error_message)
 
     @patch('hi.services.zoneminder.pyzm_client.api.ZMApi')
@@ -152,7 +152,7 @@ class TestZmClientFactory(TestCase):
         # Assert - Test error categorization
         self.assertIsInstance(result, IntegrationValidationResult)
         self.assertFalse(result.is_valid)
-        self.assertEqual(result.status, HealthStatusType.CONNECTION_ERROR)
+        self.assertEqual(result.status, HealthStatusType.ERROR)
         self.assertIn('Authentication failed', result.error_message)
 
     @patch('hi.services.zoneminder.pyzm_client.api.ZMApi')
@@ -170,6 +170,6 @@ class TestZmClientFactory(TestCase):
         # Assert
         self.assertIsInstance(result, IntegrationValidationResult)
         self.assertFalse(result.is_valid)
-        self.assertEqual(result.status, HealthStatusType.CONNECTION_ERROR)
+        self.assertEqual(result.status, HealthStatusType.ERROR)
         self.assertIn('Failed to fetch states from ZoneMinder API', result.error_message)
         

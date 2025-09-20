@@ -86,7 +86,7 @@ class ZmClientFactory:
                 return IntegrationValidationResult.success()
             else:
                 return IntegrationValidationResult.error(
-                    status=HealthStatusType.CONNECTION_ERROR,
+                    status=HealthStatusType.ERROR,
                     error_message='Failed to fetch states from ZoneMinder API'
                 )
 
@@ -100,7 +100,7 @@ class ZmClientFactory:
                                                         'login',
                                                         'credential',
                                                         'password']):
-                status = HealthStatusType.CONNECTION_ERROR
+                status = HealthStatusType.ERROR
                 user_message = f'Authentication failed: {e}'
             elif any(keyword in error_msg for keyword in ['connect',
                                                           'network',
@@ -109,10 +109,10 @@ class ZmClientFactory:
                                                           'resolve',
                                                           'schema',
                                                           'url']):
-                status = HealthStatusType.CONNECTION_ERROR
+                status = HealthStatusType.ERROR
                 user_message = f'Cannot connect to ZoneMinder: {e}'
             else:
-                status = HealthStatusType.TEMPORARY_ERROR
+                status = HealthStatusType.WARNING
                 user_message = f'API test failed: {e}'
 
             return IntegrationValidationResult.error(

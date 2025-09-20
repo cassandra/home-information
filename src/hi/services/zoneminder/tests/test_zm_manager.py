@@ -134,7 +134,7 @@ class ZoneMinderManagerConfigurationTest(TransactionTestCase):
         # Should handle missing required attribute
         self.assertIsNone(client)
         health = manager.health_status
-        self.assertEqual(health.status, HealthStatusType.CONFIG_ERROR)
+        self.assertEqual(health.status, HealthStatusType.ERROR)
 
 
 class ZoneMinderManagerThreadLocalTest(TransactionTestCase):

@@ -58,7 +58,7 @@ class HassGateway( IntegrationGateway ):
             logger.exception(f'Error getting HASS integration health status: {e}')
             # Return a default error status if we can't get the real status
             return HealthStatus(
-                status = HealthStatusType.TEMPORARY_ERROR,
+                status = HealthStatusType.WARNING,
                 last_check = datetimeproxy.now(),
                 error_message = f'Failed to get health status: {e}'
             )
@@ -76,6 +76,6 @@ class HassGateway( IntegrationGateway ):
         except Exception as e:
             logger.exception(f'Error validating HASS integration configuration: {e}')
             return IntegrationValidationResult.error(
-                status=HealthStatusType.TEMPORARY_ERROR,
+                status=HealthStatusType.WARNING,
                 error_message=f'Configuration validation failed: {e}'
             )

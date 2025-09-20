@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 from datetime import datetime
 
@@ -9,12 +9,15 @@ from .enums import HealthStatusType
 class HealthStatus:
     """Health status tracking for PeriodicMonitor instances."""
 
+    # Identification
+    provider_name   : str         # User-friendly display name
+    provider_id     : str         # Technical identifier
+    
     status         : HealthStatusType
     last_check     : datetime
     heartbeat      : Optional[datetime]  = None
     error_message  : Optional[str]       = None
     error_count    : int                 = 0
-
 
     @property
     def is_healthy(self) -> bool:
@@ -31,32 +34,6 @@ class HealthStatus:
     @property
     def status_display(self) -> str:
         return self.status.label
-
-
-
-    def to_dict(self) -> dict:
-        """Convert to dictionary for serialization."""
-        import hi.apps.common.datetimeproxy as datetimeproxy
-
-        result = {
-            'status': self.status.value,
-            'status_display': self.status_display,
-            'last_check': self.last_check,
-            'error_message': self.error_message,
-            'error_count': self.error_count,
-            'is_healthy': self.is_healthy,
-            'is_error': self.is_error,
-            'is_critical': self.is_critical,
-        }
-
-        # Include heartbeat details if present
-        if self.heartbeat is not None:
-            heartbeat_age = (datetimeproxy.now() - self.heartbeat).total_seconds()
-            result['heartbeat'] = self.heartbeat
-            result['heartbeat_age_seconds'] = heartbeat_age
-
-        return result
-
 
     @property
     def heartbeat_age_seconds(self) -> Optional[int]:

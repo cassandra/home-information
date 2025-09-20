@@ -1,23 +1,26 @@
+from abc import ABC, abstractmethod
 import copy
 import logging
 import threading
 from typing import Optional
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.system.enums import HealthStatusType
-from hi.apps.system.health_status import HealthStatus
+
+from .enums import HealthStatusType
+from .health_status import HealthStatus
+from .provider_info import ProviderInfo
 
 logger = logging.getLogger(__name__)
 
 
-class HealthStatusProvider:
+class HealthStatusProvider(ABC):
 
     def __init__(self):
         # We try not to depend on __init__() being called fo a provider context,
         # so protected most access methods anyway.
         self._ensure_health_status_provider_setup()
         return
-    
+
     def _ensure_health_status_provider_setup(self):
         if hasattr( self, '_health_status' ):
             return
@@ -27,6 +30,12 @@ class HealthStatusProvider:
             last_check = datetimeproxy.now(),
         )
         return
+
+    @classmethod
+    @abstractmethod
+    def get_provider_info(cls) -> ProviderInfo:
+        """Get the API service info for this class. Must be implemented by subclasses."""
+        pass
 
     @property
     def health_status(self) -> HealthStatus:

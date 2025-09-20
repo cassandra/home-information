@@ -126,7 +126,7 @@ class TestHassManagerInitialization(TestCase):
         self.assertIsNotNone(self.manager)
         # Health status should reflect the configuration error
         health = self.manager.health_status()
-        self.assertEqual(health.status, HealthStatusType.CONFIG_ERROR)
+        self.assertEqual(health.status, HealthStatusType.ERROR)
         self.assertIn('not implemented', health.error_message)
     
     def test_reload_with_disabled_integration(self):
@@ -156,7 +156,7 @@ class TestHassManagerInitialization(TestCase):
         
         # Health status should reflect the configuration error
         health = self.manager.health_status
-        self.assertEqual(health.status, HealthStatusType.CONFIG_ERROR)
+        self.assertEqual(health.status, HealthStatusType.ERROR)
         self.assertIn('Missing HASS attribute', health.error_message)
     
     def test_reload_with_empty_required_value(self):
@@ -187,7 +187,7 @@ class TestHassManagerInitialization(TestCase):
         
         # Health status should reflect the configuration error
         health = self.manager.health_status
-        self.assertEqual(health.status, HealthStatusType.CONFIG_ERROR)
+        self.assertEqual(health.status, HealthStatusType.ERROR)
         self.assertIn('Missing HASS attribute value', health.error_message)
     
     def test_reload_success_with_all_required_attributes(self):
@@ -680,7 +680,7 @@ class TestHassManagerApiDataFetching(TestCase):
         
         # Verify health status was updated to CONNECTION_ERROR
         health_status = self.manager.health_status
-        self.assertEqual(health_status.status, HealthStatusType.CONNECTION_ERROR)
+        self.assertEqual(health_status.status, HealthStatusType.ERROR)
         self.assertIn("Connection error", health_status.error_message)
     
     def test_fetch_hass_states_from_api_data_transformation(self):

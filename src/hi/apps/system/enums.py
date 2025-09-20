@@ -13,14 +13,8 @@ class HealthStatusType(LabeledEnum):
                            'Temporary issues detected or degraded performance')
     ERROR              = ( 'Error',
                            'Critical failures requiring attention or not responding')
-    CONFIG_ERROR       = ( 'Config Error',
-                           '' )
-    CONNECTION_ERROR   = ( 'Connection Error',
-                           '' )
-    TEMPORARY_ERROR    = ( 'Temporary Error',
-                           '' )
     DISABLED           = ( 'Disabled',
-                           '' )
+                           'Provider has been manually disabled' )
 
     @property
     def is_healthy(self) -> bool:
@@ -44,17 +38,12 @@ class HealthStatusType(LabeledEnum):
     def is_error(self) -> bool:
         return bool( self in (
             HealthStatusType.ERROR,
-            HealthStatusType.CONFIG_ERROR,
-            HealthStatusType.CONNECTION_ERROR,
-            HealthStatusType.TEMPORARY_ERROR,
         ))
 
     @property
     def is_critical(self) -> bool:
         return bool( self in (
             HealthStatusType.ERROR,
-            HealthStatusType.CONFIG_ERROR,
-            HealthStatusType.CONNECTION_ERROR,
         ))
 
     @property
@@ -86,18 +75,16 @@ class HealthStatusType(LabeledEnum):
         """
         Priority level for sorting/escalation (lower = higher priority).
         """
-        if self.is_critical:  # ERROR, CONFIG_ERROR, CONNECTION_ERROR
+        if self.is_critical:  # ERROR
             return 1
-        elif self.is_error:  # TEMPORARY_ERROR (non-critical error)
-            return 2
         elif self.is_warning:  # WARNING
-            return 3
+            return 2
         elif self.is_info:  # DISABLED
-            return 4
+            return 3
         elif self == HealthStatusType.HEALTHY:
-            return 5
+            return 4
         else:  # UNKNOWN
-            return 6
+            return 5
 
 
 class HeartbeatStatusType(LabeledEnum):

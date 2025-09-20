@@ -29,10 +29,10 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
     
     def __init__( self,
                   integration_data     : IntegrationData,
-                  health_status        : HealthStatus  = None,
-                  update_button_label  : str           = 'UPDATE',
-                  suppress_history     : bool          = False,
-                  show_secrets         : bool          = False,
+                  health_status        : HealthStatus      = None,
+                  update_button_label  : str               = 'UPDATE',
+                  suppress_history     : bool              = False,
+                  show_secrets         : bool              = False,
                   ) -> None:
         """
         Initialize context for Integration attribute editing.

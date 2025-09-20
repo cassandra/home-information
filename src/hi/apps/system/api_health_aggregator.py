@@ -3,17 +3,17 @@ from typing import Dict
 
 from .health_status import HealthStatus
 from .api_health import ApiHealthStatus
-from .api_service_info import ApiServiceInfo
+from .provider_info import ProviderInfo
 from .enums import HealthStatusType, ApiHealthStatusType, HealthAggregationRule
 
 
 @dataclass
-class ApiHealthAggregator(HealthStatus):
+class ApiHealthAggregator( HealthStatus ):
     """
     Extends HealthStatus to add API source tracking and aggregation.
     """
     # Current aggregated API health data
-    api_sources      : Dict[ApiServiceInfo, ApiHealthStatus] = field(default_factory=dict)
+    api_sources      : Dict[ProviderInfo, ApiHealthStatus] = field(default_factory=dict)
     aggregation_rule : HealthAggregationRule     = HealthAggregationRule.ALL_SOURCES_HEALTHY
 
     def aggregate_health(self) -> HealthStatusType:
@@ -66,14 +66,3 @@ class ApiHealthAggregator(HealthStatus):
 
         # Return status with highest priority (lowest priority number)
         return min(statuses, key=lambda s: s.priority)
-
-    def to_dict(self) -> dict:
-        # Start with base class dict
-        result = super().to_dict()
-
-        # Add our api_sources
-        result['api_sources'] = [api.to_dict() for api in self.api_sources.values()]
-        result['aggregation_rule'] = self.aggregation_rule.value
-        result['overall_status'] = self.overall_status.value
-
-        return result

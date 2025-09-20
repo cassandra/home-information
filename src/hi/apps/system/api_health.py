@@ -20,19 +20,16 @@ class ApiHealthStatus:
     """Health status tracking for individual API sources."""
 
     # Identification
-    service_name: str          # User-friendly display name
-    service_id: str           # Technical identifier
+    service_name           : str          # User-friendly display name
+    service_id             : str          # Technical identifier
 
-    # Health status
-    status: ApiHealthStatusType
-    last_success: Optional[datetime] = None
-
-    # Performance metrics
-    total_calls: int = 0
-    total_failures: int = 0
-    consecutive_failures: int = 0
-    average_response_time: Optional[float] = None
-    last_response_time: Optional[float] = None
+    status                 : ApiHealthStatusType
+    last_success           : Optional[datetime] = None
+    total_calls            : int = 0
+    total_failures         : int = 0
+    consecutive_failures   : int = 0
+    average_response_time  : Optional[float] = None
+    last_response_time     : Optional[float] = None
 
     def record_api_call( self, api_call_context : ApiCallContext ):
         self.total_calls += 1
@@ -119,20 +116,3 @@ class ApiHealthStatus:
             ApiHealthStatusType.FAILING: "api-source-error",
             ApiHealthStatusType.UNAVAILABLE: "api-source-error"
         }[self.status]
-
-    def to_dict(self) -> dict:
-        """Convert to dictionary for serialization."""
-        return {
-            'service_name': self.service_name,
-            'service_id': self.service_id,
-            'status': self.status.value,
-            'status_display': self.status.label,
-            'last_success': self.last_success,
-            'total_calls': self.total_calls,
-            'total_failures': self.total_failures,
-            'consecutive_failures': self.consecutive_failures,
-            'average_response_time': self.average_response_time,
-            'last_response_time': self.last_response_time,
-            'is_healthy': self.is_healthy,
-            'failure_rate': self.failure_rate,
-        }

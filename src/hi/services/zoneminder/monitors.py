@@ -9,6 +9,7 @@ from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.sensor_response_manager import SensorResponseMixin
 from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.sense.enums import CorrelationRole
+from hi.apps.system.provider_info import ProviderInfo
 
 from .constants import ZmDetailKeys, ZmTimeouts
 from .zm_models import ZmEvent, AggregatedMonitorState
@@ -55,6 +56,15 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         zm_manager.register_change_listener( self.refresh )
         self._was_initialized = True
         return
+    
+    @classmethod
+    def get_provider_info(cls) -> ProviderInfo:
+        """ Subclasses should override with something more meaningful. """
+        return ProviderInfo(
+            provider_id = 'hi.sevices.zoneminder',
+            provider_name = 'ZoneMinder Monitor',
+            description = '',            
+        )
     
     def refresh( self ):
         """ 

@@ -70,7 +70,7 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
             # Return a default error status if we can't get the real status
             import hi.apps.common.datetimeproxy as datetimeproxy
             return HealthStatus(
-                status = HealthStatusType.TEMPORARY_ERROR,
+                status = HealthStatusType.WARNING,
                 last_check = datetimeproxy.now(),
                 error_message = f'Failed to get health status: {e}'
             )
@@ -89,7 +89,7 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
         except Exception as e:
             logger.exception(f'Error validating ZoneMinder integration configuration: {e}')
             return IntegrationValidationResult.error(
-                status=HealthStatusType.TEMPORARY_ERROR,
+                status=HealthStatusType.WARNING,
                 error_message=f'Configuration validation failed: {e}'
             )
     

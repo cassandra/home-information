@@ -6,7 +6,7 @@ urlpatterns = [
             views.SystemTestUiHomeView.as_view(),
             name='system_test_ui'),
 
-    re_path(r'^health/(?P<monitor_type>\w+)$',
+    re_path(r'^health/(?P<status_type>[\w-]+)/(?P<api_flag>[\w-]+)/$',
             views.SystemTestUiHealthStatusView.as_view(),
             name='system_test_ui_health_status'),
 ]

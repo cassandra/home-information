@@ -132,7 +132,7 @@ class TestHassClientFactory(TestCase):
         # Assert - Test error handling behavior
         self.assertIsInstance(result, IntegrationValidationResult)
         self.assertFalse(result.is_valid)
-        self.assertEqual(result.status, HealthStatusType.CONNECTION_ERROR)
+        self.assertEqual(result.status, HealthStatusType.ERROR)
         self.assertIn('Cannot connect to Home Assistant', result.error_message)
 
     @patch('hi.services.hass.hass_client.get')
@@ -150,6 +150,6 @@ class TestHassClientFactory(TestCase):
         # Assert - Test error categorization
         self.assertIsInstance(result, IntegrationValidationResult)
         self.assertFalse(result.is_valid)
-        self.assertEqual(result.status, HealthStatusType.CONNECTION_ERROR)
+        self.assertEqual(result.status, HealthStatusType.ERROR)
         self.assertIn('Authentication failed', result.error_message)
         

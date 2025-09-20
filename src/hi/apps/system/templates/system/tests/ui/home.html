@@ -9,51 +9,76 @@
 
   <div class="row">
     <div class="col-md-6">
-      <h3>Health Status Provider Modals</h3>
-      <h5 class="text-muted mt-3">Basic Status Types</h5>
+      <h3>Health Status</h3>
       <ul class="list-group">
         <li class="list-group-item">
-          <a href="{% url 'system_test_ui_health_status' monitor_type='zoneminder' %}" data-async="modal">
-            ZoneMinder - Healthy Single API
+          <a href="{% url 'system_test_ui_health_status' status_type='healthy' api_flag='no-api' %}" data-async="modal">
+            {% icon "check-circle" size="sm" css_class="mr-2 text-success" %}
+            Healthy Status
           </a>
         </li>
         <li class="list-group-item">
-          <a href="{% url 'system_test_ui_health_status' monitor_type='weather' %}" data-async="modal">
-            Weather - Warning Multiple APIs
+          <a href="{% url 'system_test_ui_health_status' status_type='warning' api_flag='no-api' %}" data-async="modal">
+            {% icon "warning" size="sm" css_class="mr-2 text-warning" %}
+            Warning Status
           </a>
         </li>
         <li class="list-group-item">
-          <a href="{% url 'system_test_ui_health_status' monitor_type='alert' %}" data-async="modal">
-            Alert - Error No APIs
-          </a>
-        </li>
-      </ul>
-
-      <h5 class="text-muted mt-4">Extended Status Types</h5>
-      <ul class="list-group">
-        <li class="list-group-item">
-          <a href="{% url 'system_test_ui_health_status' monitor_type='config_error' %}" data-async="modal">
-            Config Error - Configuration Issues
+          <a href="{% url 'system_test_ui_health_status' status_type='error' api_flag='no-api' %}" data-async="modal">
+            {% icon "times-circle" size="sm" css_class="mr-2 text-danger" %}
+            Error Status
           </a>
         </li>
         <li class="list-group-item">
-          <a href="{% url 'system_test_ui_health_status' monitor_type='connection_error' %}" data-async="modal">
-            Connection Error - Network Issues
+          <a href="{% url 'system_test_ui_health_status' status_type='disabled' api_flag='no-api' %}" data-async="modal">
+            {% icon "info-circle" size="sm" css_class="mr-2 text-info" %}
+            Disabled Status
           </a>
         </li>
         <li class="list-group-item">
-          <a href="{% url 'system_test_ui_health_status' monitor_type='temporary_error' %}" data-async="modal">
-            Temporary Error - Rate Limiting
-          </a>
-        </li>
-        <li class="list-group-item">
-          <a href="{% url 'system_test_ui_health_status' monitor_type='disabled' %}" data-async="modal">
-            Disabled - Maintenance Mode
+          <a href="{% url 'system_test_ui_health_status' status_type='unknown' api_flag='no-api' %}" data-async="modal">
+            {% icon "question-circle" size="sm" css_class="mr-2 text-secondary" %}
+            Unknown Status
           </a>
         </li>
       </ul>
     </div>
 
+    <div class="col-md-6">
+      <h3>Aggregate (API) Health Status</h3>
+      <ul class="list-group">
+        <li class="list-group-item">
+          <a href="{% url 'system_test_ui_health_status' status_type='healthy' api_flag='with-api' %}" data-async="modal">
+            {% icon "check-circle" size="sm" css_class="mr-2 text-success" %}
+            Healthy Status + APIs
+          </a>
+        </li>
+        <li class="list-group-item">
+          <a href="{% url 'system_test_ui_health_status' status_type='warning' api_flag='with-api' %}" data-async="modal">
+            {% icon "warning" size="sm" css_class="mr-2 text-warning" %}
+            Warning Status + APIs
+          </a>
+        </li>
+        <li class="list-group-item">
+          <a href="{% url 'system_test_ui_health_status' status_type='error' api_flag='with-api' %}" data-async="modal">
+            {% icon "times-circle" size="sm" css_class="mr-2 text-danger" %}
+            Error Status + APIs
+          </a>
+        </li>
+        <li class="list-group-item">
+          <a href="{% url 'system_test_ui_health_status' status_type='disabled' api_flag='with-api' %}" data-async="modal">
+            {% icon "info-circle" size="sm" css_class="mr-2 text-info" %}
+            Disabled Status + APIs
+          </a>
+        </li>
+        <li class="list-group-item">
+          <a href="{% url 'system_test_ui_health_status' status_type='unknown' api_flag='with-api' %}" data-async="modal">
+            {% icon "question-circle" size="sm" css_class="mr-2 text-secondary" %}
+            Unknown Status + APIs
+          </a>
+        </li>
+      </ul>
+    </div>
   </div>
 </div>
 {% endblock %}
