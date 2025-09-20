@@ -11,8 +11,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from django.test import TestCase, TransactionTestCase
 
+from hi.apps.system.enums import HealthStatusType
+
 from hi.integrations.models import Integration, IntegrationAttribute
-from hi.integrations.enums import IntegrationHealthStatusType
+
 from hi.services.zoneminder.zm_manager import ZoneMinderManager
 from hi.services.zoneminder.enums import ZmAttributeType
 from hi.services.zoneminder.zm_metadata import ZmMetaData
@@ -104,7 +106,7 @@ class ZoneMinderManagerConfigurationTest(TransactionTestCase):
         self.assertIsNone(client)
 
         # Health status should reflect the error
-        health = manager.get_health_status()
+        health = manager.health_status
         self.assertFalse(health.is_healthy)
 
     def test_handles_disabled_integration(self):
@@ -116,8 +118,8 @@ class ZoneMinderManagerConfigurationTest(TransactionTestCase):
         client = manager.zm_client
 
         self.assertIsNone(client)
-        health = manager.get_health_status()
-        self.assertEqual(health.status, IntegrationHealthStatusType.DISABLED)
+        health = manager.health_status
+        self.assertEqual(health.status, HealthStatusType.WARNING)
 
     def test_validates_required_attributes(self):
         """Should validate that required attributes are present."""
@@ -131,8 +133,8 @@ class ZoneMinderManagerConfigurationTest(TransactionTestCase):
 
         # Should handle missing required attribute
         self.assertIsNone(client)
-        health = manager.get_health_status()
-        self.assertEqual(health.status, IntegrationHealthStatusType.CONFIG_ERROR)
+        health = manager.health_status
+        self.assertEqual(health.status, HealthStatusType.ERROR)
 
 
 class ZoneMinderManagerThreadLocalTest(TransactionTestCase):
@@ -271,61 +273,12 @@ class ZoneMinderManagerHealthStatusTest(TestCase):
     def test_tracks_health_status(self):
         """Should track health status of integration."""
         manager = ZoneMinderManager()
-        health = manager.get_health_status()
+        health = manager.health_status
 
         # Should have health status
         self.assertIsNotNone(health)
         self.assertIsNotNone(health.last_check)
         self.assertIsNotNone(health.status)
-
-    def test_updates_monitor_heartbeat(self):
-        """Should update monitor heartbeat timestamp."""
-        manager = ZoneMinderManager()
-
-        # Get initial heartbeat
-        health1 = manager.get_health_status()
-        initial_heartbeat = health1.monitor_heartbeat
-
-        # Update heartbeat
-        manager.update_monitor_heartbeat()
-
-        # Should have newer heartbeat
-        health2 = manager.get_health_status()
-        self.assertIsNotNone(health2.monitor_heartbeat)
-        if initial_heartbeat:
-            self.assertGreaterEqual(health2.monitor_heartbeat, initial_heartbeat)
-
-    @patch('hi.services.zoneminder.zm_client_factory.ZmClientFactory.create_client')
-    def test_tracks_api_metrics(self, mock_create_client):
-        """Should track API call metrics."""
-        # Create a mock client with states method
-        mock_client = Mock()
-        mock_states = Mock()
-        mock_states.list.return_value = []
-        mock_client.states.return_value = mock_states
-        mock_create_client.return_value = mock_client
-
-        manager = ZoneMinderManager()
-
-        # Make an API call - this should use our mocked client
-        manager.get_zm_states(force_load=True)
-
-        # Check metrics were updated
-        health = manager.get_health_status()
-        self.assertIsNotNone(health.api_metrics)
-        self.assertGreaterEqual(health.api_metrics['total_calls'], 0)
-
-    def test_connection_test_updates_health(self):
-        """Connection test should update health status."""
-        manager = ZoneMinderManager()
-
-        # Test connection (will fail without real API)
-        _ = manager.test_connection()
-
-        # Should update health status even on failure
-        health = manager.get_health_status()
-        self.assertIsNotNone(health.status)
-        self.assertIsNotNone(health.last_check)
 
 
 class ZoneMinderManagerReloadTest(TransactionTestCase):

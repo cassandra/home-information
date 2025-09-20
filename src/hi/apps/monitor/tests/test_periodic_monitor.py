@@ -3,6 +3,7 @@ import logging
 
 from hi.testing.async_task_utils import AsyncTaskTestCase
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
+from hi.apps.system.provider_info import ProviderInfo
 
 logging.disable(logging.CRITICAL)
 
@@ -21,6 +22,15 @@ class ConcreteTestMonitor(PeriodicMonitor):
         self.initialize_called = True
         await super().initialize()
     
+    @classmethod
+    def get_provider_info(cls) -> ProviderInfo:
+        """ Subclasses should override with something more meaningful. """
+        return ProviderInfo(
+            provider_id = 'test_monitor',
+            provider_name = 'Test Monitor',
+            description = '',            
+        )
+
     async def do_work(self):
         self.do_work_called += 1
         if self.do_work_error:
@@ -47,6 +57,15 @@ class TestPeriodicMonitor(AsyncTaskTestCase):
         class IncompleteMonitor(PeriodicMonitor):
             def __init__(self):
                 super().__init__(id='incomplete', interval_secs=1)
+                
+            @classmethod
+            def get_provider_info(cls) -> ProviderInfo:
+                """ Subclasses should override with something more meaningful. """
+                return ProviderInfo(
+                    provider_id = 'test_monitor',
+                    provider_name = 'Test Monitor',
+                    description = '',            
+                )
         
         monitor = IncompleteMonitor()
         
@@ -278,5 +297,5 @@ class TestPeriodicMonitor(AsyncTaskTestCase):
             
             # Should have continued running despite error
             self.assertGreaterEqual(fast_monitor.do_work_called, 2)
-        
+
         self.run_async(test_logic())

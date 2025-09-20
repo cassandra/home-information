@@ -40,5 +40,5 @@ class EntityStatusData:
             'display_only_svg_icon_item': self.display_only_svg_icon_item,
         }
         return context
-    
-    
+
+

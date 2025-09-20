@@ -6,7 +6,7 @@ Focuses on high-value testing: client creation, validation, and error handling.
 from unittest.mock import Mock, patch
 from django.test import TestCase
 
-from hi.integrations.enums import IntegrationHealthStatusType
+from hi.apps.system.enums import HealthStatusType
 from hi.integrations.exceptions import IntegrationAttributeError
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import IntegrationKey, IntegrationValidationResult
@@ -116,7 +116,7 @@ class TestZmClientFactory(TestCase):
         # Assert - Test actual behavior
         self.assertIsInstance(result, IntegrationValidationResult)
         self.assertTrue(result.is_valid)
-        self.assertEqual(result.status, IntegrationHealthStatusType.HEALTHY)
+        self.assertEqual(result.status, HealthStatusType.HEALTHY)
         self.assertIsNone(result.error_message)
 
         # Verify the client was actually tested
@@ -136,7 +136,7 @@ class TestZmClientFactory(TestCase):
         # Assert - Test error handling behavior
         self.assertIsInstance(result, IntegrationValidationResult)
         self.assertFalse(result.is_valid)
-        self.assertEqual(result.status, IntegrationHealthStatusType.CONNECTION_ERROR)
+        self.assertEqual(result.status, HealthStatusType.ERROR)
         self.assertIn('Cannot connect to ZoneMinder', result.error_message)
 
     @patch('hi.services.zoneminder.pyzm_client.api.ZMApi')
@@ -152,7 +152,7 @@ class TestZmClientFactory(TestCase):
         # Assert - Test error categorization
         self.assertIsInstance(result, IntegrationValidationResult)
         self.assertFalse(result.is_valid)
-        self.assertEqual(result.status, IntegrationHealthStatusType.CONNECTION_ERROR)
+        self.assertEqual(result.status, HealthStatusType.ERROR)
         self.assertIn('Authentication failed', result.error_message)
 
     @patch('hi.services.zoneminder.pyzm_client.api.ZMApi')
@@ -170,6 +170,6 @@ class TestZmClientFactory(TestCase):
         # Assert
         self.assertIsInstance(result, IntegrationValidationResult)
         self.assertFalse(result.is_valid)
-        self.assertEqual(result.status, IntegrationHealthStatusType.CONNECTION_ERROR)
+        self.assertEqual(result.status, HealthStatusType.ERROR)
         self.assertIn('Failed to fetch states from ZoneMinder API', result.error_message)
         

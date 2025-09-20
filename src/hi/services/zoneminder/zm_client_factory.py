@@ -3,8 +3,8 @@
 import logging
 from typing import Dict
 
+from hi.apps.system.enums import HealthStatusType
 from hi.integrations.exceptions import IntegrationAttributeError
-from hi.integrations.enums import IntegrationHealthStatusType
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import IntegrationKey, IntegrationValidationResult
 
@@ -86,7 +86,7 @@ class ZmClientFactory:
                 return IntegrationValidationResult.success()
             else:
                 return IntegrationValidationResult.error(
-                    status=IntegrationHealthStatusType.CONNECTION_ERROR,
+                    status=HealthStatusType.ERROR,
                     error_message='Failed to fetch states from ZoneMinder API'
                 )
 
@@ -100,7 +100,7 @@ class ZmClientFactory:
                                                         'login',
                                                         'credential',
                                                         'password']):
-                status = IntegrationHealthStatusType.CONNECTION_ERROR
+                status = HealthStatusType.ERROR
                 user_message = f'Authentication failed: {e}'
             elif any(keyword in error_msg for keyword in ['connect',
                                                           'network',
@@ -109,10 +109,10 @@ class ZmClientFactory:
                                                           'resolve',
                                                           'schema',
                                                           'url']):
-                status = IntegrationHealthStatusType.CONNECTION_ERROR
+                status = HealthStatusType.ERROR
                 user_message = f'Cannot connect to ZoneMinder: {e}'
             else:
-                status = IntegrationHealthStatusType.TEMPORARY_ERROR
+                status = HealthStatusType.WARNING
                 user_message = f'API test failed: {e}'
 
             return IntegrationValidationResult.error(

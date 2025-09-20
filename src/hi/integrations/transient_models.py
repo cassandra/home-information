@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from .enums import IntegrationAttributeType, IntegrationHealthStatusType
+from hi.apps.system.enums import HealthStatusType
+from .enums import IntegrationAttributeType
 
 
 @dataclass
@@ -76,71 +77,11 @@ class IntegrationDetails:
 
 
 @dataclass
-class IntegrationHealthStatus:
-
-    status         : IntegrationHealthStatusType
-    last_check     : datetime
-    error_message  : Optional[str]     = None
-    error_count    : int               = 0
-    # Enhanced monitoring fields for debugging transient issues
-    monitor_heartbeat : Optional[datetime] = None  # Last time the monitor cycled successfully
-    last_api_success  : Optional[datetime] = None  # Last successful API call
-    api_metrics      : Optional[Dict] = None      # API call performance metrics
-    async_diagnostics : Optional[Dict] = None     # Background task and async loop diagnostics
-
-    @property
-    def is_healthy(self) -> bool:
-        return self.status == IntegrationHealthStatusType.HEALTHY
-
-    @property
-    def is_error(self) -> bool:
-        return self.status.is_error
-
-    @property
-    def is_critical(self) -> bool:
-        return self.status.is_critical
-
-    @property
-    def status_display(self) -> str:
-        return self.status.label
-
-    def to_dict(self) -> Dict:
-        result = {
-            'status': self.status.value,
-            'status_display': self.status_display,
-            'last_check': self.last_check,
-            'error_message': self.error_message,
-            'error_count': self.error_count,
-            'is_healthy': self.is_healthy,
-            'is_error': self.is_error,
-            'is_critical': self.is_critical,
-        }
-
-        # Include enhanced monitoring fields if present
-        if self.monitor_heartbeat is not None:
-            import hi.apps.common.datetimeproxy as datetimeproxy
-            heartbeat_age = (datetimeproxy.now() - self.monitor_heartbeat).total_seconds()
-            result['monitor_heartbeat'] = self.monitor_heartbeat
-            result['monitor_heartbeat_age_seconds'] = heartbeat_age
-
-        if self.last_api_success is not None:
-            result['last_api_success'] = self.last_api_success
-
-        if self.api_metrics is not None:
-            result['api_metrics'] = self.api_metrics
-
-        if self.async_diagnostics is not None:
-            result['async_diagnostics'] = self.async_diagnostics
-
-        return result
-
-
-@dataclass
 class IntegrationValidationResult:
     """Result from integration configuration validation."""
 
     is_valid       : bool
-    status         : IntegrationHealthStatusType
+    status         : HealthStatusType
     error_message  : Optional[str] = None
     timestamp      : Optional[datetime] = None
 
@@ -154,11 +95,11 @@ class IntegrationValidationResult:
         """Create a successful validation result."""
         return cls(
             is_valid=True,
-            status=IntegrationHealthStatusType.HEALTHY
+            status=HealthStatusType.HEALTHY
         )
 
     @classmethod
-    def error(cls, status: IntegrationHealthStatusType, error_message: str) -> 'IntegrationValidationResult':
+    def error(cls, status: HealthStatusType, error_message: str) -> 'IntegrationValidationResult':
         """Create an error validation result."""
         return cls(
             is_valid=False,

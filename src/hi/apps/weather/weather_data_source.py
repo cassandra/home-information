@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from datetime import datetime
 import logging
 import redis
@@ -7,18 +8,37 @@ from django.conf import settings
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.redis_client import get_redis_client
 from hi.apps.console.console_helper import ConsoleSettingsHelper
+from hi.apps.system.api_health_status_provider import ApiHealthStatusProvider
+from hi.apps.system.provider_info import ProviderInfo
 from hi.apps.weather.transient_models import DataPointSource
 
 logger = logging.getLogger(__name__)
 
 
-class WeatherDataSource:
+class WeatherDataSource( ApiHealthStatusProvider ):
 
     TRACE = False
     FORCE_CAN_POLL = False  # For debugging
+
+    @classmethod
+    @abstractmethod
+    def weather_source_id(cls):
+        pass
     
+    @classmethod
+    @abstractmethod
+    def weather_source_label(cls):
+        pass
+    
+    @classmethod
+    @abstractmethod
+    def weather_source_abbreviation(cls):
+        pass
+    
+    @abstractmethod
     async def get_data(self):
-        raise NotImplementedError('Subclasses must override this.')
+        """ Main method periodically called to fetch data """
+        pass
     
     def requires_api_key(self) -> bool:
         """Override in subclasses that require an API key."""
@@ -29,16 +49,13 @@ class WeatherDataSource:
         return True
     
     def __init__( self,
-                  id                             : str,
-                  label                          : str,
-                  abbreviation                   : str,
                   priority                       : int,
                   requests_per_day_limit         : int,
                   requests_per_polling_interval  : int,
                   min_polling_interval_secs      : int ):
-        self._id = id
-        self._label = label
-        self._abbreviation = abbreviation
+        self._id = self.weather_source_id()
+        self._label = self.weather_source_label()
+        self._abbreviation = self.weather_source_abbreviation()
         self._priority = priority  # Lower numbers are higher priority
         self._data_point_source = DataPointSource(
             id = self._id,
@@ -121,6 +138,15 @@ class WeatherDataSource:
         """Check if weather data caching is enabled."""
         return self._get_weather_settings_helper().is_weather_cache_enabled()
         
+    @classmethod
+    def get_api_provider_info(cls) -> ProviderInfo:
+        """ Subclasses should override with something more meaningful. """
+        return ProviderInfo(
+            provider_id = cls.weather_source_id(),
+            provider_name = cls.weather_source_label(),
+            description = f'{cls.weather_source_label()} ({cls.weather_source_abbreviation})',
+        )
+
     async def fetch(self):
         can_fetch = self.can_fetch()
 

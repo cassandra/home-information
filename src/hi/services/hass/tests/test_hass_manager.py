@@ -3,7 +3,8 @@ import threading
 from unittest.mock import Mock, patch
 from django.test import TestCase
 
-from hi.integrations.enums import IntegrationHealthStatusType
+from hi.apps.system.enums import HealthStatusType
+
 from hi.integrations.exceptions import IntegrationAttributeError
 from hi.integrations.transient_models import IntegrationKey
 from hi.integrations.models import Integration
@@ -124,8 +125,8 @@ class TestHassManagerInitialization(TestCase):
         # Manager should still be functional, just with no configuration
         self.assertIsNotNone(self.manager)
         # Health status should reflect the configuration error
-        health = self.manager.get_health_status()
-        self.assertEqual(health.status, IntegrationHealthStatusType.CONFIG_ERROR)
+        health = self.manager.health_status
+        self.assertEqual(health.status, HealthStatusType.ERROR)
         self.assertIn('not implemented', health.error_message)
     
     def test_reload_with_disabled_integration(self):
@@ -139,8 +140,8 @@ class TestHassManagerInitialization(TestCase):
         self.manager.reload()
         
         # Health status should reflect the configuration error
-        health = self.manager.get_health_status()
-        self.assertEqual(health.status, IntegrationHealthStatusType.DISABLED)
+        health = self.manager.health_status
+        self.assertEqual(health.status, HealthStatusType.WARNING)
     
     def test_reload_with_missing_required_attribute(self):
         """Test reload handles missing required attributes gracefully"""
@@ -154,8 +155,8 @@ class TestHassManagerInitialization(TestCase):
         self.manager.reload()
         
         # Health status should reflect the configuration error
-        health = self.manager.get_health_status()
-        self.assertEqual(health.status, IntegrationHealthStatusType.CONFIG_ERROR)
+        health = self.manager.health_status
+        self.assertEqual(health.status, HealthStatusType.ERROR)
         self.assertIn('Missing HASS attribute', health.error_message)
     
     def test_reload_with_empty_required_value(self):
@@ -185,8 +186,8 @@ class TestHassManagerInitialization(TestCase):
         self.manager.reload()
         
         # Health status should reflect the configuration error
-        health = self.manager.get_health_status()
-        self.assertEqual(health.status, IntegrationHealthStatusType.CONFIG_ERROR)
+        health = self.manager.health_status
+        self.assertEqual(health.status, HealthStatusType.ERROR)
         self.assertIn('Missing HASS attribute value', health.error_message)
     
     def test_reload_success_with_all_required_attributes(self):
@@ -219,7 +220,7 @@ class TestHassManagerInitialization(TestCase):
         
         # Health status should be healthy (CONFIG_ERROR since we can't actually connect)
         # but at least the configuration loaded successfully
-        health = self.manager.get_health_status()
+        health = self.manager.health_status
         # The status will be CONFIG_ERROR or UNKNOWN since we don't have a real API to connect to
         # But the important thing is it loaded the attributes without errors
         self.assertIsNotNone(health)
@@ -669,18 +670,8 @@ class TestHassManagerApiDataFetching(TestCase):
         self.mock_client.states.side_effect = Exception("Connection error")
         
         # Now exceptions are caught and empty dict is returned
-        result = self.manager.fetch_hass_states_from_api()
-        
-        # Should return empty dict on error
-        self.assertEqual(result, {})
-        
-        # Verify client.states was called
-        self.mock_client.states.assert_called_once()
-        
-        # Verify health status was updated to CONNECTION_ERROR
-        health_status = self.manager.get_health_status()
-        self.assertEqual(health_status.status, IntegrationHealthStatusType.CONNECTION_ERROR)
-        self.assertIn("Connection error", health_status.error_message)
+        with self.assertRaises( Exception ):
+            _ = self.manager.fetch_hass_states_from_api()
     
     def test_fetch_hass_states_from_api_data_transformation(self):
         """Test fetch_hass_states_from_api correctly transforms state list to dictionary"""

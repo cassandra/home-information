@@ -1,6 +1,7 @@
 import logging
 
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
+from hi.apps.system.provider_info import ProviderInfo
 
 from .notify_mixins import NotificationMixin
 
@@ -18,6 +19,15 @@ class NotificationMonitor( PeriodicMonitor, NotificationMixin ):
         )
         return
 
+    @classmethod
+    def get_provider_info(cls) -> ProviderInfo:
+        """ Subclasses should override with something more meaningful. """
+        return ProviderInfo(
+            provider_id = 'hi.apps.notify',
+            provider_name = 'Notifications Monitor',
+            description = '',            
+        )
+        
     async def do_work(self):
         logger.debug( 'Checking for notification maintenance work.' )
         notification_manager = await self.notification_manager_async()

@@ -12,11 +12,11 @@ from django.forms import ModelForm, BaseInlineFormSet
 from hi.apps.attribute.edit_context import AttributeItemEditContext
 from hi.apps.attribute.forms import AttributeUploadForm
 from hi.apps.attribute.models import AttributeModel
+from hi.apps.system.health_status import HealthStatus
 
 from .forms import IntegrationAttributeRegularFormSet
 from .integration_data import IntegrationData
 from .models import Integration, IntegrationAttribute
-from .transient_models import IntegrationHealthStatus
 
 
 class IntegrationAttributeItemEditContext(AttributeItemEditContext):
@@ -29,10 +29,10 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
     
     def __init__( self,
                   integration_data     : IntegrationData,
-                  health_status        : IntegrationHealthStatus  = None,
-                  update_button_label  : str                      = 'UPDATE',
-                  suppress_history     : bool                     = False,
-                  show_secrets         : bool                     = False,
+                  health_status        : HealthStatus      = None,
+                  update_button_label  : str               = 'UPDATE',
+                  suppress_history     : bool              = False,
+                  show_secrets         : bool              = False,
                   ) -> None:
         """
         Initialize context for Integration attribute editing.

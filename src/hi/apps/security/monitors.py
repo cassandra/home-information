@@ -4,6 +4,7 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.console.console_helper import ConsoleSettingsHelper
 from hi.apps.config.settings_mixins import SettingsMixin
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
+from hi.apps.system.provider_info import ProviderInfo
 
 from .enums import SecurityState
 from .security_mixins import SecurityMixin
@@ -23,6 +24,15 @@ class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
         )
         self._last_security_state_check_datetime = datetimeproxy.now()
         return
+
+    @classmethod
+    def get_provider_info(cls) -> ProviderInfo:
+        """ Subclasses should override with something more meaningful. """
+        return ProviderInfo(
+            provider_id = 'hi.apps.security',
+            provider_name = 'Security Monitor',
+            description = '',            
+        )
 
     async def do_work(self):
         await self._check_security_state()

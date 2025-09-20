@@ -55,7 +55,7 @@ class IntegrationSelectView( HiModalView, IntegrationViewMixin ):
 class IntegrationHealthStatusView( HiModalView, IntegrationViewMixin ):
 
     def get_template_name( self ) -> str:
-        return 'integrations/modals/integration_health_status.html'
+        return 'system/modals/aggregate_health_status.html'
 
     def get( self, request, *args, **kwargs ):
         integration_id = kwargs.get('integration_id')
@@ -68,7 +68,7 @@ class IntegrationHealthStatusView( HiModalView, IntegrationViewMixin ):
         
         context = {
             'integration_data': integration_data,
-            'health_status': health_status.to_dict(),
+            'health_status': health_status,
         }
         return self.modal_response( request, context )
 
@@ -232,7 +232,7 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
                 'integration_data_list': integration_data_list,
                 'integration_data': integration_data,
                 'manage_view_template_name': manage_template_name,
-                'health_status': health_status.to_dict(),
+                'health_status': health_status,
             },
         })
         return template_context

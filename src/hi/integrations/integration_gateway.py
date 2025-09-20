@@ -4,11 +4,15 @@ from hi.apps.entity.models import Entity
 from hi.apps.entity.transient_models import VideoStream
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.transient_models import SensorResponse
+from hi.apps.system.health_status import HealthStatus
 
 from .integration_controller import IntegrationController
 from .integration_manage_view_pane import IntegrationManageViewPane
 from .models import IntegrationAttribute
-from .transient_models import IntegrationMetaData, IntegrationHealthStatus, IntegrationValidationResult
+from .transient_models import (
+    IntegrationMetaData,
+    IntegrationValidationResult,
+)
 
 
 class IntegrationGateway:
@@ -36,19 +40,19 @@ class IntegrationGateway:
         """
         raise NotImplementedError('Subclasses must override this method')
     
-    def get_health_status(self) -> IntegrationHealthStatus:
+    def get_health_status(self) -> HealthStatus:
         raise NotImplementedError('Subclasses must override this method')
     
-    def validate_configuration(self, integration_attributes: List[IntegrationAttribute]) -> IntegrationValidationResult:
-        """Validate integration configuration. e.g., by testing API connectivity
-
-        Returns:
-            IntegrationValidationResult with validation status and any error information
-        """
+    def validate_configuration(
+            self,
+            integration_attributes: List[IntegrationAttribute]
+    ) -> IntegrationValidationResult:
         raise NotImplementedError('Subclasses must override this method')
     
     def get_entity_video_stream(self, entity: Entity) -> Optional[VideoStream]:
         return None
         
-    def get_sensor_response_video_stream(self, sensor_response: SensorResponse) -> Optional[VideoStream]:
+    def get_sensor_response_video_stream(
+            self,
+            sensor_response: SensorResponse) -> Optional[VideoStream]:
         return None

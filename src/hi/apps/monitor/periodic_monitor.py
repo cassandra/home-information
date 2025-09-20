@@ -1,8 +1,11 @@
 import asyncio
 import logging
 
+from hi.apps.system.enums import HealthStatusType
+from hi.apps.system.health_status_provider import HealthStatusProvider
 
-class PeriodicMonitor:
+
+class PeriodicMonitor( HealthStatusProvider ):
     """
     Base class for any content/information that should be automatically,
     and periodically updated from some external source.
@@ -14,7 +17,8 @@ class PeriodicMonitor:
         self._query_counter = 0
         self._is_running = False
         self._logger = logging.getLogger(__name__)
-        self._logger.debug(f"Initialized: {self.__class__.__name__}")
+
+        self._logger.debug(f"Initialized: {self.__class__.__name__} with health tracking")
         return
 
     @property
@@ -24,32 +28,44 @@ class PeriodicMonitor:
     @property
     def is_running(self):
         return self._is_running
-    
+
     async def start(self) -> None:
         self._is_running = True
-        self._logger.info(f"{self.__class__.__name__} async task starting (interval: {self._query_interval_secs}s)")
+        self._logger.info(f"{self.__class__.__name__} async task starting"
+                          f" (interval: {self._query_interval_secs}s)")
 
         try:
             await self.initialize()
-            self._logger.info(f"{self.__class__.__name__} initialized successfully, entering monitoring loop")
+            self.update_health_status( HealthStatusType.HEALTHY, 'initialized successfully' )
+            self._logger.info(f"{self.__class__.__name__} initialized successfully,"
+                              f" entering monitoring loop")
 
             while self._is_running:
                 try:
                     await self.run_query()
+                    self.update_heartbeat()
+                    
                 except Exception as e:
                     self._logger.exception(f"Query execution failed in {self.__class__.__name__}: {e}")
+                    self.record_error(f"Query execution failed: {str(e)}")
                     # Continue running despite individual query failures
 
                 # Log sleep phase for debugging hanging issues
-                self._logger.debug(f"{self.__class__.__name__} sleeping for {self._query_interval_secs}s")
+                self._logger.debug(f"{self.__class__.__name__} sleeping"
+                                   f" for {self._query_interval_secs}s")
                 await asyncio.sleep(self._query_interval_secs)
-                self._logger.debug(f"{self.__class__.__name__} woke up, checking if still running: {self._is_running}")
+                self._logger.debug( f"{self.__class__.__name__} woke up,"
+                                    f" checking if still running: {self._is_running}")
 
         except asyncio.CancelledError as ce:
             self._logger.info(f"{self.__class__.__name__} async task cancelled: {ce}")
+            self.update_health_status( HealthStatusType.ERROR, "Monitor was cancelled" )
             raise  # Re-raise to properly handle cancellation
         except Exception as e:
-            self._logger.exception(f"{self.__class__.__name__} async task failed unexpectedly: {e}")
+            self._logger.exception( f"{self.__class__.__name__} async task"
+                                    f" failed unexpectedly: {e}")
+            self.update_health_status( HealthStatusType.ERROR,
+                                       f"Monitor failed to start: {str(e)}" )
             raise
         finally:
             self._logger.info(f"{self.__class__.__name__} async task cleaning up")
@@ -80,16 +96,20 @@ class PeriodicMonitor:
         try:
             await self.do_work()
             query_duration = (datetimeproxy.now() - query_start_time).total_seconds()
-            self._logger.debug(f"Query {self._query_counter} completed successfully in {query_duration:.2f}s")
+            self._logger.debug(f"Query {self._query_counter} completed successfully"
+                               f" in {query_duration:.2f}s")
 
             # Log warning if query is taking too long relative to interval
             if query_duration > (self._query_interval_secs * 0.5):
-                self._logger.warning(f"Query {self._query_counter} took {query_duration:.2f}s, "
-                                     f"which is over 50% of the {self._query_interval_secs}s interval")
+                self._logger.warning(
+                    f"Query {self._query_counter} took {query_duration:.2f}s, "
+                    f"which is over 50% of the {self._query_interval_secs}s interval"
+                )
 
         except Exception as e:
             query_duration = (datetimeproxy.now() - query_start_time).total_seconds()
-            self._logger.exception(f"Query {self._query_counter} failed after {query_duration:.2f}s: {e}")
+            self._logger.exception( f"Query {self._query_counter} failed"
+                                    f" after {query_duration:.2f}s: {e}" )
             # Don't re-raise - the monitor loop in start() will continue despite failures
         return
 

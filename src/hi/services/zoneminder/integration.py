@@ -6,14 +6,15 @@ from hi.apps.entity.transient_models import VideoStream
 from hi.apps.entity.enums import VideoStreamType, VideoStreamMode
 from hi.apps.entity.constants import VideoStreamMetadataKeys
 from hi.apps.sense.transient_models import SensorResponse
-from hi.integrations.enums import IntegrationHealthStatusType
+from hi.apps.system.enums import HealthStatusType
+from hi.apps.system.health_status import HealthStatus
+
 from hi.integrations.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
 from hi.integrations.integration_manage_view_pane import IntegrationManageViewPane
 from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import (
     IntegrationMetaData,
-    IntegrationHealthStatus,
     IntegrationValidationResult,
 )
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
@@ -55,25 +56,8 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
         except Exception as e:
             logger.exception(f'Error notifying ZoneMinder integration of settings change: {e}')
     
-    def get_health_status(self) -> IntegrationHealthStatus:
-        """Get the current health status of the ZoneMinder integration.
-
-        Delegates to ZoneMinderManager for health status information.
-        The health status now includes enhanced monitoring data for debugging
-        transient issues like the bug in #205.
-        """
-        try:
-            zm_manager = ZoneMinderManager()
-            return zm_manager.get_health_status()
-        except Exception as e:
-            logger.exception(f'Error getting ZoneMinder integration health status: {e}')
-            # Return a default error status if we can't get the real status
-            import hi.apps.common.datetimeproxy as datetimeproxy
-            return IntegrationHealthStatus(
-                status=IntegrationHealthStatusType.TEMPORARY_ERROR,
-                last_check=datetimeproxy.now(),
-                error_message=f'Failed to get health status: {e}'
-            )
+    def get_health_status(self) -> HealthStatus:
+        return ZoneMinderManager().health_status
     
     def validate_configuration(
             self,
@@ -89,7 +73,7 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
         except Exception as e:
             logger.exception(f'Error validating ZoneMinder integration configuration: {e}')
             return IntegrationValidationResult.error(
-                status=IntegrationHealthStatusType.TEMPORARY_ERROR,
+                status=HealthStatusType.WARNING,
                 error_message=f'Configuration validation failed: {e}'
             )
     
@@ -118,11 +102,14 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
                     }
                 )
             except (IndexError, ValueError):
-                logger.warning(f"Could not parse monitor ID from entity integration name: {entity.integration_name}")
+                logger.warning(f"Could not parse monitor ID from entity integration name:"
+                               f" {entity.integration_name}")
                 
         return None
         
-    def get_sensor_response_video_stream(self, sensor_response: SensorResponse) -> Optional[VideoStream]:
+    def get_sensor_response_video_stream(
+            self,
+            sensor_response: SensorResponse) -> Optional[VideoStream]:
         """Get video stream from sensor response (recorded events)"""
         # if not sensor_response.has_video_stream:
         #     return None
@@ -149,7 +136,8 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
                         duration_secs = float(sensor_response.detail_attrs[ZmDetailKeys.DURATION_SECS])
                         metadata[VideoStreamMetadataKeys.DURATION_SECS] = int(duration_secs)
                     except (ValueError, TypeError):
-                        logger.debug(f"Could not parse duration from sensor response: {sensor_response.detail_attrs.get(ZmDetailKeys.DURATION_SECS)}")
+                        logger.debug(f"Could not parse duration from sensor response:"
+                                     f" {sensor_response.detail_attrs.get(ZmDetailKeys.DURATION_SECS)}")
 
                 return VideoStream(
                     stream_type=VideoStreamType.URL,
@@ -157,6 +145,7 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
                     metadata=metadata
                 )
             except (ValueError, TypeError):
-                logger.warning(f"Could not parse event ID from sensor response: {sensor_response.detail_attrs}")
+                logger.warning(f"Could not parse event ID from sensor response:"
+                               f" {sensor_response.detail_attrs}")
                 
         return None

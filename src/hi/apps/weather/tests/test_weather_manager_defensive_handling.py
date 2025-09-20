@@ -23,11 +23,20 @@ logging.disable(logging.CRITICAL)
 class MockWeatherDataSource(WeatherDataSource):
     """Mock weather data source for testing."""
     
-    def __init__(self, source_id="mock_source"):
+    @classmethod
+    def weather_source_id(cls):
+        return 'mock_source'
+    
+    @classmethod
+    def weather_source_label(cls):
+        return 'Mock Weather Source'
+    
+    @classmethod
+    def weather_source_abbreviation(cls):
+        return 'MOCK'
+    
+    def __init__(self):
         super().__init__(
-            id=source_id,
-            label="Mock Weather Source",
-            abbreviation="MWS",
             priority=1,
             requests_per_day_limit=1000,
             requests_per_polling_interval=10,
