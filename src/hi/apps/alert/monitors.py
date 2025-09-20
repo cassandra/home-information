@@ -23,7 +23,6 @@ class AlertMonitor( PeriodicMonitor, AlertMixin ):
 
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
-        """ Subclasses should override with something more meaningful. """
         return ProviderInfo(
             provider_id = 'hi.apps.alert',
             provider_name = 'Alert Monitor',

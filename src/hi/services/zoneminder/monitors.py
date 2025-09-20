@@ -59,7 +59,6 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
     
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
-        """ Subclasses should override with something more meaningful. """
         return ProviderInfo(
             provider_id = 'hi.sevices.zoneminder',
             provider_name = 'ZoneMinder Monitor',

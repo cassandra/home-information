@@ -27,7 +27,6 @@ class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
 
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
-        """ Subclasses should override with something more meaningful. """
         return ProviderInfo(
             provider_id = 'hi.apps.security',
             provider_name = 'Security Monitor',

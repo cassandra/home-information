@@ -44,7 +44,6 @@ class HealthStatus:
         return int((datetimeproxy.now() - self.heartbeat).total_seconds())
 
     def _get_heartbeat_thresholds(self) -> tuple[int, int]:
-        """Get active and stale thresholds in seconds based on expected interval or fixed defaults."""
         if self.expected_heartbeat_interval_secs:
             # Dynamic thresholds: 1.5x interval for active, 3x for stale
             active_threshold = int(self.expected_heartbeat_interval_secs * 1.5)
@@ -58,7 +57,6 @@ class HealthStatus:
 
     @property
     def heartbeat_status_text(self) -> str:
-        """Get heartbeat status description using dynamic thresholds when available."""
         if not self.heartbeat:
             return "Unknown"
 
@@ -77,7 +75,6 @@ class HealthStatus:
 
     @property
     def heartbeat_css_class(self) -> str:
-        """Get CSS class for heartbeat indicator using dynamic thresholds when available."""
         if not self.heartbeat:
             return "heartbeat-dead"
 
@@ -96,7 +93,6 @@ class HealthStatus:
 
     @property
     def heartbeat_text_class(self) -> str:
-        """Get text color class for heartbeat status using dynamic thresholds when available."""
         if not self.heartbeat:
             return "text-error-custom"
 
@@ -115,7 +111,6 @@ class HealthStatus:
 
     @property
     def status_badge_class(self) -> str:
-        """Get Bootstrap badge class for overall status."""
         if self.status.is_healthy:
             return "monitor-status-healthy"
         elif self.status.is_warning:
@@ -131,7 +126,6 @@ class HealthStatus:
 
     @property
     def status_alert_class(self) -> str:
-        """Get alert class for status summary."""
         if self.is_healthy:
             return "alert-success"
         elif self.status.is_info:
@@ -143,7 +137,6 @@ class HealthStatus:
 
     @property
     def status_icon(self) -> str:
-        """Get Font Awesome icon for status."""
         if self.status.is_healthy:
             return "check-circle"
         elif self.status.is_warning:
@@ -158,8 +151,22 @@ class HealthStatus:
             return "question-circle"
 
     @property
+    def border_color_class(self) -> str:
+        if self.status.is_healthy:
+            return "border-healthy"
+        elif self.status.is_warning:
+            return "border-warning"
+        elif self.status.is_info:
+            return "border-info"
+        elif self.status.is_critical:
+            return "border-error"
+        elif self.status.is_error:
+            return "bordder-error"
+        else:  # UNKNOWN
+            return "border-unknown"
+        
+    @property
     def status_summary_message(self) -> str:
-        """Get appropriate status summary message."""
         if self.is_healthy:
             return "Is operating normally and heartbeat is active."
         elif self.is_critical:

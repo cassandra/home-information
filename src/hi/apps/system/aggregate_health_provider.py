@@ -8,7 +8,7 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 
 from .aggregate_health_status import AggregateHealthStatus
 from .api_health_status_provider import ApiHealthStatusProvider
-from .enums import HealthStatusType, HealthAggregationRule
+from .enums import ApiHealthStatusType, HealthStatusType, HealthAggregationRule
 from .provider_info import ProviderInfo
 
 logger = logging.getLogger(__name__)
@@ -86,6 +86,15 @@ class AggregateHealthProvider(ABC):
             self._refresh_aggregated_health()
         return
     
+    def set_all_providers_healthy(self):
+        self._aggregated_health_status.status = HealthStatusType.HEALTHY
+        for api_health_status_provider in self._api_health_status_providers:
+            api_health_status_provider.update_api_health_status(
+                status_type = ApiHealthStatusType.HEALTHY,
+            )
+            continue
+        return
+            
     def remove_api_health_status_provider(
             self,
             api_health_status_provider : ApiHealthStatusProvider

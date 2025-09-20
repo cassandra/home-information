@@ -33,14 +33,18 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
     async def initialize(self) -> None:
         discovered_sources = WeatherSourceDiscovery.discover_weather_data_source_instances()
         self._weather_data_source_instance_list = discovered_sources
-        WeatherSourceManager().add_api_health_status_provider_multi(
+
+        weather_source_manager = WeatherSourceManager()
+        weather_source_manager.add_api_health_status_provider_multi(
             api_health_status_provider_sequence = discovered_sources,
         )
+
+        # During startup safety/warmup, consider everything healthy.
+        weather_source_manager.set_all_providers_healthy()
         return
     
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
-        """ Subclasses should override with something more meaningful. """
         return ProviderInfo(
             provider_id = 'hi.apps.weather',
             provider_name = 'Weather Monitor',

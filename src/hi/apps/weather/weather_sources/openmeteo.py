@@ -726,9 +726,11 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             
         if current_data_str:
             logger.debug('OpenMeteo current weather data from cache.')
+            self.record_cache_hit()
             current_data = json.loads(current_data_str)
             return current_data
 
+        self.record_cache_miss()
         current_data = self._get_current_weather_data_from_api(geographic_location = geographic_location)
         if current_data:
             current_data_str = json.dumps(current_data)
@@ -765,9 +767,11 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             
         if forecast_data_str:
             logger.debug('OpenMeteo hourly forecast data from cache.')
+            self.record_cache_hit()
             forecast_data = json.loads(forecast_data_str)
             return forecast_data
 
+        self.record_cache_miss()
         forecast_data = self._get_hourly_forecast_data_from_api(geographic_location = geographic_location)
         if forecast_data:
             forecast_data_str = json.dumps(forecast_data)
@@ -804,9 +808,11 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             
         if forecast_data_str:
             logger.debug('OpenMeteo daily forecast data from cache.')
+            self.record_cache_hit()
             forecast_data = json.loads(forecast_data_str)
             return forecast_data
 
+        self.record_cache_miss()
         forecast_data = self._get_daily_forecast_data_from_api(geographic_location = geographic_location)
         if forecast_data:
             forecast_data_str = json.dumps(forecast_data)
@@ -846,9 +852,11 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             
         if historical_data_str:
             logger.debug('OpenMeteo historical data from cache.')
+            self.record_cache_hit()
             historical_data = json.loads(historical_data_str)
             return historical_data
 
+        self.record_cache_miss()
         historical_data = self._get_historical_weather_data_from_api(
             geographic_location = geographic_location,
             start_date = start_date,

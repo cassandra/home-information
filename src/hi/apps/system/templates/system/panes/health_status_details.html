@@ -87,7 +87,13 @@
           </div>
           <div class="metric-item {{ api_status.status_css_class }}">
             <div class="small text-muted-custom">Success Rate</div>
-            <div class="metric-value">{{ api_status.success_rate_percentage|floatformat:1 }}%</div>
+            <div class="metric-value">
+              {% if api_status.total_calls %}
+              {{ api_status.success_rate_percentage|floatformat:1 }}%
+              {% else %}
+              ---
+              {% endif %}
+            </div>
           </div>
           {% if api_status.last_response_time %}
           <div class="metric-item {{ api_status.status_css_class }}">
@@ -102,7 +108,7 @@
           {% else %}
           <div class="metric-item {{ api_status.status_css_class }}">
             <div class="small text-muted-custom">Response Time</div>
-            <div class="metric-value">timeout</div>
+            <div class="metric-value">---</div>
           </div>
           {% endif %}
           {% if api_status.total_failures > 0 or api_status.consecutive_failures > 0 %}
@@ -116,6 +122,18 @@
           </div>
           {% endif %}
         </div>
+
+        <!-- Cache Statistics -->
+        {% if api_status.cache_hits > 0 or api_status.cache_misses > 0 %}
+        <div class="cache-stats mt-2">
+          <small class="text-muted">
+            Cache: {{ api_status.cache_hits }} hits, {{ api_status.cache_misses }} misses
+            {% if api_status.cache_hit_rate_percent %}
+            ({{ api_status.cache_hit_rate_percent|floatformat:1 }}% hit rate)
+            {% endif %}
+          </small>
+        </div>
+        {% endif %}
       </div>
       {% endfor %}
     </div>

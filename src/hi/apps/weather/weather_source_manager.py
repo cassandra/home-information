@@ -10,10 +10,8 @@ class WeatherSourceManager( Singleton, AggregateHealthProvider ):
     
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
-        """ Subclasses should override with something more meaningful. """
         return ProviderInfo(
             provider_id = 'hi.apps.weather.weather_sources',
             provider_name = 'Weather API Monitor',
             description = '',            
         )
-    

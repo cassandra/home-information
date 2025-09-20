@@ -46,7 +46,6 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
 
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
-        """ Subclasses should override with something more meaningful. """
         return ProviderInfo(
             provider_id = 'hass_integration',
             provider_name = 'Home Assistant Integration',

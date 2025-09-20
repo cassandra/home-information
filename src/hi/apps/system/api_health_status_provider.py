@@ -84,4 +84,24 @@ class ApiHealthStatusProvider(ABC):
             )
         return
     
+    def record_cache_hit( self ):
+        self._ensure_api_health_status_provider_setup()
+        with self._api_health_lock:
+            self._api_health_status.record_cache_hit()
+        return
+    
+    def record_cache_miss( self ):
+        self._ensure_api_health_status_provider_setup()
+        with self._api_health_lock:
+            self._api_health_status.record_cache_miss()
+        return
+
+    def update_api_health_status( self, status_type : ApiHealthStatusType ) -> None:
+        self._ensure_api_health_status_provider_setup()
+        with self._api_health_lock:
+            self._api_health_status.status = status_type
+        return
+
+        
+                                
         

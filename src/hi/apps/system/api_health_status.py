@@ -24,12 +24,14 @@ class ApiHealthStatus:
     provider_id            : str          # Technical identifier
 
     status                 : ApiHealthStatusType
-    last_success           : Optional[datetime] = None
-    total_calls            : int = 0
-    total_failures         : int = 0
-    consecutive_failures   : int = 0
-    average_response_time  : Optional[float] = None
-    last_response_time     : Optional[float] = None
+    last_success           : Optional[datetime]  = None
+    total_calls            : int                 = 0
+    total_failures         : int                 = 0
+    consecutive_failures   : int                 = 0
+    average_response_time  : Optional[float]     = None
+    last_response_time     : Optional[float]     = None
+    cache_hits             : int                 = 0
+    cache_misses           : int                 = 0
 
     def record_api_call( self, api_call_context : ApiCallContext ):
         self.total_calls += 1
@@ -57,7 +59,29 @@ class ApiHealthStatus:
                 self.average_response_time = (( self.average_response_time * 0.8 )
                                               + ( api_call_context.duration * 0.2  ))
         return
+
+    def record_cache_hit(self) -> int:
+        self.cache_hits += 1
+        self.status = ApiHealthStatusType.HEALTHY
+        return
     
+    def record_cache_miss(self) -> int:
+        self.cache_misses += 1
+        self.status = ApiHealthStatusType.HEALTHY
+        return
+
+    @property
+    def cache_hit_rate(self) -> float:
+        cache_attempts = self.cache_hits + self.cache_misses
+        if cache_attempts < 1:
+            return 0.0
+        return ( self.cache_hits / cache_attempts )
+
+    @property
+    def cache_hit_rate_percent(self) -> float:
+        return self.cache_hit_rate * 100.0
+
+    # This happens alongside record_api_call(), record_cache_hit() and record_cache_miss()
     @property
     def is_healthy(self) -> bool:
         """Check if this API source is healthy."""
@@ -78,8 +102,11 @@ class ApiHealthStatus:
         return ((self.total_calls - self.total_failures) / self.total_calls) * 100
 
     @property
+    def status_display(self) -> str:
+        return self.status.label
+
+    @property
     def status_css_class(self) -> str:
-        """Get CSS class for status styling."""
         return {
             ApiHealthStatusType.HEALTHY: "success",
             ApiHealthStatusType.DEGRADED: "warning",
@@ -90,29 +117,26 @@ class ApiHealthStatus:
 
     @property
     def status_badge_class(self) -> str:
-        """Get Bootstrap badge class for status."""
         return {
-            ApiHealthStatusType.HEALTHY: "badge-success",
+            ApiHealthStatusType.UNKNOWN: "monitor-status-unknown",
+            ApiHealthStatusType.HEALTHY: "monitor-status-healthy",
             ApiHealthStatusType.DEGRADED: "monitor-status-warning",
-            ApiHealthStatusType.UNKNOWN: "monitor-status-warning",
             ApiHealthStatusType.FAILING: "monitor-status-error",
             ApiHealthStatusType.UNAVAILABLE: "monitor-status-error"
         }[self.status]
 
     @property
     def status_icon(self) -> str:
-        """Get Font Awesome icon for status."""
         return {
             ApiHealthStatusType.HEALTHY: "check-circle",
             ApiHealthStatusType.DEGRADED: "warning",
-            ApiHealthStatusType.UNKNOWN: "warning",
-            ApiHealthStatusType.FAILING: "warning",
-            ApiHealthStatusType.UNAVAILABLE: "warning"
+            ApiHealthStatusType.UNKNOWN: "question-circle",
+            ApiHealthStatusType.FAILING: "times-circle",
+            ApiHealthStatusType.UNAVAILABLE: "exclamation-circle"
         }[self.status]
 
     @property
     def border_color_class(self) -> str:
-        """Get border color class for API source section."""
         return {
             ApiHealthStatusType.HEALTHY: "api-source-healthy",
             ApiHealthStatusType.DEGRADED: "api-source-warning",

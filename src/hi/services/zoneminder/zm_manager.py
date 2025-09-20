@@ -76,7 +76,6 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
 
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
-        """ Subclasses should override with something more meaningful. """
         return ProviderInfo(
             provider_id = 'zm_integration',
             provider_name = 'ZoneMinder Integration',

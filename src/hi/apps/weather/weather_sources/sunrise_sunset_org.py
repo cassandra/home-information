@@ -255,9 +255,11 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
             
         if api_data_str:
             logger.debug('Sunrise-Sunset.org astronomical data from cache.')
+            self.record_cache_hit()
             api_data = json.loads(api_data_str)
             return api_data
 
+        self.record_cache_miss()
         api_data = self._get_astronomical_api_data_from_api(
             geographic_location = geographic_location,
             target_date = target_date,

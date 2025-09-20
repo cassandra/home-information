@@ -3,7 +3,7 @@
 
 {% timezone USER_TIMEZONE %}
 {% with health_status_provider.health_status as health_status %}
-<div class="card">
+<div class="card  {{ health_status.border_color_class }}">
   <div class="card-body">
     <a  href="{% url 'system_health_status' provider_id=health_status.provider_id %}"
         class="clickable-card"
