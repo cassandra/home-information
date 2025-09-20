@@ -57,6 +57,7 @@ class TestPeriodicMonitor(AsyncTaskTestCase):
         class IncompleteMonitor(PeriodicMonitor):
             def __init__(self):
                 super().__init__(id='incomplete', interval_secs=1)
+                
             @classmethod
             def get_provider_info(cls) -> ProviderInfo:
                 """ Subclasses should override with something more meaningful. """
