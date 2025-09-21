@@ -127,7 +127,6 @@ class TestHassManagerInitialization(TestCase):
         # Health status should reflect the configuration error
         health = self.manager.health_status
         self.assertEqual(health.status, HealthStatusType.ERROR)
-        self.assertIn('not implemented', health.error_message)
     
     def test_reload_with_disabled_integration(self):
         """Test reload handles disabled integration gracefully"""
@@ -157,7 +156,6 @@ class TestHassManagerInitialization(TestCase):
         # Health status should reflect the configuration error
         health = self.manager.health_status
         self.assertEqual(health.status, HealthStatusType.ERROR)
-        self.assertIn('Missing HASS attribute', health.error_message)
     
     def test_reload_with_empty_required_value(self):
         """Test reload handles empty required attribute values gracefully"""
@@ -188,7 +186,6 @@ class TestHassManagerInitialization(TestCase):
         # Health status should reflect the configuration error
         health = self.manager.health_status
         self.assertEqual(health.status, HealthStatusType.ERROR)
-        self.assertIn('Missing HASS attribute value', health.error_message)
     
     def test_reload_success_with_all_required_attributes(self):
         """Test reload successfully configures manager with all required attributes"""

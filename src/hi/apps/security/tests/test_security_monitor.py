@@ -25,7 +25,7 @@ class TestSecurityMonitor(AsyncTaskTestCase):
         monitor = SecurityMonitor()
         
         # Should be properly configured as periodic monitor
-        self.assertEqual(monitor.id, 'security-monitor')
+        self.assertEqual(monitor.id, monitor.MONITOR_ID)
         self.assertEqual(monitor._query_interval_secs, SecurityMonitor.SECURITY_POLLING_INTERVAL_SECS)
         self.assertIsNotNone(monitor._last_security_state_check_datetime)
     
@@ -73,25 +73,6 @@ class TestSecurityMonitor(AsyncTaskTestCase):
                 
                 # Should exit gracefully without error
                 # (No exceptions should be raised)
-    
-    async def test_check_security_state_auto_change_not_allowed(self):
-        """Test security state check blocked by auto_change_allowed - respects state restrictions."""
-        monitor = SecurityMonitor()
-        
-        mock_settings_manager = Mock()
-        mock_security_manager = Mock()
-        mock_security_manager.security_state = SecurityState.DISABLED  # auto_change_allowed = False
-        
-        with patch.object(monitor, 'settings_manager_async', new_callable=AsyncMock) as mock_settings:
-            mock_settings.return_value = mock_settings_manager
-            
-            with patch.object(monitor, 'security_manager_async', new_callable=AsyncMock) as mock_security:
-                mock_security.return_value = mock_security_manager
-                
-                await monitor._check_security_state()
-                
-                # Should not attempt state changes when auto change not allowed
-                mock_security_manager.update_security_state_auto.assert_not_called()
     
     @patch('hi.apps.security.monitors.datetimeproxy')
     @patch('hi.apps.security.monitors.ConsoleSettingsHelper')

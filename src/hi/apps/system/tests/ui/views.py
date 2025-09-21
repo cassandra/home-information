@@ -7,6 +7,7 @@ from hi.apps.system.health_status_provider import HealthStatusProvider
 from hi.apps.system.provider_info import ProviderInfo
 from hi.apps.system.tests.synthetic_data import SystemSyntheticData
 
+
 class SystemTestUiHomeView(View):
 
     def get(self, request, *args, **kwargs):
