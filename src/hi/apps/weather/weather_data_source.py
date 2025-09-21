@@ -160,8 +160,7 @@ class WeatherDataSource( ApiHealthStatusProvider ):
 
         if not can_fetch:
             if self.TRACE:
-                logger.debug( f'Polling limits. Skipping weather data fetch for: {self.label}' )
-            self.record_warning( 'Polling limit reached.' )
+                logger.debug(f'Polling limits. Skipping weather data fetch for: {self.label}')
             return
 
         logger.debug( f'Fetching weather data for: {self.label}' )
