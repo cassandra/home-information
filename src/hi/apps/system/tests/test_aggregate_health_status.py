@@ -23,7 +23,8 @@ class TestAggregateHealthStatus(unittest.TestCase):
             provider_id="test_provider",
             provider_name="Test Provider",
             status=HealthStatusType.HEALTHY,
-            last_check=MagicMock(),
+            last_update=MagicMock(),
+            last_message='Setup',
             aggregation_rule=HealthAggregationRule.ALL_SOURCES_HEALTHY
         )
 

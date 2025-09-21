@@ -7,7 +7,7 @@ from hi.apps.entity.enums import VideoStreamType, VideoStreamMode
 from hi.apps.entity.constants import VideoStreamMetadataKeys
 from hi.apps.sense.transient_models import SensorResponse
 from hi.apps.system.enums import HealthStatusType
-from hi.apps.system.health_status import HealthStatus
+from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from hi.integrations.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
@@ -56,8 +56,8 @@ class ZoneMinderGateway( IntegrationGateway, ZoneMinderMixin ):
         except Exception as e:
             logger.exception(f'Error notifying ZoneMinder integration of settings change: {e}')
     
-    def get_health_status(self) -> HealthStatus:
-        return ZoneMinderManager().health_status
+    def get_health_status_provider(self) -> HealthStatusProvider:
+        return ZoneMinderManager()
     
     def validate_configuration(
             self,

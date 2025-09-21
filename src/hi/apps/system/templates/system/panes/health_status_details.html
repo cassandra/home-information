@@ -2,6 +2,7 @@
 {% load tz %}
 {% timezone USER_TIMEZONE %}
 
+{% with health_status_provider.health_status as health_status %}
 <div class="container-fluid px-0">
   <!-- Overall Provider Status -->
   <div class="row mb-4">
@@ -20,27 +21,32 @@
         <div class="col-sm-9">
           <span class="heartbeat-indicator {{ health_status.heartbeat_css_class }}"></span>
           <span class="{{ health_status.heartbeat_text_class }}">{{ health_status.heartbeat_status_text }}</span>
-          <small class="text-muted-custom">
-            (last seen {{ health_status.heartbeat|localtime|date:"H:i:s" }})
-          </small>
+        </div>
+      </div>
+      <div class="row mt-2">
+        <div class="col-sm-3"><strong>Last Seen:</strong></div>
+        <div class="col-sm-9">
+          {{ health_status.heartbeat|localtime|date:"H:i:s" }}
           {% if health_status.expected_heartbeat_interval_secs %}
-          <br>Expected: {{ health_status.expected_heartbeat_interval_secs }}s
+          <span class="text-muted">
+            (Expected every {{ health_status.expected_heartbeat_interval_secs }}s)
+          </span>
           {% endif %}
         </div>
       </div>
       {% endif %}
 
       <div class="row mt-2">
-        <div class="col-sm-3"><strong>Last Check:</strong></div>
-        <div class="col-sm-9">{{ health_status.last_check|localtime|date:"M j, Y H:i:s" }}</div>
+        <div class="col-sm-3"><strong>Last Update:</strong></div>
+        <div class="col-sm-9">{{ health_status.last_update|localtime|date:"M j, Y H:i:s" }}</div>
       </div>
 
-      {% if health_status.error_message %}
+      {% if health_status.last_message %}
       <div class="row mt-2">
-        <div class="col-sm-3"><strong>Error Details:</strong></div>
+        <div class="col-sm-3"><strong>Last Message:</strong></div>
         <div class="col-sm-9">
           <div class="{{ health_status.status_alert_class }} p-2">
-            {{ health_status.error_message }}
+            {{ health_status.last_message }}
           </div>
         </div>
       </div>
@@ -77,11 +83,21 @@
       </h6>
 
       {% for api_health_status in health_status.api_status_map.values %}
+      <hr />
       {% include "system/panes/api_health_status_details.html" with api_health_status=api_health_status %}
       {% endfor %}
     </div>
   </div>
   {% endif %}
 
+  {% if health_status_provider.get_provider_info.description %}
+  <div class="row">
+    <div class="col-12">
+      <small class="text-muted">{{ health_status_provider.get_provider_info.description }}</small>
+    </div>
+  </div>
+  {% endif %}
+  
 </div>
+{% endwith %}
 {% endtimezone %}

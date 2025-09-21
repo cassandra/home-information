@@ -58,14 +58,15 @@ class SystemSyntheticData:
             'provider_id': 'provider-0',
             'provider_name': 'Provider 0',
             'status': status_enum,
-            'last_check': now,
+            'last_update': now,
+            'last_message': 'Test',
         }
 
         # Customize data based on status type
         if status_type == 'unknown':
             base_data.update({
                 'heartbeat': None,
-                'error_message': "No health data available - service not yet initialized",
+                'last_message': "No health data available - service not yet initialized",
             })
         elif status_type == 'healthy':
             base_data.update({
@@ -74,19 +75,19 @@ class SystemSyntheticData:
         elif status_type == 'warning':
             base_data.update({
                 'heartbeat': now - timedelta(minutes=2),
-                'error_message': "Temporary issue: Service experiencing intermittent connectivity issues",
+                'last_message': "Temporary issue: Service experiencing intermittent connectivity issues",
                 'error_count': 3,
             })
         elif status_type == 'error':
             base_data.update({
                 'heartbeat': now - timedelta(hours=1),
-                'error_message': "Critical error: Service has stopped responding - manual intervention required",
+                'last_message': "Critical error: Service has stopped responding - manual intervention required",
                 'error_count': 8,
             })
         elif status_type == 'disabled':
             base_data.update({
                 'heartbeat': now,
-                'error_message': "Service has been manually disabled for scheduled maintenance",
+                'last_message': "Service has been manually disabled for scheduled maintenance",
             })
 
         if with_api_data:
@@ -115,6 +116,13 @@ class SystemSyntheticData:
         }
         return labels.get(status_type, 'Health Status')
 
+    @classmethod
+    def create_provider_info(cls):
+        return ProviderInfo(
+            provider_name = "Test Provider Name",
+            provider_id = "test_provider_id",
+        )
+    
     @classmethod
     def _create_sample_api_status_map(cls, status_type: str, now: datetime) -> Dict[ProviderInfo, ApiHealthStatus]:
         """Create sample API sources based on status type."""

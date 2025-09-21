@@ -73,6 +73,25 @@ class IntegrationManager( Singleton ):
             return self._integration_data_map[integration_id].integration_gateway
         raise KeyError( f'Unknown integration id "{integration_id}".' )
 
+    def get_health_status_by_provider_id( self,
+                                          provider_id : str ) -> HealthStatusProvider:
+        with self._data_lock:
+            for integration in self._integration_data_map.values():
+                provider = integration.integration_gateway.get_health_status_provider()
+                if provider.get_provider_info().provider_id == provider_id:
+                    return provider
+                continue
+        raise KeyError( f'Unknown provider id: "{provider_id}".' )
+
+    def get_health_status_by_monitor_id( self,
+                                         monitor_id : str ) -> HealthStatusProvider:
+        with self._data_lock:
+            for monitor in self._monitor_map.values():
+                if monitor.id == monitor_id:
+                    return monitor
+                continue
+        raise KeyError( f'Unknown monitor id: "{monitor_id}".' )
+
     def get_health_status_providers(self) -> List[HealthStatusProvider]:
         with self._data_lock:
             return list( self._monitor_map.values() )

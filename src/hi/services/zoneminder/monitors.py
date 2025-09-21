@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 
 class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin ):
 
+    MONITOR_ID = 'hi.services.zoneminder.monitor'
+    
     # TODO: Move this into the integrations attributes for users to set
     ZONEMINDER_SERVER_TIMEZONE = 'America/Chicago'
 
@@ -32,7 +34,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
     
     def __init__( self ):
         super().__init__(
-            id = 'zm-monitor',
+            id = self.MONITOR_ID,
             interval_secs = self.ZONEMINDER_POLLING_INTERVAL_SECS,
         )
         self._fully_processed_event_ids = TTLCache( maxsize = 1000, ttl = 100000 )
@@ -60,7 +62,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
         return ProviderInfo(
-            provider_id = 'hi.services.zoneminder',
+            provider_id = cls.MONITOR_ID,
             provider_name = 'ZoneMinder Monitor',
             description = 'ZoneMinder camera motion detection',
             expected_heartbeat_interval_secs = cls.ZONEMINDER_POLLING_INTERVAL_SECS,

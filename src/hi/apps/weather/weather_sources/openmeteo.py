@@ -78,11 +78,13 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
 
         geographic_location = self.geographic_location
         if not geographic_location:
+            self.record_error( 'No geographic data.' )
             logger.warning('No geographic location setting. Skipping OpenMeteo weather fetch.')
             return
             
         weather_manager = await self.weather_manager_async()
         if not weather_manager:
+            self.record_error( 'No weather weather manager.' )
             logger.warning('Weather manager not available. Skipping OpenMeteo weather fetch.')
             return
 
@@ -97,6 +99,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                     weather_conditions_data = current_conditions_data,
                 )
         except Exception as e:
+            self.record_error( 'Current conditions fetch error: {e}' )
             logger.exception(f'Problem fetching OpenMeteo current conditions: {e}')
 
         # Fetch hourly forecast data
@@ -110,6 +113,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                     forecast_data_list = interval_hourly_forecast_list,
                 )
         except Exception as e:
+            self.record_error( 'Hourly forecast fetch error: {e}' )
             logger.exception(f'Problem fetching OpenMeteo hourly forecast: {e}')
 
         # Fetch daily forecast data
@@ -123,6 +127,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
                     forecast_data_list = interval_daily_forecast_list,
                 )
         except Exception as e:
+            self.record_error( 'Daily forecast fetch error: {e}' )
             logger.exception(f'Problem fetching OpenMeteo daily forecast: {e}')
 
         # Fetch historical weather data (last 7 days)
@@ -140,6 +145,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             else:
                 logger.warning('OpenMeteo returned no historical weather data')
         except Exception as e:
+            self.record_error( 'Historical data fetch error: {e}' )
             logger.exception(f'Problem fetching OpenMeteo historical data: {e}')
 
         # Note: OpenMeteo does not provide astronomical data

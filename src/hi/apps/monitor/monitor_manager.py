@@ -60,6 +60,15 @@ class AppMonitorManager( Singleton ):
             continue
         return
 
+    def get_health_status_by_monitor_id( self,
+                                         monitor_id : str ) -> HealthStatusProvider:
+        with self._data_lock:
+            for monitor in self._monitor_map.values():
+                if monitor.id == monitor_id:
+                    return monitor
+                continue
+        raise KeyError( f'Unknown monitor id: "{monitor_id}".' )
+
     def get_health_status_providers(self) -> List[HealthStatusProvider]:
         """Get health status providers for all registered monitors.
             Each provider exposes get_provider_info() and health_status.

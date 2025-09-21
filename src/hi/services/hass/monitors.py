@@ -14,12 +14,13 @@ logger = logging.getLogger(__name__)
 
 class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
 
+    MONITOR_ID = 'hi.services.hass.monitor'
     HASS_POLLING_INTERVAL_SECS = 4
     HASS_API_TIMEOUT_SECS = 10.0  # Shorter timeout appropriate for 2-second polling
 
     def __init__( self ):
         super().__init__(
-            id = 'hass-monitor',
+            id = self.MONITOR_ID,
             interval_secs = self.HASS_POLLING_INTERVAL_SECS,
         )
         self._was_initialized = False
@@ -53,7 +54,7 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
         return ProviderInfo(
-            provider_id = 'hi.services.hass',
+            provider_id = cls.MONITOR_ID,
             provider_name = 'Home Assistant Monitor',
             description = 'Home Assistant device state monitoring',
             expected_heartbeat_interval_secs = cls.HASS_POLLING_INTERVAL_SECS,

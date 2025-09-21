@@ -277,7 +277,7 @@ class ZoneMinderManagerHealthStatusTest(TestCase):
 
         # Should have health status
         self.assertIsNotNone(health)
-        self.assertIsNotNone(health.last_check)
+        self.assertIsNotNone(health.last_update)
         self.assertIsNotNone(health.status)
 
 

@@ -1,7 +1,6 @@
 import asyncio
 import logging
 
-from hi.apps.system.enums import HealthStatusType
 from hi.apps.system.health_status_provider import HealthStatusProvider
 
 
@@ -36,14 +35,14 @@ class PeriodicMonitor( HealthStatusProvider ):
 
         try:
             await self.initialize()
-            self.update_health_status( HealthStatusType.HEALTHY, 'initialized successfully' )
+            self.record_healthy( 'Initialized successfully' )
             self._logger.info(f"{self.__class__.__name__} initialized successfully,"
                               f" entering monitoring loop")
 
             while self._is_running:
                 try:
                     await self.run_query()
-                    self.update_heartbeat()
+                    self.record_heartbeat()
                     
                 except Exception as e:
                     self._logger.exception(f"Query execution failed in {self.__class__.__name__}: {e}")
@@ -59,13 +58,12 @@ class PeriodicMonitor( HealthStatusProvider ):
 
         except asyncio.CancelledError as ce:
             self._logger.info(f"{self.__class__.__name__} async task cancelled: {ce}")
-            self.update_health_status( HealthStatusType.ERROR, "Monitor was cancelled" )
+            self.record_error( "Monitor was cancelled" )
             raise  # Re-raise to properly handle cancellation
         except Exception as e:
             self._logger.exception( f"{self.__class__.__name__} async task"
                                     f" failed unexpectedly: {e}")
-            self.update_health_status( HealthStatusType.ERROR,
-                                       f"Monitor failed to start: {str(e)}" )
+            self.record_error( f"Monitor failed to start: {str(e)}" )
             raise
         finally:
             self._logger.info(f"{self.__class__.__name__} async task cleaning up")

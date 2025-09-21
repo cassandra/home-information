@@ -47,7 +47,7 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
         return ProviderInfo(
-            provider_id = 'hass_integration',
+            provider_id = 'hi.services.hass.manager',
             provider_name = 'Home Assistant Integration',
             description = '',            
         )
@@ -56,7 +56,7 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
     def get_api_provider_info(cls) -> ProviderInfo:
         """Get the API service info for this manager."""
         return ProviderInfo(
-            provider_id = 'hass_api',
+            provider_id = 'hi.services.hass.api',
             provider_name = 'Home Assistant API',
             description = 'Home Assistant REST API for entity states'
         )
@@ -93,27 +93,27 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
             self._hass_attr_type_to_attribute = self._load_attributes()
             self._hass_client = self.create_hass_client( self._hass_attr_type_to_attribute )
             self.clear_caches()
-            self.update_health_status(HealthStatusType.HEALTHY)
+            self.record_healthy('Reloaded')
 
         except IntegrationDisabledError:
             msg = 'HASS integration disabled'
             logger.info(msg)
-            self.update_health_status( HealthStatusType.DISABLED, msg  )
+            self.record_disabled( msg  )
 
         except IntegrationError as e:
             error_msg = f'HASS integration configuration error: {e}'
             logger.error(error_msg)
-            self.update_health_status( HealthStatusType.ERROR, f"Configuration error: {error_msg}" )
+            self.record_error( f"Configuration error: {error_msg}" )
 
         except IntegrationAttributeError as e:
             error_msg = f'HASS integration attribute error: {e}'
             logger.error(error_msg)
-            self.update_health_status( HealthStatusType.ERROR, f"Configuration error: {error_msg}" )
+            self.record_error( f"Configuration error: {error_msg}" )
 
         except Exception as e:
             error_msg = f'Unexpected error loading HASS configuration: {e}'
             logger.exception(error_msg)
-            self.update_health_status( HealthStatusType.WARNING, f"Temporary issue: {error_msg}" )
+            self.record_warning( f"Temporary issue: {error_msg}" )
         return
 
     def clear_caches(self):
@@ -183,24 +183,22 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
         """Test the connection to HASS API and update health status."""
         try:
             if not self.hass_client:
-                self.update_health_status(HealthStatusType.ERROR,
-                                          "HASS client not configured")
+                self.record_error("HASS client not configured")
                 return False
             
             # Try to fetch states to test connection
             states = self.fetch_hass_states_from_api(verbose=False)
             if states is not None:
-                self.update_health_status(HealthStatusType.HEALTHY)
+                self.record_healthy('OK')
                 return True
             else:
-                self.update_health_status(HealthStatusType.ERROR,
-                                          "Failed to fetch states from HASS API")
+                self.record_error("Failed to fetch states from HASS API")
                 return False
                 
         except Exception as e:
             error_msg = f'Connection test failed: {e}'
             logger.debug(error_msg)
-            self.update_health_status(HealthStatusType.ERROR, f"Connection error: {error_msg}")
+            self.record_error( f"Connection error: {error_msg}" )
             return False
     
     def test_client_with_attributes(

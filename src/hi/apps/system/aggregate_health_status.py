@@ -30,7 +30,7 @@ class AggregateHealthStatus( HealthStatus ):
 
         # Return worst of base status and aggregated API status using priority
         # Lower priority number = worse health
-        return min([self._base_status, api_health], key=lambda s: s.priority)
+        return min([ self._base_status, api_health ], key=lambda s: s.priority )
 
     @status.setter
     def status(self, value: HealthStatusType) -> None:

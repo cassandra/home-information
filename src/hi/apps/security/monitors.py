@@ -15,11 +15,12 @@ logger = logging.getLogger(__name__)
 
 class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
 
+    MONITOR_ID = 'hi.apps.security.monitor'
     SECURITY_POLLING_INTERVAL_SECS = 5
 
     def __init__( self ):
         super().__init__(
-            id = 'security-monitor',
+            id = self.MONITOR_ID,
             interval_secs = self.SECURITY_POLLING_INTERVAL_SECS,
         )
         self._last_security_state_check_datetime = datetimeproxy.now()
@@ -28,9 +29,9 @@ class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
         return ProviderInfo(
-            provider_id = 'hi.apps.security',
+            provider_id = cls.MONITOR_ID,
             provider_name = 'Security Monitor',
-            description = 'Security state monitoring and automated day/night transitions',
+            description = 'Security state monitoring',
             expected_heartbeat_interval_secs = cls.SECURITY_POLLING_INTERVAL_SECS,
         )
 

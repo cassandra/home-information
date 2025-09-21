@@ -79,11 +79,13 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
         
         geographic_location = self.geographic_location
         if not geographic_location:
+            self.record_error( 'No geographic data.' )
             logger.warning('No geographic location setting. Skipping Sunrise-Sunset.org fetch.')
             return
             
         weather_manager = await self.weather_manager_async()
         if not weather_manager:
+            self.record_error( 'No weather weather manager.' )
             logger.warning('Weather manager not available. Skipping Sunrise-Sunset.org fetch.')
             return
 
@@ -99,6 +101,7 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
                     astronomical_data_list = astronomical_data_list,
                 )
         except Exception as e:
+            self.record_error( 'Multi-data astronomical fetch error: {e}' )
             logger.exception(f'Problem fetching Sunrise-Sunset.org multi-day astronomical data: {e}')
                 
         # Also update today's astronomical data for backwards compatibility
@@ -112,6 +115,7 @@ class SunriseSunsetOrg(WeatherDataSource, WeatherMixin):
                     astronomical_data = todays_astronomical_data,
                 )
         except Exception as e:
+            self.record_error( 'Today\'s atronomical fetch error: {e}' )
             logger.exception(f'Problem fetching Sunrise-Sunset.org today\'s astronomical data: {e}')
 
         return

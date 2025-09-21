@@ -10,13 +10,14 @@ logger = logging.getLogger(__name__)
 
 class AlertMonitor( PeriodicMonitor, AlertMixin ):
 
+    MONITOR_ID = 'hi.apps.alert.monitor'
     ALERT_POLLING_INTERVAL_SECS = 3
 
     TRACE = False  # for debugging
     
     def __init__( self ):
         super().__init__(
-            id = 'alert-monitor',
+            id = self.MONITOR_ID,
             interval_secs = self.ALERT_POLLING_INTERVAL_SECS,
         )
         return
@@ -24,7 +25,7 @@ class AlertMonitor( PeriodicMonitor, AlertMixin ):
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
         return ProviderInfo(
-            provider_id = 'hi.apps.alert',
+            provider_id = cls.MONITOR_ID,
             provider_name = 'Alert Monitor',
             description = 'Alert processing and notification management',
             expected_heartbeat_interval_secs = cls.ALERT_POLLING_INTERVAL_SECS,

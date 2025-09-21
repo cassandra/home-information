@@ -38,16 +38,16 @@ class AsyncioHealthStatusProvider( HealthStatusProvider ):
             async_diagnostics = BackgroundTaskMonitor.get_background_task_status()
 
             status_type = HealthStatusType.HEALTHY
-            error_message = None
+            message = None
 
             if not async_diagnostics:
                 status_type = HealthStatusType.UNKNOWN
-                error_message = "Unable to retrieve background task status"
+                message = "Unable to retrieve background task status"
             else:
                 main_thread = async_diagnostics.get('main_thread', {})
                 if not main_thread.get('is_alive'):
                     status_type = HealthStatusType.ERROR
-                    error_message = "Main thread is not alive"
+                    message = "Main thread is not alive"
 
                 if status_type == HealthStatusType.HEALTHY:
                     background_tasks = async_diagnostics.get('background_tasks', {})
@@ -65,19 +65,19 @@ class AsyncioHealthStatusProvider( HealthStatusProvider ):
 
                     if dead_tasks:
                         status_type = HealthStatusType.ERROR
-                        error_message = f"Dead threads: {', '.join(dead_tasks)}"
+                        message = f"Dead threads: {', '.join(dead_tasks)}"
                     elif stopped_loops:
                         status_type = HealthStatusType.WARNING
-                        error_message = f"Stopped event loops: {', '.join(stopped_loops)}"
+                        message = f"Stopped event loops: {', '.join(stopped_loops)}"
 
             self.update_health_status(
                 status = status_type,
-                error_message = error_message,
+                last_message = message,
             )
         except Exception as e:
             logger.exception("Failed to get background task health status")
             self.update_health_status(
                 status = HealthStatusType.ERROR,
-                error_message = f"Failed to retrieve status: {str(e)}",
+                last_message = f"Failed to retrieve status: {str(e)}",
             )
         return

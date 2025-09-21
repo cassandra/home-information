@@ -10,11 +10,12 @@ logger = logging.getLogger(__name__)
 
 class NotificationMonitor( PeriodicMonitor, NotificationMixin ):
 
+    MONITOR_ID = 'hi.apps.notify.monitor'
     NOTIFICATION_POLLING_INTERVAL_SECS = 10
 
     def __init__( self ):
         super().__init__(
-            id = 'notification-monitor',
+            id = self.MONITOR_ID,
             interval_secs = self.NOTIFICATION_POLLING_INTERVAL_SECS,
         )
         return
@@ -22,9 +23,9 @@ class NotificationMonitor( PeriodicMonitor, NotificationMixin ):
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
         return ProviderInfo(
-            provider_id = 'hi.apps.notify',
+            provider_id = cls.MONITOR_ID,
             provider_name = 'Notifications Monitor',
-            description = 'Notification processing and delivery management',
+            description = 'Notification processing and delivery',
             expected_heartbeat_interval_secs = cls.NOTIFICATION_POLLING_INTERVAL_SECS,
         )
         
