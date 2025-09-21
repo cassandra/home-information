@@ -18,7 +18,7 @@
        data-async="true">
       <div class="d-flex justify-content-between align-items-center">
         <span>{{ integration_data.label }}</span>
-        {% with health_status=integration_data.integration_gateway.health_status %}
+        {% with health_status=integration_data.integration_gateway.get_health_status %}
         {% if health_status.is_error %}
         <span class="text-danger">
         &nbsp; {% icon "warning" size="lg" css_class="mr-1" %}

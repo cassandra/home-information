@@ -15,6 +15,7 @@
   --on-tertiary-color: #ffffff;
   --tertiary-highlight-color: #7e7e81;
   --success-color: #177219;
+  --info-color: #177072;
   --on-success-color: #ffffff;
   --success-bg-light: #e8f5e8;
   --warning-color: #ECA500;
@@ -1198,27 +1199,25 @@ g[hover] {
     100% { opacity: 1; }
 }
 
+.border-healthy { border-color: var(--success-color); }
+.border-warning { border-color: var(--warning-color); }
+.border-info { border-color: var(--info-color); }
+.border-error { border-color: var(--error-color); }
+.border-muted { border-color: var(--muted-color); }
+.border-unknown { border-color: var(--muted-color); }
+
 .api-source-section {
     border-left: 3px solid var(--line-color);
     padding-left: 1rem;
     margin-left: 0.5rem;
 }
 
-.api-source-healthy {
-    border-left-color: var(--success-color);
-}
-
-.api-source-warning {
-    border-left-color: var(--warning-color);
-}
-
-.api-source-error {
-    border-left-color: var(--error-color);
-}
-
-.api-source-muted {
-    border-left-color: var(--muted-color);
-}
+.api-source-healthy { border-left-color: var(--success-color); }
+.api-source-warning { border-left-color: var(--warning-color); }
+.api-source-info { border-left-color: var(--info-color); }
+.api-source-error { border-left-color: var(--error-color); }
+.api-source-muted { border-left-color: var(--muted-color); }
+.api-source-unknown { border-left-color: var(--muted-color); }
 
 .api-metrics-grid {
     display: grid;

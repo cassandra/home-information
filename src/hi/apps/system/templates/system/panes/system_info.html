@@ -5,77 +5,70 @@
 {% block config_content %}
 {% timezone USER_TIMEZONE %}
 <div class="container-fluid">
-  <div class="d-flex justify-content-between my-1">
-    <div class="h3">System Info</div>
-    <div>
-      <a role="button" class="btn btn-primary"
-         href="#"
-         data-async="modal" >
-        {% icon "plus" size="sm" css_class="hi-icon-left" %}PLACEHOLDER
-      </a>
+  <!-- System Health Page Header -->
+  <div class="d-flex justify-content-between align-items-center my-3">
+    <h3>System Health</h3>
+    <a hrf="{% url 'system_info' %}"
+        class="btn btn-outline-primary btn-sm" data-async="true">
+      {% icon "sync" size="sm" css_class="mr-1" %}Refresh Status
+    </a>
+  </div>
+
+  <!-- Application Monitors Grid -->
+  <div class="row">
+    <div class="col-12">
+      <h5 class="mb-3">Application Monitors</h5>
     </div>
   </div>
 
-  <div>
-    PLACEHOLDER
+  <div class="row">
+    {% for monitor_provider in app_monitor_providers %}
+    <div class="col-lg-6 col-md-12 mb-3">
+      {% include "system/panes/health_status_card.html" with health_status_provider=monitor_provider %}
+    </div>
+    {% endfor %}
   </div>
 
-  {% if async_diagnostics %}
-  <div class="row mt-2">
-    <div class="col-sm-3"><strong>Background Tasks:</strong></div>
-    <div class="col-sm-9">
-      <div class="small">
-        <div>Main Thread: {{ async_diagnostics.main_thread.name }}</div>
-        <div>Active Threads: {{ async_diagnostics.current_thread.active_count }}</div>
-
-        {% for task_name, task_info in async_diagnostics.background_tasks.items %}
-        <div class="mt-1 p-1 border-left border-info">
-          <div><strong>{{ task_name }}</strong></div>
-          <div>Thread:
-            {% if task_info.thread.is_alive %}
-            <span class="text-success">
-              {% icon "check-circle" size="sm" css_class="mr-1" %}{{ task_info.thread_name }}
-            </span>
-            {% else %}
-            <span class="text-danger">
-              {% icon "warning" size="sm" css_class="mr-1" %}Dead
-            </span>
-            {% endif %}
-          </div>
-          <div>Event Loop:
-            {% if task_info.event_loop.exists and task_info.event_loop.is_running %}
-            <span class="text-success">
-              {% icon "check-circle" size="sm" css_class="mr-1" %}Running ({{ task_info.event_loop.active_tasks }} active tasks)
-            </span>
-            {% elif task_info.event_loop.exists %}
-            <span class="text-warning">
-              {% icon "warning" size="sm" css_class="mr-1" %}Stopped
-            </span>
-            {% else %}
-            <span class="text-danger">
-              {% icon "warning" size="sm" css_class="mr-1" %}Dead
-            </span>
-            {% endif %}
-          </div>
-
-          {% if task_info.event_loop.task_details %}
-          <div class="mt-1">
-            <small>Tasks:</small>
-            {% for task_detail in task_info.event_loop.task_details %}
-            <div class="ml-2 small">
-              - {{ task_detail.coro_name|default:"unknown" }}
-              {% if task_detail.done %}(done){% elif task_detail.cancelled %}(cancelled){% else %}(running){% endif %}
-            </div>
-            {% endfor %}
-          </div>
-          {% endif %}
-        </div>
-        {% endfor %}
-      </div>
+  <!-- Integrations Monitors Grid -->
+  <div class="row">
+    <div class="col-12">
+      <h5 class="mb-3">Integration Monitors</h5>
     </div>
   </div>
-  {% endif %}
-  
+
+  <div class="row">
+    {% for integration_provider in integration_providers %}
+    <div class="col-lg-6 col-md-12 mb-3">
+      {% include "system/panes/health_status_card.html" with health_status_provider=integration_provider %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Weather Sources Section -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <h5 class="mb-3">Weather API Sources</h5>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      {% include "system/panes/health_status_pane.html" with health_status_provider=weather_provider %}
+    </div>
+  </div>
+
+  <!-- Background Tasks Section -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <h5 class="mb-3">System Tasks</h5>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      {% include "system/panes/health_status_pane.html" with health_status_provider=background_task_provider %}
+    </div>
+  </div>
 </div>
 {% endtimezone %}
 {% endblock %}

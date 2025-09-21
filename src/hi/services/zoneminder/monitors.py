@@ -59,11 +59,11 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
     
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
-        """ Subclasses should override with something more meaningful. """
         return ProviderInfo(
-            provider_id = 'hi.sevices.zoneminder',
+            provider_id = 'hi.services.zoneminder',
             provider_name = 'ZoneMinder Monitor',
-            description = '',            
+            description = 'ZoneMinder camera motion detection',
+            expected_heartbeat_interval_secs = cls.ZONEMINDER_POLLING_INTERVAL_SECS,
         )
     
     def refresh( self ):

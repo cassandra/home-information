@@ -151,6 +151,7 @@ class ApiHealthStatusType(LabeledEnum):
     DEGRADED    = ('Degraded'    , 'API responding but performance or occasional issues')
     FAILING     = ('Failing'     , 'API experiencing frequent failures or timeouts')
     UNAVAILABLE = ('Unavailable' , 'API completely unresponsive or returning errors')
+    DISABLED    = ('Disabled'    , 'API source has been manually disabled')
 
     @classmethod
     def from_metrics(cls,
@@ -216,6 +217,8 @@ class ApiHealthStatusType(LabeledEnum):
             return HealthStatusType.HEALTHY
         elif self == ApiHealthStatusType.DEGRADED:
             return HealthStatusType.WARNING
+        elif self == ApiHealthStatusType.DISABLED:
+            return HealthStatusType.DISABLED
         else:  # FAILING or UNAVAILABLE
             return HealthStatusType.ERROR
 

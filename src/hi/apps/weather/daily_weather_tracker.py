@@ -58,6 +58,8 @@ class DailyWeatherTracker(Singleton):
     
     # Field names
     FIELD_TEMPERATURE = 'temperature'
+
+    TRACE = False  # For debugging
     
     def __init_singleton__(self):
         self._fallback_source = DataPointSource(
@@ -119,7 +121,8 @@ class DailyWeatherTracker(Singleton):
         """
         try:
             field_stats = self._get_field_stats_today(location_key, self.FIELD_TEMPERATURE)
-            logger.debug( f'GET field stats [today] = {field_stats}' )
+            if self.TRACE:
+                logger.debug( f'GET field stats [today] = {field_stats}' )
             
             min_data = field_stats.get(self.STAT_MIN)
             max_data = field_stats.get(self.STAT_MAX)
@@ -146,9 +149,11 @@ class DailyWeatherTracker(Singleton):
                 source_datetime=datetime.fromisoformat(max_data['timestamp']),
                 quantity_ave=UnitQuantity(max_data['value'], max_data['units'])
             )
-            
-            logger.debug(f"Retrieved today's temperature min/max for location {location_key}:"
-                         f" {min_data['value']:.1f}°C / {max_data['value']:.1f}°C")
+
+            if self.TRACE:
+                logger.debug(
+                    f"Retrieved today's temperature min/max for location {location_key}:"
+                    f" {min_data['value']:.1f}°C / {max_data['value']:.1f}°C")
             
             return min_datapoint, max_datapoint
             
@@ -255,7 +260,8 @@ class DailyWeatherTracker(Singleton):
         cache_key = self._get_cache_key(location_key, date_key, field_name)
         stats_json = cache.get(cache_key)
 
-        logger.debug( f'Retrieve field stats [key={cache_key}] - {stats_json}' )
+        if self.TRACE:
+            logger.debug( f'Retrieve field stats [key={cache_key}] - {stats_json}' )
         
         if stats_json:
             try:

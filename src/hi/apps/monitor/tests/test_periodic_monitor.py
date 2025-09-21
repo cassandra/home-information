@@ -24,7 +24,6 @@ class ConcreteTestMonitor(PeriodicMonitor):
     
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
-        """ Subclasses should override with something more meaningful. """
         return ProviderInfo(
             provider_id = 'test_monitor',
             provider_name = 'Test Monitor',
@@ -60,7 +59,6 @@ class TestPeriodicMonitor(AsyncTaskTestCase):
                 
             @classmethod
             def get_provider_info(cls) -> ProviderInfo:
-                """ Subclasses should override with something more meaningful. """
                 return ProviderInfo(
                     provider_id = 'test_monitor',
                     provider_name = 'Test Monitor',

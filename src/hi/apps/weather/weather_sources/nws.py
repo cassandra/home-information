@@ -44,8 +44,9 @@ logger = logging.getLogger(__name__)
 
 class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
+    SOURCE_ID = 'nws'
     BASE_URL = "https://api.weather.gov/"
-
+    
     POINTS_DATA_CACHE_EXPIRY_SECS = 12 * 60 * 60  # Data can change, but not often
     STATIONS_DATA_CACHE_EXPIRY_SECS = 12 * 60 * 60  # Data can change, but not often
     OBSERVATIONS_DATA_CACHE_EXPIRY_SECS = 5 * 60  # Cache for rate-limit risk reduction
@@ -56,7 +57,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
 
     @classmethod
     def weather_source_id(cls):
-        return 'nws'
+        return cls.SOURCE_ID
     
     @classmethod
     def weather_source_label(cls):
@@ -497,9 +498,11 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             
         if observations_data_str:
             logger.debug( 'NWS observations data from cache.' )
+            self.record_cache_hit()
             observations_data = json.loads( observations_data_str )
             return observations_data
 
+        self.record_cache_miss()
         observations_data = self._get_observations_data_from_api( station = station )
         if observations_data:
             observations_data_str = json.dumps( observations_data )
@@ -529,9 +532,11 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             
         if forecast_hourly_data_str:
             logger.debug( 'NWS hourly forecast data from cache.' )
+            self.record_cache_hit()
             forecast_hourly_data = json.loads( forecast_hourly_data_str )
             return forecast_hourly_data
 
+        self.record_cache_miss()
         forecast_hourly_data = self._get_forecast_hourly_data_from_api( station = station )
         if forecast_hourly_data:
             forecast_hourly_data_str = json.dumps( forecast_hourly_data )
@@ -560,9 +565,11 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             
         if forecast_12h_data_str:
             logger.debug( 'NWS 12h forecast data from cache.' )
+            self.record_cache_hit()
             forecast_12h_data = json.loads( forecast_12h_data_str )
             return forecast_12h_data
 
+        self.record_cache_miss()
         forecast_12h_data = self._get_forecast_12h_data_from_api( station = station )
         if forecast_12h_data:
             forecast_12h_data_str = json.dumps( forecast_12h_data )
@@ -598,9 +605,11 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             
         if stations_data_str:
             logger.debug( 'NWS stations data from cache.' )
+            self.record_cache_hit()
             stations_data = json.loads( stations_data_str )
             return stations_data
-        
+
+        self.record_cache_miss()
         stations_data = self._get_stations_data_from_api( geographic_location = geographic_location )
         if stations_data:
             stations_data_str = json.dumps( stations_data )
@@ -633,8 +642,11 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             
         if points_data_str:
             logger.debug( 'NWS points data from cache.' )
+            self.record_cache_hit()
             points_data = json.loads( points_data_str )
             return points_data
+
+        self.record_cache_miss()
         points_data = self._get_points_data_from_api( geographic_location = geographic_location )
         if points_data:
             points_data_str = json.dumps( points_data )
@@ -1052,9 +1064,11 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             
         if alerts_data_str:
             logger.debug('NWS alerts data from cache.')
+            self.record_cache_hit()
             alerts_data = json.loads(alerts_data_str)
             return alerts_data
 
+        self.record_cache_miss()
         alerts_data = self._get_alerts_data_from_api(
             geographic_location = geographic_location,
         )

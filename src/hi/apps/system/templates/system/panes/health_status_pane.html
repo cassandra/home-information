@@ -1,0 +1,39 @@
+{% load icons %}
+{% load tz %}
+
+{% timezone USER_TIMEZONE %}
+{% with health_status_provider.health_status as health_status %}
+<div class="card  {{ health_status.border_color_class }}">
+  <div class="card-body">
+    <a  href="{% url 'system_health_status' provider_id=health_status.provider_id %}"
+        class="clickable-card"
+        data-async="modal">
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h6 class="mb-0">{{ health_status.provider_name }}</h6>
+          
+          {% if health_status.api_status_map %}
+          <small class="text-muted">{{ health_status.api_status_map|length }} API source{{ health_status.api_status_map|length|pluralize }} configured</small>
+          {% endif %}
+        </div>
+        <div>
+          <span class="badge monitor-status-badge {{ health_status.status_badge_class }}">
+            {% icon health_status.status_icon size="md" css_class="mr-1" %}{{ health_status.status_display }}
+          </span>
+        </div>
+      </div>
+    </a>
+    
+    {% if health_status.api_status_map %}
+    <div class="api-sources-list">
+      {% for api_health_status in health_status.api_status_map.values %}
+      <hr />
+      {% include "system/panes/api_health_status_item.html" with api_health_status=api_health_status %}
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endwith %}
+{% endtimezone %}

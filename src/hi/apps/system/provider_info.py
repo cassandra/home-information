@@ -14,6 +14,7 @@ class ProviderInfo:
     provider_id    : str           # Technical identifier (e.g., 'hass_api', 'zm_api')
     provider_name  : str           # Human-friendly display name (e.g., 'Home Assistant API')
     description    : Optional[str]  = None  # Optional longer description
+    expected_heartbeat_interval_secs : Optional[int] = None  # Expected heartbeat interval for dynamic thresholds
 
     def __str__(self) -> str:
         return f"{self.provider_name} ({self.provider_id})"

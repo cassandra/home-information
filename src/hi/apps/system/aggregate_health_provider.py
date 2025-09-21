@@ -5,7 +5,8 @@ import threading
 from typing import Optional, Sequence
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from .api_health_aggregator import ApiHealthAggregator
+
+from .aggregate_health_status import AggregateHealthStatus
 from .api_health_status_provider import ApiHealthStatusProvider
 from .enums import HealthStatusType, HealthAggregationRule
 from .provider_info import ProviderInfo
@@ -32,7 +33,7 @@ class AggregateHealthProvider(ABC):
         self._api_health_status_providers = []  # Track API health status providers
 
         provider_info = self.get_provider_info()
-        self._aggregated_health_status = ApiHealthAggregator(
+        self._aggregated_health_status = AggregateHealthStatus(
             provider_id = provider_info.provider_id,
             provider_name = provider_info.provider_name,
             status = HealthStatusType.UNKNOWN,
@@ -51,7 +52,7 @@ class AggregateHealthProvider(ABC):
         pass
 
     @property
-    def health_status(self) -> ApiHealthAggregator:
+    def health_status(self) -> AggregateHealthStatus:
         """Get aggregated health status (thread-safe, always fresh)."""
         self._ensure_api_aggregator_setup()
         with self._health_lock:
@@ -84,7 +85,7 @@ class AggregateHealthProvider(ABC):
                 continue
             self._refresh_aggregated_health()
         return
-    
+            
     def remove_api_health_status_provider(
             self,
             api_health_status_provider : ApiHealthStatusProvider
@@ -98,7 +99,11 @@ class AggregateHealthProvider(ABC):
         return
     
     def _refresh_aggregated_health(self) -> None:
-        """Refresh aggregated health from all tracked API health status providers."""
+        """Refresh API status map from all tracked API health status providers.
+
+        Note: The aggregated health status is computed dynamically via the status property,
+        so this method only needs to update the API status map.
+        """
         # Clear current sources
         self._aggregated_health_status.api_status_map.clear()
 
@@ -107,10 +112,9 @@ class AggregateHealthProvider(ABC):
             service_info = provider.get_api_provider_info()
             api_health = provider.api_health_status
             self._aggregated_health_status.api_status_map[service_info] = api_health
-            continue
-        
-        # Update overall status based on aggregation
-        self._aggregated_health_status.status = self._aggregated_health_status.overall_status
+
+        # Status is now computed dynamically via the status property in AggregateHealthStatus
+        # No need to manually update it here
         return
     
     def update_health_status( self,

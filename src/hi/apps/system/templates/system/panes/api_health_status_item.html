@@ -1,0 +1,21 @@
+{% load icons %}
+{% load tz %}
+
+{% timezone USER_TIMEZONE %}
+<div class="api-source-section {{ api_health_status.border_color_class }} mb-4">
+  <a href="{% url 'system_api_health_status' provider_id=api_health_status.provider_id %}"
+     class="clickable-card"
+     data-async="modal">
+    <div class="d-flex justify-content-between" >
+      <div>
+        <strong>{{ api_health_status.provider_name }}</strong>
+      </div>
+      <div>
+        <span class="badge {{ api_health_status.status_badge_class }}">
+          {% icon api_health_status.status_icon size="sm" css_class="mr-1" %}{{ api_health_status.status_display }}
+        </span>
+      </div>
+    </div>
+  </a>
+</div>
+{% endtimezone %}

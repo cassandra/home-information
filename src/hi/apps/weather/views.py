@@ -2,7 +2,6 @@ import logging
 from hi.hi_async_view import HiModalView
 
 from .weather_mixins import WeatherMixin
-from .weather_source_manager import WeatherSourceManager
 from .weather_sources.sunrise_sunset_org import SunriseSunsetOrg
 from .weather_sources.usno import USNO
 
@@ -78,18 +77,5 @@ class HistoryView( HiModalView, WeatherMixin ):
         logger.debug(f'History view: daily_history.data_list has {len(daily_history.data_list)} items')
         context = {
             'interval_daily_history_list': daily_history.data_list,
-        }
-        return self.modal_response( request, context )
-
-    
-class WeatherSourceStatusView( HiModalView ):
-
-    def get_template_name( self ) -> str:
-        return 'system/modals/aggregate_health_status.html'
-
-    def get( self, request, *args, **kwargs ):
-        health_status = WeatherSourceManager().health_status
-        context = {
-            'health_status': health_status,
         }
         return self.modal_response( request, context )

@@ -34,17 +34,13 @@ class WeatherSettingsHelper( SettingsMixin ):
         return self._get_weather_source_enabled_value(source_id, self.settings_manager())
     
     async def is_weather_source_enabled_async(self, source_id: str) -> bool:
-        """Check if a specific weather source is enabled (async version)."""
         settings_manager = await self.settings_manager_async()
         if not settings_manager:
             return False
         return self._get_weather_source_enabled_value(source_id, settings_manager)
     
     def get_weather_source_api_key(self, source_id: str) -> str:
-        """Get the API key for a specific weather source."""
-        # Dynamically find the API key setting for this source
         api_key_setting_name = f"{source_id.upper()}_API_KEY"
-        
         try:
             setting_enum = getattr(WeatherSetting, api_key_setting_name)
         except AttributeError:

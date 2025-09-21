@@ -18,6 +18,7 @@ class HealthStatus:
     heartbeat      : Optional[datetime]  = None
     error_message  : Optional[str]       = None
     error_count    : int                 = 0
+    expected_heartbeat_interval_secs : Optional[int] = None  # Expected polling interval for dynamic heartbeat thresholds
 
     @property
     def is_healthy(self) -> bool:
@@ -42,57 +43,74 @@ class HealthStatus:
         import hi.apps.common.datetimeproxy as datetimeproxy
         return int((datetimeproxy.now() - self.heartbeat).total_seconds())
 
+    def _get_heartbeat_thresholds(self) -> tuple[int, int]:
+        if self.expected_heartbeat_interval_secs:
+            # Dynamic thresholds: 1.5x interval for active, 3x for stale
+            active_threshold = int(self.expected_heartbeat_interval_secs * 1.5)
+            stale_threshold = int(self.expected_heartbeat_interval_secs * 3.0)
+        else:
+            # Fixed thresholds for backward compatibility
+            active_threshold = 30
+            stale_threshold = 300  # 5 minutes
+
+        return active_threshold, stale_threshold
+
     @property
     def heartbeat_status_text(self) -> str:
-        """Get heartbeat status description."""
         if not self.heartbeat:
             return "Unknown"
 
         age = self.heartbeat_age_seconds
         if age is None:
             return "Unknown"
-        elif age < 30:
+
+        active_threshold, stale_threshold = self._get_heartbeat_thresholds()
+
+        if age < active_threshold:
             return "Active"
-        elif age < 300:  # 5 minutes
+        elif age < stale_threshold:
             return "Stale"
         else:
             return "Dead"
 
     @property
     def heartbeat_css_class(self) -> str:
-        """Get CSS class for heartbeat indicator."""
         if not self.heartbeat:
             return "heartbeat-dead"
 
         age = self.heartbeat_age_seconds
         if age is None:
             return "heartbeat-dead"
-        elif age < 30:
+
+        active_threshold, stale_threshold = self._get_heartbeat_thresholds()
+
+        if age < active_threshold:
             return "heartbeat-healthy"
-        elif age < 300:  # 5 minutes
+        elif age < stale_threshold:
             return "heartbeat-stale"
         else:
             return "heartbeat-dead"
 
     @property
     def heartbeat_text_class(self) -> str:
-        """Get text color class for heartbeat status."""
         if not self.heartbeat:
             return "text-error-custom"
 
         age = self.heartbeat_age_seconds
         if age is None:
             return "text-error-custom"
-        elif age < 30:
+
+        active_threshold, stale_threshold = self._get_heartbeat_thresholds()
+
+        if age < active_threshold:
             return "text-success-custom"
-        elif age < 300:  # 5 minutes
+        elif age < stale_threshold:
             return "text-warning-custom"
         else:
             return "text-error-custom"
 
     @property
     def status_badge_class(self) -> str:
-        """Get Bootstrap badge class for overall status."""
         if self.status.is_healthy:
             return "monitor-status-healthy"
         elif self.status.is_warning:
@@ -108,7 +126,6 @@ class HealthStatus:
 
     @property
     def status_alert_class(self) -> str:
-        """Get alert class for status summary."""
         if self.is_healthy:
             return "alert-success"
         elif self.status.is_info:
@@ -120,7 +137,6 @@ class HealthStatus:
 
     @property
     def status_icon(self) -> str:
-        """Get Font Awesome icon for status."""
         if self.status.is_healthy:
             return "check-circle"
         elif self.status.is_warning:
@@ -135,8 +151,22 @@ class HealthStatus:
             return "question-circle"
 
     @property
+    def border_color_class(self) -> str:
+        if self.status.is_healthy:
+            return "border-healthy"
+        elif self.status.is_warning:
+            return "border-warning"
+        elif self.status.is_info:
+            return "border-info"
+        elif self.status.is_critical:
+            return "border-error"
+        elif self.status.is_error:
+            return "bordder-error"
+        else:  # UNKNOWN
+            return "border-unknown"
+        
+    @property
     def status_summary_message(self) -> str:
-        """Get appropriate status summary message."""
         if self.is_healthy:
             return "Is operating normally and heartbeat is active."
         elif self.is_critical:

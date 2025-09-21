@@ -2,15 +2,15 @@
 Synthetic data generation for system health status testing.
 
 This module provides a class to generate realistic test data for health status
-scenarios, supporting both regular HealthStatus and ApiHealthAggregator objects.
+scenarios, supporting both regular HealthStatus and AggregateHealthStatus objects.
 """
 
 from datetime import datetime, timedelta
 from typing import Dict
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.system.api_health import ApiHealthStatus
-from hi.apps.system.api_health_aggregator import ApiHealthAggregator
+from hi.apps.system.aggregate_health_status import AggregateHealthStatus
+from hi.apps.system.api_health_status import ApiHealthStatus
 from hi.apps.system.provider_info import ProviderInfo
 from hi.apps.system.enums import (
     HealthStatusType,
@@ -24,7 +24,7 @@ class SystemSyntheticData:
     """
     Generator for synthetic system health status data for testing purposes.
 
-    Provides methods to create realistic HealthStatus and ApiHealthAggregator
+    Provides methods to create realistic HealthStatus and AggregateHealthStatus
     objects with appropriate test data for all status types.
     """
 
@@ -35,10 +35,10 @@ class SystemSyntheticData:
 
         Args:
             status_type: One of 'unknown', 'healthy', 'warning', 'error', 'disabled'
-            with_api_data: Whether to create ApiHealthAggregator (True) or HealthStatus (False)
+            with_api_data: Whether to create AggregateHealthStatus (True) or HealthStatus (False)
 
         Returns:
-            HealthStatus or ApiHealthAggregator instance with appropriate test data
+            HealthStatus or AggregateHealthStatus instance with appropriate test data
         """
         now = datetimeproxy.now()
 
@@ -90,13 +90,13 @@ class SystemSyntheticData:
             })
 
         if with_api_data:
-            # Create ApiHealthAggregator with sample API sources
+            # Create AggregateHealthStatus with sample API sources
             api_status_map = cls._create_sample_api_status_map(status_type, now)
             aggregation_rule = cls._get_aggregation_rule_for_status(status_type)
 
-            return ApiHealthAggregator(
-                api_status_map=api_status_map,
-                aggregation_rule=aggregation_rule,
+            return AggregateHealthStatus(
+                api_status_map = api_status_map,
+                aggregation_rule = aggregation_rule,
                 **base_data
             )
         else:

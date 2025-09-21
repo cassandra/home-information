@@ -31,9 +31,10 @@ logger = logging.getLogger(__name__)
 
 class OpenMeteo(WeatherDataSource, WeatherMixin):
 
+    SOURCE_ID = 'openmeteo'
     BASE_URL = "https://api.open-meteo.com/v1/"
     ARCHIVE_BASE_URL = "https://archive-api.open-meteo.com/v1/archive"
-
+    
     CURRENT_DATA_CACHE_EXPIRY_SECS = 10 * 60  # Cache for 10 minutes
     FORECAST_DATA_CACHE_EXPIRY_SECS = 60 * 60  # Cache for 1 hour
     HISTORICAL_DATA_CACHE_EXPIRY_SECS = 30 * 24 * 60 * 60  # 30 days - historical data rarely changes
@@ -42,7 +43,7 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
     
     @classmethod
     def weather_source_id(cls):
-        return 'openmeteo'
+        return cls.SOURCE_ID
     
     @classmethod
     def weather_source_label(cls):
@@ -725,9 +726,11 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             
         if current_data_str:
             logger.debug('OpenMeteo current weather data from cache.')
+            self.record_cache_hit()
             current_data = json.loads(current_data_str)
             return current_data
 
+        self.record_cache_miss()
         current_data = self._get_current_weather_data_from_api(geographic_location = geographic_location)
         if current_data:
             current_data_str = json.dumps(current_data)
@@ -764,9 +767,11 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             
         if forecast_data_str:
             logger.debug('OpenMeteo hourly forecast data from cache.')
+            self.record_cache_hit()
             forecast_data = json.loads(forecast_data_str)
             return forecast_data
 
+        self.record_cache_miss()
         forecast_data = self._get_hourly_forecast_data_from_api(geographic_location = geographic_location)
         if forecast_data:
             forecast_data_str = json.dumps(forecast_data)
@@ -803,9 +808,11 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             
         if forecast_data_str:
             logger.debug('OpenMeteo daily forecast data from cache.')
+            self.record_cache_hit()
             forecast_data = json.loads(forecast_data_str)
             return forecast_data
 
+        self.record_cache_miss()
         forecast_data = self._get_daily_forecast_data_from_api(geographic_location = geographic_location)
         if forecast_data:
             forecast_data_str = json.dumps(forecast_data)
@@ -845,9 +852,11 @@ class OpenMeteo(WeatherDataSource, WeatherMixin):
             
         if historical_data_str:
             logger.debug('OpenMeteo historical data from cache.')
+            self.record_cache_hit()
             historical_data = json.loads(historical_data_str)
             return historical_data
 
+        self.record_cache_miss()
         historical_data = self._get_historical_weather_data_from_api(
             geographic_location = geographic_location,
             start_date = start_date,
