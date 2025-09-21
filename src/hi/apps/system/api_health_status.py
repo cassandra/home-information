@@ -32,23 +32,15 @@ class ApiHealthStatus:
     last_response_time     : Optional[float]     = None
     cache_hits             : int                 = 0
     cache_misses           : int                 = 0
-
+    last_error_message     : str                 = None
+    
     def record_api_call( self, api_call_context : ApiCallContext ):
         self.total_calls += 1
         if api_call_context.status.is_success:
             self.last_success = datetimeproxy.now()
-            self.consecutive_failures = 0
-            self.status = ApiHealthStatusType.HEALTHY
+            self.record_healthy()
         else:
-            self.total_failures += 1
-            self.consecutive_failures += 1
-
-            self.status = ApiHealthStatusType.from_metrics(
-                consecutive_failures = self.consecutive_failures,
-                total_failures = self.total_failures,
-                total_requests = self.total_calls,
-                avg_response_time = self.average_response_time
-            )
+            self.record_error( 'API call failure' )
 
         if api_call_context.duration is not None:
             self.last_response_time = api_call_context.duration
@@ -60,6 +52,23 @@ class ApiHealthStatus:
                                               + ( api_call_context.duration * 0.2  ))
         return
 
+    def record_healthy( self ):
+        self.status = ApiHealthStatusType.HEALTHY
+        self.consecutive_failures = 0
+        return
+    
+    def record_error( self, message : str = None ):
+        self.total_failures += 1
+        self.consecutive_failures += 1
+        self.last_error_message = message
+        self.status = ApiHealthStatusType.from_metrics(
+            consecutive_failures = self.consecutive_failures,
+            total_failures = self.total_failures,
+            total_requests = self.total_calls,
+            avg_response_time = self.average_response_time
+        )
+        return
+    
     def record_cache_hit(self) -> int:
         self.cache_hits += 1
         self.status = ApiHealthStatusType.HEALTHY

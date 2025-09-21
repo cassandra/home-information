@@ -62,13 +62,9 @@ class IntegrationHealthStatusView( HiModalView, IntegrationViewMixin ):
         integration_data = self.get_integration_data(
             integration_id = integration_id,
         )
-        
-        # Get health status from the integration gateway
-        health_status = integration_data.integration_gateway.get_health_status()
-        
+        health_status_provider = integration_data.integration_gateway.get_health_status_provider()
         context = {
-            'integration_data': integration_data,
-            'health_status': health_status,
+            'health_status_provider': health_status_provider,
         }
         return self.modal_response( request, context )
 
@@ -205,11 +201,11 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
             raise BadRequest( f'{integration_data.label} integration is not enabled' )
             
         # Get health status from the integration gateway
-        health_status = integration_data.integration_gateway.get_health_status()
+        health_status_provider = integration_data.integration_gateway.get_health_status_provider()
         
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
-            health_status = health_status,
+            health_status = health_status_provider.health_status,
         )
         integration_data_list = self.get_integration_data_list( enabled_only = True )
 
@@ -232,7 +228,7 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
                 'integration_data_list': integration_data_list,
                 'integration_data': integration_data,
                 'manage_view_template_name': manage_template_name,
-                'health_status': health_status,
+                'health_status': health_status_provider.health_status,
             },
         })
         return template_context
@@ -252,11 +248,11 @@ class IntegrationManageView( ConfigPageView, IntegrationViewMixin, AttributeEdit
             raise BadRequest( f'{integration_data.label} integration is not enabled' )
 
         # Get health status from the integration gateway
-        health_status = integration_data.integration_gateway.get_health_status()
+        health_status_provider = integration_data.integration_gateway.get_health_status_provider()
                 
         attr_item_context = IntegrationAttributeItemEditContext(
             integration_data = integration_data,
-            health_status = health_status,
+            health_status = health_status_provider.health_status,
         )
         
         return self.post_attribute_form(

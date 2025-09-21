@@ -21,19 +21,18 @@
 
     <div class="row">
       <div class="col-sm-6">
-        <small class="text-muted">Last Check:</small><br>
-        <span>{{ health_status.last_check|localtime|date:"H:i:s" }}</span>
+        {% if health_status.heartbeat %}
+        <small class="text-muted">Last Seen:</small><br>
+        <span>{{ health_status.heartbeat|localtime|date:"H:i:s" }}</span>
+        {% else %}
+        <small class="text-muted">Last Update:</small><br>
+        <span>{{ health_status.last_update|localtime|date:"H:i:s" }}</span>
+        {% endif %}
       </div>
       <div class="col-sm-6">
         <small class="text-muted">Status:</small><br>
         <span class="heartbeat-indicator {{ health_status.heartbeat_css_class }}"></span>
         <span class="{{ health_status.heartbeat_text_class }}">{{ health_status.heartbeat_status_text }}</span><br>
-        <small class="text-muted-custom">
-          (last seen {{ health_status.heartbeat|localtime|date:"H:i:s" }})
-          {% if health_status.expected_heartbeat_interval_secs %}
-          <br>Expected: {{ health_status.expected_heartbeat_interval_secs }}s
-          {% endif %}
-        </small>
       </div>
     </div>
 

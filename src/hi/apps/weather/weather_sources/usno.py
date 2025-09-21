@@ -88,15 +88,17 @@ class USNO( WeatherDataSource, WeatherMixin ):
         
         geographic_location = self.geographic_location
         if not geographic_location:
+            self.record_error( 'No geographic data.' )
             logger.warning('No geographic location setting. Skipping USNO fetch.')
             return
             
         weather_manager = await self.weather_manager_async()
         if not weather_manager:
+            self.record_error( 'No weather weather manager.' )
             logger.warning('Weather manager not available. Skipping USNO fetch.')
             return
 
-        # Fetch 10 days of astronomical data using the new multi-day method
+        # Fetch 10 days of astronomical data
         try:
             astronomical_data_list = self.get_astronomical_data_list(
                 geographic_location = geographic_location,
@@ -108,6 +110,7 @@ class USNO( WeatherDataSource, WeatherMixin ):
                     astronomical_data_list = astronomical_data_list,
                 )
         except Exception as e:
+            self.record_error( 'Multi-data astronomical fetch error: {e}' )
             logger.exception(f'Problem fetching USNO multi-day astronomical data: {e}')
                 
         # Also update today's astronomical data for backwards compatibility
@@ -121,6 +124,7 @@ class USNO( WeatherDataSource, WeatherMixin ):
                     astronomical_data = todays_astronomical_data,
                 )
         except Exception as e:
+            self.record_error( 'Today\'s astronomical fetch error: {e}' )
             logger.exception(f'Problem fetching USNO today\'s astronomical data: {e}')
 
         return
@@ -149,15 +153,12 @@ class USNO( WeatherDataSource, WeatherMixin ):
         
         astronomical_data_list = []
         today = datetimeproxy.now().date()
-        
-        # Get local timezone from superclass
         local_tz = pytz.timezone(self.tz_name)
         
         for day_offset in range(days_count):
             target_date = today + timedelta(days=day_offset)
             
             try:
-                # Get astronomical data for this date
                 astronomical_data = self.get_astronomical_data(
                     geographic_location=geographic_location,
                     target_date=target_date
@@ -165,10 +166,11 @@ class USNO( WeatherDataSource, WeatherMixin ):
                 
                 if astronomical_data:
                     # Create local day boundaries (midnight to midnight in local time)
-                    local_start = local_tz.localize(datetime.combine(target_date, datetime.min.time()))
-                    local_end = local_tz.localize(datetime.combine(target_date, datetime.max.time()))
+                    local_start = local_tz.localize(datetime.combine( target_date,
+                                                                      datetime.min.time()) )
+                    local_end = local_tz.localize(datetime.combine( target_date,
+                                                                    datetime.max.time()) )
                     
-                    # Convert to UTC for internal storage (following IntervalDataManager pattern)
                     interval_start = local_start.astimezone(pytz.UTC)
                     interval_end = local_end.astimezone(pytz.UTC)
                     

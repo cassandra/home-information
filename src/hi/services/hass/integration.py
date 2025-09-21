@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 from hi.apps.system.enums import HealthStatusType
-from hi.apps.system.health_status import HealthStatus
+from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from hi.integrations.integration_controller import IntegrationController
 from hi.integrations.integration_gateway import IntegrationGateway
@@ -46,8 +46,8 @@ class HassGateway( IntegrationGateway ):
         except Exception as e:
             logger.exception(f'Error notifying HASS integration of settings change: {e}')
     
-    def get_health_status(self) -> HealthStatus:
-        return HassManager().health_status
+    def get_health_status_provider(self) -> HealthStatusProvider:
+        return HassManager()
     
     def validate_configuration(
             self, integration_attributes: List[IntegrationAttribute]

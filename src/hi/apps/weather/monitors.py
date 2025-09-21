@@ -17,12 +17,13 @@ logger = logging.getLogger(__name__)
 
 class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
 
+    MONITOR_ID = 'hi.apps.weather.monitor'
     WEATHER_POLLING_INTERVAL_SECS = 150
     STARTUP_SAFETY_SECS = 30
     
     def __init__( self ):
         super().__init__(
-            id = 'weather-monitor',
+            id = self.MONITOR_ID,
             interval_secs = self.WEATHER_POLLING_INTERVAL_SECS,
         )
         self._weather_data_source_instance_list = list()
@@ -45,16 +46,16 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
                 weather_data_source.id
             )
             if is_enabled:
-                weather_data_source.set_healthy()
+                weather_data_source.record_healthy()
             else:
-                weather_data_source.set_disabled()
+                weather_data_source.record_disabled()
             continue
         return
     
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
         return ProviderInfo(
-            provider_id = 'hi.apps.weather',
+            provider_id = cls.MONITOR_ID,
             provider_name = 'Weather Monitor',
             description = 'Weather data collection and monitoring',
             expected_heartbeat_interval_secs = cls.WEATHER_POLLING_INTERVAL_SECS,
@@ -80,7 +81,7 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
                 task = asyncio.create_task( weather_data_source.fetch() )
                 task_list.append( task )
             else:
-                weather_data_source.set_disabled()
+                weather_data_source.record_disabled()
                 logger.debug( f'Weather source {weather_data_source.id} is disabled, skipping' )
             continue
 

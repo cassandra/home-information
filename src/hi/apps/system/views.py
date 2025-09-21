@@ -76,40 +76,28 @@ class SystemHealthStatusView(HiModalView):
         raise Http404( f'Unrecognized provider id "{provider_id}"')
         
     def get_integration_status_response( self, request, provider_id : str ):
-        integration_manager = IntegrationManager()
-        providers = integration_manager.get_health_status_providers()
-
-        # Find the monitor with matching provider_id
-        target_integration = None
-        for provider in providers:
-            if provider.get_provider_info().provider_id == provider_id:
-                target_integration = provider
-                break
-
-        if not target_integration:
-            raise Http404(f"Integration with provider_id '{provider_id}' not found")
+        try:
+            health_status_provider = IntegrationManager().get_health_status_by_monitor_id(
+                monitor_id = provider_id,
+            )
+        except KeyError as e:
+            raise Http404( str(e) )
 
         context = {
-            'health_status': target_integration.health_status,
+            'health_status_provider': health_status_provider,
         }
         return self.modal_response(request, context)
         
     def get_app_monitor_status_response( self, request, provider_id : str ):
-        app_monitor_manager = AppMonitorManager()
-        monitors = app_monitor_manager.get_health_status_providers()
-
-        # Find the monitor with matching provider_id
-        target_monitor = None
-        for monitor in monitors:
-            if monitor.get_provider_info().provider_id == provider_id:
-                target_monitor = monitor
-                break
-
-        if not target_monitor:
-            raise Http404(f"Monitor with provider_id '{provider_id}' not found")
+        try:
+            health_status_provider = AppMonitorManager().get_health_status_by_monitor_id(
+                monitor_id = provider_id,
+            )
+        except KeyError as e:
+            raise Http404( str(e) )
 
         context = {
-            'health_status': target_monitor.health_status,
+            'health_status_provider': health_status_provider,
         }
         return self.modal_response(request, context)
 
@@ -144,7 +132,7 @@ class WeatherHealthStatusDetailsView(HiModalView):
 
     def get(self, request, *args, **kwargs):
         context = {
-            'health_status': WeatherSourceManager().health_status,
+            'health_status_provider': WeatherSourceManager(),
         }
         return self.modal_response(request, context)
 

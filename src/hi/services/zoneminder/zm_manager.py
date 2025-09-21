@@ -77,7 +77,7 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
         return ProviderInfo(
-            provider_id = 'zm_integration',
+            provider_id = 'hi.services.zoneminder.manager',
             provider_name = 'ZoneMinder Integration',
             description = '',            
         )
@@ -86,7 +86,7 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
     def get_api_provider_info(cls) -> ProviderInfo:
         """Get the API service info for this manager."""
         return ProviderInfo(
-            provider_id = 'zm_api',
+            provider_id = 'hi.services.zoneminder.api',
             provider_name = 'ZoneMinder API',
             description = 'ZoneMinder video surveillance system API'
         )
@@ -142,28 +142,28 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
             # Clear all thread-local clients since configuration changed
             self._clear_thread_local_clients()
             self.clear_caches()
-            self.update_health_status(HealthStatusType.HEALTHY)
+            self.record_healthy('Reloaded')
             logger.debug( 'ZoneMinder manager loading completed.' )
 
         except IntegrationDisabledError:
             msg = 'ZoneMinder integration disabled'
             logger.info(msg)
-            self.update_health_status( HealthStatusType.DISABLED, msg )
+            self.record_disabled( msg )
 
         except IntegrationError as e:
             error_msg = f'ZoneMinder integration configuration error: {e}'
             logger.error(error_msg)
-            self.update_health_status( HealthStatusType.ERROR, f"Configuration error: {error_msg}" )
+            self.record_error( f"Configuration error: {error_msg}" )
 
         except IntegrationAttributeError as e:
             error_msg = f'ZoneMinder integration attribute error: {e}'
             logger.error(error_msg)
-            self.update_health_status( HealthStatusType.ERROR, f"Configuration error: {error_msg}" )
+            self.record_error( f"Configuration error: {error_msg}" )
 
         except Exception as e:
             error_msg = f'Unexpected error loading ZoneMinder configuration: {e}'
             logger.exception(error_msg)
-            self.update_health_status( HealthStatusType.WARNING, f"Temporary issue: {error_msg}" )
+            self.record_warning( f"Temporary issue: {error_msg}" )
         return
 
     def clear_caches(self):
@@ -365,24 +365,22 @@ class ZoneMinderManager( SingletonManager, AggregateHealthProvider, ApiHealthSta
         """Test the connection to ZoneMinder API and update health status."""
         try:
             if not self.zm_client:
-                self.update_health_status( HealthStatusType.ERROR,
-                                           "ZoneMinder client not configured")
+                self.record_error( "ZoneMinder client not configured")
                 return False
             
             # Try to fetch states to test connection
             states = self.get_zm_states(force_load=True)
             if states:
-                self.update_health_status(HealthStatusType.HEALTHY)
+                self.record_healthy('OK')
                 return True
             else:
-                self.update_health_status(HealthStatusType.ERROR,
-                                          "Failed to fetch states from ZoneMinder API")
+                self.record_error("Failed to fetch states from ZoneMinder API")
                 return False
                 
         except Exception as e:
             error_msg = f'Connection test failed: {e}'
             logger.debug(error_msg)
-            self.update_health_status(HealthStatusType.ERROR, f"Connection error: {error_msg}")
+            self.record_error(f"Connection error: {error_msg}")
             return False
     
     def test_client_with_attributes(

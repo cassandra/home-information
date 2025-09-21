@@ -3,8 +3,9 @@ from django.shortcuts import render
 from django.views.generic import View
 
 from hi.apps.system.enums import HealthStatusType
+from hi.apps.system.health_status_provider import HealthStatusProvider
+from hi.apps.system.provider_info import ProviderInfo
 from hi.apps.system.tests.synthetic_data import SystemSyntheticData
-
 
 class SystemTestUiHomeView(View):
 
@@ -49,8 +50,17 @@ class SystemTestUiHealthStatusView(View):
             status_type,
             with_api_data = with_api_data,
         )
+
+        class TestProvider( HealthStatusProvider ):
+            @classmethod
+            def get_provider_info(cls) -> ProviderInfo:
+                return SystemSyntheticData.create_provider_info()
+
+        health_status_provider = TestProvider()
+        health_status_provider._health_status = health_status
+        
         # Render template with scenario data (matching existing modal template expectations)
         context = {
-            'health_status': health_status,
+            'health_status_provider': health_status_provider,
         }
         return render(request, 'system/modals/health_status.html', context)

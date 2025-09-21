@@ -44,8 +44,7 @@ class ApiHealthStatusProvider(ABC):
     def api_health_status(self) -> ApiHealthStatus:
         self._ensure_api_health_status_provider_setup()
         with self._api_health_lock:
-            api_health_status = copy.deepcopy( self._api_health_status )
-        return api_health_status
+            return copy.deepcopy( self._api_health_status )
 
     @contextmanager
     def api_call_context( self, operation_name : str ):
@@ -96,20 +95,25 @@ class ApiHealthStatusProvider(ABC):
             self._api_health_status.record_cache_miss()
         return
 
+    def record_healthy( self ) -> None:
+        self._ensure_api_health_status_provider_setup()
+        with self._api_health_lock:
+            self._api_health_status.record_healthy()
+        return
+    
+    def record_error( self, message: str ) -> None:
+        self._ensure_api_health_status_provider_setup()
+        with self._api_health_lock:
+            self._api_health_status.record_error( message = message )
+        return
+    
+    def record_disabled( self ) -> None:
+        self.update_api_health_status( status_type = ApiHealthStatusType.DISABLED )
+        return
+    
     def update_api_health_status( self, status_type : ApiHealthStatusType ) -> None:
         self._ensure_api_health_status_provider_setup()
         with self._api_health_lock:
             self._api_health_status.status = status_type
         return
 
-    def set_healthy( self ) -> None:
-        self.update_api_health_status( status_type = ApiHealthStatusType.HEALTHY )
-        return
-    
-    def set_disabled( self ) -> None:
-        self.update_api_health_status( status_type = ApiHealthStatusType.DISABLED )
-        return
-    
-        
-                                
-        

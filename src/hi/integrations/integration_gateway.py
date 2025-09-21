@@ -4,7 +4,7 @@ from hi.apps.entity.models import Entity
 from hi.apps.entity.transient_models import VideoStream
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.transient_models import SensorResponse
-from hi.apps.system.health_status import HealthStatus
+from hi.apps.system.health_status_provider import HealthStatusProvider
 
 from .integration_controller import IntegrationController
 from .integration_manage_view_pane import IntegrationManageViewPane
@@ -40,7 +40,7 @@ class IntegrationGateway:
         """
         raise NotImplementedError('Subclasses must override this method')
     
-    def get_health_status(self) -> HealthStatus:
+    def get_health_status_provider(self) -> HealthStatusProvider:
         raise NotImplementedError('Subclasses must override this method')
     
     def validate_configuration(

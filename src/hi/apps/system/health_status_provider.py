@@ -21,17 +21,22 @@ class HealthStatusProvider(ABC):
         self._ensure_health_status_provider_setup()
         return
 
-    def _ensure_health_status_provider_setup(self):
-        if hasattr( self, '_health_status' ):
-            return
+    @property
+    def initial_health_status(self) -> HealthStatus:
         provider_info = self.get_provider_info()
-        self._health_status = HealthStatus(
+        return HealthStatus(
             provider_id = provider_info.provider_id,
             provider_name = provider_info.provider_name,
             status = HealthStatusType.UNKNOWN,
-            last_check = datetimeproxy.now(),
+            last_update = datetimeproxy.now(),
+            last_message = 'Initialization',
             expected_heartbeat_interval_secs = provider_info.expected_heartbeat_interval_secs,
         )
+        
+    def _ensure_health_status_provider_setup(self):
+        if hasattr( self, '_health_status' ):
+            return
+        self._health_status = self.initial_health_status
         self._health_lock = threading.Lock()
         return
 
@@ -48,22 +53,37 @@ class HealthStatusProvider(ABC):
             health_status = copy.deepcopy( self._health_status )
         return health_status
 
-    def record_warning( self, error_message: str ) -> None:
-        self.update_health_status( HealthStatusType.WARNING, error_message )
+    def record_healthy( self, message: str ) -> None:
+        self.update_health_status( HealthStatusType.HEALTHY, message )
         return
     
-    def record_error( self, error_message: str ) -> None:
-        self.update_health_status( HealthStatusType.ERROR, error_message )
+    def record_warning( self, message: str ) -> None:
+        self.update_health_status( HealthStatusType.WARNING, message )
+        return
+    
+    def record_error( self, message: str ) -> None:
+        self.update_health_status( HealthStatusType.ERROR, message )
+        return
+    
+    def record_disabled( self, message: str ) -> None:
+        self.update_health_status( HealthStatusType.DISABLED, message )
+        return
+    
+    def record_heartbeat(self) -> None:
+        self._ensure_health_status_provider_setup()
+        with self._health_lock:
+            self._health_status.heartbeat = datetimeproxy.now()
+        logger.debug("Health heartbeat updated")
         return
     
     def update_health_status( self,
                               status         : HealthStatusType,
-                              error_message  : Optional[str]      = None) -> None:
+                              last_message  : Optional[str]      = None) -> None:
         self._ensure_health_status_provider_setup()
         with self._health_lock:
             self._health_status.status = status
-            self._health_status.last_check = datetimeproxy.now()
-            self._health_status.error_message = error_message
+            self._health_status.last_update = datetimeproxy.now()
+            self._health_status.last_message = last_message
 
             if status.is_error:
                 self._health_status.error_count += 1
@@ -72,14 +92,7 @@ class HealthStatusProvider(ABC):
                 self._health_status.error_count = 0
 
         logger.debug( f'Health status updated to {status.label}:'
-                      f' {error_message or "No error"}')
-        return
-
-    def update_heartbeat(self) -> None:
-        self._ensure_health_status_provider_setup()
-        with self._health_lock:
-            self._health_status.heartbeat = datetimeproxy.now()
-        logger.debug("Health heartbeat updated")
+                      f' {last_message or "No error"}')
         return
     
     

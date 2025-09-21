@@ -14,9 +14,9 @@ class HealthStatus:
     provider_id     : str                    # Technical identifier
     
     status         : HealthStatusType        # When did we last check
-    last_check     : datetime                # When did provider last report
+    last_update    : datetime                # When did provider last report
     heartbeat      : Optional[datetime]  = None
-    error_message  : Optional[str]       = None
+    last_message   : Optional[str]       = None
     error_count    : int                 = 0
     expected_heartbeat_interval_secs : Optional[int] = None  # Expected polling interval for dynamic heartbeat thresholds
 
@@ -168,10 +168,13 @@ class HealthStatus:
     @property
     def status_summary_message(self) -> str:
         if self.is_healthy:
-            return "Is operating normally and heartbeat is active."
+            if self.heartbeat:
+                return "Is operating normally and heartbeat is active."
+            else:
+                return "Is operating normally."
         elif self.is_critical:
-            return "Requires immediate attention. Please check the configuration settings and ensure external services are accessible."
+            return "Requires immediate attention."
         else:
-            return "Has encountered temporary issues. The problem may resolve automatically, but monitoring is recommended."
+            return "Has encountered temporary issues. The problem may resolve automatically."
 
 
