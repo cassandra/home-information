@@ -53,9 +53,9 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
     @classmethod
     def get_provider_info(cls) -> ProviderInfo:
         return ProviderInfo(
-            provider_id = 'hi.sevices.hass',
+            provider_id = 'hi.services.hass',
             provider_name = 'Home Assistant Monitor',
-            description = 'Home Assistant state monitoring and entity tracking',
+            description = 'Home Assistant device state monitoring',
             expected_heartbeat_interval_secs = cls.HASS_POLLING_INTERVAL_SECS,
         )
 

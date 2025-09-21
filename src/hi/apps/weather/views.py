@@ -2,7 +2,6 @@ import logging
 from hi.hi_async_view import HiModalView
 
 from .weather_mixins import WeatherMixin
-from .weather_source_manager import WeatherSourceManager
 from .weather_sources.sunrise_sunset_org import SunriseSunsetOrg
 from .weather_sources.usno import USNO
 

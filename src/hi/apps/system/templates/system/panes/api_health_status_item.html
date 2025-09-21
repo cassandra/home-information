@@ -9,14 +9,9 @@
     <div class="d-flex justify-content-between" >
       <div>
         <strong>{{ api_health_status.provider_name }}</strong>
-        {% if api_health_status.last_success %}
-        <small class="text-muted d-block">Last success: {{ api_health_status.last_success|localtime|date:"H:i:s" }}</small>
-        {% else %}
-        <small class="text-muted d-block">No recent success</small>
-        {% endif %}
       </div>
       <div>
-        <span class="badge monitor-status-badge {{ api_health_status.status_badge_class }}">
+        <span class="badge {{ api_health_status.status_badge_class }}">
           {% icon api_health_status.status_icon size="sm" css_class="mr-1" %}{{ api_health_status.status_display }}
         </span>
       </div>

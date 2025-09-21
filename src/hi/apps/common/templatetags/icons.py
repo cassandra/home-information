@@ -44,6 +44,7 @@ AVAILABLE_ICONS = {
     'lightbulb',
     'lock',
     'map-pin',
+    'minus-circle',
     'move',
     'path',
     'play',

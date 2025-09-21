@@ -61,7 +61,40 @@ class SystemHealthStatusView(HiModalView):
         if provider_id == 'hi.apps.weather.weather_sources':
             return WeatherHealthStatusDetailsView().get( request, *args, **kwargs )
         
-        # Handle app monitor health status
+        if provider_id.startswith( 'hi.services' ):
+            return self.get_integration_status_response(
+                request = request,
+                provider_id = provider_id,
+            )
+        
+        if provider_id.startswith( 'hi.apps' ):
+            return self.get_app_monitor_status_response(
+                request = request,
+                provider_id = provider_id,
+            )
+
+        raise Http404( f'Unrecognized provider id "{provider_id}"')
+        
+    def get_integration_status_response( self, request, provider_id : str ):
+        integration_manager = IntegrationManager()
+        providers = integration_manager.get_health_status_providers()
+
+        # Find the monitor with matching provider_id
+        target_integration = None
+        for provider in providers:
+            if provider.get_provider_info().provider_id == provider_id:
+                target_integration = provider
+                break
+
+        if not target_integration:
+            raise Http404(f"Integration with provider_id '{provider_id}' not found")
+
+        context = {
+            'health_status': target_integration.health_status,
+        }
+        return self.modal_response(request, context)
+        
+    def get_app_monitor_status_response( self, request, provider_id : str ):
         app_monitor_manager = AppMonitorManager()
         monitors = app_monitor_manager.get_health_status_providers()
 

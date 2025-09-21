@@ -55,91 +55,6 @@
     </div>
   </div>
 
-  {% if health_status.api_status_map %}
-  <!-- API Sources Section -->
-  <div class="row">
-    <div class="col-12">
-      <h6 class="mb-3">
-        {% icon "plug" size="sm" css_class="mr-2" %}
-        API Sources
-      </h6>
-
-      {% for api_status in health_status.api_status_map.values %}
-      <div class="api-source-section {{ api_status.border_color_class }} mb-4">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="mb-0">{{ api_status.provider_name }}</h6>
-          <span class="badge {{ api_status.status_badge_class }}">
-            {% icon api_status.status_icon size="sm" css_class="mr-1" %}{{ api_status.status.label }}
-          </span>
-        </div>
-
-        {% if api_status.last_success %}
-        <div class="row">
-          <div class="col-sm-3"><strong>Last Success:</strong></div>
-          <div class="col-sm-9">{{ api_status.last_success|localtime|date:"H:i:s" }}</div>
-        </div>
-        {% endif %}
-
-        <div class="api-metrics-grid mt-2">
-          <div class="metric-item {{ api_status.status_css_class }}">
-            <div class="small text-muted-custom">Total Calls</div>
-            <div class="metric-value">{{ api_status.total_calls|floatformat:0 }}</div>
-          </div>
-          <div class="metric-item {{ api_status.status_css_class }}">
-            <div class="small text-muted-custom">Success Rate</div>
-            <div class="metric-value">
-              {% if api_status.total_calls %}
-              {{ api_status.success_rate_percentage|floatformat:1 }}%
-              {% else %}
-              ---
-              {% endif %}
-            </div>
-          </div>
-          {% if api_status.last_response_time %}
-          <div class="metric-item {{ api_status.status_css_class }}">
-            <div class="small text-muted-custom">Last Response</div>
-            <div class="metric-value">{{ api_status.last_response_time|floatformat:2 }}s</div>
-          </div>
-          {% elif api_status.average_response_time %}
-          <div class="metric-item {{ api_status.status_css_class }}">
-            <div class="small text-muted-custom">Avg Response</div>
-            <div class="metric-value">{{ api_status.average_response_time|floatformat:2 }}s</div>
-          </div>
-          {% else %}
-          <div class="metric-item {{ api_status.status_css_class }}">
-            <div class="small text-muted-custom">Response Time</div>
-            <div class="metric-value">---</div>
-          </div>
-          {% endif %}
-          {% if api_status.total_failures > 0 or api_status.consecutive_failures > 0 %}
-          <div class="metric-item {{ api_status.status_css_class }}">
-            <div class="small text-muted-custom">
-              {% if api_status.consecutive_failures > 0 %}Consecutive Failures{% else %}Total Failures{% endif %}
-            </div>
-            <div class="metric-value">
-              {% if api_status.consecutive_failures > 0 %}{{ api_status.consecutive_failures }}{% else %}{{ api_status.total_failures }}{% endif %}
-            </div>
-          </div>
-          {% endif %}
-        </div>
-
-        <!-- Cache Statistics -->
-        {% if api_status.cache_hits > 0 or api_status.cache_misses > 0 %}
-        <div class="cache-stats mt-2">
-          <small class="text-muted">
-            Cache: {{ api_status.cache_hits }} hits, {{ api_status.cache_misses }} misses
-            {% if api_status.cache_hit_rate_percent %}
-            ({{ api_status.cache_hit_rate_percent|floatformat:1 }}% hit rate)
-            {% endif %}
-          </small>
-        </div>
-        {% endif %}
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
-
   <!-- Status Summary Alert -->
   <div class="row">
     <div class="col-12">
@@ -151,5 +66,22 @@
       </div>
     </div>
   </div>
+  
+  {% if health_status.api_status_map %}
+  <!-- API Sources Section -->
+  <div class="row">
+    <div class="col-12">
+      <h6 class="mb-3">
+        {% icon "plug" size="sm" css_class="mr-2" %}
+        API Sources
+      </h6>
+
+      {% for api_health_status in health_status.api_status_map.values %}
+      {% include "system/panes/api_health_status_details.html" with api_health_status=api_health_status %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
 </div>
 {% endtimezone %}

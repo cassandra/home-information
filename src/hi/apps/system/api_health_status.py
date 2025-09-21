@@ -112,7 +112,8 @@ class ApiHealthStatus:
             ApiHealthStatusType.DEGRADED: "warning",
             ApiHealthStatusType.UNKNOWN: "warning",
             ApiHealthStatusType.FAILING: "error",
-            ApiHealthStatusType.UNAVAILABLE: "error"
+            ApiHealthStatusType.UNAVAILABLE: "error",
+            ApiHealthStatusType.DISABLED: "info"
         }[self.status]
 
     @property
@@ -122,7 +123,8 @@ class ApiHealthStatus:
             ApiHealthStatusType.HEALTHY: "monitor-status-healthy",
             ApiHealthStatusType.DEGRADED: "monitor-status-warning",
             ApiHealthStatusType.FAILING: "monitor-status-error",
-            ApiHealthStatusType.UNAVAILABLE: "monitor-status-error"
+            ApiHealthStatusType.UNAVAILABLE: "monitor-status-error",
+            ApiHealthStatusType.DISABLED: "monitor-status-info"
         }[self.status]
 
     @property
@@ -132,7 +134,8 @@ class ApiHealthStatus:
             ApiHealthStatusType.DEGRADED: "warning",
             ApiHealthStatusType.UNKNOWN: "question-circle",
             ApiHealthStatusType.FAILING: "times-circle",
-            ApiHealthStatusType.UNAVAILABLE: "exclamation-circle"
+            ApiHealthStatusType.UNAVAILABLE: "exclamation-circle",
+            ApiHealthStatusType.DISABLED: "minus-circle"
         }[self.status]
 
     @property
@@ -142,5 +145,6 @@ class ApiHealthStatus:
             ApiHealthStatusType.DEGRADED: "api-source-warning",
             ApiHealthStatusType.UNKNOWN: "api-source-warning",
             ApiHealthStatusType.FAILING: "api-source-error",
-            ApiHealthStatusType.UNAVAILABLE: "api-source-error"
+            ApiHealthStatusType.UNAVAILABLE: "api-source-error",
+            ApiHealthStatusType.DISABLED: "api-source-info"
         }[self.status]

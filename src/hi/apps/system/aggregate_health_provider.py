@@ -8,7 +8,7 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 
 from .aggregate_health_status import AggregateHealthStatus
 from .api_health_status_provider import ApiHealthStatusProvider
-from .enums import ApiHealthStatusType, HealthStatusType, HealthAggregationRule
+from .enums import HealthStatusType, HealthAggregationRule
 from .provider_info import ProviderInfo
 
 logger = logging.getLogger(__name__)
@@ -85,15 +85,6 @@ class AggregateHealthProvider(ABC):
                 continue
             self._refresh_aggregated_health()
         return
-    
-    def set_all_providers_healthy(self):
-        self._aggregated_health_status.status = HealthStatusType.HEALTHY
-        for api_health_status_provider in self._api_health_status_providers:
-            api_health_status_provider.update_api_health_status(
-                status_type = ApiHealthStatusType.HEALTHY,
-            )
-            continue
-        return
             
     def remove_api_health_status_provider(
             self,
@@ -108,7 +99,11 @@ class AggregateHealthProvider(ABC):
         return
     
     def _refresh_aggregated_health(self) -> None:
-        """Refresh aggregated health from all tracked API health status providers."""
+        """Refresh API status map from all tracked API health status providers.
+
+        Note: The aggregated health status is computed dynamically via the status property,
+        so this method only needs to update the API status map.
+        """
         # Clear current sources
         self._aggregated_health_status.api_status_map.clear()
 
@@ -117,10 +112,9 @@ class AggregateHealthProvider(ABC):
             service_info = provider.get_api_provider_info()
             api_health = provider.api_health_status
             self._aggregated_health_status.api_status_map[service_info] = api_health
-            continue
-        
-        # Update overall status based on aggregation
-        self._aggregated_health_status.status = self._aggregated_health_status.overall_status
+
+        # Status is now computed dynamically via the status property in AggregateHealthStatus
+        # No need to manually update it here
         return
     
     def update_health_status( self,

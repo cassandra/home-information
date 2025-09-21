@@ -7,10 +7,8 @@ and hi.apps.system.health_status.HealthStatus without creating circular dependen
 
 import logging
 
-import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.asyncio_utils import BackgroundTaskMonitor
 from .enums import HealthStatusType
-from .health_status import HealthStatus
 from .health_status_provider import HealthStatusProvider
 from .provider_info import ProviderInfo
 

@@ -102,6 +102,14 @@ class ApiHealthStatusProvider(ABC):
             self._api_health_status.status = status_type
         return
 
+    def set_healthy( self ) -> None:
+        self.update_api_health_status( status_type = ApiHealthStatusType.HEALTHY )
+        return
+    
+    def set_disabled( self ) -> None:
+        self.update_api_health_status( status_type = ApiHealthStatusType.DISABLED )
+        return
+    
         
                                 
         

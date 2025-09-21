@@ -40,7 +40,15 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
         )
 
         # During startup safety/warmup, consider everything healthy.
-        weather_source_manager.set_all_providers_healthy()
+        for weather_data_source in self._weather_data_source_instance_list:
+            is_enabled = await self._settings_helper.is_weather_source_enabled_async(
+                weather_data_source.id
+            )
+            if is_enabled:
+                weather_data_source.set_healthy()
+            else:
+                weather_data_source.set_disabled()
+            continue
         return
     
     @classmethod
@@ -72,6 +80,7 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
                 task = asyncio.create_task( weather_data_source.fetch() )
                 task_list.append( task )
             else:
+                weather_data_source.set_disabled()
                 logger.debug( f'Weather source {weather_data_source.id} is disabled, skipping' )
             continue
 

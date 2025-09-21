@@ -3,7 +3,6 @@
 
 {% timezone USER_TIMEZONE %}
 {% with health_status_provider.health_status as health_status %}
-
 <a  {% if health_status.provider_id == 'hi.apps.system.background_tasks' %}
     href="{% url 'background_task_details' as modal_url %}"
     {% else %}
