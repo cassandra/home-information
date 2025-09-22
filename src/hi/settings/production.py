@@ -42,4 +42,4 @@ LOGGING = {
     },
 }
 
-BASE_URL_FOR_EMAIL_LINKS = 'https://{SITE_DOMAIN}'
+BASE_URL_FOR_EMAIL_LINKS = f'https://{SITE_DOMAIN}'

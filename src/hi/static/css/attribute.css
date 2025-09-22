@@ -413,6 +413,9 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex: 1 1 auto; /* Allow to grow and shrink as needed */
+    max-width: 70%; /* But don't take more than 70% to leave room for actions */
+    min-width: 200px; /* Ensure minimum usable width */
 }
 
 .attr-v2-attribute-actions {

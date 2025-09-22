@@ -351,7 +351,7 @@ EMAIL_USE_SSL = ENV.EMAIL_USE_SSL
 # Needed when sending emails in background tasks since HttpRequest not
 # available. Override this for development/testing/staging.
 #
-BASE_URL_FOR_EMAIL_LINKS = 'http://{SITE_DOMAIN}'
+BASE_URL_FOR_EMAIL_LINKS = f'http://{SITE_DOMAIN}'
 
 
 # ====================

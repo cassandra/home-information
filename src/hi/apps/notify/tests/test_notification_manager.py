@@ -6,7 +6,7 @@ from hi.apps.notify.notification_manager import NotificationManager
 from hi.apps.notify.settings import NotifySetting
 from hi.apps.notify.transient_models import Notification, NotificationItem
 
-from hi.apps.notify.notification_manager import MaintenanceResult
+from hi.apps.notify.transient_models import NotificationMaintenanceResult as MaintenanceResult
 
 logging.disable(logging.CRITICAL)
 
