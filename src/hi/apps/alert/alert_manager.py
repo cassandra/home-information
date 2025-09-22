@@ -10,6 +10,7 @@ from .alert import Alert
 from .alert_queue import AlertQueue
 from .alarm import Alarm
 from .alert_status import AlertStatusData
+from .transient_models import AlertMaintenanceResult
 
 logger = logging.getLogger(__name__)
 
@@ -99,10 +100,25 @@ class AlertManager( Singleton, NotificationMixin, SecurityMixin ):
             logger.exception( 'Problem adding alarm to alert queue.', e )
         return
     
-    async def do_periodic_maintenance(self):
+    async def do_periodic_maintenance(self) -> AlertMaintenanceResult:
+        """Perform alert queue cleanup and return execution results."""
+        result = AlertMaintenanceResult()
+
         try:
-            self._alert_queue.remove_expired_or_acknowledged_alerts()
+            # Capture state before cleanup
+            result.alerts_before_cleanup = len(self._alert_queue)
+
+            # Perform cleanup and get detailed results
+            cleanup_result = self._alert_queue.remove_expired_or_acknowledged_alerts()
+            result.expired_alerts_removed = cleanup_result.expired_removed
+            result.acknowledged_alerts_removed = cleanup_result.acknowledged_removed
+
+            # Capture state after cleanup
+            result.alerts_after_cleanup = len(self._alert_queue)
+
         except Exception as e:
             logger.exception( 'Problem doing periodic alert maintenance.', e )
-        return
+            result.error_message = str(e)[:100]  # Truncate long error messages
+
+        return result
 

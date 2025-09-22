@@ -6,6 +6,7 @@ from hi.testing.async_task_utils import AsyncTaskTestCase
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.security.enums import SecurityState
 from hi.apps.security.monitors import SecurityMonitor
+from hi.apps.security.settings import SecuritySetting
 
 logging.disable(logging.CRITICAL)
 
@@ -310,3 +311,160 @@ class TestSecurityMonitor(AsyncTaskTestCase):
         self.assertTrue(hasattr(monitor, 'security_manager_async'))
         self.assertTrue(hasattr(monitor, 'settings_manager'))
         self.assertTrue(hasattr(monitor, 'settings_manager_async'))
+
+
+    async def test_do_work_reports_health_status_success(self):
+        """Test do_work reports healthy status when security state check succeeds."""
+        monitor = SecurityMonitor()
+        
+        with patch.object(monitor, "_check_security_state", new_callable=AsyncMock) as mock_check:
+            with patch.object(monitor, "record_healthy") as mock_healthy:
+                mock_check.return_value = "No change needed (Day mode)"
+                
+                await monitor.do_work()
+                
+                mock_check.assert_called_once()
+                mock_healthy.assert_called_once_with("No change needed (Day mode)")
+
+    async def test_do_work_reports_health_status_error(self):
+        """Test do_work reports error status when security state check fails."""
+        monitor = SecurityMonitor()
+        
+        with patch.object(monitor, "_check_security_state", new_callable=AsyncMock) as mock_check:
+            with patch.object(monitor, "record_error") as mock_error:
+                mock_check.side_effect = Exception("Test exception")
+                
+                await monitor.do_work()
+                
+                mock_check.assert_called_once()
+                mock_error.assert_called_once()
+                # Check that error message contains the exception
+                error_call_args = mock_error.call_args[0][0]
+                self.assertIn("Security state check failed", error_call_args)
+                self.assertIn("Test exception", error_call_args)
+
+    async def test_check_security_state_returns_appropriate_messages(self):
+        """Test _check_security_state returns appropriate status messages."""
+        monitor = SecurityMonitor()
+        
+        # Test settings manager not available
+        with patch.object(monitor, "settings_manager_async", new_callable=AsyncMock) as mock_settings:
+            mock_settings.return_value = None
+            
+            result = await monitor._check_security_state()
+            
+            self.assertEqual(result, "Settings manager not available")
+
+    async def test_check_security_state_security_manager_not_available(self):
+        """Test _check_security_state handles missing security manager."""
+        monitor = SecurityMonitor()
+        
+        mock_settings_manager = Mock()
+        
+        with patch.object(monitor, "settings_manager_async", new_callable=AsyncMock) as mock_settings:
+            with patch.object(monitor, "security_manager_async", new_callable=AsyncMock) as mock_security:
+                mock_settings.return_value = mock_settings_manager
+                mock_security.return_value = None
+                
+                result = await monitor._check_security_state()
+                
+                self.assertEqual(result, "Security manager not available")
+
+    async def test_check_security_state_auto_change_blocked(self):
+        """Test _check_security_state reports when auto-change is blocked."""
+        monitor = SecurityMonitor()
+
+        mock_settings_manager = Mock()
+        mock_security_manager = Mock()
+        mock_security_manager.security_state = SecurityState.AWAY  # auto_change_allowed = False
+
+        with patch.object(monitor, "settings_manager_async", new_callable=AsyncMock) as mock_settings:
+            with patch.object(monitor, "security_manager_async", new_callable=AsyncMock) as mock_security:
+                with patch("hi.apps.security.monitors.ConsoleSettingsHelper") as mock_console:
+                    mock_settings.return_value = mock_settings_manager
+                    mock_security.return_value = mock_security_manager
+                    mock_console.return_value.get_tz_name.return_value = "UTC"
+
+                    result = await monitor._check_security_state()
+
+                    self.assertEqual(result, "Auto-change blocked (Away mode)")
+
+    async def test_check_security_state_no_change_needed(self):
+        """Test _check_security_state reports when no change is needed."""
+        monitor = SecurityMonitor()
+
+        mock_settings_manager = Mock()
+        mock_settings_manager.get_setting_value.return_value = "06:00"  # Day/night start times
+
+        mock_security_manager = Mock()
+        mock_security_manager.security_state = SecurityState.DAY  # auto_change_allowed = True
+
+        with patch.object(monitor, "settings_manager_async", new_callable=AsyncMock) as mock_settings:
+            with patch.object(monitor, "security_manager_async", new_callable=AsyncMock) as mock_security:
+                with patch("hi.apps.security.monitors.datetimeproxy.is_time_of_day_in_interval") as mock_interval:
+                    with patch("hi.apps.security.monitors.ConsoleSettingsHelper") as mock_console:
+                        mock_settings.return_value = mock_settings_manager
+                        mock_security.return_value = mock_security_manager
+                        mock_console.return_value.get_tz_name.return_value = "UTC"
+                        mock_interval.return_value = False  # No time interval match
+
+                        result = await monitor._check_security_state()
+
+                        self.assertEqual(result, "No change needed (Day mode)")
+
+    async def test_check_security_state_day_transition(self):
+        """Test _check_security_state reports day transition."""
+        monitor = SecurityMonitor()
+        
+        mock_settings_manager = Mock()
+        mock_settings_manager.get_setting_value.side_effect = lambda setting: {
+            SecuritySetting.SECURITY_DAY_START: "06:00"
+        }.get(setting, "18:00")
+        
+        mock_security_manager = Mock()
+        mock_security_manager.security_state = SecurityState.NIGHT  # auto_change_allowed = True
+        
+        with patch.object(monitor, "settings_manager_async", new_callable=AsyncMock) as mock_settings:
+            with patch.object(monitor, "security_manager_async", new_callable=AsyncMock) as mock_security:
+                with patch("hi.apps.security.monitors.datetimeproxy.is_time_of_day_in_interval") as mock_interval:
+                    with patch("hi.apps.security.monitors.ConsoleSettingsHelper") as mock_console:
+                        mock_settings.return_value = mock_settings_manager
+                        mock_security.return_value = mock_security_manager
+                        mock_console.return_value.get_tz_name.return_value = "UTC"
+                        mock_interval.side_effect = [True, False]  # Day start time matches, night does not
+
+                        result = await monitor._check_security_state()
+
+                        self.assertEqual(result, "Transitioned Night → Day")
+                        mock_security_manager.update_security_state_auto.assert_called_once_with(
+                            new_security_state=SecurityState.DAY
+                        )
+
+    async def test_check_security_state_night_transition(self):
+        """Test _check_security_state reports night transition."""
+        monitor = SecurityMonitor()
+        
+        mock_settings_manager = Mock()
+        mock_settings_manager.get_setting_value.side_effect = lambda setting: {
+            SecuritySetting.SECURITY_NIGHT_START: "18:00"
+        }.get(setting, "06:00")
+        
+        mock_security_manager = Mock()
+        mock_security_manager.security_state = SecurityState.DAY  # auto_change_allowed = True
+        
+        with patch.object(monitor, "settings_manager_async", new_callable=AsyncMock) as mock_settings:
+            with patch.object(monitor, "security_manager_async", new_callable=AsyncMock) as mock_security:
+                with patch("hi.apps.security.monitors.datetimeproxy.is_time_of_day_in_interval") as mock_interval:
+                    with patch("hi.apps.security.monitors.ConsoleSettingsHelper") as mock_console:
+                        mock_settings.return_value = mock_settings_manager
+                        mock_security.return_value = mock_security_manager
+                        mock_console.return_value.get_tz_name.return_value = "UTC"
+                        mock_interval.side_effect = [False, True]  # Day start doesnt match, night does
+
+                        result = await monitor._check_security_state()
+
+                        self.assertEqual(result, "Transitioned Day → Night")
+                        mock_security_manager.update_security_state_auto.assert_called_once_with(
+                            new_security_state=SecurityState.NIGHT
+                        )
+

@@ -7,6 +7,7 @@ import hi.apps.common.datetimeproxy as datetimeproxy
 from .alarm import Alarm
 from .alert import Alert
 from .enums import AlarmLevel
+from .transient_models import AlertQueueCleanupResult
 
 logger = logging.getLogger(__name__)
 
@@ -135,27 +136,39 @@ class AlertQueue:
             raise KeyError( f'Alert not found for {alert_id}' )
 
     def remove_expired_or_acknowledged_alerts(self):
+        """Remove expired and acknowledged alerts and return detailed results."""
+        expired_removed = 0
+        acknowledged_removed = 0
+
         with self._active_alerts_lock:
             if self.TRACE:
                 logger.debug( f'Alert Check: List size = {len(self._alert_list)}')
             if len( self._alert_list ) < 1:
-                return
-        
+                return AlertQueueCleanupResult()
+
             now_datetime = datetimeproxy.now()
             new_list = list()
             for alert in self._alert_list:
                 if alert.end_datetime <= now_datetime:
+                    expired_removed += 1
                     continue
                 if alert.is_acknowledged:
+                    acknowledged_removed += 1
                     continue
                 new_list.append( alert )
-
-            removed_count = len(self._alert_list) - len(new_list)
-            logger.debug( f'Removed "{removed_count}" alerts.' )
-            if removed_count > 0:
+                continue
+            
+            total_removed = expired_removed + acknowledged_removed
+            logger.debug( f'Removed "{total_removed}" alerts: {expired_removed}'
+                          f' expired, {acknowledged_removed} acknowledged.' )
+            if total_removed > 0:
                 self._alert_list = new_list
                 self._last_changed_datetime = datetimeproxy.now()
 
-        return
+        return AlertQueueCleanupResult(
+            expired_removed = expired_removed,
+            acknowledged_removed = acknowledged_removed,
+            total_removed = total_removed
+        )
     
     

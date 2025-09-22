@@ -6,6 +6,8 @@ from hi.apps.notify.notification_manager import NotificationManager
 from hi.apps.notify.settings import NotifySetting
 from hi.apps.notify.transient_models import Notification, NotificationItem
 
+from hi.apps.notify.transient_models import NotificationMaintenanceResult as MaintenanceResult
+
 logging.disable(logging.CRITICAL)
 
 
@@ -81,38 +83,71 @@ class TestNotificationManager(AsyncManagerTestCase):
                 item_list=[NotificationItem(signature='sig2', title='Test 2')]
             )
             mock_notifications = [notification1, notification2]
-            
-            # Mock queue check and notification sending
+
+            # Mock settings manager to enable notifications and provide email addresses
+            mock_settings_manager = Mock()
+            mock_settings_manager.get_setting_value.side_effect = lambda setting: {
+                NotifySetting.NOTIFICATIONS_ENABLED: 'true',
+                NotifySetting.NOTIFICATIONS_EMAIL_ADDRESSES: 'test@example.com'
+            }.get(setting, '')
+
+            # Mock queue check and email sending
             with patch.object(self.manager._notification_queue, 'check_for_notifications') as mock_check:
-                with patch.object(self.manager, 'send_notifications') as mock_send:
-                    mock_check.return_value = mock_notifications
-                    mock_send.return_value = True
-                    
-                    await self.manager.do_periodic_maintenance()
-                    
-                    # Verify queue was checked
-                    mock_check.assert_called_once()
-                    
-                    # Verify each notification was processed
-                    self.assertEqual(mock_send.call_count, 2)
-                    mock_send.assert_any_call(notification1)
-                    mock_send.assert_any_call(notification2)
-        
+                with patch.object(self.manager, 'settings_manager_async') as mock_settings:
+                    with patch.object(self.manager, '_send_email_notification_internal') as mock_send:
+                        mock_check.return_value = mock_notifications
+                        mock_settings.return_value = mock_settings_manager
+                        mock_send.return_value = True
+
+                        result = await self.manager.do_periodic_maintenance()
+
+                        # Verify queue was checked
+                        mock_check.assert_called_once()
+
+                        # Verify each notification was processed
+                        self.assertEqual(mock_send.call_count, 2)
+                        mock_send.assert_any_call(
+                            notification=notification1,
+                            email_address_list=['test@example.com']
+                        )
+                        mock_send.assert_any_call(
+                            notification=notification2,
+                            email_address_list=['test@example.com']
+                        )
+
+                        # Verify result
+                        self.assertEqual(result.notifications_found, 2)
+                        self.assertEqual(result.notifications_sent, 2)
+                        self.assertEqual(result.notifications_failed, 0)
+                        self.assertFalse(result.notifications_disabled)
+
         self.run_async(async_test_logic())
 
     def test_periodic_maintenance_handles_exceptions_gracefully(self):
         """Test periodic maintenance gracefully handles exceptions without crashing."""
         async def async_test_logic():
+            # Mock settings manager to enable notifications
+            mock_settings_manager = Mock()
+            mock_settings_manager.get_setting_value.side_effect = lambda setting: {
+                NotifySetting.NOTIFICATIONS_ENABLED: 'true',
+                NotifySetting.NOTIFICATIONS_EMAIL_ADDRESSES: 'test@example.com'
+            }.get(setting, '')
+
             # Mock queue to raise an exception
             with patch.object(self.manager._notification_queue, 'check_for_notifications') as mock_check:
-                mock_check.side_effect = Exception("Test exception")
-                
-                # Should not raise an exception
-                await self.manager.do_periodic_maintenance()
-                
-                # Verify exception was caught and logged
-                mock_check.assert_called_once()
-        
+                with patch.object(self.manager, 'settings_manager_async') as mock_settings:
+                    mock_check.side_effect = Exception("Test exception")
+                    mock_settings.return_value = mock_settings_manager
+
+                    # Should not raise an exception
+                    result = await self.manager.do_periodic_maintenance()
+
+                    # Verify exception was caught and logged
+                    mock_check.assert_called_once()
+
+                    # Verify error is recorded in result
+                    self.assertIn('Queue check failed', result.error_messages[0])
+
         self.run_async(async_test_logic())
 
     def test_send_notifications_disabled_by_setting(self):
@@ -306,3 +341,98 @@ class TestNotificationManager(AsyncManagerTestCase):
                 self.assertFalse(result)
         
         self.run_async(async_test_logic())
+
+
+
+class TestMaintenanceResult(AsyncManagerTestCase):
+    """Test the MaintenanceResult data class and summary message generation."""
+
+    def test_summary_message_notifications_disabled(self):
+        """Test summary message when notifications are disabled."""
+        result = MaintenanceResult(notifications_disabled=True)
+        self.assertEqual(result.get_summary_message(), "Notifications disabled")
+
+    def test_summary_message_no_notifications_found(self):
+        """Test summary message when no notifications found."""
+        result = MaintenanceResult(notifications_found=0)
+        self.assertEqual(result.get_summary_message(), "No notifications found")
+
+    def test_summary_message_no_email_addresses(self):
+        """Test summary message when no email addresses configured."""
+        result = MaintenanceResult(
+            notifications_found=3,
+            no_email_addresses=True
+        )
+        self.assertEqual(
+            result.get_summary_message(),
+            "No email addresses configured (3 notifications pending)"
+        )
+
+    def test_summary_message_single_notification_no_addresses(self):
+        """Test summary message with single notification and no addresses."""
+        result = MaintenanceResult(
+            notifications_found=1,
+            no_email_addresses=True
+        )
+        self.assertEqual(
+            result.get_summary_message(),
+            "No email addresses configured (1 notification pending)"
+        )
+
+    def test_summary_message_notifications_sent_successfully(self):
+        """Test summary message when notifications sent successfully."""
+        result = MaintenanceResult(
+            notifications_found=5,
+            notifications_sent=5
+        )
+        self.assertEqual(result.get_summary_message(), "Sent 5 notifications")
+
+    def test_summary_message_single_notification_sent(self):
+        """Test summary message when single notification sent."""
+        result = MaintenanceResult(
+            notifications_found=1,
+            notifications_sent=1
+        )
+        self.assertEqual(result.get_summary_message(), "Sent 1 notification")
+
+    def test_summary_message_mixed_results(self):
+        """Test summary message with mixed success and failures."""
+        result = MaintenanceResult(
+            notifications_found=5,
+            notifications_sent=3,
+            notifications_failed=2
+        )
+        self.assertEqual(
+            result.get_summary_message(),
+            "Sent 3 notifications, 2 failed"
+        )
+
+    def test_summary_message_with_skipped_notifications(self):
+        """Test summary message with skipped notifications."""
+        result = MaintenanceResult(
+            notifications_found=5,
+            notifications_sent=2,
+            notifications_skipped=2,
+            notifications_failed=1
+        )
+        self.assertEqual(
+            result.get_summary_message(),
+            "Sent 2 notifications, 2 skipped (no addresses), 1 failed"
+        )
+
+    def test_summary_message_all_failed(self):
+        """Test summary message when all notifications failed."""
+        result = MaintenanceResult(
+            notifications_found=3,
+            notifications_failed=3
+        )
+        self.assertEqual(result.get_summary_message(), "3 failed")
+
+    def test_summary_message_all_skipped(self):
+        """Test summary message when all notifications skipped."""
+        result = MaintenanceResult(
+            notifications_found=3,
+            notifications_skipped=3
+        )
+        self.assertEqual(result.get_summary_message(), "3 skipped (no addresses)")
+

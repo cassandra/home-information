@@ -67,10 +67,17 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
         # issuing weather queries until server stays up a minimum amount of
         # time.
         #
+
+        weather_source_manager = WeatherSourceManager()
         uptime = datetimeproxy.now() - self._started_datetime
         if uptime.total_seconds() < self.STARTUP_SAFETY_SECS:
-            logger.debug( 'Startup safety period. Skipping weather data fetch.' )
+            message = 'Startup safety period. Waiting to fetch.'
+            logger.debug( message )
+            self.record_warning( message )
+            weather_source_manager.record_warning( message )
             return
+
+        disabled_count = 0
         
         task_list = list()
         for weather_data_source in self._weather_data_source_instance_list:
@@ -82,12 +89,19 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
                 task_list.append( task )
             else:
                 weather_data_source.record_disabled()
+                disabled_count += 1
                 logger.debug( f'Weather source {weather_data_source.id} is disabled, skipping' )
             continue
 
         if task_list:
             await asyncio.gather( *task_list )
+            message = f'Ran {len(task_list)} integrations, {disabled_count} disabled.'
+            self.record_healthy( message )
+            weather_source_manager.record_healthy( message )
         else:
-            logger.debug( 'No enabled weather sources found' )
+            message = 'No enabled weather sources found'
+            logger.debug( message )
+            self.record_warning( message )
+            weather_source_manager.record_warning( message )
         return
 
