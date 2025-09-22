@@ -25,7 +25,7 @@ class TestMonitor2(PeriodicMonitor):
     """Another test monitor for discovery."""
     def __init__(self):
         super().__init__(id='test-monitor-2', interval_secs=60)
-    
+
     async def do_work(self):
         pass
 

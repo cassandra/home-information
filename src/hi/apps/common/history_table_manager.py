@@ -30,27 +30,32 @@ from django.db.models import QuerySet
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.common.enums import LabeledEnum
 
+logger = logging.getLogger(__name__)
+
 
 class CleanupResultType(LabeledEnum):
     """Types of cleanup operation results."""
 
-    UNDER_LIMIT = ('Under Limit', 'Table is under the record limit, no cleanup needed')
-    NO_OLD_RECORDS = ('No Old Records', 'No records old enough to delete within retention period')
-    CLEANUP_PERFORMED = ('Cleanup Performed', 'Successfully deleted old records')
-    PARTIAL_ERRORS = ('Partial Errors', 'Some tables cleaned successfully, others had errors')
-    ALL_TABLES_FAILED = ('All Failed', 'All table cleanup operations failed')
-    CLEANUP_FAILED = ('Failed', 'Cleanup operation failed due to error')
-
-logger = logging.getLogger(__name__)
+    UNDER_LIMIT        = ( 'Under Limit',
+                           'Table is under the record limit, no cleanup needed' )
+    NO_OLD_RECORDS     = ( 'No Old Records',
+                           'No records old enough to delete within retention period' )
+    CLEANUP_PERFORMED  = ( 'Cleanup Performed',
+                           'Successfully deleted old records' )
+    PARTIAL_ERRORS     = ( 'Partial Errors',
+                           'Some tables cleaned successfully, others had errors' )
+    ALL_TABLES_FAILED  = ( 'All Failed',
+                           'All table cleanup operations failed' )
+    CLEANUP_FAILED     = ( 'Failed',
+                           'Cleanup operation failed due to error' )
 
 
 @dataclass
 class CleanupResult:
-    """Result of a cleanup operation."""
-    deleted_count: int
-    result_type: CleanupResultType
-    reason: str  # Human-readable message for health status
-    duration_seconds: float = 0.0
+    result_type       : CleanupResultType
+    reason            : str  # Human-readable message for health status
+    deleted_count     : int
+    duration_seconds  : float            = 0.0
 
 
 class HistoryTableManager:
@@ -73,27 +78,19 @@ class HistoryTableManager:
     per call, spreading the load across multiple cleanup cycles.
     """
 
-    def __init__(self, queryset: QuerySet, date_field_name: str,
-                 min_days_retention: int = 30,
-                 max_records_limit: int = 100000,
-                 deletion_batch_size: int = 1000):
-        """
-        Initialize the history table manager with configuration.
+    def __init__( self,
+                  queryset             : QuerySet,
+                  date_field_name      : str,
+                  min_days_retention   : int     = 30,
+                  max_records_limit    : int     = 100000,
+                  deletion_batch_size  : int     = 1000):
 
-        Args:
-            queryset: Django QuerySet for the history table
-            date_field_name: Name of the datetime field for age-based cleanup
-            min_days_retention: Minimum days to retain records (default: 30)
-            max_records_limit: Maximum records to retain (default: 100000)
-            deletion_batch_size: Records to delete per cycle (default: 1000)
-        """
         self.queryset = queryset
         self.date_field_name = date_field_name
         self.min_days_retention = min_days_retention
         self.max_records_limit = max_records_limit
         self.deletion_batch_size = deletion_batch_size
-
-        self._logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        return
 
     def cleanup_next_batch(self) -> CleanupResult:
         """
@@ -111,20 +108,17 @@ class HistoryTableManager:
         - Records within min_days_retention are NEVER deleted regardless of count
         - Cleanup load is spread across multiple cycles (rate limiting)
         - Maximum history is retained while respecting limits
-
-        Returns:
-            CleanupResult: Result containing deletion count, reason, and performance metrics
         """
         start_time = datetimeproxy.now()
         table_name = self.queryset.model._meta.db_table
-        self._logger.debug(f"Starting cleanup batch for table '{table_name}'")
+        logger.debug(f"Starting cleanup batch for table '{table_name}'")
 
         try:
             # Check if we're over the total record limit
             total_count = self._get_record_count()
 
             if total_count <= self.max_records_limit:
-                self._logger.debug(
+                logger.debug(
                     f"Under limit: {total_count} records <= {self.max_records_limit} limit "
                     f"for table '{table_name}'"
                 )
@@ -144,7 +138,7 @@ class HistoryTableManager:
 
             # Check if there are any old records eligible for deletion
             if not old_records_qs.exists():
-                self._logger.debug(
+                logger.debug(
                     f"No records older than {cutoff_date} ({self.min_days_retention} days) "
                     f"for table '{table_name}'"
                 )
@@ -159,7 +153,7 @@ class HistoryTableManager:
             ids_to_delete = list(old_records_qs.values_list('pk', flat=True)[:self.deletion_batch_size])
 
             if not ids_to_delete:
-                self._logger.debug(f"No record IDs found for deletion in table '{table_name}'")
+                logger.debug(f"No record IDs found for deletion in table '{table_name}'")
                 return CleanupResult(
                     deleted_count=0,
                     result_type=CleanupResultType.NO_OLD_RECORDS,
@@ -171,9 +165,10 @@ class HistoryTableManager:
             deleted_count = self._delete_records(ids_to_delete)
             duration = (datetimeproxy.now() - start_time).total_seconds()
 
-            self._logger.debug(
+            logger.debug(
                 f"Deleted {deleted_count} records in {duration:.3f}s "
-                f"from table '{table_name}' (had {total_count} records, batch size {self.deletion_batch_size})"
+                f"from table '{table_name}' (had {total_count} records,"
+                f" batch size {self.deletion_batch_size})"
             )
 
             return CleanupResult(
@@ -185,28 +180,19 @@ class HistoryTableManager:
 
         except Exception as e:
             duration = (datetimeproxy.now() - start_time).total_seconds()
-            self._logger.exception(f"Error during cleanup batch for table '{table_name}': {e}")
+            logger.exception(f"Error during cleanup batch for table '{table_name}': {e}")
             # Re-raise to let caller handle the error
             raise
 
     def _get_record_count(self) -> int:
         """
         Get the total number of records in the history table.
-
-        Returns:
-            int: Total record count
         """
         return self.queryset.count()
 
-    def _delete_records(self, ids: List[int]) -> int:
+    def _delete_records( self, ids: List[int] ) -> int:
         """
         Delete records with the given IDs in a single transaction.
-
-        Args:
-            ids: List of primary keys to delete
-
-        Returns:
-            int: Number of records actually deleted
         """
         if not ids:
             return 0
@@ -218,7 +204,7 @@ class HistoryTableManager:
             # Django's delete() returns a tuple: (total_deleted, {model: count_deleted})
             deleted_count = deleted_info[0] if deleted_info else 0
 
-            self._logger.debug(
+            logger.debug(
                 f"Deleted {deleted_count} records from table '{table_name}' "
                 f"with IDs: {ids[:5]}{'...' if len(ids) > 5 else ''}"
             )

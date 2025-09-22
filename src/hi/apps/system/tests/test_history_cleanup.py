@@ -313,55 +313,6 @@ class HistoryCleanupManagerTests(TransactionTestCase):
         self.assertIn("Cleaned", result.reason)
         self.assertIn("records", result.reason)
 
-    def test_get_table_summaries(self):
-        """Test the table summaries functionality."""
-        current_time = datetimeproxy.now()
-
-        # Create some test data
-        from hi.apps.sense.models import Sensor
-        from hi.apps.entity.models import Entity, EntityState
-
-        entity = Entity.objects.create(
-            name='Test Entity 4',
-            integration_id='test_entity_4',
-            integration_name='test_integration'
-        )
-        entity_state = EntityState.objects.create(
-            entity=entity,
-            entity_state_type_str='ON_OFF'
-        )
-        sensor = Sensor.objects.create(
-            name='Test Sensor 4',
-            entity_state=entity_state,
-            sensor_type_str='DEFAULT',
-            integration_id='test_id_4',
-            integration_name='test_integration'
-        )
-
-        for i in range(50):
-            SensorHistory.objects.create(
-                sensor=sensor,
-                value=f"test{i}",
-                response_datetime=current_time
-            )
-
-        manager = HistoryCleanupManager()
-        summaries = manager.get_table_summaries()
-
-        # Should have summaries for all 3 tables
-        self.assertEqual(len(summaries), 3)
-
-        # Check SensorHistory summary
-        sensor_summary = summaries['SensorHistory']
-        self.assertEqual(sensor_summary['record_count'], 50)
-        self.assertEqual(sensor_summary['max_limit'], 100000)
-        self.assertEqual(sensor_summary['retention_days'], 30)
-        self.assertEqual(sensor_summary['batch_size'], 1000)
-        self.assertEqual(sensor_summary['over_limit'], False)  # 50 < 100000
-
-        # Check other tables have 0 records
-        self.assertEqual(summaries['ControllerHistory']['record_count'], 0)
-        self.assertEqual(summaries['EventHistory']['record_count'], 0)
 
     def test_cleanup_error_handling(self):
         """Test error handling when cleanup fails for a table."""

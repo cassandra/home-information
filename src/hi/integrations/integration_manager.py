@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 class IntegrationManager( Singleton ):
 
+    START_DELAY_INTERVAL_SECS = 2
+
     def __new__(cls):
         return super().__new__(cls)
     
@@ -157,6 +159,9 @@ class IntegrationManager( Singleton ):
             if not integration_data.is_enabled:
                 logger.debug( f'Skipping disabled integration monitor: {integration_data}' )
                 continue
+
+            # Avoid the "thundering herd" during startups
+            await asyncio.sleep( self.START_DELAY_INTERVAL_SECS )
             await self._start_integration_monitor( integration_data = integration_data )
             continue
         return

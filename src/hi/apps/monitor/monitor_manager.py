@@ -18,63 +18,88 @@ logger = logging.getLogger(__name__)
 
 class AppMonitorManager( Singleton ):
 
+    START_DELAY_INTERVAL_SECS = 5
+
     def __init_singleton__( self ):
         self._monitor_map = dict()
         self._initialized = False
         self._data_lock = threading.Lock()
         self._monitor_event_loop = None
         return
-    
+
+    def _add_monitor(self, monitor: PeriodicMonitor) -> None:
+        """Thread-safe setter for monitor_map."""
+        with self._data_lock:
+            self._monitor_map[monitor.id] = monitor
+
+    def _get_monitor(self, monitor_id: str) -> PeriodicMonitor:
+        """Thread-safe getter for a single monitor."""
+        with self._data_lock:
+            return self._monitor_map.get(monitor_id)
+
+    def _get_all_monitors(self) -> List[PeriodicMonitor]:
+        """Thread-safe getter for all monitors."""
+        with self._data_lock:
+            return list(self._monitor_map.values())
+
     async def initialize( self, event_loop ) -> None:
+        # Check if already initialized (with lock)
         with self._data_lock:
             if self._initialized:
                 logger.info('MonitorManager already initialize. Skipping.')
                 return
             self._initialized = True
-
             self._monitor_event_loop = event_loop
-            
-            logger.info('Discovering and starting app monitors...')
-            periodic_monitor_class_list = self._discover_periodic_monitors()        
-            for monitor_class in periodic_monitor_class_list:
-                monitor = monitor_class()
 
-                self._monitor_map[monitor.id] = monitor
-                if not monitor.is_running:
-                    if settings.DEBUG and settings.SUPPRESS_MONITORS:
-                        logger.debug(f'Skipping app monitor: {monitor.id}. See SUPPRESS_MONITORS = True')
-                        continue
+        # Discovery and instantiation (no lock needed for discovery)
+        logger.info('Discovering and starting app monitors...')
+        periodic_monitor_class_list = self._discover_periodic_monitors()
 
-                    logger.debug( f'Starting app monitor: {monitor.id}' )
-                    asyncio.create_task( monitor.start(),
-                                         name=f'App-{monitor.id}' )
+        # Instantiate and add all monitors (with lock per add)
+        for monitor_class in periodic_monitor_class_list:
+            monitor = monitor_class()
+            self._add_monitor(monitor)
 
-                continue
+        # Sort monitors by query interval (ascending) for priority ordering
+        # This ensures critical monitors with shorter intervals start first
+        sorted_monitors = sorted(self._get_all_monitors(), key=lambda m: m._query_interval_secs)
+
+        # Start monitors with staggered delays (no lock needed)
+        for monitor in sorted_monitors:
+            if not monitor.is_running:
+                if settings.DEBUG and settings.SUPPRESS_MONITORS:
+                    logger.debug(f'Skipping app monitor: {monitor.id}. See SUPPRESS_MONITORS = True')
+                    continue
+
+                # Staggered startup: sleep before starting each monitor
+                logger.debug(f'Delaying startup of {monitor.id} by {self.START_DELAY_INTERVAL_SECS}s (interval: {monitor._query_interval_secs}s)')
+                await asyncio.sleep(self.START_DELAY_INTERVAL_SECS)
+
+                logger.debug(f'Starting app monitor: {monitor.id}')
+                asyncio.create_task(monitor.start(), name=f'App-{monitor.id}')
         return
 
     async def shutdown(self) -> None:
         logger.info('Stopping all registered app monitors...')
-        for monitor in self._monitor_map.values():
-            logger.debug( f'Stopping app monitor: {monitor.id}' )
-            monitor.stop()
-            continue
+        with self._data_lock:
+            for monitor in self._monitor_map.values():
+                logger.debug( f'Stopping app monitor: {monitor.id}' )
+                monitor.stop()
+                continue
         return
 
     def get_health_status_by_monitor_id( self,
                                          monitor_id : str ) -> HealthStatusProvider:
-        with self._data_lock:
-            for monitor in self._monitor_map.values():
-                if monitor.id == monitor_id:
-                    return monitor
-                continue
+        monitor = self._get_monitor(monitor_id)
+        if monitor:
+            return monitor
         raise KeyError( f'Unknown monitor id: "{monitor_id}".' )
 
     def get_health_status_providers(self) -> List[HealthStatusProvider]:
         """Get health status providers for all registered monitors.
             Each provider exposes get_provider_info() and health_status.
         """
-        with self._data_lock:
-            return list( self._monitor_map.values() )
+        return self._get_all_monitors()
 
     def _discover_periodic_monitors(self) -> List[ Type[ PeriodicMonitor ]]:
         periodic_monitor_class_list = list()
