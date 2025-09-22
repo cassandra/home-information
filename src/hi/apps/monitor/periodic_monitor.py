@@ -30,14 +30,15 @@ class PeriodicMonitor( HealthStatusProvider ):
 
     async def start(self) -> None:
         self._is_running = True
-        self._logger.info(f"{self.__class__.__name__} async task starting"
-                          f" (interval: {self._query_interval_secs}s)")
+        self._logger.debug( f"{self.__class__.__name__} async task starting"
+                            f" (interval: {self._query_interval_secs}s)")
 
         try:
             await self.initialize()
+            self._logger.info(f"{self.__class__.__name__} initialized.")
             self.record_healthy( 'Initialized successfully' )
-            self._logger.info(f"{self.__class__.__name__} initialized successfully,"
-                              f" entering monitoring loop")
+            self._logger.debug( f"{self.__class__.__name__} initialized successfully,"
+                                f" entering monitoring loop")
 
             while self._is_running:
                 try:
@@ -66,7 +67,6 @@ class PeriodicMonitor( HealthStatusProvider ):
             self.record_error( f"Monitor failed to start: {str(e)}" )
             raise
         finally:
-            self._logger.info(f"{self.__class__.__name__} async task cleaning up")
             await self.cleanup()
             self._logger.info(f"{self.__class__.__name__} async task stopped")
         return
@@ -81,7 +81,6 @@ class PeriodicMonitor( HealthStatusProvider ):
         """
         Optional initialization logic to be implemented by subclasses.
         """
-        self._logger.info(f"{self.__class__.__name__} initialized.")
         return
     
     async def run_query(self) -> None:

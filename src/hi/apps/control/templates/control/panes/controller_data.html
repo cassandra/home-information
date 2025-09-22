@@ -1,10 +1,10 @@
-{% load common_template_helpers %}
+{% load common_tags %}
 {% generate_uuid as unique_id %}
 <div id="hi-controller-{{ controller_data.controller.id }}-{{ unique_id }}"
      class="{{ controller_data.css_class }}" >
   <form action="{% url 'control_controller' controller_id=controller_data.controller.id %}"
-	method="post"
-	class="form" data-async="#hi-controller-{{ controller_data.controller.id }}-{{ unique_id }}" data-mode="replace"{% if in_modal_context %} data-stay-in-modal="true"{% endif %}>
+        method="post"
+        class="form" data-async="#hi-controller-{{ controller_data.controller.id }}-{{ unique_id }}" data-mode="replace"{% if in_modal_context %} data-stay-in-modal="true"{% endif %}>
     {% csrf_token %}
     <input type="hidden" name="response_context" value="{% if in_modal_context %}modal{% else %}page{% endif %}">
     
@@ -12,9 +12,9 @@
     {% if controller_data.error_list %}
     <div class="text-danger">
       <ul>
-	{% for msg in controller_data.error_list %}
-	<li>{{ msg }}</li>
-	{% endfor %}
+        {% for msg in controller_data.error_list %}
+        <li>{{ msg }}</li>
+        {% endfor %}
       </ul>
     </div>
     {% endif %}

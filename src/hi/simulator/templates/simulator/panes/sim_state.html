@@ -1,13 +1,13 @@
-{% load common_template_helpers %}
+{% load common_tags %}
 <div id="hi-sim-state-{{ sim_state.simulator_id }}-{{ sim_state.sim_entity_id }}-{{ sim_state.sim_state_id }}" class="row">
   <div class="col-4">
     {{ sim_state.name }}
   </div>
   <div class="col-8">
     <form action="{% url 'simulator_entity_state_set' simulator_id=sim_state.simulator_id sim_entity_id=sim_state.sim_entity_id sim_state_id=sim_state.sim_state_id %}"
-	  method="POST" class="form"
-	  data-async="#hi-sim-state-{{ sim_state.simulator_id }}-{{ sim_state.sim_entity_id }}-{{ sim_state.sim_state_id }}"
-	  data-mode="replace">
+          method="POST" class="form"
+          data-async="#hi-sim-state-{{ sim_state.simulator_id }}-{{ sim_state.sim_entity_id }}-{{ sim_state.sim_state_id }}"
+          data-mode="replace">
       {% csrf_token %}
       {% include_with_fallback sim_state.sim_state_type.template_name "simulator/panes/sim_control_default.html" %}
     </form>

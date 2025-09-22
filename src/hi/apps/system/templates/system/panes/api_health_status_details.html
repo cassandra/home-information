@@ -20,8 +20,11 @@
   
   {% if api_health_status.last_success %}
   <div class="row">
-    <div class="col-sm-3"><strong>Last Success:</strong></div>
-    <div class="col-sm-9">{{ api_health_status.last_success|localtime|date:"M j, Y H:i:s" }}</div>
+    <div class="col-sm-12">
+      <strong>Last Success:</strong>
+      {{ api_health_status.last_success|localtime|naturaltime }}
+      <span class="text-muted">({{ api_health_status.last_success|localtime|date:"M j, Y H:i:s" }})</span>
+    </div>
   </div>
   {% endif %}
   

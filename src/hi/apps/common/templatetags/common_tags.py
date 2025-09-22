@@ -9,6 +9,8 @@ from django.template import engines
 from django.template.loader import get_template
 from django.urls import reverse
 
+from hi.apps.common.utils import get_humanized_secs
+
 register = template.Library()
 
 
@@ -88,6 +90,26 @@ def digit_count( value ):
         return 0
     return len(str(value))
 
+
+@register.filter
+def format_duration(duration_secs):
+    """
+    Format duration in seconds to a human-readable format using existing utility.
+
+    Args:
+        duration_secs: Duration in seconds (int or float)
+
+    Returns:
+        Formatted duration string using get_humanized_secs
+    """
+    if duration_secs is None:
+        return ""
+
+    try:
+        return get_humanized_secs(duration_secs)
+    except (ValueError, TypeError):
+        return ""
+    
 
 @register.simple_tag
 def settings_value(name):

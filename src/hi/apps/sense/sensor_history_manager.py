@@ -79,3 +79,4 @@ class SensorHistoryManager( Singleton ):
             continue
 
         return sensor_history_list_map
+

@@ -1,8 +1,6 @@
 import logging
 from django import template
 
-from hi.apps.common.utils import get_humanized_secs
-
 logger = logging.getLogger(__name__)
 
 register = template.Library()
@@ -94,25 +92,3 @@ def entity_video_stream(entity):
     except Exception as e:
         logger.error(f"Error getting video stream for entity {entity.id}: {e}")
         return None
-
-
-@register.filter
-def format_duration(duration_secs):
-    """
-    Format duration in seconds to a human-readable format using existing utility.
-
-    Args:
-        duration_secs: Duration in seconds (int or float)
-
-    Returns:
-        Formatted duration string using get_humanized_secs
-    """
-    if duration_secs is None:
-        return ""
-
-    try:
-        return get_humanized_secs(duration_secs)
-    except (ValueError, TypeError):
-        return ""
-
-

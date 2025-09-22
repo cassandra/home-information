@@ -1,5 +1,5 @@
 {% load humanize %}
-{% load common_template_helpers %}
+{% load common_tags %}
 {% load icons %}
 {% if pagination.required or show_total_items %}
 <div class="my-4">
@@ -12,13 +12,13 @@
     <ul class="pagination pagination-lg justify-content-center">
       {% if pagination.has_previous_page %}
       <li class="page-item"><a class="page-link" href="{{ pagination.base_url }}?page={{ pagination.previous_page_number }}" {% if pagination.async_urls %}data-async="true"{%endif %} >
-	{% icon "chevron-left" size="sm" css_class="hi-icon-right" %}
-	<span class="d-none d-sm-block">Previous</span>
+        {% icon "chevron-left" size="sm" css_class="hi-icon-right" %}
+        <span class="d-none d-sm-block">Previous</span>
       </a></li>
       {% else %}
       <li class="page-item disabled"><span class="page-link text-muted">
-	{% icon "chevron-left" size="sm" css_class="hi-icon-right" %}
-	<span class="d-none d-sm-block">Previous</span>
+        {% icon "chevron-left" size="sm" css_class="hi-icon-right" %}
+        <span class="d-none d-sm-block">Previous</span>
       </span></li>
       {% endif %}
       
@@ -40,13 +40,13 @@
       
       {% if pagination.has_next_page %}
       <li class="page-item"><a class="page-link" href="{{ pagination.base_url }}?page={{ pagination.next_page_number }}" {% if pagination.async_urls %}data-async="true"{%endif %} >
-	<span class="d-none d-sm-block">Next</span>
-	{% icon "chevron-right" size="sm" css_class="hi-icon-left" %}
+        <span class="d-none d-sm-block">Next</span>
+        {% icon "chevron-right" size="sm" css_class="hi-icon-left" %}
       </a></li>
       {% else %}
       <li class="page-item disabled"><span class="page-link text-muted">
-	<span class="d-none d-sm-block">Next</span>
-	{% icon "chevron-right" size="sm" css_class="hi-icon-left" %}
+        <span class="d-none d-sm-block">Next</span>
+        {% icon "chevron-right" size="sm" css_class="hi-icon-left" %}
       </span></li>
       {% endif %}
     </ul>

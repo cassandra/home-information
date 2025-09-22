@@ -1,4 +1,4 @@
-{% load common_template_helpers %}
+{% load common_tags %}
 {% load icons %}
 {% generate_uuid as unique_id %}
 {% if not event_clause_form.instance.pk %}
@@ -37,19 +37,19 @@
 
     <div class="input-group mb-2 mr-sm-2 w-100">
       <div class="input-group-prepend" >
-	<label for="{{ event_clause_form.entity.id_for_label }}"
-	       class="input-group-text" >{{ event_clause_form.entity_state.label }}</label>
-	{{ event_clause_form.entity_state }}
-	<small class="form-error text-danger" >{{ event_clause_form.entity_state.errors }}</small>
+        <label for="{{ event_clause_form.entity.id_for_label }}"
+               class="input-group-text" >{{ event_clause_form.entity_state.label }}</label>
+        {{ event_clause_form.entity_state }}
+        <small class="form-error text-danger" >{{ event_clause_form.entity_state.errors }}</small>
       </div>
     </div>
 
     <div class="input-group mb-2 mr-sm-2 w-100">
       <div class="input-group-prepend" >
-	<label for="{{ event_clause_form.value.id_for_label }}"
-	       class="input-group-text" >{{ event_clause_form.value.label }}</label>
-	{{ event_clause_form.value }}
-	<small class="form-error text-danger" >{{ event_clause_form.value.errors }}</small>
+        <label for="{{ event_clause_form.value.id_for_label }}"
+               class="input-group-text" >{{ event_clause_form.value.label }}</label>
+        {{ event_clause_form.value }}
+        <small class="form-error text-danger" >{{ event_clause_form.value.errors }}</small>
       </div>
     </div>
   </div>  

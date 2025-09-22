@@ -1,3 +1,4 @@
+{% load humanize %}
 {% load icons %}
 {% load tz %}
 
@@ -23,10 +24,10 @@
       <div class="col-sm-6">
         {% if health_status.heartbeat %}
         <small class="text-muted">Last Seen:</small><br>
-        <span>{{ health_status.heartbeat|localtime|date:"H:i:s" }}</span>
+        <span>{{ health_status.heartbeat|localtime|naturaltime }}</span>
         {% else %}
         <small class="text-muted">Last Update:</small><br>
-        <span>{{ health_status.last_update|localtime|date:"H:i:s" }}</span>
+        <span>{{ health_status.last_update|localtime|naturaltime }}</span>
         {% endif %}
       </div>
       <div class="col-sm-6">
