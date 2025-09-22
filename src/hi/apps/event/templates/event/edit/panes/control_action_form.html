@@ -1,4 +1,4 @@
-{% load common_template_helpers %}
+{% load common_tags %}
 {% load icons %}
 {% generate_uuid as unique_id %}
 {% if not control_action_form.instance.pk %}
@@ -37,19 +37,19 @@
 
     <div class="input-group mb-2 mr-sm-2 w-100">
       <div class="input-group-prepend" >
-	<label for="{{ control_action_form.controller.id_for_label }}"
-	       class="input-group-text" >{{ control_action_form.controller.label }}</label>
-	{{ control_action_form.controller }}
-	<small class="form-error text-danger" >{{ control_action_form.controller.errors }}</small>
+        <label for="{{ control_action_form.controller.id_for_label }}"
+               class="input-group-text" >{{ control_action_form.controller.label }}</label>
+        {{ control_action_form.controller }}
+        <small class="form-error text-danger" >{{ control_action_form.controller.errors }}</small>
       </div>
     </div>
 
     <div class="input-group mb-2 mr-sm-2 w-100">
       <div class="input-group-prepend" >
-	<label for="{{ control_action_form.value.id_for_label }}"
-	       class="input-group-text" >{{ control_action_form.value.label }}</label>
-	{{ control_action_form.value }}
-	<small class="form-error text-danger" >{{ control_action_form.value.errors }}</small>
+        <label for="{{ control_action_form.value.id_for_label }}"
+               class="input-group-text" >{{ control_action_form.value.label }}</label>
+        {{ control_action_form.value }}
+        <small class="form-error text-danger" >{{ control_action_form.value.errors }}</small>
       </div>
     </div>
 

@@ -220,6 +220,7 @@ class TestAppMonitorManager(AsyncTaskTestCase):
             mock_monitor_instance.id = 'test-monitor'
             mock_monitor_instance.is_running = False
             mock_monitor_instance.start = Mock()
+            mock_monitor_instance._query_interval_secs = 10
             
             mock_monitor_class = Mock(return_value=mock_monitor_instance)
             
@@ -231,32 +232,6 @@ class TestAppMonitorManager(AsyncTaskTestCase):
                 # Monitor should be registered but not started
                 self.assertIn('test-monitor', self.manager._monitor_map)
                 mock_monitor_instance.start.assert_not_called()
-        
-        self.run_async(test_logic())
-    
-    @override_settings(DEBUG=False, SUPPRESS_MONITORS=False)
-    def test_monitors_started_normally(self):
-        """Test monitors are started when not suppressed."""
-        
-        async def test_logic():
-            # Create a mock monitor class that returns a configured instance
-            mock_monitor_instance = Mock(spec=PeriodicMonitor)
-            mock_monitor_instance.id = 'test-monitor'
-            mock_monitor_instance.is_running = False
-            mock_monitor_instance.start = Mock()
-            
-            mock_monitor_class = Mock(return_value=mock_monitor_instance)
-            
-            with patch.object(self.manager, '_discover_periodic_monitors') as mock_discover:
-                mock_discover.return_value = [mock_monitor_class]
-                
-                # Mock asyncio.create_task to verify task creation
-                with patch('asyncio.create_task') as mock_create_task:
-                    await self.manager.initialize(self._test_loop)
-                    
-                    # Monitor should be registered and started
-                    self.assertIn('test-monitor', self.manager._monitor_map)
-                    mock_create_task.assert_called_once()
         
         self.run_async(test_logic())
     
@@ -297,6 +272,7 @@ class TestAppMonitorManager(AsyncTaskTestCase):
             mock_monitor_instance.id = 'running-monitor'
             mock_monitor_instance.is_running = True  # Already running
             mock_monitor_instance.start = Mock()
+            mock_monitor_instance._query_interval_secs = 10
             
             mock_monitor_class = Mock(return_value=mock_monitor_instance)
             

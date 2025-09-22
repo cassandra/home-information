@@ -1,3 +1,5 @@
+{% load humanize %}
+{% load common_tags %}
 {% load icons %}
 {% load tz %}
 {% timezone USER_TIMEZONE %}
@@ -26,19 +28,28 @@
       <div class="row mt-2">
         <div class="col-sm-3"><strong>Last Seen:</strong></div>
         <div class="col-sm-9">
-          {{ health_status.heartbeat|localtime|date:"H:i:s" }}
-          {% if health_status.expected_heartbeat_interval_secs %}
-          <span class="text-muted">
-            (Expected every {{ health_status.expected_heartbeat_interval_secs }}s)
+          {{ health_status.heartbeat|localtime|naturaltime }}
+          <span class="text-muted" >
+            ({{ health_status.heartbeat|localtime|date:"M j, Y H:i:s" }})
           </span>
-          {% endif %}
         </div>
       </div>
+      {% if health_status.expected_heartbeat_interval_secs %}
+      <div class="row mt-2">
+        <div class="col-sm-3"><strong>Expected every:</strong></div>
+        <div class="col-sm-9">{{ health_status.expected_heartbeat_interval_secs|format_duration }}</div>
+      </div>
+      {% endif %}
       {% endif %}
 
       <div class="row mt-2">
         <div class="col-sm-3"><strong>Last Update:</strong></div>
-        <div class="col-sm-9">{{ health_status.last_update|localtime|date:"M j, Y H:i:s" }}</div>
+        <div class="col-sm-9">
+          {{ health_status.last_update|localtime|naturaltime }}
+          <span class="text-muted" >
+            ({{ health_status.last_update|localtime|date:"M j, Y H:i:s" }})
+          </span>
+        </div>
       </div>
 
       {% if health_status.last_message %}

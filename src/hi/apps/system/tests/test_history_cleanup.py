@@ -4,17 +4,22 @@ Tests for History Cleanup Manager
 This module tests the history cleanup functionality using real database
 operations and models, following strict anti-mocking guidelines.
 """
-
+import asyncio
 from datetime import timedelta
 
 from django.test import TransactionTestCase
 
 import hi.apps.common.datetimeproxy as datetimeproxy
-from hi.apps.common.history_table_manager import HistoryTableManager, CleanupResult
+from hi.apps.common.history_table_manager import CleanupResult, CleanupResultType
+from hi.apps.common.history_table_manager import HistoryTableManager
+from hi.apps.common.module_utils import import_module_safe
 from hi.apps.control.models import Controller, ControllerHistory
+from hi.apps.entity.models import Entity, EntityState
 from hi.apps.event.models import EventDefinition, EventHistory
+from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 from hi.apps.sense.models import Sensor, SensorHistory
 from hi.apps.system.history_cleanup.manager import HistoryCleanupManager
+from hi.apps.system.monitors import SystemMonitor
 
 
 class HistoryTableManagerConfigurationTests(TransactionTestCase):
@@ -40,8 +45,6 @@ class HistoryTableManagerConfigurationTests(TransactionTestCase):
 
         # Test under limit scenario
         # Create required objects first
-        from hi.apps.sense.models import Sensor
-        from hi.apps.entity.models import Entity, EntityState
 
         entity = Entity.objects.create(
             name='Test Entity',
@@ -68,7 +71,6 @@ class HistoryTableManagerConfigurationTests(TransactionTestCase):
             )
 
         result = manager.cleanup_next_batch()
-        from hi.apps.common.history_table_manager import CleanupResult, CleanupResultType
         self.assertIsInstance(result, CleanupResult)
         self.assertEqual(result.result_type, CleanupResultType.UNDER_LIMIT)
         self.assertEqual(result.deleted_count, 0)
@@ -89,9 +91,6 @@ class HistoryTableManagerConfigurationTests(TransactionTestCase):
         )
 
         # Create required objects first
-        from hi.apps.sense.models import Sensor
-        from hi.apps.entity.models import Entity, EntityState
-
         entity = Entity.objects.create(
             name='Test Entity 2',
             integration_id='test_entity_2',
@@ -131,7 +130,6 @@ class HistoryTableManagerConfigurationTests(TransactionTestCase):
         result = manager.cleanup_next_batch()
 
         # Should delete 10 records (batch size)
-        from hi.apps.common.history_table_manager import CleanupResultType
         self.assertEqual(result.result_type, CleanupResultType.CLEANUP_PERFORMED)
         self.assertEqual(result.deleted_count, 10)
         self.assertEqual(SensorHistory.objects.count(), 60)
@@ -172,7 +170,6 @@ class HistoryCleanupManagerTests(TransactionTestCase):
         result = manager.cleanup_next_batch()
 
         # Should return CleanupResult with aggregated results
-        from hi.apps.common.history_table_manager import CleanupResult, CleanupResultType
         self.assertIsInstance(result, CleanupResult)
         self.assertEqual(result.deleted_count, 0)
         self.assertEqual(result.result_type, CleanupResultType.UNDER_LIMIT)
@@ -182,12 +179,6 @@ class HistoryCleanupManagerTests(TransactionTestCase):
         """Test cleanup with different states across tables."""
         current_time = datetimeproxy.now()
         old_time = current_time - timedelta(days=35)
-
-        # Create required foreign key objects
-        from hi.apps.sense.models import Sensor
-        from hi.apps.control.models import Controller
-        from hi.apps.event.models import EventDefinition
-        from hi.apps.entity.models import Entity, EntityState
 
         # Create entities and entity states
         sensor_entity = Entity.objects.create(
@@ -265,8 +256,6 @@ class HistoryCleanupManagerTests(TransactionTestCase):
             )
 
         # Create a test manager with smaller limits for testing
-        from hi.apps.common.history_table_manager import HistoryTableManager
-
         test_manager = HistoryCleanupManager()
         # Override the table managers with test-friendly limits
         test_manager._table_managers = [
@@ -305,14 +294,12 @@ class HistoryCleanupManagerTests(TransactionTestCase):
         result = test_manager.cleanup_next_batch()
 
         # Should return CleanupResult with cleanup performed
-        from hi.apps.common.history_table_manager import CleanupResult, CleanupResultType
         self.assertIsInstance(result, CleanupResult)
         self.assertTrue(result.deleted_count > 0)  # Should delete some records
         self.assertEqual(result.result_type, CleanupResultType.CLEANUP_PERFORMED)
         # Reason should indicate records were cleaned
         self.assertIn("Cleaned", result.reason)
         self.assertIn("records", result.reason)
-
 
     def test_cleanup_error_handling(self):
         """Test error handling when cleanup fails for a table."""
@@ -331,7 +318,6 @@ class HistoryCleanupManagerTests(TransactionTestCase):
         result = manager.cleanup_next_batch()
 
         # Should complete without throwing exceptions and return CleanupResult
-        from hi.apps.common.history_table_manager import CleanupResult, CleanupResultType
         self.assertIsInstance(result, CleanupResult)
         self.assertIsInstance(result.deleted_count, int)
         self.assertIsInstance(result.result_type, CleanupResultType)
@@ -351,7 +337,6 @@ class SystemIntegrationTests(TransactionTestCase):
 
     def test_system_monitor_integration(self):
         """Test that SystemMonitor can call HistoryCleanupManager."""
-        from hi.apps.system.monitors import SystemMonitor
 
         monitor = SystemMonitor()
 
@@ -360,7 +345,6 @@ class SystemIntegrationTests(TransactionTestCase):
         self.assertEqual(monitor._query_interval_secs, 8 * 60 * 60)  # 8 hours
 
         # Test that do_work() runs without errors
-        import asyncio
 
         async def test_do_work():
             await monitor.do_work()
@@ -370,8 +354,6 @@ class SystemIntegrationTests(TransactionTestCase):
 
     def test_monitor_discovery(self):
         """Test that SystemMonitor is discoverable by the monitor manager."""
-        from hi.apps.monitor.periodic_monitor import PeriodicMonitor
-        from hi.apps.common.module_utils import import_module_safe
 
         # Test discovery of SystemMonitor
         module = import_module_safe('hi.apps.system.monitors')

@@ -1,4 +1,4 @@
-{% load common_template_helpers %}
+{% load common_tags %}
 {% load icons %}
 {% generate_uuid as unique_id %}
 {% if not alarm_action_form.instance.pk %}
@@ -37,28 +37,28 @@
 
     <div class="input-group mb-2 mr-sm-2 w-100">
       <div class="input-group-prepend" >
-	<label for="{{ alarm_action_form.security.id_for_label }}"
-	       class="input-group-text" >{{ alarm_action_form.security_level_str.label }}</label>
-	{{ alarm_action_form.security_level_str }}
-	<small class="form-error text-danger" >{{ alarm_action_form.security_level_str.errors }}</small>
+        <label for="{{ alarm_action_form.security.id_for_label }}"
+               class="input-group-text" >{{ alarm_action_form.security_level_str.label }}</label>
+        {{ alarm_action_form.security_level_str }}
+        <small class="form-error text-danger" >{{ alarm_action_form.security_level_str.errors }}</small>
       </div>
     </div>
 
     <div class="input-group mb-2 mr-sm-2 w-100">
       <div class="input-group-prepend" >
-	<label for="{{ alarm_action_form.alarm.id_for_label }}"
-	       class="input-group-text" >{{ alarm_action_form.alarm_level_str.label }}</label>
-	{{ alarm_action_form.alarm_level_str }}
-	<small class="form-error text-danger" >{{ alarm_action_form.alarm_level_str.errors }}</small>
+        <label for="{{ alarm_action_form.alarm.id_for_label }}"
+               class="input-group-text" >{{ alarm_action_form.alarm_level_str.label }}</label>
+        {{ alarm_action_form.alarm_level_str }}
+        <small class="form-error text-danger" >{{ alarm_action_form.alarm_level_str.errors }}</small>
       </div>
     </div>
 
     <div class="input-group mb-2 mr-sm-2">
       <div class="input-group-prepend" >
-	<label for="{{ alarm_action_form.alarm.id_for_label }}"
-	       class="input-group-text" >{{ alarm_action_form.alarm_lifetime_secs.label }}</label>
-	{{ alarm_action_form.alarm_lifetime_secs }}
-	<small class="form-error text-danger" >{{ alarm_action_form.alarm_lifetime_secs.errors }}</small>
+        <label for="{{ alarm_action_form.alarm.id_for_label }}"
+               class="input-group-text" >{{ alarm_action_form.alarm_lifetime_secs.label }}</label>
+        {{ alarm_action_form.alarm_lifetime_secs }}
+        <small class="form-error text-danger" >{{ alarm_action_form.alarm_lifetime_secs.errors }}</small>
       </div>
     </div>
 
