@@ -93,33 +93,54 @@ Execute complete strategic-to-delivery workflow with intelligent coordination:
    make lint    # Must show no output
    ```
 
-   **Expert Review Coordination:**
-   - **Use Task tool with test-engineer agent**: Review test coverage and quality
-   - **Use Task tool with domain-expert agent**: Validate business logic implementation
-   - **Use Task tool with code-quality agent**: Review architecture and coding standards
+   **Specialized Code Review** - Launch focused agents based on implementation domains:
 
-   **Quality Validation:**
-   - All tests passing with comprehensive coverage
-   - Code quality standards met
-   - Architecture and patterns aligned
-   - Documentation updated appropriately
+   **Determine which agents to use based on what was implemented:**
+   - **backend-dev agent** (if database, models, managers, or Django backend code): Review Django patterns, database operations, backend architecture, and manager implementations
+   - **frontend-dev agent** (if templates, UI, CSS, JavaScript): Review template structure, frontend patterns, accessibility, and responsive design
+   - **integration-dev agent** (if APIs, external services, data sync): Review integration patterns, API design, data transformation, and external service coordination
+   - **test-engineer agent** (always for significant implementations): Review test coverage, test quality, testing patterns, and validation strategies
+   - **domain-expert agent** (if business logic or domain rules): Review business rule implementation, domain modeling, and requirement compliance
+   - **code-quality agent** (always): Review coding standards compliance, file organization, import structure, and adherence to project conventions from docs/CLAUDE.md
 
-   **Code Review:**
-   - Use `/review` command for self-review before PR creation
-   - This ensures all changes meet project standards
+   **Agent-Specific Review Focus:**
+   Each agent should focus ONLY on their area of expertise:
 
-8. **Phase 6: PR Creation** - Automated pull request generation:
+   - **backend-dev**: Django ORM usage, database patterns, manager architecture, system design
+   - **frontend-dev**: UI patterns, accessibility, responsive design, JavaScript quality
+   - **integration-dev**: API patterns, data synchronization, external service integration
+   - **test-engineer**: Test coverage, testing strategies, test quality and maintainability
+   - **domain-expert**: Business logic correctness, domain rule implementation, requirement fulfillment
+   - **code-quality**: Coding standards, file structure, imports, naming conventions, documentation quality
+
+   **Launch agents in parallel with specific scope:**
+   ```
+   Task: backend-dev - "Review only Django backend patterns and database operations"
+   Task: test-engineer - "Review only test coverage and testing approach"
+   Task: code-quality - "Review only coding standards and project convention compliance"
+   ```
+
+   **MANDATORY CHECKPOINT**: After code review completion, PAUSE execution and present review results to user for examination before proceeding with commit/PR creation.
+
+8. **Phase 6: User Review Checkpoint** - Mandatory pause for human review:
+   - Present all agent review results to user
+   - Summarize key findings and recommendations
+   - **PAUSE**: Wait for explicit user approval before proceeding
+   - Address any concerns or make requested changes
+   - Only proceed to Phase 7 after user approval
+
+9. **Phase 7: PR Creation** - Automated pull request generation (only after user approval):
    - Use `/commit` command to create a properly formatted commit with issue context
    - Use `/pr` command to create pull request with standard template
    - This ensures consistent formatting and automatic issue linking
    - The `/pr` command handles `Closes #$1` automatically
    - Example: `/pr bugfix/205-monitoring 205`
 
-9. **Phase 7: Post-Creation Validation** - Verify successful completion:
-   - Confirm PR created successfully
-   - Verify all GitHub Actions pass
-   - Check PR template formatting
-   - Provide PR URL for review
+10. **Phase 8: Post-Creation Validation** - Verify successful completion:
+    - Confirm PR created successfully
+    - Verify all GitHub Actions pass
+    - Check PR template formatting
+    - Provide PR URL for review
 
 **Orchestration Intelligence:**
 
@@ -137,7 +158,8 @@ Execute complete strategic-to-delivery workflow with intelligent coordination:
 **Quality Gates and Checkpoints:**
 - **Strategic checkpoint**: After planning, before implementation
 - **Design checkpoint**: After design assessment, before development
-- **Quality checkpoint**: After implementation, before PR creation
+- **Quality checkpoint**: After implementation, before code review
+- **Review checkpoint**: After code review, before PR creation (MANDATORY PAUSE)
 - **Completion checkpoint**: After PR creation, before handoff
 
 **Error Recovery:**
