@@ -67,10 +67,12 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         if not self._was_initialized:
             # Timing issues when first enabling could fail initialization.
             logger.warning( 'HAss monitor failed to initialize. Skipping work cycle.' )
+            self.record_warning( 'Was not initialized.' )
             return
         
         hass_manager = await self.hass_manager_async()
         if not hass_manager:
+            self.record_error( 'No manager found.' )
             return
         
         id_to_hass_state_map = await hass_manager.fetch_hass_states_from_api_async( verbose = False )
@@ -95,5 +97,9 @@ class HassMonitor( PeriodicMonitor, HassMixin, SensorResponseMixin ):
         await self.sensor_response_manager().update_with_latest_sensor_responses(
             sensor_response_map = sensor_response_latest_map,
         )
+
+        message = f'Processed {len(id_to_hass_state_map)} Home Assistant states.'
+        self.record_healthy( message )
+        hass_manager.record_healthy( message )
         return
     

@@ -36,7 +36,24 @@ class AlertMonitor( PeriodicMonitor, AlertMixin ):
             logger.debug( 'Checking for alert maintenance work.' )
         alert_manager = await self.alert_manager_async()
         if not alert_manager:
+            self.record_error( 'Alert manager not available' )
             return
-        
-        await alert_manager.do_periodic_maintenance()
+
+        try:
+            result = await alert_manager.do_periodic_maintenance()
+            summary_message = result.get_summary_message()
+
+            if result.error_message:
+                self.record_error( summary_message )
+            else:
+                self.record_healthy( summary_message )
+
+            if self.TRACE:
+                logger.debug( f'Alert maintenance completed: {summary_message}' )
+
+        except Exception as e:
+            error_msg = f"Alert maintenance failed: {str(e)[:50]}"
+            logger.exception( error_msg )
+            self.record_error( error_msg )
+
         return

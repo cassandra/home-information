@@ -36,25 +36,34 @@ class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
         )
 
     async def do_work(self):
-        await self._check_security_state()
+        try:
+            message = await self._check_security_state()
+            self.record_healthy(message)
+        except Exception as e:
+            error_msg = f"Security state check failed: {str(e)[:50]}"
+            logger.exception(error_msg)
+            self.record_error(error_msg)
         return
 
-    async def _check_security_state( self ):
+    async def _check_security_state( self ) -> str:
+        """Check security state and return status message."""
         logger.debug( 'Security monitor: Checking security state.' )
         settings_manager = await self.settings_manager_async()
         if not settings_manager:
-            return
+            return "Settings manager not available"
         security_manager = await self.security_manager_async()
         if not security_manager:
-            return
-        
+            return "Security manager not available"
+
         current_datetime = datetimeproxy.now()
         tz_name = ConsoleSettingsHelper().get_tz_name()
+        current_state = security_manager.security_state
+
         try:
             # Some states do not allow automated changes
-            if not security_manager.security_state.auto_change_allowed:
-                logger.debug( f'Security state "{security_manager.security_state}". Auto-change not allowed.' )
-                return
+            if not current_state.auto_change_allowed:
+                logger.debug( f'Security state "{current_state}". Auto-change not allowed.' )
+                return f"Auto-change blocked ({current_state.label} mode)"
 
             day_start_time_of_day = settings_manager.get_setting_value(
                 SecuritySetting.SECURITY_DAY_START,
@@ -68,7 +77,7 @@ class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
                 security_manager.update_security_state_auto(
                     new_security_state = SecurityState.DAY,
                 )
-                return
+                return f"Transitioned {current_state.label} → Day"
 
             night_start_time_of_day = settings_manager.get_setting_value(
                 SecuritySetting.SECURITY_NIGHT_START,
@@ -82,9 +91,9 @@ class SecurityMonitor( PeriodicMonitor, SettingsMixin, SecurityMixin ):
                 security_manager.update_security_state_auto(
                     new_security_state = SecurityState.NIGHT,
                 )
-                return
+                return f"Transitioned {current_state.label} → Night"
 
             logger.debug( 'Security monitor: No change needed.' )
+            return f"No change needed ({current_state.label} mode)"
         finally:
             self._last_security_state_check_datetime = current_datetime
-        return

@@ -49,10 +49,11 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         return self.ZONEMINDER_API_TIMEOUT_SECS
 
     async def _initialize(self):
-        zm_manager = await self.zm_manager_async()
+        zm_manager = await self.zm_manager_async()  # Allows sync use elsewhere in module
         if not zm_manager:
             return
-        _ = await self.sensor_response_manager_async()  # Allows async use of self.sensor_response_manager()
+        _ = await self.sensor_response_manager_async()  # Allows sync use elsewhere in module
+        
         self._zm_tzname = await zm_manager.get_zm_tzname_async()
         self._poll_from_datetime = datetimeproxy.now()
         zm_manager.register_change_listener( self.refresh )
@@ -69,16 +70,16 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         )
     
     def refresh( self ):
-        """ 
+        """
         Called when integration settings are changed (via listener callback).
-        
+
         Note: ZoneMinderManager.reload() is already called BEFORE this callback is triggered,
         so we should NOT call manager.reload() here to avoid redundant reloads.
         The monitor should just reset its own state to pick up fresh manager state.
         """
         # Reset monitor state so next cycle reinitializes with updated manager
         self._was_initialized = False
-        self._zm_tzname = None  # Clear cached timezone
+        self._zm_tzname = None
         logger.debug( 'ZoneMinderMonitor refreshed - will reinitialize with new settings on next cycle' )
         return
 
@@ -89,6 +90,7 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         if not self._was_initialized:
             # Timing issues when first enabling could fail initialization.
             logger.warning( 'ZoneMinder monitor failed to initialize. Skipping work cycle.' )
+            self.record_warning( 'Was not initialized.' )
             return
 
         sensor_response_map = dict()
@@ -106,6 +108,10 @@ class ZoneMinderMonitor( PeriodicMonitor, ZoneMinderMixin, SensorResponseMixin )
         await self.sensor_response_manager().update_with_latest_sensor_responses(
             sensor_response_map = sensor_response_map,
         )
+        message = f'Processed {len(sensor_response_map)} ZoneMinder states.'
+        self.record_healthy( message )
+        if self.zm_manager():
+            self.zm_manager().record_healthy( message )
         return
     
     async def _process_events(self):
