@@ -2,9 +2,9 @@
 
 This file provides AI-specific guidance for Claude Code when working with this repository.
 
-## Development Philosophy - Our Prime Directive
+## Key Philosophy - Our Prime Directive
 
-In all code we write, we strive for extremely well factored code. We are thoughtful about responsibility boundaries, encapsulation, readability and maintainability. We do not write the first code we can think of to solve the problem - we find a well factored version that does the job.
+In all code we write, we strive for extremely well factored code. We are thoughtful about responsibility boundaries, encapsulation, readability and maintainability. We do not write the first code we can think of to solve the problem - we find a well factored version that does the job.  We avoid assumptions and seek clarification and verification before acting.
 
 ## Custom Command Ecosystem
 
@@ -81,6 +81,13 @@ This project has extensive custom commands for workflow automation. Use them pro
 - **Use individual commands** for precise control or unusual cases
 - **Follow command guidance** - they reference authoritative documentation
 - **Trust the process** - commands implement project best practices
+
+## Tone and Behavior
+- **Criticism is welcome** Please tell me when I am wrong or mistaken, or even when you think I might be wrong or mistaken.
+- **Correct** Please tell me if there is a better approach than the one I am taking.
+- **Be concise** I will let you know when I need longer explanations.
+- **Do not flatter** Do not give compliments unless I am specifically asking for your judgement.
+- **Ask**  Feel free to ask many questions. If you are in doubt of my intent, don't guess. Ask.
 
 ## Key Project References
 

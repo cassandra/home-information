@@ -29,3 +29,4 @@ __pycache__/
 /docs/**/*.html
 
 !.github/
+/CLAUDE.md

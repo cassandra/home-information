@@ -34,7 +34,6 @@ logger = logging.getLogger(__name__)
 
 
 class CleanupResultType(LabeledEnum):
-    """Types of cleanup operation results."""
 
     UNDER_LIMIT        = ( 'Under Limit',
                            'Table is under the record limit, no cleanup needed' )
@@ -53,7 +52,7 @@ class CleanupResultType(LabeledEnum):
 @dataclass
 class CleanupResult:
     result_type       : CleanupResultType
-    reason            : str  # Human-readable message for health status
+    reason            : str
     deleted_count     : int
     duration_seconds  : float            = 0.0
 
@@ -90,7 +89,7 @@ class HistoryTableManager:
         self.min_days_retention = min_days_retention
         self.max_records_limit = max_records_limit
         self.deletion_batch_size = deletion_batch_size
-        return
+        return None
 
     def cleanup_next_batch(self) -> CleanupResult:
         """
@@ -114,7 +113,6 @@ class HistoryTableManager:
         logger.debug(f"Starting cleanup batch for table '{table_name}'")
 
         try:
-            # Check if we're over the total record limit
             total_count = self._get_record_count()
 
             if total_count <= self.max_records_limit:
@@ -129,14 +127,12 @@ class HistoryTableManager:
                     duration_seconds=(datetimeproxy.now() - start_time).total_seconds()
                 )
 
-            # Find records older than retention period
             cutoff_date = datetimeproxy.now() - timedelta(days=self.min_days_retention)
 
             old_records_qs = self.queryset.filter(
                 **{f"{self.date_field_name}__lt": cutoff_date}
             ).order_by(self.date_field_name)
 
-            # Check if there are any old records eligible for deletion
             if not old_records_qs.exists():
                 logger.debug(
                     f"No records older than {cutoff_date} ({self.min_days_retention} days) "
@@ -149,7 +145,6 @@ class HistoryTableManager:
                     duration_seconds=(datetimeproxy.now() - start_time).total_seconds()
                 )
 
-            # Get IDs of next batch to delete (oldest first)
             ids_to_delete = list(old_records_qs.values_list('pk', flat=True)[:self.deletion_batch_size])
 
             if not ids_to_delete:
@@ -161,7 +156,6 @@ class HistoryTableManager:
                     duration_seconds=(datetimeproxy.now() - start_time).total_seconds()
                 )
 
-            # Delete the batch
             deleted_count = self._delete_records(ids_to_delete)
             duration = (datetimeproxy.now() - start_time).total_seconds()
 
@@ -185,15 +179,9 @@ class HistoryTableManager:
             raise
 
     def _get_record_count(self) -> int:
-        """
-        Get the total number of records in the history table.
-        """
         return self.queryset.count()
 
     def _delete_records( self, ids: List[int] ) -> int:
-        """
-        Delete records with the given IDs in a single transaction.
-        """
         if not ids:
             return 0
 
@@ -209,3 +197,4 @@ class HistoryTableManager:
                 f"with IDs: {ids[:5]}{'...' if len(ids) > 5 else ''}"
             )
             return deleted_count
+        return 0
