@@ -1,4 +1,5 @@
 {% load icons %}
+{% if request.view_parameters.collection_id %}
 <div class="mx-1 my-2">
   <a href="{% url 'collection_edit_mode' collection_id=request.view_parameters.collection_id %}"
      class="btn btn-primary w-100" role="button" data-async="true">
@@ -6,3 +7,10 @@
     <small>Edit:</small> {{ request.view_parameters.collection.name }}
   </a>
 </div>
+{% else %}
+<div class="alert alert-info mx-1 my-2">
+  No collection selected.
+</div>
+{% endif %}
+
+

@@ -43,19 +43,6 @@ class EditViewHelpers:
 
         # Unused = not potentially visible AND not in any collection
         accessible_ids = potentially_visible_ids | collection_member_ids
-
-
-
-
-        
-
-        print( f'\nUNUSED: {len(all_entity_ids - accessible_ids)}' )
-
-
-
-
-        
-        
         return all_entity_ids - accessible_ids
 
     @staticmethod

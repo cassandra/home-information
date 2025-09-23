@@ -1,4 +1,5 @@
 {% load icons %}
+{% if request.view_parameters.location_view.id %}
 <div class="mx-1 my-2">
   <a href="{% url 'location_view_edit_mode' location_view_id=request.view_parameters.location_view.id %}"
      class="btn btn-primary w-100" role="button" data-async="true">
@@ -6,3 +7,8 @@
     <small>Edit:</small> {{ request.view_parameters.location_view.name }}
   </a>
 </div>
+{% else %}
+<div class="alert alert-info mx-1 my-2">
+  No view selected.
+</div>
+{% endif %}
