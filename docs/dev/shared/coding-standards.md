@@ -61,6 +61,12 @@ Checklists for writing and reviewing code.
 - [ ] Templates appear in a subdirectory matching their purpose: modals, panes, pages.
 - [ ] Template tags `load` statments near the top of the file.
 
+**Comments**:
+- [ ] No comments that state what is obvious from the naming and typing and context.
+- [ ] No method docstrings that simply restate what the method name already says.
+- [ ] No inline comments that describe what the code is doing (vs why).
+- [ ] No comments that refer to the past, future or current work in progress.
+
 ## Code Conventions Details
 
 ### No "magic" strings
@@ -111,6 +117,34 @@ For readability, besides adding type hints to method parameters, we adhere to th
                          location : Location, svg_path_str: str ) -> EntityPath:
 ```
 
+### Variable Assignment vs Inlining
+
+We prefer explicit variable assignment over inlining function calls. This is not about minimizing lines of code - it's about readability and debuggability.
+
+**Good** - Named intermediate values
+```python
+table_name = self.queryset.model._meta.db_table
+logger.debug( f"Processing table: {table_name}" )
+
+cutoff_date = datetimeproxy.now() - timedelta( days=30 )
+old_records = queryset.filter( created__lt=cutoff_date )
+```
+
+**Bad** - Inlined function calls
+```python
+logger.debug( f"Processing table: {self.queryset.model._meta.db_table}" )
+
+old_records = queryset.filter(
+    created__lt=datetimeproxy.now() - timedelta( days=30 )
+)
+```
+
+Benefits of variable assignment:
+- Provides semantic naming that clarifies intent
+- Easier to debug (can inspect intermediate values)
+- Improves readability by breaking complex expressions
+- Allows reuse without recalculation
+
 ### Explicit Booleans
 
 We prefer to wrap all expression that evaluate to a boolean in `bool()` to make it explicit what type we are expecting:
@@ -122,7 +156,7 @@ We prefer to wrap all expression that evaluate to a boolean in `bool()` to make 
 
 **Bad***
 ```
-   my_variable = len(my_list) == 4 
+   my_variable = len(my_list) == 4
 ```
 
 ### Complex Boolean Expressions
@@ -184,6 +218,16 @@ def process_items(items):
 - Examples: `x = y + z`, `result += value`, `if count == 0`
 - Exception: Don't add spaces in function keyword arguments (`func(x=y)`) or type annotations
 
+### Parentheses Spacing (Deliberate PEP8 Deviation)
+- **We prefer spaces inside parentheses for enhanced readability**
+- This is a deliberate deviation from PEP8 standards (E201, E202)
+- Examples:
+  - Good: `if ( condition ):`
+  - Good: `my_function( param1, param2 )`
+  - Good: `result = calculate( x + y )`
+- This applies to all parentheses: function calls, conditionals, expressions
+- Rationale: Extra spacing improves readability by visually separating content from delimiters
+
 ### Boolean Expressions
 When assigning or returning boolean values, wrap expressions in `bool()` to make intent explicit:
 
@@ -201,6 +245,10 @@ in_modal_context = request.POST.get('context') == 'modal'
 
 The project uses two different flake8 configurations:
 - Development Configuration (`src/.flake8`) : Our preferred style for daily development work, with specific whitespace deviations from PEP8 for enhanced readability:
+  - **E201, E202**: We use spaces inside parentheses for better visual separation
+  - **E221**: We align operators and values in multi-line declarations
+  - **E251**: We use spaces around keyword parameters for consistency
+  - **Note**: These are deliberate choices for improved code readability, not oversights
 - CI Configuration (`src/.flake8-ci`): GitHub Actions enforces these standards and blocks PR merging if violations exist.
 
 ## Commenting Guidelines
@@ -292,19 +340,28 @@ The project uses two different flake8 configurations:
 
 #### BAD Comments - What NOT To Include
 
-1. **Avoid commenting obvious variable purposes**
-   - Bad: `# Store original entity_type_str to detect changes`
-   - The variable name should make this clear
+1. **Method docstrings that restate the obvious**
+   - Bad: `"""Get the total number of records in the history table."""` for `_get_record_count()` in a HistoryTableManager class
+   - Bad: `"""Delete records with the given IDs."""` for `_delete_records( ids )`
+   - Bad: `"""Types of cleanup operation results."""` for an enum called CleanupResultType
+   - The method/class name + parameters + return type already convey this information
+   - Exception: Public API methods may need docstrings for documentation generation
 
-2. **Remove work-stream artifacts**
+2. **Avoid commenting obvious variable purposes**
+   - Bad: `# Store original entity_type_str to detect changes`
+   - Bad: `# Human-readable message for health status` when field is named `reason: str`
+   - The variable name and type should make this clear
+
+3. **Remove work-stream artifacts**
    - Bad: Comments explaining why tests were removed or referencing specific issues
    - Comments should be timeless, not tied to particular development contexts
 
-3. **Redundant descriptions of clear code**
+4. **Redundant descriptions of clear code**
    - Bad: `# Track EntityType change and response needed after transaction`
-   - When variable names already convey this information
+   - Bad: `# Check if we're over the total record limit` before `if total_count <= self.max_records_limit:`
+   - When variable names and conditionals already convey this information
 
-4. **Cryptic references**
+5. **Cryptic references**
    - Bad: `# Recreate to preserve "max" to show new form`
    - If unclear, either explain properly or remove
 

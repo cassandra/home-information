@@ -7,10 +7,10 @@ SCRIPTS = deploy/env-generate.py deploy/run_container.sh
 .DEFAULT_GOAL := fix-permissions
 
 test:
-	cd src && ./manage.py test --keepdb
+	cd src && ./manage.py test --keepdb $(filter-out $@,$(MAKECMDGOALS))
 
 test-fast:
-	cd src && ./manage.py test --keepdb --parallel 4
+	cd src && ./manage.py test --keepdb --parallel 4 $(filter-out $@,$(MAKECMDGOALS))
 
 lint:
 	cd src && flake8 --config=.flake8-ci hi/ 2>/dev/null
@@ -53,4 +53,7 @@ env-build-dev:	.private/env/development.sh fix-permissions
 fix-permissions:
 	@echo "Setting execute permissions for $(SCRIPTS)"
 	chmod +x $(SCRIPTS)
+
+%:
+	@:
 

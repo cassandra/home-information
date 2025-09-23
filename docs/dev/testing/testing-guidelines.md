@@ -12,11 +12,18 @@ Run individual tests using Django with:
 
 ```bash
 cd $PROJ_DIR
-./src/manage.py test --keepdb <test-module-goes-here>
+make test <hi.test.module.goes.here>
 ```
+
+The make targets use the Django testing framework.
+
 ## Overall Guidelines
 
-We only want to mock as external system boundaries and avoid mocking anything that is internal to this code base.  We need to know how our internal components integrate and the test are the best way to know if something has chnaged in an incompatible way.  We rarely want "pure" unit testing since mocking internal app boundaries masks issues.
+YOU **MUST NOT** use mocking unless absolutely necessary.  You use real system components and create test data for all our tests (using synthetic-data.py pattern). We need to know how our internal components integrate and the test are the best way to know if something has changed in an incompatible way.  We rarely want "pure" unit testing since mocking internal app boundaries masks issues.
+
+We only want to mock as external system boundaries. Anything  that interacts with systems outside the code base, or that would leave remaining artifacts (e.g., API services, MEDIA_ROOT and other filesystem writes).
+
+YOU **NEVER** write test that depend on log messages, human readable strings or other hard-coded strings.  You test outcomes, not implementation details and artifacts.
 
 ## High-Value vs Low-Value Testing Criteria
 

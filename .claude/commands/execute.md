@@ -120,13 +120,21 @@ Execute complete strategic-to-delivery workflow with intelligent coordination:
    Task: code-quality - "Review only coding standards and project convention compliance"
    ```
 
-   **MANDATORY CHECKPOINT**: After code review completion, PAUSE execution and present review results to user for examination before proceeding with commit/PR creation.
+   **CRITICAL: Address ALL code review feedback before proceeding:**
+   - Collect all review agent feedback
+   - Implement ALL suggested improvements and fixes
+   - Make iterative changes based on review recommendations
+   - The code presented to the user must be the FINAL version after addressing all review comments
+   - Do NOT just show review results - actually fix the issues first
+
+   **MANDATORY CHECKPOINT**: After implementing all review feedback, present the FINAL improved code to user for examination before proceeding with commit/PR creation.
 
 8. **Phase 6: User Review Checkpoint** - Mandatory pause for human review:
-   - Present all agent review results to user
-   - Summarize key findings and recommendations
+   - Present the FINAL code that already incorporates all review feedback
+   - Summarize what improvements were made based on agent reviews
+   - Show that all quality gates still pass after improvements
    - **PAUSE**: Wait for explicit user approval before proceeding
-   - Address any concerns or make requested changes
+   - Address any additional concerns or make requested changes
    - Only proceed to Phase 7 after user approval
 
 9. **Phase 7: PR Creation** - Automated pull request generation (only after user approval):

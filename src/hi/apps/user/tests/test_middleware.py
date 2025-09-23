@@ -35,6 +35,7 @@ class TestAuthenticationMiddleware(BaseTestCase):
         # Verify exempt URL names are defined
         expected_exempt_urls = {
             'admin',
+            'manifest',
             'user_signin',
             'user_signin_magic_code',
             'user_signin_magic_link',
