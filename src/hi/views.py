@@ -183,7 +183,7 @@ class HomeView( View ):
 class StartView( View ):
 
     def get(self, request, *args, **kwargs):
-    
+
         # This view only for first time users (when no LocationViews exist)
         if LocationView.objects.all().exists():
             redirect_url = reverse( 'home' )
@@ -197,9 +197,64 @@ class StartView( View ):
             ProfileType.TWO_STORY,
             ProfileType.APARTMENT,
         ]
-        
-        context = {   
+
+        context = {
             'profile_type_list': profile_type_list,
         }
         return render( request, 'pages/start.html', context )
+
+
+class ManifestView( View ):
+
+    def get(self, request, *args, **kwargs):
+        """
+        Serves the PWA manifest.json for full screen mode support.
+        Configured for landscape orientation (tablet primary use case).
+        """
+        manifest_data = {
+            "name": "Home Information",
+            "short_name": "Hi",
+            "description": "Smart home monitoring and control system",
+            "start_url": "/",
+            "scope": "/",
+            "display": "fullscreen",
+            "orientation": "landscape",
+            "theme_color": "#177072",
+            "background_color": "#fdfdfd",
+            "icons": [
+                {
+                    "src": "/static/img/hi-icon-16x16.png",
+                    "sizes": "16x16",
+                    "type": "image/png"
+                },
+                {
+                    "src": "/static/img/hi-icon-32x32.png",
+                    "sizes": "32x32",
+                    "type": "image/png"
+                },
+                {
+                    "src": "/static/img/hi-icon-96x96.png",
+                    "sizes": "96x96",
+                    "type": "image/png"
+                },
+                {
+                    "src": "/static/img/hi-icon-128x128.png",
+                    "sizes": "128x128",
+                    "type": "image/png"
+                },
+                {
+                    "src": "/static/img/hi-icon-196x196.png",
+                    "sizes": "196x196",
+                    "type": "image/png"
+                },
+                {
+                    "src": "/static/img/hi-icon-512x512.png",
+                    "sizes": "512x512",
+                    "type": "image/png",
+                    "purpose": "any maskable"
+                }
+            ]
+        }
+
+        return JsonResponse( manifest_data, json_dumps_params={'indent': 2} )
     

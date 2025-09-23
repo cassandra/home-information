@@ -20,6 +20,8 @@ urlpatterns = [
     re_path(r'^(?P<filename>(service-worker.js))$',
             views.home_javascript_files, name='home-javascript-files'),
 
+    re_path( r'^manifest.json$', views.ManifestView.as_view(), name='manifest' ),
+
 
     path('admin/', admin.site.urls),
 

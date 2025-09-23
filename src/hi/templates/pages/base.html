@@ -7,12 +7,29 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <title>{% block head_title %}Home Information{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#177072">
+
+    <!-- Apple PWA Configuration -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Hi">
+
+    <!-- Standard Icons -->
     <link rel="shortcut icon" type="image/png" href="{% static 'favicon.png' %}"/>
-    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-16x16.png' %}" sizes="16x16">  
-    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-32x32.png' %}" sizes="32x32">  
-    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-96x96.png' %}" sizes="96x96">  
-    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-128x128.png' %}" sizes="128x128">  
-    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-196x196.png' %}" sizes="196x196">  
+    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-16x16.png' %}" sizes="16x16">
+    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-32x32.png' %}" sizes="32x32">
+    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-96x96.png' %}" sizes="96x96">
+    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-128x128.png' %}" sizes="128x128">
+    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-196x196.png' %}" sizes="196x196">
+    <link rel="icon" type="image/png" href="{% static 'img/hi-icon-512x512.png' %}" sizes="512x512">
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="{% static 'img/hi-icon-128x128.png' %}" sizes="128x128">
+    <link rel="apple-touch-icon" href="{% static 'img/hi-icon-196x196.png' %}" sizes="196x196">
+    <link rel="apple-touch-icon" href="{% static 'img/hi-icon-512x512.png' %}" sizes="512x512">
     {% stylesheet 'css_head' %}
     {% block head_css %}{% endblock %}
     {% block head_javascript %}{% endblock %}
@@ -39,6 +56,21 @@
     {% block footer_pre_javascript %}{% endblock %}
     {% javascript 'js_after_content' %}
     {% block footer_post_javascript %}{% endblock %}
+
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(function(registration) {
+              console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            })
+            .catch(function(error) {
+              console.log('ServiceWorker registration failed: ', error);
+            });
+        });
+      }
+    </script>
 
     {% if initial_modal_template_name|default:None %}
     <div id="antinode-initial-modal">
