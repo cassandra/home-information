@@ -16,21 +16,29 @@
       </div>
 
       <div class="search-container mb-3">
-        <input type="text" id="entity-search-input" class="form-control entity-search-input"
-               placeholder="Search items...">
+        <div class="input-group">
+          <input type="text" id="{{ DIVID.ENTITY_PICKER_SEARCH_INPUT_ID }}" class="form-control entity-search-input"
+                 placeholder="Search items...">
+          <div class="input-group-append">
+            <button type="button" class="btn btn-outline-secondary {{ DIVID.ENTITY_PICKER_SEARCH_CLEAR_CLASS }}"
+                    title="Clear search">
+              {% icon "close" size="sm" %}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="filter-toggles mb-3">
-        <button class="entity-filter-btn active" data-filter="all">
+        <button class="{{ DIVID.ENTITY_PICKER_FILTER_BTN_CLASS }} active" {{ DIVID.ENTITY_PICKER_DATA_FILTER_ATTR }}="{{ DIVID.ENTITY_PICKER_FILTER_ALL }}">
           All
         </button>
-        <button class="entity-filter-btn" data-filter="in-view">
+        <button class="{{ DIVID.ENTITY_PICKER_FILTER_BTN_CLASS }}" {{ DIVID.ENTITY_PICKER_DATA_FILTER_ATTR }}="{{ DIVID.ENTITY_PICKER_STATUS_IN_VIEW }}">
           In View
         </button>
-        <button class="entity-filter-btn" data-filter="not-in-view">
+        <button class="{{ DIVID.ENTITY_PICKER_FILTER_BTN_CLASS }}" {{ DIVID.ENTITY_PICKER_DATA_FILTER_ATTR }}="{{ DIVID.ENTITY_PICKER_STATUS_NOT_IN_VIEW }}">
           Not in View
         </button>
-        <button class="entity-filter-btn" data-filter="unused">
+        <button class="{{ DIVID.ENTITY_PICKER_FILTER_BTN_CLASS }}" {{ DIVID.ENTITY_PICKER_DATA_FILTER_ATTR }}="{{ DIVID.ENTITY_PICKER_STATUS_UNUSED }}">
           Unused
         </button>
       </div>
@@ -38,7 +46,7 @@
 
     <div class="entity-picker-items" id="entity-picker-items">
       {% for entity_view_group in entity_view_group_list %}
-      <div class="entity-group-section" data-group="{{ entity_view_group.entity_group_type.label|slugify }}">
+      <div class="{{ DIVID.ENTITY_PICKER_GROUP_SECTION_CLASS }}" data-group="{{ entity_view_group.entity_group_type.label|slugify }}">
         <div class="entity-group-header"
              data-toggle="collapse"
              data-target="#group-{{ entity_view_group.entity_group_type.label|slugify }}"
@@ -58,7 +66,7 @@
       {% endfor %}
 
       {% if collection_view_group.item_list %}
-      <div class="entity-group-section" data-group="collections">
+      <div class="{{ DIVID.ENTITY_PICKER_GROUP_SECTION_CLASS }}" data-group="collections">
         <div class="entity-group-header"
              data-toggle="collapse"
              data-target="#group-collections"

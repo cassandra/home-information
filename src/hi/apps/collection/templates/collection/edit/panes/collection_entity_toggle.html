@@ -1,9 +1,10 @@
 <div id="hi-entity-toggle-collection-{{ entity.id }}"
-     class="entity-item-row{% if exists_in_collection %} in-view{% endif %}"
+     class="{{ DIVID.ENTITY_PICKER_FILTERABLE_ITEM_CLASS }} entity-item-row{% if exists_in_collection %} in-view{% endif %}"
      data-entity-id="{{ entity.id }}"
-     data-entity-name="{{ entity.name }}"
-     data-entity-type="{{ entity.entity_type }}"
-     data-status="{% if exists_in_collection %}in-collection{% else %}not-in-collection{% endif %}">
+     {{ DIVID.ENTITY_PICKER_DATA_NAME_ATTR }}="{{ entity.name }}"
+     {{ DIVID.ENTITY_PICKER_DATA_TYPE_ATTR }}="{{ entity.entity_type }}"
+     {{ DIVID.ENTITY_PICKER_DATA_STATUS_ATTR }}="{% if exists_in_collection %}{{ DIVID.ENTITY_PICKER_STATUS_IN_COLLECTION }}{% else %}{{ DIVID.ENTITY_PICKER_STATUS_NOT_IN_COLLECTION }}{% endif %}"
+     data-item-type="entity">
   <form method="POST" role="form"
         action="{% url 'collection_edit_collection_entity_toggle' collection_id=collection.id entity_id=entity.id %}"
         data-async="#hi-entity-toggle-collection-{{ entity.id }}" data-mode="replace" >

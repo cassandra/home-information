@@ -1497,6 +1497,25 @@ g[hover] {
     margin-left: 6px;
 }
 
+/* Entity picker search clear button alignment */
+.entity-search-clear {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.search-container .input-group-append {
+    display: flex;
+    align-items: stretch;
+}
+
+.search-container .input-group {
+    display: flex;
+    align-items: stretch;
+}
+
 .unused-indicator {
     color: var(--warning-color);
     font-size: 12px;
