@@ -8,6 +8,7 @@ class AuthenticationMiddleware(object):
 
     EXEMPT_VIEW_URL_NAMES = {
         'admin',
+        'manifest',
         'user_signin',
         'user_signin_magic_code',
         'user_signin_magic_link',
