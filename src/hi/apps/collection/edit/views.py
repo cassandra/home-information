@@ -241,10 +241,13 @@ class CollectionManageItemsView( HiSideView ):
         return 'collection/edit/panes/collection_manage_items.html'
 
     def get_template_context( self, request, *args, **kwargs ):
+        from hi.apps.edit.edit_view_helpers import EditViewHelpers
 
         collection = CollectionManager().get_default_collection( request = request )
+        unused_entity_ids = EditViewHelpers.get_unused_entity_ids()
         entity_collection_group_list = CollectionManager().create_entity_collection_group_list(
             collection = collection,
+            unused_entity_ids = unused_entity_ids,
         )
         return {
             'entity_collection_group_list': entity_collection_group_list,
@@ -283,11 +286,16 @@ class CollectionEntityToggleView( View, CollectionViewMixin, EntityViewMixin ):
             entity = entity,
             collection = collection,
         )
-            
+
+        # Check if entity is unused (not in any location and not in any collection)
+        from hi.apps.edit.edit_view_helpers import EditViewHelpers
+        is_unused = EditViewHelpers.is_entity_unused(entity.id)
+
         context = {
             'collection': collection,
             'entity': entity,
             'exists_in_collection': exists_in_collection,
+            'is_unused': is_unused,
         }
         template = get_template( 'collection/edit/panes/collection_entity_toggle.html' )
         main_content = template.render( context, request = request )

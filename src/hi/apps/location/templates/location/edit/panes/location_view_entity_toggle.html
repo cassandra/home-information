@@ -1,9 +1,9 @@
 <div id="hi-entity-toggle-location-{{ entity.id }}"
-     class="{{ DIVID.ENTITY_PICKER_FILTERABLE_ITEM_CLASS }} entity-item-row{% if exists_in_view %} in-view{% endif %}"
+     class="{{ DIVID.ENTITY_PICKER_FILTERABLE_ITEM_CLASS }} entity-item-row{% if is_unused %} unused{% elif exists_in_view %} in-view{% endif %}"
      data-entity-id="{{ entity.id }}"
      {{ DIVID.ENTITY_PICKER_DATA_NAME_ATTR }}="{{ entity.name }}"
      {{ DIVID.ENTITY_PICKER_DATA_TYPE_ATTR }}="{{ entity.entity_type }}"
-     {{ DIVID.ENTITY_PICKER_DATA_STATUS_ATTR }}="{% if exists_in_view %}{{ DIVID.ENTITY_PICKER_STATUS_IN_VIEW }}{% else %}{{ DIVID.ENTITY_PICKER_STATUS_NOT_IN_VIEW }}{% endif %}"
+     {{ DIVID.ENTITY_PICKER_DATA_STATUS_ATTR }}="{% if is_unused %}{{ DIVID.ENTITY_PICKER_STATUS_UNUSED }}{% elif exists_in_view %}{{ DIVID.ENTITY_PICKER_STATUS_IN_VIEW }}{% else %}{{ DIVID.ENTITY_PICKER_STATUS_NOT_IN_VIEW }}{% endif %}"
      data-item-type="entity">
   <form method="POST" role="form"
         action="{% url 'location_edit_location_view_entity_toggle' location_view_id=location_view.id entity_id=entity.id %}"

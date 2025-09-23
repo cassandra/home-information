@@ -57,7 +57,7 @@
         </div>
         <div class="entity-group-items collapse show" id="group-{{ entity_view_group.entity_group_type.label|slugify }}">
           {% for entity_view_item in entity_view_group.item_list %}
-          {% include "location/edit/panes/location_view_entity_toggle.html" with location_view=location_view entity=entity_view_item.entity exists_in_view=entity_view_item.exists_in_view %}
+          {% include "location/edit/panes/location_view_entity_toggle.html" with location_view=location_view entity=entity_view_item.entity exists_in_view=entity_view_item.exists_in_view is_unused=entity_view_item.is_unused %}
           {% endfor %}
         </div>
       </div>
@@ -77,7 +77,7 @@
         </div>
         <div class="entity-group-items collapse show" id="group-collections">
           {% for collection_view_item in collection_view_group.item_list %}
-          {% include "location/edit/panes/location_view_collection_toggle.html" with location_view=location_view collection=collection_view_item.collection exists_in_view=collection_view_item.exists_in_view %}
+          {% include "location/edit/panes/location_view_collection_toggle.html" with location_view=location_view collection=collection_view_item.collection exists_in_view=collection_view_item.exists_in_view is_unused=collection_view_item.is_unused %}
           {% endfor %}
         </div>
       </div>

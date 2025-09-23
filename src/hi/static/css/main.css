@@ -1437,41 +1437,48 @@ g[hover] {
     margin-left: 8px;
 }
 
-.entity-item-row {
+.entity-item-row,
+.collection-item-row {
     padding: 6px 0;
     margin-bottom: 2px;
     border-radius: 4px;
     transition: background-color 0.2s;
 }
 
-.entity-item-row form {
+.entity-item-row form,
+.collection-item-row form {
     display: flex;
     align-items: center;
     margin: 0;
 }
 
-.entity-item-row:hover {
+.entity-item-row:hover,
+.collection-item-row:hover {
     background: var(--edit-tertiary-bg-color);
 }
 
-.entity-item-row.in-view {
+.entity-item-row.in-view,
+.collection-item-row.in-view {
     background: var(--edit-primary-bg-color);
     border-left: 3px solid var(--primary-color);
     padding-left: 5px;
 }
 
-.entity-item-row.in-view:hover {
+.entity-item-row.in-view:hover,
+.collection-item-row.in-view:hover {
     background: var(--primary-color);
     color: var(--on-primary-color);
 }
 
-.entity-item-row.unused {
+.entity-item-row.unused,
+.collection-item-row.unused {
     border-left: 3px solid var(--warning-color);
     background: var(--edit-secondary-bg-color);
     padding-left: 5px;
 }
 
-.entity-item-row.unused:hover {
+.entity-item-row.unused:hover,
+.collection-item-row.unused:hover {
     background: var(--secondary-highlight-color);
 }
 
