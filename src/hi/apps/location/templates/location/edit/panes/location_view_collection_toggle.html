@@ -1,14 +1,21 @@
 <div id="hi-collection-toggle-location{{ collection.id }}"
-     class="d-flex justify-content-start">
-  <div  class="">
-    <form method="POST" role="form"
-	  action="{% url 'location_edit_location_view_collection_toggle' location_view_id=location_view.id collection_id=collection.id %}"
-	  data-async="#hi-collection-toggle-location{{ collection.id }}" data-mode="replace" >
-      {% csrf_token %}
-      <input type="checkbox" id="collection-toggle-location-checkbox-{{ collection.id }}" name="checkbox_state" 
-             {% if exists_in_view %}checked{% endif %} 
-	     onchange-async="true" >
-      <label for="collection-toggle-location-checkbox-{{ collection.id }}">{{ collection.name }}</label>
-    </form>
-  </div>
+     class="{{ DIVID.ENTITY_PICKER_FILTERABLE_ITEM_CLASS }} collection-item-row{% if exists_in_view %} in-view{% endif %}"
+     data-entity-id="{{ collection.id }}"
+     {{ DIVID.ENTITY_PICKER_DATA_NAME_ATTR }}="{{ collection.name }}"
+     {{ DIVID.ENTITY_PICKER_DATA_TYPE_ATTR }}="collection"
+     {{ DIVID.ENTITY_PICKER_DATA_STATUS_ATTR }}="{% if exists_in_view %}{{ DIVID.ENTITY_PICKER_STATUS_IN_VIEW }}{% else %}{{ DIVID.ENTITY_PICKER_STATUS_NOT_IN_VIEW }}{% endif %}"
+     data-item-type="collection">
+  <form method="POST" role="form"
+        action="{% url 'location_edit_location_view_collection_toggle' location_view_id=location_view.id collection_id=collection.id %}"
+        data-async="#hi-collection-toggle-location{{ collection.id }}" data-mode="replace" >
+    {% csrf_token %}
+    <input type="checkbox" id="collection-toggle-location-checkbox-{{ collection.id }}"
+           name="checkbox_state"
+           class="entity-item-checkbox"
+           {% if exists_in_view %}checked{% endif %}
+           onchange-async="true" >
+    <label for="collection-toggle-location-checkbox-{{ collection.id }}" class="entity-item-label">
+      {{ collection.name }}
+    </label>
+  </form>
 </div>

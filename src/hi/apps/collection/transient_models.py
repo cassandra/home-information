@@ -40,6 +40,7 @@ class EntityCollectionItem:
 
     entity                : Entity
     exists_in_collection  : bool
+    is_unused             : bool = False
 
 
 @dataclass

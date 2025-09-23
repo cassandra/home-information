@@ -1,4 +1,5 @@
 {% load static %}
+{% load icons %}
 <div class="p-1">
   <div class="d-flex justify-content-between">
     {% include "location/panes/location_view_buttons.html" %}
@@ -8,15 +9,20 @@
     <div class="d-flex justify-content-end">
       {% if request.view_parameters.location %}
       <div class="px-1">
+        {% if request.view_parameters.is_editing %}
         <a class="btn btn-primary btn-control" role="button"
-           {% if request.view_parameters.is_editing %}
            href="{% url 'location_edit_mode' location_id=request.view_parameters.location.id %}"
-           {% else %}
-           href="{% url 'location_edit_location_edit' location_id=request.view_parameters.location.id %}"
-           {% endif %}
            data-async="true" >
+          {% icon "edit" size="sm" css_class="" %}
           {{ request.view_parameters.location.name }}
         </a>
+        {% else %}
+        <a class="btn btn-primary btn-control" role="button"
+           href="{% url 'location_edit_location_edit' location_id=request.view_parameters.location.id %}"
+             data-async="true" >
+          {{ request.view_parameters.location.name }}
+        </a>
+        {% endif %}
       </div>
       {% endif %}
     

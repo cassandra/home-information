@@ -57,7 +57,7 @@ self.addEventListener('activate', function(event) {
   );
 });
 
-// Fetch event - serve from cache when possible
+// Fetch event - no caching, always use network
 self.addEventListener('fetch', function(event) {
   // Only handle GET requests
   if (event.request.method !== 'GET') {
@@ -69,71 +69,6 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request)
-      .then(function(response) {
-        // Return cached version if available
-        if (response) {
-          return response;
-        }
-
-        // For HTML pages, try network first, fall back to cache
-        if (event.request.headers.get('accept').includes('text/html')) {
-          return fetch(event.request)
-            .then(function(response) {
-              // Clone the response for caching
-              var responseToCache = response.clone();
-
-              // Cache successful responses
-              if (response.status === 200) {
-                caches.open(OFFLINE_CACHE_NAME)
-                  .then(function(cache) {
-                    cache.put(event.request, responseToCache);
-                  });
-              }
-
-              return response;
-            })
-            .catch(function() {
-              // Network failed, try to serve from cache
-              return caches.match('/')
-                .then(function(response) {
-                  return response || new Response('Offline - Please check your connection', {
-                    status: 503,
-                    statusText: 'Service Unavailable',
-                    headers: new Headers({
-                      'Content-Type': 'text/html'
-                    })
-                  });
-                });
-            });
-        }
-
-        // For other resources, try network first
-        return fetch(event.request)
-          .then(function(response) {
-            // Clone the response for caching
-            var responseToCache = response.clone();
-
-            // Cache successful responses for static assets
-            if (response.status === 200 &&
-                (event.request.url.includes('/static/') ||
-                 event.request.url.includes('.css') ||
-                 event.request.url.includes('.js') ||
-                 event.request.url.includes('.png') ||
-                 event.request.url.includes('.ico'))) {
-              caches.open(STATIC_CACHE_NAME)
-                .then(function(cache) {
-                  cache.put(event.request, responseToCache);
-                });
-            }
-
-            return response;
-          })
-          .catch(function() {
-            // Network failed for static asset, serve from cache if available
-            return caches.match(event.request);
-          });
-      })
-  );
+  // Always fetch from network, no caching
+  event.respondWith(fetch(event.request));
 });

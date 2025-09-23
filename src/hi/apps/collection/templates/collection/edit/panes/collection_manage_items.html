@@ -1,29 +1,30 @@
+{% extends "edit/panes/entity_picker.html" %}
 {% load icons %}
-<div>
-  {% if request.view_parameters.is_editing %}
-  {% include "edit/panes/side_header.html" %}
-  {% endif %}
-  
-  <hr />
-  <div class="h5">Items in Collection</div>
-  
-  <div class="my-2">
-    <a href="{% url 'entity_edit_entity_add' %}"
-       class="btn btn-primary btn-control" role="button"
-       data-async="modal" >
-      {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD NEW ITEM
-    </a>
+
+{% block header %}
+<div class="mt-2">
+  {% include "collection/edit/panes/collection_edit_mode_header.html" %}
+</div>
+{% endblock %}
+
+{% block entity_groups %}
+{% for entity_collection_group in entity_collection_group_list %}
+<div class="{{ DIVID.ENTITY_PICKER_GROUP_SECTION_CLASS }}" data-group="{{ entity_collection_group.entity_group_type.label|slugify }}">
+  <div class="entity-group-header"
+       data-toggle="collapse"
+       data-target="#group-{{ entity_collection_group.entity_group_type.label|slugify }}"
+       aria-expanded="true"
+       aria-controls="group-{{ entity_collection_group.entity_group_type.label|slugify }}">
+    <span class="entity-group-title">{{ entity_collection_group.entity_group_type.label }}</span>
+    {% icon "chevron-down" css_class="entity-group-toggle" %}
   </div>
-  
-  
-  {% for entity_collection_group in entity_collection_group_list %}
-  <div class="">
-    <div class="h5">{{ entity_collection_group.entity_group_type.label }}</div>
+  <div class="entity-group-items collapse show" id="group-{{ entity_collection_group.entity_group_type.label|slugify }}">
     {% for entity_collection_item in entity_collection_group.item_list %}
-    {% include "collection/edit/panes/collection_entity_toggle.html" with collection=entity_collection_group.collection entity=entity_collection_item.entity exists_in_collection=entity_collection_item.exists_in_collection %}
+    {% include "collection/edit/panes/collection_entity_toggle.html" with collection=entity_collection_group.collection entity=entity_collection_item.entity exists_in_collection=entity_collection_item.exists_in_collection is_unused=entity_collection_item.is_unused %}
     {% endfor %}
   </div>
-  {% empty %}
-  {% include "edit/panes/no_entities_message.html" %}
-  {% endfor %}
 </div>
+{% empty %}
+{% include "edit/panes/no_entities_message.html" %}
+{% endfor %}
+{% endblock %}

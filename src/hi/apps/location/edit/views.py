@@ -391,10 +391,13 @@ class LocationViewManageItemsView( HiSideView ):
         return 'location/edit/panes/location_view_manage_items.html'
 
     def get_template_context( self, request, *args, **kwargs ):
-        
+        from hi.apps.edit.edit_view_helpers import EditViewHelpers
+
         location_view = LocationManager().get_default_location_view( request = request )
+        unused_entity_ids = EditViewHelpers.get_unused_entity_ids()
         entity_view_group_list = EntityManager().create_location_entity_view_group_list(
             location_view = location_view,
+            unused_entity_ids = unused_entity_ids,
         )
         collection_view_group = CollectionManager().create_location_collection_view_group(
             location_view = location_view,
@@ -443,11 +446,16 @@ class LocationViewEntityToggleView( View, LocationViewMixin ):
             entity = entity,
             location_view = location_view,
         )
-            
+
+        # Check if entity is unused (not in any location and not in any collection)
+        from hi.apps.edit.edit_view_helpers import EditViewHelpers
+        is_unused = EditViewHelpers.is_entity_unused(entity.id)
+
         context = {
             'location_view': location_view,
             'entity': entity,
             'exists_in_view': exists_in_view,
+            'is_unused': is_unused,
         }
         template = get_template( 'location/edit/panes/location_view_entity_toggle.html' )
         main_content = template.render( context, request = request )
@@ -493,7 +501,7 @@ class LocationViewCollectionToggleView( View, LocationViewMixin ):
             collection = collection,
             location_view = location_view,
         )
-            
+
         context = {
             'location_view': location_view,
             'collection': collection,

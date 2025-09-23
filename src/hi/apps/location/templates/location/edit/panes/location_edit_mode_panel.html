@@ -1,9 +1,10 @@
+{% load icons %}
 <div class="d-flex justify-content-between my-2">
   <div class="align-self-center h4">Space Layout</div>
   <div class="align-self-center">
     <a href="{% url 'edit_item_details_close' %}"
-       class="btn btn-tertiary" role="button" data-async="true">
-      X
+       class="btn btn-sm btn-outline-danger" role="button" data-async="true">
+      {% icon "close" size="sm" css_class="" %}
     </a>
   </div>
 </div>

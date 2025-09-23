@@ -222,7 +222,7 @@ class LocationView( models.Model, ItemTypeModelMixin ):
 
 class LocationItemModelMixin( ItemTypeModelMixin ):
     # A Location Item is a model that can be associated with a Location
-    # and that can visually appeay in one or more Location Views.  This
+    # and that can visually appear in one or more Location Views.  This
     # defined an interface that specific instance need to conform to.
     pass
 

@@ -28,6 +28,7 @@ class EntityViewItem:
 
     entity          : Entity
     exists_in_view  : bool
+    is_unused       : bool = False
 
     
 @dataclass

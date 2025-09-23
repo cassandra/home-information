@@ -125,4 +125,25 @@ DIVID = {
     'ATTR_V2_SHOW_MORE_TEXT_CLASS': 'show-more-text',
     'ATTR_V2_SHOW_LESS_TEXT_CLASS': 'show-less-text',
     'ATTR_V2_DELETE_FILE_ATTR': 'delete_file_attribute',
+
+    # Entity Picker - JavaScript dependencies only
+    'ENTITY_PICKER_FILTERABLE_ITEM_CLASS': 'filterable-item',
+    'ENTITY_PICKER_GROUP_SECTION_CLASS': 'entity-group-section',
+    'ENTITY_PICKER_SEARCH_INPUT_ID': 'entity-search-input',
+    'ENTITY_PICKER_SEARCH_CLEAR_CLASS': 'entity-search-clear',
+    'ENTITY_PICKER_FILTER_BTN_CLASS': 'entity-filter-btn',
+
+    # Entity Picker - Data attributes
+    'ENTITY_PICKER_DATA_NAME_ATTR': 'data-entity-name',
+    'ENTITY_PICKER_DATA_TYPE_ATTR': 'data-entity-type',
+    'ENTITY_PICKER_DATA_STATUS_ATTR': 'data-status',
+    'ENTITY_PICKER_DATA_FILTER_ATTR': 'data-filter',
+
+    # Entity Picker - Status values
+    'ENTITY_PICKER_STATUS_IN_VIEW': 'in-view',
+    'ENTITY_PICKER_STATUS_NOT_IN_VIEW': 'not-in-view',
+    'ENTITY_PICKER_STATUS_UNUSED': 'unused',
+
+    # Entity Picker - Filter values
+    'ENTITY_PICKER_FILTER_ALL': 'all',
 }

@@ -22,6 +22,7 @@
   --on-warning-color: #ffffff;
   --error-color: #721817;
   --on-error-color: #ffffff;
+  --error-highlight-color: #a01111;
   --muted-color: #7e7e81;
   --on-muted-color: #ffffff;
   --line-color: #cccccc;
@@ -291,6 +292,23 @@ a.clickable-card:active {
     box-shadow: 0 0 0 0.2rem rgba(244, 95, 54, 0.25) !important;
 }
 
+.btn-outline-danger {
+    color: var(--error-color) !important;
+    border-color: var(--error-color) !important;
+    background-color: transparent !important;
+}
+.btn-outline-danger:hover,
+.btn-outline-danger:focus,
+.btn-outline-danger:active,
+.btn-outline-danger.active {
+    color: var(--on-error-color) !important;
+    background-color: var(--error-color) !important;
+    border-color: var(--error-highlight-color) !important;
+}
+.btn-outline-danger:focus {
+    box-shadow: 0 0 0 0.2rem var(--error-highlight-color) !important;
+}
+
 .interstitial-page {
     display: flex;
     flex-direction: column;
@@ -347,8 +365,8 @@ a.clickable-card:active {
 #hi-side-content {
     height: calc(100vh - var(--top-buttons-height) - var(--bottom-buttons-height));
     display: flex;
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
     flex-direction: column;
     overflow-y: auto;
 }
@@ -1335,4 +1353,273 @@ g[hover] {
     .pwa-install-prompt {
         display: none !important;
     }
+}
+
+/* Entity Picker Styles */
+.entity-picker-container {
+    /* Let the container flow naturally with sidebar scroll */
+}
+
+.entity-picker-panel {
+    background: var(--white);
+    border: 1px solid var(--line-color);
+    border-radius: 8px;
+    /* Remove fixed height - let it grow with content */
+}
+
+.entity-picker-header {
+    background: var(--edit-tertiary-bg-color);
+    border-bottom: 1px solid var(--line-color);
+    padding: 0.5rem;
+    /* Make sticky within the sidebar scroll */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.entity-search-input {
+    border-radius: 6px;
+    border: 1px solid var(--line-color);
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.filter-toggles {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.entity-filter-btn {
+    padding: 4px 12px;
+    border: 1px solid var(--primary-color);
+    background: var(--white);
+    color: var(--primary-color);
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.entity-filter-btn.active {
+    background: var(--primary-color);
+    color: var(--on-primary-color);
+}
+
+.entity-filter-btn:hover {
+    background: var(--edit-primary-bg-color);
+}
+
+.entity-filter-btn.active:hover {
+    background: var(--primary-highlight-color);
+}
+
+.entity-picker-items {
+    /* Remove inner scroll - let sidebar handle scrolling */
+    padding: 0 5px 5px;
+}
+
+.entity-group-section {
+    margin-bottom: 0.75rem;
+}
+
+.entity-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line-color);
+    margin-bottom: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.entity-group-title {
+    font-weight: 600;
+    color: var(--tertiary-color);
+    font-size: 14px;
+    flex-grow: 1;
+}
+
+.entity-group-toggle {
+    color: var(--muted-color);
+    font-size: 12px;
+    transition: transform 0.2s;
+}
+
+.entity-group-header[aria-expanded="false"] .entity-group-toggle {
+    transform: rotate(-90deg);
+}
+
+.entity-group-items {
+    margin-left: 8px;
+}
+
+.entity-item-row,
+.collection-item-row {
+    padding: 6px 0;
+    margin-bottom: 2px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.entity-item-row form,
+.collection-item-row form {
+    display: flex;
+    align-items: center;
+    margin: 0;
+}
+
+.entity-item-row:hover,
+.collection-item-row:hover {
+    background: var(--edit-tertiary-bg-color);
+}
+
+.entity-item-row.in-view,
+.collection-item-row.in-view {
+    background: var(--edit-primary-bg-color);
+    border-left: 3px solid var(--primary-color);
+    padding-left: 5px;
+}
+
+.entity-item-row.in-view:hover,
+.collection-item-row.in-view:hover {
+    background: var(--primary-color);
+    color: var(--on-primary-color);
+}
+
+.entity-item-row.unused,
+.collection-item-row.unused {
+    border-left: 3px solid var(--warning-color);
+    background: var(--edit-secondary-bg-color);
+    padding-left: 5px;
+}
+
+.entity-item-row.unused:hover,
+.collection-item-row.unused:hover {
+    background: var(--secondary-highlight-color);
+}
+
+.entity-item-checkbox {
+    margin-right: 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.entity-item-label {
+    font-size: 14px;
+    cursor: pointer;
+    flex-grow: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.entity-item-id {
+    font-size: 11px;
+    color: var(--muted-color);
+    margin-left: 6px;
+}
+
+/* Entity picker search clear button alignment */
+.entity-search-clear {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.search-container .input-group-append {
+    display: flex;
+    align-items: stretch;
+}
+
+.search-container .input-group {
+    display: flex;
+    align-items: stretch;
+}
+
+.unused-indicator {
+    color: var(--warning-color);
+    font-size: 12px;
+    margin-left: 8px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Entity picker filter button grid layout */
+.filter-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.filter-toggles .entity-filter-btn {
+    flex: 1 1 45%;
+    min-width: 0; /* Allow text truncation if needed */
+}
+
+/* Sidebar form styling for narrow edit panels */
+.sidebar-form-field {
+    margin-bottom: 1rem;
+}
+
+.sidebar-form-label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--tertiary-color);
+    margin-bottom: 0.25rem;
+    line-height: 1.2;
+}
+
+.sidebar-form-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--line-color);
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    background-color: var(--white);
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.sidebar-form-input:focus {
+    border-color: var(--primary-color);
+    outline: 0;
+    box-shadow: 0 0 0 0.125rem rgba(23, 112, 114, 0.25);
+}
+
+.sidebar-form-input.is-invalid {
+    border-color: var(--error-color);
+}
+
+.sidebar-form-error {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--error-color);
+    margin-top: 0.25rem;
+    line-height: 1.2;
+}
+
+.sidebar-form-actions {
+    margin-top: 1.5rem;
+    text-align: center;
+}
+
+.sidebar-form-actions .btn {
+    min-width: 100px;
+}
+
+/* Custom select styling for sidebar forms */
+.sidebar-form-field .hi-custom-select select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--line-color);
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    background-color: var(--white);
 }

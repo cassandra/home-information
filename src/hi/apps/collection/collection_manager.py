@@ -266,13 +266,18 @@ class CollectionManager(Singleton):
             collection_position_form = collection_position_form,
         )
 
-    def create_entity_collection_group_list( self, collection : Collection ) -> List[EntityCollectionGroup]:
+    def create_entity_collection_group_list( self,
+                                             collection : Collection,
+                                             unused_entity_ids : set = None ) -> List[EntityCollectionGroup]:
 
         entity_queryset = Entity.objects.all()
-        
+
+        if unused_entity_ids is None:
+            unused_entity_ids = set()
+
         entity_collection_group_dict = dict()
         for entity in entity_queryset:
-        
+
             exists_in_collection = False
             for collection_entity in entity.collections.all():
                 if collection_entity.collection == collection:
@@ -283,6 +288,7 @@ class CollectionManager(Singleton):
             entity_collection_item = EntityCollectionItem(
                 entity = entity,
                 exists_in_collection = exists_in_collection,
+                is_unused = entity.id in unused_entity_ids,
             )
 
             entity_group_type = EntityGroupType.from_entity_type( entity.entity_type )
@@ -362,6 +368,7 @@ class CollectionManager(Singleton):
                 continue
         return
     
+
     def create_location_collection_view_group( self, location_view : LocationView ) -> CollectionViewGroup:
         existing_collections = [ x.collection
                                  for x in location_view.collection_views.select_related('collection').all() ]
@@ -371,10 +378,10 @@ class CollectionManager(Singleton):
                                       existing_collections : List[ Collection ] ) -> CollectionViewGroup:
         existing_collection_set = set( existing_collections )
         collection_queryset = Collection.objects.all()
-        
+
         collection_view_group = CollectionViewGroup()
         for collection in collection_queryset:
-        
+
             collection_view_item = CollectionViewItem(
                 collection = collection,
                 exists_in_view = bool( collection in existing_collection_set ),

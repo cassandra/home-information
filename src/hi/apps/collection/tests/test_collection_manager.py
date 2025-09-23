@@ -66,7 +66,7 @@ class TestCollectionManagerIntegration(BaseTestCase):
         CollectionEntity.objects.create(collection=collection, entity=light1)
         
         manager = CollectionManager()
-        groups = manager.create_entity_collection_group_list(collection)
+        groups = manager.create_entity_collection_group_list(collection, unused_entity_ids=set())
         
         # Should have groups for each entity type present in system
         group_types = {group.entity_group_type for group in groups}

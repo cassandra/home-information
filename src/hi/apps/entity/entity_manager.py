@@ -456,25 +456,33 @@ class EntityManager(Singleton):
         except (ValueError, IndexError, ZeroDivisionError):
             return None, None
 
-    def create_location_entity_view_group_list( self, location_view : LocationView ) -> List[EntityViewGroup]:
+
+    def create_location_entity_view_group_list( self,
+                                                location_view : LocationView,
+                                                unused_entity_ids : set = None ) -> List[EntityViewGroup]:
         existing_entities = [ x.entity
                               for x in location_view.entity_views.select_related('entity').all() ]
         all_entities = Entity.objects.all()
         return self.create_entity_view_group_list(
             existing_entities = existing_entities,
             all_entities = all_entities,
+            unused_entity_ids = unused_entity_ids,
         )
 
     def create_entity_view_group_list( self,
                                        existing_entities  : List[ Entity ],
-                                       all_entities       : Sequence[ Entity ] ) -> List[EntityViewGroup]:
+                                       all_entities       : Sequence[ Entity ],
+                                       unused_entity_ids  : set = None ) -> List[EntityViewGroup]:
         existing_entity_set = set( existing_entities )
-        
+        if unused_entity_ids is None:
+            unused_entity_ids = set()
+
         entity_view_group_dict = dict()
         for entity in all_entities:
             entity_view_item = EntityViewItem(
                 entity = entity,
                 exists_in_view = bool( entity in existing_entity_set ),
+                is_unused = entity.id in unused_entity_ids,
             )
             entity_group_type = EntityGroupType.from_entity_type( entity.entity_type )
             if entity_group_type not in entity_view_group_dict:

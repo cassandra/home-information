@@ -1,0 +1,59 @@
+{% load icons %}
+<div class="entity-picker-container">
+  <div class="entity-picker-panel">
+    <div class="entity-picker-header">
+      {% block header %}
+      {# Override this block in child templates to add specific header content #}
+      {% endblock %}
+
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h4 class="mb-0">Items</h4>
+        <div>
+          <a href="{% url 'entity_edit_entity_add' %}"
+             class="btn btn-primary btn-sm btn-control" role="button"
+             data-async="modal" >
+            {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD NEW
+          </a>
+        </div>
+      </div>
+
+      <div class="search-container mb-3">
+        <div class="input-group">
+          <input type="text" id="{{ DIVID.ENTITY_PICKER_SEARCH_INPUT_ID }}" class="form-control entity-search-input"
+                 placeholder="Search items...">
+          <div class="input-group-append">
+            <button type="button" class="btn btn-outline-secondary {{ DIVID.ENTITY_PICKER_SEARCH_CLEAR_CLASS }}"
+                    title="Clear search">
+              {% icon "close" size="sm" %}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-toggles mb-3">
+        <button class="{{ DIVID.ENTITY_PICKER_FILTER_BTN_CLASS }} active" {{ DIVID.ENTITY_PICKER_DATA_FILTER_ATTR }}="{{ DIVID.ENTITY_PICKER_FILTER_ALL }}">
+          All
+        </button>
+        <button class="{{ DIVID.ENTITY_PICKER_FILTER_BTN_CLASS }}" {{ DIVID.ENTITY_PICKER_DATA_FILTER_ATTR }}="{{ DIVID.ENTITY_PICKER_STATUS_IN_VIEW }}">
+          In View
+        </button>
+        <button class="{{ DIVID.ENTITY_PICKER_FILTER_BTN_CLASS }}" {{ DIVID.ENTITY_PICKER_DATA_FILTER_ATTR }}="{{ DIVID.ENTITY_PICKER_STATUS_NOT_IN_VIEW }}">
+          Not in View
+        </button>
+        <button class="{{ DIVID.ENTITY_PICKER_FILTER_BTN_CLASS }}" {{ DIVID.ENTITY_PICKER_DATA_FILTER_ATTR }}="{{ DIVID.ENTITY_PICKER_STATUS_UNUSED }}">
+          Unused
+        </button>
+      </div>
+    </div>
+
+    <div class="entity-picker-items" id="entity-picker-items">
+      {% block entity_groups %}
+      {# Override this block in child templates #}
+      {% endblock %}
+
+      {% block collections_section %}
+      {# Override this block for location views that need collections section #}
+      {% endblock %}
+    </div>
+  </div>
+</div>

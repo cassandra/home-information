@@ -277,6 +277,7 @@ PIPELINE = {
             'source_filenames': (
                 'js/popper.min.js',
                 'bootstrap/js/bootstrap.js',
+                'js/entity-picker.js',
             ),
             'output_filename': 'js/js_after_content.js',
         },

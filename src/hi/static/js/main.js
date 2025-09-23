@@ -117,7 +117,28 @@
         DATA_OVERFLOW_ATTR: 'data-overflow',
         DATA_LINE_COUNT_ATTR: 'data-line-count',
         DATA_ORIGINAL_VALUE_ATTR: 'data-original-value',
-        ATTR_V2_DELETE_FILE_ATTR: 'delete_file_attribute'
+        ATTR_V2_DELETE_FILE_ATTR: 'delete_file_attribute',
+
+        // Entity Picker - selectors for JavaScript dependencies
+        ENTITY_PICKER_FILTERABLE_ITEM_SELECTOR: '.filterable-item',
+        ENTITY_PICKER_GROUP_SECTION_SELECTOR: '.entity-group-section',
+        ENTITY_PICKER_SEARCH_INPUT_SELECTOR: '#entity-search-input',
+        ENTITY_PICKER_SEARCH_CLEAR_SELECTOR: '.entity-search-clear',
+        ENTITY_PICKER_FILTER_BTN_SELECTOR: '.entity-filter-btn',
+
+        // Entity Picker - Data attributes
+        ENTITY_PICKER_DATA_NAME_ATTR: 'data-entity-name',
+        ENTITY_PICKER_DATA_TYPE_ATTR: 'data-entity-type',
+        ENTITY_PICKER_DATA_STATUS_ATTR: 'data-status',
+        ENTITY_PICKER_DATA_FILTER_ATTR: 'data-filter',
+
+        // Entity Picker - Status values
+        ENTITY_PICKER_STATUS_IN_VIEW: 'in-view',
+        ENTITY_PICKER_STATUS_NOT_IN_VIEW: 'not-in-view',
+        ENTITY_PICKER_STATUS_UNUSED: 'unused',
+
+        // Entity Picker - Filter values
+        ENTITY_PICKER_FILTER_ALL: 'all'
     };
     
     window.Hi = Hi;
