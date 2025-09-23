@@ -1,13 +1,13 @@
 {% load static %}{
   "name": "Home Information",
-  "short_name": "Hi",
-  "description": "Smart home monitoring and control system",
+  "short_name": "HI",
+  "description": "Your home, your data, organized",
   "start_url": "/",
   "scope": "/",
-  "display": "fullscreen",
+  "display": "standalone",
   "orientation": "landscape",
   "theme_color": "#177072",
-  "background_color": "#fdfdfd",
+  "background_color": "#177072",
   "icons": [
     {
       "src": "{% static 'img/hi-icon-16x16.png' %}",
