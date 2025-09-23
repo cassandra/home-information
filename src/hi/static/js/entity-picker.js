@@ -41,12 +41,12 @@ $(document).ready(function() {
 
                     switch (self.currentFilter) {
                         case Hi.ENTITY_PICKER_STATUS_IN_VIEW:
-                            if (status !== Hi.ENTITY_PICKER_STATUS_IN_VIEW && status !== Hi.ENTITY_PICKER_STATUS_IN_COLLECTION) {
+                            if (status !== Hi.ENTITY_PICKER_STATUS_IN_VIEW) {
                                 show = false;
                             }
                             break;
                         case Hi.ENTITY_PICKER_STATUS_NOT_IN_VIEW:
-                            if (status === Hi.ENTITY_PICKER_STATUS_IN_VIEW || status === Hi.ENTITY_PICKER_STATUS_IN_COLLECTION || status === Hi.ENTITY_PICKER_STATUS_UNUSED) {
+                            if (status === Hi.ENTITY_PICKER_STATUS_IN_VIEW || status === Hi.ENTITY_PICKER_STATUS_UNUSED) {
                                 show = false;
                             }
                             break;

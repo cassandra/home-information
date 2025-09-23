@@ -1,9 +1,8 @@
-<div class="d-flex justify-content-between">
-  <div class="h5"><small>Collection:</small> {{ request.view_parameters.collection.name }}</div>
-  <div>
-    <a href="{% url 'collection_edit_mode' collection_id=request.view_parameters.collection_id %}"
-       class="btn btn-sm btn-tertiary" role="button" data-async="true">
-      EDIT
-    </a>
-  </div>
+{% load icons %}
+<div class="mx-1 my-2">
+  <a href="{% url 'collection_edit_mode' collection_id=request.view_parameters.collection_id %}"
+     class="btn btn-primary w-100" role="button" data-async="true">
+    {% icon "edit" size="md" css_class="" %}
+    <small>Edit:</small> {{ request.view_parameters.collection.name }}
+  </a>
 </div>

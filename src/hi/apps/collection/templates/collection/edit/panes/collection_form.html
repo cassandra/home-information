@@ -3,47 +3,49 @@
 {% endfor %}
 
 {% if collection_form.non_field_errors %}
-<div class="non-field-errors">
+<div class="sidebar-form-errors">
   {% for err in collection_form.non_field_errors %}
-  <p class="form-error text-danger">ERROR: {{ err }}</p>
+  <p class="sidebar-form-error">ERROR: {{ err }}</p>
   {% endfor %}
 </div>
 {% endif %}
 
-<div class="input-group mb-2 mr-sm-2 w-100">
-  <div class="input-group-prepend">
-    <label for="{{ collection_form.name.id_for_label }}"
-	   class="input-group-text">{{ collection_form.name.label }}</label>
-  </div>
-  {{ collection_form.name }}
-  <small class="form-error text-danger">{{ collection_form.name.errors }}</small>
+<div class="sidebar-form-field">
+  <label for="{{ collection_form.name.id_for_label }}" class="sidebar-form-label">{{ collection_form.name.label }}</label>
+  <input type="text" id="{{ collection_form.name.id_for_label }}" name="{{ collection_form.name.name }}" value="{{ collection_form.name.value|default:'' }}" class="sidebar-form-input">
+  {% if collection_form.name.errors %}
+    <div class="sidebar-form-error">{{ collection_form.name.errors }}</div>
+  {% endif %}
 </div>
 
-<div class="hi-custom-select">
-  <div class="input-group mb-2 mr-sm-2 ">
-    <div class="input-group-prepend">
-      <div class="input-group-text">{{ collection_form.collection_type_str.label_tag }}</div>
-    </div>
-    {{ collection_form.collection_type_str }}
-  </div>
-  {{ collection_form.collection_type_str.errors }}
+<div class="sidebar-form-field">
+  <label for="{{ collection_form.collection_type_str.id_for_label }}" class="sidebar-form-label">{{ collection_form.collection_type_str.label }}</label>
+  <select id="{{ collection_form.collection_type_str.id_for_label }}" name="{{ collection_form.collection_type_str.name }}" class="sidebar-form-input">
+    {% for value, label in collection_form.collection_type_str.field.choices %}
+      <option value="{{ value }}"{% if collection_form.collection_type_str.value == value %} selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  {% if collection_form.collection_type_str.errors %}
+    <div class="sidebar-form-error">{{ collection_form.collection_type_str.errors }}</div>
+  {% endif %}
 </div>
 
-<div class="hi-custom-select">
-  <div class="input-group mb-2 mr-sm-2">
-    <div class="input-group-prepend">
-      <div class="input-group-text">{{ collection_form.collection_view_type_str.label_tag }}</div>
-    </div>
-    {{ collection_form.collection_view_type_str }}
-  </div>
-  {{ collection_form.collection_view_type_str.errors }}
+<div class="sidebar-form-field">
+  <label for="{{ collection_form.collection_view_type_str.id_for_label }}" class="sidebar-form-label">{{ collection_form.collection_view_type_str.label }}</label>
+  <select id="{{ collection_form.collection_view_type_str.id_for_label }}" name="{{ collection_form.collection_view_type_str.name }}" class="sidebar-form-input">
+    {% for value, label in collection_form.collection_view_type_str.field.choices %}
+      <option value="{{ value }}"{% if collection_form.collection_view_type_str.value == value %} selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  {% if collection_form.collection_view_type_str.errors %}
+    <div class="sidebar-form-error">{{ collection_form.collection_view_type_str.errors }}</div>
+  {% endif %}
 </div>
 
-<div class="input-group mb-2 mr-sm-2 w-100">
-  <div class="input-group-prepend">
-    <label for="{{ collection_form.order_id.id_for_label }}"
-	   class="input-group-text">{{ collection_form.order_id.label }}</label>
-  </div>
-  {{ collection_form.order_id }}
-  <small class="form-error text-danger">{{ collection_form.order_id.errors }}</small>
+<div class="sidebar-form-field">
+  <label for="{{ collection_form.order_id.id_for_label }}" class="sidebar-form-label">{{ collection_form.order_id.label }}</label>
+  <input type="number" id="{{ collection_form.order_id.id_for_label }}" name="{{ collection_form.order_id.name }}" value="{{ collection_form.order_id.value|default:'' }}" class="sidebar-form-input">
+  {% if collection_form.order_id.errors %}
+    <div class="sidebar-form-error">{{ collection_form.order_id.errors }}</div>
+  {% endif %}
 </div>

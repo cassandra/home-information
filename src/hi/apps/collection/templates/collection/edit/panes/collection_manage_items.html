@@ -1,69 +1,30 @@
+{% extends "edit/panes/entity_picker.html" %}
 {% load icons %}
-<div class="entity-picker-container">
-  {% if request.view_parameters.is_editing %}
-  {% include "edit/panes/side_header.html" %}
-  {% endif %}
 
-  <div class="entity-picker-panel">
-    <div class="entity-picker-header">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h4 class="mb-0">Items in Collection</h4>
-        <a href="{% url 'entity_edit_entity_add' %}"
-           class="btn btn-primary btn-sm btn-control" role="button"
-           data-async="modal" >
-          {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD NEW ITEM
-        </a>
-      </div>
+{% block header %}
+<div class="mt-2">
+  {% include "collection/edit/panes/collection_edit_mode_header.html" %}
+</div>
+{% endblock %}
 
-      <div class="search-container mb-3">
-        <div class="input-group">
-          <input type="text" id="{{ DIVID.ENTITY_PICKER_SEARCH_INPUT_ID }}" class="form-control entity-search-input"
-                 placeholder="Search items...">
-          <div class="input-group-append">
-            <button type="button" class="btn btn-outline-secondary {{ DIVID.ENTITY_PICKER_SEARCH_CLEAR_CLASS }}"
-                    title="Clear search">
-              {% icon "close" size="sm" %}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="filter-toggles mb-3">
-        <button class="{{ DIVID.ENTITY_PICKER_FILTER_BTN_CLASS }} active" {{ DIVID.ENTITY_PICKER_DATA_FILTER_ATTR }}="{{ DIVID.ENTITY_PICKER_FILTER_ALL }}">
-          All
-        </button>
-        <button class="{{ DIVID.ENTITY_PICKER_FILTER_BTN_CLASS }}" {{ DIVID.ENTITY_PICKER_DATA_FILTER_ATTR }}="{{ DIVID.ENTITY_PICKER_STATUS_IN_COLLECTION }}">
-          In Collection
-        </button>
-        <button class="{{ DIVID.ENTITY_PICKER_FILTER_BTN_CLASS }}" {{ DIVID.ENTITY_PICKER_DATA_FILTER_ATTR }}="{{ DIVID.ENTITY_PICKER_STATUS_NOT_IN_COLLECTION }}">
-          Not in Collection
-        </button>
-        <button class="{{ DIVID.ENTITY_PICKER_FILTER_BTN_CLASS }}" {{ DIVID.ENTITY_PICKER_DATA_FILTER_ATTR }}="{{ DIVID.ENTITY_PICKER_STATUS_UNUSED }}">
-          Unused
-        </button>
-      </div>
-    </div>
-
-    <div class="entity-picker-items" id="entity-picker-items">
-      {% for entity_collection_group in entity_collection_group_list %}
-      <div class="{{ DIVID.ENTITY_PICKER_GROUP_SECTION_CLASS }}" data-group="{{ entity_collection_group.entity_group_type.label|slugify }}">
-        <div class="entity-group-header"
-             data-toggle="collapse"
-             data-target="#group-{{ entity_collection_group.entity_group_type.label|slugify }}"
-             aria-expanded="true"
-             aria-controls="group-{{ entity_collection_group.entity_group_type.label|slugify }}">
-          <span class="entity-group-title">{{ entity_collection_group.entity_group_type.label }}</span>
-          {% icon "chevron-down" css_class="entity-group-toggle" %}
-        </div>
-        <div class="entity-group-items collapse show" id="group-{{ entity_collection_group.entity_group_type.label|slugify }}">
-          {% for entity_collection_item in entity_collection_group.item_list %}
-          {% include "collection/edit/panes/collection_entity_toggle.html" with collection=entity_collection_group.collection entity=entity_collection_item.entity exists_in_collection=entity_collection_item.exists_in_collection is_unused=entity_collection_item.is_unused %}
-          {% endfor %}
-        </div>
-      </div>
-      {% empty %}
-      {% include "edit/panes/no_entities_message.html" %}
-      {% endfor %}
-    </div>
+{% block entity_groups %}
+{% for entity_collection_group in entity_collection_group_list %}
+<div class="{{ DIVID.ENTITY_PICKER_GROUP_SECTION_CLASS }}" data-group="{{ entity_collection_group.entity_group_type.label|slugify }}">
+  <div class="entity-group-header"
+       data-toggle="collapse"
+       data-target="#group-{{ entity_collection_group.entity_group_type.label|slugify }}"
+       aria-expanded="true"
+       aria-controls="group-{{ entity_collection_group.entity_group_type.label|slugify }}">
+    <span class="entity-group-title">{{ entity_collection_group.entity_group_type.label }}</span>
+    {% icon "chevron-down" css_class="entity-group-toggle" %}
+  </div>
+  <div class="entity-group-items collapse show" id="group-{{ entity_collection_group.entity_group_type.label|slugify }}">
+    {% for entity_collection_item in entity_collection_group.item_list %}
+    {% include "collection/edit/panes/collection_entity_toggle.html" with collection=entity_collection_group.collection entity=entity_collection_item.entity exists_in_collection=entity_collection_item.exists_in_collection is_unused=entity_collection_item.is_unused %}
+    {% endfor %}
   </div>
 </div>
+{% empty %}
+{% include "edit/panes/no_entities_message.html" %}
+{% endfor %}
+{% endblock %}

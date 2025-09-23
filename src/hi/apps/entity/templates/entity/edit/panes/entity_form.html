@@ -3,28 +3,29 @@
 {% endfor %}
 
 {% if entity_form.non_field_errors %}
-<div class="non-field-errors">
+<div class="sidebar-form-errors">
   {% for err in entity_form.non_field_errors %}
-  <p class="form-error text-danger">ERROR: {{ err }}</p>
+  <p class="sidebar-form-error">ERROR: {{ err }}</p>
   {% endfor %}
 </div>
 {% endif %}
 
-<div class="input-group mb-2 mr-sm-2 w-100">
-  <div class="input-group-prepend">
-    <label for="{{ entity_form.name.id_for_label }}"
-	   class="input-group-text">{{ entity_form.name.label }}</label>
-    {{ entity_form.name }}
-    <small class="form-error text-danger">{{ entity_form.name.errors }}</small>
-  </div>
+<div class="sidebar-form-field">
+  <label for="{{ entity_form.name.id_for_label }}" class="sidebar-form-label">{{ entity_form.name.label }}</label>
+  <input type="text" id="{{ entity_form.name.id_for_label }}" name="{{ entity_form.name.name }}" value="{{ entity_form.name.value|default:'' }}" class="sidebar-form-input">
+  {% if entity_form.name.errors %}
+    <div class="sidebar-form-error">{{ entity_form.name.errors }}</div>
+  {% endif %}
 </div>
 
-<div class="hi-custom-select">
-  <div class="input-group mb-2 mr-sm-2">
-    <div class="input-group-prepend">
-      <div class="input-group-text">{{ entity_form.entity_type_str.label }}</div>
-    </div>
-    {{ entity_form.entity_type_str }}
-  </div>
-  <small class="form-error text-danger">{{ entity_form.entity_type_str.errors }}</small>
+<div class="sidebar-form-field">
+  <label for="{{ entity_form.entity_type_str.id_for_label }}" class="sidebar-form-label">{{ entity_form.entity_type_str.label }}</label>
+  <select id="{{ entity_form.entity_type_str.id_for_label }}" name="{{ entity_form.entity_type_str.name }}" class="sidebar-form-input">
+    {% for value, label in entity_form.entity_type_str.field.choices %}
+      <option value="{{ value }}"{% if entity_form.entity_type_str.value == value %} selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  {% if entity_form.entity_type_str.errors %}
+    <div class="sidebar-form-error">{{ entity_form.entity_type_str.errors }}</div>
+  {% endif %}
 </div>

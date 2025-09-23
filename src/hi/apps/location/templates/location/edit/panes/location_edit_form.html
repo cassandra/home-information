@@ -3,37 +3,34 @@
 {% endfor %}
 
 {% if location_edit_form.non_field_errors %}
-<div class="non-field-errors">
+<div class="sidebar-form-errors">
   {% for err in location_edit_form.non_field_errors %}
-  <p class="form-error text-danger">ERROR: {{ err }}</p>
+  <p class="sidebar-form-error">ERROR: {{ err }}</p>
   {% endfor %}
 </div>
 {% endif %}
 
-<div class="input-group mb-2 mr-sm-2">
-  <div class="input-group-prepend">
-    <label for="{{ location_edit_form.name.id_for_label }}"
-	   class="input-group-text">{{ location_edit_form.name.label }}</label>
-  </div>
-  {{ location_edit_form.name }}
-  <small class="form-error text-danger">{{ location_edit_form.name.errors }}</small>
+<div class="sidebar-form-field">
+  <label for="{{ location_edit_form.name.id_for_label }}" class="sidebar-form-label">{{ location_edit_form.name.label }}</label>
+  <input type="text" id="{{ location_edit_form.name.id_for_label }}" name="{{ location_edit_form.name.name }}" value="{{ location_edit_form.name.value|default:'' }}" class="sidebar-form-input">
+  {% if location_edit_form.name.errors %}
+    <div class="sidebar-form-error">{{ location_edit_form.name.errors }}</div>
+  {% endif %}
 </div>
 
-<div class="input-group mb-2 mr-sm-2">
-  <div class="input-group-prepend">
-    <label for="{{ location_edit_form.order_id.id_for_label }}"
-	   class="input-group-text">{{ location_edit_form.order_id.label }}</label>
-  </div>
-  {{ location_edit_form.order_id }}
-  <small class="form-error text-danger">{{ location_edit_form.order_id.errors }}</small>
+<div class="sidebar-form-field">
+  <label for="{{ location_edit_form.order_id.id_for_label }}" class="sidebar-form-label">{{ location_edit_form.order_id.label }}</label>
+  <input type="number" id="{{ location_edit_form.order_id.id_for_label }}" name="{{ location_edit_form.order_id.name }}" value="{{ location_edit_form.order_id.value|default:'' }}" class="sidebar-form-input">
+  {% if location_edit_form.order_id.errors %}
+    <div class="sidebar-form-error">{{ location_edit_form.order_id.errors }}</div>
+  {% endif %}
 </div>
 
-<div class="input-group mb-2 mr-sm-2">
-  <div class="input-group-prepend">
-    <label for="{{ location_edit_form.svg_view_box_str.id_for_label }}"
-	   class="input-group-text">{{ location_edit_form.svg_view_box_str.label }}</label>
-  </div>
-  {{ location_edit_form.svg_view_box_str }}
-  <small class="form-error text-danger">{{ location_edit_form.svg_view_box_str.errors }}</small>
+<div class="sidebar-form-field">
+  <label for="{{ location_edit_form.svg_view_box_str.id_for_label }}" class="sidebar-form-label">{{ location_edit_form.svg_view_box_str.label }}</label>
+  <input type="text" id="{{ location_edit_form.svg_view_box_str.id_for_label }}" name="{{ location_edit_form.svg_view_box_str.name }}" value="{{ location_edit_form.svg_view_box_str.value|default:'' }}" class="sidebar-form-input">
+  {% if location_edit_form.svg_view_box_str.errors %}
+    <div class="sidebar-form-error">{{ location_edit_form.svg_view_box_str.errors }}</div>
+  {% endif %}
 </div>
 

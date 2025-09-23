@@ -4,51 +4,47 @@
 {% endfor %}
 
 {% if location_item_position_form.non_field_errors %}
-<div class="non-field-errors">
+<div class="sidebar-form-errors">
   {% for err in location_item_position_form.non_field_errors %}
-  <p class="form-error">{{ err }}</p>
+  <p class="sidebar-form-error">ERROR: {{ err }}</p>
   {% endfor %}
 </div>
 {% endif %}
 
-<div class="input-group mb-2 mr-sm-2 w-100">
-  <div class="input-group-prepend">
-    <label for="{{ location_item_position_form.svg_x.id_for_label }}"
-	   class="input-group-text">{{ location_item_position_form.svg_x.label }}</label>
-  </div>
-  {{ location_item_position_form.svg_x }}
-  <small class="form-error text-danger">{{ location_item_position_form.svg_x.errors }}</small>
+<div class="sidebar-form-field">
+  <label for="{{ location_item_position_form.svg_x.id_for_label }}" class="sidebar-form-label">{{ location_item_position_form.svg_x.label }}</label>
+  <input type="number" step="any" id="{{ location_item_position_form.svg_x.id_for_label }}" name="{{ location_item_position_form.svg_x.name }}" value="{{ location_item_position_form.svg_x.value|default:'' }}" class="sidebar-form-input">
+  {% if location_item_position_form.svg_x.errors %}
+    <div class="sidebar-form-error">{{ location_item_position_form.svg_x.errors }}</div>
+  {% endif %}
 </div>
 
-<div class="input-group mb-2 mr-sm-2">
-  <div class="input-group-prepend">
-    <label for="{{ location_item_position_form.svg_y.id_for_label }}"
-	   class="input-group-text">{{ location_item_position_form.svg_y.label }}</label>
-  </div>
-  {{ location_item_position_form.svg_y }}
-  <small class="form-error text-danger"> {{ location_item_position_form.svg_y.errors }}</small>
+<div class="sidebar-form-field">
+  <label for="{{ location_item_position_form.svg_y.id_for_label }}" class="sidebar-form-label">{{ location_item_position_form.svg_y.label }}</label>
+  <input type="number" step="any" id="{{ location_item_position_form.svg_y.id_for_label }}" name="{{ location_item_position_form.svg_y.name }}" value="{{ location_item_position_form.svg_y.value|default:'' }}" class="sidebar-form-input">
+  {% if location_item_position_form.svg_y.errors %}
+    <div class="sidebar-form-error">{{ location_item_position_form.svg_y.errors }}</div>
+  {% endif %}
 </div>
 
-<div class="input-group mb-2 mr-sm-2">
-  <div class="input-group-prepend">
-    <label for="{{ location_item_position_form.svg_scale.id_for_label }}"
-	   class="input-group-text">{{ location_item_position_form.svg_scale.label }}</label>
-  </div>
-  {{ location_item_position_form.svg_scale }}
-  <small class="form-error text-danger"> {{ location_item_position_form.svg_scale.errors }}</small>
+<div class="sidebar-form-field">
+  <label for="{{ location_item_position_form.svg_scale.id_for_label }}" class="sidebar-form-label">{{ location_item_position_form.svg_scale.label }}</label>
+  <input type="number" step="any" id="{{ location_item_position_form.svg_scale.id_for_label }}" name="{{ location_item_position_form.svg_scale.name }}" value="{{ location_item_position_form.svg_scale.value|default:'' }}" class="sidebar-form-input">
+  {% if location_item_position_form.svg_scale.errors %}
+    <div class="sidebar-form-error">{{ location_item_position_form.svg_scale.errors }}</div>
+  {% endif %}
 </div>
 
-<div class="input-group mb-2 mr-sm-2">
-  <div class="input-group-prepend">
-    <label for="{{ location_item_position_form.svg_rotate.id_for_label }}"
-	   class="input-group-text">{{ location_item_position_form.svg_rotate.label }}</label>
-  </div>
-  {{ location_item_position_form.svg_rotate }}
-  <small class="form-error text-danger"> {{ location_item_position_form.svg_rotate.errors }}</small>
+<div class="sidebar-form-field">
+  <label for="{{ location_item_position_form.svg_rotate.id_for_label }}" class="sidebar-form-label">{{ location_item_position_form.svg_rotate.label }}</label>
+  <input type="number" step="any" id="{{ location_item_position_form.svg_rotate.id_for_label }}" name="{{ location_item_position_form.svg_rotate.name }}" value="{{ location_item_position_form.svg_rotate.value|default:'' }}" class="sidebar-form-input">
+  {% if location_item_position_form.svg_rotate.errors %}
+    <div class="sidebar-form-error">{{ location_item_position_form.svg_rotate.errors }}</div>
+  {% endif %}
 </div>
 
-<div class="text-center" >
-  <button id="hi-add-entity-edit-button" type="submit" class="btn btn-primary"
+<div class="sidebar-form-actions">
+  <button id="hi-add-entity-edit-button" type="submit" class="btn btn-primary btn-block"
 	  name="action" value="update">
     {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
   </button>

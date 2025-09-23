@@ -7,8 +7,8 @@
     {% include "location/edit/panes/location_edit_form.html" %}
   </div>
   
-  <div class="text-center" >
-    <button id="hi-location-properties-edit-button" type="submit" class="btn btn-primary"
+  <div class="sidebar-form-actions">
+    <button id="hi-location-properties-edit-button" type="submit" class="btn btn-primary btn-block"
         name="action" value="update">
       {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
     </button>
@@ -16,17 +16,17 @@
 </form>
 
 {% if request.view_parameters.is_editing %}
-<div class="text-center my-3" >
+<div class="sidebar-form-actions">
   <a href="{% url 'location_edit_svg_replace' location_id=location.id %}"
-     id="hi-svg-replace-link" class="btn btn-primary btn-control" role="button"
+     id="hi-svg-replace-link" class="btn btn-sm btn-secondary btn-block btn-control" role="button"
      data-async="true">
     {% icon "upload" size="sm" css_class="hi-icon-left" %}REPLACE BACKGROUND IMAGE
   </a>
 </div>
 
-<div class="my-3">
+<div class="sidebar-form-actions">
   <a href="{% url 'location_edit_location_delete' location_id=location.id %}"
-     id="hi-delete-location-link" class="btn btn-danger btn-control" role="button"
+     id="hi-delete-location-link" class="btn btn-sm btn-danger btn-block btn-control" role="button"
      data-async="true">
     {% icon "delete" size="sm" css_class="hi-icon-left" %}DELETE SPACE AND ALL VIEWS
   </a>

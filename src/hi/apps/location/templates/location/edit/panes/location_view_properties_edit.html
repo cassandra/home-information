@@ -7,17 +7,17 @@
   <div>
     {% include "location/edit/panes/location_view_edit_mode_form.html" %}
   </div>
-  <div class="text-center" >
-    <button id="hi-add-location-view-button" type="submit" class="btn btn-primary"
-	    name="action" value="update">
+  <div class="sidebar-form-actions">
+    <button id="hi-add-location-view-button" type="submit" class="btn btn-primary btn-block"
+            name="action" value="update">
       {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
     </button>
   </div>
 </form>
 
-<div class="my-3">
+<div class="sidebar-form-actions">
   <a href="{% url 'location_edit_location_view_delete' location_view_id=location_view.id %}"
-     id="hi-delete-location-view-link" class="btn btn-danger btn-control" role="button"
+     id="hi-delete-location-view-link" class="btn btn-sm btn-danger btn-block btn-control" role="button"
      data-async="true">
     {% icon "delete" size="sm" css_class="hi-icon-left" %}DELETE THIS VIEW
   </a>

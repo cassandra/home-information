@@ -135,8 +135,6 @@
         // Entity Picker - Status values
         ENTITY_PICKER_STATUS_IN_VIEW: 'in-view',
         ENTITY_PICKER_STATUS_NOT_IN_VIEW: 'not-in-view',
-        ENTITY_PICKER_STATUS_IN_COLLECTION: 'in-collection',
-        ENTITY_PICKER_STATUS_NOT_IN_COLLECTION: 'not-in-collection',
         ENTITY_PICKER_STATUS_UNUSED: 'unused',
 
         // Entity Picker - Filter values
