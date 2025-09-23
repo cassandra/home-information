@@ -79,6 +79,10 @@ CSP_FONT_SRC = (
     'data:',
 ) + ENV.EXTRA_CSP_URLS
 
+CSP_WORKER_SRC = (
+    "'self'",
+) + ENV.EXTRA_CSP_URLS
+
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True

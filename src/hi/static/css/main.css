@@ -1253,3 +1253,86 @@ g[hover] {
     font-weight: 600;
     font-size: 1.1rem;
 }
+
+/* ================================================
+   PWA-specific styles for full screen mode
+   ================================================ */
+
+/* Fullscreen mode styles when app is installed as PWA */
+@media all and (display-mode: fullscreen) {
+    body {
+        /* Remove any default margins/padding that might appear */
+        margin: 0;
+        padding: 0;
+        /* Ensure content uses full viewport */
+        min-height: 100vh;
+        /* Prevent overscroll bounce on iOS */
+        overscroll-behavior: none;
+    }
+
+    /* Hide browser UI elements that might still be visible */
+    .browser-ui-hint {
+        display: none;
+    }
+}
+
+/* Standalone mode styles (iOS Safari, Chrome mobile) */
+@media all and (display-mode: standalone) {
+    body {
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        overscroll-behavior: none;
+        /* Add safe area padding for devices with notches */
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+
+    /* Adjust main content area for safe areas */
+    .container-fluid {
+        padding-left: max(15px, env(safe-area-inset-left));
+        padding-right: max(15px, env(safe-area-inset-right));
+    }
+}
+
+/* Landscape orientation optimizations (tablet primary use case) */
+@media (orientation: landscape) and ((display-mode: fullscreen) or (display-mode: standalone)) {
+    /* Optimize layout for landscape orientation */
+    .row {
+        /* Ensure full width usage in landscape */
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    /* Tablet-specific touch optimizations */
+    button, .btn, .form-control, select {
+        /* Ensure touch targets are at least 44px (Apple HIG) */
+        min-height: 44px;
+        /* Add more comfortable padding for touch */
+        padding: 10px 16px;
+    }
+
+    /* Optimize modal dialogs for landscape */
+    .modal-dialog {
+        max-width: 80vw;
+        margin: 2vh auto;
+    }
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    /* Ensure crisp icons and graphics on retina displays */
+    img, svg {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* PWA installation prompt hiding (when app is already installed) */
+@media (display-mode: standalone), (display-mode: fullscreen) {
+    .pwa-install-prompt {
+        display: none !important;
+    }
+}
