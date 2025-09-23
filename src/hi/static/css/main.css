@@ -1336,3 +1336,173 @@ g[hover] {
         display: none !important;
     }
 }
+
+/* Entity Picker Styles */
+.entity-picker-container {
+    /* Let the container flow naturally with sidebar scroll */
+}
+
+.entity-picker-panel {
+    background: var(--white);
+    border: 1px solid var(--line-color);
+    border-radius: 8px;
+    /* Remove fixed height - let it grow with content */
+}
+
+.entity-picker-header {
+    background: var(--edit-tertiary-bg-color);
+    border-bottom: 1px solid var(--line-color);
+    padding: 15px;
+    /* Make sticky within the sidebar scroll */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.entity-search-input {
+    border-radius: 6px;
+    border: 1px solid var(--line-color);
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.filter-toggles {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.entity-filter-btn {
+    padding: 4px 12px;
+    border: 1px solid var(--primary-color);
+    background: var(--white);
+    color: var(--primary-color);
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.entity-filter-btn.active {
+    background: var(--primary-color);
+    color: var(--on-primary-color);
+}
+
+.entity-filter-btn:hover {
+    background: var(--edit-primary-bg-color);
+}
+
+.entity-filter-btn.active:hover {
+    background: var(--primary-highlight-color);
+}
+
+.entity-picker-items {
+    /* Remove inner scroll - let sidebar handle scrolling */
+    padding: 0 15px 30px;
+}
+
+.entity-group-section {
+    margin-bottom: 20px;
+}
+
+.entity-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line-color);
+    margin-bottom: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.entity-group-title {
+    font-weight: 600;
+    color: var(--tertiary-color);
+    font-size: 14px;
+    flex-grow: 1;
+}
+
+.entity-group-toggle {
+    color: var(--muted-color);
+    font-size: 12px;
+    transition: transform 0.2s;
+}
+
+.entity-group-header[aria-expanded="false"] .entity-group-toggle {
+    transform: rotate(-90deg);
+}
+
+.entity-group-items {
+    margin-left: 8px;
+}
+
+.entity-item-row {
+    padding: 6px 0;
+    margin-bottom: 2px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.entity-item-row form {
+    display: flex;
+    align-items: center;
+    margin: 0;
+}
+
+.entity-item-row:hover {
+    background: var(--edit-tertiary-bg-color);
+}
+
+.entity-item-row.in-view {
+    background: var(--edit-primary-bg-color);
+    border-left: 3px solid var(--primary-color);
+    padding-left: 5px;
+}
+
+.entity-item-row.in-view:hover {
+    background: var(--primary-color);
+    color: var(--on-primary-color);
+}
+
+.entity-item-row.unused {
+    border-left: 3px solid var(--warning-color);
+    background: var(--edit-secondary-bg-color);
+    padding-left: 5px;
+}
+
+.entity-item-row.unused:hover {
+    background: var(--secondary-highlight-color);
+}
+
+.entity-item-checkbox {
+    margin-right: 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.entity-item-label {
+    font-size: 14px;
+    cursor: pointer;
+    flex-grow: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.entity-item-id {
+    font-size: 11px;
+    color: var(--muted-color);
+    margin-left: 6px;
+}
+
+.unused-indicator {
+    color: var(--warning-color);
+    font-size: 12px;
+    margin-left: 8px;
+}
+
+.hidden {
+    display: none !important;
+}

@@ -1,37 +1,79 @@
 {% load icons %}
-<div>
+<div class="entity-picker-container">
   {% if request.view_parameters.is_editing %}
   {% include "edit/panes/side_header.html" %}
   {% endif %}
 
-  <hr />
-  <div class="h4">Display Items</div>
+  <div class="entity-picker-panel">
+    <div class="entity-picker-header">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h4 class="mb-0">Display Items</h4>
+        <a href="{% url 'entity_edit_entity_add' %}"
+           class="btn btn-primary btn-sm btn-control" role="button"
+           data-async="modal" >
+          {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD NEW ITEM
+        </a>
+      </div>
 
-  <div class="my-2">
-    <a href="{% url 'entity_edit_entity_add' %}"
-       class="btn btn-primary btn-control" role="button"
-       data-async="modal" >
-      {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD NEW ITEM
-    </a>
-  </div>
+      <div class="search-container mb-3">
+        <input type="text" id="entity-search-input" class="form-control entity-search-input"
+               placeholder="Search items...">
+      </div>
 
-  {% for entity_view_group in entity_view_group_list %}
-  <div>
-    <div class="h5">{{ entity_view_group.entity_group_type.label }}</div>
-    {% for entity_view_item in entity_view_group.item_list %}
-    {% include "location/edit/panes/location_view_entity_toggle.html" with location_view=location_view entity=entity_view_item.entity exists_in_view=entity_view_item.exists_in_view %}
-    {% endfor %}
-  </div>
-  {% empty %}
-  {% include "edit/panes/no_entities_message.html" %}
-  {% endfor %}
+      <div class="filter-toggles mb-3">
+        <button class="entity-filter-btn active" data-filter="all">
+          All
+        </button>
+        <button class="entity-filter-btn" data-filter="in-view">
+          In View
+        </button>
+        <button class="entity-filter-btn" data-filter="not-in-view">
+          Not in View
+        </button>
+        <button class="entity-filter-btn" data-filter="unused">
+          Unused
+        </button>
+      </div>
+    </div>
 
-  {% if collection_view_group.item_list %}
-  <div class="">
-    <div class="h5">Collections</div>
-    {% for collection_view_item in collection_view_group.item_list %}
-    {% include "location/edit/panes/location_view_collection_toggle.html" with location_view=location_view collection=collection_view_item.collection exists_in_view=collection_view_item.exists_in_view %}
-    {% endfor %}
+    <div class="entity-picker-items" id="entity-picker-items">
+      {% for entity_view_group in entity_view_group_list %}
+      <div class="entity-group-section" data-group="{{ entity_view_group.entity_group_type.label|slugify }}">
+        <div class="entity-group-header"
+             data-toggle="collapse"
+             data-target="#group-{{ entity_view_group.entity_group_type.label|slugify }}"
+             aria-expanded="true"
+             aria-controls="group-{{ entity_view_group.entity_group_type.label|slugify }}">
+          <span class="entity-group-title">{{ entity_view_group.entity_group_type.label }}</span>
+          {% icon "chevron-down" css_class="entity-group-toggle" %}
+        </div>
+        <div class="entity-group-items collapse show" id="group-{{ entity_view_group.entity_group_type.label|slugify }}">
+          {% for entity_view_item in entity_view_group.item_list %}
+          {% include "location/edit/panes/location_view_entity_toggle.html" with location_view=location_view entity=entity_view_item.entity exists_in_view=entity_view_item.exists_in_view %}
+          {% endfor %}
+        </div>
+      </div>
+      {% empty %}
+      {% include "edit/panes/no_entities_message.html" %}
+      {% endfor %}
+
+      {% if collection_view_group.item_list %}
+      <div class="entity-group-section" data-group="collections">
+        <div class="entity-group-header"
+             data-toggle="collapse"
+             data-target="#group-collections"
+             aria-expanded="true"
+             aria-controls="group-collections">
+          <span class="entity-group-title">Collections</span>
+          {% icon "chevron-down" css_class="entity-group-toggle" %}
+        </div>
+        <div class="entity-group-items collapse show" id="group-collections">
+          {% for collection_view_item in collection_view_group.item_list %}
+          {% include "location/edit/panes/location_view_collection_toggle.html" with location_view=location_view collection=collection_view_item.collection exists_in_view=collection_view_item.exists_in_view %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
   </div>
-  {% endif %}
 </div>

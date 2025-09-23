@@ -1,14 +1,20 @@
 <div id="hi-entity-toggle-collection-{{ entity.id }}"
-     class="d-flex justify-content-start ml-1">
-  <div  class="">
-    <form method="POST" role="form"
-	  action="{% url 'collection_edit_collection_entity_toggle' collection_id=collection.id entity_id=entity.id %}"
-	  data-async="#hi-entity-toggle-collection-{{ entity.id }}" data-mode="replace" >
-      {% csrf_token %}
-      <input type="checkbox" id="entity-toggle-collection-checkbox-{{ entity.id }}" name="checkbox_state" 
-             {% if exists_in_collection %}checked{% endif %} 
-	     onchange-async="true" >
-      <label for="entity-toggle-collection-checkbox-{{ entity.id }}">{{ entity.name }} <small>[{{ entity.integration_id }}]</small></label>
-    </form>
-  </div>
+     class="entity-item-row{% if exists_in_collection %} in-view{% endif %}"
+     data-entity-id="{{ entity.id }}"
+     data-entity-name="{{ entity.name }}"
+     data-entity-type="{{ entity.entity_type }}"
+     data-status="{% if exists_in_collection %}in-collection{% else %}not-in-collection{% endif %}">
+  <form method="POST" role="form"
+        action="{% url 'collection_edit_collection_entity_toggle' collection_id=collection.id entity_id=entity.id %}"
+        data-async="#hi-entity-toggle-collection-{{ entity.id }}" data-mode="replace" >
+    {% csrf_token %}
+    <input type="checkbox" id="entity-toggle-collection-checkbox-{{ entity.id }}"
+           name="checkbox_state"
+           class="entity-item-checkbox"
+           {% if exists_in_collection %}checked{% endif %}
+           onchange-async="true" >
+    <label for="entity-toggle-collection-checkbox-{{ entity.id }}" class="entity-item-label">
+      {{ entity.name }} <span class="entity-item-id">[{{ entity.integration_id }}]</span>
+    </label>
+  </form>
 </div>
