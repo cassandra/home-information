@@ -1,5 +1,5 @@
 {% extends "notify/emails/base_email_message.txt" %}
-{% load common_template_helpers %}
+{% load common_tags %}
 {% block content %}Home Information Sign In
 
 Your access code is:
