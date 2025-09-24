@@ -113,13 +113,13 @@
 }
 
 .timeline-item:hover {
-    background-color: var(--edit-primary-bg-color);
+    background-color: var(--info-bg-light);
     border-left-color: var(--primary-highlight-color);
     transform: translateX(2px);
 }
 
 .timeline-item.active {
-    background-color: var(--edit-primary-bg-color);
+    background-color: var(--info-bg-light);
     border-left-color: var(--secondary-color);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -326,7 +326,7 @@
 
 /* Error State for Timeline */
 .timeline-container.error {
-    background-color: var(--edit-secondary-bg-color);
+    background-color: var(--warning-bg-light);
     padding: 1rem;
     text-align: center;
 }
