@@ -26,9 +26,22 @@
   --muted-color: #7e7e81;
   --on-muted-color: #ffffff;
   --line-color: #cccccc;
+  /* Restore original edit variables */
   --edit-primary-bg-color: #dffeff;
   --edit-secondary-bg-color: #ffd0c3;
   --edit-tertiary-bg-color: #f0f0f0;
+
+  /* Add missing semantic background variants */
+  --warning-bg-light: #fef7e6;
+  --info-bg-light: #e8f4f4;
+  --muted-bg-light: #f8f9fa;
+
+  /* Edit Mode Variables (for global edit mode styling) */
+  --edit-mode-primary-bg: #FAD4C8;    /* Side panel background */
+  --edit-mode-secondary-bg: #F5E6E1;  /* Main screen background */
+  --edit-mode-tertiary-bg: #F5E6E1;   /* Top/bottom backgrounds */
+  --edit-mode-border-color: #C65D3C;  /* Border color */
+  --edit-mode-dash-color: #A94A32;    /* Dashed line color */
   --edit-hr-color: #a0a0a0;
   
   --top-buttons-height: 2.5rem;
@@ -380,17 +393,29 @@ a.clickable-card:active {
     background: var(--white);
 }
 
+/* Edit Mode Styling - Warm color scheme with dashed borders */
 #hi-top-content[hi-edit="True"] {
-    background: var(--edit-tertiary-bg-color);
+    background: var(--edit-mode-tertiary-bg);
+    border-bottom: 3px dashed var(--edit-mode-dash-color);
+    box-shadow: inset 0 -2px 8px rgba(212, 119, 94, 0.1);
 }
+
 #hi-bottom-content[hi-edit="True"] {
-    background: var(--edit-tertiary-bg-color);
+    background: var(--edit-mode-tertiary-bg);
+    border-top: 3px dashed var(--edit-mode-dash-color);
+    box-shadow: inset 0 2px 8px rgba(212, 119, 94, 0.1);
 }
+
 .hi-screen[hi-edit="True"] {
-    background: var(--edit-secondary-bg-color);
+    background: linear-gradient(135deg, var(--edit-mode-secondary-bg) 0%, var(--white) 50%, var(--edit-mode-secondary-bg) 100%);
+    box-shadow: inset 0 0 0 3px var(--edit-mode-secondary-bg);
+    position: relative;
 }
-.hi-screen[hi-edit="True"] .hi-side {
-    background: var(--edit-primary-bg-color);
+
+/* Side panel styling in edit mode */
+.hi-screen[hi-edit="True"] #hi-side-content {
+    background: var(--edit-mode-primary-bg);
+    border-left: 3px dashed var(--edit-mode-dash-color);
 }
 
 .hi-screen {
@@ -923,7 +948,7 @@ g[hover] {
 }
 
 .getting-started-guide .mode-explanation {
-    background: var(--edit-primary-bg-color);
+    background: var(--info-bg-light);
     border-radius: 0.375rem;
     padding: 0.75rem;
     margin-bottom: 1rem;
@@ -995,7 +1020,7 @@ g[hover] {
 .getting-started-guide .help-hint {
     display: flex;
     align-items: center;
-    background: var(--edit-tertiary-bg-color);
+    background: var(--muted-bg-light);
     padding: 0.5rem;
     border-radius: 0.25rem;
     border: 1px solid var(--line-color);
@@ -1058,13 +1083,13 @@ g[hover] {
     gap: 0.5rem;
     margin-bottom: 0.75rem;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--edit-tertiary-bg-color);
+    border-bottom: 1px solid var(--muted-bg-light);
 }
 
 .editing-help-guide .category-icon {
     width: 32px;
     height: 32px;
-    background: var(--edit-primary-bg-color);
+    background: var(--info-bg-light);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -1090,7 +1115,7 @@ g[hover] {
     align-items: center;
     gap: 0.5rem;
     padding: 0.375rem 0;
-    border-bottom: 1px solid var(--edit-tertiary-bg-color);
+    border-bottom: 1px solid var(--muted-bg-light);
 }
 
 .editing-help-guide .help-actions li:last-child {
@@ -1099,7 +1124,7 @@ g[hover] {
 
 .editing-help-guide .action-method {
     font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-    background: var(--edit-tertiary-bg-color);
+    background: var(--muted-bg-light);
     padding: 0.125rem 0.375rem;
     border-radius: 0.25rem;
     font-size: 0.8rem;
@@ -1116,7 +1141,7 @@ g[hover] {
 
 .editing-help-guide .help-note {
     padding: 1rem;
-    background: var(--edit-secondary-bg-color);
+    background: var(--warning-bg-light);
     border-radius: 0.5rem;
     border-left: 4px solid var(--secondary-color);
 }
@@ -1368,7 +1393,7 @@ g[hover] {
 }
 
 .entity-picker-header {
-    background: var(--edit-tertiary-bg-color);
+    background: var(--muted-bg-light);
     border-bottom: 1px solid var(--line-color);
     padding: 0.5rem;
     /* Make sticky within the sidebar scroll */
@@ -1407,7 +1432,7 @@ g[hover] {
 }
 
 .entity-filter-btn:hover {
-    background: var(--edit-primary-bg-color);
+    background: var(--info-bg-light);
 }
 
 .entity-filter-btn.active:hover {
@@ -1472,12 +1497,12 @@ g[hover] {
 
 .entity-item-row:hover,
 .collection-item-row:hover {
-    background: var(--edit-tertiary-bg-color);
+    background: var(--muted-bg-light);
 }
 
 .entity-item-row.in-view,
 .collection-item-row.in-view {
-    background: var(--edit-primary-bg-color);
+    background: var(--success-bg-light);
     border-left: 3px solid var(--primary-color);
     padding-left: 5px;
 }
@@ -1491,7 +1516,7 @@ g[hover] {
 .entity-item-row.unused,
 .collection-item-row.unused {
     border-left: 3px solid var(--warning-color);
-    background: var(--edit-secondary-bg-color);
+    background: var(--warning-bg-light);
     padding-left: 5px;
 }
 
