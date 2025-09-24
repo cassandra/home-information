@@ -7,15 +7,7 @@
     <div id="{{ entity_data.entity.html_id }}"
          class="entity-item {{ entity_data.display_category.css_class }} {% if request.view_parameters.is_editing %}draggable{% endif %}"
          {% if request.view_parameters.is_editing %}draggable="true"{% endif %} >
-      <a href="{% if request.view_parameters.is_editing %}{% url 'entity_edit_mode' entity_id=entity_data.entity.id %}{% else %}{% url 'entity_edit' entity_id=entity_data.entity.id %}{% endif %}"
-         class="card-link"
-         data-async="true">
-        <div class="card h-100">
-          <div class="card-body p-3">
-            {% include "entity/panes/entity_status_card.html" with entity_status_data=entity_data %}
-          </div>
-        </div>
-      </a>
+      {% include "entity/panes/entity_status_card_grid.html" with entity_status_data=entity_data %}
     </div>
     {% empty %}
     <div><em>No items in collection.</em></div>
@@ -29,22 +21,7 @@
     <div id="{{ entity_data.entity.html_id }}"
          class="entity-row {{ entity_data.display_category.css_class }} {% if request.view_parameters.is_editing %}draggable{% endif %}"
          {% if request.view_parameters.is_editing %}draggable="true"{% endif %} >
-      <a href="{% if request.view_parameters.is_editing %}{% url 'entity_edit_mode' entity_id=entity_data.entity.id %}{% else %}{% url 'entity_edit' entity_id=entity_data.entity.id %}{% endif %}"
-         class="card-link"
-         data-async="true">
-        <div class="card">
-          <div class="card-body">
-            <div class="d-flex">
-              <div class="entity-title-section flex-shrink-0">
-                {% include "entity/panes/entity_status_title.html" with entity_status_data=entity_data %}
-              </div>
-              <div class="entity-content-section flex-grow-1 ml-3">
-                {% include "entity/panes/entity_state_status_card.html" with entity_state_status_data_list=entity_data.entity_state_status_data_list %}
-              </div>
-            </div>
-          </div>
-        </div>
-      </a>
+      {% include "entity/panes/entity_status_card_list.html" with entity_status_data=entity_data %}
     </div>
     {% empty %}
     <div><em>No items in collection.</em></div>
