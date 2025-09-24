@@ -66,16 +66,7 @@ class CollectionManager(Singleton):
         entity_list = [ x.entity for x in collection_entity_list ]
         entity_status_data_list = StatusDisplayManager().get_entity_status_data_list(
             entities = entity_list,
-        )
-
-        svg_item_factory = SvgItemFactory()
-        for entity_status_data in entity_status_data_list:
-            svg_icon_item = svg_item_factory.get_display_only_svg_icon_item(
-                entity = entity_status_data.entity,
-            )
-            entity_status_data.display_only_svg_icon_item = svg_icon_item
-            continue
-        
+        )        
         return CollectionData(
             collection = collection,
             entity_status_data_list = entity_status_data_list,

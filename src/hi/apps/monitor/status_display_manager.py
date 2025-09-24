@@ -120,7 +120,7 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         return EntityStatusData(
             entity = entity,
             entity_state_status_data_list = list( entity_state_to_status_data.values() ),
-            entity_for_video = entity_for_video,
+            entity_for_video = entity_for_video,  # Possibly principal entity via delegation
             display_only_svg_icon_item = svg_icon_item,
         )
 
@@ -140,18 +140,26 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         # each entity has EntityStatusData (even if there are no latest
         # sensor responses).
         #
+        svg_item_factory = SvgItemFactory()
         entity_status_data_list = list()
         for entity in entities:
+            svg_icon_item = svg_item_factory.get_display_only_svg_icon_item(
+                entity = entity,
+            )
             entity_status_data = entity_to_entity_status_data.get( entity )
             if not entity_status_data:
-                entity_for_video = entity if entity.has_video_stream else None
                 entity_status_data = EntityStatusData(
                     entity = entity,
                     entity_state_status_data_list = list(),
-                    entity_for_video = entity_for_video,
+                    display_only_svg_icon_item = svg_icon_item,
+                    # entity_for_video not looking for delegations here
                 )
+            else:
+                entity_status_data.display_only_svg_icon_item = svg_icon_item
+                
             entity_status_data_list.append( entity_status_data )
             continue
+        
         return entity_status_data_list
     
     def _get_entity_to_entity_status_data(
@@ -186,6 +194,8 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
                 entity_status_data = EntityStatusData(
                     entity = entity,
                     entity_state_status_data_list = list()
+                    # entity_for_video not looking for delegations here
+                    # display_only_svg_icon_item is filled in later
                 )
                 entity_to_entity_status_data[entity] = entity_status_data
             else:
