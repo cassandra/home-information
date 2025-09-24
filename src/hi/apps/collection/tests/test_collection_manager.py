@@ -580,3 +580,79 @@ class TestCollectionManager(BaseTestCase):
         self.assertTrue(CollectionEntity.objects.filter(
             entity=entity, collection=collection
         ).exists())
+
+    def test_collection_data_enhanced_entity_display_categories(self):
+        """Test collection data generation - entity display category classification."""
+        from hi.apps.entity.models import EntityState
+        from hi.apps.entity.enums import EntityType, EntityStateType
+
+        collection = Collection.objects.create(
+            name='Mixed Collection',
+            collection_type_str='OTHER',
+            collection_view_type_str='GRID'
+        )
+
+        # Create entities for each display category
+        plain_entity = Entity.objects.create(
+            name='Info Display',
+            entity_type_str=str(EntityType.OTHER),
+            has_video_stream=False,
+        )
+
+        video_entity = Entity.objects.create(
+            name='Security Camera',
+            entity_type_str=str(EntityType.CAMERA),
+            has_video_stream=True,
+        )
+
+        state_entity = Entity.objects.create(
+            name='Smart Switch',
+            entity_type_str=str(EntityType.LIGHT),
+            has_video_stream=False,
+        )
+
+        # Add state to state_entity
+        EntityState.objects.create(
+            entity=state_entity,
+            entity_state_type_str=str(EntityStateType.ON_OFF),
+            name='power_state',
+        )
+
+        # Create entity with both video and state (video should win)
+        hybrid_entity = Entity.objects.create(
+            name='PTZ Camera',
+            entity_type_str=str(EntityType.CAMERA),
+            has_video_stream=True,
+        )
+
+        EntityState.objects.create(
+            entity=hybrid_entity,
+            entity_state_type_str=str(EntityStateType.MOVEMENT),
+            name='pan_tilt_state',
+        )
+
+        # Add entities to collection
+        CollectionEntity.objects.create(collection=collection, entity=plain_entity, order_id=1)
+        CollectionEntity.objects.create(collection=collection, entity=video_entity, order_id=2)
+        CollectionEntity.objects.create(collection=collection, entity=state_entity, order_id=3)
+        CollectionEntity.objects.create(collection=collection, entity=hybrid_entity, order_id=4)
+
+        manager = CollectionManager()
+        collection_data = manager.get_collection_data(collection, is_editing=False)
+
+        # Generate basic template context - should only contain basic collection data
+        context = collection_data.to_template_context()
+
+        # Verify basic context contains collection and entity list
+        self.assertIn('collection', context)
+        self.assertIn('entity_status_data_list', context)
+        self.assertEqual(context['collection'], collection)
+        self.assertEqual(len(context['entity_status_data_list']), 4)
+
+        # Verify entity_status_data_list contains proper EntityStatusData objects
+        entity_names = [esd.entity.name for esd in context['entity_status_data_list']]
+        expected_names = ['Info Display', 'Security Camera', 'Smart Switch', 'PTZ Camera']
+        self.assertEqual(entity_names, expected_names)
+
+        return
+

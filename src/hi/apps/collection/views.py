@@ -59,12 +59,11 @@ class CollectionViewView( HiGridView, CollectionViewMixin ):
         request.view_parameters.update_collection( collection )
         request.view_parameters.to_session( request )
 
-        collection_data = CollectionManager().get_collection_data(
-            collection = collection,
-            is_editing = request.view_parameters.is_editing,
+        from hi.apps.collection.view_helpers import CollectionViewHelpers
+        context = CollectionViewHelpers.build_collection_template_context(
+            collection=collection,
+            is_editing=request.view_parameters.is_editing
         )
-        
-        context = collection_data.to_template_context()
         context['is_async_request'] = is_ajax( request )
         return context
     

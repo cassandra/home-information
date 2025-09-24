@@ -1,31 +1,56 @@
 <div id="hi-collection-view-main" class="hi-collection-view draggable-container">
   <div class="h4"><small>Collection:</small> {{ collection.name }}</div>
-  
+
   {% if collection.collection_view_type.is_grid %}
-  <div class="row">
-    {% for entity_status_data in entity_status_data_list %}
-    <div id="{{ entity_status_data.entity.html_id }}" 
-	 class="{% if entity_status_data_list|length == 1 %}col-12{% elif entity_status_data_list|length <= 4 %}col-6{% else %}col-4{% endif %} {% if request.view_parameters.is_editing %}draggable{% endif %} mb-2"
-	 {% if request.view_parameters.is_editing %}draggable="true"{% endif %} >
-      {% include "entity/panes/entity_status_card.html" with entity_status_data=entity_status_data %}
+  <div class="collection-grid {{ grid_class }}">
+    {% for entity_data in enhanced_entity_status_data_list %}
+    <div id="{{ entity_data.entity.html_id }}"
+         class="entity-item {{ entity_data.entity_display_category }} {% if request.view_parameters.is_editing %}draggable{% endif %}"
+         {% if request.view_parameters.is_editing %}draggable="true"{% endif %} >
+      <a href="{% if request.view_parameters.is_editing %}{% url 'entity_edit_mode' entity_id=entity_data.entity.id %}{% else %}{% url 'entity_edit' entity_id=entity_data.entity.id %}{% endif %}"
+         class="card-link"
+         data-async="true">
+        <div class="card h-100">
+          <div class="card-body p-3">
+            {% include "entity/panes/entity_status_card.html" with entity_status_data=entity_data %}
+          </div>
+        </div>
+      </a>
     </div>
     {% empty %}
     <div><em>No entities in collection.</em></div>
     {% endfor %}
   </div>
-  
+
   {% else %}
-  
-  {% for entity_status_data in entity_status_data_list %}
-  <div id="{{ entity_status_data.entity.html_id }}" 
-       class="{% if request.view_parameters.is_editing %}draggable{% endif %}"
-       {% if request.view_parameters.is_editing %}draggable="true"{% endif %} >
-    {% include "entity/panes/entity_status_row.html" with entity_status_data=entity_status_data %}
+
+  <div class="collection-list">
+    {% for entity_data in enhanced_entity_status_data_list %}
+    <div id="{{ entity_data.entity.html_id }}"
+         class="entity-row {{ entity_data.entity_display_category }} {% if request.view_parameters.is_editing %}draggable{% endif %}"
+         {% if request.view_parameters.is_editing %}draggable="true"{% endif %} >
+      <a href="{% if request.view_parameters.is_editing %}{% url 'entity_edit_mode' entity_id=entity_data.entity.id %}{% else %}{% url 'entity_edit' entity_id=entity_data.entity.id %}{% endif %}"
+         class="card-link"
+         data-async="true">
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex">
+              <div class="entity-title-section flex-shrink-0">
+                {% include "entity/panes/entity_status_title.html" with entity_status_data=entity_data %}
+              </div>
+              <div class="entity-content-section flex-grow-1 ml-3">
+                {% include "entity/panes/entity_state_status_card.html" with entity_state_status_data_list=entity_data.entity_state_status_data_list %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% empty %}
+    <div><em>No entities in collection.</em></div>
+    {% endfor %}
   </div>
-  {% empty %}
-  <div><em>No entities in collection.</em></div>
-  {% endfor %}
-  
+
   {% endif %}
-  
+
 </div>

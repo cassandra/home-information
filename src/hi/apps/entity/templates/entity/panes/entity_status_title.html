@@ -4,17 +4,7 @@
     {% include "entity/panes/entity_display_only_svg_icon.html" with svg_icon_item=entity_status_data.display_only_svg_icon_item %}
   </div>
   <div>
-    {% if request.view_parameters.is_editing %}
-    <a href="{% url 'entity_edit_mode' entity_id=entity.id %}"
-       data-async="true">
-      {{ entity.name }}
-    </a>
-    {% else %}
-    <a href="{% url 'entity_edit' entity_id=entity.id %}"
-       data-async="true">
-      {{ entity.name }}
-    </a>
-    {% endif %}
+    {{ entity.name }}
   </div>
 </div>
 {% endwith %}
