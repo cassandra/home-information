@@ -144,9 +144,11 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
         for entity in entities:
             entity_status_data = entity_to_entity_status_data.get( entity )
             if not entity_status_data:
+                entity_for_video = entity if entity.has_video_stream else None
                 entity_status_data = EntityStatusData(
                     entity = entity,
-                    entity_state_status_data_list = list()
+                    entity_state_status_data_list = list(),
+                    entity_for_video = entity_for_video,
                 )
             entity_status_data_list.append( entity_status_data )
             continue
@@ -186,7 +188,10 @@ class StatusDisplayManager( Singleton, SensorResponseMixin ):
                     entity_state_status_data_list = list()
                 )
                 entity_to_entity_status_data[entity] = entity_status_data
-            entity_to_entity_status_data[entity].entity_state_status_data_list.append(
+            else:
+                entity_status_data = entity_to_entity_status_data[entity]
+                
+            entity_status_data.entity_state_status_data_list.append(
                 entity_state_status_data
             )
             continue

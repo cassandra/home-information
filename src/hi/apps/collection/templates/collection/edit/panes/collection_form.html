@@ -42,6 +42,7 @@
   {% endif %}
 </div>
 
+{% if collection_form.order_id %}
 <div class="sidebar-form-field">
   <label for="{{ collection_form.order_id.id_for_label }}" class="sidebar-form-label">{{ collection_form.order_id.label }}</label>
   <input type="number" id="{{ collection_form.order_id.id_for_label }}" name="{{ collection_form.order_id.name }}" value="{{ collection_form.order_id.value|default:'' }}" class="sidebar-form-input">
@@ -49,3 +50,4 @@
     <div class="sidebar-form-error">{{ collection_form.order_id.errors }}</div>
   {% endif %}
 </div>
+{% endif %}

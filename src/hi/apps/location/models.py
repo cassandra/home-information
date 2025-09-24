@@ -31,7 +31,7 @@ class Location( models.Model, ItemTypeModelMixin ):
         null = False, blank = False,
     )
     order_id = models.PositiveIntegerField(
-        'Order Id',
+        'Position',
         default = 0,
         db_index = True,
     )
@@ -163,7 +163,7 @@ class LocationView( models.Model, ItemTypeModelMixin ):
         null = False, blank = False,
     )
     order_id = models.PositiveIntegerField(
-        'Order Id',
+        'Position',
         default = 0,
         db_index = True,
     )

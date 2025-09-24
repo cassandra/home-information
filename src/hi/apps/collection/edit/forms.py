@@ -13,7 +13,6 @@ class CollectionBaseForm( forms.ModelForm ):
             'name',
             'collection_type_str',
             'collection_view_type_str',
-            'order_id',
         )
         
     collection_type_str = forms.ChoiceField(
@@ -34,8 +33,14 @@ class CollectionBaseForm( forms.ModelForm ):
 
 
 class CollectionEditForm( CollectionBaseForm ):
-    pass
 
+    class Meta(CollectionBaseForm.Meta):
+        fields = CollectionBaseForm.Meta.fields + ('order_id',)
+
+        widgets = {
+            'order_id': forms.NumberInput( attrs={'class': 'form-control'} ),
+        }
+        
     
 class CollectionAddForm( CollectionBaseForm ):
 

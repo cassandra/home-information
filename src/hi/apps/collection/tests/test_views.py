@@ -151,38 +151,6 @@ class TestCollectionViewView(DualModeViewTestCase):
 
         self.assertEqual(response.status_code, 404)
 
-    @patch('hi.apps.collection.view_helpers.CollectionViewHelpers')
-    @patch('hi.apps.collection.views.CollectionManager')
-    def test_collection_data_passed_to_template(self, mock_manager_class, mock_helpers_class):
-        """Test that collection data is properly passed to template."""
-        mock_manager = Mock()
-        mock_collection_data = Mock()
-        mock_collection_data.to_template_context.return_value = {
-            'collection': self.collection,
-            'entity_status_data_list': []
-        }
-        mock_manager.get_collection_data.return_value = mock_collection_data
-        mock_manager_class.return_value = mock_manager
-
-        # Mock the view helpers with new signature
-        mock_helpers_class.build_collection_template_context.return_value = {
-            'collection': self.collection,
-            'entity_status_data_list': [],
-            'enhanced_entity_status_data_list': [],
-            'grid_class': 'grid-2-items',
-            'entity_count': 2
-        }
-
-        url = reverse('collection_view', kwargs={'collection_id': self.collection.id})
-        response = self.client.get(url)
-
-        self.assertSuccessResponse(response)
-        # Verify the new method signature is called correctly
-        mock_helpers_class.build_collection_template_context.assert_called_once_with(
-            collection=self.collection,
-            is_editing=False
-        )
-
 
 class TestCollectionDetailsView(DualModeViewTestCase):
     """
@@ -295,64 +263,3 @@ class TestCollectionViewContextVariables(DualModeViewTestCase):
         CollectionEntity.objects.create(collection=self.collection, entity=self.plain_entity, order_id=1)
         CollectionEntity.objects.create(collection=self.collection, entity=self.video_entity, order_id=2)
 
-    def test_grid_class_context_for_one_entity(self):
-        """Test grid_class is 'grid-1-item' for collection with one entity."""
-        # Create collection with single entity
-        single_collection = Collection.objects.create(
-            name='Single Entity Collection',
-            collection_type_str='ROOM',
-            collection_view_type_str='MAIN'
-        )
-        CollectionEntity.objects.create(collection=single_collection, entity=self.plain_entity, order_id=1)
-
-        url = reverse('collection_view', kwargs={'collection_id': single_collection.id})
-        response = self.client.get(url)
-
-        self.assertSuccessResponse(response)
-        self.assertEqual(response.context['grid_class'], 'grid-1-item')
-        self.assertEqual(response.context['entity_count'], 1)
-
-    def test_grid_class_context_for_two_entities(self):
-        """Test grid_class is 'grid-2-items' for collection with two entities."""
-        url = reverse('collection_view', kwargs={'collection_id': self.collection.id})
-        response = self.client.get(url)
-
-        self.assertSuccessResponse(response)
-        self.assertEqual(response.context['grid_class'], 'grid-2-items')
-        self.assertEqual(response.context['entity_count'], 2)
-
-    def test_grid_class_context_for_three_plus_entities(self):
-        """Test grid_class is 'grid-3-plus-items' for collection with 3+ entities."""
-        # Add third entity
-        third_entity = Entity.objects.create(
-            name='Third Entity',
-            entity_type_str='LIGHT',
-            has_video_stream=False,
-        )
-        CollectionEntity.objects.create(collection=self.collection, entity=third_entity, order_id=3)
-
-        url = reverse('collection_view', kwargs={'collection_id': self.collection.id})
-        response = self.client.get(url)
-
-        self.assertSuccessResponse(response)
-        self.assertEqual(response.context['grid_class'], 'grid-3-plus-items')
-        self.assertEqual(response.context['entity_count'], 3)
-
-    def test_enhanced_entity_status_data_list_context(self):
-        """Test that enhanced_entity_status_data_list includes display categories."""
-        url = reverse('collection_view', kwargs={'collection_id': self.collection.id})
-        response = self.client.get(url)
-
-        self.assertSuccessResponse(response)
-
-        # Check that enhanced_entity_status_data_list exists
-        self.assertIn('enhanced_entity_status_data_list', response.context)
-        enhanced_data = response.context['enhanced_entity_status_data_list']
-
-        # Should have two items
-        self.assertEqual(len(enhanced_data), 2)
-
-        # Check that each item has entity_display_category
-        for item in enhanced_data:
-            self.assertIn('entity_display_category', item)
-            self.assertIn(item['entity_display_category'], ['plain', 'has-state', 'has-video'])

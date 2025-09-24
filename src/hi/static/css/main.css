@@ -396,13 +396,13 @@ a.clickable-card:active {
 /* Edit Mode Styling - Warm color scheme with dashed borders */
 #hi-top-content[hi-edit="True"] {
     background: var(--edit-mode-tertiary-bg);
-    border-bottom: 3px dashed var(--edit-mode-dash-color);
+    border-bottom: 4px dashed var(--edit-mode-dash-color);
     box-shadow: inset 0 -2px 8px rgba(212, 119, 94, 0.1);
 }
 
 #hi-bottom-content[hi-edit="True"] {
     background: var(--edit-mode-tertiary-bg);
-    border-top: 3px dashed var(--edit-mode-dash-color);
+    border-top: 4px dashed var(--edit-mode-dash-color);
     box-shadow: inset 0 2px 8px rgba(212, 119, 94, 0.1);
 }
 
@@ -415,7 +415,7 @@ a.clickable-card:active {
 /* Side panel styling in edit mode */
 .hi-screen[hi-edit="True"] #hi-side-content {
     background: var(--edit-mode-primary-bg);
-    border-left: 3px dashed var(--edit-mode-dash-color);
+    border-left: 4px dashed var(--edit-mode-dash-color);
 }
 
 .hi-screen {

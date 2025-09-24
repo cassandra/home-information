@@ -36,22 +36,3 @@ class CollectionViewType(LabeledEnum):
         return self == CollectionViewType.LIST
 
 
-class CollectionDisplayCategory(LabeledEnum):
-    """
-    Display categories for entities in collection views.
-    Used for styling and layout decisions in collection templates.
-    """
-
-    PLAIN = ('Plain', 'Entity with no states or video stream - displays name and icon only')
-    HAS_STATE = ('Has State', 'Entity with sensor/controller states - displays state data and controls')
-    HAS_VIDEO = ('Has Video', 'Entity with video stream - displays video player')
-
-    @classmethod
-    def default(cls):
-        return cls.PLAIN
-
-    def css_class(self) -> str:
-        """Return CSS class name for this display category."""
-        return self.name.lower().replace('_', '-')
-
-
