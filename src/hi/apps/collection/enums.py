@@ -23,6 +23,10 @@ class CollectionType(LabeledEnum):
     def default(cls):
         return cls.OTHER
 
+    @property
+    def is_cameras(self):
+        return bool( self == CollectionType.CAMERAS )
+    
 
 class CollectionViewType(LabeledEnum):
 

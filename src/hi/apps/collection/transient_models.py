@@ -25,6 +25,8 @@ class CollectionData:
 
     @property
     def grid_css_class(self):
+        if self.collection.collection_type.is_cameras:
+            return 'grid-2-items'            
         entity_count = len(self.entity_status_data_list)
         if entity_count >= 3:
             return 'grid-3-plus-items'

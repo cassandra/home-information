@@ -4,26 +4,29 @@
   <table class="table table-striped">
     <tbody>
       {% for sensor_history in sensor_history_list %}
-      {% if sensor_history.details %}
-
       {% if sensor_history.has_video_stream %}
-      <a href="{% url 'console_entity_video_sensor_history_detail' entity_id=sensor.entity_state.entity.id sensor_id=sensor.id sensor_history_id=sensor_history.id %}"
-         data-async="true">
         <tr>
-          <td><div class="text-center" status="{{ sensor_history.value }}"> {{ sensor_history.value }}</div></td>
+          <td>
+            <a href="{{ sensor_history.video_browse_url }}" data-async="true">
+              <div class="text-center" status="{{ sensor_history.value }}">
+                {{ sensor_history.value }}
+              </div>
+            </a>
+          </td>
           <td>{{ sensor_history.response_datetime|localtime }}</td>
         </tr>
       </a>
-      {% else %}
-      <a href="{% url 'sense_sensor_history_details' sensor_history_id=sensor_history.id %}"
-         data-async="true">
+      {% elif sensor_history.details %}
         <tr>
-          <td><div class="text-center" status="{{ sensor_history.value }}"> {{ sensor_history.value }}</div></td>
+          <td>
+            <a href="{{ sensor_history.details_url }}" data-async="true">
+              <div class="text-center" status="{{ sensor_history.value }}">
+                {{ sensor_history.value }}
+              </div>
+            </a>
+          </td>
           <td>{{ sensor_history.response_datetime|localtime }}</td>
         </tr>
-      </a>
-      {% endif %}
-
       {% else %}
       <tr>
         <td><div class="text-center" status="{{ sensor_history.value }}"> {{ sensor_history.value }}</div></td>

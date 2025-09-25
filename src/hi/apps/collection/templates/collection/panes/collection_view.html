@@ -3,31 +3,35 @@
 
   {% if collection.collection_view_type.is_grid %}
   <div class="collection-grid {{ collection_grid_css_class }}">
-    {% for entity_data in entity_status_data_list %}
-    <div id="{{ entity_data.entity.html_id }}"
-         class="entity-item {{ entity_data.display_category.css_class }} {% if request.view_parameters.is_editing %}draggable{% endif %}"
+    {% for entity_status_data in entity_status_data_list %}
+    <div id="{{ entity_status_data.entity.html_id }}"
+         class="entity-item {{ entity_status_data.display_category.css_class }} {% if request.view_parameters.is_editing %}draggable{% endif %}"
          {% if request.view_parameters.is_editing %}draggable="true"{% endif %} >
-      {% include "entity/panes/entity_status_card_grid.html" with entity_status_data=entity_data %}
+      {% include "collection/panes/entity_card_grid.html" with entity_status_data=entity_status_data %}
     </div>
-    {% empty %}
-    <div><em>No items in collection.</em></div>
     {% endfor %}
   </div>
 
   {% else %}
 
   <div class="collection-list">
-    {% for entity_data in entity_status_data_list %}
-    <div id="{{ entity_data.entity.html_id }}"
-         class="entity-row {{ entity_data.display_category.css_class }} {% if request.view_parameters.is_editing %}draggable{% endif %}"
+    {% for entity_status_data in entity_status_data_list %}
+    <div id="{{ entity_status_data.entity.html_id }}"
+         class="entity-row {{ entity_status_data.display_category.css_class }} {% if request.view_parameters.is_editing %}draggable{% endif %}"
          {% if request.view_parameters.is_editing %}draggable="true"{% endif %} >
-      {% include "entity/panes/entity_status_card_list.html" with entity_status_data=entity_data %}
+      {% include "collection/panes/entity_card_list.html" with entity_status_data=entity_status_data %}
     </div>
-    {% empty %}
-    <div><em>No items in collection.</em></div>
     {% endfor %}
   </div>
 
   {% endif %}
 
+  {% if not entity_status_data_list %}
+  <div class="alert alert-info text-center w-100">
+    <div class="h4">No items in collection.</div>
+    {% if not request.view_parameters.is_editing %}
+    <div><em>Use <a href="{% url 'edit_start' %} ">Edit Mode</a> to add items.</em></div>
+    {% endif %}
+  </div>
+  {% endif %}
 </div>

@@ -1,0 +1,19 @@
+<div class="card h-100">
+  <div class="card-body">
+    <div class="d-flex">
+      <div class="entity-title-section flex-shrink-0">
+        {% include "collection/panes/entity_card_title.html" with entity_status_data=entity_status_data %}
+      </div>
+      {% if collection.collection_type.is_cameras %}
+      <div>
+        {% include "console/panes/entity_video_stream_w_link.html" with entity=entity_status_data.entity %}
+      </div>
+      {% else %}
+      <div class="entity-content-section flex-grow-1 ml-3">
+        {% include "collection/panes/entity_state_list.html" with entity_state_status_data_list=entity_status_data.entity_state_status_data_list %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+

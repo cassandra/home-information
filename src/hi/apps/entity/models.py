@@ -95,7 +95,6 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
             continue
         return attribute_map
 
-
         
 class EntityAttribute( AttributeModel ):
     """

@@ -1,6 +1,7 @@
 import json
 
 from django.db import models
+from django.urls import reverse
 
 from hi.apps.entity.models import EntityState
 
@@ -140,6 +141,10 @@ class SensorHistory(models.Model):
         return dict()
 
     @property
+    def has_details(self):
+        return bool( self.detail )
+    
+    @property
     def correlation_role(self) -> CorrelationRole:
         if self.correlation_role_str:
             return CorrelationRole.from_name_safe(self.correlation_role_str)
@@ -149,3 +154,30 @@ class SensorHistory(models.Model):
     def correlation_role(self, correlation_role: CorrelationRole):
         self.correlation_role_str = str(correlation_role) if correlation_role else None
     
+    @property
+    def entity(self):
+        return self.sensor.entity_state.entity
+
+    @property
+    def entity_state(self):
+        return self.sensor.entity_state
+
+    @property
+    def video_browse_url(self) -> str:
+        if self.has_video_stream:
+            return reverse( 'console_entity_video_sensor_history_detail',
+                            kwargs = { 'entity_id': self.entity.id,
+                                       'sensor_id': self.sensor.id,
+                                       'sensor_history_id': self.id })
+        if self.sensor.provides_video_stream:
+            return reverse( 'console_entity_video_sensor_history',
+                            kwargs = { 'entity_id': self.entity.id,
+                                       'sensor_id': self.sensor.id })        
+        return None
+    
+    @property
+    def details_url(self) -> str:
+        if self.has_details:
+            return reverse( 'sense_sensor_history_details',
+                            kwargs = { 'sensor_history_id': self.id })        
+        return None

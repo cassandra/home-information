@@ -1,10 +1,14 @@
 {% extends "modals/base.html" %}
 {% load icons %}
+{% load integration_tags %}
 
 {% block modal_dialog_class %}hi-modal-dialog-700{% endblock %}
 {% block title_text %}{{ entity.name }}{% endblock %}
 
 {% block body %}
+{% if entity.integration_id %}
+<div class="text-muted text-center"><small>From: {% integration_display_name entity %}</small></div>
+{% endif %}
 <!-- Root container for this attribute editing context -->
 <div id="{{ attr_page_context.container_html_id }}" 
      class="{{ DIVID.ATTR_V2_CONTAINER_CLASS }}">

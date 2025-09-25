@@ -51,6 +51,4 @@ class EntityStatusData:
         if len( self.entity_state_status_data_list ) > 0:
             return EntityDisplayCategory.HAS_STATE
         return EntityDisplayCategory.PLAIN
-    
-
-
+        

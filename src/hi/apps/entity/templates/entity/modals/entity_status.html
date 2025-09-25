@@ -1,5 +1,6 @@
 {% extends "modals/action_3.html" %}
 {% load video_tags %}
+{% load integration_tags %}
 
 {% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
 
@@ -14,23 +15,20 @@ Status
     {% include "entity/panes/entity_display_only_svg_icon.html" with svg_icon_item=display_only_svg_icon_item %}
   </div>
   {% endif %}
-  <div class="h5">
-    {{ entity.name }}
+  <div class="text-center">
+    <div class="h4 mb-0">{{ entity.name }}</div>
+    {% if entity.integration_id %}
+      <div class="text-muted"><small>From: {% integration_display_name entity %}</small></div>
+    {% endif %}
   </div>
   <div>
     <div class="h5 text-muted">{{ entity.entity_type.label }}</div>
   </div>
 </div>
 
-{% if entity_for_video.has_video_stream %}
-<a href="{% url 'console_entity_video_stream_dispatch' entity_id=entity_for_video.id %}"
-   data-entity-id="{{ entity_for_video.id }}"
-   data-async="#main-content"
-   class="btn btn-sm btn-outline-primary"
-   role="button">
-  {% include "console/panes/entity_video_stream.html" with entity=entity_for_video %}
-</a>
-{% endif %} 
+<div>
+  {% include "console/panes/entity_video_stream_w_link.html" with entity=entity_for_video %}
+</div>
 
 {% include "entity/panes/entity_state_status_list.html" with entity_state_status_data_list=entity_state_status_data_list in_modal_context=True %}
 {% endblock %}
