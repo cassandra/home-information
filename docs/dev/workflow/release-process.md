@@ -48,6 +48,13 @@ git merge staging
 git push origin master
 ```
 
+After changing to local master, it may be behind origin/master and should defintiely be behing both local staging and origin/staging. That is fine. When pulling in origin/master, it too will be behind staging. That is normal as the release process is all about merging staging into origin/master. 
+
+Common Mistakes to Avoid:
+  - NEVER make version changes directly on master
+  - NEVER edit files after the merge to master
+  - All changes on master must come from staging via the merge
+
 ### 4. Create GitHub Release
 
 Using GitHub CLI (preferred for automation):
@@ -115,6 +122,8 @@ mv ~/.hi ~/.hi-$DATE
 
 curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/install.sh | bash
 ```
+
+Best to try this on multiple types of machines.
 
 ### Post-Release Monitoring
 
