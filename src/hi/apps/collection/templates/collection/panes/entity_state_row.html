@@ -1,0 +1,19 @@
+{% load common_tags %}
+{% load icons %}
+{% with sensor_response=entity_state_status_data.latest_sensor_response %}
+
+{% if entity_state_status_data.controller_data_list %}
+{% for controller_data in entity_state_status_data.controller_data_list %}
+<div class="text-muted text-center"><small>{{ controller_data.controller.name }}</small></div>
+{% include "control/panes/controller_data.html" with controller_data=controller_data in_modal_context=True %}
+{% endfor %}
+
+{% elif entity_state_status_data.sensor_response_list %}
+<div class="text-muted text-center"><small>{{ sensor_response.sensor.name }}</small></div>
+{% include_with_fallback sensor_response.sensor.entity_state.entity_state_type.value_template_name "sense/panes/sensor_response_value_default.html" %}
+
+{% else %}
+<div class="alert alert-info">No sensors or controllers defined.</div>
+{% endif %}
+
+{% endwith %}

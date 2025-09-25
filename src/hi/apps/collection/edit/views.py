@@ -82,7 +82,14 @@ class CollectionAddView( HiModalView ):
 
         cleaneds_data = collection_add_form.clean()
         with transaction.atomic():
-            collection = collection_add_form.save()
+            collection = collection_add_form.save( commit = False )
+            last_collection = Collection.objects.order_by( '-order_id' ).first()
+            if last_collection:
+                collection.order_id = last_collection.order_id + 1
+            else:
+                collection.order_id = 0
+            collection.save()
+            
             if cleaneds_data['include_in_location_view']:
                 self._add_to_location_view(
                     request = request,
@@ -305,6 +312,7 @@ class CollectionEntityToggleView( View, CollectionViewMixin, EntityViewMixin ):
             is_editing = request.view_parameters.is_editing,
         )
         context = collection_data.to_template_context()
+        
         template = get_template( 'collection/panes/collection_view.html' )
         collection_content = template.render( context, request = request )
         

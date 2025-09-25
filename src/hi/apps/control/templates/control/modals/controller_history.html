@@ -6,8 +6,9 @@
 
 {% block body %}
 <h5>Controller History</h5>
-{% include "control/panes/controller_history_list.html" with controller_history_list=controller_history_list %}
-
+<div class="py-2">
+  {% include "control/panes/controller_history_list.html" with controller_history_list=controller_history_list %}
+</div>
 {% include "common/panes/pagination.html" with pagination=pagination %}
 
 {% endblock %}

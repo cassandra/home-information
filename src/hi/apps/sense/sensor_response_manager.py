@@ -198,6 +198,15 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
 
         self._latest_sensor_data_dirty = True
 
+        await self._add_sensors( sensor_response_list = sensor_response_list )
+
+        sensor_history_manager = await self.sensor_history_manager_async()
+
+        # This also has side effect of populating sensor_history_id
+        await sensor_history_manager.add_to_sensor_history(
+            sensor_response_list = sensor_response_list,
+        )        
+        
         pipeline = self._redis_client.pipeline()
         for sensor_response in sensor_response_list:
             list_cache_key = self.to_sensor_response_list_cache_key( sensor_response.integration_key )
@@ -208,13 +217,6 @@ class SensorResponseManager( Singleton, SensorHistoryMixin, EventMixin ):
             continue
         pipeline.execute()
 
-        await self._add_sensors( sensor_response_list = sensor_response_list )
-
-        sensor_history_manager = await self.sensor_history_manager_async()
-
-        await sensor_history_manager.add_to_sensor_history(
-            sensor_response_list = sensor_response_list,
-        )        
         return
     
     def to_sensor_response_list_cache_key( self, integration_key : IntegrationKey ) -> str:

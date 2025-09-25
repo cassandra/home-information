@@ -1,39 +1,55 @@
 {% load tz %}
 {% timezone USER_TIMEZONE %}
-<ul>
-  {% for sensor_history in sensor_history_list %}
-  <li>
-    {% if sensor_history.details %}
-      {% if sensor.provides_video_stream and sensor_history.has_video_stream %}
-        {# Redirect video streams to enhanced video browser #}
-        <a href="{% url 'console_entity_video_sensor_history_detail' entity_id=sensor.entity_state.entity.id sensor_id=sensor.id sensor_history_id=sensor_history.id %}"
-           data-async="true">
-          {{ sensor_history.response_datetime|localtime }} : {{ sensor_history.value }}
-        </a>
+<div class="table-responsive">
+  <table class="table table-striped">
+    <tbody>
+      {% for sensor_history in sensor_history_list %}
+      {% if sensor_history.has_video_stream %}
+        <tr>
+          <td>
+            <a href="{{ sensor_history.video_browse_url }}" data-async="true">
+              <div class="text-center" status="{{ sensor_history.value }}">
+                {{ sensor_history.value }}
+              </div>
+            </a>
+          </td>
+          <td>{{ sensor_history.response_datetime|localtime }}</td>
+        </tr>
+      </a>
+      {% elif sensor_history.details %}
+        <tr>
+          <td>
+            <a href="{{ sensor_history.details_url }}" data-async="true">
+              <div class="text-center" status="{{ sensor_history.value }}">
+                {{ sensor_history.value }}
+              </div>
+            </a>
+          </td>
+          <td>{{ sensor_history.response_datetime|localtime }}</td>
+        </tr>
       {% else %}
-        {# Use existing sensor history details modal for non-video sensors #}
-        <a href="{% url 'sense_sensor_history_details' sensor_history_id=sensor_history.id %}"
-           data-async="true">
-          {{ sensor_history.response_datetime|localtime }} : {{ sensor_history.value }}
-        </a>
+      <tr>
+        <td><div class="text-center" status="{{ sensor_history.value }}"> {{ sensor_history.value }}</div></td>
+        <td>{{ sensor_history.response_datetime|localtime }}</td>
+      </tr>
       {% endif %}
-    {% else %}
-    {{ sensor_history.response_datetime|localtime }} : {{ sensor_history.value }}
-    {% endif %}
-  </li>
-  {% empty %}
-  <div><em>No history.</em></div>
-  {% endfor %}
-  {% if show_all_link and sensor_history_list %}
-    {% if sensor.provides_video_stream %}
-      {# Redirect to enhanced video browser for video sensors #}
-      <a href="{% url 'console_entity_video_sensor_history' entity_id=sensor.entity_state.entity.id sensor_id=sensor.id %}"
-         data-async="true">&gt;&gt; See All</a>
-    {% else %}
-      {# Use existing sensor history modal for non-video sensors #}
-      <a href="{% url 'sense_sensor_history' sensor_id=sensor.id %}"
-         data-async="true">&gt;&gt; See All</a>
-    {% endif %}
+      {% empty %}
+      <tr><td colspan="2"><div class="alert alert-info" >No history.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+    
+{% if show_all_link and sensor_history_list %}
+<div>
+  {% if sensor.provides_video_stream %}
+  <a href="{% url 'console_entity_video_sensor_history' entity_id=sensor.entity_state.entity.id sensor_id=sensor.id %}"
+     data-async="true">&gt;&gt; See All</a>
+  {% else %}
+  {# Use existing sensor history modal for non-video sensors #}
+  <a href="{% url 'sense_sensor_history' sensor_id=sensor.id %}"
+     data-async="true">&gt;&gt; See All</a>
   {% endif %}
-</ul>
+</div>
+{% endif %}
 {% endtimezone %}

@@ -30,7 +30,7 @@ class Collection( models.Model, LocationItemModelMixin ):
         null = False, blank = False,
     )
     order_id = models.PositiveIntegerField(
-        'Order Id',
+        'Position',
         default = 0,
         db_index = True,
     )
@@ -82,7 +82,7 @@ class CollectionEntity(models.Model):
         on_delete = models.CASCADE,
     )
     order_id = models.PositiveIntegerField(
-        'Order Id',
+        'Position',
         default = 0,
     )
     created_datetime = models.DateTimeField(

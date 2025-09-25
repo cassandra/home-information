@@ -59,8 +59,8 @@
   --status-active-color: #DC3545;
   --status-recent-color: #FD7E14;
   --status-past-color: #FFD700;
-  --status-ok-color: green;
-  --status-bad-color: red;
+  --status-ok-color: #177219;
+  --status-bad-color: #a01111;
   --status-idle-color: #aaaaaa;
 
   --on-status-active-color: white;
@@ -205,7 +205,7 @@ a.clickable-card:active {
     border-color: var(--primary-highlight-color) !important;
 }
 .bg-primary a, .bg-info a, .btn-primary a, .btn-info a {
-    color: color: var(--on-primary-color);
+    color: var(--on-primary-color);
 }
 .bg-primary a:hover,
 .bg-primary a:focus,
@@ -214,7 +214,7 @@ a.clickable-card:active {
 .bg-info a:focus,
 .bg-info a:active {
     opacity: 0.65;
-    color: color: var(--on-primary-color);
+    color: var(--on-primary-color);
 }
 
 .bg-secondary, .btn-secondary {
@@ -223,13 +223,13 @@ a.clickable-card:active {
     border-color: var(--secondary-highlight-color) !important;
 }
 .bg-secondary a {
-    color: color: var(--on-secondary-color);
+    color: var(--on-secondary-color);
 }
 .bg-secondary a:hover,
 .bg-secondary a:focus,
 .bg-secondary a:active {
     opacity: 0.65;
-    color: color: var(--on-secondary-color);
+    color: var(--on-secondary-color);
 }
 
 .bg-tertiary, .btn-tertiary {
@@ -238,13 +238,13 @@ a.clickable-card:active {
     border-color: var(--tertiary-highlight-color) !important;
 }
 .bg-tertiary a {
-    color: color: var(--on-tertiary-color);
+    color: var(--on-tertiary-color);
 }
 .bg-tertiary a:hover,
 .bg-tertiary a:focus,
 .bg-tertiary a:active {
     opacity: 0.65;
-    color: color: var(--on-tertiary-color);
+    color: var(--on-tertiary-color);
 }
 
 .bg-danger, .btn-error, .btn-danger {
@@ -253,7 +253,7 @@ a.clickable-card:active {
     border-color: var(--error-highlight-color) !important;
 }
 .bg-danger a, .btn-error a, .btn-danger a {
-    color: color: var(--on-error-color);
+    color: var(--on-error-color);
 }
 .bg-error a:hover,
 .bg-error a:focus,
@@ -262,7 +262,7 @@ a.clickable-card:active {
 .bg-danger a:focus,
 .bg-danger a:active {
     opacity: 0.65;
-    color: color: var(--on-error-color);
+    color: var(--on-error-color);
 }
 
 .bg-muted, .btn-muted {
@@ -396,13 +396,13 @@ a.clickable-card:active {
 /* Edit Mode Styling - Warm color scheme with dashed borders */
 #hi-top-content[hi-edit="True"] {
     background: var(--edit-mode-tertiary-bg);
-    border-bottom: 3px dashed var(--edit-mode-dash-color);
+    border-bottom: 4px dashed var(--edit-mode-dash-color);
     box-shadow: inset 0 -2px 8px rgba(212, 119, 94, 0.1);
 }
 
 #hi-bottom-content[hi-edit="True"] {
     background: var(--edit-mode-tertiary-bg);
-    border-top: 3px dashed var(--edit-mode-dash-color);
+    border-top: 4px dashed var(--edit-mode-dash-color);
     box-shadow: inset 0 2px 8px rgba(212, 119, 94, 0.1);
 }
 
@@ -415,7 +415,7 @@ a.clickable-card:active {
 /* Side panel styling in edit mode */
 .hi-screen[hi-edit="True"] #hi-side-content {
     background: var(--edit-mode-primary-bg);
-    border-left: 3px dashed var(--edit-mode-dash-color);
+    border-left: 4px dashed var(--edit-mode-dash-color);
 }
 
 .hi-screen {
@@ -1586,6 +1586,334 @@ g[hover] {
 .filter-toggles .entity-filter-btn {
     flex: 1 1 45%;
     min-width: 0; /* Allow text truncation if needed */
+}
+
+/* ================================= */
+/* Collection Grid Layout           */
+/* ================================= */
+
+.collection-grid {
+    display: grid;
+    gap: 15px;
+    margin-bottom: 1rem;
+}
+
+/* Grid responsive layouts */
+.grid-1-item {
+    grid-template-columns: 1fr 2fr;
+}
+
+.grid-2-items {
+    grid-template-columns: 1fr 1fr;
+}
+
+.grid-3-plus-items {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* Card hover effects for better interaction */
+.collection-grid .card {
+    transition: all 0.2s ease;
+    border: 1px solid var(--line-color);
+    background: var(--white);
+}
+
+.collection-grid .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+}
+
+/* Enhanced typography and spacing in cards */
+.collection-grid .card-body {
+    padding: 1rem !important;
+}
+
+/* Grid card entity title styling */
+.collection-grid .card .entity-status-title {
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+.collection-grid .card .display-only-svg-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+/* Ensure consistent card heights in grid */
+.collection-grid .card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.collection-grid .card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ================================= */
+/* Collection List Layout           */
+/* ================================= */
+
+.collection-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.entity-row {
+    display: flex;
+    align-items: flex-start;
+    border-top: 1px solid var(--line-color);
+    padding: 15px 0;
+    transition: background-color 0.2s ease;
+}
+
+.entity-row:hover {
+    background-color: var(--muted-bg-light);
+}
+
+.entity-row:first-child {
+    border-top: none;
+}
+
+/* Entity type-specific flex behavior for responsive layout */
+.entity-row .entity-title-section {
+    display: flex;
+    align-items: flex-start;
+    margin-right: 15px;
+    min-width: 0; /* Allow shrinking */
+    flex: 0 0 200px; /* Default fixed width for consistent alignment */
+}
+
+.entity-row .entity-content-section {
+    flex: 1;
+    min-width: 0; /* Allow shrinking */
+}
+
+/* User-defined entities get more flexible title space to reduce blank space */
+.entity-row.user-defined .entity-title-section {
+    flex: 1;
+    max-width: none;
+}
+
+/* Sensor/controller entities maintain fixed title width for tabular consistency */
+.entity-row.sensor-controller .entity-title-section {
+    flex: 0 0 200px;
+}
+
+/* Video stream entities maintain fixed title width for tabular consistency */
+.entity-row.video-stream .entity-title-section {
+    flex: 0 0 200px;
+}
+
+/* Enhanced styling for entity title display in list view */
+.entity-row .entity-title-section a {
+    font-weight: 500;
+    color: var(--black);
+    text-decoration: none;
+}
+
+.entity-row .entity-title-section a:hover {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+/* Better spacing and alignment for entity state content */
+.entity-row .entity-content-section .d-flex {
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.entity-row .entity-content-section .text-center {
+    margin-right: 1rem;
+}
+
+/* Improve typography hierarchy in list view */
+.collection-list .entity-row h6,
+.collection-list .entity-row .h6 {
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+    color: var(--black);
+}
+
+.collection-list .entity-row small {
+    color: var(--muted-color);
+    font-size: 0.85rem;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+    .grid-3-plus-items {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .grid-1-item {
+        grid-template-columns: 1fr;
+    }
+
+    .entity-row.sensor-controller .entity-title-section,
+    .entity-row.video-stream .entity-title-section {
+        flex: 0 0 150px;
+    }
+}
+
+@media (max-width: 576px) {
+    .grid-2-items,
+    .grid-3-plus-items {
+        grid-template-columns: 1fr;
+    }
+
+    .collection-grid {
+        gap: 10px;
+    }
+
+    .entity-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .entity-row .entity-title-section {
+        margin-right: 0;
+        margin-bottom: 10px;
+        flex: none;
+    }
+}
+
+/* ================================= */
+/* Drag and Drop Styling           */
+/* ================================= */
+
+/* Draggable items in collection view */
+.collection-grid .draggable {
+    cursor: grab;
+}
+
+.collection-grid .draggable:active {
+    cursor: grabbing;
+}
+
+.collection-list .draggable {
+    cursor: grab;
+}
+
+.collection-list .draggable:active {
+    cursor: grabbing;
+}
+
+/* Visual feedback during drag operations */
+.collection-grid .draggable.ui-sortable-helper {
+    transform: rotate(2deg) scale(1.05);
+    z-index: 1000;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.collection-list .draggable.ui-sortable-helper {
+    background: var(--white);
+    border: 2px solid var(--primary-color);
+    border-radius: 4px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Drop zone styling */
+.collection-grid .ui-sortable-placeholder {
+    border: 2px dashed var(--primary-color);
+    background: var(--info-bg-light);
+    border-radius: 8px;
+    min-height: 120px;
+}
+
+.collection-list .ui-sortable-placeholder {
+    border: 2px dashed var(--primary-color);
+    background: var(--info-bg-light);
+    min-height: 60px;
+    border-radius: 4px;
+    margin: 5px 0;
+}
+
+/* List view card styling for thin rows */
+.collection-list .card {
+    margin-bottom: 0.75rem;
+    transition: all 0.2s ease;
+    border: 1px solid var(--line-color);
+}
+
+.collection-list .card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+}
+
+.collection-list .card-body {
+    padding: 0.75rem !important;
+}
+
+.collection-list .entity-title-section {
+    min-width: 200px;
+}
+
+/* ================================= */
+/* Entity Display Category Styling */
+/* ================================= */
+
+/* Entity category-specific styling for visual distinction */
+.entity-item.plain .card {
+    border-left: 3px solid var(--muted-color);
+}
+
+.entity-item.has-state .card {
+    border-left: 3px solid var(--primary-color);
+}
+
+.entity-item.has-video .card {
+    border-left: 3px solid var(--secondary-color);
+}
+
+/* List view category styling - solid borders on cards */
+.entity-row.plain .card {
+    border-left: 3px solid var(--muted-color);
+}
+
+.entity-row.has-state .card {
+    border-left: 3px solid var(--primary-color);
+}
+
+.entity-row.has-video .card {
+    border-left: 3px solid var(--secondary-color);
+}
+
+/* Enhanced grid card styling per category */
+.collection-grid .entity-item.plain .card:hover {
+    border-left-color: var(--muted-color);
+    border-left-width: 4px;
+}
+
+.collection-grid .entity-item.has-state .card:hover {
+    border-left-color: var(--primary-color);
+    border-left-width: 4px;
+}
+
+.collection-grid .entity-item.has-video .card:hover {
+    border-left-color: var(--secondary-color);
+    border-left-width: 4px;
+}
+
+/* List view entity category hover styles */
+.collection-list .entity-row.plain .card:hover {
+    border-left-color: var(--muted-color);
+    border-left-width: 4px;
+}
+
+.collection-list .entity-row.has-state .card:hover {
+    border-left-color: var(--primary-color);
+    border-left-width: 4px;
+}
+
+.collection-list .entity-row.has-video .card:hover {
+    border-left-color: var(--secondary-color);
+    border-left-width: 4px;
 }
 
 /* Sidebar form styling for narrow edit panels */

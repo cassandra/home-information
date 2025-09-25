@@ -384,3 +384,4 @@ class TestEntityManager(BaseTestCase):
         except ImportError:
             self.skipTest("Location models not available for testing")
         return
+

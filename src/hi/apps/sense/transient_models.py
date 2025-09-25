@@ -3,6 +3,8 @@ from datetime import datetime
 import json
 from typing import Dict, Optional
 
+from django.urls import reverse
+
 from hi.apps.entity.enums import EntityStateValue
 
 from hi.integrations.transient_models import IntegrationKey
@@ -28,6 +30,18 @@ class SensorResponse:
         return json.dumps( self.to_dict() )
 
     @property
+    def entity(self):
+        return self.sensor.entity_state.entity
+
+    @property
+    def entity_state(self):
+        return self.sensor.entity_state
+
+    @property
+    def has_details(self):
+        return bool( self.detail_attrs )
+    
+    @property
     def css_class(self):
         if not self.sensor:
             return ''
@@ -35,7 +49,40 @@ class SensorResponse:
     
     def is_on(self):
         return bool( self.value == str(EntityStateValue.ON) )
+
+    @property
+    def video_browse_url(self) -> str:
+        if self.has_video_stream and self.sensor_history_id:
+            return reverse( 'console_entity_video_sensor_history_detail',
+                            kwargs = { 'entity_id': self.entity.id,
+                                       'sensor_id': self.sensor.id,
+                                       'sensor_history_id': self.sensor_history_id })
+        if self.sensor.provides_video_stream:
+            return reverse( 'console_entity_video_sensor_history',
+                            kwargs = { 'entity_id': self.entity.id,
+                                       'sensor_id': self.sensor.id })        
+        return None
     
+    @property
+    def details_url(self) -> str:
+        if self.has_details:
+            return reverse( 'sense_sensor_history_details',
+                            kwargs = { 'sensor_history_id': self.sensor_history_id })        
+        return None
+    
+    @property
+    def sensor_history_url(self) -> str:
+        return reverse( 'sense_sensor_history',
+                        kwargs = { 'sensor_id': self.sensor.id })        
+
+    @property
+    def click_url(self):
+        if self.has_video_stream:
+            return self.video_browse_url
+        if self.sensor_history_id and self.has_details:
+            return self.details_url
+        return self.sensor_history_url
+        
     def to_dict(self):
         return {
             'key': str(self.integration_key),

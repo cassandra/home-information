@@ -1,0 +1,9 @@
+{% if entity.has_video_stream %}
+<a href="{% url 'console_entity_video_stream_dispatch' entity_id=entity.id %}"
+   data-entity-id="{{ entity.id }}"
+   data-async="#main-content"
+   class="btn btn-sm btn-outline-primary"
+   role="button">
+  {% include "console/panes/entity_video_stream.html" with entity=entity %}
+</a>
+{% endif %} 

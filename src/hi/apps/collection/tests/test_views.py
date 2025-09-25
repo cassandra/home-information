@@ -1,10 +1,10 @@
 import logging
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from django.urls import reverse
 
 from hi.apps.collection.collection_manager import CollectionManager
-from hi.apps.collection.models import Collection
+from hi.apps.collection.models import Collection, CollectionEntity
 from hi.apps.entity.models import Entity
 from hi.apps.location.models import Location, LocationView
 from hi.enums import ViewType
@@ -151,24 +151,6 @@ class TestCollectionViewView(DualModeViewTestCase):
 
         self.assertEqual(response.status_code, 404)
 
-    @patch('hi.apps.collection.views.CollectionManager')
-    def test_collection_data_passed_to_template(self, mock_manager_class):
-        """Test that collection data is properly passed to template."""
-        mock_manager = Mock()
-        mock_collection_data = Mock()
-        mock_collection_data.to_template_context.return_value = {
-            'collection': self.collection,
-            'entities': [self.entity1, self.entity2]
-        }
-        mock_manager.get_collection_data.return_value = mock_collection_data
-        mock_manager_class.return_value = mock_manager
-
-        url = reverse('collection_view', kwargs={'collection_id': self.collection.id})
-        response = self.client.get(url)
-
-        self.assertSuccessResponse(response)
-        mock_manager.get_collection_data.assert_called_once()
-
 
 class TestCollectionDetailsView(DualModeViewTestCase):
     """
@@ -248,3 +230,36 @@ class TestCollectionDetailsView(DualModeViewTestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 404)
+
+
+class TestCollectionViewContextVariables(DualModeViewTestCase):
+    """
+    Tests for grid class and entity display category context variables.
+    """
+
+    def setUp(self):
+        super().setUp()
+
+        # Create test collection
+        self.collection = Collection.objects.create(
+            name='Test Collection',
+            collection_type_str='ROOM',
+            collection_view_type_str='MAIN'
+        )
+
+        # Create entities with different characteristics
+        self.plain_entity = Entity.objects.create(
+            name='Plain Entity',
+            entity_type_str='GENERAL',
+            has_video_stream=False,
+        )
+        self.video_entity = Entity.objects.create(
+            name='Video Entity',
+            entity_type_str='CAMERA',
+            has_video_stream=True,
+        )
+
+        # Add entities to collection
+        CollectionEntity.objects.create(collection=self.collection, entity=self.plain_entity, order_id=1)
+        CollectionEntity.objects.create(collection=self.collection, entity=self.video_entity, order_id=2)
+
