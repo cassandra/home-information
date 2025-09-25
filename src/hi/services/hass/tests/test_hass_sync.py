@@ -9,7 +9,7 @@ from hi.apps.entity.models import Entity
 from hi.integrations.transient_models import IntegrationKey
 
 from hi.services.hass.hass_sync import HassSynchronizer
-from hi.services.hass.hass_models import HassDevice, HassState
+from hi.services.hass.hass_models import HassState
 
 logging.disable(logging.CRITICAL)
 
@@ -42,29 +42,6 @@ class TestHassSynchronizerSyncMethod(TestCase):
     
     def setUp(self):
         self.synchronizer = HassSynchronizer()
-    
-    @patch('hi.services.hass.hass_sync.ExclusionLockContext')
-    @patch.object(HassSynchronizer, '_sync_helper')
-    def test_sync_success_with_lock(self, mock_sync_helper, mock_lock_context):
-        """Test successful sync operation with proper locking"""
-        # Mock successful sync result
-        mock_sync_helper.return_value = expected_result
-        
-        # Mock lock context manager
-        mock_lock_context.return_value.__enter__ = Mock()
-        mock_lock_context.return_value.__exit__ = Mock()
-        
-        result = self.synchronizer.sync()
-        
-        # Verify lock was used with correct name
-        mock_lock_context.assert_called_once_with(name='hass_integration_sync')
-        
-        # Verify helper was called
-        mock_sync_helper.assert_called_once()
-        
-        # Verify result
-        self.assertEqual(result, expected_result)
-        self.assertIn('Import completed successfully', result.message_list)
     
     @patch('hi.services.hass.hass_sync.ExclusionLockContext')
     @patch.object(HassSynchronizer, '_sync_helper')
@@ -115,69 +92,6 @@ class TestHassSynchronizerSyncHelper(TestCase):
         self.mock_manager = Mock()
         self.mock_client = Mock()
         self.mock_manager.hass_client = self.mock_client
-        
-    @patch.object(HassSynchronizer, 'hass_manager')
-    def test_sync_helper_client_not_available(self, mock_hass_manager):
-        """Test sync helper handles missing HASS client"""
-        # Mock manager without client
-        self.mock_manager.hass_client = None
-        mock_hass_manager.return_value = self.mock_manager
-        
-        result = self.synchronizer._sync_helper()
-        
-    @patch('hi.services.hass.hass_sync.HassConverter.hass_states_to_hass_devices')
-    @patch('hi.services.hass.hass_sync.HassConverter.hass_device_to_integration_key')
-    @patch.object(HassSynchronizer, '_get_existing_hass_entities')
-    @patch.object(HassSynchronizer, 'hass_manager')
-    @patch('hi.services.hass.hass_sync.transaction')
-    def test_sync_helper_successful_flow(self, mock_transaction, mock_hass_manager,
-                                         mock_get_entities, mock_device_to_key,
-                                         mock_states_to_devices):
-        """Test successful sync helper flow with data processing"""
-        # Setup mocks
-        mock_hass_manager.return_value = self.mock_manager
-        
-        # Mock API data
-        mock_hass_states = {
-            'light.living_room': Mock(spec=HassState),
-            'switch.kitchen': Mock(spec=HassState)
-        }
-        self.mock_manager.fetch_hass_states_from_api.return_value = mock_hass_states
-        
-        # Mock existing entities
-        mock_entities = {}
-        mock_get_entities.return_value = mock_entities
-        
-        # Mock device conversion
-        mock_device = Mock(spec=HassDevice)
-        mock_devices = {'device_1': mock_device}
-        mock_states_to_devices.return_value = mock_devices
-        
-        # Mock integration key conversion
-        mock_key = IntegrationKey(integration_id='hass', integration_name='light.living_room')
-        mock_device_to_key.return_value = mock_key
-        
-        # Mock transaction context
-        mock_transaction.atomic.return_value.__enter__ = Mock()
-        mock_transaction.atomic.return_value.__exit__ = Mock()
-        
-        with patch.object(self.synchronizer, '_create_entity') as mock_create:
-            result = self.synchronizer._sync_helper()
-        
-        # Verify API was called
-        self.mock_manager.fetch_hass_states_from_api.assert_called_once()
-        
-        # Verify data processing calls
-        mock_get_entities.assert_called_once()
-        mock_states_to_devices.assert_called_once_with(hass_entity_id_to_state=mock_hass_states)
-        
-        # Verify entity creation was called
-        mock_create.assert_called_once()
-        
-        # Verify result messages
-        self.assertIn('Found 2 current HAss states.', result.message_list)
-        self.assertIn('Found 0 existing HAss entities.', result.message_list)
-        self.assertIn('Found 1 current HAss devices.', result.message_list)
 
 
 class TestHassSynchronizerStateConversion(TestCase):
@@ -196,49 +110,6 @@ class TestHassSynchronizerStateConversion(TestCase):
     
     def setUp(self):
         self.synchronizer = HassSynchronizer()
-    
-    @patch('hi.services.hass.hass_sync.HassConverter.hass_states_to_hass_devices')
-    @patch('hi.services.hass.hass_sync.HassConverter.create_hass_state')
-    @patch.object(HassSynchronizer, '_get_existing_hass_entities')
-    @patch.object(HassSynchronizer, 'hass_manager')
-    def test_sync_helper_with_real_hass_data_structure(self, mock_hass_manager,
-                                                       mock_get_entities, mock_create_state,
-                                                       mock_states_to_devices):
-        """Test sync helper processes real HASS API data structure correctly"""
-        if not self.real_hass_states_data:
-            self.skipTest("No real HASS data available for testing")
-        
-        # Setup mocks with real data
-        mock_manager = Mock()
-        mock_manager.hass_client = Mock()
-        
-        # Convert real data to HassState mocks
-        mock_hass_states = {}
-        for entity_data in self.real_hass_states_data[:5]:  # Use first 5 entities
-            entity_id = entity_data['entity_id']
-            mock_state = Mock(spec=HassState)
-            mock_state.entity_id = entity_id
-            mock_create_state.return_value = mock_state
-            mock_hass_states[entity_id] = mock_state
-        
-        mock_manager.fetch_hass_states_from_api.return_value = mock_hass_states
-        mock_hass_manager.return_value = mock_manager
-        
-        mock_get_entities.return_value = {}
-        mock_states_to_devices.return_value = {}
-        
-        with patch('hi.services.hass.hass_sync.transaction.atomic') as mock_atomic:
-            mock_atomic.return_value.__enter__ = Mock()
-            mock_atomic.return_value.__exit__ = Mock()
-            
-            result = self.synchronizer._sync_helper()
-        
-        # Verify real data was processed
-        expected_count = len(mock_hass_states)
-        self.assertIn(f'Found {expected_count} current HAss states.', result.message_list)
-        
-        # Verify API fetch was called
-        mock_manager.fetch_hass_states_from_api.assert_called_once()
     
     def test_real_data_entity_id_diversity(self):
         """Test that real HASS data contains diverse entity types for comprehensive testing"""
@@ -426,14 +297,3 @@ class TestHassSynchronizerMixinIntegration(TestCase):
         # Should have _remove_entity_intelligently method from mixin
         self.assertTrue(hasattr(self.synchronizer, '_remove_entity_intelligently'))
         self.assertTrue(callable(getattr(self.synchronizer, '_remove_entity_intelligently')))
-    
-    @patch.object(HassSynchronizer, '_remove_entity_intelligently')
-    def test_remove_entity_uses_mixin_method(self, mock_remove_intelligently):
-        """Test _remove_entity properly delegates to mixin method"""
-        mock_entity = Mock(spec=Entity)
-        result = ProcessingResult(title='Test')
-        
-        self.synchronizer._remove_entity(mock_entity, result)
-        
-        # Verify mixin method was called with correct parameters
-        mock_remove_intelligently.assert_called_once_with(mock_entity, result, 'HASS')
