@@ -1,4 +1,5 @@
 {% load icons %}
+{% load integration_tags %}
 <div class="d-flex justify-content-between mt-2">
   <div class="h4">Item Layout</div>
   <div class="">
@@ -9,15 +10,15 @@
   </div>
 </div>
 
+{% if entity.integration_id %}
+<div class="my-2">
+  <div class="text-muted">From: <strong>{% integration_display_name entity %}</strong></div>
+</div>
+{% endif %}
+
 <div id="{{ DIVID.ENTITY_PROPERTIES_PANE }}">
   {% include "entity/edit/panes/entity_properties_edit.html" %}
 </div>
-
-{% if entity.integration_id %}
-<div class="my-2">
-  <div class="h6">Integration: <strong>{{ entity.integration_id }}</strong></div>
-</div>
-{% endif %}
 
 {% if entity.can_user_delete %}
 <div class="my-2">

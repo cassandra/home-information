@@ -40,6 +40,7 @@ AVAILABLE_ICONS = {
     'exclamation-circle',
     'eye',
     'eye-off',
+    'forecast',
     'history',
     'home',
     'info-circle',

@@ -1,5 +1,6 @@
 {% extends "modals/action_3.html" %}
 {% load common_tags %}
+{% load icons %}
 
 {% block title_text %}
 {{ entity.name }}: History
@@ -35,7 +36,7 @@
 <a class="btn btn-primary"
    href="{% url 'entity_edit' entity_id=entity.id %}"
    data-async="modal">
-  EDIT
+  {% icon "edit" size="sm" css_class="hi-icon-left" %}EDIT
 </a>
 {% endblock %}
 
@@ -43,7 +44,7 @@
 <a class="btn btn-primary"
    href="{% url 'entity_status' entity_id=entity.id %}"
    data-async="modal">
-  STATUS
+  {% icon "info-circle" size="sm" css_class="hi-icon-left" %}STATUS
 </a>
 {% endblock %}
 

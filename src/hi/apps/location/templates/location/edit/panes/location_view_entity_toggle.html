@@ -1,3 +1,4 @@
+{% load integration_tags %}
 <div id="hi-entity-toggle-location-{{ entity.id }}"
      class="{{ DIVID.ENTITY_PICKER_FILTERABLE_ITEM_CLASS }} entity-item-row{% if is_unused %} unused{% elif exists_in_view %} in-view{% endif %}"
      data-entity-id="{{ entity.id }}"
@@ -15,7 +16,7 @@
            {% if exists_in_view %}checked{% endif %}
            onchange-async="true" >
     <label for="entity-toggle-location-checkbox-{{ entity.id }}" class="entity-item-label">
-      {{ entity.name }} <span class="entity-item-id">[{{ entity.integration_id }}]</span>
+      {{ entity.name }} <span class="entity-item-id">[{% integration_display_name entity %}]</span>
     </label>
   </form>
 </div>

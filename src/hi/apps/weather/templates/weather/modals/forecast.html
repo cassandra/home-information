@@ -1,4 +1,4 @@
-{% extends "modals/action_ok.html" %}
+{% extends "modals/action_done.html" %}
 
 {% block modal_dialog_class %}hi-modal-dialog-800{% endblock %}
 
@@ -33,32 +33,32 @@ Weather Forecast
     <div class="container">
       <div class="scroll-container">
         <div class="row flex-nowrap">
-	  {% for daily_forecast_interval in interval_daily_forecast_list %}
-	  <div class="weather-forecast-daily-col col-1 border p-3">
-	    {% include "weather/panes/daily_forecast_card.html" with daily_forecast_interval=daily_forecast_interval %}
-	  </div>
-	  {% empty %}
-	  <div class="alert alert-info">No forecast daily data available.</div>
-	  {% endfor %}
-	</div>
+          {% for daily_forecast_interval in interval_daily_forecast_list %}
+          <div class="weather-forecast-daily-col col-1 border p-3">
+            {% include "weather/panes/daily_forecast_card.html" with daily_forecast_interval=daily_forecast_interval %}
+          </div>
+          {% empty %}
+          <div class="alert alert-info">No forecast daily data available.</div>
+          {% endfor %}
+        </div>
       </div>
     </div>
   </div>
   <div id="forecast-hourly-content" role="tabpanel" 
-	 class="tab-pane fade" 
+         class="tab-pane fade" 
        aria-labelledby="hi-forecast-tab-hourly">
     <div class="table-responsive">
       <table class="table table-striped">
-	<thead>
-	  {% include "weather/panes/hourly_forecast_row_header.html" %}
-	</thead>
-	<tbody>
-	  {% for hourly_forecast_interval in interval_hourly_forecast_list %}
-	  {% include "weather/panes/hourly_forecast_row.html" with hourly_forecast_interval=hourly_forecast_interval %}
-	  {% empty %}
-	  <tr><td colspan="99"><div class="alert alert-info">No forecast hourly data available.</div></td></tr>
-	  {% endfor %}
-	</tbody>
+        <thead>
+          {% include "weather/panes/hourly_forecast_row_header.html" %}
+        </thead>
+        <tbody>
+          {% for hourly_forecast_interval in interval_hourly_forecast_list %}
+          {% include "weather/panes/hourly_forecast_row.html" with hourly_forecast_interval=hourly_forecast_interval %}
+          {% empty %}
+          <tr><td colspan="99"><div class="alert alert-info">No forecast hourly data available.</div></td></tr>
+          {% endfor %}
+        </tbody>
       </table>
     </div>
   </div>

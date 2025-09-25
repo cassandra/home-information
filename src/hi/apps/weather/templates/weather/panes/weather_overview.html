@@ -1,3 +1,4 @@
+{% load icons %}
 <div id="{{ DIVID.WEATHER_OVERVIEW }}">
   <a class="clickable-card" href="{% url 'weather_current_conditions_details' %}" data-async="modal">
     {% include "weather/panes/conditions.html" with conditions=weather_overview_data.current_conditions_data weather_stats=weather_overview_data.todays_weather_stats %}
@@ -9,8 +10,12 @@
   </div>
   <div class="d-flex justify-content-around my-2">
     <div><a role="button" href="{% url 'weather_forecast' %}"
-            class="btn btn-sm btn-outline-primary" data-async="modal">FORECAST</a></div>
+            class="btn btn-sm btn-outline-primary" data-async="modal">
+      {% icon "forecast" size="sm" css_class="hi-icon-left" %}FORECAST
+    </a></div>
     <div><a role="button" href="{% url 'weather_history' %}"
-            class="btn btn-sm btn-outline-primary" data-async="modal">HISTORY</a></div>
+    class="btn btn-sm btn-outline-primary" data-async="modal">
+      {% icon "history" size="sm" css_class="hi-icon-left" %}HISTORY
+    </a></div>
   </div>
 </div>
