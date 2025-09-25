@@ -1,3 +1,4 @@
+{% load icons %}
 <div class="p-1">
   <div class="d-flex justify-content-between">
     {% include "collection/panes/collection_buttons.html" %}
@@ -7,7 +8,7 @@
         <a href="{% url 'profiles_edit_reference_help' %}"
            class="btn btn-tertiary btn-control" role="button"
            data-async="true" >
-          EDIT HELP
+          {% icon "question-circle" size="sm" css_class="hi-icon-left" %}EDIT HELP
         </a>
       </div>
       {% else %}
@@ -24,7 +25,7 @@
         <a href="{% url 'config_home' %}"
            class="btn btn-tertiary btn-control" role="button"
            data-async="true" >
-          CONFIGURE
+          {% icon "settings" size="sm" css_class="hi-icon-left" %}CONFIGURE
         </a>
       </div>
       {% endif %}
