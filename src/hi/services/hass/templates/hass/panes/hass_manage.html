@@ -1,4 +1,5 @@
 {% load static %}
+{% load icons %}
 <div class="d-flex justify-content-between">
   <div class="h3 integration-title">
     <img class="img-fluid"
@@ -13,9 +14,9 @@
       <button type="submit" class="btn btn-outline-secondary" role="button"
               name="action" value="sync" >
         {% if has_entities %}
-        RE-SYNC
+        {% icon "sync" size="sm" css_class="hi-icon-left" %}RE-SYNC
         {% else %}
-        IMPORT
+        {% icon "upload" size="sm" css_class="hi-icon-left" %}IMPORT
         {% endif %}
       </button>
     </form>

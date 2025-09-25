@@ -41,6 +41,8 @@
     <div class="col-lg-6 col-md-12 mb-3">
       {% include "system/panes/health_status_card.html" with health_status_provider=integration_provider %}
     </div>
+    {% empty %}
+    <div class="col-12 text-secondary"><em>No integrations enabled.</em></div>
     {% endfor %}
   </div>
 
