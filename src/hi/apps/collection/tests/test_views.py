@@ -98,7 +98,6 @@ class TestCollectionViewView(DualModeViewTestCase):
             entity_type_str='SWITCH'
         )
         # Create collection-entity relationships
-        from hi.apps.collection.models import CollectionEntity
         CollectionEntity.objects.create(
             collection=self.collection,
             entity=self.entity1,
