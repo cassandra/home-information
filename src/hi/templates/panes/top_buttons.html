@@ -32,12 +32,12 @@
         {% if request.view_parameters.is_editing %}
         <a href="{% url 'edit_end' %}"
            class="btn btn-tertiary btn-control" role="button" >
-          EXIT EDIT
+          {% icon "close" size="sm" css_class="hi-icon-left" %}EXIT EDIT
         </a>
         {% else %}
         <a href="{% url 'edit_start' %}"
            class="btn btn-tertiary btn-control" role="button" >
-          EDIT
+          {% icon "edit" size="sm" css_class="hi-icon-left" %}EDIT
         </a>
         {% endif %}
       </div>

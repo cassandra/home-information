@@ -1,4 +1,5 @@
 {% extends "modals/action_with_cancel.html" %}
+{% load icons %}
 
 {% block preamble %}
 <form action="{% url 'entity_edit_entity_add' %}" method="post"
@@ -17,9 +18,9 @@ New Item
 {% endblock %}
 
 {% block action_right %}
-<button id="hi-add-entity-button" type="submit" class="btn btn-lg btn-primary"
+<button id="hi-add-entity-button" type="submit" class="btn btn-primary"
         name="action" value="add">
-  ADD
+  {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD
 </button>
 {% endblock %}
 

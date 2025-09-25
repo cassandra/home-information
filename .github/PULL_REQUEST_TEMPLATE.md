@@ -1,7 +1,5 @@
 ## Pull Request: [Short Title]
 
-
-
 ### Issue Link
 
 Closes #ISSUE_NUMBER
@@ -13,9 +11,10 @@ Closes #ISSUE_NUMBER
 - [ ] **Feature** (New functionality)
 - [ ] **Bugfix** (Fixes an issue)
 - [ ] **Docs** (Documentation updates)
-- [ ]  **Ops** (Infrastructure, CI/CD, build tools)
+- [ ] **Ops** (Infrastructure, CI/CD, build tools)
+
 - [ ] **Tests** (Adding/improving tests)
-- [ ] **Refactor** (Code improvements without changing functionality)
+- [ ] **Refactor** (Code/Style improvements without changing functionality)
 - [ ] **Tweak** (Minor UI or code improvements)
 
 ---
@@ -43,21 +42,6 @@ Closes #ISSUE_NUMBER
 - [ ] All tests pass (`./manage.py test`).
 - [ ] Docs updated if applicable.
 - [ ] No breaking changes introduced.
-
----
-
-## Related PRs
-
-
----
-
-## Screenshots (if applicable)
-
-
----
-
-## Additional Notes
-
 
 ---
 

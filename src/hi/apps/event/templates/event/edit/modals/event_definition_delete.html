@@ -1,4 +1,7 @@
 {% extends "modals/action_with_cancel.html" %}
+{% load icons %}
+
+{% block header_class %}bg-secondary{% endblock %}
 
 {% block preamble %}
 <form action="{% url 'event_definition_delete' id=event_definition.id %}"
@@ -20,23 +23,23 @@ Please confirm that you want to delete this trigger rule.
     <li>Name: {{ event_definition.name }}</li>
     <li>Clauses
       <ul>
-	{% for event_clause in event_definition.event_clauses.all %}
-	<li>{{ event_clause.entity_state.name }} = {{ event_clause.value }} ({{ event_clause.entity_state.entity_state_type.label }})</li>
-	{% endfor %}
+        {% for event_clause in event_definition.event_clauses.all %}
+        <li>{{ event_clause.entity_state.name }} = {{ event_clause.value }} ({{ event_clause.entity_state.entity_state_type.label }})</li>
+        {% endfor %}
       </ul>
     </li>
     <li>Alarm Actions
       <ul>
-	{% for alarm_action in event_definition.alarm_actions.all %}
-	<li>Alarm: {{ alarm_action.security_level.label }} = {{ alarm_action.alarm_level.label }}</li>
-	{% endfor %}
+        {% for alarm_action in event_definition.alarm_actions.all %}
+        <li>Alarm: {{ alarm_action.security_level.label }} = {{ alarm_action.alarm_level.label }}</li>
+        {% endfor %}
       </ul>
     </li>
     <li>Control Actions
       <ul>
-	{% for control_action in event_definition.control_actions.all %}
-	<li>Control: {{ control_action.controller.name }} = {{ control_action.value }}</li>
-	{% endfor %}
+        {% for control_action in event_definition.control_actions.all %}
+        <li>Control: {{ control_action.controller.name }} = {{ control_action.value }}</li>
+        {% endfor %}
       </ul>
     </li>
   </ul>
@@ -47,9 +50,9 @@ Please confirm that you want to delete this trigger rule.
 {% endblock %}
 
 {% block action_right %}
-<button id="hi-delete-event-definition-button" type="submit" class="btn btn-lg btn-danger"
-	name="action" value="delete">
-  DELETE
+<button id="hi-delete-event-definition-button" type="submit" class="btn btn-danger"
+        name="action" value="delete">
+  {% icon "delete" size="sm" css_class="hi-icon-left" %}DELETE
 </button>
 {% endblock %}
 

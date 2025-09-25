@@ -1,4 +1,5 @@
 {% extends "modals/action_3.html" %}
+{% load icons %}
 {% load video_tags %}
 {% load integration_tags %}
 
@@ -37,15 +38,15 @@ Status
 <a class="btn btn-primary"
    href="{% url 'entity_edit' entity_id=entity.id %}"
    data-async="modal">
-  EDIT
+  {% icon "edit" size="sm" css_class="hi-icon-left" %}EDIT
 </a>
 {% endblock %}
 
 {% block action_center %}
-<a class="btn btn-outline-primary"
+<a class="btn btn-primary"
    href="{% url 'entity_state_history' entity_id=entity.id %}"
    data-async="modal">
-  HISTORY
+  {% icon "history" size="sm" css_class="hi-icon-left" %}HISTORY
 </a>
 {% endblock %}
 

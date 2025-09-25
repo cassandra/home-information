@@ -98,7 +98,6 @@ class TestCollectionViewView(DualModeViewTestCase):
             entity_type_str='SWITCH'
         )
         # Create collection-entity relationships
-        from hi.apps.collection.models import CollectionEntity
         CollectionEntity.objects.create(
             collection=self.collection,
             entity=self.entity1,
@@ -231,35 +230,4 @@ class TestCollectionDetailsView(DualModeViewTestCase):
 
         self.assertEqual(response.status_code, 404)
 
-
-class TestCollectionViewContextVariables(DualModeViewTestCase):
-    """
-    Tests for grid class and entity display category context variables.
-    """
-
-    def setUp(self):
-        super().setUp()
-
-        # Create test collection
-        self.collection = Collection.objects.create(
-            name='Test Collection',
-            collection_type_str='ROOM',
-            collection_view_type_str='MAIN'
-        )
-
-        # Create entities with different characteristics
-        self.plain_entity = Entity.objects.create(
-            name='Plain Entity',
-            entity_type_str='GENERAL',
-            has_video_stream=False,
-        )
-        self.video_entity = Entity.objects.create(
-            name='Video Entity',
-            entity_type_str='CAMERA',
-            has_video_stream=True,
-        )
-
-        # Add entities to collection
-        CollectionEntity.objects.create(collection=self.collection, entity=self.plain_entity, order_id=1)
-        CollectionEntity.objects.create(collection=self.collection, entity=self.video_entity, order_id=2)
 

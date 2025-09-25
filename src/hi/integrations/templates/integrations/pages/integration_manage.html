@@ -9,7 +9,7 @@
       <a class="btn btn-sm btn-outline-secondary w-100" role="button"
          href="{% url 'integrations_select' %}"
          data-async="modal">
-        <i class="fas fa-cog mr-1"></i>Manage
+        {% icon "settings" size="sm" css_class="hi-icon-left" %}Manage
       </a>
     </div>
     {% for integration_data in core.integration_data_list %}

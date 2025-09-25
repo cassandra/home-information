@@ -95,7 +95,7 @@ class WeatherMonitor( PeriodicMonitor, AlertMixin, SettingsMixin ):
 
         if task_list:
             await asyncio.gather( *task_list )
-            message = f'Ran {len(task_list)} integrations, {disabled_count} disabled.'
+            message = f'Used {len(task_list)} weather sources, {disabled_count} disabled.'
             self.record_healthy( message )
             weather_source_manager.record_healthy( message )
         else:

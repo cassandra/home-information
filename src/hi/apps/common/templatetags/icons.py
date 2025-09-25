@@ -19,6 +19,8 @@ register = template.Library()
 
 # Define available icon names to prevent arbitrary file inclusion
 AVAILABLE_ICONS = {
+    'audio-disabled',
+    'audio-enabled',
     'camera',
     'cancel',
     'check-circle',
@@ -33,10 +35,12 @@ AVAILABLE_ICONS = {
     'cloud',
     'collection',
     'delete',
+    'disabled',
     'edit',
     'exclamation-circle',
     'eye',
     'eye-off',
+    'forecast',
     'history',
     'home',
     'info-circle',
@@ -56,9 +60,11 @@ AVAILABLE_ICONS = {
     'save',
     'settings',
     'shield',
+    'sleep',
     'sync',
     'tasks',
     'times-circle',
+    'unlock',
     'upload',
     'video',
     'view',

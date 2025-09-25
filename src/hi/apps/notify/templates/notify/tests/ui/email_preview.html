@@ -1,4 +1,4 @@
-{% extends "modals/action_ok.html" %}
+{% extends "modals/action_done.html" %}
 
 {% block title_text %}
 Email: {{ view_name }}
@@ -19,7 +19,7 @@ Email: {{ view_name }}
 
     {% autoescape off %}
     <iframe srcdoc="{{ body_html|safe }}"
-	    style="width: 100%; height: 50vh; border: 1px solid #ccc;"
+            style="width: 100%; height: 50vh; border: 1px solid #ccc;"
            sandbox="allow-same-origin allow-scripts">
     </iframe>
     {% endautoescape %}

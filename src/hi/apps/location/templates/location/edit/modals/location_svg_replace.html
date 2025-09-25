@@ -1,4 +1,5 @@
 {% extends "modals/action_with_cancel.html" %}
+{% load icons %}
 
 {% block preamble %}
 <form action="{% url 'location_edit_svg_replace' location_id=location.id %}"
@@ -18,9 +19,9 @@ Replace Space Background Image
 {% endblock %}
 
 {% block action_right %}
-<button id="hi-svg-replace-button" type="submit" class="btn btn-lg btn-primary"
+<button id="hi-svg-replace-button" type="submit" class="btn btn-primary"
         name="action" value="replace">
-  UPDATE
+  {% icon "save" size="sm" css_class="hi-icon-left" %}UPDATE
 </button>
 {% endblock %}
 

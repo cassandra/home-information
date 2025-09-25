@@ -1,4 +1,5 @@
 {% extends "modals/action_with_cancel.html" %}
+{% load icons %}
 
 {% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
 
@@ -46,9 +47,9 @@
   {% endblock %}
   
   {% block action_right %}
-  <button id="hi-principal-manage-button" type="submit" class="btn btn-lg btn-primary"
+  <button id="hi-principal-manage-button" type="submit" class="btn btn-primary"
         name="action" value="submit">
-    SUBMIT
+        {% icon "save" size="md" css_class="hi-icon-left" %}SUBMIT
   </button>
   {% endblock %}
 

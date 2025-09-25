@@ -1,6 +1,8 @@
 {% extends "modals/action_with_cancel.html" %}
 {% load icons %}
 
+{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+
 {% block preamble %}
 <form action="{% url 'event_definition_add' %}"
       method="post" enctype="multipart/form-data"
@@ -19,7 +21,7 @@ New Trigger Rule
 {% endblock %}
 
 {% block action_right %}
-<button id="hi-add-event-definition-button" type="submit" class="btn btn-lg btn-primary"
+<button id="hi-add-event-definition-button" type="submit" class="btn btn-primary"
         name="action" value="add">
   {% icon "plus" size="sm" css_class="hi-icon-left" %}ADD
 </button>
