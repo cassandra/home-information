@@ -67,7 +67,7 @@ For accurate weather and time, be sure to set your timezone and geographic locat
 
 You have full control of the layout of your items and the background image. These are all managed by choosing "EDIT" and entering "Editing Mode".
 
-<img src="img/getting-started/edit-button.png" alt="edit-button" width="100" />
+<img src="img/getting-started/edit-button.png" alt="edit-button" width="250" />
 
 <img src="img/getting-started/edit-mode-1024x768.png" alt="edit-mode-1024x768" width="400" />
 

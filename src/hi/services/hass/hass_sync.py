@@ -33,7 +33,7 @@ class HassSynchronizer( HassMixin, IntegrationSyncMixin ):
         except RuntimeError as e:
             logger.exception( e )
             return ProcessingResult(
-                title = 'HAss Import Result',
+                title = 'Home Assistant Import Result',
                 error_list = [ str(e) ],
             )
         finally:
@@ -41,24 +41,24 @@ class HassSynchronizer( HassMixin, IntegrationSyncMixin ):
     
     def _sync_helper( self ) -> ProcessingResult:
         hass_manager = self.hass_manager()
-        result = ProcessingResult( title = 'HAss Import Result' )
+        result = ProcessingResult( title = 'Home Assistant Import Result' )
 
         hass_client = hass_manager.hass_client
         if not hass_client:
-            logger.debug( 'HAss client not created. HAss integration disabled?' )
-            result.error_list.append( 'Sync problem. HAss integration disabled?' )
+            logger.debug( 'Home Assistant client not created. Home Assistant integration disabled?' )
+            result.error_list.append( 'Sync problem. Home Assistant integration disabled?' )
             return result
 
         hass_entity_id_to_state = hass_manager.fetch_hass_states_from_api()
-        result.message_list.append( f'Found {len(hass_entity_id_to_state)} current HAss states.' )
+        result.message_list.append( f'Found {len(hass_entity_id_to_state)} current Home Assistant states.' )
 
         integration_key_to_entity = self._get_existing_hass_entities( result = result )
-        result.message_list.append( f'Found {len(integration_key_to_entity)} existing HAss entities.' )
+        result.message_list.append( f'Found {len(integration_key_to_entity)} existing Home Assistant entities.' )
 
         hass_device_id_to_device = HassConverter.hass_states_to_hass_devices(
             hass_entity_id_to_state = hass_entity_id_to_state,
         )
-        result.message_list.append( f'Found {len(hass_device_id_to_device)} current HAss devices.' )
+        result.message_list.append( f'Found {len(hass_device_id_to_device)} current Home Assistant devices.' )
 
         integration_key_to_hass_device = {
             HassConverter.hass_device_to_integration_key( hass_device ): hass_device
@@ -93,7 +93,7 @@ class HassSynchronizer( HassMixin, IntegrationSyncMixin ):
         for entity in entity_queryset:
             integration_key = entity.integration_key
             if not integration_key:
-                result.error_list.append( f'Entity found without valid HAss Id: {entity}' )
+                result.error_list.append( f'Entity found without valid Home Assistant Id: {entity}' )
                 mock_hass_device_id = 1000000 + entity.id  # We need a (unique) placeholder for removals
                 integration_key = IntegrationKey(
                     integration_id = HassMetaData.integration_id,
@@ -111,7 +111,7 @@ class HassSynchronizer( HassMixin, IntegrationSyncMixin ):
             hass_device = hass_device,
             add_alarm_events = self.hass_manager().should_add_alarm_events,
         )
-        result.message_list.append( f'Created HAss entity: {entity}' )
+        result.message_list.append( f'Created Home Assistant entity: {entity}' )
         return
     
     def _update_entity( self,
