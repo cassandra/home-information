@@ -1,4 +1,7 @@
 {% extends "modals/action_with_cancel.html" %}
+{% load icons %}
+
+{% block header_class %}bg-secondary{% endblock %}
 
 {% block title_text %}
 Delete View?
@@ -21,9 +24,9 @@ Delete View?
       method="post" class="form"
       data-async="true" >
   {% csrf_token %}
-  <button id="hi-delete-location-view-button" type="submit" class="btn btn-lg btn-danger"
+  <button id="hi-delete-location-view-button" type="submit" class="btn btn-danger"
           name="action" value="confirm">
-    DELETE
+    {% icon "delete" size="sm" css_class="hi-icon-left" %}DELETE
   </button>
 </form>
 {% endblock %}
