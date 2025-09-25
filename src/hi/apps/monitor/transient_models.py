@@ -16,7 +16,7 @@ class EntityStateStatusData:
     controller_data_list  : List[ ControllerData ]
 
     @property
-    def latest_sensor_response(self):
+    def latest_sensor_response(self) -> SensorResponse:
         if self.sensor_response_list:
             return self.sensor_response_list[0]
         return None

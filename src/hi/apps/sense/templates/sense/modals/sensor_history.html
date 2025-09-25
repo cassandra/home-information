@@ -1,13 +1,25 @@
 {% extends "modals/action_done.html" %}
+{% load icons %}
 
 {% block title_text %}
 {{ sensor.name }}
 {% endblock %}
 
 {% block body %}
-<h5>Sensor History</h5>
-{% include "sense/panes/sensor_history_list.html" with sensor_history_list=sensor_history_list %}
-
+<div class="d-flex justify-content-between">
+  <h5>Sensor History</h5>
+  <div>
+    {% if sensor.provides_video_stream %}
+    <a href="{% url 'console_entity_video_sensor_history' entity_id=sensor.entity_state.entity.id sensor_id=sensor.id %}"
+       data-async="true" class="btn btn-sm btn-outline-primary">
+      {% icon "video" size="sm" css_class="hi-icon-left" %}Browse Videos
+    </a>
+    {% endif %}
+  </div>
+</div>
+<div class="py-2" >
+  {% include "sense/panes/sensor_history_list.html" with sensor_history_list=sensor_history_list %}
+</div>
 {% include "common/panes/pagination.html" with pagination=pagination %}
 
 {% endblock %}

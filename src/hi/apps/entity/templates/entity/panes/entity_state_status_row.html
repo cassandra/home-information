@@ -1,0 +1,19 @@
+{% load icons %}
+{% with sensor_response=entity_state_status_data.latest_sensor_response %}
+<div class="card">
+  <div class="card-body">
+    {% if entity_state_status_data.controller_data_list %}
+    {% for controller_data in entity_state_status_data.controller_data_list %}
+    {% include "control/panes/controller_data_row.html" with controller_data=controller_data %}
+    {% endfor %}
+
+    {% elif entity_state_status_data.sensor_response_list %}
+    {% include "sense/panes/sensor_response_status_row.html" with sensor_response=entity_state_status_data.latest_sensor_response %}
+
+    {% else %}
+    <div class="alert alert-info">No sensors or controllers defined.</div>
+    {% endif %}
+    
+  </div>
+</div>
+{% endwith %}

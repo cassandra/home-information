@@ -59,8 +59,8 @@
   --status-active-color: #DC3545;
   --status-recent-color: #FD7E14;
   --status-past-color: #FFD700;
-  --status-ok-color: green;
-  --status-bad-color: red;
+  --status-ok-color: #177219;
+  --status-bad-color: #a01111;
   --status-idle-color: #aaaaaa;
 
   --on-status-active-color: white;

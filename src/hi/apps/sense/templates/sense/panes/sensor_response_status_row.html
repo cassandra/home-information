@@ -1,0 +1,43 @@
+{% load common_tags %}
+{% load icons %}
+<div class="row">
+  <div class="col-6 align-self-center">
+    <div class="h6 text-center">
+      {{ sensor_response.sensor.name }}
+    </div>
+    <div class="d-flex justify-content-around mt-2">
+      {% if sensor_response.has_video_stream %}
+      <div>
+        <a href="{{ sensor_response.video_browse_url }}" 
+           class="btn btn-sm btn-outline-primary"
+           data-async="true">
+          {% icon "video" size="sm" %} Video
+        </a>
+      </div>
+      {% endif %}
+      {% if sensor_response.sensor_history_id and sensor_response.has_details %}
+      <div>
+        <a href="{{ sensor_response.details_url }}" 
+           class="btn btn-sm btn-outline-primary"
+           data-async="true">
+          {% icon "info-circle" size="sm" %} Details
+        </a>
+      </div>
+      {% endif %}
+      <div>
+        <a href="{{ sensor_response.sensor_history_url }}"
+           class="btn btn-sm btn-outline-primary"
+           data-async="true">
+          {% icon "history" size="sm" %} History
+        </a>
+      </div>
+    </div>    
+  </div>
+  <div class="col-6 align-self-center">
+    <a href="{{ sensor_response.click_url }}" title="See details">
+      <div class="{{ sensor_response.css_class }}">
+        {% include_with_fallback sensor_response.sensor.entity_state.entity_state_type.value_template_name "sense/panes/sensor_response_value_default.html" %}
+      </div>
+    </a>
+  </div>
+</div>

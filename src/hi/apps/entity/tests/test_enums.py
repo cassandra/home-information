@@ -22,7 +22,7 @@ class TestEntityStateType(BaseTestCase):
         self.assertNotEqual(on_off_template, temperature_template)
         
         # Templates should follow consistent naming pattern
-        self.assertTrue(on_off_template.startswith('sense/panes/sensor_value_'))
+        self.assertTrue(on_off_template.startswith('sense/panes/sensor_response_value_'))
         self.assertTrue(on_off_template.endswith('.html'))
         
         # Controller templates should use different namespace
@@ -35,7 +35,7 @@ class TestEntityStateType(BaseTestCase):
         
         # Complex state types should work correctly
         multivalued_template = EntityStateType.MULTIVALUED.value_template_name()
-        self.assertTrue(multivalued_template.startswith('sense/panes/sensor_value_'))
+        self.assertTrue(multivalued_template.startswith('sense/panes/sensor_response_value_'))
         self.assertIn('multivalued', multivalued_template)
         
         return

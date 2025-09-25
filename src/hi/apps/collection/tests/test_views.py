@@ -1,5 +1,5 @@
 import logging
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from django.urls import reverse
 

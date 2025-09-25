@@ -266,9 +266,9 @@ class EntityStateType(LabeledEnum):
         Template used to render a sensor's value for this state. Create the
         template at the given location to define a state-specific rendering, else
         it will fallback to the default template of
-        "entity/panes/sensor_value_default.html"
+        "entity/panes/sensor_response_value_default.html"
         """
-        return f'sense/panes/sensor_value_{self.name.lower()}.html'
+        return f'sense/panes/sensor_response_value_{self.name.lower()}.html'
 
     def controller_template_name(self):
         """

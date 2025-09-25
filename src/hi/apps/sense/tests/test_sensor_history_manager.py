@@ -151,14 +151,75 @@ class AsyncSensorHistoryManagerTestCase(AsyncTaskTestCase):
             detail_attrs={'key': 'value'},
             source_image_url='http://example.com/image.jpg'
         )
-        
+
         history = response.to_sensor_history()
-        
+
         self.assertEqual(history.sensor, self.sensor)
         self.assertEqual(len(history.value), 255)  # Should be truncated
         self.assertEqual(history.response_datetime, response.timestamp)
         self.assertEqual(history.source_image_url, response.source_image_url)
         self.assertIn('key', history.detail_attrs)
+
+    def test_add_sensor_history_populates_sensor_history_id(self):
+        """Test that add_to_sensor_history populates sensor_history_id in SensorResponse objects."""
+        # Create sensor with history disabled
+        sensor_no_persist = Sensor.objects.create(
+            name='No Persist Sensor',
+            entity_state=self.entity_state,
+            sensor_type_str='DEFAULT',
+            integration_id='no_persist_test',
+            integration_name='test_integration',
+            persist_history=False
+        )
+
+        async def async_test_logic():
+            # Create multiple sensor responses
+            responses = [
+                SensorResponse(
+                    integration_key=self.integration_key,
+                    value='value1',
+                    timestamp=timezone.make_aware(datetime(2023, 1, 1, 12, 0, 0)),
+                    sensor=self.sensor
+                ),
+                SensorResponse(
+                    integration_key=self.integration_key,
+                    value='value2',
+                    timestamp=timezone.make_aware(datetime(2023, 1, 1, 12, 1, 0)),
+                    sensor=self.sensor
+                ),
+                SensorResponse(
+                    integration_key=IntegrationKey('no_persist_test', 'test_integration'),
+                    value='value3',
+                    timestamp=timezone.make_aware(datetime(2023, 1, 1, 12, 2, 0)),
+                    sensor=sensor_no_persist  # This sensor has persist_history=False
+                )
+            ]
+
+            # Verify sensor_history_id starts as None
+            for response in responses:
+                self.assertIsNone(response.sensor_history_id)
+
+            # Add to history
+            await self.manager.add_to_sensor_history(responses)
+
+            # Verify sensor_history_id is populated for sensors with persist_history=True
+            self.assertIsNotNone(responses[0].sensor_history_id)
+            self.assertIsNotNone(responses[1].sensor_history_id)
+            # Should remain None for sensor with persist_history=False
+            self.assertIsNone(responses[2].sensor_history_id)
+
+            # Verify the history records were actually created in the database
+            history_count = await sync_to_async(SensorHistory.objects.filter(sensor=self.sensor).count)()
+            self.assertEqual(history_count, 2)
+
+            # Verify the IDs match actual database records
+            history1 = await sync_to_async(SensorHistory.objects.get)(id=responses[0].sensor_history_id)
+            self.assertEqual(history1.value, 'value1')
+
+            history2 = await sync_to_async(SensorHistory.objects.get)(id=responses[1].sensor_history_id)
+            self.assertEqual(history2.value, 'value2')
+
+        self.run_async(async_test_logic())
 
     def test_get_latest_entity_sensor_history_direct_states(self):
         """Test retrieval of sensor history for entity's direct states."""

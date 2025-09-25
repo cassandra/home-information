@@ -44,14 +44,3 @@ $(document).ready(function() {
     });
     
 });
-
-// Alternative implementation for manual form submission if needed
-// (The existing antinode.js onchange-async handler should handle this automatically)
-function setBrightness(controllerId, value) {
-    var $slider = $('[data-controller-id="' + controllerId + '"]');
-    var $display = $slider.closest('.brightness-control').find('.brightness-value');
-    
-    $slider.val(value);
-    $display.text(value + '%');
-    $slider.trigger('change');
-}

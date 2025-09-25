@@ -1,0 +1,9 @@
+<div>
+  {% for entity_state_status_data in entity_state_status_data_list %}
+  <div class="my-2">
+    {% include "entity/panes/entity_state_status_row.html" with entity_state_status_data=entity_state_status_data %}
+  </div>
+  {% empty %}
+  <div class="alert alert-info">No item status.</div>
+  {% endfor %}
+</div>

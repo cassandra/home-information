@@ -1,16 +1,24 @@
 {% load tz %}
 {% timezone USER_TIMEZONE %}
-<ul>
-  {% for controller_history in controller_history_list %}
-  <li>
-    {{ controller_history.created_datetime|localtime }} : {{ controller_history.value }}
-  </li>
-  {% empty %}
-  <div><em>No history.</em></div>
-  {% endfor %}
-  {% if show_all_link and controller_history_list %}
+<div class="table-responsive">
+  <table class="table table-striped">
+    <tbody>
+      {% for controller_history in controller_history_list %}
+      <tr>
+        <td><div class="text-center" status="{{ controller_history.value }}"> {{ controller_history.value }}</div></td>
+        <td>{{ controller_history.created_datetime|localtime }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="2"><div class="alert alert-info" >No history.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if show_all_link and controller_history_list %}
+<div>
   <a href="{% url 'control_controller_history' controller_id=controller.id %}"
      data-async="true">&gt;&gt; See All</a>
-  {% endif %}
-</ul>
+</div>
+{% endif %}
 {% endtimezone %}
