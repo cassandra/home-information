@@ -14,6 +14,11 @@ def integration_display_name( model : IntegrationDetailsModel ) -> str:
     if not model:
         return None
     integration_manager = IntegrationManager()
-    gateway = integration_manager.get_integration_gateway( model.integration_id )
-    metadata = gateway.get_metadata()
-    return metadata.label
+    try:
+        gateway = integration_manager.get_integration_gateway( model.integration_id )
+        metadata = gateway.get_metadata()
+        return metadata.label
+    except Exception:
+        pass
+    return None
+
