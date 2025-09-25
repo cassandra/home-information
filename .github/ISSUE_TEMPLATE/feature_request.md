@@ -18,10 +18,6 @@ assignees: ''
 
 ### Developer Notes
 
-**Implementation suggestions and technical details:**
-
-*(This section is optional but helpful for complex features. Include implementation guidance, key files to modify, architectural considerations, and success criteria that would assist developers working on this feature.)*
-
 ---
 
 ### Checklist

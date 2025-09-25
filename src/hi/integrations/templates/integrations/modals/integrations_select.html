@@ -1,4 +1,7 @@
 {% extends "modals/action_done.html" %}
+{% load icons %}
+
+{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
 
 {% block title_text %}
 Select Integrations
@@ -13,16 +16,20 @@ Select Integrations
   </div>
   <div class="col-3">
     {% if integration_data.integration.is_enabled %}
-    <span class="text-success">ENABLED</span>
+    <span class="text-weight-bold text-primary">
+      {% icon "save" size="sm" css_class="hi-icon-left" %}ENABLED
+    </span>
     {% else %}
-    <span class="text-danger">DISABLED</span>
+    <span class="text-secondary">
+      {% icon "eye-off" size="sm" css_class="hi-icon-left" %}DISABLED
+    </span>
     {% endif %}
   </div>
 
   <div class="col-3">
     {% if integration_data.integration.is_enabled %}
     <a href="{% url 'integrations_disable' integration_id=integration_data.integration.integration_id %}"
-       role="button" class="btn btn-danger btn-control" data-async="modal">DISABLE</a>
+       role="button" class="btn btn-secondary btn-control" data-async="modal">DISABLE</a>
     
     {% else %}
     <a href="{% url 'integrations_enable' integration_id=integration_data.integration.integration_id %}"

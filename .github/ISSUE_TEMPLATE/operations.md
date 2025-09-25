@@ -15,10 +15,6 @@ assignees: ''
 2. Step 2
 3. Step 3
 
-### Related System/Component
-
-### Logs / Screenshots (if applicable)
-
 ### Suggested Fix (if applicable)
 
 ---

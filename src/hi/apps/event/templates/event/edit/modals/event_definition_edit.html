@@ -1,6 +1,8 @@
 {% extends "modals/action_with_cancel.html" %}
 {% load icons %}
 
+{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+
 {% block preamble %}
 <form action="{% url 'event_definition_edit' id=event_definition.id %}"
       method="post" enctype="multipart/form-data"

@@ -19,8 +19,6 @@ assignees: ''
 2. Step 2
 3. Step 3
 
-### Related Test Files
-
 ### Additional Context
 
 ---

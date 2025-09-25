@@ -11,10 +11,6 @@ assignees: ''
 ### What part of the code needs refactoring?
 
 ### Why should this be refactored?
-- Code is difficult to understand or maintain.
-- Code violates best practices.
-- There is significant duplication or inefficiency.
--->
 
 ### Expected Outcome
 

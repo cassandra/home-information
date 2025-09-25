@@ -1,4 +1,5 @@
 {% extends "modals/action_1.html" %}
+{% load icons %}
 
 {% block preamble %}
 <form action="{% url 'console_unlock' %}" method="post" class="form" data-async="true">
@@ -16,7 +17,7 @@
   {% block action_center %}
   <button id="hi-console-unlock-button" type="submit" class="btn btn-lg btn-primary"
         name="action" value="unlock">
-    UNLOCK
+    {% icon "unlock" size="sm" css_class="hi-icon-left" %}UNLOCK
   </button>
   {% endblock %}
 
