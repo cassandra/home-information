@@ -12,6 +12,6 @@ class WeatherSourceManager( Singleton, AggregateHealthProvider ):
     def get_provider_info(cls) -> ProviderInfo:
         return ProviderInfo(
             provider_id = 'hi.apps.weather.weather_sources',
-            provider_name = 'Weather API Monitor',
+            provider_name = 'Weather API Manager',
             description = '',            
         )
