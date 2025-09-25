@@ -62,6 +62,7 @@ Not every item you may want to keep information about will make sense to have a 
 
 A "collection" can be used to put items into meaningful groups, like "Small Appliances" or "Power Tools".  The bottom left of the screen will show all the defined collections, though we need to add some first by clicking the "ADD" button which brings up a dialog.
 
+<img src="img/editing/new-collection-button-1024x768.png" alt="Home Information Adding Collection" width="250"> 
 <img src="img/editing/add-collection-modal-1024x768.png" alt="Home Information Adding Collection" width="300">
 
 A few notes about this dialog:
@@ -71,7 +72,7 @@ A few notes about this dialog:
 
 After adding, you will now see a button for the new collection at the bottom left. Clicking the button will change the main center view from the graphical view to the collection view.  Here we could add existing items by clicking the checkboxes on the right panel.  Note that any items you add can appear in the graphical view, the collection or both and you can easily toggle them on and off with a click of those checkboxes on the right.
 
-<img src="img/editing/new-collection-button-1024x768.png" alt="Home Information Adding Collection" width="350">  <img src="img/editing/collection-edit-view-empty-1024x768.png" alt="Home Information Empty Collection" width="350"> 
+<img src="img/editing/collection-edit-view-empty-1024x768.png" alt="Home Information Empty Collection" width="350"> 
 
 However, since we have not added any small appliances yet, we can go and do this now by clicking the "ADD NEW ITEM" button.  When viewing a collection, that button adds a new item and will also add it to the collection.  When in the graphical view, it adds it to that view.  Here is what the collection view look like after adding a bunch of small appliances. It shows both the list view (left) and grid view (right).
 
@@ -83,7 +84,7 @@ So far, we have seen just the one "view".  As more and more items are added, a s
 
 By default, you will see there is just one view created called "All".  In editing mode you will also see the "ADD" button to create new views.  Let's suppose we want to have a view that just focuses on the items in the Kitchen area. Click the "ADD" button, given it a name in the dialog and then you will see a new button and a new, but empty view.
 
-<img src="img/editing/add-location-view-modal-1024x768.png" alt="Home Information New Space View" width="350"> &nbsp; <img src="img/editing/new-location-view-button-1024x768.png" alt="Home Information New Space View" width="350"> 
+ <img src="img/editing/new-location-view-button-1024x768.png" alt="Home Information New Space View" width="350"> &nbsp; <img src="img/editing/add-location-view-modal-1024x768.png" alt="Home Information New Space View" width="350">
 
 We can add any existing kitchen items from the list at right, with the refrigerator being the only applicable one (unless you want to show all the small appliances too.)  Let's toggle the refrigerator and add a bunch of our other kitchen items: oven, cooktop, microwave, etc. We move and scale them as we did with the refrigerator to get something like this:
 
@@ -99,7 +100,7 @@ Near the top right, there is the "View: Kitchen" label and a "EDIT" button to it
 
 <img src="img/editing/new-location-view-edit-zoomed-1024x768.png" alt="Home Information Space View Edit" width="350">
 
-After adjusting the view with the view editing area open, now when you click the "Kitchen" button on the top left, it will zoom in to that saved geometry.
+After adjusting the view with the view editing area open, click "UPDATE" and now when you click the "Kitchen" button on the top left, it will zoom in to that saved geometry.
 
 ### Multiple Spaces
 
@@ -119,7 +120,7 @@ Below is the Attic space's view after using a custom SVG background and adding t
 
 When creating a new space, you get the option to add a custom background image. However, you can also change the background image at any time by choosing "EDIT" by the space name.
 
-<img src="img/editing/location-layout-edit-button-1024x768.png" alt="location-layout-edit-button-1024x768.png" width="200" />
+<img src="img/editing/location-layout-edit-button-1024x768.png" alt="location-layout-edit-button-1024x768.png" width="250" />
 
 <img src="img/editing/location-layout-edit-1024x768.png" alt="location-layout-edit-1024x768.png" width="400" />
 
