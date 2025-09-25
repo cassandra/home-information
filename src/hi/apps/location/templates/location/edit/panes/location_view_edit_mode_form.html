@@ -44,7 +44,7 @@
 
 <div class="sidebar-form-field">
   <label for="{{ location_view_edit_form.order_id.id_for_label }}" class="sidebar-form-label">{{ location_view_edit_form.order_id.label }}</label>
-  <input type="number" id="{{ location_view_edit_form.order_id.id_for_label }}" name="{{ location_view_edit_form.order_id.name }}" value="{{ location_view_edit_form.order_id.value|default:'' }}" class="sidebar-form-input">
+  <input type="number" id="{{ location_view_edit_form.order_id.id_for_label }}" name="{{ location_view_edit_form.order_id.name }}" value="{{ location_view_edit_form.order_id.value }}" class="sidebar-form-input">
   {% if location_view_edit_form.order_id.errors %}
     <div class="sidebar-form-error">{{ location_view_edit_form.order_id.errors }}</div>
   {% endif %}
@@ -60,7 +60,7 @@
 
 <div class="sidebar-form-field">
   <label for="{{ location_view_edit_form.svg_rotate.id_for_label }}" class="sidebar-form-label">{{ location_view_edit_form.svg_rotate.label }}</label>
-  <input type="number" id="{{ location_view_edit_form.svg_rotate.id_for_label }}" name="{{ location_view_edit_form.svg_rotate.name }}" value="{{ location_view_edit_form.svg_rotate.value|default:'' }}" class="sidebar-form-input">
+  <input type="number" id="{{ location_view_edit_form.svg_rotate.id_for_label }}" name="{{ location_view_edit_form.svg_rotate.name }}" value="{{ location_view_edit_form.svg_rotate.value }}" class="sidebar-form-input">
   {% if location_view_edit_form.svg_rotate.errors %}
     <div class="sidebar-form-error">{{ location_view_edit_form.svg_rotate.errors }}</div>
   {% endif %}

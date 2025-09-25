@@ -20,7 +20,7 @@
 
 <div class="sidebar-form-field">
   <label for="{{ location_edit_form.order_id.id_for_label }}" class="sidebar-form-label">{{ location_edit_form.order_id.label }}</label>
-  <input type="number" id="{{ location_edit_form.order_id.id_for_label }}" name="{{ location_edit_form.order_id.name }}" value="{{ location_edit_form.order_id.value|default:'' }}" class="sidebar-form-input">
+  <input type="number" id="{{ location_edit_form.order_id.id_for_label }}" name="{{ location_edit_form.order_id.name }}" value="{{ location_edit_form.order_id.value }}" class="sidebar-form-input">
   {% if location_edit_form.order_id.errors %}
     <div class="sidebar-form-error">{{ location_edit_form.order_id.errors }}</div>
   {% endif %}
