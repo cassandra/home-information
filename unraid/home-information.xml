@@ -23,7 +23,7 @@ Perfect for homeowners who want to stay organized and maintain their property ef
   <Category>HomeAutomation:</Category>
   <WebUI>http://[IP]:[PORT:9411]</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/cassandra/home-information/master/unraid/home-information.xml</TemplateURL>
-  <Icon>https://raw.githubusercontent.com/cassandra/home-information/master/src/hi/static/img/hi-logo-64x64.png</Icon>
+  <Icon>https://raw.githubusercontent.com/cassandra/home-information/master/src/hi/static/img/hi-icon-128x128.png</Icon>
   <ExtraParams>--restart unless-stopped</ExtraParams>
   <PostArgs/>
   <CPUset/>
