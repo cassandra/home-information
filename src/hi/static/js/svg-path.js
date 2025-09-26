@@ -214,7 +214,7 @@
             Hi.edit.eventBus.emit( Hi.edit.SELECTION_MADE_EVENT_NAME, data );
             AN.get( `${Hi.API_LOCATION_ITEM_EDIT_MODE_URL}/${svgItemId}` );
         } else {
-            AN.get( `${Hi.API_LOCATION_ITEM_STATUS_URL}/${svgItemId}` );
+            window.location.href = `${Hi.API_LOCATION_ITEM_STATUS_URL}/${svgItemId}`;
         }
     }
 
