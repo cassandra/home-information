@@ -4,6 +4,7 @@
 
 _High-level view of the applications change history.  See releases and commits for more fine-grained history._
 
+- v1.1.2 : September 26, 2025 : Bug fixes for Home Assistant temperature controller, Unraid template improvements.
 - v1.1.1 : September 25, 2025 : UI uniformity improvements, documentation updates, and edit mode styling enhancements.
 - v1.1.0 : September 16, 2025 : Video stream browser, starting profiles, integration improvements.
 - v1.0.2 : September 9, 2025 : Min/max temperature fixes, audio fixes, and installation improvements.
