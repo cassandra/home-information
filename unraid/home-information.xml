@@ -4,7 +4,6 @@
   <Repository>ghcr.io/cassandra/home-information:latest</Repository>
   <Registry>https://github.com/cassandra/home-information/pkgs/container/home-information</Registry>
   <Network>bridge</Network>
-  <MyIP/>
   <Shell>bash</Shell>
   <Privileged>false</Privileged>
   <Support>https://github.com/cassandra/home-information/issues</Support>
@@ -21,114 +20,17 @@ Key Features:&#xD;
 &#xD;
 Perfect for homeowners who want to stay organized and maintain their property effectively, especially those with home automation or security systems.</Overview>
   <Category>HomeAutomation:</Category>
-  <WebUI>http://[IP]:[PORT:9411]</WebUI>
-  <TemplateURL>https://raw.githubusercontent.com/cassandra/home-information/master/unraid/home-information.xml</TemplateURL>
+  <WebUI>http://[IP]:[PORT:8000]</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/selfhosters/unRAID-CA-templates/refs/heads/master/templates/home-information.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/cassandra/home-information/master/src/hi/static/img/hi-icon-128x128.png</Icon>
-  <ExtraParams>--restart unless-stopped</ExtraParams>
-  <PostArgs/>
-  <CPUset/>
-  <DateInstalled>1703721600</DateInstalled>
-  <DonateText/>
-  <DonateLink/>
-  <Description>Home Information transforms how you manage your property by creating a visual, spatial, centralized hub for everything about your home. Instead of hunting through drawers, email attachments, and scattered notes, you'll have manuals, maintenance records, device controls, and security monitoring all organized exactly where they belong - visually positioned on a map of your home.&#xD;
-&#xD;
-Key Features:&#xD;
-- Spatial organization by location (click on kitchen to see everything kitchen-related)&#xD;
-- Document and information management (manuals, warranties, maintenance records)&#xD;
-- Home Assistant integration for device control&#xD;
-- ZoneMinder integration for security cameras&#xD;
-- Visual security zone monitoring&#xD;
-- Local-first architecture (your data stays on your network)&#xD;
-&#xD;
-Perfect for homeowners who want to stay organized and maintain their property effectively, especially those with home automation or security systems.</Description>
-  <Networking>
-    <Mode>bridge</Mode>
-    <Publish>
-      <Port>
-        <HostPort>9411</HostPort>
-        <ContainerPort>8000</ContainerPort>
-        <Protocol>tcp</Protocol>
-      </Port>
-    </Publish>
-  </Networking>
-  <Data>
-    <Volume>
-      <HostDir>/mnt/user/appdata/home-information/database</HostDir>
-      <ContainerDir>/data/database</ContainerDir>
-      <Mode>rw</Mode>
-    </Volume>
-    <Volume>
-      <HostDir>/mnt/user/appdata/home-information/media</HostDir>
-      <ContainerDir>/data/media</ContainerDir>
-      <Mode>rw</Mode>
-    </Volume>
-    <Volume>
-      <HostDir>/mnt/user/appdata/home-information/env</HostDir>
-      <ContainerDir>/env</ContainerDir>
-      <Mode>ro</Mode>
-    </Volume>
-  </Data>
-  <Environment>
-    <Variable>
-      <Value>hi.settings.local</Value>
-      <Name>DJANGO_SETTINGS_MODULE</Name>
-      <Mode/>
-    </Variable>
-    <Variable>
-      <Value>8000</Value>
-      <Name>DJANGO_SERVER_PORT</Name>
-      <Mode/>
-    </Variable>
-    <Variable>
-      <Value>CHANGE_ME_TO_RANDOM_STRING</Value>
-      <Name>DJANGO_SECRET_KEY</Name>
-      <Mode/>
-    </Variable>
-    <Variable>
-      <Value>admin@example.com</Value>
-      <Name>DJANGO_SUPERUSER_EMAIL</Name>
-      <Mode/>
-    </Variable>
-    <Variable>
-      <Value>admin-password-123</Value>
-      <Name>DJANGO_SUPERUSER_PASSWORD</Name>
-      <Mode/>
-    </Variable>
-    <Variable>
-      <Value>/data/database</Value>
-      <Name>HI_DB_PATH</Name>
-      <Mode/>
-    </Variable>
-    <Variable>
-      <Value>/data/media</Value>
-      <Name>HI_MEDIA_PATH</Name>
-      <Mode/>
-    </Variable>
-    <Variable>
-      <Value>127.0.0.1</Value>
-      <Name>HI_REDIS_HOST</Name>
-      <Mode/>
-    </Variable>
-    <Variable>
-      <Value>6379</Value>
-      <Name>HI_REDIS_PORT</Name>
-      <Mode/>
-    </Variable>
-    <Variable>
-      <Value>true</Value>
-      <Name>HI_SUPPRESS_AUTHENTICATION</Name>
-      <Mode/>
-    </Variable>
-  </Environment>
-  <Labels/>
-  <Config Name="WebUI Port" Target="8000" Default="9411" Mode="tcp" Description="Port for the Web UI" Type="Port" Display="always" Required="true" Mask="false">9411</Config>
-  <Config Name="Database Storage" Target="/data/database" Default="/mnt/user/appdata/home-information/database" Mode="rw" Description="Directory where the SQLite database is stored" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/home-information/database</Config>
-  <Config Name="Media Storage" Target="/data/media" Default="/mnt/user/appdata/home-information/media" Mode="rw" Description="Directory where uploaded files (manuals, images, etc.) are stored" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/home-information/media</Config>
-  <Config Name="Environment Config" Target="/env" Default="/mnt/user/appdata/home-information/env" Mode="ro" Description="Directory containing environment configuration files (optional)" Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/appdata/home-information/env</Config>
-  <Config Name="Django Secret Key" Target="DJANGO_SECRET_KEY" Default="CHANGE_ME_TO_RANDOM_STRING" Mode="" Description="Django secret key - CHANGE THIS to a random string for security" Type="Variable" Display="always" Required="true" Mask="true">CHANGE_ME_TO_RANDOM_STRING</Config>
-  <Config Name="Admin Email" Target="DJANGO_SUPERUSER_EMAIL" Default="admin@example.com" Mode="" Description="Email address for the admin user" Type="Variable" Display="always" Required="true" Mask="false">admin@example.com</Config>
-  <Config Name="Admin Password" Target="DJANGO_SUPERUSER_PASSWORD" Default="admin-password-123" Mode="" Description="Password for the admin user - CHANGE THIS" Type="Variable" Display="always" Required="true" Mask="true">admin-password-123</Config>
-  <Config Name="Suppress Authentication" Target="HI_SUPPRESS_AUTHENTICATION" Default="true" Mode="" Description="Skip login screen for local network use (set to false for multi-user setup)" Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
-  <Config Name="Redis Host" Target="HI_REDIS_HOST" Default="127.0.0.1" Mode="" Description="Redis hostname (use 127.0.0.1 for internal Redis)" Type="Variable" Display="advanced" Required="false" Mask="false">127.0.0.1</Config>
-  <Config Name="Redis Port" Target="HI_REDIS_PORT" Default="6379" Mode="" Description="Redis port" Type="Variable" Display="advanced" Required="false" Mask="false">6379</Config>
+  <Config Name="WebUI Port" Target="8000" Default="9411" Mode="tcp" Description="Port for the Web UI" Type="Port" Display="always" Required="true" Mask="false"></Config>
+  <Config Name="Database Storage" Target="/data/database" Default="/mnt/user/appdata/home-information/database" Mode="rw" Description="Directory where the SQLite database is stored" Type="Path" Display="always" Required="true" Mask="false"></Config>
+  <Config Name="Media Storage" Target="/data/media" Default="/mnt/user/appdata/home-information/media" Mode="rw" Description="Directory where uploaded files (manuals, images, etc.) are stored" Type="Path" Display="always" Required="true" Mask="false"></Config>
+  <Config Name="Environment Config" Target="/env" Default="/mnt/user/appdata/home-information/env" Mode="ro" Description="Directory containing environment configuration files (optional)" Type="Path" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Django Secret Key" Target="DJANGO_SECRET_KEY" Default="" Mode="" Description="Django secret key - Set to a random string for security" Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="Admin Email" Target="DJANGO_SUPERUSER_EMAIL" Default="admin@example.com" Mode="" Description="Email address for the admin user" Type="Variable" Display="always" Required="true" Mask="false"></Config>
+  <Config Name="Admin Password" Target="DJANGO_SUPERUSER_PASSWORD" Default="" Mode="" Description="Password for the admin user" Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="Suppress Authentication" Target="HI_SUPPRESS_AUTHENTICATION" Default="true|false" Mode="" Description="Skip login screen for local network use (set to false for multi-user setup)" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Redis Host" Target="HI_REDIS_HOST" Default="127.0.0.1" Mode="" Description="Redis hostname (use 127.0.0.1 for internal Redis)" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Redis Port" Target="HI_REDIS_PORT" Default="6379" Mode="" Description="Redis port" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
 </Container>
