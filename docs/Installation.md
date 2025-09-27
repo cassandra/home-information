@@ -38,6 +38,32 @@ curl -fsSL https://raw.githubusercontent.com/cassandra/home-information/master/u
 
 This preserves all your data while updating to the latest version.
 
+### Environment Variable Changes
+
+If you used the one-liner `install.sh` script and need to change your environment variables, you'll need to re-run in docker to pick up the changes.  The install script runs docker with this command:
+```
+docker run -d \
+       --name "${CONTAINER_NAME}" \
+       --restart unless-stopped \
+       --env-file "${ENV_FILE}" \
+       -v "${DATABASE_DIR}:/data/database" \
+       -v "${MEDIA_DIR}:/data/media" \
+       -p "${EXTERNAL_PORT}:8000" \
+       "${DOCKER_IMAGE}:${DOCKER_TAG}"
+```
+Where the environment variables you need are:
+```
+CONTAINER_NAME="hi"
+HI_HOME="${HOME}/.hi"
+ENV_DIR="${HI_HOME}/env"
+ENV_FILE="${ENV_DIR}/local.env"
+DATABASE_DIR="${HI_HOME}/database"
+MEDIA_DIR="${HI_HOME}/media"
+EXTERNAL_PORT="9411"
+DOCKER_IMAGE="ghcr.io/cassandra/home-information"
+DOCKER_TAG="${1:-latest}"
+```
+
 ## Manual Installation
 
 For users who want full control over the installation process or need to customize the setup.
