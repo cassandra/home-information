@@ -115,7 +115,8 @@ class LocationItemStatusView( View, LocationViewMixin, EntityViewMixin ):
     
         elif item_type == ItemType.COLLECTION:
             url = reverse( 'collection_view', kwargs = { 'collection_id': item_id } )
-            return HttpResponseRedirect( url )
+            javascript_payload = f"window.location.href = '{url}';"
+            return HttpResponse(javascript_payload, content_type="application/javascript")
 
         raise BadRequest( f'Unknown item type "{item_type}".' )
         
