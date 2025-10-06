@@ -800,12 +800,6 @@ class HassConverter:
                 integration_key = integration_key,
                 name = name,
             )
-        elif entity_state_type == EntityStateType.OPEN_CLOSE:
-            controller = HiModelHelper.create_open_close_controller(
-                entity = entity,
-                integration_key = integration_key,
-                name = name,
-            )
         else:
             # Fallback - shouldn't happen for controllable types
             logger.warning( f'Unknown controllable EntityStateType: {entity_state_type}' )
