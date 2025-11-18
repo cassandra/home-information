@@ -41,6 +41,7 @@ class SettingsManager( Singleton ):
     
     def reload(self):
         with self._attributes_lock:
+            self._subsystem_list = sorted(self._subsystem_list, key=lambda s: s.name)
             self._attribute_value_map = dict()
             for subsystem in self._subsystem_list:
                 try:
