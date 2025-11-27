@@ -598,9 +598,10 @@ class TestLocationItemStatusView(SyncViewTestCase):
         url = reverse('location_item_status', kwargs={'html_id': html_id})
         response = self.client.get(url)
 
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual( response.status_code, 200 )
+        data = response.json()
         expected_url = reverse('collection_view', kwargs={'collection_id': self.collection.id})
-        self.assertEqual(response.url, expected_url)
+        self.assertEqual(data['location'], expected_url)
 
     def test_unknown_item_type_returns_400(self):
         """Test that unknown item types return BadRequest."""
