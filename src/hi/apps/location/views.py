@@ -115,8 +115,8 @@ class LocationItemStatusView( View, LocationViewMixin, EntityViewMixin ):
     
         elif item_type == ItemType.COLLECTION:
             url = reverse( 'collection_view', kwargs = { 'collection_id': item_id } )
-            return HttpResponseRedirect( url )
-
+            return antinode.redirect_response( url )
+        
         raise BadRequest( f'Unknown item type "{item_type}".' )
         
     def _handle_entity(self, request : HttpRequest, entity : Entity ):
