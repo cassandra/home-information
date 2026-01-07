@@ -1,6 +1,9 @@
 {% load icons %}
 {% load common_tags %}
 {% load attribute_extras %}
+{% load static %}
+<script src="{% static 'attribute/js/reorder_attribute_card.js' %}"></script>
+  
 {% comment %}
 V2 Attribute Card Component
 Individual attribute attribute card with value editing and actions
@@ -9,7 +12,7 @@ Individual attribute attribute card with value editing and actions
 <div class="{{ DIVID.ATTR_V2_ATTRIBUTE_CARD_CLASS }}{% if not attribute_form.instance.pk %} {{ DIVID.ATTR_V2_NEW_ATTRIBUTE_CLASS }}{% endif %}" 
      data-attribute-id="{{ attribute_form.instance.pk }}" 
      data-url-detect="true"
-     data-order-index="{{ forloop.counter }}"
+     data-order-index="{% if attribute_form.instance.pk %}{{ attribute_form.instance.ordering_index }}{% else %}{{ forloop.counter }}{% endif %}"
      data-value-type="{{ attribute_form.instance.value_type.name|default:'text' }}"
      data-is-secret="{{ attribute_form.instance.value_type.is_secret|yesno:'true,false' }}"
      data-can-delete="{{ attribute_form.instance.attribute_type.can_delete|yesno:'true,false' }}"
@@ -20,6 +23,12 @@ Individual attribute attribute card with value editing and actions
   {{ attribute_form.id }}
   {% if attribute_form.DELETE %}
     {{ attribute_form.DELETE.as_hidden }}
+  {% endif %}
+
+  {% if attribute_form.instance.pk %}
+    {{ attribute_form.instance.ordering_index }}
+  {% else %}
+    {{ forloop.counter }}
   {% endif %}
 
   {% if attribute_form.instance and not attribute_form.instance.is_editable %}
@@ -60,15 +69,11 @@ Individual attribute attribute card with value editing and actions
       {% if attribute_form.instance.pk and attribute_form.allow_reordering %}
       <button type="button" 
               class="btn btn-sm btn-outline-secondary"
-              disabled
-              title="Reordering available in future update"
               data-reorder-action="up">
         {% icon "chevron-up" size="sm" %}
       </button>
       <button type="button" 
               class="btn btn-sm btn-outline-secondary"
-              disabled
-              title="Reordering available in future update"
               data-reorder-action="down">
         {% icon "chevron-down" size="sm" %}
       </button>

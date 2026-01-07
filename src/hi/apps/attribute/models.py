@@ -104,6 +104,11 @@ class AttributeModel(models.Model):
         blank = True,
     )
 
+    ordering_index = models.PositiveIntegerField(
+        'Ordering Index',
+        default = 0,
+    )
+
     def get_upload_to(self):
         raise NotImplementedError('Subclasses should override this method.' )
 
