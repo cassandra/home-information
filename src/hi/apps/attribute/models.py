@@ -103,8 +103,7 @@ class AttributeModel(models.Model):
         auto_now=True,
         blank = True,
     )
-
-    ordering_index = models.PositiveIntegerField(
+    order_id = models.PositiveIntegerField(
         'Ordering Index',
         default = 0,
     )

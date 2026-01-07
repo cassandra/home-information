@@ -41,7 +41,7 @@ class AttributeForm( forms.ModelForm ):
         fields = (
             'name',
             'value',
-            'ordering_index',
+            'order_id',
         )
         widgets = {
             'name': forms.TextInput( attrs={'class': 'form-control'} ),
@@ -54,9 +54,21 @@ class AttributeForm( forms.ModelForm ):
         widget = forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
     )
 
-    ordering_index = forms.IntegerField(
+    # order_id = forms.IntegerField(
+    #     required = False,
+    #     label = 'Ordering Index',
+    #     widget = forms.HiddenInput(),
+    # )
+
+    # ordering_index = forms.IntegerField(
+    #     required = False,
+    #     label = 'Ordering Index',
+    #     widget = forms.HiddenInput(),
+    # )
+
+    banana = forms.CharField(
         required = False,
-        label = 'Ordering Index',
+        label = 'Banana Field',
         widget = forms.HiddenInput(),
     )
 

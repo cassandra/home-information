@@ -12,7 +12,7 @@ Individual attribute attribute card with value editing and actions
 <div class="{{ DIVID.ATTR_V2_ATTRIBUTE_CARD_CLASS }}{% if not attribute_form.instance.pk %} {{ DIVID.ATTR_V2_NEW_ATTRIBUTE_CLASS }}{% endif %}" 
      data-attribute-id="{{ attribute_form.instance.pk }}" 
      data-url-detect="true"
-     data-order-index="{% if attribute_form.instance.pk %}{{ attribute_form.instance.ordering_index }}{% else %}{{ forloop.counter }}{% endif %}"
+     data-order-index="{% if attribute_form.instance.pk %}{{ attribute_form.instance.order_id }}{% else %}{{ forloop.counter }}{% endif %}"
      data-value-type="{{ attribute_form.instance.value_type.name|default:'text' }}"
      data-is-secret="{{ attribute_form.instance.value_type.is_secret|yesno:'true,false' }}"
      data-can-delete="{{ attribute_form.instance.attribute_type.can_delete|yesno:'true,false' }}"
@@ -26,7 +26,7 @@ Individual attribute attribute card with value editing and actions
   {% endif %}
 
   {% if attribute_form.instance.pk %}
-    {{ attribute_form.instance.ordering_index }}
+    {{ attribute_form.instance.order_id }}
   {% else %}
     {{ forloop.counter }}
   {% endif %}
