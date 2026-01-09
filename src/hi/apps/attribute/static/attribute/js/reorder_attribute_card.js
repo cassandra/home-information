@@ -22,6 +22,18 @@ document.addEventListener("click", (event) => {
     updateOrderIndexes(parent);
 });
 
+function printOrderIndexes(container) {
+    const cards = container.querySelectorAll("[data-attribute-id]");
+    console.log("--- Order Update ---");
+    cards.forEach((card) => {
+        const nameInput = card.querySelector('input[name*="name"]');
+        const attrName = nameInput?.value || "(new attribute)";
+        const orderValue = card.dataset.orderIndex;
+        
+        console.log(`${orderValue}. ${attrName}`);
+    });
+}
+
 function moveUp(card, parent) {
     const prev = card.previousElementSibling;
     if (prev) parent.insertBefore(card, prev);
@@ -32,9 +44,17 @@ function moveDown(card, parent) {
     if (next) parent.insertBefore(next, card);
 }
 
-// function updateOrderIndexes(container) {
-//     const cards = container.querySelectorAll("[data-attribute-id]");
-//     cards.forEach((card, index) => {
-//         card.dataset.orderIndex = index + 1;
-//     });
-// }
+function updateOrderIndexes(container) {
+    const cards = container.querySelectorAll("[data-attribute-id]");
+    cards.forEach((card, index) => {
+        const newIndex = index + 1;
+        card.dataset.orderIndex = newIndex;
+        
+        const hiddenInput = card.querySelector('input[name*="order_id"]');
+        if (hiddenInput) {
+            hiddenInput.value = newIndex;
+        }
+    });
+    
+    printOrderIndexes(container);
+}

@@ -21,14 +21,13 @@ Individual attribute attribute card with value editing and actions
   
   <!-- Hidden form fields -->
   {{ attribute_form.id }}
+
   {% if attribute_form.DELETE %}
     {{ attribute_form.DELETE.as_hidden }}
   {% endif %}
-
-  {% if attribute_form.instance.pk %}
-    {{ attribute_form.instance.order_id }}
-  {% else %}
-    {{ forloop.counter }}
+  
+  {% if attribute_form.order_id %}
+    {{ attribute_form.order_id.as_hidden }}
   {% endif %}
 
   {% if attribute_form.instance and not attribute_form.instance.is_editable %}
