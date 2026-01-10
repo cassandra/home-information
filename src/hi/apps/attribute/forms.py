@@ -18,7 +18,7 @@ class RegularAttributeBaseFormSet(forms.BaseInlineFormSet):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Apply filtering after parent initialization
-        self.queryset = self.queryset.exclude(value_type_str=str(AttributeValueType.FILE))
+        self.queryset = self.queryset.exclude(value_type_str=str(AttributeValueType.FILE)).order_by("order_id", "id")
     
     def get_queryset(self):
         """Override to automatically filter out FILE attributes"""

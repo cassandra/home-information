@@ -141,6 +141,7 @@
             const $container = $form.closest(Hi.ATTR_V2_CONTAINER_SELECTOR);
             if ($container.length > 0) {
                 _syncTextareaValuesToHiddenFields($container);
+                _syncOrderIdsToHiddenFields($container);
             }
             
             const formData = new FormData($form[0]);
@@ -1184,6 +1185,46 @@
             }
         });
     }
-    
+
+    function _syncOrderIdsToHiddenFields($container) {
+        const $cards = $container.find(Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR);
+
+        let maxOrder = 0;
+
+        $cards.each(function() {
+            const $card = $(this);
+            const attrId = $card.attr(Hi.DATA_ATTRIBUTE_ID_ATTR);
+
+            if (!attrId || attrId === 'None') return;
+
+            const attrOrderIndex = $card.attr('data-order-index');
+            const n = parseInt(attrOrderIndex, 10);
+            if (!Number.isNaN(n)) {
+                maxOrder = Math.max(maxOrder, n);
+            }
+        });
+
+        let order = maxOrder + 1;
+
+        $cards.each(function() {
+            const $card = $(this);
+            const attrId = $card.attr(Hi.DATA_ATTRIBUTE_ID_ATTR);
+
+            const nameVal = ($card.find('input[name$="-name"]').val() || '').trim();
+            const valueVal = ($card.find('textarea[name$="-value"], input[name$="-value"]').val() || '').trim();
+
+            const isNew = attrId === 'None';
+            const isFilled = (nameVal.length > 0 || valueVal.length > 0);
+
+            if (isNew && isFilled) {
+                const $orderField = $card.find('input[type="hidden"][name$="-order_id"]');
+                if ($orderField.length > 0) {
+                    $orderField.val(String(order));
+                }
+
+                $card.attr('data-order-index', String(order));
+            }
+        });
+    }
     
 })();

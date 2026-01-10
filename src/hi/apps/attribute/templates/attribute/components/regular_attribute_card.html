@@ -2,7 +2,6 @@
 {% load common_tags %}
 {% load attribute_extras %}
 {% load static %}
-<script src="{% static 'attribute/js/reorder_attribute_card.js' %}"></script>
   
 {% comment %}
 V2 Attribute Card Component
@@ -67,13 +66,13 @@ Individual attribute attribute card with value editing and actions
       <!-- Reorder Controls (disabled until Issue #80, hidden if allow_reordering is False) -->
       {% if attribute_form.instance.pk and attribute_form.allow_reordering %}
       <button type="button" 
-              class="btn btn-sm btn-outline-secondary"
-              data-reorder-action="up">
+          class="btn btn-sm btn-outline-secondary"
+          onclick="reorderAttributeCard(this, 'up')">
         {% icon "chevron-up" size="sm" %}
       </button>
       <button type="button" 
-              class="btn btn-sm btn-outline-secondary"
-              data-reorder-action="down">
+          class="btn btn-sm btn-outline-secondary"
+          onclick="reorderAttributeCard(this, 'down')">
         {% icon "chevron-down" size="sm" %}
       </button>
       {% endif %}

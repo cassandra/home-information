@@ -1,37 +1,24 @@
-document.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-reorder-action]");
-    if (!button) return;
-
+function reorderAttributeCard(button, direction) {
     const card = button.closest("[data-attribute-id]");
     const parent = card?.parentElement;
+
     if (!parent) return;
-    
-    const direction = button.dataset.reorderAction;
 
     switch (direction) {
         case "up":
             moveUp(card, parent);
             break;
+
         case "down":
             moveDown(card, parent);
             break;
+
         default:
+            console.error(`Invalid direction: ${direction}`);
             return;
     }
 
     updateOrderIndexes(parent);
-});
-
-function printOrderIndexes(container) {
-    const cards = container.querySelectorAll("[data-attribute-id]");
-    console.log("--- Order Update ---");
-    cards.forEach((card) => {
-        const nameInput = card.querySelector('input[name*="name"]');
-        const attrName = nameInput?.value || "(new attribute)";
-        const orderValue = card.dataset.orderIndex;
-        
-        console.log(`${orderValue}. ${attrName}`);
-    });
 }
 
 function moveUp(card, parent) {
@@ -45,7 +32,7 @@ function moveDown(card, parent) {
 }
 
 function updateOrderIndexes(container) {
-    const cards = container.querySelectorAll("[data-attribute-id]");
+    const cards = container.querySelectorAll('[data-attribute-id]:not([data-attribute-id="None"])');
     cards.forEach((card, index) => {
         const newIndex = index + 1;
         card.dataset.orderIndex = newIndex;
@@ -54,7 +41,5 @@ function updateOrderIndexes(container) {
         if (hiddenInput) {
             hiddenInput.value = newIndex;
         }
-    });
-    
-    printOrderIndexes(container);
+    });   
 }

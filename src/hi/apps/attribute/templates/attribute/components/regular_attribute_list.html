@@ -1,3 +1,4 @@
+{% load static %}
 {% if regular_attributes_formset %}
 {{ regular_attributes_formset.management_form }}
 <div class="attr-v2-attribute-section">
@@ -20,4 +21,5 @@
     {% endfor %}
   </div>
 </div>
+<script src="{% static 'attribute/js/reorder_attribute_card.js' %}"></script>
 {% endif %}
