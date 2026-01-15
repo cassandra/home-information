@@ -173,3 +173,27 @@ class SubsystemAttributeRestoreInlineView( View,
             attr_page_context = attr_page_context,
             attr_item_context_list = attr_item_context_list,
         )
+    
+class SubsystemAttributeRestoreDefaultInlineView( View,
+                                                  SubsystemAttributeMixin,
+                                                  AttributeMultiEditViewMixin ):
+    def get(self, request, subsystem_id, attribute_id, *args, **kwargs):
+        """ Need to do restore default in a GET since nested in main form and cannot have a form in a form """
+        try:
+            attribute = SubsystemAttribute.objects.select_related('subsystem').get(
+                pk = attribute_id, subsystem_id = subsystem_id
+            )
+        except SubsystemAttribute.DoesNotExist:
+            return page_not_found_response(request, "Attribute not found.")
+        print(f"({attribute.subsystem.name}) {attribute.name} : {attribute.value}")
+        # attr_page_context = SubsystemAttributePageEditContext(
+        #     selected_subsystem_id = subsystem_id,
+        # )
+        # attr_item_context_list = self._create_attr_item_context_list()
+
+        # return self.post_restore_default(
+        #     request = request,
+        #     attribute = attribute,
+        #     attr_page_context = attr_page_context,
+        #     attr_item_context_list = attr_item_context_list,
+        # )
