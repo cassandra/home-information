@@ -22,7 +22,7 @@ class SubsystemAttributePageEditContext(AttributePageEditContext):
         super().__init__( owner_type = 'subsystem' )
         self.selected_subsystem_id = selected_subsystem_id
         return
-    
+
     @property
     def content_body_template_name(self):
         return 'config/panes/subsystem_edit_content_body.html'
@@ -55,6 +55,10 @@ class SubsystemAttributeItemEditContext(AttributeItemEditContext):
     @property
     def attribute_model_subclass(self) -> Type[AttributeModel]:
         return SubsystemAttribute
+    
+    @property
+    def can_restore_default(self):
+        return True
     
     def create_owner_form( self, form_data : Optional[ Dict[str, Any] ] = None ) -> ModelForm:
         # No viewable/editable Subsystem model properties.

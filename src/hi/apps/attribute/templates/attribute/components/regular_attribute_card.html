@@ -80,11 +80,13 @@ Individual attribute attribute card with value editing and actions
            title="View history">
           {% icon "history" size="sm" %}
         </a>
+        {% if attr_item_context.can_restore_default %}
         <a href="{% attr_restore_default_url attr_item_context attribute_form.instance.pk %}"
            class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_HISTORY_LINK_CLASS }}"
            title="Restore to Default Value">
           {% icon "history" size="sm" %}
         </a>
+        {% endif %}
       {% endif %}
       
       {% if attribute_form.instance.pk and attribute_form.instance.attribute_type.can_delete %}

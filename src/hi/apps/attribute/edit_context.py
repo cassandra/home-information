@@ -68,6 +68,14 @@ class AttributePageEditContext:
         if self.owner:
             return f'-{self.owner_type}-{self.owner_id}'
         return f'-{self.owner_type}'
+    
+    @property
+    def can_restore_default(self) -> bool:
+        """ 
+        Whether attributes for this owner type support restoring to default values. 
+        Subclasses can override. 
+        """
+        return False
 
     @property
     def content_body_template_name(self):

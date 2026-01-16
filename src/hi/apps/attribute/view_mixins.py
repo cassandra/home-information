@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 class AttributeEditCommonMixin:
-    """ Common mixins are those where we only deal with a single attribuet at a time.
-    Thus, it does not depend if we are using a single item or mutliple item views.
+    """ Common mixins are those where we only deal with a single attribute at a time.
+    Thus, it does not depend if we are using a single item or multiple item views.
     """
 
     ATTRIBUTE_HISTORY_VIEW_LIMIT = 50
