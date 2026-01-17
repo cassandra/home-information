@@ -106,6 +106,9 @@ class AttributeModel(models.Model):
 
     def get_upload_to(self):
         raise NotImplementedError('Subclasses should override this method.' )
+    
+    def get_attribute_default_value(self):
+        raise NotImplementedError('Subclasses should override this method.' )
 
     def __str__(self):
         return f'Attr: {self.name}={self.value} [{self.value_type_str}] [{self.attribute_type_str}]'

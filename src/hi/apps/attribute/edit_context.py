@@ -71,11 +71,8 @@ class AttributePageEditContext:
     
     @property
     def can_restore_default(self) -> bool:
-        """ 
-        Whether attributes for this owner type support restoring to default values. 
-        Subclasses can override. 
-        """
-        return False
+        """ Whether attributes for this owner type support restoring to default values """
+        raise NotImplementedError('Subclasses must override this method')
 
     @property
     def content_body_template_name(self):

@@ -175,6 +175,7 @@ class SubsystemAttributeRestoreInlineView( View,
             attr_item_context_list = attr_item_context_list,
         )
     
+    
 class SubsystemAttributeRestoreDefaultInlineView( View,
                                                   SubsystemAttributeMixin,
                                                   AttributeMultiEditViewMixin ):
@@ -186,31 +187,15 @@ class SubsystemAttributeRestoreDefaultInlineView( View,
             )
         except SubsystemAttribute.DoesNotExist:
             return page_not_found_response(request, "Attribute not found.")
-        enum = resolve_setting_enum(attribute.setting_key)
 
-        attribute.value = enum.definition.initial_value
-        attribute.save()
-        
-        # attr_page_context = SubsystemAttributePageEditContext(
-        #     selected_subsystem_id = subsystem_id,
-        # )
-        # attr_item_context_list = self._create_attr_item_context_list()
+        attr_page_context = SubsystemAttributePageEditContext(
+            selected_subsystem_id = subsystem_id,
+        )
+        attr_item_context_list = self._create_attr_item_context_list()
 
-        # return self.post_restore_default(
-        #     request = request,
-        #     attribute = attribute,
-        #     attr_page_context = attr_page_context,
-        #     attr_item_context_list = attr_item_context_list,
-        # )
-
-def resolve_setting_enum(setting_key: str):
-    try:
-        module_path, enum_class_name, member_name = setting_key.rsplit('.', 2)
-
-        module = importlib.import_module(module_path)
-        enum_cls = getattr(module, enum_class_name)
-
-        return getattr(enum_cls, member_name)
-
-    except Exception as exc:
-        raise RuntimeError(f"Invalid setting_key: {setting_key}") from exc
+        return self.post_restore_default(
+            request = request,
+            attribute = attribute,
+            attr_page_context = attr_page_context,
+            attr_item_context_list = attr_item_context_list,
+        )

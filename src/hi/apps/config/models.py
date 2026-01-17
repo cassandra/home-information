@@ -54,7 +54,19 @@ class SubsystemAttribute( AttributeModel ):
     def _get_history_model_class(self):
         """Return the history model class for SubsystemAttribute."""
         return SubsystemAttributeHistory
+    
+    def get_attribute_default_value(self):
+        """Return the default value for this attribute."""
+        import importlib
 
+        module_path, enum_class_name, member_name = self.setting_key.rsplit('.', 2)
+
+        module = importlib.import_module(module_path)
+        enum_cls = getattr(module, enum_class_name)
+
+        enum = getattr(enum_cls, member_name)
+        return enum.definition.initial_value
+    
 
 class SubsystemAttributeHistory(AttributeValueHistoryModel):
     """History tracking for SubsystemAttribute changes."""

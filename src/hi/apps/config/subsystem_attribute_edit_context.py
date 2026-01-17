@@ -49,16 +49,16 @@ class SubsystemAttributeItemEditContext(AttributeItemEditContext):
         return self.owner
     
     @property
+    def can_restore_default(self):
+        return True
+    
+    @property
     def content_body_template_name(self):
         return 'config/panes/subsystem_edit_content_body.html'
 
     @property
     def attribute_model_subclass(self) -> Type[AttributeModel]:
         return SubsystemAttribute
-    
-    @property
-    def can_restore_default(self):
-        return True
     
     def create_owner_form( self, form_data : Optional[ Dict[str, Any] ] = None ) -> ModelForm:
         # No viewable/editable Subsystem model properties.

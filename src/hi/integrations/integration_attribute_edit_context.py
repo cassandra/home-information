@@ -55,6 +55,10 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
         return self.owner
     
     @property
+    def can_restore_default(self):
+        return False
+    
+    @property
     def content_body_template_name(self):
         return 'integrations/panes/integration_edit_content_body.html'
     
