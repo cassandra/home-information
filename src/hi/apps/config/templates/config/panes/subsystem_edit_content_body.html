@@ -66,13 +66,20 @@ This is what gets replaced on form submission
       <!-- Audio Test Button - only shown for Audio subsystem -->
       <div class="mb-3 text-right">
         <button type="button"
-                class="btn btn-outline-primary btn-xs"
+                class="btn btn-outline-primary btn-xs d-inline-flex align-items-center"
                 onclick="Hi.audio.testAudio();"
                 title="Test audio playback">
           {% icon "play" size="xs" css_class="hi-icon-left" %}Test Audio
         </button>
       </div>
       {% endif %}
+      <div class="mb-3 text-right">
+        <a href="{% attr_restore_all_default_url multi_edit_form_data.context %}"
+          class="btn btn-outline-primary btn-xs d-inline-flex align-items-center"
+          title="Restore to Default Value">
+          {% icon "sync" size="sm" css_class="hi-icon-left" %}Reset {{ multi_edit_form_data.owner.name }} Settings
+        </a>
+      </div>
       {% include "attribute/components/regular_attribute_list.html" with regular_attributes_formset=multi_edit_form_data.formset attr_item_context=multi_edit_form_data.context %}
     </div>
     

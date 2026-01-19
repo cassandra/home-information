@@ -92,6 +92,10 @@ class AttributePageEditContext:
     @property
     def restore_default_url_name(self) -> str:
         return f'{self.owner_type}_attribute_restore_default_inline'
+    
+    @property
+    def restore_all_default_url_name(self) -> str:
+        return f'{self.owner_type}_attribute_restore_all_default'
 
     @property
     def container_html_id(self) -> str:

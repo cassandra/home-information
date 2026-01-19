@@ -26,4 +26,9 @@ urlpatterns = [
              views.SubsystemAttributeRestoreDefaultInlineView.as_view(),
              name='subsystem_attribute_restore_default_inline'),
 
+    re_path( r'^attribute/restore_all_default/(?P<subsystem_id>\d+)/$', 
+             views.SubsystemAttributesRestoreAllDefaultView.as_view(),
+             name='subsystem_attribute_restore_all_default'),
+    
+
 ]

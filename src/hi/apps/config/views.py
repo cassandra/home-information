@@ -5,6 +5,8 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.generic import View
 
+from hi.apps.attribute.edit_form_handler import AttributeEditFormHandler
+from hi.apps.attribute.edit_response_renderer import AttributeEditResponseRenderer
 import hi.apps.common.antinode as antinode
 from hi.views import page_not_found_response
 
@@ -175,7 +177,7 @@ class SubsystemAttributeRestoreInlineView( View,
             attr_item_context_list = attr_item_context_list,
         )
     
-    
+
 class SubsystemAttributeRestoreDefaultInlineView( View,
                                                   SubsystemAttributeMixin,
                                                   AttributeMultiEditViewMixin ):
@@ -199,3 +201,17 @@ class SubsystemAttributeRestoreDefaultInlineView( View,
             attr_page_context = attr_page_context,
             attr_item_context_list = attr_item_context_list,
         )
+
+
+class SubsystemAttributesRestoreAllDefaultView(View, SubsystemAttributeMixin, AttributeMultiEditViewMixin):
+    def get(self, request, subsystem_id, *args, **kwargs):
+        attributes = SubsystemAttribute.objects.select_related('subsystem').filter(subsystem_id=subsystem_id)
+        if not attributes.exists():
+            return page_not_found_response(request, "No attributes found for this subsystem.")
+
+        self.post_restore_all_defaults(
+            request=request,
+            attributes=attributes,
+        )
+
+        return HttpResponseRedirect(reverse('config_settings', args=[subsystem_id]))

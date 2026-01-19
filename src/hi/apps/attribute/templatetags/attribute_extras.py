@@ -170,3 +170,24 @@ def attr_restore_default_url(attr_item_context, attribute_id):
         'attribute_id': attribute_id
     }
     return reverse(url_name, kwargs=params)
+
+@register.simple_tag
+def attr_restore_all_default_url(attr_item_context):
+    """
+    Generate URL for attribute restore default view with correct parameter names.
+    
+    Usage in template: {% attr_restore_all_default_url attr_item_context %}
+    
+    Args:
+        attr_item_context: AttributeItemEditContext instance
+        
+    Returns:
+        str: URL for restore all default view
+    """
+    from django.urls import reverse
+    print(attr_item_context)
+    url_name = attr_item_context.restore_all_default_url_name
+    params = {
+        attr_item_context.owner_id_param_name: attr_item_context.owner_id,
+    }
+    return reverse(url_name, kwargs=params)
