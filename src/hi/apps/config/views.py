@@ -209,9 +209,14 @@ class SubsystemAttributesRestoreAllDefaultView(View, SubsystemAttributeMixin, At
         if not attributes.exists():
             return page_not_found_response(request, "No attributes found for this subsystem.")
 
-        self.post_restore_all_defaults(
+        attr_page_context = SubsystemAttributePageEditContext(
+            selected_subsystem_id=subsystem_id,
+        )
+        attr_item_context_list = self._create_attr_item_context_list()
+
+        return self.post_restore_all_defaults(
             request=request,
             attributes=attributes,
+            attr_page_context=attr_page_context,
+            attr_item_context_list=attr_item_context_list,
         )
-
-        return HttpResponseRedirect(reverse('config_settings', args=[subsystem_id]))

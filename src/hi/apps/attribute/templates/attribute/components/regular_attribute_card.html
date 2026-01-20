@@ -82,7 +82,7 @@ Individual attribute attribute card with value editing and actions
         </a>
         {% if attr_item_context.can_restore_default %}
         <a href="{% attr_restore_default_url attr_item_context attribute_form.instance.pk %}"
-           class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_HISTORY_LINK_CLASS }}"
+           class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
            title="Restore to Default Value">
           {% icon "sync" size="sm" %}
         </a>
