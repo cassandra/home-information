@@ -185,8 +185,24 @@ def attr_restore_all_default_url(attr_item_context):
         str: URL for restore all default view
     """
     from django.urls import reverse
-    print(attr_item_context)
     url_name = attr_item_context.restore_all_default_url_name
+    params = {
+        attr_item_context.owner_id_param_name: attr_item_context.owner_id,
+    }
+    return reverse(url_name, kwargs=params)
+
+@register.simple_tag
+def attr_restore_global_default_url(attr_item_context):
+    """
+    Generate URL for attribute restore global default view.
+    
+    Usage in template: {% attr_restore_global_default_url attr_item_context %}
+    
+    Returns:
+        str: URL for restore global default view
+    """
+    from django.urls import reverse
+    url_name = attr_item_context.restore_global_default_url_name
     params = {
         attr_item_context.owner_id_param_name: attr_item_context.owner_id,
     }

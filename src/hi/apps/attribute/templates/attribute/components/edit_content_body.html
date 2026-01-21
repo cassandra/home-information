@@ -53,11 +53,8 @@ by using the AttributeItemEditContext pattern.
           {% icon "save" size="sm" css_class="hi-icon-left" %}
           {{ attr_page_context.update_button_label }}
         </button>
-        <a href=""
-           class="btn btn-outline-primary btn-xs d-inline-flex align-items-center {{ DIVID.ATTR_V2_UPDATE_BTN_CLASS }} {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
-           title="Restore to Default Value">
-          {% icon "sync" size="sm" css_class="hi-icon-left" %}Reset All Settings
-        </a>
+        {% block additional_buttons %}
+        {% endblock %}
         <!-- Vertically stacked message areas -->
         <div class="attr-v2-message-stack">
           <div id="{{ attr_page_context.dirty_msg_html_id }}"

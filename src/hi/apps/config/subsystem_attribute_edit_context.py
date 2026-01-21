@@ -22,6 +22,10 @@ class SubsystemAttributePageEditContext(AttributePageEditContext):
         super().__init__( owner_type = 'subsystem' )
         self.selected_subsystem_id = selected_subsystem_id
         return
+    
+    @property
+    def can_restore_default(self):
+        return True
 
     @property
     def content_body_template_name(self):

@@ -56,16 +56,17 @@ class SubsystemAttribute( AttributeModel ):
         return SubsystemAttributeHistory
     
     def get_attribute_default_value(self):
-        """Return the default value for this attribute."""
+        """Return the default value for this attribute, or None if not found."""
         import importlib
 
-        module_path, enum_class_name, member_name = self.setting_key.rsplit('.', 2)
-
-        module = importlib.import_module(module_path)
-        enum_cls = getattr(module, enum_class_name)
-
-        enum = getattr(enum_cls, member_name)
-        return enum.definition.initial_value
+        try:
+            module_path, enum_class_name, member_name = self.setting_key.rsplit('.', 2)
+            module = importlib.import_module(module_path)
+            enum_cls = getattr(module, enum_class_name)
+            enum = getattr(enum_cls, member_name)
+            return enum.definition.initial_value
+        except (ValueError, ImportError, AttributeError):
+            return None
     
 
 class SubsystemAttributeHistory(AttributeValueHistoryModel):

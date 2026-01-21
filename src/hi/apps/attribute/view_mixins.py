@@ -92,7 +92,7 @@ class AttributeEditCommonMixin:
         """ Caller should catch exceptions """
         
         default_value = attribute.get_attribute_default_value()
-        if not default_value:
+        if default_value is None:
             raise ValueError("No setting enum available for this attribute type.")
         
         attribute.value = default_value

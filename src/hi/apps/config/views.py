@@ -203,12 +203,34 @@ class SubsystemAttributeRestoreDefaultInlineView( View,
         )
 
 
-class SubsystemAttributesRestoreAllDefaultView(View, SubsystemAttributeMixin, AttributeMultiEditViewMixin):
+class SubsystemAttributesRestoreDefaultInlineView( View, 
+                                                   SubsystemAttributeMixin, 
+                                                   AttributeMultiEditViewMixin ):
     def get(self, request, subsystem_id, *args, **kwargs):
         attributes = SubsystemAttribute.objects.select_related('subsystem').filter(subsystem_id=subsystem_id)
         if not attributes.exists():
             return page_not_found_response(request, "No attributes found for this subsystem.")
 
+        attr_page_context = SubsystemAttributePageEditContext(
+            selected_subsystem_id=subsystem_id,
+        )
+        attr_item_context_list = self._create_attr_item_context_list()
+
+        return self.post_restore_all_defaults(
+            request=request,
+            attributes=attributes,
+            attr_page_context=attr_page_context,
+            attr_item_context_list=attr_item_context_list,
+        )
+    
+class SubsystemAttributesRestoreDefaultAllInlineView( View, 
+                                                      SubsystemAttributeMixin, 
+                                                      AttributeMultiEditViewMixin ):
+    def get(self, request, subsystem_id, *args, **kwargs):
+        attributes = SubsystemAttribute.objects.select_related('subsystem').all()
+        if not attributes.exists():
+            return page_not_found_response(request, "No attributes found.")
+        
         attr_page_context = SubsystemAttributePageEditContext(
             selected_subsystem_id=subsystem_id,
         )

@@ -9,6 +9,20 @@ This is what gets replaced on form submission
 
 {% block basic_info %}{% endblock %}
 
+{% block additional_buttons %}
+  {% if attr_page_context.can_restore_default %}
+    {% for multi_edit_form_data in multi_edit_form_data_list %}
+      {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}
+        <a href="{% attr_restore_global_default_url multi_edit_form_data.context %}"
+            class="btn btn-outline-primary btn-xs d-inline-flex align-items-center {{ DIVID.ATTR_V2_UPDATE_BTN_CLASS }} {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
+            title="Restore to Default Value">
+          {% icon "sync" size="sm" css_class="hi-icon-left" %}Reset All Settings
+        </a>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endblock %}
+
 {% block additional_actions %}
 <h4 class="mb-0 text-muted {{ DIVID.ATTR_V2_FORM_DISPLAY_LABEL_CLASS }}">
   {% for multi_edit_form_data in multi_edit_form_data_list %}

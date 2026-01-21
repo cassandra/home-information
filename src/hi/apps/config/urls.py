@@ -22,13 +22,15 @@ urlpatterns = [
              views.SubsystemAttributeRestoreInlineView.as_view(),
              name='subsystem_attribute_restore_inline'),
 
-    re_path( r'^attribute/restore_default/(?P<subsystem_id>\d+)/(?P<attribute_id>\d+)/$', 
+    re_path( r'^attribute/restore/default/(?P<subsystem_id>\d+)/(?P<attribute_id>\d+)/$', 
              views.SubsystemAttributeRestoreDefaultInlineView.as_view(),
              name='subsystem_attribute_restore_default_inline'),
 
-    re_path( r'^attribute/restore_all_default/(?P<subsystem_id>\d+)/$', 
-             views.SubsystemAttributesRestoreAllDefaultView.as_view(),
-             name='subsystem_attribute_restore_all_default'),
+    re_path( r'^attribute/restore/default/subsystem/(?P<subsystem_id>\d+)/$', 
+             views.SubsystemAttributesRestoreDefaultInlineView.as_view(),
+             name='subsystem_attributes_restore_default_inline' ),
     
-
+    re_path( r'^attribute/restore/default/all/(?P<subsystem_id>\d+)/$',
+             views.SubsystemAttributesRestoreDefaultAllInlineView.as_view(),
+             name='subsystem_attributes_restore_default_all_inline' ),
 ]
