@@ -149,6 +149,7 @@ def attr_restore_url(attr_item_context, attribute_id, history_id):
     }
     return reverse(url_name, kwargs=params)
 
+
 @register.simple_tag
 def attr_restore_default_url(attr_item_context, attribute_id):
     """
@@ -171,6 +172,7 @@ def attr_restore_default_url(attr_item_context, attribute_id):
     }
     return reverse(url_name, kwargs=params)
 
+
 @register.simple_tag
 def attr_restore_all_default_url(attr_item_context):
     """
@@ -190,6 +192,7 @@ def attr_restore_all_default_url(attr_item_context):
         attr_item_context.owner_id_param_name: attr_item_context.owner_id,
     }
     return reverse(url_name, kwargs=params)
+
 
 @register.simple_tag
 def attr_restore_global_default_url(attr_item_context):
