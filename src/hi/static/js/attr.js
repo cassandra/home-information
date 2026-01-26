@@ -1200,7 +1200,9 @@
                 const containerId = $container.attr('id');
                 if (containerId) {
                     const instance = window.Hi.attr.dirtyTracking.getInstance(containerId);
-                    instance.handleOrderFieldChanges();
+                    if (instance) {
+                        instance.handleOrderFieldChanges();
+                    }
                 }
             }
         }
