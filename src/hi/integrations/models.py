@@ -59,6 +59,7 @@ class IntegrationAttribute( AttributeModel ):
     class Meta:
         verbose_name = 'Attribute'
         verbose_name_plural = 'Attributes'
+        ordering = ['order_id', 'id']
 
     def get_upload_to(self):
         return 'integration/attributes/'
