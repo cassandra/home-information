@@ -115,7 +115,11 @@
         toggleExpandedView: function(button) {
             return _toggleExpandedView(button);
         },
-        
+
+        reorderAttributeCard: function(button, direction) {
+            return _reorderAttributeCard(button, direction);
+        },
+
         // Initialization
         init: function() {
             _initializeAllContainers();
@@ -141,6 +145,7 @@
             const $container = $form.closest(Hi.ATTR_V2_CONTAINER_SELECTOR);
             if ($container.length > 0) {
                 _syncTextareaValuesToHiddenFields($container);
+                _updateOrderIndexes($container);
             }
             
             const formData = new FormData($form[0]);
@@ -1164,6 +1169,42 @@
             displayField.off('input.overflow');
         }
     }
+
+    function _reorderAttributeCard(button, direction) {
+        const card = button.closest(`[${Hi.DATA_ATTRIBUTE_ID_ATTR}]`);
+        const parent = card?.parentElement;
+
+        if (!parent) return;
+
+        switch (direction) {
+            case "up":
+                const prev = card.previousElementSibling;
+                if (prev) parent.insertBefore(card, prev);
+                break;
+
+            case "down":
+                const next = card.nextElementSibling;
+                if (next) parent.insertBefore(next, card);
+                break;
+
+            default:
+                console.error(`Invalid direction: ${direction}`);
+                return;
+        }
+
+        const $container = $(card).closest(Hi.ATTR_V2_CONTAINER_SELECTOR);
+        if ($container.length > 0) {
+            _updateOrderIndexes($container);
+
+            if (window.Hi.attr.dirtyTracking) {
+                const containerId = $container.attr('id');
+                if (containerId) {
+                    const instance = window.Hi.attr.dirtyTracking.getInstance(containerId);
+                    instance.handleOrderFieldChanges();
+                }
+            }
+        }
+    }
     
     // Sync textarea values to hidden fields before form submission
     function _syncTextareaValuesToHiddenFields($container) {
@@ -1184,6 +1225,31 @@
             }
         });
     }
-    
+
+    function _updateOrderIndexes($container) {
+        let order = 1;
+        
+        const $cards = $container.find(Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR);
+
+        $cards.each(function() {
+            const $card = $(this);
+            const attrId = $card.attr(Hi.DATA_ATTRIBUTE_ID_ATTR);
+
+            const nameVal = ($card.find('input[name$="-name"]').val() || '').trim();
+            const valueVal = ($card.find('textarea[name$="-value"], input[name$="-value"]').val() || '').trim();
+
+            const isNew = attrId === 'None';
+            const isFilled = (nameVal.length > 0 || valueVal.length > 0);
+
+            if (isNew && !isFilled) return;
+            
+            const $orderField = $card.find('input[type="hidden"][name$="-order_id"]');
+            if ($orderField.length > 0) {
+                $orderField.val(String(order));
+            }
+
+            order += 1;
+        });
+    }
     
 })();

@@ -41,6 +41,7 @@ class AttributeForm( forms.ModelForm ):
         fields = (
             'name',
             'value',
+            'order_id',
         )
         widgets = {
             'name': forms.TextInput( attrs={'class': 'form-control'} ),
@@ -51,6 +52,12 @@ class AttributeForm( forms.ModelForm ):
         required = False,
         label = 'Mark as Secret',
         widget = forms.CheckboxInput(attrs={'class': 'custom-control-input'}),
+    )
+
+    order_id = forms.IntegerField(
+        required = False,
+        label = 'Ordering Index',
+        widget = forms.HiddenInput(),
     )
 
     @property

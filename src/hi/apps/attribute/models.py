@@ -49,6 +49,7 @@ class AttributeModel(models.Model):
 
     class Meta:
         abstract = True
+        ordering = ['order_id', 'id']
  
     name = models.CharField(
         'Name',
@@ -102,6 +103,10 @@ class AttributeModel(models.Model):
         'Updated',
         auto_now=True,
         blank = True,
+    )
+    order_id = models.PositiveIntegerField(
+        'Ordering Index',
+        default = 0,
     )
 
     def get_upload_to(self):
