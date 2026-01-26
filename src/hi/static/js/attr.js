@@ -1191,6 +1191,19 @@
                 console.error(`Invalid direction: ${direction}`);
                 return;
         }
+
+        const $container = $(card).closest(Hi.ATTR_V2_CONTAINER_SELECTOR);
+        if ($container.length > 0) {
+            _updateOrderIndexes($container);
+
+            if (window.Hi.attr.dirtyTracking) {
+                const containerId = $container.attr('id');
+                if (containerId) {
+                    const instance = window.Hi.attr.dirtyTracking.getInstance(containerId);
+                    instance.handleOrderFieldChanges();
+                }
+            }
+        }
     }
     
     // Sync textarea values to hidden fields before form submission
