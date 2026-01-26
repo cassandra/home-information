@@ -49,6 +49,7 @@ class AttributeModel(models.Model):
 
     class Meta:
         abstract = True
+        ordering = ['order_id', 'id']
  
     name = models.CharField(
         'Name',

@@ -115,7 +115,11 @@
         toggleExpandedView: function(button) {
             return _toggleExpandedView(button);
         },
-        
+
+        reorderAttributeCard: function(button, direction) {
+            return _reorderAttributeCard(button, direction);
+        },
+
         // Initialization
         init: function() {
             _initializeAllContainers();
@@ -1163,6 +1167,29 @@
             
             // Remove the input listener
             displayField.off('input.overflow');
+        }
+    }
+
+    function _reorderAttributeCard(button, direction) {
+        const card = button.closest(`[${Hi.DATA_ATTRIBUTE_ID_ATTR}]`);
+        const parent = card?.parentElement;
+
+        if (!parent) return;
+
+        switch (direction) {
+            case "up":
+                const prev = card.previousElementSibling;
+                if (prev) parent.insertBefore(card, prev);
+                break;
+
+            case "down":
+                const next = card.nextElementSibling;
+                if (next) parent.insertBefore(next, card);
+                break;
+
+            default:
+                console.error(`Invalid direction: ${direction}`);
+                return;
         }
     }
     

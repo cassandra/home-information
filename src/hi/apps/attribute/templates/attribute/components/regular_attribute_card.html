@@ -66,12 +66,12 @@ Individual attribute attribute card with value editing and actions
       {% if attribute_form.instance.pk and attribute_form.allow_reordering %}
       <button type="button" 
           class="btn btn-sm btn-outline-secondary"
-          onclick="reorderAttributeCard(this, 'up')">
+          onclick="Hi.attr.reorderAttributeCard(this, 'up')">
         {% icon "chevron-up" size="sm" %}
       </button>
       <button type="button" 
           class="btn btn-sm btn-outline-secondary"
-          onclick="reorderAttributeCard(this, 'down')">
+          onclick="Hi.attr.reorderAttributeCard(this, 'down')">
         {% icon "chevron-down" size="sm" %}
       </button>
       {% endif %}
