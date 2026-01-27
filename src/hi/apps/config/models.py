@@ -1,6 +1,7 @@
 from django.db import models
 
 from hi.apps.attribute.models import AttributeModel, AttributeValueHistoryModel
+from hi.apps.config.setting_enums import SettingEnum
 
 
 class Subsystem( models.Model ):
@@ -57,15 +58,10 @@ class SubsystemAttribute( AttributeModel ):
     
     def get_attribute_default_value(self):
         """Return the default value for this attribute, or None if not found."""
-        import importlib
-
         try:
-            module_path, enum_class_name, member_name = self.setting_key.rsplit('.', 2)
-            module = importlib.import_module(module_path)
-            enum_cls = getattr(module, enum_class_name)
-            enum = getattr(enum_cls, member_name)
+            enum = SettingEnum.from_key(self.setting_key)
             return enum.definition.initial_value
-        except (ValueError, ImportError, AttributeError):
+        except (ValueError, ImportError, AttributeError, TypeError):
             return None
     
 

@@ -147,7 +147,6 @@ class EntityAttributeRestoreInlineView( View, AttributeEditViewMixin ):
             return page_not_found_response(request, "Attribute not found.")
 
         attr_item_context = EntityAttributeItemEditContext( entity = attribute.entity )
-        print("Restoring attribute id:", attribute_id, "from history id:", history_id, "Context:", attr_item_context)
         return self.post_restore(
             request = request,
             attribute = attribute,

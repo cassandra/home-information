@@ -175,7 +175,7 @@ class SubsystemAttributeRestoreInlineView( View,
         )
     
 
-class SubsystemAttributeRestoreDefaultInlineView( View,
+class SubsystemAttributeRestoreOneInlineView( View,
                                                   SubsystemAttributeMixin,
                                                   AttributeMultiEditViewMixin ):
     def get(self, request, subsystem_id, attribute_id, *args, **kwargs):
@@ -200,7 +200,7 @@ class SubsystemAttributeRestoreDefaultInlineView( View,
         )
 
 
-class SubsystemAttributesRestoreDefaultInlineView( View, 
+class SubsystemAttributeRestoreSubsytemInlineView( View, 
                                                    SubsystemAttributeMixin, 
                                                    AttributeMultiEditViewMixin ):
     def get(self, request, subsystem_id, *args, **kwargs):
@@ -221,7 +221,7 @@ class SubsystemAttributesRestoreDefaultInlineView( View,
         )
 
     
-class SubsystemAttributesRestoreDefaultAllInlineView( View, 
+class SubsystemAttributeRestoreAllInlineView( View, 
                                                       SubsystemAttributeMixin, 
                                                       AttributeMultiEditViewMixin ):
     def get(self, request, subsystem_id, *args, **kwargs):

@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Dict, List
 
+from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 
 
@@ -285,8 +286,9 @@ class AttributeMultiEditViewMixin( AttributeEditCommonMixin ):
         renderer = AttributeEditResponseRenderer()
 
         try:
-            for attribute in attributes:
-                self.do_restore_default(attribute=attribute)
+            with transaction.atomic():
+                for attribute in attributes:
+                    self.do_restore_default(attribute=attribute)
         except Exception as e:
             return renderer.render_restore_error_response(str(e))
 

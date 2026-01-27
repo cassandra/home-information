@@ -1,3 +1,4 @@
+import importlib
 from dataclasses import dataclass
 from enum import Enum
 
@@ -26,4 +27,13 @@ class SettingEnum(Enum):
     @property
     def key(self):
         return f'{self.__class__.__module__}.{self.__class__.__qualname__}.{self.name}'
+
+    @classmethod
+    def from_key(cls, setting_key: str) -> "SettingEnum":
+        module_path, enum_class_name, member_name = setting_key.rsplit('.', 2)
+        module = importlib.import_module(module_path)
+        enum_cls = getattr(module, enum_class_name)
+        if not issubclass(enum_cls, SettingEnum):
+            raise AttributeError(f"{enum_class_name} is not a SettingEnum")
+        return getattr(enum_cls, member_name)
     

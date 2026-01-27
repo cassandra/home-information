@@ -72,7 +72,7 @@ class AttributePageEditContext:
     @property
     def can_restore_default(self) -> bool:
         """ Whether attributes for this owner type support restoring to default values """
-        raise NotImplementedError('Subclasses must override this method')
+        return False
 
     @property
     def content_body_template_name(self):
@@ -90,17 +90,16 @@ class AttributePageEditContext:
         return f'{self.owner_type}_attribute_restore_inline'
 
     @property
-    def restore_default_url_name(self) -> str:
-        return f'{self.owner_type}_attribute_restore_default_inline'
+    def restore_one_url_name(self) -> str:
+        return f'{self.owner_type}_attribute_restore_one_inline'
     
     @property
-    def restore_all_default_url_name(self) -> str:
-        return f'{self.owner_type}_attributes_restore_default_inline'
+    def restore_subsystem_url_name(self) -> str:
+        return f'{self.owner_type}_attribute_restore_subsystem_inline'
     
     @property
-    def restore_global_default_url_name(self) -> str:
-        return f'{self.owner_type}_attributes_restore_default_all_inline'
-
+    def restore_all_url_name(self) -> str:
+        return f'{self.owner_type}_attribute_restore_all_inline'
     @property
     def container_html_id(self) -> str:
         return f"{DIVID['ATTR_V2_CONTAINER_ID']}{self.id_suffix}"
