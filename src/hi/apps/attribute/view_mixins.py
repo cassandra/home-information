@@ -89,12 +89,13 @@ class AttributeEditCommonMixin:
         return
     
     def do_restore_default( self,
-                            attribute          : AttributeModel ):
+                            attribute  : AttributeModel ):
         """ Caller should catch exceptions """
         
         default_value = attribute.get_attribute_default_value()
         if default_value is None:
-            raise ValueError("No setting enum available for this attribute type.")
+            logger.warning(f"Restore default: No default value for attribute {attribute.name}. Skipping restore.")
+            return 
         
         attribute.value = default_value
         attribute.save()
