@@ -176,8 +176,8 @@ class SubsystemAttributeRestoreInlineView( View,
     
 
 class SubsystemAttributeRestoreOneInlineView( View,
-                                                  SubsystemAttributeMixin,
-                                                  AttributeMultiEditViewMixin ):
+                                              SubsystemAttributeMixin,
+                                              AttributeMultiEditViewMixin ):
     def get(self, request, subsystem_id, attribute_id, *args, **kwargs):
         """ Need to do restore default in a GET since nested in main form and cannot have a form in a form """
         try:
@@ -222,8 +222,8 @@ class SubsystemAttributeRestoreSubsytemInlineView( View,
 
     
 class SubsystemAttributeRestoreAllInlineView( View, 
-                                                      SubsystemAttributeMixin, 
-                                                      AttributeMultiEditViewMixin ):
+                                              SubsystemAttributeMixin, 
+                                              AttributeMultiEditViewMixin ):
     def get(self, request, subsystem_id, *args, **kwargs):
         attributes = SubsystemAttribute.objects.select_related('subsystem').all()
         if not attributes.exists():

@@ -100,6 +100,7 @@ class AttributePageEditContext:
     @property
     def restore_all_url_name(self) -> str:
         return f'{self.owner_type}_attribute_restore_all_inline'
+    
     @property
     def container_html_id(self) -> str:
         return f"{DIVID['ATTR_V2_CONTAINER_ID']}{self.id_suffix}"
