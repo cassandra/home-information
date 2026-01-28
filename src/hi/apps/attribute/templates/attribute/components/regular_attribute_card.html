@@ -13,6 +13,9 @@ Individual attribute attribute card with value editing and actions
      data-value-type="{{ attribute_form.instance.value_type.name|default:'text' }}"
      data-is-secret="{{ attribute_form.instance.value_type.is_secret|yesno:'true,false' }}"
      data-can-delete="{{ attribute_form.instance.attribute_type.can_delete|yesno:'true,false' }}"
+     {% if attr_item_context.can_restore_default %}
+       data-default-value="{{ attribute_form.instance.get_attribute_default_value }}"
+     {% endif %}
      {% if not attribute_form.instance.pk and not attribute_form.is_bound %}style="display: none;"{% endif %}
      {% if attribute_form.instance and not attribute_form.instance.is_editable %}is_editable="false"{% endif %} >
   
@@ -81,11 +84,12 @@ Individual attribute attribute card with value editing and actions
           {% icon "history" size="sm" %}
         </a>
         {% if attr_item_context.can_restore_default %}
-        <a href="{% attr_restore_one_url attr_item_context attribute_form.instance.pk %}"
-           class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
-           title="Restore to Default Value">
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
+                title="Restore to Default Value"
+                onclick="window.Hi.attr.restoreDefaultValue(this.closest('.{{ DIVID.ATTR_V2_ATTRIBUTE_CARD_CLASS }}'));">
           {% icon "sync" size="sm" %}
-        </a>
+        </button>
         {% endif %}
       {% endif %}
       

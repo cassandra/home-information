@@ -58,6 +58,34 @@
     window.Hi = window.Hi || {};
     
     const HiAttr = {
+                restoreDefaultValue: function(attributeId) {
+                    const $attributeCard = $(`[data-attribute-id="${attributeId}"]`);
+
+                    if ($attributeCard.length === 0) return;
+
+                    const defaultValue = $attributeCard.attr('data-default-value');
+                    if (typeof defaultValue === 'undefined') {
+                        console.warn(`No data-default-value found for attribute ${attributeId}`);
+                        return;
+                    }
+
+                    let $valueField = $attributeCard.find('input[name$="-value"]');
+
+                    if ($valueField.length === 0) {
+                        $valueField = $attributeCard.find('textarea[name$="-value"]');
+                    }
+
+                    if ($valueField.length === 0) {
+                        console.warn(`Value field not found for attribute ${attributeId}`);
+                        return;
+                    }
+
+                    $valueField.val(defaultValue);
+
+                    $valueField.trigger('change');
+
+                    _ajax.showStatusMessage('Restored to default value', STATUS_TYPE.INFO, $attributeCard);
+                },
         // Status message types
         STATUS_TYPE: STATUS_TYPE,
         
@@ -115,7 +143,11 @@
         toggleExpandedView: function(button) {
             return _toggleExpandedView(button);
         },
-        
+
+        restoreDefaultValue: function(attributeId) {
+            return _restoreDefaultValue(attributeId);
+        },
+
         // Initialization
         init: function() {
             _initializeAllContainers();
@@ -1163,6 +1195,36 @@
             // Remove the input listener
             displayField.off('input.overflow');
         }
+    }
+
+    function _restoreDefaultValue(attributeId) {
+        const $attributeCard = $(`[data-attribute-id="${attributeId}"]`);
+
+        if ($attributeCard.length === 0) return;
+
+        const defaultValue = $attributeCard.attr('data-default-value');
+        
+        if (typeof defaultValue === 'undefined') {
+            console.warn(`No data-default-value found for attribute ${attributeId}`);
+            return;
+        }
+
+        let $valueField = $attributeCard.find('input[name$="-value"]');
+
+        if ($valueField.length === 0) {
+            $valueField = $attributeCard.find('textarea[name$="-value"]');
+        }
+
+        if ($valueField.length === 0) {
+            console.warn(`Value field not found for attribute ${attributeId}`);
+            return;
+        }
+
+        $valueField.val(defaultValue);
+
+        $valueField.trigger('change');
+
+        _ajax.showStatusMessage('Restored to default value', STATUS_TYPE.INFO, $attributeCard);
     }
     
     // Sync textarea values to hidden fields before form submission
