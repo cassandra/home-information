@@ -84,12 +84,12 @@ Individual attribute attribute card with value editing and actions
           {% icon "history" size="sm" %}
         </a>
         {% if attr_item_context.can_restore_default %}
-        <button type="button"
-                class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
-                title="Restore to Default Value"
-                onclick="window.Hi.attr.restoreDefaultValue(this.closest('.{{ DIVID.ATTR_V2_ATTRIBUTE_CARD_CLASS }}'));">
-          {% icon "sync" size="sm" %}
-        </button>
+          <button type="button"
+                  class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
+                  title="Restore to Default Value"
+                  onclick="window.Hi.attr.restoreDefaultValue('{{ attribute_form.instance.pk }}');">
+            {% icon "sync" size="sm" %}
+          </button>
         {% endif %}
       {% endif %}
       

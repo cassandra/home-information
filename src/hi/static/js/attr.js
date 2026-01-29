@@ -58,34 +58,6 @@
     window.Hi = window.Hi || {};
     
     const HiAttr = {
-                restoreDefaultValue: function(attributeId) {
-                    const $attributeCard = $(`[data-attribute-id="${attributeId}"]`);
-
-                    if ($attributeCard.length === 0) return;
-
-                    const defaultValue = $attributeCard.attr('data-default-value');
-                    if (typeof defaultValue === 'undefined') {
-                        console.warn(`No data-default-value found for attribute ${attributeId}`);
-                        return;
-                    }
-
-                    let $valueField = $attributeCard.find('input[name$="-value"]');
-
-                    if ($valueField.length === 0) {
-                        $valueField = $attributeCard.find('textarea[name$="-value"]');
-                    }
-
-                    if ($valueField.length === 0) {
-                        console.warn(`Value field not found for attribute ${attributeId}`);
-                        return;
-                    }
-
-                    $valueField.val(defaultValue);
-
-                    $valueField.trigger('change');
-
-                    _ajax.showStatusMessage('Restored to default value', STATUS_TYPE.INFO, $attributeCard);
-                },
         // Status message types
         STATUS_TYPE: STATUS_TYPE,
         
@@ -1197,23 +1169,46 @@
         }
     }
 
-    function _restoreDefaultValue(attributeId) {
-        const $attributeCard = $(`[data-attribute-id="${attributeId}"]`);
-
+    function _restoreDefaultValue(attributeId, containerSelector = null) {
+        const scope = containerSelector ? $(containerSelector) : $(document);
+        const $attributeCard = scope.find(`[${Hi.DATA_ATTRIBUTE_ID_ATTR}="${attributeId}"]`);
         if ($attributeCard.length === 0) return;
 
         const defaultValue = $attributeCard.attr('data-default-value');
-        
         if (typeof defaultValue === 'undefined') {
             console.warn(`No data-default-value found for attribute ${attributeId}`);
             return;
         }
 
-        let $valueField = $attributeCard.find('input[name$="-value"]');
+        const $checkbox = $attributeCard.find('input[type="checkbox"].attr-v2-boolean-checkbox');
+        if ($checkbox.length > 0) {
+            const checked =
+                defaultValue === 'true' ||
+                defaultValue === 'True' ||
+                defaultValue === '1' ||
+                defaultValue === 1 ||
+                defaultValue === true;
 
-        if ($valueField.length === 0) {
-            $valueField = $attributeCard.find('textarea[name$="-value"]');
+            $checkbox.prop('checked', checked);
+
+            $checkbox.trigger('change');
+            _ajax.showStatusMessage('Restored to default value', STATUS_TYPE.INFO, $attributeCard);
+            return;
         }
+
+        const textAreaField = $attributeCard.find(Hi.ATTR_V2_TEXTAREA_SELECTOR);
+
+        if (textAreaField.length > 0) {
+            textAreaField.val(defaultValue);
+            textAreaField.trigger('input');
+            _ajax.showStatusMessage('Restored to default value', STATUS_TYPE.INFO, $attributeCard);
+            return;
+        }
+        
+        // Standard inputs/selects (including secret, integer, float, enum)
+        const $valueField = $attributeCard.find(
+            'select[name$="-value"], input[name$="-value"]:not([type="hidden"])'
+        );
 
         if ($valueField.length === 0) {
             console.warn(`Value field not found for attribute ${attributeId}`);
@@ -1221,11 +1216,10 @@
         }
 
         $valueField.val(defaultValue);
-
         $valueField.trigger('change');
-
         _ajax.showStatusMessage('Restored to default value', STATUS_TYPE.INFO, $attributeCard);
     }
+
     
     // Sync textarea values to hidden fields before form submission
     function _syncTextareaValuesToHiddenFields($container) {
