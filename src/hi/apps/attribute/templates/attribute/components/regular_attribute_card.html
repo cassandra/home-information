@@ -85,7 +85,7 @@ Individual attribute attribute card with value editing and actions
         </a>
         {% if attr_item_context.can_restore_default %}
           <button type="button"
-                  class="btn btn-sm btn-outline-secondary {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
+                  class="btn btn-sm btn-outline-secondary"
                   title="Restore to Default Value"
                   onclick="window.Hi.attr.restoreDefaultValue('{{ attribute_form.instance.pk }}');">
             {% icon "sync" size="sm" %}
