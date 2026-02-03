@@ -88,10 +88,6 @@ class AttributePageEditContext:
     def restore_url_name(self) -> str:
         """ Should be a view that uses AttributeEditViewMixin.post_restore() """
         return f'{self.owner_type}_attribute_restore_inline'
-
-    @property
-    def restore_one_url_name(self) -> str:
-        return f'{self.owner_type}_attribute_restore_one_inline'
     
     @property
     def restore_subsystem_url_name(self) -> str:

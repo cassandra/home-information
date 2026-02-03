@@ -120,6 +120,10 @@
             return _restoreDefaultValue(attributeId);
         },
 
+        showResetSubsystemModal: function(subsystemName, resetUrl) {
+            return _showResetSubsystemModal(subsystemName, resetUrl);
+        },
+
         // Initialization
         init: function() {
             _initializeAllContainers();
@@ -1242,7 +1246,13 @@
             return;
         }
 
-        $input.val(defaultValue).trigger('change');
+        $input.val(defaultValue).trigger('input');
+    }
+
+    function _showResetSubsystemModal(subsystemName, resetUrl) {
+        $('#modalSubsystemName').text(subsystemName);
+        $('#confirmResetSubsystemBtn').attr('href', resetUrl);
+        $('#resetSubsystemModal').modal('show');
     }
 
     // Sync textarea values to hidden fields before form submission

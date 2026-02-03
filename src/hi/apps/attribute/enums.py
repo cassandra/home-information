@@ -48,3 +48,7 @@ class AttributeValueType(LabeledEnum):
     @property
     def is_boolean(self):
         return bool( self == AttributeValueType.BOOLEAN )
+    
+    @property
+    def is_float(self):
+        return bool( self == AttributeValueType.FLOAT )

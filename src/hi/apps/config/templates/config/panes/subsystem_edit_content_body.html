@@ -65,6 +65,8 @@ This is what gets replaced on form submission
 
 {% block properties_section %}
 
+{% include "config/panes/modals.html" %}
+
 <!-- Vertical Tabbed Subsystem Interface -->
 <div class="tab-content" id="subsystemTabContent">
 
@@ -88,9 +90,10 @@ This is what gets replaced on form submission
       </div>
       {% endif %}
       <div class="mb-3 text-right">
-        <a href="{% attr_restore_subsystem_url multi_edit_form_data.context %}"
+        <a href="#"
           class="btn btn-outline-primary btn-xs d-inline-flex align-items-center {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
-          title="Restore to Default Value">
+          title="Restore to Default Value"
+          onclick="showResetSubsystemModal('{{ multi_edit_form_data.owner.name|escapejs }}', '{% attr_restore_subsystem_url multi_edit_form_data.context %}')">
           {% icon "sync" size="sm" css_class="hi-icon-left" %}Reset {{ multi_edit_form_data.owner.name }} Settings
         </a>
       </div>
