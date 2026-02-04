@@ -65,17 +65,16 @@ This is what gets replaced on form submission
 
 {% block properties_section %}
 
-{% include "config/panes/modals.html" %}
-
 <!-- Vertical Tabbed Subsystem Interface -->
 <div class="tab-content" id="subsystemTabContent">
-
   {% for multi_edit_form_data in multi_edit_form_data_list %}
+  {% attr_restore_subsystem_url multi_edit_form_data.context as reset_url %}
+  {% include "config/panes/modals.html" with subsystem_id=multi_edit_form_data.owner.id subsystem_name=multi_edit_form_data.owner.name reset_url=reset_url %}
   <div class="tab-pane fade {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}show active{% endif %}" 
        id="subsystem-{{ multi_edit_form_data.owner.id }}-panel" 
        role="tabpanel" 
        aria-labelledby="subsystem-{{ multi_edit_form_data.owner.id }}-tab">
-    
+
     <!-- Subsystem content using existing attribute editing components -->
     <div class="">
       {% if multi_edit_form_data.owner.subsystem_key == "hi.apps.audio" %}
@@ -91,9 +90,9 @@ This is what gets replaced on form submission
       {% endif %}
       <div class="mb-3 text-right">
         <a href="#"
-          class="btn btn-outline-primary btn-xs d-inline-flex align-items-center {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
+          class="btn btn-outline-primary btn-xs d-inline-flex align-items-center"
           title="Restore to Default Value"
-          onclick="showResetSubsystemModal('{{ multi_edit_form_data.owner.name|escapejs }}', '{% attr_restore_subsystem_url multi_edit_form_data.context %}')">
+          onclick="window.Hi.settings.showResetSubsystemModal('{{ multi_edit_form_data.owner.id }}', this)">
           {% icon "sync" size="sm" css_class="hi-icon-left" %}Reset {{ multi_edit_form_data.owner.name }} Settings
         </a>
       </div>
