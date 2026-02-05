@@ -30,11 +30,7 @@
 
 		disableSleepMode: function() {
 			return _disableSleepMode();
-		},
-
-		showResetSubsystemModal: function(modalId = null, triggerEl = null) {
-			return _showResetSubsystemModal(modalId, triggerEl);
-		},
+		}
 	};
     
     window.Hi.settings = HiSettings;
@@ -95,26 +91,6 @@
     function _markPermissionGuidanceShown() {
 		setConsoleSetting( PermissionGuidanceShownSettingName, PermissionGuidanceShownValue );
 		return true;
-    }
-
-	function _showResetSubsystemModal(modalId, triggerEl) {
-		const selector = `#reset-subsystem-modal-${modalId}`;
-		const $modal = $(selector);
-		console.log('Showing reset subsystem modal:', $modal);
-
-		if (triggerEl) {
-			$modal.data('hi-return-focus', triggerEl);
-		}
-
-		$modal.off('hidden.bs.modal.hiReturnFocus').on('hidden.bs.modal.hiReturnFocus', function() {
-			const returnEl = $(this).data('hi-return-focus');
-			if (returnEl && typeof returnEl.focus === 'function') {
-				returnEl.focus();
-			} else {
-				document.body.focus();
-			}
-		});
-		$modal.modal('show');
     }
     
 })();

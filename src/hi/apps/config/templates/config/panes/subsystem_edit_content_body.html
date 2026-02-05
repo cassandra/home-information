@@ -92,7 +92,7 @@ This is what gets replaced on form submission
         <a href="#"
           class="btn btn-outline-primary btn-xs d-inline-flex align-items-center"
           title="Restore to Default Value"
-          onclick="window.Hi.settings.showResetSubsystemModal('{{ multi_edit_form_data.owner.id }}', this)">
+          onclick="$('#reset-subsystem-modal-{{ multi_edit_form_data.owner.id }}').modal('show');">
           {% icon "sync" size="sm" css_class="hi-icon-left" %}Reset {{ multi_edit_form_data.owner.name }} Settings
         </a>
       </div>
