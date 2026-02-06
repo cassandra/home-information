@@ -30,7 +30,9 @@
 
 		disableSleepMode: function() {
 			return _disableSleepMode();
-		}
+		},
+
+		
 	};
     
     window.Hi.settings = HiSettings;
@@ -73,6 +75,16 @@
 		return true;
     }
 
+	function _hasShownPermissionGuidance() {
+		var guidanceShown = getConsoleSetting( PermissionGuidanceShownSettingName );
+		return guidanceShown === PermissionGuidanceShownValue;
+    }
+    
+    function _markPermissionGuidanceShown() {
+		setConsoleSetting( PermissionGuidanceShownSettingName, PermissionGuidanceShownValue );
+		return true;
+    }
+
     function _enableSleepMode() {
 		let sleepOverlay = $(SleepOverlaySelector);
 		$(sleepOverlay).show();
@@ -83,14 +95,4 @@
 		$(SleepOverlaySelector).hide();
     }
 
-    function _hasShownPermissionGuidance() {
-		var guidanceShown = getConsoleSetting( PermissionGuidanceShownSettingName );
-		return guidanceShown === PermissionGuidanceShownValue;
-    }
-    
-    function _markPermissionGuidanceShown() {
-		setConsoleSetting( PermissionGuidanceShownSettingName, PermissionGuidanceShownValue );
-		return true;
-    }
-    
 })();
