@@ -1,13 +1,14 @@
+{% if reset_type == "subsystem" %}
 <div class="modal fade hi-persistent-modal"
-  id="reset-subsystem-modal-{{ subsystem_id }}"
+  id="reset-subsystem-settings-modal-{{ subsystem_id }}"
   tabindex="-1"
   role="dialog"
-  aria-labelledby="reset-subsystem-modal-title-{{ subsystem_id }}"
+  aria-labelledby="reset-subsystem-settings-modal-title-{{ subsystem_id }}"
   aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="reset-subsystem-modal-title-{{ subsystem_id }}">
+        <h5 class="modal-title" id="reset-subsystem-settings-modal-title-{{ subsystem_id }}">
           Confirm Reset
         </h5>
         <button type="button"
@@ -28,7 +29,7 @@
                 data-dismiss="modal">
           Cancel
         </button>
-        <a id="reset-subsystem-confirm-btn-{{ subsystem_id }}"
+        <a id="reset-subsystem-settings-confirm-btn-{{ subsystem_id }}"
            href="{{ reset_url }}"
             class="btn btn-danger {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }} {{ DIVID.ATTR_V2_RESET_MODAL_CONFIRM_CLASS }}">
           Reset
@@ -37,3 +38,46 @@
     </div>
   </div>
 </div>
+{% endif %}
+
+{% if reset_type == "all" %}
+<div class="modal fade hi-persistent-modal"
+  id="reset-all-settings-modal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="reset-all-settings-modal-title"
+  aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="reset-all-settings-modal-title">
+          Confirm Reset
+        </h5>
+        <button type="button"
+                class="close"
+                data-dismiss="modal"
+                aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to reset
+        <strong>All Settings</strong>?
+        This action cannot be undone.
+      </div>
+      <div class="modal-footer">
+        <button type="button"
+                class="btn btn-secondary"
+                data-dismiss="modal">
+          Cancel
+        </button>
+        <a id="reset-all-settings-confirm-btn"
+           href="{{ reset_url }}"
+            class="btn btn-danger {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }} {{ DIVID.ATTR_V2_RESET_MODAL_CONFIRM_CLASS }}">
+          Reset
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
