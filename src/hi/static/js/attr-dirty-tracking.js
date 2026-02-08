@@ -87,6 +87,12 @@
                 if (field.type === 'hidden' && field.name.includes('_')) return;
                 this.captureFieldValue(field);
             });
+
+            // Capture order fields so reorders can be tracked as dirty
+            const orderFields = form.querySelectorAll(`${Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR} input[type="hidden"][name$="-order_id"]`);
+            orderFields.forEach(field => {
+                this.captureFieldValue(field);
+            });
             
             // File title input fields
             const fileTitleFields = form.querySelectorAll(Hi.ATTR_V2_FILE_TITLE_INPUT_SELECTOR);
@@ -369,6 +375,17 @@
                 if (hiddenField && !displayField.readOnly && !displayField.classList.contains('truncated')) {
                     hiddenField.value = displayField.value;
                 }
+            });
+        },
+
+        // Evaluate order field changes after reordering
+        handleOrderFieldChanges: function() {
+            const form = this.container.querySelector(this.config.formSelector);
+            if (!form) return;
+
+            const orderFields = form.querySelectorAll(`${Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR} input[type="hidden"][name$="-order_id"]`);
+            orderFields.forEach(field => {
+                this.handleFieldChange(field);
             });
         },
         

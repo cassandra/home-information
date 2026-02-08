@@ -48,6 +48,7 @@ class SubsystemAttribute( AttributeModel ):
     class Meta:
         verbose_name = 'Subsystem Attribute'
         verbose_name_plural = 'Subsystem Attributes'
+        ordering = ['order_id', 'id']
 
     def get_upload_to(self):
         return 'settings/'
