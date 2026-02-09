@@ -25,11 +25,9 @@ class HomeBoxGateway(IntegrationGateway):
         return HbManageViewPane()
 
     def get_monitor(self) -> PeriodicMonitor:
-        
         return HomeBoxMonitor()
 
     def get_controller(self) -> IntegrationController:
-        # Implemente se necessário
         return HomeBoxController()
 
     def notify_settings_changed(self):
