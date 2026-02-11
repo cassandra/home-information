@@ -134,12 +134,14 @@ class HBApi(Base):
         self._ensure_auth()
 
         type = type.lower()
+
         if self.auth_enabled:
             query['token'] = self.access_token
             self.session = requests.Session()
         
         try:
             g.logger.Debug(3, 'make_request called with url={} payload={} type={} query={}'.format(url, payload, type, query))
+            
             if type == 'get':
                 r = self.session.get(url, params=query, timeout=25.0)
             elif type == 'post':
@@ -160,30 +162,22 @@ class HBApi(Base):
                 return r
             elif type == 'delete':
                 return None
-            else:
-                # A non 0 byte response will usually mean its an image eid request that needs re-login
-                if r.headers.get('content-length') != '0':
-                    g.logger.Debug(2, 'Raising RELOGIN ValueError')
-                    raise ValueError("RELOGIN")
-                else:
-                    # ZM returns 0 byte body if index not found
-                    g.logger.Debug(2, 'Raising BAD_IMAGE ValueError as Content-Length:0')
-                    raise ValueError("BAD_IMAGE")
-                # return r.text
-
         except requests.exceptions.HTTPError as err:
             g.logger.Debug(1, 'HTTP error: {}'.format(err))
+
             if err.response.status_code == 401 and reauth:
                 g.logger.Debug(1, 'Got 401 (Unauthorized) - retrying login once')
                 self._login()
                 g.logger.Debug(1, 'Retrying failed request again...')
                 return self._make_request(url, query, payload, type, reauth=False)
+            
             elif err.response.status_code == 404:
                 # ZM returns 404 when an image cannot be decoded
                 g.logger.Debug(3, 'Raising BAD_IMAGE ValueError for a 404')
                 raise ValueError("BAD_IMAGE")
         except ValueError as err:
             err_msg = '{}'.format(err)
+
             if err_msg == "RELOGIN":
                 if reauth:
                     g.logger.Debug(1, 'Got ValueError access error: {}'.format(err))
@@ -193,5 +187,24 @@ class HBApi(Base):
                     return self._make_request(url, query, payload, type, reauth=False)
                 else:
                     raise err
+                
             elif err_msg == "BAD_IMAGE":
                 raise ValueError("BAD_IMAGE")
+            
+    def items(self, options={}):
+        """Returns list of items.
+                
+            Args:
+                options (dict, optional): Available fields::
+            
+                    {
+                        'force_reload': boolean # if True refreshes items 
+
+                    }
+            
+        Returns:
+            list of :class:`hb_client.helpers.Item`: list of items 
+        """
+        if options.get('force_reload') or not self.Items:
+            self.Items = Items(api=self)
+        return self.Items
