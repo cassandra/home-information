@@ -52,25 +52,3 @@ class Items(Base):
         url = f"{self.api.api_url}/v1/items"
 
         return self.api._make_request(url=url, payload=options, type="post")
-
-    def find(self, id=None, name=None):
-        """Given an id or name, returns matching monitor object
-        
-        Args:
-            id (int, optional): MonitorId of monitor. Defaults to None.
-            name (string, optional): Monitor name of monitor. Defaults to None.
-        
-        Returns:
-            :class:`pyzm.helpers.Monitor`: Matching monitor object
-        """
-        if not id and not name:
-            return None
-        match = None
-        for mon in self.monitors:
-            if id and mon.id() == id:
-                match = mon
-                break
-            if name and mon.name().lower() == name.lower():
-                match = mon
-                break
-        return match

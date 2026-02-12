@@ -2,6 +2,8 @@ import requests
 import datetime
 from .helpers.base import Base
 from .helpers import globals as g
+from .helpers.items import Items
+from .helpers.locations import Locations
 
 
 class HBApi(Base):
@@ -47,27 +49,6 @@ class HBApi(Base):
 
     def get_session(self):
         return self.session
-    
-    def version(self):
-        """Returns version of API and HB
-        
-        Returns:
-            dict: Version of API and HB:
-
-                {
-                status: string # if 'error' then will also have 'reason' 
-                api_version: string # if status is 'ok'
-                hb_version: string # if status is 'ok'
-            }
-        """
-        if not self.authenticated:
-            return {'status':'error', 'reason':'not authenticated'}
-        
-        return {
-            'status': 'ok',
-            'api_version': self.api_version,
-            'hb_version': self.hb_version
-        }
     
     def _login(self):
         """This is called by the constructor. You are not expected to call this directly.
@@ -208,3 +189,19 @@ class HBApi(Base):
         if options.get('force_reload') or not self.Items:
             self.Items = Items(api=self)
         return self.Items
+    
+    def locations(self, options={}):
+        """Returns list of locations.
+                
+            Args:
+                options (dict, optional): Available fields:
+                    {
+                        "filterChildren": boolean
+                    }
+            
+        Returns:
+            list of :class:`hb_client.helpers.location.Location`: list of locations 
+        """
+        if options.get('force_reload') or not self.Locations:
+            self.Locations = Locations(api=self)
+        return self.Locations

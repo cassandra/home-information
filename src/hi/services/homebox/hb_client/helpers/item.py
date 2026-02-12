@@ -87,8 +87,19 @@ class Item(Base):
         """
         return self.item['purchasePrice']
     
+    def get_full_item(self):
+        """Returns full item object
+    
+        Returns:
+            json: json response of API request
+        """
+
+        url = f"{self.api.api_url}/v1/items/{self.id}"
+
+        return self.api._make_request(url=url, type='get')
+
     def update(self, options={}):
-        """Partially updates an existing item
+        """Partially updates an existing item (PATCH).
         Args:
             options (dict): Set of attributes that define the item:
                 {
@@ -102,7 +113,7 @@ class Item(Base):
 
         url = f"{self.api.api_url}/v1/items/{self.id}"
 
-        return self.api._make_request(url=url, type='patch')
+        return self.api._make_request(url=url, data=options, type='patch')
     
     def replace(self, options={}):
         """
@@ -156,7 +167,29 @@ class Item(Base):
 
         url = f"{self.api.api_url}/v1/items/{self.id}"
 
-        return self.api._make_request(url=url, type='put')
+        return self.api._make_request(url=url, data=options, type='put')
+
+    def duplicate(self, options={}):
+        """
+        Duplicates an existing item.
+
+        Args:
+            options (dict): Options for duplication. Must include the following fields:
+
+                Expected structure:
+                    {
+                        "copyAttachments": bool,
+                        "copyCustomFields": bool,
+                        "copyMaintenance": bool,
+                        "copyPrefix": str,
+                    }
+        Returns:
+            json: API response
+        """
+
+        url = f"{self.api.api_url}/v1/items/{self.id}/duplicate"
+
+        return self.api._make_request(url=url, data=options, type='post')
 
     def delete(self):
         """Deletes item
@@ -164,55 +197,47 @@ class Item(Base):
         Returns:
             json: API response
         """
+
         url = f"{self.api.api_url}/items/{self.id}"
 
         return self.api._make_request(url=url, type='delete')
 
-    def set_parameter(self, options={}):
-        """Changes item parameters
-        
+    def get_maintenance_log(self, options={}):
+        """Get a maintenance log entry for an item.
+
         Args:
-            options (dict, optional): As below. Defaults to {}::
+            options (dict): Maintenance log details. Must include the following fields:
 
-                {
-                    'function': string # function of item
-                    'name': string # name of item
-                    'enabled': boolean
-                    'raw': {
-                        # Any other item value that is not exposed above. Example:
-                        'Item[Colours]': '4',
-                        'Item[Method]': 'simple'
+                Expected structure:
+                    {
+                        "status": str, #Allowed values: scheduled, completed, both
                     }
-
-                }
-    
-        
-        Returns:
-            json: API Response
-        """
-        url = self.api.api_url + '/monitors/{}.json'.format(self.id())
-        payload = {}
-        if options.get('function'):
-            payload['Monitor[Function]'] = options.get('function')
-        if options.get('name'):
-            payload['Monitor[Name]'] = options.get('name')
-        if options.get('enabled') is not None:
-            enabled = '1' if options.get('enabled') else '0'
-            payload['Monitor[Enabled]'] = enabled
-
-        if options.get('raw'):
-            for k in options.get('raw'):
-                payload[k] = options.get('raw')[k]
-               
-        if payload:
-            return self.api._make_request(url=url, payload=payload, type='post')
-
-    def status(self):
-        """Returns status of monitor, as reported by zmdc
-            TBD: crappy return, need to normalize
-        
         Returns:
             json: API response
         """
-        url = self.api.api_url + '/monitors/daemonStatus/id:{}/daemon:zmc.json'.format(self.id())
-        return self.api._make_request(url=url)
+
+        url = f"{self.api.api_url}/v1/items/{self.id}/maintenance"
+
+        return self.api._make_request(url=url, data=options, type='get')
+    
+    def add_maintenance_entry(self, options={}):
+        # {{baseUrl}}/v1/items/:id/maintenance
+        """
+        Adds a maintenance log entry for an item.
+        Args:
+            options (dict): Maintenance log entry details. Must include the following fields:
+                {
+                    "completedDate": str,
+                    "cost": str,
+                    "description": str,
+                    "name": str,
+                    "scheduledDate": str
+                }
+        Returns:
+            json: API response
+        """
+
+        url = f"{self.api.api_url}/v1/items/{self.id}/maintenance"
+
+        return self.api._make_request(url=url, data=options, type='post')
+    
