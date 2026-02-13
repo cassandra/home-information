@@ -202,8 +202,8 @@ class Item(Base):
 
         return self.api._make_request(url=url, type='delete')
 
-    def get_maintenance_log(self, options={}):
-        """Get a maintenance log entry for an item.
+    def maintenances(self, options={}):
+        """Get all maintenances for an item.
 
         Args:
             options (dict): Maintenance log details. Must include the following fields:
@@ -218,12 +218,11 @@ class Item(Base):
 
         url = f"{self.api.api_url}/v1/items/{self.id}/maintenance"
 
-        return self.api._make_request(url=url, data=options, type='get')
+        return self.api._make_request(url=url, query=options, type='get')
     
     def add_maintenance_entry(self, options={}):
-        # {{baseUrl}}/v1/items/:id/maintenance
         """
-        Adds a maintenance log entry for an item.
+        Adds a maintenance entry for an item.
         Args:
             options (dict): Maintenance log entry details. Must include the following fields:
                 {

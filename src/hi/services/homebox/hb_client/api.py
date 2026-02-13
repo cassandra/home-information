@@ -4,6 +4,8 @@ from .helpers.base import Base
 from .helpers import globals as g
 from .helpers.items import Items
 from .helpers.locations import Locations
+from .helpers.maintenances import Maintenances
+from .helpers.labels import Labels
 
 
 class HBApi(Base):
@@ -179,8 +181,7 @@ class HBApi(Base):
                 options (dict, optional): Available fields::
             
                     {
-                        'force_reload': boolean # if True refreshes items 
-
+                        'force_reload': bool # if True refreshes items 
                     }
             
         Returns:
@@ -190,13 +191,31 @@ class HBApi(Base):
             self.Items = Items(api=self)
         return self.Items
     
+    def labels(self, options={}):
+        """Returns list of labels.
+                
+            Args:
+                options (dict, optional): Available fields::
+            
+                    {
+                        'force_reload': bool # if True refreshes labels 
+                    }
+            
+        Returns:
+            list of :class:`hb_client.helpers.label.Label`: list of labels 
+        """
+        if options.get('force_reload') or not self.Labels:
+            self.Labels = Labels(api=self)
+        return self.Labels
+    
     def locations(self, options={}):
         """Returns list of locations.
                 
             Args:
-                options (dict, optional): Available fields:
+                options (dict, optional): Available fields::
+            
                     {
-                        "filterChildren": boolean
+                        'force_reload': bool # if True refreshes locations 
                     }
             
         Returns:
@@ -205,3 +224,20 @@ class HBApi(Base):
         if options.get('force_reload') or not self.Locations:
             self.Locations = Locations(api=self)
         return self.Locations
+    
+    def maintenances(self, options={}):
+        """Returns list of maintenances.
+                
+            Args:
+                options (dict, optional): Available fields::
+            
+                    {
+                        'force_reload': bool # if True refreshes maintenances 
+                    }
+            
+        Returns:
+            list of :class:`hb_client.helpers.maintenance.Maintenance`: list of maintenances 
+        """
+        if options.get('force_reload') or not self.Maintenances:
+            self.Maintenances = Maintenances(api=self)
+        return self.Maintenances
