@@ -34,12 +34,12 @@ class Items(Base):
         Args:
             options (dict): Set of attributes that define the item:
                 {
-                    'description': string
-                    'locationId' : string
-                    'name'       : string
-                    'parentId'   : string
-                    'quantity'   : integer
-                    'tagIds'     : Array<string>
+                    'description': str,
+                    'locationId': str,
+                    'name': str,
+                    'parentId': str,
+                    'quantity': int,
+                    'labelIds': List<str>
                 }
         Returns:
             json: json response of API request

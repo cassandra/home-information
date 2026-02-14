@@ -12,17 +12,17 @@ from .base import Base
 
 
 class Location(Base):
-    def __init__(self, api=None, location=None):
+    def __init__(self, api, location):
         self.api = api
-        self.location = location
-    
-    def get(self):
-        """Returns location object
-        
-        Returns:
-            :class:`hb_client.helpers.location.Location`: Location object
-        """
-        return self.location
+        self._load(location)
+
+    def _load(self, location):
+        location_id = location.get('id')
+        if not location_id:
+            raise ValueError('Location ID is required to initialize Location object')
+
+        url = f"{self.api.api_url}/v1/locations/{location_id}"
+        self.location = self.api._make_request(url=url, type='get')
     
     @property
     def id(self):
@@ -52,24 +52,39 @@ class Location(Base):
         return self.location['description']
     
     @property
-    def item_count(self):
-        """Returns item count in location
+    def created_at(self):
+        """Returns location creation date
         
         Returns:
-            int: item count in location
+            string: location creation date
         """
-        return self.location['itemCount']
+        return self.location['createdAt']
     
-    def get_full_location(self):
-        """Returns full location object
-    
+    @property
+    def updated_at(self):
+        """Returns location update date
+        
         Returns:
-            json: json response of API request
+            string: location update date
         """
+        return self.location['updatedAt']   
+    
+    @property
+    def children(self):
+        """Returns location children
+        
+        Returns:
+            list: list of location children
+        """
+        return self.location['children']
 
-        url = f"{self.api.api_url}/v1/locations/{self.id}"
-
-        return self.api._make_request(url=url, type='get')
+    def get(self):
+        """Returns location object
+        
+        Returns:
+            :class:`hb_client.helpers.location.Location`: Location object
+        """
+        return self.location
 
     def update(self, options={}):
         """

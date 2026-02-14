@@ -16,14 +16,6 @@ class Maintenance(Base):
         self.api = api
         self.maintenance = maintenance
     
-    def get(self):
-        """Returns maintenance object
-        
-        Returns:
-            :class:`hb_client.helpers.maintenance.Maintenance`: Maintenance object
-        """
-        return self.maintenance
-    
     @property
     def id(self):
         """Returns maintenance Id
@@ -95,6 +87,14 @@ class Maintenance(Base):
             string: maintenance item Id
         """
         return self.maintenance['itemId']
+
+    def get(self):
+        """Returns maintenance object
+        
+        Returns:
+            :class:`hb_client.helpers.maintenance.Maintenance`: Maintenance object
+        """
+        return self.maintenance
 
     def update(self, options={}):
         """

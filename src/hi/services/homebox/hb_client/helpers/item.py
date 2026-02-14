@@ -9,20 +9,22 @@ the full object
 
 
 from .base import Base
+from . import globals as g
 
 
 class Item(Base):
-    def __init__(self, api=None, item=None):
+    def __init__(self, api, item):
         self.api = api
-        self.item = item
-    
-    def get(self):
-        """Returns item object
-        
-        Returns:
-            :class:`hb_client.helpers.Item`: Item object
-        """
-        return self.item
+        self._load(item)
+
+    def _load(self, item):
+        item_id = item.get('id')
+        if not item_id:
+            g.logger.Error('Item ID is required to initialize Item object')
+            raise ValueError('Item ID is required to initialize Item object')
+
+        url = f"{self.api.api_url}/v1/items/{item_id}"
+        self.item = self.api._make_request(url=url, type='get')
     
     @property
     def id(self):
@@ -79,6 +81,24 @@ class Item(Base):
         return bool(self.item['archived'])
     
     @property
+    def created_at(self):
+        """Returns item creation datetime
+        
+        Returns:
+            string: item creation datetime
+        """
+        return self.item['createdAt']
+    
+    @property
+    def updated_at(self):
+        """Returns item update datetime
+        
+        Returns:
+            string: item update datetime
+        """
+        return self.item['updatedAt']
+    
+    @property
     def purchase_price(self):
         """Returns item purchase price
         
@@ -86,17 +106,185 @@ class Item(Base):
             float: purchase price
         """
         return self.item['purchasePrice']
-    
-    def get_full_item(self):
-        """Returns full item object
-    
+
+    @property
+    def location(self):
+        """Returns item location
+        
         Returns:
-            json: json response of API request
+            dict: item location
         """
+        return self.item['location']
 
-        url = f"{self.api.api_url}/v1/items/{self.id}"
+    @property
+    def labels(self):
+        """Returns item labels
+        
+        Returns:
+            list: item labels
+        """
+        return self.item['labels']
 
-        return self.api._make_request(url=url, type='get')
+    @property
+    def asset_id(self):
+        """Returns item asset Id
+        
+        Returns:
+            string: item asset Id
+        """
+        return self.item['assetId']
+
+    @property
+    def sync_child_items_locations(self):
+        """Returns if child item locations should be synced
+        
+        Returns:
+            bool: sync enabled or not
+        """
+        return bool(self.item['syncChildItemsLocations'])
+    
+    @property
+    def serial_number(self):
+        """Returns item serial number
+        
+        Returns:
+            string: item serial number
+        """
+        return self.item['serialNumber']
+    
+    @property
+    def model_number(self):
+        """Returns item model number
+        
+        Returns:
+            string: item model number
+        """
+        return self.item['modelNumber']
+    
+    @property
+    def manufacturer(self):
+        """Returns item manufacturer
+        
+        Returns:
+            string: item manufacturer
+        """
+        return self.item['manufacturer']
+
+    @property
+    def lifetime_warranty(self):
+        """Returns if item has lifetime warranty
+        
+        Returns:
+            bool: lifetime warranty or not
+        """
+        return bool(self.item['lifetimeWarranty'])
+
+    @property
+    def warranty_expires(self):
+        """Returns item warranty expiration datetime
+        
+        Returns:
+            string: item warranty expiration datetime
+        """
+        return self.item['warrantyExpires']
+
+    @property
+    def warranty_details(self):
+        """Returns item warranty details
+        
+        Returns:
+            string: item warranty details
+        """
+        return self.item['warrantyDetails']
+
+    @property
+    def purchase_time(self):
+        """Returns item purchase datetime
+        
+        Returns:
+            string: item purchase datetime
+        """
+        return self.item['purchaseTime']
+
+    @property
+    def purchase_from(self):
+        """Returns item purchase source
+        
+        Returns:
+            string: item purchase source
+        """
+        return self.item['purchaseFrom']
+
+    @property
+    def sold_time(self):
+        """Returns item sold datetime
+        
+        Returns:
+            string: item sold datetime
+        """
+        return self.item['soldTime']
+    
+    @property
+    def sold_to(self):
+        """Returns item sold target
+        
+        Returns:
+            string: item sold target
+        """
+        return self.item['soldTo']
+    
+    @property
+    def sold_price(self):
+        """Returns item sold price
+        
+        Returns:
+            float: item sold price
+        """
+        return self.item['soldPrice']
+
+    @property
+    def sold_notes(self):
+        """Returns item sold notes
+        
+        Returns:
+            string: item sold notes
+        """
+        return self.item['soldNotes']
+
+    @property
+    def notes(self):
+        """Returns item notes
+        
+        Returns:
+            string: item notes
+        """
+        return self.item['notes']
+
+    @property
+    def attachments(self):
+        """Returns item attachments
+        
+        Returns:
+            list: item attachments
+        """
+        return self.item['attachments']
+
+    @property
+    def fields(self):
+        """Returns item custom fields
+        
+        Returns:
+            list: item custom fields
+        """
+        return self.item['fields']
+    
+    def get(self):
+        """Returns item object
+        
+        Returns:
+            :class:`hb_client.helpers.Item`: Item object
+        """
+        return self.item
 
     def update(self, options={}):
         """Partially updates an existing item (PATCH).
