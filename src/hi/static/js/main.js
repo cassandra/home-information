@@ -79,7 +79,6 @@
         ATTR_V2_DIRTY_MESSAGE_CLASS: 'attr-v2-dirty-message',
         ATTR_V2_STATUS_MESSAGE_CLASS: 'attr-v2-status-message',
         ATTR_V2_UPDATE_BTN_CLASS: 'attr-v2-update-btn',
-        ATTR_V2_RESET_MODAL_CONFIRM_CLASS: 'attr-v2-reset-modal-confirm',
 
         ATTR_V2_ATTRIBUTE_NAME_CLASS: 'attr-v2-attribute-name',
         // Ready-to-use jQuery selectors
@@ -90,7 +89,6 @@
         ATTR_V2_DIRTY_MESSAGE_SELECTOR: '.attr-v2-dirty-message',
         ATTR_V2_HISTORY_LINK_SELECTOR: '.attr-v2-history-link',
         ATTR_V2_RESTORE_LINK_SELECTOR: '.attr-v2-restore-link',
-        ATTR_V2_RESET_MODAL_CONFIRM_SELECTOR: '.attr-v2-reset-modal-confirm',
         ATTR_V2_ATTRIBUTE_CARD_SELECTOR: '.attr-v2-attribute-card',
         ATTR_V2_NEW_ATTRIBUTE_SELECTOR: '.attr-v2-new-attribute',
         ATTR_V2_FILE_TITLE_INPUT_SELECTOR: '.attr-v2-file-title-input',

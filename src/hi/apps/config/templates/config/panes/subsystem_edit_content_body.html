@@ -57,8 +57,6 @@ This is what gets replaced on form submission
 <!-- Vertical Tabbed Subsystem Interface -->
 <div class="tab-content" id="subsystemTabContent">
   {% for multi_edit_form_data in multi_edit_form_data_list %}
-  {% attr_restore_subsystem_url multi_edit_form_data.context as reset_url %}
-  {% include "config/panes/modals.html" with subsystem_id=multi_edit_form_data.owner.id subsystem_name=multi_edit_form_data.owner.name reset_url=reset_url reset_type='subsystem' %}
   <div class="tab-pane fade {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}show active{% endif %}"
        id="subsystem-{{ multi_edit_form_data.owner.id }}-panel"
        role="tabpanel"
@@ -80,13 +78,14 @@ This is what gets replaced on form submission
       {% include "attribute/components/regular_attribute_list.html" with regular_attributes_formset=multi_edit_form_data.formset attr_item_context=multi_edit_form_data.context %}
       <div class="mt-4 pt-3 border-top text-right">
           <small class="text-muted mr-1">Problems with these settings?</small>
-          <button type="button"
-                  class="btn btn-link btn-sm text-danger p-0"
-                  style="text-decoration: none; vertical-align: baseline;"
-                  title="Restore Default Values for {{ multi_edit_form_data.owner.name }}"
-                  onclick="$('#reset-subsystem-settings-modal-{{ multi_edit_form_data.owner.id }}').modal('show')">
+          <a href="{% url 'subsystem_attribute_restore_subsystem_confirm_modal' subsystem_id=multi_edit_form_data.owner.id %}"
+             role="button"
+              class="btn btn-link btn-sm text-danger p-0"
+             style="text-decoration: none; vertical-align: baseline;"
+             title="Restore Default Values for {{ multi_edit_form_data.owner.name }}"
+             data-async="modal">
             Reset {{ multi_edit_form_data.owner.name }} Settings to Default
-          </button>
+          </a>
       </div>
     </div>
   </div>
@@ -98,18 +97,17 @@ This is what gets replaced on form submission
   {% if attr_page_context.can_restore_default %}
     {% for multi_edit_form_data in multi_edit_form_data_list %}
       {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}
-        {% attr_restore_all_url multi_edit_form_data.context as reset_url %}
-        {% include "config/panes/modals.html" with reset_url=reset_url reset_type='all' %}
         <div class="row mt-5 mb-4">
             <div class="col-12 text-center">
                  <small class="text-muted mr-1">Need to start over?</small>
-                 <button type="button"
+                 <a href="{% url 'subsystem_attribute_restore_all_confirm_modal' subsystem_id=multi_edit_form_data.owner.id %}"
+                    role="button"
                     class="btn btn-link btn-sm text-danger p-0"
                     style="text-decoration: none; vertical-align: baseline;"
                     title="Restore Default Values for All Settings"
-                    onclick="$('#reset-all-settings-modal').modal('show')">
+                    data-async="modal">
                   Reset All Settings to Default
-                </button>
+                </a>
             </div>
         </div>
       {% endif %}

@@ -9,10 +9,11 @@ from hi.views import page_not_found_response
 
 from hi.enums import ViewMode, ViewType
 from hi.hi_grid_view import HiGridView
+from hi.hi_async_view import HiModalView
 from hi.apps.attribute.view_mixins import AttributeMultiEditViewMixin
 
 from .enums import ConfigPageType
-from .models import SubsystemAttribute
+from .models import Subsystem, SubsystemAttribute
 from .settings_mixins import SubsystemAttributeMixin
 from .subsystem_attribute_edit_context import (
     SubsystemAttributeItemEditContext,
@@ -173,11 +174,32 @@ class SubsystemAttributeRestoreInlineView( View,
             attr_page_context = attr_page_context,
             attr_item_context_list = attr_item_context_list,
         )
+
+    
+class SubsystemAttributeRestoreSubsystemConfirmModalView( HiModalView ):
+
+    def get_template_name( self ) -> str:
+        return 'config/modals/subsystem_restore_defaults_confirm.html'
+
+    def get( self, request, subsystem_id, *args, **kwargs ):
+        try:
+            subsystem = Subsystem.objects.get( pk = subsystem_id )
+        except Subsystem.DoesNotExist:
+            return page_not_found_response(request, "Subsystem not found.")
+        attr_item_context = SubsystemAttributeItemEditContext(
+            subsystem = subsystem,
+        )
+        context = {
+            'subsystem': subsystem,
+            'attr_item_context': attr_item_context,
+        }
+        return self.modal_response( request, context )
     
 
 class SubsystemAttributeRestoreSubsytemInlineView( View, 
                                                    SubsystemAttributeMixin, 
                                                    AttributeMultiEditViewMixin ):
+    
     def get(self, request, subsystem_id, *args, **kwargs):
         attributes = SubsystemAttribute.objects.select_related('subsystem').filter(subsystem_id=subsystem_id)
         if not attributes.exists():
@@ -195,10 +217,30 @@ class SubsystemAttributeRestoreSubsytemInlineView( View,
             attr_item_context_list=attr_item_context_list,
         )
 
+
+class SubsystemAttributeRestoreAllConfirmModalView( HiModalView ):
+
+    def get_template_name( self ) -> str:
+        return 'config/modals/all_restore_defaults_confirm.html'
+
+    def get( self, request, subsystem_id, *args, **kwargs ):
+        try:
+            subsystem = Subsystem.objects.get( pk = subsystem_id )
+        except Subsystem.DoesNotExist:
+            return page_not_found_response(request, "Subsystem not found.")
+        attr_item_context = SubsystemAttributeItemEditContext(
+            subsystem = subsystem,
+        )
+        context = {
+            'attr_item_context': attr_item_context,
+        }
+        return self.modal_response( request, context )
+
     
 class SubsystemAttributeRestoreAllInlineView( View, 
                                               SubsystemAttributeMixin, 
                                               AttributeMultiEditViewMixin ):
+    
     def get(self, request, subsystem_id, *args, **kwargs):
         attributes = SubsystemAttribute.objects.select_related('subsystem').all()
         if not attributes.exists():

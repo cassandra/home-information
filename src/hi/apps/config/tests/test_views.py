@@ -264,6 +264,22 @@ class TestConfigSettingsView(DualModeViewTestCase):
         self.assertEqual(attribute_day.value, str(SecuritySetting.SECURITY_DAY_START.definition.initial_value))
         self.assertEqual(attribute_away.value, str(SecuritySetting.SECURITY_AWAY_DELAY_MINS.definition.initial_value))
 
+    def test_restore_defaults_subsystem_confirm_modal(self):
+        """Subsystem reset confirmation is rendered by a server modal view."""
+        url = reverse(
+            'subsystem_attribute_restore_subsystem_confirm_modal',
+            kwargs={'subsystem_id': self.subsystem.id},
+        )
+
+        response = self.async_get(url)
+
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+
+        data = response.json()
+        self.assertIn('modal', data)
+        self.assertIn('reset-subsystem-settings-confirm-btn', data['modal'])
+
     def test_restore_defaults_for_all_subsystems(self):
         """Restoring defaults for all subsystems updates every attribute."""
         other_subsystem = Subsystem.objects.create(
@@ -299,3 +315,19 @@ class TestConfigSettingsView(DualModeViewTestCase):
 
         self.assertEqual(attribute_security.value, str(SecuritySetting.SECURITY_NIGHT_START.definition.initial_value))
         self.assertEqual(attribute_audio.value, str(AudioSetting.CONSOLE_WARNING_AUDIO_FILE.definition.initial_value))
+
+    def test_restore_defaults_all_confirm_modal(self):
+        """Global reset confirmation is rendered by a server modal view."""
+        url = reverse(
+            'subsystem_attribute_restore_all_confirm_modal',
+            kwargs={'subsystem_id': self.subsystem.id},
+        )
+
+        response = self.async_get(url)
+
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+
+        data = response.json()
+        self.assertIn('modal', data)
+        self.assertIn('reset-all-settings-confirm-btn', data['modal'])

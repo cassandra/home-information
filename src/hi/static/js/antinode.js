@@ -905,11 +905,7 @@ function handleModalHiddenEvent( modalObj ) {
     finally {
         modalHideStartMs = null;
         deferredModalShowObj = null;
-        const $modalObj = $(modalObj);
-        const isPersistent = $modalObj.hasClass('hi-persistent-modal');
-        if ( ! isPersistent ) {
-            $modalObj.remove();
-        }
+        $(modalObj).remove();
     }
 };
 

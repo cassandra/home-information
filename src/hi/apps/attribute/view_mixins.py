@@ -252,31 +252,6 @@ class AttributeMultiEditViewMixin( AttributeEditCommonMixin ):
             request = request,
         )
     
-    def post_restore_default(self, 
-                             request                 : HttpRequest,
-                             attribute               : AttributeModel,
-                             attr_page_context       : AttributePageEditContext,
-                             attr_item_context_list  : List[AttributeItemEditContext] ) -> HttpResponse:
-
-        form_handler = AttributeEditFormHandler()
-        renderer = AttributeEditResponseRenderer()    
-
-        try:
-            self.do_restore_default(
-                attribute = attribute,
-            )
-        except Exception as e:
-            return renderer.render_restore_error_response( str(e) )
-        
-        multi_edit_form_data_list = form_handler.create_multi_edit_form_data(
-            attr_item_context_list = attr_item_context_list,
-        )
-        return renderer.render_restore_success_response_multi(
-            attr_page_context = attr_page_context,
-            multi_edit_form_data_list = multi_edit_form_data_list,
-            request = request,
-        )
-    
     def post_restore_all_defaults(self,
                                   request: HttpRequest,
                                   attributes: List[AttributeModel],

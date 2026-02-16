@@ -639,42 +639,19 @@
                 e.preventDefault();
                 
                 const url = $link.attr('href');
-
-                const runRestore = function() {
-                    // Server will return JSON response with target selector and HTML
-                    $.ajax({
-                        url: url,
-                        method: 'GET',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    }).done((response) => {
-                        _ajax.handleFormSuccess(response, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
-                    }).fail((xhr) => {
-                        _ajax.handleFormError(xhr, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
-                    });
-                };
-
-                if ($link.hasClass(Hi.ATTR_V2_RESET_MODAL_CONFIRM_CLASS)) {
-                    const $modal = $link.closest(ATTR_V2_INTERNAL.MODAL_SELECTOR);
-                    if ($modal.length > 0) {
-                        let didRequest = false;
-                        const requestOnce = function() {
-                            if (didRequest) {
-                                return;
-                            }
-                            didRequest = true;
-                            runRestore();
-                        };
-
-                        $modal.one('hidden.bs.modal', requestOnce);
-                        $modal.modal('hide');
-                        setTimeout(requestOnce, 700);
-                        return;
+                
+                // Server will return JSON response with target selector and HTML
+                $.ajax({
+                    url: url,
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
-                }
-
-                runRestore();
+                }).done((response) => {
+                    _ajax.handleFormSuccess(response, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
+                }).fail((xhr) => {
+                    _ajax.handleFormError(xhr, $container.find(Hi.ATTR_V2_FORM_CLASS_SELECTOR));
+                });
             });
         });
         

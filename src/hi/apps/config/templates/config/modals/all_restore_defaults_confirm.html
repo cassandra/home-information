@@ -1,0 +1,25 @@
+{% extends "modals/action_with_cancel.html" %}
+{% load attribute_extras %}
+
+{% block modal_dialog_class %}hi-modal-dialog-600 {{ DIVID.ATTR_V2_CONTAINER_CLASS }}{% endblock %}
+
+{% block header_class %}bg-secondary{% endblock %}
+
+{% block title_text %}
+Confirm Reset
+{% endblock %}
+
+{% block body %}
+Are you sure you want to reset
+<strong>All Settings</strong>?
+This action cannot be undone.
+{% endblock %}
+
+{% block action_right %}
+<a href="{% attr_restore_all_url attr_item_context %}"
+   role="button"
+   class="btn btn-danger {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
+   data-dismiss="modal">
+  Reset
+</a>
+{% endblock %}
