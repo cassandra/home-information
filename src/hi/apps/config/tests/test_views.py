@@ -248,8 +248,6 @@ class TestConfigSettingsView(DualModeViewTestCase):
 
         data = response.json()
         self.assertIn('modal', data)
-
-        #Needed to ensure inline update
         self.assertIn('attr-v2-container', data['modal'])
         self.assertIn('attr-v2-restore-link', data['modal'])
 
