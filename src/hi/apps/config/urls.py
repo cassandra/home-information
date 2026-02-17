@@ -22,19 +22,19 @@ urlpatterns = [
              views.SubsystemAttributeRestoreInlineView.as_view(),
              name='subsystem_attribute_restore_inline'),
 
-    re_path( r'^attribute/restore/default/subsystem/(?P<subsystem_id>\d+)/$', 
-             views.SubsystemAttributeRestoreSubsytemInlineView.as_view(),
-             name='subsystem_attribute_restore_subsystem_inline' ),
-
     re_path( r'^attribute/restore/default/subsystem/confirm/(?P<subsystem_id>\d+)/$',
              views.SubsystemAttributeRestoreSubsystemConfirmModalView.as_view(),
              name='subsystem_attribute_restore_subsystem_confirm_modal' ),
-    
-    re_path( r'^attribute/restore/default/all/(?P<subsystem_id>\d+)/$',
-             views.SubsystemAttributeRestoreAllInlineView.as_view(),
-             name='subsystem_attribute_restore_all_inline' ),
 
+    re_path( r'^attribute/restore/default/subsystem/(?P<subsystem_id>\d+)/$', 
+             views.SubsystemAttributeRestoreSubsystemInlineView.as_view(),
+             name='subsystem_attribute_restore_subsystem_inline' ),
+    
     re_path( r'^attribute/restore/default/all/confirm/(?P<subsystem_id>\d+)/$',
              views.SubsystemAttributeRestoreAllConfirmModalView.as_view(),
              name='subsystem_attribute_restore_all_confirm_modal' ),
+
+    re_path( r'^attribute/restore/default/all/(?P<subsystem_id>\d+)/$',
+             views.SubsystemAttributeRestoreAllInlineView.as_view(),
+             name='subsystem_attribute_restore_all_inline' ),
 ]

@@ -1,7 +1,9 @@
 {% extends "modals/action_with_cancel.html" %}
 {% load attribute_extras %}
 
-{% block modal_dialog_class %}hi-modal-dialog-600 {{ DIVID.ATTR_V2_CONTAINER_CLASS }}{% endblock %}
+{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+
+{% block footer_class %}{{ DIVID.ATTR_V2_CONTAINER_CLASS }}{% endblock %}
 
 {% block header_class %}bg-secondary{% endblock %}
 

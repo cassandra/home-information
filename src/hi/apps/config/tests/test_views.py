@@ -211,7 +211,7 @@ class TestConfigSettingsView(DualModeViewTestCase):
             other_section = content[other_section_start:other_section_end]
             self.assertNotIn('Hi.audio.testAudio()', other_section)
 
-    def test_attribute_restore_default_ui_data_is_present(self):
+    def test_attribute_restore_ui_data_is_present(self):
         """Ensure attribute cards expose default values and restore action."""
         attribute = SubsystemAttribute.objects.create(
             subsystem=self.subsystem,
@@ -234,7 +234,32 @@ class TestConfigSettingsView(DualModeViewTestCase):
         self.assertIn(f'data-default-value="{expected_default}"', content)
         self.assertIn(f"Hi.attr.restoreDefaultValue('{attribute.id}')", content)
 
-    def test_restore_defaults_for_subsystem(self):
+    def test_restore_subsystem_confirm_modal(self):
+        """Subsystem reset confirmation is rendered by a server modal view."""
+        url = reverse(
+            'subsystem_attribute_restore_subsystem_confirm_modal',
+            kwargs={'subsystem_id': self.subsystem.id},
+        )
+
+        response = self.async_get(url)
+
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+
+        data = response.json()
+        self.assertIn('modal', data)
+
+        #Needed to ensure inline update
+        self.assertIn('attr-v2-container', data['modal'])
+        self.assertIn('attr-v2-restore-link', data['modal'])
+
+        expected_restore_url = reverse(
+            'subsystem_attribute_restore_subsystem_inline',
+            kwargs={'subsystem_id': self.subsystem.id},
+        )
+        self.assertIn(f'href="{expected_restore_url}"', data['modal'])
+
+    def test_restore_subsystem(self):
         """Restoring defaults for a subsystem updates all its attributes."""
         attribute_day = SubsystemAttribute.objects.create(
             subsystem=self.subsystem,
@@ -264,10 +289,10 @@ class TestConfigSettingsView(DualModeViewTestCase):
         self.assertEqual(attribute_day.value, str(SecuritySetting.SECURITY_DAY_START.definition.initial_value))
         self.assertEqual(attribute_away.value, str(SecuritySetting.SECURITY_AWAY_DELAY_MINS.definition.initial_value))
 
-    def test_restore_defaults_subsystem_confirm_modal(self):
-        """Subsystem reset confirmation is rendered by a server modal view."""
+    def test_restore_all_confirm_modal(self):
+        """Global reset confirmation is rendered by a server modal view."""
         url = reverse(
-            'subsystem_attribute_restore_subsystem_confirm_modal',
+            'subsystem_attribute_restore_all_confirm_modal',
             kwargs={'subsystem_id': self.subsystem.id},
         )
 
@@ -278,9 +303,16 @@ class TestConfigSettingsView(DualModeViewTestCase):
 
         data = response.json()
         self.assertIn('modal', data)
-        self.assertIn('reset-subsystem-settings-confirm-btn', data['modal'])
+        self.assertIn('attr-v2-container', data['modal'])
+        self.assertIn('attr-v2-restore-link', data['modal'])
 
-    def test_restore_defaults_for_all_subsystems(self):
+        expected_restore_url = reverse(
+            'subsystem_attribute_restore_all_inline',
+            kwargs={'subsystem_id': self.subsystem.id},
+        )
+        self.assertIn(f'href="{expected_restore_url}"', data['modal'])
+
+    def test_restore_all(self):
         """Restoring defaults for all subsystems updates every attribute."""
         other_subsystem = Subsystem.objects.create(
             name='Other Subsystem',
@@ -315,19 +347,3 @@ class TestConfigSettingsView(DualModeViewTestCase):
 
         self.assertEqual(attribute_security.value, str(SecuritySetting.SECURITY_NIGHT_START.definition.initial_value))
         self.assertEqual(attribute_audio.value, str(AudioSetting.CONSOLE_WARNING_AUDIO_FILE.definition.initial_value))
-
-    def test_restore_defaults_all_confirm_modal(self):
-        """Global reset confirmation is rendered by a server modal view."""
-        url = reverse(
-            'subsystem_attribute_restore_all_confirm_modal',
-            kwargs={'subsystem_id': self.subsystem.id},
-        )
-
-        response = self.async_get(url)
-
-        self.assertSuccessResponse(response)
-        self.assertJsonResponse(response)
-
-        data = response.json()
-        self.assertIn('modal', data)
-        self.assertIn('reset-all-settings-confirm-btn', data['modal'])

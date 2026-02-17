@@ -179,7 +179,7 @@ class SubsystemAttributeRestoreInlineView( View,
 class SubsystemAttributeRestoreSubsystemConfirmModalView( HiModalView ):
 
     def get_template_name( self ) -> str:
-        return 'config/modals/subsystem_restore_defaults_confirm.html'
+        return 'config/modals/subsystem_attribute_restore_subsystem_confirm_modal.html'
 
     def get( self, request, subsystem_id, *args, **kwargs ):
         try:
@@ -196,7 +196,7 @@ class SubsystemAttributeRestoreSubsystemConfirmModalView( HiModalView ):
         return self.modal_response( request, context )
     
 
-class SubsystemAttributeRestoreSubsytemInlineView( View, 
+class SubsystemAttributeRestoreSubsystemInlineView( View, 
                                                    SubsystemAttributeMixin, 
                                                    AttributeMultiEditViewMixin ):
     
@@ -221,7 +221,7 @@ class SubsystemAttributeRestoreSubsytemInlineView( View,
 class SubsystemAttributeRestoreAllConfirmModalView( HiModalView ):
 
     def get_template_name( self ) -> str:
-        return 'config/modals/all_restore_defaults_confirm.html'
+        return 'config/modals/subsystem_attribute_restore_all_confirm_modal.html'
 
     def get( self, request, subsystem_id, *args, **kwargs ):
         try:
