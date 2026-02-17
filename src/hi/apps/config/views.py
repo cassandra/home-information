@@ -197,8 +197,8 @@ class SubsystemAttributeRestoreSubsystemConfirmModalView( HiModalView ):
     
 
 class SubsystemAttributeRestoreSubsystemInlineView( View, 
-                                                   SubsystemAttributeMixin, 
-                                                   AttributeMultiEditViewMixin ):
+                                                    SubsystemAttributeMixin, 
+                                                    AttributeMultiEditViewMixin ):
     
     def get(self, request, subsystem_id, *args, **kwargs):
         attributes = SubsystemAttribute.objects.select_related('subsystem').filter(subsystem_id=subsystem_id)
