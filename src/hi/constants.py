@@ -102,7 +102,6 @@ DIVID = {
     'ATTR_V2_AUTO_DISMISS_CLASS': 'attr-v2-auto-dismiss',
     'ATTR_V2_HISTORY_LINK_CLASS': 'attr-v2-history-link',
     'ATTR_V2_RESTORE_LINK_CLASS': 'attr-v2-restore-link',
-    'ATTR_V2_RESET_MODAL_CONFIRM_CLASS': 'attr-v2-reset-modal-confirm',
     'ATTR_V2_STICKY_PANEL_CLASS': 'attr-v2-sticky-panel',
     'ATTR_V2_ACTION_BAR_CLASS': 'attr-v2-action-bar',
     'ATTR_V2_ACTION_BAR_CONTENT_CLASS': 'attr-v2-action-bar-content',

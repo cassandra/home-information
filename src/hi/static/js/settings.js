@@ -3,7 +3,7 @@
     window.Hi = window.Hi || {};
 
     const HiSettings = {
-		
+
 		enableAudio: function() {
 			return _enableAudio();
 		},
@@ -31,7 +31,6 @@
 		disableSleepMode: function() {
 			return _disableSleepMode();
 		},
-
 		
 	};
     
