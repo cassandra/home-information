@@ -11,8 +11,11 @@ from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import IntegrationMetaData, IntegrationValidationResult
 from hi.apps.monitor.periodic_monitor import PeriodicMonitor
 
+from .hb_controller import HomeBoxController
 from .hb_manage_view_pane import HbManageViewPane
+from .hb_manager import HomeBoxManager
 from .hb_metadata import HbMetaData
+from .monitors import HomeBoxMonitor
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +45,7 @@ class HomeBoxGateway(IntegrationGateway):
         except Exception as e:
             logger.exception(f'Error notifying HomeBox integration of settings change: {e}')
 
-    def get_health_status_provider(self):
+    def get_health_status_provider(self) -> HealthStatusProvider:
         return HomeBoxManager()
 
     def validate_configuration(

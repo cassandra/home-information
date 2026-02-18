@@ -79,15 +79,15 @@ class HbClientFactory:
             IntegrationValidationResult indicating success or failure with details
         """
         try:
-            # Test basic API connectivity by fetching states
-            states = client.states().list()
-            if states is not None:
+            # Test basic API connectivity by fetching items
+            items = client.items().list()
+            if items is not None:
                 # Successful API call
                 return IntegrationValidationResult.success()
             else:
                 return IntegrationValidationResult.error(
                     status=HealthStatusType.ERROR,
-                    error_message='Failed to fetch states from HomeBox API'
+                    error_message='Failed to fetch items from HomeBox API'
                 )
 
         except Exception as e:
