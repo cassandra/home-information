@@ -37,6 +37,11 @@ class HBApi(Base):
         self.access_token_expires = None
         self.access_token_datetime: datetime.datetime = None
 
+        self.Items = None
+        self.Labels = None
+        self.Locations = None
+        self.Maintenances = None
+
         self.session = requests.Session()
         if (self.options.get('basic_auth_user')):
             g.logger.Debug(2, 'Basic auth requested, configuring')

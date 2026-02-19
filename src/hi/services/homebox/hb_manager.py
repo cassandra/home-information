@@ -31,13 +31,20 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
 
     def __init_singleton__( self ):
         super().__init_singleton__()
+
         self._hb_attr_type_to_attribute = dict()
         self._hb_client = None
         self._client_factory = HbClientFactory()
 
+        self._hb_items_list = list()
+        self._hb_labels_list = list()
+        self._hb_locations_list = list()
+        self._hb_maintenances_list = list()
+
         self._change_listeners = set()
 
         self.add_api_health_status_provider(self)
+
         return
 
     @classmethod
@@ -108,6 +115,10 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         return
 
     def clear_caches(self):
+        self._hb_items_list = list()
+        self._hb_labels_list = list()
+        self._hb_locations_list = list()
+        self._hb_maintenances_list = list()
         return
 
     def _load_attributes(self) -> Dict[ HbAttributeType, IntegrationAttribute ]:
@@ -146,6 +157,64 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             self.fetch_hb_items_from_api,
             thread_sensitive = True,
         )(verbose=verbose)
+    
+    def fetch_hb_labels_from_api( self, verbose : bool = True ) -> list:
+        if verbose:
+            logger.debug( 'Getting current HomeBox labels.' )
+
+        if not self.hb_client:
+            logger.warning('HomeBox client not available - cannot fetch labels')
+            return []
+
+        with self.api_call_context( 'hb_labels' ):
+            return self.hb_client.labels().list()
+
+    async def fetch_hb_labels_from_api_async( self, verbose : bool = True ) -> list:
+        return await sync_to_async(
+            self.fetch_hb_labels_from_api,
+            thread_sensitive = True,
+        )(verbose=verbose)
+
+    def fetch_hb_locations_from_api( self, verbose : bool = True ) -> list:
+        if verbose:
+            logger.debug( 'Getting current HomeBox locations.' )
+
+        if not self.hb_client:
+            logger.warning('HomeBox client not available - cannot fetch locations')
+            return []
+
+        with self.api_call_context( 'hb_locations' ):
+            return self.hb_client.locations().list()
+
+    async def fetch_hb_locations_from_api_async( self, verbose : bool = True ) -> list:
+        return await sync_to_async(
+            self.fetch_hb_locations_from_api,
+            thread_sensitive = True,
+        )(verbose=verbose)
+
+    def fetch_hb_maintenances_from_api(
+            self,
+            options: Dict = None,
+            verbose : bool = True ) -> list:
+        if verbose:
+            logger.debug( 'Getting current HomeBox maintenances.' )
+
+        if not self.hb_client:
+            logger.warning('HomeBox client not available - cannot fetch maintenances')
+            return []
+
+        effective_options = options or {}
+        with self.api_call_context( 'hb_maintenances' ):
+            return self.hb_client.maintenances( effective_options ).list()
+
+    async def fetch_hb_maintenances_from_api_async(
+            self,
+            options: Dict = None,
+            verbose : bool = True ) -> list:
+        return await sync_to_async(
+            self.fetch_hb_maintenances_from_api,
+            thread_sensitive = True,
+        )(options=options, verbose=verbose)
 
     def test_connection(self) -> bool:
         try:
