@@ -121,6 +121,7 @@ class LocationAttribute( AttributeModel ):
         indexes = [
             models.Index( fields=[ 'name', 'value' ] ),
         ]
+        ordering = ['order_id', 'id']
 
     def get_upload_to(self):
         return 'location/attributes/'

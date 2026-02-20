@@ -27,6 +27,6 @@ six==1.17.0
 sqlparse==0.5.3
 typing_extensions==4.15.0
 tzlocal==5.3.1
-urllib3==2.5.0
+urllib3==2.6.3
 websocket-client==1.8.0
 yarl==1.12.0
