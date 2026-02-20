@@ -86,7 +86,16 @@ class HBApi(Base):
                 self.access_token = rj.get('token', '')
 
                 if (rj.get('expiresAt')):
-                    self.access_token_datetime = rj.get('expiresAt')
+                    expires_at = rj.get('expiresAt')
+                    
+                    if isinstance(expires_at, str):
+                        expires_at = expires_at.replace('Z', '+00:00')
+                        expires_at = datetime.datetime.fromisoformat(expires_at)
+
+                    if isinstance(expires_at, datetime.datetime) and expires_at.tzinfo is not None:
+                        expires_at = expires_at.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+
+                    self.access_token_datetime = expires_at
                     g.logger.Debug(1, 'Access token expires on: {}'.format(self.access_token_datetime))
 
             self.authenticated = True

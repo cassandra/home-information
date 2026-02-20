@@ -65,11 +65,6 @@ class HbClientFactory:
             options_key = attr_to_api_option_key[hb_attr_type]
             api_options[options_key] = hb_attr.value
 
-        log_options = dict(api_options)
-        if 'password' in log_options and log_options['password']:
-            log_options['password'] = '***'
-
-        logger.debug(f'HomeBox client options: {log_options}')
         return HBApi(options=api_options)
 
     def test_client(self, client: HBApi) -> IntegrationValidationResult:

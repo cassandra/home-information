@@ -3,12 +3,14 @@ import logging
 from hi.apps.common.database_lock import ExclusionLockContext
 from hi.apps.common.processing_result import ProcessingResult
 
+from hi.integrations.sync_mixins import IntegrationSyncMixin
+
 from .hb_mixins import HomeBoxMixin
 
 logger = logging.getLogger(__name__)
 
 
-class HomeBoxSynchronizer( HomeBoxMixin ):
+class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
 
     SYNCHRONIZATION_LOCK_NAME = 'hb_integration_sync'
 
@@ -40,5 +42,14 @@ class HomeBoxSynchronizer( HomeBoxMixin ):
 
         item_list = hb_manager.fetch_hb_items_from_api()
         result.message_list.append( f'Found {len(item_list)} current HomeBox items.' )
+
+        label_list = hb_manager.fetch_hb_labels_from_api()
+        result.message_list.append( f'Found {len(label_list)} current HomeBox labels.' )
+
+        location_list = hb_manager.fetch_hb_locations_from_api()
+        result.message_list.append( f'Found {len(location_list)} current HomeBox locations.' )
+
+        maitenance_list = hb_manager.fetch_hb_maintenances_from_api()
+        result.message_list.append( f'Found {len(maitenance_list)} current HomeBox maintenances.' )
 
         return result
