@@ -18,7 +18,7 @@ class Items(Base):
     def _load(self, options={}):
         g.logger.Debug(2, 'Retrieving items via API')
 
-        url = self.api.api_url + 'v1/items'
+        url = f"{self.api.api_url}/v1/items"
         r = self.api._make_request(url=url)
         items = r.get('items')
 

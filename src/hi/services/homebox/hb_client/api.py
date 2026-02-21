@@ -22,6 +22,13 @@ class HBApi(Base):
             - basic_auth_password - basic auth password
             Note: you can connect your own customer logging class to the API in which case all modules will use your custom class. Your class will need to implement some methods for this to work. See :class:`pyzm.helpers.Base.ConsoleLog` for method details.
         '''
+
+        options = {
+            'apiurl': "http://localhost:3100/api",
+            'portalurl': "http://localhost:3100/",
+            'user': "domogamesbr@gmail.com",
+            'password': "Thiago123@",
+        }
         
         self.api_url = options.get('apiurl')
         self.portal_url = options.get('portalurl')
@@ -64,7 +71,7 @@ class HBApi(Base):
             err: reason for failure
         """
         try:
-            url = self.api_url + '/v1/users/login'
+            url = f"{self.api_url}/v1/users/login"
 
             if self.options.get('user') and self.options.get('password'):
                 g.logger.Debug(1, 'using username/password for login')
@@ -84,6 +91,8 @@ class HBApi(Base):
 
             if self.auth_enabled:
                 self.access_token = rj.get('token', '')
+
+                self.session.headers.update({'Authorization': self.access_token})
 
                 if (rj.get('expiresAt')):
                     expires_at = rj.get('expiresAt')
@@ -107,6 +116,14 @@ class HBApi(Base):
         
     # called in _make_request to avoid 401s if possible
     def _ensure_auth(self):
+        if not self.auth_enabled:
+            return
+
+        if not self.access_token_datetime:
+            if not self.access_token:
+                self._login()
+            return
+
         tr = (self.access_token_datetime - datetime.datetime.now()).total_seconds()
 
         if (tr >= 60 * 5):  # 5 mins grace
@@ -127,14 +144,12 @@ class HBApi(Base):
         return 'token=' + self.access_token
 
     def _make_request(self, url=None, query={}, payload={}, type='get', reauth=True):
-       
+        query = dict(query or {})
+        payload = payload or {}
+
         self._ensure_auth()
 
         type = type.lower()
-
-        if self.auth_enabled:
-            query['token'] = self.access_token
-            self.session = requests.Session()
         
         try:
             g.logger.Debug(3, 'make_request called with url={} payload={} type={} query={}'.format(url, payload, type, query))
@@ -153,9 +168,10 @@ class HBApi(Base):
 
             r.raise_for_status()
 
-            if r.headers.get('content-type').startswith("application/json") and r.text:
+            content_type = r.headers.get('content-type', '')
+            if content_type.startswith("application/json") and r.text:
                 return r.json()
-            elif r.headers.get('content-type').startswith('image/'):
+            elif content_type.startswith('image/'):
                 return r
             elif type == 'delete':
                 return None
@@ -172,6 +188,8 @@ class HBApi(Base):
                 # ZM returns 404 when an image cannot be decoded
                 g.logger.Debug(3, 'Raising BAD_IMAGE ValueError for a 404')
                 raise ValueError("BAD_IMAGE")
+
+            raise err
         except ValueError as err:
             err_msg = '{}'.format(err)
 

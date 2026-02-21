@@ -19,8 +19,7 @@ class Locations(Base):
         g.logger.Debug(2, 'Retrieving locations via API')
 
         url = f"{self.api.api_url}/v1/locations"
-        r = self.api._make_request(url=url)
-        locations = r.get('locations')
+        locations = self.api._make_request(url=url)
 
         self.locations = []
         for loc in locations:

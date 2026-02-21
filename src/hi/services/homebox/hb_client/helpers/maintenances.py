@@ -13,7 +13,7 @@ from . import globals as g
 class Maintenances(Base):
     def __init__(self, api=None):
         self.api = api
-        self._load()
+        self._load(options={"status": "both"})
 
     def _load(self, options={}):
         """Load maintenances from the API.
@@ -31,9 +31,8 @@ class Maintenances(Base):
         """
         g.logger.Debug(2, 'Retrieving maintenances via API')
 
-        url = f"{self.api.api_url}/v1/maintenances"
-        r = self.api._make_request(url=url, query=options)
-        maintenances = r.get('maintenances')
+        url = f"{self.api.api_url}/v1/maintenance"
+        maintenances = self.api._make_request(url=url, query=options)
 
         self.maintenances = []
         for m in maintenances:
