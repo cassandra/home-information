@@ -9,6 +9,9 @@ This is what gets replaced on form submission
 
 {% block basic_info %}{% endblock %}
 
+{% block additional_buttons %}
+{% endblock %}
+
 {% block additional_actions %}
 <h4 class="mb-0 text-muted {{ DIVID.ATTR_V2_FORM_DISPLAY_LABEL_CLASS }}">
   {% for multi_edit_form_data in multi_edit_form_data_list %}
@@ -27,17 +30,17 @@ This is what gets replaced on form submission
 
 {% block files_section %}{% endblock %}
 
-{% block left_column %} 
+{% block left_column %}
 <nav class="nav flex-column hi-vertical-nav mr-3" id="subsystemTabs" role="tablist">
   {% for multi_edit_form_data in multi_edit_form_data_list %}
-  <a class="nav-link hi-vertical-nav-link {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}active{% endif %}" 
-     id="subsystem-{{ multi_edit_form_data.owner.id }}-tab" 
-     data-toggle="tab" 
+  <a class="nav-link hi-vertical-nav-link {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}active{% endif %}"
+     id="subsystem-{{ multi_edit_form_data.owner.id }}-tab"
+     data-toggle="tab"
      data-subsystem-id="{{ multi_edit_form_data.owner.id }}"
      data-config-settings-url="{% url 'config_settings' %}"
-     href="#subsystem-{{ multi_edit_form_data.owner.id }}-panel" 
-     role="tab" 
-     aria-controls="subsystem-{{ multi_edit_form_data.owner.id }}-panel" 
+     href="#subsystem-{{ multi_edit_form_data.owner.id }}-panel"
+     role="tab"
+     aria-controls="subsystem-{{ multi_edit_form_data.owner.id }}-panel"
      aria-selected="{% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}true{% else %}false{% endif %}"
      onclick="window.Hi.attr.updateFormAction('{% url 'config_settings' subsystem_id=multi_edit_form_data.owner.id %}', '{{ attr_page_context.container_html_id }}', '{{ multi_edit_form_data.owner.name }} Settings')">
     {{ multi_edit_form_data.owner.name }}
@@ -53,20 +56,19 @@ This is what gets replaced on form submission
 
 <!-- Vertical Tabbed Subsystem Interface -->
 <div class="tab-content" id="subsystemTabContent">
-
   {% for multi_edit_form_data in multi_edit_form_data_list %}
-  <div class="tab-pane fade {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}show active{% endif %}" 
-       id="subsystem-{{ multi_edit_form_data.owner.id }}-panel" 
-       role="tabpanel" 
+  <div class="tab-pane fade {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}show active{% endif %}"
+       id="subsystem-{{ multi_edit_form_data.owner.id }}-panel"
+       role="tabpanel"
        aria-labelledby="subsystem-{{ multi_edit_form_data.owner.id }}-tab">
-    
+
     <!-- Subsystem content using existing attribute editing components -->
     <div class="">
       {% if multi_edit_form_data.owner.subsystem_key == "hi.apps.audio" %}
       <!-- Audio Test Button - only shown for Audio subsystem -->
       <div class="mb-3 text-right">
         <button type="button"
-                class="btn btn-outline-primary btn-xs"
+                class="btn btn-outline-primary btn-xs d-inline-flex align-items-center"
                 onclick="Hi.audio.testAudio();"
                 title="Test audio playback">
           {% icon "play" size="xs" css_class="hi-icon-left" %}Test Audio
@@ -74,9 +76,41 @@ This is what gets replaced on form submission
       </div>
       {% endif %}
       {% include "attribute/components/regular_attribute_list.html" with regular_attributes_formset=multi_edit_form_data.formset attr_item_context=multi_edit_form_data.context %}
+      <div class="mt-4 pt-3 border-top text-right">
+          <small class="text-muted mr-1">Problems with these settings?</small>
+          <a href="{% url 'subsystem_attribute_restore_subsystem_confirm_modal' subsystem_id=multi_edit_form_data.owner.id %}"
+             role="button"
+             class="btn btn-link btn-sm text-danger p-0"
+             style="text-decoration: none; vertical-align: baseline;"
+             title="Restore Default Values for {{ multi_edit_form_data.owner.name }}"
+             data-async="modal">
+            Reset {{ multi_edit_form_data.owner.name }} Settings to Default
+          </a>
+      </div>
     </div>
-    
   </div>
   {% endfor %}
 </div>  
+{% endblock %}
+
+{% block additional_sections %}
+  {% if attr_page_context.can_restore_default %}
+    {% for multi_edit_form_data in multi_edit_form_data_list %}
+      {% if selected_subsystem_id == multi_edit_form_data.owner.id|stringformat:'s' %}
+        <div class="row mt-5 mb-4">
+            <div class="col-12 text-center">
+                 <small class="text-muted mr-1">Need to start over?</small>
+                 <a href="{% url 'subsystem_attribute_restore_all_confirm_modal' subsystem_id=multi_edit_form_data.owner.id %}"
+                    role="button"
+                    class="btn btn-link btn-sm text-danger p-0"
+                    style="text-decoration: none; vertical-align: baseline;"
+                    title="Restore Default Values for All Settings"
+                    data-async="modal">
+                  Reset All Settings to Default
+                </a>
+            </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
 {% endblock %}

@@ -1,6 +1,7 @@
 from django.db import models
 
 from hi.apps.attribute.models import AttributeModel, AttributeValueHistoryModel
+from hi.apps.config.setting_enums import SettingEnum
 
 
 class Subsystem( models.Model ):
@@ -55,7 +56,15 @@ class SubsystemAttribute( AttributeModel ):
     def _get_history_model_class(self):
         """Return the history model class for SubsystemAttribute."""
         return SubsystemAttributeHistory
-
+    
+    def get_attribute_default_value(self):
+        """Return the default value for this attribute, or None if not found."""
+        try:
+            enum = SettingEnum.from_key(self.setting_key)
+            return enum.definition.initial_value
+        except (ValueError, ImportError, AttributeError, TypeError):
+            return None
+    
 
 class SubsystemAttributeHistory(AttributeValueHistoryModel):
     """History tracking for SubsystemAttribute changes."""

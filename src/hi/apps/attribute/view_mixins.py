@@ -1,6 +1,7 @@
 import logging
 from typing import Any, Dict, List
 
+from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 
 
@@ -14,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class AttributeEditCommonMixin:
-    """ Common mixins are those where we only deal with a single attribuet at a time.
-    Thus, it does not depend if we are using a single item or mutliple item views.
+    """ Common mixins are those where we only deal with a single attribute at a time.
+    Thus, it does not depend if we are using a single item or multiple item views.
     """
 
     ATTRIBUTE_HISTORY_VIEW_LIMIT = 50
@@ -85,6 +86,19 @@ class AttributeEditCommonMixin:
 
         attribute.value = history_record.value
         attribute.save()  # This will create a new history record too
+        return
+    
+    def do_restore_default( self,
+                            attribute  : AttributeModel ):
+        """ Caller should catch exceptions """
+        
+        default_value = attribute.get_attribute_default_value()
+        if default_value is None:
+            logger.warning(f"Restore default: No default value for attribute {attribute.name}. Skipping restore.")
+            return 
+        
+        attribute.value = default_value
+        attribute.save()
         return
 
     
@@ -238,3 +252,27 @@ class AttributeMultiEditViewMixin( AttributeEditCommonMixin ):
             request = request,
         )
     
+    def post_restore_all_defaults(self,
+                                  request: HttpRequest,
+                                  attributes: List[AttributeModel],
+                                  attr_page_context: AttributePageEditContext,
+                                  attr_item_context_list: List[AttributeItemEditContext]) -> HttpResponse:
+
+        form_handler = AttributeEditFormHandler()
+        renderer = AttributeEditResponseRenderer()
+
+        try:
+            with transaction.atomic():
+                for attribute in attributes:
+                    self.do_restore_default(attribute=attribute)
+        except Exception as e:
+            return renderer.render_restore_error_response(str(e))
+
+        multi_edit_form_data_list = form_handler.create_multi_edit_form_data(
+            attr_item_context_list=attr_item_context_list,
+        )
+        return renderer.render_restore_success_response_multi(
+            attr_page_context=attr_page_context,
+            multi_edit_form_data_list=multi_edit_form_data_list,
+            request=request,
+        )
