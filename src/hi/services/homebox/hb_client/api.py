@@ -23,13 +23,6 @@ class HBApi(Base):
             Note: you can connect your own customer logging class to the API in which case all modules will use your custom class. Your class will need to implement some methods for this to work. See :class:`pyzm.helpers.Base.ConsoleLog` for method details.
         '''
 
-        options = {
-            'apiurl': "http://localhost:3100/api",
-            'portalurl': "http://localhost:3100/",
-            'user': "domogamesbr@gmail.com",
-            'password': "Thiago123@",
-        }
-        
         self.api_url = options.get('apiurl')
         self.portal_url = options.get('portalurl')
         if not self.portal_url and self.api_url.endswith('/api'):
