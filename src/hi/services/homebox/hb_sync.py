@@ -1,11 +1,11 @@
 import logging
-from typing import Dict
+from typing import Dict, List
 
 from django.db import transaction
 
 from hi.apps.common.database_lock import ExclusionLockContext
 from hi.apps.common.processing_result import ProcessingResult
-from hi.apps.entity.models import Entity
+from hi.apps.entity.models import Entity, EntityAttribute
 
 from hi.integrations.transient_models import IntegrationKey
 from hi.integrations.sync_mixins import IntegrationSyncMixin
@@ -13,6 +13,7 @@ from hi.integrations.sync_mixins import IntegrationSyncMixin
 from .hb_converter import HbConverter
 from .hb_metadata import HbMetaData
 from .hb_mixins import HomeBoxMixin
+from .hb_client.helpers.item import Item
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,21 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
         item_list = hb_manager.fetch_hb_items_from_api()
         result.message_list.append( f'Found {len(item_list)} current HomeBox items.' )
 
+        self._sync_helper_entities(item_list = item_list, result = result)
+
+        label_list = hb_manager.fetch_hb_labels_from_api()
+        result.message_list.append( f'Found {len(label_list)} current HomeBox labels.' )
+
+        location_list = hb_manager.fetch_hb_locations_from_api()
+        result.message_list.append( f'Found {len(location_list)} current HomeBox locations.' )
+
+        maitenance_list = hb_manager.fetch_hb_maintenances_from_api()
+        result.message_list.append( f'Found {len(maitenance_list)} current HomeBox maintenances.' )
+
+        return result
+    
+    def _sync_helper_entities( self, item_list: List[Item], result: ProcessingResult ):
+        
         integration_key_to_item = dict()
         for item in item_list:
             try:
@@ -63,33 +79,32 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
         result.message_list.append( f'Found {len(integration_key_to_entity)} existing HomeBox entities.' )
 
         with transaction.atomic():
-            for integration_key, item in integration_key_to_item.items():
+            for integration_key, hb_item in integration_key_to_item.items():
                 entity = integration_key_to_entity.get( integration_key )
                 if entity:
                     self._update_entity( entity = entity,
-                                         item = item,
-                                         result = result )
+                                        item = hb_item,
+                                        result = result )
                 else:
-                    self._create_entity( item = item,
-                                         result = result )
+                    entity = self._create_entity( item = hb_item,
+                                                result = result )
+                    
+                integration_key_to_attr = self._get_existing_hb_attributes(
+                    entity = entity,
+                )
+                self._sync_helper_entity_attributes(
+                    entity = entity,
+                    item = hb_item,
+                    integration_key_to_attr = integration_key_to_attr,
+                    result = result,
+                )
                 continue
 
             for integration_key, entity in integration_key_to_entity.items():
                 if integration_key not in integration_key_to_item:
                     self._remove_entity( entity = entity,
-                                         result = result )
+                                        result = result )
                 continue
-
-        label_list = hb_manager.fetch_hb_labels_from_api()
-        result.message_list.append( f'Found {len(label_list)} current HomeBox labels.' )
-
-        location_list = hb_manager.fetch_hb_locations_from_api()
-        result.message_list.append( f'Found {len(location_list)} current HomeBox locations.' )
-
-        maitenance_list = hb_manager.fetch_hb_maintenances_from_api()
-        result.message_list.append( f'Found {len(maitenance_list)} current HomeBox maintenances.' )
-
-        return result
 
     def _get_existing_hb_entities( self, result : ProcessingResult ) -> Dict[ IntegrationKey, Entity ]:
         logger.debug( 'Getting existing HomeBox entities.' )
@@ -113,11 +128,11 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
 
     def _create_entity( self,
                         item,
-                        result : ProcessingResult ):
+                        result : ProcessingResult ) -> Entity:
         entity = HbConverter.create_models_for_hb_item( hb_item = item )
 
         result.message_list.append( f'Created HomeBox entity: {entity}' )
-        return
+        return entity
 
     def _update_entity( self,
                         entity : Entity,
@@ -140,4 +155,113 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
                         entity : Entity,
                         result : ProcessingResult ):
         self._remove_entity_intelligently( entity, result, 'HomeBox' )
+        return
+
+    def _sync_helper_entity_attributes( self,
+                                        entity: Entity,
+                                        hb_item,
+                                        integration_key_to_attr,
+                                        result: ProcessingResult ):
+        attribute_message_list = list()
+
+        integration_key_to_hb_field = dict()
+        for order_id, hb_field in enumerate( hb_item.fields ):
+            if not isinstance( hb_field, dict ):
+                continue
+
+            integration_key = HbConverter.hb_field_to_integration_key( hb_field = hb_field )
+            if integration_key:
+                integration_key_to_hb_field[integration_key] = (hb_field, order_id)
+
+        with transaction.atomic():
+
+            for integration_key, field_data in integration_key_to_hb_field.items():
+                hb_field, order_id = field_data
+                attribute = integration_key_to_attr.get( integration_key )
+
+                if attribute:
+                    self._update_attribute(
+                        attribute = attribute,
+                        hb_field = hb_field,
+                        order_id = order_id,
+                        message_list = attribute_message_list,
+                    )
+                else:
+                    created_attribute = self._create_attribute(
+                        entity = entity,
+                        hb_field = hb_field,
+                        order_id = order_id,
+                    )
+                    if created_attribute:
+                        integration_key_to_attr[integration_key] = created_attribute
+                        attribute_message_list.append( f'Field attribute added: {created_attribute.name}' )
+                continue
+
+            for field_key, attribute in list( integration_key_to_attr.items() ):
+                if attribute.entity_id != entity.id:
+                    continue
+
+                if field_key not in integration_key_to_hb_field:
+                    self._remove_attribute(
+                        attribute = attribute,
+                        message_list = attribute_message_list,
+                    )
+                    del integration_key_to_attr[field_key]
+                continue
+
+        if attribute_message_list:
+            result.message_list.append(
+                f'Updated HomeBox entity attributes: {entity} ({", ".join(attribute_message_list)})'
+            )
+        return
+    
+    def _get_existing_hb_attributes( self,
+                                     entity: Entity ) -> Dict[ IntegrationKey, EntityAttribute ]:
+        integration_key_to_attribute = dict()
+
+        queryset = entity.attributes.filter( integration_key_str__isnull = False ).exclude( integration_key_str = '' )
+
+        for attribute in queryset:
+            try:
+                integration_key = IntegrationKey.from_string( attribute.integration_key_str )
+            except Exception:
+                logger.debug( f'Ignoring entity attribute with invalid integration key: {attribute.integration_key_str}' )
+                continue
+
+            integration_key_to_attribute[integration_key] = attribute
+
+        return integration_key_to_attribute
+
+    def _create_attribute( self,
+                           entity: Entity,
+                           hb_field,
+                           order_id: int ) -> EntityAttribute:
+        return HbConverter.create_attribute_from_hb_field(
+            entity = entity,
+            hb_field = hb_field,
+            order_id = order_id,
+        )
+
+    def _update_attribute( self,
+                           attribute: EntityAttribute,
+                           hb_field,
+                           order_id: int,
+                           message_list: List[str] ):
+        was_changed = HbConverter.update_attribute_from_hb_field(
+            attribute = attribute,
+            hb_field = hb_field,
+            order_id = order_id,
+        )
+        if was_changed:
+            message_list.append(
+                f'Field attribute updated: {HbConverter.hb_field_to_attribute_name( hb_field = hb_field )}'
+            )
+        return
+
+    def _remove_attribute( self,
+                           attribute: EntityAttribute,
+                           message_list: List[str] ):
+        old_name = attribute.name
+        attribute.delete()
+        message_list.append( f'Field attribute removed: {old_name}' )
         return

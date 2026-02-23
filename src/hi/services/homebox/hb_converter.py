@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from django.db import transaction
 
@@ -30,10 +30,6 @@ class HbConverter:
 
             entity.integration_key = entity_integration_key
             entity.save()
-            cls._create_entity_attributes_from_hb_fields(
-                entity = entity,
-                hb_item = hb_item,
-            )
             
         return entity
 
@@ -46,12 +42,6 @@ class HbConverter:
             if entity.name != entity_name:
                 messages.append( f'Name changed for {entity}. Setting to "{entity_name}"' )
                 entity.name = entity_name
-
-            attr_messages = cls._update_entity_attributes_from_hb_fields(
-                entity = entity,
-                hb_item = hb_item,
-            )
-            messages.extend( attr_messages )
 
             if messages:
                 entity.save()
@@ -96,114 +86,68 @@ class HbConverter:
         hb_item_fields = hb_item.fields
 
         for order_id, hb_field in enumerate( hb_item_fields ):
-            if not isinstance( hb_field, dict ):
-                continue
-
-            field_name = str(hb_field.get('name', '')).strip()
-            text_value = hb_field.get('textValue', '')
-            value_type = AttributeValueType.TEXT
-
-            field_key = cls.hb_field_to_integration_key( hb_field = hb_field )
-
-            EntityAttribute.objects.create(
+            cls.create_attribute_from_hb_field(
                 entity = entity,
-                name = field_name,
-                value = text_value,
-                value_type_str = str(value_type),
-                attribute_type_str = str(AttributeType.PREDEFINED),
-                is_editable = False,
-                is_required = False,
+                hb_field = hb_field,
                 order_id = order_id,
-                integration_key_str = str(field_key),
             )
 
     @classmethod
-    def _update_entity_attributes_from_hb_fields( cls, entity: Entity, hb_item: Item ) -> List[str]:
-        hb_item_fields = hb_item.fields
-        messages = list()
+    def hb_field_to_attribute_name( cls, hb_field: Dict ) -> str:
+        return str(hb_field.get('name', '')).strip()
 
-        existing_attrs = list(entity.attributes.all())
-        existing_by_key = {
-            attr.integration_key_str: attr
-            for attr in existing_attrs
-            if attr.integration_key_str and attr.integration_key_str.startswith(f'{HbMetaData.integration_id}.field:')
+    @classmethod
+    def hb_field_to_attribute_payload( cls, hb_field: Dict, order_id: int ) -> Optional[Dict]:
+        if not isinstance( hb_field, dict ):
+            return None
+
+        return {
+            'name': cls.hb_field_to_attribute_name( hb_field = hb_field ),
+            'value': hb_field.get('textValue', ''),
+            'value_type_str': str(AttributeValueType.TEXT),
+            'attribute_type_str': str(AttributeType.PREDEFINED),
+            'is_editable': False,
+            'is_required': False,
+            'order_id': order_id,
+            'integration_key_str': cls.hb_field_to_integration_key( hb_field = hb_field ),
         }
-        fallback_by_name = {
-            attr.name: attr
-            for attr in existing_attrs
-            if ((not attr.integration_key_str)
-                and (attr.attribute_type == AttributeType.PREDEFINED)
-                and (not attr.is_editable))
-        }
-        seen_field_key_set = set()
 
-        for order_id, hb_field in enumerate( hb_item_fields ):
-            if not isinstance( hb_field, dict ):
-                continue
+    @classmethod
+    def create_attribute_from_hb_field( cls,
+                                        entity: Entity,
+                                        hb_field: Dict,
+                                        order_id: int ) -> Optional[EntityAttribute]:
+        payload = cls.hb_field_to_attribute_payload(
+            hb_field = hb_field,
+            order_id = order_id,
+        )
+        if not payload:
+            return None
 
-            field_key = cls.hb_field_to_integration_key( hb_field = hb_field )
+        return EntityAttribute.objects.create(
+            entity = entity,
+            **payload,
+        )
 
-            field_name = str(hb_field.get('name', '')).strip()
-            text_value = hb_field.get( 'textValue', '' )
-            value_type = AttributeValueType.TEXT
+    @classmethod
+    def update_attribute_from_hb_field( cls,
+                                        attribute: EntityAttribute,
+                                        hb_field: Dict,
+                                        order_id: int ) -> bool:
+        payload = cls.hb_field_to_attribute_payload(
+            hb_field = hb_field,
+            order_id = order_id,
+        )
+        if not payload:
+            return False
 
-            attribute = None
-            if field_key:
-                seen_field_key_set.add( field_key )
-                attribute = existing_by_key.get( field_key )
+        was_changed = False
+        for field_name, field_value in payload.items():
+            if getattr( attribute, field_name ) != field_value:
+                setattr( attribute, field_name, field_value )
+                was_changed = True
 
-            if not attribute:
-                attribute = fallback_by_name.get( field_name )
+        if was_changed:
+            attribute.save()
 
-            if attribute:
-                was_changed = False
-                if attribute.name != field_name:
-                    attribute.name = field_name
-                    was_changed = True
-                if attribute.value != text_value:
-                    attribute.value = text_value
-                    was_changed = True
-                if attribute.value_type_str != str(value_type):
-                    attribute.value_type_str = str(value_type)
-                    was_changed = True
-                if attribute.attribute_type_str != str(AttributeType.PREDEFINED):
-                    attribute.attribute_type_str = str(AttributeType.PREDEFINED)
-                    was_changed = True
-                if attribute.is_editable:
-                    attribute.is_editable = False
-                    was_changed = True
-                if attribute.is_required:
-                    attribute.is_required = False
-                    was_changed = True
-                if attribute.order_id != order_id:
-                    attribute.order_id = order_id
-                    was_changed = True
-                if field_key and attribute.integration_key_str != field_key:
-                    attribute.integration_key_str = field_key
-                    was_changed = True
-
-                if was_changed:
-                    attribute.save()
-                    messages.append( f'Field attribute updated: {field_name}' )
-                continue
-
-            EntityAttribute.objects.create(
-                entity = entity,
-                name = field_name,
-                value = text_value,
-                value_type_str = str(value_type),
-                attribute_type_str = str(AttributeType.PREDEFINED),
-                is_editable = False,
-                is_required = False,
-                order_id = order_id,
-                integration_key_str = str(field_key),
-            )
-            messages.append( f'Field attribute added: {field_name}' )
-
-        for existing_key, attribute in existing_by_key.items():
-            if existing_key not in seen_field_key_set:
-                old_name = attribute.name
-                attribute.delete()
-                messages.append( f'Field attribute removed: {old_name}' )
-
-        return messages
+        return was_changed
