@@ -8,14 +8,21 @@ from hi.apps.entity.models import Entity, EntityAttribute
 from hi.integrations.transient_models import IntegrationKey
 
 from .hb_metadata import HbMetaData
-from .hb_client.helpers.item import Item
+from .hb_client.helpers.item import HbItem
 from .hb_client.helpers import globals as g
 
 
 class HbConverter:
 
+    HB_ITEM_ATTRIBUTE_FIELD_MAP = [
+        ( 'description', 'Description' ),
+        ( 'serial_number', 'Serial Number' ),
+        ( 'model_number', 'Model Number' ),
+        ( 'manufacturer', 'Manufacturer' ),
+    ]
+
     @classmethod
-    def create_models_for_hb_item( cls, hb_item: Item ) -> Entity:
+    def create_models_for_hb_item( cls, hb_item: HbItem ) -> Entity:
 
         with transaction.atomic():
             entity_integration_key = cls.hb_item_to_integration_key( hb_item = hb_item )
@@ -49,7 +56,7 @@ class HbConverter:
         return messages
 
     @classmethod
-    def hb_item_to_integration_key( cls, hb_item: Item ) -> IntegrationKey:
+    def hb_item_to_integration_key( cls, hb_item: HbItem ) -> IntegrationKey:
         return IntegrationKey(
             integration_id = HbMetaData.integration_id,
             integration_name = str( hb_item.id ),
@@ -68,7 +75,7 @@ class HbConverter:
         )
 
     @classmethod
-    def hb_item_to_entity_name( cls, hb_item: Item) -> str:
+    def hb_item_to_entity_name( cls, hb_item: HbItem ) -> str:
         item_name = hb_item.name
 
         if not item_name:
@@ -78,11 +85,11 @@ class HbConverter:
         return item_name
 
     @classmethod
-    def hb_item_to_entity_type( cls, hb_item: Item ) -> EntityType:
+    def hb_item_to_entity_type( cls, hb_item: HbItem ) -> EntityType:
         return EntityType.OTHER
 
     @classmethod
-    def _create_entity_attributes_from_hb_fields( cls, entity: Entity, hb_item: Item ):
+    def _create_entity_attributes_from_hb_fields( cls, entity: Entity, hb_item: HbItem ):
         hb_item_fields = hb_item.fields
 
         for order_id, hb_field in enumerate( hb_item_fields ):
@@ -95,6 +102,26 @@ class HbConverter:
     @classmethod
     def hb_field_to_attribute_name( cls, hb_field: Dict ) -> str:
         return str(hb_field.get('name', '')).strip()
+
+    @classmethod
+    def hb_item_to_hb_field_list ( cls, hb_item: HbItem ) -> List[Dict]:
+        hb_field_list = list( hb_item.fields )
+
+        for key, name in cls.HB_ITEM_ATTRIBUTE_FIELD_MAP:
+            value = str( getattr( hb_item, key, '' ) or '' ).strip()
+            if not value:
+                continue
+
+            hb_field_list.append({
+                'id': f'hb_item:{key}',
+                'type': 'text', # all fields created in homebox are text type, even if they represent numbers or booleans
+                'name': name,
+                'textValue': value,
+                'numberValue': None,
+                'booleanValue': None,
+            })
+
+        return hb_field_list
 
     @classmethod
     def hb_field_to_attribute_payload( cls, hb_field: Dict, order_id: int ) -> Optional[Dict]:

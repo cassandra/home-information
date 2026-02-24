@@ -6,11 +6,11 @@ Holds a list of Items for a HB configuration
 
 
 from .base import Base
-from .item import Item
+from .item import HbItem
 from . import globals as g
 
 
-class Items(Base):
+class HbItems(Base):
     def __init__(self, api=None):
         self.api = api
         self._load()
@@ -24,7 +24,7 @@ class Items(Base):
 
         self.items = []
         for i in items:
-            self.items.append(Item(api=self.api, item=i))
+            self.items.append(HbItem(api=self.api, item=i))
 
     def list(self):
         return self.items

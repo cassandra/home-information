@@ -150,7 +150,10 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             return []
 
         with self.api_call_context( 'hb_items' ):
-            return self.hb_client.items().list()
+            options = {
+                'force_reload': True,
+            }
+            return self.hb_client.items( options=options ).list()
 
     async def fetch_hb_items_from_api_async( self, verbose : bool = True ) -> list:
         return await sync_to_async(

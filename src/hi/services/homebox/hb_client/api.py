@@ -2,7 +2,7 @@ import requests
 import datetime
 from .helpers.base import Base
 from .helpers import globals as g
-from .helpers.items import Items
+from .helpers.items import HbItems
 from .helpers.locations import Locations
 from .helpers.maintenances import Maintenances
 from .helpers.labels import Labels
@@ -210,10 +210,10 @@ class HBApi(Base):
                     }
             
         Returns:
-            list of :class:`hb_client.helpers.Item`: list of items 
+            list of :class:`hb_client.helpers.HbItem`: list of items 
         """
         if options.get('force_reload') or not self.Items:
-            self.Items = Items(api=self)
+            self.Items = HbItems(api=self)
         return self.Items
     
     def labels(self, options={}):

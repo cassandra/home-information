@@ -57,3 +57,18 @@ class TestHbConverter(TestCase):
     def test_hb_item_to_entity_name_fallback(self):
         item = self._mock_item(item_id='item-no-name', name='')
         self.assertEqual(HbConverter.hb_item_to_entity_name(hb_item=item), 'HomeBox Item item-no-name')
+
+    def test_hb_item_to_attribute_field_list_contains_top_level_fields(self):
+        item = self._mock_item(item_id='item-top-level')
+        item.description = 'Portable drill'
+        item.serial_number = 'SN-123'
+        item.model_number = 'MD-456'
+        item.manufacturer = 'ACME'
+
+        hb_field_list = HbConverter.hb_item_to_attribute_field_list( hb_item = item )
+        field_id_to_field = { field.get( 'id' ): field for field in hb_field_list }
+
+        self.assertEqual( field_id_to_field['hb_item:description']['textValue'], 'Portable drill' )
+        self.assertEqual( field_id_to_field['hb_item:serial_number']['textValue'], 'SN-123' )
+        self.assertEqual( field_id_to_field['hb_item:model_number']['textValue'], 'MD-456' )
+        self.assertEqual( field_id_to_field['hb_item:manufacturer']['textValue'], 'ACME' )

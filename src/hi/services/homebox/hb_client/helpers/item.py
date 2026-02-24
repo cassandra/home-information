@@ -12,7 +12,7 @@ from .base import Base
 from . import globals as g
 
 
-class Item(Base):
+class HbItem(Base):
     def __init__(self, api, item):
         self.api = api
         self._load(item)
