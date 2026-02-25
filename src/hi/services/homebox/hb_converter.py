@@ -33,6 +33,7 @@ class HbConverter:
                 name = entity_name,
                 entity_type_str = str(entity_type),
                 can_user_delete = HbMetaData.allow_entity_deletion,
+                can_add_custom_attributes = HbMetaData.can_add_custom_attributes,
             )
 
             entity.integration_key = entity_integration_key

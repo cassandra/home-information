@@ -9,10 +9,11 @@ from .enums import IntegrationAttributeType
 @dataclass
 class IntegrationMetaData:
 
-    integration_id         : str  # An identifier that must be unique across all integrations
-    label                  : str  # For human-friendly displaying
-    attribute_type         : IntegrationAttributeType
-    allow_entity_deletion  : bool
+    integration_id            : str  # An identifier that must be unique across all integrations
+    label                     : str  # For human-friendly displaying
+    attribute_type            : IntegrationAttributeType
+    allow_entity_deletion     : bool
+    can_add_custom_attributes : bool = True
 
     
 @dataclass

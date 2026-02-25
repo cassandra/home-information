@@ -8,4 +8,5 @@ HbMetaData = IntegrationMetaData(
     label = 'HomeBox',
     attribute_type = HbAttributeType,
     allow_entity_deletion = False,
+    can_add_custom_attributes = False,
 )

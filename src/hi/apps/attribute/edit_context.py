@@ -227,6 +227,14 @@ class AttributeItemEditContext( AttributePageEditContext ):
     @property
     def add_attribute_button_html_id(self) -> str:
         return f"{DIVID['ATTR_V2_ADD_ATTRIBUTE_BTN_ID']}{self.id_suffix}"
+
+    @property
+    def can_add_custom_attributes(self) -> bool:
+        return True
+
+    @property
+    def add_attribute_disabled_message(self) -> str:
+        return ''
     
     def to_template_context(self) -> Dict[str, Any]:
         template_context = super().to_template_context()
