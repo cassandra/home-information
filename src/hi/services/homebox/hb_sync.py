@@ -53,15 +53,6 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
 
         self._sync_helper_entities( item_list = item_list, result = result )
 
-        label_list = hb_manager.fetch_hb_labels_from_api()
-        result.message_list.append( f'Found {len(label_list)} current HomeBox labels.' )
-
-        location_list = hb_manager.fetch_hb_locations_from_api()
-        result.message_list.append( f'Found {len(location_list)} current HomeBox locations.' )
-
-        maitenance_list = hb_manager.fetch_hb_maintenances_from_api()
-        result.message_list.append( f'Found {len(maitenance_list)} current HomeBox maintenances.' )
-
         return result
     
     def _sync_helper_entities( self, 
@@ -156,23 +147,34 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
                                         result: ProcessingResult ):
         attribute_message_list = list()
 
-        integration_key_to_hb_field = dict()
-
-        hb_field_list = HbConverter.hb_item_to_hb_field_list( hb_item = hb_item )
-
+        integration_key_to_regular_field = dict()
+        hb_field_list = HbConverter.hb_item_to_attribute_field_list( hb_item = hb_item )
         for order_id, hb_field in enumerate( hb_field_list ):
             if not isinstance( hb_field, dict ):
                 continue
 
             integration_key = HbConverter.hb_field_to_integration_key( hb_field = hb_field )
             if integration_key:
-                integration_key_to_hb_field[integration_key] = (hb_field, order_id)
+                integration_key_to_regular_field[integration_key] = (hb_field, order_id)
+
+        integration_key_to_attachment = dict()
+        attachment_list = HbConverter.hb_item_to_attachment_list( hb_item = hb_item )
+        for order_id, hb_attachment in enumerate( attachment_list ):
+            if not isinstance( hb_attachment, dict ):
+                continue
+
+            integration_key = HbConverter.hb_attachment_to_integration_key( hb_attachment = hb_attachment )
+            if integration_key:
+                integration_key_to_attachment[integration_key] = ( hb_attachment, order_id )
+
+        active_integration_keys = set(integration_key_to_regular_field.keys())
+        active_integration_keys.update(integration_key_to_attachment.keys())
 
         integration_key_to_attr = self._get_existing_hb_attributes(entity = entity)
 
         with transaction.atomic():
 
-            for integration_key, field_data in integration_key_to_hb_field.items():
+            for integration_key, field_data in integration_key_to_regular_field.items():
                 hb_field, order_id = field_data
                 attribute = integration_key_to_attr.get( integration_key )
 
@@ -182,6 +184,7 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
                         hb_field = hb_field,
                         order_id = order_id,
                         message_list = attribute_message_list,
+                        updated_prefix = 'Field attribute updated',
                     )
                 else:
                     created_attribute = self._create_attribute(
@@ -194,11 +197,34 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
                         attribute_message_list.append( f'Field attribute added: {created_attribute.name}' )
                 continue
 
+            for integration_key, hb_attachment in integration_key_to_attachment.items():
+                hb_attachment, order_id = hb_attachment
+                attribute = integration_key_to_attr.get( integration_key )
+
+                if attribute:
+                    self._update_attachment_attribute(
+                        attribute = attribute,
+                        hb_attachment = hb_attachment,
+                        order_id = order_id,
+                        message_list = attribute_message_list,
+                        updated_prefix = 'Attachment attribute updated',
+                    )
+                else:
+                    created_attribute = self._create_attachment_attribute(
+                        entity = entity,
+                        hb_attachment = hb_attachment,
+                        order_id = order_id,
+                    )
+                    if created_attribute:
+                        integration_key_to_attr[integration_key] = created_attribute
+                        attribute_message_list.append( f'Attachment attribute added: {created_attribute.name}' )
+                continue
+
             for field_key, attribute in list( integration_key_to_attr.items() ):
                 if attribute.entity_id != entity.id:
                     continue
 
-                if field_key not in integration_key_to_hb_field:
+                if field_key not in active_integration_keys:
                     self._remove_attribute( attribute = attribute, message_list = attribute_message_list )
                     del integration_key_to_attr[field_key]
                 continue
@@ -237,14 +263,40 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
                            attribute: EntityAttribute,
                            hb_field: dict,
                            order_id: int,
-                           message_list: List[str] ):
+                           message_list: List[str],
+                           updated_prefix: str ):
         was_changed = HbConverter.update_attribute_from_hb_field(
             attribute = attribute,
             hb_field = hb_field,
             order_id = order_id,
         )
         if was_changed:
-            message_list.append( f'Field attribute updated: {HbConverter.hb_field_to_attribute_name( hb_field = hb_field )}' )
+            message_list.append( f'{updated_prefix}: {HbConverter.hb_field_to_attribute_name( hb_field = hb_field )}' )
+        return
+
+    def _create_attachment_attribute( self,
+                                      entity: Entity,
+                                      hb_attachment: dict,
+                                      order_id: int ) -> EntityAttribute:
+        return HbConverter.create_attribute_from_hb_attachment(
+            entity = entity,
+            hb_attachment = hb_attachment,
+            order_id = order_id,
+        )
+
+    def _update_attachment_attribute( self,
+                                      attribute: EntityAttribute,
+                                      hb_attachment: dict,
+                                      order_id: int,
+                                      message_list: List[str],
+                                      updated_prefix: str ):
+        was_changed = HbConverter.update_attribute_from_hb_attachment(
+            attribute = attribute,
+            hb_attachment = hb_attachment,
+            order_id = order_id,
+        )
+        if was_changed:
+            message_list.append( f'{updated_prefix}: {HbConverter.hb_attachment_to_attribute_name( hb_attachment = hb_attachment )}' )
         return
 
     def _remove_attribute( self,

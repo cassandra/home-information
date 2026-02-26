@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 from django.test import TestCase
 
+from hi.apps.attribute.enums import AttributeValueType
 from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
 from hi.services.homebox.hb_converter import HbConverter
@@ -12,12 +13,15 @@ class TestHbConverter(TestCase):
 
     def _mock_item(self, item_id='item-1', name='Item 1', description='desc', quantity=1):
         item = Mock()
+        item.download_attachment.return_value = None
         item.id = item_id
         item.name = name
         item.description = description
         item.quantity = quantity
         item.location = {'id': 'loc-1', 'name': 'Garage'}
         item.labels = [{'id': 'lab-1', 'name': 'Tools'}]
+        item.fields = []
+        item.attachments = []
         return item
 
     def test_create_models_for_hb_item_creates_entity(self):
@@ -75,3 +79,80 @@ class TestHbConverter(TestCase):
         self.assertEqual( field_id_to_field['hb_item:serial_number']['textValue'], 'SN-123' )
         self.assertEqual( field_id_to_field['hb_item:model_number']['textValue'], 'MD-456' )
         self.assertEqual( field_id_to_field['hb_item:manufacturer']['textValue'], 'ACME' )
+
+    def test_hb_item_attachment_maps_to_file_attribute_payload(self):
+        item = self._mock_item(item_id='item-with-attachment')
+        item.attachments = [{
+            'id': 'att-1',
+            'title': 'Manual',
+            'mimeType': 'text/plain',
+            'path': 'some/path',
+        }]
+        item.download_attachment.return_value = {
+            'content': b'attachment-content',
+            'mime_type': 'text/plain',
+            'filename': 'Manual.txt',
+            'source_url': 'https://example/download',
+        }
+
+        attachment_field_list = HbConverter.hb_item_to_attachment_field_list(hb_item=item)
+        attachment_data = attachment_field_list[0]
+        payload = HbConverter.hb_attachment_to_attribute_payload(hb_attachment=attachment_data, order_id=0)
+
+        self.assertEqual(payload['value_type_str'], str(AttributeValueType.FILE))
+        self.assertEqual(payload['name'], 'Manual')
+        self.assertEqual(payload['file_mime_type'], 'text/plain')
+        self.assertIn('file_value', payload)
+
+    def test_create_and_update_file_attribute_from_attachment(self):
+        item = self._mock_item(item_id='item-file-sync')
+        entity = HbConverter.create_models_for_hb_item(hb_item=item)
+
+        attachment = {
+            'id': 'att-2',
+            'title': 'Teste.txt',
+            'mimeType': 'text/plain; charset=utf-8',
+            'path': 'x/y/z',
+        }
+        attachment_data = {
+            'id': 'attachment:att-2',
+            'type': 'attachment',
+            'name': 'Teste.txt',
+            'textValue': 'Teste.txt',
+            'mimeType': 'text/plain; charset=utf-8',
+            'attachment': attachment,
+            'downloaded_attachment': {
+                'content': b'v1',
+                'mime_type': 'text/plain; charset=utf-8',
+                'filename': 'Teste.txt',
+                'source_url': 'https://example/v1',
+            }
+        }
+
+        created_attribute = HbConverter.create_attribute_from_hb_attachment(
+            entity=entity,
+            hb_attachment=attachment_data,
+            order_id=0,
+        )
+
+        self.assertEqual(created_attribute.value_type_str, str(AttributeValueType.FILE))
+        self.assertTrue(bool(created_attribute.file_value))
+
+        # File should not be overwritten when already present.
+        original_name = created_attribute.file_value.name
+        attachment_data['downloaded_attachment'] = {
+            'content': b'v2',
+            'mime_type': 'text/plain; charset=utf-8',
+            'filename': 'Teste-v2.txt',
+            'source_url': 'https://example/v2',
+        }
+        was_changed = HbConverter.update_attribute_from_hb_attachment(
+            attribute=created_attribute,
+            hb_attachment=attachment_data,
+            order_id=1,
+        )
+
+        self.assertTrue(was_changed)
+        created_attribute.refresh_from_db()
+        self.assertEqual(created_attribute.order_id, 1)
+        self.assertEqual(created_attribute.file_value.name, original_name)

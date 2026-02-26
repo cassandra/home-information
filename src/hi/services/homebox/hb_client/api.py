@@ -23,7 +23,7 @@ class HBApi(Base):
             Note: you can connect your own customer logging class to the API in which case all modules will use your custom class. Your class will need to implement some methods for this to work. See :class:`pyzm.helpers.Base.ConsoleLog` for method details.
         '''
 
-        self.api_url = options.get('apiurl')
+        self.api_url = options.get('apiurl').rstrip('/')
         self.portal_url = options.get('portalurl')
         if not self.portal_url and self.api_url.endswith('/api'):
             self.portal_url = self.api_url[:-len('/api')]
@@ -136,7 +136,14 @@ class HBApi(Base):
             return ''
         return 'token=' + self.access_token
 
-    def _make_request(self, url=None, query={}, payload={}, type='get', reauth=True):
+    def _make_request( self, 
+                       url=None, 
+                       query={}, 
+                       payload={}, 
+                       type='get', 
+                       reauth=True, 
+                       timeout=25.0, 
+                       return_raw_response=False ):
         query = dict(query or {})
         payload = payload or {}
 
@@ -148,18 +155,23 @@ class HBApi(Base):
             g.logger.Debug(3, 'make_request called with url={} payload={} type={} query={}'.format(url, payload, type, query))
             
             if type == 'get':
-                r = self.session.get(url, params=query, timeout=25.0)
+                r = self.session.get(url, params=query, timeout=timeout)
             elif type == 'post':
-                r = self.session.post(url, data=payload, params=query, timeout=25.0)
+                r = self.session.post(url, data=payload, params=query, timeout=timeout)
+            elif type == 'patch':
+                r = self.session.patch(url, data=payload, params=query, timeout=timeout)
             elif type == 'put':
-                r = self.session.put(url, data=payload, params=query, timeout=25.0)
+                r = self.session.put(url, data=payload, params=query, timeout=timeout)
             elif type == 'delete':
-                r = self.session.delete(url, data=payload, params=query, timeout=25.0)
+                r = self.session.delete(url, data=payload, params=query, timeout=timeout)
             else:
                 g.logger.Error('Unsupported request type:{}'.format(type))
                 raise ValueError('Unsupported request type:{}'.format(type))
 
             r.raise_for_status()
+
+            if return_raw_response:
+                return r
 
             content_type = r.headers.get('content-type', '')
             if content_type.startswith("application/json") and r.text:
@@ -175,29 +187,34 @@ class HBApi(Base):
                 g.logger.Debug(1, 'Got 401 (Unauthorized) - retrying login once')
                 self._login()
                 g.logger.Debug(1, 'Retrying failed request again...')
-                return self._make_request(url, query, payload, type, reauth=False)
-            
-            elif err.response.status_code == 404:
-                # ZM returns 404 when an image cannot be decoded
-                g.logger.Debug(3, 'Raising BAD_IMAGE ValueError for a 404')
-                raise ValueError("BAD_IMAGE")
+                return self._make_request(
+                    url,
+                    query,
+                    payload,
+                    type,
+                    reauth=False,
+                    timeout=timeout,
+                    return_raw_response=return_raw_response,
+                )
 
             raise err
         except ValueError as err:
-            err_msg = '{}'.format(err)
 
-            if err_msg == "RELOGIN":
-                if reauth:
-                    g.logger.Debug(1, 'Got ValueError access error: {}'.format(err))
-                    g.logger.Debug(1, 'Retrying login once')
-                    self._login()
-                    g.logger.Debug(1, 'Retrying failed request again...')
-                    return self._make_request(url, query, payload, type, reauth=False)
-                else:
-                    raise err
-                
-            elif err_msg == "BAD_IMAGE":
-                raise ValueError("BAD_IMAGE")
+            if reauth:
+                g.logger.Debug(1, 'Got ValueError access error: {}'.format(err))
+                g.logger.Debug(1, 'Retrying login once')
+                self._login()
+                g.logger.Debug(1, 'Retrying failed request again...')
+                return self._make_request(
+                    url=url,
+                    query=query,
+                    payload=payload,
+                    type=type,
+                    reauth=False,
+                    return_raw_response=return_raw_response,
+                )
+            else:
+                raise err
             
     def items(self, options={}):
         """Returns list of items.

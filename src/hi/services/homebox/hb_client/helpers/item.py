@@ -8,6 +8,8 @@ the full object
 """
 
 
+from urllib.parse import quote
+
 from .base import Base
 from . import globals as g
 
@@ -269,6 +271,36 @@ class HbItem(Base):
         """
         return self.item['attachments']
 
+    def download_attachment(self, attachment=None):
+        if not isinstance(attachment, dict):
+            g.logger.Error(f'Invalid attachment provided for download: expected dict, got {type(attachment)}')
+            return None
+        
+        attachment_id = str(attachment.get('id', '')).strip()
+
+        if not attachment_id:
+            g.logger.Debug(1, f'Cannot download attachment for item {self.id}: missing attachment id')
+            return None
+
+        content_type_hint = str(attachment.get('mimeType', '')).strip()
+        filename_hint = str(attachment.get('title', '')).strip()
+        url = f"{self.api.api_url}/v1/items/{self.id}/attachments/{attachment_id}"
+
+        response = self.api._make_request(url=url, return_raw_response=True)
+
+        if not response.content:
+            g.logger.Debug(2, f'Attachment download returned empty payload: {url}')
+            return None
+
+        content_type = response.headers.get('content-type', '') or content_type_hint
+
+        return {
+            'content': response.content,
+            'mime_type': content_type,
+            'filename': filename_hint,
+            'source_url': url,
+        }
+    
     @property
     def fields(self):
         """Returns item custom fields
@@ -301,7 +333,7 @@ class HbItem(Base):
 
         url = f"{self.api.api_url}/v1/items/{self.id}"
 
-        return self.api._make_request(url=url, data=options, type='patch')
+        return self.api._make_request(url=url, payload=options, type='patch')
     
     def replace(self, options={}):
         """
@@ -355,7 +387,7 @@ class HbItem(Base):
 
         url = f"{self.api.api_url}/v1/items/{self.id}"
 
-        return self.api._make_request(url=url, data=options, type='put')
+        return self.api._make_request(url=url, payload=options, type='put')
 
     def duplicate(self, options={}):
         """
@@ -377,7 +409,7 @@ class HbItem(Base):
 
         url = f"{self.api.api_url}/v1/items/{self.id}/duplicate"
 
-        return self.api._make_request(url=url, data=options, type='post')
+        return self.api._make_request(url=url, payload=options, type='post')
 
     def delete(self):
         """Deletes item
@@ -426,5 +458,5 @@ class HbItem(Base):
 
         url = f"{self.api.api_url}/v1/items/{self.id}/maintenance"
 
-        return self.api._make_request(url=url, data=options, type='post')
+        return self.api._make_request(url=url, payload=options, type='post')
     
