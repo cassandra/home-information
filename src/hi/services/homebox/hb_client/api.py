@@ -3,9 +3,6 @@ import datetime
 from .helpers.base import Base
 from .helpers import globals as g
 from .helpers.items import HbItems
-from .helpers.locations import Locations
-from .helpers.maintenances import Maintenances
-from .helpers.labels import Labels
 
 
 class HBApi(Base):
@@ -17,10 +14,6 @@ class HBApi(Base):
             - portalurl - the full portal URL (example https://server/hb). Only needed if you are downloading events/images
             - user - username (don't specify if no auth)
             - password - password (don't specify if no auth)
-            - disable_ssl_cert_check - if True will let you use self signed certs
-            - basic_auth_user - basic auth username
-            - basic_auth_password - basic auth password
-            Note: you can connect your own customer logging class to the API in which case all modules will use your custom class. Your class will need to implement some methods for this to work. See :class:`pyzm.helpers.Base.ConsoleLog` for method details.
         '''
 
         self.api_url = options.get('apiurl').rstrip('/')
@@ -38,19 +31,8 @@ class HBApi(Base):
         self.access_token_datetime: datetime.datetime = None
 
         self.Items = None
-        self.Labels = None
-        self.Locations = None
-        self.Maintenances = None
 
         self.session = requests.Session()
-        if (self.options.get('basic_auth_user')):
-            g.logger.Debug(2, 'Basic auth requested, configuring')
-            self.session.auth = (self.options.get('basic_auth_user'), self.options.get('basic_auth_password'))
-        if options.get('disable_ssl_cert_check', True):
-            self.session.verify = False
-            g.logger.Debug(2, 'API SSL certificate check has been disbled')
-            from urllib3.exceptions import InsecureRequestWarning
-            requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
      
         self._login()
 
@@ -216,70 +198,11 @@ class HBApi(Base):
             else:
                 raise err
             
-    def items(self, options={}):
-        """Returns list of items.
-                
-            Args:
-                options (dict, optional): Available fields::
-            
-                    {
-                        'force_reload': bool # if True refreshes items 
-                    }
+    def items(self):
+        """
+        Returns list of items.
             
         Returns:
             list of :class:`hb_client.helpers.HbItem`: list of items 
         """
-        if options.get('force_reload') or not self.Items:
-            self.Items = HbItems(api=self)
-        return self.Items
-    
-    def labels(self, options={}):
-        """Returns list of labels.
-                
-            Args:
-                options (dict, optional): Available fields::
-            
-                    {
-                        'force_reload': bool # if True refreshes labels 
-                    }
-            
-        Returns:
-            list of :class:`hb_client.helpers.label.Label`: list of labels 
-        """
-        if options.get('force_reload') or not self.Labels:
-            self.Labels = Labels(api=self)
-        return self.Labels
-    
-    def locations(self, options={}):
-        """Returns list of locations.
-                
-            Args:
-                options (dict, optional): Available fields::
-            
-                    {
-                        'force_reload': bool # if True refreshes locations 
-                    }
-            
-        Returns:
-            list of :class:`hb_client.helpers.location.Location`: list of locations 
-        """
-        if options.get('force_reload') or not self.Locations:
-            self.Locations = Locations(api=self)
-        return self.Locations
-    
-    def maintenances(self, options={}):
-        """Returns list of maintenances.
-                
-            Args:
-                options (dict, optional): Available fields::
-            
-                    {
-                        'force_reload': bool # if True refreshes maintenances 
-                    }
-            
-        Returns:
-            list of :class:`hb_client.helpers.maintenance.Maintenance`: list of maintenances 
-        """
-        if options.get('force_reload') or not self.Maintenances:
-            self.Maintenances = Maintenances(api=self)
-        return self.Maintenances
+        return HbItems(api=self)

@@ -62,16 +62,10 @@ class HomeBoxMonitor( PeriodicMonitor, HomeBoxMixin ):
 			return
 
 		item_list = await self._process_items( hb_manager )
-		location_list = await self._process_locations( hb_manager )
-		label_list = await self._process_labels( hb_manager )
-		maintenance_list = await self._process_maintenances( hb_manager )
 
 		message = (
 			f'Processed HomeBox resources. '
-			f'items={len(item_list)}, '
-			f'locations={len(location_list)}, '
-			f'labels={len(label_list)}, '
-			f'maintenances={len(maintenance_list)}'
+			f'items={len(item_list)}'
 		)
 		self.record_healthy( message )
 		hb_manager.record_healthy( message )
@@ -79,12 +73,3 @@ class HomeBoxMonitor( PeriodicMonitor, HomeBoxMixin ):
 
 	async def _process_items(self, hb_manager):
 		return await hb_manager.fetch_hb_items_from_api_async( verbose = False )
-
-	async def _process_locations(self, hb_manager):
-		return await hb_manager.fetch_hb_locations_from_api_async( verbose = False )
-
-	async def _process_labels(self, hb_manager):
-		return await hb_manager.fetch_hb_labels_from_api_async( verbose = False )
-
-	async def _process_maintenances(self, hb_manager):
-		return await hb_manager.fetch_hb_maintenances_from_api_async( verbose = False )
