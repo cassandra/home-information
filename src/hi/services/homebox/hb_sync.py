@@ -13,7 +13,7 @@ from hi.integrations.sync_mixins import IntegrationSyncMixin
 from .hb_converter import HbConverter
 from .hb_metadata import HbMetaData
 from .hb_mixins import HomeBoxMixin
-from .hb_client.helpers.item import HbItem
+from .hb_models import HbItem
 
 logger = logging.getLogger(__name__)
 

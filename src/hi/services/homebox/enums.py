@@ -15,14 +15,6 @@ class HbAttributeType( IntegrationAttributeType ):
         True,
         True,
     )
-    PORTAL_URL = (
-        'Portal URL',
-        'e.g., https://myserver:8443/hb',
-        AttributeValueType.TEXT,
-        None,
-        True,
-        True,
-    )
     API_USER = (
         'Username',
         '',

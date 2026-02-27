@@ -11,9 +11,10 @@ from hi.apps.entity.models import Entity, EntityAttribute
 from hi.integrations.transient_models import IntegrationKey
 
 from .hb_metadata import HbMetaData
-from .hb_client.helpers.item import HbItem
-from .hb_client.helpers import globals as g
+from .hb_models import HbItem
+import logging
 
+logger = logging.getLogger(__name__)
 
 class HbConverter:
 
@@ -70,7 +71,7 @@ class HbConverter:
     def hb_field_to_integration_key( cls, hb_field: Dict ) -> IntegrationKey:
         field_id = str(hb_field.get('id', '')).strip()
         if not field_id:
-            g.logger.Error(f'Field id is missing for HomeBox field with name {hb_field.get("name", "")}. Cannot create integration key.' )
+            logger.error(f'Field id is missing for HomeBox field with name {hb_field.get("name", "")}. Cannot create integration key.' )
             return None
         
         return IntegrationKey(
@@ -83,7 +84,7 @@ class HbConverter:
         item_name = hb_item.name
 
         if not item_name:
-            g.logger.Error(f'Item name is missing for HomeBox item with id {hb_item.id}. Using default name.' )
+            logger.error(f'Item name is missing for HomeBox item with id {hb_item.id}. Using default name.' )
             return f'HomeBox Item {hb_item.id}'
         
         return item_name
@@ -170,9 +171,9 @@ class HbConverter:
 
             downloaded_attachment = None
             try:
-                downloaded_attachment = hb_item.download_attachment( attachment = attachment )
+                downloaded_attachment = hb_item.client.download_attachment( item_id=hb_item.id, attachment_id=attachment_id )
             except Exception as e:
-                g.logger.Debug(1, f'Unable to download HomeBox attachment {attachment_id}: {e}')
+                logger.debug(f'Unable to download HomeBox attachment {attachment_id}: {e}')
 
             attachment_list.append({
                 'id': f'attachment:{attachment_id}',

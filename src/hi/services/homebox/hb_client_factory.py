@@ -9,7 +9,7 @@ from hi.integrations.models import IntegrationAttribute
 from hi.integrations.transient_models import IntegrationKey, IntegrationValidationResult
 
 from .enums import HbAttributeType
-from .hb_client.api import HBApi
+from .hb_client import HbClient
 from .hb_metadata import HbMetaData
 
 logger = logging.getLogger(__name__)
@@ -20,15 +20,15 @@ class HbClientFactory:
 
     def create_client(
             self,
-            hb_attr_type_to_attribute: Dict[HbAttributeType, IntegrationAttribute]) -> HBApi:
+            hb_attr_type_to_attribute: Dict[HbAttributeType, IntegrationAttribute]) -> HbClient:
         """
-        Create a HBApi client from integration attributes.
+        Create a HbClient client from integration attributes.
 
         Args:
             hb_attr_type_to_attribute: Dictionary mapping attribute types to attribute objects
 
         Returns:
-            Configured HBApi instance
+            Configured HbClient instance
 
         Raises:
             IntegrationAttributeError: If required attributes are missing or invalid
@@ -40,7 +40,6 @@ class HbClientFactory:
 
         attr_to_api_option_key = {
             HbAttributeType.API_URL: 'apiurl',
-            HbAttributeType.PORTAL_URL: 'portalurl',
             HbAttributeType.API_USER: 'user',
             HbAttributeType.API_PASSWORD: 'password',
         }
@@ -65,21 +64,21 @@ class HbClientFactory:
             options_key = attr_to_api_option_key[hb_attr_type]
             api_options[options_key] = hb_attr.value
 
-        return HBApi(options=api_options)
+        return HbClient(api_options=api_options)
 
-    def test_client(self, client: HBApi) -> IntegrationValidationResult:
+    def test_client(self, client: HbClient) -> IntegrationValidationResult:
         """
         Test API connectivity for a given client.
 
         Args:
-            client: HBApi instance to test
+            client: HbClient instance to test
 
         Returns:
             IntegrationValidationResult indicating success or failure with details
         """
         try:
             # Test basic API connectivity by fetching items
-            items = client.items().list()
+            items = client.get_items()
             if items is not None:
                 # Successful API call
                 return IntegrationValidationResult.success()

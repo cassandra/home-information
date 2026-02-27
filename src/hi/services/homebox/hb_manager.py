@@ -20,7 +20,7 @@ from hi.integrations.transient_models import (
 from hi.integrations.models import Integration, IntegrationAttribute
 
 from .enums import HbAttributeType
-from .hb_client.api import HBApi
+from .hb_client import HbClient
 from .hb_client_factory import HbClientFactory
 from .hb_metadata import HbMetaData
 
@@ -80,7 +80,7 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
         return
 
     @property
-    def hb_client(self) -> HBApi:
+    def hb_client(self) -> HbClient:
         return self._hb_client
 
     def _reload_implementation( self ):
@@ -135,7 +135,7 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
 
     def create_hb_client(
             self,
-            hb_attr_type_to_attribute : Dict[ HbAttributeType, IntegrationAttribute ] ) -> HBApi:
+            hb_attr_type_to_attribute : Dict[ HbAttributeType, IntegrationAttribute ] ) -> HbClient:
         return self._client_factory.create_client(hb_attr_type_to_attribute)
 
     def fetch_hb_items_from_api( self, verbose : bool = True ) -> list:
@@ -150,7 +150,7 @@ class HomeBoxManager( SingletonManager, AggregateHealthProvider, ApiHealthStatus
             options = {
                 'force_reload': True,
             }
-            return self.hb_client.items().list()
+            return self.hb_client.get_items()
 
     async def fetch_hb_items_from_api_async( self, verbose : bool = True ) -> list:
         return await sync_to_async(
