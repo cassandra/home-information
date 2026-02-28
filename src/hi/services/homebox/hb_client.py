@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Union, Any
+from typing import Dict, List, Union, Any, Optional
 from requests import Session, Response
 
 from .hb_models import HbItem
@@ -84,8 +84,16 @@ class HbClient:
                     
         return full_items
 
-    def download_attachment(self, item_id: str, attachment_id: str) -> bytes:
-        """Downloads an attachment for a specific item."""
+    def download_attachment(self, item_id: str, attachment_id: str) -> Optional[Dict[str, Any]]:
+        """Downloads an attachment """
         url = f"{self._api_url}/{self.API_VERSION}/items/{item_id}/attachments/{attachment_id}"
         response = self._make_request('GET', url)
-        return response.content
+
+        if not isinstance(response, Response):
+            logger.warning(f"Expected a Response object for attachment download, got {type(response)}")
+            return None
+        
+        return {
+            'content': response.content,
+            'mime_type': response.headers.get('content-type'),
+        }

@@ -7,22 +7,27 @@ from hi.apps.entity.enums import EntityType
 from hi.apps.entity.models import Entity
 from hi.services.homebox.hb_converter import HbConverter
 from hi.services.homebox.hb_metadata import HbMetaData
+from hi.services.homebox.hb_models import HbItem
 
 
 class TestHbConverter(TestCase):
 
     def _mock_item(self, item_id='item-1', name='Item 1', description='desc', quantity=1):
-        item = Mock()
-        item.download_attachment.return_value = None
-        item.id = item_id
-        item.name = name
-        item.description = description
-        item.quantity = quantity
-        item.location = {'id': 'loc-1', 'name': 'Garage'}
-        item.labels = [{'id': 'lab-1', 'name': 'Tools'}]
-        item.fields = []
-        item.attachments = []
-        return item
+        api_dict = {
+            'id': item_id,
+            'name': name,
+            'description': description,
+            'quantity': quantity,
+            'location': {'id': 'loc-1', 'name': 'Garage'},
+            'labels': [{'id': 'lab-1', 'name': 'Tools'}],
+            'fields': [],
+            'attachments': [],
+        }
+
+        client = Mock()
+        client.download_attachment.return_value = None
+
+        return HbItem(api_dict=api_dict, client=client)
 
     def test_create_models_for_hb_item_creates_entity(self):
         item = self._mock_item(item_id='item-create', name='Drill')
@@ -35,8 +40,9 @@ class TestHbConverter(TestCase):
         self.assertEqual(entity.name, 'Drill')
         self.assertEqual(entity.entity_type, EntityType.OTHER)
         self.assertFalse(entity.can_add_custom_attributes)
-        self.assertEqual(entity.integration_payload.get('location_name'), 'Garage')
-        self.assertEqual(entity.integration_payload.get('label_names'), ['Tools'])
+        self.assertNotIn('description', entity.integration_payload)
+        self.assertEqual(entity.integration_payload.get('location', {}).get('name'), 'Garage')
+        self.assertEqual(entity.integration_payload.get('labels')[0].get('name'), 'Tools')
 
     def test_update_models_for_hb_item_updates_name_type_and_payload(self):
         entity = Entity.objects.create(
@@ -46,7 +52,7 @@ class TestHbConverter(TestCase):
             can_add_custom_attributes=True,
             integration_id=HbMetaData.integration_id,
             integration_name='item-update',
-            integration_payload={'description': 'old', 'quantity': 1},
+            integration_payload={'quantity': 1},
         )
 
         item = self._mock_item(item_id='item-update', name='New Name', description='new', quantity=3)
@@ -58,7 +64,7 @@ class TestHbConverter(TestCase):
         self.assertEqual(entity.name, 'New Name')
         self.assertEqual(entity.entity_type, EntityType.OTHER)
         self.assertFalse(entity.can_add_custom_attributes)
-        self.assertEqual(entity.integration_payload.get('description'), 'new')
+        self.assertNotIn('description', entity.integration_payload)
         self.assertEqual(entity.integration_payload.get('quantity'), 3)
 
     def test_hb_item_to_entity_name_fallback(self):
@@ -67,10 +73,10 @@ class TestHbConverter(TestCase):
 
     def test_hb_item_to_attribute_field_list_contains_top_level_fields(self):
         item = self._mock_item(item_id='item-top-level')
-        item.description = 'Portable drill'
-        item.serial_number = 'SN-123'
-        item.model_number = 'MD-456'
-        item.manufacturer = 'ACME'
+        item.api_dict['description'] = 'Portable drill'
+        item.api_dict['serialNumber'] = 'SN-123'
+        item.api_dict['modelNumber'] = 'MD-456'
+        item.api_dict['manufacturer'] = 'ACME'
 
         hb_field_list = HbConverter.hb_item_to_attribute_field_list( hb_item = item )
         field_id_to_field = { field.get( 'id' ): field for field in hb_field_list }
@@ -82,13 +88,13 @@ class TestHbConverter(TestCase):
 
     def test_hb_item_attachment_maps_to_file_attribute_payload(self):
         item = self._mock_item(item_id='item-with-attachment')
-        item.attachments = [{
+        item.api_dict['attachments'] = [{
             'id': 'att-1',
             'title': 'Manual',
             'mimeType': 'text/plain',
             'path': 'some/path',
         }]
-        item.download_attachment.return_value = {
+        item.client.download_attachment.return_value = {
             'content': b'attachment-content',
             'mime_type': 'text/plain',
             'filename': 'Manual.txt',

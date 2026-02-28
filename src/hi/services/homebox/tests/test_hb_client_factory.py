@@ -28,7 +28,6 @@ class TestHbClientFactory(TestCase):
 
         attr_values = {
             HbAttributeType.API_URL: 'https://homebox.example.com/api',
-            HbAttributeType.PORTAL_URL: 'https://homebox.example.com',
             HbAttributeType.API_USER: 'test_user',
             HbAttributeType.API_PASSWORD: 'test_password',
         }
@@ -48,11 +47,11 @@ class TestHbClientFactory(TestCase):
 
         return attributes
 
-    @patch('hi.services.homebox.hb_client_factory.HBApi')
-    def test_create_client_success(self, mock_hbapi_class):
+    @patch('hi.services.homebox.hb_client_factory.HbClient')
+    def test_create_client_success(self, mock_client_class):
         """Test successful client creation with valid attributes."""
         mock_client = Mock()
-        mock_hbapi_class.return_value = mock_client
+        mock_client_class.return_value = mock_client
         attributes = self._create_test_attributes()
 
         result = self.factory.create_client(attributes)
@@ -61,11 +60,10 @@ class TestHbClientFactory(TestCase):
 
         expected_options = {
             'apiurl': 'https://homebox.example.com/api',
-            'portalurl': 'https://homebox.example.com',
             'user': 'test_user',
             'password': 'test_password',
         }
-        mock_hbapi_class.assert_called_once_with(options=expected_options)
+        mock_client_class.assert_called_once_with(api_options=expected_options)
 
     def test_create_client_missing_required_attribute(self):
         """Test client creation fails with missing required attribute."""
@@ -92,9 +90,7 @@ class TestHbClientFactory(TestCase):
     def test_test_client_success(self):
         """Test successful client connectivity testing."""
         mock_client = Mock()
-        mock_items_collection = Mock()
-        mock_items_collection.list.return_value = [Mock(), Mock()]
-        mock_client.items.return_value = mock_items_collection
+        mock_client.get_items.return_value = []
 
         result = self.factory.test_client(mock_client)
 
@@ -103,13 +99,12 @@ class TestHbClientFactory(TestCase):
         self.assertEqual(result.status, HealthStatusType.HEALTHY)
         self.assertIsNone(result.error_message)
 
-        mock_client.items.assert_called_once()
-        mock_items_collection.list.assert_called_once()
+        mock_client.get_items.assert_called_once()
 
     def test_test_client_connection_failure(self):
         """Test client testing with connection failure."""
         mock_client = Mock()
-        mock_client.items.side_effect = ConnectionError('Cannot connect to HomeBox')
+        mock_client.get_items.side_effect = ConnectionError('Cannot connect to HomeBox')
 
         result = self.factory.test_client(mock_client)
 
@@ -121,7 +116,7 @@ class TestHbClientFactory(TestCase):
     def test_test_client_authentication_failure(self):
         """Test client testing with authentication failure."""
         mock_client = Mock()
-        mock_client.items.side_effect = Exception('401 Unauthorized')
+        mock_client.get_items.side_effect = Exception('401 Unauthorized')
 
         result = self.factory.test_client(mock_client)
 
@@ -133,9 +128,7 @@ class TestHbClientFactory(TestCase):
     def test_test_client_returns_none_items(self):
         """Test client testing when items call returns None."""
         mock_client = Mock()
-        mock_items_collection = Mock()
-        mock_items_collection.list.return_value = None
-        mock_client.items.return_value = mock_items_collection
+        mock_client.get_items.return_value = None
 
         result = self.factory.test_client(mock_client)
 
@@ -143,3 +136,5 @@ class TestHbClientFactory(TestCase):
         self.assertFalse(result.is_valid)
         self.assertEqual(result.status, HealthStatusType.ERROR)
         self.assertIn('Failed to fetch items from HomeBox API', result.error_message)
+
+        mock_client.get_items.assert_called_once()

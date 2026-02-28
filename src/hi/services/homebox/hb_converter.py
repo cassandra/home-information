@@ -38,6 +38,7 @@ class HbConverter:
                 entity_type_str = str(entity_type),
                 can_user_delete = HbMetaData.allow_entity_deletion,
                 can_add_custom_attributes = HbMetaData.can_add_custom_attributes,
+                integration_payload = cls.hb_item_to_entity_payload( hb_item = hb_item ),
             )
 
             entity.integration_key = entity_integration_key
@@ -54,6 +55,20 @@ class HbConverter:
             if entity.name != entity_name:
                 messages.append( f'Name changed for {entity}. Setting to "{entity_name}"' )
                 entity.name = entity_name
+
+            desired_entity_type = cls.hb_item_to_entity_type( hb_item = hb_item )
+            if entity.entity_type != desired_entity_type:
+                messages.append( f'Entity type changed for {entity}. Setting to "{desired_entity_type}"' )
+                entity.entity_type = desired_entity_type
+
+            if entity.can_add_custom_attributes != HbMetaData.can_add_custom_attributes:
+                messages.append( f'can_add_custom_attributes changed for {entity}.' )
+                entity.can_add_custom_attributes = HbMetaData.can_add_custom_attributes
+
+            new_payload = cls.hb_item_to_entity_payload( hb_item = hb_item )
+            if entity.integration_payload != new_payload:
+                entity.integration_payload = new_payload
+                messages.append( f'Integration payload updated for {entity}.' )
 
             if messages:
                 entity.save()
@@ -94,6 +109,63 @@ class HbConverter:
         return EntityType.OTHER
 
     @classmethod
+    def hb_item_to_entity_payload( cls, hb_item: HbItem ) -> Dict:
+        payload: Dict = {
+            'quantity': hb_item.quantity,
+            'insured': hb_item.insured,
+            'archived': hb_item.archived,
+            'created_at': hb_item.created_at,
+            'updated_at': hb_item.updated_at,
+            'purchase_price': hb_item.purchase_price,
+            'asset_id': hb_item.asset_id,
+            'sync_child_items_locations': hb_item.sync_child_items_locations,
+            'lifetime_warranty': hb_item.lifetime_warranty,
+            'warranty_expires': hb_item.warranty_expires,
+            'warranty_details': hb_item.warranty_details,
+            'purchase_time': hb_item.purchase_time,
+            'purchase_from': hb_item.purchase_from,
+            'sold_time': hb_item.sold_time,
+            'sold_to': hb_item.sold_to,
+            'sold_price': hb_item.sold_price,
+            'sold_notes': hb_item.sold_notes,
+            'notes': hb_item.notes,
+        }
+
+        location = hb_item.location
+        if location is None:
+            logger.warning( f'HomeBox item {hb_item.id} missing location dict' )
+            payload['location'] = None
+        else:
+            payload['location'] = {
+                'id': location.get( 'id' ),
+                'name': location.get( 'name' ),
+                'description': location.get( 'description' ),
+                'createdAt': location.get( 'createdAt' ),
+                'updatedAt': location.get( 'updatedAt' ),
+            }
+
+        labels = hb_item.labels
+        if labels is None:
+            logger.warning( f'HomeBox item {hb_item.id} missing labels list' )
+            payload['labels'] = []
+        else:
+            normalized_labels: List[Dict] = []
+            for label in labels:
+                if not isinstance( label, dict ):
+                    continue
+                normalized_labels.append({
+                    'id': label.get( 'id' ),
+                    'name': label.get( 'name' ),
+                    'description': label.get( 'description' ),
+                    'color': label.get( 'color' ),
+                    'created_at': label.get( 'createdAt' ),
+                    'updated_at': label.get( 'updatedAt' ),
+                })
+            payload['labels'] = normalized_labels
+
+        return payload
+
+    @classmethod
     def _create_entity_attributes_from_hb_fields( cls, entity: Entity, hb_item: HbItem ):
         hb_item_fields = hb_item.fields
 
@@ -109,7 +181,7 @@ class HbConverter:
         return str(hb_field.get('name', '')).strip()
 
     @classmethod
-    def hb_item_to_hb_field_list ( cls, hb_item: HbItem ) -> List[Dict]:
+    def _hb_item_to_field_list( cls, hb_item: HbItem ) -> List[Dict]:
         hb_field_list = list( hb_item.fields )
 
         for key, name in cls.HB_ITEM_ATTRIBUTE_FIELD_MAP:
@@ -131,7 +203,7 @@ class HbConverter:
     @classmethod
     def hb_item_to_attribute_field_list( cls, hb_item: HbItem ) -> List[Dict]:
         """Returns only normal (non-attachment) attribute fields from HomeBox item."""
-        return cls.hb_item_to_hb_field_list( hb_item = hb_item )
+        return cls._hb_item_to_field_list( hb_item = hb_item )
 
     @classmethod
     def hb_attachment_to_filename( cls, hb_attachment: Dict, mime_type: str = '' ) -> str:
@@ -155,8 +227,12 @@ class HbConverter:
         return filename
 
     @classmethod
-    def hb_item_to_attachment_list( cls, hb_item: HbItem ) -> List[Dict]:
+    def hb_item_to_attachment_field_list( cls, hb_item: HbItem ) -> List[Dict]:
         attachment_list = []
+
+        if not getattr( hb_item, 'client', None ):
+            logger.warning( f'HomeBox item {hb_item.id} has no client; cannot download attachments' )
+            return attachment_list
 
         for attachment in list( hb_item.attachments or [] ):
             if not isinstance( attachment, dict ):
@@ -173,7 +249,12 @@ class HbConverter:
             try:
                 downloaded_attachment = hb_item.client.download_attachment( item_id=hb_item.id, attachment_id=attachment_id )
             except Exception as e:
-                logger.debug(f'Unable to download HomeBox attachment {attachment_id}: {e}')
+                logger.warning(f'Unable to download HomeBox attachment {attachment_id} for item {hb_item.id}: {e}')
+                continue
+
+            if not downloaded_attachment:
+                logger.warning(f'Missing downloaded content for HomeBox attachment {attachment_id} (item {hb_item.id}); skipping attachment')
+                continue
 
             attachment_list.append({
                 'id': f'attachment:{attachment_id}',
@@ -188,11 +269,6 @@ class HbConverter:
             })
 
         return attachment_list
-
-    @classmethod
-    def hb_item_to_attachment_field_list( cls, hb_item: HbItem ) -> List[Dict]:
-        """Backward-compatible alias for callers/tests using old naming."""
-        return cls.hb_item_to_attachment_list( hb_item = hb_item )
 
     @classmethod
     def hb_attachment_to_attribute_name( cls, hb_attachment: Dict ) -> str:
@@ -215,6 +291,11 @@ class HbConverter:
                 order_id = order_id,
             )
 
+        integration_key = cls.hb_field_to_integration_key( hb_field = hb_field )
+        if not integration_key:
+            logger.warning( 'HomeBox field missing integration key; skipping attribute payload' )
+            return None
+
         return {
             'name': cls.hb_field_to_attribute_name( hb_field = hb_field ),
             'value': hb_field.get('textValue', ''),
@@ -223,7 +304,7 @@ class HbConverter:
             'is_editable': False,
             'is_required': False,
             'order_id': order_id,
-            'integration_key_str': cls.hb_field_to_integration_key( hb_field = hb_field ),
+            'integration_key_str': str( integration_key ),
         }
 
     @classmethod
@@ -231,16 +312,31 @@ class HbConverter:
         if not isinstance( hb_attachment, dict ):
             return None
 
-        downloaded_attachment = hb_attachment.get( 'downloaded_attachment' ) or {}
+        downloaded_attachment = hb_attachment.get( 'downloaded_attachment' )
+        if not downloaded_attachment or not isinstance( downloaded_attachment, dict ):
+            logger.warning('HomeBox attachment payload missing downloaded_attachment; skipping attribute creation')
+            return None
+
         raw_content = downloaded_attachment.get( 'content' )
+        if not raw_content:
+            logger.warning('HomeBox attachment payload missing content; skipping attribute creation')
+            return None
 
-        mime_type = str(
-            downloaded_attachment.get( 'mime_type', '' )
-            or hb_attachment.get( 'mimeType', '' )
-            or ''
-        ).strip()
+        mime_type = str( downloaded_attachment.get( 'mime_type', '' ) ).strip()
+        if not mime_type:
+            logger.warning('HomeBox attachment payload missing mime_type; skipping attribute creation')
+            return None
 
-        attachment_info = hb_attachment.get( 'attachment' ) or {}
+        attachment_info = hb_attachment.get( 'attachment' )
+        if not attachment_info or not isinstance( attachment_info, dict ):
+            logger.warning('HomeBox attachment payload missing attachment info; skipping attribute creation')
+            return None
+
+        integration_key = cls.hb_attachment_to_integration_key( hb_attachment = hb_attachment )
+        if not integration_key:
+            logger.warning( 'HomeBox attachment missing integration key; skipping attribute creation' )
+            return None
+
         filename = cls.hb_attachment_to_filename(
             hb_attachment = attachment_info,
             mime_type = mime_type,
@@ -254,12 +350,11 @@ class HbConverter:
             'is_editable': False,
             'is_required': False,
             'order_id': order_id,
-            'integration_key_str': cls.hb_attachment_to_integration_key( hb_attachment = hb_attachment ),
-            'file_mime_type': mime_type or None,
+            'integration_key_str': str( integration_key ),
+            'file_mime_type': mime_type if mime_type else None,
         }
 
-        if raw_content:
-            payload['file_value'] = ContentFile( raw_content, name = filename )
+        payload['file_value'] = ContentFile( raw_content, name = filename )
 
         return payload
 

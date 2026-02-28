@@ -158,7 +158,7 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
                 integration_key_to_regular_field[integration_key] = (hb_field, order_id)
 
         integration_key_to_attachment = dict()
-        attachment_list = HbConverter.hb_item_to_attachment_list( hb_item = hb_item )
+        attachment_list = HbConverter.hb_item_to_attachment_field_list( hb_item = hb_item )
         for order_id, hb_attachment in enumerate( attachment_list ):
             if not isinstance( hb_attachment, dict ):
                 continue
@@ -274,6 +274,14 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
             message_list.append( f'{updated_prefix}: {HbConverter.hb_field_to_attribute_name( hb_field = hb_field )}' )
         return
 
+    def _remove_attribute( self,
+                           attribute: EntityAttribute,
+                           message_list: List[str] ):
+        old_name = attribute.name
+        attribute.delete()
+        message_list.append( f'Field attribute removed: {old_name}' )
+        return
+
     def _create_attachment_attribute( self,
                                       entity: Entity,
                                       hb_attachment: dict,
@@ -297,12 +305,4 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
         )
         if was_changed:
             message_list.append( f'{updated_prefix}: {HbConverter.hb_attachment_to_attribute_name( hb_attachment = hb_attachment )}' )
-        return
-
-    def _remove_attribute( self,
-                           attribute: EntityAttribute,
-                           message_list: List[str] ):
-        old_name = attribute.name
-        attribute.delete()
-        message_list.append( f'Field attribute removed: {old_name}' )
         return
