@@ -3,6 +3,7 @@ Tests for HomeBox client factory functionality.
 Focuses on high-value testing: client creation, validation, and error handling.
 """
 
+import logging
 from unittest.mock import Mock, patch
 from django.test import TestCase
 
@@ -14,6 +15,8 @@ from hi.integrations.transient_models import IntegrationKey, IntegrationValidati
 from hi.services.homebox.enums import HbAttributeType
 from hi.services.homebox.hb_client_factory import HbClientFactory
 from hi.services.homebox.hb_metadata import HbMetaData
+
+logging.disable(logging.CRITICAL)
 
 
 class TestHbClientFactory(TestCase):

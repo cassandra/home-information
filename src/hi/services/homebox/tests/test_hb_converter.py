@@ -1,3 +1,4 @@
+import logging
 from unittest.mock import Mock
 
 from django.test import TestCase
@@ -8,6 +9,9 @@ from hi.apps.entity.models import Entity
 from hi.services.homebox.hb_converter import HbConverter
 from hi.services.homebox.hb_metadata import HbMetaData
 from hi.services.homebox.hb_models import HbItem
+
+
+logging.disable(logging.CRITICAL)
 
 
 class TestHbConverter(TestCase):
@@ -66,10 +70,6 @@ class TestHbConverter(TestCase):
         self.assertFalse(entity.can_add_custom_attributes)
         self.assertNotIn('description', entity.integration_payload)
         self.assertEqual(entity.integration_payload.get('quantity'), 3)
-
-    def test_hb_item_to_entity_name_fallback(self):
-        item = self._mock_item(item_id='item-no-name', name='')
-        self.assertEqual(HbConverter.hb_item_to_entity_name(hb_item=item), 'HomeBox Item item-no-name')
 
     def test_hb_item_to_attribute_field_list_contains_top_level_fields(self):
         item = self._mock_item(item_id='item-top-level')

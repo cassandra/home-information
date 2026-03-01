@@ -288,7 +288,7 @@ class TestEntityEditView(DualModeViewTestCase):
         self.assertIsNotNone(new_attr)
         self.assertEqual(new_attr.value, 'new value')
 
-    def test_get_hides_add_info_when_entity_disallows_custom_attributes(self):
+    def test_get_disables_add_info_when_entity_disallows_custom_attributes(self):
         self.entity.can_add_custom_attributes = False
         self.entity.save(update_fields=['can_add_custom_attributes'])
 
@@ -298,7 +298,8 @@ class TestEntityEditView(DualModeViewTestCase):
         self.assertSuccessResponse(response)
 
         content = response.content.decode('utf-8')
-        self.assertNotIn(f'attr-v2-add-attribute-btn-entity-{self.entity.id}', content)
+        self.assertIn(f'attr-v2-add-attribute-btn-entity-{self.entity.id}', content)
+        self.assertIn('disabled aria-disabled="true"', content)
         self.assertIn('New attributes are disabled for externally managed entities.', content)
 
     def test_post_rejects_new_attribute_when_entity_disallows_custom_attributes(self):
@@ -321,7 +322,8 @@ class TestEntityEditView(DualModeViewTestCase):
 
         response = self.client.post(url, form_data)
 
-        self.assertSuccessResponse(response)
+        self.assertErrorResponse(response)
+        self.assertJsonResponse(response)
         self.assertFalse(self.entity.attributes.filter(name='blocked_property').exists())
 
         content = response.content.decode('utf-8')
