@@ -16,6 +16,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class HbConverter:
 
     HB_ITEM_ATTRIBUTE_FIELD_MAP = [
@@ -86,7 +87,10 @@ class HbConverter:
     def hb_field_to_integration_key( cls, hb_field: Dict ) -> IntegrationKey:
         field_id = str(hb_field.get('id', '')).strip()
         if not field_id:
-            logger.error(f'Field id is missing for HomeBox field with name {hb_field.get("name", "")}. Cannot create integration key.' )
+            logger.error(
+                'Field id is missing for HomeBox field with name '
+                f'{hb_field.get("name", "")}. Cannot create integration key.'
+            )
             return None
         
         return IntegrationKey(
@@ -191,7 +195,7 @@ class HbConverter:
 
             hb_field_list.append({
                 'id': f'hb_item:{key}',
-                'type': 'text', # all fields created in homebox are text type, even if they represent numbers or booleans
+                'type': 'text',  # all HomeBox-created fields are text, even for numbers/booleans
                 'name': name,
                 'textValue': value,
                 'numberValue': None,
@@ -242,18 +246,30 @@ class HbConverter:
             if not attachment_id:
                 continue
 
-            attachment_title = str( attachment.get( 'title', '' ) or '' ).strip() or f'Attachment {attachment_id}'
+            attachment_title = (
+                str( attachment.get( 'title', '' ) or '' ).strip()
+                or f'Attachment {attachment_id}'
+            )
             attachment_mime_type = str( attachment.get( 'mimeType', '' ) or '' ).strip()
 
             downloaded_attachment = None
             try:
-                downloaded_attachment = hb_item.client.download_attachment( item_id=hb_item.id, attachment_id=attachment_id )
+                downloaded_attachment = hb_item.client.download_attachment(
+                    item_id = hb_item.id,
+                    attachment_id = attachment_id,
+                )
             except Exception as e:
-                logger.warning(f'Unable to download HomeBox attachment {attachment_id} for item {hb_item.id}: {e}')
+                logger.warning(
+                    'Unable to download HomeBox attachment '
+                    f'{attachment_id} for item {hb_item.id}: {e}'
+                )
                 continue
 
             if not downloaded_attachment:
-                logger.warning(f'Missing downloaded content for HomeBox attachment {attachment_id} (item {hb_item.id}); skipping attachment')
+                logger.warning(
+                    'Missing downloaded content for HomeBox attachment '
+                    f'{attachment_id} (item {hb_item.id}); skipping attachment'
+                )
                 continue
 
             attachment_list.append({
@@ -314,7 +330,10 @@ class HbConverter:
 
         downloaded_attachment = hb_attachment.get( 'downloaded_attachment' )
         if not downloaded_attachment or not isinstance( downloaded_attachment, dict ):
-            logger.warning('HomeBox attachment payload missing downloaded_attachment; skipping attribute creation')
+            logger.warning(
+                'HomeBox attachment payload missing downloaded_attachment; '
+                'skipping attribute creation'
+            )
             return None
 
         raw_content = downloaded_attachment.get( 'content' )

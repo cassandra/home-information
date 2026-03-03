@@ -1,5 +1,5 @@
 import logging
-from contextlib import nullcontext
+from contextlib import ExitStack, nullcontext
 from unittest.mock import ANY, Mock, patch
 
 from django.test import SimpleTestCase
@@ -61,30 +61,79 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
                 return existing_key
             raise ValueError('missing id')
 
-        with patch('hi.services.homebox.hb_sync.transaction.atomic', return_value=nullcontext()), \
-                patch('hi.services.homebox.hb_sync.HbConverter.hb_item_to_integration_key', side_effect=key_from_item), \
-                patch.object(synchronizer, '_get_existing_hb_entities', return_value={
-                    existing_key: existing_entity,
-                    stale_key: stale_entity,
-                }), \
-                patch.object(synchronizer, '_create_entity', return_value=created_entity) as create_entity_mock, \
-                patch.object(synchronizer, '_update_entity') as update_entity_mock, \
-                patch.object(synchronizer, '_remove_entity') as remove_entity_mock, \
-                patch.object(synchronizer, '_sync_helper_entity_attributes') as sync_attrs_mock:
+        with ExitStack() as stack:
+            stack.enter_context(
+                patch(
+                    'hi.services.homebox.hb_sync.transaction.atomic',
+                    return_value=nullcontext(),
+                )
+            )
+            stack.enter_context(
+                patch(
+                    'hi.services.homebox.hb_sync.HbConverter.hb_item_to_integration_key',
+                    side_effect=key_from_item,
+                )
+            )
+            stack.enter_context(
+                patch.object(
+                    synchronizer,
+                    '_get_existing_hb_entities',
+                    return_value={
+                        existing_key: existing_entity,
+                        stale_key: stale_entity,
+                    },
+                )
+            )
+            create_entity_mock = stack.enter_context(
+                patch.object(
+                    synchronizer,
+                    '_create_entity',
+                    return_value=created_entity,
+                )
+            )
+            update_entity_mock = stack.enter_context(
+                patch.object(synchronizer, '_update_entity')
+            )
+            remove_entity_mock = stack.enter_context(
+                patch.object(synchronizer, '_remove_entity')
+            )
+            sync_attrs_mock = stack.enter_context(
+                patch.object(synchronizer, '_sync_helper_entity_attributes')
+            )
+
             synchronizer._sync_helper_entities(
                 item_list=[item_new, item_existing, item_invalid],
                 result=result,
             )
 
         create_entity_mock.assert_called_once_with(item=item_new, result=result)
-        update_entity_mock.assert_called_once_with(entity=existing_entity, item=item_existing, result=result)
-        remove_entity_mock.assert_called_once_with(entity=stale_entity, result=result)
+        update_entity_mock.assert_called_once_with(
+            entity=existing_entity,
+            item=item_existing,
+            result=result,
+        )
+        remove_entity_mock.assert_called_once_with(
+            entity=stale_entity,
+            result=result,
+        )
 
         self.assertEqual(sync_attrs_mock.call_count, 2)
-        self.assertEqual(sync_attrs_mock.call_args_list[0].kwargs['entity'], created_entity)
-        self.assertEqual(sync_attrs_mock.call_args_list[0].kwargs['hb_item'], item_new)
-        self.assertEqual(sync_attrs_mock.call_args_list[1].kwargs['entity'], existing_entity)
-        self.assertEqual(sync_attrs_mock.call_args_list[1].kwargs['hb_item'], item_existing)
+        self.assertEqual(
+            sync_attrs_mock.call_args_list[0].kwargs['entity'],
+            created_entity,
+        )
+        self.assertEqual(
+            sync_attrs_mock.call_args_list[0].kwargs['hb_item'],
+            item_new,
+        )
+        self.assertEqual(
+            sync_attrs_mock.call_args_list[1].kwargs['entity'],
+            existing_entity,
+        )
+        self.assertEqual(
+            sync_attrs_mock.call_args_list[1].kwargs['hb_item'],
+            item_existing,
+        )
 
         self.assertIn('Found 2 existing HomeBox entities.', result.message_list)
         self.assertTrue(any('Ignoring HomeBox item due to missing/invalid id' in message
@@ -133,26 +182,76 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
             'attachment-new': attachment_new_key,
         }
 
-        with patch('hi.services.homebox.hb_sync.transaction.atomic', return_value=nullcontext()), \
-                patch('hi.services.homebox.hb_sync.HbConverter.hb_item_to_attribute_field_list',
-                      return_value=[field_existing, field_new]), \
-                patch('hi.services.homebox.hb_sync.HbConverter.hb_field_to_integration_key',
-                      side_effect=lambda hb_field: field_key_by_id.get(hb_field.get('id'))), \
-                patch('hi.services.homebox.hb_sync.HbConverter.hb_item_to_attachment_field_list',
-                      return_value=[attachment_existing, attachment_new]), \
-                patch('hi.services.homebox.hb_sync.HbConverter.hb_attachment_to_integration_key',
-                      side_effect=lambda hb_attachment: attachment_key_by_id.get(hb_attachment.get('id'))), \
-                patch.object(synchronizer, '_get_existing_hb_attributes', return_value={
-                    field_existing_key: existing_field_attr,
-                    attachment_existing_key: existing_attachment_attr,
-                    stale_key: stale_attr,
-                    foreign_key: foreign_attr,
-                }), \
-                patch.object(synchronizer, '_update_attribute') as update_attr_mock, \
-                patch.object(synchronizer, '_create_attribute', return_value=created_field_attr) as create_attr_mock, \
-                patch.object(synchronizer, '_update_attachment_attribute') as update_attachment_mock, \
-                patch.object(synchronizer, '_create_attachment_attribute',
-                             return_value=created_attachment_attr) as create_attachment_mock:
+        def field_key_from_field(hb_field):
+            return field_key_by_id.get(hb_field.get('id'))
+
+        def attachment_key_from_attachment(hb_attachment):
+            return attachment_key_by_id.get(hb_attachment.get('id'))
+
+        with ExitStack() as stack:
+            stack.enter_context(
+                patch(
+                    'hi.services.homebox.hb_sync.transaction.atomic',
+                    return_value=nullcontext(),
+                )
+            )
+            stack.enter_context(
+                patch(
+                    'hi.services.homebox.hb_sync.HbConverter.hb_item_to_attribute_field_list',
+                    return_value=[field_existing, field_new],
+                )
+            )
+            stack.enter_context(
+                patch(
+                    'hi.services.homebox.hb_sync.HbConverter.hb_field_to_integration_key',
+                    side_effect=field_key_from_field,
+                )
+            )
+            stack.enter_context(
+                patch(
+                    'hi.services.homebox.hb_sync.HbConverter.hb_item_to_attachment_field_list',
+                    return_value=[attachment_existing, attachment_new],
+                )
+            )
+            stack.enter_context(
+                patch(
+                    'hi.services.homebox.hb_sync.HbConverter.hb_attachment_to_integration_key',
+                    side_effect=attachment_key_from_attachment,
+                )
+            )
+            stack.enter_context(
+                patch.object(
+                    synchronizer,
+                    '_get_existing_hb_attributes',
+                    return_value={
+                        field_existing_key: existing_field_attr,
+                        attachment_existing_key: existing_attachment_attr,
+                        stale_key: stale_attr,
+                        foreign_key: foreign_attr,
+                    },
+                )
+            )
+            update_attr_mock = stack.enter_context(
+                patch.object(synchronizer, '_update_attribute')
+            )
+            create_attr_mock = stack.enter_context(
+                patch.object(
+                    synchronizer,
+                    '_create_attribute',
+                    return_value=created_field_attr,
+                )
+            )
+            update_attachment_mock = stack.enter_context(
+                patch.object(synchronizer, '_update_attachment_attribute')
+            )
+            create_attachment_mock = stack.enter_context(
+                patch.object(
+                    synchronizer,
+                    '_create_attachment_attribute',
+                    return_value=created_attachment_attr,
+                )
+            )
+
             synchronizer._sync_helper_entity_attributes(
                 entity=entity,
                 hb_item=Mock(),

@@ -5,8 +5,10 @@ from . import views
 
 urlpatterns = [
 
-	re_path( r'^sync$',
-			 views.HbSyncView.as_view(),
-			 name='hb_sync' ),
+    re_path(
+        r'^sync$',
+        views.HbSyncView.as_view(),
+        name='hb_sync',
+    ),
 
 ]

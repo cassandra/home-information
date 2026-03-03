@@ -2,8 +2,6 @@ from hi.apps.attribute.enums import AttributeValueType
 
 from hi.integrations.enums import IntegrationAttributeType
 
-from hi.constants import TIMEZONE_NAME_LIST
-
 
 class HbAttributeType( IntegrationAttributeType ):
 

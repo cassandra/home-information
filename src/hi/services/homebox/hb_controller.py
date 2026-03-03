@@ -11,12 +11,16 @@ logger = logging.getLogger(__name__)
 
 class HomeBoxController( IntegrationController, HomeBoxMixin ):
 
-	def do_control( self,
-					integration_details : IntegrationDetails,
-					control_value       : str             ) -> IntegrationControlResult:
-		logger.debug( f'HomeBox do_control unsupported. details={integration_details},'
-					  f' value={control_value}' )
-		return IntegrationControlResult(
-			new_value = None,
-			error_list = [ 'HomeBox control actions are not implemented yet.' ],
-		)
+    def do_control(
+        self,
+        integration_details: IntegrationDetails,
+        control_value: str,
+    ) -> IntegrationControlResult:
+        logger.debug(
+            f'HomeBox do_control unsupported. details={integration_details},'
+            f' value={control_value}'
+        )
+        return IntegrationControlResult(
+            new_value = None,
+            error_list = [ 'HomeBox control actions are not implemented yet.' ],
+        )

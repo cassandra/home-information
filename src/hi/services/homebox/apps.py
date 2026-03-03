@@ -2,5 +2,5 @@ from django.apps import AppConfig
 
 
 class HomeboxConfig(AppConfig):
-	default_auto_field = 'django.db.models.BigAutoField'
-	name = 'hi.services.homebox'
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'hi.services.homebox'

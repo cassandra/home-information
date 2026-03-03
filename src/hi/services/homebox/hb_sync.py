@@ -194,7 +194,9 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
                     )
                     if created_attribute:
                         integration_key_to_attr[integration_key] = created_attribute
-                        attribute_message_list.append( f'Field attribute added: {created_attribute.name}' )
+                        attribute_message_list.append(
+                            f'Field attribute added: {created_attribute.name}'
+                        )
                 continue
 
             for integration_key, hb_attachment in integration_key_to_attachment.items():
@@ -217,7 +219,9 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
                     )
                     if created_attribute:
                         integration_key_to_attr[integration_key] = created_attribute
-                        attribute_message_list.append( f'Attachment attribute added: {created_attribute.name}' )
+                        attribute_message_list.append(
+                            f'Attachment attribute added: {created_attribute.name}'
+                        )
                 continue
 
             for field_key, attribute in list( integration_key_to_attr.items() ):
@@ -230,19 +234,28 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
                 continue
 
         if attribute_message_list:
-            result.message_list.append( f'Updated HomeBox entity attributes: {entity} ({", ".join(attribute_message_list)})' )
+            message = (
+                f'Updated HomeBox entity attributes: {entity} '
+                f'({", ".join(attribute_message_list)})'
+            )
+            result.message_list.append( message )
         return
     
     def _get_existing_hb_attributes( self, entity: Entity ) -> Dict[ IntegrationKey, EntityAttribute ]:
         integration_key_to_attribute = dict()
 
-        queryset = entity.attributes.filter( integration_key_str__isnull = False ).exclude( integration_key_str = '' )
+        queryset = entity.attributes.filter(
+            integration_key_str__isnull = False
+        ).exclude( integration_key_str = '' )
 
         for attribute in queryset:
             try:
                 integration_key = IntegrationKey.from_string( attribute.integration_key_str )
             except Exception:
-                logger.debug( f'Ignoring entity attribute with invalid integration key: {attribute.integration_key_str}' )
+                logger.debug(
+                    'Ignoring entity attribute with invalid integration key: '
+                    f'{attribute.integration_key_str}'
+                )
                 continue
 
             integration_key_to_attribute[integration_key] = attribute
@@ -271,7 +284,11 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
             order_id = order_id,
         )
         if was_changed:
-            message_list.append( f'{updated_prefix}: {HbConverter.hb_field_to_attribute_name( hb_field = hb_field )}' )
+            message = (
+                f'{updated_prefix}: '
+                f'{HbConverter.hb_field_to_attribute_name( hb_field = hb_field )}'
+            )
+            message_list.append( message )
         return
 
     def _remove_attribute( self,
@@ -304,5 +321,9 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
             order_id = order_id,
         )
         if was_changed:
-            message_list.append( f'{updated_prefix}: {HbConverter.hb_attachment_to_attribute_name( hb_attachment = hb_attachment )}' )
+            message = (
+                f'{updated_prefix}: '
+                f'{HbConverter.hb_attachment_to_attribute_name( hb_attachment = hb_attachment )}'
+            )
+            message_list.append( message )
         return
