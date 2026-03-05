@@ -215,10 +215,29 @@ class TestEntityEditView(DualModeViewTestCase):
 
         self.assertSuccessResponse(response)
         
-        # Verify file was deleted
+        # Verify file is hidden from active querysets
         self.assertFalse(
             EntityAttribute.objects.filter(id=self.file_attr.id).exists()
         )
+
+        # Verify file attribute is soft-deleted and still recoverable
+        deleted_attr = EntityAttribute.all_objects.get(id=self.file_attr.id)
+        self.assertTrue(deleted_attr.is_deleted)
+
+    def test_restore_deleted_attribute_inline(self):
+        """Test restoring a deleted attribute through inline restore endpoint."""
+        self.file_attr.delete()
+        self.assertFalse(EntityAttribute.objects.filter(id=self.file_attr.id).exists())
+
+        restore_url = reverse(
+            'entity_attribute_restore_deleted_inline',
+            kwargs={'entity_id': self.entity.id, 'attribute_id': self.file_attr.id},
+        )
+        response = self.client.get(restore_url)
+
+        self.assertSuccessResponse(response)
+        restored = EntityAttribute.objects.get(id=self.file_attr.id)
+        self.assertFalse(restored.is_deleted)
 
     def test_post_invalid_form_returns_errors(self):
         """Test that invalid form submission returns error response with form errors."""
@@ -959,9 +978,14 @@ class TestEntityEditViewFileUploadIntegration(DualModeViewTestCase):
 
         self.assertSuccessResponse(response)
         
-        # Verify file was deleted
+        # Verify file is hidden from active querysets
         self.assertFalse(
             EntityAttribute.objects.filter(id=file_attr.id).exists()
+        )
+
+        # Verify file attribute still exists as deleted for restore
+        self.assertTrue(
+            EntityAttribute.all_objects.filter(id=file_attr.id, is_deleted=True).exists()
         )
 
     def test_file_title_update_through_entity_edit(self):
@@ -1034,6 +1058,10 @@ class TestEntityEditViewFileUploadIntegration(DualModeViewTestCase):
         # Verify deletion occurred
         self.assertFalse(
             EntityAttribute.objects.filter(id=file_to_delete.id).exists()
+        )
+
+        self.assertTrue(
+            EntityAttribute.all_objects.filter(id=file_to_delete.id, is_deleted=True).exists()
         )
         
         # Verify title update occurred

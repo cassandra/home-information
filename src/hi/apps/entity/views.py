@@ -5,6 +5,7 @@ from django.http import HttpRequest, HttpResponse
 from django.views.generic import View
 
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
+from hi.apps.attribute.edit_response_renderer import AttributeEditResponseRenderer
 from hi.apps.control.controller_history_manager import ControllerHistoryManager
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
 from hi.apps.sense.sensor_history_manager import SensorHistoryMixin
@@ -171,4 +172,32 @@ class EntityAttributeRestoreInlineView( View, AttributeEditViewMixin ):
             attribute = attribute,
             history_id = history_id,
             attr_item_context = attr_item_context,
+        )
+
+
+class EntityAttributeRestoreDeletedInlineView( View ):
+    """View for restoring soft-deleted EntityAttributes."""
+
+    def get( self,
+             request      : HttpRequest,
+             entity_id    : int,
+             attribute_id : int,
+             *args        : Any,
+             **kwargs     : Any          ) -> HttpResponse:
+        try:
+            attribute = EntityAttribute.all_objects.select_related('entity').get(
+                pk = attribute_id,
+                entity_id = entity_id,
+                is_deleted = True,
+            )
+        except EntityAttribute.DoesNotExist:
+            return page_not_found_response(request, "Deleted attribute not found.")
+
+        attribute.restore_from_deleted()
+        attr_item_context = EntityAttributeItemEditContext( entity = attribute.entity )
+        renderer = AttributeEditResponseRenderer()
+        return renderer.render_form_success_response(
+            attr_item_context = attr_item_context,
+            request = request,
+            message = 'Attribute restored',
         )

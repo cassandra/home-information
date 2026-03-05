@@ -111,6 +111,7 @@ by using the AttributeItemEditContext pattern.
   
   <!-- Additional Sections -->
   {% block additional_sections %}
+  {% include "attribute/components/deleted_attribute_list.html" with deleted_attributes=deleted_attributes %}
   {% endblock %}
   
 </div>

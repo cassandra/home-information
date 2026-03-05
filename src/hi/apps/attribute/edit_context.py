@@ -88,6 +88,10 @@ class AttributePageEditContext:
     def restore_url_name(self) -> str:
         """ Should be a view that uses AttributeEditViewMixin.post_restore() """
         return f'{self.owner_type}_attribute_restore_inline'
+
+    @property
+    def restore_deleted_url_name(self) -> str:
+        return f'{self.owner_type}_attribute_restore_deleted_inline'
     
     @property
     def restore_subsystem_url_name(self) -> str:
@@ -173,6 +177,12 @@ class AttributeItemEditContext( AttributePageEditContext ):
         """ Default is that AttributeModel suibclass has 'attributes' as the related name for 
         the owner model. """
         return self.owner.attributes.all()
+
+    def deleted_attributes_queryset(self):
+        model_class = self.attribute_model_subclass
+        if 'is_deleted' not in {field.name for field in model_class._meta.get_fields()}:
+            return model_class.objects.none()
+        return model_class.all_objects.filter(**{self.owner_type: self.owner, 'is_deleted': True})
 
     @property
     def attribute_upload_form_class(self) -> Type[AttributeUploadForm]:

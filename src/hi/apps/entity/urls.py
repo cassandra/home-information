@@ -29,6 +29,10 @@ urlpatterns = [
              views.EntityAttributeRestoreInlineView.as_view(), 
              name='entity_attribute_restore_inline' ),
 
+    re_path( r'^attribute/restore-deleted/(?P<entity_id>\d+)/(?P<attribute_id>\d+)/$',
+             views.EntityAttributeRestoreDeletedInlineView.as_view(),
+             name='entity_attribute_restore_deleted_inline' ),
+
     re_path( r'^edit/', include('hi.apps.entity.edit.urls' )),
 
 ]

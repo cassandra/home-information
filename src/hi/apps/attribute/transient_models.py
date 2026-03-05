@@ -12,6 +12,7 @@ from .models import AttributeModel
 class AttributeEditFormData:
     owner_form                 : ModelForm
     file_attributes            : QuerySet[AttributeModel]
+    deleted_attributes         : QuerySet[AttributeModel]
     regular_attributes_formset : BaseInlineFormSet
     error_count                : int               = 0
 
@@ -32,6 +33,10 @@ class AttributeMultiEditFormData:
     @property
     def file_attributes(self) -> QuerySet[AttributeModel]:
         return self.edit_form_data.file_attributes
+
+    @property
+    def deleted_attributes(self) -> QuerySet[AttributeModel]:
+        return self.edit_form_data.deleted_attributes
     
     @property
     def context(self):

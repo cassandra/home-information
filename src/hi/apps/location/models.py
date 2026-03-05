@@ -5,6 +5,7 @@ from django.db import models
 
 from hi.apps.common.svg_models import SvgDecimalField, SvgItemPositionBounds, SvgViewBox
 from hi.apps.attribute.models import AttributeModel, AttributeValueHistoryModel
+from hi.apps.attribute.models import ActiveAttributeManager, AllAttributeManager
 from hi.enums import ItemType
 from hi.models import ItemTypeModelMixin
 
@@ -114,6 +115,14 @@ class LocationAttribute( AttributeModel ):
         verbose_name = 'Location',
         on_delete = models.CASCADE,
     )
+    is_deleted = models.BooleanField(
+        'Deleted?',
+        default = False,
+        db_index = True,
+    )
+
+    objects = ActiveAttributeManager()
+    all_objects = AllAttributeManager()
 
     class Meta:
         verbose_name = 'Attribute'
@@ -129,6 +138,13 @@ class LocationAttribute( AttributeModel ):
     def _get_history_model_class(self):
         """Return the history model class for LocationAttribute."""
         return LocationAttributeHistory
+
+    def delete(self, *args, **kwargs):
+        hard_delete = kwargs.pop('hard_delete', False)
+        if hard_delete:
+            return super().delete(*args, **kwargs)
+        self.soft_delete()
+        return
 
 
 class LocationView( models.Model, ItemTypeModelMixin ):

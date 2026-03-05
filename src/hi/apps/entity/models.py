@@ -11,6 +11,7 @@ from hi.apps.location.models import (
     LocationView,
 )
 from hi.apps.attribute.models import AttributeModel, AttributeValueHistoryModel
+from hi.apps.attribute.models import ActiveAttributeManager, AllAttributeManager
 from hi.integrations.models import IntegrationDetailsModel
 from hi.enums import ItemType
 
@@ -112,6 +113,14 @@ class EntityAttribute( AttributeModel ):
         verbose_name = 'Entity',
         on_delete = models.CASCADE,
     )
+    is_deleted = models.BooleanField(
+        'Deleted?',
+        default = False,
+        db_index = True,
+    )
+
+    objects = ActiveAttributeManager()
+    all_objects = AllAttributeManager()
 
     class Meta:
         verbose_name = 'Attribute'
@@ -127,6 +136,13 @@ class EntityAttribute( AttributeModel ):
     def _get_history_model_class(self):
         """Return the history model class for EntityAttribute."""
         return EntityAttributeHistory
+
+    def delete(self, *args, **kwargs):
+        hard_delete = kwargs.pop('hard_delete', False)
+        if hard_delete:
+            return super().delete(*args, **kwargs)
+        self.soft_delete()
+        return
 
 
 class EntityState( models.Model ):

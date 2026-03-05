@@ -17,6 +17,19 @@ from .enums import (
 logger = logging.getLogger(__name__)
 
 
+class ActiveAttributeManager(models.Manager):
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if 'is_deleted' in {field.name for field in self.model._meta.get_fields()}:
+            return queryset.filter(is_deleted=False)
+        return queryset
+
+
+class AllAttributeManager(models.Manager):
+    pass
+
+
 class AttributeValueHistoryModel(models.Model):
     """
     Abstract base class for tracking attribute value changes.
@@ -207,6 +220,19 @@ class AttributeModel(models.Model):
             attribute=self,
             value=self.value
         )
+
+    def soft_delete(self):
+        if not hasattr(self, 'is_deleted'):
+            self.delete()
+            return
+        self.is_deleted = True
+        self.save(update_fields=['is_deleted', 'updated_datetime'], track_history=False)
+
+    def restore_from_deleted(self):
+        if not hasattr(self, 'is_deleted'):
+            return
+        self.is_deleted = False
+        self.save(update_fields=['is_deleted', 'updated_datetime'], track_history=False)
     
     def _get_history_model_class(self):
         """

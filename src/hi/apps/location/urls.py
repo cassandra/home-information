@@ -36,6 +36,10 @@ urlpatterns = [
     re_path( r'^attribute/restore/(?P<location_id>\d+)/(?P<attribute_id>\d+)/(?P<history_id>\d+)$', 
              views.LocationAttributeRestoreInlineView.as_view(), 
              name='location_attribute_restore_inline'),
+
+    re_path( r'^attribute/restore-deleted/(?P<location_id>\d+)/(?P<attribute_id>\d+)$',
+             views.LocationAttributeRestoreDeletedInlineView.as_view(),
+             name='location_attribute_restore_deleted_inline'),
     
     re_path( r'^edit/', include('hi.apps.location.edit.urls' )),
 
