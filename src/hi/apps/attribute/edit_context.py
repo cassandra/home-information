@@ -32,7 +32,7 @@ from django.db.models import Model
 from hi.constants import DIVID
 
 from .forms import AttributeUploadForm
-from .models import AttributeModel
+from .models import AttributeModel, model_supports_soft_delete
 
 
 class AttributePageEditContext:
@@ -178,11 +178,25 @@ class AttributeItemEditContext( AttributePageEditContext ):
         the owner model. """
         return self.owner.attributes.all()
 
-    def deleted_attributes_queryset(self):
+    @property
+    def supports_soft_deleted_attributes(self) -> bool:
+        """Whether this attribute model supports querying soft-deleted rows."""
+        return model_supports_soft_delete(self.attribute_model_subclass)
+
+    def soft_deleted_attributes_queryset(self):
+        """Return queryset with deleted attributes for this owner."""
+
+        if not self.supports_soft_deleted_attributes:
+            return self.attribute_model_subclass.objects.none()
+
+        filters = {
+            self.owner_type: self.owner,
+            "is_deleted": True,
+        }
+
         model_class = self.attribute_model_subclass
-        if 'is_deleted' not in {field.name for field in model_class._meta.get_fields()}:
-            return model_class.objects.none()
-        return model_class.all_objects.filter(**{self.owner_type: self.owner, 'is_deleted': True})
+        manager = getattr(model_class, 'all_objects', model_class.objects)
+        return manager.filter(**filters)
 
     @property
     def attribute_upload_form_class(self) -> Type[AttributeUploadForm]:

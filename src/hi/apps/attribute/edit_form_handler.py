@@ -21,10 +21,6 @@ logger = logging.getLogger(__name__)
 
 class AttributeEditFormHandler:
 
-    @staticmethod
-    def _supports_soft_delete(model_class: type[AttributeModel]) -> bool:
-        return 'is_deleted' in {field.name for field in model_class._meta.get_fields()}
-
     def create_edit_form_data(
             self,
             attr_item_context  : AttributeItemEditContext,
@@ -40,7 +36,7 @@ class AttributeEditFormHandler:
             value_type_str = str( AttributeValueType.FILE )
         ).order_by('id')
 
-        deleted_attributes: QuerySet[AttributeModel] = attr_item_context.deleted_attributes_queryset().order_by(
+        deleted_attributes = attr_item_context.soft_deleted_attributes_queryset().order_by(
             '-updated_datetime',
             '-id',
         )
@@ -97,16 +93,20 @@ class AttributeEditFormHandler:
             return
         
         AttributeModelClass = attr_item_context.attribute_model_subclass
-        supports_soft_delete = self._supports_soft_delete(AttributeModelClass)
         
         for attr_id in file_deletes:
             if not attr_id:  # Skip empty values
                 continue
             try:
+                filters = {
+                    'id': attr_id,
+                    'value_type_str': str(AttributeValueType.FILE),
+                }
+                if attr_item_context.supports_soft_deleted_attributes:
+                    filters['is_deleted'] = False
+
                 file_attribute = AttributeModelClass.objects.get(
-                    id = attr_id, 
-                    value_type_str = str(AttributeValueType.FILE),
-                    **({'is_deleted': False} if supports_soft_delete else {}),
+                    **filters,
                 )
                 # Verify permission to delete
                 if file_attribute.attribute_type.can_delete:
@@ -124,7 +124,6 @@ class AttributeEditFormHandler:
         file_title_pattern = re.compile(r'^file_title_(\d+)_(\d+)$')
 
         AttributeModelClass = attr_item_context.attribute_model_subclass
-        supports_soft_delete = self._supports_soft_delete(AttributeModelClass)
 
         for field_name, new_title in request.POST.items():
             match = file_title_pattern.match(field_name)
@@ -142,10 +141,15 @@ class AttributeEditFormHandler:
             
             try:
                 attribute_id: int = int(attribute_id_str)
+                filters = {
+                    'id': attribute_id,
+                    'value_type_str': str(AttributeValueType.FILE),
+                }
+                if attr_item_context.supports_soft_deleted_attributes:
+                    filters['is_deleted'] = False
+
                 attribute = AttributeModelClass.objects.get(
-                    id = attribute_id,
-                    value_type_str = str(AttributeValueType.FILE),
-                    **({'is_deleted': False} if supports_soft_delete else {}),
+                    **filters,
                 )
                 # Clean and validate the new title
                 new_title = new_title.strip()

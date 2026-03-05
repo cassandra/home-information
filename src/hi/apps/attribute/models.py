@@ -17,11 +17,16 @@ from .enums import (
 logger = logging.getLogger(__name__)
 
 
+def model_supports_soft_delete(model_class: type[models.Model]) -> bool:
+    """Return whether the given model class has an is_deleted soft-delete field."""
+    return 'is_deleted' in {field.name for field in model_class._meta.get_fields()}
+
+
 class ActiveAttributeManager(models.Manager):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        if 'is_deleted' in {field.name for field in self.model._meta.get_fields()}:
+        if model_supports_soft_delete(self.model):
             return queryset.filter(is_deleted=False)
         return queryset
 
