@@ -83,7 +83,6 @@ class IntegrationAttributeItemEditContext(AttributeItemEditContext):
             form_data,
             instance = self.integration,
             prefix = self.formset_prefix,
-            supports_soft_deleted_attributes = self.supports_soft_deleted_attributes,
             form_kwargs={
                 'show_as_editable': True,
                 'allow_reordering': False,  # Disable reordering for system-defined attributes

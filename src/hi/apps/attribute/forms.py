@@ -16,10 +16,6 @@ class RegularAttributeBaseFormSet(forms.BaseInlineFormSet):
     """
     
     def __init__(self, *args, **kwargs):
-        self._supports_soft_deleted_attributes = kwargs.pop(
-            'supports_soft_deleted_attributes',
-            False,
-        )
         super().__init__(*args, **kwargs)
         # Apply filtering after parent initialization
         self.queryset = self._filter_editable_queryset(self.queryset)
@@ -30,10 +26,7 @@ class RegularAttributeBaseFormSet(forms.BaseInlineFormSet):
         return self._filter_editable_queryset(queryset)
 
     def _filter_editable_queryset(self, queryset):
-        queryset = queryset.exclude(value_type_str=str(AttributeValueType.FILE))
-        if self._supports_soft_deleted_attributes:
-            queryset = queryset.filter(is_deleted=False)
-        return queryset
+        return queryset.exclude(value_type_str=str(AttributeValueType.FILE))
 
 
 class AttributeForm( forms.ModelForm ):

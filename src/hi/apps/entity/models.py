@@ -10,8 +10,7 @@ from hi.apps.location.models import (
     LocationItemPathModel,
     LocationView,
 )
-from hi.apps.attribute.models import AttributeModel, AttributeValueHistoryModel
-from hi.apps.attribute.models import ActiveAttributeManager, AllAttributeManager
+from hi.apps.attribute.models import SoftDeleteAttributeModel, AttributeValueHistoryModel
 from hi.integrations.models import IntegrationDetailsModel
 from hi.enums import ItemType
 
@@ -101,7 +100,7 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
         return attribute_map
 
         
-class EntityAttribute( AttributeModel ):
+class EntityAttribute( SoftDeleteAttributeModel ):
     """
     - Information related to an entity, e.g., specs, docs, notes, configs
     - The 'attribute type' is used to help define what information the user might need to provide.
@@ -113,15 +112,6 @@ class EntityAttribute( AttributeModel ):
         verbose_name = 'Entity',
         on_delete = models.CASCADE,
     )
-    is_deleted = models.BooleanField(
-        'Deleted?',
-        default = False,
-        db_index = True,
-    )
-
-    objects = ActiveAttributeManager()
-    all_objects = AllAttributeManager()
-
     class Meta:
         verbose_name = 'Attribute'
         verbose_name_plural = 'Attributes'
@@ -136,13 +126,6 @@ class EntityAttribute( AttributeModel ):
     def _get_history_model_class(self):
         """Return the history model class for EntityAttribute."""
         return EntityAttributeHistory
-
-    def delete(self, *args, **kwargs):
-        hard_delete = kwargs.pop('hard_delete', False)
-        if hard_delete:
-            return super().delete(*args, **kwargs)
-        self.soft_delete()
-        return
 
 
 class EntityState( models.Model ):
@@ -482,4 +465,3 @@ class EntityAttributeHistory(AttributeValueHistoryModel):
         indexes = [
             models.Index(fields=['attribute', '-changed_datetime']),
         ]
-

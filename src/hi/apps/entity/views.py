@@ -185,10 +185,9 @@ class EntityAttributeRestoreDeletedInlineView( View ):
              *args        : Any,
              **kwargs     : Any          ) -> HttpResponse:
         try:
-            attribute = EntityAttribute.all_objects.select_related('entity').get(
+            attribute = EntityAttribute.deleted_objects.select_related('entity').get(
                 pk = attribute_id,
                 entity_id = entity_id,
-                is_deleted = True,
             )
         except EntityAttribute.DoesNotExist:
             return page_not_found_response(request, "Deleted attribute not found.")

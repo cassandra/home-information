@@ -985,7 +985,7 @@ class TestEntityEditViewFileUploadIntegration(DualModeViewTestCase):
 
         # Verify file attribute still exists as deleted for restore
         self.assertTrue(
-            EntityAttribute.all_objects.filter(id=file_attr.id, is_deleted=True).exists()
+            EntityAttribute.deleted_objects.filter(id=file_attr.id).exists()
         )
 
     def test_file_title_update_through_entity_edit(self):
@@ -1061,7 +1061,7 @@ class TestEntityEditViewFileUploadIntegration(DualModeViewTestCase):
         )
 
         self.assertTrue(
-            EntityAttribute.all_objects.filter(id=file_to_delete.id, is_deleted=True).exists()
+            EntityAttribute.deleted_objects.filter(id=file_to_delete.id).exists()
         )
         
         # Verify title update occurred

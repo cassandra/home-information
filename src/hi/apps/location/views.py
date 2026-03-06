@@ -278,10 +278,9 @@ class LocationAttributeRestoreDeletedInlineView( View ):
              *args         : Any,
              **kwargs      : Any          ) -> HttpResponse:
         try:
-            attribute = LocationAttribute.all_objects.select_related('location').get(
+            attribute = LocationAttribute.deleted_objects.select_related('location').get(
                 pk = attribute_id,
                 location_id = location_id,
-                is_deleted = True,
             )
         except LocationAttribute.DoesNotExist:
             return page_not_found_response(request, "Deleted attribute not found.")

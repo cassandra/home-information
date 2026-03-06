@@ -32,7 +32,7 @@ from django.db.models import Model
 from hi.constants import DIVID
 
 from .forms import AttributeUploadForm
-from .models import AttributeModel, model_supports_soft_delete
+from .models import AttributeModel, SoftDeleteAttributeModel
 
 
 class AttributePageEditContext:
@@ -153,7 +153,7 @@ class AttributeItemEditContext( AttributePageEditContext ):
         return
         
     @property
-    def attribute_model_subclass(self) -> Type[AttributeModel]:
+    def attribute_model_subclass(self) -> Type[AttributeModel | SoftDeleteAttributeModel]:
         raise NotImplementedError('Subclasses must override this method')
 
     @property
@@ -178,25 +178,15 @@ class AttributeItemEditContext( AttributePageEditContext ):
         the owner model. """
         return self.owner.attributes.all()
 
-    @property
-    def supports_soft_deleted_attributes(self) -> bool:
-        """Whether this attribute model supports querying soft-deleted rows."""
-        return model_supports_soft_delete(self.attribute_model_subclass)
-
     def soft_deleted_attributes_queryset(self):
         """Return queryset with deleted attributes for this owner."""
 
-        if not self.supports_soft_deleted_attributes:
+        if not self.attribute_model_subclass.supports_soft_delete:
             return self.attribute_model_subclass.objects.none()
 
-        filters = {
-            self.owner_type: self.owner,
-            "is_deleted": True,
-        }
-
-        model_class = self.attribute_model_subclass
-        manager = getattr(model_class, 'all_objects', model_class.objects)
-        return manager.filter(**filters)
+        return self.attribute_model_subclass.deleted_objects.filter(
+            **{self.owner_type: self.owner}
+        )
 
     @property
     def attribute_upload_form_class(self) -> Type[AttributeUploadForm]:

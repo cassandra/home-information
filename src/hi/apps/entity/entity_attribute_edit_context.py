@@ -64,7 +64,6 @@ class EntityAttributeItemEditContext(AttributeItemEditContext):
             form_kwargs = {
                 'can_add_custom_attributes': self.can_add_custom_attributes,
             },
-            supports_soft_deleted_attributes = self.supports_soft_deleted_attributes,
         )
 
     @property

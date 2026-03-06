@@ -98,15 +98,9 @@ class AttributeEditFormHandler:
             if not attr_id:  # Skip empty values
                 continue
             try:
-                filters = {
-                    'id': attr_id,
-                    'value_type_str': str(AttributeValueType.FILE),
-                }
-                if attr_item_context.supports_soft_deleted_attributes:
-                    filters['is_deleted'] = False
-
                 file_attribute = AttributeModelClass.objects.get(
-                    **filters,
+                    id=attr_id,
+                    value_type_str=str(AttributeValueType.FILE),
                 )
                 # Verify permission to delete
                 if file_attribute.attribute_type.can_delete:
@@ -141,15 +135,9 @@ class AttributeEditFormHandler:
             
             try:
                 attribute_id: int = int(attribute_id_str)
-                filters = {
-                    'id': attribute_id,
-                    'value_type_str': str(AttributeValueType.FILE),
-                }
-                if attr_item_context.supports_soft_deleted_attributes:
-                    filters['is_deleted'] = False
-
                 attribute = AttributeModelClass.objects.get(
-                    **filters,
+                    id=attribute_id,
+                    value_type_str=str(AttributeValueType.FILE),
                 )
                 # Clean and validate the new title
                 new_title = new_title.strip()

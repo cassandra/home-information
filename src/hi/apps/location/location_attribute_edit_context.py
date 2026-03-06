@@ -61,7 +61,6 @@ class LocationAttributeItemEditContext( AttributeItemEditContext ):
             form_data,
             instance = self.location,
             prefix = self.formset_prefix,
-            supports_soft_deleted_attributes = self.supports_soft_deleted_attributes,
         )
 
     @property

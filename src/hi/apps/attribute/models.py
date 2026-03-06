@@ -17,53 +17,23 @@ from .enums import (
 logger = logging.getLogger(__name__)
 
 
-def model_supports_soft_delete(model_class: type[models.Model]) -> bool:
-    """Return whether the given model class has an is_deleted soft-delete field."""
-    return 'is_deleted' in {field.name for field in model_class._meta.get_fields()}
-
-
 class ActiveAttributeManager(models.Manager):
+    """Default manager that hides soft-deleted attributes."""
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-        if model_supports_soft_delete(self.model):
-            return queryset.filter(is_deleted=False)
-        return queryset
+        return super().get_queryset().filter(is_deleted=False)
 
 
-class AllAttributeManager(models.Manager):
-    pass
+class DeletedAttributeManager(models.Manager):
+    """Manager that returns only soft-deleted attributes."""
 
-
-class AttributeValueHistoryModel(models.Model):
-    """
-    Abstract base class for tracking attribute value changes.
-    Each concrete attribute subclass should have its own history model
-    that defines the foreign key to its specific attribute type.
-    
-    Only tracks value-based attributes (Text, Boolean, Integer, Float, etc.).
-    File attributes are excluded and will be handled separately.
-    """
-    
-    class Meta:
-        abstract = True
-        ordering = ['-changed_datetime']
-    
-    value = models.TextField(
-        'Value',
-        blank=True, null=True,
-    )
-    changed_datetime = models.DateTimeField(
-        'Changed',
-        auto_now_add=True,
-        db_index=True,
-    )
-
-    def __str__(self):
-        return f'Changed at {self.changed_datetime}'
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=True)
 
 
 class AttributeModel(models.Model):
+
+    supports_soft_delete = False
 
     class Meta:
         abstract = True
@@ -226,19 +196,6 @@ class AttributeModel(models.Model):
             value=self.value
         )
 
-    def soft_delete(self):
-        if not hasattr(self, 'is_deleted'):
-            self.delete()
-            return
-        self.is_deleted = True
-        self.save(update_fields=['is_deleted', 'updated_datetime'], track_history=False)
-
-    def restore_from_deleted(self):
-        if not hasattr(self, 'is_deleted'):
-            return
-        self.is_deleted = False
-        self.save(update_fields=['is_deleted', 'updated_datetime'], track_history=False)
-    
     def _get_history_model_class(self):
         """
         Get the corresponding history model class for this attribute type.
@@ -265,3 +222,65 @@ class AttributeModel(models.Model):
 
         super().delete( *args, **kwargs )
         return
+
+
+class SoftDeleteAttributeModel(AttributeModel):
+    """Base class for attribute models that support soft delete."""
+
+    supports_soft_delete = True
+
+    is_deleted = models.BooleanField(
+        'Deleted?',
+        default=False,
+        db_index=True,
+    )
+
+    objects = ActiveAttributeManager()
+    all_objects = models.Manager()
+    deleted_objects = DeletedAttributeManager()
+
+    class Meta(AttributeModel.Meta):
+        abstract = True
+
+    def soft_delete(self):
+        self.is_deleted = True
+        self.save(update_fields=['is_deleted', 'updated_datetime'], track_history=False)
+
+    def restore_from_deleted(self):
+        self.is_deleted = False
+        self.save(update_fields=['is_deleted', 'updated_datetime'], track_history=False)
+
+    def delete(self, *args, **kwargs):
+        hard_delete = kwargs.pop('hard_delete', False)
+        if hard_delete:
+            return super().delete(*args, **kwargs)
+        self.soft_delete()
+        return
+    
+    
+class AttributeValueHistoryModel(models.Model):
+    """
+    Abstract base class for tracking attribute value changes.
+    Each concrete attribute subclass should have its own history model
+    that defines the foreign key to its specific attribute type.
+    
+    Only tracks value-based attributes (Text, Boolean, Integer, Float, etc.).
+    File attributes are excluded and will be handled separately.
+    """
+    
+    class Meta:
+        abstract = True
+        ordering = ['-changed_datetime']
+    
+    value = models.TextField(
+        'Value',
+        blank=True, null=True,
+    )
+    changed_datetime = models.DateTimeField(
+        'Changed',
+        auto_now_add=True,
+        db_index=True,
+    )
+
+    def __str__(self):
+        return f'Changed at {self.changed_datetime}'
