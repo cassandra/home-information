@@ -5,6 +5,7 @@ from django.core.validators import URLValidator
 register = template.Library()
 _url_validator = URLValidator()
 
+
 @register.filter
 def attribute_preview(value, max_chars=60):
     """
