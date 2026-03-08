@@ -112,6 +112,7 @@ class EntityAttribute( SoftDeleteAttributeModel ):
         verbose_name = 'Entity',
         on_delete = models.CASCADE,
     )
+    
     class Meta:
         verbose_name = 'Attribute'
         verbose_name_plural = 'Attributes'

@@ -114,6 +114,7 @@ class LocationAttribute( SoftDeleteAttributeModel ):
         verbose_name = 'Location',
         on_delete = models.CASCADE,
     )
+    
     class Meta:
         verbose_name = 'Attribute'
         verbose_name_plural = 'Attributes'
