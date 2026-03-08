@@ -1,7 +1,9 @@
 from django import template
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 
 register = template.Library()
-
+_url_validator = URLValidator()
 
 @register.filter
 def attribute_preview(value, max_chars=60):
@@ -187,3 +189,26 @@ def attr_restore_all_url(attr_item_context):
         attr_item_context.owner_id_param_name: attr_item_context.owner_id,
     }
     return reverse(url_name, kwargs=params)
+
+
+@register.filter
+def attribute_url(value):
+    """
+    Return a validated URL string when value is a URL, otherwise return empty string.
+
+    This is intended for best-effort display-time detection without persisting
+    any derived value in the database.
+    """
+    if value is None:
+        return ""
+
+    url_candidate = str(value).strip()
+    if not url_candidate:
+        return ""
+
+    try:
+        _url_validator(url_candidate)
+    except ValidationError:
+        return ""
+
+    return url_candidate

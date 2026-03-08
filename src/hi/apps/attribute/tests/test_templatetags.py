@@ -11,7 +11,7 @@ from django.test import TestCase
 
 from hi.apps.attribute.templatetags.attribute_extras import (
     attribute_preview, file_title_field_name, history_target_id, 
-    history_toggle_id, attr_history_url, attr_restore_url
+    history_toggle_id, attr_history_url, attr_restore_url, attribute_url
 )
 from hi.apps.attribute.edit_context import AttributeItemEditContext
 
@@ -146,6 +146,27 @@ class TestAttributeContextFilters(TestCase):
         expected = self.context.history_toggle_id(self.attribute_id)
         self.assertEqual(result, expected)
         self.assertEqual(result, "history-extra-123-456")
+
+
+class TestAttributeUrlFilter(TestCase):
+    """Test display-time URL detection used for attribute value rendering."""
+
+    def test_attribute_url_returns_valid_url(self):
+        self.assertEqual(
+            attribute_url("https://example.com/path?q=1"),
+            "https://example.com/path?q=1"
+        )
+
+    def test_attribute_url_trims_whitespace(self):
+        self.assertEqual(
+            attribute_url("  https://example.com  "),
+            "https://example.com"
+        )
+
+    def test_attribute_url_rejects_invalid_values(self):
+        self.assertEqual(attribute_url("not a url"), "")
+        self.assertEqual(attribute_url(""), "")
+        self.assertEqual(attribute_url(None), "")
 
 
 class TestAttributeUrlTags(TestCase):
@@ -334,4 +355,21 @@ class TestTemplateIntegration(TestCase):
         # This should raise an AttributeError which Django templates handle
         with self.assertRaises(AttributeError):
             template_error.render(context_error)
+
+    def test_attribute_url_filter_in_template(self):
+        """Test attribute_url filter renders links only for valid URLs."""
+        template_str = """
+        {% load attribute_extras %}
+        {% with detected=value|attribute_url %}
+        {% if detected %}<a href="{{ detected }}">{{ detected }}</a>{% else %}NO_LINK{% endif %}
+        {% endwith %}
+        """
+
+        template = Template(template_str)
+
+        rendered_valid = template.render(Context({'value': 'https://example.com'}))
+        self.assertIn('href="https://example.com"', rendered_valid)
+
+        rendered_invalid = template.render(Context({'value': 'abc'}))
+        self.assertIn('NO_LINK', rendered_invalid)
             

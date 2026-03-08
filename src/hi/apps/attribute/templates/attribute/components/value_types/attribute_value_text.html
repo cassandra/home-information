@@ -1,4 +1,5 @@
 {% load common_tags %}
+{% load attribute_extras %}
 {% comment %}
 Text Attribute Value Component
 Renders textarea with special handling (hidden input + display textarea) for text attributes
@@ -44,6 +45,13 @@ This component handles the auto-sizing and expand/collapse functionality
   </div>
   {% endif %}
 </div>
+{% with detected_url=attribute_form.value.value|attribute_url %}
+{% if detected_url %}
+  <div class="mt-2">
+    <a href="{{ detected_url }}" target="_blank" rel="noopener noreferrer">{{ detected_url }}</a>
+  </div>
+{% endif %}
+{% endwith %}
 {% endwith %}
 {% endwith %}
 {% endwith %}
