@@ -7,6 +7,7 @@ from django.db import transaction
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
+from hi.apps.common.svg_models import SvgItemPositionBounds
 from hi.apps.common.singleton import Singleton
 from hi.apps.location.path_geometry import PathGeometry
 from hi.apps.entity.edit.forms import EntityPositionForm
@@ -238,8 +239,15 @@ class EntityManager(Singleton):
             self.DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX / 100.0
         )
         scale = target_icon_size / icon_max_dimension
-
-        position_bounds = location_view.location.svg_position_bounds
+        
+        position_bounds = SvgItemPositionBounds(
+            min_x = view_box.x,
+            min_y = view_box.y,
+            max_x = view_box.x + view_box.width,
+            max_y = view_box.y + view_box.height,
+            min_scale = 0.1,
+            max_scale = 25.0,
+        )
         scale = max( position_bounds.min_scale, min( scale, position_bounds.max_scale ) )
 
         return Decimal( str(scale) )

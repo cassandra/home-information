@@ -366,9 +366,14 @@ class TestEntityManager(BaseTestCase):
             self.assertEqual(entity_position.location, location)
             self.assertEqual(entity_position.svg_x, expected_x)
             self.assertEqual(entity_position.svg_y, expected_y)
-            # Default icon size should be tied to viewBox size (5% of shortest side).
+            # Default icon size should be tied to viewBox size using manager config.
             # Camera icon viewBox max dimension is 64 (from hi_styles).
-            expected_scale = Decimal('15') / Decimal('64')  # (300 * 0.05) / 64
+            expected_scale = (
+                Decimal('300')
+                * Decimal(str(manager.DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX))
+                / Decimal('100')
+                / Decimal('64')
+            )
             self.assertEqual(entity_position.svg_scale, expected_scale)
             self.assertEqual(entity_position.svg_rotate, Decimal('0.0'))
             
