@@ -366,7 +366,10 @@ class TestEntityManager(BaseTestCase):
             self.assertEqual(entity_position.location, location)
             self.assertEqual(entity_position.svg_x, expected_x)
             self.assertEqual(entity_position.svg_y, expected_y)
-            self.assertEqual(entity_position.svg_scale, Decimal('1.0'))
+            # Default icon size should be tied to viewBox size (5% of shortest side).
+            # Camera icon viewBox max dimension is 64 (from hi_styles).
+            expected_scale = Decimal('15') / Decimal('64')  # (300 * 0.05) / 64
+            self.assertEqual(entity_position.svg_scale, expected_scale)
             self.assertEqual(entity_position.svg_rotate, Decimal('0.0'))
             
             # Test that calling again doesn't create duplicate

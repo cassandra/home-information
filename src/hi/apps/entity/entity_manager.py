@@ -11,6 +11,7 @@ from hi.apps.common.singleton import Singleton
 from hi.apps.location.path_geometry import PathGeometry
 from hi.apps.entity.edit.forms import EntityPositionForm
 from hi.apps.location.models import Location, LocationView
+from hi.hi_styles import EntityStyle
 
 from .entity_pairing_manager import EntityPairingManager
 from .enums import (
@@ -36,6 +37,8 @@ logger = logging.getLogger(__name__)
 
 
 class EntityManager(Singleton):
+
+    DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX = 20.0
 
     def __init_singleton__(self):
         self._change_listeners = list()
@@ -211,16 +214,35 @@ class EntityManager(Singleton):
         # Default display in middle of current view
         svg_x = location_view.svg_view_box.x + ( location_view.svg_view_box.width / 2.0 )
         svg_y = location_view.svg_view_box.y + ( location_view.svg_view_box.height / 2.0 )
+        svg_scale = self._get_default_icon_scale( entity = entity, location_view = location_view )
         
         entity_position = EntityPosition.objects.create(
             entity = entity,
             location = location_view.location,
             svg_x = Decimal( svg_x ),
             svg_y = Decimal( svg_y ),
-            svg_scale = Decimal( 1.0 ),
+            svg_scale = svg_scale,
             svg_rotate = Decimal( 0.0 ),
         )
         return entity_position
+
+    def _get_default_icon_scale( self, entity: Entity, location_view: LocationView ) -> Decimal:
+        view_box = location_view.svg_view_box
+        icon_view_box = EntityStyle.get_svg_icon_viewbox( entity.entity_type )
+
+        icon_max_dimension = max( icon_view_box.width, icon_view_box.height )
+        if icon_max_dimension <= 0:
+            return Decimal( 1.0 )
+
+        target_icon_size = min( view_box.width, view_box.height ) * (
+            self.DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX / 100.0
+        )
+        scale = target_icon_size / icon_max_dimension
+
+        position_bounds = location_view.location.svg_position_bounds
+        scale = max( position_bounds.min_scale, min( scale, position_bounds.max_scale ) )
+
+        return Decimal( str(scale) )
     
     def add_entity_path_if_needed( self,
                                    entity          : Entity,
