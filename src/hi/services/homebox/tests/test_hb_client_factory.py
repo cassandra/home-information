@@ -53,6 +53,11 @@ class TestHbClientFactory(TestCase):
     @patch('hi.services.homebox.hb_client_factory.HbClient')
     def test_create_client_success(self, mock_client_class):
         """Test successful client creation with valid attributes."""
+        from hi.services.homebox.hb_client import HbClient as RealHbClient
+        mock_client_class.API_URL = RealHbClient.API_URL
+        mock_client_class.API_USER = RealHbClient.API_USER
+        mock_client_class.API_PASSWORD = RealHbClient.API_PASSWORD
+
         mock_client = Mock()
         mock_client_class.return_value = mock_client
         attributes = self._create_test_attributes()
@@ -62,9 +67,9 @@ class TestHbClientFactory(TestCase):
         self.assertIs(result, mock_client)
 
         expected_options = {
-            'apiurl': 'https://homebox.example.com/api',
-            'user': 'test_user',
-            'password': 'test_password',
+            RealHbClient.API_URL: 'https://homebox.example.com/api',
+            RealHbClient.API_USER: 'test_user',
+            RealHbClient.API_PASSWORD: 'test_password',
         }
         mock_client_class.assert_called_once_with(api_options=expected_options)
 

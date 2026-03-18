@@ -17,18 +17,17 @@ class HbClient:
 
     def __init__(self, api_options: Dict[str, str]):
         self._api_url = api_options.get(self.API_URL)
-        if self._api_url and self._api_url.endswith('/'):
+        assert self._api_url is not None
+        if self._api_url.endswith('/'):
             self._api_url = self._api_url[:-1]
-            
+
         self._user = api_options.get(self.API_USER)
+        assert self._user is not None
         self._password = api_options.get(self.API_PASSWORD)
-        
+        assert self._password is not None
+
         self._session = Session()
-        
-        if self._user and self._password:
-            self._login()
-        else:
-            logger.warning("HomeBox API user or password is missing.")
+        self._login()
 
     def _login(self):
         url = f"{self._api_url}/{self.API_VERSION}/users/login"
@@ -43,6 +42,8 @@ class HbClient:
         token = response.json().get('token')
         if token:
             self._session.headers.update({'Authorization': token})
+        else:
+            logger.warning("HomeBox login succeeded but response did not contain a token.")
 
     def _make_request(self, method: str, url: str, **kwargs) -> Union[dict, Response]:
         """Helper to make requests with simple re-authentication."""
@@ -80,7 +81,7 @@ class HbClient:
                     item_detail = self._make_request('GET', url_detail)
                     full_items.append(HbItem(api_dict=item_detail, client=self))
                 except Exception as e:
-                    logger.error(f"Erro ao buscar detalhes do item {item_id}: {e}")
+                    logger.error(f"Error fetching details for item {item_id}: {e}")
                     
         return full_items
 

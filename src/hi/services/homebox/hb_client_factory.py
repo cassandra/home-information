@@ -39,9 +39,9 @@ class HbClientFactory:
         }
 
         attr_to_api_option_key = {
-            HbAttributeType.API_URL: 'apiurl',
-            HbAttributeType.API_USER: 'user',
-            HbAttributeType.API_PASSWORD: 'password',
+            HbAttributeType.API_URL: HbClient.API_URL,
+            HbAttributeType.API_USER: HbClient.API_USER,
+            HbAttributeType.API_PASSWORD: HbClient.API_PASSWORD,
         }
 
         integration_key_to_attribute = { x.integration_key: x
