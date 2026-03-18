@@ -61,6 +61,9 @@ class EntityAttributeItemEditContext(AttributeItemEditContext):
             form_data,
             instance = self.entity,
             prefix = self.formset_prefix,
+            form_kwargs = {
+                'can_add_custom_attributes': self.can_add_custom_attributes,
+            },
         )
 
     @property

@@ -14,7 +14,7 @@ Individual attribute attribute card with value editing and actions
      data-value-type="{{ attribute_form.instance.value_type.name|default:'text' }}"
      data-is-secret="{{ attribute_form.instance.value_type.is_secret|yesno:'true,false' }}"
      data-can-delete="{{ attribute_form.instance.attribute_type.can_delete|yesno:'true,false' }}"
-     {% if not attribute_form.instance.pk and not attribute_form.is_bound %}style="display: none;"{% endif %}
+     {% if attribute_form.suppress_add_new %}style="display: none;"{% endif %}
      {% if attribute_form.instance and not attribute_form.instance.is_editable %}is_editable="false"{% endif %} >
   
   <!-- Hidden form fields -->
