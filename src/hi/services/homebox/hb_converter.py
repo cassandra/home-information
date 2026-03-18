@@ -170,17 +170,6 @@ class HbConverter:
         return payload
 
     @classmethod
-    def _create_entity_attributes_from_hb_fields( cls, entity: Entity, hb_item: HbItem ):
-        hb_item_fields = hb_item.fields
-
-        for order_id, hb_field in enumerate( hb_item_fields ):
-            cls.create_attribute_from_hb_field(
-                entity = entity,
-                hb_field = hb_field,
-                order_id = order_id,
-            )
-
-    @classmethod
     def hb_field_to_attribute_name( cls, hb_field: Dict ) -> str:
         return str(hb_field.get('name', '')).strip()
 

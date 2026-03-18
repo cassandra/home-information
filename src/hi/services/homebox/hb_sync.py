@@ -159,7 +159,8 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
 
         integration_key_to_attachment = dict()
         attachment_list = HbConverter.hb_item_to_attachment_field_list( hb_item = hb_item )
-        for order_id, hb_attachment in enumerate( attachment_list ):
+        field_count = len( hb_field_list )
+        for order_id, hb_attachment in enumerate( attachment_list, start = field_count ):
             if not isinstance( hb_attachment, dict ):
                 continue
 
@@ -199,8 +200,8 @@ class HomeBoxSynchronizer( HomeBoxMixin, IntegrationSyncMixin ):
                         )
                 continue
 
-            for integration_key, hb_attachment in integration_key_to_attachment.items():
-                hb_attachment, order_id = hb_attachment
+            for integration_key, hb_attachment_tuple in integration_key_to_attachment.items():
+                hb_attachment, order_id = hb_attachment_tuple
                 attribute = integration_key_to_attr.get( integration_key )
 
                 if attribute:

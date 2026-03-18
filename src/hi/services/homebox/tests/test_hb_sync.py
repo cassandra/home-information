@@ -274,14 +274,14 @@ class TestHomeBoxSynchronizer(SimpleTestCase):
         update_attachment_mock.assert_called_once_with(
             attribute=existing_attachment_attr,
             hb_attachment=attachment_existing,
-            order_id=0,
+            order_id=2,
             message_list=ANY,
             updated_prefix='Attachment attribute updated',
         )
         create_attachment_mock.assert_called_once_with(
             entity=entity,
             hb_attachment=attachment_new,
-            order_id=1,
+            order_id=3,
         )
 
         stale_attr.delete.assert_called_once()
