@@ -58,11 +58,11 @@ We also provide some helper scripts [Helper Scripts README](../scripts/README.md
 
 ## Integrations & Compatibility
 
-### Q: Do I need Home Assistant or ZoneMinder to use this?
-**A:** No, integrations are completely optional. Home Information provides value as a standalone information management system. Integrations add device control and monitoring capabilities when you want them.
+### Q: Do I need Home Assistant, ZoneMinder, or HomeBox to use this?
+**A:** No, integrations are completely optional. Home Information provides value as a standalone information management system. Integrations add device control, monitoring, and inventory management capabilities when you want them.
 
 ### Q: Will it work with my existing smart home setup?
-**A:** If your devices work with Home Assistant, they'll integrate well. Home Assistant supports hundreds of device types and protocols. For security cameras, ZoneMinder integration works with most IP cameras and many older CCTV systems.
+**A:** If your devices work with Home Assistant, they'll integrate well. Home Assistant supports hundreds of device types and protocols. For security cameras, ZoneMinder integration works with most IP cameras and many older CCTV systems. For home inventory tracking, HomeBox items can be imported and displayed on your home layout.
 
 ### Q: What if my devices aren't supported?
 **A:** You can still use Home Information for documentation and information management about those devices. As the project grows, we'll add more integrations based on user demand.

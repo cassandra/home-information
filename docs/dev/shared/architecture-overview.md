@@ -34,6 +34,8 @@
 
 **ZoneMinder Integration** (`src/hi/services/zoneminder/`): Camera and video surveillance system integration for security monitoring.
 
+**HomeBox Integration** (`src/hi/services/homebox/`): Home inventory system integration for item tracking and attribute synchronization.
+
 **Integration Pattern**: All external systems use integration keys for mapping entities between systems.
 
 ## Key Architectural Patterns

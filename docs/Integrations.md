@@ -5,6 +5,7 @@
 We will add more integrations as there is demand, but presently the current supported integrations are:
 - **Home Assistant** - General home automation platform for many types of devices and protocols. Requires installation and setup.
 - **ZoneMinder** - For managing security cameras with motion detection. Requires installation and setup.
+- **HomeBox** - Home inventory management system for tracking household items, warranties, and documentation. Requires installation and setup.
 
 To enable an integration, go to "Settings > Integrations > Add Integrations".
 
@@ -17,6 +18,10 @@ You will need install and set this up by following all their documentation. Star
 ## ZoneMinder
 
 You will need install and set this up by following all their documentation. Start at the [ZoneMinder Home Page](https://zoneminder.com//).
+
+## HomeBox
+
+You will need to install and set this up by following all their documentation. Start at the [HomeBox Home Page](https://homebox.software/). The API credentials are the same username and password you use to log into the HomeBox web interface.
 
 ### CORS Issues
 
