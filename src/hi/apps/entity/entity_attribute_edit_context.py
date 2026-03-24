@@ -67,6 +67,10 @@ class EntityAttributeItemEditContext(AttributeItemEditContext):
         )
 
     @property
+    def can_restore_default(self):
+        return False
+    
+    @property
     def content_body_template_name(self):
         return 'entity/panes/entity_edit_content_body.html'
     

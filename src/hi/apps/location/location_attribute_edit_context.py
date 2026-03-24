@@ -64,6 +64,10 @@ class LocationAttributeItemEditContext( AttributeItemEditContext ):
         )
 
     @property
+    def can_restore_default(self):
+        return False
+    
+    @property
     def content_body_template_name(self):
         return 'location/panes/location_edit_content_body.html'
     

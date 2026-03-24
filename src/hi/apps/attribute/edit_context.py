@@ -68,6 +68,11 @@ class AttributePageEditContext:
         if self.owner:
             return f'-{self.owner_type}-{self.owner_id}'
         return f'-{self.owner_type}'
+    
+    @property
+    def can_restore_default(self) -> bool:
+        """ Whether attributes for this owner type support restoring to default values """
+        return False
 
     @property
     def content_body_template_name(self):
@@ -83,7 +88,15 @@ class AttributePageEditContext:
     def restore_url_name(self) -> str:
         """ Should be a view that uses AttributeEditViewMixin.post_restore() """
         return f'{self.owner_type}_attribute_restore_inline'
-
+    
+    @property
+    def restore_subsystem_url_name(self) -> str:
+        return f'{self.owner_type}_attribute_restore_subsystem_inline'
+    
+    @property
+    def restore_all_url_name(self) -> str:
+        return f'{self.owner_type}_attribute_restore_all_inline'
+    
     @property
     def container_html_id(self) -> str:
         return f"{DIVID['ATTR_V2_CONTAINER_ID']}{self.id_suffix}"

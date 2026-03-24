@@ -4,6 +4,9 @@ from django.urls import reverse
 
 from hi.apps.config.enums import ConfigPageType
 from hi.apps.config.models import Subsystem, SubsystemAttribute
+from hi.apps.attribute.enums import AttributeType, AttributeValueType
+from hi.apps.audio.settings import AudioSetting
+from hi.apps.security.settings import SecuritySetting
 from hi.enums import ViewType, ViewMode
 from hi.testing.view_test_base import DualModeViewTestCase
 
@@ -208,4 +211,137 @@ class TestConfigSettingsView(DualModeViewTestCase):
             other_section = content[other_section_start:other_section_end]
             self.assertNotIn('Hi.audio.testAudio()', other_section)
 
+    def test_attribute_restore_ui_data_is_present(self):
+        """Ensure attribute cards expose default values and restore action."""
+        attribute = SubsystemAttribute.objects.create(
+            subsystem=self.subsystem,
+            setting_key=SecuritySetting.SECURITY_DAY_START.key,
+            name='Security Day Start',
+            value='10:00',
+            value_type_str=str(AttributeValueType.ENUM),
+            attribute_type_str=str(AttributeType.PREDEFINED),
+        )
 
+        url = reverse('config_settings', kwargs={'subsystem_id': self.subsystem.id})
+        response = self.client.get(url)
+
+        self.assertSuccessResponse(response)
+        self.assertHtmlResponse(response)
+
+        content = response.content.decode('utf-8')
+        expected_default = str(SecuritySetting.SECURITY_DAY_START.definition.initial_value)
+
+        self.assertIn(f'data-default-value="{expected_default}"', content)
+        self.assertIn(f"Hi.attr.restoreDefaultValue('{attribute.id}')", content)
+
+    def test_restore_subsystem_confirm_modal(self):
+        """Subsystem reset confirmation is rendered by a server modal view."""
+        url = reverse(
+            'subsystem_attribute_restore_subsystem_confirm_modal',
+            kwargs={'subsystem_id': self.subsystem.id},
+        )
+
+        response = self.async_get(url)
+
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+
+        data = response.json()
+        self.assertIn('modal', data)
+        self.assertIn('attr-v2-container', data['modal'])
+        self.assertIn('attr-v2-restore-link', data['modal'])
+
+        expected_restore_url = reverse(
+            'subsystem_attribute_restore_subsystem_inline',
+            kwargs={'subsystem_id': self.subsystem.id},
+        )
+        self.assertIn(f'href="{expected_restore_url}"', data['modal'])
+
+    def test_restore_subsystem(self):
+        """Restoring defaults for a subsystem updates all its attributes."""
+        attribute_day = SubsystemAttribute.objects.create(
+            subsystem=self.subsystem,
+            setting_key=SecuritySetting.SECURITY_DAY_START.key,
+            name='Security Day Start',
+            value='10:00',
+            value_type_str=str(AttributeValueType.ENUM),
+            attribute_type_str=str(AttributeType.PREDEFINED),
+        )
+        attribute_away = SubsystemAttribute.objects.create(
+            subsystem=self.subsystem,
+            setting_key=SecuritySetting.SECURITY_AWAY_DELAY_MINS.key,
+            name='Away Delay',
+            value='99',
+            value_type_str=str(AttributeValueType.INTEGER),
+            attribute_type_str=str(AttributeType.PREDEFINED),
+        )
+
+        url = reverse('subsystem_attribute_restore_subsystem_inline', kwargs={'subsystem_id': self.subsystem.id})
+        response = self.client.get(url)
+
+        self.assertSuccessResponse(response)
+
+        attribute_day.refresh_from_db()
+        attribute_away.refresh_from_db()
+
+        self.assertEqual(attribute_day.value, str(SecuritySetting.SECURITY_DAY_START.definition.initial_value))
+        self.assertEqual(attribute_away.value, str(SecuritySetting.SECURITY_AWAY_DELAY_MINS.definition.initial_value))
+
+    def test_restore_all_confirm_modal(self):
+        """Global reset confirmation is rendered by a server modal view."""
+        url = reverse(
+            'subsystem_attribute_restore_all_confirm_modal',
+            kwargs={'subsystem_id': self.subsystem.id},
+        )
+
+        response = self.async_get(url)
+
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+
+        data = response.json()
+        self.assertIn('modal', data)
+        self.assertIn('attr-v2-container', data['modal'])
+        self.assertIn('attr-v2-restore-link', data['modal'])
+
+        expected_restore_url = reverse(
+            'subsystem_attribute_restore_all_inline',
+            kwargs={'subsystem_id': self.subsystem.id},
+        )
+        self.assertIn(f'href="{expected_restore_url}"', data['modal'])
+
+    def test_restore_all(self):
+        """Restoring defaults for all subsystems updates every attribute."""
+        other_subsystem = Subsystem.objects.create(
+            name='Other Subsystem',
+            subsystem_key='other_subsystem_key',
+        )
+
+        attribute_security = SubsystemAttribute.objects.create(
+            subsystem=self.subsystem,
+            setting_key=SecuritySetting.SECURITY_NIGHT_START.key,
+            name='Security Night Start',
+            value='01:00',
+            value_type_str=str(AttributeValueType.ENUM),
+            attribute_type_str=str(AttributeType.PREDEFINED),
+        )
+        attribute_audio = SubsystemAttribute.objects.create(
+            subsystem=other_subsystem,
+            setting_key=AudioSetting.CONSOLE_WARNING_AUDIO_FILE.key,
+            name='Console Warning Sound',
+            value='info',
+            value_type_str=str(AttributeValueType.ENUM),
+            attribute_type_str=str(AttributeType.PREDEFINED),
+        )
+
+        url = reverse('subsystem_attribute_restore_all_inline', kwargs={'subsystem_id': self.subsystem.id})
+
+        response = self.client.get(url)
+
+        self.assertSuccessResponse(response)
+
+        attribute_security.refresh_from_db()
+        attribute_audio.refresh_from_db()
+
+        self.assertEqual(attribute_security.value, str(SecuritySetting.SECURITY_NIGHT_START.definition.initial_value))
+        self.assertEqual(attribute_audio.value, str(AudioSetting.CONSOLE_WARNING_AUDIO_FILE.definition.initial_value))

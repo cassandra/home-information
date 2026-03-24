@@ -24,6 +24,10 @@ class SubsystemAttributePageEditContext(AttributePageEditContext):
         return
     
     @property
+    def can_restore_default(self):
+        return True
+
+    @property
     def content_body_template_name(self):
         return 'config/panes/subsystem_edit_content_body.html'
 
@@ -47,6 +51,10 @@ class SubsystemAttributeItemEditContext(AttributeItemEditContext):
     def subsystem(self) -> Subsystem:
         """Get the Subsystem instance (typed accessor)."""
         return self.owner
+    
+    @property
+    def can_restore_default(self):
+        return True
     
     @property
     def content_body_template_name(self):

@@ -115,11 +115,15 @@
         toggleExpandedView: function(button) {
             return _toggleExpandedView(button);
         },
-
+        
         reorderAttributeCard: function(button, direction) {
             return _reorderAttributeCard(button, direction);
         },
 
+        restoreDefaultValue: function(attributeId) {
+            return _restoreDefaultValue(attributeId);
+        },
+    
         // Initialization
         init: function() {
             _initializeAllContainers();
@@ -1169,7 +1173,7 @@
             displayField.off('input.overflow');
         }
     }
-
+  
     function _reorderAttributeCard(button, direction) {
         const card = button.closest(`[${Hi.DATA_ATTRIBUTE_ID_ATTR}]`);
         const parent = card?.parentElement;
@@ -1206,6 +1210,82 @@
                 }
             }
         }
+    }
+
+    function _restoreDefaultValue(attributeId, containerSelector = null) {
+        const scope = containerSelector ? $(containerSelector) : $(document);
+        const $card = scope.find(`[${Hi.DATA_ATTRIBUTE_ID_ATTR}="${attributeId}"]`);
+
+        if (!$card.length) return;
+
+        const defaultValue = $card.data('default-value');
+        const valueType = $card.data('value-type');
+
+        if (defaultValue === undefined || valueType === undefined) {
+            console.warn(`Missing data for attribute ${attributeId}`);
+            return;
+        }
+
+        const handlers = {
+            BOOLEAN : _restoreCheckbox,
+            ENUM    : _restoreSelect,
+            TEXT    : _restoreTextarea,
+            FLOAT   : _restoreInput,
+            INTEGER : _restoreInput,
+        };
+
+        const handler = handlers[valueType];
+        if (!handler) {
+            console.warn(`Unsupported value_type "${valueType}"`);
+            return;
+        }
+
+        handler($card, defaultValue);
+        _ajax.showStatusMessage('Restored to default value', STATUS_TYPE.INFO, $card);
+    }
+
+    function _restoreCheckbox($card, defaultValue) {
+        const $checkbox = $card.find('input[type="checkbox"].attr-v2-boolean-checkbox');
+
+        if (!$checkbox.length) {
+            console.error('Checkbox not found for boolean attribute');
+            return;
+        }
+
+        $checkbox.prop('checked', defaultValue).trigger('change');
+    }
+
+    function _restoreTextarea($card, defaultValue) {
+        const $textarea = $card.find(Hi.ATTR_V2_TEXTAREA_SELECTOR);
+
+        if (!$textarea.length) {
+            console.error('Textarea not found for text attribute');
+            return;
+        }
+
+        $textarea.val(defaultValue).trigger('input');
+    }
+
+    function _restoreSelect($card, defaultValue) {
+        const $select = $card.find('select[name$="-value"]');
+
+        if (!$select.length) {
+            console.error('Select not found for enum attribute');
+            return;
+        }
+
+        $select.val(defaultValue).trigger('change');
+    }
+
+    function _restoreInput($card, defaultValue) {
+        const $input = $card.find('input[name$="-value"]:not([type="hidden"])');
+
+        if (!$input.length) {
+            console.error('Input not found for numeric attribute');
+            return;
+        }
+
+        $input.val(defaultValue).trigger('input');
     }
     
     // Sync textarea values to hidden fields before form submission

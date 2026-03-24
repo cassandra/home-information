@@ -14,6 +14,9 @@ Individual attribute attribute card with value editing and actions
      data-value-type="{{ attribute_form.instance.value_type.name|default:'text' }}"
      data-is-secret="{{ attribute_form.instance.value_type.is_secret|yesno:'true,false' }}"
      data-can-delete="{{ attribute_form.instance.attribute_type.can_delete|yesno:'true,false' }}"
+     {% if attr_item_context.can_restore_default %}
+       data-default-value="{{ attribute_form.instance.get_attribute_default_value }}"
+     {% endif %}
      {% if attribute_form.suppress_add_new %}style="display: none;"{% endif %}
      {% if attribute_form.instance and not attribute_form.instance.is_editable %}is_editable="false"{% endif %} >
   
@@ -82,6 +85,14 @@ Individual attribute attribute card with value editing and actions
            title="View history">
           {% icon "history" size="sm" %}
         </a>
+        {% if attr_item_context.can_restore_default %}
+          <button type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  title="Restore to Default Value"
+                  onclick="window.Hi.attr.restoreDefaultValue('{{ attribute_form.instance.pk }}');">
+            {% icon "sync" size="sm" %}
+          </button>
+        {% endif %}
       {% endif %}
       
       {% if attribute_form.instance.pk and attribute_form.instance.attribute_type.can_delete %}
