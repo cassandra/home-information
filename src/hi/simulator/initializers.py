@@ -4,9 +4,6 @@ from django.db import transaction
 
 import hi.apps.common.datetimeproxy as datetimeproxy
 
-from .models import SimProfile
-from .simulator_manager import SimulatorManager
-
 logger = logging.getLogger(__name__)
 
 
@@ -19,6 +16,11 @@ class SimulatorInitializer:
         return
 
     def _create_default_profile_if_needed( self ):
+        # Lazy load to avoid importing simulator models when simulator app
+        # is not active in the current settings profile.
+        from .models import SimProfile
+        from .simulator_manager import SimulatorManager
+
         with transaction.atomic():
             _current_sim_profile = SimProfile.objects.all().first()
             if _current_sim_profile:
