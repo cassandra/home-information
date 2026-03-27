@@ -1,5 +1,6 @@
 from django.test import TestCase
 
+
 class SimulatorInitializerTestCase(TestCase):
 
     def test_run_creates_default_profile(self):
