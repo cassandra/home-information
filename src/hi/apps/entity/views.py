@@ -11,6 +11,7 @@ from hi.apps.sense.sensor_history_manager import SensorHistoryMixin
 
 from hi.views import page_not_found_response
 from hi.hi_async_view import HiModalView
+from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransitionHandler
 
 from .models import Entity, EntityAttribute
 from .transient_models import EntityStateHistoryData
@@ -86,11 +87,29 @@ class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):
     
     def post( self, request,*args, **kwargs ):
         entity = self.get_entity(request, *args, **kwargs)
+        original_entity_type = entity.entity_type
         attr_item_context = EntityAttributeItemEditContext( entity = entity )
-        return self.post_attribute_form(
+        response = self.post_attribute_form(
             request = request,
             attr_item_context = attr_item_context,
         )
+
+        if response.status_code != 200:
+            return response
+
+        entity.refresh_from_db()
+        entity_type_changed = bool( original_entity_type != entity.entity_type )
+        if not entity_type_changed:
+            return response
+
+        transition_response = EntityTypeTransitionHandler().handle_entity_type_change(
+            request = request,
+            entity = entity,
+        )
+        if transition_response is None:
+            return response
+
+        return transition_response
 
 
 class EntityAttributeUploadView( View, EntityViewMixin, AttributeEditViewMixin ):

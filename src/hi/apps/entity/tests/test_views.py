@@ -119,6 +119,30 @@ class TestEntityEditView(DualModeViewTestCase):
         self.assertEqual(self.entity.name, 'Updated Entity Name')
         self.assertEqual(self.entity.entity_type_str, str(EntityType.WALL_SWITCH))
 
+    def test_post_entity_type_change_returns_refresh_response(self):
+        """Test EntityType changes return refresh response so location icons update."""
+        url = reverse('entity_edit', kwargs={'entity_id': self.entity.id})
+
+        form_data = EntityAttributeSyntheticData.create_form_data_for_entity_edit(
+            entity=self.entity,
+            entity_type_str=str(EntityType.CAMERA),
+        )
+
+        attributes = list(self.entity.attributes.all())
+        formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes(
+            attributes, self.entity
+        )
+        form_data.update(formset_data)
+
+        response = self.client.post(url, form_data)
+
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+
+        data = response.json()
+        self.assertIn('refresh', data)
+        self.assertTrue(data['refresh'])
+
     def test_post_attribute_value_updates(self):
         """Test updating attribute values through formset."""
         url = reverse('entity_edit', kwargs={'entity_id': self.entity.id})
