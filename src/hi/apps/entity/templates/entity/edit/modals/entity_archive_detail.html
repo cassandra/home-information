@@ -1,0 +1,39 @@
+{% extends "modals/action_done.html" %}
+{% load icons %}
+
+{% block modal_dialog_class %}hi-modal-dialog-700{% endblock %}
+
+{% block title_text %}
+{{ archived_entity.name }}
+{% endblock %}
+
+{% block body %}
+<div class="text-muted text-center mb-3">
+  <small>
+    {{ archived_entity.entity_type_str }}
+    &mdash; created {{ archived_entity.original_created_datetime|date:"M j, Y"|default:"unknown" }}
+    &mdash; archived {{ archived_entity.archived_datetime|date:"M j, Y" }}
+  </small>
+</div>
+
+{% if attributes %}
+<div class="border-top pt-2">
+  <h6 class="text-muted mb-2">Attributes</h6>
+  {% for attribute in attributes %}
+  <div class="d-flex justify-content-between align-items-start {% if not forloop.first %}border-top{% endif %} py-2">
+    <div class="mr-3">
+      <div><strong>{{ attribute.name }}</strong></div>
+      {% if attribute.value %}
+      <div class="text-muted"><small>{{ attribute.value|truncatechars:200 }}</small></div>
+      {% endif %}
+    </div>
+    <div class="text-muted text-nowrap">
+      <small>{{ attribute.value_type_str }}</small>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-muted text-center py-3">No attributes.</div>
+{% endif %}
+{% endblock %}

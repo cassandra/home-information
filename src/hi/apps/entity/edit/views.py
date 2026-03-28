@@ -16,7 +16,12 @@ from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.entity_pairing_manager import EntityPairingManager, EntityPairingError
 from hi.apps.entity.edit.entity_type_transition_handler import EntityTypeTransitionHandler
 from hi.apps.entity.forms import EntityForm
-from hi.apps.entity.models import Entity, EntityPosition
+from hi.apps.entity.models import (
+    ArchivedEntity,
+    ArchivedEntityAttribute,
+    Entity,
+    EntityPosition,
+)
 from hi.apps.entity.view_mixins import EntityViewMixin
 from hi.apps.location.models import LocationView
 from hi.apps.location.location_manager import LocationManager
@@ -296,3 +301,91 @@ class EntityPropertiesEditView( View, EntityViewMixin ):
             },
             status = status_code,
         )
+
+
+@method_decorator( edit_required, name='dispatch' )
+class EntityArchiveView( HiModalView, EntityViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'entity/edit/modals/entity_archive.html'
+
+    def get( self, request, *args, **kwargs ):
+        entity = self.get_entity( request, *args, **kwargs )
+
+        if entity.integration_id:
+            raise PermissionDenied( 'Integration entities cannot be archived.' )
+
+        context = {
+            'entity': entity,
+        }
+        return self.modal_response( request, context )
+
+    def post( self, request, *args, **kwargs ):
+        entity = self.get_entity( request, *args, **kwargs )
+
+        action = request.POST.get( 'action' )
+        if action != 'confirm':
+            raise BadRequest( 'Missing confirmation value.' )
+
+        if entity.integration_id:
+            raise PermissionDenied( 'Integration entities cannot be archived.' )
+
+        with transaction.atomic():
+            archived_entity = ArchivedEntity.objects.create(
+                name = entity.name,
+                entity_type_str = entity.entity_type_str,
+                original_created_datetime = entity.created_datetime,
+            )
+            for attribute in entity.attributes.all():
+                ArchivedEntityAttribute.objects.create(
+                    archived_entity = archived_entity,
+                    name = attribute.name,
+                    value = attribute.value,
+                    file_value = attribute.file_value,
+                    file_mime_type = attribute.file_mime_type,
+                    value_type_str = attribute.value_type_str,
+                    value_range_str = attribute.value_range_str,
+                    attribute_type_str = attribute.attribute_type_str,
+                    is_editable = False,
+                    is_required = False,
+                    order_id = attribute.order_id,
+                )
+                continue
+
+            entity.delete()
+
+        redirect_url = reverse( 'home' )
+        return self.redirect_response( request, redirect_url )
+
+
+@method_decorator( edit_required, name='dispatch' )
+class EntityArchiveListView( HiModalView ):
+
+    def get_template_name( self ) -> str:
+        return 'entity/edit/modals/entity_archive_list.html'
+
+    def get( self, request, *args, **kwargs ):
+        archived_entities = ArchivedEntity.objects.all()
+        context = {
+            'archived_entities': archived_entities,
+        }
+        return self.modal_response( request, context )
+
+
+@method_decorator( edit_required, name='dispatch' )
+class EntityArchiveDetailView( HiModalView ):
+
+    def get_template_name( self ) -> str:
+        return 'entity/edit/modals/entity_archive_detail.html'
+
+    def get( self, request, archived_entity_id, *args, **kwargs ):
+        try:
+            archived_entity = ArchivedEntity.objects.get( pk = archived_entity_id )
+        except ArchivedEntity.DoesNotExist:
+            raise Http404( 'Archived entity not found.' )
+
+        context = {
+            'archived_entity': archived_entity,
+            'attributes': archived_entity.attributes.all(),
+        }
+        return self.modal_response( request, context )
