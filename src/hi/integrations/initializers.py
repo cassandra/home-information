@@ -35,7 +35,9 @@ class IntegrationInitializer:
 
                 for attr_name in dir(app_module):
                     attr = getattr( app_module, attr_name )
-                    if ( isinstance( attr, type ) and issubclass( attr, IntegrationGateway ) and attr is not IntegrationGateway ):
+                    if ( isinstance( attr, type )
+                         and issubclass( attr, IntegrationGateway )
+                         and attr is not IntegrationGateway ):
                         integration_gateway = attr()
                         integration_metadata = integration_gateway.get_metadata()
                         integration_id = integration_metadata.integration_id
@@ -62,7 +64,7 @@ class IntegrationInitializer:
                     )
 
                 integration_metadata = integration_gateway.get_metadata()
-                integration_manager._ensure_all_attributes_exist(
+                integration_manager.ensure_all_attributes_exist(
                     integration_metadata = integration_metadata,
                     integration = integration,
                 )

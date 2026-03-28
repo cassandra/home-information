@@ -85,7 +85,7 @@ class IntegrationEnableView( HiModalView, IntegrationViewMixin, AttributeEditVie
         if integration_data.integration.is_enabled:
             raise BadRequest( f'{integration_data.label} is already enabled' )
 
-        integration_manager._ensure_all_attributes_exist(
+        integration_manager.ensure_all_attributes_exist(
             integration_metadata = integration_data.integration_metadata,
             integration = integration_data.integration,
         )

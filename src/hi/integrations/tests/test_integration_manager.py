@@ -480,7 +480,7 @@ class IntegrationManagerTestCase(TestCase):
             # Run the test
             asyncio.run(test_initialization())
 
-    def test_ensure_all_attributes_exist_new_attributes(self):
+    def testensure_all_attributes_exist_new_attributes(self):
         """Test creation of new integration attributes when they don't exist."""
         manager = IntegrationManager()
         
@@ -502,7 +502,7 @@ class IntegrationManagerTestCase(TestCase):
         self.assertEqual(integration.attributes.count(), 0)
         
         # Call method to ensure attributes exist
-        manager._ensure_all_attributes_exist(metadata, integration)
+        manager.ensure_all_attributes_exist(metadata, integration)
         
         # Verify attribute was created
         self.assertEqual(integration.attributes.count(), 1)
@@ -518,7 +518,7 @@ class IntegrationManagerTestCase(TestCase):
         expected_key = f'test_integration.{str(MockIntegrationAttributeType.TEST_ATTR).lower()}'
         self.assertEqual(created_attr.integration_key_str, expected_key)
 
-    def test_ensure_all_attributes_exist_no_duplicates(self):
+    def testensure_all_attributes_exist_no_duplicates(self):
         """Test that existing attributes are not duplicated."""
         manager = IntegrationManager()
         
@@ -553,7 +553,7 @@ class IntegrationManagerTestCase(TestCase):
         )
         
         # Call method
-        manager._ensure_all_attributes_exist(metadata, integration)
+        manager.ensure_all_attributes_exist(metadata, integration)
         
         # Verify no new attributes were created
         self.assertEqual(integration.attributes.count(), 1)
@@ -609,7 +609,7 @@ class IntegrationManagerTestCase(TestCase):
         
         # Verify the method uses the data lock
         with patch.object(manager, '_data_lock') as mock_lock:
-            manager._ensure_all_attributes_exist(metadata, integration)
+            manager.ensure_all_attributes_exist(metadata, integration)
             
             # Verify the lock was used as a context manager
             mock_lock.__enter__.assert_called_once()

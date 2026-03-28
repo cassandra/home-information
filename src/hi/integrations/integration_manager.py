@@ -272,7 +272,7 @@ class IntegrationManager( Singleton ):
         integration_queryset = Integration.objects.all()
         return { x.integration_id: x for x in integration_queryset }
     
-    def _ensure_all_attributes_exist( self,
+    def ensure_all_attributes_exist( self,
                                       integration_metadata  : IntegrationMetaData,
                                       integration           : Integration ):
         """
