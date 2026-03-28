@@ -363,7 +363,6 @@ class EntityArchiveView( HiModalView, EntityViewMixin ):
         return self.redirect_response( request, redirect_url )
 
 
-@method_decorator( edit_required, name='dispatch' )
 class EntityArchiveListView( HiModalView ):
 
     def get_template_name( self ) -> str:
@@ -377,7 +376,6 @@ class EntityArchiveListView( HiModalView ):
         return self.modal_response( request, context )
 
 
-@method_decorator( edit_required, name='dispatch' )
 class EntityArchiveDetailView( HiModalView ):
 
     def get_template_name( self ) -> str:
