@@ -1,5 +1,7 @@
 from django import template
 
+from hi.apps.console.console_helper import ConsoleSettingsHelper
+
 from hi.units import UnitQuantity, get_display_quantity
 
 register = template.Library()
@@ -69,15 +71,7 @@ def to_display_quantity( quantity : UnitQuantity ):
     if not isinstance( quantity, UnitQuantity ):
         return quantity
 
-    # Simulator settings may not include console/config apps.
-    # Fallback keeps template filters functional in that profile.
-    display_units = None
-    try:
-        from hi.apps.console.console_helper import ConsoleSettingsHelper
-        display_units = ConsoleSettingsHelper().get_display_units()
-    except Exception:
-        pass
-
+    display_units = ConsoleSettingsHelper().get_display_units()
     return get_display_quantity(
         quantity = quantity,
         display_units = display_units,
