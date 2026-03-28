@@ -337,11 +337,10 @@ class EntityArchiveView( HiModalView, EntityViewMixin ):
                 original_created_datetime = entity.created_datetime,
             )
             for attribute in entity.attributes.all():
-                ArchivedEntityAttribute.objects.create(
+                archived_attr = ArchivedEntityAttribute.objects.create(
                     archived_entity = archived_entity,
                     name = attribute.name,
                     value = attribute.value,
-                    file_value = attribute.file_value,
                     file_mime_type = attribute.file_mime_type,
                     value_type_str = attribute.value_type_str,
                     value_range_str = attribute.value_range_str,
@@ -350,6 +349,12 @@ class EntityArchiveView( HiModalView, EntityViewMixin ):
                     is_required = False,
                     order_id = attribute.order_id,
                 )
+                # Set file_value directly via update() to bypass save()'s
+                # filename uniqueness logic, preserving the original file reference.
+                if attribute.file_value:
+                    ArchivedEntityAttribute.objects.filter(
+                        pk = archived_attr.pk,
+                    ).update( file_value = attribute.file_value.name )
                 continue
 
             entity.delete()
