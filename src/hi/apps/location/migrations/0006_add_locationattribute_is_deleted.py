@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("location", "0004_locationattribute_order_id"),
+        ("location", "0005_alter_locationattribute_options"),
     ]
 
     operations = [

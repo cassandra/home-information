@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("entity", "0009_entityattribute_order_id"),
+        ("entity", "0011_entity_can_add_custom_attributes"),
     ]
 
     operations = [
