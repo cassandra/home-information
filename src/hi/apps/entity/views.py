@@ -87,7 +87,7 @@ class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):
     
     def post( self, request,*args, **kwargs ):
         entity = self.get_entity(request, *args, **kwargs)
-        original_entity_type_str = entity.entity_type_str
+        original_entity_type = entity.entity_type
         attr_item_context = EntityAttributeItemEditContext( entity = entity )
         response = self.post_attribute_form(
             request = request,
@@ -98,7 +98,7 @@ class EntityEditView( HiModalView, EntityViewMixin, AttributeEditViewMixin ):
             return response
 
         entity.refresh_from_db()
-        entity_type_changed = original_entity_type_str != entity.entity_type_str
+        entity_type_changed = bool( original_entity_type != entity.entity_type )
         if not entity_type_changed:
             return response
 
