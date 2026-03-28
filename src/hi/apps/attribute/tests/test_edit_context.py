@@ -5,6 +5,8 @@ Focuses on high-value business logic: property computation, DOM ID generation,
 URL parameter construction, and template context assembly.
 """
 import logging
+from unittest.mock import MagicMock
+
 from hi.apps.attribute.edit_context import AttributeItemEditContext
 from hi.testing.base_test_case import BaseTestCase
 
@@ -17,6 +19,18 @@ class MockOwner:
     def __init__(self, id, name):
         self.id = id
         self.name = name
+
+
+class DummyAttributeItemEditContext(AttributeItemEditContext):
+    """Concrete context used to test base-class soft-delete logic."""
+
+    def __init__(self, owner, owner_type, model_class):
+        self._model_class = model_class
+        super().__init__(owner=owner, owner_type=owner_type)
+
+    @property
+    def attribute_model_subclass(self):
+        return self._model_class
 
 
 class TestAttributeItemEditContext(BaseTestCase):
@@ -190,4 +204,48 @@ class TestAttributeItemEditContext(BaseTestCase):
                 self.assertEqual(self.context.history_target_id(attr_id), expected_history)
                 self.assertEqual(self.context.history_toggle_id(attr_id), expected_toggle)
                 self.assertEqual(self.context.file_title_field_name(attr_id), expected_field)
+
+    def test_soft_deleted_attributes_queryset_returns_none_for_non_soft_delete_model(self):
+        """Models without soft delete should return an empty queryset-like result."""
+
+        expected_queryset = object()
+
+        class NonSoftDeleteModel:
+            supports_soft_delete = False
+            objects = MagicMock()
+
+        NonSoftDeleteModel.objects.none.return_value = expected_queryset
+
+        context = DummyAttributeItemEditContext(
+            owner=self.mock_owner,
+            owner_type="entity",
+            model_class=NonSoftDeleteModel,
+        )
+
+        queryset = context.soft_deleted_attributes_queryset()
+
+        self.assertIs(queryset, expected_queryset)
+        NonSoftDeleteModel.objects.none.assert_called_once_with()
+
+    def test_soft_deleted_attributes_queryset_filters_deleted_objects_for_soft_delete_model(self):
+        """Models with soft delete should filter deleted objects by the owner relation."""
+
+        expected_queryset = object()
+
+        class SoftDeleteModel:
+            supports_soft_delete = True
+            deleted_objects = MagicMock()
+
+        SoftDeleteModel.deleted_objects.filter.return_value = expected_queryset
+
+        context = DummyAttributeItemEditContext(
+            owner=self.mock_owner,
+            owner_type="entity",
+            model_class=SoftDeleteModel,
+        )
+
+        queryset = context.soft_deleted_attributes_queryset()
+
+        self.assertIs(queryset, expected_queryset)
+        SoftDeleteModel.deleted_objects.filter.assert_called_once_with(entity=self.mock_owner)
                 

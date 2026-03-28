@@ -32,7 +32,7 @@ from django.db.models import Model
 from hi.constants import DIVID
 
 from .forms import AttributeUploadForm
-from .models import AttributeModel
+from .models import AttributeModel, SoftDeleteAttributeModel
 
 
 class AttributePageEditContext:
@@ -88,6 +88,10 @@ class AttributePageEditContext:
     def restore_url_name(self) -> str:
         """ Should be a view that uses AttributeEditViewMixin.post_restore() """
         return f'{self.owner_type}_attribute_restore_inline'
+
+    @property
+    def restore_deleted_url_name(self) -> str:
+        return f'{self.owner_type}_attribute_restore_deleted_inline'
     
     @property
     def restore_subsystem_url_name(self) -> str:
@@ -149,7 +153,7 @@ class AttributeItemEditContext( AttributePageEditContext ):
         return
         
     @property
-    def attribute_model_subclass(self) -> Type[AttributeModel]:
+    def attribute_model_subclass(self) -> Type[AttributeModel | SoftDeleteAttributeModel]:
         raise NotImplementedError('Subclasses must override this method')
 
     @property
@@ -173,6 +177,16 @@ class AttributeItemEditContext( AttributePageEditContext ):
         """ Default is that AttributeModel suibclass has 'attributes' as the related name for 
         the owner model. """
         return self.owner.attributes.all()
+
+    def soft_deleted_attributes_queryset(self):
+        """Return queryset with deleted attributes for this owner."""
+
+        if not self.attribute_model_subclass.supports_soft_delete:
+            return self.attribute_model_subclass.objects.none()
+
+        return self.attribute_model_subclass.deleted_objects.filter(
+            **{self.owner_type: self.owner}
+        )
 
     @property
     def attribute_upload_form_class(self) -> Type[AttributeUploadForm]:

@@ -10,7 +10,7 @@ from hi.apps.location.models import (
     LocationItemPathModel,
     LocationView,
 )
-from hi.apps.attribute.models import AttributeModel, AttributeValueHistoryModel
+from hi.apps.attribute.models import SoftDeleteAttributeModel, AttributeValueHistoryModel
 from hi.integrations.models import IntegrationDetailsModel
 from hi.enums import ItemType
 
@@ -100,7 +100,7 @@ class Entity( IntegrationDetailsModel, LocationItemModelMixin ):
         return attribute_map
 
         
-class EntityAttribute( AttributeModel ):
+class EntityAttribute( SoftDeleteAttributeModel ):
     """
     - Information related to an entity, e.g., specs, docs, notes, configs
     - The 'attribute type' is used to help define what information the user might need to provide.
@@ -112,7 +112,7 @@ class EntityAttribute( AttributeModel ):
         verbose_name = 'Entity',
         on_delete = models.CASCADE,
     )
-
+    
     class Meta:
         verbose_name = 'Attribute'
         verbose_name_plural = 'Attributes'
@@ -466,4 +466,3 @@ class EntityAttributeHistory(AttributeValueHistoryModel):
         indexes = [
             models.Index(fields=['attribute', '-changed_datetime']),
         ]
-

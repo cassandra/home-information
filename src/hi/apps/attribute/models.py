@@ -13,39 +13,14 @@ from .enums import (
     AttributeValueType,
     AttributeType,
 )
+from .managers import ActiveAttributeManager, DeletedAttributeManager
 
 logger = logging.getLogger(__name__)
 
 
-class AttributeValueHistoryModel(models.Model):
-    """
-    Abstract base class for tracking attribute value changes.
-    Each concrete attribute subclass should have its own history model
-    that defines the foreign key to its specific attribute type.
-    
-    Only tracks value-based attributes (Text, Boolean, Integer, Float, etc.).
-    File attributes are excluded and will be handled separately.
-    """
-    
-    class Meta:
-        abstract = True
-        ordering = ['-changed_datetime']
-    
-    value = models.TextField(
-        'Value',
-        blank=True, null=True,
-    )
-    changed_datetime = models.DateTimeField(
-        'Changed',
-        auto_now_add=True,
-        db_index=True,
-    )
-
-    def __str__(self):
-        return f'Changed at {self.changed_datetime}'
-
-
 class AttributeModel(models.Model):
+
+    supports_soft_delete = False
 
     class Meta:
         abstract = True
@@ -183,7 +158,8 @@ class AttributeModel(models.Model):
             self.file_value.field.upload_to = self.get_upload_to()
             if not self.value:
                 self.value = self.file_value.name
-            if not self.pk or not self.__class__.objects.filter( pk = self.pk ).exists():
+            all_manager = getattr( self.__class__, 'all_objects', self.__class__.objects )
+            if not self.pk or not all_manager.filter( pk = self.pk ).exists():
                 self.file_value.name = generate_unique_filename( self.file_value.name )
         
         # Save the attribute first
@@ -207,7 +183,7 @@ class AttributeModel(models.Model):
             attribute=self,
             value=self.value
         )
-    
+
     def _get_history_model_class(self):
         """
         Get the corresponding history model class for this attribute type.
@@ -234,3 +210,71 @@ class AttributeModel(models.Model):
 
         super().delete( *args, **kwargs )
         return
+
+
+class SoftDeleteAttributeModel(AttributeModel):
+    """Base class for attribute models that support soft delete."""
+
+    supports_soft_delete = True
+
+    is_deleted = models.BooleanField(
+        'Deleted?',
+        default = False,
+        db_index = True,
+    )
+
+    objects = ActiveAttributeManager()
+    all_objects = models.Manager()
+    deleted_objects = DeletedAttributeManager()
+
+    class Meta(AttributeModel.Meta):
+        abstract = True
+
+    def soft_delete( self ):
+        self.is_deleted = True
+        self.save(
+            update_fields = ['is_deleted', 'updated_datetime'],
+            track_history = False,
+        )
+
+    def restore_from_deleted( self ):
+        self.is_deleted = False
+        self.save(
+            update_fields = ['is_deleted', 'updated_datetime'],
+            track_history = False,
+        )
+
+    def delete( self, *args, **kwargs ):
+        hard_delete = kwargs.pop( 'hard_delete', False )
+        if hard_delete:
+            return super().delete(*args, **kwargs)
+        self.soft_delete()
+        return (1, {self.__class__.__name__: 1})
+    
+    
+class AttributeValueHistoryModel(models.Model):
+    """
+    Abstract base class for tracking attribute value changes.
+    Each concrete attribute subclass should have its own history model
+    that defines the foreign key to its specific attribute type.
+    
+    Only tracks value-based attributes (Text, Boolean, Integer, Float, etc.).
+    File attributes are excluded and will be handled separately.
+    """
+    
+    class Meta:
+        abstract = True
+        ordering = ['-changed_datetime']
+    
+    value = models.TextField(
+        'Value',
+        blank=True, null=True,
+    )
+    changed_datetime = models.DateTimeField(
+        'Changed',
+        auto_now_add=True,
+        db_index=True,
+    )
+
+    def __str__(self):
+        return f'Changed at {self.changed_datetime}'
