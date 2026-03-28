@@ -4,9 +4,9 @@
 <div class="d-flex justify-content-between">
   <div class="h3 integration-title">
     <img class="img-fluid"
-         src="{% static 'img/integrations/homebox.svg' %}"
-         alt="HomeBox Logo">
-    HomeBox
+         src="{% static core.integration_data.integration_metadata.logo_static_path %}"
+         alt="{{ core.integration_data.integration_metadata.label }} Logo">
+    {{ core.integration_data.integration_metadata.label }}
   </div>
   <div class="">
     <form action="{% url 'hb_sync' %}"

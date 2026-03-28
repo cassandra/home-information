@@ -8,4 +8,5 @@ ZmMetaData = IntegrationMetaData(
     label = 'ZoneMinder',
     attribute_type = ZmAttributeType,
     allow_entity_deletion = False,
+    logo_static_path = 'img/integrations/zoneminder.png',
 )

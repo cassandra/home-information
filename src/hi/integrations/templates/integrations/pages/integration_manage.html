@@ -1,5 +1,5 @@
 {% extends "config/pages/config_base.html" %}
-{% load icons %}
+{% load icons static %}
 
 {% block config_content %}
 <div id="hi-integration-settings" class="row">
@@ -17,7 +17,12 @@
        href="{% url 'integrations_manage' integration_id=integration_data.integration_id %}"
        data-async="true">
       <div class="d-flex justify-content-between align-items-center">
-        <span>{{ integration_data.label }}</span>
+        <span class="d-flex align-items-center" style="white-space: nowrap;">
+          <img src="{% static integration_data.integration_metadata.logo_static_path %}"
+               alt="{{ integration_data.label }}"
+               style="max-height: 18px; width: auto; margin-right: 6px; flex-shrink: 0;">
+          {{ integration_data.label }}
+        </span>
         {% with health_status=integration_data.integration_gateway.get_health_status_provider.health_status %}
         {% if health_status.is_error %}
         <span class="text-danger">

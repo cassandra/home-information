@@ -1,5 +1,5 @@
 {% extends "modals/action_done.html" %}
-{% load icons %}
+{% load icons static %}
 
 {% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
 
@@ -11,7 +11,11 @@ Select Integrations
 
 {% for integration_data in integration_data_list %}
 <div class="d-flex justify-content-between {% if not forloop.first %}border-top{% endif %} py-2 my-1">
-  <div class="col-6">
+  <div class="col-6 d-flex align-items-center">
+    <img src="{% static integration_data.integration_metadata.logo_static_path %}"
+         alt="{{ integration_data.integration_metadata.label }}"
+         class="img-fluid mr-2"
+         style="max-height: 24px; width: auto;">
     {{ integration_data.integration_metadata.label }}
   </div>
   <div class="col-3">

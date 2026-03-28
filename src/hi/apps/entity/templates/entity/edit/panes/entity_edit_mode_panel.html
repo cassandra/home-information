@@ -1,4 +1,4 @@
-{% load icons %}
+{% load icons static %}
 {% load integration_tags %}
 <div class="d-flex justify-content-between mt-2">
   <div class="h4">Item Layout</div>
@@ -12,7 +12,11 @@
 
 {% if entity.integration_id %}
 <div class="my-2">
-  <div class="text-muted">From: <strong>{% integration_display_name entity %}</strong></div>
+  <div class="text-muted">
+    {% integration_logo_path entity as logo_path %}
+    {% if logo_path %}<img src="{% static logo_path %}" alt="" style="max-height: 18px; width: auto; margin-right: 4px;">{% endif %}
+    From: <strong>{% integration_display_name entity %}</strong>
+  </div>
 </div>
 {% endif %}
 
