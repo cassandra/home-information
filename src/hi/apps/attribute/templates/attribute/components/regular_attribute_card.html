@@ -43,7 +43,7 @@ Individual attribute attribute card with value editing and actions
         {% include "attribute/components/name_field.html" %}
         {% with setting_help=attribute_form.instance|setting_description %}
           {% if setting_help %}
-            <div class="text-muted small mt-1"">{{ setting_help }}</div>
+            <div class="text-muted small mt-1">{{ setting_help|safe }}</div>
           {% endif %}
         {% endwith %}
       </div>
