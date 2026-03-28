@@ -1,7 +1,6 @@
 ---
 allowed-tools: Bash, Read, Write, TodoWrite
 description: Create pull request following our workflow and template requirements
-model: claude-sonnet-4-20250514
 argument-hint: [title]
 ---
 

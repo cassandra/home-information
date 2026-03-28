@@ -1,7 +1,6 @@
 ---
 allowed-tools: Bash, Read, Edit, Write, TodoWrite, Grep, Glob, Task
 description: Complete issue-to-PR orchestration with intelligent sub-agent coordination
-model: claude-sonnet-4-20250514
 argument-hint: [issue-number]
 ---
 

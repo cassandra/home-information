@@ -1,7 +1,6 @@
 ---
 allowed-tools: Bash, Read, TodoWrite, Grep, Glob, Task
 description: Systematic response to GitHub pull request feedback
-model: claude-sonnet-4-20250514
 argument-hint: [pr-number]
 ---
 

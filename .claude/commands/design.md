@@ -1,7 +1,6 @@
 ---
 allowed-tools: Bash, Read, Write, TodoWrite, Grep, Glob
 description: Design planning and HTML mockup creation for GitHub issues
-model: claude-sonnet-4-20250514
 argument-hint: [issue-number]
 ---
 

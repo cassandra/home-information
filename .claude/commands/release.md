@@ -1,7 +1,6 @@
 ---
 allowed-tools: Bash, Read, Edit, TodoWrite, Grep, Glob
 description: Execute the complete release process from staging to master
-model: claude-sonnet-4-20250514
 argument-hint: [version] (e.g., 1.2.3)
 ---
 

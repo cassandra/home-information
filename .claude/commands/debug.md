@@ -1,7 +1,6 @@
 ---
 allowed-tools: Bash, Read, TodoWrite, Grep, Glob, Task
 description: Debug issues with AI-assisted analysis and troubleshooting
-model: claude-sonnet-4-20250514
 argument-hint: [description]
 ---
 
