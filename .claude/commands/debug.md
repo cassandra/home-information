@@ -5,7 +5,7 @@ model: claude-sonnet-4-20250514
 argument-hint: [description]
 ---
 
-Debug issue: "$1"
+Debug issue: "$0"
 
 ## AI-Assisted Debugging Process
 
@@ -66,7 +66,7 @@ Execute systematic debugging approach:
    - Warning signs to watch for
    - When to escalate or seek additional help
 
-**Debugging target:** "$1"
+**Debugging target:** "$0"
 **Goal:** Systematic analysis and actionable troubleshooting plan
 
 **Common debugging areas to investigate:**

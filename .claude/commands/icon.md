@@ -5,7 +5,7 @@ model: claude-sonnet-4-20250514
 argument-hint: [concept/action]
 ---
 
-Find or create an icon for "$1":
+Find or create an icon for "$0":
 
 ## Icon Discovery & Creation Process
 
@@ -24,7 +24,7 @@ Find the best existing icon, or create a new one if needed:
 
 ## Step 1: Search Existing Icons
 
-**Searching for concept**: "$1"
+**Searching for concept**: "$0"
 
 ### Current Available Icons
 ```python
@@ -76,7 +76,7 @@ Look for matches based on:
 ### IF no good match:
 **Recommendation**: Create new icon `[proposed-name]`
 
-**Rationale**: No existing icon adequately represents "$1" because [specific gap]
+**Rationale**: No existing icon adequately represents "$0" because [specific gap]
 
 ## Step 3: Create New Icon (if needed)
 
@@ -132,6 +132,6 @@ AVAILABLE_ICONS = {
 - **Status**: state-shape (`check-circle`, `warning`)
 - **Compound**: noun-modifier (`eye-off`, `cloud`)
 
-**Concept to find/create**: "$1"
+**Concept to find/create**: "$0"
 
 Begin icon discovery and recommendation now.

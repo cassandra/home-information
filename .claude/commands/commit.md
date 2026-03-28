@@ -5,7 +5,7 @@ model: claude-sonnet-4-20250514
 argument-hint: [commit-message]
 ---
 
-Create commit with message "$1" following our standards from `docs/dev/workflow/workflow-guidelines.md`:
+Create commit with message "$0" following our standards from `docs/dev/workflow/workflow-guidelines.md`:
 
 ## Smart Commit Creation Process
 
@@ -42,7 +42,7 @@ Execute standardized commit workflow:
 5. **Create commit** - Use provided message with safe handling:
    ```bash
    # Write commit message to file for safety with special characters
-   echo "$1" > /tmp/commit_msg.txt
+   echo "$0" > /tmp/commit_msg.txt
    git commit -F /tmp/commit_msg.txt
    rm -f /tmp/commit_msg.txt
    ```
@@ -72,6 +72,6 @@ Execute standardized commit workflow:
 - Use meaningful, descriptive commit message
 - Push to current feature branch
 
-**Commit message:** "$1"
+**Commit message:** "$0"
 
 Begin commit creation now.

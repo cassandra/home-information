@@ -5,7 +5,7 @@ model: claude-sonnet-4-20250514
 argument-hint: [feature-branch-name]
 ---
 
-Post-PR cleanup for merged feature branch "$1" following `docs/dev/workflow/workflow-guidelines.md`:
+Post-PR cleanup for merged feature branch "$0" following `docs/dev/workflow/workflow-guidelines.md`:
 
 ## Post-PR Cleanup Process
 
@@ -18,7 +18,7 @@ Execute safe branch cleanup after PR merge:
    ```bash
    # 1. Verify current branch is the feature branch (not staging/master)
    git branch --show-current
-   # Must show: $1 (or other feature branch pattern)
+   # Must show: $0 (or other feature branch pattern)
    # STOP if output shows: staging, master, main
    ```
 
@@ -37,7 +37,7 @@ Execute safe branch cleanup after PR merge:
      echo "3. Discard changes: git restore ."
      echo "4. Stash for later: git stash push -m 'Post-merge changes'"
      echo ""
-     echo "After handling changes, re-run: /cleanup $1"
+     echo "After handling changes, re-run: /cleanup $0"
      exit 1
    fi
    ```
@@ -63,7 +63,7 @@ Execute safe branch cleanup after PR merge:
 
    ```bash
    # 6. Delete the merged feature branch
-   git branch -d $1
+   git branch -d $0
    ```
 
    ```bash
@@ -84,13 +84,13 @@ Execute safe branch cleanup after PR merge:
 - Address any issues (commit changes, wait for PR merge, etc.) before cleanup
 - Verify each step before proceeding to next
 
-**Feature branch to clean up:** "$1"
+**Feature branch to clean up:** "$0"
 
 **If any safety check fails:**
 - DO NOT proceed with cleanup actions
 - **For uncommitted changes**: Use the provided recovery options to handle changes properly
 - **For non-merged PR**: Wait for PR to be merged before cleanup
 - **For wrong branch**: Switch to correct feature branch first
-- Re-run `/cleanup $1` after addressing the issue
+- Re-run `/cleanup $0` after addressing the issue
 
 Begin cleanup process now.

@@ -5,7 +5,7 @@ model: claude-sonnet-4-20250514
 argument-hint: [type] [title]
 ---
 
-Create GitHub issue of type "$1" with title "$2" using proper templates and conventions:
+Create GitHub issue of type "$0" with title "$1" using proper templates and conventions:
 
 ## GitHub Issue Creation Process
 
@@ -40,18 +40,18 @@ Execute standardized issue creation with proper templates:
 4. **Create issue using GitHub CLI** - Use proper template syntax with error handling:
    ```bash
    # Map issue type to template filename
-   case "$1" in
+   case "$0" in
      bug) TEMPLATE="bug_report.md" ;;
      feature) TEMPLATE="feature_request.md" ;;
      docs) TEMPLATE="documentation.md" ;;
      ops) TEMPLATE="operations.md" ;;
      refactor) TEMPLATE="refactor.md" ;;
      tests) TEMPLATE="tests.md" ;;
-     *) echo "Invalid issue type: $1"; exit 1 ;;
+     *) echo "Invalid issue type: $0"; exit 1 ;;
    esac
 
    # Create issue with proper template
-   gh issue create --template "$TEMPLATE" --title "$2"
+   gh issue create --template "$TEMPLATE" --title "$1"
    ```
 
    **Template to File Mapping:**
@@ -161,13 +161,13 @@ git checkout -b docs/123-api-documentation
 ## Error Handling
 
 ### **Invalid Issue Type**
-If `$1` doesn't match available templates:
+If `$0` doesn't match available templates:
 - List available issue types
 - Suggest closest match
 - Provide template selection guidance
 
 ### **Invalid Title Format**
-If `$2` doesn't follow conventions:
+If `$1` doesn't follow conventions:
 - Show expected format for issue type
 - Provide title formatting examples
 - Suggest improvements
@@ -183,8 +183,8 @@ If `gh issue create` fails:
 - Supports `/investigate` issue splitting recommendations
 - Prepares for `/pickup` workflow execution
 
-**Issue Type:** $1
-**Title:** "$2"
-**Template:** $1.md (from `.github/ISSUE_TEMPLATE/`)
+**Issue Type:** $0
+**Title:** "$1"
+**Template:** $0.md (from `.github/ISSUE_TEMPLATE/`)
 
 Begin GitHub issue creation process now.

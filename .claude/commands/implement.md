@@ -5,9 +5,9 @@ model: claude-sonnet-4-20250514
 argument-hint: [issue-number]
 ---
 
-Implement GitHub issue #$1 following our development standards from `docs/dev/workflow/workflow-guidelines.md`:
+Implement GitHub issue #$0 following our development standards from `docs/dev/workflow/workflow-guidelines.md`:
 
-## Implementation Process for #$1
+## Implementation Process for #$0
 
 Execute focused implementation workflow for issue that has already been picked up:
 
@@ -19,7 +19,7 @@ Execute focused implementation workflow for issue that has already been picked u
    ```bash
    # Verify we're on the correct feature branch (not staging/master)
    git branch --show-current
-   # Should show: feature/$1-* or bugfix/$1-* etc.
+   # Should show: feature/$0-* or bugfix/$0-* etc.
 
    # Verify clean working directory
    git status
@@ -33,7 +33,7 @@ Execute focused implementation workflow for issue that has already been picked u
 3. **Read issue context** - Understand requirements completely:
    ```bash
    # Read the full issue including all comments
-   gh issue view $1
+   gh issue view $0
    ```
    - Understand the problem statement and acceptance criteria
    - Review any discussion or clarifications in comments
@@ -127,11 +127,11 @@ Execute focused implementation workflow for issue that has already been picked u
 - Provide clear handoff to `/pr` command
 
 **Prerequisites:**
-- Issue #$1 must have been picked up with `/pickup` command
+- Issue #$0 must have been picked up with `/pickup` command
 - Feature branch must already exist and be checked out
 - Investigation and planning should already be complete
 
-**Issue to implement:** #$1
+**Issue to implement:** #$0
 
 **IMPORTANT**: This command stops before PR creation. After completion, user should review the implementation and run `/pr "Title"` to create the pull request.
 

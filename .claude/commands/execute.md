@@ -5,7 +5,7 @@ model: claude-sonnet-4-20250514
 argument-hint: [issue-number]
 ---
 
-Complete issue-to-PR orchestration for GitHub issue #$1:
+Complete issue-to-PR orchestration for GitHub issue #$0:
 
 ## Full Execution Workflow Orchestration
 
@@ -16,7 +16,7 @@ Execute complete strategic-to-delivery workflow with intelligent coordination:
    - Follow well-factored code principles and sub-agent coordination patterns
 
 2. **Phase 1: Strategic Planning** - Execute planning workflow:
-   - Read GitHub issue #$1 completely using `gh issue view $1`
+   - Read GitHub issue #$0 completely using `gh issue view $0`
    - Identify information gaps and clarification needs
    - Analyze work complexity and breakdown strategy
    - Determine if multi-phase or multi-issue approach needed
@@ -60,7 +60,7 @@ Execute complete strategic-to-delivery workflow with intelligent coordination:
 
 5. **Phase 3: Development Preparation** - Setup and initial analysis:
    - Ensure on latest staging branch: `git checkout staging && git pull origin staging`
-   - Assign issue: `gh issue edit $1 --add-assignee @me`
+   - Assign issue: `gh issue edit $0 --add-assignee @me`
    - Create feature branch with proper naming (bugfix/feature/docs/ops/refactor)
    - Push branch: `git push -u origin [branch-name]`
 
@@ -141,7 +141,7 @@ Execute complete strategic-to-delivery workflow with intelligent coordination:
    - Use `/commit` command to create a properly formatted commit with issue context
    - Use `/pr` command to create pull request with standard template
    - This ensures consistent formatting and automatic issue linking
-   - The `/pr` command handles `Closes #$1` automatically
+   - The `/pr` command handles `Closes #$0` automatically
    - Example: `/pr bugfix/205-monitoring 205`
 
 10. **Phase 8: Post-Creation Validation** - Verify successful completion:
@@ -183,7 +183,7 @@ Execute complete strategic-to-delivery workflow with intelligent coordination:
 - **Human collaboration**: Strategic checkpoints for guidance
 - **Intelligent routing**: Right agents for right work types
 
-**Execution Target:** GitHub issue #$1
+**Execution Target:** GitHub issue #$0
 **Goal:** Complete strategic-to-delivery workflow with PR ready for review
 
 **Success Criteria:**
