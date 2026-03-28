@@ -344,8 +344,11 @@ class TestEntityManager(BaseTestCase):
                 integration_name='test_integration',
             )
             
-            location = Location.objects.create(name='Test Location')
-            
+            location = Location.objects.create(
+                name = 'Test Location',
+                svg_view_box_str = '100 200 400 300',
+            )
+
             # Create a mock location view with known view box
             view_box = SvgViewBox(x=100, y=200, width=400, height=300)
             location_view = Mock()
@@ -366,8 +369,7 @@ class TestEntityManager(BaseTestCase):
             self.assertEqual(entity_position.location, location)
             self.assertEqual(entity_position.svg_x, expected_x)
             self.assertEqual(entity_position.svg_y, expected_y)
-            # Default icon size should be tied to viewBox size using manager config.
-            # Camera icon viewBox max dimension is 64 (from hi_styles).
+            # Default icon size should be a percentage of the viewBox's smaller dimension.
             expected_scale = (
                 Decimal('300')
                 * Decimal(str(manager.DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX))
@@ -391,5 +393,51 @@ class TestEntityManager(BaseTestCase):
             
         except ImportError:
             self.skipTest("Location models not available for testing")
+        return
+
+    def _create_scale_test_fixtures( self, viewbox_width, viewbox_height ):
+        from hi.apps.common.svg_models import SvgViewBox
+        from hi.apps.location.models import Location
+
+        entity = Entity.objects.create(
+            name = 'Scale Test Entity',
+            entity_type_str = str( EntityType.CAMERA ),
+        )
+        location = Location.objects.create(
+            name = 'Test Location',
+            svg_view_box_str = f'0 0 {viewbox_width} {viewbox_height}',
+        )
+        location_view = Mock()
+        location_view.location = location
+        location_view.svg_view_box = SvgViewBox(
+            x = 0, y = 0, width = viewbox_width, height = viewbox_height,
+        )
+        return entity, location, location_view
+
+    def test_get_default_icon_scale_zero_viewbox(self):
+        """Scale should clamp to min_scale when viewbox has zero dimension."""
+        manager = EntityManager()
+        entity, location, location_view = self._create_scale_test_fixtures( 0, 0 )
+
+        scale = manager._get_default_icon_scale( entity, location_view )
+        self.assertEqual( scale, Decimal( str( location.svg_position_bounds.min_scale ) ) )
+        return
+
+    def test_get_default_icon_scale_very_large_viewbox(self):
+        """Scale should clamp to max_scale for extremely large viewboxes."""
+        manager = EntityManager()
+        entity, location, location_view = self._create_scale_test_fixtures( 100000, 100000 )
+
+        scale = manager._get_default_icon_scale( entity, location_view )
+        self.assertEqual( scale, Decimal( str( location.svg_position_bounds.max_scale ) ) )
+        return
+
+    def test_get_default_icon_scale_very_small_viewbox(self):
+        """Scale should clamp to min_scale for tiny viewboxes."""
+        manager = EntityManager()
+        entity, location, location_view = self._create_scale_test_fixtures( 10, 10 )
+
+        scale = manager._get_default_icon_scale( entity, location_view )
+        self.assertEqual( scale, Decimal( str( location.svg_position_bounds.min_scale ) ) )
         return
 

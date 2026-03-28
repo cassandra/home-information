@@ -7,7 +7,6 @@ from django.db import transaction
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
-from hi.apps.common.svg_models import SvgItemPositionBounds
 from hi.apps.common.singleton import Singleton
 from hi.apps.location.path_geometry import PathGeometry
 from hi.apps.entity.edit.forms import EntityPositionForm
@@ -39,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 class EntityManager(Singleton):
 
-    DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX = 20.0
+    DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX = 10.0
 
     def __init_singleton__(self):
         self._change_listeners = list()
@@ -227,27 +226,22 @@ class EntityManager(Singleton):
         )
         return entity_position
 
-    def _get_default_icon_scale( self, entity: Entity, location_view: LocationView ) -> Decimal:
+    def _get_default_icon_scale( self,
+                                 entity         : Entity,
+                                 location_view  : LocationView ) -> Decimal:
         view_box = location_view.svg_view_box
         icon_view_box = EntityStyle.get_svg_icon_viewbox( entity.entity_type )
 
         icon_max_dimension = max( icon_view_box.width, icon_view_box.height )
         if icon_max_dimension <= 0:
-            return Decimal( 1.0 )
+            return Decimal( '1.0' )
 
-        target_icon_size = min( view_box.width, view_box.height ) * (
-            self.DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX / 100.0
-        )
+        viewbox_min_dimension = min( view_box.width, view_box.height )
+        size_fraction = self.DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX / 100.0
+        target_icon_size = viewbox_min_dimension * size_fraction
         scale = target_icon_size / icon_max_dimension
-        
-        position_bounds = SvgItemPositionBounds(
-            min_x = view_box.x,
-            min_y = view_box.y,
-            max_x = view_box.x + view_box.width,
-            max_y = view_box.y + view_box.height,
-            min_scale = 0.1,
-            max_scale = 25.0,
-        )
+
+        position_bounds = location_view.location.svg_position_bounds
         scale = max( position_bounds.min_scale, min( scale, position_bounds.max_scale ) )
 
         return Decimal( str(scale) )
@@ -440,13 +434,14 @@ class EntityManager(Singleton):
         
         # Preserve EntityPath and create/update EntityPosition
         # This allows easy reversion when users change their mind
+        svg_scale = self._get_default_icon_scale( entity, location_view )
         entity_position, created = EntityPosition.objects.get_or_create(
             entity = entity,
             location = location_view.location,
             defaults = {
                 'svg_x': Decimal(center_x),
                 'svg_y': Decimal(center_y),
-                'svg_scale': Decimal(1.0),
+                'svg_scale': svg_scale,
                 'svg_rotate': Decimal(0.0),
             }
         )
