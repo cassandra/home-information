@@ -4,7 +4,7 @@ cachetools==5.5.0
 certifi==2025.8.3
 charset-normalizer==3.4.3
 dateparser==1.2.2
-Django==4.2.25
+Django==4.2.29
 django-constance==3.1.0
 django-csp==3.8
 django-picklefield==3.3
@@ -14,7 +14,7 @@ gunicorn==23.0.0
 idna==3.10
 multidict==6.0.5
 numpy==2.1.0
-pillow==10.4.0
+pillow==12.1.1
 Pint==0.25
 psutil==6.0.0
 python-dateutil==2.9.0.post0
@@ -22,9 +22,9 @@ python-dotenv==1.1.1
 python-utils==3.9.1
 pytz==2025.2
 redis==5.2.0
-requests==2.32.5
+requests==2.33.0
 six==1.17.0
-sqlparse==0.5.3
+sqlparse==0.5.5
 typing_extensions==4.15.0
 tzlocal==5.3.1
 urllib3==2.6.3
