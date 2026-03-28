@@ -204,6 +204,7 @@ If you enabled user authentication, you'll need to create user accounts manually
 Connect Home Information with your existing home automation and security systems. See the [Integrations Guide](Integrations.md) for setup instructions:
 - **Home Assistant** - Device control and monitoring
 - **ZoneMinder** - Security camera management
+- **HomeBox** - Home inventory management
 
 ## Next Steps
 

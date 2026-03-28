@@ -75,15 +75,18 @@ by using the AttributeItemEditContext pattern.
         {% block additional_actions %}
         {% endblock %}
         {% block file_upload_button %}
-        <label for="{{ attr_item_context.file_input_html_id }}" 
-               class="btn btn-sm btn-outline-primary mb-0">
+        <button type="button"
+                class="btn btn-sm btn-outline-primary mb-0"
+                {% if not attr_item_context.can_add_custom_attributes %}disabled aria-disabled="true" title="{{ attr_item_context.add_attribute_disabled_message }}"{% endif %}
+                onclick="document.getElementById('{{ attr_item_context.file_input_html_id }}').click();">
           {% icon "upload" size="sm" css_class="hi-icon-left" %}Add File
-        </label>
+        </button>
         {% endblock %}
         {% block add_attribute_button %}
         <button id="{{ attr_item_context.add_attribute_button_html_id }}" 
                 type="button" 
                 class="btn btn-sm btn-outline-primary"
+          {% if not attr_item_context.can_add_custom_attributes %}disabled aria-disabled="true" title="{{ attr_item_context.add_attribute_disabled_message }}"{% endif %}
                 onclick="window.Hi.attr.showAddAttribute('#{{ attr_page_context.container_html_id }}');">
           {% icon "plus" size="sm" css_class="hi-icon-left" %}Add Info
         </button>

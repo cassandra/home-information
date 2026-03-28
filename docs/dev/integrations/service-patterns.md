@@ -23,6 +23,13 @@ Camera and video surveillance system integration:
 - Video stream management  
 - Motion detection events
 
+## HomeBox Integration
+
+Home inventory and asset management system integration:
+- Item synchronization with read-only entity attributes
+- Custom field and attachment downloads
+- Username/password authentication with token-based session management
+
 ## Integration Patterns
 
 - **HTTP API Clients**: REST API integration patterns

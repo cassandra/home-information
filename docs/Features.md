@@ -33,6 +33,14 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 
 **Perfect for:** Managing complex properties where a single view becomes cluttered, or focusing on specific systems (like showing only HVAC-related items).
 
+### HomeBox Inventory Integration
+- **Item synchronization** - automatically import items from HomeBox into your home layout
+- **Attribute display** - view item details, warranties, purchase info, and custom fields
+- **Attachment support** - access documents and photos attached to HomeBox items
+- **Managed attributes** - HomeBox-sourced attributes are read-only to avoid conflicting edits
+
+**Use case example:** You track all your appliances and tools in HomeBox. Home Information pulls them in so you can position them on your floor plan alongside your smart home devices, giving you a complete view of everything in your home.
+
 ## Home Automation & Device Control
 
 **What it does:** Integrate with existing home automation systems to provide device control within the spatial context of your home.
@@ -124,6 +132,7 @@ Home Information provides comprehensive tools for organizing, monitoring, and co
 ### Current Integrations
 - **Home Assistant** - Complete integration with the popular open-source home automation platform
 - **ZoneMinder** - Full-featured security camera management
+- **HomeBox** - Home inventory management and item tracking
 - **Weather APIs** - National Weather Service and OpenMeteo for local conditions
 
 ### Integration Architecture

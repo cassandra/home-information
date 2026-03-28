@@ -82,7 +82,7 @@ Custom exception hierarchy:
 ### Example Integrations
 - `hi.services.hass/` - Home Assistant integration
 - `hi.services.zoneminder/` - ZoneMinder integration
-- `hi.services.weather/` - Weather service integration
+- `hi.services.homebox/` - HomeBox integration
 
 ## Related Documentation
 - [Service Patterns](service-patterns.md)

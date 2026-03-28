@@ -17,7 +17,7 @@ Individual attribute attribute card with value editing and actions
      {% if attr_item_context.can_restore_default %}
        data-default-value="{{ attribute_form.instance.get_attribute_default_value }}"
      {% endif %}
-     {% if not attribute_form.instance.pk and not attribute_form.is_bound %}style="display: none;"{% endif %}
+     {% if attribute_form.suppress_add_new %}style="display: none;"{% endif %}
      {% if attribute_form.instance and not attribute_form.instance.is_editable %}is_editable="false"{% endif %} >
   
   <!-- Hidden form fields -->
