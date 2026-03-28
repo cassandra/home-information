@@ -23,7 +23,6 @@ class SimProfile(models.Model):
     )
     
     class Meta:
-        app_label = 'simulator'
         verbose_name = 'Simulator Profile'
         verbose_name_plural = 'Simulator Profiles'
         ordering = [ '-last_switched_to_datetime' ]
@@ -71,7 +70,6 @@ class DbSimEntity(models.Model):
     )
     
     class Meta:
-        app_label = 'simulator'
         verbose_name = 'Simulator Entity'
         verbose_name_plural = 'Simulator Entities'
 

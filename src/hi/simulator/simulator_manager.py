@@ -42,7 +42,7 @@ class SimulatorManager( Singleton ):
         should_reload_instances = bool( not sim_profile
                                         or ( sim_profile != self._current_sim_profile ))
         if not sim_profile:
-            self._initialize_sim_profile( create_if_missing = True )
+            self._initialize_sim_profile()
         else:
             sim_profile.last_switched_to_datetime = datetimeproxy.now()
             sim_profile.save()
@@ -140,10 +140,10 @@ class SimulatorManager( Singleton ):
         logger.info('Stopping SimulationManager...')
         return
     
-    def _initialize_sim_profile( self, create_if_missing = False ):
+    def _initialize_sim_profile(self):
         logger.debug('Initialize SimProfile ...')
         self._current_sim_profile = SimProfile.objects.all().first()  # Default ordering is by recency use
-        if create_if_missing and not self._current_sim_profile:
+        if not self._current_sim_profile:
             self._current_sim_profile = SimProfile.objects.create(
                 name = self.DEFAULT_PROFILE_NAME,
                 last_switched_to_datetime = datetimeproxy.now(),
