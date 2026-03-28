@@ -19,8 +19,5 @@ python manage.py sync_settings
 echo "Syncing integrations..."
 python manage.py sync_integrations
 
-echo "Syncing simulator..."
-python manage.py sync_simulator
-
 echo "Starting supervisord..."
 exec "$@"
