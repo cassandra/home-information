@@ -25,7 +25,19 @@ urlpatterns = [
              views.EntityEditModeView.as_view(), 
              name='entity_edit_mode' ),
 
-    re_path( r'^properties/edit/(?P<entity_id>\d+)$', 
-             views.EntityPropertiesEditView.as_view(), 
+    re_path( r'^properties/edit/(?P<entity_id>\d+)$',
+             views.EntityPropertiesEditView.as_view(),
              name='entity_properties_edit'),
+
+    re_path( r'^archive/(?P<entity_id>\d+)$',
+             views.EntityArchiveView.as_view(),
+             name='entity_edit_entity_archive' ),
+
+    re_path( r'^archive-list/$',
+             views.EntityArchiveListView.as_view(),
+             name='entity_edit_archive_list' ),
+
+    re_path( r'^archive-detail/(?P<archived_entity_id>\d+)$',
+             views.EntityArchiveDetailView.as_view(),
+             name='entity_edit_archive_detail' ),
 ]

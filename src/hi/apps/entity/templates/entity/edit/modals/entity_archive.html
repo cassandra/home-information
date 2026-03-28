@@ -1,0 +1,35 @@
+{% extends "modals/action_with_cancel.html" %}
+{% load icons %}
+
+{% block header_class %}bg-secondary{% endblock %}
+
+{% block title_text %}
+Archive Item?
+{% endblock %}
+
+{% block body %}
+
+<p>
+  Please confirm that you want to archive this item:
+  <ul>
+    <span class="h4 text-primary">{{ entity.name }}</span>
+  </ul>
+</p>
+<p>
+  The item and its attributes will be preserved for historical reference.
+  It will be removed from the active location view and its visual placement,
+  state associations, and sensors/controllers will be deleted.
+</p>
+{% endblock %}
+
+{% block action_right %}
+<form action="{% url 'entity_edit_entity_archive' entity_id=entity.id %}"
+      method="post" class="form"
+      data-async="true" >
+  {% csrf_token %}
+  <button type="submit" class="btn btn-warning"
+          name="action" value="confirm">
+    {% icon "history" size="md" css_class="hi-icon-left" %}ARCHIVE
+  </button>
+</form>
+{% endblock %}

@@ -24,6 +24,15 @@
   {% include "entity/edit/panes/entity_properties_edit.html" %}
 </div>
 
+{% if not entity.integration_id %}
+<div class="my-2">
+  <a href="{% url 'entity_edit_entity_archive' entity_id=entity.id %}"
+     class="btn btn-sm btn-outline-secondary btn-block btn-control" role="button" data-async="modal">
+    {% icon "history" size="sm" css_class="hi-icon-left" %}ARCHIVE ITEM
+  </a>
+</div>
+{% endif %}
+
 {% if entity.can_user_delete %}
 <div class="my-2">
   <a href="{% url 'entity_edit_entity_delete' entity_id=entity.id %}"

@@ -149,4 +149,27 @@ class EntityAttributeAdmin(admin.ModelAdmin):
 
     def get_queryset( self, request ):
         return self.model.all_objects.all()
+
+
+class ArchivedEntityAttributeInLine(admin.TabularInline):
+    model = models.ArchivedEntityAttribute
+    extra = 0
+    show_change_link = True
+
+
+@admin.register(models.ArchivedEntity)
+class ArchivedEntityAdmin(admin.ModelAdmin):
+
+    show_full_result_count = False
+
+    list_display = (
+        'name',
+        'entity_type_str',
+        'original_created_datetime',
+        'archived_datetime',
+    )
+
+    search_fields = ['name']
+    readonly_fields = ('archived_datetime',)
+    inlines = [ArchivedEntityAttributeInLine]
     

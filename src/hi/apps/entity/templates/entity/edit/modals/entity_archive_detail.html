@@ -1,0 +1,72 @@
+{% extends "modals/action_done.html" %}
+{% load icons %}
+
+{% block modal_dialog_class %}hi-modal-dialog-700{% endblock %}
+
+{% block title_text %}
+{{ archived_entity.name }} <small class="text-muted">[ARCHIVED]</small>
+{% endblock %}
+
+{% block body %}
+<div class="text-muted text-center mb-3">
+  <small>
+    {{ archived_entity.entity_type_str }}
+    &mdash; created {{ archived_entity.original_created_datetime|date:"M j, Y"|default:"unknown" }}
+    &mdash; archived {{ archived_entity.archived_datetime|date:"M j, Y" }}
+  </small>
+</div>
+
+{% if attributes %}
+<div class="border-top pt-2">
+  <h6 class="text-muted mb-2">Attributes</h6>
+  {% for attribute in attributes %}
+  <div class="{% if not forloop.first %}border-top{% endif %} py-2">
+    <div class="d-flex justify-content-between align-items-start">
+      <div><strong>{{ attribute.name }}</strong></div>
+      <div class="text-muted text-nowrap">
+        <small>{{ attribute.value_type_str }}</small>
+      </div>
+    </div>
+
+    {% if attribute.value_type.is_file %}
+      {% if attribute.file_value %}
+      <div class="mt-1">
+        <a href="{{ attribute.file_value.url }}" target="_blank" rel="noopener noreferrer"
+           class="btn btn-sm btn-outline-primary">
+          {% icon "eye" size="sm" css_class="hi-icon-left" %}View File
+        </a>
+        <span class="text-muted ml-2"><small>{{ attribute.value }}</small></span>
+      </div>
+      {% else %}
+      <div class="text-muted mt-1"><small>(file not available)</small></div>
+      {% endif %}
+
+    {% elif attribute.value_type.is_secret %}
+      <div class="mt-1 {{ DIVID.ATTR_V2_SECRET_INPUT_WRAPPER_CLASS }}">
+        <input type="password"
+               class="form-control form-control-sm {{ DIVID.ATTR_V2_SECRET_INPUT_CLASS }}"
+               value="{{ attribute.value|default_if_none:'' }}"
+               readonly="readonly"
+               disabled="true"
+               style="max-width: 300px; display: inline-block;">
+        <button type="button" class="btn btn-sm btn-outline-secondary ml-1"
+                onclick="Hi.attr.toggleSecretField(this)"
+                title="Show value">
+          <span class="{{ DIVID.ATTR_V2_ICON_SHOW_CLASS }}">{% icon "eye" size="sm" %}</span>
+          <span class="{{ DIVID.ATTR_V2_ICON_HIDE_CLASS }}" style="display: none;">{% icon "eye-off" size="sm" %}</span>
+        </button>
+      </div>
+
+    {% elif attribute.value %}
+      <div class="text-muted mt-1"><small style="white-space: pre-wrap;">{{ attribute.value }}</small></div>
+
+    {% else %}
+      <div class="text-muted mt-1"><small>(empty)</small></div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-muted text-center py-3">No attributes.</div>
+{% endif %}
+{% endblock %}

@@ -10,7 +10,7 @@ from hi.apps.location.models import (
     LocationItemPathModel,
     LocationView,
 )
-from hi.apps.attribute.models import SoftDeleteAttributeModel, AttributeValueHistoryModel
+from hi.apps.attribute.models import AttributeModel, SoftDeleteAttributeModel, AttributeValueHistoryModel
 from hi.integrations.models import IntegrationDetailsModel
 from hi.enums import ItemType
 
@@ -466,3 +466,61 @@ class EntityAttributeHistory(AttributeValueHistoryModel):
         indexes = [
             models.Index(fields=['attribute', '-changed_datetime']),
         ]
+
+
+class ArchivedEntity( models.Model ):
+    """An archived entity preserved for historical reference.
+    Created by copying an Entity's identity and attributes before deletion."""
+
+    name = models.CharField(
+        'Name',
+        max_length = 64,
+        null = False, blank = False,
+    )
+    entity_type_str = models.CharField(
+        'Entity Type',
+        max_length = 32,
+        null = False, blank = False,
+    )
+    original_created_datetime = models.DateTimeField(
+        'Originally Created',
+        null = True, blank = True,
+    )
+    archived_datetime = models.DateTimeField(
+        'Archived',
+        auto_now_add = True,
+    )
+
+    class Meta:
+        verbose_name = 'Archived Entity'
+        verbose_name_plural = 'Archived Entities'
+        ordering = ['-archived_datetime']
+
+    def __str__( self ):
+        return f'{self.name} (archived {self.archived_datetime})'
+
+    @property
+    def entity_type( self ) -> EntityType:
+        return EntityType.from_name_safe( self.entity_type_str )
+
+
+class ArchivedEntityAttribute( AttributeModel ):
+    """An archived attribute preserved from a deleted entity."""
+
+    archived_entity = models.ForeignKey(
+        ArchivedEntity,
+        related_name = 'attributes',
+        verbose_name = 'Archived Entity',
+        on_delete = models.CASCADE,
+    )
+
+    class Meta:
+        verbose_name = 'Archived Attribute'
+        verbose_name_plural = 'Archived Attributes'
+        ordering = ['order_id', 'id']
+
+    def get_upload_to( self ):
+        return 'archived/entity/attributes/'
+
+    def _get_history_model_class( self ):
+        return None

@@ -8,7 +8,12 @@
 
       <div class="d-flex justify-content-between align-items-center mb-2">
         <h4 class="mb-0">Items</h4>
-        <div>
+        <div class="d-flex">
+          <a href="{% url 'entity_edit_archive_list' %}"
+             class="btn btn-outline-secondary btn-sm btn-control mr-2" role="button"
+             data-async="modal" >
+            {% icon "history" size="sm" css_class="hi-icon-left" %}ARCHIVED
+          </a>
           <a href="{% url 'entity_edit_entity_add' %}"
              class="btn btn-primary btn-sm btn-control" role="button"
              data-async="modal" >
