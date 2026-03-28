@@ -171,7 +171,8 @@ class AttributeModel(models.Model):
             self.file_value.field.upload_to = self.get_upload_to()
             if not self.value:
                 self.value = self.file_value.name
-            if not self.pk or not self.__class__.objects.filter( pk = self.pk ).exists():
+            all_manager = getattr( self.__class__, 'all_objects', self.__class__.objects )
+            if not self.pk or not all_manager.filter( pk = self.pk ).exists():
                 self.file_value.name = generate_unique_filename( self.file_value.name )
         
         # Save the attribute first
