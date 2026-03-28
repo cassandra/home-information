@@ -105,7 +105,6 @@ INSTALLED_APPS = [
     'custom',
     'hi.environment',
     'hi.apps.common',
-    'hi.simulator',
     'hi.apps.user',
     'hi.apps.config',
     'hi.apps.console',
