@@ -301,7 +301,7 @@ class IntegrationManagerTestCase(TestCase):
 
     @patch('hi.integrations.integration_manager.apps.get_app_configs')
     @patch('hi.integrations.integration_manager.import_module_safe')
-    def test_discover_defined_integrations(self, mock_import, mock_get_apps):
+    def testdiscover_defined_integrations(self, mock_import, mock_get_apps):
         """Test auto-discovery of integration gateways in services modules."""
         manager = IntegrationManager()
         
@@ -354,7 +354,7 @@ class IntegrationManagerTestCase(TestCase):
         mock_import.side_effect = mock_import_side_effect
         
         # Execute discovery
-        result = manager._discover_defined_integrations()
+        result = manager.discover_defined_integrations()
         
         # Verify correct modules were imported
         expected_module_names = [
@@ -619,7 +619,7 @@ class IntegrationManagerTestCase(TestCase):
         self.assertEqual(integration.attributes.count(), 1)
 
     @patch('hi.integrations.integration_manager.logger')
-    def test_discover_defined_integrations_error_handling(self, mock_logger):
+    def testdiscover_defined_integrations_error_handling(self, mock_logger):
         """Test error handling during integration discovery."""
         manager = IntegrationManager()
         
@@ -631,7 +631,7 @@ class IntegrationManagerTestCase(TestCase):
              patch('hi.integrations.integration_manager.import_module_safe', side_effect=Exception("Import failed")):
             
             # Execute discovery
-            result = manager._discover_defined_integrations()
+            result = manager.discover_defined_integrations()
             
             # Verify empty result when import fails
             self.assertEqual(result, {})

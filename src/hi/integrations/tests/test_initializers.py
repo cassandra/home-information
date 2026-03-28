@@ -6,6 +6,7 @@ from hi.apps.attribute.enums import AttributeValueType
 from hi.integrations.enums import IntegrationAttributeType
 from hi.integrations.initializers import IntegrationInitializer
 from hi.integrations.integration_gateway import IntegrationGateway
+from hi.integrations.integration_manager import IntegrationManager
 from hi.integrations.models import Integration, IntegrationAttribute
 from hi.integrations.transient_models import IntegrationMetaData
 
@@ -41,10 +42,12 @@ class IntegrationInitializerTestCase(TestCase):
 
     def test_run_creates_missing_integration_and_attributes(self):
         initializer = IntegrationInitializer()
+        manager = IntegrationManager()
 
         gateway = MockIntegrationGateway('test_integration')
         initializer._create_integrations(
-            defined_integration_gateway_map={'test_integration': gateway},
+            integration_manager = manager,
+            defined_gateway_map = {'test_integration': gateway},
         )
 
         integration = Integration.objects.get(integration_id='test_integration')
@@ -53,13 +56,16 @@ class IntegrationInitializerTestCase(TestCase):
 
     def test_run_is_idempotent(self):
         initializer = IntegrationInitializer()
+        manager = IntegrationManager()
 
         gateway = MockIntegrationGateway('test_integration')
         initializer._create_integrations(
-            defined_integration_gateway_map={'test_integration': gateway},
+            integration_manager = manager,
+            defined_gateway_map = {'test_integration': gateway},
         )
         initializer._create_integrations(
-            defined_integration_gateway_map={'test_integration': gateway},
+            integration_manager = manager,
+            defined_gateway_map = {'test_integration': gateway},
         )
 
         self.assertEqual(Integration.objects.filter(integration_id='test_integration').count(), 1)
