@@ -15,7 +15,7 @@
     <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-2">
       <div>
         <div><strong>{{ attribute.name }}</strong></div>
-        <div class="text-muted small">{{ attribute.value|default:"(empty)"|truncatechars:80 }}</div>
+        <div class="text-muted small">{{ attribute.value|attribute_preview }}</div>
       </div>
       <a href="{% attr_restore_deleted_url attr_item_context attribute.id %}"
          class="btn btn-xs btn-outline-primary {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
