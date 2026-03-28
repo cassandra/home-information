@@ -256,7 +256,7 @@ class SoftDeleteAttributeModel(AttributeModel):
         if hard_delete:
             return super().delete(*args, **kwargs)
         self.soft_delete()
-        return
+        return (1, {self.__class__.__name__: 1})
     
     
 class AttributeValueHistoryModel(models.Model):
