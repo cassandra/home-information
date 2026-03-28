@@ -99,8 +99,8 @@ class AttributeEditFormHandler:
                 continue
             try:
                 file_attribute = AttributeModelClass.objects.get(
-                    id=attr_id,
-                    value_type_str=str(AttributeValueType.FILE),
+                    id = attr_id,
+                    value_type_str = str( AttributeValueType.FILE ),
                 )
                 # Verify permission to delete
                 if file_attribute.attribute_type.can_delete:
@@ -136,8 +136,8 @@ class AttributeEditFormHandler:
             try:
                 attribute_id: int = int(attribute_id_str)
                 attribute = AttributeModelClass.objects.get(
-                    id=attribute_id,
-                    value_type_str=str(AttributeValueType.FILE),
+                    id = attribute_id,
+                    value_type_str = str( AttributeValueType.FILE ),
                 )
                 # Clean and validate the new title
                 new_title = new_title.strip()

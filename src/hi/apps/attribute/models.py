@@ -232,8 +232,8 @@ class SoftDeleteAttributeModel(AttributeModel):
 
     is_deleted = models.BooleanField(
         'Deleted?',
-        default=False,
-        db_index=True,
+        default = False,
+        db_index = True,
     )
 
     objects = ActiveAttributeManager()
@@ -243,16 +243,22 @@ class SoftDeleteAttributeModel(AttributeModel):
     class Meta(AttributeModel.Meta):
         abstract = True
 
-    def soft_delete(self):
+    def soft_delete( self ):
         self.is_deleted = True
-        self.save(update_fields=['is_deleted', 'updated_datetime'], track_history=False)
+        self.save(
+            update_fields = ['is_deleted', 'updated_datetime'],
+            track_history = False,
+        )
 
-    def restore_from_deleted(self):
+    def restore_from_deleted( self ):
         self.is_deleted = False
-        self.save(update_fields=['is_deleted', 'updated_datetime'], track_history=False)
+        self.save(
+            update_fields = ['is_deleted', 'updated_datetime'],
+            track_history = False,
+        )
 
-    def delete(self, *args, **kwargs):
-        hard_delete = kwargs.pop('hard_delete', False)
+    def delete( self, *args, **kwargs ):
+        hard_delete = kwargs.pop( 'hard_delete', False )
         if hard_delete:
             return super().delete(*args, **kwargs)
         self.soft_delete()
