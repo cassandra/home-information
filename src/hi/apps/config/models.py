@@ -64,6 +64,14 @@ class SubsystemAttribute( AttributeModel ):
             return enum.definition.initial_value
         except (ValueError, ImportError, AttributeError, TypeError):
             return None
+
+    @property
+    def display_description( self ):
+        try:
+            enum = SettingEnum.from_key( self.setting_key )
+            return enum.definition.description or ''
+        except (ValueError, ImportError, AttributeError, TypeError):
+            return ''
     
 
 class SubsystemAttributeHistory(AttributeValueHistoryModel):
