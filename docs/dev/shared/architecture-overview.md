@@ -77,7 +77,7 @@
 ## Database and Dependencies
 
 - **Database**: SQLite for development, supports PostgreSQL for production
-- **Cache**: Redis required for development and production
+- **Cache**: Redis (installed locally for development; bundled in Docker deployments)
 - **Frontend**: jQuery 3.7, Bootstrap 4, custom SVG manipulation
 - **Python**: 3.11+, Django 4.2
 
