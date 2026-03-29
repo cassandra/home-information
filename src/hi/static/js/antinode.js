@@ -944,6 +944,19 @@ function csrfSafeMethod(method) {
     return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
 }
 $.ajaxSetup({
+    // Disable jQuery's automatic script evaluation for security and explicit control flow.
+    // This prevents jQuery from auto-executing responses with Content-Type: application/javascript.
+    // All script execution should be done explicitly through antinode patterns (e.g., redirect_response).
+    contents: {
+        script: false
+    },
+    converters: {
+        "text script": function(text) {
+            // Don't auto-execute - return as plain text.
+            // If script execution is needed, use explicit eval or antinode patterns.
+            return text;
+        }
+    },
     beforeSend: function(xhr, settings) {
         if ( csrfSafeMethod( settings.type ) ) {
             return;
