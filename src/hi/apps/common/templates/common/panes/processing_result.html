@@ -24,3 +24,7 @@
 {% if not processing_result.error_list %}
 <div><em>No errors.</em></div>
 {% endif %}
+
+{% if processing_result.footer_message %}
+<div class="text-muted small mt-3 border-top pt-2">{{ processing_result.footer_message }}</div>
+{% endif %}
