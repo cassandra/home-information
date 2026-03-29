@@ -11,7 +11,8 @@ from django.test import TestCase
 
 from hi.apps.attribute.templatetags.attribute_extras import (
     attribute_preview, file_title_field_name, history_target_id, 
-    history_toggle_id, attr_history_url, attr_restore_url, attribute_url
+    history_toggle_id, attr_history_url, attr_restore_url, attribute_url,
+    attribute_text_has_url, attribute_text_linkify,
 )
 from hi.apps.attribute.edit_context import AttributeItemEditContext
 
@@ -167,6 +168,41 @@ class TestAttributeUrlFilter(TestCase):
         self.assertEqual(attribute_url("not a url"), "")
         self.assertEqual(attribute_url(""), "")
         self.assertEqual(attribute_url(None), "")
+
+
+class TestAttributeTextUrlFilters(TestCase):
+    """Test URL detection and inline linkification for text attributes."""
+
+    def test_attribute_text_has_url_detects_embedded_urls(self):
+        text = "Primary docs: https://example.com/docs and backup: https://backup.example.com"
+        self.assertTrue(attribute_text_has_url(text))
+
+    def test_attribute_text_has_url_rejects_non_url_text(self):
+        self.assertFalse(attribute_text_has_url("example.com without scheme"))
+        self.assertFalse(attribute_text_has_url(""))
+        self.assertFalse(attribute_text_has_url(None))
+
+    def test_attribute_text_linkify_renders_multiple_links_inline(self):
+        rendered = attribute_text_linkify(
+            "See https://example.com and https://example.org/path?q=1 for details"
+        )
+
+        self.assertIn('<a href="https://example.com" target="_blank" rel="noopener noreferrer">https://example.com</a>', rendered)
+        self.assertIn('<a href="https://example.org/path?q=1" target="_blank" rel="noopener noreferrer">https://example.org/path?q=1</a>', rendered)
+
+    def test_attribute_text_linkify_preserves_newlines_with_br(self):
+        rendered = attribute_text_linkify("Line 1\nhttps://example.com\nLine 3")
+        self.assertIn('Line 1<br>', rendered)
+        self.assertIn('</a><br>Line 3', rendered)
+
+    def test_attribute_text_linkify_escapes_non_url_html(self):
+        rendered = attribute_text_linkify('<script>alert(1)</script> https://example.com')
+        self.assertIn('&lt;script&gt;alert(1)&lt;/script&gt;', rendered)
+        self.assertNotIn('<script>', rendered)
+
+    def test_attribute_text_linkify_keeps_trailing_punctuation_outside_link(self):
+        rendered = attribute_text_linkify('Read this (https://example.com/docs).')
+        self.assertIn('<a href="https://example.com/docs" target="_blank" rel="noopener noreferrer">https://example.com/docs</a>).', rendered)
 
 
 class TestAttributeUrlTags(TestCase):

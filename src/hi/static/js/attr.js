@@ -115,6 +115,18 @@
         toggleExpandedView: function(button) {
             return _toggleExpandedView(button);
         },
+
+        toggleTextReadExpandedView: function(button) {
+            return _toggleTextReadExpandedView(button);
+        },
+
+        enterTextEditMode: function(button) {
+            return _enterTextEditMode(button);
+        },
+
+        cancelTextEditMode: function(button) {
+            return _cancelTextEditMode(button);
+        },
         
         reorderAttributeCard: function(button, direction) {
             return _reorderAttributeCard(button, direction);
@@ -1173,6 +1185,110 @@
             displayField.off('input.overflow');
         }
     }
+
+    function _toggleTextReadExpandedView(button) {
+        const $button = $(button);
+        const readMode = $button.closest(Hi.ATTR_V2_TEXT_READ_MODE_SELECTOR);
+        const readContent = readMode.find(Hi.ATTR_V2_TEXT_READ_CONTENT_SELECTOR).first();
+
+        if (readContent.length === 0) {
+            return;
+        }
+
+        const showMoreText = $button.find(Hi.ATTR_V2_SHOW_MORE_TEXT_SELECTOR);
+        const showLessText = $button.find(Hi.ATTR_V2_SHOW_LESS_TEXT_SELECTOR);
+        const isCollapsed = readContent.hasClass('is-collapsed');
+
+        if (isCollapsed) {
+            readContent.removeClass('is-collapsed');
+            readMode.attr('data-read-expanded', 'true');
+            showMoreText.hide();
+            showLessText.show();
+        } else {
+            readContent.addClass('is-collapsed');
+            readMode.attr('data-read-expanded', 'false');
+            showMoreText.show();
+            showLessText.hide();
+        }
+    }
+
+    function _enterTextEditMode(button) {
+        const $button = $(button);
+        let wrapper = $button.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
+        if (wrapper.length === 0) {
+            const card = $button.closest(Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR);
+            wrapper = card.find(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR).first();
+        }
+
+        if (wrapper.length === 0) {
+            return;
+        }
+
+        const readMode = wrapper.find(Hi.ATTR_V2_TEXT_READ_MODE_SELECTOR).first();
+        const editMode = wrapper.find(Hi.ATTR_V2_TEXT_EDIT_MODE_SELECTOR).first();
+        const editField = editMode.find(Hi.ATTR_V2_TEXT_EDIT_FIELD_SELECTOR).first();
+
+        if (editMode.length === 0 || editField.length === 0) {
+            return;
+        }
+
+        if (editMode.is(':visible')) {
+            const currentRawField = editField[0];
+            if (currentRawField) {
+                currentRawField.focus();
+            }
+            return;
+        }
+
+        const hiddenFieldId = editField.attr(Hi.DATA_HIDDEN_FIELD_ATTR);
+        const hiddenField = hiddenFieldId ? wrapper.find(`#${hiddenFieldId}`) : null;
+
+        if (hiddenField && hiddenField.length > 0) {
+            editField.val(hiddenField.val() || '');
+        }
+
+        readMode.hide();
+        editMode.show();
+
+        if (window.autosize) {
+            if (!editField[0]._autosize) {
+                autosize(editField);
+            }
+            autosize.update(editField);
+        }
+
+        const rawField = editField[0];
+        if (rawField) {
+            rawField.focus();
+            const textLength = rawField.value.length;
+            rawField.setSelectionRange(textLength, textLength);
+        }
+    }
+
+    function _cancelTextEditMode(button) {
+        const $button = $(button);
+        const wrapper = $button.closest(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR);
+        const readMode = wrapper.find(Hi.ATTR_V2_TEXT_READ_MODE_SELECTOR).first();
+        const editMode = wrapper.find(Hi.ATTR_V2_TEXT_EDIT_MODE_SELECTOR).first();
+        const editField = editMode.find(Hi.ATTR_V2_TEXT_EDIT_FIELD_SELECTOR).first();
+
+        if (editField.length === 0) {
+            return;
+        }
+
+        const originalValue = editField.attr(Hi.DATA_ORIGINAL_VALUE_ATTR) || '';
+        const hiddenFieldId = editField.attr(Hi.DATA_HIDDEN_FIELD_ATTR);
+        const hiddenField = hiddenFieldId ? wrapper.find(`#${hiddenFieldId}`) : null;
+
+        editField.val(originalValue).trigger('input').trigger('change');
+
+        if (hiddenField && hiddenField.length > 0) {
+            hiddenField.val(originalValue);
+        }
+
+        editMode.hide();
+        readMode.show();
+    }
   
     function _reorderAttributeCard(button, direction) {
         const card = button.closest(`[${Hi.DATA_ATTRIBUTE_ID_ATTR}]`);
@@ -1256,7 +1372,7 @@
     }
 
     function _restoreTextarea($card, defaultValue) {
-        const $textarea = $card.find(Hi.ATTR_V2_TEXTAREA_SELECTOR);
+        const $textarea = $card.find(Hi.ATTR_V2_TEXTAREA_SELECTOR).first();
 
         if (!$textarea.length) {
             console.error('Textarea not found for text attribute');
@@ -1264,6 +1380,12 @@
         }
 
         $textarea.val(defaultValue).trigger('input');
+
+        const hiddenFieldId = $textarea.attr(Hi.DATA_HIDDEN_FIELD_ATTR);
+        const $hiddenField = hiddenFieldId ? $card.find(`#${hiddenFieldId}`) : null;
+        if ($hiddenField && $hiddenField.length > 0) {
+            $hiddenField.val(defaultValue);
+        }
     }
 
     function _restoreSelect($card, defaultValue) {
@@ -1291,7 +1413,9 @@
     // Sync textarea values to hidden fields before form submission
     function _syncTextareaValuesToHiddenFields($container) {
         // Process all display fields within this container
-        $container.find(Hi.ATTR_V2_DISPLAY_FIELD_SELECTOR).each(function() {
+        const textFieldSelector = `${Hi.ATTR_V2_DISPLAY_FIELD_SELECTOR}, ${Hi.ATTR_V2_TEXT_EDIT_FIELD_SELECTOR}`;
+
+        $container.find(textFieldSelector).each(function() {
             const displayField = $(this);
             const hiddenFieldId = displayField.attr(Hi.DATA_HIDDEN_FIELD_ATTR);
             const hiddenField = hiddenFieldId ? $container.find('#' + hiddenFieldId) : null;

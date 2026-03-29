@@ -1,9 +1,48 @@
+import re
+
 from django import template
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
+from django.utils.html import escape, format_html
+from django.utils.safestring import mark_safe
 
 register = template.Library()
 _url_validator = URLValidator()
+_URL_IN_TEXT_PATTERN = re.compile(r'https?://[^\s<>"\']+')
+_TRAILING_PUNCTUATION = '.,;:!?)]}'
+
+
+def _is_valid_url(value):
+    """Return True when value passes Django URL validation."""
+    try:
+        _url_validator(value)
+    except ValidationError:
+        return False
+    return True
+
+
+def _split_url_and_trailing_punctuation(candidate):
+    """Split common trailing punctuation from URL candidates."""
+    trailing = []
+    trimmed = candidate
+
+    while trimmed and trimmed[-1] in _TRAILING_PUNCTUATION:
+        trailing.append(trimmed[-1])
+        trimmed = trimmed[:-1]
+
+    return trimmed, ''.join(reversed(trailing))
+
+
+def _iter_valid_url_segments(text):
+    """Yield (start, end, valid_url, trailing_punctuation) for each valid URL."""
+    for match in _URL_IN_TEXT_PATTERN.finditer(text):
+        raw_candidate = match.group(0)
+        url_candidate, trailing = _split_url_and_trailing_punctuation(raw_candidate)
+
+        if not url_candidate or not _is_valid_url(url_candidate):
+            continue
+
+        yield (match.start(), match.end(), url_candidate, trailing)
 
 
 @register.filter
@@ -207,9 +246,61 @@ def attribute_url(value):
     if not url_candidate:
         return ""
 
-    try:
-        _url_validator(url_candidate)
-    except ValidationError:
+    if not _is_valid_url(url_candidate):
         return ""
 
     return url_candidate
+
+
+@register.filter
+def attribute_text_has_url(value):
+    """Return True when text contains at least one valid URL candidate."""
+    if value is None:
+        return False
+
+    text_value = str(value)
+    if not text_value:
+        return False
+
+    return any(True for _ in _iter_valid_url_segments(text_value))
+
+
+@register.filter
+def attribute_text_linkify(value):
+    """
+    Render text with inline clickable links while safely escaping non-URL text.
+
+    Newlines are converted to <br> for read-mode display.
+    """
+    if value is None:
+        return ""
+
+    text_value = str(value)
+    if text_value == "":
+        return ""
+
+    rendered_parts = []
+    current_index = 0
+
+    for start, end, valid_url, trailing in _iter_valid_url_segments(text_value):
+        if start > current_index:
+            rendered_parts.append(escape(text_value[current_index:start]))
+
+        rendered_parts.append(
+            format_html(
+                '<a href="{}" target="_blank" rel="noopener noreferrer">{}</a>',
+                valid_url,
+                valid_url,
+            )
+        )
+
+        if trailing:
+            rendered_parts.append(escape(trailing))
+
+        current_index = end
+
+    if current_index < len(text_value):
+        rendered_parts.append(escape(text_value[current_index:]))
+
+    html = ''.join(str(part) for part in rendered_parts).replace('\n', '<br>')
+    return mark_safe(html)

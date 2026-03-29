@@ -78,6 +78,15 @@ Individual attribute attribute card with value editing and actions
         {% icon "chevron-down" size="sm" %}
       </button>
       {% endif %}
+
+      {% if attribute_form.instance.pk and attribute_form.instance.is_editable and attribute_form.instance.value_type.name == 'TEXT' and attribute_form.value.value|attribute_text_has_url %}
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary"
+                title="Edit value"
+                onclick="Hi.attr.enterTextEditMode(this)">
+          {% icon "edit" size="sm" %}
+        </button>
+      {% endif %}
       
       {% if attribute_form.instance.pk and not attribute_form.suppress_history %}
         <a href="{% attr_history_url attr_item_context attribute_form.instance.pk %}"
