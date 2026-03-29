@@ -149,6 +149,13 @@ class HassManager( SingletonManager, AggregateHealthProvider, ApiHealthStatusPro
         if attribute:
             return str_to_bool( attribute.value )
         return False
+
+    @property
+    def import_allowlist( self ) -> str:
+        attribute = self._hass_attr_type_to_attribute.get( HassAttributeType.IMPORT_ALLOWLIST )
+        if attribute and attribute.value:
+            return attribute.value
+        return HassAttributeType.IMPORT_ALLOWLIST.initial_value
         
     def fetch_hass_states_from_api( self, verbose : bool = True ) -> Dict[ str, HassState ]:
         if verbose:
