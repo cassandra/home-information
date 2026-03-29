@@ -193,6 +193,22 @@ class EntityStyle:
         fill_color = None,
         fill_opacity = 0.0,
     )
+    GarageDoor = SvgStatusStyle(
+        status_value = '',
+        stroke_color = '#888888',
+        stroke_width = 3,
+        stroke_dasharray = [],
+        fill_color = '#b0b0b0',
+        fill_opacity = 1,
+    )
+    GasLine = SvgStatusStyle(
+        status_value = '',
+        stroke_color = '#CCAA00',
+        stroke_width = 3,
+        stroke_dasharray = [ 6, 3 ],
+        fill_color = None,
+        fill_opacity = 0.0,
+    )
     SewerLine = SvgStatusStyle(
         status_value = '',
         stroke_color = '#008000',
@@ -389,6 +405,8 @@ class EntityStyle:
         EntityType.ELECTRIC_WIRE: ElectricWire,
         EntityType.FENCE: Fence,
         EntityType.FURNITURE: Furniture,
+        EntityType.GARAGE_DOOR: GarageDoor,
+        EntityType.GAS_LINE: GasLine,
         EntityType.GREENHOUSE: Greenhouse,
         EntityType.PIPE: Pipe,
         EntityType.SEWER_LINE: SewerLine,
