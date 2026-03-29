@@ -1,4 +1,25 @@
-<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
-<circle cx="32" cy="32" r="26" fill="#e8e8e8" stroke="#999" stroke-width="1.5"/>
-<text x="32" y="42" font-family="sans-serif" font-size="32" font-weight="bold" fill="#999" text-anchor="middle">?</text>
+<rect class="hi-entity-bg" x="0" y="0" width="48" height="64" fill="none"/>
 
+<!-- Freezer body (single door upright) -->
+<rect x="8" y="4" width="32" height="56" rx="3" fill="#f0f4f8" stroke="#2c3e50" stroke-width="2"/>
+
+<!-- Door panel -->
+<rect x="10" y="6" width="28" height="52" rx="2" fill="#ffffff" stroke="#bdc3c7" stroke-width="1"/>
+
+<!-- Door handle -->
+<rect x="34" y="24" width="2" height="14" rx="1" fill="#34495e"/>
+
+<!-- Snowflake symbol -->
+<path d="M24,22 L24,38" stroke="#3498db" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M17,30 L31,30" stroke="#3498db" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M19,25 L29,35" stroke="#3498db" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M29,25 L19,35" stroke="#3498db" stroke-width="1.5" stroke-linecap="round"/>
+
+<!-- Small frost crystals on arms -->
+<path d="M22,23 L24,25" stroke="#85c1e9" stroke-width="1" stroke-linecap="round"/>
+<path d="M26,23 L24,25" stroke="#85c1e9" stroke-width="1" stroke-linecap="round"/>
+<path d="M22,37 L24,35" stroke="#85c1e9" stroke-width="1" stroke-linecap="round"/>
+<path d="M26,37 L24,35" stroke="#85c1e9" stroke-width="1" stroke-linecap="round"/>
+
+<!-- Temperature indicator -->
+<circle cx="16" cy="12" r="2" fill="#3498db" opacity="0.7"/>

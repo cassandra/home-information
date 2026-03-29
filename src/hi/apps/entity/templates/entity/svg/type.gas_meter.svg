@@ -1,4 +1,34 @@
 <rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
-<circle cx="32" cy="32" r="26" fill="#e8e8e8" stroke="#999" stroke-width="1.5"/>
-<text x="32" y="42" font-family="sans-serif" font-size="32" font-weight="bold" fill="#999" text-anchor="middle">?</text>
 
+<!-- Meter body -->
+<rect x="12" y="14" width="40" height="36" rx="3" fill="#e8e0d0" stroke="#555" stroke-width="1.5"/>
+
+<!-- Dial face -->
+<circle cx="32" cy="28" r="11" fill="#fff" stroke="#555" stroke-width="1"/>
+
+<!-- Dial markings -->
+<line x1="32" y1="18" x2="32" y2="20" stroke="#555" stroke-width="1"/>
+<line x1="32" y1="36" x2="32" y2="38" stroke="#555" stroke-width="1"/>
+<line x1="22" y1="28" x2="24" y2="28" stroke="#555" stroke-width="1"/>
+<line x1="40" y1="28" x2="42" y2="28" stroke="#555" stroke-width="1"/>
+
+<!-- Dial needle -->
+<line x1="32" y1="28" x2="37" y2="23" stroke="#c0392b" stroke-width="1.5" stroke-linecap="round"/>
+<circle cx="32" cy="28" r="1.5" fill="#c0392b"/>
+
+<!-- Reading display -->
+<rect x="22" y="40" width="20" height="6" rx="1" fill="#333" stroke="#555" stroke-width="0.5"/>
+<text x="32" y="45" font-family="monospace" font-size="4" fill="#4caf50" text-anchor="middle">00384</text>
+
+<!-- Input pipe (left) -->
+<rect x="2" y="24" width="12" height="6" rx="2" fill="#888" stroke="#555" stroke-width="1"/>
+
+<!-- Output pipe (right) -->
+<rect x="50" y="24" width="12" height="6" rx="2" fill="#888" stroke="#555" stroke-width="1"/>
+
+<!-- Shutoff valve on input -->
+<rect x="6" y="22" width="4" height="10" rx="1" fill="#c0392b" stroke="#555" stroke-width="0.5"/>
+
+<!-- Mounting bracket -->
+<rect x="18" y="10" width="4" height="6" fill="#888"/>
+<rect x="42" y="10" width="4" height="6" fill="#888"/>

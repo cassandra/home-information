@@ -1,4 +1,35 @@
-<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
-<circle cx="32" cy="32" r="26" fill="#e8e8e8" stroke="#999" stroke-width="1.5"/>
-<text x="32" y="42" font-family="sans-serif" font-size="32" font-weight="bold" fill="#999" text-anchor="middle">?</text>
+<rect class="hi-entity-bg" x="0" y="0" width="48" height="64" fill="none"/>
 
+<!-- Filter canister (tall cylinder) -->
+<rect x="12" y="14" width="24" height="46" rx="4" fill="#e8f4f8" stroke="#555" stroke-width="1.5"/>
+
+<!-- Canister bands -->
+<line x1="12" y1="26" x2="36" y2="26" stroke="#999" stroke-width="0.8"/>
+<line x1="12" y1="38" x2="36" y2="38" stroke="#999" stroke-width="0.8"/>
+<line x1="12" y1="50" x2="36" y2="50" stroke="#999" stroke-width="0.8"/>
+
+<!-- Filter media visible inside (translucent) -->
+<rect x="16" y="28" width="16" height="10" fill="#90caf9" opacity="0.3" rx="1"/>
+<rect x="16" y="40" width="16" height="10" fill="#bbdefb" opacity="0.3" rx="1"/>
+
+<!-- Head unit on top -->
+<rect x="10" y="8" width="28" height="8" rx="2" fill="#888" stroke="#555" stroke-width="1.5"/>
+
+<!-- Pressure gauge -->
+<circle cx="24" cy="12" r="3" fill="#fff" stroke="#555" stroke-width="0.8"/>
+<line x1="24" y1="12" x2="26" y2="10" stroke="#c0392b" stroke-width="0.8" stroke-linecap="round"/>
+
+<!-- Pressure release button -->
+<circle cx="34" cy="12" r="2" fill="#c0392b" stroke="#555" stroke-width="0.5"/>
+
+<!-- Input pipe (left) -->
+<rect x="2" y="10" width="10" height="5" rx="2" fill="#6699cc" stroke="#555" stroke-width="0.8"/>
+
+<!-- Output pipe (right) -->
+<rect x="36" y="10" width="10" height="5" rx="2" fill="#6699cc" stroke="#555" stroke-width="0.8"/>
+
+<!-- Water drop icon -->
+<path d="M24,54 C24,54 27,57 27,59 C27,60.7 25.7,61 24,61 C22.3,61 21,60.7 21,59 C21,57 24,54 24,54Z" fill="#3498db" opacity="0.6"/>
+
+<!-- Base -->
+<rect x="14" y="58" width="20" height="4" rx="1" fill="#777"/>

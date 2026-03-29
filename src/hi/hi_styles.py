@@ -363,7 +363,9 @@ class EntityStyle:
         EntityType.NETWORK_SWITCH: SvgViewBox( x = 0, y = 0, width = 64, height = 32 ),
         EntityType.ON_OFF_SWITCH: SvgViewBox( x = 0, y = 0, width = 44, height = 64 ),
         EntityType.OPEN_CLOSE_SENSOR: SvgViewBox( x = 0, y = 0, width = 64, height = 50 ),
+        EntityType.POOL_PUMP: SvgViewBox( x = 0, y = 0, width = 64, height = 48 ),
         EntityType.PUMP: SvgViewBox( x = 0, y = 0, width = 64, height = 45 ),
+        EntityType.FREEZER: SvgViewBox( x = 0, y = 0, width = 48, height = 64 ),
         EntityType.REFRIGERATOR: SvgViewBox( x = 0, y = 0, width = 48, height = 64 ),
         EntityType.SERVER: SvgViewBox( x = 0, y = 0, width = 45, height = 64 ),
         EntityType.SINK: SvgViewBox( x = 0, y = 0, width = 64, height = 50 ),
@@ -374,6 +376,7 @@ class EntityStyle:
         EntityType.THERMOSTAT: SvgViewBox( x = 0, y = 0, width = 64, height = 44 ),
         EntityType.TOILET: SvgViewBox( x = 0, y = 0, width = 48, height = 64 ),
         EntityType.WALL_SWITCH: SvgViewBox( x = 0, y = 0, width = 42, height = 64 ),
+        EntityType.WATER_FILTER: SvgViewBox( x = 0, y = 0, width = 48, height = 64 ),
         EntityType.WATER_HEATER: SvgViewBox( x = 0, y = 0, width = 38, height = 64 ),
         EntityType.WATER_METER: SvgViewBox( x = 0, y = 0, width = 64, height = 43 ),
     }
