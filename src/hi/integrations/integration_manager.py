@@ -282,8 +282,8 @@ class IntegrationManager( Singleton ):
         """
         with self._data_lock:
             new_attribute_types = list()
-            existing_attribute_integration_keys = set([ x.integration_key
-                                                        for x in integration.attributes.all() ])
+            existing_attributes = { x.integration_key: x
+                                    for x in integration.attributes.all() }
 
             AttributeType = integration_metadata.attribute_type
             for attribute_type in AttributeType:
@@ -291,8 +291,17 @@ class IntegrationManager( Singleton ):
                     integration_id = integration.integration_id,
                     integration_name = str(attribute_type),
                 )
-                if integration_key not in existing_attribute_integration_keys:
+                if integration_key not in existing_attributes:
                     new_attribute_types.append( attribute_type )
+                else:
+                    existing_attr = existing_attributes[integration_key]
+                    description = attribute_type.description or ''
+                    if existing_attr.description != description:
+                        existing_attr.description = description
+                        existing_attr.save(
+                            update_fields = ['description'],
+                            track_history = False,
+                        )
                 continue
 
             if new_attribute_types:
@@ -316,6 +325,7 @@ class IntegrationManager( Singleton ):
             integration = integration,
             name = attribute_type.label,
             value = attribute_type.initial_value,
+            description = attribute_type.description or '',
             value_type_str = str(attribute_type.value_type),
             value_range_str = json.dumps( attribute_type.value_range_dict ),
             integration_key_str = str(integration_key),
