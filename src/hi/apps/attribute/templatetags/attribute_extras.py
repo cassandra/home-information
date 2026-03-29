@@ -199,23 +199,3 @@ def attr_restore_all_url(attr_item_context):
         attr_item_context.owner_id_param_name: attr_item_context.owner_id,
     }
     return reverse(url_name, kwargs=params)
-
-
-@register.filter
-def setting_description(attribute):
-    """
-    Return SettingEnum description text for config attributes.
-
-    For non-config attributes (without setting_key) or invalid keys,
-    returns an empty string so templates can safely omit this section.
-    """
-    setting_key = getattr(attribute, 'setting_key', None)
-    if not setting_key:
-        return ''
-
-    try:
-        from hi.apps.config.setting_enums import SettingEnum
-        enum_member = SettingEnum.from_key(setting_key)
-        return enum_member.definition.description or ''
-    except Exception:
-        return ''

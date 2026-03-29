@@ -41,11 +41,9 @@ Individual attribute attribute card with value editing and actions
     <div class="{{ DIVID.ATTR_V2_ATTRIBUTE_NAME_CLASS }}">
       <div class="d-flex flex-column align-items-start w-100">
         {% include "attribute/components/name_field.html" %}
-        {% with setting_help=attribute_form.instance|setting_description %}
-          {% if setting_help %}
-            <div class="text-muted small mt-1">{{ setting_help|safe }}</div>
-          {% endif %}
-        {% endwith %}
+        {% if attribute_form.instance.display_description %}
+          <div class="text-muted small mt-1">{{ attribute_form.instance.display_description|safe }}</div>
+        {% endif %}
       </div>
     </div>
 
