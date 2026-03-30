@@ -116,6 +116,10 @@
             return _toggleExpandedView(button);
         },
 
+        enterAttributeEditMode: function(button) {
+            return _enterAttributeEditMode(button);
+        },
+
         toggleTextReadExpandedView: function(button) {
             return _toggleTextReadExpandedView(button);
         },
@@ -1210,6 +1214,49 @@
             showMoreText.show();
             showLessText.hide();
         }
+    }
+
+    function _enterAttributeEditMode(button) {
+        const $button = $(button);
+        const $card = $button.closest(Hi.ATTR_V2_ATTRIBUTE_CARD_SELECTOR);
+        if ($card.length === 0) {
+            return;
+        }
+
+        const isSecret = $card.data('is-secret') === true || $card.data('is-secret') === 'true';
+        if (isSecret) {
+            const secretInput = $card.find(Hi.ATTR_V2_SECRET_INPUT_SELECTOR).first();
+            if (secretInput.length === 0 || secretInput.prop('disabled')) {
+                return;
+            }
+
+            const toggleButton = $card.find('.attr-v2-secret-toggle').first();
+            if (toggleButton.length > 0 && secretInput.attr('type') === 'password') {
+                _toggleSecretField(toggleButton[0]);
+            }
+
+            secretInput.focus();
+            return;
+        }
+
+        const textWrapper = $card.find(Hi.ATTR_V2_TEXT_VALUE_WRAPPER_SELECTOR).first();
+        if (textWrapper.length > 0) {
+            _enterTextEditMode(button);
+            return;
+        }
+
+        const editableField = $card.find(
+            '.attr-v2-boolean-checkbox:not([disabled]), ' +
+            'select[name$="-value"]:not([disabled]), ' +
+            'input[name$="-value"]:not([type="hidden"]):not([disabled]), ' +
+            'textarea[name$="-value"]:not([disabled])'
+        ).first();
+
+        if (editableField.length > 0) {
+            editableField.trigger('focus');
+        }
+
+        return;
     }
 
     function _enterTextEditMode(button) {

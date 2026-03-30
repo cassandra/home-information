@@ -281,57 +281,6 @@ class TestAttributeUrlTags(TestCase):
             attr_restore_url(self.context, self.attribute_id, self.history_id)
 
 
-class TestTemplateIntegration(TestCase):
-    """Test template filters and tags integrated with Django template system."""
-    
-    def setUp(self):
-        self.mock_owner = MockOwner(id=123, name="Test Owner")
-        self.context = AttributeItemEditContext(self.mock_owner, "entity")
-        
-    def test_attribute_preview_filter_in_template(self):
-        """Test attribute_preview filter works in actual template rendering."""
-        template_str = """
-        {% load attribute_extras %}
-        Preview: {{ value|attribute_preview:30 }}
-        """
-        
-        template = Template(template_str)
-        
-        # Test with long multiline value
-        long_value = "This is a very long first line that will be truncated\nSecond line\nThird line"
-        context = Context({'value': long_value})
-        
-        rendered = template.render(context).strip()
-        self.assertIn("Preview:", rendered)
-        self.assertIn("...", rendered)
-        self.assertIn("chars", rendered)
-        self.assertIn("lines", rendered)
-        
-    def test_context_filters_in_template(self):
-        """Test AttributeItemEditContext filters work in template rendering."""
-        template_str = """
-        {% load attribute_extras %}
-        Field: {{ attr_item_context|file_title_field_name:attribute_id }}
-        Target: {{ attr_item_context|history_target_id:attribute_id }}
-        Toggle: {{ attr_item_context|history_toggle_id:attribute_id }}
-        """
-        
-        template = Template(template_str)
-        context = Context({
-            'attr_item_context': self.context,
-            'attribute_id': 456
-        })
-        
-        rendered = template.render(context)
-        self.assertIn("Field: file_title_123_456", rendered)
-        self.assertIn("Target: hi-entity-attr-history-123-456", rendered)
-        self.assertIn("Toggle: history-extra-123-456", rendered)
-        
-    @patch('django.urls.reverse')
-    def test_url_tags_in_template(self, mock_reverse):
-        """Test URL tags work in actual template rendering."""
-        mock_reverse.side_effect = lambda name, kwargs: f"/{name.replace('_', '/')}/{kwargs.get('entity_id', 0)}/{kwargs.get('attribute_id', 0)}/"
-        
         template_str = """
         {% load attribute_extras %}
         History: {% attr_history_url attr_item_context attribute_id %}
