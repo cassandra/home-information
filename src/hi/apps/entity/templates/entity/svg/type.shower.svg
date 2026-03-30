@@ -1,6 +1,6 @@
 <rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
 <path class="hi-entity-shower-background"
-      fill="#fcfcff" stroke="black" stroke-width="0"
+      fill="none" stroke="none"
       d="M 7.32,0.00
          C 7.32,0.00 9.37,0.00 9.37,0.00
          9.37,0.00 13.00,0.00 13.00,0.00
