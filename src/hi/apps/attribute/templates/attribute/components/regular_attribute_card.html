@@ -79,13 +79,15 @@ Individual attribute attribute card with value editing and actions
       </button>
       {% endif %}
 
-      {% if attribute_form.instance.pk and attribute_form.instance.is_editable and (attribute_form.instance.value_type.name == 'TEXT' or attribute_form.instance.value_type.is_secret) %}
-        <button type="button"
-                class="btn btn-sm btn-outline-secondary"
-                title="Edit value"
-                onclick="Hi.attr.enterAttributeEditMode(this)">
-          {% icon "edit" size="sm" %}
-        </button>
+      {% if attribute_form.instance.pk and attribute_form.instance.is_editable %}
+        {% if attribute_form.instance.value_type.name == 'TEXT' or attribute_form.instance.value_type.is_secret %}
+          <button type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  title="Edit value"
+                  onclick="Hi.attr.enterAttributeEditMode(this)">
+            {% icon "edit" size="sm" %}
+          </button>
+        {% endif %}
       {% endif %}
       
       {% if attribute_form.instance.pk and not attribute_form.suppress_history %}

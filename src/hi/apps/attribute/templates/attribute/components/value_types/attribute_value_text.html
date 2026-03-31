@@ -27,7 +27,11 @@ New/unsaved TEXT forms start directly in edit mode.
   <div class="{{ DIVID.ATTR_V2_TEXT_READ_MODE_CLASS }}" data-read-expanded="false"
       {% if not attribute_form.instance.pk %}style="display: none;"{% endif %}>
     <div class="{{ DIVID.ATTR_V2_TEXT_READ_CONTENT_CLASS }}{% if overflows > 0 %} is-collapsed{% endif %}">
-      {{ value_text|attribute_text_linkify }}
+      {% if value_text %}
+        {{ value_text|attribute_text_linkify }}
+      {% else %}
+        &nbsp;
+      {% endif %}
     </div>
 
     {% if overflows > 0 %}

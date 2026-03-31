@@ -1327,10 +1327,24 @@
         const hiddenFieldId = editField.attr(Hi.DATA_HIDDEN_FIELD_ATTR);
         const hiddenField = hiddenFieldId ? wrapper.find(`#${hiddenFieldId}`) : null;
 
-        editField.val(originalValue).trigger('input').trigger('change');
+        editField.val(originalValue);
 
         if (hiddenField && hiddenField.length > 0) {
             hiddenField.val(originalValue);
+        }
+
+        const container = $button.closest(Hi.ATTR_V2_CONTAINER_SELECTOR);
+        if (container.length > 0 && window.Hi && window.Hi.attr && window.Hi.attr.dirtyTracking) {
+            const containerId = container.attr('id');
+            if (containerId) {
+                const instance = window.Hi.attr.dirtyTracking.getInstance(containerId);
+                if (instance) {
+                    instance.handleFieldChange(editField[0]);
+                    if (hiddenField && hiddenField.length > 0) {
+                        instance.handleFieldChange(hiddenField[0]);
+                    }
+                }
+            }
         }
 
         editMode.hide();
