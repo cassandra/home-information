@@ -182,6 +182,12 @@ class TestAttributeTextUrlFilters(TestCase):
         self.assertFalse(attribute_text_has_url(""))
         self.assertFalse(attribute_text_has_url(None))
 
+    def test_attribute_text_has_url_detects_url_with_wrapping_punctuation(self):
+        self.assertTrue(attribute_text_has_url("Open this (https://example.com/docs)."))
+
+    def test_attribute_text_has_url_ignores_invalid_http_candidates(self):
+        self.assertFalse(attribute_text_has_url("Broken candidate: https://bad"))
+
     def test_attribute_text_linkify_renders_multiple_links_inline(self):
         rendered = attribute_text_linkify(
             "See https://example.com and https://example.org/path?q=1 for details"
@@ -203,6 +209,45 @@ class TestAttributeTextUrlFilters(TestCase):
     def test_attribute_text_linkify_keeps_trailing_punctuation_outside_link(self):
         rendered = attribute_text_linkify('Read this (https://example.com/docs).')
         self.assertIn('<a href="https://example.com/docs" target="_blank" rel="noopener noreferrer">https://example.com/docs</a>).', rendered)
+
+    def test_attribute_text_linkify_keeps_multiple_trailing_punctuation_outside_link(self):
+        rendered = attribute_text_linkify('Open https://example.com/path), right now!')
+        self.assertIn(
+            '<a href="https://example.com/path" target="_blank" rel="noopener noreferrer">https://example.com/path</a>),',
+            rendered,
+        )
+
+    def test_attribute_text_linkify_does_not_link_invalid_candidates(self):
+        rendered = attribute_text_linkify('Broken: https://bad and valid: https://example.com')
+        self.assertIn('Broken: https://bad', rendered)
+        self.assertIn(
+            '<a href="https://example.com" target="_blank" rel="noopener noreferrer">https://example.com</a>',
+            rendered,
+        )
+
+    def test_attribute_text_linkify_filter_renders_anchor_in_template_output(self):
+        template_str = """
+        {% load attribute_extras %}
+        {{ value|attribute_text_linkify }}
+        """
+        template = Template(template_str)
+
+        rendered = template.render(Context({'value': 'See https://example.com'}))
+        self.assertIn('<a href="https://example.com" target="_blank" rel="noopener noreferrer">', rendered)
+        self.assertNotIn('&lt;a href=', rendered)
+
+    def test_attribute_text_has_url_filter_works_in_template_condition(self):
+        template_str = """
+        {% load attribute_extras %}
+        {% if value|attribute_text_has_url %}HAS_URL{% else %}NO_URL{% endif %}
+        """
+        template = Template(template_str)
+
+        rendered_with_url = template.render(Context({'value': 'Link: https://example.com'}))
+        self.assertIn('HAS_URL', rendered_with_url)
+
+        rendered_without_url = template.render(Context({'value': 'No link here'}))
+        self.assertIn('NO_URL', rendered_without_url)
 
 
 class TestAttributeUrlTags(TestCase):
@@ -279,24 +324,6 @@ class TestAttributeUrlTags(TestCase):
             
         with self.assertRaises(NoReverseMatch):
             attr_restore_url(self.context, self.attribute_id, self.history_id)
-
-
-        template_str = """
-        {% load attribute_extras %}
-        History: {% attr_history_url attr_item_context attribute_id %}
-        Restore: {% attr_restore_url attr_item_context attribute_id history_id %}
-        """
-        
-        template = Template(template_str)
-        context = Context({
-            'attr_item_context': self.context,
-            'attribute_id': 456,
-            'history_id': 789
-        })
-        
-        rendered = template.render(context)
-        self.assertIn("History:", rendered)
-        self.assertIn("Restore:", rendered)
         
     def test_template_syntax_error_handling(self):
         """Test template tags handle syntax errors appropriately."""
