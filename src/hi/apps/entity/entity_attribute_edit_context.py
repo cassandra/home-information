@@ -61,6 +61,9 @@ class EntityAttributeItemEditContext(AttributeItemEditContext):
             form_data,
             instance = self.entity,
             prefix = self.formset_prefix,
+            form_kwargs = {
+                'can_add_custom_attributes': self.can_add_custom_attributes,
+            },
         )
 
     @property
@@ -75,3 +78,13 @@ class EntityAttributeItemEditContext(AttributeItemEditContext):
     def file_upload_url(self) -> str:
         return reverse( 'entity_attribute_upload',
                         kwargs = { 'entity_id': self.entity.id })
+
+    @property
+    def can_add_custom_attributes(self) -> bool:
+        return self.entity.can_add_custom_attributes
+
+    @property
+    def add_attribute_disabled_message(self) -> str:
+        if self.can_add_custom_attributes:
+            return ''
+        return 'New attributes are disabled for externally managed entities.'

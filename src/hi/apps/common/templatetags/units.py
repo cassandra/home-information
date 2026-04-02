@@ -70,6 +70,7 @@ def format_compass( quantity : UnitQuantity ):
 def to_display_quantity( quantity : UnitQuantity ):
     if not isinstance( quantity, UnitQuantity ):
         return quantity
+
     display_units = ConsoleSettingsHelper().get_display_units()
     return get_display_quantity(
         quantity = quantity,

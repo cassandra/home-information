@@ -20,6 +20,7 @@ class EntityType(LabeledEnum):
     AUTOMOBILE           = ( 'Automobile', '' )
     AV_RECEIVER          = ( 'A/V Receiver', '' )  # Controls Speakers/TV
     BAROMETER            = ( 'Barometer', '' )
+    BATTERY_STORAGE      = ( 'Battery Storage', '' )
     BATHTUB              = ( 'Bathtub', '' )
     CAMERA               = ( 'Camera', '' )
     CARBON_MONOXIDE_DETECTOR = ( 'Carbon Monoxide Detector', '' )
@@ -42,12 +43,18 @@ class EntityType(LabeledEnum):
     ELECTRICITY_METER    = ( 'Electricity Meter', '' )
     ELECTRIC_PANEL       = ( 'Electric Panel', '' )
     ELECTRIC_WIRE        = ( 'Electric Wire', '' )
+    EV_CHARGER           = ( 'EV Charger', '' )
     EXHAUST_FAN          = ( 'Exhaust Fan', '' )
     FENCE                = ( 'Fence', '' )
     FIRE_EXTINGUISHER    = ( 'Fire Extinguisher', '' )
     FIREPLACE            = ( 'Fireplace', '' )
+    FREEZER              = ( 'Freezer', '' )
     FURNITURE            = ( 'Furniture', '' )
+    GARAGE_DOOR          = ( 'Garage Door', '' )
+    GARAGE_DOOR_OPENER   = ( 'Garage Door Opener', '' )
     GARBAGE_DISPOSAL     = ( 'Garbage Disposal', '' )
+    GAS_LINE             = ( 'Gas Line', '' )
+    GAS_METER            = ( 'Gas Meter', '' )
     GENERATOR            = ( 'Generator', '' )
     GREENHOUSE           = ( 'Greenhouse', '' )
     GRILL                = ( 'Grill', '' )  # BBQ
@@ -59,6 +66,8 @@ class EntityType(LabeledEnum):
     HVAC_FURNACE         = ( 'HVAC Furnace', '' )  # Controls area
     HVAC_MINI_SPLIT      = ( 'HVAC Mini-split', '' )  # Controls area
     HYGROMETER           = ( 'Hygrometer', '' )
+    INVERTER             = ( 'Inverter', '' )
+    IRRIGATION_CONTROLLER = ( 'Irrigation Controller', '' )
     LAWN_MOWER           = ( 'Lawn Mower', '' )
     LEAF_BLOWER          = ( 'Leaf Blower', '' )
     LIGHT                = ( 'Light', '' )
@@ -75,6 +84,9 @@ class EntityType(LabeledEnum):
     PIPE                 = ( 'Pipe', '' )
     PLANT                = ( 'Plant', '' )
     POOL_FILTER          = ( 'Pool Filter', '' )
+    POOL_HEATER          = ( 'Pool Heater', '' )
+    POOL_PUMP            = ( 'Pool Pump', '' )
+    POOL_SWG             = ( 'Pool SWG', '' )
     POWER_WASHER         = ( 'Power Washer', '' )
     PRESENCE_SENSOR      = ( 'Presence Sensor', '' )
     PRINTER              = ( 'Printer', '' )
@@ -88,6 +100,7 @@ class EntityType(LabeledEnum):
     SHOWER               = ( 'Shower', '' )
     SINK                 = ( 'Sink', '' ) 
     SKYLIGHT             = ( 'Skylight', '' )
+    RADON_DETECTOR       = ( 'Radon Detector', '' )
     SMOKE_DETECTOR       = ( 'Smoke Detector', '' )
     SOLAR_PANEL          = ( 'Solar Panel', '' )
     SPEAKER              = ( 'Speaker', '' )
@@ -95,6 +108,7 @@ class EntityType(LabeledEnum):
     SPRINKLER_HEAD       = ( 'Sprinkler Head', '' )
     SPRINKLER_VALVE      = ( 'Sprinkler Valve', '' )  # Controls sprinkler heads
     SPRINKLER_WIRE       = ( 'Sprinkler Wire', '' )
+    SUMP_PUMP            = ( 'Sump Pump', '' )
     TELECOM_BOX          = ( 'Telecom Box', '' )
     TELECOM_WIRE         = ( 'Telecom Wire', '' )
     TELEVISION           = ( 'Television', '' )
@@ -109,7 +123,9 @@ class EntityType(LabeledEnum):
     VANITY               = ( 'Vanity', '' )
     WALL                 = ( 'Wall', '' )
     WALL_SWITCH          = ( 'Wall Switch', '' )
+    WATER_FILTER         = ( 'Water Filter', '' )
     WATER_HEATER         = ( 'Water Heater', '' )
+    WATER_SOFTENER       = ( 'Water Softener', '' )
     WATER_LINE           = ( 'Water Line', '' )
     WATER_METER          = ( 'Water Meter', '' )
     WATER_SHUTOFF_VALVE  = ( 'Water Shutoff Valve', '' )
@@ -129,6 +145,7 @@ class EntityType(LabeledEnum):
             cls.AREA,
             cls.DOOR,
             cls.FURNITURE,
+            cls.GARAGE_DOOR,
             cls.GREENHOUSE,
             cls.WALL,
             cls.WINDOW,
@@ -142,6 +159,7 @@ class EntityType(LabeledEnum):
             cls.DRAINAGE_PIPE,
             cls.ELECTRIC_WIRE,
             cls.FENCE,
+            cls.GAS_LINE,
             cls.PIPE,
             cls.SEWER_LINE,
             cls.SPEAKER_WIRE,

@@ -312,6 +312,19 @@
         handleResponse: function(response, $form, options = {}, isError = false) {
             // Parse response into normalized format
             const data = this.parseResponse(response);
+
+            // Handle antinode-style redirects
+            if (data.location) {
+                window.location.href = data.location;
+                return;
+            }
+
+            // Handle antinode-style refresh responses
+            if (data.refresh) {
+                window.location.reload();
+                window.scrollTo(0, 0);
+                return;
+            }
             
             // Handle redirects first - if redirect is present, do it immediately
             if (data.redirect) {

@@ -112,7 +112,7 @@ class EntityAttributeHistoryTestCase(BaseTestCase):
         return
 
     def test_attribute_history_cascade_deletion(self):
-        """Test that history records are deleted when attribute is deleted - database constraint behavior."""
+        """Test that history records are deleted when attribute is hard-deleted - database constraint behavior."""
         # Create entity and attribute with history
         entity = Entity.objects.create(
             name='Test Entity',
@@ -137,13 +137,39 @@ class EntityAttributeHistoryTestCase(BaseTestCase):
         history_count = EntityAttributeHistory.objects.filter(attribute=attr).count()
         self.assertEqual(history_count, 2)
         
-        # Delete the attribute
-        attr.delete()
+        # Hard-delete the attribute to trigger FK cascade.
+        attr.delete(hard_delete=True)
         
         # Verify all history records are deleted (cascade)
         history_count = EntityAttributeHistory.objects.filter(attribute=attr).count()
         self.assertEqual(history_count, 0)
         return
+
+    def test_attribute_history_preserved_on_soft_delete(self):
+        """Test that soft delete keeps history records because row is not physically removed."""
+        entity = Entity.objects.create(
+            name='Test Entity',
+            entity_type_str=str(EntityType.OTHER),
+            integration_id='test.entity',
+            integration_name='test_integration'
+        )
+
+        attr = EntityAttribute.objects.create(
+            entity=entity,
+            name='test_attr',
+            value='test_value',
+            value_type_str=str(AttributeValueType.TEXT),
+            attribute_type_str=str(AttributeType.CUSTOM)
+        )
+
+        attr.value = 'updated_value'
+        attr.save()
+
+        self.assertEqual(EntityAttributeHistory.objects.filter(attribute=attr).count(), 2)
+
+        attr.delete()
+
+        self.assertEqual(EntityAttributeHistory.objects.filter(attribute=attr).count(), 2)
 
     def test_multiple_attribute_updates_create_sequential_history(self):
         """Test that multiple updates create proper history sequence - workflow verification."""

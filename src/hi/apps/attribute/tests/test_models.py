@@ -1,9 +1,12 @@
 import json
 import logging
+import uuid
 from unittest.mock import patch
 
 from hi.apps.attribute.models import AttributeModel
 from hi.apps.attribute.enums import AttributeValueType, AttributeType
+from hi.apps.entity.enums import EntityType
+from hi.apps.entity.models import Entity, EntityAttribute
 from hi.integrations.transient_models import IntegrationKey
 from hi.testing.base_test_case import BaseTestCase
 
@@ -225,4 +228,57 @@ class TestAttributeModel(BaseTestCase):
         # __repr__ should equal __str__
         self.assertEqual(repr(attr), str(attr))
         return
+
+
+class TestSoftDeleteAttributeModelIntegration(BaseTestCase):
+    """Integration tests for soft-delete behavior on concrete attribute models."""
+
+    def _create_entity(self) -> Entity:
+        unique_id = str(uuid.uuid4())[:8]
+        return Entity.objects.create(
+            name='Soft Delete Entity',
+            integration_id=f'test.soft.delete.{unique_id}',
+            integration_name='test_integration',
+            entity_type_str=str(EntityType.LIGHT),
+        )
+
+    def _create_text_attribute(self, entity: Entity, value: str = 'value') -> EntityAttribute:
+        return EntityAttribute.objects.create(
+            entity=entity,
+            name='test_attribute',
+            value=value,
+            attribute_type_str=str(AttributeType.CUSTOM),
+            value_type_str=str(AttributeValueType.TEXT),
+        )
+
+    def test_soft_delete_hides_from_active_manager_and_keeps_deleted_record(self):
+        entity = self._create_entity()
+        attribute = self._create_text_attribute(entity)
+
+        attribute.delete()
+
+        self.assertFalse(EntityAttribute.objects.filter(id=attribute.id).exists())
+        self.assertTrue(EntityAttribute.deleted_objects.filter(id=attribute.id).exists())
+        self.assertTrue(EntityAttribute.all_objects.filter(id=attribute.id).exists())
+
+    def test_restore_from_deleted_makes_attribute_visible_again(self):
+        entity = self._create_entity()
+        attribute = self._create_text_attribute(entity)
+
+        attribute.delete()
+        attribute.restore_from_deleted()
+
+        restored = EntityAttribute.objects.get(id=attribute.id)
+        self.assertFalse(restored.is_deleted)
+        self.assertFalse(EntityAttribute.deleted_objects.filter(id=attribute.id).exists())
+
+    def test_hard_delete_removes_row_from_all_managers(self):
+        entity = self._create_entity()
+        attribute = self._create_text_attribute(entity)
+
+        attribute.delete(hard_delete=True)
+
+        self.assertFalse(EntityAttribute.objects.filter(id=attribute.id).exists())
+        self.assertFalse(EntityAttribute.deleted_objects.filter(id=attribute.id).exists())
+        self.assertFalse(EntityAttribute.all_objects.filter(id=attribute.id).exists())
 

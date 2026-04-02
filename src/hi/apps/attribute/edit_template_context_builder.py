@@ -25,6 +25,7 @@ class AttributeEditTemplateContextBuilder:
         context = {
             'owner_form': edit_form_data.owner_form,
             'file_attributes': edit_form_data.file_attributes,
+            'deleted_attributes': edit_form_data.deleted_attributes,
             'regular_attributes_formset': edit_form_data.regular_attributes_formset,
 
             # Duplicate with explicit naming for convenience.
@@ -54,6 +55,7 @@ class AttributeEditTemplateContextBuilder:
         context = {
             'owner_form': edit_form_data.owner_form,
             'file_attributes': edit_form_data.file_attributes,
+            'deleted_attributes': edit_form_data.deleted_attributes,
             'regular_attributes_formset': edit_form_data.regular_attributes_formset,
             'success_message': success_message,
             'error_message': error_message,

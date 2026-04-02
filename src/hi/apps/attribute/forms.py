@@ -18,11 +18,14 @@ class RegularAttributeBaseFormSet(forms.BaseInlineFormSet):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Apply filtering after parent initialization
-        self.queryset = self.queryset.exclude(value_type_str=str(AttributeValueType.FILE))
+        self.queryset = self._filter_editable_queryset(self.queryset)
     
     def get_queryset(self):
         """Override to automatically filter out FILE attributes"""
         queryset = super().get_queryset()
+        return self._filter_editable_queryset(queryset)
+
+    def _filter_editable_queryset(self, queryset):
         return queryset.exclude(value_type_str=str(AttributeValueType.FILE))
 
 
@@ -75,12 +78,23 @@ class AttributeForm( forms.ModelForm ):
     @property
     def show_secrets(self):
         return self._show_secrets
-        
+
+    @property
+    def suppress_add_new(self):
+        """Whether the add-new-attribute form should be suppressed in the UI.
+        Suppressed when: form is unbound (initial render) or custom attributes not allowed."""
+        if self.instance and self.instance.pk:
+            return False
+        if not self.is_bound:
+            return True
+        return not self._can_add_custom_attributes
+
     def __init__(self, *args, **kwargs):
         self._show_as_editable = kwargs.pop( 'show_as_editable', True )
         self._allow_reordering = kwargs.pop( 'allow_reordering', True )
         self._suppress_history = kwargs.pop( 'suppress_history', False )
         self._show_secrets = kwargs.pop( 'show_secrets', False )
+        self._can_add_custom_attributes = kwargs.pop( 'can_add_custom_attributes', True )
         
         instance = kwargs.get('instance')
         super().__init__(*args, **kwargs)
@@ -104,10 +118,8 @@ class AttributeForm( forms.ModelForm ):
         
         form_is_bound = bool( self.instance.pk )
         if form_is_bound:
-            if ( not self.instance.is_editable
-                 and ( value is not None )
-                 and ( value != self.instance.value )):
-                raise ValidationError( f'The attribute "{self.instance.name}" is not editable.' )
+            if not self.instance.is_editable:
+                return cleaned_data
             if ( self.instance.attribute_type == AttributeType.PREDEFINED
                  and ( name is not None )
                  and ( name != self.instance.name )):

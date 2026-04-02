@@ -127,7 +127,7 @@ class IntegrationManager( Singleton ):
     async def _load_integration_data(self) -> None:
         
         logger.debug("Discovering defined integrations ...")
-        defined_integration_gateway_map = self._discover_defined_integrations()
+        defined_integration_gateway_map = self.discover_defined_integrations()
 
         logger.debug("Loading existing integrations ...")
         existing_integration_map = await sync_to_async( self._load_existing_integrations,
@@ -139,11 +139,11 @@ class IntegrationManager( Singleton ):
             if integration_id in existing_integration_map:
                 integration = existing_integration_map[integration_id]
             else:
-                integration = await sync_to_async( Integration.objects.create,
-                                                   thread_sensitive = True )(
-                    integration_id = integration_id,
-                    is_enabled = False,
+                logger.warning(
+                    f'Missing integration DB record for "{integration_id}". '
+                    'Skipping integration startup until sync_integrations is run.'
                 )
+                continue
             integration_data = IntegrationData(
                 integration_gateway = integration_gateway,
                 integration = integration,
@@ -235,7 +235,7 @@ class IntegrationManager( Singleton ):
         del self._monitor_map[integration_id]
         return
 
-    def _discover_defined_integrations(self) -> Dict[ str, IntegrationGateway ]:
+    def discover_defined_integrations(self) -> Dict[ str, IntegrationGateway ]:
 
         integration_id_to_gateway = dict()
         for app_config in apps.get_app_configs():
@@ -272,9 +272,9 @@ class IntegrationManager( Singleton ):
         integration_queryset = Integration.objects.all()
         return { x.integration_id: x for x in integration_queryset }
     
-    def _ensure_all_attributes_exist( self,
-                                      integration_metadata  : IntegrationMetaData,
-                                      integration           : Integration ):
+    def ensure_all_attributes_exist( self,
+                                     integration_metadata  : IntegrationMetaData,
+                                     integration           : Integration ):
         """
         After an integration is created, we need to be able to detect if any
         new attributes might have been defined.  This allows new code
@@ -282,8 +282,8 @@ class IntegrationManager( Singleton ):
         """
         with self._data_lock:
             new_attribute_types = list()
-            existing_attribute_integration_keys = set([ x.integration_key
-                                                        for x in integration.attributes.all() ])
+            existing_attributes = { x.integration_key: x
+                                    for x in integration.attributes.all() }
 
             AttributeType = integration_metadata.attribute_type
             for attribute_type in AttributeType:
@@ -291,8 +291,17 @@ class IntegrationManager( Singleton ):
                     integration_id = integration.integration_id,
                     integration_name = str(attribute_type),
                 )
-                if integration_key not in existing_attribute_integration_keys:
+                if integration_key not in existing_attributes:
                     new_attribute_types.append( attribute_type )
+                else:
+                    existing_attr = existing_attributes[integration_key]
+                    description = attribute_type.description or ''
+                    if existing_attr.description != description:
+                        existing_attr.description = description
+                        existing_attr.save(
+                            update_fields = ['description'],
+                            track_history = False,
+                        )
                 continue
 
             if new_attribute_types:
@@ -316,6 +325,7 @@ class IntegrationManager( Singleton ):
             integration = integration,
             name = attribute_type.label,
             value = attribute_type.initial_value,
+            description = attribute_type.description or '',
             value_type_str = str(attribute_type.value_type),
             value_range_str = json.dumps( attribute_type.value_range_dict ),
             integration_key_str = str(integration_key),

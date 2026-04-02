@@ -1,0 +1,39 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+
+<!-- Resin tank (tall cylinder, left) -->
+<rect x="6" y="14" width="20" height="46" rx="4" fill="#d4c5a9" stroke="#555" stroke-width="1.5"/>
+
+<!-- Control valve head -->
+<rect x="4" y="8" width="24" height="8" rx="2" fill="#555" stroke="#333" stroke-width="1.5"/>
+
+<!-- Display on control head -->
+<rect x="8" y="10" width="12" height="4" rx="1" fill="#1a1a2e" stroke="#333" stroke-width="0.5"/>
+<text x="14" y="13.5" font-family="monospace" font-size="3" fill="#4caf50" text-anchor="middle">REGEN</text>
+
+<!-- Buttons on control head -->
+<circle cx="24" cy="12" r="1.5" fill="#c0392b"/>
+
+<!-- Pipe connections from head -->
+<rect x="0" y="10" width="6" height="4" rx="1" fill="#6699cc" stroke="#555" stroke-width="0.5"/>
+<rect x="26" y="10" width="6" height="4" rx="1" fill="#6699cc" stroke="#555" stroke-width="0.5"/>
+
+<!-- Brine tank (shorter, wider, right) -->
+<rect x="36" y="24" width="24" height="36" rx="4" fill="#e0ddd0" stroke="#555" stroke-width="1.5"/>
+
+<!-- Brine tank lid -->
+<rect x="34" y="20" width="28" height="6" rx="3" fill="#ccc" stroke="#555" stroke-width="1"/>
+
+<!-- Salt level visible inside brine tank -->
+<rect x="38" y="40" width="20" height="18" rx="2" fill="#fff" opacity="0.5"/>
+<!-- Salt granules -->
+<circle cx="43" cy="48" r="1.5" fill="#f5f5f0" stroke="#ddd" stroke-width="0.5"/>
+<circle cx="48" cy="45" r="1.5" fill="#f5f5f0" stroke="#ddd" stroke-width="0.5"/>
+<circle cx="53" cy="47" r="1.5" fill="#f5f5f0" stroke="#ddd" stroke-width="0.5"/>
+<circle cx="45" cy="52" r="1.5" fill="#f5f5f0" stroke="#ddd" stroke-width="0.5"/>
+<circle cx="50" cy="50" r="1.5" fill="#f5f5f0" stroke="#ddd" stroke-width="0.5"/>
+<circle cx="42" cy="55" r="1.5" fill="#f5f5f0" stroke="#ddd" stroke-width="0.5"/>
+<circle cx="48" cy="54" r="1.5" fill="#f5f5f0" stroke="#ddd" stroke-width="0.5"/>
+<circle cx="54" cy="53" r="1.5" fill="#f5f5f0" stroke="#ddd" stroke-width="0.5"/>
+
+<!-- Brine tube connecting tanks -->
+<path d="M26,14 C30,14 34,18 34,22" fill="none" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>

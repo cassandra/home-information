@@ -5,7 +5,7 @@
 ## Requirements and Dependencies
 
 - Python 3.11 (or higher) - installed.
-- Redis - installed and running.
+- Redis - installed and running locally (bundled automatically in Docker deployments).
 - A GitHub account.
 
 ## Tech Stack

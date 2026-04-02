@@ -1,11 +1,10 @@
 ---
 allowed-tools: Bash, Read, Write, TodoWrite, Grep, Glob
 description: Design planning and HTML mockup creation for GitHub issues
-model: claude-sonnet-4-20250514
 argument-hint: [issue-number]
 ---
 
-Design planning and HTML mockup creation for GitHub issue #$1:
+Design planning and HTML mockup creation for GitHub issue #$0:
 
 ## Design Phase Process
 
@@ -17,7 +16,7 @@ Execute design-focused work session for planning and mockup creation:
    - Focus on well-factored design solutions
 
 2. **Read GitHub issue completely** - Understand design requirements:
-   - Use `gh issue view $1` to read issue description and all comments
+   - Use `gh issue view $0` to read issue description and all comments
    - Identify visual and UX requirements
    - Understand user needs and interaction goals
    - Note any existing design discussion or wireframes
@@ -44,7 +43,7 @@ Execute design-focused work session for planning and mockup creation:
    - Confirm target user experience goals
 
 6. **Create HTML mockup** - After design decisions are clarified:
-   - Build interactive HTML mockup in `data/design/issue-$1/mockup.html`
+   - Build interactive HTML mockup in `data/design/issue-$0/mockup.html`
    - Use existing CSS patterns and component styles where possible
    - Focus on layout, interaction patterns, and visual hierarchy
    - Make mockup interactive to demonstrate user flows
@@ -58,14 +57,14 @@ Execute design-focused work session for planning and mockup creation:
    - Finalize mockup before proceeding to interaction docs
 
 8. **Create interaction documentation** - After mockup is finalized:
-   - Document in `data/design/issue-$1/interaction-patterns.md`
+   - Document in `data/design/issue-$0/interaction-patterns.md`
    - Specify user interaction flows and behaviors
    - Define component states and transitions
    - Document accessibility patterns and requirements
    - Specify responsive behavior across breakpoints
 
 9. **Create design summary** - Comprehensive deliverable:
-   - Document in `data/design/issue-$1/design-summary.md`
+   - Document in `data/design/issue-$0/design-summary.md`
    - Summarize key design decisions and rationale
    - Document component specifications
    - Include implementation guidance for developers
@@ -95,7 +94,7 @@ Execute design-focused work session for planning and mockup creation:
 - Focus on user experience and interaction patterns
 - Ensure consistency with existing design system
 
-**Design Target:** GitHub issue #$1
+**Design Target:** GitHub issue #$0
 **Output:** HTML mockup + interaction documentation + design summary
 
 **Note:** This is a planning and design task that does not include implementation. The deliverables will guide the separate implementation phase.

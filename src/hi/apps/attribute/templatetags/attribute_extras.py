@@ -193,6 +193,18 @@ def attr_restore_url(attr_item_context, attribute_id, history_id):
 
 
 @register.simple_tag
+def attr_restore_deleted_url(attr_item_context, attribute_id):
+    """Generate URL for restoring soft-deleted attributes."""
+    from django.urls import reverse
+    url_name = attr_item_context.restore_deleted_url_name
+    params = {
+        attr_item_context.owner_id_param_name: attr_item_context.owner_id,
+        'attribute_id': attribute_id,
+    }
+    return reverse(url_name, kwargs=params)
+
+
+@register.simple_tag
 def attr_restore_subsystem_url(attr_item_context):
     """
     Generate URL for attribute restore default view with correct parameter names.

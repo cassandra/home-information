@@ -4,6 +4,7 @@
 
 _High-level view of the applications change history.  See releases and commits for more fine-grained history._
 
+- v1.1.5 : March 29, 2026 : HomeBox integration, entity archiving, soft-delete attributes, HA import allowlist filtering, new entity types (pool equipment, EV charger, energy storage, water treatment, etc.), integration logo display, dynamic entity sizing, security dependency updates, weather resilience improvements.
 - v1.1.4 : January 26, 2026 : Attribute ordering improvements, restore-to-default settings functionality, security updates including urllib3 CVE patch.
 - v1.1.3 : October 6, 2025 : Home Assistant converter bug fixes, comprehensive Unraid template with all environment variables.
 - v1.1.2 : September 26, 2025 : Bug fixes for Home Assistant temperature controller, Unraid template improvements.

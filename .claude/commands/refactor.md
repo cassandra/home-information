@@ -1,11 +1,10 @@
 ---
 allowed-tools: Bash, Read, TodoWrite, Grep, Glob, Task
 description: Plan and execute refactoring with expert analysis
-model: claude-sonnet-4-20250514
 argument-hint: [target] (e.g., ClassName, module_name, or file_path)
 ---
 
-Plan refactoring for: "$1"
+Plan refactoring for: "$0"
 
 ## Expert Refactoring Planning Process
 
@@ -16,7 +15,7 @@ Execute comprehensive refactoring analysis and planning:
    - Use specialized agents for expert refactoring analysis
 
 2. **Analyze current implementation** - Understand existing code:
-   - Search for target: "$1" across codebase
+   - Search for target: "$0" across codebase
    - Identify all usages and dependencies
    - Understand current patterns and structure
    - Document existing behavior and interfaces
@@ -72,7 +71,7 @@ Execute comprehensive refactoring analysis and planning:
 - Plan for rollback at each phase
 - Document architectural decisions
 
-**Refactoring target:** "$1"
+**Refactoring target:** "$0"
 **Goal:** Well-factored code following our architecture principles
 
 **Key considerations from `docs/CLAUDE.md`:**

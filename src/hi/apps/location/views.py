@@ -10,6 +10,7 @@ from hi.apps.common.utils import is_ajax
 import hi.apps.common.antinode as antinode
 
 from hi.apps.attribute.view_mixins import AttributeEditViewMixin
+from hi.apps.attribute.edit_response_renderer import AttributeEditResponseRenderer
 from hi.apps.control.one_click_control_service import (
     OneClickControlService,
     OneClickError,
@@ -264,4 +265,31 @@ class LocationAttributeRestoreInlineView( View, AttributeEditViewMixin ):
             attribute = attribute,
             history_id = history_id,
             attr_item_context = attr_item_context,
+        )
+
+
+class LocationAttributeRestoreDeletedInlineView( View ):
+    """View for restoring soft-deleted LocationAttributes."""
+
+    def get( self,
+             request       : HttpRequest,
+             location_id   : int,
+             attribute_id  : int,
+             *args         : Any,
+             **kwargs      : Any          ) -> HttpResponse:
+        try:
+            attribute = LocationAttribute.deleted_objects.select_related('location').get(
+                pk = attribute_id,
+                location_id = location_id,
+            )
+        except LocationAttribute.DoesNotExist:
+            return page_not_found_response(request, "Deleted attribute not found.")
+
+        attribute.restore_from_deleted()
+        attr_item_context = LocationAttributeItemEditContext( location = attribute.location )
+        renderer = AttributeEditResponseRenderer()
+        return renderer.render_form_success_response(
+            attr_item_context = attr_item_context,
+            request = request,
+            message = 'Attribute restored',
         )

@@ -55,10 +55,29 @@ class HassSynchronizer( HassMixin, IntegrationSyncMixin ):
         integration_key_to_entity = self._get_existing_hass_entities( result = result )
         result.message_list.append( f'Found {len(integration_key_to_entity)} existing Home Assistant entities.' )
 
+        import_allowlist = hass_manager.import_allowlist
         hass_device_id_to_device = HassConverter.hass_states_to_hass_devices(
             hass_entity_id_to_state = hass_entity_id_to_state,
+            import_allowlist = import_allowlist,
         )
         result.message_list.append( f'Found {len(hass_device_id_to_device)} current Home Assistant devices.' )
+
+        if import_allowlist:
+            total_states = len( hass_entity_id_to_state )
+            imported_states = sum(
+                len( device.hass_state_list )
+                for device in hass_device_id_to_device.values()
+            )
+            skipped_count = total_states - imported_states
+            if skipped_count > 0:
+                result.message_list.append(
+                    f'Filtered {skipped_count} states not matching the Import Allowlist.'
+                )
+                result.footer_message = (
+                    'Not seeing all your Home Assistant items? '
+                    'Check the "Import Allowlist" in the Home Assistant '
+                    'integration settings to add more domains or device classes.'
+                )
 
         integration_key_to_hass_device = {
             HassConverter.hass_device_to_integration_key( hass_device ): hass_device

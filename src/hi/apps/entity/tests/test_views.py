@@ -119,6 +119,30 @@ class TestEntityEditView(DualModeViewTestCase):
         self.assertEqual(self.entity.name, 'Updated Entity Name')
         self.assertEqual(self.entity.entity_type_str, str(EntityType.WALL_SWITCH))
 
+    def test_post_entity_type_change_returns_refresh_response(self):
+        """Test EntityType changes return refresh response so location icons update."""
+        url = reverse('entity_edit', kwargs={'entity_id': self.entity.id})
+
+        form_data = EntityAttributeSyntheticData.create_form_data_for_entity_edit(
+            entity=self.entity,
+            entity_type_str=str(EntityType.CAMERA),
+        )
+
+        attributes = list(self.entity.attributes.all())
+        formset_data = EntityAttributeSyntheticData.create_formset_data_for_attributes(
+            attributes, self.entity
+        )
+        form_data.update(formset_data)
+
+        response = self.client.post(url, form_data)
+
+        self.assertSuccessResponse(response)
+        self.assertJsonResponse(response)
+
+        data = response.json()
+        self.assertIn('refresh', data)
+        self.assertTrue(data['refresh'])
+
     def test_post_attribute_value_updates(self):
         """Test updating attribute values through formset."""
         url = reverse('entity_edit', kwargs={'entity_id': self.entity.id})
@@ -191,10 +215,29 @@ class TestEntityEditView(DualModeViewTestCase):
 
         self.assertSuccessResponse(response)
         
-        # Verify file was deleted
+        # Verify file is hidden from active querysets
         self.assertFalse(
             EntityAttribute.objects.filter(id=self.file_attr.id).exists()
         )
+
+        # Verify file attribute is soft-deleted and still recoverable
+        deleted_attr = EntityAttribute.all_objects.get(id=self.file_attr.id)
+        self.assertTrue(deleted_attr.is_deleted)
+
+    def test_restore_deleted_attribute_inline(self):
+        """Test restoring a deleted attribute through inline restore endpoint."""
+        self.file_attr.delete()
+        self.assertFalse(EntityAttribute.objects.filter(id=self.file_attr.id).exists())
+
+        restore_url = reverse(
+            'entity_attribute_restore_deleted_inline',
+            kwargs={'entity_id': self.entity.id, 'attribute_id': self.file_attr.id},
+        )
+        response = self.client.get(restore_url)
+
+        self.assertSuccessResponse(response)
+        restored = EntityAttribute.objects.get(id=self.file_attr.id)
+        self.assertFalse(restored.is_deleted)
 
     def test_post_invalid_form_returns_errors(self):
         """Test that invalid form submission returns error response with form errors."""
@@ -287,6 +330,47 @@ class TestEntityEditView(DualModeViewTestCase):
         new_attr = self.entity.attributes.filter(name='new_property').first()
         self.assertIsNotNone(new_attr)
         self.assertEqual(new_attr.value, 'new value')
+
+    def test_get_disables_add_info_when_entity_disallows_custom_attributes(self):
+        self.entity.can_add_custom_attributes = False
+        self.entity.save(update_fields=['can_add_custom_attributes'])
+
+        url = reverse('entity_edit', kwargs={'entity_id': self.entity.id})
+        response = self.client.get(url)
+
+        self.assertSuccessResponse(response)
+
+        content = response.content.decode('utf-8')
+        self.assertIn(f'attr-v2-add-attribute-btn-entity-{self.entity.id}', content)
+        self.assertIn('disabled aria-disabled="true"', content)
+        self.assertIn('New attributes are disabled for externally managed entities.', content)
+
+    def test_post_rejects_new_attribute_when_entity_disallows_custom_attributes(self):
+        self.entity.can_add_custom_attributes = False
+        self.entity.save(update_fields=['can_add_custom_attributes'])
+
+        url = reverse('entity_edit', kwargs={'entity_id': self.entity.id})
+        form_data = EntityAttributeSyntheticData.create_form_data_for_entity_edit(entity=self.entity)
+
+        regular_attributes = list(self.entity.attributes.exclude(value_type_str=str(AttributeValueType.FILE)))
+        prefix = f'entity-{self.entity.id}'
+        form_data.update({
+            f'{prefix}-TOTAL_FORMS': str(len(regular_attributes) + 2),
+            f'{prefix}-INITIAL_FORMS': str(len(regular_attributes)),
+            f'{prefix}-MIN_NUM_FORMS': '0',
+            f'{prefix}-MAX_NUM_FORMS': '1000',
+            f'{prefix}-{len(regular_attributes)}-name': 'blocked_property',
+            f'{prefix}-{len(regular_attributes)}-value': 'blocked value',
+        })
+
+        response = self.client.post(url, form_data)
+
+        self.assertErrorResponse(response)
+        self.assertJsonResponse(response)
+        self.assertFalse(self.entity.attributes.filter(name='blocked_property').exists())
+
+        content = response.content.decode('utf-8')
+        self.assertIn('New attributes cannot be added for this entity because attributes are managed externally.', content)
 
     def test_entity_with_complex_attribute_mix(self):
         """Test editing entity with mixed attribute types (text, file, secret)."""
@@ -894,9 +978,14 @@ class TestEntityEditViewFileUploadIntegration(DualModeViewTestCase):
 
         self.assertSuccessResponse(response)
         
-        # Verify file was deleted
+        # Verify file is hidden from active querysets
         self.assertFalse(
             EntityAttribute.objects.filter(id=file_attr.id).exists()
+        )
+
+        # Verify file attribute still exists as deleted for restore
+        self.assertTrue(
+            EntityAttribute.deleted_objects.filter(id=file_attr.id).exists()
         )
 
     def test_file_title_update_through_entity_edit(self):
@@ -969,6 +1058,10 @@ class TestEntityEditViewFileUploadIntegration(DualModeViewTestCase):
         # Verify deletion occurred
         self.assertFalse(
             EntityAttribute.objects.filter(id=file_to_delete.id).exists()
+        )
+
+        self.assertTrue(
+            EntityAttribute.deleted_objects.filter(id=file_to_delete.id).exists()
         )
         
         # Verify title update occurred

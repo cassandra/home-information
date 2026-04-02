@@ -228,6 +228,32 @@ class LocationAttributeEditFormHandlerTest(AttributeEditFormHandlerTestMixin, Ba
         # Should handle long names according to model constraints
         is_valid = handler.validate_forms(edit_form_data=edit_form_data)
         self.assertIsInstance(is_valid, bool)
+
+    def test_create_edit_form_data_includes_soft_deleted_attributes(self):
+        """Deleted attributes should be available for restore in the edit form payload."""
+        location = self.create_owner_instance(name="Soft Delete Form Data Location")
+        active_attr = self.create_attribute_instance(
+            location,
+            name="active_attr",
+            value="active",
+            value_type_str=str(AttributeValueType.TEXT),
+        )
+        deleted_attr = self.create_attribute_instance(
+            location,
+            name="deleted_attr",
+            value="deleted",
+            value_type_str=str(AttributeValueType.TEXT),
+        )
+        deleted_attr.delete()
+
+        context = self.create_item_edit_context(location)
+        handler = self._get_handler()
+
+        form_data = handler.create_edit_form_data(attr_item_context=context)
+        deleted_ids = [attr.id for attr in form_data.deleted_attributes]
+
+        self.assertIn(deleted_attr.id, deleted_ids)
+        self.assertNotIn(active_attr.id, deleted_ids)
         
     def _get_handler(self):
         """Get handler instance for testing."""

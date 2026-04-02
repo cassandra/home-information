@@ -1,0 +1,26 @@
+{% extends "modals/action_done.html" %}
+{% load icons %}
+
+{% block modal_dialog_class %}hi-modal-dialog-600{% endblock %}
+
+{% block title_text %}
+Archived Items
+{% endblock %}
+
+{% block body %}
+{% for archived_entity in archived_entities %}
+<div class="d-flex justify-content-between align-items-center {% if not forloop.first %}border-top{% endif %} py-2 my-1">
+  <div>
+    <div><strong>{{ archived_entity.name }}</strong></div>
+    <div class="text-muted"><small>{{ archived_entity.entity_type_str }} &mdash; archived {{ archived_entity.archived_datetime|date:"M j, Y" }}</small></div>
+  </div>
+  <a href="{% url 'entity_edit_archive_detail' archived_entity_id=archived_entity.id %}"
+     class="btn btn-sm btn-outline-primary" role="button"
+     data-async="modal">
+    {% icon "eye" size="sm" css_class="hi-icon-left" %}VIEW
+  </a>
+</div>
+{% empty %}
+<div class="text-muted text-center py-3">No archived items.</div>
+{% endfor %}
+{% endblock %}

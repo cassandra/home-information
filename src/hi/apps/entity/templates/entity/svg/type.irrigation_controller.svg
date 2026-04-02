@@ -1,0 +1,43 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+
+<!-- Controller body -->
+<rect x="6" y="6" width="52" height="52" rx="3" fill="#f5f5f0" stroke="#555" stroke-width="1.5"/>
+
+<!-- Display screen -->
+<rect x="12" y="11" width="28" height="16" rx="1" fill="#d4edda" stroke="#555" stroke-width="1"/>
+
+<!-- Clock display -->
+<text x="26" y="20" font-family="monospace" font-size="6" fill="#2c3e50" text-anchor="middle">6:30</text>
+<text x="26" y="25" font-family="monospace" font-size="3.5" fill="#555" text-anchor="middle">ZONE 3</text>
+
+<!-- Water drop icon on display -->
+<path d="M36,14 C36,14 39,18 39,20 C39,21.7 37.7,23 36,23 C34.3,23 33,21.7 33,20 C33,18 36,14 36,14Z" fill="#3498db" opacity="0.7"/>
+
+<!-- Dial/knob -->
+<circle cx="48" cy="19" r="6" fill="#ddd" stroke="#555" stroke-width="1"/>
+<circle cx="48" cy="19" r="1" fill="#555"/>
+<line x1="48" y1="19" x2="48" y2="14" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+
+<!-- Zone buttons (2 rows of 4) -->
+<rect x="12" y="32" width="8" height="6" rx="1" fill="#4caf50" stroke="#388e3c" stroke-width="0.5"/>
+<rect x="22" y="32" width="8" height="6" rx="1" fill="#4caf50" stroke="#388e3c" stroke-width="0.5"/>
+<rect x="32" y="32" width="8" height="6" rx="1" fill="#4caf50" stroke="#388e3c" stroke-width="0.5"/>
+<rect x="42" y="32" width="8" height="6" rx="1" fill="#4caf50" stroke="#388e3c" stroke-width="0.5"/>
+
+<rect x="12" y="40" width="8" height="6" rx="1" fill="#81c784" stroke="#388e3c" stroke-width="0.5"/>
+<rect x="22" y="40" width="8" height="6" rx="1" fill="#81c784" stroke="#388e3c" stroke-width="0.5"/>
+<rect x="32" y="40" width="8" height="6" rx="1" fill="#81c784" stroke="#388e3c" stroke-width="0.5"/>
+<rect x="42" y="40" width="8" height="6" rx="1" fill="#81c784" stroke="#388e3c" stroke-width="0.5"/>
+
+<!-- Zone numbers -->
+<text x="16" y="37" font-family="sans-serif" font-size="4" fill="#fff" text-anchor="middle">1</text>
+<text x="26" y="37" font-family="sans-serif" font-size="4" fill="#fff" text-anchor="middle">2</text>
+<text x="36" y="37" font-family="sans-serif" font-size="4" fill="#fff" text-anchor="middle">3</text>
+<text x="46" y="37" font-family="sans-serif" font-size="4" fill="#fff" text-anchor="middle">4</text>
+<text x="16" y="45" font-family="sans-serif" font-size="4" fill="#fff" text-anchor="middle">5</text>
+<text x="26" y="45" font-family="sans-serif" font-size="4" fill="#fff" text-anchor="middle">6</text>
+<text x="36" y="45" font-family="sans-serif" font-size="4" fill="#fff" text-anchor="middle">7</text>
+<text x="46" y="45" font-family="sans-serif" font-size="4" fill="#fff" text-anchor="middle">8</text>
+
+<!-- Wire entry at bottom -->
+<rect x="28" y="56" width="8" height="4" rx="1" fill="#888" stroke="#555" stroke-width="0.5"/>

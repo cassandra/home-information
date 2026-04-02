@@ -1,7 +1,6 @@
 ---
 allowed-tools: Bash, Read, TodoWrite, Grep, Glob, Task
 description: Systematic test failure analysis and remediation
-model: claude-sonnet-4-20250514
 argument-hint:
 ---
 

@@ -35,6 +35,11 @@ class AttributeEditFormHandler:
         file_attributes: QuerySet[AttributeModel] = attr_item_context.attributes_queryset().filter(
             value_type_str = str( AttributeValueType.FILE )
         ).order_by('id')
+
+        deleted_attributes = attr_item_context.soft_deleted_attributes_queryset().order_by(
+            '-updated_datetime',
+            '-id',
+        )
         
         # Regular attributes formset (should exclude FILE attributes)
         regular_attributes_formset = attr_item_context.create_regular_attributes_formset(
@@ -43,6 +48,7 @@ class AttributeEditFormHandler:
         return AttributeEditFormData(
             owner_form = owner_form,
             file_attributes = file_attributes,
+            deleted_attributes = deleted_attributes,
             regular_attributes_formset = regular_attributes_formset,
         )
 
@@ -93,8 +99,8 @@ class AttributeEditFormHandler:
                 continue
             try:
                 file_attribute = AttributeModelClass.objects.get(
-                    id = attr_id, 
-                    value_type_str = str(AttributeValueType.FILE)
+                    id = attr_id,
+                    value_type_str = str( AttributeValueType.FILE ),
                 )
                 # Verify permission to delete
                 if file_attribute.attribute_type.can_delete:
@@ -131,7 +137,7 @@ class AttributeEditFormHandler:
                 attribute_id: int = int(attribute_id_str)
                 attribute = AttributeModelClass.objects.get(
                     id = attribute_id,
-                    value_type_str = str(AttributeValueType.FILE)
+                    value_type_str = str( AttributeValueType.FILE ),
                 )
                 # Clean and validate the new title
                 new_title = new_title.strip()

@@ -1,5 +1,5 @@
 {% extends "modals/action_3.html" %}
-{% load icons %}
+{% load icons static %}
 {% load video_tags %}
 {% load integration_tags %}
 
@@ -19,7 +19,13 @@ Status
   <div class="text-center">
     <div class="h4 mb-0">{{ entity.name }}</div>
     {% if entity.integration_id %}
-      <div class="text-muted"><small>From: {% integration_display_name entity %}</small></div>
+      <div class="text-muted">
+        <small>
+          {% integration_logo_path entity as logo_path %}
+          {% if logo_path %}<img src="{% static logo_path %}" alt="" style="max-height: 18px; width: auto; margin-right: 4px;">{% endif %}
+          From: {% integration_display_name entity %}
+        </small>
+      </div>
     {% endif %}
   </div>
   <div>

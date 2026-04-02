@@ -1,11 +1,10 @@
 ---
 allowed-tools: Bash, Read, Write, TodoWrite
 description: Create pull request following our workflow and template requirements
-model: claude-sonnet-4-20250514
 argument-hint: [title]
 ---
 
-Create pull request with title "$1" following our workflow from `docs/dev/workflow/workflow-guidelines.md`:
+Create pull request with title "$0" following our workflow from `docs/dev/workflow/workflow-guidelines.md`:
 
 ## Pull Request Creation Process
 
@@ -105,11 +104,11 @@ Execute the complete PR creation workflow:
    EOF
 
    # Update placeholders in the file
-   sed -i '' "s/\[TITLE\]/$1/g" /tmp/pr_body.md
+   sed -i '' "s/\[TITLE\]/$0/g" /tmp/pr_body.md
    sed -i '' "s/\[ISSUE_NUMBER\]/ISSUE_NUMBER/g" /tmp/pr_body.md
 
    # Create PR using file reference with detected base branch
-   gh pr create --title "$1" --body-file /tmp/pr_body.md --base "$BASE_BRANCH"
+   gh pr create --title "$0" --body-file /tmp/pr_body.md --base "$BASE_BRANCH"
 
    # Clean up temporary file
    rm -f /tmp/pr_body.md
@@ -130,6 +129,6 @@ Execute the complete PR creation workflow:
 - Use HEREDOC syntax to prevent formatting issues
 - No Claude attribution in PR description
 
-**PR Title:** "$1"
+**PR Title:** "$0"
 
 Begin PR creation process now.

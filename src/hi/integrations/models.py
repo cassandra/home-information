@@ -48,12 +48,17 @@ class Integration( models.Model ):
     
 
 class IntegrationAttribute( AttributeModel ):
-    
+
     integration = models.ForeignKey(
         Integration,
         related_name = 'attributes',
         verbose_name = 'Integration',
         on_delete = models.CASCADE,
+    )
+    description = models.TextField(
+        'Description',
+        blank = True,
+        default = '',
     )
 
     class Meta:
@@ -61,9 +66,13 @@ class IntegrationAttribute( AttributeModel ):
         verbose_name_plural = 'Attributes'
         ordering = ['order_id', 'id']
 
+    @property
+    def display_description( self ):
+        return self.description or ''
+
     def get_upload_to(self):
         return 'integration/attributes/'
-    
+
     def _get_history_model_class(self):
         """Return the history model class for IntegrationAttribute."""
         return IntegrationAttributeHistory

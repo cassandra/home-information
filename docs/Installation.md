@@ -204,6 +204,7 @@ If you enabled user authentication, you'll need to create user accounts manually
 Connect Home Information with your existing home automation and security systems. See the [Integrations Guide](Integrations.md) for setup instructions:
 - **Home Assistant** - Device control and monitoring
 - **ZoneMinder** - Security camera management
+- **HomeBox** - Home inventory management
 
 ## Next Steps
 
@@ -217,9 +218,17 @@ With your installation running, see the [Getting Started Guide](GettingStarted.m
 
 ### Common Issues
 
-**Can't access from other devices?**
-- Add your network URLs to `HI_EXTRA_HOST_URLS` in `$HOME/.hi/env/local.env`
-- Restart with `make docker-stop && make docker-run`
+**Can't access from other devices on your network?**
+
+By default, the app only accepts requests to `localhost`. To access it from other devices (including by IP address), you need to tell the app which URLs are allowed:
+
+- Set `HI_EXTRA_HOST_URLS` to the URL(s) you'll use to access the app, including the scheme and port
+- Example: `HI_EXTRA_HOST_URLS="http://192.168.1.100:9411"` (use your server's actual IP)
+- Multiple URLs can be space-separated: `HI_EXTRA_HOST_URLS="http://192.168.1.100:9411 http://myserver.local:9411"`
+- For standalone Docker: edit `$HOME/.hi/env/local.env` and restart with `make docker-stop && make docker-run`
+- For unRAID: set the "Extra Host URLs" field under "Show more settings"
+
+If you see `Invalid HTTP_HOST header` errors in the logs, this is the setting you need.
 
 **Email alerts not working?**
 Configure email settings in `$HOME/.hi/env/local.env`:

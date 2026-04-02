@@ -1,0 +1,37 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+
+<!-- Sump pit (cross-section view) -->
+<path d="M8,28 L8,56 C8,60 14,62 14,62 L50,62 C50,62 56,60 56,56 L56,28" fill="#8d6e63" stroke="#5d4037" stroke-width="1.5" fill-opacity="0.3"/>
+
+<!-- Water level in pit -->
+<rect x="10" y="42" width="44" height="19" rx="2" fill="#90caf9" opacity="0.4"/>
+
+<!-- Pit rim / floor line -->
+<line x1="4" y1="28" x2="60" y2="28" stroke="#5d4037" stroke-width="2"/>
+
+<!-- Pump body (cylindrical) -->
+<rect x="22" y="34" width="20" height="22" rx="3" fill="#555" stroke="#333" stroke-width="1.5"/>
+
+<!-- Motor housing top -->
+<rect x="24" y="30" width="16" height="6" rx="2" fill="#444" stroke="#333" stroke-width="1"/>
+
+<!-- Discharge pipe going up -->
+<rect x="38" y="6" width="6" height="30" rx="1" fill="#888" stroke="#555" stroke-width="1"/>
+
+<!-- Discharge pipe elbow -->
+<path d="M41,36 C41,36 44,36 44,33" fill="none" stroke="#555" stroke-width="6"/>
+<path d="M41,36 C41,36 44,36 44,33" fill="none" stroke="#888" stroke-width="4"/>
+
+<!-- Check valve on discharge -->
+<rect x="36" y="16" width="10" height="5" rx="1" fill="#c0392b" stroke="#555" stroke-width="0.5"/>
+
+<!-- Float switch -->
+<circle cx="18" cy="44" r="4" fill="#f39c12" stroke="#e67e22" stroke-width="1"/>
+<line x1="18" y1="40" x2="18" y2="34" stroke="#555" stroke-width="1" stroke-linecap="round"/>
+
+<!-- Power cord -->
+<path d="M30,30 C28,24 26,20 24,14 C23,10 20,8 20,4" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+
+<!-- Pit cover (partial, showing cutaway) -->
+<line x1="4" y1="28" x2="18" y2="28" stroke="#777" stroke-width="3"/>
+<line x1="46" y1="28" x2="60" y2="28" stroke="#777" stroke-width="3"/>

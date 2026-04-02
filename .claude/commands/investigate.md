@@ -1,13 +1,12 @@
 ---
 allowed-tools: Bash, Read, Edit, TodoWrite, Grep, Glob, Task
 description: Deep investigation and analysis of GitHub issues for implementation planning
-model: claude-sonnet-4-20250514
 argument-hint: [issue-number]
 ---
 
-Deep investigation and implementation planning for GitHub issue #$1:
+Deep investigation and implementation planning for GitHub issue #$0:
 
-## Investigation Process for #$1
+## Investigation Process for #$0
 
 Perform comprehensive codebase analysis and implementation planning:
 
@@ -15,7 +14,7 @@ Perform comprehensive codebase analysis and implementation planning:
    - Read `docs/CLAUDE.md` for AI-specific guidance and sub-agent coordination patterns
    - Follow development philosophy of well-factored solutions
 
-2. **Read GitHub issue completely** - Use `gh issue view $1` to understand:
+2. **Read GitHub issue completely** - Use `gh issue view $0` to understand:
    - Full issue description and requirements
    - All comments and discussion history
    - Labels, assignees, and project context
@@ -84,7 +83,7 @@ Perform comprehensive codebase analysis and implementation planning:
      - More technical unknowns discovered
      - Need for deeper integration analysis
 
-**Investigation target:** GitHub issue #$1
+**Investigation target:** GitHub issue #$0
 **Goal:** Complete technical analysis and implementation roadmap
 
 Begin deep investigation now.
