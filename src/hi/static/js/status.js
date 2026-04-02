@@ -33,6 +33,8 @@
     const CssClassUpdateMapAttr = 'cssClassUpdateMap';
     const IdReplaceUpdateMapAttr = 'idReplaceUpdateMap';
     const IdReplaceHashMapAttr = 'idReplaceHashMap';
+    const ConsoleLockedAttr = 'consoleLocked';
+    const ConsoleUnlockUrl = '/console/unlock';
     const TransientViewSuggestionAttr = 'transientViewSuggestion';
     const TransientViewUrlAttr = 'url';
     const TransientViewDurationSecondsAttr = 'durationSeconds';
@@ -128,6 +130,10 @@
         if ( Hi.DEBUG && TRACE ) { console.log( "Server response: "+JSON.stringify( respObj)); }
 
         doServerStartTimeCheck( respObj );
+
+        if ( ConsoleLockedAttr in respObj ) {
+            handleConsoleLockState( respObj[ConsoleLockedAttr] );
+        }
         
         if ( ServerTimestampAttr in respObj ) {
             gLastServerDate = new Date( respObj[ServerTimestampAttr] );
@@ -144,6 +150,22 @@
         }
         if ( TransientViewSuggestionAttr in respObj ) {
             handleTransientViewSuggestion( respObj[TransientViewSuggestionAttr] );
+        }
+    }
+
+    function handleConsoleLockState( isConsoleLocked ) {
+        if ( ! isConsoleLocked ) {
+            return;
+        }
+
+        // Avoid creating a duplicate unlock modal while one is already visible.
+        const unlockModalVisible = $('form[action="' + ConsoleUnlockUrl + '"]').closest('.modal.show').length > 0;
+        if ( unlockModalVisible ) {
+            return;
+        }
+
+        if ( window.AN && window.AN.get ) {
+            window.AN.get( ConsoleUnlockUrl );
         }
     }
 

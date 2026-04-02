@@ -277,6 +277,38 @@ class TestSecurityManager(BaseTestCase):
             
             mock_update.assert_called_once_with(new_security_state=SecurityState.AWAY)
 
+    def test_apply_delayed_state_away_with_lock_password_triggers_auto_lock_event(self):
+        """Test delayed AWAY transition increments console auto-lock event version."""
+        manager = SecurityManager()
+        manager._delayed_security_state = SecurityState.AWAY
+        manager._redis_client = Mock()
+        manager._redis_client.get.return_value = '7'
+
+        with patch('hi.apps.security.security_manager.ConsoleSettingsHelper.get_console_lock_password') as mock_password:
+            mock_password.return_value = 'secret'
+
+            with patch.object(manager, 'update_security_state_immediate'):
+                manager._apply_delayed_state()
+
+        manager._redis_client.set.assert_called_once_with(
+            SecurityManager.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY,
+            '8',
+        )
+
+    def test_apply_delayed_state_away_without_lock_password_does_not_trigger_auto_lock_event(self):
+        """Test delayed AWAY transition does not auto-lock when no lock password is configured."""
+        manager = SecurityManager()
+        manager._delayed_security_state = SecurityState.AWAY
+        manager._redis_client = Mock()
+
+        with patch('hi.apps.security.security_manager.ConsoleSettingsHelper.get_console_lock_password') as mock_password:
+            mock_password.return_value = ''
+
+            with patch.object(manager, 'update_security_state_immediate'):
+                manager._apply_delayed_state()
+
+        manager._redis_client.set.assert_not_called()
+
     def test_update_security_state_auto_blocked_by_state(self):
         """Test auto update blocked by non-auto-changeable state."""
         manager = SecurityManager()

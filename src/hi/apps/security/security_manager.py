@@ -29,6 +29,7 @@ class SecurityManager( Singleton, SettingsMixin ):
     SECURITY_STATE_LABEL_SNOOZED = 'Snoozed'
 
     SECURITY_STATE_CACHE_KEY = 'hi.security.state'
+    CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY = 'hi.console.away.auto_lock_version'
     
     def __init_singleton__(self):
         self._security_state = SecurityState.default()
@@ -68,6 +69,9 @@ class SecurityManager( Singleton, SettingsMixin ):
     @property
     def security_level(self) -> SecurityLevel:
         return self._security_level
+
+    def get_console_away_auto_lock_version(self) -> str:
+        return self._redis_client.get(self.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY)
     
     def get_security_status_data(self) -> SecurityStatusData:
         with self._security_status_lock:
@@ -199,7 +203,27 @@ class SecurityManager( Singleton, SettingsMixin ):
 
     def _apply_delayed_state( self ):
         logger.debug( f'Applying delayed security state = {self._delayed_security_state}' )
-        self.update_security_state_immediate( new_security_state = self._delayed_security_state )
+        delayed_security_state = self._delayed_security_state
+        self.update_security_state_immediate( new_security_state = delayed_security_state )
+        if delayed_security_state == SecurityState.AWAY:
+            self._increment_console_away_auto_lock_version_if_enabled()
+        return
+
+    def _increment_console_away_auto_lock_version_if_enabled(self):
+        lock_password = ConsoleSettingsHelper().get_console_lock_password()
+        if not lock_password:
+            return
+
+        current_version_str = self._redis_client.get(self.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY)
+        try:
+            current_version = int(current_version_str)
+        except (TypeError, ValueError):
+            current_version = 0
+
+        self._redis_client.set(
+            self.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY,
+            str(current_version + 1),
+        )
         return
     
     def update_security_state_auto( self, new_security_state  : SecurityState ):
