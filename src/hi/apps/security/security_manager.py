@@ -206,14 +206,10 @@ class SecurityManager( Singleton, SettingsMixin ):
         delayed_security_state = self._delayed_security_state
         self.update_security_state_immediate( new_security_state = delayed_security_state )
         if delayed_security_state == SecurityState.AWAY:
-            self._increment_console_away_auto_lock_version_if_enabled()
+            self._increment_console_away_auto_lock_version()
         return
 
-    def _increment_console_away_auto_lock_version_if_enabled(self):
-        lock_password = ConsoleSettingsHelper().get_console_lock_password()
-        if not lock_password:
-            return
-
+    def _increment_console_away_auto_lock_version(self):
         current_version_str = self._redis_client.get(self.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY)
         try:
             current_version = int(current_version_str)

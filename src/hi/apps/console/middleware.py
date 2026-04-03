@@ -1,5 +1,6 @@
 from django.urls import reverse
 
+from .console_helper import ConsoleSettingsHelper
 from hi.apps.security.security_manager import SecurityManager
 
 from .constants import ConsoleConstants
@@ -47,6 +48,10 @@ class ConsoleLockMiddleware:
         request.session[ConsoleConstants.CONSOLE_AWAY_AUTO_LOCK_VERSION_SESSION_VAR] = str(auto_lock_version)
 
         if request.session.get( ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR, False ):
+            return
+
+        lock_password = ConsoleSettingsHelper().get_console_lock_password()
+        if not lock_password:
             return
 
         request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = True
