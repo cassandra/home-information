@@ -26,8 +26,10 @@ class TestConsoleLockMiddleware(BaseTestCase):
         request.session = {}
 
         with patch('hi.apps.console.middleware.SecurityManager') as mock_security_manager, \
+             patch('hi.apps.console.middleware.ConsoleSettingsHelper.get_console_lock_password') as mock_get_lock_password, \
              patch('hi.apps.console.middleware.ConsoleUnlockView') as mock_unlock_view_class:
             mock_security_manager.return_value.get_console_away_auto_lock_version.return_value = '2'
+            mock_get_lock_password.return_value = 'secret'
 
             mock_unlock_view = Mock()
             mock_unlock_response = HttpResponse('locked', status=403)
@@ -97,4 +99,47 @@ class TestConsoleLockMiddleware(BaseTestCase):
 
             self.assertIsNone(response)
             self.assertNotIn(ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR, request.session)
+            mock_unlock_view_class.assert_not_called()
+
+    def test_process_request_new_away_auto_lock_version_without_password_does_not_lock(self):
+        """Test middleware records event version but does not lock when no password exists."""
+        request = self.factory.get('/console/entity/video-stream/1')
+        request.session = {}
+
+        with patch('hi.apps.console.middleware.SecurityManager') as mock_security_manager, \
+             patch('hi.apps.console.middleware.ConsoleSettingsHelper.get_console_lock_password') as mock_get_lock_password, \
+             patch('hi.apps.console.middleware.ConsoleUnlockView') as mock_unlock_view_class:
+            mock_security_manager.return_value.get_console_away_auto_lock_version.return_value = '2'
+            mock_get_lock_password.return_value = ''
+
+            response = self.middleware.process_request(request)
+
+            self.assertIsNone(response)
+            self.assertEqual(
+                request.session[ConsoleConstants.CONSOLE_AWAY_AUTO_LOCK_VERSION_SESSION_VAR],
+                '2',
+            )
+            self.assertNotIn(ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR, request.session)
+            mock_unlock_view_class.assert_not_called()
+
+    def test_process_request_api_status_when_locked_is_excluded(self):
+        """Test locked session does not block api_status path, which must stay pollable."""
+        request = self.factory.get(reverse('api_status'))
+        request.session = {
+            ConsoleConstants.CONSOLE_AWAY_AUTO_LOCK_VERSION_SESSION_VAR: '2',
+            ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR: True,
+        }
+
+        with patch('hi.apps.console.middleware.SecurityManager') as mock_security_manager, \
+             patch('hi.apps.console.middleware.ConsoleUnlockView') as mock_unlock_view_class:
+            mock_security_manager.return_value.get_console_away_auto_lock_version.return_value = '3'
+
+            response = self.middleware.process_request(request)
+
+            self.assertIsNone(response)
+            self.assertEqual(
+                request.session[ConsoleConstants.CONSOLE_AWAY_AUTO_LOCK_VERSION_SESSION_VAR],
+                '3',
+            )
+            self.assertTrue(request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR])
             mock_unlock_view_class.assert_not_called()
