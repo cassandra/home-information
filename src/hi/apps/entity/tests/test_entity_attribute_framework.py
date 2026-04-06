@@ -180,6 +180,32 @@ class EntityAttributeEditFormHandlerTest(AttributeEditFormHandlerTestMixin, Base
         
         # File handling is tested at the view level, but we can test the context setup
         self.assertIsNotNone(context.file_upload_url)
+
+    def test_create_edit_form_data_includes_soft_deleted_attributes(self):
+        """Deleted attributes should be available for restore in the edit form payload."""
+        entity = self.create_owner_instance(name="Soft Delete Form Data Entity")
+        active_attr = self.create_attribute_instance(
+            entity,
+            name="active_attr",
+            value="active",
+            value_type_str=str(AttributeValueType.TEXT),
+        )
+        deleted_attr = self.create_attribute_instance(
+            entity,
+            name="deleted_attr",
+            value="deleted",
+            value_type_str=str(AttributeValueType.TEXT),
+        )
+        deleted_attr.delete()
+
+        context = self.create_item_edit_context(entity)
+        handler = self._get_handler()
+
+        form_data = handler.create_edit_form_data(attr_item_context=context)
+        deleted_ids = [attr.id for attr in form_data.deleted_attributes]
+
+        self.assertIn(deleted_attr.id, deleted_ids)
+        self.assertNotIn(active_attr.id, deleted_ids)
         
     def _get_handler(self):
         """Get handler instance for testing."""

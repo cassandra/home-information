@@ -1,4 +1,4 @@
-{% load icons %}
+{% load icons static %}
 {% load integration_tags %}
 <div class="d-flex justify-content-between mt-2">
   <div class="h4">Item Layout</div>
@@ -12,13 +12,26 @@
 
 {% if entity.integration_id %}
 <div class="my-2">
-  <div class="text-muted">From: <strong>{% integration_display_name entity %}</strong></div>
+  <div class="text-muted">
+    {% integration_logo_path entity as logo_path %}
+    {% if logo_path %}<img src="{% static logo_path %}" alt="" style="max-height: 18px; width: auto; margin-right: 4px;">{% endif %}
+    From: <strong>{% integration_display_name entity %}</strong>
+  </div>
 </div>
 {% endif %}
 
 <div id="{{ DIVID.ENTITY_PROPERTIES_PANE }}">
   {% include "entity/edit/panes/entity_properties_edit.html" %}
 </div>
+
+{% if not entity.integration_id %}
+<div class="my-2">
+  <a href="{% url 'entity_edit_entity_archive' entity_id=entity.id %}"
+     class="btn btn-sm btn-outline-secondary btn-block btn-control" role="button" data-async="modal">
+    {% icon "history" size="sm" css_class="hi-icon-left" %}ARCHIVE ITEM
+  </a>
+</div>
+{% endif %}
 
 {% if entity.can_user_delete %}
 <div class="my-2">

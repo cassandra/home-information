@@ -1,15 +1,14 @@
 ---
 allowed-tools: Bash, Read, TodoWrite, Grep, Glob, Task
 description: Systematic response to GitHub pull request feedback
-model: claude-sonnet-4-20250514
 argument-hint: [pr-number]
 ---
 
-Systematic response to GitHub pull request #$1 feedback:
+Systematic response to GitHub pull request #$0 feedback:
 
 ## PR Feedback Response Process
 
-Focus on responding to feedback on GitHub pull request #$1:
+Focus on responding to feedback on GitHub pull request #$0:
 
 1. **Use TodoWrite to plan feedback response workflow** - Track systematic review response
 
@@ -33,10 +32,10 @@ Focus on responding to feedback on GitHub pull request #$1:
 4. **Read all PR feedback** - Collect and understand review comments:
    ```bash
    # View PR details and all comments
-   gh pr view $1
+   gh pr view $0
 
    # Get detailed review comments
-   gh pr view $1 --comments
+   gh pr view $0 --comments
    ```
 
 5. **Categorize feedback types** - Organize by domain and nature:
@@ -134,7 +133,7 @@ Focus on responding to feedback on GitHub pull request #$1:
 - Ask for clarification when feedback is unclear
 - Acknowledge good suggestions even if not implementing
 
-**PR Target:** #$1
+**PR Target:** #$0
 **Goal:** Systematic and complete response to all review feedback
 
 Begin systematic PR feedback response now.

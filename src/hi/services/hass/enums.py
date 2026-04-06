@@ -29,8 +29,27 @@ class HassAttributeType( IntegrationAttributeType ):
         False,
         True,
     )
+    IMPORT_ALLOWLIST = (
+        'Import Allowlist',
+        'HA domains and device classes to import (one per line). '
+        'Use "domain" for all classes, or "domain:class" for specific ones.',
+        AttributeValueType.TEXT,
+        None,
+        True,
+        False,
+        'binary_sensor\n'
+        'camera\n'
+        'climate\n'
+        'cover\n'
+        'fan\n'
+        'light\n'
+        'lock\n'
+        'media_player\n'
+        'sensor\n'
+        'switch',
+    )
 
-    
+
 class HassStateValue:
 
     ON = 'on'

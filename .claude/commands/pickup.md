@@ -1,13 +1,12 @@
 ---
 allowed-tools: Bash, Read, TodoWrite, Grep
 description: Pick up a GitHub issue following our development workflow
-model: claude-sonnet-4-20250514
 argument-hint: [issue-number]
 ---
 
-Pick up GitHub issue #$1 following our development workflow from docs/dev/workflow/workflow-guidelines.md:
+Pick up GitHub issue #$0 following our development workflow from docs/dev/workflow/workflow-guidelines.md:
 
-## Issue Pickup Process for #$1
+## Issue Pickup Process for #$0
 
 Execute the complete issue pickup workflow:
 
@@ -15,7 +14,7 @@ Execute the complete issue pickup workflow:
    - Read `docs/CLAUDE.md` for development philosophy and workflow integration
    - Focus on well-factored solutions and quality over speed
 
-2. **Read the GitHub issue and all comments** - Understand requirements, context, and discussion using `gh issue view $1`
+2. **Read the GitHub issue and all comments** - Understand requirements, context, and discussion using `gh issue view $0`
 
 3. **Complexity Assessment** - Evaluate if pickup is appropriate:
    - **STOP and use `/plan` if:**
@@ -52,11 +51,11 @@ Execute the complete issue pickup workflow:
    - Pull latest: `git pull origin staging`
    - Verify clean state: `git status`
 
-5. **Assign issue to yourself** - Use: `gh issue edit $1 --add-assignee @me`
+5. **Assign issue to yourself** - Use: `gh issue edit $0 --add-assignee @me`
 
 6. **Create feature branch immediately** - Use proper naming from `docs/dev/workflow/workflow-guidelines.md`:
    - Determine branch type from issue labels/content (feature/bugfix/docs/ops/refactor)
-   - Create branch: `git checkout -b [type]/$1-[mnemonic]`
+   - Create branch: `git checkout -b [type]/$0-[mnemonic]`
    - Push branch: `git push -u origin [branch-name]`
 
 7. **Investigation and planning** - Research the codebase:
@@ -79,6 +78,6 @@ Execute the complete issue pickup workflow:
 - Always verify clean working directory before branch operations
 - Post comprehensive investigation findings to GitHub issue
 
-**Issue to pick up:** #$1
+**Issue to pick up:** #$0
 
 Begin the pickup process now.

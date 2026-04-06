@@ -1,22 +1,21 @@
 ---
 allowed-tools: Bash, Read, TodoWrite, Grep, Glob
 description: Strategic planning and work breakdown for GitHub issues
-model: claude-sonnet-4-20250514
 argument-hint: [issue-number]
 ---
 
-Strategic planning and work breakdown for GitHub issue #$1:
+Strategic planning and work breakdown for GitHub issue #$0:
 
 ## Strategic Planning Process
 
-Help plan the work described in GitHub issue #$1 to determine optimal breakdown strategy:
+Help plan the work described in GitHub issue #$0 to determine optimal breakdown strategy:
 
 1. **Use TodoWrite to plan strategic analysis** - Track planning phases
    - Read `docs/CLAUDE.md` for AI-specific guidance and project context
    - Follow development philosophy of well-factored solutions
 
 2. **Read GitHub issue completely** - Understand full scope and context:
-   - Use `gh issue view $1` to read issue description and all comments
+   - Use `gh issue view $0` to read issue description and all comments
    - Understand business requirements and user needs
    - Identify stated goals and success criteria
    - Note any existing discussion or proposed approaches
@@ -75,7 +74,7 @@ Help plan the work described in GitHub issue #$1 to determine optimal breakdown 
    - If multi-issue approach recommended, provide `/createissue` commands for each issue
 
 9. **Post strategic plan to GitHub issue** - Document planning analysis:
-   - Use `gh issue comment $1` to post the complete strategic plan
+   - Use `gh issue comment $0` to post the complete strategic plan
    - Include all key sections: complexity assessment, breakdown strategy, phase descriptions, timeline, risk assessment
    - Provide clear rationale for chosen approach
    - Document effort estimates and value delivery timeline
@@ -109,7 +108,7 @@ Help plan the work described in GitHub issue #$1 to determine optimal breakdown 
 - Reduce risk through incremental approach
 - Ensure clear success criteria for each phase/issue
 
-**Planning Target:** GitHub issue #$1
+**Planning Target:** GitHub issue #$0
 **Output:** Strategic work breakdown with implementation roadmap
 
 **Key Decision Criteria:**

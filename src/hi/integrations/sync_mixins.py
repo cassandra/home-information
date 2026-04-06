@@ -96,7 +96,10 @@ class IntegrationSyncMixin:
                 ).delete()[0]
                 logger.debug(f'Removed {removed_state_count} orphaned entity states for {entity}')
             
-            # Remove integration-related attributes (keep user-created ones)
+            # Remove integration-related attributes (keep user-created ones).
+            # Note: queryset .delete() intentionally bypasses the model-level
+            # SoftDeleteAttributeModel.delete() override, performing a hard delete.
+            # Integration attributes should not accumulate as soft-deleted records.
             removed_attr_count = entity.attributes.filter(
                 integration_key_str__isnull=False
             ).delete()[0]

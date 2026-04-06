@@ -1,0 +1,37 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+
+<!-- Inverter body (wall-mounted box, wider than tall) -->
+<rect x="6" y="12" width="52" height="40" rx="3" fill="#e0e0e0" stroke="#555" stroke-width="1.5"/>
+
+<!-- Display screen -->
+<rect x="12" y="17" width="24" height="14" rx="1" fill="#2c3e50" stroke="#34495e" stroke-width="1"/>
+
+<!-- DC to AC wave symbol on display -->
+<!-- DC flat line -->
+<line x1="15" y1="22" x2="21" y2="22" stroke="#4caf50" stroke-width="1.5"/>
+<!-- Arrow -->
+<path d="M22,24 L25,24" stroke="#4caf50" stroke-width="1" stroke-linecap="round"/>
+<path d="M24,22.5 L25,24 L24,25.5" stroke="#4caf50" stroke-width="1" fill="none" stroke-linecap="round"/>
+<!-- AC sine wave -->
+<path d="M27,24 C28,21 29,21 30,24 C31,27 32,27 33,24" stroke="#4caf50" stroke-width="1.5" fill="none"/>
+
+<!-- Status LEDs -->
+<circle cx="42" cy="20" r="2" fill="#4caf50"/>
+<circle cx="42" cy="26" r="2" fill="#f39c12"/>
+<circle cx="48" cy="20" r="2" fill="#3498db"/>
+<circle cx="48" cy="26" r="2" fill="#999" opacity="0.5"/>
+
+<!-- Ventilation grille -->
+<line x1="12" y1="36" x2="52" y2="36" stroke="#bbb" stroke-width="0.8"/>
+<line x1="12" y1="39" x2="52" y2="39" stroke="#bbb" stroke-width="0.8"/>
+<line x1="12" y1="42" x2="52" y2="42" stroke="#bbb" stroke-width="0.8"/>
+<line x1="12" y1="45" x2="52" y2="45" stroke="#bbb" stroke-width="0.8"/>
+
+<!-- Cable entry points on bottom -->
+<rect x="18" y="50" width="6" height="6" rx="1" fill="#888" stroke="#555" stroke-width="0.5"/>
+<rect x="29" y="50" width="6" height="6" rx="1" fill="#888" stroke="#555" stroke-width="0.5"/>
+<rect x="40" y="50" width="6" height="6" rx="1" fill="#888" stroke="#555" stroke-width="0.5"/>
+
+<!-- DC/AC labels -->
+<text x="21" y="58" font-family="monospace" font-size="4" fill="#555" text-anchor="middle">DC</text>
+<text x="43" y="58" font-family="monospace" font-size="4" fill="#555" text-anchor="middle">AC</text>

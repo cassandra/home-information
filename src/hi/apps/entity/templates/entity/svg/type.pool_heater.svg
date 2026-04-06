@@ -1,0 +1,39 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+
+<!-- Heater body (squat rectangular unit) -->
+<rect x="6" y="18" width="52" height="36" rx="3" fill="#d0d0d0" stroke="#555" stroke-width="1.5"/>
+
+<!-- Ventilated top panel -->
+<rect x="6" y="10" width="52" height="10" rx="3" fill="#bbb" stroke="#555" stroke-width="1.5"/>
+<line x1="14" y1="13" x2="14" y2="18" stroke="#999" stroke-width="0.8"/>
+<line x1="20" y1="13" x2="20" y2="18" stroke="#999" stroke-width="0.8"/>
+<line x1="26" y1="13" x2="26" y2="18" stroke="#999" stroke-width="0.8"/>
+<line x1="32" y1="13" x2="32" y2="18" stroke="#999" stroke-width="0.8"/>
+<line x1="38" y1="13" x2="38" y2="18" stroke="#999" stroke-width="0.8"/>
+<line x1="44" y1="13" x2="44" y2="18" stroke="#999" stroke-width="0.8"/>
+<line x1="50" y1="13" x2="50" y2="18" stroke="#999" stroke-width="0.8"/>
+
+<!-- Control panel -->
+<rect x="14" y="23" width="20" height="12" rx="1" fill="#f5f5f0" stroke="#555" stroke-width="1"/>
+
+<!-- Temperature display -->
+<text x="24" y="31" font-family="monospace" font-size="6" fill="#c0392b" text-anchor="middle">84°</text>
+
+<!-- Heat indicator flames -->
+<path d="M40,40 C40,37 42,35 42,32 C42,35 44,37 44,40 C44,42 42,43 42,43 C42,43 40,42 40,40Z" fill="#e74c3c" opacity="0.8"/>
+<path d="M46,40 C46,37 48,36 48,34 C48,36 50,37 50,40 C50,42 48,42.5 48,42.5 C48,42.5 46,42 46,40Z" fill="#f39c12" opacity="0.7"/>
+
+<!-- Status LED -->
+<circle cx="30" cy="44" r="2" fill="#4caf50"/>
+
+<!-- Pipe connections (left side) -->
+<rect x="0" y="30" width="8" height="5" rx="2" fill="#6699cc" stroke="#555" stroke-width="0.8"/>
+<rect x="0" y="40" width="8" height="5" rx="2" fill="#cc6666" stroke="#555" stroke-width="0.8"/>
+
+<!-- Flow direction arrows -->
+<text x="3" y="34" font-family="sans-serif" font-size="3" fill="#fff" text-anchor="middle">IN</text>
+<text x="4" y="44" font-family="sans-serif" font-size="3" fill="#fff" text-anchor="middle">OUT</text>
+
+<!-- Feet/base -->
+<rect x="12" y="54" width="6" height="4" rx="1" fill="#888"/>
+<rect x="46" y="54" width="6" height="4" rx="1" fill="#888"/>

@@ -39,11 +39,21 @@ Compact history display that loads into attribute cards
         </div>
         <div>
           {% if record.value != attribute.value %}
-            <a href="{% attr_restore_url attr_item_context attribute.id record.pk %}"
-               class="btn btn-xs btn-outline-primary {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
-               title="Restore this value">
-              Restore
-            </a>
+            {% if attr_item_context.can_add_custom_attributes %}
+              <a href="{% attr_restore_url attr_item_context attribute.id record.pk %}"
+                 class="btn btn-xs btn-outline-primary {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
+                 title="Restore this value">
+                Restore
+              </a>
+            {% else %}
+              <button type="button"
+                      class="btn btn-xs btn-outline-primary {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
+                      disabled
+                      aria-disabled="true"
+                      title="{{ attr_item_context.add_attribute_disabled_message }}">
+                Restore
+              </button>
+            {% endif %}
           {% else %}
             <small class="text-muted">Current</small>
           {% endif %}

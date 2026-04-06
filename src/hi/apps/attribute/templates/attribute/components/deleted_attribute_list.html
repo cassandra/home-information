@@ -1,0 +1,29 @@
+{% load icons attribute_extras %}
+{% if deleted_attributes %}
+<div class="attr-v2-attribute-section mt-2">
+  <button type="button"
+          class="btn btn-sm btn-outline-secondary"
+          onclick="window.Hi.toggleDetails('{{ attr_item_context.owner_type }}-deleted-attributes-{{ attr_item_context.owner_id }}')"
+          title="Show deleted attributes">
+    {% icon "history" size="sm" css_class="hi-icon-left" %}Deleted Attributes ({{ deleted_attributes|length }})
+  </button>
+
+  <div id="{{ attr_item_context.owner_type }}-deleted-attributes-{{ attr_item_context.owner_id }}"
+       class="mt-2"
+       style="display: none;">
+    {% for attribute in deleted_attributes %}
+    <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-2">
+      <div>
+        <div><strong>{{ attribute.name }}</strong></div>
+        <div class="text-muted small">{{ attribute.value|attribute_preview }}</div>
+      </div>
+      <a href="{% attr_restore_deleted_url attr_item_context attribute.id %}"
+         class="btn btn-xs btn-outline-primary {{ DIVID.ATTR_V2_RESTORE_LINK_CLASS }}"
+         title="Restore attribute">
+        Restore
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

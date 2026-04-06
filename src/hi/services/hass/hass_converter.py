@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Dict, List
+from typing import Dict, List, Optional, Set, Tuple
 
 from django.db import transaction
 
@@ -80,6 +80,41 @@ class HassConverter:
     HA API → HassStates → Device Grouping → EntityState Mapping → Service Payload → 
     Controller/Sensor Creation → Payload Storage → Runtime Service Calls
     """
+
+    @staticmethod
+    def parse_import_allowlist( allowlist_text : str ) -> Tuple[ Set[str], Set[Tuple[str, str]] ]:
+        """Parse allowlist text into domain-only and domain:class rule sets.
+        Returns:
+            (allowed_domains, allowed_domain_classes) where:
+            - allowed_domains: set of domains where all classes are allowed
+            - allowed_domain_classes: set of (domain, device_class) tuples
+        """
+        allowed_domains = set()
+        allowed_domain_classes = set()
+        for line in allowlist_text.strip().splitlines():
+            rule = line.strip()
+            if not rule:
+                continue
+            if ':' in rule:
+                domain, device_class = rule.split( ':', 1 )
+                allowed_domain_classes.add( ( domain.strip(), device_class.strip() ) )
+            else:
+                allowed_domains.add( rule )
+        return ( allowed_domains, allowed_domain_classes )
+
+    @staticmethod
+    def is_state_allowed( hass_state,
+                          allowed_domains        : Set[str],
+                          allowed_domain_classes  : Set[Tuple[str, str]] ) -> bool:
+        """Check if a state matches the allowlist. The allowlist is the sole
+        authority when configured — IGNORE_DOMAINS is not consulted."""
+        domain = hass_state.domain
+        if domain in allowed_domains:
+            return True
+        device_class = hass_state.device_class or ''
+        if ( domain, device_class ) in allowed_domain_classes:
+            return True
+        return False
 
     # Ignore all states from these domains - typically non-physical entities
     # that don't represent controllable devices or useful sensors
@@ -330,7 +365,8 @@ class HassConverter:
     
     @classmethod
     def hass_states_to_hass_devices( cls,
-                                     hass_entity_id_to_state : Dict[ str, HassState ]
+                                     hass_entity_id_to_state  : Dict[ str, HassState ],
+                                     import_allowlist          : Optional[str] = None,
                                      ) -> Dict[ str, HassDevice ]:
         """
         The Home Assistant (HAss) model we see by fetching the HAss states does
@@ -341,9 +377,19 @@ class HassConverter:
         HAss devices to help map from the HAss model to this app's model.
         """
         
+        # When an allowlist is configured, it is the sole authority on what
+        # gets imported. When not configured, fall back to IGNORE_DOMAINS.
+        if import_allowlist:
+            allowed_domains, allowed_domain_classes = cls.parse_import_allowlist( import_allowlist )
+            use_allowlist = True
+        else:
+            allowed_domains = set()
+            allowed_domain_classes = set()
+            use_allowlist = False
+
         ##########
         # First pass to gather candidate device names.
-        
+
         # All names (ignoring domain) seen with a known suffix. Values are set of domains seen.
         names_seen_with_suffixes = dict()
 
@@ -354,13 +400,16 @@ class HassConverter:
         # uniquely identify a device.
         #
         group_ids = dict()
-        
+
         for hass_state in hass_entity_id_to_state.values():
             domain = hass_state.domain
             full_name = hass_state.entity_name_sans_prefix
             short_name = hass_state.entity_name_sans_suffix
 
-            if domain in cls.IGNORE_DOMAINS:
+            if use_allowlist:
+                if not cls.is_state_allowed( hass_state, allowed_domains, allowed_domain_classes ):
+                    continue
+            elif domain in cls.IGNORE_DOMAINS:
                 continue
 
             # All states with same insteon address are from same device
@@ -393,7 +442,10 @@ class HassConverter:
             full_name = hass_state.entity_name_sans_prefix
             short_name = hass_state.entity_name_sans_suffix
 
-            if domain in cls.IGNORE_DOMAINS:
+            if use_allowlist:
+                if not cls.is_state_allowed( hass_state, allowed_domains, allowed_domain_classes ):
+                    continue
+            elif domain in cls.IGNORE_DOMAINS:
                 continue
 
             # Simplest case of having explicit group id

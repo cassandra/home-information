@@ -12,6 +12,17 @@ logging.disable(logging.CRITICAL)
 
 class TestEntity(BaseTestCase):
 
+    def test_can_add_attributes_defaults_to_true(self):
+        entity = Entity.objects.create(
+            name='Default Flags Entity',
+            entity_type_str=str(EntityType.OTHER),
+            integration_id='default_flags_001',
+            integration_name='test_integration',
+        )
+
+        self.assertTrue(entity.can_add_custom_attributes)
+        return
+
     def test_integration_key_enforces_unique_entity_identification(self):
         """Test integration key uniqueness - critical for data integrity."""
         # Create first entity with unique integration key

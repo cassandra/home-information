@@ -334,7 +334,7 @@ class NationalWeatherService( WeatherDataSource, WeatherMixin ):
             source_datetime = source_datetime,
             station = station,
         )
-        if wind_gust_data_point is not None:
+        if wind_gust_data_point is not None and weather_conditions_data.windspeed is not None:
             weather_conditions_data.windspeed.quantity_max = wind_gust_data_point.quantity
             
         description_short = properties_data.get( 'textDescription' )

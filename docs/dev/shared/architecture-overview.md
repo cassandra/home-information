@@ -34,6 +34,8 @@
 
 **ZoneMinder Integration** (`src/hi/services/zoneminder/`): Camera and video surveillance system integration for security monitoring.
 
+**HomeBox Integration** (`src/hi/services/homebox/`): Home inventory system integration for item tracking and attribute synchronization.
+
 **Integration Pattern**: All external systems use integration keys for mapping entities between systems.
 
 ## Key Architectural Patterns
@@ -75,7 +77,7 @@
 ## Database and Dependencies
 
 - **Database**: SQLite for development, supports PostgreSQL for production
-- **Cache**: Redis required for development and production
+- **Cache**: Redis (installed locally for development; bundled in Docker deployments)
 - **Frontend**: jQuery 3.7, Bootstrap 4, custom SVG manipulation
 - **Python**: 3.11+, Django 4.2
 

@@ -92,6 +92,7 @@ class TestHassSynchronizerSyncHelper(TestCase):
         self.mock_manager = Mock()
         self.mock_client = Mock()
         self.mock_manager.hass_client = self.mock_client
+        self.mock_manager.import_allowlist = None
 
 
 class TestHassSynchronizerStateConversion(TestCase):
@@ -151,8 +152,9 @@ class TestHassSynchronizerTransactionBehavior(TestCase):
             # Setup manager
             mock_manager = Mock()
             mock_manager.hass_client = Mock()
+            mock_manager.import_allowlist = None
             mock_hass_manager.return_value = mock_manager
-            
+
             # Setup scenario: one new device, one entity to remove
             api_states = {'light.new': self._create_mock_hass_state('light.new', 'light', 'on')}
             mock_manager.fetch_hass_states_from_api.return_value = api_states
@@ -183,11 +185,12 @@ class TestHassSynchronizerTransactionBehavior(TestCase):
         with patch.object(self.synchronizer, 'hass_manager') as mock_hass_manager, \
              patch.object(self.synchronizer, '_get_existing_hass_entities') as mock_get_entities:
             
-            # Setup manager  
+            # Setup manager
             mock_manager = Mock()
             mock_manager.hass_client = Mock()
+            mock_manager.import_allowlist = None
             mock_hass_manager.return_value = mock_manager
-            
+
             # Setup API data
             api_states = {'light.test': self._create_mock_hass_state('light.test', 'light', 'on')}
             mock_manager.fetch_hass_states_from_api.return_value = api_states
@@ -230,6 +233,7 @@ class TestHassSynchronizerErrorScenarios(TestCase):
         # Mock manager with client that fails API fetch
         mock_manager = Mock()
         mock_manager.hass_client = Mock()
+        mock_manager.import_allowlist = None
         mock_manager.fetch_hass_states_from_api.side_effect = Exception("API connection failed")
         mock_hass_manager.return_value = mock_manager
         
@@ -248,6 +252,7 @@ class TestHassSynchronizerErrorScenarios(TestCase):
         # Setup mocks
         mock_manager = Mock()
         mock_manager.hass_client = Mock()
+        mock_manager.import_allowlist = None
         mock_manager.fetch_hass_states_from_api.return_value = {'test': Mock()}
         mock_hass_manager.return_value = mock_manager
         

@@ -8,4 +8,5 @@ HassMetaData = IntegrationMetaData(
     label = 'Home Assistant',
     attribute_type = HassAttributeType,
     allow_entity_deletion = False,
+    logo_static_path = 'img/integrations/home-assistant.png',
 )

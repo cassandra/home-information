@@ -159,6 +159,8 @@ class AttributeEditResponseRenderer:
             edit_form_data.regular_attributes_formset = fresh_form_data.regular_attributes_formset
         if edit_form_data.file_attributes is None:
             edit_form_data.file_attributes = fresh_form_data.file_attributes
+        if edit_form_data.deleted_attributes is None:
+            edit_form_data.deleted_attributes = fresh_form_data.deleted_attributes
         return edit_form_data
         
     def render_upload_form(

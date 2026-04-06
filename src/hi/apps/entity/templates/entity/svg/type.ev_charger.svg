@@ -1,0 +1,24 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+
+<!-- Charging station body -->
+<rect x="18" y="8" width="28" height="40" rx="3" fill="#e0e0e0" stroke="#555" stroke-width="1.5"/>
+
+<!-- Display screen -->
+<rect x="23" y="13" width="18" height="10" rx="1" fill="#2c3e50" stroke="#34495e" stroke-width="1"/>
+
+<!-- Lightning bolt on screen -->
+<path d="M34,15 L30,20 L33,20 L30,25 L36,19 L33,19 Z" fill="#4caf50"/>
+
+<!-- Charging cable -->
+<path d="M32,48 C32,52 28,54 28,58" fill="none" stroke="#555" stroke-width="3" stroke-linecap="round"/>
+
+<!-- Cable plug head -->
+<rect x="24" y="57" width="8" height="5" rx="1" fill="#333" stroke="#555" stroke-width="0.5"/>
+<rect x="26" y="62" width="2" height="2" rx="0.5" fill="#888"/>
+<rect x="30" y="62" width="2" height="2" rx="0.5" fill="#888"/>
+
+<!-- Status LED -->
+<circle cx="32" cy="28" r="2" fill="#4caf50"/>
+
+<!-- Mounting post -->
+<rect x="29" y="46" width="6" height="4" fill="#888"/>

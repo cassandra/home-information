@@ -13,6 +13,7 @@ class ProcessingResult:
 
     Provide this as 'processing_result' in the template context.
     """
-    title         : str
-    message_list  : List[ str ]     = field( default_factory = list )
-    error_list    : List[ str ]     = field( default_factory = list )
+    title           : str
+    message_list    : List[ str ]     = field( default_factory = list )
+    error_list      : List[ str ]     = field( default_factory = list )
+    footer_message  : str             = ''

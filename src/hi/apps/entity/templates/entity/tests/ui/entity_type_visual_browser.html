@@ -120,25 +120,17 @@
 
 </div>
 
-<!-- Enlarged View Modal -->
-<div class="modal fade" id="enlargedModal" tabindex="-1" role="dialog">
-  <div class="modal-dialog modal-dialog-centered" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="enlargedModalTitle">EntityType Details</h5>
-        <button type="button" class="close" data-dismiss="modal">
-          <span>&times;</span>
-        </button>
-      </div>
-      <div class="modal-body text-center">
-        <div id="enlargedContent" style="height: 200px; display: flex; align-items: center; justify-content: center;">
-          <!-- Content will be populated by JavaScript -->
-        </div>
-        <div class="mt-3">
-          <strong id="enlargedName"></strong><br>
-          <span class="badge" id="enlargedType"></span>
-        </div>
-      </div>
+<!-- Enlarged View Overlay (plain div, not a Bootstrap modal, to avoid antinode removal) -->
+<div id="enlargedOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;"
+     onclick="if(event.target===this) this.style.display='none';">
+  <div style="background:#fff; border-radius:8px; padding:20px; max-width:400px; width:90%; text-align:center; position:relative;">
+    <button type="button" style="position:absolute; top:8px; right:12px; border:none; background:none; font-size:1.5rem; cursor:pointer;"
+            onclick="document.getElementById('enlargedOverlay').style.display='none';">&times;</button>
+    <h5 id="enlargedModalTitle" class="mb-3">EntityType Details</h5>
+    <div id="enlargedContent" style="height:200px; display:flex; align-items:center; justify-content:center;"></div>
+    <div class="mt-3">
+      <strong id="enlargedName"></strong><br>
+      <span class="badge" id="enlargedType"></span>
     </div>
   </div>
 </div>
@@ -233,7 +225,7 @@ function showEnlarged(entityTypeName, label, visualType) {
   originalVisual.style.maxHeight = '128px';
   originalVisual.classList.add('img-fluid');
 
-  // Update modal content
+  // Update overlay content
   document.getElementById('enlargedModalTitle').textContent = label;
   document.getElementById('enlargedContent').innerHTML = '';
   document.getElementById('enlargedContent').appendChild(originalVisual);
@@ -245,8 +237,8 @@ function showEnlarged(entityTypeName, label, visualType) {
     (visualType === 'Icon' ? 'primary' :
      visualType === 'Closed Path' ? 'success' : 'warning');
 
-  // Show modal
-  $('#enlargedModal').modal('show');
+  // Show overlay
+  document.getElementById('enlargedOverlay').style.display = 'flex';
 }
 </script>
 

@@ -1,0 +1,26 @@
+<rect class="hi-entity-bg" x="0" y="0" width="64" height="64" fill="none"/>
+
+<!-- Detector body (small desktop unit, rounded) -->
+<rect x="10" y="14" width="44" height="40" rx="6" fill="#f5f5f5" stroke="#555" stroke-width="1.5"/>
+
+<!-- Display screen -->
+<rect x="16" y="19" width="32" height="18" rx="2" fill="#1a1a2e" stroke="#333" stroke-width="1"/>
+
+<!-- Radon reading -->
+<text x="32" y="30" font-family="monospace" font-size="10" fill="#4caf50" text-anchor="middle">0.8</text>
+<text x="32" y="35" font-family="monospace" font-size="3.5" fill="#888" text-anchor="middle">pCi/L</text>
+
+<!-- Rn symbol -->
+<text x="32" y="48" font-family="serif" font-size="8" font-weight="bold" fill="#777" text-anchor="middle">Rn</text>
+
+<!-- Status indicator -->
+<circle cx="44" cy="46" r="3" fill="#4caf50" stroke="#388e3c" stroke-width="0.5"/>
+
+<!-- Air intake vents (sides) -->
+<line x1="11" y1="28" x2="11" y2="32" stroke="#ccc" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="11" y1="34" x2="11" y2="38" stroke="#ccc" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="11" y1="40" x2="11" y2="44" stroke="#ccc" stroke-width="1.5" stroke-linecap="round"/>
+
+<line x1="53" y1="28" x2="53" y2="32" stroke="#ccc" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="53" y1="34" x2="53" y2="38" stroke="#ccc" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="53" y1="40" x2="53" y2="44" stroke="#ccc" stroke-width="1.5" stroke-linecap="round"/>

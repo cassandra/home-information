@@ -234,6 +234,27 @@ class TestConfigSettingsView(DualModeViewTestCase):
         self.assertIn(f'data-default-value="{expected_default}"', content)
         self.assertIn(f"Hi.attr.restoreDefaultValue('{attribute.id}')", content)
 
+    def test_setting_description_is_rendered(self):
+        """Config settings page should show SettingDefinition descriptions."""
+        SubsystemAttribute.objects.create(
+            subsystem=self.subsystem,
+            setting_key=SecuritySetting.SECURITY_NIGHT_START.key,
+            name='Security Night Start',
+            value='23:00',
+            value_type_str=str(AttributeValueType.ENUM),
+            attribute_type_str=str(AttributeType.PREDEFINED),
+        )
+
+        url = reverse('config_settings', kwargs={'subsystem_id': self.subsystem.id})
+        response = self.client.get(url)
+
+        self.assertSuccessResponse(response)
+        self.assertHtmlResponse(response)
+
+        content = response.content.decode('utf-8')
+        expected_description = SecuritySetting.SECURITY_NIGHT_START.definition.description
+        self.assertIn(expected_description, content)
+
     def test_restore_subsystem_confirm_modal(self):
         """Subsystem reset confirmation is rendered by a server modal view."""
         url = reverse(

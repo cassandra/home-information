@@ -14,6 +14,9 @@ class LocationAttributeInLine(admin.TabularInline):
     extra = 0
     show_change_link = True
 
+    def get_queryset( self, request ):
+        return self.model.all_objects.all()
+
 
 class LocationAttributeHistoryInLine(admin.TabularInline):
     model = models.LocationAttributeHistory
@@ -66,16 +69,21 @@ class LocationViewAdmin(admin.ModelAdmin):
 class LocationAttributeAdmin(admin.ModelAdmin):
 
     show_full_result_count = False
-    
+
     list_display = (
         'location',
         'name',
         'value',
         'value_type_str',
         'attribute_type_str',
+        'is_deleted',
         'created_datetime',
     )
 
+    list_filter = ( 'is_deleted', )
     search_fields = ['name', 'location__name']
     readonly_fields = ('location', 'created_datetime')
     inlines = [LocationAttributeHistoryInLine]
+
+    def get_queryset( self, request ):
+        return self.model.all_objects.all()
