@@ -167,10 +167,15 @@ class AttributeUploadForm( forms.ModelForm ):
     def save( self, commit = True ):
         instance = super().save( commit = False )
 
-        mime_type_tuple = mimetypes.guess_type( instance.file_value.name )
+        uploaded_mime_type = getattr(instance.file_value, 'content_type', None)
+        if uploaded_mime_type:
+            uploaded_mime_type = uploaded_mime_type.split(';', 1)[0].strip().lower()
+        if not uploaded_mime_type:
+            mime_type_tuple = mimetypes.guess_type( instance.file_value.name )
+            uploaded_mime_type = mime_type_tuple[0]
         
         instance.name = instance.file_value.name
-        instance.file_mime_type = mime_type_tuple[0]
+        instance.file_mime_type = uploaded_mime_type
         instance.value_type_str = str( AttributeValueType.FILE )
         instance.attribute_type_str = str(AttributeType.CUSTOM)
         instance.is_editable = True
@@ -178,4 +183,5 @@ class AttributeUploadForm( forms.ModelForm ):
 
         if commit:
             instance.save()
+            instance.generate_thumbnail_best_effort()
         return instance
