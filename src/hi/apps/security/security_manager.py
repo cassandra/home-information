@@ -71,6 +71,8 @@ class SecurityManager( Singleton, SettingsMixin ):
         return self._security_level
 
     def get_console_away_auto_lock_version(self) -> str:
+        if not self._redis_client:
+            return None
         return self._redis_client.get(self.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY)
     
     def get_security_status_data(self) -> SecurityStatusData:
@@ -210,6 +212,8 @@ class SecurityManager( Singleton, SettingsMixin ):
         return
 
     def _increment_console_away_auto_lock_version(self):
+        if not self._redis_client:
+            return
         current_version_str = self._redis_client.get(self.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY)
         try:
             current_version = int(current_version_str)
