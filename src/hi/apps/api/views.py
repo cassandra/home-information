@@ -11,6 +11,7 @@ from django.views.generic import View
 from hi.apps.alert.alert_mixins import AlertMixin
 import hi.apps.common.datetimeproxy as datetimeproxy
 from hi.apps.config.settings_mixins import SettingsMixin
+from hi.apps.console.constants import ConsoleConstants
 from hi.apps.console.console_mixins import ConsoleMixin
 from hi.apps.console.transient_view_manager import TransientViewManager
 from hi.apps.monitor.status_display_manager import StatusDisplayManager
@@ -35,6 +36,7 @@ class StatusView( View,
     CssClassUpdateMapAttr = 'cssClassUpdateMap'
     IdReplaceUpdateMapAttr = 'idReplaceUpdateMap'
     IdReplaceHashMapAttr = 'idReplaceHashMap'
+    ConsoleLockedAttr = 'consoleLocked'
     TransientViewSuggestionAttr = 'transientViewSuggestion'
     TransientViewUrlAttr = 'url'
     TransientViewDurationSecondsAttr = 'durationSeconds'
@@ -91,6 +93,10 @@ class StatusView( View,
             self.CssClassUpdateMapAttr: css_class_update_map,
             self.IdReplaceUpdateMapAttr: id_replace_map,
             self.IdReplaceHashMapAttr: id_replace_hash_map,
+            self.ConsoleLockedAttr: request.session.get(
+                ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR,
+                False,
+            ),
         }
         
         if suggestion:

@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from django.urls import reverse
 
+from hi.apps.console.constants import ConsoleConstants
 from hi.testing.view_test_base import AsyncViewTestCase
 
 logging.disable(logging.CRITICAL)
@@ -31,6 +32,29 @@ class TestStatusView(AsyncViewTestCase):
         self.assertIn('cssClassUpdateMap', data)
         self.assertIn('idReplaceUpdateMap', data)
         self.assertIn('idReplaceHashMap', data)
+        self.assertIn('consoleLocked', data)
+
+    def test_status_view_reports_console_locked_false_by_default(self):
+        """Test that status response defaults consoleLocked to False."""
+        url = reverse('api_status')
+        response = self.async_get(url)
+
+        self.assertSuccessResponse(response)
+        data = response.json()
+        self.assertFalse(data['consoleLocked'])
+
+    def test_status_view_reports_console_locked_true_when_session_locked(self):
+        """Test that status response reflects session lock state."""
+        session = self.client.session
+        session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = True
+        session.save()
+
+        url = reverse('api_status')
+        response = self.async_get(url)
+
+        self.assertSuccessResponse(response)
+        data = response.json()
+        self.assertTrue(data['consoleLocked'])
 
     def test_status_view_timestamp_format(self):
         """Test that timestamps in status response are properly formatted."""

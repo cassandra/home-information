@@ -1,6 +1,6 @@
 import logging
 from threading import Timer, Lock
-from typing import Dict
+from typing import Dict, Optional
 
 from django.core.exceptions import BadRequest
 from django.http import HttpRequest
@@ -29,6 +29,7 @@ class SecurityManager( Singleton, SettingsMixin ):
     SECURITY_STATE_LABEL_SNOOZED = 'Snoozed'
 
     SECURITY_STATE_CACHE_KEY = 'hi.security.state'
+    CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY = 'hi.console.away.auto_lock_version'
     
     def __init_singleton__(self):
         self._security_state = SecurityState.default()
@@ -68,6 +69,11 @@ class SecurityManager( Singleton, SettingsMixin ):
     @property
     def security_level(self) -> SecurityLevel:
         return self._security_level
+
+    def get_console_away_auto_lock_version( self ) -> Optional[str]:
+        if not self._redis_client:
+            return None
+        return self._redis_client.get( self.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY )
     
     def get_security_status_data(self) -> SecurityStatusData:
         with self._security_status_lock:
@@ -199,7 +205,16 @@ class SecurityManager( Singleton, SettingsMixin ):
 
     def _apply_delayed_state( self ):
         logger.debug( f'Applying delayed security state = {self._delayed_security_state}' )
-        self.update_security_state_immediate( new_security_state = self._delayed_security_state )
+        delayed_security_state = self._delayed_security_state
+        self.update_security_state_immediate( new_security_state = delayed_security_state )
+        if delayed_security_state == SecurityState.AWAY:
+            self._increment_console_away_auto_lock_version()
+        return
+
+    def _increment_console_away_auto_lock_version( self ) -> None:
+        if not self._redis_client:
+            return
+        self._redis_client.incr( self.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY )
         return
     
     def update_security_state_auto( self, new_security_state  : SecurityState ):
