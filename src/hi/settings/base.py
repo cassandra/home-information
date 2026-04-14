@@ -325,6 +325,8 @@ CACHES = {
     }
 }
 
+TEST_RUNNER = 'hi.testing.runner.HiTestRunner'
+
 
 AUTH_USER_MODEL = "custom.CustomUser"
 SUPPRESS_AUTHENTICATION = ENV.SUPPRESS_AUTHENTICATION
