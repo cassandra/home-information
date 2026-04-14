@@ -29,7 +29,7 @@ class SecurityManager( Singleton, SettingsMixin ):
     SECURITY_STATE_LABEL_SNOOZED = 'Snoozed'
 
     SECURITY_STATE_CACHE_KEY = 'hi.security.state'
-    CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY = 'hi.console.away.auto_lock_version'
+    CONSOLE_AWAY_LOCK_TIMESTAMP_CACHE_KEY = 'hi.console.away.lock_timestamp'
     
     def __init_singleton__(self):
         self._security_state = SecurityState.default()
@@ -70,10 +70,10 @@ class SecurityManager( Singleton, SettingsMixin ):
     def security_level(self) -> SecurityLevel:
         return self._security_level
 
-    def get_console_away_auto_lock_version( self ) -> Optional[str]:
+    def get_console_away_lock_timestamp( self ) -> Optional[str]:
         if not self._redis_client:
             return None
-        return self._redis_client.get( self.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY )
+        return self._redis_client.get( self.CONSOLE_AWAY_LOCK_TIMESTAMP_CACHE_KEY )
     
     def get_security_status_data(self) -> SecurityStatusData:
         with self._security_status_lock:
@@ -208,13 +208,22 @@ class SecurityManager( Singleton, SettingsMixin ):
         delayed_security_state = self._delayed_security_state
         self.update_security_state_immediate( new_security_state = delayed_security_state )
         if delayed_security_state == SecurityState.AWAY:
-            self._increment_console_away_auto_lock_version()
+            self._set_console_away_lock_timestamp()
         return
 
-    def _increment_console_away_auto_lock_version( self ) -> None:
+    def _set_console_away_lock_timestamp( self ) -> None:
         if not self._redis_client:
             return
-        self._redis_client.incr( self.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY )
+        self._redis_client.set(
+            self.CONSOLE_AWAY_LOCK_TIMESTAMP_CACHE_KEY,
+            str( datetimeproxy.now() ),
+        )
+        return
+
+    def _delete_console_away_lock_timestamp( self ) -> None:
+        if not self._redis_client:
+            return
+        self._redis_client.delete( self.CONSOLE_AWAY_LOCK_TIMESTAMP_CACHE_KEY )
         return
     
     def update_security_state_auto( self, new_security_state  : SecurityState ):
@@ -260,7 +269,7 @@ class SecurityManager( Singleton, SettingsMixin ):
             self._security_status_lock.acquire()
         try:
             self._cancel_security_state_transition()
-            
+
             if new_security_state == SecurityState.DISABLED:
                 self._security_level = SecurityLevel.OFF
 
@@ -276,9 +285,13 @@ class SecurityManager( Singleton, SettingsMixin ):
                 logger.error( f'Unsupported security state "{new_security_state}"' )
                 return
 
+            previous_state = self._security_state
             self._security_state = new_security_state
             self._redis_client.set( self.SECURITY_STATE_CACHE_KEY, str( self._security_state ))
-            
+
+            if previous_state == SecurityState.AWAY and new_security_state != SecurityState.AWAY:
+                self._delete_console_away_lock_timestamp()
+
         finally:
             if not lock_acquired:
                 self._security_status_lock.release()
@@ -299,6 +312,8 @@ class SecurityManager( Singleton, SettingsMixin ):
             previous_security_state = SecurityState.from_name_safe( previous_security_state_str )
             if not previous_security_state.auto_change_allowed:
                 self.update_security_state_immediate( new_security_state = previous_security_state )
+                if previous_security_state == SecurityState.AWAY:
+                    self._set_console_away_lock_timestamp()
                 return
         
         # Else, revert to look at time of day to initialize the state.

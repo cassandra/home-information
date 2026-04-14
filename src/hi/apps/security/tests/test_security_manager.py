@@ -278,8 +278,8 @@ class TestSecurityManager(BaseTestCase):
 
             mock_update.assert_called_once_with(new_security_state=SecurityState.AWAY)
 
-    def test_apply_delayed_state_away_triggers_auto_lock_event(self):
-        """Test delayed AWAY transition increments console auto-lock event version."""
+    def test_apply_delayed_state_away_sets_lock_timestamp(self):
+        """Test delayed AWAY transition sets console auto-lock timestamp."""
         manager = SecurityManager()
         manager._delayed_security_state = SecurityState.AWAY
         manager._redis_client = Mock()
@@ -287,13 +287,14 @@ class TestSecurityManager(BaseTestCase):
         with patch.object( manager, 'update_security_state_immediate' ):
             manager._apply_delayed_state()
 
-        manager._redis_client.incr.assert_called_once_with(
-            SecurityManager.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY,
+        manager._redis_client.set.assert_called_once_with(
+            SecurityManager.CONSOLE_AWAY_LOCK_TIMESTAMP_CACHE_KEY,
+            manager._redis_client.set.call_args[0][1],  # timestamp string
         )
         return
 
-    def test_apply_delayed_state_non_away_does_not_trigger_auto_lock(self):
-        """Test delayed non-AWAY transition does not increment auto-lock version."""
+    def test_apply_delayed_state_non_away_does_not_set_timestamp(self):
+        """Test delayed non-AWAY transition does not set auto-lock timestamp."""
         manager = SecurityManager()
         manager._delayed_security_state = SecurityState.NIGHT
         manager._redis_client = Mock()
@@ -301,7 +302,61 @@ class TestSecurityManager(BaseTestCase):
         with patch.object( manager, 'update_security_state_immediate' ):
             manager._apply_delayed_state()
 
-        manager._redis_client.incr.assert_not_called()
+        manager._redis_client.set.assert_not_called()
+        return
+
+    def test_leaving_away_deletes_lock_timestamp(self):
+        """Test transitioning out of AWAY deletes the auto-lock timestamp."""
+        manager = SecurityManager()
+        manager._security_state = SecurityState.AWAY
+        manager._redis_client = Mock()
+
+        manager.update_security_state_immediate( SecurityState.DAY )
+
+        manager._redis_client.delete.assert_called_once_with(
+            SecurityManager.CONSOLE_AWAY_LOCK_TIMESTAMP_CACHE_KEY,
+        )
+        return
+
+    def test_staying_in_away_does_not_delete_timestamp(self):
+        """Test re-entering AWAY does not delete the auto-lock timestamp."""
+        manager = SecurityManager()
+        manager._security_state = SecurityState.AWAY
+        manager._redis_client = Mock()
+
+        manager.update_security_state_immediate( SecurityState.AWAY )
+
+        manager._redis_client.delete.assert_not_called()
+        return
+
+    def test_non_away_transition_does_not_delete_timestamp(self):
+        """Test non-AWAY to non-AWAY transition does not delete timestamp."""
+        manager = SecurityManager()
+        manager._security_state = SecurityState.DAY
+        manager._redis_client = Mock()
+
+        manager.update_security_state_immediate( SecurityState.NIGHT )
+
+        manager._redis_client.delete.assert_not_called()
+        return
+
+    @patch('hi.apps.security.security_manager.get_redis_client')
+    def test_initialize_away_sets_lock_timestamp(self, mock_get_redis_client):
+        """Test initializing with AWAY state sets a fresh lock timestamp."""
+        mock_redis = Mock()
+        mock_get_redis_client.return_value = mock_redis
+        mock_redis.get.return_value = str( SecurityState.AWAY )
+
+        manager = SecurityManager()
+        manager._initialize_security_state()
+
+        # Should set the lock timestamp (second set call after the state set)
+        set_calls = mock_redis.set.call_args_list
+        timestamp_calls = [
+            c for c in set_calls
+            if c[0][0] == SecurityManager.CONSOLE_AWAY_LOCK_TIMESTAMP_CACHE_KEY
+        ]
+        self.assertEqual( len( timestamp_calls ), 1 )
         return
 
     def test_update_security_state_auto_blocked_by_state(self):

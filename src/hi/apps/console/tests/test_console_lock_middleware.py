@@ -29,14 +29,14 @@ class TestConsoleLockMiddleware( BaseTestCase ):
         with patch( 'hi.apps.console.middleware.SecurityManager' ) as mock_security_manager, \
              patch( 'hi.apps.console.middleware.ConsoleSettingsHelper' ) as mock_helper, \
              patch( 'hi.apps.console.middleware.ConsoleUnlockView' ) as mock_unlock_view:
-            mock_security_manager.return_value.get_console_away_auto_lock_version.return_value = '2'
+            mock_security_manager.return_value.get_console_away_lock_timestamp.return_value = '2'
             mock_helper.return_value.get_console_lock_password.return_value = 'secret'
             mock_unlock_view.return_value.get.return_value = HttpResponse( 'locked', status = 403 )
 
             response = self.middleware.process_request( request )
 
             self.assertEqual(
-                request.session[ConsoleConstants.CONSOLE_AWAY_AUTO_LOCK_VERSION_SESSION_VAR],
+                request.session[ConsoleConstants.CONSOLE_AWAY_LOCK_TIMESTAMP_SESSION_VAR],
                 '2',
             )
             self.assertTrue( request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] )
@@ -47,12 +47,12 @@ class TestConsoleLockMiddleware( BaseTestCase ):
         """Middleware does not relock when the AWAY auto-lock event was already seen."""
         request = self.factory.get( reverse( 'home' ) )
         request.session = {
-            ConsoleConstants.CONSOLE_AWAY_AUTO_LOCK_VERSION_SESSION_VAR: '2',
+            ConsoleConstants.CONSOLE_AWAY_LOCK_TIMESTAMP_SESSION_VAR: '2',
             ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR: False,
         }
 
         with patch( 'hi.apps.console.middleware.SecurityManager' ) as mock_security_manager:
-            mock_security_manager.return_value.get_console_away_auto_lock_version.return_value = '2'
+            mock_security_manager.return_value.get_console_away_lock_timestamp.return_value = '2'
 
             response = self.middleware.process_request( request )
 
@@ -64,18 +64,18 @@ class TestConsoleLockMiddleware( BaseTestCase ):
         """Middleware records new event version while allowing excluded unlock path."""
         request = self.factory.get( reverse( 'console_unlock' ) )
         request.session = {
-            ConsoleConstants.CONSOLE_AWAY_AUTO_LOCK_VERSION_SESSION_VAR: '2',
+            ConsoleConstants.CONSOLE_AWAY_LOCK_TIMESTAMP_SESSION_VAR: '2',
             ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR: True,
         }
 
         with patch( 'hi.apps.console.middleware.SecurityManager' ) as mock_security_manager:
-            mock_security_manager.return_value.get_console_away_auto_lock_version.return_value = '3'
+            mock_security_manager.return_value.get_console_away_lock_timestamp.return_value = '3'
 
             response = self.middleware.process_request( request )
 
             self.assertIsNone( response )
             self.assertEqual(
-                request.session[ConsoleConstants.CONSOLE_AWAY_AUTO_LOCK_VERSION_SESSION_VAR],
+                request.session[ConsoleConstants.CONSOLE_AWAY_LOCK_TIMESTAMP_SESSION_VAR],
                 '3',
             )
             self.assertTrue( request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] )
@@ -87,7 +87,7 @@ class TestConsoleLockMiddleware( BaseTestCase ):
         request.session = {}
 
         with patch( 'hi.apps.console.middleware.SecurityManager' ) as mock_security_manager:
-            mock_security_manager.return_value.get_console_away_auto_lock_version.return_value = None
+            mock_security_manager.return_value.get_console_away_lock_timestamp.return_value = None
 
             response = self.middleware.process_request( request )
 
@@ -102,14 +102,14 @@ class TestConsoleLockMiddleware( BaseTestCase ):
 
         with patch( 'hi.apps.console.middleware.SecurityManager' ) as mock_security_manager, \
              patch( 'hi.apps.console.middleware.ConsoleSettingsHelper' ) as mock_helper:
-            mock_security_manager.return_value.get_console_away_auto_lock_version.return_value = '2'
+            mock_security_manager.return_value.get_console_away_lock_timestamp.return_value = '2'
             mock_helper.return_value.get_console_lock_password.return_value = ''
 
             response = self.middleware.process_request( request )
 
             self.assertIsNone( response )
             self.assertEqual(
-                request.session[ConsoleConstants.CONSOLE_AWAY_AUTO_LOCK_VERSION_SESSION_VAR],
+                request.session[ConsoleConstants.CONSOLE_AWAY_LOCK_TIMESTAMP_SESSION_VAR],
                 '2',
             )
             self.assertNotIn( ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR, request.session )
@@ -119,18 +119,18 @@ class TestConsoleLockMiddleware( BaseTestCase ):
         """Locked session does not block api_status path, which must stay pollable."""
         request = self.factory.get( reverse( 'api_status' ) )
         request.session = {
-            ConsoleConstants.CONSOLE_AWAY_AUTO_LOCK_VERSION_SESSION_VAR: '2',
+            ConsoleConstants.CONSOLE_AWAY_LOCK_TIMESTAMP_SESSION_VAR: '2',
             ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR: True,
         }
 
         with patch( 'hi.apps.console.middleware.SecurityManager' ) as mock_security_manager:
-            mock_security_manager.return_value.get_console_away_auto_lock_version.return_value = '3'
+            mock_security_manager.return_value.get_console_away_lock_timestamp.return_value = '3'
 
             response = self.middleware.process_request( request )
 
             self.assertIsNone( response )
             self.assertEqual(
-                request.session[ConsoleConstants.CONSOLE_AWAY_AUTO_LOCK_VERSION_SESSION_VAR],
+                request.session[ConsoleConstants.CONSOLE_AWAY_LOCK_TIMESTAMP_SESSION_VAR],
                 '3',
             )
             self.assertTrue( request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] )
