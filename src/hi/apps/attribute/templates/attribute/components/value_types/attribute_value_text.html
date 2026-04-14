@@ -26,7 +26,8 @@ New/unsaved TEXT forms start directly in edit mode.
   <!-- Read mode with inline links -->
   <div class="{{ DIVID.ATTR_V2_TEXT_READ_MODE_CLASS }}" data-read-expanded="false"
       {% if not attribute_form.instance.pk %}style="display: none;"{% endif %}>
-    <div class="{{ DIVID.ATTR_V2_TEXT_READ_CONTENT_CLASS }}{% if overflows > 0 %} is-collapsed{% endif %}">
+    <div class="{{ DIVID.ATTR_V2_TEXT_READ_CONTENT_CLASS }}{% if overflows > 0 %} is-collapsed{% endif %}"
+        {% if attribute_form.instance.is_editable %}onclick="Hi.attr.handleTextReadContentClick(event)" style="cursor: text;"{% endif %}>
       {% if value_text %}
         {{ value_text|attribute_text_linkify }}
       {% else %}

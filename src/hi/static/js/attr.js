@@ -131,7 +131,11 @@
         cancelTextEditMode: function(button) {
             return _cancelTextEditMode(button);
         },
-        
+
+        handleTextReadContentClick: function(event) {
+            return _handleTextReadContentClick(event);
+        },
+
         reorderAttributeCard: function(button, direction) {
             return _reorderAttributeCard(button, direction);
         },
@@ -1270,6 +1274,19 @@
         }
 
         return;
+    }
+
+    function _handleTextReadContentClick(event) {
+        // Don't enter edit mode if clicking a link
+        if (event.target.closest('a')) {
+            return;
+        }
+        // Don't enter edit mode if user is selecting text
+        const selection = window.getSelection();
+        if (selection && !selection.isCollapsed) {
+            return;
+        }
+        _enterTextEditMode(event.currentTarget);
     }
 
     function _enterTextEditMode(button) {
