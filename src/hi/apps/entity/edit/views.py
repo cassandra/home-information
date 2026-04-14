@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from django.core.exceptions import BadRequest, PermissionDenied
 from django.db import transaction
@@ -82,15 +82,39 @@ class EntityAddView( HiModalView ):
             }
             return self.modal_response( request, context )
 
+        quantity = entity_form.cleaned_data['quantity']
         with transaction.atomic():
-            entity = entity_form.save()
-            self._add_to_current_view_type(
-                request = request,
-                entity = entity,
+            created_entities = self._create_entities_bulk(
+                entity_form = entity_form,
+                quantity = quantity,
             )
+            for entity in created_entities:
+                self._add_to_current_view_type(
+                    request = request,
+                    entity = entity,
+                )
+                continue
             
         redirect_url = reverse('home')
         return self.redirect_response( request, redirect_url )
+
+    def _create_entities_bulk(self, entity_form: EntityForm, quantity: int) -> List[Entity]:
+        base_name = entity_form.cleaned_data['name']
+        entity_type_str = entity_form.cleaned_data['entity_type_str']
+
+        entities = []
+        for i in range( 1, quantity + 1 ):
+            entity_name = base_name if quantity == 1 else f'{base_name} ({i})'
+            entity = Entity(
+                name=entity_name,
+                entity_type_str=entity_type_str,
+            )
+            entities.append(entity)
+            continue
+
+        created_entities = Entity.objects.bulk_create(entities)
+        
+        return created_entities
 
     def _add_to_current_view_type( self, request, entity : Entity ):
         

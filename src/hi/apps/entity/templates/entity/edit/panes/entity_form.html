@@ -29,3 +29,11 @@
     <div class="sidebar-form-error">{{ entity_form.entity_type_str.errors }}</div>
   {% endif %}
 </div>
+
+<div class="sidebar-form-field">
+  <label for="{{ entity_form.quantity.id_for_label }}" class="sidebar-form-label">{{ entity_form.quantity.label }}</label>
+  <input type="number" id="{{ entity_form.quantity.id_for_label }}" name="{{ entity_form.quantity.name }}" value="{{ entity_form.quantity.value|default:1 }}" min="{{ entity_form.quantity.field.min_value }}" max="{{ entity_form.quantity.field.max_value }}" step="{{ entity_form.quantity.field.widget.attrs.step|default:1 }}" class="sidebar-form-input">
+  {% if entity_form.quantity.errors %}
+    <div class="sidebar-form-error">{{ entity_form.quantity.errors }}</div>
+  {% endif %}
+</div>
