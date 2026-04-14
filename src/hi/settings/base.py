@@ -312,7 +312,6 @@ CONSTANCE_CONFIG = {
 
 REDIS_HOST = ENV.REDIS_HOST
 REDIS_PORT = ENV.REDIS_PORT
-REDIS_KEY_PREFIX = ENV.REDIS_KEY_PREFIX
 
 CACHES = {
     'default': {
@@ -321,9 +320,11 @@ CACHES = {
         'LOCATION': [
             f'redis://{REDIS_HOST}:{REDIS_PORT}',
         ],
-        "KEY_PREFIX": f'main:{REDIS_KEY_PREFIX}',
+        "KEY_PREFIX": 'main:',
     }
 }
+
+TEST_RUNNER = 'hi.testing.runner.HiTestRunner'
 
 
 AUTH_USER_MODEL = "custom.CustomUser"
