@@ -85,7 +85,7 @@ Individual attribute attribute card with value editing and actions
       {% endif %}
 
       {% if attribute_form.instance.pk and attribute_form.instance.is_editable %}
-        {% if attribute_form.instance.value_type.name == 'TEXT' or attribute_form.instance.value_type.is_secret %}
+        {% if attribute_form.instance.value_type.name == 'TEXT' %}
           <button type="button"
                   class="btn btn-sm btn-outline-secondary"
                   title="Edit value"
