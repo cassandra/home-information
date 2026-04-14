@@ -26,7 +26,7 @@
     const ServerPollingIntervalMs = 3 * 1000;
     const PollingErrorNotifyTimeMs = 60 * 1000;
     const ServerErrorMessageSelector = '#hi-server-error-msg';
-    const ServerPollingUrl = '/api/status';
+    const ServerPollingUrl = Hi.API_STATUS_URL;
     const ServerStartTimestampAttr = 'startTimestamp';
     const ServerTimestampAttr = 'timestamp';
     const LastServerTimestampAttr = 'lastTimestamp';
@@ -34,7 +34,7 @@
     const IdReplaceUpdateMapAttr = 'idReplaceUpdateMap';
     const IdReplaceHashMapAttr = 'idReplaceHashMap';
     const ConsoleLockedAttr = 'consoleLocked';
-    const ConsoleUnlockUrl = '/console/unlock';
+    const ConsoleUnlockUrl = Hi.CONSOLE_UNLOCK_URL;
     const TransientViewSuggestionAttr = 'transientViewSuggestion';
     const TransientViewUrlAttr = 'url';
     const TransientViewDurationSecondsAttr = 'durationSeconds';
