@@ -1,8 +1,9 @@
+from django.http import HttpRequest
 from django.urls import reverse
 
-from .console_helper import ConsoleSettingsHelper
 from hi.apps.security.security_manager import SecurityManager
 
+from .console_helper import ConsoleSettingsHelper
 from .constants import ConsoleConstants
 from .views import ConsoleUnlockView
 
@@ -34,7 +35,7 @@ class ConsoleLockMiddleware:
             return ConsoleUnlockView().get( request )
         return None
 
-    def _process_away_auto_lock( self, request ):
+    def _process_away_auto_lock( self, request : HttpRequest ) -> None:
         auto_lock_version = SecurityManager().get_console_away_auto_lock_version()
         if not auto_lock_version:
             return
@@ -42,10 +43,10 @@ class ConsoleLockMiddleware:
         previous_auto_lock_version = request.session.get(
             ConsoleConstants.CONSOLE_AWAY_AUTO_LOCK_VERSION_SESSION_VAR
         )
-        if str(previous_auto_lock_version) == str(auto_lock_version):
+        if str( previous_auto_lock_version ) == str( auto_lock_version ):
             return
 
-        request.session[ConsoleConstants.CONSOLE_AWAY_AUTO_LOCK_VERSION_SESSION_VAR] = str(auto_lock_version)
+        request.session[ConsoleConstants.CONSOLE_AWAY_AUTO_LOCK_VERSION_SESSION_VAR] = str( auto_lock_version )
 
         if request.session.get( ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR, False ):
             return
@@ -56,6 +57,6 @@ class ConsoleLockMiddleware:
 
         request.session[ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR] = True
         return
-    
+
     def process_response(self, request, response):
         return response

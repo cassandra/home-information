@@ -1,6 +1,6 @@
 import logging
 from threading import Timer, Lock
-from typing import Dict
+from typing import Dict, Optional
 
 from django.core.exceptions import BadRequest
 from django.http import HttpRequest
@@ -70,10 +70,10 @@ class SecurityManager( Singleton, SettingsMixin ):
     def security_level(self) -> SecurityLevel:
         return self._security_level
 
-    def get_console_away_auto_lock_version(self) -> str:
+    def get_console_away_auto_lock_version( self ) -> Optional[str]:
         if not self._redis_client:
             return None
-        return self._redis_client.get(self.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY)
+        return self._redis_client.get( self.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY )
     
     def get_security_status_data(self) -> SecurityStatusData:
         with self._security_status_lock:
@@ -211,19 +211,10 @@ class SecurityManager( Singleton, SettingsMixin ):
             self._increment_console_away_auto_lock_version()
         return
 
-    def _increment_console_away_auto_lock_version(self):
+    def _increment_console_away_auto_lock_version( self ) -> None:
         if not self._redis_client:
             return
-        current_version_str = self._redis_client.get(self.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY)
-        try:
-            current_version = int(current_version_str)
-        except (TypeError, ValueError):
-            current_version = 0
-
-        self._redis_client.set(
-            self.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY,
-            str(current_version + 1),
-        )
+        self._redis_client.incr( self.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY )
         return
     
     def update_security_state_auto( self, new_security_state  : SecurityState ):

@@ -271,10 +271,11 @@ class TestSecurityManager(BaseTestCase):
         """Test apply delayed state - calls immediate update with delayed state."""
         manager = SecurityManager()
         manager._delayed_security_state = SecurityState.AWAY
-        
+        manager._redis_client = Mock()
+
         with patch.object(manager, 'update_security_state_immediate') as mock_update:
             manager._apply_delayed_state()
-            
+
             mock_update.assert_called_once_with(new_security_state=SecurityState.AWAY)
 
     def test_apply_delayed_state_away_triggers_auto_lock_event(self):
@@ -282,30 +283,26 @@ class TestSecurityManager(BaseTestCase):
         manager = SecurityManager()
         manager._delayed_security_state = SecurityState.AWAY
         manager._redis_client = Mock()
-        manager._redis_client.get.return_value = '7'
 
-        with patch.object(manager, 'update_security_state_immediate'):
+        with patch.object( manager, 'update_security_state_immediate' ):
             manager._apply_delayed_state()
 
-        manager._redis_client.set.assert_called_once_with(
+        manager._redis_client.incr.assert_called_once_with(
             SecurityManager.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY,
-            '8',
         )
+        return
 
-    def test_apply_delayed_state_away_initializes_auto_lock_event_version_when_unset(self):
-        """Test delayed AWAY transition initializes auto-lock event version when missing."""
+    def test_apply_delayed_state_non_away_does_not_trigger_auto_lock(self):
+        """Test delayed non-AWAY transition does not increment auto-lock version."""
         manager = SecurityManager()
-        manager._delayed_security_state = SecurityState.AWAY
+        manager._delayed_security_state = SecurityState.NIGHT
         manager._redis_client = Mock()
-        manager._redis_client.get.return_value = None
 
-        with patch.object(manager, 'update_security_state_immediate'):
+        with patch.object( manager, 'update_security_state_immediate' ):
             manager._apply_delayed_state()
 
-        manager._redis_client.set.assert_called_once_with(
-            SecurityManager.CONSOLE_AWAY_AUTO_LOCK_VERSION_CACHE_KEY,
-            '1',
-        )
+        manager._redis_client.incr.assert_not_called()
+        return
 
     def test_update_security_state_auto_blocked_by_state(self):
         """Test auto update blocked by non-auto-changeable state."""
