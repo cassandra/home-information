@@ -36,17 +36,17 @@ class ConsoleLockMiddleware:
         return None
 
     def _process_away_auto_lock( self, request : HttpRequest ) -> None:
-        auto_lock_version = SecurityManager().get_console_away_auto_lock_version()
-        if not auto_lock_version:
+        away_timestamp = SecurityManager().get_console_away_lock_timestamp()
+        if not away_timestamp:
             return
 
-        previous_auto_lock_version = request.session.get(
-            ConsoleConstants.CONSOLE_AWAY_AUTO_LOCK_VERSION_SESSION_VAR
+        previous_away_timestamp = request.session.get(
+            ConsoleConstants.CONSOLE_AWAY_LOCK_TIMESTAMP_SESSION_VAR
         )
-        if str( previous_auto_lock_version ) == str( auto_lock_version ):
+        if str( previous_away_timestamp ) == str( away_timestamp ):
             return
 
-        request.session[ConsoleConstants.CONSOLE_AWAY_AUTO_LOCK_VERSION_SESSION_VAR] = str( auto_lock_version )
+        request.session[ConsoleConstants.CONSOLE_AWAY_LOCK_TIMESTAMP_SESSION_VAR] = str( away_timestamp )
 
         if request.session.get( ConsoleConstants.CONSOLE_LOCKED_SESSION_VAR, False ):
             return
