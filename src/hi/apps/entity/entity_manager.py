@@ -1,7 +1,7 @@
 from decimal import Decimal
 import logging
 from threading import local
-from typing import List, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 from django.db import transaction
 from django.db.models.signals import post_save, post_delete
@@ -39,6 +39,9 @@ logger = logging.getLogger(__name__)
 class EntityManager(Singleton):
 
     DEFAULT_ICON_SIZE_PERCENT_OF_VIEWBOX = 10.0
+    DEFAULT_INITIAL_POSITION_GRID_COLUMNS = 4
+    DEFAULT_INITIAL_POSITION_GRID_SPACING_FRACTION = 0.18
+    DEFAULT_INITIAL_POSITION_VIEWBOX_MARGIN_FRACTION = 0.05
 
     def __init_singleton__(self):
         self._change_listeners = list()
@@ -113,7 +116,11 @@ class EntityManager(Singleton):
                 svg_path = svg_path_str,
             )
             
-    def create_entity_view( self, entity : Entity, location_view : LocationView ):
+    def create_entity_view( self,
+                            entity : Entity,
+                            location_view : LocationView,
+                            bulk_grid_index : Optional[int] = None,
+                            bulk_grid_total : Optional[int] = None ):
 
         with transaction.atomic():
 
@@ -129,6 +136,8 @@ class EntityManager(Singleton):
                 self.add_entity_position_if_needed(
                     entity = entity,
                     location_view = location_view,
+                    bulk_grid_index = bulk_grid_index,
+                    bulk_grid_total = bulk_grid_total,
                 )
             try:
                 entity_view = EntityView.objects.get(
@@ -152,7 +161,11 @@ class EntityManager(Singleton):
             entity_view.delete()
         return
     
-    def add_entity_to_view( self, entity : Entity, location_view : LocationView ):
+    def add_entity_to_view( self,
+                            entity : Entity,
+                            location_view : LocationView,
+                            bulk_grid_index : Optional[int] = None,
+                            bulk_grid_total : Optional[int] = None ):
 
         with transaction.atomic():
             # Only create delegate entities the first time an entity is added to a view.
@@ -168,6 +181,8 @@ class EntityManager(Singleton):
             _ = self.create_entity_view(
                 entity = entity,
                 location_view = location_view,
+                bulk_grid_index = bulk_grid_index,
+                bulk_grid_total = bulk_grid_total,
             )
             for delegate_entity in delegate_entity_list:
                 _ = self.create_entity_view(
@@ -201,7 +216,9 @@ class EntityManager(Singleton):
     
     def add_entity_position_if_needed( self,
                                        entity : Entity,
-                                       location_view : LocationView ) -> EntityPosition:
+                                       location_view : LocationView,
+                                       bulk_grid_index : Optional[int] = None,
+                                       bulk_grid_total : Optional[int] = None ) -> EntityPosition:
         try:
             _ = EntityPosition.objects.get(
                 location = location_view.location,
@@ -211,9 +228,16 @@ class EntityManager(Singleton):
         except EntityPosition.DoesNotExist:
             pass
 
-        # Default display in middle of current view
-        svg_x = location_view.svg_view_box.x + ( location_view.svg_view_box.width / 2.0 )
-        svg_y = location_view.svg_view_box.y + ( location_view.svg_view_box.height / 2.0 )
+        if bulk_grid_total is not None and bulk_grid_total > 1 and bulk_grid_index is not None:
+            svg_x, svg_y = self._get_bulk_initial_entity_position(
+                location_view = location_view,
+                bulk_grid_index = bulk_grid_index,
+                bulk_grid_total = bulk_grid_total,
+            )
+        else: # Default display in middle of current view
+            svg_x = location_view.svg_view_box.x + ( location_view.svg_view_box.width / 2.0 )
+            svg_y = location_view.svg_view_box.y + ( location_view.svg_view_box.height / 2.0 )
+
         svg_scale = self._get_default_icon_scale( entity = entity, location_view = location_view )
         
         entity_position = EntityPosition.objects.create(
@@ -225,6 +249,59 @@ class EntityManager(Singleton):
             svg_rotate = Decimal( 0.0 ),
         )
         return entity_position
+
+    def _get_bulk_initial_entity_position( self,
+                                           location_view : LocationView,
+                                           bulk_grid_index : int,
+                                           bulk_grid_total : int ) -> Tuple[float, float]:
+        view_box = location_view.svg_view_box
+        center_x = view_box.x + ( view_box.width / 2.0 )
+        center_y = view_box.y + ( view_box.height / 2.0 )
+
+        if bulk_grid_total <= 1:
+            return center_x, center_y
+
+        columns = min( max( 2, self.DEFAULT_INITIAL_POSITION_GRID_COLUMNS ), bulk_grid_total )
+        rows = ( bulk_grid_total + columns - 1 ) // columns
+
+        column_index = bulk_grid_index % columns
+        row_index = bulk_grid_index // columns
+
+        column_offset = column_index - ( ( columns - 1 ) / 2.0 )
+        row_offset = row_index - ( ( rows - 1 ) / 2.0 )
+
+        spacing_x = view_box.width * self.DEFAULT_INITIAL_POSITION_GRID_SPACING_FRACTION
+        spacing_y = view_box.height * self.DEFAULT_INITIAL_POSITION_GRID_SPACING_FRACTION
+
+        svg_x = center_x + ( column_offset * spacing_x )
+        svg_y = center_y + ( row_offset * spacing_y )
+
+        return self._clamp_point_to_viewbox(
+            svg_x = svg_x,
+            svg_y = svg_y,
+            view_box = view_box,
+        )
+
+    def _clamp_point_to_viewbox( self,
+                                 svg_x : float,
+                                 svg_y : float,
+                                 view_box ) -> Tuple[float, float]:
+        margin_x = view_box.width * self.DEFAULT_INITIAL_POSITION_VIEWBOX_MARGIN_FRACTION
+        margin_y = view_box.height * self.DEFAULT_INITIAL_POSITION_VIEWBOX_MARGIN_FRACTION
+
+        min_x = view_box.x + margin_x
+        max_x = ( view_box.x + view_box.width ) - margin_x
+        min_y = view_box.y + margin_y
+        max_y = ( view_box.y + view_box.height ) - margin_y
+
+        if min_x > max_x:
+            min_x = max_x = view_box.x + ( view_box.width / 2.0 )
+        if min_y > max_y:
+            min_y = max_y = view_box.y + ( view_box.height / 2.0 )
+
+        clamped_x = max( min_x, min( svg_x, max_x ) )
+        clamped_y = max( min_y, min( svg_y, max_y ) )
+        return clamped_x, clamped_y
 
     def _get_default_icon_scale( self,
                                  entity         : Entity,

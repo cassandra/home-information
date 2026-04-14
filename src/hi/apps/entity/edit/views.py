@@ -88,10 +88,12 @@ class EntityAddView( HiModalView ):
                 entity_form = entity_form,
                 quantity = quantity,
             )
-            for entity in created_entities:
+            for i, entity in enumerate( created_entities ):
                 self._add_to_current_view_type(
                     request = request,
                     entity = entity,
+                    bulk_grid_index = i,
+                    bulk_grid_total = quantity,
                 )
                 continue
             
@@ -116,7 +118,11 @@ class EntityAddView( HiModalView ):
         
         return created_entities
 
-    def _add_to_current_view_type( self, request, entity : Entity ):
+    def _add_to_current_view_type( self,
+                                   request,
+                                   entity : Entity,
+                                   bulk_grid_index : int = None,
+                                   bulk_grid_total : int = None ):
         
         if request.view_parameters.view_type.is_location_view:
             try:
@@ -124,6 +130,8 @@ class EntityAddView( HiModalView ):
                 EntityManager().add_entity_to_view(
                     entity = entity,
                     location_view = current_location_view,
+                    bulk_grid_index = bulk_grid_index,
+                    bulk_grid_total = bulk_grid_total,
                 )
             except LocationView.DoesNotExist:
                 logger.warning( 'No current location view to add new entity to.')
