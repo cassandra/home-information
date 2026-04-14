@@ -367,7 +367,8 @@
             const form = this.container.querySelector(this.config.formSelector);
             if (!form) return;
             
-            const displayFields = form.querySelectorAll(Hi.ATTR_V2_DISPLAY_FIELD_SELECTOR);
+            const textFieldSelector = `${Hi.ATTR_V2_DISPLAY_FIELD_SELECTOR}, ${Hi.ATTR_V2_TEXT_EDIT_FIELD_SELECTOR}`;
+            const displayFields = form.querySelectorAll(textFieldSelector);
             displayFields.forEach(displayField => {
                 const hiddenFieldId = displayField.getAttribute('data-hidden-field');
                 const hiddenField = hiddenFieldId ? document.getElementById(hiddenFieldId) : null;

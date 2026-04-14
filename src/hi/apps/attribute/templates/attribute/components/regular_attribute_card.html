@@ -83,6 +83,17 @@ Individual attribute attribute card with value editing and actions
         {% icon "chevron-down" size="sm" %}
       </button>
       {% endif %}
+
+      {% if attribute_form.instance.pk and attribute_form.instance.is_editable %}
+        {% if attribute_form.instance.value_type.name == 'TEXT' %}
+          <button type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  title="Edit value"
+                  onclick="Hi.attr.enterAttributeEditMode(this)">
+            {% icon "edit" size="sm" %}
+          </button>
+        {% endif %}
+      {% endif %}
       
       {% if attribute_form.instance.pk and not attribute_form.suppress_history %}
         <a href="{% attr_history_url attr_item_context attribute_form.instance.pk %}"
@@ -148,13 +159,13 @@ Individual attribute attribute card with value editing and actions
       {% elif attribute_form.instance.value_type.is_secret %}
         {% include "attribute/components/value_types/attribute_value_secret.html" %}
       {% else %}
-        <!-- TEXT and other types use textarea -->
+        <!-- TEXT and other fallback types use text read/edit component -->
         <div class="{{ DIVID.ATTR_V2_TEXT_VALUE_CLASS }}">
           {% include "attribute/components/value_types/attribute_value_text.html" %}
         </div>
       {% endif %}
     {% else %}
-      <!-- New attribute - always use textarea (TEXT behavior) -->
+      <!-- New attribute uses text read/edit component (starts in edit mode) -->
       <div class="{{ DIVID.ATTR_V2_TEXT_VALUE_CLASS }}">
         {% include "attribute/components/value_types/attribute_value_text.html" %}
       </div>

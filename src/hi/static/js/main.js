@@ -108,6 +108,10 @@
         ATTR_V2_AUTO_DISMISS_SELECTOR: '.attr-v2-auto-dismiss',
         ATTR_V2_UPDATE_BTN_SELECTOR: '.attr-v2-update-btn',
         ATTR_V2_DISPLAY_FIELD_SELECTOR: '.display-field',
+        ATTR_V2_TEXT_READ_MODE_SELECTOR: '.attr-v2-text-read-mode',
+        ATTR_V2_TEXT_READ_CONTENT_SELECTOR: '.attr-v2-text-read-content',
+        ATTR_V2_TEXT_EDIT_MODE_SELECTOR: '.attr-v2-text-edit-mode',
+        ATTR_V2_TEXT_EDIT_FIELD_SELECTOR: '.attr-v2-text-edit-field',
         ATTR_V2_SHOW_MORE_TEXT_SELECTOR: '.show-more-text',
         ATTR_V2_SHOW_LESS_TEXT_SELECTOR: '.show-less-text',
         
