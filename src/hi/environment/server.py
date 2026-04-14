@@ -33,7 +33,6 @@ class EnvironmentSettings:
     MEDIA_ROOT                 : str           = None
     REDIS_HOST                 : str           = 'localhost'
     REDIS_PORT                 : int           = 6379
-    REDIS_KEY_PREFIX           : str           = ''
     SUPPRESS_AUTHENTICATION    : bool          = True
     EMAIL_SUBJECT_PREFIX       : str           = ''
     DEFAULT_FROM_EMAIL         : str           = ''
@@ -125,10 +124,6 @@ class EnvironmentSettings:
             env_settings.REDIS_PORT = int( cls.get_env_variable('HI_REDIS_PORT') )
         except ( TypeError, ValueError ):
             pass
-        env_settings.REDIS_KEY_PREFIX = cls.get_env_variable(
-            'HI_REDIS_KEY_PREFIX',
-            env_settings.REDIS_KEY_PREFIX,
-        )
 
         ###########
         # Email-related
