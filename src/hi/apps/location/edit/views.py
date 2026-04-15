@@ -591,14 +591,21 @@ class LocationItemPathView( View ):
             main_content = 'OK',
         )
 
+
 @method_decorator( edit_required, name='dispatch' )
 class LocationSvgEditView( View, LocationViewMixin ):
 
     def get( self, request, *args, **kwargs ):
         location = self.get_location( request, *args, **kwargs )
+        manager = LocationManager()
+
+        draft_resumed = manager.draft_has_changes( location )
+        if not manager.draft_svg_exists( location ):
+            manager.create_draft_svg( location )
 
         context = {
             'location': location,
+            'draft_resumed': draft_resumed,
         }
         return render( request, 'location/edit/pages/location_svg_edit.html', context )
 
@@ -611,19 +618,19 @@ class LocationSvgEditCancelView( HiModalView, LocationViewMixin ):
 
     def get( self, request, *args, **kwargs ):
         location = self.get_location( request, *args, **kwargs )
+        manager = LocationManager()
 
-        # TODO: Check if any changes are being discarded.  If not, just redirect
-        # to default page, else show confirmation dialog before redirect (POST).
-        
-        context = {
-            'location': location,
-        }
+        if not manager.draft_has_changes( location ):
+            manager.delete_draft_svg( location )
+            redirect_url = reverse('home')
+            return antinode.redirect_response( redirect_url )
+
+        context = { 'location': location }
         return self.modal_response( request, context )
-    
+
     def post( self, request, *args, **kwargs ):
-
-        # TODO: Discard any in-progress edits, then redirect to default page.
-
+        location = self.get_location( request, *args, **kwargs )
+        LocationManager().delete_draft_svg( location )
         redirect_url = reverse('home')
         return antinode.redirect_response( redirect_url )
 
@@ -636,19 +643,19 @@ class LocationSvgEditExitView( HiModalView, LocationViewMixin ):
 
     def get( self, request, *args, **kwargs ):
         location = self.get_location( request, *args, **kwargs )
+        manager = LocationManager()
 
-        # TODO: Check if any changes were made.  If no changes, just redirect
-        # to default page, else show confirmation dialog before saving (POST).
-        
-        context = {
-            'location': location,
-        }
+        if not manager.draft_has_changes( location ):
+            manager.delete_draft_svg( location )
+            redirect_url = reverse('home')
+            return antinode.redirect_response( redirect_url )
+
+        context = { 'location': location }
         return self.modal_response( request, context )
-    
+
     def post( self, request, *args, **kwargs ):
-
-        # TODO: Save edits to real background image, then redirect to default page.
-
+        location = self.get_location( request, *args, **kwargs )
+        LocationManager().commit_draft_svg( location )
         redirect_url = reverse('home')
         return antinode.redirect_response( redirect_url )
 

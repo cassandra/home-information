@@ -12,7 +12,16 @@
     <div class="align-self-center">
       PALETTE
     </div>
-    
+
+    {% if draft_resumed %}
+    <div class="align-self-center">
+      <div class="alert alert-info alert-dismissible fade show m-1 py-1 px-2" role="alert" style="font-size: 0.85rem;">
+        Resumed draft from previous session. Use CANCEL EDITS to discard.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="padding: 0.35rem;"></button>
+      </div>
+    </div>
+    {% endif %}
+
     <div class="align-self-center">
       <div class="d-flex justify-content-between">
         <div class="align-self-center m-1">

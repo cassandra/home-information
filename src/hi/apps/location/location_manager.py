@@ -96,6 +96,47 @@ class LocationManager(Singleton):
         
         return
     
+    def get_draft_svg_filename( self, location : Location ) -> str:
+        base, ext = os.path.splitext( location.svg_fragment_filename )
+        return f'{base}.draft{ext}'
+
+    def draft_svg_exists( self, location : Location ) -> bool:
+        return default_storage.exists( self.get_draft_svg_filename( location ) )
+
+    def draft_has_changes( self, location : Location ) -> bool:
+        draft_filename = self.get_draft_svg_filename( location )
+        if not default_storage.exists( draft_filename ):
+            return False
+        with default_storage.open( location.svg_fragment_filename, 'r' ) as f:
+            live_content = f.read()
+        with default_storage.open( draft_filename, 'r' ) as f:
+            draft_content = f.read()
+        return bool( live_content != draft_content )
+
+    def delete_draft_svg( self, location : Location ) -> None:
+        draft_filename = self.get_draft_svg_filename( location )
+        if default_storage.exists( draft_filename ):
+            default_storage.delete( draft_filename )
+        return
+
+    def create_draft_svg( self, location : Location ) -> str:
+        draft_filename = self.get_draft_svg_filename( location )
+        self._ensure_directory_exists( draft_filename )
+        with default_storage.open( location.svg_fragment_filename, 'r' ) as source:
+            content = source.read()
+        with default_storage.open( draft_filename, 'w' ) as dest:
+            dest.write( content )
+        return draft_filename
+
+    def commit_draft_svg( self, location : Location ) -> None:
+        draft_filename = self.get_draft_svg_filename( location )
+        with default_storage.open( draft_filename, 'r' ) as source:
+            content = source.read()
+        with default_storage.open( location.svg_fragment_filename, 'w' ) as dest:
+            dest.write( content )
+        default_storage.delete( draft_filename )
+        return
+
     def _ensure_directory_exists( self, filepath ):
         if isinstance( default_storage, FileSystemStorage ):
             directory = os.path.dirname( default_storage.path( filepath ))
