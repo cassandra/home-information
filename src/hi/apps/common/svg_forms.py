@@ -101,8 +101,10 @@ class SvgFileForm(forms.Form):
         'animation', 'audio', 'video', 'style',
     }
     DANGEROUS_ATTRS = {
-        'onload', 'onclick', 'onmouseover', 'xlink:href',
-        'href',
+        'onload', 'onclick', 'onmouseover',
+    }
+    HREF_ATTRS = {
+        'href', 'xlink:href',
     }
 
     def __init__(self, *args, **kwargs):
@@ -183,6 +185,12 @@ class SvgFileForm(forms.Form):
                         logger.debug(f'Removing dangerous SVG attribute "{attr_name}"')
                         del element.attrib[attr_name]
                         self._increment_dangerous_attr_count( attr_name )
+                    elif attr_name in self.HREF_ATTRS:
+                        attr_value = element.attrib[attr_name].strip()
+                        if not attr_value.startswith('#'):
+                            logger.debug(f'Removing dangerous SVG href "{attr_name}={attr_value}"')
+                            del element.attrib[attr_name]
+                            self._increment_dangerous_attr_count( attr_name )
                     continue
 
                 continue
