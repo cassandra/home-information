@@ -3,7 +3,7 @@ import logging
 
 from django.core.exceptions import BadRequest
 from django.db import transaction
-from django.http import Http404, HttpResponseNotAllowed, HttpResponseRedirect
+from django.http import Http404, HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect
 from django.shortcuts import render
 from django.template.loader import get_template
 from django.urls import reverse
@@ -14,6 +14,7 @@ from hi.apps.collection.collection_manager import CollectionManager
 from hi.apps.collection.edit.views import CollectionPositionEditView
 from hi.apps.collection.models import Collection
 import hi.apps.common.antinode as antinode
+from hi.apps.common.svg_models import SvgViewBox
 from hi.apps.entity.edit.views import EntityPositionEditView
 from hi.apps.entity.entity_manager import EntityManager
 from hi.apps.entity.models import Entity
@@ -595,6 +596,8 @@ class LocationItemPathView( View ):
 @method_decorator( edit_required, name='dispatch' )
 class LocationSvgEditView( View, LocationViewMixin ):
 
+    SVG_EDIT_VIEWBOX_SESSION_PREFIX = 'svg_edit_viewbox_'
+
     def get( self, request, *args, **kwargs ):
         location = self.get_location( request, *args, **kwargs )
         manager = LocationManager()
@@ -603,9 +606,18 @@ class LocationSvgEditView( View, LocationViewMixin ):
         if not manager.draft_svg_exists( location ):
             manager.create_draft_svg( location )
 
+        session_key = f'{self.SVG_EDIT_VIEWBOX_SESSION_PREFIX}{location.id}'
+        if session_key not in request.session:
+            request.session[session_key] = location.svg_view_box_str
+        svg_view_box = SvgViewBox.from_attribute_value( request.session[session_key] )
+
+        draft_svg_filename = manager.get_draft_svg_filename( location )
+
         context = {
             'location': location,
             'draft_resumed': draft_resumed,
+            'draft_svg_filename': draft_svg_filename,
+            'svg_view_box': svg_view_box,
         }
         return render( request, 'location/edit/pages/location_svg_edit.html', context )
 
@@ -620,7 +632,12 @@ class LocationSvgEditCancelView( HiModalView, LocationViewMixin ):
         location = self.get_location( request, *args, **kwargs )
         manager = LocationManager()
 
-        if not manager.draft_has_changes( location ):
+        session_key = f'{LocationSvgEditView.SVG_EDIT_VIEWBOX_SESSION_PREFIX}{location.id}'
+        viewbox_changed = ( request.session.get( session_key ) != location.svg_view_box_str )
+        has_changes = manager.draft_has_changes( location ) or viewbox_changed
+
+        if not has_changes:
+            request.session.pop( session_key, None )
             manager.delete_draft_svg( location )
             redirect_url = reverse('home')
             return antinode.redirect_response( redirect_url )
@@ -630,6 +647,8 @@ class LocationSvgEditCancelView( HiModalView, LocationViewMixin ):
 
     def post( self, request, *args, **kwargs ):
         location = self.get_location( request, *args, **kwargs )
+        session_key = f'{LocationSvgEditView.SVG_EDIT_VIEWBOX_SESSION_PREFIX}{location.id}'
+        request.session.pop( session_key, None )
         LocationManager().delete_draft_svg( location )
         redirect_url = reverse('home')
         return antinode.redirect_response( redirect_url )
@@ -645,7 +664,12 @@ class LocationSvgEditExitView( HiModalView, LocationViewMixin ):
         location = self.get_location( request, *args, **kwargs )
         manager = LocationManager()
 
-        if not manager.draft_has_changes( location ):
+        session_key = f'{LocationSvgEditView.SVG_EDIT_VIEWBOX_SESSION_PREFIX}{location.id}'
+        viewbox_changed = ( request.session.get( session_key ) != location.svg_view_box_str )
+        has_changes = manager.draft_has_changes( location ) or viewbox_changed
+
+        if not has_changes:
+            request.session.pop( session_key, None )
             manager.delete_draft_svg( location )
             redirect_url = reverse('home')
             return antinode.redirect_response( redirect_url )
@@ -655,9 +679,47 @@ class LocationSvgEditExitView( HiModalView, LocationViewMixin ):
 
     def post( self, request, *args, **kwargs ):
         location = self.get_location( request, *args, **kwargs )
-        LocationManager().commit_draft_svg( location )
+        manager = LocationManager()
+
+        manager.commit_draft_svg( location )
+
+        session_key = f'{LocationSvgEditView.SVG_EDIT_VIEWBOX_SESSION_PREFIX}{location.id}'
+        viewbox_str = request.session.pop( session_key, None )
+        if viewbox_str:
+            location.svg_view_box_str = viewbox_str
+            location.save()
+
         redirect_url = reverse('home')
         return antinode.redirect_response( redirect_url )
 
 
-    
+@method_decorator( edit_required, name='dispatch' )
+class LocationSvgEditViewBoxView( View, LocationViewMixin ):
+
+    def post( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+
+        try:
+            width = float( request.POST.get( 'width', 0 ) )
+            height = float( request.POST.get( 'height', 0 ) )
+        except (TypeError, ValueError):
+            raise BadRequest( 'Invalid viewbox dimensions.' )
+
+        if width <= 0 or height <= 0:
+            raise BadRequest( 'Viewbox dimensions must be positive.' )
+
+        svg_view_box = SvgViewBox( x=0, y=0, width=width, height=height )
+        session_key = f'{LocationSvgEditView.SVG_EDIT_VIEWBOX_SESSION_PREFIX}{location.id}'
+        request.session[session_key] = str( svg_view_box )
+
+        manager = LocationManager()
+        draft_svg_filename = manager.get_draft_svg_filename( location )
+        context = {
+            'location': location,
+            'draft_svg_filename': draft_svg_filename,
+            'svg_view_box': svg_view_box,
+        }
+        template = get_template( 'location/edit/panes/location_svg_edit_canvas.html' )
+        canvas_html = template.render( context, request=request )
+        return HttpResponse( canvas_html )
+

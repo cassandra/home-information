@@ -73,8 +73,12 @@ urlpatterns = [
              views.LocationSvgEditCancelView.as_view(), 
              name='location_svg_edit_cancel'),
 
-    re_path( r'^svg/edit/exit/(?P<location_id>\d+)$', 
-             views.LocationSvgEditExitView.as_view(), 
+    re_path( r'^svg/edit/exit/(?P<location_id>\d+)$',
+             views.LocationSvgEditExitView.as_view(),
              name='location_svg_edit_exit'),
+
+    re_path( r'^svg/edit/viewbox/(?P<location_id>\d+)$',
+             views.LocationSvgEditViewBoxView.as_view(),
+             name='location_svg_edit_viewbox'),
 
 ]
