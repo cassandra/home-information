@@ -191,3 +191,27 @@ svg.hi-location-view-svg path.sinks {
     stroke: black;
     stroke-width: 1;
 }
+
+/* Open-path stroke-based wall styles for editor-compatible SVGs */
+svg.hi-location-view-svg path.exterior-wall-stroke {
+    fill: none;
+    stroke: black;
+    stroke-width: 16;
+}
+svg.hi-location-view-svg path.interior-wall-stroke {
+    fill: none;
+    stroke: #202020;
+    stroke-width: 8;
+}
+
+/* Hit areas for editor-compatible background elements */
+svg.hi-location-view-svg path.hi-bg-hit-area {
+    stroke: transparent;
+    stroke-width: 30;
+    fill: none;
+    pointer-events: stroke;
+}
+svg.hi-location-view-svg rect.hi-bg-hit-area {
+    fill: transparent;
+    pointer-events: all;
+}
