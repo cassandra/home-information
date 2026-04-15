@@ -1,0 +1,1 @@
+/* Location SVG Editor Javascript */

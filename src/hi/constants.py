@@ -151,4 +151,10 @@ DIVID = {
 
     # Entity Picker - Filter values
     'ENTITY_PICKER_FILTER_ALL': 'all',
+
+    # Location SVG Editor Grid Structure
+    'LOCATION_SVG_EDIT_TOP': 'hi-location-svg-editor-top',
+    'LOCATION_SVG_EDIT_BOTTOM': 'hi-location-svg-editor-bottom',
+    'LOCATION_SVG_EDIT_MAIN': 'hi-location-svg-editor-main',
+
 }

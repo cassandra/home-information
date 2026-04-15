@@ -1,0 +1,49 @@
+{% extends "pages/base.html" %}
+{% load pipeline %}
+{% load icons %}
+
+{% block head_css %}
+{% stylesheet 'css_location_svg_edit' %}
+{% endblock %}
+
+{% block content %}
+<div id="{{ DIVID.LOCATION_SVG_EDIT_TOP }}" class="fixed-top">
+  <div class="d-flex justify-content-between">
+    <div class="align-self-center">
+      PALETTE
+    </div>
+    
+    <div class="align-self-center">
+      <div class="d-flex justify-content-between">
+        <div class="align-self-center m-1">
+          <a href="{% url 'location_svg_edit_cancel' location_id=location.id %}"
+             id="hi-location-svg-edit-cancel-link" class="btn btn-outline-tertiary" role="button"
+             data-async="true">
+            {% icon "cancel" size="sm" css_class="hi-icon-left" %} CANCEL EDITS
+          </a>
+        </div>
+        
+        <div class="align-self-center m-1">
+          <a href="{% url 'location_svg_edit_exit' location_id=location.id %}"
+             id="hi-location-svg-edit-exit-link" class="btn btn-primary" role="button"
+             data-async="true">
+            {% icon "save" size="sm" css_class="hi-icon-left" %} SAVE & EXIT
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="{{ DIVID.LOCATION_SVG_EDIT_BOTTOM }}" class="fixed-bottom">
+FOOTER
+</div>
+
+<div id="{{ DIVID.LOCATION_SVG_EDIT_MAIN }}" class="container-fluid">
+BODY
+</div>
+{% endblock %}
+
+{% block footer_post_javascript %}
+{% javascript 'js_location_svg_edit' %}
+{% endblock %}

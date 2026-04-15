@@ -250,6 +250,12 @@ PIPELINE = {
             ),
             'output_filename': 'css/css_head.css',
         },
+        'css_location_svg_edit': {
+            'source_filenames': (
+                'css/location-svg-edit.css',
+            ),
+            'output_filename': 'css/css_location_svg_edit.css',
+        },
     },
     'JAVASCRIPT': {
         'js_before_content': {
@@ -294,6 +300,13 @@ PIPELINE = {
                 'js/svg-event-listeners.js',
             ),
             'output_filename': 'js/js_hi_grid_content.js',
+        },
+        'js_location_svg_edit': {
+            'source_filenames': (
+                'js/svg-utils.js',
+                'js/location-svg-edit.js',
+            ),
+            'output_filename': 'js/js_location_svg_edit.js',
         },
     }
 }

@@ -4,6 +4,7 @@ import logging
 from django.core.exceptions import BadRequest
 from django.db import transaction
 from django.http import Http404, HttpResponseNotAllowed, HttpResponseRedirect
+from django.shortcuts import render
 from django.template.loader import get_template
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -589,3 +590,67 @@ class LocationItemPathView( View ):
         return antinode.response(
             main_content = 'OK',
         )
+
+@method_decorator( edit_required, name='dispatch' )
+class LocationSvgEditView( View, LocationViewMixin ):
+
+    def get( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+
+        context = {
+            'location': location,
+        }
+        return render( request, 'location/edit/pages/location_svg_edit.html', context )
+
+
+@method_decorator( edit_required, name='dispatch' )
+class LocationSvgEditCancelView( HiModalView, LocationViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'location/edit/modals/location_svg_edit_cancel.html'
+
+    def get( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+
+        # TODO: Check if any changes are being discarded.  If not, just redirect
+        # to default page, else show confirmation dialog before redirect (POST).
+        
+        context = {
+            'location': location,
+        }
+        return self.modal_response( request, context )
+    
+    def post( self, request, *args, **kwargs ):
+
+        # TODO: Discard any in-progress edits, then redirect to default page.
+
+        redirect_url = reverse('home')
+        return antinode.redirect_response( redirect_url )
+
+
+@method_decorator( edit_required, name='dispatch' )
+class LocationSvgEditExitView( HiModalView, LocationViewMixin ):
+
+    def get_template_name( self ) -> str:
+        return 'location/edit/modals/location_svg_edit_exit.html'
+
+    def get( self, request, *args, **kwargs ):
+        location = self.get_location( request, *args, **kwargs )
+
+        # TODO: Check if any changes were made.  If no changes, just redirect
+        # to default page, else show confirmation dialog before saving (POST).
+        
+        context = {
+            'location': location,
+        }
+        return self.modal_response( request, context )
+    
+    def post( self, request, *args, **kwargs ):
+
+        # TODO: Save edits to real background image, then redirect to default page.
+
+        redirect_url = reverse('home')
+        return antinode.redirect_response( redirect_url )
+
+
+    

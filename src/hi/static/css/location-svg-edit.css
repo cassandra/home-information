@@ -1,0 +1,26 @@
+/* Location SVG Editor Styles */
+
+:root {
+    --svg-editor-top-height: 4rem;
+    --svg-editor-bottom-height: 4rem;
+    --svg-editor-main-height: 4rem;
+}
+
+#hi-location-svg-editor-top {
+    height: calc( var(--svg-editor-top-height) );
+    background: var(--edit-mode-tertiary-bg);
+    border-bottom: 4px dashed var(--edit-mode-dash-color);
+    box-shadow: inset 0 -2px 8px rgba(212, 119, 94, 0.1);
+}
+#hi-location-svg-editor-bottom {
+    height: var(--svg-editor-bottom-height);
+    background: var(--edit-mode-tertiary-bg);
+    border-top: 4px dashed var(--edit-mode-dash-color);
+    box-shadow: inset 0 2px 8px rgba(212, 119, 94, 0.1);
+}
+#hi-location-svg-editor-main {
+    background: linear-gradient(135deg, var(--edit-mode-secondary-bg) 0%, var(--white) 50%, var(--edit-mode-secondary-bg) 100%);
+    box-shadow: inset 0 0 0 3px var(--edit-mode-secondary-bg);
+    position: relative;
+    max-height: 100vh;
+}
