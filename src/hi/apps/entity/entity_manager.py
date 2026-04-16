@@ -234,7 +234,8 @@ class EntityManager(Singleton):
                 bulk_grid_index = bulk_grid_index,
                 bulk_grid_total = bulk_grid_total,
             )
-        else: # Default display in middle of current view
+        # Default display in middle of current view
+        else: 
             svg_x = location_view.svg_view_box.x + ( location_view.svg_view_box.width / 2.0 )
             svg_y = location_view.svg_view_box.y + ( location_view.svg_view_box.height / 2.0 )
 
