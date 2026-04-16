@@ -58,15 +58,19 @@
       <button type="submit" class="btn btn-sm btn-outline-primary ms-2 mx-1">Apply</button>
     </form>
     <div class="d-flex gap-2">
-      <a href="{% url 'location_svg_edit_export' location_id=location.id %}"
-         class="btn btn-tertiary btn-control" role="button">
-        {% icon "save" size="sm" css_class="hi-icon-left" %}EXPORT
-      </a>
-      <a href="{% url 'location_svg_edit_help' %}"
-         class="btn btn-tertiary btn-control" role="button"
-         data-async="true">
-        {% icon "question-circle" size="sm" css_class="hi-icon-left" %}HELP
-      </a>
+      <div class="mx-2">
+        <a href="{% url 'location_svg_edit_export' location_id=location.id %}"
+           class="btn btn-sm btn-outline-primary" role="button">
+          {% icon "download" size="sm" css_class="hi-icon-left" %}EXPORT
+        </a>
+      </div>
+      <div class="mx-2">
+        <a href="{% url 'location_svg_edit_help' %}"
+           class="btn btn-tertiary btn-control" role="button"
+           data-async="true">
+          {% icon "question-circle" size="sm" css_class="hi-icon-left" %}HELP
+        </a>
+      </div>
     </div>
   </div>
 </div>
